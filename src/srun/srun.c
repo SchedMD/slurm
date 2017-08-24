@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,22 +38,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
-#ifdef HAVE_AIX
-#  undef HAVE_UNSETENV
-#  include <sys/checkpnt.h>
-#endif
-#ifndef HAVE_UNSETENV
-#  include "src/common/unsetenv.h"
-#endif
-
+#include <ctype.h>
+#include <fcntl.h>
+#include <grp.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
 #include <sys/param.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -61,15 +55,8 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
-#include <ctype.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
 #include <termios.h>
 #include <unistd.h>
-#include <grp.h>
 
 #include "src/common/fd.h"
 
@@ -101,25 +88,12 @@
 #include "src/api/step_ctx.h"
 #include "src/api/step_launch.h"
 
-#if defined (HAVE_DECL_STRSIGNAL) && !HAVE_DECL_STRSIGNAL
-#  ifndef strsignal
- extern char *strsignal(int);
-#  endif
-#endif /* defined HAVE_DECL_STRSIGNAL && !HAVE_DECL_STRSIGNAL */
-
 #ifndef OPEN_MPI_PORT_ERROR
 /* This exit code indicates the launched Open MPI tasks could
  *	not open the reserved port. It was already open by some
  *	other process. */
 #define OPEN_MPI_PORT_ERROR 108
 #endif
-
-#define MAX_RETRIES 20
-#define MAX_ENTRIES 50
-
-#define	TYPE_NOT_TEXT	0
-#define	TYPE_TEXT	1
-#define	TYPE_SCRIPT	2
 
 static struct termios termdefaults;
 static uint32_t global_rc = 0;

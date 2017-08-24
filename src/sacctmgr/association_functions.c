@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,7 +40,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_assoc_cond_t *assoc_cond,
 		     List format_list)
 {
@@ -783,7 +783,7 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	}
 }
 
-extern int sacctmgr_list_assoc(int argc, char *argv[])
+extern int sacctmgr_list_assoc(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t *assoc_cond =
@@ -884,13 +884,13 @@ extern int sacctmgr_list_assoc(int argc, char *argv[])
 	return rc;
 }
 
-/* extern int sacctmgr_modify_assoc(int argc, char *argv[]) */
+/* extern int sacctmgr_modify_assoc(int argc, char **argv) */
 /* { */
 /* 	int rc = SLURM_SUCCESS; */
 /* 	return rc; */
 /* } */
 
-/* extern int sacctmgr_delete_assoc(int argc, char *argv[]) */
+/* extern int sacctmgr_delete_assoc(int argc, char **argv) */
 /* { */
 /* 	int rc = SLURM_SUCCESS; */
 /* 	return rc; */

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,6 +38,8 @@
 #include "affinity.h"
 
 #ifdef HAVE_NUMA
+
+static uint16_t *numa_array = NULL;
 
 static char * _memset_to_str(nodemask_t *mask, char *str)
 {
@@ -86,11 +88,11 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 		if (val & 1)
 			nodemask_set(mask, base);
 		if (val & 2)
-			 nodemask_set(mask, base+1);
+			nodemask_set(mask, base+1);
 		if (val & 4)
-			 nodemask_set(mask, base+2);
+			nodemask_set(mask, base+2);
 		if (val & 8)
-			 nodemask_set(mask, base+3);
+			nodemask_set(mask, base+3);
 		len--;
 		ptr--;
 		base += 4;
@@ -101,9 +103,7 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 
 void slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job)
 {
-	char bind_type[42];
-	char action[42];
-	char status[42];
+	char *action, *bind_type, *mode;
 	char mstr[1 + NUMA_NUM_NODES / 4];
 	int task_gid = job->envtp->procid;
 	int task_lid = job->envtp->localid;
@@ -112,40 +112,41 @@ void slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job)
 	if (!(job->mem_bind_type & MEM_BIND_VERBOSE))
 		return;
 
-	action[0] = '\0';
-	status[0] = '\0';
-
 	if (job->mem_bind_type & MEM_BIND_NONE) {
-		strcpy(action, "");
-		strcpy(bind_type, "=NONE");
+		mode = "=";
+		action = "";
+		bind_type = "NONE";
 	} else {
-		strcpy(action, " set");
+		action = " set";
+		if (job->mem_bind_type & MEM_BIND_PREFER)
+			mode = " PREFER ";
+		else
+			mode = "=";
 		if (job->mem_bind_type & MEM_BIND_RANK) {
-			strcpy(bind_type, "=RANK");
+			bind_type = "RANK";
 		} else if (job->mem_bind_type & MEM_BIND_LOCAL) {
-			strcpy(bind_type, "=LOC ");
+			bind_type = "LOC";
 		} else if (job->mem_bind_type & MEM_BIND_MAP) {
-			strcpy(bind_type, "=MAP ");
+			bind_type = "MAP";
 		} else if (job->mem_bind_type & MEM_BIND_MASK) {
-			strcpy(bind_type, "=MASK");
+			bind_type = "MASK";
 		} else if (job->mem_bind_type & (~MEM_BIND_VERBOSE)) {
-			strcpy(bind_type, "=UNK ");
+			bind_type = "UNK";
 		} else {
-			strcpy(action, "");
-			strcpy(bind_type, "=NULL");
+			action = "";
+			bind_type = "NULL";
 		}
 	}
 
-	fprintf(stderr, "mem_bind%s - "
-			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
-			bind_type,
+	fprintf(stderr, "mem_bind%s%s - "
+			"%s, task %2u %2u [%u]: mask 0x%s%s\n",
+			mode, bind_type,
 			conf->hostname,
 			task_gid,
 			task_lid,
 			mypid,
 			_memset_to_str(mask, mstr),
-			action,
-			status);
+			action);
 }
 
 int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
@@ -237,79 +238,51 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 }
 
 
-static uint16_t *numa_array = NULL;
-
-/* helper function */
-static void _add_numa_mask_to_array(unsigned long *cpu_mask, int size,
-					uint16_t maxcpus, uint16_t nnode_id)
-{
-	unsigned long count = 1;
-	int i, j, x = sizeof(unsigned long) * 8;
-	for (i = 0; i < size; i++) {
-		/* iterate over each bit of this unsigned long */
-		for (j = 0, count = 1; j < x; j++, count *= 2) {
-			if (count & cpu_mask[i]) {
-				/* this bit in the cpu_mask is set */
-				int cpu = i * sizeof(unsigned long) + j;
-				if (cpu < maxcpus) {
-					numa_array[cpu] = nnode_id;
-				}
-			}
-		}
-	}
-}
-
 /* return the numa node for the given cpuid */
 extern uint16_t slurm_get_numa_node(uint16_t cpuid)
 {
-	uint16_t maxcpus = 0, nnid = 0;
-	int size, retry, max_node;
-	unsigned long *cpu_mask;
+	uint16_t maxcpus = 0;
+	int nnid, j, max_node;
+	struct bitmask *collective;
+
+	if (numa_array)
+		return numa_array[cpuid];
 
 	maxcpus = conf->sockets * conf->cores * conf->threads;
+
 	if (cpuid >= maxcpus)
 		return 0;
 
-	if (numa_array) {
-		return numa_array[cpuid];
-	}
-
 	/* need to load the numa_array */
 	max_node = numa_max_node();
+	numa_array = xmalloc(sizeof(uint16_t) * maxcpus);
 
-	/* The required size of the mask buffer for numa_node_to_cpus()
-	 * is goofed up. The third argument is supposed to be the size
-	 * of the mask, which is an array of unsigned longs. The *unit*
-	 * of the third argument is unclear - should it be in bytes or
-	 * in unsigned longs??? Since I don't know, I'm using this retry
-	 * loop to try and determine an acceptable size. If anyone can
-	 * fix this interaction, please do!!
-	 */
-	size = 8;
-	cpu_mask = xmalloc(sizeof(unsigned long) * size);
-	retry = 0;
-	while (retry++ < 8 && numa_node_to_cpus(nnid, cpu_mask, size) < 0) {
-		size *= 2;
-		xrealloc(cpu_mask, sizeof(unsigned long) * size);
-	}
-	if (retry >= 8) {
-		xfree(cpu_mask);
-		error("NUMA problem with numa_node_to_cpus arguments");
+	collective = numa_allocate_cpumask();
+	if (maxcpus > collective->size) {
+		error("%s: Size mismatch!!!! %d %"PRIu64,
+		      __func__, maxcpus, collective->size);
+		numa_free_cpumask(collective);
 		return 0;
 	}
-	numa_array = xmalloc(sizeof(uint16_t) * maxcpus);
-	_add_numa_mask_to_array(cpu_mask, size, maxcpus, nnid);
-	while (nnid++ < max_node) {
-		if (numa_node_to_cpus(nnid, cpu_mask, size) < 0) {
-			error("NUMA problem - numa_node_to_cpus 2nd call fail");
-			xfree(cpu_mask);
-			xfree(numa_array);
-			numa_array = NULL;
+
+	for (nnid = 0; nnid <= max_node; nnid++) {
+		/* FIXME: This is a hack to make it work like NUMA v2, but for
+		 * the time being we are stuck on v1. (numa_node_to_cpus will
+		 * multiple the size by 8 and the collective is already at the
+		 * correct size)
+		 */
+		if (numa_node_to_cpus(nnid, collective->maskp,
+				      collective->size / 8)) {
+			error("%s: numa_node_to_cpus: %m", __func__);
+			numa_free_cpumask(collective);
 			return 0;
 		}
-		_add_numa_mask_to_array(cpu_mask, size, maxcpus, nnid);
+		for (j = 0; j < maxcpus; j++)
+			if (numa_bitmask_isbitset(collective, j))
+				numa_array[j] = nnid;
 	}
-	xfree(cpu_mask);
+
+	numa_free_cpumask(collective);
 	return numa_array[cpuid];
 }
 

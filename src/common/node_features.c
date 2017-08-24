@@ -6,7 +6,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,30 +35,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if STDC_HEADERS
-#    include <string.h>
-#  endif
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif /* HAVE_SYS_TYPES_H */
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else /* ! HAVE_INTTYPES_H */
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif /* HAVE_INTTYPES_H */
-#else /* ! HAVE_CONFIG_H */
-#  include <sys/types.h>
-#  include <unistd.h>
-#  include <stdint.h>
-#  include <string.h>
-#endif /* HAVE_CONFIG_H */
+#include <inttypes.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
@@ -76,6 +56,7 @@
  * working.  If you need to add fields, add them to the end of the structure.
  */
 typedef struct node_features_ops {
+	uint32_t(*boot_time)	(void);
 	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
@@ -85,6 +66,7 @@ typedef struct node_features_ops {
 	int	(*node_update)	(char *active_features, bitstr_t *node_bitmap);
 	char *	(*node_xlate)	(char *new_features, char *orig_features,
 				 int mode);
+	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
 	int	(*reconfig)	(void);
 	bool	(*user_update)	(uid_t uid);
 } node_features_ops_t;
@@ -94,6 +76,7 @@ typedef struct node_features_ops {
  * declared for node_features_ops_t.
  */
 static const char *syms[] = {
+	"node_features_p_boot_time",
 	"node_features_p_get_node",
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
@@ -102,6 +85,7 @@ static const char *syms[] = {
 	"node_features_p_node_state",
 	"node_features_p_node_update",
 	"node_features_p_node_xlate",
+	"node_features_p_step_config",
 	"node_features_p_reconfig",
 	"node_features_p_user_update"
 };
@@ -206,6 +190,24 @@ extern int node_features_g_count(void)
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
+}
+
+/* Perform set up for step launch
+ * mem_sort IN - Trigger sort of memory pages (KNL zonesort)
+ * numa_bitmap IN - NUMA nodes allocated to this job */
+extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap)
+{
+	DEF_TIMERS;
+	int i;
+
+	START_TIMER;
+	if (node_features_g_init() != SLURM_SUCCESS)
+		return;
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++)
+		(*(ops[i].step_config))(mem_sort, numa_bitmap);
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_step_config");
 }
 
 /* Reset plugin configuration information */
@@ -423,4 +425,23 @@ extern bool node_features_g_user_update(uid_t uid)
 	END_TIMER2("node_features_g_user_update");
 
 	return result;
+}
+
+/* Return estimated reboot time, in seconds */
+extern uint32_t node_features_g_boot_time(void)
+{
+	DEF_TIMERS;
+	uint32_t boot_time = 0;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		boot_time = MAX(boot_time, (*(ops[i].boot_time))());
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_user_update");
+
+	return boot_time;
 }

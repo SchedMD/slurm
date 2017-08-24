@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,17 +40,8 @@
 #ifndef _HAVE_SLURM_CRED_H
 #define _HAVE_SLURM_CRED_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_UNISTD_H
-#  include <unistd.h>
-#endif
-
-#if HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
@@ -160,7 +151,7 @@ typedef struct {
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
 	uint16_t  job_core_spec;	/* count of specialized cores */
 	char     *job_hostlist;		/* list of nodes allocated to JOB */
-	uint32_t  job_mem_limit;	/* MB of memory reserved per node OR
+	uint64_t  job_mem_limit;	/* MB of memory reserved per node OR
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (no limit) */
 	uint32_t  job_nhosts;		/* count of nodes allocated to JOB */
@@ -169,7 +160,7 @@ typedef struct {
 	/* STEP specific info */
 	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */
 	char     *step_hostlist;	/* list of nodes allocated to STEP */
-	uint32_t  step_mem_limit;	/* MB of memory reserved per node OR
+	uint64_t  step_mem_limit;	/* MB of memory reserved per node OR
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (no limit) */
 	List step_gres_list;		/* Generic resources allocated to STEP */
@@ -322,7 +313,7 @@ int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
  */
 void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 			 char **job_alloc_cores, char **step_alloc_cores,
-			 uint32_t *job_mem_limit, uint32_t *step_mem_limit);
+			 uint64_t *job_mem_limit, uint64_t *step_mem_limit);
 
 /*
  * Retrieve the job and step generic resources (gres) allocate to this job
@@ -353,8 +344,4 @@ void          pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer);
 sbcast_cred_t *unpack_sbcast_cred(Buf buffer);
 void          print_sbcast_cred(sbcast_cred_t *sbcast_cred);
 
-
-#ifdef DISABLE_LOCALTIME
-extern char * timestr (const time_t *tp, char *buf, size_t n);
-#endif
 #endif  /* _HAVE_SLURM_CREDS_H */

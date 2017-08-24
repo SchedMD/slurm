@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -44,13 +44,11 @@
  *  their description strings.
  */
 
-#if HAVE_CONFIG_H
 #include "config.h"
-#endif
 
-#include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "slurm/slurm_errno.h"
@@ -329,6 +327,12 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Waiting for burst buffer"				},
 	{ ESLURM_PARTITION_DOWN,
 	  "Partition in DOWN state"				},
+	{ ESLURM_DUPLICATE_GRES,
+	  "Duplicate generic resource (gres) specification"	},
+	{ ESLURM_JOB_SETTING_DB_INX,
+	  "Job update not available right now, the DB index is being set, try again in a bit" },
+	{ ESLURM_RSV_ALREADY_STARTED,
+	  "Reservation already started"	},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
@@ -437,6 +441,12 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_OVER_ALLOCATE,
 	  "You can not allocate more than 100% of a resource"	},
 
+	/* Federation Errors */
+	{ ESLURM_FED_CLUSTER_MAX_CNT,
+	  "Too many clusters in federation"			},
+	{ ESLURM_FED_CLUSTER_MULTIPLE_ASSIGNMENT,
+	  "Clusters can only be assigned to one federation" 	},
+
 	/* plugin and custom errors */
 	{ ESLURM_MISSING_TIME_LIMIT,
 	  "Time limit specification required, but not provided"	},
@@ -488,7 +498,12 @@ static char *_lookup_slurm_api_errtab(int errnum)
 char *slurm_strerror(int errnum)
 {
 	char *res = _lookup_slurm_api_errtab(errnum);
-	return (res ? res : strerror(errnum));
+	if (res)
+		return res;
+	else if (errnum > 0)
+		return strerror(errnum);
+	else
+		return "Unknown negative error number";
 }
 
 /*

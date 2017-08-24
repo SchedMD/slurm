@@ -5,7 +5,7 @@
  *  Written by Yiannis Georgiou <yiannis.georgiou@bull.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,17 +34,25 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #define _GNU_SOURCE
-#include <sched.h>
 #include <glob.h>
-#include <sys/types.h>
+#include <limits.h>
+#include <sched.h>
 #include <sys/stat.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include <sys/types.h>
+
+#ifdef MAJOR_IN_MKDEV
+#  include <sys/mkdev.h>
+#endif
+#ifdef MAJOR_IN_SYSMACROS
+#  include <sys/sysmacros.h>
+#endif
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
 #include "src/common/xstring.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
@@ -53,10 +61,6 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #include "task_cgroup.h"
-
-#ifndef PATH_MAX
-#define PATH_MAX 256
-#endif
 
 static char user_cgroup_path[PATH_MAX];
 static char job_cgroup_path[PATH_MAX];
@@ -123,11 +127,38 @@ extern int task_cgroup_devices_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
         if (xcgroup_create(&devices_ns, &devices_cg,"",0,0)
 	    == XCGROUP_SUCCESS) {
                 if (xcgroup_lock(&devices_cg) == XCGROUP_SUCCESS) {
+			int i = 0, npids = 0, cnt = 0;
+			pid_t* pids = NULL;
 			/* First move slurmstepd to the root devices cg
 			 * so we can remove the step/job/user devices
 			 * cg's.  */
 			xcgroup_move_process(&devices_cg, getpid());
-                        if (xcgroup_delete(&step_devices_cg) != SLURM_SUCCESS)
+
+			/* There is a delay in the cgroup system when moving the
+			 * pid from one cgroup to another.  This is usually
+			 * short, but we need to wait to make sure the pid is
+			 * out of the step cgroup or we will occur an error
+			 * leaving the cgroup unable to be removed.
+			 */
+			do {
+				xcgroup_get_pids(&step_devices_cg,
+						 &pids, &npids);
+				for (i = 0 ; i<npids ; i++)
+					if (pids[i] == getpid()) {
+						cnt++;
+						break;
+					}
+				xfree(pids);
+			} while ((i < npids) && (cnt < MAX_MOVE_WAIT));
+
+			if (cnt < MAX_MOVE_WAIT)
+				debug3("Took %d checks before stepd pid was removed from the step cgroup.",
+				       cnt);
+			else
+				error("Pid %d is still in the step cgroup.  It might be left uncleaned after the job.",
+				      getpid());
+
+			if (xcgroup_delete(&step_devices_cg) != SLURM_SUCCESS)
                                 debug2("task/cgroup: unable to remove step "
                                        "devices : %m");
                         if (xcgroup_delete(&job_devices_cg) != XCGROUP_SUCCESS)
@@ -437,6 +468,7 @@ error:
 	xcgroup_destroy(&devices_cg);
 	xfree(gres_step_bit_alloc);
 	xfree(gres_job_bit_alloc);
+	xfree(gres_count);
 	xfree(gres_name);
 	xfree(dev_path);
 	xfree(gres_cgroup);

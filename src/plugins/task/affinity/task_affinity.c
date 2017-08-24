@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,12 +39,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <dirent.h>
+#include <limits.h>
 #include <signal.h>
 #include <sys/types.h>
 
@@ -244,9 +243,7 @@ extern int task_p_slurmd_resume_job (uint32_t job_id)
 extern int task_p_slurmd_release_resources (uint32_t job_id)
 {
 	DIR *dirp;
-	struct dirent entry;
-	struct dirent *result;
-	int rc;
+	struct dirent *entryp;
 	char base[PATH_MAX];
 	char path[PATH_MAX];
 
@@ -295,15 +292,12 @@ extern int task_p_slurmd_release_resources (uint32_t job_id)
 	}
 
 	while (1) {
-		rc = readdir_r(dirp, &entry, &result);
-		if (rc && (errno == EAGAIN))
-			continue;
-		if (rc || (result == NULL))
+		if (!(entryp = readdir(dirp)))
 			break;
-		if (xstrncmp(entry.d_name, "slurm", 5))
+		if (xstrncmp(entryp->d_name, "slurm", 5))
 			continue;
 		if (snprintf(path, PATH_MAX, "%s/%s",
-					 base, entry.d_name) >= PATH_MAX) {
+			     base, entryp->d_name) >= PATH_MAX) {
 			error("%s: cpuset path too long", __func__);
 			break;
 		}
@@ -364,6 +358,20 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 
 	return rc;
 }
+
+#ifdef HAVE_NUMA
+static void _numa_set_preferred(nodemask_t *new_mask)
+{
+	int i;
+
+	for (i = 0; i < NUMA_NUM_NODES; i++) {
+		if (nodemask_isset(new_mask, i)) {
+			numa_set_preferred(i);
+			break;
+		}
+	}
+}
+#endif
 
 /*
  * task_p_pre_launch() is called prior to exec of application task.
@@ -453,8 +461,12 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		if (get_memset(&new_mask, job) &&
 		    (!(job->mem_bind_type & MEM_BIND_NONE))) {
 			slurm_set_memset(path, &new_mask);
-			if (numa_available() >= 0)
-				numa_set_membind(&new_mask);
+			if (numa_available() >= 0) {
+				if (job->mem_bind_type & MEM_BIND_PREFER)
+					_numa_set_preferred(&new_mask);
+				else
+					numa_set_membind(&new_mask);
+			}
 			cur_mask = new_mask;
 		}
 		slurm_chk_memset(&cur_mask, job);
@@ -464,7 +476,10 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		cur_mask = numa_get_membind();
 		if (get_memset(&new_mask, job)
 		    &&  (!(job->mem_bind_type & MEM_BIND_NONE))) {
-			numa_set_membind(&new_mask);
+			if (job->mem_bind_type & MEM_BIND_PREFER)
+				_numa_set_preferred(&new_mask);
+			else
+				numa_set_membind(&new_mask);
 			cur_mask = new_mask;
 		}
 		slurm_chk_memset(&cur_mask, job);
@@ -477,7 +492,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
  * task_p_pre_launch_priv() is called prior to exec of application task.
  * in privileged mode, just after slurm_spank_task_init_privileged
  */
-extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
+extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 {
 	return SLURM_SUCCESS;
 }
@@ -517,7 +532,7 @@ extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task
 #endif
 	if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
 				 base, job->jobid, job->stepid,
-				 job->envtp->localid) >= PATH_MAX) {
+				 task->id) >= PATH_MAX) {
 		error("%s: cpuset path too long", __func__);
 		return SLURM_ERROR;
 	}

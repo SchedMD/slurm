@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,6 +35,11 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+/* PRId64 isn't available in cpp via old inttypes.h for some reason, modern
+ * versions of the header don't have this restriction, but this can be fixed
+ * with the #define below allows you to use PRId64 (for bitstrings). */
+#define __STDC_FORMAT_MACROS
 
 extern "C" {
 #include "../ba_bgq/block_allocator.h"
@@ -431,7 +436,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 
 	inx = ba_node_xlate_to_1d(cnode_coords, ba_mp_geo_system);
 	if (inx >= bit_size(ba_mp->cnode_err_bitmap)) {
-		error("trying to set cnode %d but we only have %d",
+		error("trying to set cnode %d but we only have %"BITSTR_FMT,
 		      inx, bit_size(ba_mp->cnode_err_bitmap));
 		return;
 	}

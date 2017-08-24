@@ -6,7 +6,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -96,8 +96,16 @@ extern int node_features_g_node_update(char *active_features,
 extern char *node_features_g_node_xlate(char *new_features,char *orig_features,
 					int mode);
 
+/* Perform set up for step launch
+ * mem_sort IN - Trigger sort of memory pages (KNL zonesort)
+ * numa_bitmap IN - NUMA nodes allocated to this job */
+extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap);
+
 /* Determine if the specified user can modify the currently available node
  * features */
 extern bool node_features_g_user_update(uid_t uid);
+
+/* Return estimated reboot time, in seconds */
+extern uint32_t node_features_g_boot_time(void);
 
 #endif /* !_NODE_FEATURES_H */

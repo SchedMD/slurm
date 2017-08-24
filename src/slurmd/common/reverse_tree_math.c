@@ -9,9 +9,12 @@
  *                     Siberian Branch of Russian Academy of Science
  *  Written by Artem Polyakov <artpol84@gmail.com>.
  *  All rights reserved.
+ *  Portions copyright (C) 2017 Mellanox Technologies.
+ *  Written by Artem Polyakov <artpol84@gmail.com>.
+ *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -63,8 +66,36 @@ static inline int int_pow(int num, int power)
 
 static inline int geometric_series(int width, int depth)
 {
+	/*
+	 * the main idea behind this formula is the following math base:
+	 * a^n - b^n = (a-b)*(a^(n-1) + b*a^(n-2) + b^2*a^(n-3) ... +b^(n-1))
+	 * if we set a = 1, b = w (width) we will turn it to:
+	 *
+	 *        1 - w^n = (1-w)*(1 + w + w^2 + ... +w^(n-1))     (1)
+	 *        C = (1 + w + w^2 + ... +w^(n-1))                 (2)
+	 *
+	 * is perfectly a number of children in the tree with width w.
+	 * So we can calculate C from (1):
+	 *
+	 *        1 - w^n = (1-w)*C =>  C = (1-w^n)/(1-w)          (3)
+	 *
+	 * (2) takes (n-1) sums and (n-2) multiplication (or (n-2) exponentiations).
+	 * (3) takes n+1 multiplications (or one exponentiation), 2 subtractions,
+	 * 1 division.
+	 * However if more optimal exponentiation algorithm is used like this
+	 * (https://en.wikipedia.org/wiki/Exponentiation_by_squaring) number of
+	 * multiplications will be O(log(n)).
+	 * In case of (2) we will still need all the intermediate powers which
+	 * doesn't allow to benefit from efficient exponentiation.
+	 * As it is now - int_pow(x, n) is a primitive O(n) algorithm.
+	 *
+	 * w = 1 is a special case that will lead to divide by 0.
+	 * as C (2) corresponds to a full number of nodes in the tree including
+	 * the root - we need to return analog in the w=1 tree which is
+	 * (depth+1).
+	 */
 	return (width == 1) ?
-		1 : (1 - (int_pow(width, (depth+1)))) / (1 - width);
+		(depth+1) : (1 - (int_pow(width, (depth+1)))) / (1 - width);
 }
 
 static inline int dep(int total, int width)

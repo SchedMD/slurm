@@ -4,7 +4,7 @@
  *  Copyright (C) 2015-2016 SchedMD LLC.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,10 +35,6 @@
 
 #ifndef _FILE_BCAST_H
 #define _FILE_BCAST_H
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include "slurm/slurm.h"
 #include "src/common/macros.h"

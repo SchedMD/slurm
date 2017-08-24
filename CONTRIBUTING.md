@@ -2,7 +2,7 @@ NOTES FOR GITHUB DEVELOPERS
 ---------------------------
 
 The official issue tracker for Slurm is at
-  http://bugs.schedmd.com/
+  https://bugs.schedmd.com/
 
 We welcome code contributions and patches, but **we do not accept Pull Requests
 through Github at this time.** Please submit patches as attachments to new
@@ -11,8 +11,8 @@ bugs under "Contributions" category.
 CODING GUIDELINES
 -----------------
 Slurm loosely follows the Linux Kernel style guidelines
-(https://www.kernel.org/doc/Documentation/CodingStyle). If in doubt, please
-follow their example.
+(https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/process/coding-style.rst).
+If in doubt, please follow their example.
 
 A brief overview, with some notable exceptions:
 - Tabs not spaces, tabs are 8-spaces wide.
@@ -61,5 +61,5 @@ LEGAL
 -----
 
 We ask that a contributor licensing agreement be signed for all substantial
-contributions. Please see http://slurm.schedmd.com/contributor.html for
+contributions. Please see https://slurm.schedmd.com/contributor.html for
 details.

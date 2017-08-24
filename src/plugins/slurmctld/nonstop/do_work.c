@@ -5,7 +5,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,18 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif
-#endif
-
 #include <fcntl.h>
+#include <inttypes.h>
 #include <poll.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -55,8 +45,8 @@
 #include <time.h>
 #include <unistd.h>
 
-//#include "slurm/slurmdb.h"
 #include "slurm/smd_ns.h"
+
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/bitstring.h"
 #include "src/common/job_resources.h"
@@ -274,6 +264,7 @@ unpack_error:
 		xfree(job_fail_ptr->fail_node_names[i]);
 	xfree(job_fail_ptr->fail_node_names);
 	xfree(job_fail_ptr->pending_node_name);
+	xfree(job_fail_ptr);
 	return SLURM_ERROR;
 }
 

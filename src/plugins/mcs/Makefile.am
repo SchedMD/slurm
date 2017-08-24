@@ -1,3 +1,3 @@
 # Makefile for job_container plugins
 
-SUBDIRS = group none user
+SUBDIRS = account group none user

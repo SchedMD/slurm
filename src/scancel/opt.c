@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,30 +38,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#include "config.h"
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#define _GNU_SOURCE
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <pwd.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -134,7 +121,7 @@ static void _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
-int initialize_and_process_args(int argc, char *argv[])
+int initialize_and_process_args(int argc, char **argv)
 {
 	/* initialize option defaults */
 	_opt_default();
@@ -376,7 +363,7 @@ static void _opt_env(void)
 static void _opt_args(int argc, char **argv)
 {
 	char **rest = NULL;
-	int i, opt_char, option_index;
+	int opt_char, option_index;
 	static struct option long_options[] = {
 		{"account",	required_argument, 0, 'A'},
 		{"batch",	no_argument,       0, 'b'},
@@ -484,15 +471,9 @@ static void _opt_args(int argc, char **argv)
 
 	if (optind < argc)
 		rest = argv + optind;
-	if (rest && (rest[0][0] >= '0') && (rest[0][0] <= '9')) {
+
+	if (rest)
 		opt.job_list = _xlate_job_step_ids(rest);
-	} else if (rest) {
-		for (i = optind; i < argc; i++) {
-			if (opt.job_name)
-				xstrcat(opt.job_name, ",");
-			xstrcat(opt.job_name, argv[i]);
-		}
-	}
 
 	if (!_opt_verify())
 		exit(1);
@@ -527,7 +508,7 @@ _xlate_job_step_ids(char **rest)
 	for (i = 0; id_args[i] && (buf_offset < buf_size); i++) {
 		job_id = strtol(id_args[i], &next_str, 10);
 		if (job_id <= 0) {
-			error ("Invalid job_id %s", id_args[i]);
+			error ("Invalid job id %s", id_args[i]);
 			exit (1);
 		}
 		opt.job_id[buf_offset] = job_id;
@@ -604,7 +585,7 @@ _xlate_job_step_ids(char **rest)
 			next_str[0] = '\0';
 			id_args[i+1] = xstrdup(next_str + 1);
 		} else if (next_str[0] != '\0') {
-			error ("Invalid job ID %s", id_args[i]);
+			error ("Invalid job id %s", id_args[i]);
 			exit (1);
 		}
 	}
@@ -714,6 +695,8 @@ static void _help(void)
 /*	printf("      --ctld                      send request directly to slurmctld\n"); */
 	printf("  -f, --full                      signal batch shell and all steps for specified job\n");
 	printf("  -i, --interactive               require response from user for each job\n");
+	printf("  -M, --clusters                  clusters to issue commands to.\n");
+	printf("                                  NOTE: SlurmDBD must be up.\n");
 	printf("  -n, --name=job_name             act only on jobs with this name\n");
 	printf("  -p, --partition=partition       act only on jobs in this partition\n");
 	printf("  -Q, --quiet                     disable warnings\n");

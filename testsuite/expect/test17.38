@@ -12,7 +12,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -40,6 +40,11 @@ set elps_time   0
 set job_id      0
 
 print_header $test_id
+
+if {[test_alps]} {
+	send_user "\nWARNING: This test is incompatible with Cray/ALPS systems\n"
+	exit $exit_code
+}
 
 #
 # Delete left-over programs and rebuild them.

@@ -2,7 +2,7 @@
  * Fork apbasil process as co-process, parse output.
  *
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
- * Portions Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
+ * Portions Copyright (C) 2011 SchedMD <https://www.schedmd.com>.
  * Licensed under the GPLv2.
  */
 #include "../basil_interface.h"
@@ -124,7 +124,7 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r,
 			_write_xml(fp, "   <MemoryParamArray>\n");
 			for (mem = param->memory; mem; mem = mem->next) {
 				_write_xml(fp, "    <MemoryParam type=\"%s\""
-					   " size_mb=\"%u\"/>\n",
+					   " size_mb=\"%"PRIu64"\"/>\n",
 					   nam_memtype[mem->type],
 					   mem->size_mb ? : 1);
 			}
@@ -173,7 +173,7 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r,
 					   nam_acceltype[accel->type]);
 
 				if (accel->memory_mb)
-					_write_xml(fp, " memory_mb=\"%u\"",
+					_write_xml(fp, " memory_mb=\"%"PRIu64"\"",
 						   accel->memory_mb);
 				_write_xml(fp, "/>\n");
 			}
@@ -274,10 +274,10 @@ int basil_request(struct basil_parse_data *bp)
 
 	switch (bp->method) {
 	case BM_engine:
-		_write_xml(apbasil, "type=\"ENGINE\"/>");
+		_write_xml(apbasil, "type=\"ENGINE\"/>\n");
 		break;
 	case BM_inventory:
-		_write_xml(apbasil, "type=\"INVENTORY\"/>");
+		_write_xml(apbasil, "type=\"INVENTORY\"/>\n");
 		break;
 	case BM_reserve:
 		_write_xml(apbasil, ">\n");

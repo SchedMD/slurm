@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2011 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2011 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -112,6 +112,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_partition)
 #define format_add_partition_name(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_partition_name)
+#define format_add_port(list, wid, right, suffix) \
+	format_add_function(list, wid, right, suffix, _print_port)
 #define format_add_prefix(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_prefix)
 #define format_add_preempt_mode(list,wid,right,suffix) \
@@ -206,6 +208,8 @@ int _print_oversubscribe(sinfo_data_t * sinfo_data, int width,
 int _print_partition(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_partition_name(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_port(sinfo_data_t *sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_prefix(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);

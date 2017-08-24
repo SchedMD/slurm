@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -119,7 +119,7 @@ static int _check_status()
 	return SLURM_SUCCESS;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	update_block_msg_t msg;

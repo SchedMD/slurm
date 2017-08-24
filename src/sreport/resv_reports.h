@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -44,10 +44,10 @@
 #include "sreport.h"
 #include "src/common/proc_args.h"
 
-//extern int slurmdb_cluster_account_by_user(int argc, char *argv[]);
-//extern int cluster_user_by_account(int argc, char *argv[]);
-//extern int cluster_user_by_wckey(int argc, char *argv[]);
-extern int resv_utilization(int argc, char *argv[]);
-//extern int cluster_wckey_by_user(int argc, char *argv[]);
+//extern int slurmdb_cluster_account_by_user(int argc, char **argv);
+//extern int cluster_user_by_account(int argc, char **argv);
+//extern int cluster_user_by_wckey(int argc, char **argv);
+extern int resv_utilization(int argc, char **argv);
+//extern int cluster_wckey_by_user(int argc, char **argv);
 
 #endif

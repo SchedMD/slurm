@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -51,7 +51,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "src/common/getopt.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
@@ -89,6 +88,7 @@ typedef enum {	HEADLINE,
 
 typedef enum {
 		PRINT_ACCOUNT,
+		PRINT_ADMIN_COMMENT,
 		PRINT_ALLOC_CPUS,
 		PRINT_ALLOC_GRES,
 		PRINT_ALLOC_NODES,
@@ -111,6 +111,7 @@ typedef enum {
 		PRINT_CPU_TIME_RAW,
 		PRINT_DERIVED_EC,
 		PRINT_ELAPSED,
+		PRINT_ELAPSED_RAW,
 		PRINT_ELIGIBLE,
 		PRINT_END,
 		PRINT_EXITCODE,

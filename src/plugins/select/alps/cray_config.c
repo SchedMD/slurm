@@ -2,12 +2,12 @@
  *  cray_config.c
  *
  *****************************************************************************
- *  Copyright (C) 2011 SchedMD LLC <http://www.schedmd.com>.
+ *  Copyright (C) 2011 SchedMD LLC <https://www.schedmd.com>.
  *  Supported by the Oak Ridge National Laboratory Extreme Scale Systems Center
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,7 +40,6 @@
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/read_config.h"
-#include "src/common/parse_spec.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 

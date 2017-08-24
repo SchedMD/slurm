@@ -3,13 +3,13 @@
  *  mode of sview.
  *****************************************************************************
  *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2012-2015 SchedMD LLC <http://www.schedmd.com>
+ *  Portions Copyright (C) 2012-2015 SchedMD LLC <https://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -31,7 +31,7 @@
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 
 #define _DEBUG 0
 
@@ -89,13 +89,13 @@ static char *_initial_page_opts = "Name,Node_Count,Core_Count,NodeList,"
 	"Time_Start,Time_End";
 
 static display_data_t display_data_resv[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NAME,       "Name", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NAME,       "Name", false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_COLOR,      NULL, TRUE, EDIT_COLOR,
+	{G_TYPE_STRING, SORTID_COLOR,      NULL, true, EDIT_COLOR,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_ACTION,     "Action", FALSE, EDIT_MODEL,
+	{G_TYPE_STRING, SORTID_ACTION,     "Action", false, EDIT_MODEL,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODE_CNT,
 #ifdef HAVE_BG
@@ -103,58 +103,58 @@ static display_data_t display_data_resv[] = {
 #else
 	 "Node Count",
 #endif
-	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
+	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_CORE_CNT,
 #ifdef HAVE_BG
 	 "Cnode Count",
 #else
 	 "Core Count",
 #endif
-	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
+	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODELIST,
 #ifdef HAVE_BG
 	 "MidplaneList",
 #else
 	 "Node List",
 #endif
-	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", FALSE, EDIT_TEXTBOX,
+	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TIME_END,   "Time End", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_TIME_END,   "Time End", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_DURATION,   "Duration", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_DURATION,   "Duration", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_BURST_BUFFER,  "BurstBuffer", FALSE,
+	{G_TYPE_STRING, SORTID_BURST_BUFFER,  "BurstBuffer", false,
 	 EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_LICENSES,   "Licenses", TRUE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_LICENSES,   "Licenses", true, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_USERS,      "Users", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_USERS,      "Users", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_PARTITION,  "Partition", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_PARTITION,  "Partition", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_FEATURES,   "Features", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_FEATURES,   "Features", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_FLAGS,      "Flags", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_FLAGS,      "Flags", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE,
+	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TRES,   "TRES", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_TRES,   "TRES", false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_INT,    SORTID_UPDATED,    NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT,    SORTID_UPDATED,    NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_WATTS,    "Watts", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_WATTS,    "Watts", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t create_data_resv[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NAME,  "Name", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_NAME,  "Name", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODE_CNT,
 #ifdef HAVE_BG
@@ -162,61 +162,61 @@ static display_data_t create_data_resv[] = {
 #else
 	 "Node_Count",
 #endif
-	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
+	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_CORE_CNT,
 #ifdef HAVE_BG
 	 "Cnode_Count",
 #else
 	 "Core_Count",
 #endif
-	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
+	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODELIST,
 #ifdef HAVE_BG
 	 "Midplane_List",
 #else
 	 "Node_List",
 #endif
-	 FALSE, EDIT_TEXTBOX,
+	 false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_START, "Time_Start",
-	 FALSE, EDIT_TEXTBOX,
+	 false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TIME_END,   "Time_End", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_TIME_END,   "Time_End", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_DURATION,   "Duration", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_DURATION,   "Duration", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_BURST_BUFFER,  "BurstBuffer", FALSE,
+	{G_TYPE_STRING, SORTID_BURST_BUFFER,  "BurstBuffer", false,
 	 EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_USERS,      "Users", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_USERS,      "Users", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_PARTITION,  "Partition", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_PARTITION,  "Partition", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_FEATURES,   "Features", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_FEATURES,   "Features", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_FLAGS, "Flags", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_FLAGS, "Flags", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_WATTS, "Watts", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_WATTS, "Watts", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t options_data_resv[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
-	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, RESV_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Remove Reservation", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Edit Reservation", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, RESV_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, RESV_PAGE},
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE},
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", true, RESV_PAGE},
+	{G_TYPE_STRING, RESV_PAGE, "Remove Reservation", true, ADMIN_PAGE},
+	{G_TYPE_STRING, RESV_PAGE, "Edit Reservation", true, ADMIN_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Jobs", true, RESV_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Partitions", true, RESV_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, RESV_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Midplanes", TRUE, RESV_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", true, RESV_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Midplanes", true, RESV_PAGE},
 #else
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, RESV_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, RESV_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, RESV_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, RESV_PAGE},
 #endif
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 
@@ -401,9 +401,9 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		tok = strtok_r(tmp_text, ",", &last);
 		while (tok) {
 			temp_int = strtol(tok, &temp_str, 10);
-			if ((temp_str[0] == 'k') || (temp_str[0] == 'k'))
+			if ((temp_str[0] == 'k') || (temp_str[0] == 'K'))
 				temp_int *= 1024;
-			if ((temp_str[0] == 'm') || (temp_str[0] == 'm'))
+			if ((temp_str[0] == 'm') || (temp_str[0] == 'M'))
 				temp_int *= (1024 * 1024);
 			xrealloc(resv_msg->node_cnt,
 				 (sizeof(uint32_t) * (block_inx + 2)));
@@ -544,7 +544,7 @@ static GtkWidget *_admin_full_edit_resv(resv_desc_msg_t *resv_msg,
 	table = GTK_TABLE(bin->child);
 	gtk_table_resize(table, SORTID_CNT, 2);
 
-	gtk_table_set_homogeneous(table, FALSE);
+	gtk_table_set_homogeneous(table, false);
 
 	for (i = 0; i < SORTID_CNT; i++) {
 		while (display_data++) {
@@ -995,7 +995,7 @@ extern GtkWidget *create_resv_entry(resv_desc_msg_t *resv_msg,
 	table = GTK_TABLE(bin->child);
 	gtk_table_resize(table, SORTID_CNT, 2);
 
-	gtk_table_set_homogeneous(table, FALSE);
+	gtk_table_set_homogeneous(table, false);
 
 	for (i = 0; i < SORTID_CNT; i++) {
 		while (display_data++) {
@@ -1194,12 +1194,12 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	reserve_info_t *resv_ptr = NULL;
 	time_t now = time(NULL);
 	GtkTreePath *path = NULL;
-	static bool set_opts = FALSE;
+	static bool set_opts = false;
 
 	if (!set_opts)
 		set_page_opts(RESV_PAGE, display_data_resv,
 			      SORTID_CNT, _initial_page_opts);
-	set_opts = TRUE;
+	set_opts = true;
 
 	/* reset */
 	if (!table && !display_data) {
@@ -1305,8 +1305,8 @@ display_it:
 	view = INFO_VIEW;
 	_update_info_resv(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
-	toggled = FALSE;
-	force_refresh = FALSE;
+	toggled = false;
+	force_refresh = false;
 reset_curs:
 	if (main_window && main_window->window)
 		gdk_window_set_cursor(main_window->window, NULL);
@@ -1597,7 +1597,7 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("resv got unknown type %d\n", id);
 	}
-	if (!sview_thread_new((gpointer)popup_thr, popup_win, FALSE, &error)) {
+	if (!sview_thread_new((gpointer)popup_thr, popup_win, false, &error)) {
 		g_printerr ("Failed to create resv popup thread: %s\n",
 			    error->message);
 		return;
@@ -1627,7 +1627,7 @@ extern void select_admin_resv(GtkTreeModel *model, GtkTreeIter *iter,
 					   SORTID_NODELIST, treeview);
 			return;
 		}
-		global_multi_error = FALSE;
+		global_multi_error = false;
 		gtk_tree_selection_selected_foreach(
 			gtk_tree_view_get_selection(treeview),
 			_process_each_resv, display_data->name);
@@ -1691,10 +1691,10 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	}
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			   label, FALSE, FALSE, 0);
+			   label, false, false, 0);
 	if (entry)
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-				   entry, TRUE, TRUE, 0);
+				   entry, true, true, 0);
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 

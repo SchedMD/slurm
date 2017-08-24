@@ -16,7 +16,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -45,12 +45,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <pthread.h>
 #include <dirent.h>
+#include <pthread.h>
 
 #include "src/common/list.h"
 #include "src/common/node_select.h"
@@ -300,19 +298,9 @@ extern int slurm_select_init(bool only_default)
 				continue;
 
 			len = strlen(e->d_name);
-#if defined(__CYGWIN__)
-			len -= 4;
-#else
 			len -= 3;
-#endif
 			/* Check only shared object files */
-			if (xstrcmp(e->d_name+len,
-#if defined(__CYGWIN__)
-				   ".dll"
-#else
-				   ".so"
-#endif
-				    ))
+			if (xstrcmp(e->d_name+len, ".so"))
 				continue;
 			/* add one for the / */
 			len++;

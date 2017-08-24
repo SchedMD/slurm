@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,21 +37,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef HAVE_SYS_SYSLOG_H
-#  include <sys/syslog.h>
-#endif
-
+#include <arpa/inet.h>
 #include <errno.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -112,6 +104,55 @@ slurm_print_node_table ( FILE * out, node_info_t * node_ptr,
 	xfree(print_this);
 }
 
+/* Given data structures containing information about nodes and partitions,
+ * populate the node's "partitions" field */
+void
+slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
+			       partition_info_msg_t *part_buffer_ptr)
+{
+	int i, j, n, p;
+	node_info_t *node_ptr;
+	partition_info_t *part_ptr;
+
+	if (!node_buffer_ptr || (node_buffer_ptr->record_count == 0) ||
+	    !part_buffer_ptr || (part_buffer_ptr->record_count == 0))
+		return;
+
+	for (n = 0, node_ptr = node_buffer_ptr->node_array;
+	     n < node_buffer_ptr->record_count; n++, node_ptr++) {
+		xfree(node_ptr->partitions);
+	}
+
+	/*
+	 * Iterate through the partitions in the slurm.conf using "p".  The
+	 * partition has an array of node index pairs to specify the range.
+	 * Using "i", iterate by two's through the node list to get the
+	 * begin-end node range.  Using "j", interate through the node range
+	 * and add the partition name to the node's partition list.  If the
+	 * node on the partition is a singleton (i.e. Nodes=node1), the
+	 * begin-end range are both the same node index value.
+	 */
+	for (p = 0, part_ptr = part_buffer_ptr->partition_array;
+	     p < part_buffer_ptr->record_count; p++, part_ptr++) {
+		for (i = 0; ; i += 2) {
+			if (part_ptr->node_inx[i] == -1)
+				break;
+			for (j = part_ptr->node_inx[i];
+			     j <= part_ptr->node_inx[i+1]; j++) {
+				char *sep = "";
+				if ((j < 0) ||
+				    (j >= node_buffer_ptr->record_count))
+					continue;
+				node_ptr = node_buffer_ptr->node_array + j;
+				if (node_ptr->partitions)
+					sep = ",";
+				xstrfmtcat(node_ptr->partitions, "%s%s", sep,
+					   part_ptr->name);
+			}		
+		}
+	}
+}
+
 /*
  * slurm_sprint_node_table - output information about a specific Slurm nodes
  *	based upon message as loaded using slurm_load_node
@@ -133,7 +174,8 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	int cpus_per_node = 1;
 	int idle_cpus;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	uint32_t alloc_memory;
+	uint64_t alloc_memory;
+	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
 
 	if (node_scaling)
@@ -242,11 +284,32 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	}
 
 	/****** Line (optional) ******/
-	if (node_ptr->node_hostname || node_ptr->node_addr) {
-		xstrfmtcat(out, "NodeAddr=%s NodeHostName=%s Version=%s",
-			   node_ptr->node_addr, node_ptr->node_hostname,
-			   node_ptr->version);
-		xstrcat(out, line_end);
+	{
+		bool line_used = false;
+
+		if (node_ptr->node_addr) {
+			xstrfmtcat(out, "NodeAddr=%s ", node_ptr->node_addr);
+			line_used = true;
+		}
+
+		if (node_ptr->node_hostname) {
+			xstrfmtcat(out, "NodeHostName=%s ",
+				   node_ptr->node_hostname);
+			line_used = true;
+		}
+
+		if (node_ptr->port != slurm_get_slurmd_port()) {
+			xstrfmtcat(out, "Port=%u ", node_ptr->port);
+			line_used = true;
+		}
+
+		if (node_ptr->version && xstrcmp(node_ptr->version, slurmctld_conf.version)) {
+			xstrfmtcat(out, "Version=%s", node_ptr->version);
+			line_used = true;
+		}
+
+		if (line_used)
+			xstrcat(out, line_end);
 	}
 
 	/****** Line ******/
@@ -257,13 +320,13 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				  SELECT_NODEDATA_MEM_ALLOC,
 				  NODE_STATE_ALLOCATED,
 				  &alloc_memory);
-	xstrfmtcat(out, "RealMemory=%u AllocMem=%u ",
+	xstrfmtcat(out, "RealMemory=%"PRIu64" AllocMem=%"PRIu64" ",
 		   node_ptr->real_memory, alloc_memory);
 
-	if (node_ptr->free_mem == NO_VAL)
+	if (node_ptr->free_mem == NO_VAL64)
 		xstrcat(out, "FreeMem=N/A ");
 	else
-		xstrfmtcat(out, "FreeMem=%u ", node_ptr->free_mem);
+		xstrfmtcat(out, "FreeMem=%"PRIu64" ", node_ptr->free_mem);
 
 	xstrfmtcat(out, "Sockets=%u Boards=%u",
 		   node_ptr->sockets, node_ptr->boards);
@@ -282,7 +345,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				   node_ptr->cpu_spec_list);
 		}
 		if (node_ptr->mem_spec_limit) {
-			xstrfmtcat(out, "MemSpecLimit=%u",
+			xstrfmtcat(out, "MemSpecLimit=%"PRIu64"",
 				   node_ptr->mem_spec_limit);
 		}
 		xstrcat(out, line_end);
@@ -308,6 +371,12 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	xstrcat(out, line_end);
 
 	/****** Line ******/
+	if (node_ptr->partitions) {
+		xstrfmtcat(out, "Partitions=%s ", node_ptr->partitions);
+		xstrcat(out, line_end);
+	}
+
+	/****** Line ******/
 	if (node_ptr->boot_time) {
 		slurm_make_time_str((time_t *)&node_ptr->boot_time,
 				    time_str, sizeof(time_str));
@@ -323,7 +392,17 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	} else {
 		xstrcat(out, "SlurmdStartTime=None");
 	}
+	xstrcat(out, line_end);
 
+	/****** TRES Line ******/
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
+				     NODE_STATE_ALLOCATED, &node_alloc_tres);
+	xstrfmtcat(out, "CfgTRES=%s", node_ptr->tres_fmt_str);
+	xstrcat(out, line_end);
+	xstrfmtcat(out, "AllocTRES=%s",
+		   (node_alloc_tres) ?  node_alloc_tres : "");
+	xfree(node_alloc_tres);
 	xstrcat(out, line_end);
 
 	/****** Power Management Line ******/
@@ -400,6 +479,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				slurm_make_time_str((time_t *)&node_ptr->reason_time,
 						    time_str, sizeof(time_str));
 				xstrfmtcat(out, " [%s@%s]", user_name, time_str);
+				xfree(user_name);
 			}
 			tok = strtok_r(NULL, "\n", &save_ptr);
 		}

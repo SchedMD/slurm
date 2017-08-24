@@ -27,10 +27,9 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="job_exit_code.html">Job Exit Codes</a></li>
 <li>Specific Systems</li>
 <ul>
-<li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
+<li><a href="bluegene.html">BlueGene/Q User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
 <li><a href="cray_alps.html">Cray User and Administrator Guide with ALPS</a></li>
-<li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
 <li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 <li><a href="intel_knl.html">Intel Knights Landing (KNL) User and Administrator Guide</a></li>
 </ul>
@@ -88,7 +87,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
 <li><a href="cray_alps.html">Cray User and Administrator Guide with ALPS</a></li>
-<li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
 <li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 </ul>
 </ul>

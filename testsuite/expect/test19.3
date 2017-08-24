@@ -13,7 +13,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -42,24 +42,9 @@ print_header $test_id
 #
 # get my uid and clear any vestigial triggers
 #
-set uid -1
-spawn $bin_id -u
-expect {
-	-re "($number)" {
-		set uid $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$uid == -1} {
-	send_user "\nCan't get my uid\n"
-	exit 1
-} elseif {$uid == 0} {
-	send_user "\nWARNING: Can't run this test as user root\n"
-	exit 0
-}
+
+set uid [stop_root_user]
+
 exec $strigger --clear --quiet --user=$uid
 
 #

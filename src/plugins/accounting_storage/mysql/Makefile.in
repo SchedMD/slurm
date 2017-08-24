@@ -94,6 +94,7 @@ target_triplet = @target@
 subdir = src/plugins/accounting_storage/mysql
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
+	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -104,7 +105,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
 	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
-	$(top_srcdir)/auxdir/x_ac_aix.m4 \
 	$(top_srcdir)/auxdir/x_ac_blcr.m4 \
 	$(top_srcdir)/auxdir/x_ac_bluegene.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
@@ -132,7 +132,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
-	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
@@ -183,6 +182,7 @@ am__accounting_storage_mysql_la_SOURCES_DIST =  \
 	as_mysql_tres.h as_mysql_archive.c as_mysql_archive.h \
 	as_mysql_assoc.c as_mysql_assoc.h as_mysql_cluster.c \
 	as_mysql_cluster.h as_mysql_convert.c as_mysql_convert.h \
+	as_mysql_federation.c as_mysql_federation.h \
 	as_mysql_fix_runaway_jobs.c as_mysql_fix_runaway_jobs.h \
 	as_mysql_job.c as_mysql_job.h as_mysql_jobacct_process.c \
 	as_mysql_jobacct_process.h as_mysql_problems.c \
@@ -200,6 +200,7 @@ am__objects_1 =  \
 	accounting_storage_mysql_la-as_mysql_assoc.lo \
 	accounting_storage_mysql_la-as_mysql_cluster.lo \
 	accounting_storage_mysql_la-as_mysql_convert.lo \
+	accounting_storage_mysql_la-as_mysql_federation.lo \
 	accounting_storage_mysql_la-as_mysql_fix_runaway_jobs.lo \
 	accounting_storage_mysql_la-as_mysql_job.lo \
 	accounting_storage_mysql_la-as_mysql_jobacct_process.lo \
@@ -220,6 +221,7 @@ am__EXTRA_accounting_storage_mysql_la_SOURCES_DIST =  \
 	as_mysql_tres.h as_mysql_archive.c as_mysql_archive.h \
 	as_mysql_assoc.c as_mysql_assoc.h as_mysql_cluster.c \
 	as_mysql_cluster.h as_mysql_convert.c as_mysql_convert.h \
+	as_mysql_federation.c as_mysql_federation.h \
 	as_mysql_fix_runaway_jobs.c as_mysql_fix_runaway_jobs.h \
 	as_mysql_job.c as_mysql_job.h as_mysql_jobacct_process.c \
 	as_mysql_jobacct_process.h as_mysql_problems.c \
@@ -313,11 +315,9 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BGL_LOADED = @BGL_LOADED@
 BGQ_LOADED = @BGQ_LOADED@
 BG_INCLUDES = @BG_INCLUDES@
 BG_LDFLAGS = @BG_LDFLAGS@
-BG_L_P_LOADED = @BG_L_P_LOADED@
 BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
 BLCR_HOME = @BLCR_HOME@
 BLCR_LDFLAGS = @BLCR_LDFLAGS@
@@ -328,7 +328,6 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CHECK_CFLAGS = @CHECK_CFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
-CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CRAY_JOB_CPPFLAGS = @CRAY_JOB_CPPFLAGS@
@@ -373,7 +372,6 @@ GTK_LIBS = @GTK_LIBS@
 H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
-HAVE_AIX = @HAVE_AIX@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
@@ -405,7 +403,6 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -456,7 +453,6 @@ PMIX_V1_CPPFLAGS = @PMIX_V1_CPPFLAGS@
 PMIX_V1_LDFLAGS = @PMIX_V1_LDFLAGS@
 PMIX_V2_CPPFLAGS = @PMIX_V2_CPPFLAGS@
 PMIX_V2_LDFLAGS = @PMIX_V2_LDFLAGS@
-PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
@@ -464,7 +460,6 @@ PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
-REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
@@ -575,6 +570,7 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_assoc.c as_mysql_assoc.h \
 		as_mysql_cluster.c as_mysql_cluster.h \
 		as_mysql_convert.c as_mysql_convert.h \
+		as_mysql_federation.c as_mysql_federation.h \
 		as_mysql_fix_runaway_jobs.c as_mysql_fix_runaway_jobs.h \
 		as_mysql_job.c as_mysql_job.h \
 		as_mysql_jobacct_process.c as_mysql_jobacct_process.h \
@@ -683,6 +679,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_assoc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_cluster.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_convert.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_federation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_fix_runaway_jobs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_job.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_jobacct_process.Plo@am__quote@
@@ -766,6 +763,13 @@ accounting_storage_mysql_la-as_mysql_convert.lo: as_mysql_convert.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='as_mysql_convert.c' object='accounting_storage_mysql_la-as_mysql_convert.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -c -o accounting_storage_mysql_la-as_mysql_convert.lo `test -f 'as_mysql_convert.c' || echo '$(srcdir)/'`as_mysql_convert.c
+
+accounting_storage_mysql_la-as_mysql_federation.lo: as_mysql_federation.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -MT accounting_storage_mysql_la-as_mysql_federation.lo -MD -MP -MF $(DEPDIR)/accounting_storage_mysql_la-as_mysql_federation.Tpo -c -o accounting_storage_mysql_la-as_mysql_federation.lo `test -f 'as_mysql_federation.c' || echo '$(srcdir)/'`as_mysql_federation.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/accounting_storage_mysql_la-as_mysql_federation.Tpo $(DEPDIR)/accounting_storage_mysql_la-as_mysql_federation.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='as_mysql_federation.c' object='accounting_storage_mysql_la-as_mysql_federation.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -c -o accounting_storage_mysql_la-as_mysql_federation.lo `test -f 'as_mysql_federation.c' || echo '$(srcdir)/'`as_mysql_federation.c
 
 accounting_storage_mysql_la-as_mysql_fix_runaway_jobs.lo: as_mysql_fix_runaway_jobs.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -MT accounting_storage_mysql_la-as_mysql_fix_runaway_jobs.lo -MD -MP -MF $(DEPDIR)/accounting_storage_mysql_la-as_mysql_fix_runaway_jobs.Tpo -c -o accounting_storage_mysql_la-as_mysql_fix_runaway_jobs.lo `test -f 'as_mysql_fix_runaway_jobs.c' || echo '$(srcdir)/'`as_mysql_fix_runaway_jobs.c

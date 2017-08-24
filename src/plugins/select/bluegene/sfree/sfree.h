@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,19 +39,11 @@
 #ifndef _SFREE_H
 #define _SFREE_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "../bg_enums.h"
@@ -71,6 +63,6 @@ extern int all_blocks;
 extern int remove_blocks;
 extern bool wait_full;
 
-extern void parse_command_line(int argc, char *argv[]);
+extern void parse_command_line(int argc, char **argv);
 
 #endif

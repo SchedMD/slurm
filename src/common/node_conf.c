@@ -14,7 +14,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,27 +43,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <time.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -103,6 +96,7 @@ static struct node_record *
 		_find_node_record (char *name,bool test_alias,bool log_missing);
 static void	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
+static const char* _node_record_hash_identity (void* item);
 
 /*
  * _build_single_nodeline_info - From the slurm.conf reader, build table,
@@ -238,7 +232,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		}
 		/* find_node_record locks this to get the
 		 * alias so we need to unlock */
-		node_rec = find_node_record(alias);
+		node_rec = find_node_record2(alias);
 
 		if (node_rec == NULL) {
 			node_rec = create_node_record(config_ptr, alias);
@@ -389,6 +383,8 @@ static void _list_delete_config (void *config_entry)
 	xfree(config_ptr->gres);
 	xfree (config_ptr->nodes);
 	FREE_NULL_BITMAP (config_ptr->node_bitmap);
+	xfree(config_ptr->tres_weights);
+	xfree(config_ptr->tres_weights_str);
 	xfree (config_ptr);
 }
 
@@ -403,6 +399,16 @@ static int _list_find_config (void *config_entry, void *key)
 	if (key == NULL)
 		return 1;
 	return 0;
+}
+
+/*
+ * xhash helper function to index node_record per name field
+ * in node_hash_table
+ */
+static const char* _node_record_hash_identity (void* item)
+{
+	struct node_record *node_ptr = (struct node_record *) item;
+	return node_ptr->name;
 }
 
 /*
@@ -572,9 +578,10 @@ extern int build_all_frontend_info (bool is_slurmd_context)
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
+ * IN tres_cnt - number of TRES configured on system (used on controller side)
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info (bool set_bitmap)
+extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	struct config_record *config_ptr = NULL;
@@ -600,6 +607,16 @@ extern int build_all_nodeline_info (bool set_bitmap)
 		config_ptr->real_memory = node->real_memory;
 		config_ptr->mem_spec_limit = node->mem_spec_limit;
 		config_ptr->tmp_disk = node->tmp_disk;
+
+		if (tres_cnt) {
+			config_ptr->tres_weights_str =
+				xstrdup(node->tres_weights_str);
+			config_ptr->tres_weights =
+				slurm_get_tres_weight_array(
+						node->tres_weights_str,
+						tres_cnt);
+		}
+
 		config_ptr->weight = node->weight;
 		if (node->feature && node->feature[0])
 			config_ptr->feature = xstrdup(node->feature);
@@ -680,15 +697,26 @@ extern struct node_record *create_node_record (
 	if (!node_record_table_ptr) {
 		node_record_table_ptr =
 			(struct node_record *) xmalloc (new_buffer_size);
-	} else if (old_buffer_size != new_buffer_size)
+	} else if (old_buffer_size != new_buffer_size) {
 		xrealloc (node_record_table_ptr, new_buffer_size);
+		/*
+		 * You need to rehash the hash after we realloc or we will have
+		 * only bad memory references in the hash.
+		 */
+		rehash_node();
+	}
 	node_ptr = node_record_table_ptr + (node_record_count++);
 	node_ptr->name = xstrdup(node_name);
+	if (!node_hash_table)
+		node_hash_table = xhash_init(_node_record_hash_identity,
+					     NULL, NULL, 0);
+	xhash_add(node_hash_table, node_ptr);
+
 	node_ptr->config_ptr = config_ptr;
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
 	node_ptr->cpu_load = NO_VAL;
-	node_ptr->free_mem = NO_VAL;
+	node_ptr->free_mem = NO_VAL64;
 	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	node_ptr->boards = config_ptr->boards;
 	node_ptr->sockets = config_ptr->sockets;
@@ -792,15 +820,6 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 		return _find_alias_node_record(name, log_missing);
 	}
 	return NULL;
-}
-
-/*
- * xhash helper function to index node_record per name field
- * in node_hash_table
- */
-const char* node_record_hash_identity (void* item) {
-	struct node_record *node_ptr = (struct node_record *) item;
-	return node_ptr->name;
 }
 
 /*
@@ -982,7 +1001,7 @@ extern void rehash_node (void)
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	xhash_free (node_hash_table);
-	node_hash_table = xhash_init(node_record_hash_identity,
+	node_hash_table = xhash_init(_node_record_hash_identity,
 				     NULL, NULL, 0);
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if ((node_ptr->name == NULL) ||

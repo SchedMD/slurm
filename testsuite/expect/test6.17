@@ -1,0 +1,116 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test scancel handling of invalid job IDs and filters.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Morris Jette <jette@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id      "6.17"
+set exit_code    0
+
+print_header $test_id
+
+#
+# Test scancel with name filter that finds no jobs
+#
+set matches  0
+spawn $scancel --name=INVALID --qos=INVALID --verbose
+expect {
+	-re "No active jobs match ALL" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scancel not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scancel failed to log no matching jobs\n"
+	set exit_code 1
+}
+
+#
+# Test scancel with invalid job ID
+#
+set matches  0
+spawn $scancel INVALID
+expect {
+	-re "Invalid job id" {
+		send_user "\nError is expected, no worries.\n"
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scancel not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scancel failed to log invalid job ID\n"
+	set exit_code 1
+}
+send_user "\n\n\n"
+
+#
+# Test scancel with invalid job ID
+#
+set matches  0
+spawn $scancel 0
+expect {
+	-re "Invalid job id" {
+		send_user "\nError is expected, no worries.\n"
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scancel not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scancel failed to log invalid job ID\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code
+

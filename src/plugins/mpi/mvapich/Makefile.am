@@ -12,7 +12,5 @@ endif
 
 pkglib_LTLIBRARIES = $(MVAPICH)
 
-mpi_mvapich_la_SOURCES = mpi_mvapich.c mvapich.c mvapich.h \
-	$(top_srcdir)/src/common/mpi.h
-
+mpi_mvapich_la_SOURCES = mpi_mvapich.c mvapich.c mvapich.h
 mpi_mvapich_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS) $(MUNGE_LIBS)

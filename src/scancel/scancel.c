@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,31 +38,21 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <unistd.h>
 #include <errno.h>
+#include <inttypes.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <pthread.h>
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else  /* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif  /* HAVE_INTTYPES_H */
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -75,12 +65,12 @@
 #define MAX_THREADS 10
 
 static void  _add_delay(void);
-static int   _cancel_jobs (int filter_cnt);
+static int   _cancel_jobs(void);
 static void *_cancel_job_id (void *cancel_info);
 static void *_cancel_step_id (void *cancel_info);
 
 static int  _confirmation(job_info_t *job_ptr, uint32_t step_id);
-static int  _filter_job_records (void);
+static void _filter_job_records(void);
 static void _load_job_records (void);
 static int  _multi_cluster(List clusters);
 static int  _proc_cluster(void);
@@ -113,7 +103,7 @@ static	uint32_t max_resp_time = 0;
 static	int request_count = 0;
 
 int
-main (int argc, char *argv[])
+main (int argc, char **argv)
 {
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 	int rc = 0;
@@ -155,8 +145,7 @@ _multi_cluster(List clusters)
 static int
 _proc_cluster(void)
 {
-	int filter_cnt = 0;
-	int rc;
+	int rc, rc2;
 
 	if (has_default_opt() && !has_job_steps()) {
 		rc = _signal_job_by_str();
@@ -174,9 +163,10 @@ _proc_cluster(void)
 	    (opt.state != JOB_END) ||
 	    (opt.user_name) ||
 	    (opt.wckey)) {
-		filter_cnt = _filter_job_records();
+		_filter_job_records();
 	}
-	rc = MAX(_cancel_jobs(filter_cnt), rc);
+	rc2 = _cancel_jobs();
+	rc = MAX(rc, rc2);
 	slurm_free_job_info_msg(job_buffer_ptr);
 
 	return rc;
@@ -193,7 +183,8 @@ _load_job_records (void)
 	/* We need the fill job array string representation for identifying
 	 * and killing job arrays */
 	setenv("SLURM_BITSTR_LEN", "0", 1);
-	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr, 1);
+	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr,
+				      (SHOW_ALL | SHOW_FED_TRACK));
 
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
@@ -303,10 +294,9 @@ static int _verify_job_ids(void)
 
 /* _filter_job_records - filtering job information per user specification
  * RET Count of job's filtered out OTHER than for job ID value */
-static int _filter_job_records (void)
+static void _filter_job_records(void)
 {
-	int filter_cnt = 0;
-	int i;
+	int i, job_matches = 0;
 	job_info_t *job_ptr = NULL;
 	uint32_t job_base_state;
 
@@ -322,60 +312,51 @@ static int _filter_job_records (void)
 		    (job_base_state != JOB_RUNNING) &&
 		    (job_base_state != JOB_SUSPENDED)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if (opt.account != NULL &&
+		if (opt.account &&
 		    xstrcmp(job_ptr->account, opt.account)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if (opt.job_name != NULL &&
+		if (opt.job_name &&
 		    xstrcmp(job_ptr->name, opt.job_name)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if ((opt.partition != NULL) &&
+		if (opt.partition &&
 		    xstrcmp(job_ptr->partition, opt.partition)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if ((opt.qos != NULL) &&
-		    xstrcmp(job_ptr->qos, opt.qos)) {
+		if (opt.qos && xstrcmp(job_ptr->qos, opt.qos)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if ((opt.reservation != NULL) &&
+		if (opt.reservation &&
 		    xstrcmp(job_ptr->resv_name, opt.reservation)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
 		if ((opt.state != JOB_END) &&
 		    (job_ptr->job_state != opt.state)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if ((opt.user_name != NULL) &&
+		if ((opt.user_name) &&
 		    (job_ptr->user_id != opt.user_id)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if (opt.nodelist != NULL) {
+		if (opt.nodelist) {
 			/* If nodelist contains a '/', treat it as a file name */
 			if (strchr(opt.nodelist, '/') != NULL) {
 				char *reallist;
@@ -390,7 +371,6 @@ static int _filter_job_records (void)
 			hostset_t hs = hostset_create(job_ptr->nodes);
 			if (!hostset_intersects(hs, opt.nodelist)) {
 				job_ptr->job_id = 0;
-				filter_cnt++;
 				hostset_destroy(hs);
 				continue;
 			} else {
@@ -398,7 +378,7 @@ static int _filter_job_records (void)
 			}
 		}
 
-		if (opt.wckey != NULL) {
+		if (opt.wckey) {
 			char *job_key = job_ptr->wckey;
 
 			/*
@@ -412,13 +392,43 @@ static int _filter_job_records (void)
 
 			if (xstrcmp(job_key, opt.wckey) != 0) {
 				job_ptr->job_id = 0;
-				filter_cnt++;
 				continue;
 			}
 		}
+
+		job_matches++;
 	}
 
-	return filter_cnt;
+
+	if ((job_matches == 0) && (opt.verbose > 0)) {
+		char *err_msg = NULL;
+		if (opt.account)
+			xstrfmtcat(err_msg, "account=%s ", opt.account);
+		if (opt.job_name)
+			xstrfmtcat(err_msg, "job_name=%s ", opt.job_name);
+		if (opt.nodelist)
+			xstrfmtcat(err_msg, "nodelist=%s ", opt.nodelist);
+		if (opt.partition)
+			xstrfmtcat(err_msg, "partition=%s ", opt.partition);
+		if (opt.qos)
+			xstrfmtcat(err_msg, "qos=%s ", opt.qos);
+		if (opt.reservation)
+			xstrfmtcat(err_msg, "reservation=%s ", opt.reservation);
+		if (opt.state != JOB_END) {
+			xstrfmtcat(err_msg, "state=%s ",
+				   job_state_string(opt.state));
+		}
+		if (opt.user_name)
+			xstrfmtcat(err_msg, "user_name=%s ", opt.user_name);
+		if (opt.wckey)
+			xstrfmtcat(err_msg, "wckey=%s ", opt.wckey);
+		if (err_msg) {
+			error("No active jobs match ALL job filters, including: %s",
+			      err_msg);
+			xfree(err_msg);
+		}
+	}
+	return;
 }
 
 static char *_build_jobid_str(job_info_t *job_ptr)
@@ -438,7 +448,7 @@ static char *_build_jobid_str(job_info_t *job_ptr)
 	return result;
 }
 
-static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
+static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 {
 	job_cancel_info_t *cancel_info;
 	job_info_t *job_ptr;
@@ -497,8 +507,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 			slurm_mutex_lock(&num_active_threads_lock);
 			num_active_threads++;
 			while (num_active_threads > MAX_THREADS) {
-				pthread_cond_wait(&num_active_threads_cond,
-						  &num_active_threads_lock);
+				slurm_cond_wait(&num_active_threads_cond,
+						&num_active_threads_lock);
 			}
 			slurm_mutex_unlock(&num_active_threads_lock);
 
@@ -535,8 +545,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 				 * starting confirmation of next job */
 				slurm_mutex_lock(&num_active_threads_lock);
 				while (num_active_threads > 0) {
-					pthread_cond_wait(&num_active_threads_cond,
-							  &num_active_threads_lock);
+					slurm_cond_wait(&num_active_threads_cond,
+							&num_active_threads_lock);
 				}
 				slurm_mutex_unlock(&num_active_threads_lock);
 			}
@@ -545,7 +555,7 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 }
 
 static void
-_cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
+_cancel_jobs_by_state(uint32_t job_state, int *rc)
 {
 	int i, err;
 	job_cancel_info_t *cancel_info;
@@ -555,7 +565,7 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 	/* Spawn a thread to cancel each job or job step marked for
 	 * cancellation */
 	if (opt.job_cnt) {
-		_cancel_jobid_by_state(job_state, filter_cnt, rc);
+		_cancel_jobid_by_state(job_state, rc);
 		return;
 	}
 
@@ -589,8 +599,8 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 		slurm_mutex_lock(&num_active_threads_lock);
 		num_active_threads++;
 		while (num_active_threads > MAX_THREADS) {
-			pthread_cond_wait(&num_active_threads_cond,
-					  &num_active_threads_lock);
+			slurm_cond_wait(&num_active_threads_cond,
+					&num_active_threads_lock);
 		}
 		slurm_mutex_unlock(&num_active_threads_lock);
 
@@ -604,8 +614,8 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 			 * starting confirmation of next job */
 			slurm_mutex_lock(&num_active_threads_lock);
 			while (num_active_threads > 0) {
-				pthread_cond_wait(&num_active_threads_cond,
-						  &num_active_threads_lock);
+				slurm_cond_wait(&num_active_threads_cond,
+						&num_active_threads_lock);
 			}
 			slurm_mutex_unlock(&num_active_threads_lock);
 		}
@@ -613,7 +623,7 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 }
 
 /* _cancel_jobs - filter then cancel jobs or job steps per request */
-static int _cancel_jobs(int filter_cnt)
+static int _cancel_jobs(void)
 {
 	int rc = 0;
 
@@ -622,35 +632,32 @@ static int _cancel_jobs(int filter_cnt)
 		error("pthread_attr_setdetachstate error %m");
 
 	slurm_mutex_init(&num_active_threads_lock);
+	slurm_cond_init(&num_active_threads_cond, NULL);
 
-	if (pthread_cond_init(&num_active_threads_cond, NULL))
-		error("pthread_cond_init error %m");
-
-	_cancel_jobs_by_state(JOB_PENDING, filter_cnt, &rc);
+	_cancel_jobs_by_state(JOB_PENDING, &rc);
 	/* Wait for any cancel of pending jobs to complete before starting
 	 * cancellation of running jobs so that we don't have a race condition
 	 * with pending jobs getting scheduled while running jobs are also
 	 * being cancelled. */
 	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
-		pthread_cond_wait(&num_active_threads_cond,
-				  &num_active_threads_lock);
+		slurm_cond_wait(&num_active_threads_cond,
+				&num_active_threads_lock);
 	}
 	slurm_mutex_unlock(&num_active_threads_lock);
 
-	_cancel_jobs_by_state(JOB_END, filter_cnt, &rc);
+	_cancel_jobs_by_state(JOB_END, &rc);
 	/* Wait for any spawned threads that have not finished */
 	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
-		pthread_cond_wait(&num_active_threads_cond,
-				  &num_active_threads_lock);
+		slurm_cond_wait(&num_active_threads_cond,
+				&num_active_threads_lock);
 	}
 	slurm_mutex_unlock(&num_active_threads_lock);
 
 	slurm_attr_destroy(&attr);
 	slurm_mutex_destroy(&num_active_threads_lock);
-	if (pthread_cond_destroy(&num_active_threads_cond))
-		error("pthread_cond_destroy error %m");
+	slurm_cond_destroy(&num_active_threads_cond);
 
 	return rc;
 }
@@ -776,7 +783,7 @@ _cancel_job_id (void *ci)
 	slurm_mutex_lock(cancel_info->num_active_threads_lock);
 	*(cancel_info->rc) = MAX(*(cancel_info->rc), error_code);
 	(*(cancel_info->num_active_threads))--;
-	pthread_cond_signal(cancel_info->num_active_threads_cond);
+	slurm_cond_signal(cancel_info->num_active_threads_cond);
 	slurm_mutex_unlock(cancel_info->num_active_threads_lock);
 
 	xfree(cancel_info->job_id_str);
@@ -865,7 +872,7 @@ _cancel_step_id (void *ci)
 	slurm_mutex_lock(cancel_info->num_active_threads_lock);
 	*(cancel_info->rc) = MAX(*(cancel_info->rc), error_code);
 	(*(cancel_info->num_active_threads))--;
-	pthread_cond_signal(cancel_info->num_active_threads_cond);
+	slurm_cond_signal(cancel_info->num_active_threads_cond);
 	slurm_mutex_unlock(cancel_info->num_active_threads_lock);
 
 	xfree(cancel_info->job_id_str);
@@ -911,8 +918,7 @@ static int _signal_job_by_str(void)
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 	slurm_mutex_init(&num_active_threads_lock);
-	if (pthread_cond_init(&num_active_threads_cond, NULL))
-		error("pthread_cond_init error %m");
+	slurm_cond_init(&num_active_threads_cond, NULL);
 
 	for (i = 0; opt.job_list[i]; i++) {
 		cancel_info = (job_cancel_info_t *)
@@ -929,8 +935,8 @@ static int _signal_job_by_str(void)
 		slurm_mutex_lock(&num_active_threads_lock);
 		num_active_threads++;
 		while (num_active_threads > MAX_THREADS) {
-			pthread_cond_wait(&num_active_threads_cond,
-					  &num_active_threads_lock);
+			slurm_cond_wait(&num_active_threads_cond,
+					&num_active_threads_lock);
 		}
 		slurm_mutex_unlock(&num_active_threads_lock);
 
@@ -942,8 +948,8 @@ static int _signal_job_by_str(void)
 	/* Wait all spawned threads to finish */
 	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
-		pthread_cond_wait(&num_active_threads_cond,
-				  &num_active_threads_lock);
+		slurm_cond_wait(&num_active_threads_cond,
+				&num_active_threads_lock);
 	}
 	slurm_mutex_unlock(&num_active_threads_lock);
 

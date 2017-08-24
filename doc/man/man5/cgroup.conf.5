@@ -41,13 +41,6 @@ Specify the \fIPATH\fR under which cgroups should be mounted. This
 should be a writable directory which will contain cgroups mounted
 one per subsystem. The default \fIPATH\fR is /sys/fs/cgroup.
 
-.TP
-\fBCgroupReleaseAgentDir\fR=<path_to_release_agent_directory>
-Used to tune the cgroup system behavior. This parameter identifies the location
-of the directory containing Slurm cgroup release_agent files. As of 16.05.5
-the release_agents are no longer required for proper cleanup of the cgroup
-hierarchy.
-
 .SH "TASK/CGROUP PLUGIN"
 
 .LP
@@ -64,6 +57,14 @@ the devices, supported by default and then deny on those that the job does not h
 permission to use. The default value is "/etc/slurm/cgroup_allowed_devices_file.conf". The syntax of
 the file accepts one device per line and it permits lines like /dev/sda* or /dev/cpu/*/*.
 See also an example of this file in etc/cgroup_allowed_devices_file.conf.example.
+
+.TP
+\fBAllowedKmemSpace\fR=<number>
+Constrain the job cgroup kernel memory to this amount of the allocated memory,
+specified in bytes. The \fBAllowedKmemSpace\fR must be between the upper and
+lower memory limits, specified by \fBMaxKmemPercent\fR and \fBMinKmemSpace\fR,
+respectivley. If \fBAllowedKmemSpace\fR goes beyond the upper or lower limit,
+it will be reset to that upper or lower limit, whichever has been exceeded.
 
 .TP
 \fBAllowedRAMSpace\fR=<number>
@@ -98,6 +99,13 @@ allocated resources. It uses the devices subsystem for that.
 The default value is "no".
 
 .TP
+\fBConstrainKmemSpace\fR=<yes|no>
+If configured to "yes" then constrain the job's Kmem RAM usage. In addition to
+RAM usage. Only takes effect if ConstrainRAMSpace is set to "yes". The default
+value is "yes", in which case the job's Kmem limit will be set to its RAM limit.
+Also see \fBAllowedKmemSpace\fR.
+
+.TP
 \fBConstrainRAMSpace\fR=<yes|no>
 If configured to "yes" then constrain the job's RAM usage by setting
 the memory soft limit to the allocated memory and the hard limit to
@@ -106,6 +114,11 @@ which case the job's RAM limit will be set to its swap space limit if
 \fBConstrainSwapSpace\fR is set to "yes".
 Also see \fBAllowedSwapSpace\fR, \fBAllowedRAMSpace\fR and
 \fBConstrainSwapSpace\fR.
+NOTE: When enabled, ConstrainRAMSpace can lead to a noticiable decline in
+per-node job throughout. Sites with high-throughput requirements should
+carefully weigh the tradeoff between per-node throughput, versus potential
+problems that can arise from unconstrained memory usage on the node. See
+<https://slurm.schedmd.com/high_throughput.html> for further discussion.
 
 .TP
 \fBConstrainSwapSpace\fR=<yes|no>
@@ -134,6 +147,16 @@ that may be used for a job. This will be the swap limit applied to jobs
 on systems where memory is not being explicitly allocated to job. The
 \fIPERCENT\fR may be an arbitrary floating point number between 0 and 100.
 The default value is 100.
+
+.TP
+\fBMaxKmemPercent\fR=\fIPERCENT\fR
+Set an upper bound in percent of total Kmem for a job. The \fIPERCENT\fR may be an
+arbitrary floating point number. The default value is 100.
+
+.TP
+\fBMinKmemSpace\fR=<number>
+Set a lower bound (in MB) on the memory limits defined by
+\fBAllowedKmemSpace\fR. The default limit is 30M.
 
 .TP
 \fBMinRAMSpace\fR=<number>

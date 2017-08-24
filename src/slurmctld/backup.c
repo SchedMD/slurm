@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,15 +37,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#include "config.h"
 
 #include <errno.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,14 +65,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#ifndef VOLATILE
-#if defined(__STDC__) || defined(__cplusplus)
-#define VOLATILE volatile
-#else
-#define VOLATILE
-#endif
-#endif
-
 #define SHUTDOWN_WAIT     2	/* Time to wait for primary server shutdown */
 
 static int          _background_process_msg(slurm_msg_t * msg);
@@ -91,7 +78,7 @@ inline static void  _update_cred_key(void);
 
 /* Local variables */
 static bool          dump_core = false;
-static VOLATILE bool takeover = false;
+static volatile bool takeover = false;
 static time_t last_controller_response;
 
 /*
@@ -113,9 +100,9 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	time_t last_ping = 0;
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	info("slurmctld running in background mode");
 	takeover = false;
@@ -253,7 +240,7 @@ static void *_background_signal_hand(void *no_data)
 	sigset_t set;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -314,16 +301,16 @@ static void _sig_handler(int signal)
  *	controller (that's us) */
 static void *_background_rpc_mgr(void *no_data)
 {
-	slurm_fd_t newsockfd;
-	slurm_fd_t sockfd;
+	int newsockfd;
+	int sockfd;
 	slurm_addr_t cli_addr;
-	slurm_msg_t *msg = NULL;
+	slurm_msg_t msg;
 	int error_code;
 	char* node_addr = NULL;
 
 	/* Read configuration only */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	int sigarray[] = {SIGUSR1, 0};
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -369,18 +356,17 @@ static void *_background_rpc_mgr(void *no_data)
 			continue;
 		}
 
-		msg = xmalloc(sizeof(slurm_msg_t));
-		slurm_msg_t_init(msg);
-		if (slurm_receive_msg(newsockfd, msg, 0) != 0)
+		slurm_msg_t_init(&msg);
+		if (slurm_receive_msg(newsockfd, &msg, 0) != 0)
 			error("slurm_receive_msg: %m");
 
-		error_code = _background_process_msg(msg);
+		error_code = _background_process_msg(&msg);
 		if ((error_code == SLURM_SUCCESS)			&&
-		    (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)	&&
+		    (msg.msg_type == REQUEST_SHUTDOWN_IMMEDIATE)	&&
 		    (slurmctld_config.shutdown_time == 0))
 			slurmctld_config.shutdown_time = time(NULL);
 
-		slurm_free_msg(msg);
+		slurm_free_msg_members(&msg);
 
 		slurm_close(newsockfd);	/* close new socket */
 	}
@@ -402,7 +388,7 @@ static int _background_process_msg(slurm_msg_t * msg)
 		uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, auth_info);
 
 		xfree(auth_info);
-		if ((uid == 0) || (uid == getuid()))
+		if (validate_slurm_user(uid))
 			super_user = true;
 
 		if (super_user &&
@@ -442,7 +428,7 @@ static int _ping_controller(void)
 	slurm_msg_t req;
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/*
 	 *  Set address of controller to ping

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,35 +36,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#  if HAVE_STRING_H
-#    include <string.h>
-#  endif
-#  if HAVE_PTHREAD_H
-#    include <pthread.h>
-#  endif
-#else                /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#  include <string.h>
-#  include <pthread.h>
-#endif                /* HAVE_CONFIG_H */
+#include "config.h"
 
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <assert.h>
-#include <errno.h>
-#include <ctype.h>
+#include <string.h>
 #include <sys/param.h>
 #include <unistd.h>
+
 #include <slurm/slurmdb.h>
 
 #include "src/common/bitstring.h"
@@ -76,6 +61,7 @@
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -238,9 +224,7 @@ struct hostlist {
 #define HOSTLIST_MAGIC    57005
 	int magic;
 #endif
-#if    WITH_PTHREADS
 	pthread_mutex_t mutex;
-#endif                /* WITH_PTHREADS */
 
 	/* current number of elements available in array */
 	int size;
@@ -401,66 +385,16 @@ static int hostset_find_host(hostset_t, const char *);
 
 /* ------[ macros ]------ */
 
-#ifdef WITH_PTHREADS
-#  define mutex_init(mutex)						\
-	do {								\
-		int e = pthread_mutex_init(mutex, NULL);		\
-		if (e) {						\
-			errno = e;					\
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex init:"); \
-			abort();					\
-		}							\
-	} while (0)
-
-#  define mutex_lock(mutex)						\
-	do {								\
- 		int e = pthread_mutex_lock(mutex);			\
-		if (e) {						\
-			errno = e;					\
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex lock:"); \
- 			abort();					\
-		}							\
-	} while (0)
-
-#  define mutex_unlock(mutex)						\
-	do {								\
-		int e = pthread_mutex_unlock(mutex);			\
-		if (e) {						\
-			errno = e;					\
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex unlock:"); \
-			abort();					\
-		}							\
-	} while (0)
-
-#  define mutex_destroy(mutex)						\
-	do {								\
-		int e = pthread_mutex_destroy(mutex);			\
-		if (e) {						\
-			errno = e;					\
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex destroy:");	\
-			abort();					\
-		}							\
-	} while (0)
-
-#else                /* !WITH_PTHREADS */
-
-#  define mutex_init(mutex)
-#  define mutex_lock(mutex)
-#  define mutex_unlock(mutex)
-#  define mutex_destroy(mutex)
-
-#endif                /* WITH_PTHREADS */
-
 #define LOCK_HOSTLIST(_hl)				\
 	do {						\
 		assert(_hl != NULL);			\
-		mutex_lock(&(_hl)->mutex);		\
+		slurm_mutex_lock(&(_hl)->mutex);		\
 		assert((_hl)->magic == HOSTLIST_MAGIC);	\
 	} while (0)
 
 #define UNLOCK_HOSTLIST(_hl)			\
 	do {					\
-		mutex_unlock(&(_hl)->mutex);	\
+		slurm_mutex_unlock(&(_hl)->mutex);	\
 	} while (0)
 
 #define seterrno_ret(_errno, _rc)		\
@@ -540,7 +474,7 @@ bracket: 	open_bracket = strchr(parse, '[');
 	}
 
 	/* nullify consecutive separators and push str beyond them */
-	while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+	while ((**str != '\0') && (strchr(sep, **str) != NULL))
 		*(*str)++ = '\0';
 
 	return tok;
@@ -1167,7 +1101,7 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 			strncat(hn->prefix, hn->suffix, ldiff);
 			/* Now adjust the suffix of the hostname object. */
 			hn->suffix += ldiff;
-			/* And the numeric representation just incase
+			/* And the numeric representation just in case
 			 * whatever we just tacked on to the prefix
 			 * had something other than 0 in it.
 			 *
@@ -1328,7 +1262,7 @@ static hostlist_t hostlist_new(void)
 		goto fail1;
 
 	assert(new->magic = HOSTLIST_MAGIC);
-	mutex_init(&new->mutex);
+	slurm_mutex_init(&new->mutex);
 
 	new->hr = (hostrange_t *) malloc(HOSTLIST_CHUNK * sizeof(hostrange_t));
 	if (!new->hr)
@@ -1859,6 +1793,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 	char new_prefix[1024], tmp_prefix[1024];
 
 	strncpy(tmp_prefix, prefix, sizeof(tmp_prefix));
+	tmp_prefix[sizeof(tmp_prefix) - 1] = '\0';
 	if (((p = strrchr(tmp_prefix, '[')) != NULL) &&
 	    ((q = strrchr(p, ']')) != NULL)) {
 		struct _range *prefix_range = NULL;
@@ -1931,8 +1866,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 	struct _range *ranges = NULL;
 	int capacity = 0;
 	int nr, err;
-	char *p, *tok, *str, *orig;
-	char cur_tok[1024];
+	char *cur_tok = NULL, *p, *tok, *str, *orig;
 
 	if (hostlist == NULL)
 		return new;
@@ -1943,7 +1877,6 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 	}
 
 	while ((tok = _next_tok(sep, &str)) != NULL) {
-		strncpy(cur_tok, tok, 1024);
 		if ((p = strrchr(tok, '[')) != NULL) {
 			char *q, *prefix = tok;
 			*p++ = '\0';
@@ -1967,17 +1900,20 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 				 * Not likely what the user
 				 * wanted. We will just tack one on
 				 * the end. */
-				strcat(cur_tok, "]");
-				if (prefix && prefix[0])
+				if (prefix && prefix[0]) {
+					xstrfmtcat(cur_tok, "%s]", tok);
 					hostlist_push_host_dims(
 						new, cur_tok, dims);
-				else
+					xfree(cur_tok);
+				} else {
 					hostlist_push_host_dims(new, p, dims);
+				}
 
 			}
 
-		} else
-			hostlist_push_host_dims(new, cur_tok, dims);
+		} else {
+			hostlist_push_host_dims(new, tok, dims);
+		}
 	}
 	xfree(ranges);
 
@@ -2041,16 +1977,16 @@ void hostlist_destroy(hostlist_t hl)
 		return;
 	LOCK_HOSTLIST(hl);
 	while (hl->ilist) {
-		mutex_unlock(&hl->mutex);
+		slurm_mutex_unlock(&hl->mutex);
 		hostlist_iterator_destroy(hl->ilist);
-		mutex_lock(&hl->mutex);
+		slurm_mutex_lock(&hl->mutex);
 	}
 	for (i = 0; i < hl->nranges; i++)
 		hostrange_destroy(hl->hr[i]);
 	free(hl->hr);
 	assert(hl->magic = 0x1);
 	UNLOCK_HOSTLIST(hl);
-	mutex_destroy(&hl->mutex);
+	slurm_mutex_destroy(&hl->mutex);
 	free(hl);
 }
 
@@ -2064,9 +2000,9 @@ int hostlist_push(hostlist_t hl, const char *hosts)
 	new = hostlist_create(hosts);
 	if (!new)
 		return 0;
-	mutex_lock(&new->mutex);
+	slurm_mutex_lock(&new->mutex);
 	retval = new->nhosts;
-	mutex_unlock(&new->mutex);
+	slurm_mutex_unlock(&new->mutex);
 	hostlist_push_list(hl, new);
 	hostlist_destroy(new);
 	return retval;
@@ -2242,14 +2178,50 @@ char *hostlist_pop_range(hostlist_t hl)
 	return buf;
 }
 
+int hostlist_pop_range_values(
+	hostlist_t hl, unsigned long *lo, unsigned long *hi)
+{
+	int i;
+	hostrange_t tail;
+
+	if (!hl || !lo || !hi)
+		return 0;
+
+	*lo = 0;
+	*hi = 0;
+	LOCK_HOSTLIST(hl);
+	if (hl->nranges < 1) {
+		UNLOCK_HOSTLIST(hl);
+		return 0;
+	}
+
+	i = hl->nranges - 1;
+	tail = hl->hr[i];
+
+	if (tail && i < hl->nranges) {
+		*lo = tail->lo;
+		*hi = tail->hi;
+		hl->nhosts -= hostrange_count(tail);
+		hl->nranges--;
+		hostrange_destroy(tail);
+		hl->hr[i] = NULL;
+	}
+
+	UNLOCK_HOSTLIST(hl);
+
+	return 1;
+}
 
 char *hostlist_shift_range(hostlist_t hl)
 {
 	int i;
 	char *buf;
-	hostlist_t hltmp = hostlist_new();
-	if (!hltmp || !hl)
+	hostlist_t hltmp ;
+
+	if (!hl)
 		return NULL;
+
+	hltmp = hostlist_new();
 
 	LOCK_HOSTLIST(hl);
 

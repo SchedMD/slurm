@@ -8,7 +8,7 @@
 that can be allocated to jobs and steps. The most obvious example of
 GRES use would be GPUs. GRES are identified by a specific name and use an
 optional plugin to provide device-specific support. This document is meant
-to provide details abou. Slurm's implementation of GRES support including the
+to provide details about Slurm's implementation of GRES support including the
 relevant data structures. For an overview of GRES configuration and use, see
 <a href="gres.html">Generic Resource (GRES) Scheduling</a>. For details about
 the APIs provided by GRES plugins, see <a href="gres_plugins.html">
@@ -19,7 +19,7 @@ Slurm Generic Resource (GRES) Plugin API</a>.</p>
 <p>GRES are associated with Slurm nodes, jobs and job steps. You will find
 a string variable named <b>gres</b> in those data structures which
 is used to store the GRES configured on a node or required by a job or step
-(e.g. "gpu:2,nic:1"). This string is also visible to variou. Slurm commands
+(e.g. "gpu:2,nic:1"). This string is also visible to various Slurm commands
 viewing information about those data structures (e.g. "scontrol show job").
 There is a second variable associated with each of those data structures on
 the <b>slurmctld</b> daemon

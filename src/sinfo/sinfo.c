@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,10 +37,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include "src/common/xstring.h"
 #include "src/common/macros.h"
@@ -103,7 +99,7 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 			   node_info_t *node_ptr, uint32_t node_scaling);
 static int _find_part_list(void *x, void *key);
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	int rc = 0;
@@ -481,7 +477,7 @@ void *_build_part_info(void *args)
 		error("sinfo_cnt underflow");
 		sinfo_cnt = 0;
 	}
-	pthread_cond_broadcast(&sinfo_cnt_cond);
+	slurm_cond_broadcast(&sinfo_cnt_cond);
 	slurm_mutex_unlock(&sinfo_cnt_mutex);
 	return NULL;
 }
@@ -603,7 +599,7 @@ static int _build_sinfo_data(List sinfo_list,
 
 	slurm_mutex_lock(&sinfo_cnt_mutex);
 	while (sinfo_cnt) {
-		pthread_cond_wait(&sinfo_cnt_cond, &sinfo_cnt_mutex);
+		slurm_cond_wait(&sinfo_cnt_cond, &sinfo_cnt_mutex);
 	}
 	slurm_mutex_unlock(&sinfo_cnt_mutex);
 
@@ -735,7 +731,7 @@ static void _sort_hostlist(List sinfo_list)
  * data to print. Return true if it is duplicate/redundant data. */
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
-	uint32_t tmp = 0;
+	uint64_t tmp = 0;
 
 	if (params.node_flag)
 		return false;
@@ -834,6 +830,9 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	if (params.match_flags.free_mem_flag &&
 	    (node_ptr->free_mem        != sinfo_ptr->min_free_mem))
 		return false;
+	if (params.match_flags.port_flag &&
+	    (node_ptr->port != sinfo_ptr->port))
+		return false;
 	if (params.match_flags.version_flag &&
 	    (node_ptr->version     != sinfo_ptr->version))
 		return false;
@@ -925,7 +924,8 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			  uint32_t node_scaling)
 {
-	uint32_t base_state, alloc_mem = 0;
+	uint32_t base_state;
+	uint64_t alloc_mem = 0;
 	uint16_t used_cpus = 0, error_cpus = 0;
 	int total_cpus = 0, total_nodes = 0;
 	/* since node_scaling could be less here, we need to use the
@@ -954,6 +954,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->max_disk   = node_ptr->tmp_disk;
 		sinfo_ptr->min_mem    = node_ptr->real_memory;
 		sinfo_ptr->max_mem    = node_ptr->real_memory;
+		sinfo_ptr->port       = node_ptr->port;
 		sinfo_ptr->min_weight = node_ptr->weight;
 		sinfo_ptr->max_weight = node_ptr->weight;
 		sinfo_ptr->min_cpu_load = node_ptr->cpu_load;
@@ -1176,8 +1177,8 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 				if ((((state[i] == NODE_STATE_ALLOCATED)
 				      && IS_NODE_DRAINING(tmp_node_ptr))
 				     || (*node_state == NODE_STATE_DRAIN))
-				    || (*node_state == state[i])
-				    || (*node_state == NODE_STATE_RES))
+				     || (*node_state == state[i])
+				     || (*node_state == NODE_STATE_RES))
 					break;
 			}
 			list_iterator_reset(iterator);
@@ -1204,8 +1205,8 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 			tmp_node_ptr->node_state = *node_state;
 			if (((*node_state == NODE_STATE_DRAIN)
 			     || IS_NODE_DRAINED(tmp_node_ptr))
-			    || (*node_state == NODE_STATE_IDLE)
-			    || (*node_state == NODE_STATE_RES))
+			     || (*node_state == NODE_STATE_IDLE)
+			     || (*node_state == NODE_STATE_RES))
 				break;
 		}
 		list_iterator_destroy(iterator);

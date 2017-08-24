@@ -12,7 +12,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -197,20 +197,7 @@ proc test_part { acct part acct_con } {
 # Remove any vestigial accounts or partitions
 cleanup
 
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: id is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+set user_name [get_my_user_name]
 
 if { [string length $partition] == 0 } {
 	 set partition [default_partition]

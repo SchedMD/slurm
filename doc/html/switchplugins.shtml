@@ -181,13 +181,13 @@ The number of bytes written should be returned if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int switch_p_unpack_node_info (switch_node_info_t switch_node,
+<p class="commandline">int switch_p_unpack_node_info (switch_node_info_t **switch_node,
 Buf buffer);</p>
-<p style="margin-left:.2in"><b>Description</b>: Unpack the data associated with a
-node's switch state record from a buffer.</p>
+<p style="margin-left:.2in"><b>Description</b>: Allocate and unpack
+  the data associated with a node's switch state record from a buffer.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> switch_node</span>&nbsp; &nbsp;&nbsp;(input/output) a
-previously allocated node switch state record to be filled in with data read from
+<span class="commandline"> switch_node</span>&nbsp; &nbsp;&nbsp;(output) a
+node switch state record will be allocated and filled in with data read from
 the buffer.<br>
 <span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) buffer from
 which the record's contents are read.</p>
@@ -275,12 +275,12 @@ The number of bytes written should be returned if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int switch_p_unpack_jobinfo (switch_jobinfo_t switch_job, Buf buffer);</p>
-<p style="margin-left:.2in"><b>Description</b>: Unpack the data associated with a job's
+<p class="commandline">int switch_p_unpack_jobinfo (switch_jobinfo_t **switch_job, Buf buffer);</p>
+<p style="margin-left:.2in"><b>Description</b>: Allocate and unpack the data associated with a job's
 switch credential from a buffer.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input/output) a previously
-allocated job step switch credential to be filled in with data read from the buffer.<br>
+<span class="commandline"> switch_job</span>&nbsp;
+&nbsp;&nbsp;(output) a job step switch credential will be allocated and filled in with data read from the buffer.<br>
 <span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) buffer from
 which the credential's contents are read.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,6 +43,9 @@
 extern time_t shutdown_time;		/* when shutdown request arrived */
 extern pthread_mutex_t registered_lock;
 extern List registered_clusters;
+extern pthread_mutex_t rpc_mutex;
+extern slurmdb_stats_rec_t rpc_stats;
+extern pthread_t signal_handler_thread;	/* thread ID for signal hander */
 
 extern void shutdown_threads();
 

@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,31 +38,27 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_STRING_H
-#  include <string.h>
-#endif
+#include "config.h"
 
 #include <grp.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/gres.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/uid.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -166,13 +162,13 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 		err = _expand_stdio_filename(efname, gtid[node_id][i], job);
 		job->task[i] = task_info_create(i, gtid[node_id][i], in, out,
 						err);
-		if (!job->multi_prog) {
+		if ((job->flags & LAUNCH_MULTI_PROG) == 0) {
 			job->task[i]->argc = job->argc;
 			job->task[i]->argv = job->argv;
 		}
 	}
 
-	if (job->multi_prog) {
+	if (job->flags & LAUNCH_MULTI_PROG) {
 		char *switch_type = slurm_get_switch_type();
 		if (!xstrcmp(switch_type, "switch/cray"))
 			multi_prog_parse(job, gtid);
@@ -269,8 +265,8 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 	}
 
 	job->state = SLURMSTEPD_STEP_STARTING;
-	pthread_cond_init(&job->state_cond, NULL);
-	pthread_mutex_init(&job->state_mutex, NULL);
+	slurm_cond_init(&job->state_cond, NULL);
+	slurm_mutex_init(&job->state_mutex);
 	job->node_tasks	= msg->tasks_to_launch[nodeid];
 	i = sizeof(uint16_t) * msg->nnodes;
 	job->task_cnts  = xmalloc(i);
@@ -349,10 +345,9 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 	} else {
 		memset(&resp_addr, 0, sizeof(slurm_addr_t));
 	}
-	job->user_managed_io = msg->user_managed_io;
 	if (!msg->io_port)
-		msg->user_managed_io = 1;
-	if (!msg->user_managed_io) {
+		msg->flags |= LAUNCH_USER_MANAGED_IO;
+	if ((msg->flags & LAUNCH_USER_MANAGED_IO) == 0) {
 		memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr_t));
 		slurm_set_addr(&io_addr,
 			       msg->io_port[nodeid % msg->num_io_port],
@@ -363,9 +358,6 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr,
 				protocol_version);
-
-	job->buffered_stdio = msg->buffered_stdio;
-	job->labelio = msg->labelio;
 
 	job->profile     = msg->profile;
 	job->task_prolog = xstrdup(msg->task_prolog);
@@ -388,11 +380,9 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 	acct_gather_profile_startpoll(msg->acctg_freq,
 				      conf->job_acct_gather_freq);
 
-	job->multi_prog  = msg->multi_prog;
 	job->timelimit   = (time_t) -1;
-	job->task_flags  = msg->task_flags;
+	job->flags       = msg->flags;
 	job->switch_job  = msg->switch_job;
-	job->pty         = msg->pty;
 	job->open_mode   = msg->open_mode;
 	job->options     = msg->options;
 	format_core_allocs(msg->cred, conf->node_name, conf->cpus,
@@ -455,8 +445,8 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job = xmalloc(sizeof(stepd_step_rec_t));
 
 	job->state = SLURMSTEPD_STEP_STARTING;
-	pthread_cond_init(&job->state_cond, NULL);
-	pthread_mutex_init(&job->state_mutex, NULL);
+	slurm_cond_init(&job->state_cond, NULL);
+	slurm_mutex_init(&job->state_mutex);
 	if (msg->cpus_per_node)
 		job->cpus    = msg->cpus_per_node[0];
 	job->node_tasks  = 1;
@@ -486,7 +476,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	acct_gather_profile_startpoll(msg->acctg_freq,
 				      conf->job_acct_gather_freq);
 
-	job->multi_prog = 0;
 	job->open_mode  = msg->open_mode;
 	job->overcommit = (bool) msg->overcommit;
 
@@ -571,13 +560,16 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 extern void
 stepd_step_rec_destroy(stepd_step_rec_t *job)
 {
+	uint16_t multi_prog = 0;
 	int i;
 
 	_array_free(&job->env);
 	_array_free(&job->argv);
 
+	if (job->flags & LAUNCH_MULTI_PROG)
+		multi_prog = 1;
 	for (i = 0; i < job->node_tasks; i++)
-		_task_info_destroy(job->task[i], job->multi_prog);
+		_task_info_destroy(job->task[i], multi_prog);
 	eio_handle_destroy(job->eio);
 	FREE_NULL_LIST(job->sruns);
 	FREE_NULL_LIST(job->clients);

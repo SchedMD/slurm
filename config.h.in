@@ -3,15 +3,6 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Define the BG_BRIDGE_SO value */
-#undef BG_BRIDGE_SO
-
-/* Define the BG_DB2_SO value */
-#undef BG_DB2_SO
-
-/* Define the BG_SERIAL value */
-#undef BG_SERIAL
-
 /* Define BLCR installation home */
 #undef BLCR_HOME
 
@@ -45,9 +36,6 @@
 /* Define to 1 if 4-dimensional architecture */
 #undef HAVE_4D
 
-/* Define to 1 for AIX operating system */
-#undef HAVE_AIX
-
 /* Define to 1 for Cray XT/XE systems using ALPS */
 #undef HAVE_ALPS_CRAY
 
@@ -60,12 +48,6 @@
 /* Define to 1 if emulating or running on Blue Gene system */
 #undef HAVE_BG
 
-/* Define to 1 if emulating or running on Blue Gene/L system */
-#undef HAVE_BGL
-
-/* Define to 1 if emulating or running on Blue Gene/P system */
-#undef HAVE_BGP
-
 /* Define to 1 if emulating or running on Blue Gene/Q system */
 #undef HAVE_BGQ
 
@@ -74,9 +56,6 @@
 
 /* Define to 1 if using code where blocks have actions */
 #undef HAVE_BG_GET_ACTION
-
-/* Define to 1 if emulating or running on Blue Gene/L or P system */
-#undef HAVE_BG_L_P
 
 /* Define to 1 if using code with new iocheck */
 #undef HAVE_BG_NEW_IO_CHECK
@@ -190,11 +169,8 @@
 /* Define to 1 if you have the <linux/sched.h> header file. */
 #undef HAVE_LINUX_SCHED_H
 
-/* Compile with Lua 5.1 */
-#undef HAVE_LUA_5_1
-
-/* Compile with Lua 5.2 */
-#undef HAVE_LUA_5_2
+/* Define to 1 if we have the Lua library */
+#undef HAVE_LUA
 
 /* Define to 1 if you have 'lz4' library (-llz4) */
 #undef HAVE_LZ4
@@ -265,9 +241,6 @@
 
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
-
-/* Define to 1 if you have the <proctrack.h> header file. */
-#undef HAVE_PROCTRACK_H
 
 /* Define if libc sets program_invocation_name */
 #undef HAVE_PROGRAM_INVOCATION_NAME
@@ -404,9 +377,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to 1 if you have the `unsetenv' function. */
-#undef HAVE_UNSETENV
-
 /* Define to 1 if you have the <utmp.h> header file. */
 #undef HAVE_UTMP_H
 
@@ -419,6 +389,16 @@
 /* Define to 1 if you have the external variable, _system_configuration with a
    member named physmem. */
 #undef HAVE__SYSTEM_CONFIGURATION
+
+/* Define to 1 if the system has the `__builtin_clzll' built-in function */
+#undef HAVE___BUILTIN_CLZLL
+
+/* Define to 1 if the system has the `__builtin_ctzll' built-in function */
+#undef HAVE___BUILTIN_CTZLL
+
+/* Define to 1 if the system has the `__builtin_popcountll' built-in function
+   */
+#undef HAVE___BUILTIN_POPCOUNTLL
 
 /* Defined if libcurl supports AsynchDNS */
 #undef LIBCURL_FEATURE_ASYNCHDNS
@@ -492,6 +472,14 @@
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
+/* Define to 1 if `major', `minor', and `makedev' are declared in <mkdev.h>.
+   */
+#undef MAJOR_IN_MKDEV
+
+/* Define to 1 if `major', `minor', and `makedev' are declared in
+   <sysmacros.h>. */
+#undef MAJOR_IN_SYSMACROS
+
 /* Define to 1 for memory leak debugging. */
 #undef MEMORY_LEAK_DEBUG
 
@@ -503,10 +491,6 @@
 
 /* Define to 1 if you are building a production release. */
 #undef NDEBUG
-
-/* Define to 1 if we can't use the alter ignore when messing with a database
-   table */
-#undef NO_ALTER_IGNORE_MYSQL
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
@@ -553,9 +537,6 @@
 
 /* Define to 1 if sched_getaffinity takes two arguments. */
 #undef SCHED_GETAFFINITY_TWO_ARGS
-
-/* Define to 1 if setpgrp takes two arguments. */
-#undef SETPGRP_TWO_ARGS
 
 /* Define if you need setproctitle padding */
 #undef SETPROCTITLE_PS_PADDING
@@ -608,9 +589,6 @@
 /* Define Slurm installation prefix */
 #undef SLURM_PREFIX
 
-/* Define to 1 if running slurm simulator */
-#undef SLURM_SIMULATOR
-
 /* SLURM Version Number */
 #undef SLURM_VERSION_NUMBER
 
@@ -641,9 +619,6 @@
 /* Define the project's version. */
 #undef VERSION
 
-/* Define if you have pthreads. */
-#undef WITH_PTHREADS
-
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
 #if defined AC_APPLE_UNIVERSAL_BUILD
@@ -655,17 +630,6 @@
 #  undef WORDS_BIGENDIAN
 # endif
 #endif
-
-/* Enable large inode numbers on Mac OS X 10.5.  */
-#ifndef _DARWIN_USE_64_BIT_INODE
-# define _DARWIN_USE_64_BIT_INODE 1
-#endif
-
-/* Number of bits in a file offset, on hosts where this is settable. */
-#undef _FILE_OFFSET_BITS
-
-/* Define for large files, on AIX-style hosts. */
-#undef _LARGE_FILES
 
 /* Define curl_free() as free() if our version of curl lacks curl_free. */
 #undef curl_free

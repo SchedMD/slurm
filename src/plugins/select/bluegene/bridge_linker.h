@@ -1,13 +1,12 @@
 /*****************************************************************************\
  *  bridge_linker.h
- *
  *****************************************************************************
  *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,23 +41,17 @@
 /* This must be included first for AIX systems */
 #include "src/common/macros.h"
 
+#include "config.h"
+
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
 #endif
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include <dlfcn.h>
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#include <pthread.h>
 
 #include "src/common/node_select.h"
 #include "src/common/read_config.h"
-#include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"

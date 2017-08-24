@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,23 +36,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#include <sys/types.h>
+#include <dlfcn.h>
+#include <inttypes.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <dlfcn.h>
-#include <pthread.h>
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -66,7 +56,6 @@
 #include "src/common/xlua.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-
 const char plugin_name[]            = "LUA proctrack module";
 const char plugin_type[]            = "proctrack/lua";
 const uint32_t plugin_version       = SLURM_VERSION_NUMBER;
@@ -78,9 +67,7 @@ static lua_State *L = NULL;
  *  Mutex for protecting multi-threaded access to this plugin.
  *   (Only 1 thread at a time should be in here)
  */
-#ifdef WITH_PTHREADS
 static pthread_mutex_t lua_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 /*
  *  Lua interface to SLURM log facility:
@@ -137,27 +124,65 @@ static const struct luaL_Reg slurm_functions [] = {
 	{ NULL,    NULL        }
 };
 
+static void _lua_table_register(lua_State *L, const char *libname,
+				const luaL_Reg *l)
+{
+#if LUA_VERSION_NUM == 501
+	luaL_register(L, NULL, l);
+#else
+	luaL_setfuncs(L, l, 0);
+	if (libname)
+		lua_setglobal(L, libname);
+#endif
+}
+
 static int lua_register_slurm_output_functions (void)
 {
+	char *unpack_str;
+	char tmp_string[100];
+
+#if LUA_VERSION_NUM == 501
+	unpack_str = "unpack";
+#else
+	unpack_str = "table.unpack";
+#endif
 	/*
 	 *  Register slurm output functions in a global "slurm" table
 	 */
 	lua_newtable (L);
-	luaL_register (L, NULL, slurm_functions);
+	_lua_table_register(L, NULL, slurm_functions);
 
 	/*
 	 *  Create more user-friendly lua versions of SLURM log functions.
 	 */
-	luaL_loadstring (L, "slurm.error (string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.error (string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_error");
-	luaL_loadstring (L, "slurm.log (0, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (0, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_info");
-	luaL_loadstring (L, "slurm.log (1, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (1, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_verbose");
-	luaL_loadstring (L, "slurm.log (2, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (2, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_debug");
-	luaL_loadstring (L, "slurm.log (3, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (3, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_debug2");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (4, string.format(%s({...})))",
+		 unpack_str);
 
 	/*
 	 * slurm.SUCCESS, slurm.FAILURE and slurm.ERROR
@@ -565,7 +590,12 @@ int proctrack_p_get_pids (uint64_t cont_id, pid_t **pids, int *npids)
 	/*
 	 *  Get table size and create array for slurm
 	 */
+#if LUA_VERSION_NUM == 501
 	*npids = lua_objlen (L, t);
+#else
+	*npids = lua_rawlen(L, t);
+#endif
+
 	p = (pid_t *) xmalloc (*npids * sizeof (pid_t));
 
 	/*

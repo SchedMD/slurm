@@ -31,6 +31,13 @@ Without this option, the display will be optimized for use with job arrays
 array index values printed using a regular expression).
 
 .TP
+\fB\-\-array-unique\fR
+Display one unique pending job array element per line. Without this option,
+the pending job array elements will be grouped into the master array job to
+optimize the display.  This can also be set with the environment variable
+SQUEUE_ARRAY_UNIQUE.
+
+.TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
 
@@ -363,14 +370,15 @@ Actual or expected start time of the job or job step.
 Job state, compact form:
 PD (pending), R (running), CA (cancelled), CF(configuring),
 CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure) and SE (special exit state).
+F (failed), TO (timeout), NF (node failure), RV (revoked) and SE
+(special exit state).
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
 \fB%T\fR
 Job state, extended form:
 PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING,
-FAILED, TIMEOUT, PREEMPTED, NODE_FAIL and SPECIAL_EXIT.
+FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
@@ -455,6 +463,10 @@ Valid \fItype\fR specifications include:
 Print the account associated with the job.
 (Valid for jobs only)
 .TP
+\fBadmin_comment\fR
+Administrator comment associated with the job.
+(Valid for jobs only)
+.TP
 \fBallocnodes\fR
 Print the nodes allocated to the job.
 (Valid for jobs only)
@@ -495,6 +507,10 @@ Prints the number of boards per node allocated to the job.
 .TP
 \fBburstbuffer\fR
 Burst Buffer specification
+(Valid for jobs only)
+.TP
+\fBburstbufferstate\fR
+Burst Buffer state
 (Valid for jobs only)
 .TP
 \fBchptdir\fR
@@ -545,6 +561,10 @@ dependent jobs complete. In the case of a job that can not run due to job
 dependencies never being satisfied, the full original job dependency
 specification will be reported. A value of NULL implies this job has no
 dependencies.
+(Valid for jobs only)
+.TP
+\fBdelayboot\fR
+Delay boot time.
 (Valid for jobs only)
 .TP
 \fBderivedec\fR
@@ -806,7 +826,7 @@ Actual or expected start time of the job or job step.
 \fBstate\fR
 Job state, extended form:
 PENDING, RUNNING, STOPPED, SUSPENDED, CANCELLED, COMPLETING, COMPLETED,
-CONFIGURING, FAILED, TIMEOUT, PREEMPTED, NODE_FAIL and SPECIAL_EXIT.
+CONFIGURING, FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
@@ -814,7 +834,7 @@ See the \fBJOB STATE CODES\fR section below for more information.
 Job state, compact form:
 PD (pending), R (running), CA (cancelled), CF(configuring),
 CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure) and SE (special exit state).
+F (failed), TO (timeout), NF (node failure), RV (revoked) and SE (special exit state).
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
@@ -967,8 +987,8 @@ reported. If no state is specified then pending, running, and completing
 jobs are reported. Valid states (in both extended and compact form) include:
 PENDING (PD), RUNNING (R), SUSPENDED (S), STOPPED (ST),
 COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
-FAILED (F), TIMEOUT (TO), PREEMPTED (PR), BOOT_FAIL (BF) , NODE_FAIL (NF)
-and SPECIAL_EXIT (SE).
+FAILED (F), TIMEOUT (TO), PREEMPTED (PR), BOOT_FAIL (BF) , NODE_FAIL (NF),
+REVOKED (RV), and SPECIAL_EXIT (SE).
 Note the \fB<state_list>\fR supplied is case insensitive ("pd" and "PD" are
 equivalent).
 See the \fBJOB STATE CODES\fR section below for more information.
@@ -1154,6 +1174,9 @@ Job is awaiting resource allocation.
 .TP
 \fBPR  PREEMPTED\fR
 Job terminated due to preemption.
+.TP
+\fBR   REVOKED\fR
+Sibling was removed from cluster due to other cluster starting the job.
 .TP
 \fBR   RUNNING\fR
 Job currently has an allocation.

@@ -89,10 +89,17 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_MAN2HTML_TRUE@am__append_1 = $(html_DATA)
+@BUILD_HDF5_TRUE@am__append_1 = sh5util.1
+@WITH_BLCR_TRUE@am__append_2 = srun_cr.1
+@BUILD_SVIEW_TRUE@am__append_3 = sview.1
+@BUILD_HDF5_TRUE@@HAVE_MAN2HTML_TRUE@am__append_4 = sh5util.html
+@HAVE_MAN2HTML_TRUE@@WITH_BLCR_TRUE@am__append_5 = srun_cr.html
+@BUILD_SVIEW_TRUE@@HAVE_MAN2HTML_TRUE@am__append_6 = sview.html
+@HAVE_MAN2HTML_TRUE@am__append_7 = $(html_DATA)
 subdir = doc/man/man1
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
+	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -103,7 +110,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
 	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
-	$(top_srcdir)/auxdir/x_ac_aix.m4 \
 	$(top_srcdir)/auxdir/x_ac_blcr.m4 \
 	$(top_srcdir)/auxdir/x_ac_bluegene.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
@@ -131,7 +137,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
-	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
@@ -205,11 +210,9 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BGL_LOADED = @BGL_LOADED@
 BGQ_LOADED = @BGQ_LOADED@
 BG_INCLUDES = @BG_INCLUDES@
 BG_LDFLAGS = @BG_LDFLAGS@
-BG_L_P_LOADED = @BG_L_P_LOADED@
 BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
 BLCR_HOME = @BLCR_HOME@
 BLCR_LDFLAGS = @BLCR_LDFLAGS@
@@ -220,7 +223,6 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CHECK_CFLAGS = @CHECK_CFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
-CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CRAY_JOB_CPPFLAGS = @CRAY_JOB_CPPFLAGS@
@@ -265,7 +267,6 @@ GTK_LIBS = @GTK_LIBS@
 H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
-HAVE_AIX = @HAVE_AIX@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
@@ -297,7 +298,6 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -348,7 +348,6 @@ PMIX_V1_CPPFLAGS = @PMIX_V1_CPPFLAGS@
 PMIX_V1_LDFLAGS = @PMIX_V1_LDFLAGS@
 PMIX_V2_CPPFLAGS = @PMIX_V2_CPPFLAGS@
 PMIX_V2_LDFLAGS = @PMIX_V2_LDFLAGS@
-PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
@@ -356,7 +355,6 @@ PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
-REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
@@ -457,54 +455,19 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-man1_MANS = \
-	sacct.1 \
-	sacctmgr.1 \
-	salloc.1 \
-	sattach.1 \
-	sbatch.1 \
-	sbcast.1 \
-	scancel.1 \
-	scontrol.1 \
-	sdiag.1	\
-	sinfo.1   \
-	slurm.1 \
-	smap.1 \
-	sprio.1 \
-	sh5util.1 \
-	squeue.1 \
-	sreport.1 \
-	srun.1 \
-	srun_cr.1 \
-	sshare.1 \
-	sstat.1 \
-	strigger.1 \
-	sview.1
-
-EXTRA_DIST = $(man1_MANS) $(am__append_1)
-@HAVE_MAN2HTML_TRUE@html_DATA = \
-@HAVE_MAN2HTML_TRUE@	sacct.html \
-@HAVE_MAN2HTML_TRUE@	sacctmgr.html \
-@HAVE_MAN2HTML_TRUE@	salloc.html \
-@HAVE_MAN2HTML_TRUE@	sattach.html \
-@HAVE_MAN2HTML_TRUE@	sbatch.html \
-@HAVE_MAN2HTML_TRUE@	sbcast.html \
-@HAVE_MAN2HTML_TRUE@	scancel.html \
-@HAVE_MAN2HTML_TRUE@	scontrol.html \
-@HAVE_MAN2HTML_TRUE@	sdiag.html \
-@HAVE_MAN2HTML_TRUE@	sinfo.html \
-@HAVE_MAN2HTML_TRUE@	smap.html \
-@HAVE_MAN2HTML_TRUE@	sprio.html \
-@HAVE_MAN2HTML_TRUE@	sh5util.html \
-@HAVE_MAN2HTML_TRUE@	squeue.html \
-@HAVE_MAN2HTML_TRUE@	sreport.html \
-@HAVE_MAN2HTML_TRUE@	srun.html \
-@HAVE_MAN2HTML_TRUE@	srun_cr.html \
-@HAVE_MAN2HTML_TRUE@	sshare.html \
-@HAVE_MAN2HTML_TRUE@	sstat.html \
-@HAVE_MAN2HTML_TRUE@	strigger.html \
-@HAVE_MAN2HTML_TRUE@	sview.html
-
+man1_MANS = sacct.1 sacctmgr.1 salloc.1 sattach.1 sbatch.1 sbcast.1 \
+	scancel.1 scontrol.1 sdiag.1 sinfo.1 slurm.1 smap.1 sprio.1 \
+	squeue.1 sreport.1 srun.1 sshare.1 sstat.1 strigger.1 \
+	$(am__append_1) $(am__append_2) $(am__append_3)
+EXTRA_DIST = $(man1_MANS) $(am__append_7)
+@HAVE_MAN2HTML_TRUE@html_DATA = sacct.html sacctmgr.html salloc.html \
+@HAVE_MAN2HTML_TRUE@	sattach.html sbatch.html sbcast.html \
+@HAVE_MAN2HTML_TRUE@	scancel.html scontrol.html sdiag.html \
+@HAVE_MAN2HTML_TRUE@	sinfo.html smap.html sprio.html \
+@HAVE_MAN2HTML_TRUE@	squeue.html sreport.html srun.html \
+@HAVE_MAN2HTML_TRUE@	sshare.html sstat.html strigger.html \
+@HAVE_MAN2HTML_TRUE@	$(am__append_4) $(am__append_5) \
+@HAVE_MAN2HTML_TRUE@	$(am__append_6)
 @HAVE_MAN2HTML_TRUE@MOSTLYCLEANFILES = ${html_DATA}
 @HAVE_MAN2HTML_TRUE@SUFFIXES = .html
 all: all-am

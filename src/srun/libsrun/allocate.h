@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -63,7 +63,7 @@ resource_allocation_response_msg_t * allocate_nodes(bool handle_signals);
 void ignore_signal(int signo);
 
 /* clean up the msg thread polling for information from the controller */
-int cleanup_allocation();
+int cleanup_allocation(void);
 
 /*
  * Test if an allocation would occur now given the job request.
@@ -72,14 +72,14 @@ int cleanup_allocation();
 int allocate_test(void);
 
 /* Set up port to handle messages from slurmctld */
-slurm_fd_t slurmctld_msg_init(void);
+int slurmctld_msg_init(void);
 
 /*
  * Create a job_desc_msg_t object, filled in from the current srun options
  * (see opt.h)
  * The resulting memory must be freed with  job_desc_msg_destroy()
  */
-job_desc_msg_t * job_desc_msg_create_from_opts ();
+job_desc_msg_t *job_desc_msg_create_from_opts (void);
 
 /*
  * Destroy (free memory from) a job_desc_msg_t object allocated with
@@ -93,7 +93,7 @@ void job_desc_msg_destroy (job_desc_msg_t *j);
  *
  * Returns NULL if SLURM_JOB_ID is not present or is invalid.
  */
-resource_allocation_response_msg_t * existing_allocation(void);
+resource_allocation_response_msg_t *existing_allocation(void);
 
 /*
  * Create a job step given the job information stored in 'j'

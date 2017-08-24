@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,15 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
 #include <errno.h>
+#include <pthread.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -94,9 +87,14 @@ extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 		(void) _wr_rdlock(PART_LOCK, true);
 	else if (lock_levels.partition == WRITE_LOCK)
 		(void) _wr_wrlock(PART_LOCK, true);
+
+	if (lock_levels.federation == READ_LOCK)
+		(void) _wr_rdlock(FED_LOCK, true);
+	else if (lock_levels.federation == WRITE_LOCK)
+		(void) _wr_wrlock(FED_LOCK, true);
 }
 
-/* try_lock_slurmctld - equivalent to lock_slurmctld() except 
+/* try_lock_slurmctld - equivalent to lock_slurmctld() except
  * RET 0 on success or -1 if the locks are currently not available */
 extern int try_lock_slurmctld (slurmctld_lock_t lock_levels)
 {
@@ -108,7 +106,7 @@ extern int try_lock_slurmctld (slurmctld_lock_t lock_levels)
 		success = _wr_wrlock(CONFIG_LOCK, false);
 	if (!success)
 		return -1;
-		
+
 	if (lock_levels.job == READ_LOCK)
 		success = _wr_rdlock(JOB_LOCK, false);
 	else if (lock_levels.job == WRITE_LOCK)
@@ -157,6 +155,30 @@ extern int try_lock_slurmctld (slurmctld_lock_t lock_levels)
 		return -1;
 	}
 
+	if (lock_levels.federation == READ_LOCK)
+		success = _wr_rdlock(FED_LOCK, false);
+	else if (lock_levels.federation == WRITE_LOCK)
+		success = _wr_wrlock(FED_LOCK, false);
+	if (!success) {
+		if (lock_levels.partition == READ_LOCK)
+			_wr_rdunlock(PART_LOCK);
+		else if (lock_levels.partition == WRITE_LOCK)
+			_wr_wrunlock(PART_LOCK);
+		if (lock_levels.node == READ_LOCK)
+			_wr_rdunlock(NODE_LOCK);
+		else if (lock_levels.node == WRITE_LOCK)
+			_wr_wrunlock(NODE_LOCK);
+		if (lock_levels.job == READ_LOCK)
+			_wr_rdunlock(JOB_LOCK);
+		else if (lock_levels.job == WRITE_LOCK)
+			_wr_wrunlock(JOB_LOCK);
+		if (lock_levels.config == READ_LOCK)
+			_wr_rdunlock(CONFIG_LOCK);
+		else if (lock_levels.config == WRITE_LOCK)
+			_wr_wrunlock(CONFIG_LOCK);
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -164,6 +186,11 @@ extern int try_lock_slurmctld (slurmctld_lock_t lock_levels)
  *	defined order */
 extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 {
+	if (lock_levels.federation == READ_LOCK)
+		_wr_rdunlock(FED_LOCK);
+	else if (lock_levels.federation == WRITE_LOCK)
+		_wr_wrunlock(FED_LOCK);
+
 	if (lock_levels.partition == READ_LOCK)
 		_wr_rdunlock(PART_LOCK);
 	else if (lock_levels.partition == WRITE_LOCK)
@@ -189,25 +216,16 @@ extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
  *	Wait until there are no write locks AND
  *	no pending write locks (write_wait_lock == 0)
  *
- *	NOTE: Always favoring write locks can result in starvation for
- *	read locks. To prevent this, read locks were permitted to be satisified
- *	after 10 consecutive write locks. This prevented starvation, but
- *	deadlock has been observed with some values for the count. */
+ *	NOTE: Always favoring write locks could result in starvation for
+ *	read locks. */
 static bool _wr_rdlock(lock_datatype_t datatype, bool wait_lock)
 {
 	bool success = true;
 
 	slurm_mutex_lock(&locks_mutex);
 	while (1) {
-#if 1
 		if ((slurmctld_locks.entity[write_lock(datatype)] == 0) &&
 		    (slurmctld_locks.entity[write_wait_lock(datatype)] == 0)) {
-#else
-		/* SEE NOTE ABOVE */
-		if ((slurmctld_locks.entity[write_lock(datatype)] == 0) &&
-		    ((slurmctld_locks.entity[write_wait_lock(datatype)] == 0) ||
-		     (slurmctld_locks.entity[write_cnt_lock(datatype)] > 10))) {
-#endif
 			slurmctld_locks.entity[read_lock(datatype)]++;
 			slurmctld_locks.entity[write_cnt_lock(datatype)] = 0;
 			break;
@@ -215,7 +233,7 @@ static bool _wr_rdlock(lock_datatype_t datatype, bool wait_lock)
 			success = false;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&locks_cond, &locks_mutex);
+			slurm_cond_wait(&locks_cond, &locks_mutex);
 			if (kill_thread)
 				pthread_exit(NULL);
 		}
@@ -229,7 +247,7 @@ static void _wr_rdunlock(lock_datatype_t datatype)
 {
 	slurm_mutex_lock(&locks_mutex);
 	slurmctld_locks.entity[read_lock(datatype)]--;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
 
@@ -253,7 +271,7 @@ static bool _wr_wrlock(lock_datatype_t datatype, bool wait_lock)
 			success = false;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&locks_cond, &locks_mutex);
+			slurm_cond_wait(&locks_cond, &locks_mutex);
 			if (kill_thread)
 				pthread_exit(NULL);
 		}
@@ -267,7 +285,7 @@ static void _wr_wrunlock(lock_datatype_t datatype)
 {
 	slurm_mutex_lock(&locks_mutex);
 	slurmctld_locks.entity[write_lock(datatype)]--;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
 
@@ -284,7 +302,7 @@ void get_lock_values(slurmctld_lock_flags_t * lock_flags)
 extern void kill_locked_threads(void)
 {
 	kill_thread = 1;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 }
 
 /* un/lock semaphore used for saving state of slurmctld */

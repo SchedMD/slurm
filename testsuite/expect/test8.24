@@ -16,7 +16,7 @@
 #
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -232,16 +232,7 @@ send_user "\nNodeCnt=$def_node_cnt\n"
 #
 # Get the user name
 #
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-	}
-	eof {
-		wait
-	}
-}
-
+set user_name [get_my_user_name]
 
 #
 # Make a list of lists with a series of parameters to test.  All the tests

@@ -5,7 +5,7 @@
  *  Written by Bull- Yiannis Georgiou
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -188,7 +188,7 @@ static int _read_lustre_counters(void)
 		    || xstrcmp(entry->d_name, "..") == 0)
 			continue;
 
-		snprintf(path_stats, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
+		snprintf(path_stats, PATH_MAX, "%s/%s/stats", lustre_dir,
 			 entry->d_name);
 		debug3("%s: Found file %s", __func__, path_stats);
 

@@ -6,7 +6,7 @@
  *  Written by David Bigagli <david@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,7 +39,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_reservation_cond_t *reservation_cond,
 		     List format_list)
 {
@@ -147,7 +147,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
         List reservation_list;
         ListIterator itr;
 	ListIterator itr2;
-	List format_list = list_create(slurm_destroy_char);
+	List format_list;
 	List print_fields_list;
         slurmdb_reservation_cond_t *reservation_cond =
 		xmalloc(sizeof(slurmdb_reservation_cond_t));
@@ -157,8 +157,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
 	char *tmp_char;
 
  	/* If we don't have any arguments make sure we set up the
-	   time correctly for just the past day.
-	*/
+	 * time correctly for just the past day. */
 	if (argc == 0) {
                 struct tm start_tm;
 		reservation_cond->time_start = time(NULL);
@@ -168,7 +167,8 @@ int sacctmgr_list_reservation(int argc, char **argv)
                         fprintf(stderr,
                                 " Couldn't get localtime from %ld",
                                 (long)reservation_cond->time_start);
-                        exit_code = 1;
+			slurmdb_destroy_reservation_cond(reservation_cond);
+			exit_code = 1;
                         return 0;
                 }
                 start_tm.tm_sec = 0;
@@ -178,6 +178,8 @@ int sacctmgr_list_reservation(int argc, char **argv)
                 start_tm.tm_isdst = -1;
                 reservation_cond->time_start = slurm_mktime(&start_tm);
         }
+
+	format_list = list_create(slurm_destroy_char);
    	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))

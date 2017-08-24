@@ -7,7 +7,7 @@
  *  Written by Rod Schultz <rod.schultz@bull.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,6 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -57,9 +59,6 @@
 strong_alias(route_split_hostlist_treewidth,
 	     slurm_route_split_hostlist_treewidth);
 
-/* ************************************************************************** */
-/*  TAG(                        slurm_route_ops_t                          )  */
-/* ************************************************************************** */
 typedef struct slurm_route_ops {
 	int  (*split_hostlist)    (hostlist_t hl,
 				   hostlist_t** sp_hl,
@@ -270,9 +269,6 @@ clean:
 	xfree(hll);
 }
 
-/* ************************************************************************** */
-/*  TAG(                        slurm_route_init                           )  */
-/* ************************************************************************** */
 extern int route_init(char *node_name)
 {
 	int retval = SLURM_SUCCESS;
@@ -310,9 +306,6 @@ done:
 	return retval;
 }
 
-/* ************************************************************************** */
-/*  TAG(                        slurm_route_fini                           )  */
-/* ************************************************************************** */
 extern int route_fini(void)
 {
 	int rc;
@@ -331,9 +324,6 @@ extern int route_fini(void)
 }
 
 
-/* ************************************************************************** */
-/*  TAG(                      route_g_split_hostlist                   )      */
-/* ************************************************************************** */
 /*
  * route_g_split_hostlist - logic to split an input hostlist into
  *                          a set of hostlists to forward to.
@@ -389,9 +379,6 @@ extern int route_g_split_hostlist(hostlist_t hl,
 	return rc;
 }
 
-/* ************************************************************************** */
-/*  TAG(                      route_g_reconfigure                      )      */
-/* ************************************************************************** */
 /*
  * route_g_reconfigure - reset during reconfigure
  *
@@ -407,9 +394,6 @@ extern int route_g_reconfigure(void)
 	return (*(ops.reconfigure))();
 }
 
-/* ************************************************************************** */
-/*  TAG(                      route_g_next_collector                   )      */
-/* ************************************************************************** */
 /*
  * route_g_next_collector - return address of next collector
  *
@@ -425,9 +409,6 @@ extern slurm_addr_t* route_g_next_collector(bool *is_collector)
 	return (*(ops.next_collector))(is_collector);
 }
 
-/* ************************************************************************** */
-/*  TAG(                      route_g_next_collector_backup            )      */
-/* ************************************************************************** */
 /*
  * route_g_next_collector_backup
  *
@@ -442,9 +423,6 @@ extern slurm_addr_t* route_g_next_collector_backup(void)
 }
 
 
-/* ************************************************************************** */
-/*  TAG(                      route_split_hostlist_treewidth               )  */
-/* ************************************************************************** */
 /*
  * route_split_hostlist_treewidth - logic to split an input hostlist into
  *                                  a set of hostlists to forward to.
@@ -506,9 +484,6 @@ extern int route_split_hostlist_treewidth(hostlist_t hl,
 	return SLURM_SUCCESS;
 }
 
-/* ************************************************************************** */
-/*  TAG(                      route_next_collector                         )  */
-/* ************************************************************************** */
 /*
  * route_next_collector - get collector node address based
  *
@@ -523,9 +498,6 @@ extern slurm_addr_t* route_next_collector(bool *is_collector)
 }
 
 
-/* ************************************************************************** */
-/*  TAG(                      route_next_collector_backup                  )  */
-/* ************************************************************************** */
 /*
  * route_next_collector_backup - get collector backup address based
  *

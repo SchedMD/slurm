@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -117,6 +117,7 @@ typedef enum {
 	SLURMDB_MODIFY_RES,
 	SLURMDB_REMOVE_QOS_USAGE,
 	SLURMDB_ADD_TRES,
+	SLURMDB_UPDATE_FEDS,
 } slurmdb_update_type_t;
 
 /* Define QOS flags */
@@ -140,6 +141,29 @@ typedef enum {
 #define	SLURMDB_RES_FLAG_ADD         0x20000000
 #define	SLURMDB_RES_FLAG_REMOVE      0x40000000
 
+/* Define Federation flags */
+#define	FEDERATION_FLAG_BASE           0x0fffffff
+#define	FEDERATION_FLAG_NOTSET         0x10000000
+#define	FEDERATION_FLAG_ADD            0x20000000
+#define	FEDERATION_FLAG_REMOVE         0x40000000
+
+#define	FEDERATION_FLAG_LLC            0x00000001
+
+/* SLURM CLUSTER FEDERATION STATES */
+enum cluster_fed_states {
+	CLUSTER_FED_STATE_NA,
+	CLUSTER_FED_STATE_ACTIVE,
+	CLUSTER_FED_STATE_INACTIVE
+};
+#define CLUSTER_FED_STATE_BASE       0x000f
+#define CLUSTER_FED_STATE_FLAGS      0xfff0
+#define CLUSTER_FED_STATE_DRAIN      0x0010 /* drain cluster by not accepting
+					       any new jobs and waiting for all
+					       federated jobs to complete.*/
+#define CLUSTER_FED_STATE_REMOVE     0x0020 /* remove cluster from federation
+					       once cluster is drained of
+					       federated jobs */
+
 /* flags and types of resources */
 /* when we come up with some */
 
@@ -162,12 +186,15 @@ typedef enum {
 /* Cluster flags */
 #define CLUSTER_FLAG_BG     0x00000001 /* This is a bluegene cluster */
 #define CLUSTER_FLAG_BGL    0x00000002 /* This is a bluegene/l cluster */
+				       /* Removed v17.02 */
 #define CLUSTER_FLAG_BGP    0x00000004 /* This is a bluegene/p cluster */
+				       /* Removed v17.02 */
 #define CLUSTER_FLAG_BGQ    0x00000008 /* This is a bluegene/q cluster */
 #define CLUSTER_FLAG_SC     0x00000010 /* This is a sun constellation cluster */
 				       /* Removed v16.05 */
 #define CLUSTER_FLAG_XCPU   0x00000020 /* This has xcpu, removed v15.08 */
 #define CLUSTER_FLAG_AIX    0x00000040 /* This is an aix cluster */
+				       /* Removed v17.02 */
 #define CLUSTER_FLAG_MULTSD 0x00000080 /* This cluster is multiple slurmd */
 #define CLUSTER_FLAG_CRAYXT 0x00000100 /* This cluster is a ALPS cray
 					* (deprecated) Same as CRAY_A */
@@ -350,6 +377,14 @@ typedef struct {
 				 * in months by default set the
 				 * SLURMDB_PURGE_ARCHIVE bit for
 				 * archiving */
+	uint32_t purge_txn; /* purge transaction data older than this
+			     * in months by default set the
+			     * SLURMDB_PURGE_ARCHIVE bit for
+			     * archiving */
+	uint32_t purge_usage; /* purge usage data older than this
+			       * in months by default set the
+			       * SLURMDB_PURGE_ARCHIVE bit for
+			       * archiving */
 } slurmdb_archive_cond_t;
 
 typedef struct {
@@ -549,6 +584,7 @@ struct slurmdb_assoc_usage {
 typedef struct {
 	uint16_t classification; /* how this machine is classified */
 	List cluster_list; /* list of char * */
+	List federation_list; /* list of char */
 	uint32_t flags;
 	List plugin_id_select_list; /* list of char * */
 	List rpc_version_list; /* list of char * */
@@ -557,6 +593,17 @@ typedef struct {
 	uint16_t with_deleted;
 	uint16_t with_usage;
 } slurmdb_cluster_cond_t;
+
+typedef struct {
+	uint32_t id; /* id of cluster in federation */
+	char *name; /* Federation name */
+	void *recv;  /* slurm_persist_conn_t we recv information about this
+		      * sibling on. (We get this information) */
+	void *send; /* slurm_persist_conn_t we send information to this
+		     * cluster on. (We set this information) */
+	uint32_t state; /* state of cluster in federation */
+	uint32_t weight; /* weight of cluster in federation */
+} slurmdb_cluster_fed_t;
 
 typedef struct {
 	List accounting_list; /* list of slurmdb_cluster_accounting_rec_t *'s */
@@ -570,14 +617,16 @@ typedef struct {
 			* Size of each dimension For now only on
 			* a bluegene cluster.  DOESN'T GET
 			* PACKED, is set up in slurmdb_get_info_cluster */
+	slurmdb_cluster_fed_t fed; /* Federation information */
 	uint32_t flags;      /* set of CLUSTER_FLAG_* */
+	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACK */
 	char *name;
 	char *nodes;
 	uint32_t plugin_id_select; /* id of the select plugin */
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* version of rpc this cluter is running */
-	char *tres_str;       /* comma separated list of TRES */
+	char  	*tres_str;    /* comma separated list of TRES */
 } slurmdb_cluster_rec_t;
 
 typedef struct {
@@ -632,6 +681,18 @@ typedef struct {
 	char *tres_str;         /* TRES touched by this event */
 } slurmdb_event_rec_t;
 
+typedef struct {
+	List federation_list; 	/* list of char * */
+	List cluster_list; 	/* list of char * */
+	uint16_t with_deleted;
+} slurmdb_federation_cond_t;
+
+typedef struct {
+	char     *name;		/* Name of federation */
+	uint32_t  flags; 	/* flags to control scheduling on controller */
+	List      cluster_list;	/* List of slurmdb_cluster_rec_t *'s */
+} slurmdb_federation_rec_t;
+
 /* slurmdb_job_cond_t is defined above alphabetical */
 
 
@@ -642,6 +703,7 @@ typedef struct {
 
 typedef struct {
 	char    *account;
+	char	*admin_comment;
 	char	*alloc_gres;
 	uint32_t alloc_nodes;
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
@@ -673,7 +735,7 @@ typedef struct {
 	uint32_t qosid;
 	uint32_t req_cpus;
 	char	*req_gres;
-	uint32_t req_mem;
+	uint64_t req_mem;
 	uint32_t requid;
 	uint32_t resvid;
 	char *resv_name;
@@ -845,6 +907,7 @@ typedef struct {
 	double usage_thres; /* percent of effective usage of an
 			       association when breached will deny
 			       pending and new jobs */
+	time_t blocked_until; /* internal use only, DON'T PACK  */
 } slurmdb_qos_rec_t;
 
 typedef struct {
@@ -901,6 +964,8 @@ typedef struct {
 	uint32_t nnodes;
 	char *nodes;
 	uint32_t ntasks;
+	uint32_t packjobid;	/* jobid of srun first step of the jobpack */
+	uint32_t packstepid;	/* stepid of jobpack member */
 	char *pid_str;
 	uint32_t req_cpufreq_min;
 	uint32_t req_cpufreq_max;
@@ -1130,6 +1195,30 @@ typedef struct {
 	uint32_t count; /* total count of jobs taken up by this cluster */
 	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_cluster_grouping_t;
+
+#define ROLLUP_HOUR	0
+#define ROLLUP_DAY	1
+#define ROLLUP_MONTH	2
+#define ROLLUP_COUNT	3
+typedef struct rollup_stats {
+	uint32_t rollup_time[ROLLUP_COUNT];
+} rollup_stats_t;
+
+typedef struct {
+	uint16_t *rollup_count;		/* Length should be ROLLUP_COUNT */
+	uint64_t *rollup_time;		/* Length should be ROLLUP_COUNT */
+	uint64_t *rollup_max_time;	/* Length should be ROLLUP_COUNT */
+
+	uint32_t type_cnt;		/* Length of rpc_type arrays */
+	uint16_t *rpc_type_id;		/* RPC type */
+	uint32_t *rpc_type_cnt;		/* count of RPCs processed */
+	uint64_t *rpc_type_time;	/* total usecs this type RPC */
+	uint32_t user_cnt;		/* Length of rpc_user arrays */
+	uint32_t *rpc_user_id;		/* User ID issuing RPC */
+	uint32_t *rpc_user_cnt;		/* count of RPCs processed */
+	uint64_t *rpc_user_time;	/* total usecs this user's RPCs */
+} slurmdb_stats_rec_t;
+
 
 /* global variable for cross cluster communication */
 extern slurmdb_cluster_rec_t *working_cluster_rec;
@@ -1371,10 +1460,24 @@ extern List slurmdb_coord_remove(void *db_conn, List acct_list,
 
 /*
  * reconfigure the slurmdbd
- * RET: List of config_key_pairs_t *
- * note List needs to be freed when called
  */
 extern int slurmdb_reconfig(void *db_conn);
+
+/*
+ * shutdown the slurmdbd
+ */
+extern int slurmdb_shutdown(void *db_conn);
+
+/*
+ * clear the slurmdbd statistics
+ */
+extern int slurmdb_clear_stats(void *db_conn);
+
+/*
+ * get the slurmdbd statistics
+ * Call slurmdb_destroy_stats_rec() to free stats_pptr
+ */
+extern int slurmdb_get_stats(void *db_conn, slurmdb_stats_rec_t **stats_pptr);
 
 /*
  * get info from the storage
@@ -1461,6 +1564,7 @@ extern void slurmdb_destroy_coord_rec(void *object);
 extern void slurmdb_destroy_clus_res_rec(void *object);
 extern void slurmdb_destroy_cluster_accounting_rec(void *object);
 extern void slurmdb_destroy_cluster_rec(void *object);
+extern void slurmdb_destroy_federation_rec(void *object);
 extern void slurmdb_destroy_accounting_rec(void *object);
 extern void slurmdb_free_assoc_mgr_state_msg(void *object);
 extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc);
@@ -1484,6 +1588,7 @@ extern void slurmdb_destroy_report_cluster_rec(void *object);
 extern void slurmdb_destroy_user_cond(void *object);
 extern void slurmdb_destroy_account_cond(void *object);
 extern void slurmdb_destroy_cluster_cond(void *object);
+extern void slurmdb_destroy_federation_cond(void *object);
 extern void slurmdb_destroy_tres_cond(void *object);
 extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
@@ -1506,6 +1611,7 @@ extern void slurmdb_destroy_selected_step(void *object);
 extern void slurmdb_destroy_report_job_grouping(void *object);
 extern void slurmdb_destroy_report_acct_grouping(void *object);
 extern void slurmdb_destroy_report_cluster_grouping(void *object);
+extern void slurmdb_destroy_stats_rec(void *object);
 
 extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				   bool free_it);
@@ -1513,6 +1619,8 @@ extern void slurmdb_init_clus_res_rec(slurmdb_clus_res_rec_t *clus_res,
 				      bool free_it);
 extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 				     bool free_it);
+extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
+					bool free_it);
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos,
 				 bool free_it,
 				 uint32_t init_val);
@@ -1524,6 +1632,8 @@ extern void slurmdb_init_tres_cond(slurmdb_tres_cond_t *tres,
 				   bool free_it);
 extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
 				      bool free_it);
+extern void slurmdb_init_federation_cond(slurmdb_federation_cond_t *federation,
+					 bool free_it);
 extern void slurmdb_init_res_cond(slurmdb_res_cond_t *cluster,
 				  bool free_it);
 
@@ -1652,12 +1762,14 @@ extern int slurmdb_usage_get(void *db_conn,
  * IN: sent_start (option time to do a re-roll or start from this point)
  * IN: sent_end (option time to do a re-roll or end at this point)
  * IN: archive_data (if 0 old data is not archived in a monthly rollup)
+ * IN/OUT: rollup_stats data structure in which to save rollup statistics
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int slurmdb_usage_roll(void *db_conn,
 			      time_t sent_start,
 			      time_t sent_end,
-			      uint16_t archive_data);
+			      uint16_t archive_data,
+			      rollup_stats_t *rollup_stats);
 
 /************** user functions **************/
 

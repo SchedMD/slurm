@@ -9,7 +9,7 @@ Slurm has also been packaged for
 <a href="http://packages.ubuntu.com/search?keywords=slurm-wlm">Ubuntu</a>
 (named <i>slurm-wlm</i> or <i>slurm-llnl</i> depending upon the version) and
 <a href="http://www.pkgsrc.org">NetBSD</a> (in pkgsrc) and
-<a href="http://www.freshports.org/sysutils/slurm-hpc/">FreeBSD</a>.</p>
+<a href="http://www.freshports.org/sysutils/slurm-wlm/">FreeBSD</a>.</p>
 
 <!--
 Slurm interface to PHP
@@ -28,7 +28,7 @@ a message.</li>
 <li><b>MUNGE</b> (recommended)<br>
 In order to compile the "auth/munge" authentication plugin for Slurm,
 you will need to build and install MUNGE, available from
-<a href="http://dun.github.io/munge/">http://dun.github.io/munge/</a> and
+<a href="https://dun.github.io/munge/">https://dun.github.io/munge/</a> and
 <a href="http://packages.debian.org/src:munge">Debian</a> and
 <a href="http://fedoraproject.org/">Fedora</a> and
 <a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.</li>
@@ -124,9 +124,11 @@ https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interac
 <li><b>Interconnect</b> plugins (Switch plugin)</li>
 <ul>
 <li><b>Infiniband</b><br>
-The <b>topology.conf</b> file for an Infiniband switch can be automatically
-generated using the <b>ib2slurm</b> tool found here:
-<a href="https://github.com/fintler/ib2slurm">https://github.com/fintler/ib2slurm</a>.
+The <b>topology.conf</b> file for an Infiniband switch can be
+automatically generated using the <b>slurmibtopology</b> tool found here:<br>
+<a href="https://ftp.fysik.dtu.dk/Slurm/slurmibtopology.sh">
+https://ftp.fysik.dtu.dk/Slurm/slurmibtopology.sh</a>.
+
 </ul><br>
 
 <li><b>I/O Watchdog</b><br>
@@ -136,9 +138,9 @@ activity. This facility attempts to monitor all write activity of an
 application and trigger a set of user-defined actions when write activity
 as ceased for a configurable period of time. A SPANK plugin is provided
 for use with Slurm. See the README and man page in the package for more
-details. Download the latest source from:<br>
-<a href="http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2">
-http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
+details.
+<a href="https://github.com/grondo/io-watchdog">
+https://github.com/grondo/io-watchdog</a></li><br>
 
 <li><b>MPI</b> versions supported</li>
 <ul>
@@ -219,11 +221,8 @@ during the next job launch. Thus, the SPANK infrastructure provides
 administrators and other developers a low cost, low effort ability to
 dynamically modify the runtime behavior of Slurm job launch.
 As assortment of SPANK plugins are available from<br>
-<a href="http://code.google.com/p/slurm-spank-plugins/">
-http://code.google.com/p/slurm-spank-plugins/</a>.<br>
-The current source for the plugins can be checked out of the subversion
-repository with the following command:<br>
-<i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/slurm-plugins</i><br><br>
+<a href="https://github.com/grondo/slurm-spank-plugins">
+https://github.com/grondo/slurm-spank-plugins</a>.<br>
 
 A SPANK plugin called "spunnel" to support ssh port forwarding is available
 from Harvard University.
@@ -234,7 +233,8 @@ It can be downloaded from the
 A set of scripts that leverages Slurm's job completion logging facility
 in provide information about what jobs were running at any point in the
 past as well as what resources they used. Download the code from:<br>
-<a href="http://sqlog.googlecode.com">http://sqlog.googlecode.com</a></li><br>
+<a href="https://github.com/grondo/sqlog">
+https://github.com/grondo/sqlog</a></li><br>
 
 <li><b>Task Affinity</b> plugins</li>
 <ul>
@@ -245,7 +245,7 @@ Portable Hardware Locality (HWLOC)</a></li>
 <li><b>Node Health Check</b><br>
 Probably the most comprehensive and lightweight health check tool out
 there is
-<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.
+<a href="https://github.com/mej/nhc">LBNL Node Health Check</a>.
 It has integration with Slurm as well as Torque resource managers.</li><br>
 
 <li><b>Accounting Tools</b><br>
@@ -327,6 +327,11 @@ STUBL is a collection of supplemental tools and utility scripts for Slurm.<br>
     Start Time, Elapsed Time, Amount of RAM Requested, Average RAM Used, and
     Max RAM Used.</dd>
 </dl></li><br>
+
+<li><b>pestat</b><br>
+Prints a consolidated compute node status line, with one line per node including a list of jobs.<br>
+<a href="https://github.com/OleHolmNielsen/Slurm_tools/tree/master/pestat">Home page</a></li><br>
+<!-- It would be nice to provide our own perl-based version of pestat -->
 
 <li><b>Slurmmon</b><br>
 Slurmmon is a system for gathering and plotting data about Slurm scheduling and
@@ -412,6 +417,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 9 July 2016</p>
+<p style="text-align:center;">Last modified 8 May 2017</p>
 
 <!--#include virtual="footer.txt"-->

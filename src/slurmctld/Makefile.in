@@ -96,6 +96,7 @@ sbin_PROGRAMS = slurmctld$(EXEEXT)
 subdir = src/slurmctld
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
+	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -106,7 +107,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
 	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
-	$(top_srcdir)/auxdir/x_ac_aix.m4 \
 	$(top_srcdir)/auxdir/x_ac_blcr.m4 \
 	$(top_srcdir)/auxdir/x_ac_bluegene.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
@@ -134,7 +134,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
-	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
@@ -150,16 +149,17 @@ am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	backup.$(OBJEXT) burst_buffer.$(OBJEXT) controller.$(OBJEXT) \
-	front_end.$(OBJEXT) gang.$(OBJEXT) groups.$(OBJEXT) \
-	job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) job_submit.$(OBJEXT) \
-	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
-	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
-	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
-	powercapping.$(OBJEXT) preempt.$(OBJEXT) proc_req.$(OBJEXT) \
-	read_config.$(OBJEXT) reservation.$(OBJEXT) \
-	sched_plugin.$(OBJEXT) slurmctld_plugstack.$(OBJEXT) \
-	srun_comm.$(OBJEXT) state_save.$(OBJEXT) statistics.$(OBJEXT) \
-	step_mgr.$(OBJEXT) trigger_mgr.$(OBJEXT)
+	fed_mgr.$(OBJEXT) front_end.$(OBJEXT) gang.$(OBJEXT) \
+	groups.$(OBJEXT) job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) \
+	job_submit.$(OBJEXT) licenses.$(OBJEXT) locks.$(OBJEXT) \
+	node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
+	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
+	port_mgr.$(OBJEXT) power_save.$(OBJEXT) powercapping.$(OBJEXT) \
+	preempt.$(OBJEXT) proc_req.$(OBJEXT) read_config.$(OBJEXT) \
+	reservation.$(OBJEXT) sched_plugin.$(OBJEXT) \
+	slurmctld_plugstack.$(OBJEXT) srun_comm.$(OBJEXT) \
+	state_save.$(OBJEXT) statistics.$(OBJEXT) step_mgr.$(OBJEXT) \
+	trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmctld_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
@@ -241,11 +241,9 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BGL_LOADED = @BGL_LOADED@
 BGQ_LOADED = @BGQ_LOADED@
 BG_INCLUDES = @BG_INCLUDES@
 BG_LDFLAGS = @BG_LDFLAGS@
-BG_L_P_LOADED = @BG_L_P_LOADED@
 BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
 BLCR_HOME = @BLCR_HOME@
 BLCR_LDFLAGS = @BLCR_LDFLAGS@
@@ -256,7 +254,6 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CHECK_CFLAGS = @CHECK_CFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
-CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CRAY_JOB_CPPFLAGS = @CRAY_JOB_CPPFLAGS@
@@ -301,7 +298,6 @@ GTK_LIBS = @GTK_LIBS@
 H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
-HAVE_AIX = @HAVE_AIX@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
@@ -333,7 +329,6 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -384,7 +379,6 @@ PMIX_V1_CPPFLAGS = @PMIX_V1_CPPFLAGS@
 PMIX_V1_LDFLAGS = @PMIX_V1_LDFLAGS@
 PMIX_V2_CPPFLAGS = @PMIX_V2_CPPFLAGS@
 PMIX_V2_LDFLAGS = @PMIX_V2_LDFLAGS@
-PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
@@ -392,7 +386,6 @@ PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
-REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
@@ -509,6 +502,8 @@ slurmctld_SOURCES = \
 	burst_buffer.c	\
 	burst_buffer.h	\
 	controller.c 	\
+	fed_mgr.c 	\
+	fed_mgr.h 	\
 	front_end.c	\
 	front_end.h	\
 	gang.c		\
@@ -661,6 +656,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/controller.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fed_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gang.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/groups.Po@am__quote@

@@ -388,6 +388,17 @@ MM/DD[/YY]\-HH:MM[:SS]
 YYYY\-MM\-DD[THH:MM[:SS]]]
 
 .TP
+\fB\-\-delay\-boot\fR=<\fIminutes\fR>
+Do not reboot nodes in order to satisfied this job's feature specification if
+the job has been eligible to run for less than this time period.
+If the job has waited for less than the specified period, it will use only
+nodes which already have the specified features.
+The argument is in units of minutes.
+A default value may be set by a system administrator using the \fBdelay_boot\fR
+option of the \fBSchedulerParameters\fR configuration parameter in the
+slurm.conf file, otherwise the default value is zero (no delay).
+
+.TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
 satisfied completed.
@@ -724,8 +735,10 @@ This parameter is a group among the groups of the user.
 Default value is calculated by the Plugin mcs if it's enabled.
 
 .TP
-\fB\-\-mem\fR=<\fIMB\fR>
-Specify the real memory required per node in megabytes.
+\fB\-\-mem\fR=<\fIsize[units]\fR>
+Specify the real memory required per node.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both of parameters can be
@@ -748,8 +761,10 @@ the job's Resident Set Size (RSS). A task may exceed the memory limit until
 the next periodic accounting sample.
 
 .TP
-\fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
-Minimum memory required per allocated CPU in megabytes.
+\fB\-\-mem\-per\-cpu\fR=<\fIsize[units]\fR>
+Minimum memory required per allocated CPU.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
 (see exception below). If configured, both of parameters can be
@@ -794,9 +809,11 @@ The following informational environment variables are set when
 \fB\-\-mem_bind\fR is in use:
 
 .nf
-	SLURM_MEM_BIND_VERBOSE
-	SLURM_MEM_BIND_TYPE
 	SLURM_MEM_BIND_LIST
+	SLURM_MEM_BIND_PREFER
+	SLURM_MEM_BIND_SORT
+	SLURM_MEM_BIND_TYPE
+	SLURM_MEM_BIND_VERBOSE
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -805,17 +822,8 @@ of the individual SLURM_MEM_BIND* variables.
 Supported options include:
 .RS
 .TP
-.B q[uiet]
-quietly bind before task runs (default)
-.TP
-.B v[erbose]
-verbosely report binding before task runs
-.TP
-.B no[ne]
-don't bind tasks to memory (default)
-.TP
-.B rank
-bind by task rank (not recommended)
+.B help
+show this help message
 .TP
 .B local
 Use memory local to the processor in use
@@ -831,6 +839,9 @@ with '0x' in which case they interpreted as hexadecimal values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
+To simplify support for large task counts, the lists may follow a map with an
+asterisk and repetition count
+For example "map_mem:0x0f*4,0xf0*4".
 Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_mem:<list>
@@ -845,10 +856,29 @@ with [0-9] so they are seen as numerical values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
+To simplify support for large task counts, the lists may follow a mask with an
+asterisk and repetition count
+For example "mask_mem:0*4,1*4".
 Not supported unless the entire node is allocated to the job.
 .TP
-.B help
-show this help message
+.B no[ne]
+don't bind tasks to memory (default)
+.TP
+.B p[refer]
+Prefer use of first specified NUMA node, but permit
+ use of other available NUMA nodes.
+.TP
+.B q[uiet]
+quietly bind before task runs (default)
+.TP
+.B rank
+bind by task rank (not recommended)
+.TP
+.B sort
+sort free cache pages (run zonesort on Intel KNL nodes)
+.TP
+.B v[erbose]
+verbosely report binding before task runs
 .RE
 
 .TP
@@ -1037,8 +1067,6 @@ Run the job with an adjusted scheduling priority within Slurm. With no
 adjustment value the scheduling priority is decreased by 100. A negative nice
 value increases the priority, otherwise decreases it. The adjustment range is
 +/\- 2147483645. Only privileged users can specify a negative adjustment.
-NOTE: This option is presently ignored if \fISchedulerType=sched/wiki\fR or
-\fISchedulerType=sched/wiki2\fR.
 
 .TP
 \fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
@@ -1239,6 +1267,12 @@ sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled.
 
 .TP
+\fB\-\-spread\-job\fR
+Spread the job allocation over as many nodes as possible and attempt to
+evenly distribute tasks across the allocated nodes.
+This option disables the topology/tree plugin.
+
+.TP
 \fB\-\-switches\fR=<\fIcount\fR>[@<\fImax\-time\fR>]
 When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
@@ -1252,6 +1286,9 @@ Acceptable time formats include "minutes", "minutes:seconds",
 The job's maximum time delay may be limited by the system administrator using
 the \fBSchedulerParameters\fR configuration parameter with the
 \fBmax_switch_wait\fR parameter option.
+On a dragonfly network the only switch count supported is 1 since communication
+performance will be highest when a job is allocate resources on one leaf switch
+or more than 2 leaf switches.
 The default max\-time is the max_switch_wait SchedulerParameters.
 
 .TP
@@ -1299,8 +1336,11 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds".
 
 .TP
-\fB\-\-tmp\fR=<\fIMB\fR>
-Specify a minimum amount of temporary disk space.
+\fB\-\-tmp\fR=<\fIsize[units]\fR>
+Specify a minimum amount of temporary disk space per node.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
+Different units can be specified using the suffix [K|M|G|T].
 
 .TP
 \fB\-u\fR, \fB\-\-usage\fR
@@ -1459,11 +1499,17 @@ Same as \fB\-\-bb\fR
 \fBSALLOC_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR
 .TP
+\fBSALLOC_CONSTRAINT\fR
+Same as \fB\-C\fR, \fB\-\-constraint\fR
+.TP
 \fBSALLOC_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
 .TP
 \fBSALLOC_DEBUG\fR
 Same as \fB\-v, \-\-verbose\fR
+.TP
+\fBSALLOC_DELAY_BOOT\fR
+Same as \fB\-\-delay\-boot\fR
 .TP
 \fBSALLOC_EXCLUSIVE\fR
 Same as \fB\-\-exclusive\fR
@@ -1523,6 +1569,9 @@ Same as \fB\-\-reservation\fR
 .TP
 \fBSALLOC_SIGNAL\fR
 Same as \fB\-\-signal\fR
+.TP
+\fBSALLOC_SPREAD_JOB\fR
+Same as \fB\-\-spread\-job\fR
 .TP
 \fBSALLOC_THREAD_SPEC\fR
 Same as \fB\-\-thread\-spec\fR
@@ -1617,6 +1666,23 @@ Advanced reservation containing the job allocation, if any.
 .TP
 \fBSLURM_MEM_BIND\fR
 Set to value of the \-\-mem_bind\fR option.
+.TP
+\fBSLURM_MEM_BIND_LIST\fR
+Set to bit mask used for memory binding.
+.TP
+\fBSLURM_MEM_BIND_PREFER\fR
+Set to "prefer" if the \-\-mem_bind\fR option includes the prefer option.
+.TP
+\fBSLURM_MEM_BIND_SORT\fR
+Sort free cache pages (run zonesort on Intel KNL nodes)
+.TP
+\fBSLURM_MEM_BIND_TYPE\fR
+Set to the memory binding type specified with the \-\-mem_bind\fR option.
+Possible values are "none", "rank", "map_map", "mask_mem" and "local".
+.TP
+\fBSLURM_MEM_BIND_VERBOSE\fR
+Set to "verbose" if the \-\-mem_bind\fR option includes the verbose option.
+Set to "quiet" otherwise.
 .TP
 \fBSLURM_MEM_PER_CPU\fR
 Same as \fB\-\-mem\-per\-cpu\fR

@@ -5,7 +5,7 @@
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,15 +34,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
-
 #ifndef _XCGROUP_H_
 #define _XCGROUP_H_
 
-#include <sys/types.h>
 #include <dirent.h>
+#include <sys/types.h>
+
 #include "src/common/xcgroup_read_config.h"
 
 #define XCGROUP_ERROR    1

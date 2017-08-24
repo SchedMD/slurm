@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,15 +39,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -61,7 +59,7 @@ static void malloc_assert_failed(char *, const char *, int,
 #  define xmalloc_assert(expr)  do {                                          \
           (expr) ? ((void)(0)) :                                              \
           malloc_assert_failed(__STRING(expr), file, line, func,              \
-                               __CURRENT_FUNC__);                             \
+                               __func__);                             \
           } while (0)
 #endif /* NDEBUG */
 

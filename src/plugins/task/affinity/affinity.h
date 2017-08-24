@@ -4,7 +4,7 @@
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -33,60 +33,54 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-/*
- * FreeBSD and Linux affinity functions have a slightly different interface
- * and are defined in different headers.  See platform-dependencies in
- * affinity.c.
- */
-#ifdef __FreeBSD__
-#include <sys/param.h>
-#include <sys/cpuset.h>
-typedef cpuset_t cpu_set_t;
-#endif
-
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
+#endif
+
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
+#ifndef __USE_GNU
+#  define  __USE_GNU
 #endif
 
 #ifdef HAVE_NUMA
 #  include <numa.h>
 #endif
 
-#ifdef HAVE_SYS_TYPES_H
-#  include <sys/types.h>
+/*
+ * FreeBSD and Linux affinity functions have a slightly different interface
+ * and are defined in different headers.  See platform-dependencies in
+ * affinity.c.
+ */
+#ifdef __FreeBSD__
+#  include <sys/param.h>
+#  include <sys/cpuset.h>
+   typedef cpuset_t cpu_set_t;
 #endif
 
 #ifdef HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
 #endif
 
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <sys/param.h>
-#include <poll.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <pwd.h>
 #include <grp.h>
+#include <poll.h>
+#include <pwd.h>
+#include <sched.h> /* SMB */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/utsname.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-#ifndef   __USE_GNU
-#define   __USE_GNU
-#endif
-
-#include <sched.h> /* SMB */
-
-#ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
-#endif
-
 #include "slurm/slurm_errno.h"
+
 #include "src/common/slurm_xlator.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

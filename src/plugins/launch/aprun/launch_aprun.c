@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,12 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/parse_time.h"
@@ -367,8 +363,8 @@ static void _handle_msg(slurm_msg_t *msg)
 static void *_msg_thr_internal(void *arg)
 {
 	slurm_addr_t cli_addr;
-	slurm_fd_t newsockfd;
-	slurm_msg_t *msg;
+	int newsockfd;
+	slurm_msg_t msg;
 	int *slurmctld_fd_ptr = (int *)arg;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -381,15 +377,15 @@ static void *_msg_thr_internal(void *arg)
 				error("slurm_accept_msg_conn: %m");
 			continue;
 		}
-		msg = xmalloc(sizeof(slurm_msg_t));
-		if (slurm_receive_msg(newsockfd, msg, 0) != 0) {
+		slurm_msg_t_init(&msg);
+		if (slurm_receive_msg(newsockfd, &msg, 0) != 0) {
 			error("slurm_receive_msg: %m");
 			/* close the new socket */
 			slurm_close(newsockfd);
 			continue;
 		}
-		_handle_msg(msg);
-		slurm_free_msg(msg);
+		_handle_msg(&msg);
+		slurm_free_msg_members(&msg);
 		slurm_close(newsockfd);
 	}
 	return NULL;
@@ -499,11 +495,11 @@ extern int launch_p_setup_srun_opt(char **rest)
 		}
 	}
 
-	if (opt.mem_per_cpu != NO_VAL) {
+	if (opt.mem_per_cpu != NO_VAL64) {
 		opt.argc += 2;
 		xrealloc(opt.argv, opt.argc * sizeof(char *));
 		opt.argv[command_pos++] = xstrdup("-m");
-		opt.argv[command_pos++] = xstrdup_printf("%u", opt.mem_per_cpu);
+		opt.argv[command_pos++] = xstrdup_printf("%"PRIu64"", opt.mem_per_cpu);
 	}
 
 	if (opt.ntasks_per_node != NO_VAL) {
@@ -737,10 +733,10 @@ extern int launch_p_step_launch(
 		*/
 		rc = 0;
 	} else {
-		setpgrp();
+		setpgid(0, 0);
 		_unblock_signals();
 		/* dup stdio onto our open fds */
-		if ((dup2(cio_fds->in.fd, 0) == -1) ||
+		if ((dup2(cio_fds->input.fd, 0) == -1) ||
 		    (dup2(cio_fds->out.fd, 1) == -1) ||
 		    (dup2(cio_fds->err.fd, 2) == -1)) {
 			error("dup2: %m");

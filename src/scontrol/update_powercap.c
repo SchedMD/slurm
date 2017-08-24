@@ -5,7 +5,7 @@
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -65,7 +65,7 @@ static uint32_t _parse_watts(char * watts_str)
  *			error message and returns 0
  */
 extern int
-scontrol_update_powercap (int argc, char *argv[])
+scontrol_update_powercap (int argc, char **argv)
 {
 	update_powercap_msg_t powercap_msg;
 	int i;

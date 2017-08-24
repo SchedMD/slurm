@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,21 +40,9 @@
 #ifndef __SQUEUE_H__
 #define __SQUEUE_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include <ctype.h>
+#include <inttypes.h>
 #include <stdio.h>
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else  /* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif  /* HAVE_INTTYPES_H */
-
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -79,6 +67,7 @@ typedef struct job_step {
 struct squeue_parameters {
 	bool all_flag;
 	bool array_flag;
+	bool array_unique_flag;
 	int  iterate;
 	bool job_flag;
 	bool start_flag;
@@ -125,7 +114,7 @@ struct squeue_parameters {
 
 extern struct squeue_parameters params;
 
-extern void parse_command_line( int argc, char* argv[] );
+extern void parse_command_line( int argc, char* *argv );
 extern int  parse_format( char* format );
 extern int  parse_long_format( char* format_long);
 extern void sort_job_list( List job_list );

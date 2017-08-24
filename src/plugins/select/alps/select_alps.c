@@ -2,14 +2,14 @@
  *  select_alps.c - node selection plugin for alps/cray systems.
  *****************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Supported by the Oak Ridge National Laboratory Extreme Scale Systems Center
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,26 +38,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#endif
-
 #include "slurm/slurm.h"
 
+#include <inttypes.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 #include "other_select.h"
 #include "basil_interface.h"
 #include "cray_config.h"
@@ -177,7 +168,7 @@ static void _set_inv_interval(void)
 
 	if (sched_params) {
 		if (sched_params &&
-		    (tmp_ptr = slurm_strcasestr(sched_params,
+		    (tmp_ptr = xstrcasestr(sched_params,
 						"inventory_interval="))) {
 		/*                                   0123456789012345 */
 			i = atoi(tmp_ptr + 19);
@@ -949,7 +940,7 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 		/* init the rest of the dim sizes. All current (2011)
 		 * XT/XE installations have a maximum dimension of 3,
 		 * smaller systems deploy a 2D Torus which has no
-		 * connectivity in X-dimension.  Just incase they
+		 * connectivity in X-dimension.  Just in case they
 		 * decide to change it where we only get 2 instead of
 		 * 3 we will initialize it later. */
 		for (i = 1; i < dims; i++)

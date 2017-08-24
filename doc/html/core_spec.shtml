@@ -30,7 +30,7 @@ explicitly requested by the job. For example "salloc -n1 --core-spec=1 bash"
 will result in one entire node being reserved for the job, but only one CPU
 will be available for subsequent job steps. The remaining CPUs on the node
 (at least one core because of "--core-spec=1") will only be available for
-system use. The job will be changed for all CPUs on the node and the job's
+system use. The job will be charged for all CPUs on the node and the job's
 NumCPUs value reported by the <i>scontrol</i>, <i>sview</i> and <i>squeue</i>
 commands will reflect all CPUS on all allocated nodes as will the job's
 accounting.</p>
@@ -43,11 +43,11 @@ Note that the <i>core_spec/cray</i> does not currently support identification of
 specific cores, so that plugin should not be used in conjunction with the
 <i>CPUSpecList</i> configuration parameter, even on Cray systems.
 If <i>CoreSpecCount</i> is configured, but not <i>CPUSpecList</i>, the cores
-selected for specialization will always follow the assignment algorithm
-described below.
+selected for specialization will follow the assignment algorithm
+described below .
 The first core selected will be the highest numbered core on the highest
 numbered socket.
-Subsequent cores selected will be the highest numbered core on the lower
+Subsequent cores selected will be the highest numbered core on lower
 numbered sockets.
 If additional cores are required, they well come from the next highest numbered
 cores on each socket.
@@ -61,6 +61,15 @@ socket: 1 core: 1<br>
 socket: 0 core: 1<br>
 socket: 1 core: 0<br>
 socket: 0 core: 0</p>
+
+<p>Slurm can be configured to specialize the last, rather than the first cores
+by configuring SchedulerParameters=spec_cores_first. In that case,
+the first core selected will be the lowest numbered core on the lowest
+numbered socket.
+Subsequent cores selected will be the lowest numbered core on higher
+numbered sockets.
+If additional cores are required, they well come from the next lowest numbered
+cores on each socket.</p>
 
 <p>Note that core specialization reservation may impact the use of some
 job allocation request options, especially --cores-per-socket.</p>
@@ -93,6 +102,6 @@ If the core count is not configured and the CPUs value is configured to the
 count of hyperthreads, then hyperthreads rather than cores will be reserved for
 system use.</p>
 
-<p style="text-align:center;">Last modified 1 December 2016</p>
+<p style="text-align:center;">Last modified 29 December 2016</p>
 
 <!--#include virtual="footer.txt"-->

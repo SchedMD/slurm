@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,10 +39,6 @@
 
 #ifndef _NODE_SELECT_H
 #define _NODE_SELECT_H
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

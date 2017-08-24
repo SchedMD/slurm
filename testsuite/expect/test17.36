@@ -11,7 +11,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -350,7 +350,7 @@ cancel_job $job_id
 # Test partition with oversubscribe=NO
 #
 ####################################
-send_user "\n\nTest partition with overoubscribe=NO\n"
+send_user "\n\nTest partition with oversubscribe=NO\n"
 
 # Determine the number of cores or CPUs
 set num_jobs [cr_core_cpu $node_name]

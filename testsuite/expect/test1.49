@@ -13,7 +13,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -135,17 +135,8 @@ if {$matches != $exp_matches} {
 #
 # Get my id to compare with output
 #
-set my_uid -1
-spawn $bin_id
-expect {
-	-re "uid=($number)" {
-		set my_uid $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+
+set my_uid [get_my_uid]
 
 #
 # Make sure we have two records in both prolog and epilog output (one for each task)

@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,20 +38,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#define _GNU_SOURCE
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -88,7 +77,7 @@ static void  _usage(void);
 /*
  * parse_command_line, fill in params data structure with data
  */
-extern void parse_command_line(int argc, char *argv[])
+extern void parse_command_line(int argc, char **argv)
 {
 	char *env_val = NULL;
 	int opt_char;
@@ -358,7 +347,7 @@ _next_tok (char *sep, char **str)
 	char *tok;
 
 	/* push str past any leading separators */
-	while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+	while ((**str != '\0') && (strchr(sep, **str) != NULL))
 		(*str)++;
 
 	if (**str == '\0')
@@ -368,11 +357,11 @@ _next_tok (char *sep, char **str)
 	tok = *str;
 
 	/* push str past token and leave pointing to first separator */
-	while ((**str != '\0') && (strchr(sep, **str) == '\0'))
+	while ((**str != '\0') && (strchr(sep, **str) == NULL))
 		(*str)++;
 
 	/* nullify consecutive separators and push str beyond them */
-	while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+	while ((**str != '\0') && (strchr(sep, **str) != NULL))
 		*(*str)++ = '\0';
 
 	return (tok);
@@ -489,6 +478,8 @@ _node_state_list (void)
 	xstrcat(all_states, node_state_string(NODE_STATE_FAIL));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_MAINT));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT));
 
 	for (i = 0; i < strlen (all_states); i++)
 		all_states[i] = tolower (all_states[i]);
@@ -552,6 +543,8 @@ _node_state_id (char *str)
 		return NODE_STATE_FAIL;
 	if (_node_state_equal (NODE_STATE_MAINT, str))
 		return NODE_STATE_MAINT;
+	if (_node_state_equal (NODE_STATE_REBOOT, str))
+		return NODE_STATE_REBOOT;
 
 	return (-1);
 }
@@ -1018,6 +1011,12 @@ static int _parse_long_format (char* format_long)
 						   field_size,
 						   right_justify,
 						   suffix );
+		} else if (!xstrcasecmp(token, "port")) {
+			params.match_flags.port_flag = true;
+			format_add_port( params.format_list,
+					 field_size,
+					 right_justify,
+					 suffix );
 		} else if (!xstrcasecmp(token, "preemptmode")) {
 			params.match_flags.preempt_mode_flag = true;
 			format_add_preempt_mode( params.format_list,
@@ -1275,6 +1274,8 @@ void _print_options( void )
 			"true" : "false");
 	printf("partition_flag  = %s\n", params.match_flags.partition_flag ?
 			"true" : "false");
+	printf("port_flag       = %s\n", params.match_flags.port_flag ?
+			"true" : "false");
 	printf("priority_job_factor_flag   = %s\n",
 			params.match_flags.priority_job_factor_flag ?
 			"true" : "false");
@@ -1322,6 +1323,8 @@ Usage: sinfo [OPTIONS]\n\
   --hide                     do not show hidden or non-accessible partitions\n\
   -i, --iterate=seconds      specify an iteration period\n\
   -l, --long                 long output - displays more information\n\
+  -M, --clusters=names       clusters to issue commands to.\n\
+                             NOTE: SlurmDBD must be up.\n\
   -n, --nodes=NODES          report on specific node(s)\n\
   --noconvert                don't convert units from their original type\n\
 			     (e.g. 2048M won't be converted to 2G).\n\

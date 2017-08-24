@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -299,10 +299,6 @@ extern void get_bg_part(void)
 		       new_bg_ptr->block_array[i].conn_type,
 		       sizeof(block_ptr->bg_conn_type));
 
-		if (params.cluster_flags & CLUSTER_FLAG_BGL)
-			block_ptr->bg_node_use =
-				new_bg_ptr->block_array[i].node_use;
-
 		block_ptr->ionode_str
 			= xstrdup(new_bg_ptr->block_array[i].ionode_str);
 		block_ptr->cnode_cnt = new_bg_ptr->block_array[i].cnode_cnt;
@@ -502,12 +498,6 @@ static void _print_header_part(void)
 				  main_ycord,
 				  main_xcord, "CONN");
 			main_xcord += 8;
-			if (params.cluster_flags & CLUSTER_FLAG_BGL) {
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "NODE_USE");
-				main_xcord += 10;
-			}
 		}
 
 		mvwprintw(text_win, main_ycord,
@@ -531,8 +521,6 @@ static void _print_header_part(void)
 			printf("STATE ");
 			printf("    JOBID ");
 			printf("     CONN ");
-			if (params.cluster_flags & CLUSTER_FLAG_BGL)
-				printf(" NODE_USE ");
 		}
 
 		printf("NODES ");
@@ -647,15 +635,6 @@ static int _print_text_part(partition_info_t *part_ptr,
 				xfree(conn_str);
 				main_xcord += 8;
 
-				if (params.cluster_flags & CLUSTER_FLAG_BGL) {
-					mvwprintw(text_win,
-						  main_ycord,
-						  main_xcord, "%.9s",
-						  node_use_string(
-							  db2_info_ptr->
-							  bg_node_use));
-					main_xcord += 10;
-				}
 			} else {
 				mvwprintw(text_win,
 					  main_ycord,
@@ -778,11 +757,6 @@ static int _print_text_part(partition_info_t *part_ptr,
 					db2_info_ptr->bg_conn_type);
 				printf("%8.8s ", conn_str);
 				xfree(conn_str);
-
-				if (params.cluster_flags & CLUSTER_FLAG_BGL)
-					printf("%9.9s ", node_use_string(
-						       db2_info_ptr->
-						       bg_node_use));
 			}
 		}
 

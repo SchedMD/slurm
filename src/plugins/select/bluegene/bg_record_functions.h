@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,13 +38,9 @@
 #ifndef _BLUEGENE_BG_RECORD_FUNCTIONS_H_
 #define _BLUEGENE_BG_RECORD_FUNCTIONS_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
+#include <pwd.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <pwd.h>
 
 #include "src/common/xstring.h"
 #include "src/common/bitstring.h"

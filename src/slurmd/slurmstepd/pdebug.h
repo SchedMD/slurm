@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,19 +36,20 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
 #ifndef _PDEBUG_H
 #define _PDEBUG_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <unistd.h>
 #include <sys/param.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 #ifdef HAVE_SYS_PTRACE_H
 #  include <sys/ptrace.h>
 #endif
-#include <sys/wait.h>
+
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*

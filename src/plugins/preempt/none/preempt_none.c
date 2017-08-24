@@ -2,13 +2,13 @@
  *  preempt_none.c - disable job preemption plugin.
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -52,50 +52,33 @@ const char	plugin_name[]	= "Preemption disabled";
 const char	plugin_type[]	= "preempt/none";
 const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 
-/**************************************************************************/
-/*  TAG(                              init                              ) */
-/**************************************************************************/
-extern int init( void )
+extern int init(void)
 {
 	verbose("preempt/none loaded");
 	return SLURM_SUCCESS;
 }
 
-/**************************************************************************/
-/*  TAG(                              fini                              ) */
-/**************************************************************************/
-extern void fini( void )
+extern void fini(void)
 {
 	/* Empty. */
 }
 
-/**************************************************************************/
-/* TAG(                 find_preemptable_jobs                           ) */
-/**************************************************************************/
 extern List find_preemptable_jobs(struct job_record *job_ptr)
 {
 	return (List) NULL;
 }
 
-/**************************************************************************/
-/* TAG(                 job_preempt_mode                                ) */
-/**************************************************************************/
 extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 {
 	return (uint16_t) PREEMPT_MODE_OFF;
 }
 
-/**************************************************************************/
-/* TAG(                 preemption_enabled                              ) */
-/**************************************************************************/
 extern bool preemption_enabled(void)
 {
 	return false;
 }
 
-/***************************************************************************/
 /* Return true if the preemptor can preempt the preemptee, otherwise false */
-/***************************************************************************/
 extern bool job_preempt_check(job_queue_rec_t *preemptor,
 			      job_queue_rec_t *preemptee)
 {

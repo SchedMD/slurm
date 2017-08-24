@@ -9,7 +9,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,27 +41,15 @@
 #ifndef _SETUP_H
 #define _SETUP_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
+#include <inttypes.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
+
 #include "src/common/slurm_xlator.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_mpi.h"
 #include "src/common/xstring.h"
-
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
 #include "src/srun/libsrun/debugger.h"
 #include "src/srun/libsrun/opt.h"
 

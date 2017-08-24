@@ -10,6 +10,7 @@
 source ./globals
 
 set test_id    "20.12"
+set file_err   "test$test_id.error"
 set file_in    "test$test_id.input"
 set file_out   "test$test_id.output"
 set exit_code  0
@@ -30,18 +31,14 @@ proc make_random_var_name {} {
 }
 
 proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_expect_val qsub_extra_options extra_batch_header } {
-	global file_in
-	global file_out
+	global file_err file_in file_out
 	global exit_code
 	global test_var_value
-	global bin_cat
-	global bin_echo
-	global bin_rm
+	global bin_cat bin_echo bin_rm
 	global qsub
 	global number
 	global env
-	global variable1_value
-	global variable2_value
+	global variable1_value variable2_value
 	global subtest_name
 
 	send_user "\n==============================================\n"
@@ -49,14 +46,14 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_exp
 	send_user "==============================================\n"
 
 	set job_id 0
-	exec rm -f $file_out
+	exec rm -f $file_err $file_out
 	make_bash_script $file_in "$extra_batch_header\n$bin_echo $variable1_name=\$$variable1_name\n$bin_echo $variable2_name=\$$variable2_name\n"
 
 	# Set our 2 test variables
 	set env($variable1_name) $variable1_value
 	set env($variable2_name) $variable2_value
 
-	set qsub_base_options [concat -l walltime=1:00 -o $file_out $file_in]
+	set qsub_base_options [concat -l walltime=1:00 -r $file_err -o $file_out $file_in]
 	set qsub_options [concat $qsub_extra_options $qsub_base_options]
 
 	eval spawn $qsub [lrange $qsub_options 0 end]
@@ -109,7 +106,9 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_exp
 	}
 
 	if {$exit_code == 0} {
-		exec $bin_rm -f $file_in $file_out
+		exec $bin_rm -f $file_err $file_in $file_out
+		set pattern "$file_in*"
+		file delete {*}[glob $pattern]
 	} else {
 		exit $exit_code
 	}

@@ -13,7 +13,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -89,7 +89,7 @@ proc run_gpu_test { gres_cnt } {
 		}
 	}
 	if {$invalid != 0} {
-		send_user "\WARNING: Insufficient resources to test 2 GPUs\n"
+		send_user "\WARNING: Insufficient resources to test $gres_cnt GPUs\n"
 		return 0
 	} elseif {$bad_format != 0} {
 		send_user "\nFAILURE: Duplicated device number in GRES allocation\n"

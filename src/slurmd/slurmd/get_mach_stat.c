@@ -2,9 +2,6 @@
  *  get_mach_stat.c - Get the status of the current machine
  *
  *  NOTE: Some of these functions are system dependent. Built on RedHat2.4
- *  NOTE: While not currently used by SLURM, this code can also get a node's
- *       OS name and CPU speed. See code ifdef'ed out via USE_OS_NAME and
- *       USE_CPU_SPEED
  *****************************************************************************
  *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
  *  Copyright (C) 2002-2006 The Regents of the University of California.
@@ -13,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,9 +39,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_SYS_SYSTEMCFG_H
 # include <sys/systemcfg.h>
@@ -68,7 +63,7 @@
 #include <string.h>
 #include <syslog.h>
 
-#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__)
+#if defined(__sun) || defined(__APPLE__)
 #  include <sys/times.h>
 #  include <sys/types.h>
 #elif defined(__NetBSD__) || defined(__FreeBSD__)
@@ -101,46 +96,10 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
-#include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
-
-/* #define DEBUG_DETAIL	1 */	/* enable detailed debugging within SLURM */
-
-#ifdef USE_OS_NAME
-/*
- * get_os_name - Return the operating system name and version
- * Input: os_name - buffer for the OS name, must be at least MAX_OS_LEN characters
- * Output: os_name - filled in with OS name, "UNKNOWN" if error
- *         return code - 0 if no error, otherwise errno
- */
-extern int
-get_os_name(char *os_name)
-{
-	int error_code;
-	struct utsname sys_info;
-
-	strcpy(os_name, "UNKNOWN");
-	error_code = uname(&sys_info);
-	if (error_code != 0) {
-		error ("get_os_name: uname error %d", error_code);
-		return error_code;
-	}
-
-	if ((strlen(sys_info.sysname) + strlen(sys_info.release) + 2) >=
-		MAX_OS_LEN) {
-		error ("get_os_name: OS name too long");
-		return error_code;
-	}
-
-	strcpy(os_name, sys_info.sysname);
-	strcat(os_name, ".");
-	strcat(os_name, sys_info.release);
-	return 0;
-}
-#endif
 
 
 /*
@@ -168,8 +127,7 @@ get_mach_name(char *node_name)
  * Output: real_memory - the Real Memory size in MB, "1" if error
  *         return code - 0 if no error, otherwise errno
  */
-extern int
-get_memory(uint32_t *real_memory)
+extern int get_memory(uint64_t *real_memory)
 {
 #ifdef HAVE__SYSTEM_CONFIGURATION
 	*real_memory = _system_configuration.physmem / (1024 * 1024);
@@ -183,7 +141,7 @@ get_memory(uint32_t *real_memory)
 		error ("get_memory: error running sysconf(_SC_PHYS_PAGES)");
 		return EINVAL;
 	}
-	*real_memory = (uint32_t)((float)pages * (sysconf(_SC_PAGE_SIZE) /
+	*real_memory = (uint64_t)((float)pages * (sysconf(_SC_PAGE_SIZE) /
 			1048576.0)); /* Megabytes of memory */
 #  else  /* !_SC_PHYS_PAGES */
 #    if HAVE_SYSCTLBYNAME
@@ -273,7 +231,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 
 extern int get_up_time(uint32_t *up_time)
 {
-#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
+#if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 	clock_t tm;
 	struct tms buf;
 
@@ -284,20 +242,6 @@ extern int get_up_time(uint32_t *up_time)
 	}
 
 	*up_time = tm / sysconf(_SC_CLK_TCK);
-#elif defined(__CYGWIN__)
-	FILE *uptime_file;
-	char buffer[128];
-	char* _uptime_path = "/proc/uptime";
-
-	if (!(uptime_file = fopen(_uptime_path, "r"))) {
-		error("get_up_time: error %d opening %s", errno, _uptime_path);
-		return errno;
-	}
-
-	if (fgets(buffer, sizeof(buffer), uptime_file))
-		*up_time = atoi(buffer);
-
-	fclose(uptime_file);
 #else
 	/* NOTE for Linux: The return value of times() may overflow the
 	 * possible range of type clock_t. There is also an offset of
@@ -326,28 +270,10 @@ extern int get_up_time(uint32_t *up_time)
 
 extern int get_cpu_load(uint32_t *cpu_load)
 {
-#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
+#if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 	/* Not sure how to get CPU load on above systems.
 	 * Perhaps some method below works. */
 	*cpu_load = 0;
-#elif defined(__CYGWIN__)
-	FILE *load_file;
-	char buffer[128];
-	char *space;
-	char *_load_path = "/proc/loadavg";
-
-	if (!(load_file = fopen(_load_path, "r"))) {
-		error("get_cpu_load: error %d opening %s", errno, _load_path);
-		return errno;
-	}
-
-	if (fgets(buffer, sizeof(buffer), load_file) &&
-	    (space = strchr(buffer, ' '))) {
-		*cpu_load = atof(space + 1) * 100.0;
-	} else
-		*cpu_load = 0;
-
-	fclose(load_file);
 #else
 	struct sysinfo info;
 	float shift_float = (float) (1 << SI_LOAD_SHIFT);
@@ -362,9 +288,9 @@ extern int get_cpu_load(uint32_t *cpu_load)
 	return 0;
 }
 
-extern int get_free_mem(uint32_t *free_mem)
+extern int get_free_mem(uint64_t *free_mem)
 {
-#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__CYGWIN__)
+#if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 	/* Not sure how to get CPU load on above systems.
 	 * Perhaps some method below works. */
 	*free_mem = 0;
@@ -380,92 +306,3 @@ extern int get_free_mem(uint32_t *free_mem)
 #endif
 	return 0;
 }
-
-#ifdef USE_CPU_SPEED
-/* _chk_cpuinfo_str
- *	check a line of cpuinfo data (buffer) for a keyword.  If it
- *	exists, return the string value for that keyword in *valptr.
- * Input:  buffer - single line of cpuinfo data
- *	   keyword - keyword to check for
- * Output: valptr - string value corresponding to keyword
- *         return code - true if keyword found, false if not found
- */
-static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
-{
-	char *ptr;
-	if (xstrncmp(buffer, keyword, strlen(keyword)))
-		return false;
-
-	ptr = strstr(buffer, ":");
-	if (ptr != NULL)
-		ptr++;
-	*valptr = ptr;
-	return true;
-}
-
-/* _chk_cpuinfo_float
- *	check a line of cpuinfo data (buffer) for a keyword.  If it
- *	exists, return the float value for that keyword in *valptr.
- * Input:  buffer - single line of cpuinfo data
- *	   keyword - keyword to check for
- * Output: valptr - float value corresponding to keyword
- *         return code - true if keyword found, false if not found
- */
-static int _chk_cpuinfo_float(char *buffer, char *keyword, float *val)
-{
-	char *valptr;
-	if (_chk_cpuinfo_str(buffer, keyword, &valptr)) {
-		*val = (float) strtod(valptr, (char **)NULL);
-		return true;
-	} else {
-		return false;
-	}
-}
-
-/*
- * get_speed - Return the speed of procs on this system (MHz clock)
- * Input: procs - buffer for the CPU speed
- * Output: procs - filled in with CPU speed, "1.0" if error
- *         return code - 0 if no error, otherwise errno
- */
-extern int
-get_speed(float *speed)
-{
-#if defined (__sun)
-	kstat_ctl_t   *kc;
-	kstat_t       *ksp;
-	kstat_named_t *knp;
-
-	kc = kstat_open();
-	if (kc == NULL) {
-		error ("get speed: kstat error %d", errno);
-		return errno;
-	}
-
-	ksp = kstat_lookup(kc, "cpu_info", -1, NULL);
-	kstat_read(kc, ksp, NULL);
-	knp = kstat_data_lookup(ksp, "clock_MHz");
-
-	*speed = knp->value.l;
-#else
-	FILE *cpu_info_file;
-	char buffer[128];
-	char* _cpuinfo_path = "/proc/cpuinfo";
-
-	*speed = 1.0;
-	cpu_info_file = fopen(_cpuinfo_path, "r");
-	if (cpu_info_file == NULL) {
-		error("get_speed: error %d opening %s", errno, _cpuinfo_path);
-		return errno;
-	}
-
-	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
-		_chk_cpuinfo_float(buffer, "cpu MHz", speed);
-	}
-
-	fclose(cpu_info_file);
-#endif
-	return 0;
-}
-
-#endif

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,14 +36,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include <fcntl.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -51,6 +47,7 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
+#include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/slurm_mpi.h"
 #include "src/common/xmalloc.h"
@@ -244,7 +241,7 @@ static void *mpich1_thr(void *arg)
 done:
 	slurm_mutex_lock(&shutdown_lock);
 	shutdown_complete = true;
-	pthread_cond_signal(&shutdown_cond);
+	slurm_cond_signal(&shutdown_cond);
 	slurm_mutex_unlock(&shutdown_lock);
 	return NULL;
 }
@@ -300,7 +297,7 @@ p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 	shutdown_complete = false;
 	shutdown_timeout = 5;
 	slurm_mutex_init(&shutdown_lock);
-	pthread_cond_init(&shutdown_cond, NULL);
+	slurm_cond_init(&shutdown_cond, NULL);
 
 	/* Process messages in a separate thread */
 	slurm_attr_init(&attr);
@@ -348,7 +345,7 @@ int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
 				if (time(NULL) >= ts.tv_sec) {
 					break;
 				}
-				pthread_cond_timedwait(
+				slurm_cond_timedwait(
 					&shutdown_cond,
 					&shutdown_lock, &ts);
 			}
@@ -359,7 +356,7 @@ int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
 			close(shutdown_pipe[1]);
 
 			slurm_mutex_destroy(&shutdown_lock);
-			pthread_cond_destroy(&shutdown_cond);
+			slurm_cond_destroy(&shutdown_cond);
 		}
 		p4_tid = (pthread_t) -1;
 	}

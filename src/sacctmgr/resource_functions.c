@@ -8,7 +8,7 @@
  *  Written by Bill Brophy <bill.brophy@bull.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -132,7 +132,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 	}
 }
 
-static int _set_res_cond(int *start, int argc, char *argv[],
+static int _set_res_cond(int *start, int argc, char **argv,
 			     slurmdb_res_cond_t *res_cond,
 			     List format_list)
 {
@@ -273,7 +273,7 @@ static int _set_res_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
-static int _set_res_rec(int *start, int argc, char *argv[],
+static int _set_res_rec(int *start, int argc, char **argv,
 			List name_list, List cluster_list,
 			slurmdb_res_rec_t *res)
 {
@@ -383,12 +383,13 @@ static int _set_res_rec(int *start, int argc, char *argv[],
 					 MAX(strlen(temp), 1))) {
 				res->type = SLURMDB_RESOURCE_LICENSE;
 			} else {
-				exit_code=1;
+				exit_code = 1;
 				fprintf(stderr,
 					" Unknown resource type: '%s'  "
 					"Valid resources is License.\n",
 					temp);
 			}
+			xfree(temp);
 		} else {
 			exit_code = 1;
 			printf(" Unknown option: %s\n"
@@ -497,11 +498,11 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 	printf("\n");
 }
 
-extern int sacctmgr_add_res(int argc, char *argv[])
+extern int sacctmgr_add_res(int argc, char **argv)
 
 {
 	int rc = SLURM_SUCCESS;
-	int i=0, limit_set=0;
+	int i = 0, limit_set = 0;
 	ListIterator itr = NULL;
 	ListIterator clus_itr = NULL;
 	slurmdb_res_rec_t *res = NULL;
@@ -515,7 +516,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 
 	slurmdb_init_res_rec(start_res, 0);
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
@@ -534,7 +535,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 		FREE_NULL_LIST(name_list);
 		FREE_NULL_LIST(cluster_list);
 		slurmdb_destroy_res_rec(start_res);
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Need name of resource to add.\n");
 		return SLURM_SUCCESS;
 	}
@@ -570,7 +571,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 	if (cluster_list)
 		clus_itr = list_iterator_create(cluster_list);
 	while ((name = list_next(itr))) {
-		bool added = 0;
+		bool added = false;
 		found_res = sacctmgr_find_res_from_list(
 			g_res_list, NO_VAL, name, start_res->server);
 		if (!found_res) {
@@ -588,7 +589,6 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 					"count to initially add '%s'.\n", name);
 				break;
 			}
-			added = 1;
 			res = xmalloc(sizeof(slurmdb_res_rec_t));
 			slurmdb_init_res_rec(res, 0);
 			res->name = xstrdup(name);
@@ -605,6 +605,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 			xstrfmtcat(res_str, "  %s@%s\n",
 				   res->name, res->server);
 			list_append(res_list, res);
+			added = true;
 		}
 
 		if (cluster_list && list_count(cluster_list)) {
@@ -643,17 +644,17 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 
 				if (!clus_res) {
 					if (!added) {
-						added = 1;
 						xstrfmtcat(res_str,
 							   "  %s@%s\n", name,
 							   res->server);
 						list_append(res_list, res);
+						added = true;
 					}
 					/* make sure we don't overcommit */
 					res->percent_used +=
 						start_res->percent_used;
 					if (res->percent_used > 100) {
-						exit_code=1;
+						exit_code = 1;
 						fprintf(stderr,
 							" Adding this %d "
 							"clusters to resource "
@@ -685,14 +686,15 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 					   overcommit */
 				}
 			}
-			if (res->percent_used > 100)
-				break;
+
+			if (!added)
+				slurmdb_destroy_res_rec(res);
 
 			if (found_itr)
 				list_iterator_destroy(found_itr);
 
-			if (!added)
-				slurmdb_destroy_res_rec(res);
+			if (res->percent_used > 100)
+				break;
 
 			list_iterator_reset(clus_itr);
 		}
@@ -757,7 +759,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem adding system resource: %s\n",
 			slurm_strerror(rc));
 		rc = SLURM_ERROR;
@@ -769,7 +771,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_list_res(int argc, char *argv[])
+extern int sacctmgr_list_res(int argc, char **argv)
 
 {
 	int rc = SLURM_SUCCESS;
@@ -849,7 +851,7 @@ extern int sacctmgr_list_res(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_modify_res(int argc, char *argv[])
+extern int sacctmgr_modify_res(int argc, char **argv)
 
 {
 	int rc = SLURM_SUCCESS;
@@ -959,7 +961,7 @@ extern int sacctmgr_modify_res(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_delete_res(int argc, char *argv[])
+extern int sacctmgr_delete_res(int argc, char **argv)
 
 {
 	int rc = SLURM_SUCCESS;

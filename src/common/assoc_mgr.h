@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,10 +43,6 @@
 
 #ifndef _SLURM_ASSOC_MGR_H
 #define _SLURM_ASSOC_MGR_H
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include "src/common/list.h"
 #include "src/common/slurm_accounting_storage.h"
@@ -101,6 +97,7 @@ typedef struct {
  	uint16_t cache_level;
 	uint16_t enforce;
 	void (*add_license_notify) (slurmdb_res_rec_t *rec);
+	void (*resize_qos_notify) (void);
 	void (*remove_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*remove_license_notify) (slurmdb_res_rec_t *rec);
 	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
@@ -394,7 +391,7 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc);
 extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos);
 
 /*
- * Dump the state information of the association mgr just incase the
+ * Dump the state information of the association mgr just in case the
  * database isn't up next time we run.
  */
 extern int dump_assoc_mgr_state(char *state_save_location);
@@ -483,4 +480,13 @@ extern char *assoc_mgr_make_tres_str_from_array(
 extern void assoc_mgr_get_default_qos_info(
 	slurmdb_assoc_rec_t *assoc_ptr, slurmdb_qos_rec_t *qos_rec);
 
+/* Calcuate a weighted tres value.
+ * IN: tres_cnt - array of tres values of size g_tres_count.
+ * IN: weights - weights to apply to tres values of size g_tres_count.
+ * IN: flags - priority flags (toogle between MAX or SUM of tres).
+ * IN: locked - whether the tres read assoc mgr lock is locked or not.
+ * RET: returns the calcuated tres weight.
+ */
+extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
+				      uint16_t flags, bool locked);
 #endif /* _SLURM_ASSOC_MGR_H */

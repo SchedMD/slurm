@@ -7,7 +7,7 @@
  *  Matthieu Hautreux
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,12 +36,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <sys/types.h>
+#include <limits.h>
 #include <stdlib.h>		/* getenv   */
+#include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
 #include "slurm/slurm.h"
@@ -49,10 +46,6 @@
 #include "src/plugins/jobacct_gather/cgroup/jobacct_gather_cgroup.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
-
-#ifndef PATH_MAX
-#define PATH_MAX 256
-#endif
 
 static char user_cgroup_path[PATH_MAX];
 static char job_cgroup_path[PATH_MAX];

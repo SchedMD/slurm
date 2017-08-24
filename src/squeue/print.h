@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -77,9 +77,6 @@ int print_steps_list(List steps, List format);
 int print_jobs_array(job_info_t * jobs, int size, List format);
 int print_steps_array(job_step_info_t * steps, int size, List format);
 
-int print_job_from_format(squeue_job_rec_t * job_rec_ptr, List list);
-int print_step_from_format(job_step_info_t * job_step, List list);
-
 /*****************************************************************************
  * Job Line Format Options
  *****************************************************************************/
@@ -94,8 +91,12 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_batch_host)
 #define job_format_add_burst_buffer(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_burst_buffer)
+#define job_format_add_burst_buffer_state(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_burst_buffer_state)
 #define job_format_add_core_spec(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_core_spec)
+#define job_format_add_delay_boot(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_delay_boot)
 #define job_format_add_job_id(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_job_id)
 #define job_format_add_job_id2(list,wid,right,suffix) \
@@ -197,6 +198,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_qos)
 #define job_format_add_select_jobinfo(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_select_jobinfo)
+#define job_format_add_admin_comment(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_admin_comment)
 #define job_format_add_comment(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_comment)
 #define job_format_add_reservation(list,wid,right,suffix) \
@@ -230,6 +233,16 @@ int job_format_add_function(List list, int width, bool right_justify,
 				_print_job_eligible_time)
 #define job_format_add_exit_code(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_exit_code)
+#define job_format_add_fed_origin(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix, _print_job_fed_origin)
+#define job_format_add_fed_origin_raw(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix, \
+				_print_job_fed_origin_raw)
+#define job_format_add_fed_siblings(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix, _print_job_fed_siblings)
+#define job_format_add_fed_siblings_raw(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix, \
+				_print_job_fed_siblings_raw)
 #define job_format_add_max_cpus(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_max_cpus)
 #define job_format_add_max_nodes(list,wid,right,suffix) \
@@ -292,8 +305,12 @@ int _print_job_batch_host(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_burst_buffer(job_info_t * job, int width, bool right_justify,
 			    char* suffix);
+int _print_job_burst_buffer_state(job_info_t * job, int width,
+				  bool right_justify, char* suffix);
 int _print_job_core_spec(job_info_t * job, int width, bool right_justify,
 			 char* suffix);
+int _print_job_delay_boot(job_info_t * job, int width, bool right_justify,
+			  char* suffix);
 int _print_job_job_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_job_id2(job_info_t * job, int width, bool right_justify,
@@ -391,6 +408,8 @@ int _print_job_qos(job_info_t * job, int width, bool right_justify,
 		   char* suffix);
 int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 			      char* suffix);
+int _print_job_admin_comment(job_info_t * job, int width, bool right_justify,
+			     char* suffix);
 int _print_job_comment(job_info_t * job, int width, bool right_justify,
 		       char* suffix);
 int _print_job_reservation(job_info_t * job, int width, bool right_justify,
@@ -421,6 +440,14 @@ int _print_job_eligible_time(job_info_t * job, int width, bool right_justify,
 			     char* suffix);
 int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 			 char* suffix);
+int _print_job_fed_origin(job_info_t * job, int width, bool right_justify,
+			  char* suffix);
+int _print_job_fed_origin_raw(job_info_t * job, int width, bool right_justify,
+			      char* suffix);
+int _print_job_fed_siblings(job_info_t * job, int width, bool right_justify,
+			    char* suffix);
+int _print_job_fed_siblings_raw(job_info_t * job, int width, bool right_justify,
+				char* suffix);
 int _print_job_max_cpus(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_max_nodes(job_info_t * job, int width, bool right_justify,
@@ -451,8 +478,6 @@ int _print_job_resize_time(job_info_t * job, int width,
 			   bool right_justify, char* suffix);
 int _print_job_restart_cnt(job_info_t * job, int width,
 			   bool right_justify, char* suffix);
-int _print_job_sockets_per_board(job_info_t * job, int width,
-				 bool right_justify, char* suffix);
 int _print_job_sockets_per_board(job_info_t * job, int width,
 				 bool right_justify, char* suffix);
 int _print_job_std_err(job_info_t * job, int width,

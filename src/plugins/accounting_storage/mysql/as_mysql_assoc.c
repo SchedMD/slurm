@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -1112,11 +1112,14 @@ static int _setup_assoc_cond_limits(
 	if (!assoc_cond)
 		return 0;
 
+	/*
+	 * Don't use prefix here, always use t1 or we could get extra "deleted"
+	 * entries we don't want.
+	 */
 	if (assoc_cond->with_deleted)
-		xstrfmtcat(*extra, " (%s.deleted=0 || %s.deleted=1)",
-			   prefix, prefix);
+		xstrfmtcat(*extra, " (t1.deleted=0 || t1.deleted=1)");
 	else
-		xstrfmtcat(*extra, " %s.deleted=0", prefix);
+		xstrfmtcat(*extra, " t1.deleted=0");
 
 	if (assoc_cond->only_defs) {
 		set = 1;
@@ -1588,18 +1591,18 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			}
 			xfree(tmp_qos);
 
-			set_qos_vals=1;
+			set_qos_vals = 1;
 		}
 
 
-		if (account_type)
+		if (account_type) {
 			_modify_unset_users(mysql_conn,
 					    mod_assoc,
 					    row[MASSOC_ACCT],
 					    lft, rgt,
 					    ret_list,
 					    moved_parent);
-		else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
+		} else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
 			/* Use fresh one here so we don't have to
 			   worry about dealing with bad values.
 			*/
@@ -1613,6 +1616,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				     mysql_conn, &tmp_assoc, &reset_query,
 				     moved_parent ? 0 : 1))
 			    != SLURM_SUCCESS) {
+				slurmdb_destroy_assoc_rec(mod_assoc);
 				xfree(reset_query);
 				goto end_it;
 			}
@@ -2140,20 +2144,16 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		 */
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_pj, parent_mtpj,
-			TRES_STR_FLAG_NONE);
-		xfree(parent_mtpj);
+			TRES_STR_FLAG_SORT_ID);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_pn, parent_mtpn,
-			TRES_STR_FLAG_NONE);
-		xfree(parent_mtpn);
+			TRES_STR_FLAG_SORT_ID);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_mins_pj, parent_mtmpj,
-			TRES_STR_FLAG_NONE);
-		xfree(parent_mtmpj);
+			TRES_STR_FLAG_SORT_ID);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_run_mins, parent_mtrm,
-			TRES_STR_FLAG_NONE);
-		xfree(parent_mtrm);
+			TRES_STR_FLAG_SORT_ID);
 
 		assoc->qos_list = list_create(slurm_destroy_char);
 
@@ -2240,6 +2240,10 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
 	}
+	xfree(parent_mtpj);
+	xfree(parent_mtpn);
+	xfree(parent_mtmpj);
+	xfree(parent_mtrm);
 	mysql_free_result(result);
 
 	FREE_NULL_LIST(delta_qos_list);

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,15 +39,7 @@
 #ifndef _SLURM_PRIORITY_H
 #define _SLURM_PRIORITY_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-#if HAVE_STDINT_H
-#  include <stdint.h>           /* for uint16_t, uint32_t definitions */
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>         /* for uint16_t, uint32_t definitions */
-#endif
+#include <inttypes.h>
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/slurm_accounting_storage.h"

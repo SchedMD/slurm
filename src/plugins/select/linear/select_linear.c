@@ -5,14 +5,14 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Copyright (C) 2014 Silicon Graphics International Corp. All rights reserved.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,20 +41,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#include "config.h"
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#endif
+#define _GNU_SOURCE
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -66,6 +57,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
+#include "src/common/assoc_mgr.h"
 #include "src/common/gres.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
@@ -77,6 +69,7 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/preempt.h"
@@ -126,8 +119,12 @@ struct hypercube_switch ***hypercube_switches;
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
 	uint16_t alloc_cpus;
-	uint32_t alloc_memory;
+	uint64_t alloc_memory;
+	char    *tres_alloc_fmt_str;	/* formatted str of allocated tres */
+	double   tres_alloc_weighted;	/* weighted number of tres allocated. */
 };
+
+static uint16_t priority_flags = 0;
 
 static int  _add_job_to_nodes(struct cr_record *cr_ptr,
 			      struct job_record *job_ptr, char *pre_err,
@@ -472,8 +469,8 @@ static job_resources_t *_create_job_resources(int node_cnt)
 	job_resrcs_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * node_cnt);
 	job_resrcs_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
 	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
-	job_resrcs_ptr->memory_allocated = xmalloc(sizeof(uint32_t) * node_cnt);
-	job_resrcs_ptr->memory_used = xmalloc(sizeof(uint32_t) * node_cnt);
+	job_resrcs_ptr->memory_allocated = xmalloc(sizeof(uint64_t) * node_cnt);
+	job_resrcs_ptr->memory_used = xmalloc(sizeof(uint64_t) * node_cnt);
 	job_resrcs_ptr->nhosts = node_cnt;
 	return job_resrcs_ptr;
 }
@@ -485,7 +482,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	int i, j, k;
 	int first_bit, last_bit;
 	uint32_t node_cpus, total_cpus = 0, node_cnt;
-	uint32_t job_memory_cpu = 0, job_memory_node = 0;
+	uint64_t job_memory_cpu = 0, job_memory_node = 0;
 	job_resources_t *job_resrcs_ptr;
 
 	if (job_ptr->details->pn_min_memory  && (cr_type & CR_MEMORY)) {
@@ -558,8 +555,8 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 	int count = 0, total_jobs, total_run_jobs;
 	struct part_cr_record *part_cr_ptr;
 	struct node_record *node_ptr;
-	uint32_t job_memory_cpu = 0, job_memory_node = 0;
-	uint32_t alloc_mem = 0, job_mem = 0, avail_mem = 0;
+	uint64_t job_memory_cpu = 0, job_memory_node = 0;
+	uint64_t alloc_mem = 0, job_mem = 0, avail_mem = 0;
 	uint32_t cpu_cnt, gres_cpus, gres_cores;
 	int core_start_bit, core_end_bit, cpus_per_core;
 	List gres_list;
@@ -1600,7 +1597,7 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 			cur_node_index++;
 			node_index = hypercube_switches[min_curve][switch_index]->
 				node_index[cur_node_index];
-		} while (FALSE == bit_test(avail_bitmap, node_index));
+		} while (false == bit_test(avail_bitmap, node_index));
 
 		/* Allocate the CPUs from the node */
 		bit_set(bitmap, node_index);
@@ -1747,7 +1744,7 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* phase 3 */
-	/* Determine lowest level switch satifying request with best fit */
+	/* Determine lowest level switch satisfying request with best fit */
 	best_fit_inx = -1;
 	for (j = 0; j < switch_record_cnt; j++) {
 #if SELECT_DEBUG
@@ -2042,7 +2039,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* phase 3 */
-	/* Determine lowest level switch satifying request with best fit */
+	/* Determine lowest level switch satisfying request with best fit */
 	best_fit_inx = -1;
 	for (j = 0; j < switch_record_cnt; j++) {
 #if SELECT_DEBUG
@@ -2281,7 +2278,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 	int i, i_first, i_last, node_offset, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
-	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
+	uint64_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
 	bool exclusive, is_job_running;
 	uint16_t cpu_cnt;
 	struct node_record *node_ptr;
@@ -2690,7 +2687,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 {
 	int i, node_inx, node_offset;
 	job_resources_t *job_resrcs_ptr;
-	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
+	uint64_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
 	int first_bit;
 	uint16_t cpu_cnt;
 	List gres_list;
@@ -2783,7 +2780,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	bool exclusive;
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
-	uint32_t job_memory_cpu = 0, job_memory_node = 0;
+	uint64_t job_memory_cpu = 0, job_memory_node = 0;
 	uint16_t cpu_cnt;
 	struct node_record *node_ptr;
 	List gres_list;
@@ -2920,7 +2917,7 @@ static void _dump_node_cr(struct cr_record *cr_ptr)
 
 	for (i = 0; i < select_node_cnt; i++) {
 		node_ptr = node_record_table_ptr + i;
-		info("Node:%s exclusive_cnt:%u alloc_mem:%u",
+		info("Node:%s exclusive_cnt:%u alloc_mem:%"PRIu64"",
 		     node_ptr->name, cr_ptr->nodes[i].exclusive_cnt,
 		     cr_ptr->nodes[i].alloc_memory);
 
@@ -3005,7 +3002,7 @@ static void _init_node_cr(void)
 	ListIterator part_iterator;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
-	uint32_t job_memory_cpu, job_memory_node;
+	uint64_t job_memory_cpu, job_memory_node;
 	int exclusive, i, i_first, i_last, node_offset;
 
 	if (cr_ptr)
@@ -3171,7 +3168,7 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	bitstr_t *orig_map;
 	int i, rc = SLURM_ERROR;
-	uint32_t save_mem;
+	uint64_t save_mem;
 
 	orig_map = bit_copy(bitmap);
 
@@ -3352,7 +3349,7 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 /* Determine where and when the job at job_ptr can begin execution by updating
  * a scratch cr_record structure to reflect each job terminating at the
  * end of its time limit and use this to show where and when the job at job_ptr
- * will begin execution. Used by SLURM's sched/backfill plugin and Moab. */
+ * will begin execution. Used by Slurm's sched/backfill plugin. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  int max_share, uint32_t req_nodes,
@@ -3512,12 +3509,14 @@ extern int init ( void )
 
 	topo_param = slurm_get_topology_param();
 	if (topo_param) {
-		if (strcasestr(topo_param, "dragonfly"))
+		if (xstrcasestr(topo_param, "dragonfly"))
 			have_dragonfly = true;
-		if (strcasestr(topo_param, "TopoOptional"))
+		if (xstrcasestr(topo_param, "TopoOptional"))
 			topo_optional = true;
 		xfree(topo_param);
 	}
+
+	priority_flags = slurm_get_priority_flags();
 
 	return rc;
 }
@@ -3581,12 +3580,12 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	slurm_mutex_lock(&cr_mutex);
 	_free_cr(cr_ptr);
 	cr_ptr = NULL;
-	slurm_mutex_unlock(&cr_mutex);
 
 	select_node_ptr = node_ptr;
 	select_node_cnt = node_cnt;
 	select_fast_schedule = slurm_get_fast_schedule();
 	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
+	slurm_mutex_unlock(&cr_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -3879,9 +3878,14 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		pack16(nodeinfo->alloc_cpus, buffer);
-		pack32(nodeinfo->alloc_memory, buffer);
+		pack64(nodeinfo->alloc_memory, buffer);
+		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
+		packdouble(nodeinfo->tres_alloc_weighted, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack16(nodeinfo->alloc_cpus, buffer);
+		pack32(xlate_mem_new2old(nodeinfo->alloc_memory), buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -3891,14 +3895,23 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   Buf buffer,
 					   uint16_t protocol_version)
 {
+	uint32_t uint32_tmp;
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
-		safe_unpack32(&nodeinfo_ptr->alloc_memory, buffer);
+		safe_unpack64(&nodeinfo_ptr->alloc_memory, buffer);
+		safe_unpackstr_xmalloc(&nodeinfo_ptr->tres_alloc_fmt_str,
+				       &uint32_tmp, buffer);
+		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t tmp_mem;
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+		safe_unpack32(&tmp_mem, buffer);
+		nodeinfo_ptr->alloc_memory = xlate_mem_old2new(tmp_mem);
 	}
 
 	return SLURM_SUCCESS;
@@ -3929,6 +3942,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 			return EINVAL;
 		}
 		nodeinfo->magic = 0;
+		xfree(nodeinfo->tres_alloc_fmt_str);
 		xfree(nodeinfo);
 	}
 	return SLURM_SUCCESS;
@@ -3964,14 +3978,27 @@ extern int select_p_select_nodeinfo_set_all(void)
 			continue;
 		}
 
+		xfree(nodeinfo->tres_alloc_fmt_str);
 		if (IS_NODE_COMPLETING(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
 			if (slurmctld_conf.fast_schedule)
 				nodeinfo->alloc_cpus =
 					node_ptr->config_ptr->cpus;
 			else
 				nodeinfo->alloc_cpus = node_ptr->cpus;
-		} else
+
+			nodeinfo->tres_alloc_fmt_str =
+				assoc_mgr_make_tres_str_from_array(
+						node_ptr->tres_cnt,
+						TRES_STR_CONVERT_UNITS, false);
+			nodeinfo->tres_alloc_weighted =
+				assoc_mgr_tres_weighted(
+					node_ptr->tres_cnt,
+					node_ptr->config_ptr->tres_weights,
+					priority_flags, false);
+		} else {
 			nodeinfo->alloc_cpus = 0;
+			nodeinfo->tres_alloc_weighted = 0.0;
+		}
 		if (cr_ptr && cr_ptr->nodes) {
 			nodeinfo->alloc_memory = cr_ptr->nodes[n].alloc_memory;
 		} else {
@@ -4001,8 +4028,9 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
-	uint32_t *uint32 = (uint32_t *) data;
+	uint64_t *uint64 = (uint64_t *) data;
 	char **tmp_char = (char **) data;
+	double *tmp_double = (double *) data;
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
 	if (nodeinfo == NULL) {
@@ -4033,7 +4061,13 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		*tmp_char = NULL;
 		break;
 	case SELECT_NODEDATA_MEM_ALLOC:
-		*uint32 = nodeinfo->alloc_memory;
+		*uint64 = nodeinfo->alloc_memory;
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_FMT_STR:
+		*tmp_char = xstrdup(nodeinfo->tres_alloc_fmt_str);
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_WEIGHTED:
+		*tmp_double = nodeinfo->tres_alloc_weighted;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
@@ -4252,7 +4286,7 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	}
 #endif
 
-	/* Determine lowest level switch satifying request with best fit */
+	/* Determine lowest level switch satisfying request with best fit */
 	best_fit_inx = -1;
 	for (j=0; j<switch_record_cnt; j++) {
 		if (switches_node_cnt[j] < rem_nodes)

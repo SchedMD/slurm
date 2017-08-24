@@ -35,10 +35,7 @@
  *  Refer to "util-net.h" for documentation on public functions.
 \*****************************************************************************/
 
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "config.h"
 
 #ifndef   _GNU_SOURCE
 #  define _GNU_SOURCE
@@ -90,6 +87,12 @@ struct hostent * get_host_by_name(const char *name,
 	assert(buf != NULL);
 
 	slurm_mutex_lock(&hostentLock);
+	/* It appears gethostbyname leaks memory once.  Under the covers it
+	 * calls gethostbyname_r (at least on Ubuntu 16.10).  This leak doesn't
+	 * appear to get worst, meaning it only happens once, so we should be
+	 * ok.  Though gethostbyname is obsolete now we can't really change
+	 * since aliases don't work we can't change.
+	 */
 	if ((hptr = gethostbyname(name)))
 		n = copy_hostent(hptr, buf, buflen);
 	if (h_err)
@@ -142,75 +145,6 @@ const char * host_strerror(int h_err)
 	else if ((h_err == NO_ADDRESS) || (h_err == NO_DATA))
 		return("No address associated with name");
 	return("Unknown error");
-}
-
-
-int host_name_to_addr4(const char *name, struct in_addr *addr)
-{
-	struct hostent *hptr;
-	unsigned char buf[HOSTENT_SIZE];
-
-	assert(name != NULL);
-	assert(addr != NULL);
-
-	if (!(hptr = get_host_by_name(name, buf, sizeof(buf), NULL)))
-		return(-1);
-	if (hptr->h_length > 4) {
-		errno = ERANGE;
-		return(-1);
-	}
-	memcpy(addr, hptr->h_addr_list[0], hptr->h_length);
-	return(0);
-}
-
-
-char * host_addr4_to_name(const struct in_addr *addr, char *dst, int dstlen)
-{
-	struct hostent *hptr;
-	unsigned char buf[HOSTENT_SIZE];
-
-	assert(addr != NULL);
-	assert(dst != NULL);
-
-	if (!(hptr = get_host_by_addr((char *) addr, 4, AF_INET,
-				      buf, sizeof(buf), NULL)))
-		return(NULL);
-	if (strlen(hptr->h_name) >= dstlen) {
-		errno = ERANGE;
-		return(NULL);
-	}
-	strcpy(dst, hptr->h_name);
-	return(dst);
-}
-
-
-char * host_name_to_cname(const char *src, char *dst, int dstlen)
-{
-	struct hostent *hptr;
-	unsigned char buf[HOSTENT_SIZE];
-	struct in_addr addr;
-
-	assert(src != NULL);
-	assert(dst != NULL);
-
-	if (!(hptr = get_host_by_name(src, buf, sizeof(buf), NULL)))
-		return(NULL);
-	/*
-	 *  If 'src' is an ip-addr string, it will simply be copied to h_name.
-	 *    So, we need to perform a reverse query based on the in_addr
-	 *    in order to obtain the canonical name of the host.
-	 *  Besides, this additional query helps protect against DNS spoofing.
-	 */
-	memcpy(&addr, hptr->h_addr_list[0], hptr->h_length);
-	if (!(hptr = get_host_by_addr((char *) &addr, 4, AF_INET,
-				      buf, sizeof(buf), NULL)))
-		return(NULL);
-	if (strlen(hptr->h_name) >= dstlen) {
-		errno = ERANGE;
-		return(NULL);
-	}
-	strcpy(dst, hptr->h_name);
-	return(dst);
 }
 
 
@@ -323,56 +257,6 @@ static int validate_hostent_copy(
 }
 #endif /* !NDEBUG */
 
-
-#ifndef HAVE_INET_PTON
-int inet_pton(int family, const char *str, void *addr)
-{
-/*  cf. Stevens UNPv1 p72.
- */
-	struct in_addr tmpaddr;
-
-	if (family != AF_INET) {
-		errno = EAFNOSUPPORT;
-		return(-1);
-	}
-#ifdef HAVE_INET_ATON
-	if (!inet_aton(str, &tmpaddr))
-		return(0);
-#else /* !HAVE_INET_ATON */
-	if ((tmpaddr.s_addr = inet_addr(str)) == -1)
-		return(0);
-#endif /* !HAVE_INET_ATON */
-
-	memcpy(addr, &tmpaddr, sizeof(struct in_addr));
-	return(1);
-}
-#endif /* !HAVE_INET_PTON */
-
-
-#ifndef HAVE_INET_NTOP
-const char * inet_ntop(int family, const void *addr, char *str, size_t len)
-{
-/*  cf. Stevens UNPv1 p72.
- */
-	const unsigned char *p = (const unsigned char *) addr;
-	char tmpstr[INET_ADDRSTRLEN];
-
-	assert(str != NULL);
-
-	if (family != AF_INET) {
-		errno = EAFNOSUPPORT;
-		return(NULL);
-	}
-	snprintf(tmpstr, sizeof(tmpstr), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
-	if (strlen(tmpstr) >= len) {
-		errno = ENOSPC;
-		return(NULL);
-	}
-	strcpy(str, tmpstr);
-	return(str);
-}
-#endif /* !HAVE_INET_NTOP */
-
 /* is_full_path()
  *
  * Test if the given path is a full or relative one.
@@ -400,7 +284,7 @@ extern char *make_full_path(char *rpath)
 #ifdef HAVE_GET_CURRENT_DIR_NAME
 	cwd = get_current_dir_name();
 #else
-	cwd = xmalloc(PATH_MAX);
+	cwd = malloc(PATH_MAX);
 	cwd = getcwd(cwd, PATH_MAX);
 #endif
 	/* 2 = / + 0

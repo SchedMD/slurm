@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,18 +39,7 @@
 #ifndef _SLURMDBD_DEFS_H
 #define _SLURMDBD_DEFS_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#else				/* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif				/*  HAVE_CONFIG_H */
+#include <inttypes.h>
 
 #include "slurm/slurm.h"
 
@@ -72,8 +61,8 @@ typedef enum {
 	DBD_FLUSH_JOBS, 	/* End jobs that are still running
 				 * when a controller is restarted.	*/
 	DBD_GET_ACCOUNTS,	/* Get account information		*/
-	DBD_GET_ASSOCS,         /* Get association information   	*/
-	DBD_GET_ASSOC_USAGE,  	/* Get assoc usage information  	*/
+	DBD_GET_ASSOCS,         /* #1410, Get association information   */
+	DBD_GET_ASSOC_USAGE,  	/* Get assoc usage information   	*/
 	DBD_GET_CLUSTERS,	/* Get account information		*/
 	DBD_GET_CLUSTER_USAGE, 	/* Get cluster usage information	*/
 	DBD_RECONFIG,   	/* Reread the slurmdbd.conf     	*/
@@ -82,7 +71,7 @@ typedef enum {
 	DBD_GOT_ASSOCS, 	/* Response to DBD_GET_ASSOCS   	*/
 	DBD_GOT_ASSOC_USAGE,  	/* Response to DBD_GET_ASSOC_USAGE    	*/
 	DBD_GOT_CLUSTERS,	/* Response to DBD_GET_CLUSTERS		*/
-	DBD_GOT_CLUSTER_USAGE, 	/* Response to DBD_GET_CLUSTER_USAGE   	*/
+	DBD_GOT_CLUSTER_USAGE, 	/* #1420, Response to DBD_GET_CLUSTER_USAGE */
 	DBD_GOT_JOBS,		/* Response to DBD_GET_JOBS		*/
 	DBD_GOT_LIST,           /* Response to DBD_MODIFY/REMOVE MOVE_* */
 	DBD_GOT_USERS,  	/* Response to DBD_GET_USERS		*/
@@ -94,10 +83,10 @@ typedef enum {
 	DBD_JOB_SUSPEND,	/* Record job suspension		*/
 	DBD_MODIFY_ACCOUNTS,    /* Modify existing account              */
 	DBD_MODIFY_ASSOCS,      /* Modify existing association          */
-	DBD_MODIFY_CLUSTERS,    /* Modify existing cluster              */
+	DBD_MODIFY_CLUSTERS,    /* #1430, Modify existing cluster       */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
 	DBD_NODE_STATE,		/* Record node state transition		*/
-	DBD_RC,			/* Return code from operation		*/
+	DBD_RC, 		/* DEFUNCT, use PERSIST_RC instead.	*/
 	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/
 	DBD_REMOVE_ACCOUNTS,    /* Remove existing account              */
 	DBD_REMOVE_ACCOUNT_COORDS,/* Remove existing coordinator from
@@ -105,7 +94,7 @@ typedef enum {
 	DBD_REMOVE_ASSOCS,      /* Remove existing association          */
 	DBD_REMOVE_CLUSTERS,    /* Remove existing cluster              */
 	DBD_REMOVE_USERS,       /* Remove existing user                 */
-	DBD_ROLL_USAGE,         /* Roll up usage                        */
+	DBD_ROLL_USAGE,         /* #1440 Roll up usage                  */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START,		/* Record step starting			*/
 	DBD_UPDATE_SHARES_USED,	/* Doesn't do anything but
@@ -117,7 +106,7 @@ typedef enum {
 	DBD_ADD_QOS,		/* Add QOS information   	        */
 	DBD_GET_QOS,		/* Get QOS information   	        */
 	DBD_GOT_QOS,		/* Got QOS information   	        */
-	DBD_REMOVE_QOS,		/* Remove QOS information   	        */
+	DBD_REMOVE_QOS,		/* #1450, Remove QOS information        */
 	DBD_MODIFY_QOS,         /* Modify existing QOS                  */
 	DBD_ADD_WCKEYS,		/* Add WCKEY information   	        */
 	DBD_GET_WCKEYS,		/* Get WCKEY information   	        */
@@ -128,7 +117,7 @@ typedef enum {
 	DBD_GOT_WCKEY_USAGE,  	/* Get wckey usage information  	*/
 	DBD_ARCHIVE_DUMP,    	/* issue a request to dump jobs to
 				 * archive */
-	DBD_ARCHIVE_LOAD,    	/* load an archive file    	        */
+	DBD_ARCHIVE_LOAD,    	/* #1460, load an archive file          */
 	DBD_ADD_RESV,    	/* add a reservation                    */
 	DBD_REMOVE_RESV,    	/* remove a reservation                 */
 	DBD_MODIFY_RESV,    	/* modify a reservation                 */
@@ -138,7 +127,7 @@ typedef enum {
 	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
 	DBD_GET_PROBS,  	/* Get problems existing in accounting	*/
 	DBD_GOT_PROBS,		/* Response to DBD_GET_PROBS		*/
-	DBD_GET_EVENTS, 	/* Get event information		*/
+	DBD_GET_EVENTS, 	/* #1470, Get event information		*/
 	DBD_GOT_EVENTS, 	/* Response to DBD_GET_EVENTS		*/
 	DBD_SEND_MULT_JOB_START,/* Send multiple job starts		*/
 	DBD_GOT_MULT_JOB_START,	/* Get response to DBD_SEND_MULT_JOB_START */
@@ -148,15 +137,28 @@ typedef enum {
 	DBD_ADD_RES,    	/* Add new system resource to the mix   */
 	DBD_GET_RES,		/* Get resource information		*/
 	DBD_GOT_RES,		/* Got resource information		*/
-	DBD_REMOVE_RES,     	/* Remove existing resource      	*/
+	DBD_REMOVE_RES,     	/* #1480, Remove existing resource      */
 	DBD_MODIFY_RES,     	/* Modify existing resource      	*/
 	DBD_ADD_CLUS_RES,    	/* Add cluster using a resource    	*/
 	DBD_REMOVE_CLUS_RES,   	/* Remove existing cluster resource    	*/
 	DBD_MODIFY_CLUS_RES,   	/* Modify existing cluster resource   	*/
-	DBD_ADD_TRES,         /* Add tres to the database           */
-	DBD_GET_TRES,         /* Get tres from the database         */
-	DBD_GOT_TRES,         /* Got tres from the database         */
+	DBD_ADD_TRES,           /* Add tres to the database           */
+	DBD_GET_TRES,           /* Get tres from the database         */
+	DBD_GOT_TRES,           /* Got tres from the database         */
 	DBD_FIX_RUNAWAY_JOB,    /* Fix any runaway jobs */
+	DBD_GET_STATS,		/* Get daemon statistics */
+	DBD_GOT_STATS,		/* #1490 ,Got daemon statistics data */
+	DBD_CLEAR_STATS,	/* Clear daemon statistics */
+	DBD_SHUTDOWN,		/* Shutdown daemon */
+	DBD_ADD_FEDERATIONS,    /* Add new federation to the mix        */
+	DBD_GET_FEDERATIONS,	/* Get federation information		*/
+	DBD_GOT_FEDERATIONS,	/* Response to DBD_GET_FEDERATIONS 	*/
+	DBD_MODIFY_FEDERATIONS, /* Modify existing federation 		*/
+	DBD_REMOVE_FEDERATIONS, /* Removing existing federation 	*/
+
+	SLURM_PERSIST_INIT = 6500, /* So we don't use the
+				    * REQUEST_PERSIST_INIT also used here.
+				    */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -216,7 +218,6 @@ typedef struct dbd_get_jobs_msg {
 
 typedef struct dbd_init_msg {
 	char *cluster_name;     /* cluster this message is coming from */
-	uint16_t rollback;      /* to allow rollbacks or not */
 	uint16_t version;	/* protocol version */
 	uint32_t uid;		/* UID originating connection,
 				 * filled by authtentication plugin*/
@@ -229,10 +230,11 @@ typedef struct dbd_fini_msg {
 } dbd_fini_msg_t;
 
 typedef struct dbd_job_comp_msg {
+	char *	 admin_comment;	/* job admin comment field */
 	uint32_t assoc_id;	/* accounting association id needed to
 				 * find job record in db */
 	char *	 comment;	/* job comment field */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	uint32_t derived_ec;	/* derived job exit code or signal */
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
@@ -257,7 +259,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t array_task_pending;/* number of tasks still pending */
 	uint32_t assoc_id;	/* accounting association id */
 	char *   block_id;      /* Bluegene block id */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */
 	uint32_t gid;	        /* group ID */
 	uint32_t job_id;	/* job ID */
@@ -270,7 +272,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t priority;	/* job priority */
 	uint32_t qos_id;        /* qos job is running with */
 	uint32_t req_cpus;	/* count of req processors */
-	uint32_t req_mem;       /* requested minimum memory */
+	uint64_t req_mem;       /* requested minimum memory */
 	uint32_t resv_id;	/* reservation id */
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time */
@@ -290,14 +292,14 @@ typedef struct dbd_job_start_msg {
 /* returns a uint32_t along with a return code */
 typedef struct dbd_id_rc_msg {
 	uint32_t job_id;
-	uint32_t id;
+	uint64_t db_index;
 	uint32_t return_code;
 } dbd_id_rc_msg_t;
 
 typedef struct dbd_job_suspend_msg {
 	uint32_t assoc_id;	/* accounting association id needed
 				 * to find job record in db */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	uint32_t job_id;	/* job ID needed to find job record
 				 * in db */
 	uint32_t job_state;	/* job state */
@@ -333,12 +335,6 @@ typedef struct dbd_node_state_msg {
 	char *tres_str;	        /* Simple comma separated list of TRES */
 } dbd_node_state_msg_t;
 
-typedef struct dbd_rc_msg {
-	char *   comment;	/* reason for failure */
-	uint32_t return_code;
-	uint16_t sent_type;	/* type of message this is in response to */
-} dbd_rc_msg_t;
-
 typedef struct dbd_register_ctld_msg {
 	uint16_t dimensions;    /* dimensions of system */
 	uint32_t flags;         /* flags for cluster */
@@ -348,7 +344,7 @@ typedef struct dbd_register_ctld_msg {
 
 typedef struct dbd_step_comp_msg {
 	uint32_t assoc_id;	/* accounting association id */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
 	jobacctinfo_t *jobacct; /* status info */
@@ -365,7 +361,7 @@ typedef struct dbd_step_comp_msg {
 
 typedef struct dbd_step_start_msg {
 	uint32_t assoc_id;	/* accounting association id */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
@@ -375,6 +371,8 @@ typedef struct dbd_step_start_msg {
 	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
+	uint32_t packjobid;	/* jobid of srun first step of the jobpack */
+	uint32_t packstepid;	/* stepid of jobpack member */
 	uint32_t req_cpufreq_min; /* requested minimum CPU frequency  */
 	uint32_t req_cpufreq_max; /* requested maximum CPU frequency  */
 	uint32_t req_cpufreq_gov; /* requested CPU frequency governor */
@@ -396,14 +394,15 @@ extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
+extern void slurmdbd_defs_init(char *auth_info);
+extern void slurmdbd_defs_fini(void);
+
 /* Open a socket connection to SlurmDbd
  * auth_info IN - alternate authentication key
  * make_agent IN - make agent to process RPCs if set
  * rollback IN - keep journal and permit rollback if set
  * Returns SLURM_SUCCESS or an error code */
-extern int slurm_open_slurmdbd_conn(char *auth_info,
-                                    const slurm_trigger_callbacks_t *callbacks,
-                                    bool rollback);
+extern int slurm_open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);
@@ -446,6 +445,7 @@ extern void slurmdbd_free_buffer(void *x);
 \*****************************************************************************/
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg);
+extern void slurmdbd_free_msg(slurmdbd_msg_t *msg);
 extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
 extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 				   slurmdbd_msg_type_t type);
@@ -459,7 +459,6 @@ extern void slurmdbd_free_list_msg(dbd_list_msg_t *msg);
 extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 				     slurmdbd_msg_type_t type);
 extern void slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg);
-extern void slurmdbd_free_rc_msg(dbd_rc_msg_t *msg);
 extern void slurmdbd_free_register_ctld_msg(dbd_register_ctld_msg_t *msg);
 extern void slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg);
 extern void slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
@@ -483,7 +482,7 @@ extern void slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
 				   uint16_t rpc_version,
 				   slurmdbd_msg_type_t type, Buf buffer);
 extern void slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version,
-				   Buf buffer, char *auth_info);
+				   Buf buffer);
 extern void slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg,
 				   uint16_t rpc_version, Buf buffer);
 extern void slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
@@ -509,8 +508,6 @@ extern void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
 extern void slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
 					 uint16_t rpc_version,
 					 Buf buffer);
-extern void slurmdbd_pack_rc_msg(dbd_rc_msg_t *msg,
-				 uint16_t rpc_version, Buf buffer);
 extern void slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 					    uint16_t rpc_version,
 					    Buf buffer);
@@ -546,8 +543,8 @@ extern int slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
 extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 				    uint16_t rpc_version,
 				    slurmdbd_msg_type_t type, Buf buffer);
-extern int slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer,
-				    char *auth_info);
+extern int slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
+				    uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg,
 				    uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
@@ -573,8 +570,6 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 extern int slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
 					  uint16_t rpc_version,
 					  Buf buffer);
-extern int slurmdbd_unpack_rc_msg(dbd_rc_msg_t **msg,
-				  uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 					     uint16_t rpc_version,
 					     Buf buffer);

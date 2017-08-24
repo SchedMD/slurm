@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,6 +39,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/xsignal.h"
 #include "src/common/proc_args.h"
@@ -62,18 +64,18 @@ List g_res_list = NULL;
 List g_tres_list = NULL;
 bool tree_display = 0;
 
-static void	_add_it (int argc, char *argv[]);
-static void	_archive_it (int argc, char *argv[]);
-static void	_show_it (int argc, char *argv[]);
-static void	_modify_it (int argc, char *argv[]);
-static void	_delete_it (int argc, char *argv[]);
-static int	_get_command (int *argc, char *argv[]);
-static void     _print_version( void );
-static int	_process_command (int argc, char *argv[]);
-static void	_usage ();
+static void	_add_it(int argc, char **argv);
+static void	_archive_it(int argc, char **argv);
+static void	_clear_it(int argc, char **argv);
+static void	_show_it(int argc, char **argv);
+static void	_modify_it(int argc, char **argv);
+static void	_delete_it(int argc, char **argv);
+static int	_get_command(int *argc, char **argv);
+static void     _print_version(void);
+static int	_process_command(int argc, char **argv);
+static void	_usage(void);
 
-int
-main (int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
 	char **input_fields;
@@ -285,8 +287,7 @@ static char *_getline(const char *prompt)
  * OUT argc - location to store count of arguments
  * OUT argv - location to store the argument list
  */
-static int
-_get_command (int *argc, char **argv)
+static int _get_command (int *argc, char **argv)
 {
 	char *in_line;
 	static char *last_in_line = NULL;
@@ -377,10 +378,10 @@ static void _print_version(void)
  * IN argv - the arguments
  * RET 0 or errno (only for errors fatal to sacctmgr)
  */
-static int
-_process_command (int argc, char *argv[])
+static int _process_command (int argc, char **argv)
 {
-	int command_len = 0;
+	int command_len = 0, rc;
+
 	if (argc < 1) {
 		exit_code = 1;
 		if (quiet_flag == -1)
@@ -438,6 +439,8 @@ _process_command (int argc, char *argv[])
 	} else if ((strncasecmp (argv[0], "archive",
 				 MAX(command_len, 3)) == 0)) {
 		_archive_it((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "clear", MAX(command_len, 3)) == 0) {
+		_clear_it((argc - 1), &argv[1]);
 	} else if ((strncasecmp (argv[0], "show", MAX(command_len, 3)) == 0) ||
 		   (strncasecmp (argv[0], "list", MAX(command_len, 3)) == 0)) {
 		_show_it((argc - 1), &argv[1]);
@@ -494,7 +497,7 @@ _process_command (int argc, char *argv[])
 		if (argc > 3)
 			archive_data = atoi(argv[3]);
 		if (acct_storage_g_roll_usage(db_conn, my_start,
-					     my_end, archive_data)
+					      my_end, archive_data, NULL)
 		   == SLURM_SUCCESS) {
 			if (commit_check("Would you like to commit rollup?")) {
 				acct_storage_g_commit(db_conn, 1);
@@ -502,6 +505,21 @@ _process_command (int argc, char *argv[])
 				printf(" Rollup Discarded\n");
 				acct_storage_g_commit(db_conn, 0);
 			}
+		}
+	} else if (strncasecmp (argv[0], "shutdown",
+				MAX(command_len, 4)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for %s keyword\n",
+				 argv[0]);
+		}
+
+		rc = slurmdb_shutdown(db_conn);
+		if (rc != SLURM_SUCCESS) {
+			fprintf(stderr, " Problem shutting down server: %s\n",
+				slurm_strerror(rc));
+			exit_code = 1;
 		}
 	} else if (strncasecmp (argv[0], "version", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
@@ -524,7 +542,7 @@ _process_command (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _add_it (int argc, char *argv[])
+static void _add_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -550,6 +568,8 @@ static void _add_it (int argc, char *argv[])
 		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Coordinator", MAX(command_len, 2))) {
 		error_code = sacctmgr_add_coord((argc - 1), &argv[1]);
+	} else if (!strncasecmp(argv[0], "Federation", MAX(command_len, 1))) {
+		error_code = sacctmgr_add_federation((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "QOS", MAX(command_len, 1))) {
 		error_code = sacctmgr_add_qos((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 1))) {
@@ -560,9 +580,9 @@ static void _add_it (int argc, char *argv[])
 	helpme:
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in add command\n");
-		fprintf(stderr, "Input line must include, ");
-		fprintf(stderr, "\"Account\", \"Cluster\", ");
-		fprintf(stderr, "\"Coordinator\", \"QOS\", \"Resource\", ");
+		fprintf(stderr, "Input line must include ");
+		fprintf(stderr, "\"Account\", \"Cluster\", \"Coordinator\", ");
+		fprintf(stderr, "\"Federation\", \"QOS\", \"Resource\", ");
 		fprintf(stderr, "or \"User\"\n");
 	}
 
@@ -576,7 +596,7 @@ static void _add_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _archive_it (int argc, char *argv[])
+static void _archive_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -613,13 +633,44 @@ static void _archive_it (int argc, char *argv[])
 }
 
 /*
+ * _clear_it - Clear the slurm configuration per the supplied arguments
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _clear_it(int argc, char **argv)
+{
+	int error_code = SLURM_SUCCESS;
+	int command_len = 0;
+
+	if (!argv[0])
+		goto helpme;
+
+	command_len = strlen(argv[0]);
+
+	/* First identify the entity to list */
+	if (!strncasecmp(argv[0], "Stats", MAX(command_len, 1))) {
+		error_code = slurmdb_clear_stats(db_conn);
+	} else {
+	helpme:
+		exit_code = 1;
+		fprintf(stderr, "No valid entity in list command\n");
+		fprintf(stderr, "Input line must include ");
+		fprintf(stderr, "\"Stats\"\n");
+	}
+
+	if (error_code != SLURM_SUCCESS) {
+		exit_code = 1;
+	}
+}
+
+/*
  * _show_it - list the slurm configuration per the supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
  * undocumented association options wopi and wopl
  * without parent info and without parent limits
  */
-static void _show_it (int argc, char *argv[])
+static void _show_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -648,6 +699,9 @@ static void _show_it (int argc, char *argv[])
 	} else if (strncasecmp(argv[0], "Events",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_event((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "Federation",
+				MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_list_federation((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "Problems",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
@@ -662,6 +716,8 @@ static void _show_it (int argc, char *argv[])
 	} else if (!strncasecmp(argv[0], "Reservations", MAX(command_len, 4)) ||
 		   !strncasecmp(argv[0], "Resv", MAX(command_len, 4))) {
 		error_code = sacctmgr_list_reservation((argc - 1), &argv[1]);
+	} else if (!strncasecmp(argv[0], "Stats", MAX(command_len, 1))) {
+		error_code = sacctmgr_list_stats((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Transactions", MAX(command_len, 1))
 		   || !strncasecmp(argv[0], "Txn", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
@@ -678,9 +734,9 @@ static void _show_it (int argc, char *argv[])
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"Account\", \"Association\", "
 			"\"Cluster\", \"Configuration\",\n\"Event\", "
-			"\"Problem\", \"QOS\", \"Resource\", \"Reservation\", "
-			"\"RunAwayJobs\", \"Transaction\", \"TRES\", "
-			"\"User\", or \"WCKey\"\n");
+			"\"Federation\", \"Problem\", \"QOS\", \"Resource\", "
+			"\"Reservation\",\n\"RunAwayJobs\", \"Stats\", "
+			"\"Transaction\", \"TRES\", \"User\", or \"WCKey\"\n");
 	}
 
 	if (error_code != SLURM_SUCCESS) {
@@ -694,7 +750,7 @@ static void _show_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _modify_it (int argc, char *argv[])
+static void _modify_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -719,6 +775,9 @@ static void _modify_it (int argc, char *argv[])
 	} else if (strncasecmp(argv[0], "Clusters",
 				MAX(command_len, 5)) == 0) {
 		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "Federation",
+			       MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_modify_federation((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "Job", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_job((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "QOSs", MAX(command_len, 1)) == 0) {
@@ -732,7 +791,7 @@ static void _modify_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Cluster\", "
+		fprintf(stderr, "\"Account\", \"Cluster\", \"Federation\", "
 			"\"Job\", \"QOS\", \"Resource\" or \"User\"\n");
 	}
 
@@ -746,7 +805,7 @@ static void _modify_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _delete_it (int argc, char *argv[])
+static void _delete_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -774,6 +833,9 @@ static void _delete_it (int argc, char *argv[])
 	} else if (strncasecmp(argv[0], "Coordinators",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_coord((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "Federations",
+				MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_delete_federation((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "QOS", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_qos((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0) {
@@ -785,8 +847,8 @@ static void _delete_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in delete command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Cluster\", ");
-		fprintf(stderr, "\"Coordinator\",\"QOS\", \"Resource\", or ");
+		fprintf(stderr, "\"Account\", \"Cluster\", \"Coordinator\", ");
+		fprintf(stderr, "\"Federation\", \"QOS\", \"Resource\", or ");
 		fprintf(stderr, "\"User\"\n");
 	}
 
@@ -796,7 +858,8 @@ static void _delete_it (int argc, char *argv[])
 }
 
 /* _usage - show the valid sacctmgr commands */
-void _usage () {
+void _usage()
+{
 	printf ("\
 sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
@@ -823,6 +886,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                               back into the databse.                       \n\
      associations             when using show/list will list the           \n\
                               associations associated with the entity.     \n\
+     clear stats              clear server statistics                      \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      dump <CLUSTER> [File=<FILENAME>]                                      \n\
                               dump database information of the             \n\
@@ -850,16 +914,17 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      quit                     terminate this command.                      \n\
      readonly                 makes it so no modification can happen.      \n\
      reconfigure              reread the slurmdbd.conf on the DBD.         \n\
+     shutdown                 shutdown the server.                         \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
-                  \"configuration\", \"coordinator\", \"event\", \"job\",  \n\
-                  \"problem\", \"qos\", \"resource\", \"reservation\",     \n\
-                  \"runawayjobs\", \"transaction\", \"tres\",              \n\
-                  \"user\" or \"wckey\"                                    \n\
+                  \"configuration\", \"coordinator\", \"event\",           \n\
+                  \"federation\", \"job\", \"problem\", \"qos\",           \n\
+                  \"resource\", \"reservation\", \"runawayjobs\", \"stats\"\n\
+                  \"transaction\", \"tres\", \"user\" or \"wckey\"         \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=,             \n\
@@ -890,18 +955,21 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithSubAccounts, WithDeleted, WOLimits,        \n\
                             WOPInfo, and WOPLimits                         \n\
                                                                            \n\
-       list cluster       - Classification=, DefaultQOS=, Flags=, Format=, \n\
-                            Names=, RPC=, and WOLimits                     \n\
-       add cluster        - DefaultQOS=, Fairshare=, GrpTRES=, GrpJobs=,   \n\
+       list cluster       - Classification=, DefaultQOS=, Federation=,     \n\
+                            Flags=, Format=, Names=, RPC= WithFed and      \n\
+                            WOLimits                                       \n\
+       add cluster        - DefaultQOS=, Fairshare=, Federation=, FedState=,\n\
+                            GrpTRES=, GrpJobs=, GrpMemory=, GrpNodes=,     \n\
+                            GrpSubmitJob=, MaxTRESMins=, MaxJobs=,         \n\
+                            MaxNodes=, MaxSubmitJobs=, MaxWall=, Name=,    \n\
+                            QosLevel= and Weight=                          \n\
+       modify cluster     - (set options) DefaultQOS=, Fairshare=,         \n\
+                            Federation=, FedState=, GrpTRES=, GrpJobs=,    \n\
                             GrpMemory=, GrpNodes=, GrpSubmitJob=,          \n\
                             MaxTRESMins=, MaxJobs=, MaxNodes=,             \n\
-                            MaxSubmitJobs=, MaxWall=, Name=, and QosLevel= \n\
-       modify cluster     - (set options) DefaultQOS=, Fairshare=, GrpTRES=,\n\
-                            GrpJobs=, GrpMemory=, GrpNodes=, GrpSubmitJob=,\n\
-                            MaxTRESMins=, MaxJobs=, MaxNodes=,             \n\
-                            MaxSubmitJobs=, MaxWall=, and QosLevel=        \n\
-                            (where options) Classification=, Flags=,       \n\
-                            and Names=                                     \n\
+                            MaxSubmitJobs=, MaxWall=, QosLevel= and Weight=\n\
+                            (where options) Classification=, Federation=,  \n\
+                            Flags=, and Names=                             \n\
        delete cluster     - Classification=, DefaultQOS=, Flags=, and Names=\n\
                                                                            \n\
        add coordinator    - Accounts=, and Names=                          \n\
@@ -910,6 +978,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        list events        - All_Clusters, All_Time, Clusters=, End=, Events=,\n\
                             Format=, MaxCPUs=, MinCPUs=, Nodes=, Reason=,  \n\
                             Start=, States=, and User=                     \n\
+                                                                           \n\
+       list federation    - Names=, Format= and Tree                       \n\
+       add federation     - Flags=, Clusters= and Name=                    \n\
+       modify federation  - (set options) Clusters= and Flags=             \n\
+                            (where options) Names=                         \n\
+       delete federation  - Names=                                         \n\
                                                                            \n\
        modify job         - (set options) DerivedExitCode=, Comment=       \n\
                             (where options) JobID=, Cluster=               \n\
@@ -947,7 +1021,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list reservation   - Clusters=, End=, ID=, Names=, Nodes=, Start=   \n\
                                                                            \n\
-       list runawayjobs                                                    \n\
+       list runawayjobs   - Cluster=, Format=                              \n\
+                                                                           \n\
+       clear stats                                                         \n\
+       list stats                                                          \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
                             Format=, ID=, Start=, User=, and WithAssoc     \n\
@@ -1024,6 +1101,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        Reservation        - Assoc, Cluster, End, Flags, ID, Name,          \n\
                             NodeNames, Start, TRES                         \n\
                                                                            \n\
+       RunAwayJobs        - Cluster, ID, Name, Partition, State,           \n\
+                            TimeStart, TimeEnd                             \n\
+                                                                           \n\
        Transactions       - Action, Actor, Info, TimeStamp, Where          \n\
                                                                            \n\
        TRES               - ID, Name, Type                                 \n\
@@ -1040,4 +1120,3 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   All commands entitys, and options are case-insensitive.               \n\n");
 
 }
-

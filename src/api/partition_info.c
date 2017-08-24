@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,10 +37,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include <errno.h>
 #include <stdio.h>
@@ -295,15 +291,24 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrfmtcat(out, " OverSubscribe=YES:%u", val);
 
+	xstrcat(out, line_end);
+
+	/****** Line ******/
+	if (part_ptr->over_time_limit == NO_VAL16)
+		xstrfmtcat(out, "OverTimeLimit=NONE");
+	else if (part_ptr->over_time_limit == (uint16_t) INFINITE)
+		xstrfmtcat(out, "OverTimeLimit=UNLIMITED");
+	else
+		xstrfmtcat(out, "OverTimeLimit=%u", part_ptr->over_time_limit);
+
 	preempt_mode = part_ptr->preempt_mode;
-	if (preempt_mode == (uint16_t) NO_VAL)
+	if (preempt_mode == NO_VAL16)
 		preempt_mode = slurm_get_preempt_mode(); /* use cluster param */
 	xstrfmtcat(out, " PreemptMode=%s", preempt_mode_string(preempt_mode));
 
 	xstrcat(out, line_end);
 
-	/****** Line 8 ******/
-
+	/****** Line ******/
 	if (part_ptr->state_up == PARTITION_UP)
 		xstrcat(out, "State=UP");
 	else if (part_ptr->state_up == PARTITION_DOWN)
@@ -340,26 +345,26 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		if (part_ptr->def_mem_per_cpu == MEM_PER_CPU) {
 			xstrcat(out, "DefMemPerCPU=UNLIMITED");
 		} else {
-			xstrfmtcat(out, "DefMemPerCPU=%u",
+			xstrfmtcat(out, "DefMemPerCPU=%"PRIu64"",
 				   part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
 		}
 	} else if (part_ptr->def_mem_per_cpu == 0) {
 		xstrcat(out, "DefMemPerNode=UNLIMITED");
 	} else {
-		xstrfmtcat(out, "DefMemPerNode=%u", part_ptr->def_mem_per_cpu);
+		xstrfmtcat(out, "DefMemPerNode=%"PRIu64"", part_ptr->def_mem_per_cpu);
 	}
 
 	if (part_ptr->max_mem_per_cpu & MEM_PER_CPU) {
 		if (part_ptr->max_mem_per_cpu == MEM_PER_CPU) {
 			xstrcat(out, " MaxMemPerCPU=UNLIMITED");
 		} else {
-			xstrfmtcat(out, " MaxMemPerCPU=%u",
+			xstrfmtcat(out, " MaxMemPerCPU=%"PRIu64"",
 				   part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
 		}
 	} else if (part_ptr->max_mem_per_cpu == 0) {
 		xstrcat(out, " MaxMemPerNode=UNLIMITED");
 	} else {
-		xstrfmtcat(out, " MaxMemPerNode=%u", part_ptr->max_mem_per_cpu);
+		xstrfmtcat(out, " MaxMemPerNode=%"PRIu64"", part_ptr->max_mem_per_cpu);
 	}
 
 	/****** Line 10 ******/

@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -133,6 +133,7 @@ strong_alias(bit_nset_max_count,slurm_bit_nset_max_count);
 strong_alias(bit_rotate_copy,	slurm_bit_rotate_copy);
 strong_alias(bit_rotate,	slurm_bit_rotate);
 strong_alias(bit_fmt,		slurm_bit_fmt);
+strong_alias(bit_fmt_full,	slurm_bit_fmt_full);
 strong_alias(bit_unfmt,		slurm_bit_unfmt);
 strong_alias(bitfmt2int,	slurm_bitfmt2int);
 strong_alias(bit_fmt_hexmask,	slurm_bit_fmt_hexmask);
@@ -158,17 +159,12 @@ strong_alias(bit_get_pos_num,	slurm_bit_get_pos_num);
  *   nbits (IN)		valid bits in new bitstring, initialized to all clear
  *   RETURN		new bitstring
  */
-bitstr_t *
-bit_alloc(bitoff_t nbits)
+bitstr_t *bit_alloc(bitoff_t nbits)
 {
 	bitstr_t *new;
 
 	_assert_valid_size(nbits);
-	new = (bitstr_t *)xmalloc(_bitstr_words(nbits) * sizeof(bitstr_t));
-	if (!new) {
-		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
-		abort();
-	}
+	new = xmalloc(_bitstr_words(nbits) * sizeof(bitstr_t));
 
 	_bitstr_magic(new) = BITSTR_MAGIC;
 	_bitstr_bits(new) = nbits;
@@ -181,18 +177,13 @@ bit_alloc(bitoff_t nbits)
  *   nbits (IN)		valid bits in new bitstr
  *   RETURN		new bitstring
  */
-bitstr_t *
-bit_realloc(bitstr_t *b, bitoff_t nbits)
+bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits)
 {
 	bitstr_t *new = NULL;
 
 	_assert_bitstr_valid(b);
 	_assert_valid_size(nbits);
 	new = xrealloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
-	if (!new) {
-		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
-		abort();
-	}
 
 	_assert_bitstr_valid(new);
 	_bitstr_bits(new) = nbits;
@@ -629,6 +620,23 @@ bit_and(bitstr_t *b1, bitstr_t *b2)
 }
 
 /*
+ * b1 &= ~b2
+ * b1 (IN/OUT)
+ * b2 (IN)
+ */
+void bit_and_not(bitstr_t *b1, bitstr_t *b2)
+{
+	bitoff_t bit;
+
+	_assert_bitstr_valid(b1);
+	_assert_bitstr_valid(b2);
+	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
+
+	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8)
+		b1[_bit_word(bit)] &= ~b2[_bit_word(bit)];
+}
+
+/*
  * b1 = ~b1		one's complement
  *   b1 (IN/OUT)	first bitmap
  */
@@ -697,43 +705,18 @@ bit_copybits(bitstr_t *dest, bitstr_t *src)
 	memcpy(&dest[BITSTR_OVERHEAD], &src[BITSTR_OVERHEAD], len);
 }
 
-#if !defined(USE_64BIT_BITSTR)
 /*
  * Returns the hamming weight (i.e. the number of bits set) in a word.
- * NOTE: This routine borrowed from Linux 2.4.9 <linux/bitops.h>.
- */
-static uint32_t
-hweight(uint32_t w)
-{
-	uint32_t res;
-
-	res = (w   & 0x55555555) + ((w >> 1)    & 0x55555555);
-	res = (res & 0x33333333) + ((res >> 2)  & 0x33333333);
-	res = (res & 0x0F0F0F0F) + ((res >> 4)  & 0x0F0F0F0F);
-	res = (res & 0x00FF00FF) + ((res >> 8)  & 0x00FF00FF);
-	res = (res & 0x0000FFFF) + ((res >> 16) & 0x0000FFFF);
-
-	return res;
-}
-#else
-/*
- * A 64 bit version crafted from 32-bit one borrowed above.
+ * NOTE: This routine borrowed from Linux 4.9 <tools/lib/hweight.c>.
  */
 static uint64_t
 hweight(uint64_t w)
 {
-	uint64_t res;
-
-	res = (w   & 0x5555555555555555) + ((w >> 1)    & 0x5555555555555555);
-	res = (res & 0x3333333333333333) + ((res >> 2)  & 0x3333333333333333);
-	res = (res & 0x0F0F0F0F0F0F0F0F) + ((res >> 4)  & 0x0F0F0F0F0F0F0F0F);
-	res = (res & 0x00FF00FF00FF00FF) + ((res >> 8)  & 0x00FF00FF00FF00FF);
-	res = (res & 0x0000FFFF0000FFFF) + ((res >> 16) & 0x0000FFFF0000FFFF);
-	res = (res & 0x00000000FFFFFFFF) + ((res >> 32) & 0x00000000FFFFFFFF);
-
-	return res;
+        w -= (w >> 1) & 0x5555555555555555ul;
+        w =  (w & 0x3333333333333333ul) + ((w >> 2) & 0x3333333333333333ul);
+        w =  (w + (w >> 4)) & 0x0f0f0f0f0f0f0f0ful;
+        return (w * 0x0101010101010101ul) >> 56;
 }
-#endif /* !USE_64BIT_BITSTR */
 
 /*
  * Count the number of bits set in bitstring.
@@ -1007,22 +990,9 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
 }
 
 /*
- * XXX the relationship between stdint types and "unsigned [long] long"
- * types is architecture/compiler dependent, so this may have to be tweaked.
- */
-#ifdef	USE_64BIT_BITSTR
-#define BITSTR_RANGE_FMT	"%"PRIu64"-%"PRIu64","
-#define BITSTR_SINGLE_FMT	"%"PRIu64","
-#else
-#define BITSTR_RANGE_FMT	"%u-%u,"
-#define BITSTR_SINGLE_FMT	"%u,"
-#endif
-
-/*
  * Convert to range string format, e.g. 0-5,42
  */
-char *
-bit_fmt(char *str, int32_t len, bitstr_t *b)
+char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 {
 	int32_t count = 0, ret, word;
 	bitoff_t start, bit;
@@ -1047,11 +1017,12 @@ bit_fmt(char *str, int32_t len, bitstr_t *b)
 			if (bit == start)	/* add single bit position */
 				ret = snprintf(str+strlen(str),
 				               len-strlen(str),
-				               BITSTR_SINGLE_FMT, start);
+				               "%"BITSTR_FMT",", start);
 			else 			/* add bit position range */
 				ret = snprintf(str+strlen(str),
 				               len-strlen(str),
-				               BITSTR_RANGE_FMT, start, bit);
+				               "%"BITSTR_FMT"-%"BITSTR_FMT",",
+					       start, bit);
 			assert(ret != -1);
 		}
 		bit++;
@@ -1064,6 +1035,44 @@ bit_fmt(char *str, int32_t len, bitstr_t *b)
 /* 		str[0] = '['; */
 /* 		strcat(str, "]"); */
 /* 	}  */
+	return str;
+}
+
+/*
+ * Convert to range string format, e.g. 0-5,42 with no length restriction
+ */
+char *bit_fmt_full(bitstr_t *b)
+{
+	int32_t count = 0, word;
+	bitoff_t start, bit;
+	char *str = NULL, *comma = "";
+	_assert_bitstr_valid(b);
+
+	for (bit = 0; bit < _bitstr_bits(b); ) {
+		word = _bit_word(bit);
+		if (b[word] == 0) {
+			bit += sizeof(bitstr_t)*8;
+			continue;
+		}
+
+		if (bit_test(b, bit)) {
+			count++;
+			start = bit;
+			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1)) {
+				bit++;
+				count++;
+			}
+			if (bit == start)	/* add single bit position */
+				xstrfmtcat(str, "%s%"BITSTR_FMT"",
+					   comma, start);
+			else 			/* add bit position range */
+				xstrfmtcat(str, "%s%"BITSTR_FMT"-%"BITSTR_FMT,
+					   comma, start, bit);
+			comma = ",";
+		}
+		bit++;
+	}
+
 	return str;
 }
 
@@ -1204,6 +1213,49 @@ int inx2bitstr(bitstr_t *b, int32_t *inx)
 		bit_nset(b, *p, *(p + 1));
 	}
 	return rc;
+}
+
+/*
+ * convert a bitstring to inx format
+ * returns an xmalloc()'d array of int32_t that must be xfree()'d
+ */
+int32_t *bitstr2inx(bitstr_t *b)
+{
+	bitoff_t start, bit, pos = 0;
+	int32_t *bit_inx;
+
+	if (!b) {
+		bit_inx = xmalloc(sizeof(int32_t));
+		bit_inx[0] = -1;
+		return bit_inx;
+	}
+
+	/* worst case: every other bit set, resulting in an array of length
+	 * bitstr_bits(b) + 1 (if an odd number of elements)
+	 * + 1 (for trailing -1) */
+	bit_inx = xmalloc_nz(sizeof(int32_t) * (_bitstr_bits(b) + 2));
+
+	for (bit = 0; bit < _bitstr_bits(b); ) {
+		/* skip past empty words */
+		if (!b[_bit_word(bit)]) {
+			bit += sizeof(bitstr_t) * 8;
+			continue;
+		}
+
+		if (bit_test(b, bit)) {
+			start = bit;
+			while (bit + 1 < _bitstr_bits(b)
+			       && bit_test(b, bit + 1))
+				bit++;
+			bit_inx[pos++] = start;
+			bit_inx[pos++] = bit;
+		}
+		bit++;
+	}
+	/* terminate array with -1 */
+	bit_inx[pos] = -1;
+
+	return bit_inx;
 }
 
 /* bit_fmt_hexmask
@@ -1413,11 +1465,7 @@ bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 	assert(pos <= bit_cnt);
 
 	if (!bit_test(b, pos)) {
-#ifdef	USE_64BIT_BITSTR
-		error("bit %"PRIu64" not set", pos);
-#else
-		error("bit %d not set", pos);
-#endif
+		error("bit %"BITSTR_FMT" not set", pos);
 		return cnt;
 	}
 	for (bit = 0; bit <= pos; bit++) {
@@ -1428,4 +1476,3 @@ bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 
 	return cnt;
 }
-

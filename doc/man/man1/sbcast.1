@@ -1,4 +1,4 @@
-.TH sbcast "1" "Slurm Commands" "March 2016" "Slurm Commands"
+.TH sbcast "1" "Slurm Commands" "October 2016" "Slurm Commands"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a Slurm job.
@@ -15,6 +15,10 @@ allocation.
 \fBSOURCE\fR is the name of a file on the current node.
 \fBDEST\fR should be the fully qualified pathname for the
 file copy to be created on each node.
+If a fully qualified pathname is not provided, the file will be created in
+the directory specified in the \fBSbcastParameters\fR parameter in the slurm.conf
+file (if available) otherwise it will be created in the current working
+directory from which the sbcast command is invoked.
 \fBDEST\fR should be on a file system local to that node.
 Note that parallel file systems \fImay\fR provide better performance
 than \fBsbcast\fR can provide, although performance will vary
@@ -25,8 +29,10 @@ by file size, degree of parallelism, and network type.
 \fB\-C\fR [\fIlibrary\fR], \fB\-\-compress\fR[=\fIlibrary\fR]
 Compress the file being transmitted.
 The optional argument specifies the data compression library to be used.
-Supported values are "lz4" (default) and "zlib".
+Supported values are "lz4" (default), "none" and "zlib".
 Some compression libraries may be unavailable on some systems.
+The default compression library (and enabling compression itself) may be
+set in the slurm.conf file using the SbcastParameter option.
 .TP
 \fB\-f\fR, \fB\-\-force\fR
 If the destination file already exists, replace it.
@@ -118,7 +124,7 @@ srun: jobid 12345 submitted
 Copyright (C) 2006-2010 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2016 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

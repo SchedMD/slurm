@@ -4,16 +4,16 @@ AUTOMAKE_OPTIONS = foreign
 
 bin_SCRIPTS = seff smail
 
-# Don't rely on autoconf to replace variables outside of makefiles
-smail: smail.in
-	sed -e 's|@bindir[@]|$(bindir)|g' \
-	    ${abs_srcdir}/smail.in >${abs_srcdir}/smail
+seff:
+smail:
+_perldir=$(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
 
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(DESTDIR)$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
 	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	   cp $(top_srcdir)/contribs/seff/$$p $(DESTDIR)$(bindir)/$$p; \
+	   echo "sed 's%use lib .*%use lib qw(${_perldir});%; s|@bindir[@]|$(bindir)|g' ${abs_srcdir}/$$p > $(DESTDIR)$(bindir)/$$p"; \
+	   sed "s%use lib .*%use lib qw(${_perldir});%; s|@bindir[@]|$(bindir)|g" ${abs_srcdir}/$$p >$(DESTDIR)$(bindir)/$$p; \
 	   chmod 755 $(DESTDIR)$(bindir)/$$p;\
 	done
 

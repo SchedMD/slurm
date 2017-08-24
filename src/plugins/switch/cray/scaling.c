@@ -6,7 +6,7 @@
  *  Written by David Gloe <c16817@cray.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -46,7 +46,7 @@
 
 // Static functions
 static int _get_cpu_total(void);
-static uint32_t _get_mem_total(void);
+static uint64_t _get_mem_total(void);
 
 /*
  * Determines the cpu scaling amount to use.
@@ -109,7 +109,7 @@ int get_cpu_scaling(stepd_step_rec_t *job)
 int get_mem_scaling(stepd_step_rec_t *job)
 {
 	int mem_scaling;
-	uint32_t total_mem;
+	uint64_t total_mem;
 
 	/*
 	 * Get the memory amount
@@ -152,7 +152,7 @@ int get_mem_scaling(stepd_step_rec_t *job)
  * Get the total amount of memory on the node.
  * Returns 0 on failure.
  */
-static uint32_t _get_mem_total(void)
+static uint64_t _get_mem_total(void)
 {
 	FILE *f = NULL;
 	size_t sz = 0;
@@ -160,7 +160,7 @@ static uint32_t _get_mem_total(void)
 	char *lin = NULL;
 	int meminfo_value;
 	char meminfo_str[1024];
-	uint32_t total_mem = 0;
+	uint64_t total_mem = 0;
 
 	f = fopen("/proc/meminfo", "r");
 	if (f == NULL ) {

@@ -134,9 +134,6 @@ of the Slurm contribs distribution follows:
   slurm_completion_help/     [shell script, vim file]
      Scripts to help in option completion when using slurm commands.
 
-  slurmdb-direct/    [ Perl program ]
-     Program that permits writing directly to SlurmDBD (Slurm DataBase Daemon).
-
   spank_core.c       [ SPANK plugin, C program ]
      A Slurm SPANK plugin that can be used to permit users to generated
      light-weight core files rather than full core files.

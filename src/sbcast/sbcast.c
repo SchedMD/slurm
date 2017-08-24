@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,18 +38,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #include "slurm/slurm_errno.h"
 
@@ -70,7 +68,7 @@
 /* global variables */
 struct bcast_parameters params;	/* program parameters */
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	int rc;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;

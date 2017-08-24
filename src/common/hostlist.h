@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,6 +38,8 @@
 
 #ifndef _HOSTLIST_H
 #define _HOSTLIST_H
+
+#include "config.h"
 
 #include <unistd.h>		/* load ssize_t definition */
 
@@ -83,7 +85,7 @@ extern char *alpha_num;
  * lsd_nomem_error(file,line,mesg) is a macro definition that returns NULL.
  * This macro may be redefined to invoke another routine instead.
  *
- * If WITH_PTHREADS is defined, these routines will be thread-safe.
+ * These routines are thread-safe.
  *
  */
 
@@ -246,6 +248,16 @@ char * hostlist_shift(hostlist_t hl);
  * Caller is responsible for freeing returned memory
  */
 char * hostlist_pop_range(hostlist_t hl);
+
+/* hostlist_pop_range_values():
+ *
+ * Pop the last range of hosts of the hostlist hl and fill in lo and hi with the
+ * values of the range.
+ * Returns 0 if no ranges exist 1 otherwise.
+ * The range associated with the returned lo and hi is removed from hl.
+ */
+int hostlist_pop_range_values(
+	hostlist_t hl, unsigned long *lo, unsigned long *hi);
 
 /* hostlist_shift_range():
  *

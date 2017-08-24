@@ -6,7 +6,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,15 +35,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/xmalloc.h"
@@ -155,7 +151,7 @@ spawn_req_pack(spawn_req_t *req, Buf buf)
 	void *auth_cred;
 	char *auth_info = slurm_get_auth_info();
 
-	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
+	auth_cred = g_slurm_auth_create(auth_info);
 	xfree(auth_info);
 	if (auth_cred == NULL) {
 		error("authentication: %s",

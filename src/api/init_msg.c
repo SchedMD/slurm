@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,10 +38,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include <errno.h>
 #include <stdio.h>
 
@@ -68,6 +64,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->cpu_freq_max	= NO_VAL;
 	job_desc_msg->cpu_freq_gov	= NO_VAL;
 	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
+	job_desc_msg->delay_boot	= NO_VAL;
 	job_desc_msg->geometry[0]       = (uint16_t) NO_VAL;
 	job_desc_msg->group_id		= NO_VAL;
 	job_desc_msg->job_id		= NO_VAL;
@@ -85,7 +82,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->overcommit	= (uint8_t) NO_VAL;
 	job_desc_msg->plane_size	= (uint16_t) NO_VAL;
 	job_desc_msg->pn_min_cpus	= (uint16_t) NO_VAL;
-	job_desc_msg->pn_min_memory	= NO_VAL;
+	job_desc_msg->pn_min_memory	= NO_VAL64;
 	job_desc_msg->pn_min_tmp_disk	= NO_VAL;
 	job_desc_msg->priority		= NO_VAL;
 	job_desc_msg->reboot		= (uint16_t) NO_VAL;
@@ -125,14 +122,15 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 {
 	memset(update_part_msg, 0, sizeof(update_part_msg_t));
 	update_part_msg->default_time   = (uint32_t) NO_VAL;
-	update_part_msg->def_mem_per_cpu = (uint32_t) NO_VAL;
+	update_part_msg->def_mem_per_cpu = NO_VAL64;
 	update_part_msg->grace_time     = (uint32_t) NO_VAL;
 	update_part_msg->max_cpus_per_node = NO_VAL;
-	update_part_msg->max_mem_per_cpu = (uint32_t) NO_VAL;
+	update_part_msg->max_mem_per_cpu = NO_VAL64;
 	update_part_msg->max_nodes 	= NO_VAL;
 	update_part_msg->max_share 	= (uint16_t) NO_VAL;
 	update_part_msg->min_nodes 	= NO_VAL;
 	update_part_msg->max_time 	= (uint32_t) NO_VAL;
+	update_part_msg->over_time_limit = NO_VAL16;
 	update_part_msg->preempt_mode 	= (uint16_t) NO_VAL;
 	update_part_msg->priority_job_factor = (uint16_t) NO_VAL;
 	update_part_msg->priority_tier	= (uint16_t) NO_VAL;

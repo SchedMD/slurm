@@ -55,6 +55,32 @@ using the ifconfig command. A value of 4096 has been found to work well for one
 site with a very large cluster
 (e.g. <i>"ifconfig <interface> txqueuelen 4096"</i>).</p>
 
+<h3>Thread/Process Limit</h3>
+
+<p>There is a newly introduced limit in SLES 12 SP2 (used on Cray systems
+with CLE 6.0UP04, to be released mid-2017).
+The version of systemd shipped with SLES 12 SP2 contains support for the
+<a href="https://www.suse.com/releasenotes/x86_64/SUSE-SLES/12-SP2/#fate-320358">
+PIDs cgroup controller</a>.
+Under the new systemd version, each init script or systemd service is limited
+to 512 threads/processes by default.
+This could cause issues for the slurmctld and slurmd daemons on large clusters
+or systems with a high job throughput rate.
+To increase the limit beyond the default:</p>
+<ul>
+<li>If using a systemd service file: Add <i>TasksMax=N</i> to the [Service]
+ section. N can be a specific number, or special value <i>infinity</i>.</li>
+<li>If using an init script: Create the file<br>
+/etc/systemd/system/&lt;init script name&gt;.service.d/override.conf<br>
+with these contents:
+<pre>
+  [Service]
+  TasksMax=N
+</pre></li>
+</ul></p>
+<p>Note: Earlier versions of systemd that don't support the PIDs cgroup
+controller simply ignore the TasksMax setting.</p>
+
 <h2>User Limits</h2>
 
 <p>The <b>ulimit</b> values in effect for the <b>slurmctld</b> daemon should
@@ -165,6 +191,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 22 July 2015</p>
+<p style="text-align:center;">Last modified 3 March 2017</p>
 
 <!--#include virtual="footer.txt"-->

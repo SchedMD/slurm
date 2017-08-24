@@ -7,7 +7,7 @@
  *  <asanchez1987@gmail.com>, who borrowed heavily from jobcomp/filetxt
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,26 +36,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
+#include "config.h"
 
 #include <curl/curl.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <grp.h>
 #include <pwd.h>
-#include <stdlib.h>
 #include <stddef.h>
-#include <sys/types.h>
+#include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
+
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
@@ -107,12 +100,13 @@ const char plugin_type[] = "jobcomp/elasticsearch";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define INDEX_RETRY_INTERVAL 30
-#define JOBCOMP_DATA_FORMAT "{\"jobid\":%lu,\"username\":\"%s\","	\
-	"\"user_id\":%lu,\"groupname\":\"%s\",\"group_id\":%lu,"	\
+#define JOBCOMP_DATA_FORMAT "{\"jobid\":%u,\"username\":\"%s\","	\
+	"\"user_id\":%u,\"groupname\":\"%s\",\"group_id\":%u,"  	\
 	"\"@start\":\"%s\",\"@end\":\"%s\",\"elapsed\":%ld,"		\
 	"\"partition\":\"%s\",\"alloc_node\":\"%s\","			\
-	"\"nodes\":\"%s\",\"total_cpus\":%lu,\"total_nodes\":%lu,"	\
-	"\"derived_exitcode\":%lu,\"exitcode\":%lu,\"state\":\"%s\""
+	"\"nodes\":\"%s\",\"total_cpus\":%u,\"total_nodes\":%u,"	\
+	"\"derived_exitcode\":%u,\"exitcode\":%u,\"state\":\"%s\""      \
+	",\"cpu_hours\":%.6f"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -351,13 +345,10 @@ static int _index_job(const char *jobcomp)
 	}
 
 	if (curl_handle) {
-		char *url = xstrdup(log_url);
-		xstrcat(url, index_type);
-
 		chunk.message = xmalloc(1);
 		chunk.size = 0;
 
-		curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+		curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
 		curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
 		curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, jobcomp);
 		curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE,
@@ -372,7 +363,7 @@ static int _index_job(const char *jobcomp)
 		if (res != CURLE_OK) {
 			if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
 				info("%s: Could not connect to: %s , reason: %s"
-				     , plugin_type, url,
+				     , plugin_type, log_url,
 				     curl_easy_strerror(res));
 			rc = SLURM_ERROR;
 		} else {
@@ -382,7 +373,7 @@ static int _index_job(const char *jobcomp)
 			if (token == NULL) {
 				error("%s: Could not receive the HTTP response"
 				      " status code from %s", plugin_type, 
-					url);
+					log_url);
 				rc = SLURM_ERROR;
 			} else {
 				token = strtok(NULL, " ");
@@ -396,7 +387,8 @@ static int _index_job(const char *jobcomp)
 					    DEBUG_FLAG_ESEARCH) {
 						info("%s: HTTP status code %s "
 						     "received from %s",
-						     plugin_type, token, url);
+						     plugin_type, token,
+						     log_url);
 						info("%s: HTTP response:\n%s",
 						     plugin_type, response);
 					}
@@ -418,7 +410,6 @@ static int _index_job(const char *jobcomp)
 		}
 		xfree(chunk.message);
 		curl_easy_cleanup(curl_handle);
-		xfree(url);
 	}
 	curl_global_cleanup();
 
@@ -611,7 +602,6 @@ static void _make_time_str(time_t * time, char *string, int size)
 
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
-	int nwritten, B_SIZE = 1024;
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
 	char time_str[32], *cluster = NULL, *qos, *state_string;
 	time_t elapsed_time;
@@ -619,7 +609,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	uint32_t time_limit;
 	uint16_t ntasks_per_node;
 	int i;
-	char *buffer, tmp_str[256], *script_str, *script;
+	char *buffer, *script_str, *script;
 	struct job_node *jnode;
 
 	if (list_count(jobslist) > MAX_JOBS) {
@@ -670,47 +660,19 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	elapsed_time = job_ptr->end_time - job_ptr->start_time;
 
-	buffer = xmalloc(B_SIZE);
-
-	nwritten = snprintf(buffer, B_SIZE, JOBCOMP_DATA_FORMAT,
-			    (unsigned long) job_ptr->job_id, usr_str,
-			    (unsigned long) job_ptr->user_id, grp_str,
-			    (unsigned long) job_ptr->group_id, start_str,
-			    end_str, (long) elapsed_time,
-			    job_ptr->partition, job_ptr->alloc_node,
-			    job_ptr->nodes, (unsigned long) job_ptr->total_cpus,
-			    (unsigned long) job_ptr->total_nodes,
-			    (unsigned long) job_ptr->derived_ec,
-			    (unsigned long) job_ptr->exit_code, state_string);
-
-	if (nwritten >= B_SIZE) {
-		B_SIZE += nwritten + 1;
-		buffer = xrealloc(buffer, B_SIZE);
-
-		nwritten = snprintf(buffer, B_SIZE, JOBCOMP_DATA_FORMAT,
-				    (unsigned long) job_ptr->job_id, usr_str,
-				    (unsigned long) job_ptr->user_id, grp_str,
-				    (unsigned long) job_ptr->group_id,
-				    start_str, end_str, (long) elapsed_time,
-				    job_ptr->partition, job_ptr->alloc_node,
-				    job_ptr->nodes,
-				    (unsigned long) job_ptr->total_cpus,
-				    (unsigned long) job_ptr->total_nodes,
-				    (unsigned long) job_ptr->derived_ec,
-				    (unsigned long) job_ptr->exit_code,
-				    state_string);
-
-		if (nwritten >= B_SIZE) {
-			error("%s: Job completion data truncated and lost",
-			      plugin_type);
-			return SLURM_ERROR;
-		}
-	}
-
-	snprintf(tmp_str, sizeof(tmp_str), ",\"cpu_hours\":%.6f",
-		 ((float) elapsed_time * (float) job_ptr->total_cpus) /
-		  (float) 3600);
-	xstrcat(buffer, tmp_str);
+	buffer = xstrdup_printf(JOBCOMP_DATA_FORMAT,
+				job_ptr->job_id, usr_str,
+				job_ptr->user_id, grp_str,
+				job_ptr->group_id, start_str,
+				end_str, elapsed_time,
+				job_ptr->partition, job_ptr->alloc_node,
+				job_ptr->nodes, job_ptr->total_cpus,
+				job_ptr->total_nodes,
+				job_ptr->derived_ec,
+				job_ptr->exit_code, state_string,
+				((float) elapsed_time *
+				 (float) job_ptr->total_cpus) /
+				(float) 3600);
 
 	if (job_ptr->array_task_id != NO_VAL) {
 		xstrfmtcat(buffer, ",\"array_job_id\":%lu",
@@ -875,8 +837,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	xstrcat(buffer, "}");
 	jnode = xmalloc(sizeof(struct job_node));
-	jnode->serialized_job = xstrdup(buffer);
+	jnode->serialized_job = buffer;
 	list_enqueue(jobslist, jnode);
+	buffer = NULL;
 
 	return SLURM_SUCCESS;
 }
@@ -975,7 +938,11 @@ extern int slurm_jobcomp_set_location(char *location)
 		return SLURM_ERROR;
 	}
 
-	log_url = xstrdup(location);
+	/* Strip any trailing slashes. */
+	while (location[strlen(location) - 1] == '/')
+		location[strlen(location) - 1] = '\0';
+
+	log_url = xstrdup_printf("%s%s", location, index_type);
 
 	curl_global_init(CURL_GLOBAL_ALL);
 	curl_handle = curl_easy_init();

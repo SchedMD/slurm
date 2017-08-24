@@ -2,13 +2,13 @@
  *  preempt.c - Job preemption plugin function setup.
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -94,7 +94,7 @@ static void _preempt_signal(struct job_record *job_ptr, uint32_t grace_time)
 /* *********************************************************************** */
 /*  TAG(                    slurm_job_check_grace                       )  */
 /* *********************************************************************** */
-extern int slurm_job_check_grace(struct job_record *job_ptr)
+extern int slurm_job_check_grace(struct job_record *job_ptr, uint32_t preemptor)
 {
 	/* Preempt modes: -1 (unset), 0 (none), 1 (partition), 2 (QOS) */
 	static int preempt_mode = 0;
@@ -130,8 +130,9 @@ extern int slurm_job_check_grace(struct job_record *job_ptr)
 	}
 
 	if (grace_time) {
-		debug("setting %u sec preemption grace time for job %u",
-		      grace_time, job_ptr->job_id);
+		debug("setting %u sec preemption grace time for job %u to "
+		      "reclaim resources for job %u",
+		      grace_time, job_ptr->job_id, preemptor);
 		_preempt_signal(job_ptr, grace_time);
 	} else
 		rc = SLURM_ERROR;
@@ -149,7 +150,7 @@ extern int slurm_preempt_init(void)
 	char *type = NULL;
 
 	/* This function is called frequently, so it should be as fast as
-	 * possible. The test below will be TRUE almost all of the time and
+	 * possible. The test below will be true almost all of the time and
 	 * is as fast as possible. */
 	if (init_run && g_context)
 		return retval;

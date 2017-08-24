@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,12 +37,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
+
 #if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
 #endif
+
 #include <grp.h>
 #include <pthread.h>
 #include <signal.h>
@@ -74,7 +74,10 @@
 /* Global variables */
 time_t shutdown_time = 0;		/* when shutdown request arrived */
 List registered_clusters = NULL;
+pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
+slurmdb_stats_rec_t rpc_stats;
 pthread_mutex_t registered_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_t signal_handler_thread;	/* thread ID for signal hander */
 
 /* Local variables */
 static int    dbd_sigarray[] = {	/* blocked signals for this process */
@@ -87,7 +90,6 @@ static log_options_t log_opts = 	/* Log to stderr & syslog */
 	LOG_OPTS_INITIALIZER;
 static int	 new_nice = 0;
 static pthread_t rpc_handler_thread;	/* thread ID for RPC hander */
-static pthread_t signal_handler_thread;	/* thread ID for signal hander */
 static pthread_t rollup_handler_thread;	/* thread ID for rollup hander */
 static pthread_t commit_handler_thread;	/* thread ID for commit hander */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -99,27 +101,29 @@ static List lft_rgt_list = NULL;
 
 /* Local functions */
 static void  _become_slurm_user(void);
+static void  _commit_handler_cancel(void);
+static void *_commit_handler(void *no_data);
 static void  _daemonize(void);
 static void  _default_sigaction(int sig);
+static void  _free_dbd_stats(void);
 static void  _init_config(void);
+static void  _init_dbd_stats(void);
 static void  _init_pidfile(void);
 static void  _kill_old_slurmdbd(void);
-static void  _parse_commandline(int argc, char *argv[]);
+static void  _parse_commandline(int argc, char **argv);
+static void  _restart_self(int argc, char **argv);
 static void  _request_registrations(void *db_conn);
-static void  _rollup_handler_cancel();
+static void  _rollup_handler_cancel(void);
 static void *_rollup_handler(void *no_data);
-static void  _commit_handler_cancel();
-static void *_commit_handler(void *no_data);
 static int   _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
 static void  _set_work_dir(void);
 static void *_signal_handler(void *no_data);
 static void  _update_logging(bool startup);
 static void  _update_nice(void);
 static void  _usage(char *prog_name);
-static void  _restart_self(int argc, char **argv);
 
 /* main - slurmctld main function, start various threads and process RPCs */
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	pthread_attr_t thread_attr;
 	char node_name_short[128];
@@ -143,6 +147,9 @@ int main(int argc, char *argv[])
 		fatal("Unable to initialize %s accounting storage plugin",
 		      slurmdbd_conf->storage_type);
 	}
+
+	slurmdbd_defs_init(slurmdbd_conf->auth_info);
+
 	_kill_old_slurmdbd();
 	if (foreground == 0)
 		_daemonize();
@@ -160,6 +167,7 @@ int main(int argc, char *argv[])
 	if (foreground == 0)
 		_set_work_dir();
 	log_config();
+	_init_dbd_stats();
 
 #ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
@@ -276,10 +284,14 @@ int main(int argc, char *argv[])
 		acct_storage_g_commit(db_conn, 1);
 
 		/* this is only ran if not backup */
-		if (rollup_handler_thread)
+		if (rollup_handler_thread) {
 			pthread_join(rollup_handler_thread, NULL);
-		if (rpc_handler_thread)
+			rollup_handler_thread = 0;
+		}
+		if (rpc_handler_thread) {
 			pthread_join(rpc_handler_thread, NULL);
+			rpc_handler_thread = 0;
+		}
 
 		if (backup && primary_resumed && !restart_backup) {
 			shutdown_time = 0;
@@ -321,10 +333,12 @@ end_it:
 	slurm_auth_fini();
 	log_fini();
 	free_slurmdbd_conf();
+	_free_dbd_stats();
+	slurmdbd_defs_fini();
 	exit(0);
 }
 
-extern void reconfig()
+extern void reconfig(void)
 {
 	read_slurmdbd_conf();
 	assoc_mgr_set_missing_uids();
@@ -332,7 +346,7 @@ extern void reconfig()
 	_update_logging(false);
 }
 
-extern void shutdown_threads()
+extern void shutdown_threads(void)
 {
 	shutdown_time = time(NULL);
 	/* End commit before rpc_mgr_wake.  It will do the final
@@ -341,6 +355,56 @@ extern void shutdown_threads()
 	_commit_handler_cancel();
 	rpc_mgr_wake();
 	_rollup_handler_cancel();
+}
+
+/* Allocate storage for statistics data structure,
+ * Free storage using _free_dbd_stats() */
+static void _init_dbd_stats(void)
+{
+	slurm_mutex_lock(&rpc_mutex);
+	rpc_stats.rollup_count    =
+		xmalloc(sizeof(uint16_t) * ROLLUP_COUNT);
+	rpc_stats.rollup_time     =
+		xmalloc(sizeof(uint64_t) * ROLLUP_COUNT);
+	rpc_stats.rollup_max_time =
+		xmalloc(sizeof(uint64_t) * ROLLUP_COUNT);
+
+	rpc_stats.type_cnt = 200;  /* Capture info for first 200 RPC types */
+	rpc_stats.rpc_type_id   =
+		xmalloc(sizeof(uint16_t) * rpc_stats.type_cnt);
+	rpc_stats.rpc_type_cnt  =
+		xmalloc(sizeof(uint32_t) * rpc_stats.type_cnt);
+	rpc_stats.rpc_type_time =
+		xmalloc(sizeof(uint64_t) * rpc_stats.type_cnt);
+
+	rpc_stats.user_cnt = 200;  /* Capture info for first 200 RPC users */
+	rpc_stats.rpc_user_id   =
+		xmalloc(sizeof(uint32_t) * rpc_stats.user_cnt);
+	rpc_stats.rpc_user_cnt  =
+		xmalloc(sizeof(uint32_t) * rpc_stats.user_cnt);
+	rpc_stats.rpc_user_time =
+		xmalloc(sizeof(uint64_t) * rpc_stats.user_cnt);
+	slurm_mutex_unlock(&rpc_mutex);
+}
+
+/* Free storage from statistics data structure */
+static void _free_dbd_stats(void)
+{
+	slurm_mutex_lock(&rpc_mutex);
+	xfree(rpc_stats.rollup_count);
+	xfree(rpc_stats.rollup_time);
+	xfree(rpc_stats.rollup_max_time);
+
+	rpc_stats.type_cnt = 0;
+	xfree(rpc_stats.rpc_type_id);
+	xfree(rpc_stats.rpc_type_cnt);
+	xfree(rpc_stats.rpc_type_time);
+
+	rpc_stats.user_cnt = 0;
+	xfree(rpc_stats.rpc_user_id);
+	xfree(rpc_stats.rpc_user_cnt);
+	xfree(rpc_stats.rpc_user_time);
+	slurm_mutex_unlock(&rpc_mutex);
 }
 
 /* Reset some of the processes resource limits to the hard limits */
@@ -376,7 +440,7 @@ static void  _init_config(void)
  * IN argv - the command line arguments
  * IN/OUT conf_ptr - pointer to current configuration, update as needed
  */
-static void _parse_commandline(int argc, char *argv[])
+static void _parse_commandline(int argc, char **argv)
 {
 	int c = 0;
 	char *tmp_char;
@@ -599,7 +663,7 @@ static void _request_registrations(void *db_conn)
 	FREE_NULL_LIST(cluster_list);
 }
 
-static void _rollup_handler_cancel()
+static void _rollup_handler_cancel(void)
 {
 	if (running_rollup) {
 		if (backup && running_rollup && primary_resumed)
@@ -627,6 +691,8 @@ static void *_rollup_handler(void *db_conn)
 	time_t next_time;
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
+	rollup_stats_t rollup_stats;
+	int i;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -641,13 +707,27 @@ static void *_rollup_handler(void *db_conn)
 		if (!db_conn)
 			break;
 		/* run the roll up */
+		memset(&rollup_stats, 0, sizeof(rollup_stats_t));
 		slurm_mutex_lock(&rollup_lock);
 		running_rollup = 1;
 		debug2("running rollup at %s", slurm_ctime2(&start_time));
-		acct_storage_g_roll_usage(db_conn, 0, 0, 1);
+		acct_storage_g_roll_usage(db_conn, 0, 0, 1, &rollup_stats);
 		acct_storage_g_commit(db_conn, 1);
 		running_rollup = 0;
 		slurm_mutex_unlock(&rollup_lock);
+
+		slurm_mutex_lock(&rpc_mutex);
+		for (i = 0; i < ROLLUP_COUNT; i++) {
+			if (rollup_stats.rollup_time[i] == 0)
+				continue;
+			rpc_stats.rollup_count[i]++;
+			rpc_stats.rollup_time[i] +=
+				rollup_stats.rollup_time[i];
+			rpc_stats.rollup_max_time[i] =
+				MAX(rpc_stats.rollup_max_time[i],
+				    rollup_stats.rollup_time[i]);
+		}
+		slurm_mutex_unlock(&rpc_mutex);
 
 		/* get the time now we have rolled usage */
 		start_time = time(NULL);
@@ -706,7 +786,7 @@ static void *_commit_handler(void *db_conn)
 			itr = list_iterator_create(registered_clusters);
 			while ((slurmdbd_conn = list_next(itr))) {
 				debug4("running commit for %s",
-				       slurmdbd_conn->cluster_name);
+				       slurmdbd_conn->conn->cluster_name);
 				acct_storage_g_commit(
 					slurmdbd_conn->db_conn, 1);
 			}
@@ -735,7 +815,7 @@ static void *_commit_handler(void *db_conn)
 static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 {
 	slurm_addr_t ctld_address;
-	slurm_fd_t fd;
+	int fd;
 	int rc = SLURM_SUCCESS;
 
 	slurm_set_addr_char(&ctld_address, cluster_rec->control_port,

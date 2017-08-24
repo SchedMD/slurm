@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,15 +37,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <stdlib.h>
-#include <unistd.h>
 #include <poll.h>
-#include <sys/types.h>
 #include <pwd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/env.h"
 #include "src/common/fd.h"
@@ -502,12 +500,15 @@ allocate_nodes(bool handle_signals)
 		 * allocated so we don't have issues when we use them
 		 * in the step creation.
 		 */
-		if (opt.pn_min_memory != NO_VAL)
-			opt.pn_min_memory = (resp->pn_min_memory &
-					     (~MEM_PER_CPU));
-		else if (opt.mem_per_cpu != NO_VAL)
-			opt.mem_per_cpu = (resp->pn_min_memory &
-					   (~MEM_PER_CPU));
+		opt.pn_min_memory = NO_VAL64;
+		opt.mem_per_cpu = NO_VAL64;
+		if (resp->pn_min_memory != NO_VAL64) {
+			if (resp->pn_min_memory & MEM_PER_CPU)
+				opt.mem_per_cpu = (resp->pn_min_memory &
+						   (~MEM_PER_CPU));
+			else
+				opt.pn_min_memory = resp->pn_min_memory;
+		}
 		/*
 		 * FIXME: timelimit should probably also be updated
 		 * here since it could also change.
@@ -601,18 +602,16 @@ existing_allocation(void)
 }
 
 /* Set up port to handle messages from slurmctld */
-slurm_fd_t
-slurmctld_msg_init(void)
+int slurmctld_msg_init(void)
 {
 	slurm_addr_t slurm_address;
 	uint16_t port;
-	static slurm_fd_t slurmctld_fd   = (slurm_fd_t) 0;
+	static int slurmctld_fd = -1;
 	uint16_t *ports;
 
-	if (slurmctld_fd)	/* May set early for queued job allocation */
+	if (slurmctld_fd >= 0)	/* May set early for queued job allocation */
 		return slurmctld_fd;
 
-	slurmctld_fd = -1;
 	slurmctld_comm_addr.port = 0;
 
 	if ((ports = slurm_get_srun_port_range()))
@@ -732,11 +731,12 @@ job_desc_msg_create_from_opts (void)
 		j->nice   = NICE_OFFSET + opt.nice;
 	if (opt.priority)
 		j->priority = opt.priority;
-
 	if (opt.cpu_bind)
 		j->cpu_bind       = opt.cpu_bind;
 	if (opt.cpu_bind_type)
 		j->cpu_bind_type  = opt.cpu_bind_type;
+	if (opt.delay_boot != NO_VAL)
+		j->delay_boot = opt.delay_boot;
 	if (opt.mem_bind)
 		j->mem_bind       = opt.mem_bind;
 	if (opt.mem_bind_type)
@@ -816,9 +816,9 @@ job_desc_msg_create_from_opts (void)
 	}
 	if (opt.pn_min_cpus != NO_VAL)
 		j->pn_min_cpus    = opt.pn_min_cpus;
-	if (opt.pn_min_memory != NO_VAL)
+	if (opt.pn_min_memory != NO_VAL64)
 		j->pn_min_memory = opt.pn_min_memory;
-	else if (opt.mem_per_cpu != NO_VAL)
+	else if (opt.mem_per_cpu != NO_VAL64)
 		j->pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
 	if (opt.pn_min_tmp_disk != NO_VAL)
 		j->pn_min_tmp_disk = opt.pn_min_tmp_disk;

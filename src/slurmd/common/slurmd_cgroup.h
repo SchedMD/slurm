@@ -7,7 +7,7 @@
  *  Written by Martin Perry <martin.perry@bull.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,12 +35,9 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
+
 #ifndef _SLURMD_CGROUP_H
 #define _SLURMD_CGROUP_H
-
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
 
 /* Initialize slurmd system cpuset cgroup */
 extern int init_system_cpuset_cgroup(void);
@@ -56,7 +53,7 @@ extern void fini_system_cgroup(void);
 extern int set_system_cgroup_cpus(char *phys_core_str);
 
 /* Set memory limit in system memory cgroup */
-extern int set_system_cgroup_mem_limit(uint32_t mem_spec_limit);
+extern int set_system_cgroup_mem_limit(uint64_t mem_spec_limit);
 
 /* Disable OOM killer in system memory cgroup */
 extern int disable_system_cgroup_mem_oom();

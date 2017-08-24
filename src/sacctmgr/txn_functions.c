@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,7 +41,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/slurmdbd_defs.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_txn_cond_t *txn_cond,
 		     List format_list)
 {
@@ -159,7 +159,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 
-extern int sacctmgr_list_txn(int argc, char *argv[])
+extern int sacctmgr_list_txn(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_txn_cond_t *txn_cond = xmalloc(sizeof(slurmdb_txn_cond_t));

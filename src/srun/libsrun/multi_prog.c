@@ -14,7 +14,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,14 +43,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <stdio.h>
 #include <ctype.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -62,6 +60,7 @@
 #include "src/common/xstring.h"
 
 #include "debugger.h"
+#include "multi_prog.h"
 #include "opt.h"
 
 /* Given a program name, translate it to a fully qualified pathname
@@ -115,7 +114,7 @@ _build_path(char* fname)
 static void
 _set_range(int low_num, int high_num, char *exec_name, bool ignore_duplicates)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -187,7 +186,7 @@ mpir_set_multi_name(int ntasks, const char *config_fname)
 	char *ranks, *exec_name, *p, *ptrptr;
 	int line_num = 0;
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -239,7 +238,7 @@ mpir_set_multi_name(int ntasks, const char *config_fname)
 extern void
 mpir_init(int num_tasks)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -255,7 +254,7 @@ mpir_init(int num_tasks)
 extern void
 mpir_cleanup(void)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -272,7 +271,7 @@ mpir_cleanup(void)
 extern void
 mpir_set_executable_names(const char *executable_name)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -292,7 +291,7 @@ mpir_set_executable_names(const char *executable_name)
 extern void
 mpir_dump_proctable(void)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else

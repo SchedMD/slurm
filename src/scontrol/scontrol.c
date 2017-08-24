@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,23 +39,29 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include "scontrol.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 #include "src/common/proc_args.h"
+#include "src/common/uid.h"
 
 #define OPT_LONG_HIDE   0x102
 
+/* Global externs from scontrol.h */
 char *command_name;
 List clusters = NULL;
-int all_flag;		/* display even hidden partitions */
-int detail_flag;	/* display additional details */
-int exit_code;		/* scontrol's exit code, =1 on any error at any time */
-int exit_flag;		/* program to terminate if =1 */
-int input_words;	/* number of words of input permitted */
-int one_liner;		/* one record per line if =1 */
-int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
-int verbosity;		/* count of "-v" options */
+int all_flag = 0;	/* display even hidden partitions */
+int detail_flag = 0;	/* display additional details */
+int exit_code = 0;	/* scontrol's exit code, =1 on any error at any time */
+int exit_flag = 0;	/* program to terminate if =1 */
+int input_words = 128;	/* number of words of input permitted */
+int one_liner = 0;	/* one record per line if =1 */
+int quiet_flag = 0;	/* quiet=1, verbose=-1, normal=0 */
+int verbosity = 0;	/* count of "-v" options */
 uint32_t cluster_flags; /* what type of cluster are we talking to */
+uint32_t euid = NO_VAL;	 /* send request to the slurmctld in behave of
+			    this user */
 
 block_info_msg_t *old_block_info_ptr = NULL;
 front_end_info_msg_t *old_front_end_info_ptr = NULL;
@@ -65,30 +71,29 @@ partition_info_msg_t *old_part_info_ptr = NULL;
 reserve_info_msg_t *old_res_info_ptr = NULL;
 slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
 
-static void	_create_it (int argc, char *argv[]);
-static void	_delete_it (int argc, char *argv[]);
-static void     _show_it (int argc, char *argv[]);
-static int	_get_command (int *argc, char *argv[]);
+static void	_create_it(int argc, char **argv);
+static void	_delete_it(int argc, char **argv);
+static void     _show_it(int argc, char **argv);
+static int	_get_command(int *argc, char **argv);
 static void     _ping_slurmctld(char *control_machine,
 				char *backup_controller);
-static void	_print_config (char *config_param);
-static void     _print_daemons (void);
-static void     _print_aliases (char* node_hostname);
-static void	_print_ping (void);
+static void	_print_config(char *config_param);
+static void     _print_daemons(void);
+static void     _print_aliases(char* node_hostname);
+static void	_print_ping(void);
 static void	_print_slurmd(char *hostlist);
-static void     _print_version( void );
-static int	_process_command (int argc, char *argv[]);
-static void	_update_it (int argc, char *argv[]);
-static int	_update_bluegene_block (int argc, char *argv[]);
-static int      _update_bluegene_submp (int argc, char *argv[]);
+static void     _print_version(void);
+static int	_process_command(int argc, char **argv);
+static void	_update_it(int argc, char **argv);
+static int	_update_bluegene_block(int argc, char **argv);
+static int      _update_bluegene_submp(int argc, char **argv);
 static int	_update_slurmctld_debug(char *val);
-static void	_usage ();
-static void	_write_config (void);
+static void	_usage(void);
+static void	_write_config(void);
 
-int
-main (int argc, char *argv[])
+int main(int argc, char **argv)
 {
-	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
+	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count = 0;
 	char **input_fields, *env_val;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
@@ -102,20 +107,14 @@ main (int argc, char *argv[])
 		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"oneliner", 0, 0, 'o'},
 		{"quiet",    0, 0, 'Q'},
+		{"uid",	     1, 0, 'u'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
 		{NULL,       0, 0, 0}
 	};
 
-	command_name      = argv[0];
-	all_flag          = 0;
-	detail_flag       = 0;
-	exit_code         = 0;
-	exit_flag         = 0;
-	input_field_count = 0;
-	quiet_flag        = 0;
-	verbosity         = 0;
+	command_name = argv[0];
 	slurm_conf_init(NULL);
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
@@ -133,7 +132,7 @@ main (int argc, char *argv[])
 		if ((optind < argc) &&
 		    !strncasecmp(argv[optind], "setdebugflags", 8))
 			break;	/* avoid parsing "-<flagname>" as option */
-		if ((opt_char = getopt_long(argc, argv, "adhM:oQvV",
+		if ((opt_char = getopt_long(argc, argv, "adhM:oQu:vV",
 					    long_options, &option_index)) == -1)
 			break;
 		switch (opt_char) {
@@ -172,6 +171,12 @@ main (int argc, char *argv[])
 			break;
 		case (int)'Q':
 			quiet_flag = 1;
+			break;
+		case (int)'u':
+			if (uid_from_string(optarg, &euid) < 0) {
+				error("--uid=\"%s\" invalid", optarg);
+				exit(exit_code);
+			}
 			break;
 		case (int)'v':
 			quiet_flag = -1;
@@ -277,8 +282,7 @@ static char *_getline(const char *prompt)
  * OUT argc - location to store count of arguments
  * OUT argv - location to store the argument list
  */
-static int
-_get_command (int *argc, char **argv)
+static int _get_command (int *argc, char **argv)
 {
 	char *in_line;
 	static char *last_in_line = NULL;
@@ -350,8 +354,7 @@ _get_command (int *argc, char **argv)
 /*
  * _write_config - write the configuration parameters and values to a file.
  */
-static void
-_write_config (void)
+static void _write_config(void)
 {
 	int error_code;
 	node_info_msg_t *node_info_ptr = NULL;
@@ -638,7 +641,7 @@ _print_aliases (char* node_hostname)
  * _reboot_nodes - issue RPC to have computing nodes reboot when idle
  * RET 0 or a slurm error code
  */
-static int _reboot_nodes(char *node_list)
+static int _reboot_nodes(char *node_list, bool asap)
 {
 	slurm_ctl_conf_t *conf;
 	int rc;
@@ -658,6 +661,8 @@ static int _reboot_nodes(char *node_list)
 
 	bzero(&req, sizeof(reboot_msg_t));
 	req.node_list = node_list;
+	if (asap)
+		req.flags |= REBOOT_FLAGS_ASAP;
 	msg.msg_type = REQUEST_REBOOT_NODES;
 	msg.data = &req;
 
@@ -676,8 +681,7 @@ static int _reboot_nodes(char *node_list)
  * IN argv - the arguments
  * RET 0 or errno (only for errors fatal to scontrol)
  */
-static int
-_process_command (int argc, char *argv[])
+static int _process_command (int argc, char **argv)
 {
 	int error_code = 0;
 	char *tag = argv[0];
@@ -889,15 +893,21 @@ _process_command (int argc, char *argv[])
 		exit_flag = 1;
 	}
 	else if (strncasecmp (tag, "reboot_nodes", MAX(tag_len, 3)) == 0) {
-		if (argc > 2) {
+		bool asap = false;
+		int argc_offset = 1;
+		if ((argc > 1) && !strcasecmp(argv[1], "ASAP")) {
+			asap = true;
+			argc_offset++;
+		}
+		if ((argc - argc_offset) > 1) {
 			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n",
 				 tag);
-		} else if (argc < 2) {
-			error_code = _reboot_nodes("ALL");
+		} else if ((argc - argc_offset) < 1) {
+			error_code = _reboot_nodes("ALL", asap);
 		} else
-			error_code = _reboot_nodes(argv[1]);
+			error_code = _reboot_nodes(argv[argc_offset], asap);
 		if (error_code) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1371,8 +1381,7 @@ _process_command (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void
-_create_it (int argc, char *argv[])
+static void _create_it(int argc, char **argv)
 {
 	/* Scan for "res" first, anywhere in the args.  When creating
 	   a reservation there is a partition= option, which we don't
@@ -1413,8 +1422,7 @@ _create_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void
-_delete_it (int argc, char *argv[])
+static void _delete_it(int argc, char **argv)
 {
 	char *tag = NULL, *val = NULL;
 	int tag_len = 0;
@@ -1483,8 +1491,7 @@ _delete_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void
-_show_it (int argc, char *argv[])
+static void _show_it(int argc, char **argv)
 {
 	char *tag = NULL, *val = NULL;
 	int tag_len = 0;
@@ -1546,6 +1553,8 @@ _show_it (int argc, char *argv[])
 					argv[0]);
 		}
 		_print_daemons ();
+	} else if (strncasecmp (tag, "Federations",  MAX(tag_len, 1)) == 0) {
+		scontrol_print_federation();
 	} else if (strncasecmp (tag, "FrontendName",  MAX(tag_len, 1)) == 0) {
 		scontrol_print_front_end_list(val);
 	} else if (strncasecmp (tag, "hostnames", MAX(tag_len, 5)) == 0) {
@@ -1607,8 +1616,7 @@ _show_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void
-_update_it (int argc, char *argv[])
+static void _update_it(int argc, char **argv)
 {
 	char *val = NULL;
 	int i, error_code = SLURM_SUCCESS;
@@ -1724,8 +1732,7 @@ _update_it (int argc, char *argv[])
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-static int
-_update_bluegene_block (int argc, char *argv[])
+static int _update_bluegene_block(int argc, char **argv)
 {
 	int i, update_cnt = 0;
 	update_block_msg_t block_msg;
@@ -1811,8 +1818,7 @@ _update_bluegene_block (int argc, char *argv[])
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-static int
-_update_bluegene_submp (int argc, char *argv[])
+static int _update_bluegene_submp(int argc, char **argv)
 {
 	int i, update_cnt = 0;
 	update_block_msg_t block_msg;
@@ -1910,8 +1916,8 @@ static int _update_slurmctld_debug(char *val)
 }
 
 /* _usage - show the valid scontrol commands */
-void
-_usage () {
+void _usage(void)
+{
 	printf ("\
 scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
@@ -1920,8 +1926,10 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
      -M or --cluster: equivalent to \"cluster\" command                    \n\
+             NOTE: SlurmDBD must be up.                                    \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\
+     -u or --uid: Update job as user <uid> instead of the invoking user id.\n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
 									   \n\
@@ -1937,6 +1945,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      cluster                  cluster to issue commands to.  Default is    \n\
 			      current cluster.  cluster with no name will  \n\
 			      reset to default.                            \n\
+                              NOTE: SlurmDBD must be up.                   \n\
      checkpoint <CH_OP><ID>   perform a checkpoint operation on identified \n\
 			      job or job step \n\
      completing               display jobs in completing state along with  \n\
@@ -1969,7 +1978,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      ping                     print status of slurmctld daemons.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     reboot_nodes [<nodelist>]  reboot the nodes when they become idle.    \n\
+     reboot [ASAP] [<nodelist>]  reboot the nodes when they become idle.   \n\
                               By default all nodes are rebooted.           \n\
      reconfigure              re-read configuration files.                 \n\
      release <job_list>       permit specified job to start (see hold)     \n\
@@ -1996,7 +2005,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
 									   \n\
   <ENTITY> may be \"aliases\", \"assoc_mgr\" \"burstBuffer\",              \n\
-       \"config\", \"daemons\", \"frontend\",                              \n\
+       \"config\", \"daemons\", \"federation\", \"frontend\",              \n\
        \"hostlist\", \"hostlistsorted\", \"hostnames\",                    \n\
        \"job\", \"layouts\", \"node\", \"partition\", \"reservation\",     \n\
        \"slurmd\", \"step\", or \"topology\"                               \n\

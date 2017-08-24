@@ -11,7 +11,7 @@
 # Written by Aline Roy <aline.roy@cea.fr>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -35,6 +35,11 @@ set exit_code   0
 set job_id      0
 
 print_header $test_id
+
+if {[test_alps]} {
+	send_user "\nWARNING: This test is incompatible with Cray/alps systems\n"
+	exit $exit_code
+}
 
 set part_name [default_partition]
 set default_time [get_partition_default_time_limit $part_name]

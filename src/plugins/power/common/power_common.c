@@ -9,7 +9,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,9 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <fcntl.h>
@@ -298,11 +296,7 @@ extern char *power_run_script(char *script_name, char *script_path,
 			else if (cpid > 0)
 				exit(0);
 		}
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execv(script_path, script_argv);
 		error("%s: execv(%s): %m", __func__, script_path);
 		exit(127);

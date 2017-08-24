@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,42 +38,24 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <string.h>		/* strcpy, strncasecmp */
+#define _GNU_SOURCE
 
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
-
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
-#ifdef HAVE_LIMITS_H
-#  include <limits.h>
-#endif
-
+#include <ctype.h>		/* isdigit    */
 #include <fcntl.h>
+#include <getopt.h>
+#include <limits.h>
+#include <pwd.h>		/* getpwuid   */
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv, strtol, etc. */
-#include <pwd.h>		/* getpwuid   */
-#include <ctype.h>		/* isdigit    */
+#include <string.h>		/* strcpy, strncasecmp */
 #include <sys/param.h>		/* MAXPATHLEN */
-#include <sys/stat.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "src/common/cpu_frequency.h"
@@ -124,6 +106,9 @@
 #define OPT_HINT	0x1a
 #define OPT_CPU_FREQ    0x1b
 #define OPT_THREAD_SPEC 0x1c
+#define OPT_SPREAD_JOB  0x1d
+#define OPT_DELAY_BOOT	0x1e
+#define OPT_INT64	0x1f
 #define OPT_USE_MIN_NODES 0x23
 
 /* generic getopt_long flags, integers and *not* valid characters */
@@ -179,13 +164,14 @@
 #define LONG_OPT_PROFILE         0x144
 #define LONG_OPT_CPU_FREQ        0x145
 #define LONG_OPT_GRES_FLAGS      0x146
+#define LONG_OPT_SPREAD_JOB      0x147
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_POWER           0x162
 #define LONG_OPT_THREAD_SPEC     0x163
 #define LONG_OPT_USE_MIN_NODES   0x164
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
-
+#define LONG_OPT_DELAY_BOOT      0x167
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -219,7 +205,7 @@ static void  _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
-int initialize_and_process_args(int argc, char *argv[])
+int initialize_and_process_args(int argc, char **argv)
 {
 	/* initialize option defaults */
 	_opt_default();
@@ -307,15 +293,19 @@ static void _opt_default()
 	opt.ntasks_set = false;
 	opt.cpus_per_task = 0;
 	opt.cpus_set = false;
+	opt.hint_env = NULL;
+	opt.hint_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.nodes_set = false;
 	opt.sockets_per_node = NO_VAL; /* requested sockets */
 	opt.cores_per_socket = NO_VAL; /* requested cores */
 	opt.threads_per_core = NO_VAL; /* requested threads */
+	opt.threads_per_core_set = false;
 	opt.ntasks_per_node      = 0;  /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
+	opt.ntasks_per_core_set  = false;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
 	opt.core_spec = (uint16_t) NO_VAL;
@@ -380,6 +370,7 @@ static void _opt_default()
 	opt.cpu_freq_min    = NO_VAL;
 	opt.cpu_freq_max    = NO_VAL;
 	opt.cpu_freq_gov    = NO_VAL;
+	opt.delay_boot      = NO_VAL;
 	opt.no_shell	    = false;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
@@ -418,9 +409,11 @@ env_vars_t env_vars[] = {
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
+  {"SALLOC_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL          },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SALLOC_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
+  {"SALLOC_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
   {"SALLOC_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
@@ -441,13 +434,14 @@ env_vars_t env_vars[] = {
   {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
+  {"SALLOC_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL          },
   {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SALLOC_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
-  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
   {"SALLOC_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
+  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
   {NULL, 0, NULL, NULL}
 };
 
@@ -474,6 +468,7 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
+	int i;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -494,6 +489,16 @@ _process_env_var(env_vars_t *e, const char *val)
 			}
 		}
 		break;
+
+        case OPT_INT64:
+                if (val[0] != '\0') {
+                        *((int64_t *) e->arg) = (int64_t) strtoll(val, &end, 10);
+                        if (!(end && *end == '\0')) {
+                                error("%s=%s invalid. ignoring...",
+                                      e->var, val);
+                        }
+                }
+                break;
 
 	case OPT_BOOL:
 		/* A boolean env variable is true if:
@@ -587,15 +592,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.overcommit = true;
 		break;
 	case OPT_HINT:
-		/* Keep after other options filled in */
-		if (verify_hint(val,
-				&opt.sockets_per_node,
-				&opt.cores_per_socket,
-				&opt.threads_per_core,
-				&opt.ntasks_per_core,
-				NULL)) {
-			exit(error_exit);
-		}
+		opt.hint_env = xstrdup(val);
 		break;
 	case OPT_MEM_BIND:
 		if (slurm_verify_mem_bind(val, &opt.mem_bind,
@@ -644,6 +641,17 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.core_spec = parse_int("thread_spec", val, true) |
 					 CORE_SPEC_THREAD;
 		break;
+	case OPT_SPREAD_JOB:
+		opt.job_flags |= SPREAD_JOB;
+		break;
+	case OPT_DELAY_BOOT:
+		i = time_str2secs(val);
+		if (i == NO_VAL)
+			error("Invalid SALLOC_DELAY_BOOT argument: %s. Ignored",
+			      val);
+		else
+			opt.delay_boot = (uint32_t) i;
+		break;
 	case OPT_USE_MIN_NODES:
 		opt.job_flags |= USE_MIN_NODES;
 		break;
@@ -655,8 +663,9 @@ _process_env_var(env_vars_t *e, const char *val)
 
 void set_options(const int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0;
+	int opt_char, option_index = 0, max_val = 0, i;
 	char *tmp;
+	long long priority;
 	static struct option long_options[] = {
 		{"account",       required_argument, 0, 'A'},
 		{"extra-node-info", required_argument, 0, 'B'},
@@ -704,6 +713,7 @@ void set_options(const int argc, char **argv)
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"deadline",      required_argument, 0, LONG_OPT_DEADLINE},
+		{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
@@ -740,6 +750,7 @@ void set_options(const int argc, char **argv)
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+		{"spread-job",    no_argument,       0, LONG_OPT_SPREAD_JOB},
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
@@ -765,7 +776,7 @@ void set_options(const int argc, char **argv)
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, opt_string,
+	while ((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
 
@@ -792,6 +803,7 @@ void set_options(const int argc, char **argv)
 					optarg);
 				exit(error_exit);
 			}
+			opt.threads_per_core_set = true;
 			break;
 		case 'c':
 			opt.cpus_set = true;
@@ -954,9 +966,18 @@ void set_options(const int argc, char **argv)
 			opt.deadline = parse_time(optarg, 0);
 			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				error("Invalid deadline specification %s",
-				       optarg);
+				      optarg);
 				exit(error_exit);
 			}
+			break;
+		case LONG_OPT_DELAY_BOOT:
+			i = time_str2secs(optarg);
+			if (i == NO_VAL) {
+				error("Invalid delay-boot specification %s",
+				      optarg);
+				exit(error_exit);
+			}
+			opt.delay_boot = (uint32_t) i;
 			break;
                 case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
@@ -1007,9 +1028,10 @@ void set_options(const int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_MEM:
-			opt.realmem = (int) str_to_mbytes(optarg);
+			opt.realmem = (int64_t) str_to_mbytes2(optarg);
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1017,7 +1039,7 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
-			opt.mem_per_cpu = (int) str_to_mbytes(optarg);
+			opt.mem_per_cpu = (int64_t) str_to_mbytes2(optarg);
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1025,7 +1047,7 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_TMP:
-			opt.tmpdisk = str_to_mbytes(optarg);
+			opt.tmpdisk = str_to_mbytes2(optarg);
 			if (opt.tmpdisk < 0) {
 				error("invalid tmp value %s", optarg);
 				exit(error_exit);
@@ -1092,19 +1114,19 @@ void set_options(const int argc, char **argv)
 			if (tmp_nice < 0) {
 				uid_t my_uid = getuid();
 				if ((my_uid != 0) &&
-					(my_uid != slurm_get_slurm_user_id())) {
-						error("Nice value must be "
-						      "non-negative, value "
-						      "ignored");
-						tmp_nice = 0;
+				    (my_uid != slurm_get_slurm_user_id())) {
+					error("Nice value must be "
+					      "non-negative, value ignored");
+					tmp_nice = 0;
 				}
 			}
 			opt.nice = (int) tmp_nice;
 			break;
 		}
-		case LONG_OPT_PRIORITY: {
-			long long priority;
-			if (strcasecmp(optarg, "TOP") == 0) {
+		case LONG_OPT_PRIORITY:
+			if (!optarg) { /* CLANG Fix */
+				;
+			} else if (strcasecmp(optarg, "TOP") == 0) {
 				opt.priority = NO_VAL - 1;
 			} else {
 				priority = strtoll(optarg, NULL, 10);
@@ -1119,7 +1141,6 @@ void set_options(const int argc, char **argv)
 				opt.priority = priority;
 			}
 			break;
-		}
 		case LONG_OPT_BELL:
 			opt.bell = BELL_ALWAYS;
 			break;
@@ -1166,6 +1187,7 @@ void set_options(const int argc, char **argv)
 			if ((opt.threads_per_core == 1) &&
 			    (max_val == INT_MAX))
 				opt.threads_per_core = NO_VAL;
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = parse_int("ntasks-per-node",
@@ -1178,6 +1200,7 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_NTASKSPERCORE:
 			opt.ntasks_per_core = parse_int("ntasks-per-core",
 							optarg, true);
+			opt.ntasks_per_core_set  = true;
 			break;
 		case LONG_OPT_HINT:
 			/* Keep after other options filled in */
@@ -1189,9 +1212,12 @@ void set_options(const int argc, char **argv)
 					NULL)) {
 				exit(error_exit);
 			}
+			opt.hint_set = true;
+			opt.ntasks_per_core_set  = true;
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_REBOOT:
-#if defined HAVE_BG && !defined HAVE_BG_L_P
+#if defined HAVE_BG
 			info("WARNING: If your job is smaller than the block "
 			     "it is going to run on and other jobs are "
 			     "running on it the --reboot option will not be "
@@ -1280,6 +1306,8 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
+			if (!optarg) /* CLANG Fix */
+				break;
 			if ((optarg[0] < '0') || (optarg[0] > '9')) {
 				error("Invalid --wait-all-nodes argument: %s",
 				      optarg);
@@ -1294,6 +1322,8 @@ void set_options(const int argc, char **argv)
 						"Ignored", optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
+			if (!optarg) /* CLANG Fix */
+				break;
 			pos_delimit = strstr(optarg,"@");
 			if (pos_delimit != NULL) {
 				pos_delimit[0] = '\0';
@@ -1313,6 +1343,9 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = parse_int("thread_spec", optarg, true) |
 				CORE_SPEC_THREAD;
+			break;
+		case LONG_OPT_SPREAD_JOB:
+			opt.job_flags |= SPREAD_JOB;
 			break;
 		case LONG_OPT_USE_MIN_NODES:
 			opt.job_flags |= USE_MIN_NODES;
@@ -1424,10 +1457,25 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	hostlist_t hl = NULL;
+	int hl_cnt = 0;
 
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
+	}
+
+	if (opt.hint_env &&
+	    (!opt.hint_set && !opt.ntasks_per_core_set &&
+	     !opt.threads_per_core_set)) {
+		if (verify_hint(opt.hint_env,
+				&opt.sockets_per_node,
+				&opt.cores_per_socket,
+				&opt.threads_per_core,
+				&opt.ntasks_per_core,
+				NULL)) {
+			exit(error_exit);
+		}
 	}
 
 	if (!opt.nodelist) {
@@ -1458,8 +1506,7 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.nodelist) {
-		int hl_cnt;
-		hostlist_t hl = hostlist_create(opt.nodelist);
+		hl = hostlist_create(opt.nodelist);
 		if (!hl) {
 			error("memory allocation failure");
 			exit(error_exit);
@@ -1470,6 +1517,7 @@ static bool _opt_verify(void)
 			opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
 		else
 			opt.min_nodes = hl_cnt;
+		opt.nodes_set = true;
 	}
 
 
@@ -1552,19 +1600,10 @@ static bool _opt_verify(void)
 		info("The --kill-command is not supported on Cray.");
 		opt.kill_command_signal_set = false;
 	}
-#elif defined(HAVE_BGL)
-	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
-		error("invalid BlrtsImage given '%s'", opt.blrtsimage);
-		verified = false;
-	}
 #endif
 
 	if (opt.linuximage && strchr(opt.linuximage, ' ')) {
-#ifdef HAVE_BGL
-		error("invalid LinuxImage given '%s'", opt.linuximage);
-#else
 		error("invalid CnloadImage given '%s'", opt.linuximage);
-#endif
 		verified = false;
 	}
 
@@ -1574,11 +1613,7 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.ramdiskimage && strchr(opt.ramdiskimage, ' ')) {
-#ifdef HAVE_BGL
-		error("invalid RamDiskImage given '%s'", opt.ramdiskimage);
-#else
 		error("invalid IoloadImage given '%s'", opt.ramdiskimage);
-#endif
 		verified = false;
 	}
 
@@ -1639,6 +1674,12 @@ static bool _opt_verify(void)
 		}
 
 	} else if (opt.nodes_set && opt.ntasks_set) {
+		/*
+		 * Make sure that the number of
+		 * max_nodes is <= number of tasks
+		 */
+		if (opt.ntasks < opt.max_nodes)
+			opt.max_nodes = opt.ntasks;
 
 		/*
 		 *  make sure # of procs >= min_nodes
@@ -1649,10 +1690,21 @@ static bool _opt_verify(void)
 			      "nodes, setting nnodes to %d",
 			      opt.ntasks, opt.min_nodes, opt.ntasks);
 
-			opt.min_nodes = opt.ntasks;
-			if (   opt.max_nodes
-			       && (opt.min_nodes > opt.max_nodes) )
-				opt.max_nodes = opt.min_nodes;
+			opt.min_nodes = opt.max_nodes = opt.ntasks;
+
+			if (hl_cnt > opt.min_nodes) {
+				int del_cnt, i;
+				char *host;
+				del_cnt = hl_cnt - opt.min_nodes;
+				for (i=0; i<del_cnt; i++) {
+					host = hostlist_pop(hl);
+					free(host);
+				}
+				xfree(opt.nodelist);
+				opt.nodelist =
+					hostlist_ranged_string_xmalloc(hl);
+			}
+
 		}
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
@@ -1661,7 +1713,8 @@ static bool _opt_verify(void)
 	   of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	    && (!opt.nodes_set || !opt.ntasks_set)) {
-		hostlist_t hl = hostlist_create(opt.nodelist);
+		if (!hl)
+			hl = hostlist_create(opt.nodelist);
 		if (!opt.ntasks_set) {
 			opt.ntasks_set = 1;
 			opt.ntasks = hostlist_count(hl);
@@ -1671,8 +1724,10 @@ static bool _opt_verify(void)
 			hostlist_uniq(hl);
 			opt.min_nodes = opt.max_nodes = hostlist_count(hl);
 		}
-		hostlist_destroy(hl);
 	}
+
+	if (hl)
+		hostlist_destroy(hl);
 
 	if (opt.time_limit_str) {
 		opt.time_limit = time_str2mins(opt.time_limit_str);
@@ -1697,11 +1752,6 @@ static bool _opt_verify(void)
 		exit(error_exit);
 	}
 
-#ifdef HAVE_AIX
-	if (opt.network == NULL)
-		opt.network = "us,sn_all,bulk_xfer";
-#endif
-
 #ifdef HAVE_NATIVE_CRAY
 	if (opt.network && opt.shared)
 		fatal("Requesting network performance counters requires "
@@ -1719,6 +1769,19 @@ static bool _opt_verify(void)
 			setenvf(NULL, "SLURM_MEM_BIND", "%s", tmp);
 		}
 	}
+	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_SORT") == NULL) &&
+	    (opt.mem_bind_type & MEM_BIND_SORT)) {
+		setenvf(NULL, "SLURM_MEM_BIND_SORT", "sort");
+	}
+
+	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_VERBOSE") == NULL)) {
+		if (opt.mem_bind_type & MEM_BIND_VERBOSE) {
+			setenvf(NULL, "SLURM_MEM_BIND_VERBOSE", "verbose");
+		} else {
+			setenvf(NULL, "SLURM_MEM_BIND_VERBOSE", "quiet");
+		}
+	}
+
 	if ((opt.ntasks_per_node > 0) &&
 	    (getenv("SLURM_NTASKS_PER_NODE") == NULL)) {
 		setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d",
@@ -1881,10 +1944,10 @@ static char *print_constraints()
 		xstrfmtcat(buf, "mincpus=%d ", opt.mincpus);
 
 	if (opt.realmem > 0)
-		xstrfmtcat(buf, "mem=%dM ", opt.realmem);
+		xstrfmtcat(buf, "mem=%"PRIi64"M ", opt.realmem);
 
 	if (opt.mem_per_cpu > 0)
-		xstrfmtcat(buf, "mem-per-cpu=%dM ", opt.mem_per_cpu);
+		xstrfmtcat(buf, "mem-per-cpu=%"PRIi64"M ", opt.mem_per_cpu);
 
 	if (opt.tmpdisk > 0)
 		xstrfmtcat(buf, "tmp=%ld ", opt.tmpdisk);
@@ -1933,6 +1996,8 @@ static void _opt_list(void)
 	info("wckey          : `%s'", opt.wckey);
 	if (opt.jobid != NO_VAL)
 		info("jobid          : %u", opt.jobid);
+	if (opt.delay_boot != NO_VAL)
+		info("delay_boot     : %u", opt.delay_boot);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if (opt.distribution == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
@@ -1973,24 +2038,12 @@ static void _opt_list(void)
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
-#ifdef HAVE_BGL
-	if (opt.blrtsimage)
-		info("BlrtsImage     : %s", opt.blrtsimage);
-#endif
 	if (opt.linuximage)
-#ifdef HAVE_BGL
-		info("LinuxImage     : %s", opt.linuximage);
-#else
 		info("CnloadImage    : %s", opt.linuximage);
-#endif
 	if (opt.mloaderimage)
 		info("MloaderImage   : %s", opt.mloaderimage);
 	if (opt.ramdiskimage)
-#ifdef HAVE_BGL
-		info("RamDiskImage   : %s", opt.ramdiskimage);
-#else
 		info("IoloadImage   : %s", opt.ramdiskimage);
-#endif
 
 	if (opt.begin) {
 		char time_str[32];
@@ -2045,22 +2098,12 @@ static void _usage(void)
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
-#ifdef HAVE_BG_L_P
-"              [--geometry=XxYxZ] "
-#else
-"              [--geometry=AxXxYxZ] "
-#endif
-"[--conn-type=type] [--no-rotate]\n"
-#ifdef HAVE_BGL
-"              [--blrts-image=path] [--linux-image=path]\n"
-"              [--mloader-image=path] [--ramdisk-image=path]\n"
-#else
+"              [--geometry=AxXxYxZ] [--conn-type=type] [--no-rotate]\n"
 "              [--cnload-image=path]\n"
 "              [--mloader-image=path] [--ioload-image=path]\n"
 #endif
-#endif
 "              [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
-"              [--bell] [--no-bell] [--kill-command[=signal]]\n"
+"              [--bell] [--no-bell] [--kill-command[=signal]] [--spread-job]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--mem_bind=...] [--reservation=name] [--mcs-label=mcs]\n"
@@ -2069,7 +2112,7 @@ static void _usage(void)
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--reboot]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
-"              [--use-min-nodes] [executable [args...]]\n");
+"              [--delay-boot=mins] [--use-min-nodes] [executable [args...]]\n");
 }
 
 static void _help(void)
@@ -2088,6 +2131,7 @@ static void _help(void)
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
+"      --delay-boot=mins       delay boot for desired node features\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"
 "                              this deadline (start > (deadline - time[-min]))\n"
@@ -2126,6 +2170,7 @@ static void _help(void)
 "      --reboot                reboot compute nodes before starting job\n"
 "  -s, --oversubscribe         oversubscribe resources with other jobs\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
+"      --spread-job            spread job across as many nodes as possible\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
@@ -2184,11 +2229,6 @@ static void _help(void)
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
-#ifdef HAVE_AIX				/* AIX/Federation specific options */
-"AIX related options:\n"
-"      --network=type          communication protocol to be used\n"
-"\n"
-#endif
 #ifdef HAVE_NATIVE_CRAY			/* Native Cray specific options */
 "Cray related options:\n"
 "      --network=type          Use network performance counters\n"
@@ -2197,17 +2237,12 @@ static void _help(void)
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */
 "Blue Gene related options:\n"
-#ifdef HAVE_BG_L_P
-"  -g, --geometry=XxYxZ        geometry constraints of the job\n"
-#else
 "  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
 "                              sub-block allocations can not be allocated\n"
 "                              with the geometry option\n"
-#endif
 "  -R, --no-rotate             disable geometry rotation\n"
 "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
 "                              if not set, then tries to fit TORUS else MESH\n"
-#ifndef HAVE_BGL
 "                              If wanting to run in HTC mode (only for 1\n"
 "                              midplane and below).  You can use HTC_S for\n"
 "                              SMP, HTC_D for Dual, HTC_V for\n"
@@ -2215,16 +2250,6 @@ static void _help(void)
 "      --cnload-image=path     path to compute node image for bluegene block.  Default if not set\n"
 "      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
 "      --ioload-image=path     path to ioload image for bluegene block.  Default if not set\n"
-#else
-"      --blrts-image=path      path to blrts image for bluegene block.\n"
-"                              Default if not set\n"
-"      --linux-image=path      path to linux image for bluegene block.  Default\n"
-"                              if not set\n"
-"      --mloader-image=path    path to mloader image for bluegene block.\n"
-"                              Default if not set\n"
-"      --ramdisk-image=path    path to ramdisk image for bluegene block.\n"
-"                              Default if not set\n"
-#endif
 #endif
 "\n"
 "Help options:\n"

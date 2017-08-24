@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,16 +37,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
+#include <stdlib.h>
+#include <string.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "src/common/log.h"
 #include "src/common/env.h" /* For unsetenvp() */
@@ -131,10 +129,10 @@ int set_user_limits(stepd_step_rec_t *job)
 		r.rlim_max =  r.rlim_cur = task_mem_bytes;
 		if (setrlimit(RLIMIT_RSS, &r)) {
 			/* Indicates that limit has already been exceeded */
-			fatal("setrlimit(RLIMIT_RSS, %u MB): %m",
+			fatal("setrlimit(RLIMIT_RSS, %"PRIu64" MB): %m",
 			      job->step_mem);
 		} else
-			debug2("Set task rss(%u MB)", job->step_mem);
+			debug2("Set task rss(%"PRIu64" MB)", job->step_mem);
 #if 0
 		getrlimit(RLIMIT_RSS, &r);
 		info("task RSS limits: %u %u", r.rlim_cur, r.rlim_max);
@@ -151,10 +149,10 @@ int set_user_limits(stepd_step_rec_t *job)
 		r.rlim_cur = r.rlim_max;
 		if (setrlimit(SLURM_RLIMIT_VSIZE, &r)) {
 			/* Indicates that limit has already been exceeded */
-			fatal("setrlimit(%s, %u MB): %m", 
+			fatal("setrlimit(%s, %"PRIu64" MB): %m",
 			      SLURM_RLIMIT_VNAME, job->step_mem);
 		} else
-			debug2("Set task vsize(%u MB)", job->step_mem);
+			debug2("Set task vsize(%"PRIu64" MB)", job->step_mem);
 #if 0
 		getrlimit(SLURM_RLIMIT_VSIZE, &r);
 		info("task VSIZE limits:   %u %u", r.rlim_cur, r.rlim_max);
@@ -217,7 +215,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 	unsigned long env_value;
 	char max[24], cur[24], req[24];
 	struct rlimit r;
-	bool u_req_propagate;  /* e.g. TRUE if 'srun --propagate' */
+	bool u_req_propagate;  /* e.g. true if 'srun --propagate' */
 
 	char env_name[25] = "SLURM_RLIMIT_";
 	char *rlimit_name = &env_name[6];
@@ -309,12 +307,12 @@ static int _get_env_val(char **env, const char *name, unsigned long *valp,
 	 * user requested to have this rlimit propagated via 'srun --propagate'
 	 */
 	if (*val == 'U') {
-		*u_req_propagate = TRUE;
+		*u_req_propagate = true;
 		debug2( "_get_env_val: %s propagated by user option", &name[6]);
 		val++;
 	}
 	else
-		*u_req_propagate = FALSE;
+		*u_req_propagate = false;
 
 	*valp = strtoul(val, &p, 10);
 

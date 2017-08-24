@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,11 +38,7 @@
 \*****************************************************************************/
 
 #ifndef _SWITCH_H
-#define _SWITCH_H 	1
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#define _SWITCH_H
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -153,7 +149,7 @@ extern int  switch_g_pack_jobinfo  (switch_jobinfo_t *jobinfo, Buf buffer,
  * RET         - slurm error code
  * NOTE: returned value must be freed using g_switch_g_free_jobinfo
  */
-extern int  switch_g_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer,
+extern int  switch_g_unpack_jobinfo(switch_jobinfo_t **jobinfo, Buf buffer,
 				    uint16_t protocol_version);
 
 /* get some field from a switch job credential
@@ -182,11 +178,11 @@ extern int switch_g_job_step_part_comp(switch_jobinfo_t *jobinfo,
 	char *nodelist);
 
 /*
- * Return TRUE if the switch plugin processes partial job step
+ * Return true if the switch plugin processes partial job step
  * completion calls (i.e. switch_g_job_step_part_comp). Support
  * of partition completions is compute intensive, so it should
  * be avoided unless switch resources are in short supply (e.g.
- * switch/nrt). Otherwise return FALSE.
+ * switch/nrt). Otherwise return false.
  */
 extern bool switch_g_part_comp(void);
 
@@ -402,7 +398,7 @@ extern int switch_g_pack_node_info(switch_node_info_t *switch_node,
  * Unpack the data associated with a node's switch state record
  * from a buffer.
  */
-extern int switch_g_unpack_node_info(switch_node_info_t *switch_node,
+extern int switch_g_unpack_node_info(switch_node_info_t **switch_node,
 				     Buf buffer, uint16_t protocol_version);
 
 /*

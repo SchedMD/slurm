@@ -1,5 +1,10 @@
 #!/bin/bash
 echo $* >>/var/tmp/capmc.log
+
+first_nid=1
+last_nid=22000
+
+
 if [ $# -lt 1 ] ; then
 echo 'no argument'
 exit 1
@@ -202,23 +207,23 @@ fi
 
 if [ "$1" = "get_node_energy_counter" ] ; then
 echo '{
-    "e": 0, 
-    "err_msg": "", 
-    "nid_count": 3, 
+    "e": 0,
+    "err_msg": "",
+    "nid_count": 3,
     "nodes": [
         {
-            "energy_ctr": 4761800, 
-            "nid": 1, 
+            "energy_ctr": 4761800,
+            "nid": 1,
             "time": "2015-02-19 15:50:18.581552-06"
-        }, 
+        },
         {
-            "energy_ctr": 4821800, 
-            "nid": 2, 
+            "energy_ctr": 4821800,
+            "nid": 2,
             "time": "2015-02-19 15:50:18.581652-06"
         },
         {
-            "energy_ctr": 4821800, 
-            "nid": 3, 
+            "energy_ctr": 4821800,
+            "nid": 3,
             "time": "2015-02-19 15:50:19.981752-06"
         }
     ]
@@ -261,9 +266,10 @@ exit 0
 fi
 
 if [ "$1" = "node_reinit" ] ; then
+sleep 5
 echo '{
     "e":0,
-    "err_msg":"uccess"
+    "err_msg":"Success"
 }'
 exit 0
 fi
@@ -279,26 +285,26 @@ fi
 
 if [ "$1" = "node_status" ] ; then
 echo '{
-    "e": 0, 
-    "err_msg": "", 
+    "e": 0,
+    "err_msg": "",
     "off": [
         1,
         2,
         3,
-        14, 
+        14,
         15
-    ], 
+    ],
     "on": [
         1,
         2,
         3,
-        4, 
+        4,
         5,
 	6
-    ], 
+    ],
     "ready": [
-        16, 
-        27, 
+        16,
+        27,
         18
     ]
 }'
@@ -381,25 +387,44 @@ fi
 
 if [ "$1" = "get_mcdram_capabilities" ] ; then
 echo '{
+    "nids": ['
+inx=$first_nid
+while [ $inx -lt $last_nid ]
+do
+	echo "        {
+            \"mcdram_cfg\": \"flat,0,split,25,equal,50,cache,100\",
+            \"nid\": $inx
+        },"
+	inx=$((inx+1))
+done
+	echo "        {
+            \"mcdram_cfg\": \"flat,0,split,25,equal,50,cache,100\",
+            \"nid\": $inx
+        } "
+echo '    ],
+    "err_msg": "Success; nids not eligible for numa operations were ignored",
+    "e": 0
+}'
+exit 0
+fi
+
+if [ "$1" = "get_mcdram_capabilitiesx" ] ; then
+echo '{
     "nids": [
         {
-            "mcdram_cfg": "flat,0,split,25,equal,50,cache,100", 
+            "mcdram_cfg": "flat,0,split,25,equal,50,cache,100",
             "nid": 1
-        }, 
-        {
-            "mcdram_cfg": "flat,0,split,25,equal,50,cache,100", 
-            "nid": 2
-        }, 
-        {
-            "mcdram_cfg": "flat,0,split,25,equal,50,cache,100", 
-            "nid": 3
         },
         {
-            "mcdram_cfg": "flat,0,split,25,equal,50,cache,100", 
-            "nid": 4
+            "mcdram_cfg": "flat,0,split,25,equal,50,cache,100",
+            "nid": 2
+        },
+        {
+            "mcdram_cfg": "flat,0,split,25,equal,50,cache,100",
+            "nid": 3
         }
-    ], 
-    "err_msg": "Success; nids not eligible for mcdram operations were ignored", 
+    ],
+    "err_msg": "Success; nids not eligible for mcdram operations were ignored",
     "e": 0
 }'
 exit 0
@@ -407,37 +432,59 @@ fi
 
 if [ "$1" = "get_mcdram_cfg" ]; then
 echo '{
+    "nids": ['
+inx=$first_nid
+while [ $inx -lt $last_nid ]
+do
+	echo "        {
+            \"mcdram_cfg\": \"flat\",
+            \"mcdram_pct\": \"0\",
+            \"mcdram_size\": \"8192MB\",
+            \"nid\": $inx,
+            \"dram_size\": \"96GB\"
+        },"
+	inx=$((inx+1))
+done
+	echo "        {
+            \"mcdram_cfg\": \"flat\",
+            \"mcdram_pct\": \"0\",
+            \"mcdram_size\": \"8192MB\",
+            \"nid\": $inx,
+            \"dram_size\": \"96GB\"
+        } "
+echo '    ],
+    "err_msg": "Success; nids not eligible for numa operations were ignored",
+    "e": 0
+}'
+exit 0
+fi
+
+if [ "$1" = "get_mcdram_cfgx" ]; then
+echo '{
     "nids": [
         {
-            "mcdram_cfg": "flat", 
-            "mcdram_pct": "0", 
-            "mcdram_size": "8192MB", 
-            "nid": 1, 
-            "dram_size": "96GB"
-        }, 
-        {
-            "mcdram_cfg": "flat", 
-            "mcdram_pct": "0", 
-            "mcdram_size": "8192MB", 
-            "nid": 2, 
-            "dram_size": "96GB"
-        }, 
-        {
-            "mcdram_cfg": "flat", 
-            "mcdram_pct": "0", 
-            "mcdram_size": "8192MB", 
-            "nid": 3, 
+            "mcdram_cfg": "flat",
+            "mcdram_pct": "0",
+            "mcdram_size": "8192MB",
+            "nid": 1,
             "dram_size": "96GB"
         },
         {
-            "mcdram_cfg": "flat", 
-            "mcdram_pct": "0", 
-            "mcdram_size": "8192MB", 
-            "nid": 4, 
+            "mcdram_cfg": "flat",
+            "mcdram_pct": "0",
+            "mcdram_size": "8192MB",
+            "nid": 2,
+            "dram_size": "96GB"
+        },
+        {
+            "mcdram_cfg": "flat",
+            "mcdram_pct": "0",
+            "mcdram_size": "8192MB",
+            "nid": 3,
             "dram_size": "96GB"
         }
-    ], 
-    "err_msg": "Success; nids not eligible for mcdram operations were ignored", 
+    ],
+    "err_msg": "Success; nids not eligible for mcdram operations were ignored",
     "e": 0
 }'
 exit 0
@@ -445,25 +492,44 @@ fi
 
 if [ "$1" = "get_numa_capabilities" ]; then
 echo '{
+    "nids": ['
+inx=$first_nid
+while [ $inx -lt $last_nid ]
+do
+	echo "        {
+            \"numa_cfg\": \"a2a,snc2,snc4,hemi,quad\",
+            \"nid\": $inx
+        },"
+	inx=$((inx+1))
+done
+	echo "        {
+            \"numa_cfg\": \"a2a,snc2,snc4,hemi,quad\",
+            \"nid\": $inx
+        } "
+echo '    ],
+    "err_msg": "Success; nids not eligible for numa operations were ignored",
+    "e": 0
+}'
+exit 0
+fi
+
+if [ "$1" = "get_numa_capabilitiesx" ]; then
+echo '{
     "nids": [
         {
-            "numa_cfg": "a2a,snc2,snc4,hemi,quad", 
+            "numa_cfg": "a2a,snc2,snc4,hemi,quad",
             "nid": 1
-        }, 
-        {
-            "numa_cfg": "a2a,snc2,snc4,hemi,quad", 
-            "nid": 2
-        }, 
-        {
-            "numa_cfg": "a2a,snc2,snc4,hemi,quad", 
-            "nid": 3
         },
         {
-            "numa_cfg": "a2a,snc2,snc4,hemi,quad", 
-            "nid": 4
+            "numa_cfg": "a2a,snc2,snc4,hemi,quad",
+            "nid": 2
+        },
+        {
+            "numa_cfg": "a2a,snc2,snc4,hemi,quad",
+            "nid": 3
         }
-    ], 
-    "err_msg": "Success; nids not eligible for numa operations were ignored", 
+    ],
+    "err_msg": "Success; nids not eligible for numa operations were ignored",
     "e": 0
 }'
 exit 0
@@ -471,21 +537,44 @@ fi
 
 if [ "$1" = "get_numa_cfg" ]; then
 echo '{
+    "nids": ['
+inx=$first_nid
+while [ $inx -lt $last_nid ]
+do
+	echo "        {
+            \"numa_cfg\": \"a2a\",
+            \"nid\": $inx
+        },"
+	inx=$((inx+1))
+done
+	echo "        {
+            \"numa_cfg\": \"a2a\",
+            \"nid\": $inx
+        } "
+echo '    ],
+    "err_msg": "Success; nids not eligible for numa operations were ignored",
+    "e": 0
+}'
+exit 0
+fi
+
+if [ "$1" = "get_numa_cfgx" ]; then
+echo '{
     "nids": [
         {
-            "numa_cfg": "a2a", 
+            "numa_cfg": "a2a",
             "nid": 1
-        }, 
+        },
         {
-            "numa_cfg": "a2a", 
+            "numa_cfg": "a2a",
             "nid": 2
-        }, 
+        },
         {
-            "numa_cfg": "a2a", 
+            "numa_cfg": "a2a",
             "nid": 3
-        }
-    ], 
-    "err_msg": "Success; nids not eligible for numa operations were ignored", 
+        },
+    ],
+    "err_msg": "Success; nids not eligible for numa operations were ignored",
     "e": 0
 }'
 exit 0

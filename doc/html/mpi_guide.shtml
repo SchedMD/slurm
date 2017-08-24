@@ -410,8 +410,8 @@ $ srun -n16 --mpi=pmi2 a.out
 
 <h2><a name="bluegene_mpi" href="http://www.research.ibm.com/bluegene/"><b>BlueGene MPI</b></a></h2>
 
-<p>All IBM BlueGene Systems rely upon Slurm to create a job's resource
-allocation, but the task launch mechanism differs by system type.</p>
+<p>IBM BlueGene/Q Systems rely upon Slurm to create a job's resource
+allocation.</p>
 
 <h3>BlueGene/Q</h3>
 <p>The BlueGene/Q systems support the ability to allocate different portions of
@@ -424,19 +424,7 @@ The srun command creates a job step allocation which is linked to IBM's
 <span class="commandline">runjob</span> libraries which will launch
 the tasks within the allocated resources.</p>
 
-<h3>BlueGene/L and BlueGene/P</h3>
-<p>BlueGene/L and P MPI relies upon the native
-<span class="commandline">mpirun</span> command to launch tasks.
-Build a job script containing one or more invocations of the
-<span class="commandline">mpirun</span> command. Then submit
-the script to Slurm using <span class="commandline">sbatch</span>.
-For example:</p>
-<pre>
-$ sbatch -N512 my.script
-</pre>
-<p>Note that the node count specified with the <i>-N</i> option indicates
-the base partition count.
-See <a href="bluegene.html">BlueGene User and Administrator Guide</a>
+<p>See <a href="bluegene.html">BlueGene/Q User and Administrator Guide</a>
 for more information.</p>
 <hr size=4 width="100%">
 

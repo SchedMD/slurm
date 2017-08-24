@@ -3,14 +3,14 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov> and
  *  Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -67,8 +67,8 @@ static int   _build_min_max_32_string(char *buffer, int buf_size,
 static int   _build_cpu_load_min_max_32(char *buffer, int buf_size,
 					uint32_t min, uint32_t max,
 					bool range);
-static int   _build_free_mem_min_max_32(char *buffer, int buf_size,
-					uint32_t min, uint32_t max,
+static int   _build_free_mem_min_max_64(char *buffer, int buf_size,
+					uint64_t min, uint64_t max,
 					bool range);
 static void  _print_reservation(reserve_info_t *resv_ptr, int width);
 static int   _print_secs(long time, int width, bool right, bool cut_output);
@@ -323,24 +323,24 @@ _build_cpu_load_min_max_32(char *buffer, int buf_size,
 }
 
 static int
-_build_free_mem_min_max_32(char *buffer, int buf_size,
-			    uint32_t min, uint32_t max,
+_build_free_mem_min_max_64(char *buffer, int buf_size,
+			    uint64_t min, uint64_t max,
 			    bool range)
 {
 
 	char tmp_min[16];
 	char tmp_max[16];
 
-	if (min == NO_VAL) {
+	if (min == NO_VAL64) {
 		strcpy(tmp_min, "N/A");
 	} else {
-		snprintf(tmp_min, sizeof(tmp_min), "%u", min);
+		snprintf(tmp_min, sizeof(tmp_min), "%"PRIu64"", min);
 	}
 
-	if (max == NO_VAL) {
+	if (max == NO_VAL64) {
 		strcpy(tmp_max, "N/A");
 	} else {
-		snprintf(tmp_max, sizeof(tmp_max), "%u", max);
+		snprintf(tmp_max, sizeof(tmp_max), "%"PRIu64"", max);
 	}
 
 	if (max == min)
@@ -920,6 +920,24 @@ int _print_partition_name(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_port(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix)
+{
+	char id[FORMAT_STRING_SIZE];
+	if (sinfo_data) {
+		_build_min_max_16_string(id, FORMAT_STRING_SIZE,
+				      sinfo_data->port,
+				      sinfo_data->port, false);
+		_print_str(id, width, right_justify, true);
+	} else {
+		_print_str("PORT", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_prefix(sinfo_data_t * job, int width, bool right_justify,
 		char* suffix)
 {
@@ -1268,10 +1286,10 @@ int _print_free_mem(sinfo_data_t * sinfo_data, int width,
 	char id[FORMAT_STRING_SIZE];
 
 	if (sinfo_data) {
-		_build_free_mem_min_max_32(id, FORMAT_STRING_SIZE,
-					 sinfo_data->min_free_mem,
-					 sinfo_data->max_free_mem,
-					 true);
+		_build_free_mem_min_max_64(id, FORMAT_STRING_SIZE,
+					   sinfo_data->min_free_mem,
+					   sinfo_data->max_free_mem,
+					   true);
 		_print_str(id, width, right_justify, true);
 	} else {
 		_print_str("FREE_MEM", width, right_justify, true);
@@ -1326,7 +1344,7 @@ int _print_alloc_mem(sinfo_data_t * sinfo_data, int width,
 {
 	char tmp_line[32];
 	if (sinfo_data) {
-		sprintf(tmp_line, "%u", sinfo_data->alloc_memory);
+		sprintf(tmp_line, "%"PRIu64"", sinfo_data->alloc_memory);
 		_print_str(tmp_line, width, right_justify, true);
 	} else {
 		_print_str("ALLOCMEM", width, right_justify, true);

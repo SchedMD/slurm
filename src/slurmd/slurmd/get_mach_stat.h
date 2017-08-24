@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *  
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,32 +38,14 @@
 
 #ifndef _GET_MACH_STAT_H
 #define _GET_MACH_STAT_H
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
+
+#include <inttypes.h>
 
 extern int get_cpu_load(uint32_t *cpu_load);
-extern int get_free_mem(uint32_t *free_mem);
+extern int get_free_mem(uint64_t *free_mem);
 extern int get_mach_name(char *node_name);
-extern int get_memory(uint32_t *real_memory);
+extern int get_memory(uint64_t *real_memory);
 extern int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);
 extern int get_up_time(uint32_t *up_time);
-
-#ifdef USE_OS_NAME
-extern int get_os_name(char *os_name);
-#endif
-
-#ifdef USE_CPU_SPEED
-extern int get_speed(float *speed);
-#endif
 
 #endif	/* _GET_MACH_STAT_H */

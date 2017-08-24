@@ -711,13 +711,17 @@ that was sent in some how.<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int acct_storage_p_roll_usage(void *db_conn, time_t sent_start)
+int acct_storage_p_roll_usage(void *db_conn, time_t sent_start, time_t sent_end,
+uint16_t archive_data, rollup_stats_t *rollup_stats)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 roll up association, cluster, and wckey usage in the storage.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
-<span class="commandline">start</span> (input) start time of the rollup.<br>
+<span class="commandline">sent_start</span> (input) start time of the rollup.<br>
+<span class="commandline">sent_end</span> (input) end time of the rollup.<br>
+<span class="commandline">archive_data</span> (input) archive the results if not zero.<br>
+<span class="commandline">rollup_stats</span> (input/output) performance statistics.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -1024,6 +1028,6 @@ database with.
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 22 July 2016</p>
 
 <!--#include virtual="footer.txt"-->

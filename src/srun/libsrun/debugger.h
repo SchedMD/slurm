@@ -7,11 +7,9 @@
  *  http://www.etnus.com/
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 /* Use symbols from the runjob.so library provided by IBM.
  * Do NOT use debugger symbols local to the srun command */
 
@@ -28,14 +26,6 @@
 
 #ifndef _DEBUGGER_INCLUDE
 #define _DEBUGGER_INCLUDE
-
-#ifndef VOLATILE
-#if defined(__STDC__) || defined(__cplusplus)
-#define VOLATILE volatile
-#else
-#define VOLATILE
-#endif
-#endif
 
 #include "srun_job.h"
 /*****************************************************************************
@@ -75,7 +65,7 @@ extern int MPIR_proctable_size;
  * 2) inform the process that it has been attached to and is
  *    now free to run.
  */
-extern VOLATILE int MPIR_debug_state;
+extern volatile int MPIR_debug_state;
 extern int          MPIR_being_debugged; /* Cause extra info on internal state
 					  * to be maintained
 					  */

@@ -379,6 +379,9 @@ with '0x' in which case they interpreted as hexadecimal values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
+To simplify support for large task counts, the lists may follow a map with an
+asterisk and repetition count
+For example "map_cpu:0x0f*4,0xf0*4".
 Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_cpu:<list>
@@ -390,6 +393,9 @@ first mask specified in the list, etc.).
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'. Not supported unless the entire node is
 allocated to the job.
+To simplify support for large task counts, the lists may follow a map with an
+asterisk and repetition count
+For example "mask_cpu:0x0f*4,0xf0*4".
 Not supported unless the entire node is allocated to the job.
 .TP
 .B rank_ldom
@@ -590,7 +596,20 @@ MM/DD[/YY]\-HH:MM[:SS]
 .br
 YYYY\-MM\-DD[THH:MM[:SS]]]
 
-This option applies to job allocations.
+This option applies only to job allocations.
+
+.TP
+\fB\-\-delay\-boot\fR=<\fIminutes\fR>
+Do not reboot nodes in order to satisfied this job's feature specification if
+the job has been eligible to run for less than this time period.
+If the job has waited for less than the specified period, it will use only
+nodes which already have the specified features.
+The argument is in units of minutes.
+A default value may be set by a system administrator using the \fBdelay_boot\fR
+option of the \fBSchedulerParameters\fR configuration parameter in the
+slurm.conf file, otherwise the default value is zero (no delay).
+
+This option applies only to job allocations.
 
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
@@ -651,7 +670,7 @@ relative path to the directory where the command is executed. This
 option applies to job allocations.
 
 .TP
-\fB\-e\fR, \fB\-\-error\fR=<\fImode\fR>
+\fB\-e\fR, \fB\-\-error\fR=<\fIfilename pattern\fR>
 Specify how stderr is to be redirected. By default in interactive mode,
 .B srun
 redirects stderr to the same file as stdout, if one is specified. The
@@ -1076,8 +1095,10 @@ Default value is calculated by the Plugin mcs if it's enabled. This option
 applies to job allocations.
 
 .TP
-\fB\-\-mem\fR=<\fIMB\fR>
-Specify the real memory required per node in megabytes.
+\fB\-\-mem\fR=<\fIsize[units]\fR>
+Specify the real memory required per node.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both of parameters can be
@@ -1105,8 +1126,10 @@ the next periodic accounting sample.
 This option applies to job and step allocations.
 
 .TP
-\fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
-Minimum memory required per allocated CPU in megabytes.
+\fB\-\-mem\-per\-cpu\fR=<\fIsize[units]\fR>
+Minimum memory required per allocated CPU.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
 (see exception below). If configured, both of parameters can be
@@ -1155,9 +1178,11 @@ The following informational environment variables are set when
 \fB\-\-mem_bind\fR is in use:
 
 .nf
-	SLURM_MEM_BIND_VERBOSE
-	SLURM_MEM_BIND_TYPE
 	SLURM_MEM_BIND_LIST
+	SLURM_MEM_BIND_PREFER
+	SLURM_MEM_BIND_SORT
+	SLURM_MEM_BIND_TYPE
+	SLURM_MEM_BIND_VERBOSE
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -1166,17 +1191,8 @@ of the individual SLURM_MEM_BIND* variables.
 Supported options include:
 .RS
 .TP
-.B q[uiet]
-quietly bind before task runs (default)
-.TP
-.B v[erbose]
-verbosely report binding before task runs
-.TP
-.B no[ne]
-don't bind tasks to memory (default)
-.TP
-.B rank
-bind by task rank (not recommended)
+.B help
+show this help message
 .TP
 .B local
 Use memory local to the processor in use
@@ -1192,6 +1208,9 @@ with '0x' in which case they interpreted as hexadecimal values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
+To simplify support for large task counts, the lists may follow a map with an
+asterisk and repetition count
+For example "map_mem:0x0f*4,0xf0*4".
 Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_mem:<list>
@@ -1206,10 +1225,33 @@ with [0-9] so they are seen as numerical values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
+To simplify support for large task counts, the lists may follow a mask with an
+asterisk and repetition count
+For example "mask_mem:0*4,1*4".
 Not supported unless the entire node is allocated to the job.
 .TP
-.B help
-show this help message
+.B no[ne]
+don't bind tasks to memory (default)
+.TP
+.B nosort
+avoid sorting free cache pages (default, LaunchParameters configuration
+parameter can override this default)
+.TP
+.B p[refer]
+Prefer use of first specified NUMA node, but permit
+ use of other available NUMA nodes.
+.TP
+.B q[uiet]
+quietly bind before task runs (default)
+.TP
+.B rank
+bind by task rank (not recommended)
+.TP
+.B sort
+sort free cache pages (run zonesort on Intel KNL nodes)
+.TP
+.B v[erbose]
+verbosely report binding before task runs
 .TP
 This option applies to job and step allocations.
 .RE
@@ -1484,8 +1526,6 @@ Run the job with an adjusted scheduling priority within Slurm. With no
 adjustment value the scheduling priority is decreased by 100. A negative nice
 value increases the priority, otherwise decreases it. The adjustment range is
 +/\- 2147483645. Only privileged users can specify a negative adjustment.
-NOTE: This option is presently ignored if \fISchedulerType=sched/wiki\fR or
-\fISchedulerType=sched/wiki2\fR.
 
 .TP
 \fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
@@ -1549,13 +1589,14 @@ defined in the file \fIslurm.h\fR and is not a variable, it is set at
 Slurm build time.
 
 .TP
-\fB\-o\fR, \fB\-\-output\fR=<\fImode\fR>
-Specify the mode for stdout redirection. By default in interactive mode,
+\fB\-o\fR, \fB\-\-output\fR=<\fIfilename pattern\fR>
+Specify the "\fIfilename pattern\fR" for stdout redirection. By default in
+interactive mode,
 .B srun
 collects stdout from all tasks and sends this output via TCP/IP to
 the attached terminal. With \fB\-\-output\fR stdout may be redirected
 to a file, to one file per task, or to /dev/null. See section
-\fBIO Redirection\fR below for the various forms of \fImode\fR.
+\fBIO Redirection\fR below for the various forms of \fIfilename pattern\fR.
 If the specified file already exists, it will be overwritten.
 .br
 
@@ -1697,8 +1738,7 @@ Implicitly sets \fB\-\-error\fR and \fB\-\-output\fR to /dev/null
 for all tasks except task zero, which may cause those tasks to
 exit immediately (e.g. shells will typically exit immediately
 in that situation).
-Not currently supported on AIX platforms. This option applies to step
-allocations.
+This option applies to step allocations.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
@@ -1742,12 +1782,13 @@ This is only supported with some system configurations and will otherwise be
 silently ignored. This option applies to job allocations.
 
 .TP
-\fB\-\-resv\-ports\fR
+\fB\-\-resv\-ports\fR[=\fIcount\fR]
 Reserve communication ports for this job. Users can specify the number
 of port they want to reserve. The parameter MpiParams=ports=12000-12999
-must be specified in \fIslurm.conf\fR. If not specified the default reserve
-number of ports equal to the number of tasks. If the number of reserved ports
-is zero no ports is reserved.
+must be specified in \fIslurm.conf\fR. If not specified and Slurm's OpenMPI
+plugin is used, then by default the number of reserved equal to the highest
+number of tasks on any node in the job step allocation.
+If the number of reserved ports is zero then no ports is reserved.
 Used for OpenMPI. This option applies to job and step allocations.
 
 .TP
@@ -1836,6 +1877,13 @@ sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled. This option applies to job allocations.
 
 .TP
+\fB\-\-spread\-job\fR
+Spread the job allocation over as many nodes as possible and attempt to
+evenly distribute tasks across the allocated nodes.
+This option disables the topology/tree plugin.
+This option applies to job allocations.
+
+.TP
 \fB\-\-switches\fR=<\fIcount\fR>[@<\fImax\-time\fR>]
 When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
@@ -1849,6 +1897,9 @@ Acceptable time formats include "minutes", "minutes:seconds",
 The job's maximum time delay may be limited by the system administrator using
 the \fBSchedulerParameters\fR configuration parameter with the
 \fBmax_switch_wait\fR parameter option.
+On a dragonfly network the only switch count supported is 1 since communication
+performance will be highest when a job is allocate resources on one leaf switch
+or more than 2 leaf switches.
 The default max\-time is the max_switch_wait SchedulerParameters. This option
 applies to job allocations.
 
@@ -1941,9 +1992,12 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds". This option applies to job allocations.
 
 .TP
-\fB\-\-tmp\fR=<\fIMB\fR>
-Specify a minimum amount of temporary disk space. This option applies to job
-allocations.
+\fB\-\-tmp\fR=<\fIsize[units]\fR>
+Specify a minimum amount of temporary disk space per node.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
+Different units can be specified using the suffix [K|M|G|T].
+This option applies to job allocations.
 
 .TP
 \fB\-u\fR, \fB\-\-unbuffered\fR
@@ -2207,8 +2261,8 @@ that runs \fBsrun\fR.  Depending on the cluster's file system layout,
 this may result in the output appearing in different places depending
 on whether the job is run in batch mode.
 .TP
-\fBformat string\fR
-\fBsrun\fR allows for a format string to be used to generate the
+\fBfilename pattern\fR
+\fBsrun\fR allows for a filename pattern to be used to generate the
 named IO file
 described above. The following list of format specifiers may be
 used in the format string to generate a filename that will be
@@ -2254,6 +2308,9 @@ separate IO file per task.
 .TP
 \fB%u\fR
 User name.
+.TP
+\fB%x\fR
+Job name.
 .PP
 A number placed between the percent character and format specifier may be
 used to zero\-pad the result in the IO filename. This number is ignored if
@@ -2348,6 +2405,9 @@ Same as \fB\-\-compress\fR
 \fBSLURM_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR
 .TP
+\fBSLURM_CONSTRAINT\fR
+Same as \fB\-C\fR, \fB\-\-constraint\fR
+.TP
 \fBSLURM_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
 .TP
@@ -2363,7 +2423,10 @@ Same as \fB\-c, \-\-cpus\-per\-task\fR
 \fBSLURM_DEBUG\fR
 Same as \fB\-v, \-\-verbose\fR
 .TP
-\fBSlurmD_DEBUG\fR
+\fBSLURM_DELAY_BOOT\fR
+Same as \fB\-\-delay\-boot\fR
+.TP
+\fBfBSLURMD_DEBUG\fR
 Same as \fB\-d, \-\-slurmd\-debug\fR
 .TP
 \fBSLURM_DEPENDENCY\fR
@@ -2529,6 +2592,9 @@ Same as \fB\-e, \-\-error\fR
 \fBSLURM_STDINMODE\fR
 Same as \fB\-i, \-\-input\fR
 .TP
+\fBSLURM_SPREAD_JOB\fR
+Same as \fB\-\-spread\-job\fR
+.TP
 \fBSLURM_SRUN_REDUCE_TASK_EXIT_MSG\fR
 if set and non-zero, successive task exit messages with the same exit code will
 be printed only once.
@@ -2673,14 +2739,20 @@ initiated (where the srun command ran from).
 Node local task ID for the process within a job.
 
 .TP
-\fBSLURM_MEM_BIND_VERBOSE\fR
-\-\-mem_bind verbosity (quiet,verbose).
+\fBSLURM_MEM_BIND_LIST\fR
+\-\-mem_bind map or mask list (<list of IDs or masks for this node>).
+.TP
+\fBSLURM_MEM_BIND_PREFER\fR
+\-\-mem_bind prefer (prefer).
+.TP
+\fBSLURM_MEM_BIND_SORT\fR
+Sort free cache pages (run zonesort on Intel KNL nodes).
 .TP
 \fBSLURM_MEM_BIND_TYPE\fR
 \-\-mem_bind type (none,rank,map_mem:,mask_mem:).
 .TP
-\fBSLURM_MEM_BIND_LIST\fR
-\-\-mem_bind map or mask list (<list of IDs or masks for this node>).
+\fBSLURM_MEM_BIND_VERBOSE\fR
+\-\-mem_bind verbosity (quiet,verbose).
 
 .TP
 \fBSLURM_NNODES\fR

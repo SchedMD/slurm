@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,16 +39,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <stdlib.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <netinet/in.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <inttypes.h>
 
 #include "slurm/slurm_errno.h"
 
@@ -97,7 +93,7 @@ strong_alias(unpackmem_array,	slurm_unpackmem_array);
 /* Basic buffer management routines */
 /* create_buf - create a buffer with the supplied contents, contents must
  * be xalloc'ed */
-Buf create_buf(char *data, int size)
+Buf create_buf(char *data, uint32_t size)
 {
 	Buf my_buf;
 
@@ -119,13 +115,15 @@ Buf create_buf(char *data, int size)
 /* free_buf - release memory associated with a given buffer */
 void free_buf(Buf my_buf)
 {
+	if (!my_buf)
+		return;
 	assert(my_buf->magic == BUF_MAGIC);
 	xfree(my_buf->head);
 	xfree(my_buf);
 }
 
 /* Grow a buffer by the specified amount */
-void grow_buf (Buf buffer, int size)
+void grow_buf (Buf buffer, uint32_t size)
 {
 	if ((buffer->size + size) > MAX_BUF_SIZE) {
 		error("%s: Buffer size limit exceeded (%u > %u)",
@@ -138,7 +136,7 @@ void grow_buf (Buf buffer, int size)
 }
 
 /* init_buf - create an empty buffer of the given size */
-Buf init_buf(int size)
+Buf init_buf(uint32_t size)
 {
 	Buf my_buf;
 
@@ -445,6 +443,19 @@ void pack64_array(uint64_t * valp, uint32_t size_val, Buf buffer)
 	}
 }
 
+/* Pack an array of 64bit values as if they were 32bit
+ * Used for backwards compatibility */
+void pack64_array_as_32(uint64_t * valp, uint32_t size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	pack32(size_val, buffer);
+
+	for (i = 0; i < size_val; i++) {
+		pack32((uint32_t) *(valp + i), buffer);
+	}
+}
+
 /* Given a int ptr, it will unpack an array of size_val
  */
 int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
@@ -458,6 +469,24 @@ int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 	for (i = 0; i < *size_val; i++) {
 		if (unpack64((*valp) + i, buffer))
 			return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+/* Unpack an array of 64bit values as if they were 32bit
+ * Used for backwards compatibility */
+int unpack64_array_from_32(uint64_t ** valp, uint32_t * size_val, Buf buffer)
+{
+	uint32_t i = 0, val32;
+
+	if (unpack32(size_val, buffer))
+		return SLURM_ERROR;
+
+	*valp = xmalloc_nz((*size_val) * sizeof(uint64_t));
+	for (i = 0; i < *size_val; i++) {
+		if (unpack32(&val32, buffer))
+			return SLURM_ERROR;
+		*(*valp + i) = val32;
 	}
 	return SLURM_SUCCESS;
 }
@@ -761,7 +790,7 @@ int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 			return SLURM_ERROR;
 		*valp = malloc(*size_valp);
 		if (*valp == NULL) {
-			log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
+			log_oom(__FILE__, __LINE__, __func__);
 			abort();
 		}
 		memcpy(*valp, &buffer->head[buffer->processed],

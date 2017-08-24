@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,7 +39,7 @@
 #ifndef _HAVE_ACCOUNTING_STORAGE_MYSQL_H
 #define _HAVE_ACCOUNTING_STORAGE_MYSQL_H
 
-#include <strings.h>
+#include <string.h>
 #include <stdlib.h>
 
 /* we can't include common/slurm_xlator.h here since it contains
@@ -81,6 +81,7 @@ extern char *cluster_day_table;
 extern char *cluster_hour_table;
 extern char *cluster_month_table;
 extern char *cluster_table;
+extern char *federation_table;
 extern char *event_table;
 extern char *job_table;
 extern char *last_ran_table;

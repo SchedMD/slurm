@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,26 +39,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <string.h>
+#include <ctype.h>
+#include <errno.h>
+#include <pthread.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
-#if 	HAVE_UNISTD_H
-#  include <unistd.h>
-#endif
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
-#include <stdarg.h>
-#include <ctype.h>
-#include <sys/time.h>
+#include <string.h>
 #include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 
@@ -97,6 +89,7 @@ strong_alias(xstrtolower,       slurm_xstrtolower);
 strong_alias(xstrchr,           slurm_xstrchr);
 strong_alias(xstrcmp,           slurm_xstrcmp);
 strong_alias(xstrcasecmp,       slurm_xstrcasecmp);
+strong_alias(xstrcasestr,       slurm_xstrcasestr);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.
@@ -201,11 +194,6 @@ void _xstrftimecat(char **buf, const char *fmt)
 	struct tm tm;
 
 	const char default_fmt[] = "%m/%d/%Y %H:%M:%S %Z";
-#ifdef DISABLE_LOCALTIME
-	static int disabled=0;
-	if (!buf) disabled=1;
-	if (disabled) return;
-#endif
 
 	if (fmt == NULL)
 		fmt = default_fmt;
@@ -602,6 +590,33 @@ int xstrcasecmp(const char *s1, const char *s2)
 		return 1;
 	else
 		return strcasecmp(s1, s2);
+}
+
+char *xstrcasestr(char *haystack, char *needle)
+{
+	int hay_inx, hay_size, need_inx, need_size;
+	char *hay_ptr = haystack;
+
+	if (haystack == NULL || needle == NULL)
+		return NULL;
+
+	hay_size = strlen(haystack);
+	need_size = strlen(needle);
+
+	for (hay_inx=0; hay_inx<hay_size; hay_inx++) {
+		for (need_inx=0; need_inx<need_size; need_inx++) {
+			if (tolower((int) hay_ptr[need_inx]) !=
+			    tolower((int) needle [need_inx]))
+				break;		/* mis-match */
+		}
+
+		if (need_inx == need_size)	/* it matched */
+			return hay_ptr;
+		else				/* keep looking */
+			hay_ptr++;
+	}
+
+	return NULL;	/* no match anywhere in string */
 }
 
 /*

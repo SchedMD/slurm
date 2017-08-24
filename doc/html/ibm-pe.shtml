@@ -362,7 +362,7 @@ instead of the users tasks.  The exit code of the job allocation if
 started with srun will be correct as we will grab the exit code from
 the wrapped poe.</p>
 
-<p>Use of the srun command rather than the poe command is recommeded to launch
+<p>Use of the srun command rather than the poe command is recommended to launch
 tasks. If the poe command is used with a hostlist file (e.g. "-hfile" option or
 "MP_HOSTFILE" environment variable or a "host.list" file in the current working
 directory), the resd option must be set to yes (e.g. "-resd yes" option or

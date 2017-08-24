@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,6 +36,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include <limits.h>
 
 #include "affinity.h"
 static bool cpuset_prefix_set = false;
@@ -192,7 +194,7 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 	int fd, rc;
 	int cpu_cnt = 0, mem_cnt = 0;
 	char file_path[PATH_MAX];
-	char mstr[1 + CPU_SETSIZE * 4];
+	char mstr[2 + CPU_SETSIZE * 4];
 
 	if (mkdir(path, 0700) && (errno != EEXIST)) {
 		error("%s: mkdir(%s): %m", __func__, path);
@@ -204,10 +206,12 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 		 base, cpuset_prefix);
 	fd = open(file_path, O_RDONLY);
 	if (fd >= 0) {
-		rc = read(fd, mstr, sizeof(mstr));
+		rc = read(fd, mstr, sizeof(mstr) - 1);
 		close(fd);
-		if (rc > 0)
+		if (rc > 0) {
+			mstr[rc] = '\0';
 			cpu_cnt = str_to_cnt(mstr);
+		}
 	}
 
 	/* Set "cpus" per user request */
@@ -235,12 +239,14 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 		error("open(%s): %m", file_path);
 	} else {
 		memset(mstr, 0, sizeof(mstr));
-		rc = read(fd, mstr, sizeof(mstr)-1);	/* Insure NULL at end */
+		rc = read(fd, mstr, sizeof(mstr) - 1);
 		close(fd);
 		if (rc < 1) {
 			error("read(%s): %m", file_path);
 			return SLURM_ERROR;
 		}
+		if (rc >= 0)
+			mstr[rc] = '\0';
 		if (rc > 0)
 			mem_cnt = str_to_cnt(mstr);
 		if ((cpu_cnt > 1) && (mem_cnt > 1))
@@ -252,7 +258,7 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 			error("open(%s): %m", file_path);
 			return SLURM_ERROR;
 		}
-		rc = write(fd, mstr, strlen(mstr)+1);
+		rc = write(fd, mstr, strlen(mstr) + 1);
 		close(fd);
 		if (rc < 1) {
 			error("write(%s): %m", file_path);
@@ -283,7 +289,7 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 		return SLURM_ERROR;
 	}
 	snprintf(mstr, sizeof(mstr), "%d", pid);
-	rc = write(fd, mstr, strlen(mstr)+1);
+	rc = write(fd, mstr, strlen(mstr) + 1);
 	close(fd);
 	if (rc < 1) {
 		error("write(%s, %s): %m", file_path, mstr);
@@ -297,7 +303,7 @@ int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask)
 {
 	int fd, rc;
 	char file_path[PATH_MAX];
-	char mstr[1 + CPU_SETSIZE * 4];
+	char mstr[2 + CPU_SETSIZE * 4];
 
 	snprintf(file_path, sizeof(file_path), "%s/%scpus",
 		 path, cpuset_prefix);
@@ -306,13 +312,13 @@ int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask)
 		error("open(%s): %m", file_path);
 		return SLURM_ERROR;
 	}
-	memset(mstr, 0, sizeof(mstr));
-	rc = read(fd, mstr, sizeof(mstr)-1);	/* Insure NULL at end */
+	rc = read(fd, mstr, sizeof(mstr) - 1);
 	close(fd);
 	if (rc < 1) {
 		error("read(%s): %m", file_path);
 		return SLURM_ERROR;
 	}
+	mstr[rc] = '\0';
 	str_to_cpuset(mask, mstr);
 
 	snprintf(file_path, sizeof(file_path), "%s/tasks", path);
@@ -321,12 +327,13 @@ int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask)
 		error("open(%s): %m", file_path);
 		return SLURM_ERROR;
 	}
-	rc = read(fd, mstr, sizeof(mstr));
+	rc = read(fd, mstr, (sizeof(mstr) - 1));
 	close(fd);
 	if (rc < 1) {
 		error("read(%s): %m", file_path);
 		return SLURM_ERROR;
 	}
+	mstr[rc] = '\0';
 
 	/* FIXME: verify that pid is in mstr */
 
@@ -347,7 +354,7 @@ int	slurm_memset_available(void)
 int	slurm_set_memset(char *path, nodemask_t *new_mask)
 {
 	char file_path[PATH_MAX];
-	char mstr[1 + CPU_SETSIZE * 4], tmp[10];
+	char mstr[1 + CPU_SETSIZE * 4], tmp[16];
 	int fd, i, max_node;
 	ssize_t rc;
 

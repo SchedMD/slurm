@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -120,6 +120,14 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list);
 
 /*
+ * add federations to accounting system
+ * IN:  list List of slurmdb_federation_rec_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
+					  List federation_list);
+
+/*
  * add tres to accounting system
  * IN:  tres_list List of slurmdb_tres_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
@@ -207,6 +215,17 @@ extern List acct_storage_g_modify_assocs(
 	void *db_conn, uint32_t uid,
 	slurmdb_assoc_cond_t *assoc_cond,
 	slurmdb_assoc_rec_t *assoc);
+
+/*
+ * modify existing federations in the accounting system
+ * IN:  slurmdb_federation_cond_t *fed_cond
+ * IN:  slurmdb_federation_rec_t  *fed
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_modify_federations(
+				void *db_conn, uint32_t uid,
+				slurmdb_federation_cond_t *fed_cond,
+				slurmdb_federation_rec_t *fed);
 
 /*
  * modify existing job in the accounting system
@@ -298,6 +317,15 @@ extern List acct_storage_g_remove_assocs(
 	void *db_conn, uint32_t uid, slurmdb_assoc_cond_t *assoc_cond);
 
 /*
+ * remove federations from accounting system
+ * IN:  slurmdb_federation_cond_t *fed_cond
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_remove_federations(
+					void *db_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond);
+
+/*
  * remove qos from accounting system
  * IN:  slurmdb_qos_cond_t *qos_cond
  * RET: List containing (char *'s) else NULL on error
@@ -357,6 +385,15 @@ extern List acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
  */
 extern List acct_storage_g_get_clusters(
 	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond);
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_federation_cond_t *
+ * RET: returns List of slurmdb_federation_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_federations(void *db_conn, uint32_t uid,
+					   slurmdb_federation_cond_t *fed_cond);
 
 /*
  * get info from the storage
@@ -469,7 +506,8 @@ extern int acct_storage_g_get_usage(
  */
 extern int acct_storage_g_roll_usage(void *db_conn,
 				     time_t sent_start, time_t sent_end,
-				     uint16_t archive_data);
+				     uint16_t archive_data,
+				     rollup_stats_t *rollup_stats);
 
 /*
  * Fix runaway jobs
@@ -507,6 +545,24 @@ extern int acct_storage_g_reconfig(void *db_conn, bool dbd);
  */
 extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
 					List cluster_list);
+
+/*
+ * Get performance statistics.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_get_stats(void *db_conn, slurmdb_stats_rec_t **stats);
+
+/*
+ * Clear performance statistics.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_clear_stats(void *db_conn);
+
+/*
+ * Shutdown database server.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_shutdown(void *db_conn);
 
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 

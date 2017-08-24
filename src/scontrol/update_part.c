@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,7 +42,7 @@
 #include "src/scontrol/scontrol.h"
 
 extern int
-scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
+scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			     update_part_msg_t *part_msg_ptr)
 {
 	int i, min, max;
@@ -227,7 +227,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "OverSubscribe", MAX(taglen, 2)) ||
+		else if (!strncasecmp(tag, "OverSubscribe", MAX(taglen, 5)) ||
 			 !strncasecmp(tag, "Shared", MAX(taglen, 2))) {
 			char *colon_pos = strchr(val, ':');
 			if (colon_pos) {
@@ -266,6 +266,19 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable OverSubscribe values are "
 					"NO, EXCLUSIVE, YES:#, and FORCE:#");
+				return -1;
+			}
+			(*update_cnt_ptr)++;
+		}
+		else if (strncasecmp(tag, "OverTimeLimit", MAX(taglen, 5))
+			  == 0) {
+			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
+			    (xstrcasecmp(val,"INFINITE") == 0)) {
+				part_msg_ptr->over_time_limit =
+					(uint16_t) INFINITE;
+			} else if (parse_uint16(val, &part_msg_ptr->
+						      over_time_limit)) {
+				error("Invalid OverTimeLimit value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;
@@ -363,7 +376,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (!strncasecmp(tag, "DefMemPerCPU", MAX(taglen, 10))) {
-			if (parse_uint32(val, &part_msg_ptr->def_mem_per_cpu)) {
+			if (parse_uint64(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerCPU value: %s", val);
 				return -1;
 			}
@@ -371,14 +384,14 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (!strncasecmp(tag, "DefMemPerNode", MAX(taglen, 10))) {
-			if (parse_uint32(val, &part_msg_ptr->def_mem_per_cpu)) {
+			if (parse_uint64(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerNode value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;
 		}
 		else if (!strncasecmp(tag, "MaxMemPerCPU", MAX(taglen, 10))) {
-			if (parse_uint32(val, &part_msg_ptr->max_mem_per_cpu)) {
+			if (parse_uint64(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerCPU value: %s", val);
 				return -1;
 			}
@@ -386,7 +399,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (!strncasecmp(tag, "MaxMemPerNode", MAX(taglen, 10))) {
-			if (parse_uint32(val, &part_msg_ptr->max_mem_per_cpu)) {
+			if (parse_uint64(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerNode value: %s", val);
 				return -1;
 			}
@@ -418,7 +431,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
  *			error message and returns 0
  */
 extern int
-scontrol_update_part (int argc, char *argv[])
+scontrol_update_part (int argc, char **argv)
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;
@@ -455,7 +468,7 @@ scontrol_update_part (int argc, char *argv[])
  *			error message and returns 0
  */
 extern int
-scontrol_create_part (int argc, char *argv[])
+scontrol_create_part (int argc, char **argv)
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;

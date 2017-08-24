@@ -13,7 +13,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -206,16 +206,7 @@ if {$sq_format(ntpersocket) == 0 || $sq_format(cpuspertask) == 0} {
 exec $bin_rm $tmp_sc
 cancel_job $tmp_job
 
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set sq_format(username) $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set sq_format(username) [get_my_user_name]
 
 set match 0
 spawn $sacctmgr add -i account $test_acct

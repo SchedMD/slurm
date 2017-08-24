@@ -1,13 +1,12 @@
 /*****************************************************************************\
  *  mysql_common.c - common functions for the mysql storage plugin.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,7 +38,10 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include "mysql_common.h"
+#include "src/common/log.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/timers.h"
@@ -218,6 +220,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 			       table_name);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
+		xfree(old_index);
 		return SLURM_ERROR;
 	}
 	xfree(query);
@@ -268,7 +271,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 
 
 	itr = list_iterator_create(columns);
-#ifdef NO_ALTER_IGNORE_MYSQL
 	/* In MySQL 5.7.4 we lost the ability to run 'alter ignore'.  This was
 	 * needed when converting old tables to new schemas.  If people convert
 	 * in the future from an older version of Slurm that needed the ignore
@@ -276,9 +278,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	 * work correctly or manually edit the database to get things to work.
 	 */
 	query = xstrdup_printf("alter table %s", table_name);
-#else
-	query = xstrdup_printf("alter ignore table %s", table_name);
-#endif
 	correct_query = xstrdup(query);
 	START_TIMER;
 	while (fields[i].name) {
@@ -367,7 +366,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	}
 
 	if ((temp = strstr(ending, "unique index ("))) {
-		int open = 0, close =0;
+		int open = 0, close = 0;
 		int end = 0;
 		while (temp[end++]) {
 			if (temp[end] == '(')
@@ -894,9 +893,9 @@ extern int mysql_db_query_check_after(mysql_conn_t *mysql_conn, char *query)
 	return rc;
 }
 
-extern int mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query)
+extern uint64_t mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query)
 {
-	int new_id = 0;
+	uint64_t new_id = 0;
 
 	slurm_mutex_lock(&mysql_conn->lock);
 	if (_mysql_query_internal(mysql_conn->db_conn, query) != SLURM_ERROR)  {

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,24 +36,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#if HAVE_UNISTD_H
-#  if HAVE_SETRESUID
-#    define _GNU_SOURCE /* for setresuid(3) */
-#  endif
-#  include <unistd.h>
-#endif
-
-#if HAVE_STRING_H
-#  include <string.h>
-#endif
-
-#if HAVE_STDLIB_H
-#  include <stdlib.h>
-#endif
+#define _GNU_SOURCE /* for setresuid(3) */
 
 #ifdef HAVE_PTY_H
 #  include <pty.h>
@@ -63,13 +48,15 @@
 #  include <utmp.h>
 #endif
 
+#include <errno.h>
+#include <fcntl.h>
 #include <poll.h>
-#include <sys/types.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <errno.h>
 
 #include "src/common/cbuf.h"
 #include "src/common/eio.h"
@@ -201,7 +188,7 @@ struct task_read_info {
 struct window_info {
 	stepd_step_task_info_t *task;
 	stepd_step_rec_t *job;
-	slurm_fd_t pty_fd;
+	int pty_fd;
 };
 #ifdef HAVE_PTY_H
 static void  _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job);
@@ -238,7 +225,7 @@ _client_readable(eio_obj_t *obj)
 	xassert(client->magic == CLIENT_IO_MAGIC);
 
 	if (client->in_eof) {
-		debug5("  false");
+		debug5("  false, in_eof");
 		/* We no longer want the _client_read() function to handle
 		   errors on write now that the read side of the connection
 		   is closed.  Setting handle_read to NULL will result in
@@ -872,7 +859,7 @@ static void
 _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 {
 	char *host, *port, *rows, *cols;
-	slurm_fd_t pty_fd;
+	int pty_fd;
 	slurm_addr_t pty_addr;
 	uint16_t port_u;
 	struct window_info *win_info;
@@ -946,7 +933,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	 *  Initialize stdin
 	 */
 #ifdef HAVE_PTY_H
-	if (job->pty) {
+	if (job->flags & LAUNCH_PTY) {
 		/* All of the stdin fails unless EVERY
 		 * task gets an eio object for stdin.
 		 * Its not clear why that is. */
@@ -1032,7 +1019,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	 *  Initialize stdout
 	 */
 #ifdef HAVE_PTY_H
-	if (job->pty) {
+	if (job->flags & LAUNCH_PTY) {
 		if (task->gtid == 0) {
 			task->stdout_fd = dup(task->stdin_fd);
 			fd_set_close_on_exec(task->stdout_fd);
@@ -1050,11 +1037,13 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			fd_set_close_on_exec(task->stdout_fd);
 			task->from_stdout = -1;  /* not used */
 		}
-	} else if (task->ofname != NULL &&
-		   (!job->labelio || xstrcmp(task->ofname, "/dev/null")==0)) {
+	} else if ((task->ofname != NULL) &&
+		   (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+		    (xstrcmp(task->ofname, "/dev/null") == 0))) {
 #else
 	if (task->ofname != NULL &&
-	    (!job->labelio || xstrcmp(task->ofname, "/dev/null")==0) ) {
+	    (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+	     xstrcmp(task->ofname, "/dev/null") == 0)) {
 #endif
 		int count = 0;
 		/* open file on task's stdout */
@@ -1074,7 +1063,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		/* create pipe and eio object */
 		int pout[2];
 #if HAVE_PTY_H
-		if (job->buffered_stdio) {
+		if (!(job->flags & LAUNCH_BUFFERED_IO)) {
 #if HAVE_SETRESUID
 			if (setresuid(geteuid(), geteuid(), 0) < 0)
 				error("%s: %d setresuid() %m",
@@ -1117,7 +1106,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	 *  Initialize stderr
 	 */
 #ifdef HAVE_PTY_H
-	if (job->pty) {
+	if (job->flags & LAUNCH_PTY) {
 		if (task->gtid == 0) {
 			/* Make a file descriptor for the task to write to, but
 			   don't make a separate one read from, because in pty
@@ -1136,11 +1125,14 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			fd_set_close_on_exec(task->stderr_fd);
 			task->from_stderr = -1;  /* not used */
 		}
-	} else if (task->efname != NULL &&
-		   (!job->labelio || xstrcmp(task->efname, "/dev/null")==0)) {
+
+	} else if ((task->efname != NULL) &&
+		   (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+		    (xstrcmp(task->efname, "/dev/null") == 0))) {
 #else
-	if (task->efname != NULL &&
-	    (!job->labelio || xstrcmp(task->efname, "/dev/null")==0) ) {
+	if ((task->efname != NULL) &&
+	    (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+	     (xstrcmp(task->efname, "/dev/null") == 0))) {
 #endif
 		int count = 0;
 		/* open file on task's stdout */
@@ -1452,6 +1444,7 @@ io_close_all(stepd_step_rec_t *job)
 	} else {
 		if (dup2(devnull, STDERR_FILENO) < 0)
 			error("Unable to dup /dev/null onto stderr");
+		(void) close(devnull);
 	}
 
 	/* Signal IO thread to close appropriate
@@ -1791,18 +1784,18 @@ _send_eof_msg(struct task_read_info *out)
 
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->job->clients);
-	while((eio = list_next(clients))) {
+	while ((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		debug5("======================== Enqueued eof message");
 		xassert(client->magic == CLIENT_IO_MAGIC);
 
-		/* Send eof message to all clients.
-		 */
-
+		/* Send eof message to all clients */
 		if (list_enqueue(client->msg_queue, msg))
 			msg->ref_count++;
 	}
 	list_iterator_destroy(clients);
+	if (msg->ref_count == 0)
+		free_io_buf(msg);
 
 	debug4("Leaving  _send_eof_msg");
 }
@@ -1815,8 +1808,11 @@ _task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cb
 	struct io_buf *msg;
 	char *ptr;
 	Buf packbuf;
+	bool must_truncate = false;
+	int avail;
 	struct slurm_io_header header;
 	int n;
+	bool buffered_stdio = job->flags & LAUNCH_BUFFERED_IO;
 
 	debug4("%s: Entering...", __func__);
 
@@ -1827,13 +1823,43 @@ _task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cb
 	}
 
 	ptr = msg->data + io_hdr_packed_size();
-	n = cbuf_read(cbuf, ptr, MAX_MSG_LEN);
+
+	if (buffered_stdio) {
+		avail = cbuf_peek_line(cbuf, ptr, MAX_MSG_LEN, 1);
+		if (avail >= MAX_MSG_LEN)
+			must_truncate = true;
+		else if (avail == 0 && cbuf_used(cbuf) >= MAX_MSG_LEN)
+			must_truncate = true;
+	}
+
+	debug5("%s: buffered_stdio is %s", __func__,
+	       buffered_stdio ? "true" : "false");
+	debug5("%s: must_truncate  is %s", __func__,
+	       must_truncate ? "true" : "false");
+
+	/*
+	 * If eof has been read from a tasks stdout or stderr, we need to
+	 * ignore normal line buffering and send the buffer immediately.
+	 * Hence the "|| out->eof".
+	 */
+	if (must_truncate || !buffered_stdio || out->eof) {
+		n = cbuf_read(cbuf, ptr, MAX_MSG_LEN);
+	} else {
+		n = cbuf_read_line(cbuf, ptr, MAX_MSG_LEN, -1);
+		if (n == 0) {
+			debug5("  partial line in buffer, ignoring");
+			debug4("Leaving  _task_build_message");
+			list_enqueue(job->free_outgoing, msg);
+			return NULL;
+		}
+	}
+
 	header.type = out->type;
 	header.ltaskid = out->ltaskid;
 	header.gtaskid = out->gtaskid;
 	header.length = n;
 
-	debug4("%s: header.length %d", __func__, n);
+	debug4("%s: header.length = %d", __func__, n);
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
 	if (!packbuf) {
 		fatal("Failure to allocate memory for a message header");
@@ -1847,7 +1873,7 @@ _task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cb
 	packbuf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(packbuf);
 
-	debug4("%s: Leaving...", __func__);
+	debug4("%s: Leaving", __func__);
 	return msg;
 }
 

@@ -1,14 +1,14 @@
 /*****************************************************************************\
  *  as_mysql_usage.h - functions dealing with usage.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2016 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -53,7 +53,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			  void *in, slurmdbd_msg_type_t type,
 			  time_t start, time_t end);
 extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
-			    time_t sent_start, time_t sent_end,
-			    uint16_t archive_data);
+			  time_t sent_start, time_t sent_end,
+			  uint16_t archive_data, rollup_stats_t *rollup_stats);
 
 #endif

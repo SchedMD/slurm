@@ -81,6 +81,12 @@ Time of last step start to archive.
 \fBSLURM_ARCHIVE_SUSPEND\fR
 1 for archive suspend data 0 otherwise.
 .TP
+\fBSLURM_ARCHIVE_TXN\fR
+1 for archive transaction data 0 otherwise.
+.TP
+\fBSLURM_ARCHIVE_USAGE\fR
+1 for archive usage data 0 otherwise.
+.TP
 \fBSLURM_ARCHIVE_LAST_SUSPEND\fR
 Time of last suspend start to archive.
 .TP
@@ -95,6 +101,16 @@ no otherwise.  Default is no.
 \fBArchiveSuspend\fR
 When purging suspend data also archive it.  Boolean, yes to archive
 suspend data, no otherwise.  Default is no.
+
+.TP
+\fBArchiveTXN\fR
+When purging transaction data also archive it.  Boolean, yes to archive
+transaction data, no otherwise.  Default is no.
+
+.TP
+\fBArchiveUsage\fR
+When purging usage data (Cluster, Association and WCKey) also archive it.
+Boolean, yes to archive transaction data, no otherwise.  Default is no.
 
 .TP
 \fBAuthInfo\fR
@@ -345,7 +361,7 @@ If not set (default), then job step records are never purged.
 .TP
 \fBPurgeJobAfter\fR
 Individual job records over this age are purged from the database.
-Aggregated information will be preserved indefinitely.
+Aggregated information will be preserved to "PurgeUsageAfter".
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
@@ -358,7 +374,7 @@ If not set (default), then job records are never purged.
 .TP
 \fBPurgeResvAfter\fR
 Individual reservation records over this age are purged from the database.
-Aggregated information will be preserved indefinitely.
+Aggregated information will be preserved to "PurgeUsageAfter".
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
@@ -371,7 +387,7 @@ If not set (default), then reservation records are never purged.
 .TP
 \fBPurgeStepAfter\fR
 Individual job step records over this age are purged from the database.
-Aggregated information will be preserved indefinitely.
+Aggregated information will be preserved to "PurgeUsageAfter".
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
@@ -385,7 +401,32 @@ If not set (default), then job step records are never purged.
 \fBPurgeSuspendAfter\fR
 Records of individual suspend times for jobs over this age are purged from the
 database.
-Aggregated information will be preserved indefinitely.
+Aggregated information will be preserved to "PurgeUsageAfter".
+The time is a numeric value and is a number of months.  If you want to purge
+more often you can include "hours", or "days" behind the numeric value to get
+those more frequent purges (i.e. a value of "12hours" would purge
+everything older than 12 hours).
+The purge takes place at the start of the each purge interval.
+For example, if the purge time is 2 months, the purge would happen at the
+beginning of each month.
+If not set (default), then job step records are never purged.
+
+.TP
+\fBPurgeTXNAfter\fR
+Records of individual transaction times for transactions over this age are purged from the database.
+The time is a numeric value and is a number of months.  If you want to purge
+more often you can include "hours", or "days" behind the numeric value to get
+those more frequent purges (i.e. a value of "12hours" would purge
+everything older than 12 hours).
+The purge takes place at the start of the each purge interval.
+For example, if the purge time is 2 months, the purge would happen at the
+beginning of each month.
+If not set (default), then job step records are never purged.
+
+.TP
+\fBPurgeUsageAfter\fR
+Usage Records (Cluster, Association and WCKey) over this age are purged from the
+database.
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
@@ -483,6 +524,10 @@ ArchiveSteps=no
 .br
 ArchiveSuspend=no
 .br
+ArchiveTXN=no
+.br
+ArchiveUsage=no
+.br
 #ArchiveScript=/usr/sbin/slurm.dbd.archive
 .br
 AuthInfo=/var/run/munge/munge.socket.2
@@ -502,6 +547,10 @@ PurgeResvAfter=1month
 PurgeStepAfter=1month
 .br
 PurgeSuspendAfter=1month
+.br
+PurgeTXNAfter=12month
+.br
+PurgeUsageAfter=24month
 .br
 LogFile=/var/log/slurmdbd.log
 .br

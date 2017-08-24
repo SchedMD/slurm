@@ -11,7 +11,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -155,12 +155,15 @@ typedef struct bb_job {
 	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
 	char      *qos;	 	/* Associated QOS (for limits) */
 	int        retry_cnt;	/* Count of attempted retries */
+	uint64_t   req_size;	/* Bytes requested by job (excludes
+				 * persistent buffers) */
 	int        state;	/* job state with respect to burst buffers,
 				 * See BB_STATE_* in slurm.h.in */
 	uint32_t   swap_size;	/* swap space required per node in GB */
 	uint32_t   swap_nodes;	/* Number of nodes needed */
 	uint64_t   total_size;	/* Total bytes required for job (excludes
-				 * persistent buffers) */
+				 * persistent buffers, rounded up from
+				 * req_size) */
 	uint32_t   user_id;	/* user the job runs as */
 } bb_job_t;
 

@@ -5,7 +5,7 @@
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,12 +34,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
-
+#include <limits.h>
+#include <stdlib.h>		/* getenv */
 #include <sys/types.h>
-#include <stdlib.h>		/* getenv     */
 
 #include "slurm/slurm_errno.h"
 #include "slurm/slurm.h"
@@ -49,10 +46,6 @@
 #include "src/common/xstring.h"
 
 #include "task_cgroup.h"
-
-#ifndef PATH_MAX
-#define PATH_MAX 256
-#endif
 
 extern slurmd_conf_t *conf;
 
@@ -67,15 +60,20 @@ static xcgroup_t job_memory_cg;
 static xcgroup_t step_memory_cg;
 
 static bool constrain_ram_space;
+static bool constrain_kmem_space;
 static bool constrain_swap_space;
 
 static float allowed_ram_space;   /* Allowed RAM in percent       */
 static float allowed_swap_space;  /* Allowed Swap percent         */
+static float allowed_kmem_space;  /* Allowed Kmem number          */
+static float max_kmem_percent;	   /* Allowed Kernel memory percent*/
 
+static uint64_t max_kmem;       /* Upper bound for kmem.limit_in_bytes  */
 static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes  */
 static uint64_t max_swap;       /* Upper bound for swap                   */
 static uint64_t totalram;       /* Total real memory available on node    */
-static uint64_t min_ram_space;  /* Don't constrain RAM below this value       */
+static uint64_t min_ram_space;  /* Don't constrain RAM below this value   */
+static uint64_t min_kmem_space; /* Don't constrain Kernel mem below       */
 
 static uint64_t percent_in_bytes (uint64_t mb, float percent)
 {
@@ -107,6 +105,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	xcgroup_set_param(&memory_cg, "memory.use_hierarchy","1");
 	xcgroup_destroy(&memory_cg);
 
+	constrain_kmem_space = slurm_cgroup_conf->constrain_kmem_space;
 	constrain_ram_space = slurm_cgroup_conf->constrain_ram_space;
 	constrain_swap_space = slurm_cgroup_conf->constrain_swap_space;
 
@@ -122,28 +121,41 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	else
 		allowed_ram_space = 100.0;
 
+	allowed_kmem_space = slurm_cgroup_conf->allowed_kmem_space;
 	allowed_swap_space = slurm_cgroup_conf->allowed_swap_space;
 
 	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
 		error ("task/cgroup: Unable to get RealMemory size");
 
+	max_kmem = percent_in_bytes(totalram, slurm_cgroup_conf->max_kmem_percent);
 	max_ram = percent_in_bytes(totalram, slurm_cgroup_conf->max_ram_percent);
 	max_swap = percent_in_bytes(totalram, slurm_cgroup_conf->max_swap_percent);
 	max_swap += max_ram;
 	min_ram_space = slurm_cgroup_conf->min_ram_space * 1024 * 1024;
+	max_kmem_percent = slurm_cgroup_conf->max_kmem_percent;
+	min_kmem_space = slurm_cgroup_conf->min_kmem_space * 1024 * 1024;
 
 	debug ("task/cgroup/memory: total:%luM allowed:%.4g%%(%s), "
-	       "swap:%.4g%%(%s), max:%.4g%%(%luM) max+swap:%.4g%%(%luM) min:%uM",
+	       "swap:%.4g%%(%s), max:%.4g%%(%luM) "
+	       "max+swap:%.4g%%(%luM) min:%luM "
+	       "kmem:%.4g%%(%luM %s) min:%luM",
 	       (unsigned long) totalram,
 	       allowed_ram_space,
 	       constrain_ram_space?"enforced":"permissive",
+
 	       allowed_swap_space,
 	       constrain_swap_space?"enforced":"permissive",
 	       slurm_cgroup_conf->max_ram_percent,
 	       (unsigned long) (max_ram/(1024*1024)),
+
 	       slurm_cgroup_conf->max_swap_percent,
 	       (unsigned long) (max_swap/(1024*1024)),
-	       (unsigned) slurm_cgroup_conf->min_ram_space);
+	       (unsigned long) slurm_cgroup_conf->min_ram_space,
+
+	       slurm_cgroup_conf->max_kmem_percent,
+	       (unsigned long) (max_kmem/(1024*1024)),
+	       constrain_kmem_space?"enforced":"permissive",
+	       (unsigned long) slurm_cgroup_conf->min_kmem_space);
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd
@@ -270,6 +282,28 @@ static uint64_t swap_limit_in_bytes (uint64_t mem)
 	return (mem);
 }
 
+/*
+ * If Kmem space is disabled, it set to max percent of its RAM usage.
+ */
+static uint64_t kmem_limit_in_bytes (uint64_t mlb)
+{
+	uint64_t totalKmem = percent_in_bytes(mlb, max_kmem_percent);
+	if ( ! constrain_kmem_space )
+		return totalKmem;
+	if ( allowed_kmem_space < 0 ) {	/* Initial value */
+		if ( mlb > totalKmem )
+			return totalKmem;
+		if ( mlb < min_kmem_space )
+			return min_kmem_space;
+		return mlb;
+	}
+	if ( allowed_kmem_space > totalKmem )
+		return totalKmem;
+	if ( allowed_kmem_space < min_kmem_space )
+		return min_kmem_space;
+	return allowed_kmem_space;
+}
+
 static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 			     char *path, uint64_t mem_limit, uid_t uid,
 			     gid_t gid, uint32_t notify)
@@ -304,7 +338,9 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	 * Also constrain kernel memory (if available).
 	 * See https://lwn.net/Articles/516529/
 	 */
-	xcgroup_set_uint64_param (cg, "memory.kmem.limit_in_bytes", mlb);
+	if (constrain_kmem_space)
+		xcgroup_set_uint64_param (cg, "memory.kmem.limit_in_bytes",
+					  kmem_limit_in_bytes(mlb));
 
 	/* this limit has to be set only if ConstrainSwapSpace is set to yes */
 	if ( constrain_swap_space ) {
@@ -466,15 +502,10 @@ error:
 	return fstatus;
 }
 
-extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job)
+extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job, pid_t pid)
 {
 	int fstatus = SLURM_ERROR;
-	pid_t pid;
 
-	/*
-	 * Attach the current task to the step memory cgroup
-	 */
-	pid = getpid();
 	if (xcgroup_add_pids(&step_memory_cg, &pid, 1) != XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to add task[pid=%u] to "
 		      "memory cg '%s'",pid,step_memory_cg.path);
@@ -504,6 +535,7 @@ int failcnt_non_zero(xcgroup_t* cg, char* param)
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 {
 	xcgroup_t memory_cg;
+	int rc = SLURM_SUCCESS;
 
 	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
 	    == XCGROUP_SUCCESS) {
@@ -513,37 +545,44 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 			 * can't tell which is which so we'll treat
 			 * them the same */
 			if (failcnt_non_zero(&step_memory_cg,
-					     "memory.memsw.failcnt"))
+					     "memory.memsw.failcnt")) {
 				/* reports the number of times that the
 				 * memory plus swap space limit has
 				 * reached the value set in
 				 * memory.memsw.limit_in_bytes.
 				 */
 				error("Exceeded step memory limit at some point.");
-			else if (failcnt_non_zero(&step_memory_cg,
-						  "memory.failcnt"))
+				rc = ENOMEM;
+			} else if (failcnt_non_zero(&step_memory_cg,
+						    "memory.failcnt")) {
 				/* reports the number of times that the
 				 * memory limit has reached the value set
 				 * in memory.limit_in_bytes.
 				 */
 				error("Exceeded step memory limit at some point.");
+				rc = ENOMEM;
+			}
 			if (failcnt_non_zero(&job_memory_cg,
-					     "memory.memsw.failcnt"))
+					     "memory.memsw.failcnt")) {
 				error("Exceeded job memory limit at some point.");
-			else if (failcnt_non_zero(&job_memory_cg,
-						  "memory.failcnt"))
+				rc = ENOMEM;
+			} else if (failcnt_non_zero(&job_memory_cg,
+						    "memory.failcnt")) {
 				error("Exceeded job memory limit at some point.");
+				rc = ENOMEM;
+			}
 			xcgroup_unlock(&memory_cg);
-		} else
+		} else {
 			error("task/cgroup task_cgroup_memory_check_oom: "
 			      "task_cgroup_memory_check_oom: unable to lock "
 			      "root memcg : %m");
+		}
 		xcgroup_destroy(&memory_cg);
 	} else
 		error("task/cgroup task_cgroup_memory_check_oom: "
 		      "unable to create root memcg : %m");
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int task_cgroup_memory_add_pid(pid_t pid)

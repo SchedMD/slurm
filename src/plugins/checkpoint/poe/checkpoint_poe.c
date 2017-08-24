@@ -14,7 +14,7 @@
  *  Written by Morris Jette <jette1@llnl.gov> and <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,20 +43,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
+#include <inttypes.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <time.h>
@@ -67,6 +57,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
@@ -174,7 +165,7 @@ extern int fini ( void )
 {
 	slurm_mutex_lock(&ckpt_agent_mutex);
 	ckpt_agent_stop = true;
-	pthread_cond_signal(&ckpt_agent_cond);
+	slurm_cond_signal(&ckpt_agent_cond);
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 
 	if (ckpt_agent_tid && pthread_join(ckpt_agent_tid, NULL)) {
@@ -485,7 +476,7 @@ static void _my_sleep(int secs)
 	ts.tv_nsec = now.tv_usec * 1000;
 	slurm_mutex_lock(&ckpt_agent_mutex);
 	if (!ckpt_agent_stop)
-		pthread_cond_timedwait(&ckpt_agent_cond,&ckpt_agent_mutex,&ts);
+		slurm_cond_timedwait(&ckpt_agent_cond,&ckpt_agent_mutex,&ts);
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 }
 

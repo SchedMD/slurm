@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -50,9 +50,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
-#include "src/common/arg_desc.h"
 
-static bool auth_dummy = false;	/* for security testing */
 static bool init_run = false;
 
 /*
@@ -62,7 +60,7 @@ static bool init_run = false;
  * end of the structure.
  */
 typedef struct slurm_auth_ops {
-        void *       (*create)    ( void *argv[], char *auth_info );
+        void *       (*create)    ( char *auth_info );
         int          (*destroy)   ( void *cred );
         int          (*verify)    ( void *cred, char *auth_info );
         uid_t        (*get_uid)   ( void *cred, char *auth_info );
@@ -97,19 +95,6 @@ static const char *syms[] = {
 static slurm_auth_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static void **
-_slurm_auth_marshal_args(void *hosts, int timeout)
-{
-        void **argv;
-
-        argv = xmalloc(ARG_COUNT * sizeof(void *));
-        argv[ARG_HOST_LIST] = hosts;
-        /* This strange looking code avoids warnings on IA64 */
-        argv[ARG_TIMEOUT] = ((char *) NULL) + timeout;
-
-        return argv;
-}
 
 static const char *
 slurm_auth_generic_errstr( int slurm_errno )
@@ -159,12 +144,6 @@ extern int slurm_auth_init( char *auth_type )
 
 	type = slurm_get_auth_type();
 
-	if (xstrcmp(type, "auth/dummy") == 0) {
-		info( "warning: %s plugin selected", type);
-		auth_dummy = true;
-		goto done;
-	}
-
 	g_context = plugin_context_create(
 		plugin_type, type, (void **)&ops, syms, sizeof(syms));
 
@@ -203,125 +182,88 @@ slurm_auth_fini( void )
  * the API function dispatcher.
  */
 
-void *
-g_slurm_auth_create( void *hosts, int timeout, char *auth_info )
+void *g_slurm_auth_create(char *auth_info)
 {
-        void **argv;
-        void *ret;
-
-	if ( slurm_auth_init(NULL) < 0 )
+	if (slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	if ( auth_dummy )
-		return xmalloc(0);
-
-        if ( ( argv = _slurm_auth_marshal_args(hosts, timeout) ) == NULL ) {
-                return NULL;
-        }
-
-        ret = (*(ops.create))( argv, auth_info );
-        xfree( argv );
-        return ret;
+        return (*(ops.create))(auth_info);
 }
 
-int
-g_slurm_auth_destroy( void *cred )
+int g_slurm_auth_destroy(void *cred)
 {
-        if ( slurm_auth_init(NULL) < 0 )
+        if (slurm_auth_init(NULL) < 0)
                 return SLURM_ERROR;
 
-	if ( auth_dummy )	/* don't worry about leak in testing */
-		return SLURM_SUCCESS;
-
-        return (*(ops.destroy))( cred );
+        return (*(ops.destroy))(cred);
 }
 
-int
-g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
+int g_slurm_auth_verify(void *cred, char *auth_info)
 {
-        int ret;
-
-        if ( slurm_auth_init(NULL) < 0 )
+        if (slurm_auth_init(NULL) < 0)
                 return SLURM_ERROR;
 
-	if ( auth_dummy )
-		return SLURM_SUCCESS;
-
-        ret = (*(ops.verify))( cred, auth_info );
-        return ret;
+        return (*(ops.verify))(cred, auth_info);
 }
 
-uid_t
-g_slurm_auth_get_uid( void *cred, char *auth_info )
+uid_t g_slurm_auth_get_uid(void *cred, char *auth_info)
 {
-	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
+	if (slurm_auth_init(NULL) < 0)
                 return SLURM_AUTH_NOBODY;
 
-        return (*(ops.get_uid))( cred, auth_info );
+        return (*(ops.get_uid))(cred, auth_info);
 }
 
-gid_t
-g_slurm_auth_get_gid( void *cred, char *auth_info )
+gid_t g_slurm_auth_get_gid(void *cred, char *auth_info)
 {
-	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
+	if (slurm_auth_init(NULL) < 0)
                 return SLURM_AUTH_NOBODY;
 
-        return (*(ops.get_gid))( cred, auth_info );
+        return (*(ops.get_gid))(cred, auth_info);
 }
 
-int
-g_slurm_auth_pack( void *cred, Buf buf )
+int g_slurm_auth_pack(void *cred, Buf buf)
 {
-        if ( slurm_auth_init(NULL) < 0 )
+        if (slurm_auth_init(NULL) < 0)
                 return SLURM_ERROR;
 
-	if ( auth_dummy )
-		return SLURM_SUCCESS;
-
-        return (*(ops.pack))( cred, buf );
+        return (*(ops.pack))(cred, buf);
 }
 
-void *
-g_slurm_auth_unpack( Buf buf )
+void *g_slurm_auth_unpack(Buf buf)
 {
-	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
+	if (slurm_auth_init(NULL) < 0)
                 return NULL;
 
-        return (*(ops.unpack))( buf );
+        return (*(ops.unpack))(buf);
 }
 
-int
-g_slurm_auth_print( void *cred, FILE *fp )
+int g_slurm_auth_print(void *cred, FILE *fp)
 {
-        if ( slurm_auth_init(NULL) < 0 )
+        if (slurm_auth_init(NULL) < 0)
                 return SLURM_ERROR;
 
-	if ( auth_dummy )
-		return SLURM_SUCCESS;
-
-        return (*(ops.print))( cred, fp );
+        return (*(ops.print))(cred, fp);
 }
 
-int
-g_slurm_auth_errno( void *cred )
+int g_slurm_auth_errno(void *cred)
 {
-        if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
+        if (slurm_auth_init(NULL) < 0)
                 return SLURM_ERROR;
 
-        return (*(ops.sa_errno))( cred );
+        return (*(ops.sa_errno))(cred);
 }
 
-const char *
-g_slurm_auth_errstr( int slurm_errno )
+const char *g_slurm_auth_errstr(int slurm_errno)
 {
         static char auth_init_msg[] = "authentication initialization failure";
         char *generic;
 
-	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
+	if (slurm_auth_init(NULL) < 0 )
 		return auth_init_msg;
 
-        if (( generic = (char *) slurm_auth_generic_errstr( slurm_errno ) ))
+        if ((generic = (char *) slurm_auth_generic_errstr(slurm_errno)))
                 return generic;
 
-        return (*(ops.sa_errstr))( slurm_errno );
+        return (*(ops.sa_errstr))(slurm_errno);
 }

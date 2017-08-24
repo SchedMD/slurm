@@ -13,7 +13,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,27 +43,16 @@
  *
 \*****************************************************************************/
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
+#define _GNU_SOURCE
 
 #include <dirent.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 #include "src/common/uid.h"
 #include "src/common/read_config.h"

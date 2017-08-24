@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,25 +37,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <stdlib.h>
 
 #include "slurm/slurm.h"
 #include "src/common/checkpoint.h"
 #include "src/common/slurm_protocol_api.h"
 
-#ifdef HAVE_AIX
-  char *__progname = "PROGRAM";
-#else
-  extern char * __progname;
-#endif
+extern char * __progname;
 
 static int _handle_rc_msg(slurm_msg_t *msg);
 static int _checkpoint_op (uint16_t op, uint16_t data,

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -65,8 +65,8 @@ int check_header_version(header_t * header)
 
 	if (slurmdbd_conf) {
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
-		    (header->version != SLURM_15_08_PROTOCOL_VERSION) &&
-		    (header->version != SLURM_14_11_PROTOCOL_VERSION)) {
+		    (header->version != SLURM_ONE_BACK_PROTOCOL_VERSION) &&
+		    (header->version != SLURM_MIN_PROTOCOL_VERSION)) {
 			debug("unsupported RPC version %hu msg type %s(%u)",
 			      header->version, rpc_num2string(header->msg_type),
 			      header->msg_type);
@@ -90,8 +90,9 @@ int check_header_version(header_t * header)
 			}
 		default:
 			if ((header->version != SLURM_PROTOCOL_VERSION)     &&
-			    (header->version != SLURM_15_08_PROTOCOL_VERSION) &&
-			    (header->version != SLURM_14_11_PROTOCOL_VERSION)) {
+			    (header->version !=
+			     SLURM_ONE_BACK_PROTOCOL_VERSION) &&
+			    (header->version != SLURM_MIN_PROTOCOL_VERSION)) {
 				debug("Unsupported RPC version %hu "
 				      "msg type %s(%u)", header->version,
 				      rpc_num2string(header->msg_type),
@@ -180,7 +181,7 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 	}
 	debug3("msg -> resp_port  = %u", *(msg->resp_port));
 	debug3("msg -> io_port    = %u", *(msg->io_port));
-	debug3("msg -> task_flags = %x", msg->task_flags);
+	debug3("msg -> flags      = %x", msg->flags);
 
 	for (i = 0; i < msg->tasks_to_launch[node_id]; i++) {
 		debug3("global_task_id[%d]: %u ", i,

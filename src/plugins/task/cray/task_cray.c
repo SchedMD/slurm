@@ -6,7 +6,7 @@
  *  Copyright 2013 Cray Inc. All Rights Reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,28 +35,24 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
+#include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/param.h>
-#include <errno.h>
-#include "limits.h"
-#include <sched.h>
 
 #ifdef HAVE_NUMA
-#include <numa.h>
+#  include <numa.h>
 #endif
 
 #include "slurm/slurm_errno.h"
@@ -64,7 +60,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #ifdef HAVE_NATIVE_CRAY
-#include "alpscomm_cn.h"
+#  include "alpscomm_cn.h"
 #endif
 
 static uint64_t debug_flags = 0;
@@ -169,7 +165,7 @@ extern int init (void)
 	char *task_cray = strstr(task_plugin, "cray");
 
 	if (!task_cgroup || !task_cray || task_cgroup < task_cray)
-		error("task/cgroup must be used with, and listed after, "
+		fatal("task/cgroup must be used with, and listed after, "
 		      "task/cray in TaskPlugin");
 
 	xfree(task_plugin);
@@ -328,8 +324,8 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 
 	START_TIMER;
 	apid = SLURM_ID_HASH(job->jobid, job->stepid);
-	debug("task_p_pre_launch: %u.%u, apid %"PRIu64", task %d",
-	      job->jobid, job->stepid, apid, job->envtp->procid);
+	debug2("task_p_pre_launch: %u.%u, apid %"PRIu64", task %d",
+	       job->jobid, job->stepid, apid, job->envtp->procid);
 
 	/*
 	 * Send the rank to the application's PMI layer via an environment
@@ -383,7 +379,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
  * task_p_pre_launch_priv() is called prior to exec of application task.
  * in privileged mode, just after slurm_spank_task_init_privileged
  */
-extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
+extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 {
 	int rc = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -419,7 +415,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 
 #ifdef HAVE_NATIVE_CRAY
 	debug("task_p_post_term: %u.%u, task %d",
-	      job->jobid, job->stepid, job->envtp->procid);
+	      job->jobid, job->stepid, task->id);
 
 	if (track_status) {
 		rc = _check_status_file(job, task);
@@ -514,13 +510,16 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 
 	rc = _get_numa_nodes(path, &cnt, &numa_nodes);
 	if (rc < 0) {
-		CRAY_ERR("get_numa_nodes failed. Return code: %d", rc);
+		/* Failure common due to race condition in releasing cgroups */
+		debug("%s: _get_numa_nodes failed. Return code: %d",
+		      __func__, rc);
 		return SLURM_ERROR;
 	}
 
 	rc = _get_cpu_masks(cnt, numa_nodes, &cpuMasks);
 	if (rc < 0) {
-		CRAY_ERR("get_cpu_masks failed. Return code: %d", rc);
+		CRAY_ERR("_get_cpu_masks failed. Return code: %d", rc);
+		xfree(numa_nodes);
 		return SLURM_ERROR;
 	}
 
@@ -535,9 +534,8 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	xfree(numa_nodes);
 	xfree(cpuMasks);
 
-	if (rc != 1) {
+	if (rc != 1)
 		return SLURM_ERROR;
-	}
 	END_TIMER;
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
@@ -623,9 +621,6 @@ static int _check_status_file(stepd_step_rec_t *job,
 	char status;
 	int rv, fd;
 
-	debug("task_p_post_term: %u.%u, task %d",
-	      job->jobid, job->stepid, job->envtp->procid);
-
 	// We only need to special case termination with exit(0)
 	// srun already handles abnormal exit conditions fine
 	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
@@ -660,7 +655,7 @@ static int _check_status_file(stepd_step_rec_t *job,
 	}
 
 	// Seek to the correct offset
-	rv = lseek(fd, job->envtp->localid + 1, SEEK_SET);
+	rv = lseek(fd, task->id + 1, SEEK_SET);
 	if (rv == -1) {
 		CRAY_ERR("lseek failed: %m");
 		TEMP_FAILURE_RETRY(close(fd));
@@ -717,14 +712,14 @@ static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
 	char *lin = NULL;
 
 	rc = snprintf(buffer, sizeof(buffer), "%s/%s", path, "mems");
-	if (rc < 0) {
+	if (rc < 0)
 		CRAY_ERR("snprintf failed. Return code: %d", rc);
-	}
 
 	f = fopen(buffer, "r");
-	if (f == NULL ) {
-		CRAY_ERR("Failed to open file %s: %m", buffer);
-		return -1;
+	if (f == NULL) {
+		/* Failure common due to race condition in releasing cgroups */
+		debug("%s: Failed to open file %s: %m", __func__, buffer);
+		return SLURM_ERROR;
 	}
 
 	lsz = getline(&lin, &sz, f);
@@ -733,14 +728,14 @@ static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
 			lin[strlen(lin) - 1] = '\0';
 		}
 		bm = numa_parse_nodestring(lin);
-		if (bm == NULL ) {
+		if (bm == NULL) {
 			CRAY_ERR("Error numa_parse_nodestring:"
 				 " Invalid node string: %s", lin);
 			free(lin);
 			return SLURM_ERROR;
 		}
 	} else {
-		CRAY_ERR("Reading %s failed", buffer);
+		debug("%s: Reading %s failed", __func__, buffer);
 		return SLURM_ERROR;
 	}
 	free(lin);

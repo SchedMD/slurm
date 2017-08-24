@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,24 +41,13 @@
 #ifndef _SINFO_H
 #define _SINFO_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include <ctype.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else  /* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif  /* HAVE_INTTYPES_H */
 
 #include "slurm/slurm.h"
 
@@ -72,6 +61,7 @@
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
+	uint16_t port;
 	uint32_t node_state;
 
 	uint32_t nodes_alloc;
@@ -94,17 +84,17 @@ typedef struct {
 	uint32_t max_threads;
 	uint32_t min_disk;
 	uint32_t max_disk;
-	uint32_t min_mem;
-	uint32_t max_mem;
+	uint64_t min_mem;
+	uint64_t max_mem;
 	uint32_t min_weight;
 	uint32_t max_weight;
 	uint32_t min_cpu_load;
 	uint32_t max_cpu_load;
-	uint32_t min_free_mem;
-	uint32_t max_free_mem;
+	uint64_t min_free_mem;
+	uint64_t max_free_mem;
 
 	uint32_t max_cpus_per_node;
-	uint32_t alloc_memory;
+	uint64_t alloc_memory;
 
 	char *version;
 	char *features;
@@ -147,6 +137,7 @@ struct sinfo_match_flags {
 	bool memory_flag;
 	bool node_addr_flag;
 	bool partition_flag;
+	bool port_flag;
 	bool preempt_mode_flag;
 	bool priority_job_factor_flag;
 	bool priority_tier_flag;
@@ -203,7 +194,7 @@ struct sinfo_parameters {
 
 extern struct sinfo_parameters params;
 
-extern void parse_command_line( int argc, char* argv[] );
+extern void parse_command_line( int argc, char* *argv );
 extern int  parse_state( char* str, uint16_t* states );
 extern void sort_sinfo_list( List sinfo_list );
 

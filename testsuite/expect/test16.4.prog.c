@@ -1,5 +1,5 @@
  /*****************************************************************************\
- *  test1.18.proc.c - Simple I/O test program for SLURM regression test1.18.
+ *  test16.4.proc.c - Simple I/O test program for SLURM regression test16.4.
  *  Print "waiting\n" to stdout and wait for "exit" as stdin.
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under

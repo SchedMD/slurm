@@ -13,7 +13,7 @@
 # Written by Morris Jette <jette(at)schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -42,27 +42,7 @@ set output_use  "test$test_id.use.output"
 set script_use  "test$test_id.use.bash"
 set tmp_file    "test$test_id"
 
-#
-# get my uid and clear any vestigial triggers
-#
-set uid -1
-spawn $bin_id -u
-expect {
-	-re "($number)" {
-		set uid $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$uid == -1} {
-	send_user "\nCan't get my uid\n"
-	exit 1
-} elseif {$uid == 0} {
-	send_user "\nWARNING: Can't run this test as user root\n"
-	exit 0
-}
+stop_root_user
 
 proc find_bb_jobid { fname bb_jobid } {
 	global bin_cat
@@ -113,20 +93,22 @@ exec $bin_rm -f $input_data $output_data $output_use
 exec $bin_echo $data_in >$cwd/$input_data
 
 if {[get_bb_emulate] != 0} {
-	set work_file_in  $cwd/$input_data
-	set work_file_out $cwd/$output_data
-} else {
-	set work_file_in  /ss/$tmp_file
-	set work_file_out /ss/$tmp_file
-}
-
-make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private pfs=/scratch
-#DW stage_in type=file source=$cwd/$input_data destination=/ss/$tmp_file
-#DW stage_out type=file destination=$cwd/$output_data source=/ss/$tmp_file
-$bin_cat  $work_file_in
-$bin_echo $data_out >$work_file_out
+make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
+#DW stage_in type=file source=$cwd/$input_data destination=\$DW_JOB_STRIPED/$tmp_file
+#DW stage_out type=file destination=$cwd/$output_data source=\$DW_JOB_STRIPED/$tmp_file
+$bin_cat  $cwd/$input_data
+$bin_echo $data_out >$cwd/$output_data
 $scontrol show burst
 exit 0"
+} else {
+make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
+#DW stage_in type=file source=$cwd/$input_data destination=\$DW_JOB_STRIPED/$tmp_file
+#DW stage_out type=file destination=$cwd/$output_data source=\$DW_JOB_STRIPED/$tmp_file
+$bin_cat  \$DW_JOB_STRIPED/$tmp_file
+$bin_echo $data_out >\$DW_JOB_STRIPED/$tmp_file
+$scontrol show burst
+exit 0"
+}
 
 incr max_job_state_delay 300
 set job_id_use 0

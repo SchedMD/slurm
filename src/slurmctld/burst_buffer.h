@@ -5,7 +5,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -154,6 +154,14 @@ extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only);
  * Returns a SLURM errno.
  */
 extern int bb_g_job_begin(struct job_record *job_ptr);
+
+/* Revoke allocation, but do not release resources.
+ * Executed after bb_g_job_begin() if there was an allocation failure.
+ * Does not release previously allocated resources.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_revoke_alloc(struct job_record *job_ptr);
 
 /*
  * Trigger a job's burst buffer stage-out to begin

@@ -5,7 +5,7 @@
  *  Written by Aline Roy <aline.roy@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -33,10 +33,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_mcs.h"
@@ -99,23 +95,24 @@ extern int mcs_p_set_mcs_label (struct job_record *job_ptr, char *label)
 {
 	char *user = NULL;
 	int rc = SLURM_SUCCESS;
+
 	user = uid_to_string((uid_t) job_ptr->user_id);
 	xfree(job_ptr->mcs_label);
+
 	if (label != NULL) {
 		/* test label param */
-		if (xstrcmp(label, user) == 0) {
+		if (xstrcmp(label, user) == 0)
 			job_ptr->mcs_label = xstrdup(user);
-		} else {
+		else
 			rc = SLURM_ERROR;
-		}
 	} else {
-		if ((slurm_mcs_get_enforced() == 0) &&
-		   job_ptr->details && (job_ptr->details->whole_node != 3)) {
+		if ((slurm_mcs_get_enforced() == 0) && job_ptr->details &&
+		    (job_ptr->details->whole_node != WHOLE_NODE_MCS))
 			;
-		} else {
+		else
 			job_ptr->mcs_label = xstrdup(user);
-		}
 	}
+
 	xfree(user);
 	return rc;
 }
@@ -127,16 +124,16 @@ extern int mcs_p_check_mcs_label (uint32_t user_id, char *mcs_label)
 {
 	char *user = NULL;
 	int rc = SLURM_SUCCESS;
+
 	user = uid_to_string((uid_t) user_id);
 	if (mcs_label != NULL) {
-		if (xstrcmp(mcs_label, user) == 0) {
+		if (xstrcmp(mcs_label, user) == 0)
 			rc = SLURM_SUCCESS;
-		} else {
+		else
 			rc = SLURM_ERROR;
-		}
-	} else {
+	} else
 		rc = SLURM_SUCCESS;
-	}
+
 	xfree(user);
 	return rc;
 }

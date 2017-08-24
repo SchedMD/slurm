@@ -8,7 +8,7 @@
  *  Written by Morris Jette <jette1@llnl.gov>, Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,19 +37,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#  if WITH_PTHREADS
-#    include <pthread.h>
-#  endif
-#endif
+#include "config.h"
 
+#include <inttypes.h>
+#include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
 
@@ -565,7 +556,7 @@ no_reboot:
 	*/
 	if (block_inited && bg_action_ptr->job_ptr) {
 		slurmctld_lock_t job_write_lock = {
-			NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+			NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 		lock_slurmctld(job_write_lock);
 		bg_action_ptr->job_ptr->job_state &= (~JOB_CONFIGURING);
 		last_job_update = time(NULL);
@@ -578,7 +569,7 @@ no_reboot:
 		   the batch script, slurm_fail_job()
 		   is a no-op if issued prior
 		   to the script initiation do clean up just
-		   incase the fail job isn't ran */
+		   in case the fail job isn't ran */
 		(void) slurm_fail_job(req_job_id, JOB_BOOT_FAIL);
 	}
 }
@@ -771,7 +762,7 @@ extern int start_job(struct job_record *job_ptr)
 
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
-	/* Just incase something happens to free this block before we
+	/* Just in case something happens to free this block before we
 	   start the job we will make it so this job doesn't get blown
 	   away.
 	*/

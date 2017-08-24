@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,32 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if STDC_HEADERS
-#    include <string.h>
-#  endif
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif /* HAVE_SYS_TYPES_H */
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else /* ! HAVE_INTTYPES_H */
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif /* HAVE_INTTYPES_H */
-#else /* ! HAVE_CONFIG_H */
-#  include <sys/types.h>
-#  include <unistd.h>
-#  include <stdint.h>
-#  include <string.h>
-#endif /* HAVE_CONFIG_H */
-
+#include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
@@ -133,12 +112,12 @@ static bool _user_access(uid_t run_uid, uint32_t submit_uid,
 static bool _valid_memory(struct part_record *part_ptr,
 			  struct job_descriptor *job_desc)
 {
-	uint32_t job_limit, part_limit;
+	uint64_t job_limit, part_limit;
 
 	if (!part_ptr->max_mem_per_cpu)
 		return true;
 
-	if (job_desc->pn_min_memory == NO_VAL)
+	if (job_desc->pn_min_memory == NO_VAL64)
 		return true;
 
 	if ((job_desc->pn_min_memory   & MEM_PER_CPU) &&
@@ -162,7 +141,7 @@ static bool _valid_memory(struct part_record *part_ptr,
 
 	if (job_limit > part_limit) {
 		debug("job_submit/partition: skipping partition %s due to "
-		      "memory limit (%u > %u)",
+		      "memory limit (%"PRIu64" > %"PRIu64")",
 		      part_ptr->name, job_limit, part_limit);
 		return false;
 	}

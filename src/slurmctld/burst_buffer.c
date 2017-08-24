@@ -5,7 +5,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,31 +34,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if STDC_HEADERS
-#    include <string.h>
-#  endif
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif /* HAVE_SYS_TYPES_H */
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else /* ! HAVE_INTTYPES_H */
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif /* HAVE_INTTYPES_H */
-#else /* ! HAVE_CONFIG_H */
-#  include <sys/types.h>
-#  include <unistd.h>
-#  include <stdint.h>
-#  include <string.h>
-#endif /* HAVE_CONFIG_H */
+#include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -93,6 +73,7 @@ typedef struct slurm_bb_ops {
 	int		(*job_test_stage_in) (struct job_record *job_ptr,
 					      bool test_only);
 	int		(*job_begin) (struct job_record *job_ptr);
+	int		(*job_revoke_alloc) (struct job_record *job_ptr);
 	int		(*job_start_stage_out) (struct job_record *job_ptr);
 	int		(*job_test_post_run) (struct job_record *job_ptr);
 	int		(*job_test_stage_out) (struct job_record *job_ptr);
@@ -115,6 +96,7 @@ static const char *syms[] = {
 	"bb_p_job_try_stage_in",
 	"bb_p_job_test_stage_in",
 	"bb_p_job_begin",
+	"bb_p_job_revoke_alloc",
 	"bb_p_job_start_stage_out",
 	"bb_p_job_test_post_run",
 	"bb_p_job_test_stage_out",
@@ -541,6 +523,32 @@ extern int bb_g_job_begin(struct job_record *job_ptr)
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_begin))(job_ptr);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/* Revoke allocation, but do not release resources.
+ * Executed after bb_g_job_begin() if there was an allocation failure.
+ * Does not release previously allocated resources.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_revoke_alloc(struct job_record *job_ptr)
+{
+	DEF_TIMERS;
+	int i, rc = SLURM_SUCCESS, rc2;
+
+	START_TIMER;
+	if (bb_g_init() != SLURM_SUCCESS)
+		rc = SLURM_ERROR;
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		rc2 = (*(ops[i].job_revoke_alloc))(job_ptr);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}

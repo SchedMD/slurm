@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,20 +38,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include "src/common/slurm_xlator.h"
-
 #ifndef _SLURM_NRT_INCLUDED
 #define _SLURM_NRT_INCLUDED
 
-#if HAVE_NRT_H
-# include <nrt.h>
-#else
-# error "Must have nrt.h to compile this module!"
-#endif
+#include <nrt.h>
+
+#include "src/common/slurm_xlator.h"
 
 /* opaque data structures - no peeking! */
 typedef struct slurm_nrt_libstate slurm_nrt_libstate_t;
@@ -108,7 +100,7 @@ extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 			     int instances, int cau, int immed);
 extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf,
 			    uint16_t protocol_version);
-extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf,
+extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t **jp, Buf buf,
 			      uint16_t protocol_version);
 extern void nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp);
 extern int nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid,

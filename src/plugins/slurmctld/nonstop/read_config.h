@@ -6,7 +6,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,26 +38,10 @@
 #ifndef _HAVE_NONSTOP_READ_CONFIG_H
 #define _HAVE_NONSTOP_READ_CONFIG_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDBOOL_H
-#    include <stdbool.h>
-#  else
-     typedef enum {false, true} bool;
-#  endif			/* !HAVE_STDBOOL_H */
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#endif
-
-#define GPL_LICENSED 1
+#include <inttypes.h>
 #include <munge.h>
-#include <unistd.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #define DEFAULT_NONSTOP_PORT		6820
 

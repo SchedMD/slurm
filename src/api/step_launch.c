@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,30 +37,25 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef HAVE_LIMITS_H
-#  include <limits.h>
-#endif
+#include "config.h"
 
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <limits.h>
+#include <netdb.h>		/* for gethostbyname */
+#include <netinet/in.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <netinet/in.h>
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <netdb.h> /* for gethostbyname */
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 
@@ -69,6 +64,7 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
+#include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/plugstack.h"
 #include "src/common/slurm_auth.h"
@@ -77,6 +73,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
+#include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -284,7 +281,9 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
 	launch.accel_bind_type	= params->accel_bind_type;
-	launch.multi_prog	= params->multi_prog ? 1 : 0;
+	launch.flags		= 0;
+	if (params->multi_prog)
+		launch.flags	|= LAUNCH_MULTI_PROG;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.ntasks_per_board = params->ntasks_per_board;
 	launch.ntasks_per_core  = params->ntasks_per_core;
@@ -292,7 +291,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 
 	launch.task_dist	= params->task_dist;
 	launch.partition	= params->partition;
-	launch.pty              = params->pty;
+	if (params->pty)
+		launch.flags |= LAUNCH_PTY;
 	launch.ckpt_dir         = params->ckpt_dir;
 	launch.restart_dir      = params->restart_dir;
 	launch.acctg_freq	= params->acctg_freq;
@@ -301,24 +301,26 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.complete_nodelist =
 		xstrdup(ctx->step_resp->step_layout->node_list);
 	spank_set_remote_options (launch.options);
-	launch.task_flags = 0;
 	if (params->parallel_debug)
-		launch.task_flags |= TASK_PARALLEL_DEBUG;
+		launch.flags |= LAUNCH_PARALLEL_DEBUG;
 
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
 	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;
 
-	launch.user_managed_io = params->user_managed_io ? 1 : 0;
+	if (params->user_managed_io)
+		launch.flags	|= LAUNCH_USER_MANAGED_IO;
 	ctx->launch_state->user_managed_io = params->user_managed_io;
 
 	if (!ctx->launch_state->user_managed_io) {
 		launch.ofname = params->remote_output_filename;
 		launch.efname = params->remote_error_filename;
 		launch.ifname = params->remote_input_filename;
-		launch.buffered_stdio = params->buffered_stdio ? 1 : 0;
-		launch.labelio = params->labelio ? 1 : 0;
+		if (params->buffered_stdio)
+			launch.flags	|= LAUNCH_BUFFERED_IO;
+		if (params->labelio)
+			launch.flags	|= LAUNCH_LABEL_IO;
 		ctx->launch_state->io.normal =
 			client_io_handler_create(params->local_fds,
 						 ctx->step_req->num_tasks,
@@ -470,11 +472,14 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
 	launch.accel_bind_type	= params->accel_bind_type;
-	launch.multi_prog	= params->multi_prog ? 1 : 0;
+	launch.flags = 0;
+	if (params->multi_prog)
+		launch.flags |= LAUNCH_MULTI_PROG;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.task_dist	= params->task_dist;
 	launch.partition	= params->partition;
-	launch.pty              = params->pty;
+	if (params->pty)
+		launch.flags |= LAUNCH_PTY;
 	launch.ckpt_dir         = params->ckpt_dir;
 	launch.restart_dir      = params->restart_dir;
 	launch.acctg_freq	= params->acctg_freq;
@@ -484,16 +489,16 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 		xstrdup(ctx->step_resp->step_layout->node_list);
 
 	spank_set_remote_options (launch.options);
-	launch.task_flags = 0;
 	if (params->parallel_debug)
-		launch.task_flags |= TASK_PARALLEL_DEBUG;
+		launch.flags |= LAUNCH_PARALLEL_DEBUG;
 
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
 	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;
 
-	launch.user_managed_io = params->user_managed_io ? 1 : 0;
+	if (params->user_managed_io)
+		launch.flags |= LAUNCH_USER_MANAGED_IO;
 
 	/* user_managed_io is true */
 	if (!ctx->launch_state->io.user) {
@@ -569,7 +574,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 			      sls->tasks_requested);
 			sls->abort = true;
 			_step_abort(ctx);
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 			slurm_mutex_unlock(&sls->lock);
 			return SLURM_ERROR;
 		}
@@ -587,7 +592,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 				error("timeout waiting for I/O connect");
 				sls->abort = true;
 				_step_abort(ctx);
-				pthread_cond_broadcast(&sls->cond);
+				slurm_cond_broadcast(&sls->cond);
 				slurm_mutex_unlock(&sls->lock);
 				return SLURM_ERROR;
 			}
@@ -619,7 +624,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	slurm_mutex_lock(&sls->lock);
 	while (bit_set_count(sls->tasks_exited) < sls->tasks_requested) {
 		if (!sls->abort) {
-			pthread_cond_wait(&sls->cond, &sls->lock);
+			slurm_cond_wait(&sls->cond, &sls->lock);
 		} else {
 			if (!sls->abort_action_taken) {
 				slurm_kill_job_step(ctx->job_id,
@@ -710,7 +715,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	/* Shutdown the io timeout thread, if one exists */
 	if (sls->io_timeout_thread_created) {
 		sls->halt_io_test = true;
-		pthread_cond_broadcast(&sls->cond);
+		slurm_cond_broadcast(&sls->cond);
 
 		slurm_mutex_unlock(&sls->lock);
 		pthread_join(sls->io_timeout_thread, NULL);
@@ -747,7 +752,7 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 
 	slurm_mutex_lock(&sls->lock);
 	sls->abort = true;
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -756,7 +761,7 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
  */
 void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 {
-	int node_id, j, active, num_tasks;
+	int node_id, j, num_tasks;
 	slurm_msg_t req;
 	kill_tasks_msg_t msg;
 	hostlist_t hl;
@@ -766,8 +771,6 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
 	struct step_launch_state *sls = ctx->launch_state;
-
-	debug2("forward signal %d to job %u", signo, ctx->job_id);
 
 	/* common to all tasks */
 	msg.job_id      = ctx->job_id;
@@ -780,15 +783,13 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	for (node_id = 0;
 	     node_id < ctx->step_resp->step_layout->node_cnt;
 	     node_id++) {
-		active = 0;
+		bool active = false;
 		num_tasks = sls->layout->tasks[node_id];
 		for (j = 0; j < num_tasks; j++) {
-			if (bit_test(sls->tasks_started,
-				     sls->layout->tids[node_id][j]) &&
-			    !bit_test(sls->tasks_exited,
+			if (!bit_test(sls->tasks_exited,
 				      sls->layout->tids[node_id][j])) {
 				/* this one has active tasks */
-				active = 1;
+				active = true;
 				break;
 			}
 		}
@@ -811,6 +812,8 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	slurm_mutex_unlock(&sls->lock);
 
 	if (!hostlist_count(hl)) {
+		verbose("no active tasks in job %u to send signal %d",
+		        ctx->job_id, signo);
 		hostlist_destroy(hl);
 		goto nothing_left;
 	}
@@ -824,7 +827,7 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	if (ctx->step_resp->use_protocol_ver)
 		req.protocol_version = ctx->step_resp->use_protocol_ver;
 
-	debug3("sending signal %d to job %u on host %s",
+	debug2("sending signal %d to job %u on hosts %s",
 	       signo, ctx->job_id, name);
 
 	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0, false))) {
@@ -896,7 +899,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->mpi_info->step_layout = layout;
 	sls->mpi_state = NULL;
 	slurm_mutex_init(&sls->lock);
-	pthread_cond_init(&sls->cond, NULL);
+	slurm_cond_init(&sls->cond, NULL);
 
 	for (ii = 0; ii < layout->node_cnt; ii++) {
 		sls->io_deadline[ii] = (time_t)NO_VAL;
@@ -942,8 +945,8 @@ void step_launch_state_alter(slurm_step_ctx_t *ctx)
 void step_launch_state_destroy(struct step_launch_state *sls)
 {
 	/* First undo anything created in step_launch_state_create() */
-	pthread_mutex_destroy(&sls->lock);
-	pthread_cond_destroy(&sls->cond);
+	slurm_mutex_destroy(&sls->lock);
+	slurm_cond_destroy(&sls->cond);
 	FREE_NULL_BITMAP(sls->tasks_started);
 	FREE_NULL_BITMAP(sls->tasks_exited);
 	FREE_NULL_BITMAP(sls->node_io_error);
@@ -966,12 +969,15 @@ static int _connect_srun_cr(char *addr)
 	unsigned int sa_len;
 	int fd, rc;
 
-#ifdef UNIX_PATH_MAX
-	if (addr && (strlen(addr) > UNIX_PATH_MAX)) {
+	if (!addr) {
+		error("%s: socket path name is NULL", __func__);
+		return -1;
+	}
+	if (strlen(addr) >= sizeof(sa.sun_path)) {
 		error("%s: socket path name too long (%s)", __func__, addr);
 		return -1;
 	}
-#endif
+
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
 		error("failed creating cr socket: %m");
@@ -980,7 +986,7 @@ static int _connect_srun_cr(char *addr)
 	memset(&sa, 0, sizeof(sa));
 
 	sa.sun_family = AF_UNIX;
-	strcpy(sa.sun_path, addr);
+	strlcpy(sa.sun_path, addr, sizeof(sa.sun_path));
 	sa_len = strlen(sa.sun_path) + sizeof(sa.sun_family);
 
 	while (((rc = connect(fd, (struct sockaddr *)&sa, sa_len)) < 0) &&
@@ -1148,7 +1154,7 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 	if (sls->callback.task_start != NULL)
 		(sls->callback.task_start)(msg);
 
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 
 }
@@ -1187,7 +1193,7 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 		bit_set(sls->tasks_exited, msg->task_id_list[i]);
 	}
 
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -1211,7 +1217,7 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 	force_terminated_job = true;
 	slurm_mutex_lock(&sls->lock);
 	sls->abort = true;
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -1225,7 +1231,7 @@ _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
 		(sls->callback.step_timeout)(step_msg);
 
 	slurm_mutex_lock(&sls->lock);
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -1290,7 +1296,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 		client_io_handler_downnodes(sls->io.normal, node_ids,
 					    num_node_ids);
 	}
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 
 	xfree(node_ids);
@@ -1345,7 +1351,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 			      "connections.");
 
 			sls->abort = true;
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 			slurm_mutex_unlock(&sls->lock);
 			return;
 		}
@@ -1392,7 +1398,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 			error("Aborting, step missing and io error on node %d",
 			      node_id);
 			sls->abort = true;
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 			break;
 		}
 
@@ -1419,7 +1425,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 			error("Aborting, can not test connection to node %d.",
 			      node_id);
 			sls->abort = true;
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 			break;
 		}
 
@@ -1430,7 +1436,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 		 * for receiving a response passes.
 		 */
 		if (test_message_sent) {
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 		} else {
 			sls->io_deadline[node_id] = (time_t)NO_VAL;
 		}
@@ -1492,7 +1498,7 @@ _task_user_managed_io_handler(struct step_launch_state *sls,
 	/* prevent the caller from closing the user managed IO stream */
 	user_io_msg->conn_fd = -1;
 
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -1604,7 +1610,7 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 
 	slurm_mutex_lock(&sls->lock);
 	sls->abort = true;
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 
 	memset(&msg, 0, sizeof(step_complete_msg_t));
@@ -1875,7 +1881,7 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 		error("Aborting, io error and missing step on node %d",
 		      node_id);
 		sls->abort = true;
-		pthread_cond_broadcast(&sls->cond);
+		slurm_cond_broadcast(&sls->cond);
 	} else {
 
 		/* FIXME
@@ -1889,7 +1895,7 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 			error("%s: aborting, io error with slurmstepd on node %d",
 			      __func__, node_id);
 			sls->abort = true;
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 		}
 	}
 
@@ -1960,7 +1966,7 @@ _check_io_timeout(void *_sls)
 
 			if (sls->io_deadline[ii] <= now) {
 				sls->abort = true;
-				pthread_cond_broadcast(&sls->cond);
+				slurm_cond_broadcast(&sls->cond);
 				error(  "Cannot communicate with node %d.  "
 					"Aborting job.", ii);
 				break;
@@ -1975,12 +1981,12 @@ _check_io_timeout(void *_sls)
 		if (next_deadline == (time_t)NO_VAL) {
 			debug("io timeout thread: no pending deadlines, "
 			      "sleeping indefinitely");
-			pthread_cond_wait(&sls->cond, &sls->lock);
+			slurm_cond_wait(&sls->cond, &sls->lock);
 		} else {
 			debug("io timeout thread: sleeping %lds until deadline",
 			       (long)(next_deadline - time(NULL)));
 			ts.tv_sec = next_deadline;
-			pthread_cond_timedwait(&sls->cond, &sls->lock, &ts);
+			slurm_cond_timedwait(&sls->cond, &sls->lock, &ts);
 		}
 	}
 	slurm_mutex_unlock(&sls->lock);

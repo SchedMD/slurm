@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,24 +36,23 @@
 \*****************************************************************************/
 
 #if !(defined(__FreeBSD__) || defined(__NetBSD__))
-#if     HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #define _GNU_SOURCE
+
+#include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <linux/limits.h>
+#include <math.h>
+#include <sched.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <fcntl.h>
-#include "limits.h"
-#include <linux/limits.h>
-#include <sched.h>
 #include <sys/stat.h>
-#include <math.h>
+#include <unistd.h>
 
 #include "switch_cray.h"
 #include "slurm/slurm.h"
@@ -124,6 +123,7 @@ int fini(void)
 
 extern int switch_p_reconfig(void)
 {
+	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 
@@ -298,24 +298,18 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		print_jobinfo(job);
 	}
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job->magic, buffer);
 		pack32(job->num_cookies, buffer);
 		packstr_array(job->cookies, job->num_cookies, buffer);
 		pack32_array(job->cookie_ids, job->num_cookies, buffer);
 		pack64(job->apid, buffer);
-	} else {
-		pack32(job->magic, buffer);
-		pack32(job->num_cookies, buffer);
-		packstr_array(job->cookies, job->num_cookies, buffer);
-		pack32_array(job->cookie_ids, job->num_cookies, buffer);
-		pack32(job->port, buffer);
 	}
 
 	return 0;
 }
 
-extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
 				   uint16_t protocol_version)
 {
 	uint32_t num_cookies;
@@ -328,9 +322,10 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 
 	xassert(buffer);
 
-	job = (slurm_cray_jobinfo_t *) switch_job;
+	job = xmalloc(sizeof(slurm_cray_jobinfo_t));
+	*switch_job = (switch_jobinfo_t *)job;
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job->magic, buffer);
 
 		if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
@@ -355,37 +350,6 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 			goto unpack_error;
 		}
 		safe_unpack64(&job->apid, buffer);
-	} else {
-		safe_unpack32(&job->magic, buffer);
-
-		if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
-			CRAY_DEBUG("Nothing to unpack");
-			return SLURM_SUCCESS;
-		}
-
-		xassert(job->magic == CRAY_JOBINFO_MAGIC);
-		safe_unpack32(&(job->num_cookies), buffer);
-		safe_unpackstr_array(&(job->cookies), &num_cookies, buffer);
-		if (num_cookies != job->num_cookies) {
-			CRAY_ERR("Wrong number of cookies received."
-				 " Expected: %" PRIu32 "Received: %" PRIu32,
-				 job->num_cookies, num_cookies);
-			goto unpack_error;
-		}
-		safe_unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
-		if (num_cookies != job->num_cookies) {
-			CRAY_ERR("Wrong number of cookie IDs received."
-				 " Expected: %" PRIu32 "Received: %" PRIu32,
-				 job->num_cookies, num_cookies);
-			goto unpack_error;
-		}
-		safe_unpack32(&job->port, buffer);
-#if 0
-		/* We rely upon switch_p_alloc_jobinfo() to initialize these
-		 * fields, which do not exist in older data structures. */
-		job->num_ports = 1;
-		job->apid = SLURM_ID_HASH(jobid, stepid);
-#endif
 	}
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
@@ -405,21 +369,10 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	CRAY_ERR("Unpacking error");
-	if (job->num_cookies) {
-		xfree(job->cookie_ids);
 
-		if (job->cookies) {
-			int i;
-			// Free the individual cookie strings.
-			for (i = 0; i < job->num_cookies; i++) {
-				xfree(job->cookies[i]);
-			}
-			xfree(job->cookies);
-		}
-	}
-	if (job->num_ptags)
-		xfree(job->ptags);
+	CRAY_ERR("Unpacking error");
+	switch_p_free_jobinfo(*switch_job);
+	*switch_job = NULL;
 
 	return SLURM_ERROR;
 }
@@ -464,7 +417,8 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *sw_job = (slurm_cray_jobinfo_t *) job->switch_job;
 	int rc, num_ptags;
-	int mem_scaling, cpu_scaling;
+	char *launch_params;
+	int exclusive = 0, mem_scaling = 100, cpu_scaling = 100;
 	int *ptags = NULL;
 	char *err_msg = NULL;
 	uint64_t cont_id = job->cont_id;
@@ -532,29 +486,46 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	/*
 	 * Configure the network
 	 *
-	 * I'm setting exclusive flag to zero for now until we can figure out a
-	 * way to guarantee that the application not only has exclusive access
-	 * to the node but also will not be suspended.  This may not happen.
-	 *
 	 * Cray shmem still uses the network, even when it's using only one
 	 * node, so we must always configure the network.
 	 */
-	cpu_scaling = get_cpu_scaling(job);
-	if (cpu_scaling == -1) {
-		return SLURM_ERROR;
+	launch_params = slurm_get_launch_params();
+	if (launch_params && strstr(launch_params, "cray_net_exclusive")) {
+		/*
+		 * Grant exclusive access and all aries resources to the job.
+		 * Not recommended if you may run multiple steps within
+		 * the job, and will cause problems if you suspend or allow
+		 * nodes to be shared across multiple jobs.
+		 */
+		/*
+		 * TODO: determine if this can be managed per-job, rather
+		 * than globally across the cluster.
+		 */
+		exclusive = 1;
 	}
+	xfree(launch_params);
 
-	mem_scaling = get_mem_scaling(job);
-	if (mem_scaling == -1) {
-		return SLURM_ERROR;
+	if (!exclusive) {
+		/*
+		 * Calculate percentages of cpu and mem to assign to
+		 * non-exclusive jobs.
+		 */
+
+		cpu_scaling = get_cpu_scaling(job);
+		if (cpu_scaling == -1)
+			return SLURM_ERROR;
+
+		mem_scaling = get_mem_scaling(job);
+		if (mem_scaling == -1)
+			return SLURM_ERROR;
 	}
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		CRAY_INFO("Network Scaling: CPU %d Memory %d",
-			  cpu_scaling, mem_scaling);
+		CRAY_INFO("Network Scaling: Exclusive %d CPU %d Memory %d",
+			  exclusive, cpu_scaling, mem_scaling);
 	}
 
-	rc = alpsc_configure_nic(&err_msg, 0, cpu_scaling, mem_scaling,
+	rc = alpsc_configure_nic(&err_msg, exclusive, cpu_scaling, mem_scaling,
 				 cont_id, sw_job->num_cookies,
 				 (const char **) sw_job->cookies,
 				 &num_ptags, &ptags, NULL);
@@ -883,7 +854,7 @@ extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer,
 	return 0;
 }
 
-extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
+extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 				     Buf buffer, uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;

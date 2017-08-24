@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -157,9 +157,9 @@ enum spank_item {
     S_STEP_CPUS_PER_TASK,    /* CPUs allocated per task (=1 if --overcommit
                               * option is used, uint32_t *)                  */
     S_JOB_ALLOC_CORES,       /* Job allocated cores in list format (char **) */
-    S_JOB_ALLOC_MEM,         /* Job allocated memory in MB (uint32_t *)      */
+    S_JOB_ALLOC_MEM,         /* Job allocated memory in MB (uint64_t *)      */
     S_STEP_ALLOC_CORES,      /* Step alloc'd cores in list format  (char **) */
-    S_STEP_ALLOC_MEM,        /* Step alloc'd memory in MB (uint32_t *)       */
+    S_STEP_ALLOC_MEM,        /* Step alloc'd memory in MB (uint64_t *)       */
     S_SLURM_RESTART_COUNT    /* Job restart count (uint32_t *)               */
 };
 

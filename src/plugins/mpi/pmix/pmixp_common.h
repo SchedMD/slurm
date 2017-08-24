@@ -6,7 +6,7 @@
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -68,11 +68,6 @@
 #ifndef PMIX_VERSION_MAJOR
 #define PMIX_VERSION_MAJOR 1L
 #endif
-
-/* TODO: use /tmp directory instead */
-#define MAX_USOCK_PATH							\
-	((size_t) &(((struct sockaddr_un *)0 + 1)->sun_family) -	\
-	(size_t)&(((struct sockaddr_un *)0)->sun_path))
 
 /* ----------------------------------------------------------
  * SLURM environment that influence us:

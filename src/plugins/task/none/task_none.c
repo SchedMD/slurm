@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,10 +37,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include <signal.h>
 #include <sys/types.h>
@@ -182,7 +178,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
  * task_p_pre_launch_priv() is called prior to exec of application task.
  * in privileged mode, just after slurm_spank_task_init_privileged
  */
-extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
+extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 {
 	debug("task_p_pre_launch_priv: %u.%u",
 	      job->jobid, job->stepid);

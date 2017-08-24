@@ -46,14 +46,6 @@
 #ifndef _LOG_H
 #define _LOG_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef HAVE_SYS_SYSLOG_H
-#  include <sys/syslog.h>
-#endif
-
 #include <syslog.h>
 #include <stdio.h>
 
@@ -251,15 +243,13 @@ extern int get_log_level(void);
  * Messages do not need a newline!
  *
  * args are printf style with the following exceptions:
- *
- * fmt     expands to
- * ~~~~    ~~~~~~~~~~~
- * "%m" => strerror(errno)
- * "%t" => strftime "%x %X"  (locally preferred short date/time)
- * "%T" => strftime "%a, %d %b %Y %H:%M:%S %z" (rfc2822 date/time)
+ * %m expands to strerror(errno)
+ * %M expand to time stamp, format is configuration dependent
+ * %t expands to strftime("%x %X") [ locally preferred short date/time ]
+ * %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  */
 
-/* fatal() aborts program unless NDEBUG defined
+/* fatal() exits program
  * error() returns SLURM_ERROR
  */
 void	fatal(const char *, ...) __attribute__ ((format (printf, 1, 2)));

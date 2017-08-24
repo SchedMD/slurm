@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,24 +38,28 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
+#include "config.h"
+
+#include <ctype.h>
 #include <fcntl.h>
 #include <grp.h>
+#ifdef HAVE_NUMA
+#undef NUMA_VERSION1_COMPATIBILITY
+#include <numa.h>
+#endif
+#include <poll.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <sys/param.h>
-#include <poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 #include <utime.h>
 
@@ -74,7 +78,6 @@
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
 #include "src/common/read_config.h"
-#include "src/common/siphash.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_acct_gather_energy.h"
@@ -82,7 +85,6 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
@@ -106,11 +108,12 @@
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
 
-#define EPIL_RETRY_MAX 2	/* max retries of epilog complete message */
-
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
 #endif
+
+#define MAX_CPU_CNT 1024
+#define MAX_NUMA_CNT 128
 
 typedef struct {
 	int ngids;
@@ -120,8 +123,8 @@ typedef struct {
 typedef struct {
 	uint32_t job_id;
 	uint32_t step_id;
-	uint32_t job_mem;
-	uint32_t step_mem;
+	uint64_t job_mem;
+	uint64_t step_mem;
 } job_mem_limits_t;
 
 typedef struct {
@@ -249,9 +252,13 @@ static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List job_limits_list = NULL;
 static bool job_limits_loaded = false;
 
-#define FINI_JOB_CNT 32
+/*
+ * To be fixed in 17.11 to match the count of cpus on a node instead of a hard
+ * code.
+ */
+#define FINI_JOB_CNT 256
 static pthread_mutex_t fini_mutex = PTHREAD_MUTEX_INITIALIZER;
-static uint32_t fini_job_id[FINI_JOB_CNT];
+static uint32_t fini_job_id[FINI_JOB_CNT] = {0};
 static int next_fini_job_inx = 0;
 
 /* NUM_PARALLEL_SUSP_JOBS controls the number of jobs that can be suspended or
@@ -261,15 +268,16 @@ static int next_fini_job_inx = 0;
  * suspended at one time. */
 #define NUM_PARALLEL_SUSP_STEPS 8
 static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
-static uint32_t job_suspend_array[NUM_PARALLEL_SUSP_JOBS];
+static uint32_t job_suspend_array[NUM_PARALLEL_SUSP_JOBS] = {0};
 static int job_suspend_size = 0;
 
 #define JOB_STATE_CNT 64
 static pthread_mutex_t job_state_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  job_state_cond    = PTHREAD_COND_INITIALIZER;
-static uint32_t active_job_id[JOB_STATE_CNT];
+static uint32_t active_job_id[JOB_STATE_CNT] = {0};
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define FILE_BCAST_TIMEOUT 300
 static pthread_mutex_t file_bcast_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -468,9 +476,11 @@ static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return (0);
+
  rwfail:
+	FREE_NULL_BUFFER(buffer);
 	return (-1);
 }
 
@@ -917,7 +927,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		}
 
 		/*
-		 * Just incase we (or someone we are linking to)
+		 * Just in case we (or someone we are linking to)
 		 * opened a file and didn't do a close on exec.  This
 		 * is needed mostly to protect us against libs we link
 		 * to that don't set the flag as we should already be
@@ -1081,8 +1091,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 
 		if (cpu_log) {
 			char *per_job = "", *per_step = "";
-			uint32_t job_mem  = arg.job_mem_limit;
-			uint32_t step_mem = arg.step_mem_limit;
+			uint64_t job_mem  = arg.job_mem_limit;
+			uint64_t step_mem = arg.step_mem_limit;
 			if (job_mem & MEM_PER_CPU) {
 				job_mem &= (~MEM_PER_CPU);
 				per_job = "_per_CPU";
@@ -1092,7 +1102,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 				per_step = "_per_CPU";
 			}
 			info("====================");
-			info("step_id:%u.%u job_mem:%uMB%s step_mem:%uMB%s",
+			info("step_id:%u.%u job_mem:%"PRIu64"MB%s "
+			     "step_mem:%"PRIu64"MB%s",
 			     arg.jobid, arg.stepid, job_mem, per_job,
 			     step_mem, per_step);
 		}
@@ -1191,7 +1202,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	req->job_core_spec = arg.job_core_spec;
 	req->node_cpus = step_cpus;
 #if 0
-	info("%u.%u node_id:%d mem orig:%u cpus:%u limit:%u",
+	info("%u.%u node_id:%d mem orig:%"PRIu64" cpus:%u limit:%"PRIu64"",
 	     jobid, stepid, node_id, arg.job_mem_limit,
 	     step_cpus, req->job_mem_lim);
 #endif
@@ -1208,6 +1219,174 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
+static inline int _char_to_val(int c)
+{
+	int cl;
+
+	cl = tolower(c);
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	else if (cl >= 'a' && cl <= 'f')
+		return cl + (10 - 'a');
+	else
+		return -1;
+}
+
+static int _str_to_memset(bitstr_t *mask, char *str)
+{
+	int len = strlen(str);
+	const char *ptr = str + len - 1;
+	int base = 0;
+
+	while (ptr >= str) {
+		char val = _char_to_val(*ptr);
+		if (val == (char) -1)
+			return -1;
+		if ((val & 1) && (base < MAX_NUMA_CNT))
+			bit_set(mask, base);
+		base++;
+		if ((val & 2) && (base < MAX_NUMA_CNT))
+			bit_set(mask, base);
+		base++;
+		if ((val & 4) && (base < MAX_NUMA_CNT))
+			bit_set(mask, base);
+		base++;
+		if ((val & 8) && (base < MAX_NUMA_CNT))
+			bit_set(mask, base);
+		base++;
+		len--;
+		ptr--;
+	}
+
+	return 0;
+}
+
+static bitstr_t *_build_cpu_bitmap(uint16_t cpu_bind_type, char *cpu_bind,
+				   int task_cnt_on_node)
+{
+	bitstr_t *cpu_bitmap = NULL;
+	char *tmp_str, *tok, *save_ptr = NULL;
+	int cpu_id;
+
+	if (cpu_bind_type & CPU_BIND_NONE) {
+		/* Return NULL bitmap, sort all NUMA */
+	} else if ((cpu_bind_type & CPU_BIND_RANK) &&
+		   (task_cnt_on_node > 0)) {
+		cpu_bitmap = bit_alloc(MAX_CPU_CNT);
+		if (task_cnt_on_node >= MAX_CPU_CNT)
+			task_cnt_on_node = MAX_CPU_CNT;
+		for (cpu_id = 0; cpu_id < task_cnt_on_node; cpu_id++) {
+			bit_set(cpu_bitmap, cpu_id);
+		}
+	} else if (cpu_bind_type & CPU_BIND_MAP) {
+		cpu_bitmap = bit_alloc(MAX_CPU_CNT);
+		tmp_str = xstrdup(cpu_bind);
+		tok = strtok_r(tmp_str, ",", &save_ptr);
+		while (tok) {
+			if (!xstrncmp(tok, "0x", 2))
+				cpu_id = strtoul(tok + 2, NULL, 16);
+			else
+				cpu_id = strtoul(tok, NULL, 10);
+			if (cpu_id < MAX_CPU_CNT)
+				bit_set(cpu_bitmap, cpu_id);
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp_str);
+	} else if (cpu_bind_type & CPU_BIND_MASK) {
+		cpu_bitmap = bit_alloc(MAX_CPU_CNT);
+		tmp_str = xstrdup(cpu_bind);
+		tok = strtok_r(tmp_str, ",", &save_ptr);
+		while (tok) {
+			if (!xstrncmp(tok, "0x", 2))
+				tok += 2;	/* Skip "0x", always hex */
+			(void) _str_to_memset(cpu_bitmap, tok);
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp_str);
+	}
+	return cpu_bitmap;
+}
+
+static bitstr_t *_xlate_cpu_to_numa_bitmap(bitstr_t *cpu_bitmap)
+{
+	bitstr_t *numa_bitmap = NULL;
+#ifdef HAVE_NUMA
+	struct bitmask *numa_bitmask = NULL;
+	char cpu_str[10240];
+	int i, max_numa;
+
+	if (numa_available() != -1) {
+		bit_fmt(cpu_str, sizeof(cpu_str), cpu_bitmap);
+		numa_bitmask = numa_parse_cpustring(cpu_str);
+		if (numa_bitmask) {
+			max_numa = numa_max_node();
+			numa_bitmap = bit_alloc(MAX_NUMA_CNT);
+			for (i = 0; i <= max_numa; i++) {
+				if (numa_bitmask_isbitset(numa_bitmask, i))
+					bit_set(numa_bitmap, i);
+			}
+			numa_bitmask_free(numa_bitmask);
+		}
+	}
+#endif
+	return numa_bitmap;
+
+}
+
+static bitstr_t *_build_numa_bitmap(uint16_t mem_bind_type, char *mem_bind,
+				    uint16_t cpu_bind_type, char *cpu_bind,
+				    int task_cnt_on_node)
+{
+	bitstr_t *cpu_bitmap = NULL, *numa_bitmap = NULL;
+	char *tmp_str, *tok, *save_ptr = NULL;
+	int numa_id;
+
+	if (mem_bind_type & MEM_BIND_NONE) {
+		/* Return NULL bitmap, sort all NUMA */
+	} else if ((mem_bind_type & MEM_BIND_RANK) &&
+		   (task_cnt_on_node > 0)) {
+		numa_bitmap = bit_alloc(MAX_NUMA_CNT);
+		if (task_cnt_on_node >= MAX_NUMA_CNT)
+			task_cnt_on_node = MAX_NUMA_CNT;
+		for (numa_id = 0; numa_id < task_cnt_on_node; numa_id++) {
+			bit_set(numa_bitmap, numa_id);
+		}
+	} else if (mem_bind_type & MEM_BIND_MAP) {
+		numa_bitmap = bit_alloc(MAX_NUMA_CNT);
+		tmp_str = xstrdup(mem_bind);
+		tok = strtok_r(tmp_str, ",", &save_ptr);
+		while (tok) {
+			if (!xstrncmp(tok, "0x", 2))
+				numa_id = strtoul(tok + 2, NULL, 16);
+			else
+				numa_id = strtoul(tok, NULL, 10);
+			if (numa_id < MAX_NUMA_CNT)
+				bit_set(numa_bitmap, numa_id);
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp_str);
+	} else if (mem_bind_type & MEM_BIND_MASK) {
+		numa_bitmap = bit_alloc(MAX_NUMA_CNT);
+		tmp_str = xstrdup(mem_bind);
+		tok = strtok_r(tmp_str, ",", &save_ptr);
+		while (tok) {
+			if (!xstrncmp(tok, "0x", 2))
+				tok += 2;	/* Skip "0x", always hex */
+			(void) _str_to_memset(numa_bitmap, tok);
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp_str);
+	} else if (mem_bind_type & MEM_BIND_LOCAL) {
+		cpu_bitmap = _build_cpu_bitmap(cpu_bind_type, cpu_bind,
+					       task_cnt_on_node);
+		if (cpu_bitmap) {
+			numa_bitmap = _xlate_cpu_to_numa_bitmap(cpu_bitmap);
+			FREE_NULL_BITMAP(cpu_bitmap);
+		}
+	}
+
+	return numa_bitmap;
+}
 
 static void
 _rpc_launch_tasks(slurm_msg_t *msg)
@@ -1218,6 +1397,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	uid_t    req_uid;
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     super_user = false;
+	bool     mem_sort = false;
 #ifndef HAVE_FRONT_END
 	bool     first_job_run;
 #endif
@@ -1226,6 +1406,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	hostset_t step_hset = NULL;
 	job_mem_limits_t *job_limits_ptr;
 	int nodeid = 0;
+	bitstr_t *numa_bitmap = NULL;
+
 #ifndef HAVE_FRONT_END
 	/* It is always 0 for front end systems */
 	nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
@@ -1321,6 +1503,19 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 #endif
 
+	if (req->mem_bind_type & MEM_BIND_SORT) {
+		int task_cnt = -1;
+		if (req->tasks_to_launch)
+			task_cnt = (int) req->tasks_to_launch[nodeid];
+		mem_sort = true;
+		numa_bitmap = _build_numa_bitmap(req->mem_bind_type,
+						 req->mem_bind,
+						 req->cpu_bind_type,
+						 req->cpu_bind, task_cnt);
+	}
+	node_features_g_step_config(mem_sort, numa_bitmap);
+	FREE_NULL_BITMAP(numa_bitmap);
+
 	if (req->job_mem_lim || req->step_mem_lim) {
 		step_loc_t step_info;
 		slurm_mutex_lock(&job_limits_mutex);
@@ -1338,10 +1533,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			job_limits_ptr->step_id  = req->job_step_id;
 			job_limits_ptr->step_mem = req->step_mem_lim;
 #if _LIMIT_INFO
-			info("AddLim step:%u.%u job_mem:%u step_mem:%u",
-			      job_limits_ptr->job_id, job_limits_ptr->step_id,
-			      job_limits_ptr->job_mem,
-			      job_limits_ptr->step_mem);
+			info("AddLim step:%u.%u job_mem:%"PRIu64" "
+			     "step_mem:%"PRIu64"",
+			     job_limits_ptr->job_id, job_limits_ptr->step_id,
+			     job_limits_ptr->job_mem,
+			     job_limits_ptr->step_mem);
 #endif
 			list_append(job_limits_list, job_limits_ptr);
 		}
@@ -1493,48 +1689,50 @@ static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
 static void
 _prolog_error(batch_job_launch_msg_t *req, int rc)
 {
-	char *err_name_ptr, err_name[256], path_name[MAXPATHLEN];
+	char *err_name = NULL, *path_name = NULL;
 	char *fmt_char;
 	int fd;
 
 	if (req->std_err || req->std_out) {
 		if (req->std_err)
-			strncpy(err_name, req->std_err, sizeof(err_name));
+			err_name = xstrdup(req->std_err);
 		else
-			strncpy(err_name, req->std_out, sizeof(err_name));
+			err_name = xstrdup(req->std_out);
 		if ((fmt_char = strchr(err_name, (int) '%')) &&
 		    (fmt_char[1] == 'j') && !strchr(fmt_char+1, (int) '%')) {
-			char tmp_name[256];
+			char *tmp_name = NULL;
 			fmt_char[1] = 'u';
-			snprintf(tmp_name, sizeof(tmp_name), err_name,
-				 req->job_id);
-			strncpy(err_name, tmp_name, sizeof(err_name));
+			xstrfmtcat(tmp_name, err_name, req->job_id);
+			xfree(err_name);
+			err_name = tmp_name;
+			//tmp_name = NULL;
 		}
 	} else {
-		snprintf(err_name, sizeof(err_name), "slurm-%u.out",
-			 req->job_id);
+		xstrfmtcat(err_name, "slurm-%u.out", req->job_id);
 	}
-	err_name_ptr = err_name;
-	if (err_name_ptr[0] == '/')
-		snprintf(path_name, MAXPATHLEN, "%s", err_name_ptr);
+	if (err_name[0] == '/')
+		xstrfmtcat(path_name, "%s", err_name);
 	else if (req->work_dir)
-		snprintf(path_name, MAXPATHLEN, "%s/%s",
-			req->work_dir, err_name_ptr);
+		xstrfmtcat(path_name, "%s/%s", req->work_dir, err_name);
 	else
-		snprintf(path_name, MAXPATHLEN, "/%s", err_name_ptr);
+		xstrfmtcat(path_name, "/%s", err_name);
+	xfree(err_name);
+
 	if ((fd = _open_as_other(path_name, req)) == -1) {
 		error("Unable to open %s: Permission denied", path_name);
+		xfree(path_name);
 		return;
 	}
-	snprintf(err_name, sizeof(err_name),
-		 "Error running slurm prolog: %d\n", WEXITSTATUS(rc));
+	xfree(path_name);
+	xstrfmtcat(err_name, "Error running slurm prolog: %d\n",
+		   WEXITSTATUS(rc));
 	safe_write(fd, err_name, strlen(err_name));
 	if (fchown(fd, (uid_t) req->uid, (gid_t) req->gid) == -1) {
-		snprintf(err_name, sizeof(err_name),
-			 "Couldn't change fd owner to %u:%u: %m\n",
-			 req->uid, req->gid);
+		error("%s: Couldn't change fd owner to %u:%u: %m",
+		      __func__, req->uid, req->gid);
 	}
 rwfail:
+	xfree(err_name);
 	close(fd);
 }
 
@@ -1608,13 +1806,13 @@ _set_batch_job_limits(slurm_msg_t *msg)
 
 	if (cpu_log) {
 		char *per_job = "";
-		uint32_t job_mem  = arg.job_mem_limit;
+		uint64_t job_mem  = arg.job_mem_limit;
 		if (job_mem & MEM_PER_CPU) {
 			job_mem &= (~MEM_PER_CPU);
 			per_job = "_per_CPU";
 		}
 		info("====================");
-		info("batch_job:%u job_mem:%uMB%s", req->job_id,
+		info("batch_job:%u job_mem:%"PRIu64"MB%s", req->job_id,
 		     job_mem, per_job);
 	}
 	if (cpu_log || (arg.job_mem_limit & MEM_PER_CPU)) {
@@ -1807,10 +2005,11 @@ static void _make_prolog_mem_container(slurm_msg_t *msg)
 			job_limits_ptr->step_id  = SLURM_EXTERN_CONT;
 			job_limits_ptr->step_mem = req->job_mem_limit;
 #if _LIMIT_INFO
-			info("AddLim step:%u.%u job_mem:%u step_mem:%u",
-			      job_limits_ptr->job_id, job_limits_ptr->step_id,
-			      job_limits_ptr->job_mem,
-			      job_limits_ptr->step_mem);
+			info("AddLim step:%u.%u job_mem:%"PRIu64""
+			     " step_mem:%"PRIu64"",
+			     job_limits_ptr->job_id, job_limits_ptr->step_id,
+			     job_limits_ptr->job_mem,
+			     job_limits_ptr->step_mem);
 #endif
 			list_append(job_limits_list, job_limits_ptr);
 		}
@@ -1977,14 +2176,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 			_spawn_prolog_stepd(msg);
 	} else {
 		_launch_job_fail(req->job_id, rc);
-		/*
-		 *  If job prolog failed or we could not reply,
-		 *  initiate message to slurmctld with current state
-		 */
-		if ((rc == ESLURMD_PROLOG_FAILED) ||
-		    (rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
-		    (rc == ESLURMD_SETUP_ENVIRONMENT_ERROR))
-			send_registration_msg(rc, false);
+		send_registration_msg(rc, false);
 	}
 }
 
@@ -2265,8 +2457,8 @@ no_job:
 static int
 _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 {
-	complete_batch_script_msg_t comp_msg;
-	struct requeue_msg req_msg;
+	complete_batch_script_msg_t comp_msg = {0};
+	struct requeue_msg req_msg = {0};
 	slurm_msg_t resp_msg;
 	int rc = 0, rpc_rc;
 	static time_t config_update = 0;
@@ -2411,6 +2603,10 @@ _rpc_reboot(slurm_msg_t *msg)
 				sp = xstrdup(reboot_program);
 			reboot_msg = (reboot_msg_t *) msg->data;
 			if (reboot_msg && reboot_msg->features) {
+				/*
+				 * Run reboot_program with only arguments given
+				 * in reboot_msg->features.
+				 */
 				info("Node reboot request with features %s being processed",
 				     reboot_msg->features);
 				(void) node_features_g_node_set(
@@ -2422,7 +2618,8 @@ _rpc_reboot(slurm_msg_t *msg)
 					cmd = xstrdup(sp);
 				}
 			} else {
-				cmd = xstrdup(sp);
+				/* Run reboot_program verbatim */
+				cmd = xstrdup(reboot_program);
 				info("Node reboot request being processed");
 			}
 			if (access(sp, R_OK | X_OK) < 0)
@@ -2515,7 +2712,8 @@ _load_job_limits(void)
 			job_limits_ptr->step_mem =
 				stepd_mem_info.step_mem_limit;
 #if _LIMIT_INFO
-			info("RecLim step:%u.%u job_mem:%u step_mem:%u",
+			info("RecLim step:%u.%u job_mem:%"PRIu64""
+			     " step_mem:%"PRIu64"",
 			     job_limits_ptr->job_id, job_limits_ptr->step_id,
 			     job_limits_ptr->job_mem,
 			     job_limits_ptr->step_mem);
@@ -2570,10 +2768,10 @@ _enforce_job_mem_limit(void)
 	job_step_stat_t *resp = NULL;
 	struct job_mem_info {
 		uint32_t job_id;
-		uint32_t mem_limit;	/* MB */
-		uint32_t mem_used;	/* MB */
-		uint32_t vsize_limit;	/* MB */
-		uint32_t vsize_used;	/* MB */
+		uint64_t mem_limit;	/* MB */
+		uint64_t mem_used;	/* MB */
+		uint64_t vsize_limit;	/* MB */
+		uint64_t vsize_used;	/* MB */
 	};
 	struct job_mem_info *job_mem_info_ptr = NULL;
 
@@ -2690,8 +2888,9 @@ _enforce_job_mem_limit(void)
 		if ((job_mem_info_ptr[i].mem_limit != 0) &&
 		    (job_mem_info_ptr[i].mem_used >
 		     job_mem_info_ptr[i].mem_limit)) {
-			info("Job %u exceeded memory limit (%u>%u), "
-			     "cancelling it", job_mem_info_ptr[i].job_id,
+			info("Job %u exceeded memory limit "
+			     "(%"PRIu64">%"PRIu64"), cancelling it",
+			     job_mem_info_ptr[i].job_id,
 			     job_mem_info_ptr[i].mem_used,
 			     job_mem_info_ptr[i].mem_limit);
 			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
@@ -2699,8 +2898,9 @@ _enforce_job_mem_limit(void)
 		} else if ((job_mem_info_ptr[i].vsize_limit != 0) &&
 			   (job_mem_info_ptr[i].vsize_used >
 			    job_mem_info_ptr[i].vsize_limit)) {
-			info("Job %u exceeded virtual memory limit (%u>%u), "
-			     "cancelling it", job_mem_info_ptr[i].job_id,
+			info("Job %u exceeded virtual memory limit "
+			     "(%"PRIu64">%"PRIu64"), cancelling it",
+			     job_mem_info_ptr[i].job_id,
 			     job_mem_info_ptr[i].vsize_used,
 			     job_mem_info_ptr[i].vsize_limit);
 			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
@@ -2950,21 +3150,6 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done2;
 	}
-
-#ifdef HAVE_AIX
-#  ifdef SIGMIGRATE
-#    ifdef SIGSOUND
-	/* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
-	 * These signals are not sent to the entire process group, but just a
-	 * single process, namely the PMD. */
-	if (signal == SIGMIGRATE || signal == SIGSOUND) {
-		rc = stepd_signal_task_local(fd, protocol_version,
-					     signal, 0);
-		goto done2;
-	}
-#    endif
-#  endif
-#endif
 
 	rc = stepd_signal_container(fd, protocol_version, signal);
 	if (rc == -1)
@@ -3682,7 +3867,7 @@ static void _fb_rdlock(void)
 			fb_read_lock++;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&file_bcast_cond, &file_bcast_mutex);
+			slurm_cond_wait(&file_bcast_cond, &file_bcast_mutex);
 		}
 	}
 	slurm_mutex_unlock(&file_bcast_mutex);
@@ -3692,7 +3877,7 @@ static void _fb_rdunlock(void)
 {
 	slurm_mutex_lock(&file_bcast_mutex);
 	fb_read_lock--;
-	pthread_cond_broadcast(&file_bcast_cond);
+	slurm_cond_broadcast(&file_bcast_cond);
 	slurm_mutex_unlock(&file_bcast_mutex);
 }
 
@@ -3706,7 +3891,7 @@ static void _fb_wrlock(void)
 			fb_write_wait_lock--;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&file_bcast_cond, &file_bcast_mutex);
+			slurm_cond_wait(&file_bcast_cond, &file_bcast_mutex);
 		}
 	}
 	slurm_mutex_unlock(&file_bcast_mutex);
@@ -3716,7 +3901,7 @@ static void _fb_wrunlock(void)
 {
 	slurm_mutex_lock(&file_bcast_mutex);
 	fb_write_lock--;
-	pthread_cond_broadcast(&file_bcast_cond);
+	slurm_cond_broadcast(&file_bcast_cond);
 	slurm_mutex_unlock(&file_bcast_mutex);
 }
 
@@ -3791,7 +3976,8 @@ void file_bcast_purge(void)
 
 static int _rpc_file_bcast(slurm_msg_t *msg)
 {
-	int rc, offset, inx;
+	int rc;
+	int64_t offset, inx;
 	file_bcast_info_t *file_info;
 	file_bcast_msg_t *req = msg->data;
 	file_bcast_info_t key;
@@ -4257,10 +4443,10 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 		}
 
 		debug2("container signal %d to job %u.%u",
-		       sig, jobid, stepd->stepid);
+		       sig, stepd->jobid, stepd->stepid);
 		if (stepd_signal_container(
 			    fd, stepd->protocol_version, sig) < 0)
-			debug("kill jobid=%u failed: %m", jobid);
+			debug("kill jobid=%u failed: %m", stepd->jobid);
 		close(fd);
 	}
 	list_iterator_destroy(i);
@@ -4270,6 +4456,48 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 	return step_cnt;
 }
 
+/*
+ * ume_notify - Notify all jobs and steps on this node that a Uncorrectable
+ *	Memory Error (UME) has occured by sending SIG_UME (to log event in
+ *	stderr)
+ * RET count of signaled job steps
+ */
+extern int ume_notify(void)
+{
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
+	int step_cnt  = 0;
+	int fd;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((stepd = list_next(i))) {
+		step_cnt++;
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid,
+				   &stepd->protocol_version);
+		if (fd == -1) {
+			debug3("Unable to connect to step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			continue;
+		}
+
+		debug2("container SIG_UME to job %u.%u",
+		       stepd->jobid, stepd->stepid);
+		if (stepd_signal_container(
+			    fd, stepd->protocol_version, SIG_UME) < 0)
+			debug("kill jobid=%u failed: %m", stepd->jobid);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	FREE_NULL_LIST(steps);
+
+	if (step_cnt == 0)
+		debug2("No steps to send SIG_UME");
+	return step_cnt;
+}
 /*
  * _terminate_all_steps - signals the container of all steps of a job
  * jobid IN - id of job to signal
@@ -4968,7 +5196,6 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		nsteps = _kill_all_active_steps(job_id, SIGTERM, true);
 	}
 
-#ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog) {
 		slurm_cred_begin_expiration(conf->vctx, job_id);
 		save_cred_state(conf->vctx);
@@ -4978,7 +5205,6 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		_launch_complete_rm(job_id);
 		return;
 	}
-#endif
 
 	/*
 	 *  Check for corpses
@@ -5141,9 +5367,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 static void
 _rpc_terminate_job(slurm_msg_t *msg)
 {
-#ifndef HAVE_AIX
 	bool		have_spank = false;
-#endif
 	int             rc     = SLURM_SUCCESS;
 	kill_job_msg_t *req    = msg->data;
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred,
@@ -5186,6 +5410,11 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		return;
 	}
 
+	/*
+	 * Note the job is finishing to avoid a race condition for batch jobs
+	 * that finish before the slurmd knows it finished launching.
+	 */
+	_note_batch_job_finished(req->job_id);
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
@@ -5248,7 +5477,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
 	}
 
-#ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog) {
 		struct stat stat_buf;
 		if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
@@ -5289,7 +5517,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		_launch_complete_rm(req->job_id);
 		return;
 	}
-#endif
 
 	/*
 	 *  At this point, if connection still open, we send controller
@@ -5617,10 +5844,6 @@ _build_env(job_env_t *job_env)
 	if (job_env->resv_id) {
 #if defined(HAVE_BG)
 		setenvf(&env, "MPIRUN_PARTITION", "%s", job_env->resv_id);
-# ifdef HAVE_BGP
-		/* Needed for HTC jobs */
-		setenvf(&env, "SUBMIT_POOL", "%s", job_env->resv_id);
-# endif
 #elif defined(HAVE_ALPS_CRAY)
 		setenvf(&env, "BASIL_RESERVATION_ID", "%s", job_env->resv_id);
 #endif
@@ -5683,11 +5906,7 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 
 		if (dup2 (pfds[0], STDIN_FILENO) < 0)
 			fatal ("dup2: %m");
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		if (conf->chos_loc && !access(conf->chos_loc, X_OK))
 			execve(conf->chos_loc, argv, env);
 		else
@@ -5780,8 +5999,7 @@ static void *_prolog_timer(void *x)
 	slurm_mutex_lock(timer_struct->timer_mutex);
 	if (!timer_struct->prolog_fini) {
 		rc = pthread_cond_timedwait(timer_struct->timer_cond,
-					    timer_struct->timer_mutex,
-					    &ts);
+					    timer_struct->timer_mutex, &ts);
 	}
 	slurm_mutex_unlock(timer_struct->timer_mutex);
 
@@ -5800,6 +6018,31 @@ static void *_prolog_timer(void *x)
 	return NULL;
 }
 
+static int _get_node_inx(char *hostlist)
+{
+	char *host;
+	int node_inx = -1;
+	hostset_t hset;
+
+	if (!conf->node_name)
+		return node_inx;
+
+	if ((hset = hostset_create(hostlist))) {
+		int inx = 0;
+		while ((host = hostset_shift(hset))) {
+			if (!strcmp(host, conf->node_name)) {
+				node_inx = inx;
+				free(host);
+				break;
+			}
+			inx++;
+			free(host);
+		}
+		hostset_destroy(hset);
+	}
+	return node_inx;
+}
+
 static int
 _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
@@ -5815,6 +6058,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 	timer_struct_t  timer_struct;
 	bool prolog_fini = false;
+	bool script_lock = false;
 	char **my_env;
 
 	my_env = _build_env(job_env);
@@ -5824,7 +6068,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 		slurm_cred_get_args(cred, &cred_arg);
 		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS", "%s",
 			cred_arg.job_constraints);
-		gres_plugin_job_set_env(&my_env, cred_arg.job_gres_list);
+		gres_plugin_job_set_env(&my_env, cred_arg.job_gres_list,
+					_get_node_inx(cred_arg.step_hostlist));
 		slurm_cred_free_args(&cred_arg);
 	}
 
@@ -5837,6 +6082,11 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
+
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+		slurm_mutex_lock(&prolog_serial_mutex);
+		script_lock = true;
+	}
 
 	slurm_attr_init(&timer_attr);
 	timer_struct.job_id      = job_env->jobid;
@@ -5858,7 +6108,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	info("%s: run job script took %s", __func__, TIME_STR);
 	slurm_mutex_lock(&timer_mutex);
 	prolog_fini = true;
-	pthread_cond_broadcast(&timer_cond);
+	slurm_cond_broadcast(&timer_cond);
 	slurm_mutex_unlock(&timer_mutex);
 
 	diff_time = difftime(time(NULL), start_time);
@@ -5874,6 +6124,9 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	_destroy_env(my_env);
 
 	pthread_join(timer_id, NULL);
+	if (script_lock)
+		slurm_mutex_unlock(&prolog_serial_mutex);
+
 	return rc;
 }
 #endif
@@ -5887,6 +6140,7 @@ _run_epilog(job_env_t *job_env)
 	int error_code, diff_time;
 	char *my_epilog;
 	char **my_env = _build_env(job_env);
+	bool script_lock = false;
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
@@ -5899,6 +6153,11 @@ _run_epilog(job_env_t *job_env)
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(job_env->jobid);
+
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+		slurm_mutex_lock(&prolog_serial_mutex);
+		script_lock = true;
+	}
 
 	if (timeout == (uint16_t)NO_VAL)
 		error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
@@ -5915,6 +6174,9 @@ _run_epilog(job_env_t *job_env)
 		info("epilog for job %u ran for %d seconds",
 		     job_env->jobid, diff_time);
 	}
+
+	if (script_lock)
+		slurm_mutex_unlock(&prolog_serial_mutex);
 
 	return error_code;
 }
@@ -5993,7 +6255,15 @@ _dealloc_gids_cache(gids_cache_t *p)
 static size_t
 _gids_hashtbl_idx(const char *user)
 {
-	uint64_t x = siphash_str(user);
+	uint64_t x = 0;
+	int i = 0;
+	/* copied from _get_hash_idx in slurmctld */
+	/* step through string, multiply value times position
+	 * to get a bit of entropy back */
+	while (*user) {
+		x += i++ * (int) *user++;
+	}
+
 	return x % GIDS_HASH_LEN;
 }
 
@@ -6104,7 +6374,7 @@ _add_starting_step(uint16_t type, void *req)
 
 	/* Add the step info to a list of starting processes that
 	   cannot reliably be contacted. */
-	slurm_mutex_lock(&conf->starting_steps_lock);
+
 	starting_step = xmalloc(sizeof(starting_step_t));
 	if (!starting_step) {
 		error("%s failed to allocate memory", __func__);
@@ -6143,7 +6413,6 @@ _add_starting_step(uint16_t type, void *req)
 	}
 
 fail:
-	slurm_mutex_unlock(&conf->starting_steps_lock);
 	return rc;
 }
 
@@ -6151,22 +6420,21 @@ fail:
 static int
 _remove_starting_step(uint16_t type, void *req)
 {
-	uint32_t job_id, step_id;
-	ListIterator iter;
-	starting_step_t *starting_step;
+	starting_step_t starting_step;
 	int rc = SLURM_SUCCESS;
-	bool found = false;
-
-	slurm_mutex_lock(&conf->starting_steps_lock);
 
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
-		job_id =  ((batch_job_launch_msg_t *)req)->job_id;
-		step_id = ((batch_job_launch_msg_t *)req)->step_id;
+		starting_step.job_id =
+			((batch_job_launch_msg_t *)req)->job_id;
+		starting_step.step_id =
+			((batch_job_launch_msg_t *)req)->step_id;
 		break;
 	case LAUNCH_TASKS:
-		job_id =  ((launch_tasks_request_msg_t *)req)->job_id;
-		step_id = ((launch_tasks_request_msg_t *)req)->job_step_id;
+		starting_step.job_id =
+			((launch_tasks_request_msg_t *)req)->job_id;
+		starting_step.step_id =
+			((launch_tasks_request_msg_t *)req)->job_step_id;
 		break;
 	default:
 		error("%s called with an invalid type: %u", __func__, type);
@@ -6174,24 +6442,16 @@ _remove_starting_step(uint16_t type, void *req)
 		goto fail;
 	}
 
-	iter = list_iterator_create(conf->starting_steps);
-	while ((starting_step = list_next(iter))) {
-		if (starting_step->job_id  == job_id &&
-		    starting_step->step_id == step_id) {
-			starting_step = list_remove(iter);
-			xfree(starting_step);
-
-			found = true;
-			pthread_cond_broadcast(&conf->starting_steps_cond);
-			break;
-		}
-	}
-	if (!found) {
-		error("%s: step %u.%u not found", __func__, job_id, step_id);
+	if (!list_delete_all(conf->starting_steps,
+			     _compare_starting_steps,
+			     &starting_step)) {
+		error("%s: step %u.%u not found", __func__,
+		      starting_step.job_id,
+		      starting_step.step_id);
 		rc = SLURM_FAILURE;
 	}
+	slurm_cond_broadcast(&conf->starting_steps_cond);
 fail:
-	slurm_mutex_unlock(&conf->starting_steps_lock);
 	return rc;
 }
 
@@ -6216,12 +6476,15 @@ static int _compare_starting_steps(void *listentry, void *key)
 
 static int _wait_for_starting_step(uint32_t job_id, uint32_t step_id)
 {
-	starting_step_t  starting_step;
-	starting_step.job_id  = job_id;
-	starting_step.step_id = step_id;
+	static pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
+	struct timespec ts = {0, 0};
+	struct timeval now;
+
+	starting_step_t starting_step;
 	int num_passes = 0;
 
-	slurm_mutex_lock(&conf->starting_steps_lock);
+	starting_step.job_id  = job_id;
+	starting_step.step_id = step_id;
 
 	while (list_find_first( conf->starting_steps,
 				&_compare_starting_steps,
@@ -6236,8 +6499,14 @@ static int _wait_for_starting_step(uint32_t job_id, uint32_t step_id)
 		}
 		num_passes++;
 
-		pthread_cond_wait(&conf->starting_steps_cond,
-				  &conf->starting_steps_lock);
+		gettimeofday(&now, NULL);
+		ts.tv_sec = now.tv_sec+1;
+		ts.tv_nsec = now.tv_usec * 1000;
+
+		slurm_mutex_lock(&dummy_lock);
+		slurm_cond_timedwait(&conf->starting_steps_cond,
+				     &dummy_lock, &ts);
+		slurm_mutex_unlock(&dummy_lock);
 	}
 	if (num_passes > 0) {
 		if (step_id != NO_VAL)
@@ -6247,7 +6516,6 @@ static int _wait_for_starting_step(uint32_t job_id, uint32_t step_id)
 			debug( "Finished wait for job %d, all steps",
 				job_id);
 	}
-	slurm_mutex_unlock(&conf->starting_steps_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -6263,15 +6531,12 @@ static bool _step_is_starting(uint32_t job_id, uint32_t step_id)
 	starting_step.step_id = step_id;
 	bool ret = false;
 
-	slurm_mutex_lock(&conf->starting_steps_lock);
-
 	if (list_find_first( conf->starting_steps,
 			     &_compare_starting_steps,
 			     &starting_step )) {
 		ret = true;
 	}
 
-	slurm_mutex_unlock(&conf->starting_steps_lock);
 	return ret;
 }
 
@@ -6281,7 +6546,6 @@ static void _add_job_running_prolog(uint32_t job_id)
 	uint32_t *job_running_prolog;
 
 	/* Add the job to a list of jobs whose prologs are running */
-	slurm_mutex_lock(&conf->prolog_running_lock);
 	job_running_prolog = xmalloc(sizeof(uint32_t));
 	if (!job_running_prolog) {
 		error("_add_job_running_prolog failed to allocate memory");
@@ -6295,33 +6559,16 @@ static void _add_job_running_prolog(uint32_t job_id)
 	}
 
 fail:
-	slurm_mutex_unlock(&conf->prolog_running_lock);
+	return;
 }
 
 /* Remove this job from the list of jobs currently running their prolog */
 static void _remove_job_running_prolog(uint32_t job_id)
 {
-	ListIterator iter;
-	uint32_t *job_running_prolog;
-	bool found = false;
-
-	slurm_mutex_lock(&conf->prolog_running_lock);
-
-	iter = list_iterator_create(conf->prolog_running_jobs);
-	while ((job_running_prolog = list_next(iter))) {
-		if (*job_running_prolog  == job_id) {
-			job_running_prolog = list_remove(iter);
-			xfree(job_running_prolog);
-
-			found = true;
-			pthread_cond_broadcast(&conf->prolog_running_cond);
-			break;
-		}
-	}
-	if (!found)
+	if (!list_delete_all(conf->prolog_running_jobs,
+			     _match_jobid, &job_id))
 		error("_remove_job_running_prolog: job not found");
-
-	slurm_mutex_unlock(&conf->prolog_running_lock);
+	slurm_cond_broadcast(&conf->prolog_running_cond);
 }
 
 static int _match_jobid(void *listentry, void *key)
@@ -6344,15 +6591,24 @@ static int _prolog_is_running (uint32_t jobid)
 /* Wait for the job's prolog to complete */
 static void _wait_for_job_running_prolog(uint32_t job_id)
 {
+	static pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
+	struct timespec ts = {0, 0};
+	struct timeval now;
+
 	debug( "Waiting for job %d's prolog to complete", job_id);
-	slurm_mutex_lock(&conf->prolog_running_lock);
 
 	while (_prolog_is_running (job_id)) {
-		pthread_cond_wait(&conf->prolog_running_cond,
-				  &conf->prolog_running_lock);
+
+		gettimeofday(&now, NULL);
+		ts.tv_sec = now.tv_sec+1;
+		ts.tv_nsec = now.tv_usec * 1000;
+
+		slurm_mutex_lock(&dummy_lock);
+		slurm_cond_timedwait(&conf->prolog_running_cond,
+				     &dummy_lock, &ts);
+		slurm_mutex_unlock(&dummy_lock);
 	}
 
-	slurm_mutex_unlock(&conf->prolog_running_lock);
 	debug( "Finished wait for job %d's prolog to complete", job_id);
 }
 
@@ -6445,7 +6701,7 @@ static void _launch_complete_add(uint32_t job_id)
 			}
 		}
 	}
-	pthread_cond_signal(&job_state_cond);
+	slurm_cond_signal(&job_state_cond);
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job add", job_id);
 }
@@ -6527,8 +6783,8 @@ static void _launch_complete_wait(uint32_t job_id)
 			gettimeofday(&now, NULL);
 			timeout.tv_sec  = now.tv_sec + 1;
 			timeout.tv_nsec = now.tv_usec * 1000;
-			pthread_cond_timedwait(&job_state_cond,&job_state_mutex,
-					       &timeout);
+			slurm_cond_timedwait(&job_state_cond,&job_state_mutex,
+					     &timeout);
 			continue;
 		}
 		if (empty == -1)	/* Discard oldest job */

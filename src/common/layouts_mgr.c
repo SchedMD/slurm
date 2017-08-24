@@ -7,7 +7,7 @@
  *  Enhanced by Matthieu Hautreux <matthieu.hautreux@cea.fr> for slurm-15.x.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,19 +36,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <pthread.h>
-#include <string.h>
-#include <strings.h>
 #include <ctype.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #include "layouts_mgr.h"
 
-#include "src/common/entity.h"
-#include "src/common/layout.h"
-
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
+#include "src/common/entity.h"
+#include "src/common/layout.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/node_conf.h"
@@ -74,8 +73,6 @@
 /*****************************************************************************\
  *                            STRUCTURES AND TYPES                           *
 \*****************************************************************************/
-
-void free(void*);
 
 /*
  * layouts_conf_spec_t - structure used to keep track of layouts conf details
@@ -674,17 +671,16 @@ int _layouts_entity_get_mkv(layout_t* l, entity_t* e, char* keys, void* value,
 	while ((key = hostlist_shift(kl))) {
 		if (processed >= length) {
 			rc++;
-			continue;
-		}
-		if (_layouts_entity_get_kv_size(l, e, key, &elt_size) ||
-		    (processed + elt_size) > length ||
-		    _layouts_entity_get_kv(l, e, key, value, key_type)) {
+		} else if (_layouts_entity_get_kv_size(l, e, key, &elt_size) ||
+			   (processed + elt_size) > length ||
+			   _layouts_entity_get_kv(l, e, key, value, key_type)) {
 			rc++;
 			processed = length;
-			continue;
+		} else {
+			value += elt_size;
+			processed += elt_size;
 		}
-		value += elt_size;
-		processed += elt_size;
+		free(key);
 	}
 	hostlist_destroy(kl);
 
@@ -736,15 +732,14 @@ int _layouts_entity_get_mkv_ref(layout_t* l, entity_t* e, char* keys,
 	while ((key = hostlist_shift(kl))) {
 		if (processed >= length) {
 			rc++;
-			continue;
-		}
-		if (_layouts_entity_get_kv_ref(l, e, key, value, key_type)) {
+		} else if (_layouts_entity_get_kv_ref(l, e, key, value, key_type)) {
 			rc++;
 			processed = length;
-			continue;
+		} else {
+			value += elt_size;
+			processed += elt_size;
 		}
-		value += elt_size;
-		processed += elt_size;
+		free(key);
 	}
 	hostlist_destroy(kl);
 

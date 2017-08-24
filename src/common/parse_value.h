@@ -7,7 +7,7 @@
  *  for slurm-14.11.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -44,6 +44,7 @@
 int s_p_handle_long(long* data, const char* key, const char* value);
 int s_p_handle_uint16(uint16_t* data, const char* key, const char *value);
 int s_p_handle_uint32(uint32_t* data, const char* key, const char* value);
+int s_p_handle_uint64(uint64_t* data, const char* key, const char* value);
 int s_p_handle_boolean(bool* data, const char* key, const char* value);
 int s_p_handle_float(float* data, const char* key, const char* value);
 int s_p_handle_double(double* data, const char* key, const char* value);

@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "March 2016" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "July 2016" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -39,7 +39,7 @@ This is equivalent to the \fBhelp\fR command.
 
 .TP
 \fB\-i\fR, \fB\-\-immediate\fR
-commit changes immediately.
+commit changes immediately without asking for confirmation.
 
 .TP
 \fB\-n\fR, \fB\-\-noheader\fR
@@ -90,6 +90,10 @@ Identical to the \fBcreate\fR command.
 Use with show or list to display associations with the entity.
 
 .TP
+\fBclear\fR stats
+Clear the server statistics.
+
+.TP
 \fBcreate\fR <\fIENTITY\fR> <\fISPECS\fR>
 Add an entity.
 Identical to the \fBadd\fR command.
@@ -102,11 +106,6 @@ Delete the specified entities.
 \fBdump\fR <\fIENTITY\fR> <\fIFile=FILENAME\fR>
 Dump cluster data to the specified file. If the filename is not specified
 it uses clustername.cfg filename by default.
-
-.TP
-\fBexit\fP
-Terminate sacctmgr interactive mode.
-Identical to the \fBquit\fR command.
 
 .TP
 \fBhelp\fP
@@ -134,15 +133,6 @@ Modify an entity.
 Use with show or list to display entity problems.
 
 .TP
-\fBquiet\fP
-Print no messages other than error messages.
-
-.TP
-\fBquit\fP
-Terminate the execution of sacctmgr interactive mode.
-Identical to the \fBexit\fR command.
-
-.TP
 \fBreconfigure\fR
 Reconfigures the SlurmDBD if running with one.
 
@@ -154,14 +144,39 @@ specifying SPECS in your query.
 Identical to the \fBlist\fR command.
 
 .TP
-\fBverbose\fP
-Enable detailed logging.
-This includes time\-stamps on data structures, record counts, etc.
-This is an independent command with no options meant for use in interactive mode.
+\fBshutdown\fR
+Shutdown the server.
 
 .TP
 \fBversion\fP
 Display the version number of sacctmgr.
+
+.SH "INTERACTIVE COMMANDS"
+
+\fBNOTE:\fP
+All commands listed below can be used in the interactive mode, but \fINOT\fP
+on the initial command line.
+
+.TP
+\fBexit\fP
+Terminate sacctmgr interactive mode.
+Identical to the \fBquit\fR command.
+
+.TP
+\fBquiet\fP
+Print no messages other than error messages.
+
+.TP
+\fBquit\fP
+Terminate the execution of sacctmgr interactive mode.
+Identical to the \fBexit\fR command.
+
+.TP
+\fBverbose\fP
+Enable detailed logging.
+This includes time\-stamps on data structures, record counts, etc.
+This is an independent command with no options meant for use in
+interactive mode.
 
 .TP
 \fB!!\fP
@@ -208,13 +223,6 @@ account and user associations inside their realm.
 Events like downed or draining nodes on clusters.
 
 .TP
-\fIRunawayJobs\fR
-Used only with the \fIlist\fR or \fIshow\fR command to report current
-jobs that have been orphanded on the local cluster and are now
-runaway.  If there are jobs in this state it will also give you an
-option to "fix" them.
-
-.TP
 \fIjob\fR
 Used to modify specific fields of a job: Derived Exit Code and
 the Comment String.
@@ -227,6 +235,19 @@ Quality of Service.
 \fIResource\fP
 Software resources for the system. Those are software licenses shared
 among clusters.
+
+.TP
+\fIRunawayJobs\fR
+Used only with the \fIlist\fR or \fIshow\fR command to report current
+jobs that have been orphanded on the local cluster and are now
+runaway.  If there are jobs in this state it will also give you an
+option to "fix" them.
+
+.TP
+\fIstats\fR
+Used with \fBlist\fR or \fBshow\fR command to view server statistics.
+Accepts optional argument of \fBave_time\fR or \fBtotal_time\fR to sort on those
+fields. By default, sorts on increasing RPC count field.
 
 .TP
 \fItransaction\fR
@@ -537,18 +558,19 @@ associations along with the accounts listed in the option.
 .TP
 \fIWOLimits\fP
 Display information without limit information. This is for a smaller
-default format of Cluster,Account,User,Partition
+default format of "Cluster,Account,User,Partition".
 
 .TP
 \fIWOPInfo\fP
-Display information without parent information. (i.e. parent id, and
-parent account name.) This option also invokes WOPLIMITS.
+Display information without parent information (i.e. parent id, and
+parent account name). This option also implicitly sets the WOPLimits
+option.
 
 .TP
 \fIWOPLimits\fP
-Display information without hierarchical parent limits. (i.e. will
+Display information without hierarchical parent limits (i.e. will
 only display limits where they are set instead of propagating them
-from the parent.)
+from the parent).
 
 
 .SH "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
@@ -681,7 +703,7 @@ Type of machine, current classifications are capability and capacity.
 .TP
 \fIFlags\fP=<flag list>
 Comma separated list of Attributes for a particular cluster.  Current
-Flags include AIX, BGL, BGP, BGQ, Bluegene, CrayXT, FrontEnd, and MultipleSlurmd
+Flags include BGL, BGP, BGQ, Bluegene, CrayXT, FrontEnd, and MultipleSlurmd
 
 .TP
 \fIName\fP=<name>
@@ -1364,6 +1386,24 @@ Server serving up the resource.
 .TP
 \fIType\fP
 Type of resource this record represents.
+
+.SH "LIST/SHOW RUNAWAYJOB FORMAT OPTIONS"
+
+.TP
+\fICluster\fP
+Name of cluster job ran on.
+\fIID\fP
+Id of the job.
+\fIName\fP
+Name of the job.
+\fIPartition\fP
+Partition job ran on.
+\fIState\fP
+Current State of the job in the database.
+\fITimeStart\fP
+Time job started running.
+\fITimeEnd\fP
+Current recorded time of the end of the job.
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"
 
@@ -2113,7 +2153,7 @@ An example of listing trackable resources
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2015 SchedMD LLC.
+Copyright (C) 2010\-2016 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

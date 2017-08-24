@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,10 +38,9 @@
 #ifndef SWITCH_CRAY_H
 #define SWITCH_CRAY_H
 
-#include "src/common/slurm_xlator.h"
-#if     HAVE_CONFIG_H
 #include "config.h"
-#endif
+
+#include "src/common/slurm_xlator.h"
 
 #include <stdint.h>
 
@@ -65,7 +64,7 @@
  * path that does not vary regardless of where Slurm is installed.
  */
 #ifndef LEGACY_SPOOL_DIR
-#define LEGACY_SPOOL_DIR	"/var/spool/alps/"
+#define LEGACY_SPOOL_DIR	"/var/opt/cray/alps/spool/"
 #endif
 
 // Magic value signifying that jobinfo wasn't NULL

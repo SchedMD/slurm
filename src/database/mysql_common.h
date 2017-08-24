@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,28 +38,17 @@
  *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
-#ifndef _HAVE_MYSQL_COMMON_H
-#define _HAVE_MYSQL_COMMON_H
+#ifndef _MYSQL_COMMON_H
+#define _MYSQL_COMMON_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
+#include <inttypes.h>
+#include <pthread.h>
 #include <stdio.h>
+
 #include "slurm/slurm_errno.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
+
 #include <mysql.h>
 #include <mysqld_error.h>
 
@@ -113,10 +102,9 @@ extern MYSQL_RES *mysql_db_query_ret(mysql_conn_t *mysql_conn,
 				     char *query, bool last);
 extern int mysql_db_query_check_after(mysql_conn_t *mysql_conn, char *query);
 
-extern int mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query);
+extern uint64_t mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query);
 
 extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 				 storage_field_t *fields, char *ending);
-
 
 #endif

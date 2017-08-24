@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -69,7 +69,7 @@ typedef struct slurm_switch_ops {
 	int          (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo,
 					    Buf buffer,
 					    uint16_t protocol_version );
-	int          (*unpack_jobinfo)    ( switch_jobinfo_t *jobinfo,
+	int          (*unpack_jobinfo)    ( switch_jobinfo_t **jobinfo,
 					    Buf buffer,
 					    uint16_t protocol_version );
 	int          (*get_jobinfo)       ( switch_jobinfo_t *switch_job,
@@ -110,7 +110,7 @@ typedef struct slurm_switch_ops {
 	int          (*pack_nodeinfo)     ( switch_node_info_t *nodeinfo,
 					    Buf buffer,
 					    uint16_t protocol_version );
-	int          (*unpack_nodeinfo)   ( switch_node_info_t *nodeinfo,
+	int          (*unpack_nodeinfo)   ( switch_node_info_t **nodeinfo,
 					    Buf buffer,
 					    uint16_t protocol_version );
 	int          (*free_nodeinfo)     ( switch_node_info_t **nodeinfo );
@@ -303,7 +303,7 @@ extern int switch_g_pack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer,
 	return (*(ops.pack_jobinfo))( jobinfo, buffer, protocol_version );
 }
 
-extern int switch_g_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer,
+extern int switch_g_unpack_jobinfo(switch_jobinfo_t **jobinfo, Buf buffer,
 				   uint16_t protocol_version)
 {
 	if ( switch_init() < 0 )
@@ -511,7 +511,7 @@ extern int switch_g_pack_node_info(switch_node_info_t *switch_node,
 	return (*(ops.pack_nodeinfo))(switch_node, buffer, protocol_version);
 }
 
-extern int switch_g_unpack_node_info(switch_node_info_t *switch_node,
+extern int switch_g_unpack_node_info(switch_node_info_t **switch_node,
 				     Buf buffer, uint16_t protocol_version)
 {
 	if ( switch_init() < 0 )

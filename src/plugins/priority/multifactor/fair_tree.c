@@ -6,7 +6,7 @@
  *  Authors: Ryan Cox <ryan_cox@byu.edu>, Levi Morrison <levi_morrison@byu.edu>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -51,7 +51,7 @@ static void _apply_priority_fs(void);
 extern void fair_tree_decay(List jobs, time_t start)
 {
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks =
 		{ WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 		  NO_LOCK, NO_LOCK, NO_LOCK };

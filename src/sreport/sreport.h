@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,26 +41,15 @@
 #ifndef __SREPORT_H__
 #define __SREPORT_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef HAVE_STRING_H
-#  include <string.h>
-#endif
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -68,14 +57,6 @@
 #  include <readline/readline.h>
 #  include <readline/history.h>
 #endif
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else  /* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif  /* HAVE_INTTYPES_H */
 
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"

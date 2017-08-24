@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,18 +38,7 @@
 #ifndef __SLURM_ACCT_GATHER_H__
 #define __SLURM_ACCT_GATHER_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#else				/* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif				/*  HAVE_CONFIG_H */
+#include <inttypes.h>
 
 #include "read_config.h"
 #include "slurm_acct_gather_energy.h"
@@ -63,8 +52,8 @@ extern int acct_gather_conf_destroy(void);
 /* don't forget to free this */
 extern List acct_gather_conf_values(void);
 extern int acct_gather_parse_freq(int type, char *freq);
-extern int acct_gather_check_acct_freq_task(
-	uint32_t job_mem_lim, char *acctg_freq);
+extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
+					    char *acctg_freq);
 extern void acct_gather_suspend_poll(void);
 extern void acct_gather_resume_poll(void);
 extern bool acct_gather_suspend_test(void);

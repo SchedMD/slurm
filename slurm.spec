@@ -9,7 +9,6 @@
 # --enable-salloc-background %_with_salloc_background 1  on a cray system alloc salloc
 #                                               to execute as a background process.
 # --prefix           %_prefix             path  install path for commands, libraries, etc.
-# --with aix         %_with_aix           1     build aix RPM
 # --with auth_none   %_with_auth_none     1     build auth-none RPM
 # --with blcr        %_with_blcr          1     require blcr support
 # --with bluegene    %_with_bluegene      1     build bluegene RPM
@@ -17,7 +16,6 @@
 # --with cray_alps   %_with_cray_alps     1     build for a Cray system with ALPS
 # --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
 # --without debug    %_without_debug      1     don't compile with debugging symbols
-# --with pmix        %_with_pmix          1     build pmix support
 # --with lua         %_with_lua           1     build Slurm lua bindings (proctrack only for now)
 # --without munge    %_without_munge      path  don't build auth-munge RPM
 # --with mysql       %_with_mysql         1     require mysql/mariadb support
@@ -47,7 +45,6 @@
 %slurm_without_opt cray_network
 %slurm_without_opt salloc_background
 %slurm_without_opt multiple_slurmd
-%slurm_without_opt pmix
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
@@ -72,11 +69,6 @@
 %slurm_with_opt pam
 %endif
 
-# Define with_aix on AIX systems (for proctrack)
-%ifos aix5.3
-%slurm_with_opt aix
-%endif
-
 %slurm_without_opt sgijob
 %slurm_without_opt lua
 %slurm_without_opt partial-attach
@@ -95,7 +87,7 @@ License: GPL
 Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
-URL: http://slurm.schedmd.com/
+URL: https://slurm.schedmd.com/
 
 Requires: slurm-plugins
 
@@ -173,12 +165,7 @@ BuildRequires: glib2-devel
 BuildRequires: pkgconfig
 %endif
 
-%ifnos aix5.3
-# FIXME: AIX can't seem to find this even though this is in existance there.
-# We should probably figure out a better way of doing this, but for now we
-# just won't look for it on AIX.
 BuildRequires: perl(ExtUtils::MakeMaker)
-%endif
 
 %description
 Slurm is an open source, fault-tolerant, and highly
@@ -227,12 +214,7 @@ scheduling and accounting modules
 # sure we get the correct installdir
 %define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
-# AIX doesn't always give the correct install prefix here for mans
-%ifos aix5.3
-%define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; $P="/usr/share"; $T =~ s/$P//; print $T;')
-%else
 %define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
-%endif
 
 %define _perlarchlib %(perl -e 'use Config; $T=$Config{installarchlib}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
@@ -326,32 +308,6 @@ Requires: slurm-perlapi
 %description openlava
 OpenLava wrapper scripts used for helping migrate from OpenLava/LSF to Slurm
 
-%package sjobexit
-Summary: Slurm job exit code management tools
-Group: Development/System
-Requires: slurm-perlapi
-%description sjobexit
-Slurm job exit code management tools. Enables users to alter job exit code
-information for completed jobs
-
-%package slurmdb-direct
-Summary: Wrappers to write directly to the slurmdb
-Group: Development/System
-Requires: slurm-perlapi
-%description slurmdb-direct
-Wrappers to write directly to the slurmdb
-
-%if %{slurm_with aix}
-%package aix
-Summary: Slurm interfaces to IBM AIX
-Group: System Environment/Base
-Requires: slurm
-BuildRequires: proctrack >= 3
-Obsoletes: slurm-aix-federation
-%description aix
-Slurm interfaces for IBM AIX systems
-%endif
-
 %if %{slurm_with percs}
 %package percs
 Summary: Slurm plugins to run on an IBM PERCS system
@@ -361,7 +317,6 @@ BuildRequires: nrt
 %description percs
 Slurm plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
 %endif
-
 
 %if %{slurm_with sgijob}
 %package proctrack-sgi-job
@@ -385,25 +340,22 @@ Slurm lua bindings
 Includes the Slurm proctrack/lua and job_submit/lua plugin
 %endif
 
-%package seff
-Summary: Mail tool that includes job statistics in user notification email
-Group: Development/System
-Requires: slurm-perlapi
-%description seff
-Mail program used directly by the Slurm daemons. On completion of a job,
-wait for it's accounting information to be available and include that
-information in the email body.
-
-%package sjstat
+%package contribs
 Summary: Perl tool to print Slurm job state information
 Group: Development/System
 Requires: slurm
-%description sjstat
-Perl tool to print Slurm job state information. The output is designed to give
-information on the resource usage and availablilty, as well as information
+Obsoletes: slurm-sjobexit slurm-sjstat slurm-seff
+%description contribs
+seff is a mail program used directly by the Slurm daemons. On completion of a
+job, wait for it's accounting information to be available and include that
+information in the email body.
+sjobexit is a slurm job exit code management tool. It enables users to alter
+job exit code information for completed jobs
+sjstat is a Perl tool to print Slurm job state information. The output is designed
+to give information on the resource usage and availablilty, as well as information
 about jobs that are currently active on the machine. This output is built
 using the Slurm utilities, sinfo, squeue and scontrol, the man pages for these
-utilities will provide more information and greater depth of understanding
+utilities will provide more information and greater depth of understanding.
 
 %if %{slurm_with pam}
 %package pam_slurm
@@ -417,15 +369,6 @@ This module restricts access to compute nodes in a cluster where Slurm is in
 use.  Access is granted to root, any user with an Slurm-launched job currently
 running on the node, or any user who has allocated resources on the node
 according to the Slurm
-%endif
-
-%if %{slurm_with blcr}
-%package blcr
-Summary: Allows Slurm to use Berkeley Lab Checkpoint/Restart
-Group: System Environment/Base
-Requires: slurm
-%description blcr
-Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 %endif
 
 #############################################################################
@@ -453,7 +396,7 @@ Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
-	%{?slurm_with_pmix:--with-pmix=%{?with_pmix_dir}} \
+	%{?slurm_with_pmix:--with-pmix=%{?slurm_with_pmix}} \
 	%{?with_freeipmi:--with-freeipmi=%{?with_freeipmi}}\
 	%{?with_cflags}
 
@@ -476,22 +419,17 @@ rm -rf "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" %__make install
 DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
 
-%ifos aix5.3
-   mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
-%else
-   if [ -d /etc/init.d ]; then
-      install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
-      install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
-      mkdir -p "$RPM_BUILD_ROOT/usr/sbin"
-      ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
-      ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
-   fi
-   if [ -d /usr/lib/systemd/system ]; then
-      install -D -m644 etc/slurmctld.service $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service
-      install -D -m644 etc/slurmd.service    $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service
-      install -D -m644 etc/slurmdbd.service  $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service
-   fi
-%endif
+if [ -d /usr/lib/systemd/system ]; then
+   install -D -m644 etc/slurmctld.service $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service
+   install -D -m644 etc/slurmd.service    $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service
+   install -D -m644 etc/slurmdbd.service  $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service
+elif [ -d /etc/init.d ]; then
+   install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
+   install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
+   mkdir -p "$RPM_BUILD_ROOT/usr/sbin"
+   ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
+   ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
+fi
 
 # Do not package Slurm's version of libpmi on Cray systems.
 # Cray's version of libpmi should be used.
@@ -514,10 +452,6 @@ DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
 
 install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
 install -D -m644 etc/cgroup_allowed_devices_file.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup_allowed_devices_file.conf.example
-install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.release_common.example
-install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_freezer
-install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_cpuset
-install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_memory
 install -D -m644 etc/layouts.d.power.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/layouts.d/power.conf.example
 install -D -m644 etc/layouts.d.power_cpufreq.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/layouts.d/power_cpufreq.conf.example
 install -D -m644 etc/layouts.d.unit.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/layouts.d/unit.conf.example
@@ -615,6 +549,10 @@ LIST=./slurm.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
+test -f $RPM_BUILD_ROOT/%{_libexecdir}/slurm/cr_checkpoint.sh   &&
+  echo %{_libexecdir}/slurm/cr_checkpoint.sh	        >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libexecdir}/slurm/cr_restart.sh      &&
+  echo %{_libexecdir}/slurm/cr_restart.sh	        >> $LIST
 test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_suspend		&&
   echo %{_sbindir}/capmc_suspend			>> $LIST
 test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_resume		&&
@@ -668,11 +606,6 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_runjob.so &&
 
 %endif
 
-LIST=./aix.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
-  echo %{_libdir}/slurm/proctrack_aix.so               >> $LIST
-
 LIST=./percs.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_poe.so	&&
@@ -717,6 +650,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
    echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/burst_buffer_cray.so        &&
    echo %{_libdir}/slurm/burst_buffer_cray.so        >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so          &&
+   echo %{_libdir}/slurm/checkpoint_blcr.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
    echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rrd.so          &&
@@ -729,6 +664,12 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_aprun.so             &&
    echo %{_libdir}/slurm/launch_aprun.so             >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_mvapich.so              &&
    echo %{_libdir}/slurm/mpi_mvapich.so              >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_pmix.so                 &&
+   echo %{_libdir}/slurm/mpi_pmix.so                 >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_pmix_v1.so              &&
+   echo %{_libdir}/slurm/mpi_pmix_v1.so              >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_pmix_v2.so              &&
+   echo %{_libdir}/slurm/mpi_pmix_v2.so              >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/node_features_knl_cray.so   &&
    echo %{_libdir}/slurm/node_features_knl_cray.so   >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/node_features_knl_generic.so &&
@@ -792,9 +733,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
-%ifos aix5.3
-%{_sbindir}/srun
-%endif
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
@@ -826,10 +764,6 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %config %{_sysconfdir}/cgroup.conf.example
 %config %{_sysconfdir}/cgroup_allowed_devices_file.conf.example
-%config %{_sysconfdir}/cgroup.release_common.example
-%config %{_sysconfdir}/cgroup/release_freezer
-%config %{_sysconfdir}/cgroup/release_cpuset
-%config %{_sysconfdir}/cgroup/release_memory
 %config %{_sysconfdir}/layouts.d/power.conf.example
 %config %{_sysconfdir}/layouts.d/power_cpufreq.conf.example
 %config %{_sysconfdir}/layouts.d/unit.conf.example
@@ -837,10 +771,6 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/slurm.epilog.clean
 %exclude %{_mandir}/man1/sjobexit*
 %exclude %{_mandir}/man1/sjstat*
-%if %{slurm_with blcr}
-%exclude %{_mandir}/man1/srun_cr*
-%exclude %{_bindir}/srun_cr
-%endif
 #############################################################################
 
 %files devel
@@ -932,7 +862,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/job_submit_cray.so
 %{_libdir}/slurm/job_submit_require_timelimit.so
 %{_libdir}/slurm/job_submit_throttle.so
-%{_libdir}/slurm/jobacct_gather_aix.so
 %{_libdir}/slurm/jobacct_gather_cgroup.so
 %{_libdir}/slurm/jobacct_gather_linux.so
 %{_libdir}/slurm/jobacct_gather_none.so
@@ -942,6 +871,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/layouts_power_cpufreq.so
 %{_libdir}/slurm/layouts_power_default.so
 %{_libdir}/slurm/layouts_unit_default.so
+%{_libdir}/slurm/mcs_account.so
 %{_libdir}/slurm/mcs_group.so
 %{_libdir}/slurm/mcs_none.so
 %{_libdir}/slurm/mcs_user.so
@@ -955,9 +885,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/mpi_pmi2.so
 %endif
 %{_libdir}/slurm/mpi_none.so
-%if %{slurm_with pmix}
-%{_libdir}/slurm/mpi_pmix.so
-%endif
 %{_libdir}/slurm/power_none.so
 %{_libdir}/slurm/preempt_job_prio.so
 %{_libdir}/slurm/preempt_none.so
@@ -973,8 +900,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
-%{_libdir}/slurm/sched_wiki.so
-%{_libdir}/slurm/sched_wiki2.so
 %{_libdir}/slurm/select_alps.so
 %{_libdir}/slurm/select_cray.so
 %{_libdir}/slurm/select_cons_res.so
@@ -1015,25 +940,6 @@ rm -rf $RPM_BUILD_ROOT
 
 #############################################################################
 
-%files sjobexit
-%defattr(-,root,root)
-%{_bindir}/sjobexitmod
-%{_mandir}/man1/sjobexit*
-#############################################################################
-
-%files slurmdb-direct
-%defattr(-,root,root)
-%config (noreplace) %{_perldir}/config.slurmdb.pl
-%{_sbindir}/moab_2_slurmdb
-#############################################################################
-
-%if %{slurm_with aix}
-%files -f aix.files aix
-%defattr(-,root,root)
-%{_libdir}/slurm/checkpoint_aix.so
-%endif
-#############################################################################
-
 %if %{slurm_with percs}
 %files -f percs.files percs
 %defattr(-,root,root)
@@ -1056,31 +962,18 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 #############################################################################
 
-%files seff
+%files contribs
 %defattr(-,root,root)
 %{_bindir}/seff
-%{_bindir}/smail
-#############################################################################
-
-%files sjstat
-%defattr(-,root,root)
+%{_bindir}/sjobexitmod
 %{_bindir}/sjstat
+%{_bindir}/smail
 %{_mandir}/man1/sjstat*
 #############################################################################
 
 %if %{slurm_with pam}
 %files -f pam.files pam_slurm
 %defattr(-,root,root)
-%endif
-#############################################################################
-
-%if %{slurm_with blcr}
-%files blcr
-%defattr(-,root,root)
-%{_bindir}/srun_cr
-%{_libexecdir}/slurm/cr_*
-%{_libdir}/slurm/checkpoint_blcr.so
-%{_mandir}/man1/srun_cr*
 %endif
 #############################################################################
 
@@ -1100,7 +993,9 @@ rm -rf $RPM_BUILD_ROOT
 if [ -x /sbin/ldconfig ]; then
     /sbin/ldconfig %{_libdir}
     if [ $1 = 1 ]; then
-	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+	if [ -x /etc/init.d/slurm ]; then
+	    [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+        fi
     fi
 fi
 
@@ -1133,7 +1028,9 @@ fi
 
 %postun
 if [ "$1" -gt 1 ]; then
-    /etc/init.d/slurm condrestart
+    if [ -x /etc/init.d/slurmdbd ]; then
+        /etc/init.d/slurm condrestart
+    fi
 elif [ "$1" -eq 0 ]; then
     if [ -x /sbin/ldconfig ]; then
 	/sbin/ldconfig %{_libdir}
@@ -1145,7 +1042,9 @@ fi
 
 %postun slurmdbd
 if [ "$1" -gt 1 ]; then
-    /etc/init.d/slurmdbd condrestart
+    if [ -x /etc/init.d/slurmdbd ]; then
+        /etc/init.d/slurm condrestart
+    fi
 fi
 
 #############################################################################

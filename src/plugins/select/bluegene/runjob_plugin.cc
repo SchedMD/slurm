@@ -12,7 +12,7 @@
  *  Written by Danny Auble <da@schedmd.com> et. al.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,9 +42,8 @@
 \*****************************************************************************/
 
 extern "C" {
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
+
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"

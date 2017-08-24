@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,10 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include "sview.h"
 
 #define _DEBUG 0
-#define MAX_RETRIES 3		/* g_thread_create retries */
 
 typedef struct {
 	GtkTable *table;
@@ -55,10 +56,10 @@ sview_config_t working_sview_config;
 int adding = 1;
 int fini = 0;
 int grid_init = 0;
-bool toggled = FALSE;
-bool force_refresh = FALSE;
-bool apply_hidden_change = TRUE;
-bool apply_partition_check = FALSE;
+bool toggled = false;
+bool force_refresh = false;
+bool apply_hidden_change = true;
+bool apply_partition_check = false;
 List popup_list = NULL;
 List signal_params_list = NULL;
 int page_running = -1;
@@ -115,60 +116,60 @@ static int debug_action_entries = 0;
 */
 
 display_data_t main_display_data[] = {
-	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
+	{G_TYPE_NONE, JOB_PAGE, "Jobs", true, -1,
 	 refresh_main, create_model_job, admin_edit_job,
 	 get_info_job, specific_info_job,
 	 set_menus_job, NULL},
-	{G_TYPE_NONE, PART_PAGE, "Partitions", TRUE, -1,
+	{G_TYPE_NONE, PART_PAGE, "Partitions", true, -1,
 	 refresh_main, create_model_part, admin_edit_part,
 	 get_info_part, specific_info_part,
 	 set_menus_part, NULL},
-	{G_TYPE_NONE, RESV_PAGE, "Reservations", TRUE, -1,
+	{G_TYPE_NONE, RESV_PAGE, "Reservations", true, -1,
 	 refresh_main, create_model_resv, admin_edit_resv,
 	 get_info_resv, specific_info_resv,
 	 set_menus_resv, NULL},
-	{G_TYPE_NONE, BB_PAGE, "Burst Buffers", TRUE, -1,
+	{G_TYPE_NONE, BB_PAGE, "Burst Buffers", true, -1,
 	 refresh_main, create_model_bb, admin_edit_bb,
 	 get_info_bb, specific_info_bb,
 	 set_menus_bb, NULL},
 #ifdef HAVE_BG
-	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
+	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", true, -1,
 	 refresh_main, NULL, NULL,
 	 get_info_block, specific_info_block,
 	 set_menus_block, NULL},
-	{G_TYPE_NONE, NODE_PAGE, "Midplanes", FALSE, -1,
+	{G_TYPE_NONE, NODE_PAGE, "Midplanes", false, -1,
 	 refresh_main, NULL, NULL,
 	 get_info_node, specific_info_node,
 	 set_menus_node, NULL},
 #else
-	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", FALSE, -1,
+	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", false, -1,
 	 refresh_main, NULL, NULL,
 	 get_info_block, specific_info_block,
 	 set_menus_block, NULL},
-	{G_TYPE_NONE, NODE_PAGE, "Nodes", FALSE, -1,
+	{G_TYPE_NONE, NODE_PAGE, "Nodes", false, -1,
 	 refresh_main, NULL, NULL,
 	 get_info_node, specific_info_node,
 	 set_menus_node, NULL},
 #endif
-	{G_TYPE_NONE, FRONT_END_PAGE, "Front End Nodes", FALSE, -1,
+	{G_TYPE_NONE, FRONT_END_PAGE, "Front End Nodes", false, -1,
 	 refresh_main, create_model_front_end, admin_edit_front_end,
 	 get_info_front_end, specific_info_front_end,
 	 set_menus_front_end, NULL},
-	{G_TYPE_NONE, SUBMIT_PAGE, NULL, FALSE, -1,
+	{G_TYPE_NONE, SUBMIT_PAGE, NULL, false, -1,
 	 refresh_main, NULL, NULL, NULL,
 	 NULL, NULL, NULL},
-	{G_TYPE_NONE, ADMIN_PAGE, NULL, FALSE, -1,
+	{G_TYPE_NONE, ADMIN_PAGE, NULL, false, -1,
 	 refresh_main, NULL, NULL,
 	 NULL, NULL,
 	 NULL, NULL},
-	{G_TYPE_NONE, INFO_PAGE, NULL, FALSE, -1,
+	{G_TYPE_NONE, INFO_PAGE, NULL, false, -1,
 	 refresh_main, NULL, NULL,
 	 NULL, NULL,
 	 NULL, NULL},
-	{G_TYPE_NONE, TAB_PAGE, "Visible Tabs", TRUE, -1,
+	{G_TYPE_NONE, TAB_PAGE, "Visible Tabs", true, -1,
 	 refresh_main, NULL, NULL, _get_info_tabs,
 	 NULL, NULL, NULL},
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	{G_TYPE_NONE, -1, NULL, false, -1}
 };
 
 void *_page_thr(void *arg)
@@ -301,7 +302,7 @@ static void _page_switched(GtkNotebook     *notebook,
 	else if (!grid_init && !started_grid_init) {
 		/* start the thread to make the grid only once */
 		if (!sview_thread_new(
-			    _grid_init_thr, notebook, FALSE, &error)) {
+			    _grid_init_thr, notebook, false, &error)) {
 			g_printerr ("Failed to create grid init thread: %s\n",
 				    error->message);
 			return;
@@ -334,7 +335,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		page_thr->page_num = i;
 		page_thr->table = table;
 
-		if (!sview_thread_new(_page_thr, page_thr, FALSE, &error)) {
+		if (!sview_thread_new(_page_thr, page_thr, false, &error)) {
 			g_printerr ("Failed to create page thread: %s\n",
 				    error->message);
 			return;
@@ -390,7 +391,7 @@ static void _set_hidden(GtkToggleAction *action)
 		FREE_NULL_LIST(grid_button_list);
 		get_system_stats(main_grid_table);
 	}
-	apply_hidden_change = TRUE;
+	apply_hidden_change = true;
 	refresh_main(NULL, NULL);
 	display_edit_note(tmp);
 	g_free(tmp);
@@ -424,7 +425,7 @@ static void _set_topogrid(GtkToggleAction *action)
 		working_sview_config.grid_topological
 			= gtk_toggle_action_get_active(action);
 	}
-	apply_hidden_change = FALSE;
+	apply_hidden_change = false;
 	if (working_sview_config.grid_topological) {
 		if (!g_switch_nodes_maps)
 			rc = get_topo_conf();
@@ -648,7 +649,7 @@ static gboolean _delete(GtkWidget *widget,
 	}
 	xfree(debug_actions);
 
-	return FALSE;
+	return false;
 }
 
 static char *_get_ui_description()
@@ -1167,7 +1168,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		if (cluster_flags & CLUSTER_FLAG_BG) {
 			switch(display_data->id) {
 			case BLOCK_PAGE:
-				display_data->show = TRUE;
+				display_data->show = true;
 				break;
 			case NODE_PAGE:
 				display_data->name = "Midplanes";
@@ -1178,7 +1179,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		} else {
 			switch(display_data->id) {
 			case BLOCK_PAGE:
-				display_data->show = FALSE;
+				display_data->show = false;
 				break;
 			case NODE_PAGE:
 				display_data->name = "Nodes";
@@ -1330,7 +1331,7 @@ static GtkWidget *_create_cluster_combo(void)
 	if (list_count(cluster_list) > 1)
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
 
-	/* Set up the working_cluster_rec just incase we are on a node
+	/* Set up the working_cluster_rec just in case we are on a node
 	   that doesn't technically belong to a cluster (like
 	   the node running the slurmdbd).
 	*/
@@ -1359,7 +1360,7 @@ static GtkWidget *_create_cluster_combo(void)
 
 		renderer = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo),
-					   renderer, TRUE);
+					   renderer, true);
 		gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(combo),
 					      renderer, "text", 0);
 		gtk_combo_box_set_active(GTK_COMBO_BOX(combo), spot);
@@ -1444,7 +1445,7 @@ extern void close_tab(GtkWidget *widget, GdkEventButton *event,
 	//g_print("hid %d\n", display_data->extra);
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	GtkWidget *menubar = NULL;
 	GtkWidget *table = NULL;
@@ -1477,7 +1478,7 @@ int main(int argc, char *argv[])
 	view = GTK_VIEWPORT(bin->child);
 	bin = GTK_BIN(&view->bin);
 	main_grid_table = GTK_TABLE(bin->child);
-	gtk_table_set_homogeneous(main_grid_table, TRUE);
+	gtk_table_set_homogeneous(main_grid_table, true);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(grid_window),
 				       GTK_POLICY_NEVER,
 				       GTK_POLICY_AUTOMATIC);
@@ -1499,8 +1500,8 @@ int main(int argc, char *argv[])
 	g_signal_connect(G_OBJECT(main_notebook), "switch_page",
 			 G_CALLBACK(_page_switched),
 			 NULL);
-	table = gtk_table_new(1, 3, FALSE);
-	gtk_table_set_homogeneous(GTK_TABLE(table), FALSE);
+	table = gtk_table_new(1, 3, false);
+	gtk_table_set_homogeneous(GTK_TABLE(table), false);
 	gtk_container_set_border_width(GTK_CONTAINER(table), 1);
 	/* Create a menu */
 	menubar = _get_menubar_menu(main_window, main_notebook);
@@ -1514,17 +1515,17 @@ int main(int argc, char *argv[])
 				 GTK_FILL, GTK_SHRINK, 0, 0);
 	}
 	gtk_notebook_popup_enable(GTK_NOTEBOOK(main_notebook));
-	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
+	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), true);
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook),
 				 working_sview_config.tab_pos);
 
 	main_statusbar = gtk_statusbar_new();
 	gtk_statusbar_set_has_resize_grip(GTK_STATUSBAR(main_statusbar),
-					  FALSE);
+					  false);
 	/* Pack it all together */
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
-			   table, FALSE, FALSE, 0);
-	table = gtk_table_new(1, 2, FALSE);
+			   table, false, false, 0);
+	table = gtk_table_new(1, 2, false);
 
 	gtk_table_attach(GTK_TABLE(table), grid_window, 0, 1, 0, 1,
 			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
@@ -1532,9 +1533,9 @@ int main(int argc, char *argv[])
 	gtk_table_attach_defaults(GTK_TABLE(table), main_notebook, 1, 2, 0, 1);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
-			   table, TRUE, TRUE, 0);
+			   table, true, true, 0);
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
-			   main_statusbar, FALSE, FALSE, 0);
+			   main_statusbar, false, false, 0);
 
 	in_process_cursor = gdk_cursor_new(GDK_WATCH);
 

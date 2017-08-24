@@ -5,7 +5,7 @@
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,10 +34,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
-
 #ifndef _TASK_CGROUP_MEMORY_H_
 #define _TASK_CGROUP_MEMORY_H_
 
@@ -53,7 +49,7 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf);
 extern int task_cgroup_memory_create(stepd_step_rec_t *job);
 
 /* create a task cgroup and attach the task to it */
-extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job);
+extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job, pid_t pid);
 
 /* detect if oom ran on a step or job and print notice of said event */
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job);

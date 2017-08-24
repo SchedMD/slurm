@@ -6,7 +6,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,32 +34,32 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
-#include <stdint.h>
-#include <stdio.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+#include "config.h"
+
 #include <errno.h>
-#include <time.h>
+#include <inttypes.h>
+#include <libcr.h>
 #include <poll.h>
 #include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/time.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/un.h>
 #include <sys/wait.h>
-#include <libcr.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -299,7 +299,7 @@ fork_exec_srun(void)
 		 * remove srun from the foreground process group,
 		 * or Ctrl-C will cause SIGINT duplicated
 		 */
-		setpgrp();
+		setpgid(0, 0);
 
 		update_env("SLURM_SRUN_CR_SOCKET", cr_sock_addr);
 
@@ -410,7 +410,7 @@ cr_callback(void *unused)
 
 		debug2("step not launched.");
 
-		pthread_cond_broadcast(&step_launch_cond);
+		slurm_cond_broadcast(&step_launch_cond);
 	}
 
 	return 0;
@@ -467,8 +467,7 @@ main(int argc, char **argv)
 		slurm_mutex_lock(&step_launch_mutex);
 		while (step_launched) {
 			/* just avoid busy waiting */
-			pthread_cond_wait(&step_launch_cond,
-					  &step_launch_mutex);
+			slurm_cond_wait(&step_launch_cond, &step_launch_mutex);
 		}
 		slurm_mutex_unlock(&step_launch_mutex);
 

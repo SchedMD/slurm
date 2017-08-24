@@ -1,11 +1,15 @@
 <!--#include virtual="header.txt"-->
 
-<h1>BlueGene User and Administrator Guide</h1>
+<h1>BlueGene/Q User and Administrator Guide</h1>
+
+<p><b>Beginning with the 17.02 release only BlueGene/Q systems are supported
+by Slurm. Support for the BlueGene/L and BlueGene/P systems has been removed.
+</b></p>
 
 <h2>Overview</h2>
 
 <p>This document describes the unique features of Slurm on the
-<a href="http://www.research.ibm.com/bluegene/">IBM BlueGene</a> systems.
+<a href="http://www.research.ibm.com/bluegene/">IBM BlueGene/Q</a> systems.
 You should be familiar with Slurm's mode of operation on Linux clusters
 before studying the relatively few differences in BlueGene operation
 described in this document.</p>
@@ -13,14 +17,13 @@ described in this document.</p>
 <p>BlueGene systems have several unique features making for a few
 differences in how Slurm operates there.
 BlueGene systems consists of one or more <i>base partitions</i> or
-<i>midplanes</i> connected in a three-dimensional - XYZ - (BlueGene/L
-and BlueGene/P systems) or four-dimensional - AXYZ - (BlueGene/Q) torus.
+<i>midplanes</i> connected in a four-dimensional - AXYZ - torus.
 Each <i>midplane</i> typically includes 512 <i>c-nodes</i> or compute
 nodes each containing two or more cores;
 one core is typically designed primarily for managing communications while the
 other cores are used primarily for computations.
 Each <i>c-node</i> can execute only one process and thus are unable to execute
-both the user's application plu. Slurm's <i>slurmd</i> daemon.
+both the user's application plu and Slurm's <i>slurmd</i> daemon.
 Thus the <i>slurmd</i> daemon(s) executes on one or more of the BlueGene
 <i>Front End Nodes</i>.
 The <i>slurmd</i> daemons provide (almost) all of the normal Slurm services
@@ -28,7 +31,7 @@ for every <i>midplane</i> on the system. </p>
 
 <p>Internally Slurm treats each <i>midplane</i> as one node with
 a processor count equal to the number of cores on the midplane, which
-keeps the number of entities being managed b. Slurm more
+keeps the number of entities being managed by Slurm more
 reasonable.</p>
 
 <p>All BlueGene systems can sub-allocate a <i>midplane</i>
@@ -73,7 +76,7 @@ have, for instance, the 4th nodeboard populated instead of the 1st.
 services except support for job steps, which is detailed later.
 The sstat command is not supported on BlueGene systems.</p>
 
-<p>Seven job submission options are available exclusively on BlueGene systems:</p>
+<p>Four job submission options are available exclusively on BlueGene/Q systems:</p>
 <table>
 <tr VALIGN=TOP><td><i>--geometry</i></td><td>Specify job size in each dimension,
     (i.e. 1x4x4 = 16 nodes)</td></tr>
@@ -84,18 +87,8 @@ The sstat command is not supported on BlueGene systems.</p>
     specify a different conn-type for each dimension, TTMT would
     give you Torus in all dimensions except the Y dimension, where
     it would be Mesh.</td></tr>
-<tr VALIGN=TOP><td><i>--blrts-image</i></td><td>(BlueGene/L systems only)
-    Specify alternative blrts image for bluegene block.  Default if not set.</td></tr>
-<tr VALIGN=TOP><td><i>--cnload-image</i></td><td>(BlueGene/P systems only) Specify
-    alternative c-node image for bluegene block. Default if not set.</td></tr>
-<tr VALIGN=TOP><td><i>--ioload-image</i></td><td>(BlueGene/P systems only) Specify
-    alternative io image for bluegene block. Default if not set.</td></tr>
-<tr VALIGN=TOP><td><i>--linux-image</i></td><td>(BlueGene/L systems only)
-    Specify alternative linux image for bluegene block.  Default if not set.</td></tr>
 <tr VALIGN=TOP><td><i>--mloader-image</i></td><td>Specify
     alternative mloader image for bluegene block. Default if not set.</td></tr>
-<tr VALIGN=TOP><td><i>--ramdisk-image</i></td><td>(BlueGene/L or P systems only)
-    Specify alternative ramdisk image for bluegene block. Default if not set.</td></tr>
 </table>
 
 <p>The <i>--nodes</i> option with a minimum and (optionally) maximum node count
@@ -117,29 +110,6 @@ by <i>srun</i> and cannot be overridden using this option.  Two
 leading dashes are required when listing the <i>runjob</i>
 options, e.g., <i>srun --launcher-opts='--mapping TEDCBA'</i>.  See
 the <i>runjob</i> man page for the list of available options.</p>
-
-<h3>Task Launch on BlueGene/L and BlueGene/P only</h3>
-
-<p>Slurm performs resource allocation for the job, but initiation of tasks is
-performed using the <i>mpirun</i> command. Slurm has no concept of a job step
-on BlueGene/L or BlueGene/P systems.
-To reiterate: <u><i>salloc</i> or <i>sbatch</i> are used to create a job allocation, but
-<i>mpirun</i> is used to launch the parallel tasks.</u>
-The script that you submit to Slurm can contain multiple invocations of mpirun
-as well as any desired commands for pre- and post-processing.
-The mpirun command will get its <i>block</i> information from the
-<i>MPIRUN_PARTITION</i> environment variable as set by Slurm. A sample script
-is shown below.</p>
-<pre>
-#!/bin/bash
-# pre-processing
-date
-# processing
-mpirun -exec /home/user/prog -cwd /home/user -args 123
-mpirun -exec /home/user/prog -cwd /home/user -args 124
-# post-processing
-date
-</pre>
 
 <h3><a name="naming">Naming Conventions</a></h3>
 <p>The naming of midplanes includes a numeric suffix representing the its
@@ -367,18 +337,6 @@ Slurm will support this in the future when the underlying system allows it.
 </p>
 
 <p class="footer"><a href="#top">top</a></p>
-
-<h2>System Administration for all BlueGene/L Systems</h2>
-
-<p>Building a BlueGene compatible system is dependent upon the
-<i>configure</i> program locating some expected files.
-In particular for a BlueGene/L system, the configure script searches
-for <i>libdb2.so</i> in the
-directories <i>/bgl/BlueLight/ppcfloor/bglsys</i>, <i>/opt/IBM/db2/V8.1</i>
-<i>/home/bgdb2cli/sqllib</i> and <i>/u/bgdb2cli/sqllib</i>.  If your
-DB2 library file is in a different location, use the configure
-option <i>--with-db2-dir=PATH</i> to specify the parent directory.
-This option does not apply to any other BlueGene arch.</p>
 
 <h2>System Administration for all BlueGene Systems</h2>
 
@@ -747,19 +705,6 @@ are case insensitive.</p>
 systems is <i>MloaderImage</i>. Alternate images may be specified as described
 above for all BlueGene system types.</p>
 
-<p>On BlueGene/L and BlueGene/P systems DB2 database access is required by
-the <i>slurmctld</i> daemon.  All other Slurm daemons and commands
-interact with DB2 using remote procedure calls, which are processed
-by <i>slurmctld</i>.
-DB2 access is dependent upon the environment variable
-<i>BRIDGE_CONFIG_FILE</i>.
-Make sure this is set appropriate before initiating the
-<i>slurmctld</i> daemon.
-If desired, this environment variable and any other logic
-can be executed through the script <i>/etc/sysconfig/slurm</i>,
-which is automatically executed by <i>/etc/init.d/slurm</i>
-prior to initiating the Slurm daemons.</p>
-
 <p>When <i>slurmctld</i> is initially started on an idle system, the blocks
 already defined in MMCS are read using the Bridge APIs.
 If these blocks do not correspond to those defined in the <i>bluegene.conf</i>
@@ -767,9 +712,6 @@ file, the old blocks with a prefix of "RMP" are destroyed and new ones
 created.
 When a job is scheduled, the appropriate block is identified,
 its user set, and it is booted.
-On BlueGene/L and BlueGene/P systems Node use (virtual or coprocessor)
-is set from the mpirun command line.
-Slurm has nothing to do with setting the node use.
 Subsequent jobs use this same block without rebooting by changing
 the associated user field.
 The only time blocks should be freed and rebooted, in normal operation,
@@ -833,17 +775,9 @@ daemon serving as a front-end to those midplanes is not responding (on
 non-BlueGene systems, the <i>slurmd</i> actually does run on the compute
 nodes, so the message is more meaningful there). </p>
 
-<p>Note that you can emulate a BlueGene/L system on stand-alone Linux
+<p>Note that you can emulate a BlueGene/Q system on stand-alone Linux
 system.
-Run <i>configure</i> with the <i>--enable-bgl-emulation</i> option.
-This will define "HAVE_BG", "HAVE_BGL", "HAVE_BG_L_P", and
-"HAVE_FRONT_END" in the config.h file.
-You can also emulate a BlueGene/P system with
-the <i>--enable-bgp-emulation</i> option.
-This will define "HAVE_BG", "HAVE_BGP", "HAVE_BG_L_P", and
-"HAVE_FRONT_END" in the config.h file.
-You can also emulate a BlueGene/Q system using
-the <i>--enable-bgq-emulation</i> option.
+Run <i>configure</i> with the <i>--enable-bgq-emulation</i> option.
 This will define "HAVE_BG", "HAVE_BGQ", and "HAVE_FRONT_END" in the
 config.h file.
 Then execute <i>make</i> normally.
@@ -855,6 +789,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 28 September 2016</p>
 
 <!--#include virtual="footer.txt"-->

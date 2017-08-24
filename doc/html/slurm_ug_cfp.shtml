@@ -1,17 +1,17 @@
 <!--#include virtual="header.txt"-->
 
 <h1>CALL  FOR  ABSTRACTS</h1>
-<p>Slurm User Group Meeting 2016<br>
-26-27 September 2016<br>
-Athens, Greece</p>
+<p>Slurm User Group Meeting 2017<br>
+24-26 September 2017<br>
+Berkeley, California, USA</p>
 
 <p>You are invited to submit an abstract of a tutorial, technical presentation
-or site report to be given at the Slurm User Group Meeting 2016. This event is
-sponsored and organized by
-<a href="http://www.grnet.gr/">Greek Research and Technology Network (GRNET)</a> and
+or site report to be given at the Slurm User Group Meeting 2017. This event is
+sponsored and organized by the
+<a href="http://www.nersc.gov/">National Energy Research Scientific Computing Center (NERSC)</a> and
 <a href="https://www.schedmd.com/">SchedMD</a>.
-It will be held at the Technopolis, 100 Pireos Street in Athens, Greece
-on 26-27 September 2016.</p>
+It will be held at the National Energy Scientific Computing Center (NERSC)
+at 1 Cyclotron Road in Berkeley, California, USA, on 24-26 September 2017.</p>
 
 <p>This international event is opened to everyone who wants to:
 <ul>
@@ -27,22 +27,20 @@ or tutorial about Slurm is invited to send an abstract to
 <a href="mailto:slugc@schedmd.com">slugc@schedmd.com</a>.</p>
 
 <p><b>Important Dates:</b><br>
-30 June 2016: Abstracts due<br>
-15 July 2016: Notification of acceptance<br>
-26-27 September 2016: Slurm User Group Meeting<br>
+30 June 2017: Abstracts due<br>
+15 July 2017: Notification of acceptance<br>
+24-26 September 2017: Slurm User Group Meeting<br>
 </p>
 
 <p><b>Program Committee:</b><br>
-Vangelis Floros (GRNET)<br>
-Yiannis Georgiou (Bull)<br>
 Brian Gilmer (Cray)<br>
-Matthieu Hautreux (CEA)<br>
-Morris Jette (SchedMD)</p>
+Douglas Jacobsen (NERSC)<br>
+Morris Jette (SchedMD)<br>
+Bruce Pfaff (NASA Goddard)<br>
+Tim Wickberg (SchedMD)</p>
 
-<!--
-<p><a href="slurm_ug_registration.html">Registration information</a></p>
--->
+<p><a href="slurm_ug_agenda.html">Registration Information</a></p>
 
-<p style="text-align:center;">Last modified 5 July 2016</p>
+<p style="text-align:center;">Last modified 1 May 2017</p>
 
 <!--#include virtual="footer.txt"-->

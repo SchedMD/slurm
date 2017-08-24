@@ -5,7 +5,7 @@
  *  Written by Morris Jette
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -52,6 +52,7 @@
 #include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/xstring.h"
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char *argv[])
@@ -131,9 +132,9 @@ int main(int argc, char *argv[])
 	}
 
 	if (argc > 2)
-		job_config = argv[1];
+		job_config = xstrdup(argv[1]);
 
-	rc = gres_plugin_job_state_validate(job_config, &job_gres_list);
+	rc = gres_plugin_job_state_validate(&job_config, &job_gres_list);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("failure: gres_plugin_job_state_validate");
 		exit(1);

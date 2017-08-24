@@ -6,7 +6,7 @@
  *  Written by Yiannis Georgiou <yiannis.georgiou@bull.net>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -103,7 +103,7 @@ static void *_watch_node(void *arg)
 		slurm_mutex_unlock(&g_context_lock);
 
 		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
-		pthread_cond_wait(
+		slurm_cond_wait(
 			&acct_gather_profile_timer[type].notify,
 			&acct_gather_profile_timer[type].notify_mutex);
 		slurm_mutex_unlock(&acct_gather_profile_timer[type].

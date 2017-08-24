@@ -5,7 +5,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,10 +39,6 @@
  * MP_PMDLOG=yes	Write log files to /tmp/mplog.*
  * SCI_DEBUG_FANOUT=#   Fanout of pmdv12 in launching tasks
 \*****************************************************************************/
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -212,11 +208,11 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 	if (opt.job_name)
 		setenv("SLURM_JOB_NAME", opt.job_name, 1);
 	if (opt.mem_per_cpu > 0) {
-		snprintf(value, sizeof(value), "%d", opt.mem_per_cpu);
+		snprintf(value, sizeof(value), "%"PRIu64, opt.mem_per_cpu);
 		setenv("SLURM_MEM_PER_CPU", value, 1);
 	}
 	if (opt.pn_min_memory > 0) {
-		snprintf(value, sizeof(value), "%d", opt.pn_min_memory);
+		snprintf(value, sizeof(value), "%"PRIu64, opt.pn_min_memory);
 		setenv("SLURM_MEM_PER_NODE", value, 1);
 	}
 	if (opt.network)
@@ -670,7 +666,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		 * purpose.  It makes it so each task has a separate
 		 * line. */
 		setenv("MP_STDOUTMODE", "unordered", 1);
-		/* Just incase we didn't specify a file in srun. */
+		/* Just in case we didn't specify a file in srun. */
 		setenv("SLURM_ARBITRARY_NODELIST", opt.nodelist, 1);
 	} else {
 		/* Since poe doesn't need to know about the partition and it
@@ -805,10 +801,10 @@ extern int launch_p_step_launch(
 		*/
 		rc = 0;
 	} else {
-		setpgrp();
+		setpgid(0, 0);
 		_unblock_signals();
 		/* dup stdio onto our open fds */
-		if ((dup2(cio_fds->in.fd, 0) == -1) ||
+		if ((dup2(cio_fds->input.fd, 0) == -1) ||
 		    (dup2(cio_fds->out.fd, 1) == -1) ||
 		    (dup2(cio_fds->err.fd, 2) == -1)) {
 			error("dup2: %m");

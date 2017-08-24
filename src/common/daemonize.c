@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,15 +36,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include <config.h>
 
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
@@ -151,6 +149,7 @@ read_pidfile(const char *pidfile, int *pidfd)
 	else
 		(void) close(fd);
 
+/*	fclose(fp);	NOTE: DO NOT CLOSE, "fd" CONTAINS FILE DESCRIPTOR */
 	return (lpid);
 }
 
@@ -165,7 +164,13 @@ create_pidfile(const char *pidfile, uid_t uid)
 	xassert(pidfile != NULL);
 	xassert(pidfile[0] == '/');
 
-	fd = creat_cloexec(pidfile, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+#ifdef O_CLOEXEC
+	fd = open(pidfile, O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC,
+		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+#else
+	fd = open(pidfile, O_CREAT | O_WRONLY | O_TRUNC,
+		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+#endif
 	if (fd < 0) {
 		error("Unable to open pidfile `%s': %m", pidfile);
 		return -1;
@@ -188,6 +193,7 @@ create_pidfile(const char *pidfile, uid_t uid)
 	if (uid && (fchown(fd, uid, -1) < 0))
 		error ("Unable to reset owner of pidfile: %m");
 
+/*	fclose(fp);	NOTE: DO NOT CLOSE, "fd" CONTAINS FILE DESCRIPTOR */
 	return fd;
 
   error:

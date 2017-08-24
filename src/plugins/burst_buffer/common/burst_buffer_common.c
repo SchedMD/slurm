@@ -11,7 +11,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,9 +40,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <fcntl.h>
@@ -320,7 +318,7 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr)
 		user_ptr = user_ptr->next;
 	}
 	user_ptr = xmalloc(sizeof(bb_user_t));
-	xassert((user_ptr->magic = BB_USER_MAGIC));	/* Sets value */
+	user_ptr->magic = BB_USER_MAGIC;
 	user_ptr->next = state_ptr->bb_uhash[inx];
 	/* user_ptr->size = 0;	initialized by xmalloc */
 	user_ptr->user_id = user_id;
@@ -652,7 +650,35 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	bb_config_t *config_ptr = &state_ptr->bb_config;
 	int i;
 
-	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		packstr(config_ptr->allow_users_str, buffer);
+		packstr(config_ptr->create_buffer,   buffer);
+		packstr(config_ptr->default_pool,    buffer);
+		packstr(config_ptr->deny_users_str,  buffer);
+		packstr(config_ptr->destroy_buffer,  buffer);
+		pack32(config_ptr->flags,            buffer);
+		packstr(config_ptr->get_sys_state,   buffer);
+		pack64(config_ptr->granularity,      buffer);
+		pack32(config_ptr->pool_cnt,         buffer);
+		for (i = 0; i < config_ptr->pool_cnt; i++) {
+			packstr(config_ptr->pool_ptr[i].name, buffer);
+			pack64(config_ptr->pool_ptr[i].total_space, buffer);
+			pack64(config_ptr->pool_ptr[i].granularity, buffer);
+			pack64(config_ptr->pool_ptr[i].unfree_space, buffer);
+			pack64(config_ptr->pool_ptr[i].used_space, buffer);
+		}
+		pack32(config_ptr->other_timeout,    buffer);
+		packstr(config_ptr->start_stage_in,  buffer);
+		packstr(config_ptr->start_stage_out, buffer);
+		packstr(config_ptr->stop_stage_in,   buffer);
+		packstr(config_ptr->stop_stage_out,  buffer);
+		pack32(config_ptr->stage_in_timeout, buffer);
+		pack32(config_ptr->stage_out_timeout,buffer);
+		pack64(state_ptr->total_space,       buffer);
+		pack64(state_ptr->unfree_space,      buffer);
+		pack64(state_ptr->used_space,        buffer);
+		pack32(config_ptr->validate_timeout, buffer);
+	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		packstr(config_ptr->allow_users_str, buffer);
 		packstr(config_ptr->create_buffer,   buffer);
 		packstr(config_ptr->default_pool,    buffer);
@@ -741,32 +767,60 @@ extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 }
 
 /* Translate a burst buffer size specification in string form to numeric form,
- * recognizing various sufficies (MB, GB, TB, PB, and Nodes). Default units
- * are bytes. */
+ * recognizing various (case insensitive) sufficies:
+ * K/KiB, M/MiB, G/GiB, T/TiB, P/PiB for powers of 1024
+ * KB, MB, GB, TB, PB for powers of 1000
+ * N/Node/Nodes will consider the size in nodes
+ * Default units are bytes. */
 extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 {
-	char *end_ptr = NULL;
-	int64_t bb_size_i;
+	char *tmp = NULL, *unit;
+	uint64_t bb_size_i;
 	uint64_t bb_size_u = 0;
 
-	bb_size_i = (int64_t) strtoll(tok, &end_ptr, 10);
-	if (bb_size_i > 0) {
-		bb_size_u = (uint64_t) bb_size_i;
-		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
+	bb_size_i = (uint64_t) strtoull(tok, &tmp, 10);
+	if ((bb_size_i > 0) && tmp) {
+		bb_size_u = bb_size_i;
+		unit = xstrdup(tmp);
+		strtok(unit, " ");
+		if (!xstrcasecmp(unit, "k") || !xstrcasecmp(unit, "kib")) {
 			bb_size_u *= 1024;
-		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+		} else if (!xstrcasecmp(unit, "kb")) {
+			bb_size_u *= 1000;
+
+		} else if (!xstrcasecmp(unit, "m") ||
+			   !xstrcasecmp(unit, "mib")) {
 			bb_size_u *= ((uint64_t)1024 * 1024);
-		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
+		} else if (!xstrcasecmp(unit, "mb")) {
+			bb_size_u *= ((uint64_t)1000 * 1000);
+
+		} else if (!xstrcasecmp(unit, "g") ||
+			   !xstrcasecmp(unit, "gib")) {
 			bb_size_u *= ((uint64_t)1024 * 1024 * 1024);
-		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
+		} else if (!xstrcasecmp(unit, "gb")) {
+			bb_size_u *= ((uint64_t)1000 * 1000 * 1000);
+
+		} else if (!xstrcasecmp(unit, "t") ||
+			   !xstrcasecmp(unit, "tib")) {
 			bb_size_u *= ((uint64_t)1024 * 1024 * 1024 * 1024);
-		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
+		} else if (!xstrcasecmp(unit, "tb")) {
+			bb_size_u *= ((uint64_t)1000 * 1000 * 1000 * 1000);
+
+		} else if (!xstrcasecmp(unit, "p") ||
+			   !xstrcasecmp(unit, "pib")) {
 			bb_size_u *= ((uint64_t)1024 * 1024 * 1024 * 1024
 				      * 1024);
-		} else if ((end_ptr[0] == 'n') || (end_ptr[0] == 'N')) {
+		} else if (!xstrcasecmp(unit, "pb")) {
+			bb_size_u *= ((uint64_t)1000 * 1000 * 1000 * 1000
+				      * 1000);
+
+		} else if (!xstrcasecmp(unit, "n") ||
+			   !xstrcasecmp(unit, "node") ||
+			   !xstrcasecmp(unit, "nodes")) {
 			bb_size_u |= BB_SIZE_IN_NODES;
 			granularity = 1;
 		}
+		xfree(unit);
 	}
 
 	if (granularity > 1) {
@@ -778,7 +832,7 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 }
 
 /* Translate a burst buffer size specification in numeric form to string form,
- * recognizing various sufficies (MB, GB, TB, PB, and Nodes). Default units
+ * appending various sufficies (KiB, MiB, GB, TB, PB, and Nodes). Default units
  * are bytes. */
 extern char *bb_get_size_str(uint64_t size)
 {
@@ -789,21 +843,42 @@ extern char *bb_get_size_str(uint64_t size)
 	} else if (size & BB_SIZE_IN_NODES) {
 		size &= (~BB_SIZE_IN_NODES);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"N", size);
+
 	} else if ((size % ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024)) == 0) {
 		size /= ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"PiB", size);
+	} else if ((size % ((uint64_t)1000 * 1000 * 1000 * 1000 * 1000)) == 0) {
+		size /= ((uint64_t)1000 * 1000 * 1000 * 1000 * 1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"PB", size);
+
 	} else if ((size % ((uint64_t)1024 * 1024 * 1024 * 1024)) == 0) {
 		size /= ((uint64_t)1024 * 1024 * 1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"TiB", size);
+	} else if ((size % ((uint64_t)1000 * 1000 * 1000 * 1000)) == 0) {
+		size /= ((uint64_t)1000 * 1000 * 1000 * 1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"TB", size);
+
 	} else if ((size % ((uint64_t)1024 * 1024 * 1024)) == 0) {
 		size /= ((uint64_t)1024 * 1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"GiB", size);
+	} else if ((size % ((uint64_t)1000 * 1000 * 1000)) == 0) {
+		size /= ((uint64_t)1000 * 1000 * 1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"GB", size);
+
 	} else if ((size % ((uint64_t)1024 * 1024)) == 0) {
 		size /= ((uint64_t)1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"MiB", size);
+	} else if ((size % ((uint64_t)1000 * 1000)) == 0) {
+		size /= ((uint64_t)1000 * 1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"MB", size);
+
 	} else if ((size % ((uint64_t)1024)) == 0) {
 		size /= ((uint64_t)1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"KiB", size);
+	} else if ((size % ((uint64_t)1000)) == 0) {
+		size /= ((uint64_t)1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"KB", size);
+
 	} else {
 		snprintf(size_str, sizeof(size_str), "%"PRIu64, size);
 	}
@@ -923,8 +998,8 @@ extern void bb_sleep(bb_state_t *state_ptr, int add_secs)
 	ts.tv_nsec = tv.tv_usec * 1000;
 	slurm_mutex_lock(&state_ptr->term_mutex);
 	if (!state_ptr->term_flag) {
-		pthread_cond_timedwait(&state_ptr->term_cond,
-				       &state_ptr->term_mutex, &ts);
+		slurm_cond_timedwait(&state_ptr->term_cond,
+				     &state_ptr->term_mutex, &ts);
 	}
 	slurm_mutex_unlock(&state_ptr->term_mutex);
 }
@@ -944,7 +1019,7 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 	state_ptr->last_update_time = now;
 	bb_alloc = xmalloc(sizeof(bb_alloc_t));
 	i = user_id % BB_HASH_SIZE;
-	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
+	bb_alloc->magic = BB_ALLOC_MAGIC;
 	bb_alloc->next = state_ptr->bb_ahash[i];
 	state_ptr->bb_ahash[i] = bb_alloc;
 	bb_alloc->array_task_id = NO_VAL;
@@ -976,7 +1051,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	bb_alloc->array_task_id = job_ptr->array_task_id;
 	bb_alloc->assoc_ptr = job_ptr->assoc_ptr;
 	bb_alloc->job_id = job_ptr->job_id;
-	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
+	bb_alloc->magic = BB_ALLOC_MAGIC;
 	i = job_ptr->user_id % BB_HASH_SIZE;
 	xstrfmtcat(bb_alloc->name, "%u", job_ptr->job_id);
 	bb_alloc->next = state_ptr->bb_ahash[i];
@@ -1002,8 +1077,6 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 	bb_alloc_t *bb_alloc;
 
 	bb_alloc = bb_alloc_job_rec(state_ptr, job_ptr, bb_job);
-	bb_limit_add(bb_alloc->user_id, bb_alloc->size, bb_alloc->pool,
-		     state_ptr, true);
 
 	return bb_alloc;
 }
@@ -1153,11 +1226,7 @@ extern char *bb_run_script(char *script_type, char *script_path,
 			else if (cpid > 0)
 				exit(0);
 		}
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execv(script_path, script_argv);
 		error("%s: execv(%s): %m", __func__, script_path);
 		exit(127);
@@ -1245,7 +1314,7 @@ extern bb_job_t *bb_job_alloc(bb_state_t *state_ptr, uint32_t job_id)
 	bb_job_t *bb_job = xmalloc(sizeof(bb_job_t));
 
 	xassert(state_ptr);
-	xassert((bb_job->magic = BB_JOB_MAGIC));	/* Sets value */
+	bb_job->magic = BB_JOB_MAGIC;
 	bb_job->next = state_ptr->bb_jhash[inx];
 	bb_job->job_id = job_id;
 	state_ptr->bb_jhash[inx] = bb_job;

@@ -10,15 +10,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-if HAVE_UNSETENV
-build_unsetenv_src =
-extra_unsetenv_src = unsetenv.c unsetenv.h
-else
-build_unsetenv_src = unsetenv.c unsetenv.h
-extra_unsetenv_src =
-endif
-
-AM_CPPFLAGS     = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS     = -I$(top_srcdir) $(BG_INCLUDES) $(lua_CFLAGS)
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 # This is needed if compiling on windows
@@ -54,7 +46,6 @@ libcommon_la_SOURCES = 			\
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
 	parse_value.c parse_value.h	\
-	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
 	power.c power.h			\
@@ -104,11 +95,7 @@ libcommon_la_SOURCES = 			\
 	slurm_time.c slurm_time.h	\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
-	arg_desc.c arg_desc.h		\
 	macros.h			\
-	malloc.c malloc.h		\
-	getopt.h getopt.c getopt1.c     \
-	$(build_unsetenv_src)		\
 	slurm_selecttype_info.c 	\
 	slurm_selecttype_info.h		\
 	slurm_resource_info.c 		\
@@ -126,7 +113,6 @@ libcommon_la_SOURCES = 			\
 	write_labelled_message.c	\
 	write_labelled_message.h	\
 	proc_args.c proc_args.h		\
-	slurm_strcasestr.c slurm_strcasestr.h \
 	node_conf.h node_conf.c		\
 	gres.h gres.c			\
 	entity.h entity.c		\
@@ -134,15 +120,16 @@ libcommon_la_SOURCES = 			\
 	layouts_mgr.h layouts_mgr.c	\
 	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
-	xlua.c xlua.h			\
+	xlua.c xlua.h                   \
 	callerid.c callerid.h		\
-	siphash24.c siphash_slurm.c siphash.h
+	slurm_persist_conn.c slurm_persist_conn.h
+
 
 EXTRA_libcommon_la_SOURCES = 		\
-	$(extra_unsetenv_src)		\
 	uthash/LICENSE			\
 	uthash/README			\
 	uthash/uthash.h
+
 
 libdaemonize_la_SOURCES =  		\
 	daemonize.c       	 	\

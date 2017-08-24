@@ -5,7 +5,7 @@
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,9 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef   _ISOC99_SOURCE
-#  define _ISOC99_SOURCE /* strtof() */
-#endif
+#include "config.h"
 
 #include <pwd.h>
 #include <stdlib.h>
@@ -88,6 +86,10 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		slurm_cgroup_conf->max_ram_percent = 100 ;
 		slurm_cgroup_conf->min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
 		slurm_cgroup_conf->constrain_swap_space = false ;
+		slurm_cgroup_conf->constrain_kmem_space = false ;
+		slurm_cgroup_conf->allowed_kmem_space = -1;
+		slurm_cgroup_conf->max_kmem_percent = 100;
+		slurm_cgroup_conf->min_kmem_space = XCGROUP_DEFAULT_MIN_RAM;
 		slurm_cgroup_conf->allowed_swap_space = 0 ;
 		slurm_cgroup_conf->max_swap_percent = 100 ;
 		slurm_cgroup_conf->memlimit_enforcement = 0 ;
@@ -143,11 +145,14 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"ConstrainRAMSpace", S_P_BOOLEAN},
 		{"AllowedRAMSpace", S_P_STRING},
 		{"MaxRAMPercent", S_P_STRING},
-		{"MinRAMSpace", S_P_UINT32},
+		{"MinRAMSpace", S_P_UINT64},
 		{"ConstrainSwapSpace", S_P_BOOLEAN},
+		{"ConstrainKmemSpace", S_P_BOOLEAN},
+		{"AllowedKmemSpace", S_P_STRING},
+		{"MaxKmemPercent", S_P_STRING},
+		{"MinKmemSpace", S_P_UINT64},
 		{"AllowedSwapSpace", S_P_STRING},
 		{"MaxSwapPercent", S_P_STRING},
-		{"ConstrainCores", S_P_BOOLEAN},
 		{"MemoryLimitEnforcement", S_P_BOOLEAN},
 		{"MemoryLimitThreshold", S_P_STRING},
 		{"ConstrainDevices", S_P_BOOLEAN},
@@ -227,6 +232,21 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 				     "ConstrainSwapSpace", tbl))
 			slurm_cgroup_conf->constrain_swap_space = false;
 
+		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_kmem_space,
+				     "ConstrainKmemSpace", tbl))
+			slurm_cgroup_conf->constrain_kmem_space = true;
+
+		conf_get_float (tbl,
+				"AllowedKmemSpace",
+				&slurm_cgroup_conf->allowed_kmem_space);
+
+		conf_get_float (tbl,
+				"MaxKmemPercent",
+				&slurm_cgroup_conf->max_kmem_percent);
+
+		s_p_get_uint64 (&slurm_cgroup_conf->min_kmem_space,
+				"MinKmemSpace", tbl);
+
 		conf_get_float (tbl,
 				"AllowedSwapSpace",
 				&slurm_cgroup_conf->allowed_swap_space);
@@ -235,7 +255,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 				"MaxSwapPercent",
 				&slurm_cgroup_conf->max_swap_percent);
 
-		s_p_get_uint32 (&slurm_cgroup_conf->min_ram_space,
+		s_p_get_uint64 (&slurm_cgroup_conf->min_ram_space,
 		                "MinRAMSpace", tbl);
 
 		/* Memory limits */

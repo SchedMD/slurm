@@ -16,7 +16,6 @@ The major type must be &quot;checkpoint.&quot; The minor type can be any recogni
 abbreviation for the type of checkpoint mechanism.
 We recommend, for example:</p>
 <ul>
-<li><b>aix</b> &mdash; AIX system checkpoint.</li>
 <li><b>blcr</b> &mdash;
 <a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
 Berkeley Lab Checkpoint/Restart (BLCR)</a></li>
@@ -32,13 +31,13 @@ There is no requirement with respect to its format.</p>
 If specified, identifies the version of Slurm used to build this plugin and
 any attempt to load the plugin from a different version of Slurm will result
 in an error.
-If not specified, then the plugin may be loadeed by Slurm commands and
+If not specified, then the plugin may be loaded by Slurm commands and
 daemons from any version, however this may result in difficult to diagnose
 failures due to changes in the arguments to plugin functions or changes
 in other Slurm functions used by the plugin.</p>
 
 <p>The programmer is urged to study
-<span class="commandline">src/plugins/checkpoint/checkpoint_aix.c</span>
+<span class="commandline">src/plugins/checkpoint/blcr/checkpoint_blcr.c</span>
 for a sample implementation of a Slurm job checkpoint plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 

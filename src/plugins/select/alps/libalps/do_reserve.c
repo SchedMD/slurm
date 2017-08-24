@@ -11,7 +11,7 @@
  * @rp:     reservation to add to
  * @mem_mb: memory size in MB requested for @rp
  */
-static int _rsvn_add_mem_param(struct basil_rsvn_param *rp, uint32_t mem_mb)
+static int _rsvn_add_mem_param(struct basil_rsvn_param *rp, uint64_t mem_mb)
 {
 	struct basil_memory_param *mp;
 
@@ -44,7 +44,7 @@ static int _rsvn_add_mem_param(struct basil_rsvn_param *rp, uint32_t mem_mb)
  */
 static int _rsvn_add_params(struct basil_reservation *resv,
 			    uint32_t width, uint32_t depth, uint32_t nppn,
-			    uint32_t mem_mb, char *mppnodes, uint32_t nppcu,
+			    uint64_t mem_mb, char *mppnodes, uint32_t nppcu,
 			    struct basil_accel_param *accel)
 {
 	struct basil_rsvn_param *rp = xmalloc(sizeof(*rp));
@@ -89,7 +89,7 @@ static int _rsvn_add_params(struct basil_reservation *resv,
 static struct basil_reservation *_rsvn_new(const char *user,
 					   const char *batch_id,
 					   uint32_t width, uint32_t depth,
-					   uint32_t nppn, uint32_t mem_mb,
+					   uint32_t nppn, uint64_t mem_mb,
 					   uint32_t nppcu, char *mppnodes,
 					   struct basil_accel_param *accel)
 {
@@ -128,7 +128,7 @@ static struct basil_reservation *_rsvn_new(const char *user,
  */
 long basil_reserve(const char *user, const char *batch_id,
 		   uint32_t width, uint32_t depth, uint32_t nppn,
-		   uint32_t mem_mb, uint32_t nppcu, struct nodespec *ns_head,
+		   uint64_t mem_mb, uint32_t nppcu, struct nodespec *ns_head,
 		   struct basil_accel_param *accel_head)
 {
 	struct basil_reservation *rsvn;

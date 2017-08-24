@@ -10,7 +10,7 @@
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -47,23 +47,10 @@
  *       Morris Jette, et al.
 \*****************************************************************************/
 
-
 #ifndef __SLURM_JOBACCT_GATHER_H__
 #define __SLURM_JOBACCT_GATHER_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#else				/* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif				/*  HAVE_CONFIG_H */
-
+#include <inttypes.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <time.h>
@@ -160,10 +147,11 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid);
 extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid);
 
 extern int jobacct_gather_set_proctrack_container_id(uint64_t id);
-extern int jobacct_gather_set_mem_limit(uint32_t job_id, uint32_t step_id,
-					uint32_t mem_limit);
-extern void jobacct_gather_handle_mem_limit(
-	uint64_t total_job_mem, uint64_t total_job_vsize);
+extern int jobacct_gather_set_mem_limit(uint32_t job_id,
+					uint32_t step_id,
+					uint64_t mem_limit);
+extern void jobacct_gather_handle_mem_limit(uint64_t total_job_mem,
+					    uint64_t total_job_vsize);
 
 extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id);
 extern void jobacctinfo_destroy(void *object);

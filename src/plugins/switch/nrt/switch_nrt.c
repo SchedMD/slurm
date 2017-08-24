@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,16 +39,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include <stdlib.h>
 #include <fcntl.h>
-#include <signal.h>
-#include <sys/types.h>
 #include <regex.h>
+#include <signal.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
@@ -426,12 +422,16 @@ extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer,
 				 protocol_version);
 }
 
-extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
+extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 				     Buf buffer, uint16_t protocol_version)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_node_info()");
-	return nrt_unpack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node,
+
+	if (switch_p_alloc_node_info(switch_node))
+		return SLURM_ERROR;
+
+	return nrt_unpack_nodeinfo((slurm_nrt_nodeinfo_t *) *switch_node,
 				   buffer, protocol_version);
 }
 
@@ -694,13 +694,13 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 				protocol_version);
 }
 
-extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
 				   uint16_t protocol_version)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_jobinfo()");
 
-	return nrt_unpack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer,
+	return nrt_unpack_jobinfo((slurm_nrt_jobinfo_t **)switch_job, buffer,
 				  protocol_version);
 }
 

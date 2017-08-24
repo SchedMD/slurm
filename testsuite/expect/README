@@ -1,14 +1,14 @@
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2011 Lawrence Livermore National Security.
-# Copyright (C) 2010-2015 SchedMD LLC
+# Copyright (C) 2010-2017 SchedMD LLC
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # Additions by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the supplied file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -80,9 +80,7 @@ variety of systems before a SLURM release is made. This has resulted in
 high system reliability. When SLURM bugs are found or features added,
 this test suite is expanded.
 
-A summary of each test is shown below. There are also scripts to emulate
-some commands on systems lacking them (e.g.  AIX). These include pkill and
-usleep.
+A summary of each test is shown below.
 ############################################################################
 
 
@@ -205,7 +203,7 @@ test1.94   Test of MPICH2 task spawn logic
 test1.95   Basic UPC (Unified Parallel C) test via srun.
 test1.96   Basic SHMEM test via srun.
 test1.97   Test that --ntask-per-node and -c options are enforced
-test1.98   AVAILBLE...
+test1.98   DEFUNCT
 test1.99   Validate that SrunPortRange is enforced when using srun
 test1.100  Test of pack/nopack task distribution.
 test1.101  Test of --bcast option.
@@ -221,6 +219,8 @@ test1.110  Test of --deadline and --begin option and --time_min OK
 test1.111  Test of --deadline and --begin option and time to be changed
 test1.112  Test of --deadline and --begin option and time not changed
 test1.113  Test of --use-min-nodes option.
+test1.114  Test of srun --spread-job option.
+test1.115  Test of srun not hanging on ignored stdin.
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
@@ -335,6 +335,7 @@ test6.13   Test routing all signals through slurmctld rather than slurmd
 test6.14   Test scancel nodelist option (--nodelist or -w).
 test6.15   Test scancel signal of full job including batch script (--full option).
 test6.16   Validate scancel of multiple job steps (job.step specification).
+test6.17   Test scancel handling of invalid job IDs and filters.
 
 test7.#    Testing of other functionality.
 ==========================================
@@ -348,12 +349,8 @@ test7.4    Test of TotalView operation with srun, with and without bulk
 	   transfer.
 test7.5    Test of TotalView termination logic for srun.
 test7.6    Test of TotalView operation with sattach
-test7.7    Test of sched/wiki2 plugin. This is intended to execute in the
-	   place of Moab or Maui and emulate its actions to confirm proper
-	   operation of the plugin.
-test7.8    Test of sched/wiki plugin. This is intended to execute in the
-	   place of Maui and emulate its actions to confirm proper
-	   operation of the plugin.
+test7.7    (removed)
+test7.8    (removed)
 test7.9    Test that no files are open in spawned tasks (except stdin,
 	   stdout, and stderr) to insure successful checkpoint/restart.
 test7.10   Test if we can trick SLURM into using the wrong user ID
@@ -376,7 +373,7 @@ test8.3    Test of Blue Gene specific job geometry support
 test8.4    Test of Blue Gene MPI job execution
 test8.5    Test creation of all blocks 1 midplane and smaller.
 test8.6    Stress test Dynamic mode block creation.
-test8.7    Test of Blue Gene scheduling with sched/wik2 plugin.
+test8.7    (removed)
 test8.8    Test result of marking smaller blocks in an error state.
 test8.9    Bluegene/Q only: Test to make sure if a nodeboard goes unavailable
 	   while another block is using it for passthrough to make sure the
@@ -594,6 +591,7 @@ test17.41  Validate that sbatch, srun, salloc return partition error message.
 test17.42  Test of sbatch --wait option.
 test17.43  Test sbatch handling of very long lines in script
 test17.44  Validate that aftercorr dependency is enforced.
+test17.45  Test of sbatch --bbf option
 test17.51  Validate that the mcs plugin (mcs/user) is OK with sbatch
 test17.52  Validate that the mcs plugin (mcs/group) is OK with sbatch
 test17.53  Test of --deadline option too late
@@ -607,6 +605,7 @@ test17.60  Test of --deadline and --begin option and --time_min too long
 test17.61  Test of --deadline and --begin option and --time_min OK
 test17.62  Test for #BSUB batch script entry
 test17.63  Test of --use-min-nodes option.
+test17.64  Validate that the mcs plugin (mcs/account) is OK with sbatch
 
 
 test19.#   Testing of strigger options.
@@ -675,8 +674,8 @@ test21.32  Validate that mod qos =,+=,-= change the preempt value
 test21.33  Validate that a resource can be added to a cluster after creation
 test21.34  Validate that partition and job qos limits are enforced
 test21.35  Validate DenyOnLimit QoS flag is enforced on QoS and Associations.
-test21.36  Validate that sacctmgr runaway jobs fixes runaway jobs.
-
+test21.36  Validate that sacctmgr lost jobs fixes lost jobs.
+test21.37  sacctmgr show stats
 
 test22.#   Testing of sreport commands and options.
 	   These also test the sacctmgr archive dump/load functions.
@@ -788,6 +787,7 @@ test35.*   Burst buffer tests
 =============================
 test35.1   Cray persistent burst buffer creation
 test35.2   Cray job-specific burst buffer use
+test35.3   Cray burst buffer use by job arrays
 
 test36.#   Testing of openlava/LSF wrappers and Perl APIs.
 ==========================================================
@@ -795,3 +795,11 @@ test36.1   lsid wrapper test
 test36.2   bjobs wrapper test
 test36.3   bkill wrapper test
 test36.4   bsub wrapper test
+
+test37.#   Testing of federations.
+==================================
+test37.1   sacctmgr operations on clusters and federations.
+test37.2   Validate federated clusters return federated job ids.
+test37.3   scontrol show federations
+test37.4   federated job submission
+test37.5   Federated Requeue

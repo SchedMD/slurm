@@ -5,7 +5,7 @@
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,18 +37,7 @@
 #ifndef _CGROUP_READ_CONFIG_H
 #define _CGROUP_READ_CONFIG_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else  /* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#include <stdint.h>
-#endif  /* HAVE_CONFIG_H */
+#include <inttypes.h>
 
 /*  Default lower bound on memory limit in MB. This is required so we
  *   don't immediately kill slurmstepd on mem cgroup creation if
@@ -73,7 +62,12 @@ typedef struct slurm_cgroup_conf {
 	float     allowed_ram_space;
 	float     max_ram_percent;       /* Upper bound on memory as % of RAM*/
 
-	uint32_t  min_ram_space;         /* Lower bound on memory limit (MB) */
+	uint64_t  min_ram_space;         /* Lower bound on memory limit (MB) */
+
+	bool      constrain_kmem_space;
+	float     allowed_kmem_space;
+	float     max_kmem_percent;
+	uint64_t  min_kmem_space;
 
 	bool      constrain_swap_space;
 	float     allowed_swap_space;

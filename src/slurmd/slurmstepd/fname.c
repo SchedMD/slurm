@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -76,14 +76,14 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 char *
 fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 {
-	char *name = NULL;
-	char *orig = xstrdup(format);
+	char *name = NULL, *orig;
 	int id;
 	char *esc;
 
 	if (((id = fname_single_task_io (format)) >= 0) && (taskid != id))
 		return (xstrdup ("/dev/null"));
 
+	orig = xstrdup(format);
 	esc = is_path_escaped(orig);
 
 	/* If format doesn't specify an absolute pathname, use cwd
@@ -253,8 +253,9 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 }
 
 /*
- * Substitute the path option for a batch job
- *
+ * Substitute the path option for a batch job. These options should mirror
+ * those used with "srun" (parsed in fname_create found in
+ * src/srun/libsrun/fname.c).
  */
 static void _batch_path_check(char **p, char **q, char **name,
 			      unsigned int wid, stepd_step_rec_t *job,
@@ -309,6 +310,11 @@ static void _batch_path_check(char **p, char **q, char **name,
 			job->user_name = uid_to_string(job->uid);
 		xmemcat(*name, *q, *p - 1);
 		xstrfmtcat(*name, "%s", job->user_name);
+		*q = ++(*p);
+		break;
+	case 'x':  /* '%x' => job name       */
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%s", getenvp(job->env, "SLURM_JOB_NAME"));
 		*q = ++(*p);
 		break;
 	default:

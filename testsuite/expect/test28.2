@@ -13,7 +13,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -69,6 +69,7 @@ delete_file
 
 make_bash_script $file_script "
 $bin_echo array_id=\$SLURM_ARRAY_JOB_ID
+$bin_echo task_count=\$SLURM_ARRAY_TASK_COUNT
 $bin_echo task_id=\$SLURM_ARRAY_TASK_ID
 $bin_echo task_min=\$SLURM_ARRAY_TASK_MIN
 $bin_echo task_max=\$SLURM_ARRAY_TASK_MAX
@@ -166,6 +167,10 @@ for {set index 0} {$index < $array_end} {incr index} {
 			incr env_cnt
 			exp_continue
 		}
+		-re "task_count=$array_end" {
+			incr env_cnt
+			exp_continue
+		}
 		-re "task_id=$index" {
 			incr env_cnt
 			exp_continue
@@ -186,8 +191,8 @@ for {set index 0} {$index < $array_end} {incr index} {
 			wait
 		}
 	}
-	if {$env_cnt != 5} {
-		send_user "\nFAILURE: Missing environment variables in file test$test_id-$job_id\_$index\.output ($env_cnt != 5)\n"
+	if {$env_cnt != 6} {
+		send_user "\nFAILURE: Missing environment variables in file test$test_id-$job_id\_$index\.output ($env_cnt != 6)\n"
 		set exit_code 1
 	}
 }

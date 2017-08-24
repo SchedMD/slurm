@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -599,7 +599,8 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (debug_flags & DEBUG_FLAG_DB_QOS)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		object->id = mysql_db_insert_ret_id(mysql_conn, query);
+		object->id = (uint32_t)mysql_db_insert_ret_id(
+			mysql_conn, query);
 		xfree(query);
 		if (!object->id) {
 			error("Couldn't add qos %s", object->name);
@@ -1088,15 +1089,21 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
-	itr = list_iterator_create(as_mysql_cluster_list);
-	while ((object = list_next(itr))) {
-		if ((rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
-					user_name, qos_table, name_char,
-					assoc_char, object, NULL, NULL))
-		    != SLURM_SUCCESS)
-			break;
-	}
-	list_iterator_destroy(itr);
+	if (list_count(as_mysql_cluster_list)) {
+		itr = list_iterator_create(as_mysql_cluster_list);
+		while ((object = list_next(itr))) {
+			if ((rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
+						user_name, qos_table, name_char,
+						assoc_char, object, NULL, NULL))
+			    != SLURM_SUCCESS)
+				break;
+		}
+		list_iterator_destroy(itr);
+	} else
+		rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
+				   user_name, qos_table, name_char,
+				   assoc_char, NULL, NULL, NULL);
+
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(assoc_char);

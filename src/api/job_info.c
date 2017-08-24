@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,10 +37,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include <ctype.h>
 #include <errno.h>
@@ -337,7 +333,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j, k;
 	char time_str[32], *group_name, *user_name;
-	char tmp1[128], tmp2[128];
+	char *gres_last = "", tmp1[128], tmp2[128];
 	char *tmp6_ptr;
 	char tmp_line[1024 * 128];
 	char tmp_path[MAXPATHLEN];
@@ -354,8 +350,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	int abs_node_inx, rel_node_inx;
 	int64_t nice;
 	int bit_inx, bit_reps;
-	uint32_t *last_mem_alloc_ptr = NULL;
-	uint32_t last_mem_alloc = NO_VAL;
+	uint64_t *last_mem_alloc_ptr = NULL;
+	uint64_t last_mem_alloc = NO_VAL64;
 	char *last_hosts;
 	hostlist_t hl, hl_last;
 	char select_buf[122];
@@ -560,6 +556,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, line_end);
 	}
 
+	/****** Line 14a (optional) ******/
+	if (job_ptr->fed_siblings) {
+		xstrfmtcat(out, "FedOrigin=%s FedSiblings=%s",
+			   job_ptr->fed_origin_str, job_ptr->fed_siblings_str);
+		xstrcat(out, line_end);
+	}
+
 	/****** Line 15 ******/
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
@@ -703,6 +706,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		i = sock_inx = sock_reps = 0;
 		abs_node_inx = job_ptr->node_inx[i];
 
+		gres_last = "";
 		/* tmp1[] stores the current cpu(s) allocated */
 		tmp2[0] = '\0';	/* stores last cpu(s) allocated */
 		for (rel_node_inx=0; rel_node_inx < job_resrcs->nhosts;
@@ -736,6 +740,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 * group of hosts that had identical allocation values.
 			 */
 			if (xstrcmp(tmp1, tmp2) ||
+			    ((rel_node_inx < job_ptr->gres_detail_cnt) &&
+			     xstrcmp(job_ptr->gres_detail_str[rel_node_inx],
+				     gres_last)) ||
 			    (last_mem_alloc_ptr != job_resrcs->memory_allocated) ||
 			    (job_resrcs->memory_allocated &&
 			     (last_mem_alloc !=
@@ -745,10 +752,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 						hostlist_ranged_string_xmalloc(
 						hl_last);
 					xstrfmtcat(out,
-						   "  Nodes=%s CPU_IDs=%s Mem=%u",
+						   "  Nodes=%s CPU_IDs=%s "
+						   "Mem=%"PRIu64" GRES_IDX=%s",
 						   last_hosts, tmp2,
 						   last_mem_alloc_ptr ?
-						   last_mem_alloc : 0);
+						   last_mem_alloc : 0,
+						    gres_last);
 					xfree(last_hosts);
 					xstrcat(out, line_end);
 
@@ -756,12 +765,18 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 					hl_last = hostlist_create(NULL);
 				}
 				strcpy(tmp2, tmp1);
+				if (rel_node_inx < job_ptr->gres_detail_cnt) {
+					gres_last = job_ptr->
+						    gres_detail_str[rel_node_inx];
+				} else {
+					gres_last = "";
+				}
 				last_mem_alloc_ptr = job_resrcs->memory_allocated;
 				if (last_mem_alloc_ptr)
 					last_mem_alloc = job_resrcs->
 						memory_allocated[rel_node_inx];
 				else
-					last_mem_alloc = NO_VAL;
+					last_mem_alloc = NO_VAL64;
 			}
 			hostlist_push_host(hl_last, host);
 			free(host);
@@ -779,9 +794,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 		if (hostlist_count(hl_last)) {
 			last_hosts = hostlist_ranged_string_xmalloc(hl_last);
-			xstrfmtcat(out, "  Nodes=%s CPU_IDs=%s Mem=%u",
+			xstrfmtcat(out, "  Nodes=%s CPU_IDs=%s Mem=%"PRIu64" GRES_IDX=%s",
 				 last_hosts, tmp2,
-				 last_mem_alloc_ptr ? last_mem_alloc : 0);
+				 last_mem_alloc_ptr ? last_mem_alloc : 0,
+				 gres_last);
 			xfree(last_hosts);
 			xstrcat(out, line_end);
 		}
@@ -811,9 +827,14 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrfmtcat(out, "MinMemory%s=%s MinTmpDiskNode=%s", tmp6_ptr, tmp1, tmp2);
 	xstrcat(out, line_end);
 
-	/****** Line 19 ******/
-	xstrfmtcat(out, "Features=%s Gres=%s Reservation=%s",
-		   job_ptr->features, job_ptr->gres, job_ptr->resv_name);
+	/****** Line ******/
+	secs2time_str((time_t)job_ptr->delay_boot, tmp1, sizeof(tmp1));
+	xstrfmtcat(out, "Features=%s DelayBoot=%s", job_ptr->features, tmp1);
+	xstrcat(out, line_end);
+
+	/****** Line ******/
+	xstrfmtcat(out, "Gres=%s Reservation=%s",
+		   job_ptr->gres, job_ptr->resv_name);
 	xstrcat(out, line_end);
 
 	/****** Line 20 ******/
@@ -848,27 +869,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, select_buf);
 		}
 
-		if (cluster_flags & CLUSTER_FLAG_BGL) {
-			/****** Line 25 (optional) ******/
-			select_g_select_jobinfo_sprint(
-				job_ptr->select_jobinfo,
-				select_buf, sizeof(select_buf),
-				SELECT_PRINT_BLRTS_IMAGE);
-			if (select_buf[0] != '\0') {
-				xstrcat(out, line_end);
-				xstrfmtcat(out, "BlrtsImage=%s", select_buf);
-			}
-		}
 		/****** Line 26 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 					       select_buf, sizeof(select_buf),
 					       SELECT_PRINT_LINUX_IMAGE);
 		if (select_buf[0] != '\0') {
 			xstrcat(out, line_end);
-			if (cluster_flags & CLUSTER_FLAG_BGL)
-				xstrfmtcat(out, "LinuxImage=%s", select_buf);
-			else
-				xstrfmtcat(out, "CnloadImage=%s", select_buf);
+			xstrfmtcat(out, "CnloadImage=%s", select_buf);
 		}
 		/****** Line 27 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
@@ -884,14 +891,17 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 					       SELECT_PRINT_RAMDISK_IMAGE);
 		if (select_buf[0] != '\0') {
 			xstrcat(out, line_end);
-			if (cluster_flags & CLUSTER_FLAG_BGL)
-				xstrfmtcat(out, "RamDiskImage=%s", select_buf);
-			else
-				xstrfmtcat(out, "IoloadImage=%s", select_buf);
+			xstrfmtcat(out, "IoloadImage=%s", select_buf);
 		}
 	}
 
-	/****** Line 29 (optional) ******/
+	/****** Line (optional) ******/
+	if (job_ptr->admin_comment) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "AdminComment=%s ", job_ptr->admin_comment);
+	}
+
+	/****** Line (optional) ******/
 	if (job_ptr->comment) {
 		xstrcat(out, line_end);
 		xstrfmtcat(out, "Comment=%s ", job_ptr->comment);
@@ -918,26 +928,26 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrfmtcat(out, "StdOut=%s", tmp_path);
 	}
 
-	/****** Line 33 (optional) ******/
-	if (job_ptr->batch_script) {
-		xstrcat(out, line_end);
-		xstrcat(out, "BatchScript=\n");
-		xstrcat(out, job_ptr->batch_script);
-	}
-
 	/****** Line 34 (optional) ******/
 	if (job_ptr->req_switch) {
 		char time_buf[32];
 		xstrcat(out, line_end);
 		secs2time_str((time_t) job_ptr->wait4switch, time_buf,
 			      sizeof(time_buf));
-		xstrfmtcat(out, "Switches=%u@%s\n", job_ptr->req_switch, time_buf);
+		xstrfmtcat(out, "Switches=%u@%s", job_ptr->req_switch, time_buf);
 	}
 
 	/****** Line 35 (optional) ******/
 	if (job_ptr->burst_buffer) {
 		xstrcat(out, line_end);
 		xstrfmtcat(out, "BurstBuffer=%s", job_ptr->burst_buffer);
+	}
+
+	/****** Line (optional) ******/
+	if (job_ptr->burst_buffer_state) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "BurstBufferState=%s",
+			   job_ptr->burst_buffer_state);
 	}
 
 	/****** Line 36 (optional) ******/
@@ -955,11 +965,23 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	/****** Line 38 (optional) ******/
 	if (job_ptr->bitflags) {
 		xstrcat(out, line_end);
+		if (job_ptr->bitflags & GRES_ENFORCE_BIND)
+			xstrcat(out, "GresEnforceBind=Yes");
 		if (job_ptr->bitflags & KILL_INV_DEP)
 			xstrcat(out, "KillOInInvalidDependent=Yes");
 		if (job_ptr->bitflags & NO_KILL_INV_DEP)
 			xstrcat(out, "KillOInInvalidDependent=No");
+		if (job_ptr->bitflags & SPREAD_JOB)
+			xstrcat(out, "SpreadJob=Yes");
 	}
+
+	/****** Last line ******/
+	if (job_ptr->batch_script) {
+		xstrcat(out, line_end);
+		xstrcat(out, "BatchScript=\n");
+		xstrcat(out, job_ptr->batch_script);
+	}
+	/* NOTE: Keep BatchScript last so it is more easily readable */
 
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
@@ -1160,7 +1182,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
-	if (rc != 0 || !resp_msg.auth_cred) {
+	if ((rc != 0) || !resp_msg.auth_cred) {
 		error("slurm_pid2jobid: %m");
 		if (resp_msg.auth_cred)
 			g_slurm_auth_destroy(resp_msg.auth_cred);

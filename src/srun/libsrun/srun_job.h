@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,11 +38,8 @@
 #ifndef _HAVE_JOB_H
 #define _HAVE_JOB_H
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
 #include <netinet/in.h>
+#include <pthread.h>
 
 #include "slurm/slurm.h"
 
@@ -152,6 +149,6 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 void    job_update_io_fnames(srun_job_t *j);
 
 /* Set up port to handle messages from slurmctld */
-slurm_fd_t slurmctld_msg_init(void);
+int slurmctld_msg_init(void);
 
 #endif /* !_HAVE_JOB_H */

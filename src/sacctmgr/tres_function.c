@@ -6,7 +6,7 @@
  *  Written by David Bigagli <david@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,7 +38,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_tres_cond_t *tres_cond,
 		     List format_list)
 {

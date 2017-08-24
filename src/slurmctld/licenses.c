@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -148,9 +148,12 @@ static List _build_license_list(char *licenses, bool *valid)
 			if ((token[i] == ':') || (token[i] == '*')) {
 				token[i++] = '\0';
 				num = (int32_t)strtol(&token[i], &end_num, 10);
+				if (*end_num != '\0')
+					 *valid = false;
+				break;
 			}
 		}
-		if (num < 0) {
+		if (num < 0 || !(*valid)) {
 			*valid = false;
 			break;
 		}
@@ -630,9 +633,11 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 			rc = EAGAIN;
 			break;
 		} else {
+			/* Assume node reboot required since we have not
+			 * selected the compute nodes yet */
 			resv_licenses = job_test_lic_resv(job_ptr,
 							  license_entry->name,
-							  when);
+							  when, true);
 			if ((license_entry->total + match->used +
 			     resv_licenses) > match->total) {
 				rc = EAGAIN;

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -74,7 +74,7 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc);
  * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
  * IN timeout - true if job exhausted time limit, send REQUEST_KILL_TIMELIMIT
  *	RPC instead of REQUEST_TERMINATE_JOB
- * IN suspended - true if job was already suspended (node's job_run_cnt
+ * IN suspended - true if job was already suspended (node's run_job_cnt
  *	already decremented);
  * IN preempted - true if job is being preempted
  */
@@ -131,5 +131,10 @@ extern void re_kill_job(struct job_record *job_ptr);
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			bitstr_t **select_node_bitmap, char *unavail_node_str,
 			char **err_msg);
+
+/* launch_prolog - launch job prolog script by slurmd on allocated nodes
+ * IN job_ptr - pointer to the job record
+ */
+extern void launch_prolog(struct job_record *job_ptr);
 
 #endif /* !_HAVE_NODE_SCHEDULER_H */

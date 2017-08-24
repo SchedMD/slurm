@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -310,7 +310,7 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 /* This will destroy the *loc_tres given after it is transfered */
 static void _transfer_loc_tres(List *loc_tres, local_id_usage_t *usage)
 {
-	if (!usage) {
+	if (!usage || !*loc_tres || !list_count(*loc_tres)) {
 		FREE_NULL_LIST(*loc_tres);
 		return;
 	}
@@ -423,6 +423,14 @@ static int _process_purge(mysql_conn_t *mysql_conn,
 		arch_cond.purge_suspend = slurmdbd_conf->purge_suspend;
 	else
 		arch_cond.purge_suspend = NO_VAL;
+	if (purge_period & slurmdbd_conf->purge_txn)
+		arch_cond.purge_txn = slurmdbd_conf->purge_txn;
+	else
+		arch_cond.purge_txn = NO_VAL;
+	if (purge_period & slurmdbd_conf->purge_usage)
+		arch_cond.purge_usage = slurmdbd_conf->purge_usage;
+	else
+		arch_cond.purge_usage = NO_VAL;
 
 	job_cond.cluster_list = list_create(NULL);
 	list_append(job_cond.cluster_list, cluster_name);

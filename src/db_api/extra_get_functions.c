@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,10 +38,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "slurm/slurmdb.h"
@@ -50,8 +46,6 @@
 
 /*
  * reconfigure the slurmdbd
- * RET: List of config_key_pairs_t *
- * note List needs to be freed when called
  */
 extern int slurmdb_reconfig(void *db_conn)
 {
@@ -125,4 +119,27 @@ extern List slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond)
 	return acct_storage_g_get_txn(db_conn, getuid(), txn_cond);
 }
 
+/*
+ * shutdown the slurmdbd
+ */
+extern int slurmdb_shutdown(void *db_conn)
+{
+	return acct_storage_g_shutdown(db_conn);
+}
 
+/*
+ * clear the slurmdbd statistics
+ */
+extern int slurmdb_clear_stats(void *db_conn)
+{
+	return acct_storage_g_clear_stats(db_conn);
+}
+
+/*
+ * get the slurmdbd statistics
+ * Call slurmdb_destroy_stats_rec() to free stats_pptr
+ */
+extern int slurmdb_get_stats(void *db_conn, slurmdb_stats_rec_t **stats_pptr)
+{
+	return acct_storage_g_get_stats(db_conn, stats_pptr);
+}

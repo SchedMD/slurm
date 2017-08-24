@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,35 +38,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <string.h>		/* strcpy, strncasecmp */
-#include <ctype.h>      /* isdigit() */
+#define _GNU_SOURCE
 
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
-
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
-#ifdef HAVE_LIMITS_H
-#  include <limits.h>
-#endif
-
+#include <ctype.h>		/* isdigit() */
 #include <fcntl.h>
+#include <getopt.h>
+#include <limits.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
+#include <string.h>		/* strcpy, strncasecmp */
 #include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -134,7 +117,10 @@
 #define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
-#define OPT_USE_MIN_NODES 0x23
+#define OPT_SPREAD_JOB  0x23
+#define OPT_DELAY_BOOT  0x24
+#define OPT_INT64	0x25
+#define OPT_USE_MIN_NODES 0x26
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -211,11 +197,13 @@
 #define LONG_OPT_LAUNCH_CMD      0x156
 #define LONG_OPT_PROFILE         0x157
 #define LONG_OPT_EXPORT          0x158
+#define LONG_OPT_SPREAD_JOB      0x159
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_ACCEL_BIND      0x161
 #define LONG_OPT_USE_MIN_NODES   0x162
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
+#define LONG_OPT_DELAY_BOOT      0x167
 
 extern char **environ;
 
@@ -261,7 +249,7 @@ static bool  _valid_node_list(char **node_list_pptr);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
-int initialize_and_process_args(int argc, char *argv[])
+int initialize_and_process_args(int argc, char **argv)
 {
 	/* initialize option defaults */
 	_opt_default();
@@ -388,6 +376,7 @@ static void argerror(const char *msg, ...)
  */
 static void _opt_default(void)
 {
+	char *launch_params;
 	char buf[MAXPATHLEN + 1];
 	int i;
 	uid_t uid = getuid();
@@ -412,21 +401,32 @@ static void _opt_default(void)
 	opt.ntasks_set = false;
 	opt.cpus_per_task = 0;
 	opt.cpus_set = false;
+	opt.hint_env = NULL;
+	opt.hint_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.sockets_per_node = NO_VAL; /* requested sockets */
 	opt.cores_per_socket = NO_VAL; /* requested cores */
 	opt.threads_per_core = NO_VAL; /* requested threads */
+	opt.threads_per_core_set = false;
 	opt.ntasks_per_node      = NO_VAL; /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
+	opt.ntasks_per_core_set  = false;
 	opt.nodes_set = false;
 	opt.nodes_set_env = false;
 	opt.nodes_set_opt = false;
 	opt.cpu_bind_type = 0;
+	opt.cpu_bind_type_set = false;
 	opt.cpu_bind = NULL;
-	opt.mem_bind_type = 0;
+
 	opt.mem_bind = NULL;
+	opt.mem_bind_type = 0;
+	launch_params = slurm_get_launch_params();
+	if (launch_params && strstr(launch_params, "mem_sort"))
+		opt.mem_bind_type |= MEM_BIND_SORT;
+	xfree(launch_params);
+
 	opt.accel_bind_type = 0;
 	opt.core_spec = (uint16_t) NO_VAL;
 	opt.core_spec_set = false;
@@ -492,8 +492,8 @@ static void _opt_default(void)
 	opt.warn_time   = 0;
 
 	opt.pn_min_cpus    = NO_VAL;
-	opt.pn_min_memory  = NO_VAL;
-	opt.mem_per_cpu    = NO_VAL;
+	opt.pn_min_memory  = NO_VAL64;
+	opt.mem_per_cpu    = NO_VAL64;
 	opt.pn_min_tmp_disk= NO_VAL;
 
 	opt.hold	    = false;
@@ -558,6 +558,7 @@ static void _opt_default(void)
 	opt.priority = 0;
 	opt.power_flags = 0;
 	opt.mcs_label = NULL;
+	opt.delay_boot = NO_VAL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -590,10 +591,12 @@ env_vars_t env_vars[] = {
 {"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
 {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL             },
+{"SLURM_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL             },
 {"SLURM_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL             },
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
 {"SLURM_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL             },
+{"SLURM_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL             },
 {"SLURM_DEPENDENCY",    OPT_STRING,     &opt.dependency,    NULL             },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL             },
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
@@ -614,8 +617,8 @@ env_vars_t env_vars[] = {
 {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL             },
 {"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL             },
-{"SLURM_MEM_PER_CPU",	OPT_INT,	&opt.mem_per_cpu,   NULL             },
-{"SLURM_MEM_PER_NODE",	OPT_INT,	&opt.pn_min_memory, NULL             },
+{"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
+{"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
 {"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
@@ -641,6 +644,7 @@ env_vars_t env_vars[] = {
 {"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
 {"SLURM_RESTART_DIR",   OPT_STRING,     &opt.restart_dir ,  NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
+{"SLURM_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL             },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
 {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
@@ -692,6 +696,7 @@ _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
 	task_dist_states_t dt;
+	int i;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -706,6 +711,16 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_INT:
 		if (val[0] != '\0') {
 			*((int *) e->arg) = (int) strtol(val, &end, 10);
+			if (!(end && *end == '\0')) {
+				error("%s=%s invalid. ignoring...",
+				      e->var, val);
+			}
+		}
+		break;
+
+	case OPT_INT64:
+		if (val[0] != '\0') {
+			*((int64_t *) e->arg) = (int64_t) strtoll(val, &end, 10);
 			if (!(end && *end == '\0')) {
 				error("%s=%s invalid. ignoring...",
 				      e->var, val);
@@ -740,15 +755,7 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
 	case OPT_HINT:
-		/* Keep after other options filled in */
-		if (verify_hint(val,
-				&opt.sockets_per_node,
-				&opt.cores_per_socket,
-				&opt.threads_per_core,
-				&opt.ntasks_per_core,
-				&opt.cpu_bind_type)) {
-			exit(error_exit);
-		}
+		opt.hint_env = xstrdup(val);
 		break;
 	case OPT_MEM_BIND:
 		if (slurm_verify_mem_bind(val, &opt.mem_bind,
@@ -880,6 +887,17 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.core_spec = _get_int(val, "thread_spec", true) |
 					 CORE_SPEC_THREAD;
 		break;
+	case OPT_SPREAD_JOB:
+		opt.job_flags |= SPREAD_JOB;
+		break;
+	case OPT_DELAY_BOOT:
+		i = time_str2secs(val);
+		if (i == NO_VAL)
+			error("Invalid SLURM_DELAY_BOOT argument: %s. Ignored",
+			      val);
+		else
+			opt.delay_boot = (uint32_t) i;
+		break;
 	case OPT_USE_MIN_NODES:
 		opt.job_flags |= USE_MIN_NODES;
 		break;
@@ -967,6 +985,7 @@ static void _set_options(const int argc, char **argv)
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"deadline",         required_argument, 0, LONG_OPT_DEADLINE},
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
+		{"delay-boot",       required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 		{"exclusive",        optional_argument, 0, LONG_OPT_EXCLUSIVE},
 		{"export",           required_argument, 0, LONG_OPT_EXPORT},
@@ -1018,6 +1037,7 @@ static void _set_options(const int argc, char **argv)
 		{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 		{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+		{"spread-job",       no_argument,       0, LONG_OPT_SPREAD_JOB},
 		{"switches",         required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
@@ -1075,12 +1095,13 @@ static void _set_options(const int argc, char **argv)
 						&opt.cores_per_socket,
 						&opt.threads_per_core,
 						&opt.cpu_bind_type);
-
 			if (opt.extra_set == false) {
 				error("invalid resource allocation -B `%s'",
 					optarg);
 				exit(error_exit);
 			}
+			opt.cpu_bind_type_set = true;
+			opt.threads_per_core_set = true;
 			break;
 		case (int)'c':
 			tmp_int = _get_int(optarg, "cpus-per-task", false);
@@ -1326,6 +1347,7 @@ static void _set_options(const int argc, char **argv)
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
 				exit(error_exit);
+			opt.cpu_bind_type_set = true;
 			break;
 		case LONG_OPT_LAUNCH_CMD:
 			opt.launch_cmd = true;
@@ -1370,10 +1392,11 @@ static void _set_options(const int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_MEM:
-			opt.pn_min_memory = (int) str_to_mbytes(optarg);
-			opt.mem_per_cpu = NO_VAL;
+			opt.pn_min_memory = (int64_t) str_to_mbytes2(optarg);
+			opt.mem_per_cpu = NO_VAL64;
 			if (opt.pn_min_memory < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1381,8 +1404,8 @@ static void _set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
-			opt.mem_per_cpu = (int) str_to_mbytes(optarg);
-			opt.pn_min_memory = NO_VAL;
+			opt.mem_per_cpu = (int64_t) str_to_mbytes2(optarg);
+			opt.pn_min_memory = NO_VAL64;
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1408,7 +1431,7 @@ static void _set_options(const int argc, char **argv)
 				opt.resv_port_cnt = 0;
 			break;
 		case LONG_OPT_TMP:
-			opt.pn_min_tmp_disk = str_to_mbytes(optarg);
+			opt.pn_min_tmp_disk = str_to_mbytes2(optarg);
 			if (opt.pn_min_tmp_disk < 0) {
 				error("invalid tmp value %s", optarg);
 				exit(error_exit);
@@ -1614,6 +1637,7 @@ static void _set_options(const int argc, char **argv)
 			if ((opt.threads_per_core == 1) &&
 			    (max_val == INT_MAX))
 				opt.threads_per_core = NO_VAL;
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = _get_int(optarg,
@@ -1627,6 +1651,7 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_NTASKSPERCORE:
 			opt.ntasks_per_core = _get_int(optarg,
 						       "ntasks-per-core", true);
+			opt.ntasks_per_core_set  = true;
 			break;
 		case LONG_OPT_HINT:
 			/* Keep after other options filled in */
@@ -1638,6 +1663,9 @@ static void _set_options(const int argc, char **argv)
 					&opt.cpu_bind_type)) {
 				exit(error_exit);
 			}
+			opt.hint_set = true;
+			opt.ntasks_per_core_set  = true;
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
 			xfree(opt.blrtsimage);
@@ -1790,6 +1818,18 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_COMPRESS:
 			opt.compress = parse_compress_type(optarg);
 			break;
+		case LONG_OPT_SPREAD_JOB:
+			opt.job_flags |= SPREAD_JOB;
+			break;
+		case LONG_OPT_DELAY_BOOT:
+			tmp_int = time_str2secs(optarg);
+			if (tmp_int == NO_VAL) {
+				error("Invalid delay-boot specification %s",
+				      optarg);
+				exit(error_exit);
+			}
+			opt.delay_boot = (uint32_t) tmp_int;
+			break;
 		case LONG_OPT_USE_MIN_NODES:
 			opt.job_flags |= USE_MIN_NODES;
 			break;
@@ -1844,13 +1884,6 @@ static void _opt_args(int argc, char **argv)
 		xfree(launch_type);
 	}
 
-#ifdef HAVE_AIX
-	if (opt.network == NULL) {
-		opt.network = "us,sn_all,bulk_xfer";
-		setenv("SLURM_NETWORK", opt.network, 1);
-	}
-#endif
-
 #ifdef HAVE_NATIVE_CRAY
 	/* only fatal on the allocation */
 	if (opt.network && opt.shared && (opt.jobid == NO_VAL))
@@ -1887,7 +1920,7 @@ static void _opt_args(int argc, char **argv)
 	if (!rest && !opt.test_only)
 		fatal("No command given to execute.");
 
-#if defined HAVE_BG && !defined HAVE_BG_L_P
+#if defined HAVE_BG
 	/* Since this is needed on an emulated system don't put this code in
 	 * the launch plugin.
 	 */
@@ -1906,7 +1939,7 @@ static void _opt_args(int argc, char **argv)
 	/* Since this is needed on an emulated system don't put this code in
 	 * the launch plugin.
 	 */
-#if defined HAVE_BG && !defined HAVE_BG_L_P
+#if defined HAVE_BG
 	if (opt.test_only && !opt.jobid_set && (opt.jobid != NO_VAL)) {
 		/* Do not perform allocate test, only disable use of "runjob" */
 		opt.test_only = false;
@@ -1932,7 +1965,7 @@ static void _opt_args(int argc, char **argv)
 			test_exec = true;
 		xfree(launch_params);
 	}
-#if defined HAVE_BG && !defined HAVE_BG_L_P
+#if defined HAVE_BG
 	/* BGQ's runjob command required a fully qualified path */
 	if (!launch_g_handle_multi_prog_verify(command_pos) &&
 	    (opt.argc > command_pos)) {
@@ -2011,6 +2044,19 @@ static bool _opt_verify(void)
 		error("-r,--relative not allowed with "
 		      "-w,--nodelist or -x,--exclude.");
 		verified = false;
+	}
+
+	if (opt.hint_env &&
+	    (!opt.hint_set && !opt.cpu_bind_type_set &&
+	     !opt.ntasks_per_core_set && !opt.threads_per_core_set)) {
+		if (verify_hint(opt.hint_env,
+				&opt.sockets_per_node,
+				&opt.cores_per_socket,
+				&opt.threads_per_core,
+				&opt.ntasks_per_core,
+				&opt.cpu_bind_type)) {
+			exit(error_exit);
+		}
 	}
 
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
@@ -2121,19 +2167,8 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-#if defined(HAVE_BGL)
-	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
-		error("invalid BlrtsImage given '%s'", opt.blrtsimage);
-		verified = false;
-	}
-#endif
-
 	if (opt.linuximage && strchr(opt.linuximage, ' ')) {
-#ifdef HAVE_BGL
-		error("invalid LinuxImage given '%s'", opt.linuximage);
-#else
 		error("invalid CnloadImage given '%s'", opt.linuximage);
-#endif
 		verified = false;
 	}
 
@@ -2143,11 +2178,7 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.ramdiskimage && strchr(opt.ramdiskimage, ' ')) {
-#ifdef HAVE_BGL
-		error("invalid RamDiskImage given '%s'", opt.ramdiskimage);
-#else
 		error("invalid IoloadImage given '%s'", opt.ramdiskimage);
-#endif
 		verified = false;
 	}
 
@@ -2287,6 +2318,11 @@ static bool _opt_verify(void)
 		}
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
+
+	if ((opt.ntasks_per_node != NO_VAL) && (!opt.ntasks_set)) {
+		opt.ntasks = opt.min_nodes * opt.ntasks_per_node;
+		opt.ntasks_set = 1;
+	}
 
 	if (hl)
 		hostlist_destroy(hl);
@@ -2489,11 +2525,11 @@ static char *print_constraints(void)
 	if (opt.pn_min_cpus != NO_VAL)
 		xstrfmtcat(buf, "mincpus-per-node=%d ", opt.pn_min_cpus);
 
-	if (opt.pn_min_memory != NO_VAL)
-		xstrfmtcat(buf, "mem-per-node=%dM ", opt.pn_min_memory);
+	if (opt.pn_min_memory != NO_VAL64)
+		xstrfmtcat(buf, "mem-per-node=%"PRIi64"M ", opt.pn_min_memory);
 
-	if (opt.mem_per_cpu != NO_VAL)
-		xstrfmtcat(buf, "mem-per-cpu=%dM ", opt.mem_per_cpu);
+	if (opt.mem_per_cpu != NO_VAL64)
+		xstrfmtcat(buf, "mem-per-cpu=%"PRIi64"M ", opt.mem_per_cpu);
 
 	if (opt.pn_min_tmp_disk != NO_VAL)
 		xstrfmtcat(buf, "tmp-per-node=%ld ", opt.pn_min_tmp_disk);
@@ -2549,15 +2585,17 @@ static void _opt_list(void)
 	info("cpu_freq_min   : %u", opt.cpu_freq_min);
 	info("cpu_freq_max   : %u", opt.cpu_freq_max);
 	info("cpu_freq_gov   : %u", opt.cpu_freq_gov);
+	if (opt.delay_boot != NO_VAL)
+		info("delay_boot        : %u", opt.delay_boot);
 	info("switches       : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
-	info("cpu_bind       : %s",
-	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
-	info("mem_bind       : %s",
-	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
+	info("cpu_bind       : %s (%u)",
+	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind, opt.cpu_bind_type);
+	info("mem_bind       : %s (%u)",
+	     opt.mem_bind == NULL ? "default" : opt.mem_bind, opt.mem_bind_type);
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	if (opt.immediate <= 1)
@@ -2611,24 +2649,12 @@ static void _opt_list(void)
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("preserve_env   : %s", tf_(opt.preserve_env));
 
-#ifdef HAVE_BGL
-	if (opt.blrtsimage)
-		info("BlrtsImage     : %s", opt.blrtsimage);
-#endif
 	if (opt.linuximage)
-#ifdef HAVE_BGL
-		info("LinuxImage     : %s", opt.linuximage);
-#else
 		info("CnloadImage    : %s", opt.linuximage);
-#endif
 	if (opt.mloaderimage)
 		info("MloaderImage   : %s", opt.mloaderimage);
 	if (opt.ramdiskimage)
-#ifdef HAVE_BGL
-		info("RamDiskImage   : %s", opt.ramdiskimage);
-#else
 		info("IoloadImage   : %s", opt.ramdiskimage);
-#endif
 
 	info("network        : %s", opt.network);
 	info("propagate      : %s",
@@ -2712,7 +2738,7 @@ static char *_read_file(char *fname)
 /* Determine if srun is under the control of a parallel debugger or not */
 static bool _under_parallel_debugger (void)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 	return false;
@@ -2742,30 +2768,20 @@ static void _usage(void)
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
 "            [--profile=...]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
-#ifdef HAVE_BG_L_P
-"            [--geometry=XxYxZ] "
-#else
-"            [--export=env_vars|NONE] [--geometry=AxXxYxZ] "
-#endif
-"[--conn-type=type] [--no-rotate]\n"
-#ifdef HAVE_BGL
-"            [--blrts-image=path] [--linux-image=path]\n"
-"            [--mloader-image=path] [--ramdisk-image=path]\n"
-#else
+"            [--export=env_vars|NONE] [--geometry=AxXxYxZ] [--conn-type=type] [--no-rotate]\n"
 "            [--cnload-image=path]\n"
 "            [--mloader-image=path] [--ioload-image=path]\n"
-#endif
 #endif
 "            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog] [--mcs-label=mcs]\n"
-"            [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
+"            [--cpu-freq=min[-max[:gov]] [--power=flags] [--spread-job]\n"
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "            [--bcast=<dest_path>] [--compress[=library]]\n"
-"            [--acctg-freq=<datatype>=<interval>]\n"
+"            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
 "            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
 "            executable [args...]\n");
 
@@ -2798,6 +2814,7 @@ static void _help(void)
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"
 "                              this deadline (start > (deadline - time[-min]))\n"
+"      --delay-boot=mins       delay boot for desired node features\n"
 "  -D, --chdir=path            change remote current working directory\n"
 "      --export=env_vars|NONE  environment variables passed to launcher with\n"
 "                              optional values or NONE (pass no variables)\n"
@@ -2858,6 +2875,7 @@ static void _help(void)
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --slurmd-debug=level    slurmd debug level\n"
+"      --spread-job            spread job across as many nodes as possible\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
@@ -2912,12 +2930,17 @@ static void _help(void)
 "      --ntasks-per-socket=n   number of tasks to invoke on each socket\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
-	    && xstrcasecmp(conf->task_plugin, "task/affinity") == 0) {
+	    && ((strstr(conf->task_plugin, "affinity"))
+		|| (strstr(conf->task_plugin, "cgroup")))) {
 		printf(
 "      --cpu_bind=             Bind tasks to CPUs\n"
 "                              (see \"--cpu_bind=help\" for options)\n"
 "      --hint=                 Bind tasks according to application hints\n"
-"                              (see \"--hint=help\" for options)\n"
+"                              (see \"--hint=help\" for options)\n");
+	}
+	if (conf->task_plugin != NULL
+	    && (strstr(conf->task_plugin, "affinity"))) {
+		printf(
 "      --mem_bind=             Bind memory to locality domains (ldom)\n"
 "                              (see \"--mem_bind=help\" for options)\n");
 	}
@@ -2926,7 +2949,7 @@ static void _help(void)
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
-#if defined HAVE_AIX || defined HAVE_LIBNRT /* IBM PE specific options */
+#if defined HAVE_LIBNRT /* IBM PE specific options */
 "PE related options:\n"
 "      --network=type          communication protocol to be used\n"
 "\n"
@@ -2941,15 +2964,10 @@ static void _help(void)
 "Blue Gene related options:\n"
 "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
 "                              if not set, then tries to fit TORUS else MESH\n"
-#ifdef HAVE_BG_L_P
-"  -g, --geometry=XxYxZ        geometry constraints of the job\n"
-#else
 "  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
 "                              sub-block allocations can not be allocated\n"
 "                              with the geometry option\n"
-#endif
 "  -R, --no-rotate             disable geometry rotation\n"
-#ifndef HAVE_BGL
 "                              If wanting to run in HTC mode (only for 1\n"
 "                              midplane and below).  You can use HTC_S for\n"
 "                              SMP, HTC_D for Dual, HTC_V for\n"
@@ -2957,12 +2975,6 @@ static void _help(void)
 "      --cnload-image=path     path to compute node image for bluegene block.  Default if not set\n"
 "      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
 "      --ioload-image=path     path to ioload image for bluegene block.  Default if not set\n"
-#else
-"      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
-"      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
-"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
-"      --ramdisk-image=path    path to ramdisk image for bluegene block.  Default if not set\n"
-#endif
 #endif
 "\n"
 "Help options:\n"

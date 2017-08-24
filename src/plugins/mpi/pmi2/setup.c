@@ -9,7 +9,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,23 +38,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #if defined(__FreeBSD__)
 #include <sys/socket.h>	/* AF_INET */
 #endif
 
+#include <dlfcn.h>
 #include <fcntl.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/un.h>
 #include <poll.h>
-#include <unistd.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dlfcn.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/net.h"

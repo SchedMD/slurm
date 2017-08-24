@@ -7,7 +7,7 @@
  *  Written by Rod Schultz <rod.schultz@bull.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -53,7 +53,6 @@
 #include <signal.h>
 
 #define _DEBUG 1
-#define _DEBUG_STATS 1
 
 /*
  * These variables are required by the generic plugin interface.  If they

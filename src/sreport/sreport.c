@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,6 +38,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include "src/sreport/sreport.h"
 #include "src/sreport/assoc_reports.h"
 #include "src/sreport/cluster_reports.h"
@@ -65,21 +67,21 @@ void *db_conn = NULL;
 uint32_t my_uid = 0;
 slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 
-static void	_assoc_rep (int argc, char *argv[]);
+static void	_assoc_rep (int argc, char **argv);
 static List	_build_tres_list(char *tres_str);
-static void	_cluster_rep (int argc, char *argv[]);
-static int	_get_command (int *argc, char *argv[]);
-static void	_job_rep (int argc, char *argv[]);
+static void	_cluster_rep (int argc, char **argv);
+static int	_get_command (int *argc, char **argv);
+static void	_job_rep (int argc, char **argv);
 static void     _print_version( void );
-static int	_process_command (int argc, char *argv[]);
-static void	_resv_rep (int argc, char *argv[]);
+static int	_process_command (int argc, char **argv);
+static void	_resv_rep (int argc, char **argv);
 static int      _set_sort(char *format);
 static int      _set_time_format(char *format);
 static void	_usage ( void );
-static void	_user_rep (int argc, char *argv[]);
+static void	_user_rep (int argc, char **argv);
 
 int
-main (int argc, char *argv[])
+main (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
 	char **input_fields;
@@ -303,7 +305,7 @@ static char *_getline(const char *prompt)
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _job_rep (int argc, char *argv[])
+static void _job_rep (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = strlen(argv[0]);
@@ -340,7 +342,7 @@ static void _job_rep (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _user_rep (int argc, char *argv[])
+static void _user_rep (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 
@@ -363,7 +365,7 @@ static void _user_rep (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _resv_rep (int argc, char *argv[])
+static void _resv_rep (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 
@@ -386,7 +388,7 @@ static void _resv_rep (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _cluster_rep (int argc, char *argv[])
+static void _cluster_rep (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 
@@ -422,7 +424,7 @@ static void _cluster_rep (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _assoc_rep (int argc, char *argv[])
+static void _assoc_rep (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 
@@ -530,7 +532,7 @@ static void _print_version(void)
  * RET 0 or errno (only for errors fatal to sreport)
  */
 static int
-_process_command (int argc, char *argv[])
+_process_command (int argc, char **argv)
 {
 	int command_len = 0;
 

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,50 +37,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-
-#  if HAVE_DIRENT_H
-#    include <dirent.h>
-#    define NAMLEN(dirent) strlen((dirent)->d_name)
-#  else /* ! HAVE_DIRENT_H */
-#    define dirent direct
-#    define NAMLEN(dirent) (dirent)->d_namlen
-#  endif /* HAVE_DIRENT_H */
-
-#  if STDC_HEADERS
-#    include <string.h>
-#  else /* ! STDC_HEADERS */
-#    if !HAVE_STRCHR
-#      define strchr index
-#      define strrchr rindex
-char *strchr(), *strrchr();
-#    endif /* HAVE_STRCHR */
-#  endif /* STDC_HEADERS */
-
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif /* HAVE_UNISTD_H */
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif
-#  if HAVE_SYS_STAT_H
-#    include <sys/stat.h>
-#  endif
-
-#  if HAVE_STDLIB_H
-#    include <stdlib.h>
-#  endif
-
-#else /* ! HAVE_CONFIG_H */
-#  include <dirent.h>
-#  include <string.h>
-#  include <stdlib.h>
-#  include <unistd.h>
-#  include <dirent.h>
-#  include <sys/types.h>
-#  include <sys/stat.h>
-#endif /* HAVE_CONFIG_H */
+#include <dirent.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/macros.h"
 #include "src/common/xassert.h"
@@ -478,7 +440,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 	return SLURM_SUCCESS;
 }
 
-/* Return TRUE if the specified pathname is recognized as that of a shared
+/* Return true if the specified pathname is recognized as that of a shared
  * object (i.e. containing ".so\0") */
 static bool
 _so_file ( char *file_name )
@@ -496,7 +458,7 @@ _so_file ( char *file_name )
 	return false;
 }
 
-/* Return TRUE of the specified major_type is a prefix of the shared object
+/* Return true of the specified major_type is a prefix of the shared object
  * pathname (i.e. either "<major_name>..." or "lib<major_name>...") */
 static bool
 _match_major ( const char *path_name, const char *major_type )
@@ -505,13 +467,13 @@ _match_major ( const char *path_name, const char *major_type )
 
 	/* Special case for BlueGene systems */
 	if (xstrncmp(head, "libsched_if", 11) == 0)
-		return FALSE;
+		return false;
 
 	if (xstrncmp(head, "lib", 3) == 0)
 		head += 3;
 	if (xstrncmp(head, major_type, strlen(major_type)))
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
 int

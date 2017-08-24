@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "March 2016" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "November 2016" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- view information about Slurm nodes and partitions.
@@ -62,6 +62,7 @@ This is ignored if the \fB\-\-format\fR option is specified.
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.  Multiple cluster names may be comma separated.
 A value of of '\fIall\fR' will query to run on all clusters.
+Note that the SlurmDBD must be up for this option to work properly.
 
 .TP
 \fB\-n <nodes>\fR, \fB\-\-nodes=<nodes>\fR
@@ -380,6 +381,9 @@ Partition name followed by "*" for the default partition, also see \fB%R\fR.
 \fBpartitionname\fR
 Partition name, also see \fB%P\fR.
 .TP
+\fBport\fR
+Node TCP port.
+.TP
 \fBpreemptmode\fR
 PreemptionMode.
 .TP
@@ -566,6 +570,9 @@ state in the form "available/idle/other/total".
 Name of a partition.  Note that the suffix "*" identifies the
 default partition.
 .TP
+\fBPORT\fR
+Local TCP port used by slurmd on the node.
+.TP
 \fBROOT\fR
 Is the ability to allocate resources in this partition
 restricted to user root, \fByes\fR or \fBno\fR.
@@ -617,8 +624,10 @@ running at reduced frequency).
 The node is presently being powered up or configured.
 .TP
 \fB$\fR
-The node is currently in a reservation with a flag value of "maintenance"
-or is scheduled to be rebooted.
+The node is currently in a reservation with a flag value of "maintenance".
+.TP
+\fB@\fR
+The node is pending reboot.
 .TP 12
 \fBALLOCATED\fR
 The node has been allocated to one or more jobs.
@@ -687,8 +696,10 @@ some point in the indefinite future for use.
 The node is not allocated to any jobs and is available for use.
 .TP
 \fBMAINT\fR
-The node is currently in a reservation with a flag value of "maintenance"
-or is scheduled to be rebooted.
+The node is currently in a reservation with a flag value of "maintainence".
+.TP
+\fBREBOOT\fR
+The node is currently scheduled to be rebooted.
 .TP
 \fBMIXED\fR
 The node has some of its CPUs ALLOCATED while others are IDLE.

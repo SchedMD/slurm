@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -25,41 +25,23 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <string.h>		/* strcpy, strncasecmp */
+#define _GNU_SOURCE
 
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
-
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
-#ifdef HAVE_LIMITS_H
-#  include <limits.h>
-#endif
-
+#include <ctype.h>		/* isdigit    */
 #include <fcntl.h>
+#include <getopt.h>
+#include <limits.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
-#include <ctype.h>		/* isdigit    */
+#include <string.h>		/* strcpy, strncasecmp */
 #include <sys/param.h>		/* MAXPATHLEN */
-#include <sys/stat.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <unistd.h>
 
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -116,7 +98,7 @@ static void  _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
-int initialize_and_process_args(int argc, char *argv[])
+int initialize_and_process_args(int argc, char **argv)
 {
 	/* initialize option defaults */
 	_opt_default();
@@ -462,7 +444,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 	if (opt.input_filter_set)
-		opt.fds.in.taskid = opt.input_filter;
+		opt.fds.input.taskid = opt.input_filter;
 	if (opt.output_filter_set)
 		opt.fds.out.taskid = opt.output_filter;
 	if (opt.error_filter_set) {

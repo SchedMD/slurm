@@ -5,7 +5,7 @@
  *  Initially written by Thomas Cadeau @ Bull. Adapted by Yoann Blein @ Bull.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -83,7 +83,6 @@ slurmd_conf_t *conf = NULL;
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
 #define IPMI_VERSION 2		/* Data structure version number */
-#define NBFIRSTREAD 3
 #define MAX_LOG_ERRORS 5	/* Max sensor reading errors log messages */
 
 /*

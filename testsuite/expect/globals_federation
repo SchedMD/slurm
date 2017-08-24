@@ -1,0 +1,573 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Establish global state information for SLURM federation tests
+#
+# To define site-specific state information, set the values in a file
+# named 'globals.local'. Those values will override any specified here.
+# for example:
+#
+# $ cat globals.local
+# set slurm_dir "/usr/local"
+# set mpicc     "/usr/local/bin/mpicc"
+#
+############################################################################
+# Copyright (C) 2016 SchedMD LLC.
+# Written by Brian Christiansen <brian@schedmd.com>
+
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the supplied file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+
+# Set if testing federations
+cset fed_slurm_base 	""
+cset fedc1 		""
+cset fedc2 		""
+cset fedc3 		""
+
+set eol "\r\n"
+
+proc test_federation_setup { } {
+	global fed_slurm_base fedc1 fedc2 fedc3
+	set rc 0
+	if {![string compare $fed_slurm_base ""] ||
+	    ![string compare $fedc1 ""] ||
+	    ![string compare $fedc2 ""] ||
+	    ![string compare $fedc3 ""]} {
+		set rc 1;
+	}
+
+	return $rc
+}
+
+proc setup_federation { fed_name } {
+	global sacctmgr fedc1 fedc2 fedc3 eol
+	set rc 0
+
+	set my_pid [spawn $sacctmgr -i add federation $fed_name]
+	set matches 0
+	expect {
+		-re "Adding Federation\\(s\\)$eol" {
+			incr matches
+				exp_continue
+		}
+		-re "$fed_name$eol" {
+			incr matches
+				exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+				slow_kill $my_pid
+				set rc 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {!$rc && $matches != 2} {
+		send_user "$matches FAILURE: failed to create federation.\n"
+		set rc 1
+		return $rc
+	}
+
+	set count 0
+	foreach cluster [list $fedc1 $fedc2 $fedc3] {
+		incr count
+		set my_pid [spawn $sacctmgr -i mod cluster $cluster set federation=$fed_name weight=1]
+		set matches 0
+		expect {
+			-re "Setting$eol" {
+				incr matches
+					exp_continue
+			}
+			-re "^\\s+Federation\\s+=\\s+$fed_name$eol" {
+				incr matches
+				exp_continue
+			}
+			-re "^\\s+Weight\\s+=\\s+1$eol" {
+				incr matches
+				exp_continue
+			}
+			-re "Modified cluster...$eol" {
+				incr matches
+				exp_continue
+			}
+			-re "^\\s+$cluster$eol" {
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sacctmgr add not responding\n"
+					slow_kill $my_pid
+					set rc 1
+			}
+			eof {
+				wait
+			}
+		}
+		if {!$rc && $matches != 5} {
+			send_user "$matches FAILURE: failed to add $cluster to federation.\n"
+			set rc 1
+			break;
+		}
+
+		if {$count > 1} {
+			sleep 5;
+		}
+	}
+	return $rc
+}
+
+proc test_cluster_up { cname } {
+	set rc 0
+	set matches 0
+	global fed_slurm_base fedc1 fedc2 fedc3
+	set my_scontrol "${fed_slurm_base}/$cname/bin/scontrol"
+	log_user 0
+	set my_pid [spawn $my_scontrol show config]
+	expect {
+		"Configuration data as of" {
+			incr matches
+		}
+		timeout {
+			send_user "\nFAILURE: $cname not responding\n"
+			slow_kill $my_pid
+			set rc 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {!$rc && $matches != 1} {
+		send_user "\nFAILURE: $cname not responding\n"
+		set rc 1
+	}
+	log_user 1
+	return $rc
+}
+
+proc delete_federations { names } {
+	global sacctmgr
+	set matches 0
+	set rc 0
+	set object "federation"
+	set my_pid [spawn $sacctmgr -i delete $object $names]
+	expect {
+		-re "privilege to perform this action" {
+			send_user "FAILURE: don't have privileges."
+			incr rc
+		}
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr rc
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr rc
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr rc
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr rc
+		}
+		-re "Deleting $object" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $my_pid
+			incr rc
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$rc && $matches != 1} {
+		send_user "\nFAILURE: sacctmgr had a problem deleting $object got $matches\n"
+		incr rc
+	}
+
+	return $rc
+}
+
+proc get_clusterfed_info { fed_name } {
+	global sacctmgr eol
+	set matches 0
+	array set clusters {}
+	set my_pid [spawn $sacctmgr show cluster federation=$fed_name \
+		    format="cluster%20,federation%20,id,controlhost,controlport,weight,fedstate"]
+	expect {
+		-re "Cluster\\s+Federation\\s+ID\\s+ControlHost\\s+ControlPort\\s+Weight\\s+FedState $eol" {
+			incr matches
+			exp_continue
+		}
+		-re "\\s+(\\S+)\\s+$fed_name\\s+(\\d+)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S*) $eol" {
+			set clusters($expect_out(1,string)) [dict create id     $expect_out(2,string) \
+									 host   $expect_out(3,string) \
+									 port   $expect_out(4,string) \
+									 weight $expect_out(5,string) \
+									 state  $expect_out(6,string)]
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches < 2} {
+		send_user "$matches FAILURE: didn't match enough clusters for $fed_name.\n"
+		exit 1
+	}
+
+	return [array get clusters]
+}
+
+#
+# Add a single cluster to the given federation.
+# IN:  cname    - name of cluster to add to federation.
+# IN:  fed_name - name of federation to add cluster to.
+# RET: returns 0 on sucess, 1 on failure.
+#
+proc add_cluster_to_fed {cname fed_name} {
+	global sacctmgr eol
+
+	set rc 0
+	set matches 0
+	set my_pid [spawn $sacctmgr -i modify federation $fed_name set clusters+=$cname]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "Cluster\\s+ \\+= $cname$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Modified federation...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "\\s+$fed_name$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			set rc 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$rc || $matches != 4} {
+		send_user "$matches FAILURE: failed to add $cname to $fed_name.\n"
+		set $rc 1
+	}
+
+	return $rc
+}
+
+#
+# Remove a single cluster from the given federation.
+# IN:  cname    - name of cluster to remove from the federation.
+# IN:  fed_name - name of federation to remove cluster from.
+# RET: returns 0 on sucess, 1 on failure.
+#
+proc remove_cluster_from_fed {cname fed_name} {
+	global sacctmgr eol
+
+	set rc 0
+	set matches 0
+	set my_pid [spawn $sacctmgr -i modify federation $fed_name set clusters-=$cname]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "Cluster\\s+ -= $cname$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Modified federation...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "\\s+$fed_name$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			set rc 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$rc || $matches != 4} {
+		send_user "$matches FAILURE: failed to remove $cname from $fed_name.\n"
+		set $rc 1
+	}
+
+	return $rc
+}
+
+
+proc modify_federation_flags {fed_name mode flags} {
+	global sacctmgr eol
+	set matches 0
+	set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags$mode$flags]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Flags\\s+\\$mode\\s+$flags$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Modified federation...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+$fed_name$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 4} {
+		send_user "$matches FAILURE: unexpected error.\n"
+		end_it 1
+	}
+}
+
+proc modify_cluster_weight {cname weight} {
+	global sacctmgr eol
+	set matches 0
+	set my_pid [spawn $sacctmgr -i mod cluster $cname set weight=$weight]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Weight\\s+=\\s+$weight$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified cluster...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+$cname$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 4} {
+		send_user "$matches FAILURE: failed to set weight for $cname\n"
+		end_it 1
+	}
+}
+
+
+proc log_error {msg} {
+	send_user "\nFAILURE: $msg\n"
+}
+
+proc log_warn {msg} {
+	send_user "\nWARNING:    $msg\n"
+}
+
+proc log_info {msg} {
+	send_user "INFO:    $msg\n"
+}
+
+
+################################################################
+#
+# Proc: wait_for_fed_job
+#
+# Purpose:  Wait for a previously submitted SLURM job to reach
+# the desired state, exponential back-off 1 to 10 seconds
+#
+# Returns: A non-zero return code indicates a failure.
+#
+# Input: job_id   -- The SLURM job id of a job we want to
+#                    wait for.
+#        desired_state -- The state you want the job to attain before
+#                         returning.  Currently supports:
+#                            DONE any terminated state
+#                            PENDING job is pending
+#                            RUNNING job is running
+#                            SUSPENDED job is suspended
+#
+# NOTE: We sleep for two seconds before replying that a job is
+# done to give time for I/O completion (stdout/stderr files)
+#
+################################################################
+
+proc wait_for_fed_job { job_id desired_state clusters } {
+	global scontrol max_job_state_delay fedc1 fedc2 fedc3
+
+	# First verify that desired_state is supported
+	switch $desired_state {
+		"DONE" {}
+		"PENDING" {}
+		"RUNNING" {}
+		"SUSPENDED" {}
+		"SPECIAL_EXIT" {}
+		default {
+			send_user "FAILURE: wait_for_job with invalid state: $desired_state\n"
+			return ""
+		}
+	}
+
+	if {$job_id == 0} {
+		send_user "FAILURE: wait_for_job with invalid job ID: $job_id\n"
+		return ""
+	}
+
+	set sleep_time  1
+	set my_delay    0
+
+	set spec_clusters [list $fedc1 $fedc2 $fedc3]
+	if {[string compare $clusters ""]} {
+		set spec_clusters [split $clusters ","]
+	}
+	log_info "checking for $desired_state on [join $spec_clusters ,]"
+
+	while 1 {
+		foreach cluster $spec_clusters {
+			log_info "checking $cluster"
+			set fd [open "|$scontrol -M$cluster -a -o show job $job_id"]
+			gets $fd line
+			catch {close $fd}
+			if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
+				send_user "$desired_state not found on cluster $cluster\n"
+				continue
+			}
+
+			switch $state {
+				"NOT_FOUND" -
+				"CANCELLED" -
+				"DEADLINE" -
+				"FAILED" -
+				"TIMEOUT" -
+				"NODE_FAIL" -
+				"PREEMPTED" -
+				"COMPLETED" {
+					if {[string compare $desired_state "DONE"] == 0} {
+						send_user "Job $job_id is DONE ($state) on $cluster\n"
+						sleep 2
+						return $cluster
+					}
+					if {[string compare $desired_state "RUNNING"] == 0} {
+						send_user "Job $job_id is $state, "
+						send_user "but we wanted RUNNING\n"
+					}
+					if {[string compare $desired_state "SUSPENDED"] == 0} {
+						send_user "Job $job_id is $state, "
+						send_user "but we wanted SUSPENDED\n"
+					}
+					return ""
+				}
+				"PENDING" {
+					if {[string compare $desired_state "PENDING"] == 0} {
+						send_user "Job $job_id is PENDING on $cluster\n"
+						return $cluster
+					}
+					send_user "Job $job_id is in state $state, "
+					send_user "desire $desired_state\n"
+				}
+				"RUNNING" {
+					if {[string compare $desired_state "RUNNING"] == 0} {
+						send_user "Job $job_id is RUNNING on $cluster\n"
+						return $cluster
+					}
+					send_user "Job $job_id is in state $state, "
+					send_user "desire $desired_state\n"
+				}
+				"SPECIAL_EXIT" {
+					if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
+						send_user "Job $job_id is SPECIAL_EXIT on $cluster\n"
+						return $cluster
+					}
+					send_user "Job $job_id is in state $state, "
+					send_user "desire $desired_state\n"
+				}
+				"SUSPENDED" {
+					if {[string compare $desired_state "SUSPENDED"] == 0} {
+						send_user "Job $job_id is SUSPENDED on $cluster\n"
+						return $cluster
+					}
+					send_user "Job $job_id is in state $state, "
+					send_user "desire $desired_state\n"
+				}
+				default {
+					send_user "Job $job_id is in state $state, "
+					send_user "desire $desired_state\n"
+				}
+			}
+		}
+
+		if { $my_delay > $max_job_state_delay } {
+			send_user "FAILURE: Timeout waiting for job state $desired_state\n"
+			return ""
+		}
+
+		exec sleep $sleep_time
+		set my_delay [expr $my_delay + $sleep_time]
+		set sleep_time  [expr $sleep_time * 2]
+		if { $sleep_time > 10 } {
+			set sleep_time 10
+		}
+	}
+}

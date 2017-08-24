@@ -96,7 +96,7 @@ The system <span class="commandline">_init()</span> is called before the SLURM
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline">void *slurm_auth_create (void **argv, char *auth_info);</p>
+<p class="commandline">void *slurm_auth_create(char *auth_info);</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocates from the free store
 an anonymous credential object and returns a pointer to it. The pointer should
 be valid until passed to <span class="commandline">slurm_auth_destroy()</span> for

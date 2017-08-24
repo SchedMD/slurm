@@ -10,7 +10,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,15 +39,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
+#include <dlfcn.h>
 #include <errno.h>
-#include <sys/types.h>
 #include <stdio.h>
-#include <dlfcn.h>	/* don't know if there's an autoconf for this. */
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"
@@ -55,20 +56,6 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
 #include "slurm/slurm_errno.h"
-
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif /* HAVE_UNISTD_H */
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif
-#  if HAVE_SYS_STAT_H
-#    include <sys/stat.h>
-#  endif
-
-#  if HAVE_STDLIB_H
-#    include <stdlib.h>
-#  endif
 
 strong_alias(plugin_get_syms,         slurm_plugin_get_syms);
 strong_alias(plugin_load_and_link,    slurm_plugin_load_and_link);
@@ -233,23 +220,19 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 
 plugin_handle_t
 plugin_load_and_link(const char *type_name, int n_syms,
-		    const char *names[], void *ptrs[])
+		     const char *names[], void *ptrs[])
 {
 	plugin_handle_t plug = PLUGIN_INVALID_HANDLE;
 	struct stat st;
-	char *head=NULL, *dir_array=NULL, *so_name = NULL,
-		*file_name=NULL;
-	int i=0;
+	char *head = NULL, *dir_array = NULL, *so_name = NULL;
+	char *file_name = NULL;
+	int i = 0;
 	plugin_err_t err = EPLUGIN_NOTFOUND;
 
 	if (!type_name)
 		return plug;
-#if defined(__CYGWIN__)
-	so_name = xstrdup_printf("%s.dll", type_name);
-#else
 	so_name = xstrdup_printf("%s.so", type_name);
-#endif
-	while(so_name[i]) {
+	while (so_name[i]) {
 		if (so_name[i] == '/')
 			so_name[i] = '_';
 		i++;
@@ -261,7 +244,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 	}
 
 	head = dir_array;
-	for (i=0; ; i++) {
+	for (i = 0; ; i++) {
 		bool got_colon = 0;
 		if (dir_array[i] == ':') {
 			dir_array[i] = '\0';
@@ -280,12 +263,12 @@ plugin_load_and_link(const char *type_name, int n_syms,
 			if ((err = plugin_load_from_file(&plug, file_name))
 			   == EPLUGIN_SUCCESS) {
 				if (plugin_get_syms(plug, n_syms,
-						    names, ptrs) >=
-				       n_syms) {
+						    names, ptrs) >= n_syms) {
 					debug3("Success.");
 					xfree(file_name);
 					break;
 				} else {
+					(void) dlclose(plug);
 					err = EPLUGIN_MISSING_SYMBOL;
 					plug = PLUGIN_INVALID_HANDLE;
 				}

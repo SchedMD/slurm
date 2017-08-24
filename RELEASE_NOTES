@@ -1,13 +1,13 @@
-RELEASE NOTES FOR SLURM VERSION 16.05
-27 April 2016
+RELEASE NOTES FOR SLURM VERSION 17.02
+23 February 2017
 
 IMPORTANT NOTES:
-ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
-UPGRADED FROM AN OLDER VERSION! Reduce your configured MaxJobID value as needed
-prior to upgrading in order to eliminate these jobs.
+THE MAXJOBID IS NOW 67,108,863. ANY PRE-EXISTING JOBS WILL CONTINUE TO RUN BUT
+NEW JOB IDS WILL BE WITHIN THE NEW MAXJOBID RANGE. Adjust your configured
+MaxJobID value as needed to eliminate any confusion.
 
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
-The 16.05 slurmdbd will work with Slurm daemons of version 14.11 and above.
+The 17.02 slurmdbd will work with Slurm daemons of version 15.08 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.  No real harm will come from updating
@@ -22,214 +22,249 @@ under the [mysqld] reference in the my.cnf file and restarting the mysqld. The
 buffer pool size must be smaller than the size of the MySQL tmpdir. This is
 needed when converting large tables over to the new database schema.
 
-Slurm can be upgraded from version 14.03 or 14.11 to version 15.08 without loss
+Slurm can be upgraded from version 15.08 or 16.05 to version 17.02 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
+NOTE: systemd services files are installed automatically, but not enabled.
+      You will need to manually enable them on the appropriate systems:
+      - Controller: systemctl enable slurmctld
+      - Database: systemctl enable slurmdbd
+      - Compute Nodes: systemctl enable slurmd
+
+NOTE: If you are not using Munge, but are using the "service" scripts to
+      start Slurm daemons, then you will need to remove this check from the
+      etc/slurm*service scripts.
+
+NOTE: If you are upgrading with any jobs from 14.03 or earlier
+      (i.e. quick upgrade from 14.03 -> 15.08 -> 17.02) you will need
+      to wait until after those jobs are gone before you upgrade to 17.02.
+
+NOTE: If you interact with any memory values in a job_submit plugin, you will
+      need to test against NO_VAL64 instead of NO_VAL, and change your printf
+      format as well.
 
 HIGHLIGHTS
 ==========
- -- Implemented and documented PMIX protocol which is used to bootstrap an
-    MPI job. PMIX is an alternative to PMI and PMI2.
- -- Change default CgroupMountpoint (in cgroup.conf) from "/cgroup" to
-    "/sys/fs/cgroup" to match current standard.
- -- Add Multi-Category Security (MCS) infrastructure to permit nodes to be bound
-    to specific users or groups.
- -- Added --deadline option to salloc, sbatch and srun. Jobs which can not be
-    completed by the user specified deadline will be terminated with a state of
-    "Deadline" or "DL".
- -- Add an "scontrol top <jobid>" command to re-order the priorities of a user's
-    pending jobs. May be disabled with the "disable_user_top" option in the
-    SchedulerParameters configuration parameter.
- -- Added new job dependency type of "aftercorr" which will start a task of a
-    job array after the corresponding task of another job array completes.
- -- Add --gres-flags=enforce-binding option to salloc, sbatch and srun commands.
-    If set, the only CPUs available to the job will be those bound to the
-    selected GRES (i.e. the CPUs identifed in the gres.conf file will be
-    strictly enforced rather than advisory).
- -- Added wrappers for LSF/OpenLava commands
- -- Added Grid Engine options to qsub command wrapper.
+ -- Added infrastructure for managing workload across a federation of clusters.
+    (partial functionality in version 17.02, fully operational in May 2017)
+ -- In order to support federated jobs, the MaxJobID configuration parameter
+    default value has been reduced from 2,147,418,112 to 67,043,328 and its
+    maximum value is now 67,108,863. Upon upgrading, any pre-existing jobs that
+    have a job ID above the new range will continue to run and new jobs will get
+    job IDs in the new range.
+ -- Added "MailDomain" configuration parameter to qualify email addresses.
+ -- Automatically clean up task/cgroup cpuset and devices cgroups after steps
+    are completed.
+ -- Added burst buffer support for job arrays. Added new SchedulerParameters
+    configuration parameter of bb_array_stage_cnt=# to indicate how many pending
+    tasks of a job array should be made available for burst buffer resource
+    allocation.
+ -- Added new sacctmgr commands: "shutdown" (shutdown the server), "list stats"
+    (get server statistics) "clear stats" (clear server statistics).
+ -- The database index for jobs is now 64 bits.  If you happen to be close to
+    4 billion jobs in your database you will want to update your slurmctld at
+    the same time as your slurmdbd to prevent roll over of this variable as
+    it is 32 bit previous versions of Slurm.
+ -- All memory values (in MB) are now 64 bit. Previously, nodes with more than
+    2 TB of memory would not schedule or enforce memory limits correctly.
+ -- Removed AIX, BlueGene/L and BlueGene/P support.
+ -- Removed sched/wiki and sched/wiki2 plugins and associated code.
+ -- Added PrologFlags=Serial to disable concurrent execution of prolog/epilog
+    scripts.
 
 RPMBUILD CHANGES
 ================
- -- Remove all *.la files from RPMs.
- -- Implemented the --without=package option for configure.
+ -- Removed separate slurm_blcr package. If Slurm is built with BLCR support,
+    the files will now be part of the main Slurm packages.
+ -- Replace sjstat, seff and sjobexit RPM packages with a single "contribs"
+    package.
+ -- Prevent installation of both init scripts and systemd service files.
+    Note that systemd services are not automatically enabled at this time,
+    unlike the init scripts which were automatically enabled with chkconfig.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- New configuration parameter NodeFeaturesPlugins added.
- -- Change default CgroupMountpoint (in cgroup.conf) from "/cgroup" to
-    "/sys/fs/cgroup" to match current standard.
- -- Introduce a new parameter "requeue_setup_env_fail" in SchedulerParameters.
-    If set, a job that fails to setup the environment will be requeued and the
-    node drained.
- -- The partition-specific SelectTypeParameters parameter can now be used to
-    change the memory allocation tracking specification in the global
-    SelectTypeParameters configuration parameter. Supported partition-specific
-    values are CR_Core, CR_Core_Memory, CR_Socket and CR_Socket_Memory. If the
-    global SelectTypeParameters value includes memory allocation management and
-    the partition-specific value does not, then memory allocation management for
-    that partition will NOT be supported (i.e. memory can be over-allocated).
-    Likewise the global SelectTypeParameters might not include memory management
-    while the partition-specific value does.
- -- Split partition's "Priority" field into "PriorityTier" (used to order
-    partitions for scheduling and preemption) plus "PriorityJobFactor" (used by
-    priority/multifactor plugin in calculating job priority, which is used to
-    order jobs within a partition for scheduling). If only "Priority" is
-    specified, that value will be used for both the "PriorityTier" and
-    "PriorityJobFactor" value.
- -- New configuration file "knl.conf" added specifically for Intel Knights
-    Landing processor support.
- -- Make it so jobs/steps track ':' named gres/tres, before hand gres/gpu:tesla
-    would only track gres/gpu, now it will track both gres/gpu and
-    gres/gpu:tesla as separate gres if configured like
-    AccountingStorageTRES=gres/gpu,gres/gpu:tesla
- -- Add TCPTimeout option to slurm[dbd].conf. Decouples MessageTimeout from TCP
-    connections.
- -- Added SchedulingParameters option of "bf_min_prio_reserve". Jobs below
-    the specified threshold will not have resources reserved for them.
- -- Add SchedulerParameter "no_env_cache", if set no environment cache will be
-    used when launching a job, instead the job will fail and drain the node if
-    the environment isn't loaded normally.
- -- Remove the SchedulerParameters option of "assoc_limit_continue", making it
-    the default value. Add option of "assoc_limit_stop". If "assoc_limit_stop"
-    is set and a job cannot start due to association limits, then do not attempt
-    to initiate any lower priority jobs in that partition. Setting this can
-    decrease system throughput and utlization, but avoid potentially starving
-    larger jobs by preventing them from launching indefinitely.
- -- Rename partition configuration from "Shared" to "OverSubscribe". Rename
-    salloc, sbatch, srun option from "--shared" to "--oversubscribe". The old
-    options will continue to function. Output field names also changed in
-    scontrol, sinfo, squeue and sview.
- -- Add TopologyParam option of "TopoOptional" to optimize network topology
-    only for jobs requesting it.
- -- Configuration parameter "CpuFreqDef" used to set default governor for job
-    step not specifying --cpu-freq (previously the parameter was unused)
- -- Use TaskPluginParam for default task binding if no user specified CPU
-    binding. User --cpu_bind option takes precident over default. No longer
-    any error if user --cpu_bind option does not match TaskPluginParam.
+ -- Added new "TRESWeights" configuration parameter to "NodeName" line for
+    calculating how busy a node is. Currently only used for federation
+    configurations.
+ -- Added new "PriorityFlags" option of "INCR_ONLY", which prevents a job's
+    priority from being decremented.
+ -- Added "SchedulerParameters" configuration parameter of "default_gbytes",
+    which treats numeric only (no suffix) value for memory and tmp disk space as
+    being in units of Gigabytes. Mostly for compatability with LSF.
+ -- Added "BootTime" configuration parameter to knl.conf file to optimize
+    resource allocations with respect to required node reboots.
+ -- Added "SchedulingParameters" option of "bf_job_part_count_reserve". Jobs
+    below the specified threshold will not have resources reserved for them.
+ -- Added "SchedulerParameters" option of "spec_cores_first" to select
+    specialized cores from the lowest rather than highest number cores and
+    sockets.
+ -- Added "PrologFlags" option of "Serial" to disable concurrent launch of
+    Prolog and Epilog scripts.
+ -- Removed "SchedulerRootFilter" configuration parameter.
+ -- Added "SyscfgTimeout" parameter to knl.conf configuration file.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- sbatch to read OpenLava/LSF/#BSUB options from the batch script.
- -- Add sbatch "--wait" option that waits for job completion before exiting.
-    Exit code will match that of spawned job.
- -- Job output and error files can now contain "%" character by specifying
-    a file name with two consecutive "%" characters. For example,
-    "sbatch -o "slurm.%%.%j" for job ID 123 will generate an output file named
-    "slurm.%.123".
- -- Increase default sbcast buffer size from 512KB to 8MB.
- -- Add "ValidateTimeout" and "OtherTimeout" to "scontrol show burst" output.
- -- Implemented the checking configuration functionality using the new -C
-    options of slurmctld. To check for configuration errors in slurm.conf
-    run: 'slurmctld -C'.
- -- Burst buffer advanced reservation units treated as bytes (per documentation)
-    rather than GB.
- -- Add "features_act" field (currently active features) to the node
-    information. Output of scontrol, sinfo, and sview changed accordingly.
-    The field previously displayed as "Features" is now "AvailableFeatures"
-    while the new field is displayed as "ActiveFeatures".
- -- Enable sbcast data compression logic (compress option previously ignored).
- -- Add --compress option to srun command for use with --bcast option.
- -- Added "sacctmgr show lostjobs" to report any orphaned jobs in the database.
- -- Add reservation flag of "purge_comp" which will purge an advanced
-    reservation once it has no more active (pending, suspended or running) jobs.
- -- Add ARRAY_TASKS mail option to send emails to each task in a job array.
+ -- Added commands to sacctmgr for managing and displaying federations.
+ -- Added salloc, sbatch and srun option of "--delay-boot=<time>", which will
+    temporarily delay booting nodes into the desired state for a job in the
+    hope of using nodes already in the proper state which will be available at
+    a later time.
+ -- Added salloc/sbatch/srun "--spread-job" option to distribute tasks over as
+    many nodes as possible. This also treats the "--ntasks-per-node" option as a
+    maximum value.
+ -- Added support for sbatch --bbf option to specify a burst buffer input file.
+ -- Added SLURM_ARRAY_TASK_COUNT environment variable. Total number of tasks in
+    a job array (e.g. "--array=2,4,8" will set SLURM_ARRAY_TASK_COUNT=3).
+ -- Modify cpu_bind and mem_bind map and mask options to accept a repetition
+    count to better support large task count. For example:
+    "mask_mem:0x0f*2,0xf0*2" is equivalent to "mask_mem:0x0f,0x0f,0xf0,0xf0".
+ -- Added support for "--mem_bind=prefer" option to prefer, but not restrict
+    memory use to the identified NUMA node.
+ -- Added "--mem_bind=sort" option to run zonesort on KNL nodes at step start.
+ -- Do not process SALLOC_HINT, SBATCH_HINT or SLURM_HINT environment variables
+    if any of the following salloc, sbatch or srun command line options are
+    specified: -B, --cpu_bind, --hint, --ntasks-per-core, or --threads-per-core.
+ -- Added port info to "sinfo" and "scontrol show node" output.
+ -- Move BatchScript to end of each job's information when using
+    "scontrol -dd show job" to make it more readable.
+ -- The scancel command would treat a non-numeric argument as the name of jobs
+    to be cancelled (a non-documented feature). Cancelling jobs by name now
+    require the "--jobname=" command line argument.
+ -- If GRES are configured with file IDs, then "scontrol -d show node" will
+    not only identify the count of currently allocated GRES, but their specific
+    index numbers (e.g. "GresUsed=gpu:alpha:2(IDX:0,2),gpu:beta:0(IDX:N/A)").
+    Ditto for job information with "scontrol -d show job".
+ -- Added "GresEnforceBind=Yes" to "scontrol show job" output if so configured.
+ -- Added "Partitions" field to "scontrol show node" output.
 
 OTHER CHANGES
 =============
- -- Add mail wrapper script "smail" that will include job statistics in email
-    notification messages.
- -- Removed support for authd. authd has not been developed and supported since
-    several years.
- -- Enable the hdf5 profiling of the batch step.
- -- Eliminate redundant environment and script files for job arrays. This
-    greatly reduces the number of files involved in managing job arrays.
- -- Burst buffer/cray - Add support for multiple buffer pools including support
-    for different resource granularity by pool.
- -- Stop searching sbatch scripts for #PBS directives after 100 lines of
-    non-comments. Stop parsing #PBS or #SLURM directives after 1024 characters
-    into a line. Required for decent perforamnce with huge scripts.
- -- New node features plugin infrastructure added. Currently used for support
-    of Intel Knights Landing processor.
- -- If NodeHealthCheckProgram configured HealthCheckInterval is non-zero, then
-    modify slurmd to run it before registering with slurmctld.
- -- select/cray - Initiate step node health check at start of step termination
-    rather than after application completely ends so that NHC can capture
-    information about hung (non-killable) processes.
- -- Display thread name along with thread id and remove process name in stderr
-    logging for "thread_id" LogTimeFormat.
+ -- Added event trigger on burst buffer errors (see strigger man page,
+    "--burst_buffer" option).
+ -- Added job AdminComment field which can only be set by a Slurm administrator.
+ -- Added mechanism to constrain kernel memory allocation using cgroups. New
+    cgroup.conf parameters added: ConstrainKmemSpace, MaxKmemPercent, and
+    MinKmemSpace.
+ -- burst_buffer/cray: Accept new jobs on backup slurmctld daemon without access
+    to dw_wlm_cli command. No burst buffer actions will take place.
+ -- node_features/knl_cray and knl_generic - Added capability to detected
+    Uncorrectable Memory Errors (UME) and if detected then log the event in all
+    job and step stderr with a message of the form:
+    error: *** STEP 1.2 ON tux1 UNCORRECTABLE MEMORY ERROR AT 2016-12-14T09:09:37 ***
+ -- If job is allocated nodes which are powered down, then reset job start time
+    when the nodes are ready and do not charge the job for power up time.
+ -- Added the ability to purge transactions from the database.
+ -- Added the ability to purge rolled up usage from the database.
+ -- Added new mcs/account plugin.
+ -- job_submit/lua - remove access to internal reservation job_run_cnt and
+    job_pend_cnt fields.
+ -- Increased maximum file size supported by sbcast from 2 GB (32-bit integer
+    to 64-bits).
 
 API CHANGES
 ===========
-Removed PARAMS macro from slurm.h.
-Removed BEGIN_C_DECLS and END_C_DECLS macros from slurm.h.
 
 Changed members of the following structs
 ========================================
-In burst_buffer_info_t, Changed gres_cnt to pool_cnt
-	Changed gres_ptr to pool_ptr
-In burst_buffer_pool_t: Changed avail_cnt to total_space
-In job_desc_msg_t: Changed nice from 16 to 32-bits
-In partition_info_t: Split priority into priority_job_factor and priority_tier
-In slurm_job_info_t: Changed nice from 16 to 32-bits
+Memory conversion to uint64_t in: job_descriptor, job_info, node_info,
+	partition_info, resource_allocation_response_msg, slurm_ctl_conf,
+	slurmd_status_msg, slurm_step_ctx_params_t
+Variables converted are: actual_real_mem, def_mem_per_cpu, free_mem,
+	max_mem_per_cpu, mem_spec_limit, pn_min_memory, real_memory, req_mem.
+In slurm_step_io_fds_t: changed "in" to "input".
+In file_bcast_msg_t: changed block_no from uint16_t to uint32_t, changed
+	block_offset uint32_t to uint64_t.
 
 Added members to the following struct definitions
 =================================================
-In burst_buffer_info_t: Added other_timeout and validate_timeout
-In burst_buffer_resv_t: Added pool
-In job_desc_msg_t: Added deadline, mcs_label
-In node_info_t: Added features_act and mcs_label
-In resource_allocation_response_msg_t: Added ntasks_per_board, ntasks_per_core,
-	ntasks_per_socket
-In slurm_job_info_t: Added deadline, num_tasks, mcs_label
-In slurm_ctl_conf_t: Added mcs_plugin, mcs_plugin_params, tcp_timeout, and
-	node_features_plugins
-In slurm_step_launch_params_t: Added ntasks_per_board, ntasks_per_core,
-	ntasks_per_socket
-In update_node_msg_t: Added features_act
-In slurm_job_info_t: Added start_protocol_ver
-In slurm_step_layout_t: Added start_protocol_ver
-In job_step_info_t: Added start_protocol_ver
+In burst_buffer_info_t: Added unfree_space (Drained or allocates space)
+In burst_buffer_pool_t: Added unfree_space
+In connection_arg_t: Added bool persist
+In job_desc_msg_t: Added admin_comment, delay_boot, fed_siblings (to track which
+	clusters have sibling jobs), group_number, numpack, pack_leader,
+	pelog_env, pelog_env_size and restart_cnt.
+In slurm_job_info_t: Added admin_comment, burst_buffer_state, delay_boot,
+	fed_origin_str, fed_siblings, fed_siblings_str, gres_detail_cnt and
+	gres_detail_str.
+In job_step_info_t: Added packjobid, packstepid, srun_host and srun_pid.
+In node_info_t: Added partitions and port.
+In partition_info_t: Added over_time_limit
+In resource_allocation_msg_t: added node_addr and working_cluster_rec for
+		     federated interactive jobs.
+In slurm_ctl_conf: Added mail_domain and sbcast_parameters.
+In slurm_job_info_t: Added fed_origin_str, fed_siblings, fed_siblings_str to
+		      display job federation information.
+In slurm_msg_t: Added buffer to keep received message buffer to use for later
+	purposes.
+In slurmctld_lock_t: Added federation
+In slurmdb_cluster_cond_t: Added List federation_list
+In slurmdb_cluster_rec_t: Added fed, lock, sockfd
+In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
+	cluster is.
 
 Added the following struct definitions
 ======================================
-Added top_job_msg_t for user to reorder his jobs
+Added slurmdb_cluster_fed_t to store federation information on
+	slurmdb_cluster_rec_t.
+Added slurmdb_federation_cond_t for selecting federations from db.
+Added slurmdb_federation_rec_t to represent federation objects.
+Added job_fed_details_t for storing federated job information.
+Added sib_msg_t for sending messages to siblings.
+Added slurm_step_layout_req_t to improve slurmctld control over task layout
 
 Removed members from the following struct definitions
 =====================================================
-In burst_buffer_resv_t: Removed gres_cnt and gres_ptr
+Removed schedport from slurm_ctl_conf.
+Removed schedrootfltr from slurm_ctl_conf.
 
 Changed the following enums and #defines
 ========================================
-Added DEBUG_FLAG_TIME_CRAY and DEBUG_FLAG_NODE_FEATURES
-Added RESERVE_FLAG_PURGE_COMP
-Added JOB_DEADLINE (job state)
-Added MAIL_ARRAY_TASK (mail flag)
-Changed MAX_TASKS_PER_NODE from 128 to 512
-Changed NICE_OFFSET from 10000 to 0x80000000
-Added new job state/wait reasons: FAIL_DEADLINE, WAIT_QOS_MAX_BB_PER_ACCT,
-	WAIT_QOS_MAX_CPU_PER_ACCT, WAIT_QOS_MAX_ENERGY_PER_ACCT,
-	WAIT_QOS_MAX_GRES_PER_ACCT, WAIT_QOS_MAX_NODE_PER_ACCT,
-	WAIT_QOS_MAX_LIC_PER_ACCT, WAIT_QOS_MAX_MEM_PER_ACCT,
-	WAIT_QOS_MAX_UNK_PER_ACCT, WAIT_QOS_MAX_JOB_PER_ACCT,
-	WAIT_QOS_MAX_SUB_JOB_PER_ACCT
-Added new partition limit enforcement flags: PARTITION_ENFORCE_NONE,
-	PARTITION_ENFORCE_ALL, PARTITION_ENFORCE_ANY
-Added select plugin IDs: SELECT_PLUGIN_BLUEGENE, SELECT_PLUGIN_CONS_RES,
-	SELECT_PLUGIN_LINEAR, SELECT_PLUGIN_ALPS, SELECT_PLUGIN_SERIAL,
-	SELECT_PLUGIN_CRAY_LINEAR, SELECT_PLUGIN_CRAY_CONS_RES
-Added job flags: GRES_ENFORCE_BIND and TEST_NOW_ONLY
-Added job resource sharing flags: JOB_SHARED_NONE, JOB_SHARED_OK,
-	JOB_SHARED_USER, JOB_SHARED_MCS
+Added BB_STATE_PRE_RUN for burst buffer state information
+Added CR_NHC_ABSOLUTELY_NO to disable Cray Node Health Check
+Added DEBUG_FLAG_FEDR flag for federation debugging.
+Added cluster_fed_states enum and defines for federation states.
+Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
+Added the following job state flags: JOB_REVOKED (to indicate that federated
+	job started on another cluster), JOB_REQUEUE_FED, JOB_POWER_UP_NODE
+	and JOB_RECONFIG_FAIL.
+Added MAX_JOB_ID (0x03FFFFFF).
+Added MEM_BIND_PREFER and MEM_BIND_SORT memory binding options.
+Changed MEM_PER_CPU flag to 0x8000000000000000 from 0x80000000.
+Added NO_VAL16 (0xfffe).
+Changed NODE_STATE_FLAGS to 0xfffffff0 from 0xfff0.
+Added NODE_STATE_REBOOT to request node reboot.
+Added the following job options: NODE_MEM_CALC, NODE_REBOOT, SPREAD_JOB and
+	USE_MIN_NODES.
+Added PROLOG_FLAG_SERIAL to serially execute prolog/epilog.
+Added SELECT_NODEDATA_TRES_ALLOC_FMT_STR to select_nodedata_type.
+Added SELECT_NODEDATA_TRES_ALLOC_WEIGHTED to select_nodedata_type.
+Added SHOW_FED_TRACK to show only federated jobs.
+Added SLURM_MSG_KEEP_BUFFER msg flag to instruct slurm_receive_msg() to save the
+	buffer ptr.
+Added SLURM_PENDING_STEP (step for external process container)
+Added TRIGGER_RES_TYPE_OTHER for burst buffer event trigger
+Added TRIGGER_TYPE_BURST_BUFFER for burst buffer event trigger
+Added the following job wait reasons: WAIT_PART_CONFIG, WAIT_ACCOUNT_POLICY,
+	WAIT_FED_JOB_LOCK.
 
 Added the following API's
 =========================
-Added slurm_top_job() function to reorder a user's jobs
+Added slurm_load_federation() to retrieve federation info from cluster.
+Added slurm_print_federation() to print federation info retrieved from cluster.
+Added slurm_get_priority_flags() to retrieve priority flags from slurmctld_conf.
+Added slurm_populate_node_partitions() to identify all partitions associated
+	with nodes
 
 Changed the following API's
 ============================
-Added use_protocol_ver parameter to slurm_job_step_stat().
+
+Removed the following API's
+===========================
+Removed slurm_get_sched_port() .
+Removed slurm_get_root_filter().

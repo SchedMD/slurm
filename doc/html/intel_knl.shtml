@@ -55,6 +55,13 @@ explicitly request that memory using Slurm's Generic RESource (GRES) options.
 The HBM will always be known by Slurm GRES name of "hbm".
 Examples below demonstrate use of HBM.</p>
 
+<p>Sorting of the free cache pages at step startup using Intel's zonesort
+module can be configred as the default for all steps using the
+"LaunchParameters=mem_sort" option in the slurm.conf file.
+Individual job steps can enable or disable sorting using the "--mem_bind=sort"
+or "--mem_bind=nosort" command line options for srun.
+Sorting will be performed only for the NUMA nodes allocated to the job step.</p>
+
 <p><a name="note"><b>NOTE</b></a>: Slurm version 16.05 provides limited support
 for restricting use of HBM. At some point in the future, the amount of HBM
 requested by the job will be compared with the total amount of HBM and number of
@@ -174,6 +181,9 @@ Features which are not KNL-specific (e.g. rack number, "knl", etc.) will be
 copied from the node's "Features" configuration in "slurm.conf" to both the
 available and active feature fields and not modified by the NodeFeatures
 plugin.</p>
+
+<p>NOTE: For Dell KNL systems you must also include the<i>SystemType=Dell</i>
+option for successful operation.</p>
 
 <p>Slurm version 16.05 does not support the concept of multiple NUMA nodes
 within a single socket. If a KNL node is booted with multiple NUMA, then each

@@ -5,7 +5,7 @@
  *  Written by Alejandro Lucero <alucero@bsc.es>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,20 +34,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#define _GNU_SOURCE
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -67,7 +56,7 @@ extern bool sort_by_time2;
 /*
  * parse_command_line, fill in params data structure with data
  */
-extern void parse_command_line(int argc, char *argv[])
+extern void parse_command_line(int argc, char **argv)
 {
 	int opt_char;
 	int option_index;

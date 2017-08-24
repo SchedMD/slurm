@@ -1,4 +1,4 @@
-.TH strigger "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH strigger "1" "Slurm Commands" "August 2016" "Slurm Commands"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -72,6 +72,11 @@ Trigger an event when the backup slurmctld resumes operation after failure.
 .TP
 \fB\-C\fR, \fB\-\-backup_slurmctld_assumed_control\fR
 Trigger event when backup slurmctld assumes control.
+
+
+.TP
+\fB\-\-burst_buffer\fR
+Trigger event when burst buffer error occurs.
 
 .TP
 \fB\-\-clear\fP
@@ -162,6 +167,7 @@ trigger event.
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.
+Note that the SlurmDBD must be up for this option to work properly.
 
 .TP
 \fB\-n\fR, \fB\-\-node\fR[=\fIhost\fR]

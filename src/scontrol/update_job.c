@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -54,10 +54,14 @@ static bool	_is_job_id(char *job_str);
 static bool	_is_single_job(char *job_id_str);
 static char *	_job_name2id(char *job_name, uint32_t job_uid);
 static char *	_next_job_id(void);
-static int	_parse_checkpoint_args(int argc, char **argv,
-				       uint16_t *max_wait, char **image_dir);
-static int	_parse_restart_args(int argc, char **argv,
-				    uint16_t *stick, char **image_dir);
+static int	_parse_checkpoint_args(int argc,
+				       char **argv,
+				       uint16_t *max_wait,
+				       char **image_dir);
+static int	_parse_restart_args(int argc,
+				    char **argv,
+				    uint16_t *stick,
+				    char **image_dir);
 static void	_update_job_size(uint32_t job_id);
 
 /* Local variables for managing job IDs */
@@ -213,8 +217,10 @@ fini:	xfree(local_job_str);
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-extern int
-scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
+extern int scontrol_checkpoint(char *op,
+			       char *job_step_id_str,
+			       int argc,
+			       char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id = 0, step_id = 0;
@@ -313,9 +319,10 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 	return rc;
 }
 
-static int
-_parse_checkpoint_args(int argc, char **argv, uint16_t *max_wait,
-		       char **image_dir)
+static int _parse_checkpoint_args(int argc,
+				  char **argv,
+				  uint16_t *max_wait,
+				  char **image_dir)
 {
 	int i;
 
@@ -335,8 +342,10 @@ _parse_checkpoint_args(int argc, char **argv, uint16_t *max_wait,
 	return 0;
 }
 
-static int
-_parse_restart_args(int argc, char **argv, uint16_t *stick, char **image_dir)
+static int _parse_restart_args(int argc,
+			       char **argv,
+			       uint16_t *stick,
+			       char **image_dir)
 {
 	int i;
 
@@ -419,6 +428,7 @@ scontrol_hold(char *op, char *job_str)
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_msg.job_id_str = _next_job_id();
 		}
@@ -505,6 +515,7 @@ scontrol_hold(char *op, char *job_str)
 					slurm_strerror(resp->error_code[j]));
 			}
 			slurm_free_job_array_resp(resp);
+			resp = NULL;
 		}
 		xfree(job_id_str);
 	}
@@ -560,6 +571,7 @@ scontrol_suspend(char *op, char *job_str)
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_id_str = _next_job_id();
 		}
@@ -620,6 +632,7 @@ scontrol_requeue(char *job_str)
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_id_str = _next_job_id();
 		}
@@ -668,6 +681,7 @@ scontrol_requeue_hold(uint32_t state_flag, char *job_str)
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_id_str = _next_job_id();
 		}
@@ -715,8 +729,7 @@ scontrol_top_job(char *job_id_str)
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-extern int
-scontrol_update_job (int argc, char *argv[])
+extern int scontrol_update_job(int argc, char **argv)
 {
 	bool update_size = false;
 	int i, update_cnt = 0, rc = SLURM_SUCCESS, rc2;
@@ -728,10 +741,15 @@ scontrol_update_job (int argc, char *argv[])
 
 	slurm_init_job_desc_msg (&job_msg);
 	for (i = 0; i < argc; i++) {
+		char *add_info = NULL;
 		tag = argv[i];
 		val = strchr(argv[i], '=');
 		if (val) {
 			taglen = val - argv[i];
+			if ((taglen > 0) && (val[-1] == '+')) {
+				add_info = val - 1;
+				taglen--;
+			}
 			val++;
 			vallen = strlen(val);
 		} else if (strncasecmp(tag, "Nice", MAX(strlen(tag), 2)) == 0){
@@ -755,6 +773,13 @@ scontrol_update_job (int argc, char *argv[])
 		if (strncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
 			job_msg.job_id_str = val;
 		}
+		else if (strncasecmp(tag, "AdminComment", MAX(taglen, 3)) == 0){
+			if (add_info)
+				job_msg.admin_comment = add_info;
+			else
+				job_msg.admin_comment = val;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "ArrayTaskThrottle",
 				     MAX(taglen, 10)) == 0) {
 			int throttle;
@@ -769,6 +794,16 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(tag, "Comment", MAX(taglen, 3)) == 0) {
 			job_msg.comment = val;
+			update_cnt++;
+		}
+		else if (strncasecmp(tag, "DelayBoot", MAX(taglen, 5)) == 0) {
+			int time_sec = time_str2secs(val);
+			if (time_sec == NO_VAL) {
+				error("Invalid DelayBoot value");
+				exit_code = 1;
+				return 0;
+			}
+			job_msg.delay_boot = time_sec;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 5)) == 0) {
@@ -950,7 +985,7 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(tag, "MinMemoryNode",
 				     MAX(taglen, 10)) == 0) {
-			if (parse_uint32(val, &job_msg.pn_min_memory)) {
+			if (parse_uint64(val, &job_msg.pn_min_memory)) {
 				error ("Invalid MinMemoryNode value: %s", val);
 				exit_code = 1;
 				return 0;
@@ -959,7 +994,7 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(tag, "MinMemoryCPU",
 				     MAX(taglen, 10)) == 0) {
-			if (parse_uint32(val, &job_msg.pn_min_memory)) {
+			if (parse_uint64(val, &job_msg.pn_min_memory)) {
 				error ("Invalid MinMemoryCPU value: %s", val);
 				exit_code = 1;
 				return 0;
@@ -1218,6 +1253,11 @@ scontrol_update_job (int argc, char *argv[])
 		return 0;
 	}
 
+	/* If specified, override uid with effective uid provided by
+	 * -u <uid> or --uid=<uid> */
+	if (euid != NO_VAL)
+		job_msg.user_id = euid;
+
 	if (!job_msg.job_id_str && job_msg.name) {
 		/* Translate name to job ID string */
 		job_msg.job_id_str = _job_name2id(job_msg.name, job_uid);
@@ -1270,6 +1310,7 @@ scontrol_update_job (int argc, char *argv[])
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_msg.job_id_str = _next_job_id();
 		}
@@ -1291,8 +1332,7 @@ scontrol_update_job (int argc, char *argv[])
  * argv[0] == jobid
  * argv[1]++ the message
  */
-extern int
-scontrol_job_notify(int argc, char *argv[])
+extern int scontrol_job_notify(int argc, char **argv)
 {
 	int i;
 	uint32_t job_id;

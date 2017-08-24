@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,26 +40,15 @@
 #ifndef __SACCTMGR_H__
 #define __SACCTMGR_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef HAVE_STRING_H
-#  include <string.h>
-#endif
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -67,14 +56,6 @@
 #  include <readline/readline.h>
 #  include <readline/history.h>
 #endif
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else  /* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif  /* HAVE_INTTYPES_H */
 
 #include "slurm/slurm.h"
 
@@ -96,6 +77,7 @@ typedef enum {
 	PRINT_COORDS,
 	PRINT_CPUS,
 	PRINT_DESC,
+	PRINT_FEDERATION,
 	PRINT_FLAGS,
 	PRINT_NAME,
 	PRINT_PART,
@@ -150,11 +132,14 @@ typedef enum {
 	PRINT_CHOST = 3000,
 	PRINT_CPORT,
 	PRINT_CLASS,
+	PRINT_FEDSTATE,
+	PRINT_FEDSTATERAW,
 	PRINT_TRES,
 	PRINT_NODECNT,
 	PRINT_CLUSTER_NODES,
 	PRINT_RPC_VERSION,
 	PRINT_SELECT,
+	PRINT_WEIGHT,
 
 	/* ACCT */
 	PRINT_ORG = 4000,
@@ -240,47 +225,52 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 					   print_field_t *field, List tree_list,
 					   bool last);
 
-extern int sacctmgr_add_assoc(int argc, char *argv[]);
-extern int sacctmgr_add_user(int argc, char *argv[]);
-extern int sacctmgr_add_account(int argc, char *argv[]);
-extern int sacctmgr_add_cluster(int argc, char *argv[]);
-extern int sacctmgr_add_coord(int argc, char *argv[]);
-extern int sacctmgr_add_qos(int argc, char *argv[]);
-extern int sacctmgr_add_res(int argc, char *argv[]);
+extern int sacctmgr_add_assoc(int argc, char **argv);
+extern int sacctmgr_add_user(int argc, char **argv);
+extern int sacctmgr_add_account(int argc, char **argv);
+extern int sacctmgr_add_cluster(int argc, char **argv);
+extern int sacctmgr_add_federation(int argc, char **argv);
+extern int sacctmgr_add_coord(int argc, char **argv);
+extern int sacctmgr_add_qos(int argc, char **argv);
+extern int sacctmgr_add_res(int argc, char **argv);
 
-extern int sacctmgr_list_assoc(int argc, char *argv[]);
-extern int sacctmgr_list_user(int argc, char *argv[]);
-extern int sacctmgr_list_account(int argc, char *argv[]);
-extern int sacctmgr_list_cluster(int argc, char *argv[]);
+extern int sacctmgr_list_assoc(int argc, char **argv);
+extern int sacctmgr_list_user(int argc, char **argv);
+extern int sacctmgr_list_account(int argc, char **argv);
+extern int sacctmgr_list_cluster(int argc, char **argv);
 extern int sacctmgr_list_config(bool have_db_conn);
-extern int sacctmgr_list_event(int argc, char *argv[]);
-extern int sacctmgr_list_problem(int argc, char *argv[]);
-extern int sacctmgr_list_qos(int argc, char *argv[]);
-extern int sacctmgr_list_res(int argc, char *argv[]);
-extern int sacctmgr_list_wckey(int argc, char *argv[]);
-extern int sacctmgr_list_tres(int, char **);
+extern int sacctmgr_list_event(int argc, char **argv);
+extern int sacctmgr_list_federation(int argc, char **argv);
+extern int sacctmgr_list_problem(int argc, char **argv);
+extern int sacctmgr_list_qos(int argc, char **argv);
+extern int sacctmgr_list_res(int argc, char **argv);
 extern int sacctmgr_list_reservation(int argc, char **argv);
+extern int sacctmgr_list_stats(int argc, char **argv);
+extern int sacctmgr_list_tres(int, char **);
+extern int sacctmgr_list_wckey(int argc, char **argv);
 
-extern int sacctmgr_modify_assoc(int argc, char *argv[]);
-extern int sacctmgr_modify_user(int argc, char *argv[]);
-extern int sacctmgr_modify_account(int argc, char *argv[]);
-extern int sacctmgr_modify_cluster(int argc, char *argv[]);
-extern int sacctmgr_modify_job(int argc, char *argv[]);
-extern int sacctmgr_modify_qos(int argc, char *argv[]);
-extern int sacctmgr_modify_res(int argc, char *argv[]);
+extern int sacctmgr_modify_assoc(int argc, char **argv);
+extern int sacctmgr_modify_user(int argc, char **argv);
+extern int sacctmgr_modify_account(int argc, char **argv);
+extern int sacctmgr_modify_cluster(int argc, char **argv);
+extern int sacctmgr_modify_federation(int argc, char **argv);
+extern int sacctmgr_modify_job(int argc, char **argv);
+extern int sacctmgr_modify_qos(int argc, char **argv);
+extern int sacctmgr_modify_res(int argc, char **argv);
 
-extern int sacctmgr_delete_assoc(int argc, char *argv[]);
-extern int sacctmgr_delete_user(int argc, char *argv[]);
-extern int sacctmgr_delete_account(int argc, char *argv[]);
-extern int sacctmgr_delete_cluster(int argc, char *argv[]);
-extern int sacctmgr_delete_coord(int argc, char *argv[]);
-extern int sacctmgr_delete_qos(int argc, char *argv[]);
-extern int sacctmgr_delete_res(int argc, char *argv[]);
+extern int sacctmgr_delete_assoc(int argc, char **argv);
+extern int sacctmgr_delete_user(int argc, char **argv);
+extern int sacctmgr_delete_account(int argc, char **argv);
+extern int sacctmgr_delete_cluster(int argc, char **argv);
+extern int sacctmgr_delete_coord(int argc, char **argv);
+extern int sacctmgr_delete_federation(int argc, char **argv);
+extern int sacctmgr_delete_qos(int argc, char **argv);
+extern int sacctmgr_delete_res(int argc, char **argv);
 
-extern int sacctmgr_dump_cluster(int argc, char *argv[]);
+extern int sacctmgr_dump_cluster(int argc, char **argv);
 
-extern int sacctmgr_archive_dump(int argc, char *argv[]);
-extern int sacctmgr_archive_load(int argc, char *argv[]);
+extern int sacctmgr_archive_dump(int argc, char **argv);
+extern int sacctmgr_archive_load(int argc, char **argv);
 
 /* common.c */
 extern int parse_option_end(char *option);
@@ -305,6 +295,8 @@ extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
 				int last);
 extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc);
+extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster);
+extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed);
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
 extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond);
 extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond);
@@ -353,12 +345,17 @@ extern int print_file_slurmdb_hierarchical_rec_list(FILE *fd,
 					  List user_list,
 					  List acct_list);
 
-extern void load_sacctmgr_cfg_file (int argc, char *argv[]);
+extern void load_sacctmgr_cfg_file (int argc, char **argv);
 
 /* txn_functions.c */
-extern int sacctmgr_list_txn(int argc, char *argv[]);
+extern int sacctmgr_list_txn(int argc, char **argv);
 
 /* runaway_jobs_functions.c */
-extern int sacctmgr_list_runaway_jobs(int argc, char *argv[]);
+extern int sacctmgr_list_runaway_jobs(int argc, char **argv);
+
+/* federation_functions.c */
+extern int verify_federations_exist(List name_list);
+extern int verify_fed_clusters(List cluster_list, const char *fed_name,
+			       bool *existing_fed);
 
 #endif

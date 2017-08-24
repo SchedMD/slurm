@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,9 +40,7 @@
 #ifndef _SLURM_PROTOCOL_COMMON_H
 #define _SLURM_PROTOCOL_COMMON_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -67,26 +65,28 @@
 /* slurm protocol header defines, based upon config.h, 16 bits */
 /* A new SLURM_PROTOCOL_VERSION needs to be made each time the version
  * changes so the slurmdbd can talk all versions for update messages.
- * In slurm_protocol_util.c check_header_version(), and init_header()
- * need to be updated also when changes are added */
+ */
 /* NOTE: The API version can not be the same as the Slurm version.  The
  *       version in the code is referenced as a uint16_t which if 1403 was the
  *       api it would go over the limit.  So keep is a relatively
  *       small number.
- * NOTE: These values must be Moved to
+ * NOTE: These values must be moved to
  * src/plugins/accounting_storage/mysql/as_mysql_archive.c when we are
  * done here with them since we have to support old version of archive
  * files since they don't update once they are created.
  */
+#define SLURM_17_02_PROTOCOL_VERSION ((31 << 8) | 0)
 #define SLURM_16_05_PROTOCOL_VERSION ((30 << 8) | 0)
 #define SLURM_15_08_PROTOCOL_VERSION ((29 << 8) | 0)
-#define SLURM_14_11_PROTOCOL_VERSION ((28 << 8) | 0)
 
-#define SLURM_PROTOCOL_VERSION SLURM_16_05_PROTOCOL_VERSION
-#define SLURM_MIN_PROTOCOL_VERSION SLURM_14_11_PROTOCOL_VERSION
+#define SLURM_PROTOCOL_VERSION SLURM_17_02_PROTOCOL_VERSION
+#define SLURM_ONE_BACK_PROTOCOL_VERSION SLURM_16_05_PROTOCOL_VERSION
+#define SLURM_MIN_PROTOCOL_VERSION SLURM_15_08_PROTOCOL_VERSION
 
 #if 0
-/* SLURM version 14.11 code removed support for protocol versions before 2.5 */
+/* Old Slurm versions kept for reference only.  Slurm only actively keeps track
+ * of 2 previous versions. */
+#define SLURM_14_11_PROTOCOL_VERSION ((28 << 8) | 0)
 #define SLURM_14_03_PROTOCOL_VERSION ((27 << 8) | 0)
 #define SLURM_2_6_PROTOCOL_VERSION ((26 << 8) | 0)
 #define SLURM_2_5_PROTOCOL_VERSION ((25 << 8) | 0)
@@ -98,9 +98,13 @@
 #define SLURM_1_3_PROTOCOL_VERSION ((13 << 8) | 0)
 #endif
 
-/* used to set flags to empty */
+/* Below are flags for the header of a message. */
+
+/* Used to set flags to empty */
 #define SLURM_PROTOCOL_NO_FLAGS 0
 #define SLURM_GLOBAL_AUTH_KEY   0x0001
+#define SLURMDBD_CONNECTION     0x0002
+#define SLURM_MSG_KEEP_BUFFER   0x0004
 
 #include "src/common/slurm_protocol_socket_common.h"
 

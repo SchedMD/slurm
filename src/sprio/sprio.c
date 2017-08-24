@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,24 +36,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
+#include "config.h"
 
 #ifdef HAVE_TERMCAP_H
 #  include <termcap.h>
 #endif
 
-#include <sys/ioctl.h>
 #include <termios.h>
+#include <sys/ioctl.h>
 
 #include "src/common/slurm_priority.h"
 #include "src/common/xstring.h"
@@ -74,7 +64,7 @@ char    *weight_tres; /* weights for TRES factors */
 static int _get_info(priority_factors_request_msg_t *factors_req,
 		     priority_factors_response_msg_t **factors_resp);
 
-int main (int argc, char *argv[])
+int main (int argc, char **argv)
 {
 	char *prio_type = NULL;
 	int error_code = SLURM_SUCCESS;

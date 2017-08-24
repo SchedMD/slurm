@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -54,7 +54,7 @@ static List print_fields_list = NULL; /* types are of print_field_t */
 static bool group_accts = false;
 static uint32_t top_limit = 10;
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_user_cond_t *user_cond, List format_list)
 {
 	int i;
@@ -391,7 +391,7 @@ static void _set_usage_column_width(List print_fields_list,
 				       slurmdb_report_cluster_list);
 }
 
-extern int user_top(int argc, char *argv[])
+extern int user_top(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));

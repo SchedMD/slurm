@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -105,8 +105,10 @@ static int _parse_comp_file(
 
 	if (!fgets(line, BUFFER_SIZE, fd)) {
 		fprintf(stderr, "Empty step update completion file\n");
+		(void) fclose(fd);
 		return SLURM_ERROR;
 	}
+	(void) fclose(fd);
 
 	fptr = line;	/* break the record into NULL-terminated strings */
 	for (i = 0; i < MAX_RECORD_FIELDS; i++) {
@@ -168,7 +170,7 @@ static int _parse_comp_file(
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-extern int scontrol_update_step (int argc, char *argv[])
+extern int scontrol_update_step (int argc, char **argv)
 {
 	int i, update_cnt = 0;
 	char *tag, *val;

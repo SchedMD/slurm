@@ -5,7 +5,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,21 +34,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef HAVE_SYS_SYSLOG_H
-#  include <sys/syslog.h>
-#endif
-
+#include <arpa/inet.h>
 #include <errno.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -69,21 +61,42 @@ static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 		snprintf(buf, buf_size, "INFINITE");
 	} else if (num == 0) {
 		snprintf(buf, buf_size, "0");
+
 	} else if ((num % ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024)) == 0) {
 		tmp64 = num / ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
-		snprintf(buf, buf_size, "%"PRIu64"P", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"PiB", tmp64);
+	} else if ((num % ((uint64_t)1000 * 1000 * 1000 * 1000 * 1000)) == 0) {
+		tmp64 = num / ((uint64_t)1000 * 1000 * 1000 * 1000 * 1000);
+		snprintf(buf, buf_size, "%"PRIu64"PB", tmp64);
+
 	} else if ((num % ((uint64_t)1024 * 1024 * 1024 * 1024)) == 0) {
 		tmp64 = num / ((uint64_t)1024 * 1024 * 1024 * 1024);
-		snprintf(buf, buf_size, "%"PRIu64"T", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"TiB", tmp64);
+	} else if ((num % ((uint64_t)1000 * 1000 * 1000 * 1000)) == 0) {
+		tmp64 = num / ((uint64_t)1000 * 1000 * 1000 * 1000);
+		snprintf(buf, buf_size, "%"PRIu64"TB", tmp64);
+
 	} else if ((num % ((uint64_t)1024 * 1024 * 1024)) == 0) {
 		tmp64 = num / ((uint64_t)1024 * 1024 * 1024);
-		snprintf(buf, buf_size, "%"PRIu64"G", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"GiB", tmp64);
+	} else if ((num % ((uint64_t)1000 * 1000 * 1000)) == 0) {
+		tmp64 = num / ((uint64_t)1000 * 1000 * 1000);
+		snprintf(buf, buf_size, "%"PRIu64"GB", tmp64);
+
 	} else if ((num % ((uint64_t)1024 * 1024)) == 0) {
 		tmp64 = num / ((uint64_t)1024 * 1024);
-		snprintf(buf, buf_size, "%"PRIu64"M", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"MiB", tmp64);
+	} else if ((num % ((uint64_t)1000 * 1000)) == 0) {
+		tmp64 = num / ((uint64_t)1000 * 1000);
+		snprintf(buf, buf_size, "%"PRIu64"MB", tmp64);
+
 	} else if ((num % 1024) == 0) {
 		tmp64 = num / 1024;
-		snprintf(buf, buf_size, "%"PRIu64"K", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"KiB", tmp64);
+	} else if ((num % 1000) == 0) {
+		tmp64 = num / 1000;
+		snprintf(buf, buf_size, "%"PRIu64"KB", tmp64);
+
 	} else {
 		tmp64 = num;
 		snprintf(buf, buf_size, "%"PRIu64"", tmp64);
@@ -165,7 +178,7 @@ static void _print_burst_buffer_resv(FILE *out,
 				     int one_liner, bool verbose)
 {
 	char sz_buf[32], time_buf[64], tmp_line[512];
-	char *out_buf = NULL;
+	char *out_buf = NULL, *user_name;
 
 	/****** Line 1 ******/
 	if (burst_buffer_ptr->job_id &&
@@ -191,6 +204,8 @@ static void _print_burst_buffer_resv(FILE *out,
 		time_t now = time(NULL);
 		slurm_make_time_str(&now, time_buf, sizeof(time_buf));
 	}
+
+	user_name = uid_to_string(burst_buffer_ptr->user_id);
 	if (verbose) {
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "Account=%s CreateTime=%s Partition=%s Pool=%s QOS=%s "
@@ -199,16 +214,15 @@ static void _print_burst_buffer_resv(FILE *out,
 			 burst_buffer_ptr->partition, burst_buffer_ptr->pool,
 			 burst_buffer_ptr->qos,
 			 sz_buf, bb_state_string(burst_buffer_ptr->state),
-			 uid_to_string(burst_buffer_ptr->user_id),
-			 burst_buffer_ptr->user_id);
+			 user_name, burst_buffer_ptr->user_id);
 	} else {
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "CreateTime=%s Pool=%s Size=%s State=%s UserID=%s(%u)",
 			 time_buf, burst_buffer_ptr->pool, sz_buf,
 			 bb_state_string(burst_buffer_ptr->state),
-			 uid_to_string(burst_buffer_ptr->user_id),
-			 burst_buffer_ptr->user_id);
+			 user_name, burst_buffer_ptr->user_id);
 	}
+	xfree(user_name);
 	xstrcat(out_buf, tmp_line);
 
 	xstrcat(out_buf, "\n");
@@ -221,12 +235,14 @@ static void _print_burst_buffer_use(FILE *out,
 				    int one_liner)
 {
 	char tmp_line[512], sz_buf[32];
-	char *out_buf = NULL;
+	char *out_buf = NULL, *user_name;
 
+	user_name = uid_to_string(usage_ptr->user_id);
 	_get_size_str(sz_buf, sizeof(sz_buf), usage_ptr->used);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "    UserID=%s(%u) Used=%s",
-	         uid_to_string(usage_ptr->user_id), usage_ptr->user_id, sz_buf);
+	         user_name, usage_ptr->user_id, sz_buf);
+	xfree(user_name);
 
 	xstrcat(out_buf, tmp_line);
 	xstrcat(out_buf, "\n");
@@ -250,14 +266,18 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		int verbose)
 {
 	char tmp_line[512];
-	char g_sz_buf[32],t_sz_buf[32], u_sz_buf[32];
+	char f_sz_buf[32], g_sz_buf[32],t_sz_buf[32], u_sz_buf[32];
 	char *out_buf = NULL;
+	uint64_t free_space;
 	burst_buffer_resv_t *bb_resv_ptr;
 	burst_buffer_use_t  *bb_use_ptr;
 	bool has_acl = false;
 	int i;
 
 	/****** Line ******/
+	free_space = burst_buffer_ptr->total_space -
+		     burst_buffer_ptr->unfree_space;
+	_get_size_str(f_sz_buf, sizeof(f_sz_buf), free_space);
 	_get_size_str(g_sz_buf, sizeof(g_sz_buf),
 		      burst_buffer_ptr->granularity);
 	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
@@ -266,9 +286,9 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		      burst_buffer_ptr->used_space);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Name=%s DefaultPool=%s Granularity=%s TotalSpace=%s "
-		 "UsedSpace=%s",
+		 "FreeSpace=%s UsedSpace=%s",
 		 burst_buffer_ptr->name, burst_buffer_ptr->default_pool,
-		 g_sz_buf, t_sz_buf, u_sz_buf);
+		 g_sz_buf, t_sz_buf, f_sz_buf, u_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (!one_liner)
 		xstrcat(out_buf, "\n");
@@ -276,6 +296,9 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	/****** Line (optional) ******/
 	/* Alternate pool information */
 	for (i = 0; i < burst_buffer_ptr->pool_cnt; i++) {
+		free_space = burst_buffer_ptr->pool_ptr[i].total_space -
+			     burst_buffer_ptr->pool_ptr[i].unfree_space;
+		_get_size_str(f_sz_buf, sizeof(f_sz_buf), free_space);
 		_get_size_str(g_sz_buf, sizeof(g_sz_buf),
 			      burst_buffer_ptr->pool_ptr[i].granularity);
 		_get_size_str(t_sz_buf, sizeof(t_sz_buf),
@@ -284,9 +307,9 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 			      burst_buffer_ptr->pool_ptr[i].used_space);
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "  AltPoolName[%d]=%s Granularity=%s TotalSpace=%s "
-			 "UsedSpace=%s",
+			 "FreeSpace=%s UsedSpace=%s",
 			 i, burst_buffer_ptr->pool_ptr[i].name,
-			 g_sz_buf, t_sz_buf, u_sz_buf);
+			 g_sz_buf, t_sz_buf, f_sz_buf, u_sz_buf);
 		xstrcat(out_buf, tmp_line);
 		if (!one_liner)
 			xstrcat(out_buf, "\n");

@@ -326,7 +326,7 @@ void eh_mem(struct ud *ud, const XML_Char **attrs)
 	    memory.page_size_kb < 1)
 		fatal("illegal page_size_kb = %s", attribs[1]);
 
-	if (atou32(attribs[2], &memory.page_count) < 0 ||
+	if (atou64(attribs[2], &memory.page_count) < 0 ||
 	    memory.page_count < 1)
 		fatal("illegal page_count = %s", attribs[2]);
 
@@ -360,7 +360,7 @@ void eh_mem_alloc(struct ud *ud, const XML_Char **attrs)
 	if (atou32(attribs[0], &memalloc.rsvn_id) < 0)
 		fatal("illegal reservation_id = %s", attribs[0]);
 
-	if (atou32(attribs[1], &memalloc.page_count) < 0)
+	if (atou64(attribs[1], &memalloc.page_count) < 0)
 		fatal("illegal page_count = %s", attribs[1]);
 
 	ud->current_node.reserved = true;
@@ -489,7 +489,7 @@ void eh_command(struct ud *ud, const XML_Char **attrs)
 			fatal("invalid depth '%s'", attribs[1]);
 		else if (atou32(attribs[2], &new->nppn) < 0)
 			fatal("invalid nppn '%s'", attribs[2]);
-		else if (atou32(attribs[3], &new->memory) < 0)
+		else if (atou64(attribs[3], &new->memory) < 0)
 			fatal("invalid memory '%s'", attribs[3]);
 		for (new->arch = BNA_X2; new->arch < BNA_MAX; new->arch += 1)
 			if (strcmp(attribs[4], nam_arch[new->arch]) == 0)

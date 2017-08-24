@@ -62,6 +62,7 @@
 <li><a href="#sbatch_srun">What is the difference between the sbatch
   and srun commands?</a></li>
 <li><a href="#squeue_color">Can squeue output be color coded?</a></li>
+<li><a href="#x11">Can Slurm export an X11 display on an allocated compute node?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -180,9 +181,13 @@ script for Slurm?</a></li>
 <li><a href="#cluster_acct">When adding a new cluster, how can the Slurm cluster
     configuration be copied from an existing cluster to the new cluster?</a></li>
 <li><a href="#cray_dvs">How can I update Slurm on a Cray DVS file system without
-rebooting the nodes?</a></li>
+    rebooting the nodes?</a></li>
 <li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
 <li><a href="#routing queue">How can a routing queue be configured?</a></li>
+<li><a href="#squeue_script">How can I suspend, resume, hold or release all
+    of the jobs belonging to a speciic user, partition, etc?</a></li>
+<li><a href="#changed_uid">I had to change a user's UID and now they cannot submit
+    jobs. How do I get the new UID to take effect?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -808,7 +813,7 @@ allocations is planned in the future to make this process both simpler and
 more flexible.</p>
 
 <pre>
-$ salloc -N4 bash
+$ salloc -N4 -C haswell bash
 salloc: Granted job allocation 65542
 $ srun hostname
 icrm1
@@ -816,10 +821,10 @@ icrm2
 icrm3
 icrm4
 
-$ salloc -N4 --dependency=expand:$SLURM_JOB_ID bash
+$ salloc -N4 -C knl,snc4,flat --dependency=expand:$SLURM_JOB_ID bash
 salloc: Granted job allocation 65543
 $ scontrol update jobid=$SLURM_JOB_ID NumNodes=0
-To rese. Slurm environment variables, execute
+To reset Slurm environment variables, execute
   For bash or sh shells:  . ./slurm_job_65543_resize.sh
   For csh shells:         source ./slurm_job_65543_resize.csh
 $ exit
@@ -827,7 +832,7 @@ exit
 salloc: Relinquishing job allocation 65543
 
 $ scontrol update jobid=$SLURM_JOB_ID NumNodes=ALL
-To rese. Slurm environment variables, execute
+To reset Slurm environment variables, execute
   For bash or sh shells:  . ./slurm_job_65542_resize.sh
   For csh shells:         source ./slurm_job_65542_resize.csh
 $ . ./slurm_job_$SLURM_JOB_ID_resize.sh
@@ -1052,6 +1057,46 @@ regex white:default ^JOBID.*
 </pre>
 <img src="squeue_color.png" width=600>
 
+<p><a name="x11"><b>33. Can Slurm export an X11 display on an allocated compute node?</b></a><br>
+You will need to build and install an optional SPANK plugin for that functionality
+today. The functionality should be provided natively in Slurm soon. Instructions
+to build and install the plugin follow. Update the Slurm installation path as needed.</p>
+<pre>
+# Maybe obvious, but don't forget the -X on ssh
+$ ssh -X alex@testserver.com
+
+# Get the plugin
+$ mkdir git
+$ cd git
+$ git clone https://github.com/hautreux/slurm-spank-x11.git
+$ cd slurm-spank-x11
+
+# Manually edit the X11_LIBEXEC_PROG macro definition
+$ vi slurm-spank-x11.c
+$ vi slurm-spank-x11-plug.c
+$ grep "define X11_" slurm-spank-x11.c
+#define X11_LIBEXEC_PROG "/opt/slurm/17.02/libexec/slurm-spank-x11"
+$ grep "define X11_LIBEXEC_PROG" slurm-spank-x11-plug.c
+#define X11_LIBEXEC_PROG "/opt/slurm/17.02/libexec/slurm-spank-x11"
+
+
+# Compile
+$ gcc -g -o slurm-spank-x11 slurm-spank-x11.c
+$ gcc -g -I/opt/slurm/17.02/include -shared -fPIC -o x11.so slurm-spank-x11-plug.c
+
+# Install
+$ mkdir -p /opt/slurm/17.02/libexec
+$ install -m 755 slurm-spank-x11 /opt/slurm/17.02/libexec
+$ install -m 755 x11.so /opt/slurm/17.02/lib/slurm
+
+# Configure
+$ echo -e "optional\tx11.so" >> /opt/slurm/17.02/etc/plugstack.conf
+$ cd ~/tests
+
+# Run
+$ srun -n1 --pty --x11 xclock
+adam@node1's password:
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -2169,8 +2214,27 @@ guide for more information.
 Also see the available job submit plugins distributed with Slurm for examples
 (look in the "src/plugins/job_submit" directory).</p>
 
+<p><a name="squeue_script"><b>66. How can I suspend, resume, hold or release all
+    of the jobs belonging to a speciic user, partition, etc?</b></a><br>
+There isn't any filtering by user, partition, etc. available in the scontrol
+command; however the squeue command can be used to perform the filtering and
+build a script which you can then execute. For example:
+<pre>
+> squeue -u adam -h -o "scontrol hold %i" &gt;hold_script
+</pre>
+
+<p><a name="changed_uid"><b>67. I had to change a user's UID and now they cannot submit
+    jobs. How do I get the new UID to take effect?</b></a><br>
+When changing UIDs, you will also need to restart the slurmctld for the changes to
+take effect. Normally, when adding a new user to the system, the UID is filled in
+automatically and immediately. If the user isn't known on the system yet, there is a
+thread that runs every hour that fills in those UIDs when they become known, but it
+doesn't recognize UID changes of preexisting users. But you can simply restart the
+slurmctld for those changes to be recognized.
+</li>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 December 2016</p>
+<p style="text-align:center;">Last modified 6 June 2017</p>
 
 <!--#include virtual="footer.txt"-->

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,32 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if STDC_HEADERS
-#    include <string.h>
-#  endif
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif /* HAVE_SYS_TYPES_H */
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else /* ! HAVE_INTTYPES_H */
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif /* HAVE_INTTYPES_H */
-#else /* ! HAVE_CONFIG_H */
-#  include <sys/types.h>
-#  include <unistd.h>
-#  include <stdint.h>
-#  include <string.h>
-#endif /* HAVE_CONFIG_H */
-
+#include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
@@ -169,13 +148,10 @@ extern int fini ( void )
  * Allocate and initializes a credential.  This function should return
  * NULL if it cannot allocate a credential.
  */
-slurm_auth_credential_t *
-slurm_auth_create( void *argv[], char *auth_info )
+slurm_auth_credential_t *slurm_auth_create(char *auth_info)
 {
 	slurm_auth_credential_t *cred;
-
-	cred = ((slurm_auth_credential_t *)
-		xmalloc( sizeof( slurm_auth_credential_t ) ));
+	cred = xmalloc(sizeof(slurm_auth_credential_t));
 	cred->cr_errno = SLURM_SUCCESS;
 	cred->uid = geteuid();
 	cred->gid = getegid();

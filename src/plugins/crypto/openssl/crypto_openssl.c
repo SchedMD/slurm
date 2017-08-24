@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,19 +37,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else /* ! HAVE_INTTYPES_H */
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif /* HAVE_INTTYPES_H */
-#else /* ! HAVE_CONFIG_H */
-#  include <stdint.h>
-#endif /* HAVE_CONFIG_H */
+#include "config.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 
 /*

@@ -13,7 +13,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,13 +42,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <unistd.h>
+
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_api.h"

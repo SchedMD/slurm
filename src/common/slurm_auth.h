@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,24 +39,11 @@
 #ifndef __SLURM_AUTHENTICATION_H__
 #define __SLURM_AUTHENTICATION_H__
 
+#include <inttypes.h>
 #include <stdio.h>
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
 
 #include "src/common/plugrack.h"
 #include "src/common/pack.h"
-#include "src/common/arg_desc.h"
 
 /*
  * This API operates on a global authentication
@@ -144,10 +131,9 @@ extern int slurm_auth_fini( void );
 /*
  * Static bindings for the global authentication context.
  */
-extern void *	g_slurm_auth_create( void *hosts, int timeout, char *auth_info );
+extern void *	g_slurm_auth_create(char *auth_info);
 extern int	g_slurm_auth_destroy( void *cred );
-extern int	g_slurm_auth_verify( void *cred, void *hosts, int timeout,
-				     char *auth_info );
+extern int	g_slurm_auth_verify(void *cred, char *auth_info);
 extern uid_t	g_slurm_auth_get_uid( void *cred, char *auth_info );
 extern gid_t	g_slurm_auth_get_gid( void *cred, char *auth_info );
 extern int	g_slurm_auth_pack( void *cred, Buf buf );

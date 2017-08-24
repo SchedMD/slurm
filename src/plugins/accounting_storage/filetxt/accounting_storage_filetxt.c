@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,7 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <strings.h>
+#include <string.h>
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "filetxt_jobacct_process.h"
@@ -299,6 +299,12 @@ extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern int acct_storage_p_add_federations(void *db_conn, uint32_t uid,
+					  List federation_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int acct_storage_p_add_tres(void *db_conn,
 				     uint32_t uid, List tres_list)
 {
@@ -359,6 +365,14 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 extern List acct_storage_p_modify_assocs(void *db_conn, uint32_t uid,
 					      slurmdb_assoc_cond_t *assoc_q,
 					      slurmdb_assoc_rec_t *assoc)
+{
+	return SLURM_SUCCESS;
+}
+
+extern List acct_storage_p_modify_federations(
+				void *db_conn, uint32_t uid,
+				slurmdb_federation_cond_t *fed_cond,
+				slurmdb_federation_rec_t *fed)
 {
 	return SLURM_SUCCESS;
 }
@@ -428,6 +442,13 @@ extern List acct_storage_p_remove_assocs(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern List acct_storage_p_remove_federations(
+					void *db_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond)
 {
@@ -466,6 +487,12 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 
 extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 					slurmdb_cluster_cond_t *cluster_cond)
+{
+	return NULL;
+}
+
+extern List acct_storage_p_get_federations(void *db_conn, uid_t uid,
+					   slurmdb_federation_cond_t *fed_cond)
 {
 	return NULL;
 }
@@ -540,7 +567,8 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 
 extern int acct_storage_p_roll_usage(void *db_conn,
 				     time_t sent_start, time_t sent_end,
-				     uint16_t archive_data)
+				     uint16_t archive_data,
+				     rollup_stats_t *rollup_stats)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -1055,6 +1083,21 @@ extern int acct_storage_p_reconfig(void *db_conn)
 
 extern int acct_storage_p_reset_lft_rgt(void *db_conn, uid_t uid,
 					List cluster_list)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_get_stats(void *db_conn, bool dbd)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_clear_stats(void *db_conn, bool dbd)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_shutdown(void *db_conn, bool dbd)
 {
 	return SLURM_SUCCESS;
 }

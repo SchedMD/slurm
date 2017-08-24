@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,15 +39,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include <ctype.h>
 #include <regex.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -77,6 +74,7 @@ strong_alias(s_p_get_string,		slurm_s_p_get_string);
 strong_alias(s_p_get_long,		slurm_s_p_get_long);
 strong_alias(s_p_get_uint16,		slurm_s_p_get_uint16);
 strong_alias(s_p_get_uint32,		slurm_s_p_get_uint32);
+strong_alias(s_p_get_uint64,		slurm_s_p_get_uint64);
 strong_alias(s_p_get_float,		slurm_s_p_get_float);
 strong_alias(s_p_get_double,		slurm_s_p_get_double);
 strong_alias(s_p_get_long_double,	slurm_s_p_get_long_double);
@@ -617,6 +615,14 @@ static void* _handle_uint32(const char* key, const char* value)
 	return data;
 }
 
+static void* _handle_uint64(const char* key, const char* value)
+{
+	uint64_t* data = (uint64_t*)xmalloc(sizeof(uint64_t));
+	if (s_p_handle_uint64(data, key, value) == SLURM_ERROR)
+		return NULL;
+	return data;
+}
+
 static void* _handle_boolean(const char* key, const char* value)
 {
 	bool* data = (bool*)xmalloc(sizeof(bool));
@@ -743,6 +749,10 @@ static int _handle_expline_cmp_uint32(const void* v1, const void* v2)
 {
 	return *((uint32_t*)v1) != *((uint32_t*)v2);
 }
+static int _handle_expline_cmp_uint64(const void* v1, const void* v2)
+{
+	return *((uint64_t*)v1) != *((uint64_t*)v2);
+}
 static int _handle_expline_cmp_float(const void* v1, const void* v2)
 {
 	return *((float*)v1) != *((float*)v2);
@@ -793,7 +803,7 @@ static void _handle_expline_ac(s_p_hashtbl_t* tbl,
 }
 
 /*
- * merge a feshly generated s_p_hashtbl_t from the line/expline processing
+ * merge a freshly generated s_p_hashtbl_t from the line/expline processing
  * with the already added s_p_hashtbl_t elements of the previously processed
  * siblings
  */
@@ -826,6 +836,11 @@ static void _handle_expline_merge(_expline_values_t* v_data,
 	case S_P_UINT32:
 		_handle_expline_ac(current_tbl, master_key, matchp->data,
 				   _handle_expline_cmp_uint32, &v_data->values,
+				   tables_count);
+		break;
+	case S_P_UINT64:
+		_handle_expline_ac(current_tbl, master_key, matchp->data,
+				   _handle_expline_cmp_uint64, &v_data->values,
 				   tables_count);
 		break;
 	case S_P_FLOAT:
@@ -916,6 +931,9 @@ static void _handle_keyvalue_match(s_p_values_t *v,
 		break;
 	case S_P_UINT32:
 		_handle_common(v, value, line, leftover, _handle_uint32);
+		break;
+	case S_P_UINT64:
+		_handle_common(v, value, line, leftover, _handle_uint64);
 		break;
 	case S_P_POINTER:
 		_handle_pointer(v, value, line, leftover);
@@ -1073,57 +1091,6 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 				break;
 			}
 			xstrtolower(tmp_str);
-
-#if 0
-	char hostname[BUFFER_SIZE] = "";
-	char ip_str[BUFFER_SIZE] = "";
-	slurm_addr_t ip_addr;
-	char *ip, *port;
-
-/* Disable modifiers for hostname and IP address as doing offers little benefit,
- * but provides ample opportunity for failures due to bad configurations which
- * would be very difficult to diagnose.
- */
-		} else if ((format = strstr(filename, "%h"))) { /* Hostname */
-			if (gethostname_short(hostname, sizeof(hostname))) {
-				error("%s: Did not get hostname for include "
-				      "path", __func__);
-				xfree(filename);
-				break;
-			}
-			tmp_str = hostname;
-
-		} else if ((format = strstr(filename, "%i"))) { /* IP Address */
-			if (gethostname(hostname, sizeof(hostname))) {
-				error("%s: Did not get IP address for include "
-				      "path", __func__);
-				xfree(filename);
-				break;
-			}
-			_slurm_set_addr_char(&ip_addr, 0, hostname);
-			_slurm_print_slurm_addr(&ip_addr, ip_str,
-						sizeof(ip_str));
-			if (!xstrncmp(ip_str, "127.0.0.1", 9) ||
-			    !xstrncmp(ip_str, "127.0.1.1", 9)) {
-				/* Got address for loopback */
-				error("%s: Could not get unique IP address for "
-				      "include path (hostname=%s)",
-				      __func__, hostname);
-				xfree(filename);
-				break;
-			}
-			ip = strrchr(ip_str, '.');
-			port = strstr(ip, ":");
-			if (!ip || !port) {
-				error("%s: Did not get IP address for include "
-				      "path (hostname=%s)", __func__, hostname);
-				xfree(filename);
-				break;
-			}
-			port[0] = '\0';	/* Exclude the port number */
-			tmp_str = ip + 1;
-#endif
-
 		} else {	/* No special characters */
 			break;
 		}
@@ -1926,6 +1893,19 @@ int s_p_get_uint32(uint32_t *num, const char *key,
 	return 0;
 }
 
+int s_p_get_uint64(uint64_t *num, const char *key,
+		   const s_p_hashtbl_t *hashtbl)
+{
+	s_p_values_t *p = _get_check(S_P_UINT64, key, hashtbl);
+
+	if (p) {
+		*num = *(uint64_t *)p->data;
+		return 1;
+	}
+
+	return 0;
+}
+
 int s_p_get_operator(slurm_parser_operator_t *opt, const char *key,
 		     const s_p_hashtbl_t *hashtbl)
 {
@@ -2060,6 +2040,7 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 	long num;
 	uint16_t num16;
 	uint32_t num32;
+	uint64_t num64;
 	float numf;
 	double numd;
 	long double numld;
@@ -2095,6 +2076,12 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 		case S_P_UINT32:
 			if (s_p_get_uint32(&num32, op->key, hashtbl))
 				verbose("%s = %u", op->key, num32);
+			else
+				verbose("%s", op->key);
+			break;
+		case S_P_UINT64:
+			if (s_p_get_uint64(&num64, op->key, hashtbl))
+				verbose("%s = %"PRIu64"", op->key, num64);
 			else
 				verbose("%s", op->key);
 			break;

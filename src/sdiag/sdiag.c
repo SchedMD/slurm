@@ -5,7 +5,7 @@
  *  Written by Alejandro Lucero <alucero@bsc.es>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,10 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -67,9 +64,9 @@ static void _sort_rpc(void);
 
 stats_info_request_msg_t req;
 
-extern void parse_command_line(int argc, char *argv[]);
+extern void parse_command_line(int argc, char **argv);
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	int rc = 0;
 
@@ -184,8 +181,6 @@ static int _print_stats(void)
 
 	printf("\nRemote Procedure Call statistics by user\n");
 	for (i = 0; i < buf->rpc_user_size; i++) {
-		if (i == 0)
-			printf("\n");
 		printf("\t%-16s(%8u) count:%-6u "
 		       "ave_time:%-6u total_time:%"PRIu64"\n",
 		       uid_to_string_cached((uid_t)buf->rpc_user_id[i]),

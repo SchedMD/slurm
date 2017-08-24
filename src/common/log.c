@@ -50,38 +50,23 @@
 #  define _GNU_SOURCE
 #endif
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
 #endif
 
-#include <stdio.h>
-
-#if HAVE_STRING_H
-#  include <string.h>
-#endif
-
-#include <stdarg.h>
 #include <errno.h>
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif /* WITH_PTHREADS */
-
-
-#if HAVE_STDLIB_H
-#  include <stdlib.h>	/* for abort() */
-#endif
-
 #include <poll.h>
-#include <unistd.h>
+#include <pthread.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
@@ -150,11 +135,7 @@ typedef struct {
 char *slurm_prog_name = NULL;
 
 /* static variables */
-#ifdef WITH_PTHREADS
-  static pthread_mutex_t  log_lock = PTHREAD_MUTEX_INITIALIZER;
-#else
-  static int              log_lock;
-#endif /* WITH_PTHREADS */
+static pthread_mutex_t  log_lock = PTHREAD_MUTEX_INITIALIZER;
 static log_t            *log = NULL;
 static log_t            *sched_log = NULL;
 
@@ -174,19 +155,16 @@ extern char * program_invocation_name;
 /*
  * pthread_atfork handlers:
  */
-#ifdef WITH_PTHREADS
 static void _atfork_prep()   { slurm_mutex_lock(&log_lock);   }
 static void _atfork_parent() { slurm_mutex_unlock(&log_lock); }
 static void _atfork_child()  { slurm_mutex_unlock(&log_lock); }
 static bool at_forked = false;
-#  define atfork_install_handlers()                                           \
-          while (!at_forked) {                                                \
-                pthread_atfork(_atfork_prep, _atfork_parent, _atfork_child);  \
-		at_forked = true;                                             \
-	  }
-#else
-#  define atfork_install_handlers() (NULL)
-#endif
+#define atfork_install_handlers()					\
+	while (!at_forked) {						\
+		pthread_atfork(_atfork_prep, _atfork_parent, _atfork_child); \
+		at_forked = true;					\
+	}
+
 static void _log_flush(log_t *log);
 
 
@@ -712,6 +690,7 @@ set_idbuf(char *idbuf)
  *
  * args are like printf, with the addition of the following format chars:
  * - %m expands to strerror(errno)
+ * - %M expand to time stamp, format is configuration dependent
  * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
  * - %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  *
@@ -1137,25 +1116,8 @@ log_flush()
 	slurm_mutex_unlock(&log_lock);
 }
 
-/* LLNL Software development Toolbox (LSD-Tools)
- * fatal() and nomem() functions
- */
-void
-lsd_fatal_error(char *file, int line, char *msg)
-{
-	error("%s:%d %s: %m", file, line, msg);
-}
-
-void *
-lsd_nomem_error(char *file, int line, char *msg)
-{
-	error("%s:%d %s: %m", file, line, msg);
-	slurm_seterrno(ENOMEM);
-	return NULL;
-}
-
 /*
- * attempt to log message and abort()
+ * attempt to log message and exit()
  */
 void fatal(const char *fmt, ...)
 {
@@ -1271,11 +1233,7 @@ struct fatal_cleanup {
 };
 
 /* static variables */
-#ifdef WITH_PTHREADS
-  static pthread_mutex_t  fatal_lock = PTHREAD_MUTEX_INITIALIZER;
-#else
-  static int	fatal_lock;
-#endif /* WITH_PTHREADS */
+static pthread_mutex_t  fatal_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct fatal_cleanup *fatal_cleanups = NULL;
 
 /* Registers a cleanup function to be called by fatal() for this thread

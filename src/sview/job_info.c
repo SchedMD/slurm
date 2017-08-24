@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,7 +38,7 @@
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 
 #define _DEBUG 0
 #define MAX_CANCEL_RETRY 10
@@ -136,15 +136,9 @@ enum {
 	SORTID_GRES,
 	SORTID_GROUP_ID,
 	SORTID_IMAGE_BLRTS,
-#ifdef HAVE_BGL
-	SORTID_IMAGE_LINUX,
-	SORTID_IMAGE_MLOADER,
-	SORTID_IMAGE_RAMDISK,
-#else
 	SORTID_IMAGE_LINUX,
 	SORTID_IMAGE_RAMDISK,
 	SORTID_IMAGE_MLOADER,
-#endif
 	SORTID_JOBID,
 	SORTID_JOBID_FORMATTED,
 	SORTID_LICENSES,
@@ -223,260 +217,251 @@ static char *_initial_page_opts = ("JobID,Partition,BG_Block,"
 				   "State,Time_Running,Node_Count,NodeList");
 
 static display_data_t display_data_job[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_job,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_JOBID, "JobID", FALSE, EDIT_NONE, refresh_job,
+	{G_TYPE_STRING, SORTID_JOBID, "JobID", false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_JOBID_FORMATTED, NULL, FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_JOBID_FORMATTED, NULL, false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR,
+	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ACTION, "Action", FALSE,
+	{G_TYPE_STRING, SORTID_ACTION, "Action", false,
 	 EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_INT, SORTID_ALLOC, NULL, FALSE, EDIT_NONE, refresh_job,
+	{G_TYPE_INT, SORTID_ALLOC, NULL, false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ARRAY_JOB_ID, "Array_Job_ID", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_ARRAY_JOB_ID, "Array_Job_ID", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ARRAY_TASK_ID, "Array_Task_ID", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_ARRAY_TASK_ID, "Array_Task_ID", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_PARTITION, "Partition", FALSE,
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", FALSE, EDIT_NONE, refresh_job,
+	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GEOMETRY, "Geometry",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ROTATE, "Rotate",
-	 FALSE, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CONNECTION, "Connection",
-	 FALSE, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
-#ifdef HAVE_BGL
-	{G_TYPE_STRING, SORTID_IMAGE_BLRTS, "Image Blrts",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_LINUX, "Image Linux",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_RAMDISK, "Image Ramdisk",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-#else
+	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_BLRTS, NULL,
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_LINUX, "Image Cnload",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_RAMDISK, "Image Ioload",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-#endif
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_MLOADER, "Image Mloader",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #else
-	{G_TYPE_STRING, SORTID_BLOCK, NULL, TRUE, EDIT_NONE, refresh_job,
+	{G_TYPE_STRING, SORTID_BLOCK, NULL, true, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GEOMETRY, NULL,
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ROTATE, NULL,
-	 FALSE, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CONNECTION, NULL,
-	 FALSE, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_BLRTS, NULL,
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_LINUX, NULL,
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_RAMDISK, NULL,
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_MLOADER, NULL,
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #endif
 #ifdef HAVE_ALPS_CRAY
-	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, "ALPS Resv ID", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, "ALPS Resv ID", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
 #else
-	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, NULL, TRUE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, NULL, true, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
 #endif
-	{G_TYPE_STRING, SORTID_USER_ID, "UserID", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_USER_ID, "UserID", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_GROUP_ID, "GroupID", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_GROUP_ID, "GroupID", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_WCKEY, "WCKey", FALSE, EDIT_TEXTBOX, refresh_job,
+	{G_TYPE_STRING, SORTID_WCKEY, "WCKey", false, EDIT_TEXTBOX, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE, EDIT_TEXTBOX, refresh_job,
+	{G_TYPE_STRING, SORTID_NAME, "Name", false, EDIT_TEXTBOX, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_NONE, refresh_job,
+	{G_TYPE_STRING, SORTID_STATE, "State", false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_job,
+	{G_TYPE_INT, SORTID_STATE_NUM, NULL, false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_PREEMPT_TIME, "Preempt Time", FALSE,
+	{G_TYPE_STRING, SORTID_PREEMPT_TIME, "Preempt Time", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIME_RESIZE, "Time Resize", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_RESIZE, "Time Resize", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIME_RUNNING, "Time Running", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_RUNNING, "Time Running", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIME_SUBMIT, "Time Submit", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_SUBMIT, "Time Submit", false,
 	 EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIME_ELIGIBLE, "Time Eligible", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_ELIGIBLE, "Time Eligible", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIME_END, "Time End", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_END, "Time End", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_DEADLINE, "Deadline", FALSE,
+	{G_TYPE_STRING, SORTID_DEADLINE, "Deadline", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIME_SUSPEND, "Time Suspended", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_SUSPEND, "Time Suspended", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODES, "Node Count", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_NODES, "Node Count", false, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS, "CPU Count",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_EXC, "MidplaneList Excluded",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_REQ, "MidplaneList Requested",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_SCHED, "MidplaneList Scheduled",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", FALSE,
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_EXC, "NodeList Excluded",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_REQ, "NodeList Requested",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_SCHED, "NodeList Scheduled",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 #endif
-	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", FALSE, EDIT_MODEL,
+	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", false, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_CORE_SPEC, "CoreSpec", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_CORE_SPEC, "CoreSpec", false, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_THREAD_SPEC, "ThreadSpec", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_THREAD_SPEC, "ThreadSpec", false, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_REBOOT, "Reboot", FALSE, EDIT_MODEL,
+	{G_TYPE_STRING, SORTID_REBOOT, "Reboot", false, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_REQUEUE, "Requeue", FALSE, EDIT_MODEL,
+	{G_TYPE_STRING, SORTID_REQUEUE, "Requeue", false, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_INT, SORTID_RESTARTS, "Restart Count", FALSE, EDIT_NONE,
+	{G_TYPE_INT, SORTID_RESTARTS, "Restart Count", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
 	/* Priority is a string so we can edit using a text box */
-	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
+	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_DERIVED_EC, "Derived Exit Code", FALSE,
+	{G_TYPE_STRING, SORTID_DERIVED_EC, "Derived Exit Code", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_EXIT_CODE, "Exit Code", FALSE,
+	{G_TYPE_STRING, SORTID_EXIT_CODE, "Exit Code", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_BATCH, "Batch Flag", FALSE,
+	{G_TYPE_STRING, SORTID_BATCH, "Batch Flag", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_BATCH_HOST, "Batch Host", FALSE,
+	{G_TYPE_STRING, SORTID_BATCH_HOST, "Batch Host", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_BURST_BUFFER, "Burst Buffer", FALSE,
+	{G_TYPE_STRING, SORTID_BURST_BUFFER, "Burst Buffer", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPU_MIN, "CPUs Min",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPU_MAX, "CPUs Max",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TASKS, "Task Count",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", FALSE,
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
 	 EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_STD_ERR, "Standard Error",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_STD_IN, "Standard In",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_STD_OUT, "Standard Out",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "CPUs per Task",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_RESV_NAME, "Reservation Name",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPU_REQ, "Min CPUs Per Node",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MEM_MIN, "Min Memory",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TMP_DISK, "Min Tmp Disk Per Node",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	/* Nice is a string so we can edit using a text box */
-	{G_TYPE_STRING, SORTID_NICE, "Nice", FALSE,
+	{G_TYPE_STRING, SORTID_NICE, "Nice", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ACCOUNT, "Account", FALSE,
+	{G_TYPE_STRING, SORTID_ACCOUNT, "Account", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_QOS, "QOS", FALSE,
+	{G_TYPE_STRING, SORTID_QOS, "QOS", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REASON, "Reason Waiting",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_SWITCHES, "Switches",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GRES, "Gres",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_LICENSES, "Licenses",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MCS_LABEL, "MCS_Label",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_DEPENDENCY, "Dependency",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ALLOC_NODE, "Alloc Node : Sid",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NETWORK, "Network",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COMMAND, "Command",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COMMENT, "Comment",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_WORKDIR, "Work Dir",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_INT, SORTID_COLOR_INX, NULL, FALSE, EDIT_NONE,
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_INT, SORTID_COLOR_INX, NULL, false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, FALSE, EDIT_NONE,
+	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_INT, SORTID_SMALL_BLOCK, NULL, FALSE, EDIT_NONE, refresh_job,
+	{G_TYPE_INT, SORTID_SMALL_BLOCK, NULL, false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TRES, "TRES", FALSE,
+	{G_TYPE_STRING, SORTID_TRES, "TRES", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_job,
+	{G_TYPE_INT, SORTID_UPDATED, NULL, false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t create_data_job[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_COMMAND, "Script File", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_COMMAND, "Script File", false, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", false, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", false, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TASKS, "Task Count", FALSE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_TASKS, "Task Count", false, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t options_data_job[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
-	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, JOB_PAGE},
-	{G_TYPE_STRING, JOB_PAGE, "Signal", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, JOB_PAGE, "Requeue", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, JOB_PAGE, "Cancel", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, JOB_PAGE, "Suspend/Resume", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, JOB_PAGE, "Edit Job", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, JOB_PAGE},
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE},
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", true, JOB_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Signal", true, ADMIN_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Requeue", true, ADMIN_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Cancel", true, ADMIN_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Suspend/Resume", true, ADMIN_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Edit Job", true, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Partition", true, JOB_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Block", TRUE, JOB_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Midplanes", TRUE, JOB_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Block", true, JOB_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Midplanes", true, JOB_PAGE},
 #else
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, JOB_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, JOB_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, JOB_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, JOB_PAGE},
 #endif
-	{G_TYPE_STRING, RESV_PAGE, "Reservation", TRUE, JOB_PAGE},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_STRING, RESV_PAGE, "Reservation", true, JOB_PAGE},
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 struct signv {
@@ -774,22 +759,24 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 {
 	char *type = "";
 	int temp_int = 0;
+	long long int temp_ll = 0;
 	char *p;
 	uint16_t rotate;
 	uint16_t conn_type[cluster_dims];
-	char* token, *delimiter = ",x", *next_ptr;
+	char *token, *delimiter = ",x", *next_ptr;
 	char *sep_char;
 	int j;
 	uint16_t geo[cluster_dims];
-	char* geometry_tmp = xstrdup(new_text);
-	char* original_ptr = geometry_tmp;
+	char *geometry_tmp, *original_ptr;
 
 	/* need to clear global_edit_error here (just in case) */
 	global_edit_error = 0;
 	if (!job_msg)
 		return NULL;
 
-	switch(column) {
+	geometry_tmp = xstrdup(new_text);
+	original_ptr = geometry_tmp;
+	switch (column) {
 	case SORTID_ACTION:
 		xfree(got_edit_signal);
 		if (!xstrcasecmp(new_text, "None"))
@@ -903,21 +890,21 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->max_nodes = (uint32_t)temp_int;
 		break;
 	case SORTID_MEM_MIN:
-		temp_int = strtol(new_text, &p, 10);
+		temp_ll = strtoll(new_text, &p, 10);
 		if (*p == 'g' || *p == 'G')
-			temp_int *= 1024;
+			temp_ll *= 1024;
 		else if (*p == 't' || *p == 'T')
-			temp_int *= 1048576;
+			temp_ll *= 1048576;
 
-		p = slurm_strcasestr((char *)new_text, "cpu");
+		p = xstrcasestr((char *)new_text, "cpu");
 		if (p)
 			type = "min memory per cpu";
 		else
 			type = "min memory per node";
 
-		if (temp_int <= 0)
+		if (temp_ll <= 0)
 			goto return_error;
-		job_msg->pn_min_memory = (uint32_t)temp_int;
+		job_msg->pn_min_memory = (uint64_t) temp_ll;
 		if (p)
 			job_msg->pn_min_memory |= MEM_PER_CPU;
 		break;
@@ -1062,9 +1049,9 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	case SORTID_GEOMETRY:
 		type = "geometry";
 		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-		for (j=0; j<cluster_dims; j++)
+		for (j = 0; j < cluster_dims; j++)
 			geo[j] = (uint16_t) NO_VAL;
-		for (j=0; j<cluster_dims; j++) {
+		for (j = 0; j < cluster_dims; j++) {
 			if (!token) {
 				//error("insufficient dimensions in "
 				//      "Geometry");
@@ -1130,10 +1117,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 					    (void *) new_text);
 		break;
 	case SORTID_IMAGE_LINUX:
-		if (cluster_flags & CLUSTER_FLAG_BGL)
-			type = "LinuxImage";
-		else
-			type = "CnloadImage";
+		type = "CnloadImage";
 
 		if (!job_msg->select_jobinfo)
 			job_msg->select_jobinfo
@@ -1152,10 +1136,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 					    (void *) new_text);
 		break;
 	case SORTID_IMAGE_RAMDISK:
-		if (cluster_flags & CLUSTER_FLAG_BGL)
-			type = "RamdiskImage";
-		else
-			type = "IoloadImage";
+		type = "IoloadImage";
 
 		if (!job_msg->select_jobinfo)
 			job_msg->select_jobinfo
@@ -1284,7 +1265,7 @@ static GtkWidget *_admin_full_edit_job(job_desc_msg_t *job_msg,
 	table = GTK_TABLE(bin->child);
 	gtk_table_resize(table, SORTID_CNT, 2);
 
-	gtk_table_set_homogeneous(table, FALSE);
+	gtk_table_set_homogeneous(table, false);
 
 	for(i = 0; i < SORTID_CNT; i++) {
 		while (display_data++) {
@@ -1354,7 +1335,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
-	uint32_t min_mem = 0;
+	uint64_t min_mem = 0;
 
 	GtkTreeIter iter;
 	GtkTreeStore *treestore =
@@ -1625,17 +1606,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_GROUP_ID),
 				   tmp_char);
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		if (cluster_flags & CLUSTER_FLAG_BGL)
-			add_display_treestore_line(
-				update, treestore, &iter,
-				find_col_name(display_data_job,
-					      SORTID_IMAGE_BLRTS),
-				select_g_select_jobinfo_sprint(
-					job_ptr->select_jobinfo,
-					tmp_char,
-					sizeof(tmp_char),
-					SELECT_PRINT_BLRTS_IMAGE));
-
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_job,
 							 SORTID_IMAGE_LINUX),
@@ -2037,7 +2007,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
-	uint32_t min_mem = 0;
+	uint64_t min_mem = 0;
 
 	if (!iter)
 		iter = &sview_job_info_ptr->iter_ptr;
@@ -2484,18 +2454,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_ROTATE,        tmp_rotate,
 				   SORTID_SMALL_BLOCK,
 					sview_job_info_ptr->small_block,
-				   -1);
-	}
-
-	if (cluster_flags & CLUSTER_FLAG_BGL) {
-		char tmp_blrts[40];
-
-		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-					       tmp_blrts, sizeof(tmp_blrts),
-					       SELECT_PRINT_BLRTS_IMAGE);
-
-		gtk_tree_store_set(treestore, iter,
-				   SORTID_IMAGE_BLRTS,   tmp_blrts,
 				   -1);
 	}
 
@@ -3482,6 +3440,8 @@ need_refresh:
 			}
 		}
 		list_iterator_destroy(itr);
+		xfree(color_inx);
+		xfree(color_set_flag);
 	}
 	post_setup_popup_grid_list(popup_win);
 
@@ -3540,7 +3500,7 @@ extern GtkWidget *create_job_entry(job_desc_msg_t *job_msg,
 	table = GTK_TABLE(bin->child);
 	gtk_table_resize(table, SORTID_CNT, 2);
 
-	gtk_table_set_homogeneous(table, FALSE);
+	gtk_table_set_homogeneous(table, false);
 
 	/* NOTE: We build this in the order defined in the data structure
 	 * rather than in SORTID order for more flexibility. */
@@ -3750,28 +3710,26 @@ extern GtkListStore *create_model_job(int type)
 				   0, "NAV",
 				   1, SORTID_CONNECTION,
 				   -1);
-		if (!(cluster_flags & CLUSTER_FLAG_BGL)) {
-			gtk_list_store_append(model, &iter);
-			gtk_list_store_set(model, &iter,
-					   0, "HTC SMP",
-					   1, SORTID_CONNECTION,
-					   -1);
-			gtk_list_store_append(model, &iter);
-			gtk_list_store_set(model, &iter,
-					   0, "HTC Dual",
-					   1, SORTID_CONNECTION,
-					   -1);
-			gtk_list_store_append(model, &iter);
-			gtk_list_store_set(model, &iter,
-					   0, "HTC Virtual",
-					   1, SORTID_CONNECTION,
-					   -1);
-			gtk_list_store_append(model, &iter);
-			gtk_list_store_set(model, &iter,
-					   0, "HTC Linux",
-					   1, SORTID_CONNECTION,
-					   -1);
-		}
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC SMP",
+				   1, SORTID_CONNECTION,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC Dual",
+				   1, SORTID_CONNECTION,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC Virtual",
+				   1, SORTID_CONNECTION,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC Linux",
+				   1, SORTID_CONNECTION,
+				   -1);
 		break;
 	default:
 		break;
@@ -3890,12 +3848,12 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
-	static bool set_opts = FALSE;
+	static bool set_opts = false;
 
 	if (!set_opts)
 		set_page_opts(JOB_PAGE, display_data_job,
 			      SORTID_CNT, _initial_page_opts);
-	set_opts = TRUE;
+	set_opts = true;
 
 	/* reset */
 	if (!table && !display_data) {
@@ -4047,8 +4005,8 @@ display_it:
 	/* gtk_widget_set_size_request(display_widget, -1, -1); */
 	_update_info_job(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
-	toggled = FALSE;
-	force_refresh = FALSE;
+	toggled = false;
+	force_refresh = false;
 
 reset_curs:
 	if (main_window && main_window->window)
@@ -4501,7 +4459,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("jobs got %d\n", id);
 	}
-	if (!sview_thread_new((gpointer)popup_thr, popup_win, FALSE, &error)) {
+	if (!sview_thread_new((gpointer)popup_thr, popup_win, false, &error)) {
 		g_printerr ("Failed to create part popup thread: %s\n",
 			    error->message);
 		return;
@@ -4743,10 +4701,10 @@ static void _edit_each_job (GtkTreeModel *model, GtkTreeIter *iter,
 		job_msg->job_id = job_foreach->job_id;
 		entry = _admin_full_edit_job(job_msg, model, iter);
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-				   label, FALSE, FALSE, 0);
+				   label, false, false, 0);
 		if (entry)
 			gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-					   entry, TRUE, TRUE, 0);
+					   entry, true, true, 0);
 		gtk_widget_show_all(popup);
 		response = gtk_dialog_run(GTK_DIALOG(popup));
 		gtk_widget_destroy(popup);
@@ -4829,7 +4787,6 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 	if (xstrcmp(type, "Edit Job") == 0)
 		return _edit_jobs(model, iter, type, treeview);
 
-	job_msg = xmalloc(sizeof(job_desc_msg_t));
 	popup = gtk_dialog_new_with_buttons(
 			type,
 			GTK_WINDOW(main_window),
@@ -4858,6 +4815,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 		gtk_tree_model_get(model, iter, SORTID_POS, &jobid, -1);
 	}
 
+	job_msg = xmalloc(sizeof(job_desc_msg_t));
 	slurm_init_job_desc_msg(job_msg);
 
 	if (!xstrcasecmp("Signal", type)) {
@@ -4917,10 +4875,10 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 	}
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			   label, FALSE, FALSE, 0);
+			   label, false, false, 0);
 	if (entry)
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-				   entry, TRUE, TRUE, 0);
+				   entry, true, true, 0);
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
@@ -5013,30 +4971,16 @@ extern void cluster_change_job(void)
 			default:
 				break;
 			}
-			if (cluster_flags & CLUSTER_FLAG_BGL) {
-				switch(display_data->id) {
-				case SORTID_IMAGE_BLRTS:
-					display_data->name = "Image Blrts";
-					break;
-				case SORTID_IMAGE_LINUX:
-					display_data->name = "Image Linux";
-					break;
-				case SORTID_IMAGE_RAMDISK:
-					display_data->name = "Image Ramdisk";
-					break;
-				}
-			} else {
-				switch(display_data->id) {
-				case SORTID_IMAGE_BLRTS:
-					display_data->name = NULL;
-					break;
-				case SORTID_IMAGE_LINUX:
-					display_data->name = "Image Cnload";
-					break;
-				case SORTID_IMAGE_RAMDISK:
-					display_data->name = "Image Ioload";
-					break;
-				}
+			switch(display_data->id) {
+			case SORTID_IMAGE_BLRTS:
+				display_data->name = NULL;
+				break;
+			case SORTID_IMAGE_LINUX:
+				display_data->name = "Image Cnload";
+				break;
+			case SORTID_IMAGE_RAMDISK:
+				display_data->name = "Image Ioload";
+				break;
 			}
 		} else {
 			switch(display_data->id) {

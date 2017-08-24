@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,13 +41,6 @@
 
 #include "src/common/pack.h"
 #include "src/common/assoc_mgr.h"
-
-extern bool fd_writeable(slurm_fd_t fd);
-
-/* Return a buffer containing a DBD_RC (return code) message
- * caller must free returned buffer */
-extern Buf make_dbd_rc_msg(uint16_t rpc_version,
-			   int rc, char *comment, uint16_t sent_type);
 
 /* Process incoming RPCs. Meant to execute as a pthread */
 extern void *rpc_mgr(void *no_data);

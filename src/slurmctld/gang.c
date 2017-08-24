@@ -2,12 +2,12 @@
  *  gang.c - Gang scheduler functions.
  *****************************************************************************
  *  Copyright (C) 2008 Hewlett-Packard Development Company, L.P.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Written by Chris Holmes
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -48,6 +48,7 @@
 #include "slurm/slurm.h"
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
@@ -673,8 +674,7 @@ static void _preempt_job_dequeue(void)
 		} else if ((preempt_mode == PREEMPT_MODE_REQUEUE) &&
 			   job_ptr->batch_flag && job_ptr->details &&
 			   (job_ptr->details->requeue > 0)) {
-			rc = job_requeue(0, job_ptr->job_id, -1,
-					 (uint16_t)NO_VAL, true, 0);
+			rc = job_requeue(0, job_ptr->job_id, NULL, true, 0);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);
@@ -1221,7 +1221,7 @@ extern int gs_fini(void)
 	if (thread_running) {
 		slurm_mutex_lock(&term_lock);
 		thread_shutdown = true;
-		pthread_cond_signal(&term_cond);
+		slurm_cond_signal(&term_cond);
 		slurm_mutex_unlock(&term_lock);
 		usleep(120000);
 		if (timeslicer_thread_id)
@@ -1614,7 +1614,7 @@ static void _slice_sleep(void)
 	ts.tv_nsec = now.tv_usec * 1000;
 	slurm_mutex_lock(&term_lock);
 	if (!thread_shutdown)
-		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
+		slurm_cond_timedwait(&term_cond, &term_lock, &ts);
 	slurm_mutex_unlock(&term_lock);
 }
 
@@ -1623,7 +1623,7 @@ static void *_timeslicer_thread(void *arg)
 {
 	/* Write locks on job and read lock on nodes */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
 	ListIterator part_iterator;
 	struct gs_part *p_ptr;
 

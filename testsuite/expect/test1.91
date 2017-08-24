@@ -15,7 +15,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -60,6 +60,14 @@ if {![test_cpu_affinity]} {
 	exit 0
 }
 send_user "\ntask affinity plugin installed\n"
+
+set task_params [string tolower [get_affinity_params]]
+if {[string first $task_params "boards"]  != -1 ||
+    [string first $task_params "sockets"] != -1 ||
+    [string first $task_params "cores"]   != -1} {
+	send_user "\nWARNING: TaskPluginParams=$task_params not supported\n"
+	exit 0
+}
 
 set force 0
 log_user 0

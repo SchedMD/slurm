@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,10 +34,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include <stdlib.h>
 
@@ -186,8 +182,8 @@ _handle_msg(slurm_msg_t *msg)
 static void *_msg_thr_internal(void *arg)
 {
 	slurm_addr_t cli_addr;
-	slurm_fd_t newsockfd;
-	slurm_msg_t *msg;
+	int newsockfd;
+	slurm_msg_t msg;
 	int *slurmctld_fd_ptr = (int *)arg;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -200,15 +196,15 @@ static void *_msg_thr_internal(void *arg)
 				error("slurm_accept_msg_conn: %m");
 			continue;
 		}
-		msg = xmalloc(sizeof(slurm_msg_t));
-		if (slurm_receive_msg(newsockfd, msg, 0) != 0) {
+		slurm_msg_t_init(&msg);
+		if (slurm_receive_msg(newsockfd, &msg, 0) != 0) {
 			error("slurm_receive_msg: %m");
 			/* close the new socket */
 			slurm_close(newsockfd);
 			continue;
 		}
-		_handle_msg(msg);
-		slurm_free_msg(msg);
+		_handle_msg(&msg);
+		slurm_free_msg_members(&msg);
 		slurm_close(newsockfd);
 	}
 	return NULL;
@@ -316,7 +312,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 		}
 	}
 
-	/* We need to do +2 here just incase multi-prog is needed (we
+	/* We need to do +2 here just in case multi-prog is needed (we
 	 * add an extra argv on so just make space for it). */
 	opt.argv = (char **) xmalloc((opt.argc + command_pos + 2) *
 		   sizeof(char *));
@@ -470,7 +466,7 @@ extern int launch_p_step_launch(
 	msg_thread = _spawn_msg_handler();
 
 	*global_rc = runjob_launch(opt.argc, opt.argv,
-				   cio_fds->in.fd,
+				   cio_fds->input.fd,
 				   cio_fds->out.fd,
 				   cio_fds->err.fd);
 	_send_step_complete_rpc(*global_rc);

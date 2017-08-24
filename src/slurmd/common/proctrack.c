@@ -7,7 +7,7 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,16 +36,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <fcntl.h>
 #include <pthread.h>
-#include <unistd.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <signal.h>
+#include <unistd.h>
+
 #ifdef HAVE_LINUX_SCHED_H
 #  include <linux/sched.h>
 #endif
@@ -220,15 +219,21 @@ static bool _test_core_dumping(char* stat_fname)
 	int proc_fd, proc_stat_size = BUF_SIZE;
 	bool dumping_results = false;
 
-	proc_stat = (char *) xmalloc(proc_stat_size);
 	proc_fd = open(stat_fname, O_RDONLY, 0);
 	if (proc_fd == -1)
 		return false;  /* process is now gone */
-	while ((num = read(proc_fd, proc_stat, proc_stat_size)) > 0) {
-		if (num < (proc_stat_size-1))
+	proc_stat = xmalloc_nz(proc_stat_size + 1);
+	while (1) {
+		num = read(proc_fd, proc_stat, proc_stat_size);
+		if (num < 0) {
+			proc_stat[0] = '\0';
+			break;
+		}
+		proc_stat[num] = '\0';
+		if (num < proc_stat_size)
 			break;
 		proc_stat_size += BUF_SIZE;
-		xrealloc(proc_stat, proc_stat_size);
+		xrealloc_nz(proc_stat, proc_stat_size + 1);
 		if (lseek(proc_fd, (off_t) 0, SEEK_SET) != 0)
 			break;
 	}
@@ -237,9 +242,8 @@ static bool _test_core_dumping(char* stat_fname)
 	/* split into "PID (cmd" and "<rest>" */
 	str_ptr = (char *)strrchr(proc_stat, ')');
 	if (str_ptr == NULL) {
-		error("\
-%s: unexpected format of %s (%s) bracket missing?", __func__,
-		      stat_fname, proc_stat);
+		error("%s: unexpected format of %s (%s) bracket missing?",
+		      __func__, stat_fname, proc_stat);
 		xfree(proc_stat);
 		return false;
 	}

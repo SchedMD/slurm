@@ -6,7 +6,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,19 +38,13 @@
 #ifndef _PLUGSTACK_H
 #define _PLUGSTACK_H
 
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include <config.h>
 
 #ifndef   _GNU_SOURCE
 #  define _GNU_SOURCE
 #endif
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
+#include <getopt.h>
 
 #include "src/common/job_options.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

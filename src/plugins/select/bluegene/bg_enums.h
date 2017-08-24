@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,9 +41,7 @@
 #define ATTACH_BGL_H	/* Replacement for attach_bgl.h on BGL */
 #define ATTACH_BG_H	/* Replacement for attach_bg.h on BGP */
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_BG_FILES
 

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -198,5 +198,8 @@ int xstrncmp(const char *s1, const char *s2, size_t n);
  * safe strcasecmp (handles NULL values)
  */
 int xstrcasecmp(const char *s1, const char *s2);
+
+/* safe case insensitive version of strstr(). */
+char *xstrcasestr(char *haystack, char *needle);
 
 #endif /* !_XSTRING_H */

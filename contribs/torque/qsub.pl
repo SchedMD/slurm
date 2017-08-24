@@ -12,7 +12,7 @@
 #  CODE-OCEC-09-009. All rights reserved.
 #
 #  This file is part of SLURM, a resource management program.
-#  For details, see <http://slurm.schedmd.com/>.
+#  For details, see <https://slurm.schedmd.com/>.
 #  Please also read the included file: DISCLAIMER.
 #
 #  SLURM is free software; you can redistribute it and/or modify it under
@@ -418,6 +418,9 @@ if ($interactive) {
 	# If block is true wait for the job to finish
 	my($resp, $count);
 	my $slurm = Slurm::new();
+	if (!$slurm) {
+		die "Problem loading slurm.\n";
+	}
 	if ( (lc($block) eq "true" ) and ($command_exit_status == 0) ) {
 		sleep 2;
 		my($job) = $slurm->load_job($job_id);

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,16 +40,14 @@
 #ifndef _HAVE_OPT_H
 #define _HAVE_OPT_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #ifndef SYSTEM_DIMENSIONS
 #  define SYSTEM_DIMENSIONS 1
 #endif
 
-#include <time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "src/common/macros.h" /* true and false */
@@ -59,8 +57,6 @@
 
 #define DEFAULT_IMMEDIATE	1
 #define MAX_THREADS		60
-
-#define INT_UNASSIGNED ((int)-1)
 
 /* global variables relating to user options */
 extern int _verbose;
@@ -91,10 +87,15 @@ typedef struct srun_options {
 	int32_t sockets_per_node; /* --sockets-per-node=n      */
 	int32_t cores_per_socket; /* --cores-per-socket=n      */
 	int32_t threads_per_core; /* --threads-per-core=n      */
+	bool threads_per_core_set;/* --threads-per-core set explicitly set */
 	int32_t ntasks_per_node;   /* --ntasks-per-node=n	*/
 	int32_t ntasks_per_socket; /* --ntasks-per-socket=n	*/
 	int ntasks_per_core;	/* --ntasks-per-core=n		*/
+	bool ntasks_per_core_set; /* --ntasks-per-core set explicitly set */
+	char *hint_env;		/* SLURM_HINT env var setting	*/
+	bool hint_set;		/* --hint set explicitly set	*/
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
+	bool cpu_bind_type_set;	/* --cpu_bind set explicitly set */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
@@ -178,8 +179,8 @@ typedef struct srun_options {
 
 	/* constraint options */
 	int32_t pn_min_cpus;	/* --mincpus=n			*/
-	int32_t pn_min_memory;	/* --mem=n			*/
-	int32_t mem_per_cpu;	/* --mem-per-cpu=n		*/
+	int64_t pn_min_memory;	/* --mem=n			*/
+	int64_t mem_per_cpu;	/* --mem-per-cpu=n		*/
 	long pn_min_tmp_disk;	/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	char *gres;		/* --gres=			*/
@@ -241,12 +242,13 @@ typedef struct srun_options {
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	time_t deadline; 	/* --deadline                   */
 	uint32_t job_flags;	/* --gres-flags */
+	uint32_t delay_boot;	/* --delay-boot			*/	
 } opt_t;
 
 extern opt_t opt;
 
 extern int error_exit;		/* exit code for slurm errors */
-extern int immediate_exit;	/* exit code for --imediate option & busy */
+extern int immediate_exit;	/* exit code for --immediate option & busy */
 extern bool srun_max_timer;
 extern bool srun_shutdown;
 extern time_t srun_begin_time;	/* begin time of srun process */
@@ -258,8 +260,8 @@ extern resource_allocation_response_msg_t *global_resp;
  *  macro or move this to a function if it gets a little complicated)
  */
 #define constraints_given() ((opt.pn_min_cpus     != NO_VAL) || \
-			     (opt.pn_min_memory   != NO_VAL) || \
-			     (opt.job_max_memory   != NO_VAL) || \
+			     (opt.pn_min_memory   != NO_VAL64) || \
+			     (opt.job_max_memory   != NO_VAL64) || \
 			     (opt.pn_min_tmp_disk != NO_VAL) || \
 			     (opt.pn_min_sockets  != NO_VAL) || \
 			     (opt.pn_min_cores    != NO_VAL) || \
@@ -272,7 +274,7 @@ extern resource_allocation_response_msg_t *global_resp;
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int initialize_and_process_args(int argc, char *argv[]);
+int initialize_and_process_args(int argc, char **argv);
 
 /* external functions available for SPANK plugins to modify the environment
  * exported to the SLURM Prolog and Epilog programs */

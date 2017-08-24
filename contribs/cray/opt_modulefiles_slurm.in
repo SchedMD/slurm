@@ -6,7 +6,7 @@
 # SUBROUTINES
 proc ModulesHelp { } {
 	puts stderr "\tThis is Slurm $::version.\n"
-	puts stderr "\tPlease consult http://slurm.schedmd.com/cray.html"
+	puts stderr "\tPlease consult https://slurm.schedmd.com/cray.html"
 }
 
 # CONFIGURATION

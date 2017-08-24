@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,9 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -202,7 +200,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 				   node_info_ptr->node_array[i].gres);
 
 		if (node_info_ptr->node_array[i].real_memory > 1)
-		        xstrfmtcat(tmp_str, " RealMemory=%u",
+		        xstrfmtcat(tmp_str, " RealMemory=%"PRIu64"",
 				   node_info_ptr->node_array[i].real_memory);
 
 		if (node_info_ptr->node_array[i].tmp_disk)
@@ -216,6 +214,12 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (node_info_ptr->node_array[i].features != NULL)
 		        xstrfmtcat(tmp_str, " Feature=%s",
 				   node_info_ptr->node_array[i].features);
+
+		if (node_info_ptr->node_array[i].port &&
+		    node_info_ptr->node_array[i].port
+		    != slurm_ctl_conf_ptr->slurmd_port)
+		        xstrfmtcat(tmp_str, " Port=%u",
+				   node_info_ptr->node_array[i].port);
 
 		/* check for duplicate records */
 		for (crp = rp; crp != NULL; crp = crp->next) {
@@ -287,10 +291,10 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 		if (p[i].def_mem_per_cpu & MEM_PER_CPU) {
 		        if (p[i].def_mem_per_cpu != MEM_PER_CPU)
-		                fprintf(fp, "DefMemPerCPU=%"PRIu32"",
+		                fprintf(fp, "DefMemPerCPU=%"PRIu64"",
 		                        p[i].def_mem_per_cpu & (~MEM_PER_CPU));
 		} else if (p[i].def_mem_per_cpu != 0)
-		        fprintf(fp, "DefMemPerNode=%"PRIu32"",
+		        fprintf(fp, "DefMemPerNode=%"PRIu64"",
 		                p[i].def_mem_per_cpu);
 
 		if (!p[i].allow_accounts && p[i].deny_accounts)
@@ -331,10 +335,10 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 		if (p[i].max_mem_per_cpu & MEM_PER_CPU) {
 		        if (p[i].max_mem_per_cpu != MEM_PER_CPU)
-		                fprintf(fp, " MaxMemPerCPU=%"PRIu32"",
+		                fprintf(fp, " MaxMemPerCPU=%"PRIu64"",
 		                        p[i].max_mem_per_cpu & (~MEM_PER_CPU));
 		} else if (p[i].max_mem_per_cpu != 0)
-		        fprintf(fp, " MaxMemPerNode=%"PRIu32"",
+		        fprintf(fp, " MaxMemPerNode=%"PRIu64"",
 				p[i].max_mem_per_cpu);
 
 		if (p[i].max_nodes != INFINITE) {
@@ -447,17 +451,13 @@ void slurm_print_ctl_conf ( FILE* out,
 	char *select_title = "Select Plugin Configuration";
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if (cluster_flags & CLUSTER_FLAG_BGL)
-		select_title = "\nBluegene/L configuration\n";
-	else if (cluster_flags & CLUSTER_FLAG_BGP)
-		select_title = "\nBluegene/P configuration\n";
-	else if (cluster_flags & CLUSTER_FLAG_BGQ)
+	if (cluster_flags & CLUSTER_FLAG_BGQ)
 		select_title = "\nBluegene/Q configuration\n";
 	else if (cluster_flags & CLUSTER_FLAG_CRAY)
 		select_title = "\nCray configuration\n";
 
-	if ( slurm_ctl_conf_ptr == NULL )
-		return ;
+	if (slurm_ctl_conf_ptr == NULL)
+		return;
 
 	slurm_make_time_str((time_t *)&slurm_ctl_conf_ptr->last_update,
 			     time_str, sizeof(time_str));
@@ -690,18 +690,18 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
-	if (slurm_ctl_conf_ptr->def_mem_per_cpu == INFINITE) {
+	if (slurm_ctl_conf_ptr->def_mem_per_cpu == INFINITE64) {
 		key_pair->name = xstrdup("DefMemPerNode");
 		key_pair->value = xstrdup("UNLIMITED");
 	} else if (slurm_ctl_conf_ptr->def_mem_per_cpu & MEM_PER_CPU) {
 		key_pair->name = xstrdup("DefMemPerCPU");
-		snprintf(tmp_str, sizeof(tmp_str), "%u",
+		snprintf(tmp_str, sizeof(tmp_str), "%"PRIu64"",
 			 slurm_ctl_conf_ptr->def_mem_per_cpu &
 			 (~MEM_PER_CPU));
 		key_pair->value = xstrdup(tmp_str);
 	} else if (slurm_ctl_conf_ptr->def_mem_per_cpu) {
 		key_pair->name = xstrdup("DefMemPerNode");
-		snprintf(tmp_str, sizeof(tmp_str), "%u",
+		snprintf(tmp_str, sizeof(tmp_str), "%"PRIu64"",
 			 slurm_ctl_conf_ptr->def_mem_per_cpu);
 		key_pair->value = xstrdup(tmp_str);
 	} else {
@@ -983,6 +983,11 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MailDomain");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->mail_domain);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MailProg");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->mail_prog);
 	list_append(ret_list, key_pair);
@@ -1010,18 +1015,18 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
-	if (slurm_ctl_conf_ptr->max_mem_per_cpu == INFINITE) {
+	if (slurm_ctl_conf_ptr->max_mem_per_cpu == INFINITE64) {
 		key_pair->name = xstrdup("MaxMemPerNode");
 		key_pair->value = xstrdup("UNLIMITED");
 	} else if (slurm_ctl_conf_ptr->max_mem_per_cpu & MEM_PER_CPU) {
 		key_pair->name = xstrdup("MaxMemPerCPU");
-		snprintf(tmp_str, sizeof(tmp_str), "%u",
+		snprintf(tmp_str, sizeof(tmp_str), "%"PRIu64"",
 			 slurm_ctl_conf_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
 		key_pair->value = xstrdup(tmp_str);
 
 	} else if (slurm_ctl_conf_ptr->max_mem_per_cpu) {
 		key_pair->name = xstrdup("MaxMemPerNode");
-		snprintf(tmp_str, sizeof(tmp_str), "%u",
+		snprintf(tmp_str, sizeof(tmp_str), "%"PRIu64"",
 			 slurm_ctl_conf_ptr->max_mem_per_cpu);
 		key_pair->value = xstrdup(tmp_str);
 	} else {
@@ -1378,21 +1383,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SbcastParameters");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->sbcast_parameters);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SchedulerParameters");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->sched_params);
-	list_append(ret_list, key_pair);
-
-	snprintf(tmp_str, sizeof(tmp_str), "%u",
-		 slurm_ctl_conf_ptr->schedport);
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("SchedulerPort");
-	key_pair->value = xstrdup(tmp_str);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("SchedulerRootFilter");
-	key_pair->value = xstrdup_printf(
-		"%u", slurm_ctl_conf_ptr->schedrootfltr);
 	list_append(ret_list, key_pair);
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
@@ -1484,7 +1481,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->slurmd_plugstack);
 	list_append(ret_list, key_pair);
 
-#ifndef MULTIPLE_SLURMD
 	snprintf(tmp_str, sizeof(tmp_str), "%u",
 		 slurm_ctl_conf_ptr->slurmd_port);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -1492,7 +1488,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-#endif
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmdSpoolDir");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->slurmd_spooldir);
@@ -1856,7 +1851,7 @@ void slurm_print_slurmd_status (FILE* out,
 		slurmd_status_ptr->actual_cores);
 	fprintf(out, "Actual threads per core  = %u\n",
 		slurmd_status_ptr->actual_threads);
-	fprintf(out, "Actual real memory       = %u MB\n",
+	fprintf(out, "Actual real memory       = %"PRIu64" MB\n",
 		slurmd_status_ptr->actual_real_mem);
 	fprintf(out, "Actual temp disk space   = %u MB\n",
 		slurmd_status_ptr->actual_tmp_disk);
@@ -1947,9 +1942,36 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 			      key_pair->name,
 			      key_pair->value);
 		} else {
-			/* Only write out values. Use strtok
-			 * to grab just the value (ie. "60 sec") */
-			temp = strtok(key_pair->value, " (");
+			if ((!xstrcasecmp(key_pair->name, "ChosLoc")) ||
+			    (!xstrcasecmp(key_pair->name, "Epilog")) ||
+			    (!xstrcasecmp(key_pair->name, "EpilogSlurmctld")) ||
+			    (!xstrcasecmp(key_pair->name,
+					  "HealthCheckProgram")) ||
+			    (!xstrcasecmp(key_pair->name, "MailProg")) ||
+			    (!xstrcasecmp(key_pair->name, "Prolog")) ||
+			    (!xstrcasecmp(key_pair->name, "PrologSlurmctld")) ||
+			    (!xstrcasecmp(key_pair->name, "RebootProgram")) ||
+			    (!xstrcasecmp(key_pair->name, "ResumeProgram")) ||
+			    (!xstrcasecmp(key_pair->name, "ResvEpilog")) ||
+			    (!xstrcasecmp(key_pair->name, "ResvProlog")) ||
+			    (!xstrcasecmp(key_pair->name,
+					  "SallocDefaultCommand")) ||
+			    (!xstrcasecmp(key_pair->name, "SrunEpilog")) ||
+			    (!xstrcasecmp(key_pair->name, "SrunProlog")) ||
+			    (!xstrcasecmp(key_pair->name, "SuspendProgram")) ||
+			    (!xstrcasecmp(key_pair->name, "TaskEpilog")) ||
+			    (!xstrcasecmp(key_pair->name, "TaskProlog")) ||
+			    (!xstrcasecmp(key_pair->name,
+					  "UnkillableStepProgram"))) {
+				/* Exceptions not be tokenized in the output */
+				temp = key_pair->value;
+			} else {
+				/*
+				 * Only write out values. Use strtok
+				 * to grab just the value (ie. "60 sec")
+				 */
+				temp = strtok(key_pair->value, " (");
+			}
 			temp = xstrdup_printf("%s=%s",
 					      key_pair->name, temp);
 		}
@@ -2016,8 +2038,6 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		if (!xstrcasecmp(key_pair->name, "SelectType") ||
 		    !xstrcasecmp(key_pair->name, "SelectTypeParameters") ||
 		    !xstrcasecmp(key_pair->name, "SchedulerParameters") ||
-		    !xstrcasecmp(key_pair->name, "SchedulerPort") ||
-		    !xstrcasecmp(key_pair->name, "SchedulerRootFilter") ||
 		    !xstrcasecmp(key_pair->name, "SchedulerTimeSlice") ||
 		    !xstrcasecmp(key_pair->name, "SchedulerType") ||
 		    !xstrcasecmp(key_pair->name, "SlurmSchedLogLevel") ||

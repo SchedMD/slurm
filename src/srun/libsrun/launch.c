@@ -4,7 +4,7 @@
 *  Written by Danny Auble <da@schedmd.com>
 *
 *  This file is part of SLURM, a resource management program.
-*  For details, see <http://slurm.schedmd.com/>.
+*  For details, see <https://slurm.schedmd.com/>.
 *  Please also read the included file: DISCLAIMER.
 *
 *  SLURM is free software; you can redistribute it and/or modify it under
@@ -32,6 +32,8 @@
 *  with SLURM; if not, write to the Free Software Foundation, Inc.,
 *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "config.h"
 
 #include <stdlib.h>
 #include <fcntl.h>
@@ -159,9 +161,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 void (*signal_function)(int),
 					 sig_atomic_t *destroy_job)
 {
-	int i, rc;
-	unsigned long step_wait = 0, my_sleep = 0;
-	uint16_t base_dist;
+	int i, j, rc;
+	unsigned long step_wait = 0;
+	uint16_t base_dist, slurmctld_timeout;
 
 	if (!job) {
 		error("launch_common_create_job_step: no job given");
@@ -198,9 +200,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		job->ntasks = opt.ntasks = job->nhosts * opt.ntasks_per_node;
 	job->ctx_params.task_count = opt.ntasks;
 
-	if (opt.mem_per_cpu != NO_VAL)
+	if (opt.mem_per_cpu != NO_VAL64)
 		job->ctx_params.pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
-	else if (opt.pn_min_memory != NO_VAL)
+	else if (opt.pn_min_memory != NO_VAL64)
 		job->ctx_params.pn_min_memory = opt.pn_min_memory;
 	if (opt.gres)
 		job->ctx_params.gres = opt.gres;
@@ -302,7 +304,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	      job->ctx_params.cpu_count, job->ctx_params.task_count,
 	      job->ctx_params.name, job->ctx_params.relative);
 
-	for (i=0; (!(*destroy_job)); i++) {
+	for (i = 0; (!(*destroy_job)); i++) {
 		if (opt.no_alloc) {
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
 				&job->ctx_params, job->stepid);
@@ -313,8 +315,10 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 							    srun_begin_time)) *
 					    1000;
 			} else {
-				/* Wait 60 to 70 seconds for response */
-				step_wait = (getpid() % 10) * 1000 + 60000;
+				slurmctld_timeout = MIN(300, MAX(60,
+					slurm_get_slurmctld_timeout()));
+				step_wait = ((getpid() % 10) +
+					     slurmctld_timeout) * 1000;
 			}
 			job->step_ctx = slurm_step_ctx_create_timeout(
 						&job->ctx_params, step_wait);
@@ -350,17 +354,11 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 				     "retrying");
 			}
 			xsignal_unblock(sig_array);
-			for (i = 0; sig_array[i]; i++)
-				xsignal(sig_array[i], signal_function);
-			my_sleep = (getpid() % 1000) * 100 + 100000;
+			for (j = 0; sig_array[j]; j++)
+				xsignal(sig_array[j], signal_function);
 		} else {
 			verbose("Job step creation still disabled, retrying");
-			my_sleep *= 2;
 		}
-
-		/* sleep 0.1 to 5 secs with exponential back-off */
-		my_sleep = MIN(my_sleep, 5000000);
-		usleep(my_sleep);
 
 		if (*destroy_job) {
 			/* cancelled by signal */
@@ -417,17 +415,17 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 	if (_is_local_file(job->ifname)) {
 		if ((job->ifname->name == NULL) ||
 		    (job->ifname->taskid != -1)) {
-			cio_fds->in.fd = STDIN_FILENO;
+			cio_fds->input.fd = STDIN_FILENO;
 		} else {
-			cio_fds->in.fd = open(job->ifname->name, O_RDONLY);
-			if (cio_fds->in.fd == -1) {
+			cio_fds->input.fd = open(job->ifname->name, O_RDONLY);
+			if (cio_fds->input.fd == -1) {
 				error("Could not open stdin file: %m");
 				exit(error_exit);
 			}
 		}
 		if (job->ifname->type == IO_ONE) {
-			cio_fds->in.taskid = job->ifname->taskid;
-			cio_fds->in.nodeid = slurm_step_layout_host_id(
+			cio_fds->input.taskid = job->ifname->taskid;
+			cio_fds->input.nodeid = slurm_step_layout_host_id(
 				launch_common_get_slurm_step_layout(job),
 				job->ifname->taskid);
 		}

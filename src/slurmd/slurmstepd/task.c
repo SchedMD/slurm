@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,39 +37,23 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <grp.h>
 #include <pwd.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
-#if HAVE_STDLIB_H
-#  include <stdlib.h>
-#endif
-
-#if HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif
-
-#ifdef HAVE_AIX
-#  include <sys/checkpnt.h>
-#endif
-
-#include <sys/resource.h>
 
 /* FIXME: Come up with a real solution for EUID instead of substituting RUID */
 #if defined(__NetBSD__)
@@ -234,18 +218,13 @@ _run_script_and_set_env(const char *name, const char *path,
 
 		argv[0] = xstrdup(path);
 		argv[1] = NULL;
-		close(1);
-		if (dup(pfd[1]) == -1)
+		if (dup2(pfd[1], 1) == -1)
 			error("couldn't do the dup: %m");
 		close(2);
 		close(0);
 		close(pfd[0]);
 		close(pfd[1]);
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execve(path, argv, job->env);
 		error("execve(%s): %m", path);
 		exit(127);
@@ -352,7 +331,6 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 
 	return mpi_hook_slurmstepd_task(info, &job->env);
 }
-extern void block_daemon(void);
 
 /*
  *  Current process is running as the user when this is called.
@@ -401,6 +379,7 @@ exec_task(stepd_step_rec_t *job, int i)
 	 * references. */
 	job->envtp->env = env_array_copy((const char **) job->env);
 	setup_env(job->envtp, false);
+	setenvf(&job->envtp->env, "SLURM_JOB_GID", "%d", job->gid);
 	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
 	tmp_env = job->env;
 	job->env = job->envtp->env;

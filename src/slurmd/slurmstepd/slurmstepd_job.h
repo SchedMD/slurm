@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,10 +41,7 @@
 #ifndef _SLURMSTEPD_JOB_H
 #define _SLURMSTEPD_JOB_H
 
-#if WITH_PTHREADS
 #include <pthread.h>
-#endif
-
 #include <pwd.h>
 
 #include "src/common/macros.h"
@@ -140,8 +137,8 @@ typedef struct {
 	uint16_t      *task_cnts;  /* Number of tasks on each node in job   */
 	uint32_t       cpus_per_task;	/* number of cpus desired per task  */
 	uint32_t       debug;  /* debug level for job slurmd                */
-	uint32_t       job_mem;  /* MB of memory reserved for the job       */
-	uint32_t       step_mem; /* MB of memory reserved for the step      */
+	uint64_t       job_mem;  /* MB of memory reserved for the job       */
+	uint64_t       step_mem; /* MB of memory reserved for the step      */
 	uint16_t       cpus;   /* number of cpus to use for this job        */
 	uint32_t       argc;   /* number of commandline arguments           */
 	char         **env;    /* job environment                           */
@@ -167,7 +164,6 @@ typedef struct {
 	bool           aborted;    /* true if already aborted               */
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
-	bool           user_managed_io;
 	time_t         timelimit;  /* time at which job must stop           */
 	uint32_t       profile;	   /* Level of acct_gather_profile          */
 	char          *task_prolog; /* per-task prolog                      */
@@ -199,20 +195,13 @@ typedef struct {
 			       * used when a new client attaches
 			       */
 
-	uint8_t	buffered_stdio; /* stdio buffering flag, 1 for line-buffering,
-				 * 0 for no buffering
-				 */
-	uint8_t labelio;	/* 1 for labelling output with the task id */
-
 	pthread_t      ioid;  /* pthread id of IO thread                    */
 	pthread_t      msgid; /* pthread id of message thread               */
 	eio_handle_t  *msg_handle; /* eio handle for the message thread     */
 
 	pid_t          jmgr_pid;     /* job manager pid                     */
 	pid_t          pgid;         /* process group id for tasks          */
-
-	uint16_t       task_flags;
-	uint16_t       multi_prog;
+	uint32_t       flags;        /* See LAUNCH_* flags defined in slurm_protocol_defs.h */
 	uint16_t       overcommit;
 	env_t          *envtp;
 	uint64_t       cont_id;
@@ -220,7 +209,6 @@ typedef struct {
 	char          *batchdir;
 	jobacctinfo_t *jobacct;
 	uint8_t        open_mode;	/* stdout/err append or truncate */
-	uint8_t        pty;		/* set if creating pseudo tty	*/
 	job_options_t  options;
 	char          *ckpt_dir;
 	time_t         ckpt_timestamp;
@@ -240,6 +228,7 @@ typedef struct {
 	int		non_smp;	/* Set if task IDs are not monotonically
 					 * increasing across all nodes, set only
 					 * native Cray systems */
+	bool		oom_error;	/* step out of memory error */
 } stepd_step_rec_t;
 
 

@@ -185,6 +185,18 @@ Attempt to claim burst buffer resources.<br>
 A Slurm errno
 
 <p class="commandline">
+int bb_p_job_revoke_alloc(struct job_record *job_ptr)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Revoke allocation, but do not release resources.
+Executed after bb_g_job_begin if there was an allocation failure.
+Does not release previously allocated resources.<br>
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_ptr</span>
+(input) Job record to test.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+A Slurm errno
+
+<p class="commandline">
 int bb_p_job_start_stage_out(struct job_record *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Trigger a job's burst buffer stage out to begin.
@@ -241,6 +253,6 @@ return value).
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 3 December 2015</p>
+<p style="text-align:center;">Last modified 15 May 2017</p>
 
 <!--#include virtual="footer.txt"-->

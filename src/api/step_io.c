@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -25,23 +25,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/select.h>
-#include <poll.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <signal.h>
 
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
@@ -78,9 +74,6 @@ typedef struct kill_thread {
 } kill_thread_t;
 
 static struct io_buf *_alloc_io_buf(void);
-#if 0
-static void     _free_io_buf(struct io_buf *buf);
-#endif
 static void	_init_stdio_eio_objs(slurm_step_io_fds_t fds,
 				     client_io_t *cio);
 static void	_handle_io_init_msg(int fd, client_io_t *cio);
@@ -305,14 +298,20 @@ _server_read(eio_obj_t *obj, List objs)
 
 		n = io_hdr_read_fd(obj->fd, &s->header);
 		if (n <= 0) { /* got eof or error on socket read */
-			if (n < 0) { /* Error */
-				if (getenv("SLURM_PTY_PORT") == NULL) {
-					error("%s: fd %d error reading header: %m",
-					      __func__, obj->fd);
-				}
-				if (s->cio->sls) {
-					step_launch_notify_io_failure(
-						s->cio->sls, s->node_id);
+			if (n < 0) {	/* Error */
+				if (obj->shutdown) {
+					verbose("%s: Dropped pending I/O for terminated task",
+						__func__);
+				} else {
+					if (getenv("SLURM_PTY_PORT") == NULL) {
+						error("%s: fd %d error reading header: %m",
+						      __func__, obj->fd);
+					}
+					if (s->cio->sls) {
+						step_launch_notify_io_failure(
+							s->cio->sls,
+							s->node_id);
+					}
 				}
 			}
 			close(obj->fd);
@@ -980,28 +979,16 @@ _alloc_io_buf(void)
 	return buf;
 }
 
-#if 0
-static void
-_free_io_buf(struct io_buf *buf)
-{
-	if (buf) {
-		if (buf->data)
-			xfree(buf->data);
-		xfree(buf);
-	}
-}
-#endif
-
 static void
 _init_stdio_eio_objs(slurm_step_io_fds_t fds, client_io_t *cio)
 {
 	/*
 	 * build stdin eio_obj_t
 	 */
-	if (fds.in.fd > -1) {
-		fd_set_close_on_exec(fds.in.fd);
+	if (fds.input.fd > -1) {
+		fd_set_close_on_exec(fds.input.fd);
 		cio->stdin_obj = create_file_read_eio_obj(
-			fds.in.fd, fds.in.taskid, fds.in.nodeid, cio);
+			fds.input.fd, fds.input.taskid, fds.input.nodeid, cio);
 		eio_new_initial_obj(cio->eio, cio->stdin_obj);
 	}
 
@@ -1256,7 +1243,7 @@ client_io_handler_destroy(client_io_t *cio)
 	/* FIXME - perhaps should make certain that IO engine is shutdown
 	   (by calling client_io_handler_finish()) before freeing anything */
 
-	pthread_mutex_destroy(&cio->ioservers_lock);
+	slurm_mutex_destroy(&cio->ioservers_lock);
 	FREE_NULL_BITMAP(cio->ioservers_ready_bits);
 	xfree(cio->ioserver); /* need to destroy the obj first? */
 	xfree(cio->listenport);

@@ -14,7 +14,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -43,12 +43,6 @@ array set nodes {}
 array set def_node_feat {}
 
 print_header $test_id
-
-if {[test_wiki_sched] == 1} {
-	send_user "\nWARNING: not compatible with sched/wiki (Maui)\n"
-	send_user "         or sched/wiki2 (Moab) schedulers\n"
-	exit $exit_code
-}
 
 proc check_job {nnode test_job} {
 	global exit_code sbatch test_part file_in bin_sleep
@@ -109,7 +103,7 @@ proc sub_job_or {nnode fail_test} {
 	set fail_node_config 0
 
 	if {$fail_test} {
-		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode $file_in
+		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Requested node configuration is not available" {
 				set fail_node_config 1
@@ -128,7 +122,7 @@ proc sub_job_or {nnode fail_test} {
 			send_user "\nThis error is expected do not worry\n"
 		}
 	} else {
-		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode $file_in
+		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set test_job $expect_out(1,string)
@@ -159,7 +153,7 @@ proc sub_job_xor {nnode fail_test} {
 	set fail_node_config 0
 
 	if {$fail_test} {
-		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode $file_in
+		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Requested node configuration is not available" {
 				set fail_node_config 1
@@ -178,7 +172,7 @@ proc sub_job_xor {nnode fail_test} {
 			send_user "\nThis error is expected do not worry\n"
 		}
 	} else {
-		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode $file_in
+		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set test_job $expect_out(1,string)
@@ -259,7 +253,7 @@ make_bash_script $file_in "
 #
 set err_msg     0
 set timeout $max_job_delay
-spawn $sbatch -N1 --constraint=invalid,constraint -t1 $file_in
+spawn $sbatch -N1 --constraint=invalid,constraint -t1 -o /dev/null $file_in
 expect {
 	-re "error:.*Invalid feature specification" {
 		send_user "This error is expected, no worries\n"

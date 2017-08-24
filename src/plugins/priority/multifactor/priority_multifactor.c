@@ -14,7 +14,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,34 +43,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#if HAVE_FLOAT_H
-#  include <float.h>
-#endif
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
-#if HAVE_VALUES_H
-#  include <values.h>
-#endif
 #if HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
 
-#include <sys/stat.h>
-#include <stdio.h>
 #include <fcntl.h>
-
+#include <limits.h>
 #include <math.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <sys/stat.h>
+
 #include "slurm/slurm_errno.h"
 
 #include "src/common/parse_time.h"
@@ -86,8 +71,6 @@
 
 #define SECS_PER_DAY	(24 * 60 * 60)
 #define SECS_PER_WEEK	(7 * SECS_PER_DAY)
-
-#define MIN_USAGE_FACTOR 0.01
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -626,8 +609,12 @@ static uint32_t _get_priority_internal(time_t start_time,
 				tmp_64 = 0xffffffff;
 				priority_part = (double) tmp_64;
 			}
-			job_ptr->priority_array[i] = (uint32_t) priority_part;
-
+			if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
+			    (job_ptr->priority_array[i] <
+			     (uint32_t) priority_part)) {
+				job_ptr->priority_array[i] =
+					(uint32_t) priority_part;
+			}
 			debug("Job %u has more than one partition (%s)(%u)",
 			      job_ptr->job_id, part_ptr->name,
 			      job_ptr->priority_array[i]);
@@ -759,10 +746,8 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
  */
 static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 {
-	int    i;
-	double to_bill_node   = 0.0;
-	double to_bill_global = 0.0;
-	double *billing_weights = NULL;
+	xassert(job_ptr);
+
 	struct part_record *part_ptr = job_ptr->part_ptr;
 
 	/* We don't have any resources allocated, just return 0. */
@@ -789,30 +774,10 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 		     job_ptr->job_id, part_ptr->billing_weights_str,
 		     job_ptr->part_ptr->name);
 
-	billing_weights = part_ptr->billing_weights;
-	for (i = 0; i < slurmctld_tres_cnt; i++) {
-		double tres_weight = billing_weights[i];
-		char  *tres_type   = assoc_mgr_tres_array[i]->type;
-		double tres_value  = job_ptr->tres_alloc_cnt[i];
-
-		if (priority_debug)
-			info("BillingWeight: %s = %f * %f = %f",
-			     assoc_mgr_tres_name_array[i],
-			     tres_value, tres_weight, tres_value * tres_weight);
-
-		tres_value *= tres_weight;
-
-		if ((flags & PRIORITY_FLAGS_MAX_TRES) &&
-		    ((i == TRES_ARRAY_CPU) ||
-		     (i == TRES_ARRAY_MEM) ||
-		     (i == TRES_ARRAY_NODE) ||
-		     (!xstrcasecmp(tres_type, "gres"))))
-			to_bill_node = MAX(to_bill_node, tres_value);
-		else
-			to_bill_global += tres_value;
-	}
-
-	job_ptr->billable_tres = to_bill_node + to_bill_global;
+	job_ptr->billable_tres =
+		assoc_mgr_tres_weighted(job_ptr->tres_alloc_cnt,
+					part_ptr->billing_weights, flags,
+					false);
 
 	if (priority_debug)
 		info("BillingWeight: Job %d %s = %f", job_ptr->job_id,
@@ -945,7 +910,7 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t tres_run_delta[slurmctld_tres_cnt];
 	int i;
 
@@ -964,6 +929,12 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 	while ((job_ptr = list_next(itr))) {
 		if (priority_debug)
 			debug2("job: %u", job_ptr->job_id);
+
+		/* If end_time_exp is NO_VAL we have already ran the end for
+		 * this job.  We don't want to do it again, so just exit.
+		 */
+		if (job_ptr->end_time_exp == (time_t)NO_VAL)
+			continue;
 
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
@@ -1203,7 +1174,7 @@ static void *_decay_thread(void *no_data)
 
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -1457,7 +1428,7 @@ static void _internal_setup(void)
 							  slurmctld_tres_cnt);
 	}
 	xfree(tres_weights_str);
-	flags = slurmctld_conf.priority_flags;
+	flags = slurm_get_priority_flags();
 
 	if (priority_debug) {
 		info("priority: Damp Factor is %u", damp_factor);
@@ -1633,6 +1604,9 @@ int init ( void )
 {
 	pthread_attr_t thread_attr;
 	char *temp = NULL;
+	/* Write lock on jobs, read lock on nodes and partitions */
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	/* This means we aren't running from the controller so skip setup. */
 	if (cluster_cpus == NO_VAL) {
@@ -1646,6 +1620,7 @@ int init ( void )
 	temp = slurm_get_accounting_storage_type();
 	if (xstrcasecmp(temp, "accounting_storage/slurmdbd")
 	    && xstrcasecmp(temp, "accounting_storage/mysql")) {
+		time_t start_time = time(NULL);
 		error("You are not running a supported "
 		      "accounting_storage plugin\n(%s).\n"
 		      "Fairshare can only be calculated with either "
@@ -1656,6 +1631,14 @@ int init ( void )
 		      temp);
 		calc_fairshare = 0;
 		weight_fs = 0;
+
+		/* Initialize job priority factors for valid sprio output */
+		lock_slurmctld(job_write_lock);
+		list_for_each(
+			job_list,
+			(ListForF) _decay_apply_new_usage_and_weighted_factors,
+			&start_time);
+		unlock_slurmctld(job_write_lock);
 	} else if (assoc_mgr_root_assoc) {
 		if (!cluster_cpus)
 			fatal("We need to have a cluster cpu count "
@@ -1663,18 +1646,21 @@ int init ( void )
 			      "plugin");
 		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&decay_handler_thread, &thread_attr,
-				   _decay_thread, NULL))
-			fatal("pthread_create error %m");
 
 		/* The decay_thread sets up some global variables that are
 		 * needed outside of the decay_thread (i.e. decay_factor,
 		 * g_last_ran).  These are needed if a job was completing and
 		 * the slurmctld was reset.  If they aren't setup before
 		 * continuing we could get more time added than should be on a
-		 * restart.  So wait until they are set up.
-		 */
+		 * restart.  So wait until they are set up. Set the lock now so
+		 * that the decay thread won't trigger the conditional before we
+		 * wait for it. */
 		slurm_mutex_lock(&decay_init_mutex);
+
+		if (pthread_create(&decay_handler_thread, &thread_attr,
+				   _decay_thread, NULL))
+			fatal("pthread_create error %m");
+
 		pthread_cond_wait(&decay_init_cond, &decay_init_mutex);
 		slurm_mutex_unlock(&decay_init_mutex);
 
@@ -1830,7 +1816,7 @@ extern List priority_p_get_priority_factors_list(
 
 	/* Read lock on jobs, nodes, and partitions */
 	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	xassert(req_msg);
 	req_job_list = req_msg->job_id_list;
@@ -1898,7 +1884,7 @@ extern List priority_p_get_priority_factors_list(
 }
 
 /* at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
- * READ_LOCK, READ_LOCK }; should be locked before calling this */
+ * READ_LOCK, READ_LOCK, NO_LOCK }; should be locked before calling this */
 extern void priority_p_job_end(struct job_record *job_ptr)
 {
 	if (priority_debug)
@@ -1918,6 +1904,7 @@ extern bool decay_apply_new_usage(struct job_record *job_ptr,
 	/* apply new usage */
 	if (((flags & PRIORITY_FLAGS_CALCULATE_RUNNING) ||
 	     !IS_JOB_PENDING(job_ptr)) &&
+	    !IS_JOB_POWER_UP_NODE(job_ptr) &&
 	    job_ptr->start_time && job_ptr->assoc_ptr) {
 		if (!_apply_new_usage(job_ptr, g_last_ran, *start_time_ptr, 0))
 			return false;
@@ -1929,21 +1916,28 @@ extern bool decay_apply_new_usage(struct job_record *job_ptr,
 extern int decay_apply_weighted_factors(struct job_record *job_ptr,
 					 time_t *start_time_ptr)
 {
+	uint32_t new_prio;
+
 	/* Always return SUCCESS so that list_for_each will
 	 * continue processing list of jobs. */
 
 	/*
-	 * Priority 0 is reserved for held
-	 * jobs. Also skip priority
-	 * calculation for non-pending jobs.
+	 * Priority 0 is reserved for held jobs. Also skip priority
+	 * re_calculation for non-pending jobs.
 	 */
 	if ((job_ptr->priority == 0) ||
+	    IS_JOB_POWER_UP_NODE(job_ptr) ||
 	    (!IS_JOB_PENDING(job_ptr) &&
 	     !(flags & PRIORITY_FLAGS_CALCULATE_RUNNING)))
 		return SLURM_SUCCESS;
 
-	job_ptr->priority = _get_priority_internal(*start_time_ptr, job_ptr);
-	last_job_update = time(NULL);
+	new_prio = _get_priority_internal(*start_time_ptr, job_ptr);
+	if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
+	    (job_ptr->priority < new_prio)) {
+		job_ptr->priority = new_prio;
+		last_job_update = time(NULL);
+	}
+
 	debug2("priority for job %u is now %u",
 	       job_ptr->job_id, job_ptr->priority);
 

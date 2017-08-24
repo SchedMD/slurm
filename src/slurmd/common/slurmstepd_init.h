@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,10 +38,6 @@
 
 #ifndef _SLURMD_STEP_INIT_H
 #define _SLURMD_STEP_INIT_H
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include "src/common/slurm_protocol_defs.h"
 

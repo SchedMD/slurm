@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,10 +36,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -69,13 +65,14 @@ extern int slurmdb_usage_get(void *db_conn, void *in, int type,
  * IN: sent_start (option time to do a re-roll or start from this point)
  * IN: sent_end (option time to do a re-roll or end at this point)
  * IN: archive_data (if 0 old data is not archived in a monthly rollup)
+ * IN/OUT: rollup_stats data structure in which to save rollup statistics
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_usage_roll(void *db_conn,
-			      time_t sent_start, time_t sent_end,
-			      uint16_t archive_data)
+extern int slurmdb_usage_roll(void *db_conn, time_t sent_start,
+			      time_t sent_end, uint16_t archive_data,
+			      rollup_stats_t *rollup_stats)
 {
 	return acct_storage_g_roll_usage(db_conn, sent_start,
-					 sent_end, archive_data);
+					 sent_end, archive_data, rollup_stats);
 }
 

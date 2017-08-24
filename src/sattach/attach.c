@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,10 +36,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "src/common/log.h"
 
 #include "src/sattach/attach.h"
@@ -49,8 +45,8 @@
  */
 MPIR_PROCDESC *MPIR_proctable;
 int MPIR_proctable_size;
-VOLATILE int MPIR_debug_state;
-VOLATILE int MPIR_debug_gate;
+volatile int MPIR_debug_state;
+volatile int MPIR_debug_gate;
 int MPIR_being_debugged;
 int MPIR_i_am_starter;
 int MPIR_acquired_pre_main;

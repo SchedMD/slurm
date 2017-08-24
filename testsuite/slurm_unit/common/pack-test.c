@@ -1,15 +1,5 @@
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif
 #include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 

@@ -102,10 +102,8 @@ Waittime=0
 DefMemPerCPU={defmem}
 FastSchedule=0
 MaxMemPerCPU={maxmem}
-#SchedulerRootFilter=1
 #SchedulerTimeSlice=30
 SchedulerType=sched/backfill
-SchedulerPort=7321
 SelectType=select/cray
 SelectTypeParameters=CR_CORE_Memory,other_cons_res
 #

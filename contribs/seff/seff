@@ -8,6 +8,7 @@ use strict qw/vars/;
 use Getopt::Std;
 use POSIX qw/pow/;
 use Sys::Hostname;
+use lib "${FindBin::Bin}/../lib/perl";
 use Slurmdb ':all';
 use Slurm ':all';
 #use Data::Dumper;
@@ -218,5 +219,6 @@ sub kbytes2str {
     my $exp = int(log($kbytes) / log($mul));
     my @pre = qw/ M G T P E /;
     my $pre = $pre[$exp-1];
-    return sprintf("%.2f %sB", ($kbytes / pow($mul, $exp)), $pre);
+
+    return sprintf("%.2f %sB", ($kbytes / pow($mul, $exp)), $pre ? $pre : "");
 }

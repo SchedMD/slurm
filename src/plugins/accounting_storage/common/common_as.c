@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,11 +36,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <strings.h>
+#include <fcntl.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
+
 #include "src/common/env.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
@@ -135,7 +136,7 @@ static void _dump_slurmdb_res_records(List res_list)
  * RET: error code
  *
  * NOTE: This function will take the object given and free it later so it
- *       needed to be removed from a list if in one before.
+ *       needs to be removed from a existing lists prior.
  */
 extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			     void *object)
@@ -160,7 +161,11 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		/* here we prepend primarly for remove association
 		   since parents need to be removed last, and they are
 		   removed first in the calling code */
-		list_prepend(update_object->objects, object);
+		if (type == SLURMDB_UPDATE_FEDS) {
+			FREE_NULL_LIST(update_object->objects);
+			update_object->objects = object;
+		} else
+			list_prepend(update_object->objects, object);
 		return SLURM_SUCCESS;
 	}
 
@@ -201,6 +206,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
 			assoc->max_wall_pj = INFINITE;
+		/* fall through */
 	case SLURMDB_MODIFY_ASSOC:
 	case SLURMDB_REMOVE_ASSOC:
 		xassert(((slurmdb_assoc_rec_t *)object)->cluster);
@@ -224,6 +230,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
 			qos->max_wall_pj = INFINITE;
+		/* fall through */
 	case SLURMDB_MODIFY_QOS:
 	case SLURMDB_REMOVE_QOS:
 		update_object->objects = list_create(
@@ -246,12 +253,16 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 	case SLURMDB_ADD_RES:
 		xassert(((slurmdb_res_rec_t *)object)->name);
 		xassert(((slurmdb_res_rec_t *)object)->server);
+		/* fall through */
 	case SLURMDB_MODIFY_RES:
 	case SLURMDB_REMOVE_RES:
 		xassert(((slurmdb_res_rec_t *)object)->id != NO_VAL);
 		update_object->objects = list_create(
 			slurmdb_destroy_res_rec);
 		break;
+	case SLURMDB_UPDATE_FEDS:
+		update_object->objects = object;
+		return SLURM_SUCCESS;
 	case SLURMDB_UPDATE_NOTSET:
 	default:
 		error("unknown type set in update_object: %d", type);
@@ -296,6 +307,9 @@ extern void dump_update_list(List update_list)
 			debug3("\tASSOC RECORDS");
 			_dump_slurmdb_assoc_records(object->objects);
 			break;
+		case SLURMDB_UPDATE_FEDS:
+			debug3("\tFEDERATION RECORDS");
+			break;
 		case SLURMDB_ADD_QOS:
 		case SLURMDB_MODIFY_QOS:
 		case SLURMDB_REMOVE_QOS:
@@ -336,7 +350,7 @@ extern void dump_update_list(List update_list)
 extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 {
 	slurm_addr_t ctld_address;
-	slurm_fd_t fd;
+	int fd;
 	int rc = SLURM_SUCCESS;
 
 	info("First time to register cluster requesting "
@@ -539,7 +553,7 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 		if ((uid != slurmdbd_conf->slurm_user_id && uid != 0)
 		   && assoc_mgr_get_admin_level(db_conn, uid) < min_level)
 			is_admin = 0;
-	} else if (uid != 0)
+	} else if ((uid != 0) && (uid != slurmctld_conf.slurm_user_id))
 		is_admin = 0;
 
 	return is_admin;
@@ -755,6 +769,34 @@ extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
 				     SLURMDB_PURGE_ARCHIVE_SET(
 					     arch_cond->purge_suspend));
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_SUSPEND", "%ld",
+				     (long)curr_end);
+	}
+
+	if (arch_cond->purge_txn != NO_VAL) {
+		if (!(curr_end = archive_setup_end_time(
+			     last_submit, arch_cond->purge_txn))) {
+			error("Parsing purge txn");
+			return SLURM_ERROR;
+		}
+
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_TXN", "%u",
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_txn));
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_TXN", "%ld",
+				     (long)curr_end);
+	}
+
+	if (arch_cond->purge_usage != NO_VAL) {
+		if (!(curr_end = archive_setup_end_time(
+			     last_submit, arch_cond->purge_usage))) {
+			error("Parsing purge usage");
+			return SLURM_ERROR;
+		}
+
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_USAGE", "%u",
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_usage));
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_USAGE", "%ld",
 				     (long)curr_end);
 	}
 

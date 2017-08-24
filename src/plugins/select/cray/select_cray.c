@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -46,6 +46,7 @@
 #include <fcntl.h>
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/burst_buffer.h"
@@ -307,11 +308,7 @@ static int _run_nhc(nhc_info_t *nhc_info)
 		goto fini;
 	}
 	if (cpid == 0) {
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execvp(argv[0], argv);
 		exit(127);
 	}
@@ -821,7 +818,7 @@ static void _update_app(struct step_record *step_ptr,
 	return;
 }
 
-static void _start_aeld_thread()
+static void _start_aeld_thread(void)
 {
 	if (scheduling_disabled)
 		return;
@@ -843,7 +840,7 @@ static void _start_aeld_thread()
 	}
 }
 
-static void _stop_aeld_thread()
+static void _stop_aeld_thread(void)
 {
 	if (scheduling_disabled)
 		return;
@@ -908,14 +905,10 @@ static void _free_blade(blade_info_t *blade_info)
 static void _pack_blade(blade_info_t *blade_info, Buf buffer,
 			uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack64(blade_info->id, buffer);
 		pack32(blade_info->job_cnt, buffer);
 		pack_bit_str_hex(blade_info->node_bitmap, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack64(blade_info->id, buffer);
-		pack32(blade_info->job_cnt, buffer);
-		pack_bit_str(blade_info->node_bitmap, buffer);
 	}
 
 }
@@ -923,14 +916,10 @@ static void _pack_blade(blade_info_t *blade_info, Buf buffer,
 static int _unpack_blade(blade_info_t *blade_info, Buf buffer,
 			 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64(&blade_info->id, buffer);
 		safe_unpack32(&blade_info->job_cnt, buffer);
 		unpack_bit_str_hex(&blade_info->node_bitmap, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack64(&blade_info->id, buffer);
-		safe_unpack32(&blade_info->job_cnt, buffer);
-		unpack_bit_str(&blade_info->node_bitmap, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -1011,7 +1000,7 @@ static void _throttle_start(void)
 			active_post_nhc_cnt++;
 			break;
 		}
-		pthread_cond_wait(&throttle_cond, &throttle_mutex);
+		slurm_cond_wait(&throttle_cond, &throttle_mutex);
 	}
 	slurm_mutex_unlock(&throttle_mutex);
 	usleep(100);
@@ -1020,7 +1009,7 @@ static void _throttle_fini(void)
 {
 	slurm_mutex_lock(&throttle_mutex);
 	active_post_nhc_cnt--;
-	pthread_cond_broadcast(&throttle_cond);
+	slurm_cond_broadcast(&throttle_cond);
 	slurm_mutex_unlock(&throttle_mutex);
 }
 
@@ -1030,10 +1019,9 @@ static void _wait_job_completed(uint32_t job_id, struct job_record *job_ptr)
 {
 	bool fini = false;
 	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	while (!fini) {
-		sleep(1);
 		lock_slurmctld(job_read_lock);
 		if ((job_ptr->magic  != JOB_MAGIC) ||
 		    (job_ptr->job_id != job_id)    ||
@@ -1041,6 +1029,8 @@ static void _wait_job_completed(uint32_t job_id, struct job_record *job_ptr)
 		     (bb_g_job_test_post_run(job_ptr) != 0)))
 			fini = true;
 		unlock_slurmctld(job_read_lock);
+		if (!fini)
+			sleep(1);
 	}
 }
 
@@ -1051,9 +1041,9 @@ static void *_job_fini(void *args)
 
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!job_ptr) {
 		error("_job_fini: no job ptr given, this should never happen");
@@ -1104,9 +1094,9 @@ static void *_step_fini(void *args)
 
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!step_ptr) {
 		error("%s: no step_ptr given, this should never happen",
@@ -1219,7 +1209,7 @@ static void _spawn_cleanup_thread(
 static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 				 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!jobinfo) {
 			pack_bit_str_hex(NULL, buffer);
 			pack16(0, buffer);
@@ -1230,18 +1220,6 @@ static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 			pack16(jobinfo->cleaning, buffer);
 			pack8(jobinfo->npc, buffer);
 			pack_bit_str_hex(jobinfo->used_blades, buffer);
-		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!jobinfo) {
-			pack_bit_str(NULL, buffer);
-			pack16(0, buffer);
-			pack8(0, buffer);
-			pack_bit_str(NULL, buffer);
-		} else {
-			pack_bit_str(jobinfo->blade_map, buffer);
-			pack16(jobinfo->cleaning, buffer);
-			pack8(jobinfo->npc, buffer);
-			pack_bit_str(jobinfo->used_blades, buffer);
 		}
 	}
 }
@@ -1255,16 +1233,11 @@ static int _select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 
 	jobinfo->magic = JOBINFO_MAGIC;
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		unpack_bit_str_hex(&jobinfo->blade_map, buffer);
 		safe_unpack16(&jobinfo->cleaning, buffer);
 		safe_unpack8(&jobinfo->npc, buffer);
 		unpack_bit_str_hex(&jobinfo->used_blades, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		unpack_bit_str(&jobinfo->blade_map, buffer);
-		safe_unpack16(&jobinfo->cleaning, buffer);
-		safe_unpack8(&jobinfo->npc, buffer);
-		unpack_bit_str(&jobinfo->used_blades, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -1441,6 +1414,7 @@ extern int select_p_state_save(char *dir_name)
 
 extern int select_p_state_restore(char *dir_name)
 {
+	static time_t last_config_update = (time_t) 0;
 	int state_fd, i;
 	char *state_file = NULL;
 	Buf buffer = NULL;
@@ -1454,8 +1428,6 @@ extern int select_p_state_restore(char *dir_name)
 		return SLURM_SUCCESS;
 
 	debug("cray: select_p_state_restore");
-
-	static time_t last_config_update = (time_t) 0;
 
 	/* only run on startup */
 	if (last_config_update)
@@ -1792,7 +1764,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		}
 		if (end_nn != topology_num_nodes) {
 			/* already looped */
-			fatal("Node %s(%d) isn't found on the system",
+			for (nn = 0; nn < topology_num_nodes; nn++) {
+				info("ALPS topology, record:%d nid:%d",
+				     nn, topology[nn].nid);
+			}
+			fatal("Node %s(%d) isn't found in the ALPS system topoloogy table",
 			      node_ptr->name, nodeinfo->nid);
 		} else if (!found) {
 			end_nn = last_nn;

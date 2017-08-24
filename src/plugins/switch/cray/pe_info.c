@@ -6,7 +6,7 @@
  *  Written by David Gloe <c16817@cray.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -70,7 +70,7 @@ int build_alpsc_pe_info(stepd_step_rec_t *job,
 	} else if (cmd_index == NULL) {
 		CRAY_ERR("NULL cmd_index");
 		return SLURM_ERROR;
-	} else if (job->multi_prog) {
+	} else if (job->flags & LAUNCH_MULTI_PROG) {
 		if (job->mpmd_set == NULL) {
 			CRAY_ERR("MPMD launch but no mpmd_set");
 			return SLURM_ERROR;

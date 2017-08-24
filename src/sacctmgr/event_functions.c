@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -272,7 +272,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 	return count;
 }
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_event_cond_t *event_cond,
 		     List format_list)
 {
@@ -449,14 +449,14 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 
-extern int sacctmgr_list_event(int argc, char *argv[])
+extern int sacctmgr_list_event(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_event_cond_t *event_cond =
 		xmalloc(sizeof(slurmdb_event_cond_t));
 	List event_list = NULL;
 	slurmdb_event_rec_t *event = NULL;
-	int i=0;
+	int i = 0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	int field_count = 0;
@@ -479,6 +479,7 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 				" Couldn't get localtime from %ld",
 				(long)event_cond->period_start);
 			exit_code = 1;
+			slurmdb_destroy_event_cond(event_cond);
 			return 0;
 		}
 		start_tm.tm_sec = 0;

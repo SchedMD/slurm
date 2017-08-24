@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,32 +36,25 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE 1
+#include "config.h"
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
+#define _GNU_SOURCE
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
+#include <dlfcn.h>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <dlfcn.h>
 
 #include <job.h>	/* Cray's job module component */
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/timers.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -117,7 +110,7 @@ static void _end_container_thread(void)
 		/* This will end the thread and remove it from the container */
 		slurm_mutex_lock(&thread_mutex);
 		slurm_mutex_lock(&notify_mutex);
-		pthread_cond_signal(&notify);
+		slurm_cond_signal(&notify);
 		slurm_mutex_unlock(&notify_mutex);
 
 		pthread_join(threadid, NULL);
@@ -144,7 +137,7 @@ extern int fini(void)
 
 	/* free up some memory */
 	slurm_mutex_destroy(&notify_mutex);
-	pthread_cond_destroy(&notify);
+	slurm_cond_destroy(&notify);
 	slurm_mutex_destroy(&thread_mutex);
 
 	return SLURM_SUCCESS;
@@ -177,7 +170,7 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 		if (threadid) {
 			debug("Had a thread already 0x%08lx", threadid);
 			slurm_mutex_lock(&notify_mutex);
-			pthread_cond_wait(&notify, &notify_mutex);
+			slurm_cond_wait(&notify, &notify_mutex);
 			slurm_mutex_unlock(&notify_mutex);
 			debug("Last thread done 0x%08lx", threadid);
 		}
@@ -189,7 +182,7 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 		slurm_mutex_lock(&notify_mutex);
 		pthread_attr_init(&attr);
 		pthread_create(&threadid, &attr, _create_container_thread, job);
-		pthread_cond_wait(&notify, &notify_mutex);
+		slurm_cond_wait(&notify, &notify_mutex);
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
 		if (job->cont_id != (jid_t)-1)

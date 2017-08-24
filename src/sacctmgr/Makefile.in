@@ -95,6 +95,7 @@ bin_PROGRAMS = sacctmgr$(EXEEXT)
 subdir = src/sacctmgr
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
+	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -105,7 +106,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
 	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
-	$(top_srcdir)/auxdir/x_ac_aix.m4 \
 	$(top_srcdir)/auxdir/x_ac_blcr.m4 \
 	$(top_srcdir)/auxdir/x_ac_bluegene.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
@@ -133,7 +133,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
-	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
@@ -151,12 +150,13 @@ am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 	archive_functions.$(OBJEXT) association_functions.$(OBJEXT) \
 	config_functions.$(OBJEXT) cluster_functions.$(OBJEXT) \
 	common.$(OBJEXT) event_functions.$(OBJEXT) \
-	file_functions.$(OBJEXT) runaway_job_functions.$(OBJEXT) \
-	job_functions.$(OBJEXT) reservation_functions.$(OBJEXT) \
-	resource_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
-	qos_functions.$(OBJEXT) txn_functions.$(OBJEXT) \
-	user_functions.$(OBJEXT) wckey_functions.$(OBJEXT) \
-	problem_functions.$(OBJEXT) tres_function.$(OBJEXT)
+	federation_functions.$(OBJEXT) file_functions.$(OBJEXT) \
+	runaway_job_functions.$(OBJEXT) job_functions.$(OBJEXT) \
+	reservation_functions.$(OBJEXT) resource_functions.$(OBJEXT) \
+	sacctmgr.$(OBJEXT) qos_functions.$(OBJEXT) \
+	txn_functions.$(OBJEXT) user_functions.$(OBJEXT) \
+	wckey_functions.$(OBJEXT) problem_functions.$(OBJEXT) \
+	tres_function.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(top_builddir)/src/db_api/libslurmdb.o \
@@ -238,11 +238,9 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BGL_LOADED = @BGL_LOADED@
 BGQ_LOADED = @BGQ_LOADED@
 BG_INCLUDES = @BG_INCLUDES@
 BG_LDFLAGS = @BG_LDFLAGS@
-BG_L_P_LOADED = @BG_L_P_LOADED@
 BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
 BLCR_HOME = @BLCR_HOME@
 BLCR_LDFLAGS = @BLCR_LDFLAGS@
@@ -253,7 +251,6 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CHECK_CFLAGS = @CHECK_CFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
-CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CRAY_JOB_CPPFLAGS = @CRAY_JOB_CPPFLAGS@
@@ -298,7 +295,6 @@ GTK_LIBS = @GTK_LIBS@
 H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
-HAVE_AIX = @HAVE_AIX@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
@@ -330,7 +326,6 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -381,7 +376,6 @@ PMIX_V1_CPPFLAGS = @PMIX_V1_CPPFLAGS@
 PMIX_V1_LDFLAGS = @PMIX_V1_LDFLAGS@
 PMIX_V2_CPPFLAGS = @PMIX_V2_CPPFLAGS@
 PMIX_V2_LDFLAGS = @PMIX_V2_LDFLAGS@
-PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
@@ -389,7 +383,6 @@ PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
-REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
@@ -504,6 +497,7 @@ sacctmgr_SOURCES = \
 	cluster_functions.c	\
 	common.c                \
 	event_functions.c	\
+	federation_functions.c	\
 	file_functions.c	\
 	runaway_job_functions.c \
 	job_functions.c		\
@@ -618,6 +612,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/event_functions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/federation_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/problem_functions.Po@am__quote@

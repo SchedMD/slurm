@@ -35,35 +35,24 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
+#include <inttypes.h>
+#include <libgen.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
-#include <libgen.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
@@ -621,7 +610,7 @@ static void _requeue_when_finished(uint32_t job_id)
 {
 	/* Locks: read job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
 
 	while (1) {
@@ -651,7 +640,7 @@ static void *_ckpt_agent_thr(void *arg)
 	int rc;
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
 	struct check_job_info *check_ptr;
@@ -659,7 +648,7 @@ static void *_ckpt_agent_thr(void *arg)
 	/* only perform ckpt operation of ONE JOB */
 	slurm_mutex_lock(&ckpt_agent_mutex);
 	while (ckpt_agent_jobid && ckpt_agent_jobid != req->job_id) {
-		pthread_cond_wait(&ckpt_agent_cond, &ckpt_agent_mutex);
+		slurm_cond_wait(&ckpt_agent_cond, &ckpt_agent_mutex);
 	}
 	ckpt_agent_jobid = req->job_id;
 	ckpt_agent_count ++;
@@ -714,7 +703,7 @@ static void *_ckpt_agent_thr(void *arg)
 	ckpt_agent_count --;
 	if (ckpt_agent_count == 0) {
 		ckpt_agent_jobid = 0;
-		pthread_cond_broadcast(&ckpt_agent_cond);
+		slurm_cond_broadcast(&ckpt_agent_cond);
 	}
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 	_ckpt_req_free(req);

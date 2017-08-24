@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -129,11 +129,11 @@ int blocks_are_created = 0;
 int num_unused_cpus = 0;
 int num_possible_unused_cpus = 0;
 slurmctld_lock_t job_read_lock = {
-	NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 slurmctld_lock_t node_write_lock = {
-	NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
+	NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 slurmctld_lock_t part_write_lock = {
-	NO_LOCK, READ_LOCK, WRITE_LOCK, WRITE_LOCK };
+	NO_LOCK, READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
 
@@ -1454,7 +1454,7 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 {
 #ifdef HAVE_BG
 	int i = 0;
-	uint32_t real_memory, threads, cores;
+	uint64_t real_memory, threads, cores;
 
 	if (!node_ptr_array)
 		return SLURM_SUCCESS;
@@ -1593,7 +1593,7 @@ extern int select_p_block_init(List part_list)
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements,
- *	identify the nodes which "best" satify the request. The specified
+ *	identify the nodes which "best" satisfy the request. The specified
  *	nodes may be DOWN or BUSY at the time of this test as may be used
  *	to deterime if a job could ever run.
  * IN/OUT job_ptr - pointer to job being scheduled start_time is set
@@ -1699,7 +1699,7 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 			} else if (!bg_record->free_cnt
 				   && (uid == job_ptr->user_id)
 				   && (bg_record->state == BG_BLOCK_INITED)) {
-				/* Clear the state just incase we
+				/* Clear the state just in case we
 				 * missed it somehow. */
 				job_ptr->job_state &= (~JOB_CONFIGURING);
 				last_job_update = time(NULL);

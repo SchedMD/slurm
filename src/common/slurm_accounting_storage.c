@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,13 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include <pthread.h>
 #include <string.h>
@@ -55,7 +49,6 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/xstring.h"
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/slurmctld/slurmctld.h"
@@ -81,6 +74,8 @@ typedef struct slurm_acct_storage_ops {
 				    List acct_list);
 	int  (*add_clusters)       (void *db_conn, uint32_t uid,
 				    List cluster_list);
+	int  (*add_federations)    (void *db_conn, uint32_t uid,
+				    List federation_list);
 	int  (*add_tres)           (void *db_conn, uint32_t uid,
 				    List tres_list_in);
 	int  (*add_assocs)         (void *db_conn, uint32_t uid,
@@ -105,6 +100,9 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_assocs)      (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond,
 				    slurmdb_assoc_rec_t *assoc);
+	List (*modify_federations) (void *db_conn, uint32_t uid,
+				    slurmdb_federation_cond_t *fed_cond,
+				    slurmdb_federation_rec_t *fed);
 	List (*modify_job)         (void *db_conn, uint32_t uid,
 				    slurmdb_job_modify_cond_t *job_cond,
 				    slurmdb_job_rec_t *job);
@@ -130,6 +128,8 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_cluster_cond_t *cluster_cond);
 	List (*remove_assocs)      (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond);
+	List (*remove_federations) (void *db_conn, uint32_t uid,
+				    slurmdb_federation_cond_t *fed_cond);
 	List (*remove_qos)         (void *db_conn, uint32_t uid,
 				    slurmdb_qos_cond_t *qos_cond);
 	List (*remove_res)         (void *db_conn, uint32_t uid,
@@ -144,6 +144,8 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_account_cond_t *acct_cond);
 	List (*get_clusters)       (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond);
+	List (*get_federations)    (void *db_conn, uint32_t uid,
+				    slurmdb_federation_cond_t *fed_cond);
 	List (*get_config)         (void *db_conn, char *config_name);
 	List (*get_tres)           (void *db_conn, uint32_t uid,
 				    slurmdb_tres_cond_t *tres_cond);
@@ -169,7 +171,8 @@ typedef struct slurm_acct_storage_ops {
 				    time_t end);
 	int (*roll_usage)          (void *db_conn,
 				    time_t sent_start, time_t sent_end,
-				    uint16_t archive_data);
+				    uint16_t archive_data,
+				    rollup_stats_t *rollup_stats);
 	int  (*fix_runaway_jobs)   (void *db_conn, uint32_t uid, List jobs);
 	int  (*node_down)          (void *db_conn,
 				    struct node_record *node_ptr,
@@ -206,6 +209,9 @@ typedef struct slurm_acct_storage_ops {
 	int (*reconfig)            (void *db_conn, bool dbd);
 	int (*reset_lft_rgt)       (void *db_conn, uid_t uid,
 				    List cluster_list);
+	int (*get_stats)           (void *db_conn, slurmdb_stats_rec_t **stats);
+	int (*clear_stats)         (void *db_conn);
+	int (*shutdown)            (void *db_conn);
 } slurm_acct_storage_ops_t;
 /*
  * Must be synchronized with slurm_acct_storage_ops_t above.
@@ -218,6 +224,7 @@ static const char *syms[] = {
 	"acct_storage_p_add_coord",
 	"acct_storage_p_add_accts",
 	"acct_storage_p_add_clusters",
+	"acct_storage_p_add_federations",
 	"acct_storage_p_add_tres",
 	"acct_storage_p_add_assocs",
 	"acct_storage_p_add_qos",
@@ -228,6 +235,7 @@ static const char *syms[] = {
 	"acct_storage_p_modify_accts",
 	"acct_storage_p_modify_clusters",
 	"acct_storage_p_modify_assocs",
+	"acct_storage_p_modify_federations",
 	"acct_storage_p_modify_job",
 	"acct_storage_p_modify_qos",
 	"acct_storage_p_modify_res",
@@ -238,6 +246,7 @@ static const char *syms[] = {
 	"acct_storage_p_remove_accts",
 	"acct_storage_p_remove_clusters",
 	"acct_storage_p_remove_assocs",
+	"acct_storage_p_remove_federations",
 	"acct_storage_p_remove_qos",
 	"acct_storage_p_remove_res",
 	"acct_storage_p_remove_wckeys",
@@ -245,6 +254,7 @@ static const char *syms[] = {
 	"acct_storage_p_get_users",
 	"acct_storage_p_get_accts",
 	"acct_storage_p_get_clusters",
+	"acct_storage_p_get_federations",
 	"acct_storage_p_get_config",
 	"acct_storage_p_get_tres",
 	"acct_storage_p_get_assocs",
@@ -276,6 +286,9 @@ static const char *syms[] = {
 	"acct_storage_p_flush_jobs_on_cluster",
 	"acct_storage_p_reconfig",
 	"acct_storage_p_reset_lft_rgt",
+	"acct_storage_p_get_stats",
+	"acct_storage_p_clear_stats",
+	"acct_storage_p_shutdown",
 };
 
 static slurm_acct_storage_ops_t ops;
@@ -407,6 +420,14 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 	return (*(ops.add_clusters))(db_conn, uid, cluster_list);
 }
 
+extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
+					  List federation_list)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.add_federations))(db_conn, uid, federation_list);
+}
+
 extern int acct_storage_g_add_tres(void *db_conn, uint32_t uid,
 				   List tres_list_in)
 {
@@ -489,6 +510,16 @@ extern List acct_storage_g_modify_assocs(
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(ops.modify_assocs))(db_conn, uid, assoc_cond, assoc);
+}
+
+extern List acct_storage_g_modify_federations(
+				void *db_conn, uint32_t uid,
+				slurmdb_federation_cond_t *fed_cond,
+				slurmdb_federation_rec_t *fed)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(ops.modify_federations))(db_conn, uid, fed_cond, fed);
 }
 
 extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
@@ -578,6 +609,15 @@ extern List acct_storage_g_remove_assocs(
 	return (*(ops.remove_assocs))(db_conn, uid, assoc_cond);
 }
 
+extern List acct_storage_g_remove_federations(
+					void *db_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(ops.remove_federations))(db_conn, uid, fed_cond);
+}
+
 extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond)
 {
@@ -632,6 +672,14 @@ extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(ops.get_clusters))(db_conn, uid, cluster_cond);
+}
+
+extern List acct_storage_g_get_federations(void *db_conn, uint32_t uid,
+					   slurmdb_federation_cond_t *fed_cond)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(ops.get_federations))(db_conn, uid, fed_cond);
 }
 
 extern List acct_storage_g_get_config(void *db_conn, char *config_name)
@@ -726,11 +774,13 @@ extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
 
 extern int acct_storage_g_roll_usage(void *db_conn,
 				     time_t sent_start, time_t sent_end,
-				     uint16_t archive_data)
+				     uint16_t archive_data,
+				     rollup_stats_t *rollup_stats)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(ops.roll_usage))(db_conn, sent_start, sent_end, archive_data);
+	return (*(ops.roll_usage))(db_conn, sent_start, sent_end, archive_data,
+				   rollup_stats);
 }
 
 extern int acct_storage_g_fix_runaway_jobs(void *db_conn,
@@ -1025,5 +1075,39 @@ extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(ops.reset_lft_rgt))(db_conn, uid, cluster_list);
+
+}
+
+/*
+ * Get performance statistics.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.get_stats))(db_conn, stats);
+}
+
+/*
+ * Clear performance statistics.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_clear_stats(void *db_conn)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.clear_stats))(db_conn);
+}
+
+/*
+ * Shutdown database server.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_shutdown(void *db_conn)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.shutdown))(db_conn);
 
 }

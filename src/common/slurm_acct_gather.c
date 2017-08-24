@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,7 +39,6 @@
 #include <stdlib.h>
 
 #include "src/common/slurm_acct_gather.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/xstring.h"
 
 static bool acct_gather_suspended = false;
@@ -130,15 +129,19 @@ extern int acct_gather_conf_init(void)
 
 extern int acct_gather_conf_destroy(void)
 {
-	int rc;
+	int rc, rc2;
 
 	if (!inited)
 		return SLURM_SUCCESS;
 
 	rc = acct_gather_energy_fini();
-	rc = MAX(rc, acct_gather_filesystem_fini());
-	rc = MAX(rc, acct_gather_infiniband_fini());
-	rc = MAX(rc, acct_gather_profile_fini());
+	rc2 = acct_gather_filesystem_fini();
+	rc = MAX(rc, rc2);
+	rc2 = acct_gather_infiniband_fini();
+	rc = MAX(rc, rc2);
+	rc2 = acct_gather_profile_fini();
+	rc = MAX(rc, rc2);
+
 	return rc;
 }
 
@@ -169,7 +172,7 @@ extern int acct_gather_parse_freq(int type, char *freq)
 
 	switch (type) {
 	case PROFILE_ENERGY:
-		if ((sub_str = slurm_strcasestr(freq, "energy=")))
+		if ((sub_str = xstrcasestr(freq, "energy=")))
 			freq_int = _get_int(sub_str + 7);
 		break;
 	case PROFILE_TASK:
@@ -178,15 +181,15 @@ extern int acct_gather_parse_freq(int type, char *freq)
 		*/
 		freq_int = _get_int(freq);
 		if ((freq_int == -1)
-		    && (sub_str = slurm_strcasestr(freq, "task=")))
+		    && (sub_str = xstrcasestr(freq, "task=")))
 			freq_int = _get_int(sub_str + 5);
 		break;
 	case PROFILE_FILESYSTEM:
-		if ((sub_str = slurm_strcasestr(freq, "filesystem=")))
+		if ((sub_str = xstrcasestr(freq, "filesystem=")))
 			freq_int = _get_int(sub_str + 11);
 		break;
 	case PROFILE_NETWORK:
-		if ((sub_str = slurm_strcasestr(freq, "network=")))
+		if ((sub_str = xstrcasestr(freq, "network=")))
 			freq_int = _get_int(sub_str + 8);
 		break;
 	default:
@@ -198,8 +201,8 @@ extern int acct_gather_parse_freq(int type, char *freq)
 	return freq_int;
 }
 
-extern int acct_gather_check_acct_freq_task(
-	uint32_t job_mem_lim, char *acctg_freq)
+extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
+					    char *acctg_freq)
 {
 	int task_freq;
 	static uint32_t acct_freq_task = NO_VAL;

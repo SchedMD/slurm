@@ -7,13 +7,9 @@
 #ifndef __CRAY_BASIL_INTERFACE_H
 #define __CRAY_BASIL_INTERFACE_H
 
-#if HAVE_CONFIG_H
-# include "config.h"
-#endif	/* HAVE_CONFIG_H */
+#include "config.h"
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#include <pthread.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

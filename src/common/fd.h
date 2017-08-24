@@ -35,14 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-
 #ifndef _FD_H
 #define _FD_H
-
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -59,15 +53,6 @@ static inline void closeall(int fd)
 	while (fd < fdlimit)
 		close(fd++);
 }
-
-/* Open a fd with close-on-exec (POSIX 2008, Linux 2.6.23+), emulating
- * it on systems that lack it.  */
-int open_cloexec(const char *pathname, int flags);
-
-/* Create a fd with close-on-exec (POSIX 2008, Linux 2.6.23+),
- * emulating it on systems that lack it.  */
-int creat_cloexec(const char *pathname, mode_t mode);
-
 
 void fd_set_close_on_exec(int fd);
 /*

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,36 +37,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if STDC_HEADERS
-#    include <string.h>
-#  endif
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif /* HAVE_SYS_TYPES_H */
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else /* ! HAVE_INTTYPES_H */
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif /* HAVE_INTTYPES_H */
-#else /* ! HAVE_CONFIG_H */
-#  include <sys/types.h>
-#  include <unistd.h>
-#  include <time.h>
-#  include <stdint.h>
-#  include <string.h>
-#endif /* HAVE_CONFIG_H */
+#include "config.h"
 
+#include <inttypes.h>
+#include <munge.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <munge.h>
+#include <string.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
@@ -101,8 +81,7 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]       	= "auth plugin for Munge "
-				  "(http://code.google.com/p/munge/)";
+const char plugin_name[]       	= "Munge authentication plugin";
 const char plugin_type[]       	= "auth/munge";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
@@ -175,8 +154,7 @@ int init ( void )
  * allocate a credential.  Whether the credential is populated with useful
  * data at this time is implementation-dependent.
  */
-slurm_auth_credential_t *
-slurm_auth_create( void *argv[], char *opts )
+slurm_auth_credential_t *slurm_auth_create(char *opts)
 {
 	int rc, retry = RETRY_COUNT, auth_ttl;
 	slurm_auth_credential_t *cred = NULL;
@@ -234,7 +212,7 @@ slurm_auth_create( void *argv[], char *opts )
 	 */
 	ohandler = xsignal(SIGALRM, (SigFunc *)SIG_BLOCK);
 
-    again:
+again:
 	err = munge_encode(&cred->m_str, ctx, cred->buf, cred->len);
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
@@ -682,22 +660,29 @@ _print_cred(munge_ctx_t ctx)
 	cred_info_destroy(mi);
 }
 
-/* Convert AuthInfo to a socket path. Accepts "socket=<path>[,]"
+/*
+ * Convert AuthInfo to a socket path. Accepts two input formats:
+ * 1) <path>		(Old format)
+ * 2) socket=<path>[,]	(New format)
  * NOTE: Caller must xfree return value
  */
 static char *_auth_opts_to_socket(char *opts)
 {
 	char *socket = NULL, *sep, *tmp;
 
-	if (opts) {
-		tmp = strstr(opts, "socket=");
-		if (tmp) {	/* New format */
-			socket = xstrdup(tmp + 7);
-			sep = strchr(socket, ',');
-			if (sep)
-				sep[0] = '\0';
-		}
-	}
+	if (!opts)
+		return NULL;
+
+	tmp = strstr(opts, "socket=");
+	if (tmp) {	/* New format */
+		socket = xstrdup(tmp + 7);
+		sep = strchr(socket, ',');
+		if (sep)
+			sep[0] = '\0';
+	} else if (strchr(opts, '='))
+		;	/* New format, but socket not specified */
+	else
+		socket = xstrdup(opts);	/* Old format */
 
 	return socket;
 }

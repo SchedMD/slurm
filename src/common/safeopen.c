@@ -6,7 +6,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,20 +35,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_UNISTD_H
-#  include <unistd.h>
-#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "src/common/safeopen.h"
 #include "src/common/xassert.h"
@@ -79,8 +72,9 @@ FILE * safeopen(const char *path, const char *mode, int flags)
 		fstat(fd,   &fb2);
 
 		if (fb2.st_ino != fb1.st_ino) {
-			fprintf(stderr, "safeopen(): refusing to open `%s', "
-					"which is a soft link\n", path);
+			fprintf(stderr,
+				"%s refusing to open file %s: soft link\n",
+				__func__, path);
 			close(fd);
 			return NULL;
 		}

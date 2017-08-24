@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,20 +38,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,11 +55,12 @@
 #include "src/squeue/squeue.h"
 
 /* getopt_long options, integers but not characters */
-#define OPT_LONG_HELP      0x100
-#define OPT_LONG_USAGE     0x101
-#define OPT_LONG_HIDE      0x102
-#define OPT_LONG_START     0x103
-#define OPT_LONG_NOCONVERT 0x104
+#define OPT_LONG_HELP         0x100
+#define OPT_LONG_USAGE        0x101
+#define OPT_LONG_HIDE         0x102
+#define OPT_LONG_START        0x103
+#define OPT_LONG_NOCONVERT    0x104
+#define OPT_LONG_ARRAY_UNIQUE 0x105
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -95,7 +85,7 @@ static bool _find_a_host(char *, node_info_msg_t *);
  * parse_command_line
  */
 extern void
-parse_command_line( int argc, char* argv[] )
+parse_command_line( int argc, char* *argv )
 {
 	char *env_val = NULL;
 	bool override_format_env = false;
@@ -105,6 +95,7 @@ parse_command_line( int argc, char* argv[] )
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
 		{"array",      no_argument,       0, 'r'},
+		{"array-unique",no_argument,      0, OPT_LONG_ARRAY_UNIQUE},
 		{"Format",     required_argument, 0, 'O'},
 		{"format",     required_argument, 0, 'o'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
@@ -154,6 +145,8 @@ parse_command_line( int argc, char* argv[] )
 	}
 	if (getenv("SQUEUE_PRIORITY"))
 		params.priority_flag = true;
+	if (getenv("SQUEUE_ARRAY_UNIQUE"))
+		params.array_unique_flag = true;
 	while ((opt_char = getopt_long(argc, argv,
 				       "A:ahi:j::lL:n:M:O:o:p:Pq:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
@@ -302,6 +295,9 @@ parse_command_line( int argc, char* argv[] )
 				      optarg);
 				exit(1);
 			}
+			break;
+		case OPT_LONG_ARRAY_UNIQUE:
+			params.array_unique_flag = true;
 			break;
 		case OPT_LONG_HELP:
 			_help();
@@ -498,6 +494,8 @@ _parse_state( char* str, uint32_t* states )
 	xstrcat(state_names, job_state_string(JOB_CONFIGURING));
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_RESIZING));
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_REVOKED));
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_SPECIAL_EXIT));
 	error("Valid job states include: %s\n", state_names);
@@ -1068,11 +1066,22 @@ extern int parse_long_format( char* format_long )
 							  field_size,
 							  right_justify,
 							  suffix );
-			else if (!xstrcasecmp(token,"burstbuffer"))
+			else if (!xstrcasecmp(token, "burstbuffer"))
 				job_format_add_burst_buffer(params.format_list,
 							    field_size,
 							    right_justify,
-							    suffix );
+							    suffix);
+			else if (!xstrcasecmp(token, "burstbufferstate"))
+				job_format_add_burst_buffer_state(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix);
+			else if (!xstrcasecmp(token, "delayboot"))
+				job_format_add_delay_boot(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix);
 			else if (!xstrcasecmp(token,"mincpus"))
 				job_format_add_min_cpus( params.format_list,
 							 field_size,
@@ -1162,6 +1171,11 @@ extern int parse_long_format( char* format_long )
 							field_size,
 							right_justify,
 							suffix );
+			else if (!xstrcasecmp(token, "admin_comment"))
+				job_format_add_admin_comment( params.format_list,
+							      field_size,
+							      right_justify,
+							      suffix );
 			else if (!xstrcasecmp(token, "comment"))
 				job_format_add_comment( params.format_list,
 							field_size,
@@ -1366,6 +1380,28 @@ extern int parse_long_format( char* format_long )
 							 field_size,
 							 right_justify,
 							 suffix );
+			else if (!xstrcasecmp(token, "fedorigin"))
+				job_format_add_fed_origin(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!xstrcasecmp(token, "fedoriginraw"))
+				job_format_add_fed_origin_raw(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!xstrcasecmp(token, "fedsiblings"))
+				job_format_add_fed_siblings(params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!xstrcasecmp(token, "fedsiblingsraw"))
+				job_format_add_fed_siblings_raw(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
 			else if (!xstrcasecmp(token, "maxcpus"))
 				job_format_add_max_cpus(params.format_list,
 							 field_size,
@@ -1744,6 +1780,7 @@ _build_job_list( char* str )
 		list_append( my_list, job_step_id );
 		job = strtok_r (NULL, ",", &tmp_char);
 	}
+	xfree(my_job_list);
 	return my_list;
 }
 
@@ -1757,7 +1794,7 @@ static List
 _build_str_list(char* str)
 {
 	List my_list;
-	char *tok = NULL, *tmp_char = NULL, *my_str = NULL;
+	char *elem, *tok = NULL, *tmp_char = NULL, *my_str = NULL;
 
 	if (str == NULL)
 		return NULL;
@@ -1765,11 +1802,11 @@ _build_str_list(char* str)
 	my_str = xstrdup(str);
 	tok = strtok_r(my_str, ",", &tmp_char);
 	while (tok) {
-		list_append(my_list, tok);
+		elem = xstrdup(tok);
+		list_append(my_list, elem);
 		tok = strtok_r(NULL, ",", &tmp_char);
 	}
-	/* NOTE: Do NOT xfree my_list or the elements just added to the
-	 * list will also be freed. */
+	xfree(my_str);
 	return my_list;
 }
 
@@ -1785,29 +1822,29 @@ _build_state_list( char* str )
 	char *state = NULL, *tmp_char = NULL, *my_state_list = NULL;
 	uint32_t *state_id = NULL;
 
-	if ( str == NULL)
+	if (str == NULL)
 		return NULL;
-	if ( xstrcasecmp( str, "all" ) == 0 )
+	if (xstrcasecmp( str, "all") == 0)
 		return _build_all_states_list ();
 
-	my_list = list_create( NULL );
-	my_state_list = xstrdup( str );
+	my_list = list_create(NULL);
+	my_state_list = xstrdup(str);
 	state = strtok_r( my_state_list, ",", &tmp_char );
-	while (state)
-	{
-		state_id = xmalloc( sizeof( uint32_t ) );
-		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
-			exit( 1 );
-		list_append( my_list, state_id );
-		state = strtok_r( NULL, ",", &tmp_char );
+	while (state) {
+		state_id = xmalloc(sizeof(uint32_t));
+		if (_parse_state(state, state_id) != SLURM_SUCCESS)
+			exit(1);
+		list_append(my_list, state_id);
+		state = strtok_r(NULL, ",", &tmp_char);
 	}
+	xfree(my_state_list);
 	return my_list;
 
 }
 
 static void _append_state_list(List my_list, uint32_t state_id)
 {
-	uint16_t *state_rec;
+	uint32_t *state_rec;
 
 	state_rec = xmalloc(sizeof(uint32_t));
 	*state_rec = state_id;
@@ -1830,6 +1867,7 @@ _build_all_states_list( void )
 
 	_append_state_list(my_list, JOB_COMPLETING);
 	_append_state_list(my_list, JOB_CONFIGURING);
+	_append_state_list(my_list, JOB_REVOKED);
 	_append_state_list(my_list, JOB_SPECIAL_EXIT);
 
 	return my_list;
@@ -1850,39 +1888,40 @@ _build_step_list( char* str )
 	int job_id, array_id, step_id;
 	squeue_job_step_t *job_step_id = NULL;
 
-	if ( str == NULL)
+	if (str == NULL)
 		return NULL;
-	my_list = list_create( NULL );
-	my_step_list = xstrdup( str );
-	step = strtok_r( my_step_list, ",", &tmp_char );
+
+	my_list = list_create(NULL);
+	my_step_list = xstrdup(str);
+	step = strtok_r(my_step_list, ",", &tmp_char);
 	while (step) {
-		job_name = strtok_r( step, ".", &tmps_char );
+		job_name = strtok_r(step, ".", &tmps_char);
 		if (job_name == NULL)
 			break;
-		step_name = strtok_r( NULL, ".", &tmps_char );
-		job_id = strtol( job_name, &end_ptr, 10 );
+		step_name = strtok_r(NULL, ".", &tmps_char);
+		job_id = strtol(job_name, &end_ptr, 10);
 		if (end_ptr[0] == '_')
-			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
+			array_id = strtol(end_ptr + 1, &end_ptr, 10);
 		else
 			array_id = NO_VAL;
 		if (step_name == NULL) {
-			error ( "Invalid job_step id: %s.??",
-				 job_name );
-			exit( 1 );
+			error("Invalid job_step id: %s.??", job_name);
+			exit(1);
 		}
 		step_id = strtol( step_name, &end_ptr, 10 );
 		if ((job_id <= 0) || (step_id < 0)) {
-			error( "Invalid job_step id: %s.%s",
-				job_name, step_name );
-			exit( 1 );
+			error("Invalid job_step id: %s.%s",
+			      job_name, step_name);
+			exit(1);
 		}
-		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
+		job_step_id = xmalloc(sizeof(squeue_job_step_t));
 		job_step_id->job_id   = job_id;
 		job_step_id->array_id = array_id;
 		job_step_id->step_id  = step_id;
-		list_append( my_list, job_step_id );
-		step = strtok_r( NULL, ",", &tmp_char);
+		list_append(my_list, job_step_id);
+		step = strtok_r(NULL, ",", &tmp_char);
 	}
+	xfree(my_step_list);
 	return my_list;
 }
 
@@ -1898,23 +1937,25 @@ _build_user_list( char* str )
 	char *user = NULL;
 	char *tmp_char = NULL, *my_user_list = NULL;
 
-	if ( str == NULL )
+	if (str == NULL)
 		return NULL;
-	my_list = list_create( NULL );
-	my_user_list = xstrdup( str );
-	user = strtok_r( my_user_list, ",", &tmp_char );
+
+	my_list = list_create(NULL);
+	my_user_list = xstrdup(str);
+	user = strtok_r(my_user_list, ",", &tmp_char);
 	while (user) {
 		uid_t some_uid;
-		if ( uid_from_string( user, &some_uid ) == 0 ) {
+		if (uid_from_string(user, &some_uid) == 0) {
 			uint32_t *user_id = NULL;
-			user_id = xmalloc( sizeof( uint32_t ));
+			user_id = xmalloc(sizeof(uint32_t));
 			*user_id = (uint32_t) some_uid;
-			list_append( my_list, user_id );
+			list_append(my_list, user_id);
 		} else {
-			error( "Invalid user: %s\n", user);
+			error("Invalid user: %s\n", user);
 		}
-		user = strtok_r (NULL, ",", &tmp_char);
+		user = strtok_r(NULL, ",", &tmp_char);
 	}
+	xfree(my_user_list);
 	return my_list;
 }
 
@@ -1949,12 +1990,15 @@ Usage: squeue [OPTIONS]\n\
   --noconvert                     don't convert units from their original type\n\
 				  (e.g. 2048M won't be converted to 2G).\n\
   -o, --format=format             format specification\n\
+  -O, --Format=format             format specification\n\
   -p, --partition=partition(s)    comma separated list of partitions\n\
 				  to view, default is all partitions\n\
   -q, --qos=qos(s)                comma separated list of qos's\n\
 				  to view, default is all qos's\n\
   -R, --reservation=name          reservation to view, default is all\n\
   -r, --array                     display one job array element per line\n\
+      --array-unique              display one unique pending job array\n\
+				  element per line\n\
   -s, --step=step(s)              comma separated list of job steps\n\
 				  to view, default is all\n\
   -S, --sort=fields               comma separated list of fields to sort on\n\
@@ -1998,9 +2042,11 @@ _check_node_names(hostset_t names)
 	while ((host = hostlist_next(itr))) {
 		if (!_find_a_host(host, node_info)) {
 			error("Invalid node name %s", host);
+			free(host);
 			hostlist_iterator_destroy(itr);
 			return false;
 		}
+		free(host);
 	}
 	hostlist_iterator_destroy(itr);
 

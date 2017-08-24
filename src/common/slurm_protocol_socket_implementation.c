@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,35 +38,21 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#define _USE_IRS 1	/* Required for AIX and hstrerror() */
-
-#include <unistd.h>
-#include <string.h>
-#include <netdb.h>
+#include <arpa/inet.h>
 #include <errno.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/param.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <arpa/inet.h>
-#include <sys/param.h>
-#include <stdlib.h>
-
-#if HAVE_SYS_SOCKET_H
-#  include <sys/socket.h>
-#else
-#  if HAVE_SOCKET_H
-#    include <socket.h>
-#  endif
-#endif
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_protocol_api.h"
@@ -92,9 +78,9 @@
 
 
 /* Static functions */
-static int _slurm_connect (int __fd, struct sockaddr const * __addr,
-			   socklen_t __len);
-static slurm_fd_t _slurm_create_socket ( slurm_socket_type_t type );
+static int _slurm_connect(int __fd, struct sockaddr const * __addr,
+			  socklen_t __len);
+static int _slurm_create_socket ( slurm_socket_type_t type );
 static int _slurm_vfcntl(int fd, int cmd, va_list va );
 static int _slurm_fcntl(int fd, int cmd, ... );
 static int _slurm_socket (int __domain, int __type, int __protocol);
@@ -151,8 +137,8 @@ static void _sock_bind_wild(int sockfd)
 	return;
 }
 
-extern ssize_t slurm_msg_recvfrom_timeout(slurm_fd_t fd, char **pbuf,
-		size_t *lenp, uint32_t flags, int tmout)
+extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
+					  uint32_t flags, int tmout)
 {
 	ssize_t  len;
 	uint32_t msglen;
@@ -184,14 +170,14 @@ extern ssize_t slurm_msg_recvfrom_timeout(slurm_fd_t fd, char **pbuf,
 	return (ssize_t) msglen;
 }
 
-extern ssize_t slurm_msg_sendto(slurm_fd_t fd, char *buffer, size_t size,
+extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size,
 				uint32_t flags)
 {
 	return slurm_msg_sendto_timeout( fd, buffer, size, flags,
 				(slurm_get_msg_timeout() * 1000));
 }
 
-ssize_t slurm_msg_sendto_timeout(slurm_fd_t fd, char *buffer, size_t size,
+ssize_t slurm_msg_sendto_timeout(int fd, char *buffer, size_t size,
 				 uint32_t flags, int timeout)
 {
 	int   len;
@@ -222,7 +208,7 @@ ssize_t slurm_msg_sendto_timeout(slurm_fd_t fd, char *buffer, size_t size,
 
 /* Send slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-extern int slurm_send_timeout(slurm_fd_t fd, char *buf, size_t size,
+extern int slurm_send_timeout(int fd, char *buf, size_t size,
 			      uint32_t flags, int timeout)
 {
 	int rc;
@@ -329,7 +315,7 @@ extern int slurm_send_timeout(slurm_fd_t fd, char *buf, size_t size,
 
 /* Get slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-extern int slurm_recv_timeout(slurm_fd_t fd, char *buffer, size_t size,
+extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 			      uint32_t flags, int timeout )
 {
 	int rc;
@@ -427,10 +413,10 @@ extern int slurm_recv_timeout(slurm_fd_t fd, char *buffer, size_t size,
 	return recvlen;
 }
 
-extern slurm_fd_t slurm_init_msg_engine(slurm_addr_t *addr)
+extern int slurm_init_msg_engine(slurm_addr_t *addr)
 {
 	int rc;
-	slurm_fd_t fd;
+	int fd;
 	const int one = 1;
 	const size_t sz1 = sizeof(one);
 
@@ -471,16 +457,16 @@ extern slurm_fd_t slurm_init_msg_engine(slurm_addr_t *addr)
  * set *ADDR (which is *ADDR_LEN bytes long) to the address of the connecting
  * peer and *ADDR_LEN to the address's actual length, and return the
  * new socket's descriptor, or -1 for errors.  */
-extern slurm_fd_t slurm_accept_msg_conn(slurm_fd_t fd, slurm_addr_t *addr)
+extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(slurm_addr_t);
 	return accept(fd, (struct sockaddr *)addr, &len);
 }
 
-extern slurm_fd_t slurm_open_stream(slurm_addr_t *addr, bool retry)
+extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 {
 	int retry_cnt;
-	slurm_fd_t fd;
+	int fd;
 	uint16_t port;
 	char ip[32];
 
@@ -532,7 +518,7 @@ extern slurm_fd_t slurm_open_stream(slurm_addr_t *addr, bool retry)
 }
 
 /* Put the local address of FD into *ADDR and its length in *LEN.  */
-extern int slurm_get_stream_addr(slurm_fd_t fd, slurm_addr_t *addr )
+extern int slurm_get_stream_addr(int fd, slurm_addr_t *addr )
 {
 	socklen_t size = sizeof(addr);
 	return getsockname(fd, (struct sockaddr *)addr, &size);
@@ -546,10 +532,9 @@ static int _slurm_socket (int __domain, int __type, int __protocol)
 /* Create a socket of the specified type
  * IN type - SLURM_STREAM or SLURM_MESSAGE
  */
-static slurm_fd_t _slurm_create_socket ( slurm_socket_type_t type )
+static int _slurm_create_socket ( slurm_socket_type_t type )
 {
-	switch ( type )
-	{
+	switch (type) {
 		case SLURM_STREAM :
 			return _slurm_socket ( AF_INET, SOCK_STREAM,
 					      IPPROTO_TCP) ;
@@ -722,7 +707,7 @@ extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
 	/*
 	 * If NULL hostname passed in, we only update the port of addr
 	 */
-	addr->sin_family = AF_SLURM;
+	addr->sin_family = AF_INET;
 	addr->sin_port   = htons(port);
 	if (host == NULL)
 		return;
@@ -747,7 +732,7 @@ extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
 	/*
 	 * If NULL hostname passed in, we only update the port of addr
 	 */
-	addr->sin_family = AF_SLURM;
+	addr->sin_family = AF_INET;
 	addr->sin_port   = htons(port);
 	if (host == NULL)
 		return;
@@ -782,7 +767,7 @@ extern void slurm_get_addr (slurm_addr_t *addr, uint16_t *port, char *host,
 	char * tmp_s_addr = (char *) &addr->sin_addr.s_addr;
 	int    len    = sizeof(addr->sin_addr.s_addr);
 
-	he = get_host_by_addr( tmp_s_addr, len, AF_SLURM,
+	he = get_host_by_addr( tmp_s_addr, len, AF_INET,
 			       (void *) &h_buf, sizeof(h_buf), &h_err );
 
 	if (he != NULL) {
@@ -811,6 +796,32 @@ extern void slurm_print_slurm_addr ( slurm_addr_t * address, char *buf,
 	snprintf(buf, n, "%s:%d", addrbuf, ntohs(address->sin_port));
 }
 
+/* Given a file descriptor, write the peer connection's
+ * IP address and port into the supplied buffer */
+extern void slurm_print_peer_addr(int fd, char *buf, int buf_size)
+{
+	char ipstr[INET6_ADDRSTRLEN];
+	struct sockaddr_storage addr;
+	socklen_t addrlen = sizeof(addr);
+	int port = -1;
+
+	if (getpeername(fd, (struct sockaddr*)&addr, &addrlen) == 0) {
+		if (addr.ss_family == AF_INET) {
+			struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+			port = ntohs(s->sin_port);
+			inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
+			snprintf(buf, buf_size, "%s:%d", ipstr, port);
+		} else if (addr.ss_family == AF_INET6) {
+			struct sockaddr_in6 *s = (struct sockaddr_in6 *)&addr;
+			port = ntohs(s->sin6_port);
+			inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof ipstr);
+			snprintf(buf, buf_size, "[%s]:%d", ipstr, port);
+		}
+	}
+	if (port < 0)
+		snprintf(buf, buf_size, "%s", "<getpeername error>");
+}
+
 extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
 {
 	pack32( ntohl( addr->sin_addr.s_addr ), buffer );
@@ -819,7 +830,7 @@ extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
 
 extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
 {
-	addr->sin_family = AF_SLURM ;
+	addr->sin_family = AF_INET;
 	safe_unpack32(&addr->sin_addr.s_addr, buffer);
 	safe_unpack16(&addr->sin_port, buffer);
 

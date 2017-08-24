@@ -73,6 +73,9 @@ if (@ARGV < 1) {
 	pod2usage(-message=>"Missing Job ID", -verbose=>0);
 } else {
 	$slurm = Slurm::new();
+	if (!$slurm) {
+		die "Problem loading slurm.\n";
+	}
 	$resp = $slurm->get_end_time($job_id);
 	if (not defined($resp)) {
 		pod2usage(-message=>"Job id $job_id not valid!", -verbose=>0);

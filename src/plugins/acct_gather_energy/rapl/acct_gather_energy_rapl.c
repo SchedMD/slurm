@@ -6,7 +6,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -248,13 +248,13 @@ static void _hardware(void)
 		if (!xstrncmp(buf, "physical id", sizeof("physical id") - 1)) {
 			sscanf(buf, "physical id\t: %d", &pkg);
 
-			if (pkg >= MAX_PKGS)
+			if (pkg >= MAX_PKGS) {
 				fatal("Slurm can only handle %d sockets for "
 				      "rapl, you seem to have more than that.  "
 				      "Update src/plugins/acct_gather_energy/"
 				      "rapl/acct_gather_energy_rapl.h "
 				      "(MAX_PKGS) and recompile.", MAX_PKGS);
-			if (pkg2cpu[pkg] == -1) {
+			} else if (pkg2cpu[pkg] == -1) {
 				nb_pkg++;
 				pkg2cpu[pkg] = cpu;
 			}

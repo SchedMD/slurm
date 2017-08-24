@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -104,6 +104,7 @@ typedef struct {
 	lock_level_t	job;
 	lock_level_t	node;
 	lock_level_t	partition;
+	lock_level_t	federation;
 }	slurmctld_lock_t;
 
 /* Interval lock structure
@@ -120,6 +121,7 @@ typedef enum {
 	JOB_LOCK,
 	NODE_LOCK,
 	PART_LOCK,
+	FED_LOCK,
 	ENTITY_COUNT
 }	lock_datatype_t;
 

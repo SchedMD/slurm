@@ -2,11 +2,12 @@
  *  node_features_knl_generic.c - Plugin for managing Intel KNL state
  *  information on a generic Linux cluster
  *****************************************************************************
- *  Copyright (C) 2016 SchedMD LLC.
+ *  Copyright (C) 2016-2017 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
+ *             Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,11 +40,19 @@
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <ctype.h>
+#include <fcntl.h>
+#ifdef HAVE_NUMA
+#undef NUMA_VERSION1_COMPATIBILITY
+#include <numa.h>
+#endif
 #include <poll.h>
+#include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
@@ -60,8 +69,8 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -72,10 +81,11 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmd/slurmd/req.h"
 
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT   500
-#define SYSCFG_TIMEOUT 1000
+#define DEFAULT_SYSCFG_TIMEOUT 1000
 
 /* Intel Knights Landing Configuration Modes */
 #define KNL_NUMA_CNT	5
@@ -93,6 +103,12 @@
 #define KNL_FLAT	0x0800
 #define KNL_AUTO	0x1000
 
+#ifndef MODPROBE_PATH
+#define MODPROBE_PATH	"/sbin/modprobe"
+#endif
+#define ZONE_SORT_PATH	"/sys/kernel/zone_sort_free_pages/nodeid"
+//#define ZONE_SORT_PATH	"/tmp/nodeid"	/* For testing */
+
 #ifndef DEFAULT_MCDRAM_SIZE
 #define DEFAULT_MCDRAM_SIZE ((uint64_t) 16 * 1024 * 1024 * 1024)
 #endif
@@ -106,6 +122,12 @@ slurmctld_config_t slurmctld_config __attribute__((weak_import));
 #else
 slurmctld_config_t slurmctld_config;
 #endif
+
+typedef enum {
+	KNL_SYSTEM_TYPE_NOT_SET,
+	KNL_SYSTEM_TYPE_INTEL,
+	KNL_SYSTEM_TYPE_DELL,
+} knl_system_type_t;
 
 /*
  * These variables are required by the burst buffer plugin interface.  If they
@@ -137,16 +159,25 @@ const char plugin_type[]        = "node_features/knl_generic";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /* Configuration Paramters */
-static bool  debug_flag = false;
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
 static uint16_t allow_numa = KNL_NUMA_FLAG;
 static uid_t *allowed_uid = NULL;
 static int allowed_uid_cnt = 0;
+static uint32_t boot_time = (5 * 60);	/* 5 minute estimated boot time */
+static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
-static char *syscfg_path = NULL;
-static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
+static char *mc_path = NULL;
+static uint32_t syscfg_timeout = 0;
 static bool reconfig = false;
+static time_t shutdown_time = 0;
+static int syscfg_found = -1;
+static char *syscfg_path = NULL;
+static knl_system_type_t knl_system_type = KNL_SYSTEM_TYPE_INTEL;
+static uint32_t ume_check_interval = 0;
+static pthread_mutex_t ume_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t ume_thread = 0;
 
 /* Percentage of MCDRAM used for cache by type, updated from syscfg */
 static int mcdram_pct[KNL_MCDRAM_CNT];
@@ -156,10 +187,15 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"AllowMCDRAM", S_P_STRING},
 	{"AllowNUMA", S_P_STRING},
 	{"AllowUserBoot", S_P_STRING},
+	{"BootTime", S_P_UINT32},
 	{"DefaultMCDRAM", S_P_STRING},
 	{"DefaultNUMA", S_P_STRING},
 	{"LogFile", S_P_STRING},
+	{"McPath", S_P_STRING},
 	{"SyscfgPath", S_P_STRING},
+	{"SyscfgTimeout", S_P_UINT32},
+	{"SystemType", S_P_STRING},
+	{"UmeCheckInterval", S_P_UINT32},
 	{NULL}
 };
 
@@ -282,7 +318,8 @@ static uint16_t _knl_mcdram_token(char *token)
 		mcdram_num = KNL_CACHE;
 	else if (!xstrcasecmp(token, "hybrid"))
 		mcdram_num = KNL_HYBRID;
-	else if (!xstrcasecmp(token, "flat"))
+	else if (!xstrcasecmp(token, "flat") ||
+		 !xstrcasecmp(token, "memory"))
 		mcdram_num = KNL_FLAT;
 	else if (!xstrcasecmp(token, "equal"))
 		mcdram_num = KNL_EQUAL;
@@ -390,6 +427,41 @@ static uint16_t _knl_numa_token(char *token)
 }
 
 /*
+ * Translate KNL System enum to equivalent string value
+ */
+static char *_knl_system_type_str(knl_system_type_t system_type)
+{
+	switch (system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		return "Intel";
+	case KNL_SYSTEM_TYPE_DELL:
+		return "Dell";
+	case KNL_SYSTEM_TYPE_NOT_SET:
+	default:
+		return "Unknown";
+	}
+}
+
+/*
+ * Given a KNL System token, return its equivalent enum value
+ * token IN - String to scan
+ * RET System enum value
+ */
+static knl_system_type_t _knl_system_type_token(char *token)
+{
+	knl_system_type_t system_type;
+
+	if (!xstrcasecmp("intel", token))
+		system_type = KNL_SYSTEM_TYPE_INTEL;
+	else if (!xstrcasecmp("dell", token))
+		system_type = KNL_SYSTEM_TYPE_DELL;
+	else
+		system_type = KNL_SYSTEM_TYPE_NOT_SET;
+
+	return system_type;
+}
+
+/*
  * Return time in msec since "start time"
  */
 static int _tot_wait (struct timeval *start_time)
@@ -476,10 +548,10 @@ static char *_run_script(char *cmd_path, char **script_argv, int *status)
 			fds.fd = pfd[0];
 			fds.events = POLLIN | POLLHUP | POLLRDHUP;
 			fds.revents = 0;
-			new_wait = SYSCFG_TIMEOUT - _tot_wait(&tstart);
+			new_wait = syscfg_timeout - _tot_wait(&tstart);
 			if (new_wait <= 0) {
 				error("%s: %s poll timeout @ %d msec",
-				      __func__, script_argv[1], SYSCFG_TIMEOUT);
+				      __func__, script_argv[1], syscfg_timeout);
 				break;
 			}
 			new_wait = MIN(new_wait, MAX_POLL_WAIT);
@@ -566,6 +638,73 @@ static char *_make_uid_str(uid_t *uid_array, int uid_cnt)
 	return uid_str;
 }
 
+/* Watch for Uncorrectable Memory Errors. Notify jobs if any detected */
+static void *_ume_agent(void *args)
+{
+	struct timespec req;
+	int i, mc_num, csrow_num, ue_count, last_ue_count = -1;
+	int *fd = NULL, fd_cnt = 0, fd_size = 0, ume_path_size;
+	char buf[8], *ume_path;
+	ssize_t rd_size;
+
+	/* Identify and open array of UME file descriptors */
+	ume_path_size = strlen(mc_path) + 32;
+	ume_path = xmalloc(ume_path_size);
+	for (mc_num = 0; ; mc_num++) {
+		for (csrow_num = 0; ; csrow_num++) {
+			if (fd_cnt == fd_size) {
+				fd_size += 64;
+				fd = xrealloc(fd, sizeof(int) * fd_size);
+			}
+			snprintf(ume_path, ume_path_size,
+				 "%s/mc%d/csrow%d/ue_count",
+				 mc_path, mc_num, csrow_num);
+			if ((fd[fd_cnt] = open(ume_path, 0)) >= 0)
+				fd_cnt++;
+			else
+				break;
+		}
+		if (csrow_num == 0)
+			break;
+	}
+	xfree(ume_path);
+
+	while (!shutdown_time) {
+		/* Get current UME count */
+		ue_count = 0;
+		for (i = 0; i < fd_cnt; i++) {
+			(void) lseek(fd[i], 0, SEEK_SET);
+			rd_size = read(fd[i], buf, 7);
+			if (rd_size <= 0)
+				continue;
+			buf[rd_size] = '\0';
+			ue_count += atoi(buf);
+		}
+
+		if (shutdown_time)
+			break;
+		/* If UME count changed, notify all steps */
+		if ((last_ue_count < ue_count) && (last_ue_count != -1)) {
+			i = ume_notify();
+			error("UME error detected. Notified %d job steps", i);
+		}
+		last_ue_count = ue_count;
+
+		if (shutdown_time)
+			break;
+		/* Sleep before retry */
+		req.tv_sec  =  ume_check_interval / 1000000;
+		req.tv_nsec = (ume_check_interval % 1000000) * 1000;
+		(void) nanosleep(&req, NULL);
+	}
+
+	for (i = 0; i < fd_cnt; i++)
+		(void) close(fd[i]);
+	xfree(fd);
+
+	return NULL;
+}
+
 /* Load configuration */
 extern int init(void)
 {
@@ -581,6 +720,7 @@ extern int init(void)
 	allow_numa = KNL_NUMA_FLAG;
 	xfree(allowed_uid);
 	allowed_uid_cnt = 0;
+	syscfg_timeout = DEFAULT_SYSCFG_TIMEOUT;
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
@@ -617,6 +757,7 @@ extern int init(void)
 			_make_uid_array(tmp_str);
 			xfree(tmp_str);
 		}
+		(void) s_p_get_uint32(&boot_time, "BootTime", tbl);
 		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
 			default_mcdram = _knl_mcdram_parse(tmp_str, ",");
 			if (_knl_mcdram_bits_cnt(default_mcdram) != 1) {
@@ -633,15 +774,33 @@ extern int init(void)
 			}
 			xfree(tmp_str);
 		}
+		(void) s_p_get_string(&mc_path, "McPath", tbl);
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
+		if (s_p_get_string(&tmp_str, "SystemType", tbl)) {
+			if ((knl_system_type = _knl_system_type_token(tmp_str))
+			    == KNL_SYSTEM_TYPE_NOT_SET)
+				fatal("knl_generic.conf: Invalid SystemType=%s.",
+				      tmp_str);
+			xfree(tmp_str);
+		}
+		(void) s_p_get_uint32(&syscfg_timeout, "SyscfgTimeout", tbl);
+		(void) s_p_get_uint32(&ume_check_interval, "UmeCheckInterval",
+				      tbl);
+
 		s_p_hashtbl_destroy(tbl);
 	} else if (errno != ENOENT) {
 		error("Error opening/reading knl_generic.conf: %m");
 		rc = SLURM_ERROR;
 	}
 	xfree(knl_conf_file);
+	if (!mc_path)
+		mc_path = xstrdup("/sys/devices/system/edac/mc");
 	if (!syscfg_path)
 		syscfg_path = xstrdup("/usr/bin/syscfg");
+	if (access(syscfg_path, X_OK) == 0)
+		syscfg_found = 1;
+	else
+		syscfg_found = 0;
 
 	if ((resume_program = slurm_get_resume_program())) {
 		error("Use of ResumeProgram with %s not currently supported",
@@ -662,9 +821,14 @@ extern int init(void)
 		info("AllowMCDRAM=%s AllowNUMA=%s",
 		     allow_mcdram_str, allow_numa_str);
 		info("AllowUserBoot=%s", allow_user_str);
+		info("BootTIme=%u", boot_time);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
+		info("McPath=%s", mc_path);
 		info("SyscfgPath=%s", syscfg_path);
+		info("SyscfgTimeout=%u msec", syscfg_timeout);
+		info("SystemType=%s", _knl_system_type_str(knl_system_type));
+		info("UmeCheckInterval=%u", ume_check_interval);
 		xfree(allow_mcdram_str);
 		xfree(allow_numa_str);
 		xfree(allow_user_str);
@@ -673,17 +837,38 @@ extern int init(void)
 	}
 	gres_plugin_add("hbm");
 
+	if (ume_check_interval && run_in_daemon("slurmd")) {
+		pthread_attr_t attr;
+		slurm_attr_init(&attr);
+		slurm_mutex_lock(&ume_mutex);
+		if (pthread_create(&ume_thread, &attr, _ume_agent, NULL)) {
+			error("%s: Unable to start UME monitor thread: %m",
+			       __func__);
+		}
+		slurm_mutex_unlock(&ume_mutex);
+		slurm_attr_destroy(&attr);
+	}
+
 	return rc;
 }
 
 /* Release allocated memory */
 extern int fini(void)
 {
+	shutdown_time = time(NULL);
+	slurm_mutex_lock(&ume_mutex);
+	if (ume_thread) {
+		pthread_join(ume_thread, NULL);
+		ume_thread = 0;
+	}
+	slurm_mutex_unlock(&ume_mutex);
 	xfree(allowed_uid);
 	allowed_uid_cnt = 0;
 	debug_flag = false;
 	xfree(mcdram_per_node);
+	xfree(mc_path);
 	xfree(syscfg_path);
+
 	return SLURM_SUCCESS;
 }
 
@@ -728,15 +913,43 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	char *avail_states = NULL, *cur_state = NULL;
 	char *resp_msg, *argv[10], *avail_sep = "", *cur_sep = "", *tok;
 	int status = 0;
+	int len;
 
 	if (!syscfg_path || !avail_modes || !current_mode)
 		return;
+	if (syscfg_found == 0) {
+		/* This node on cluster lacks syscfg; should not be KNL */
+		static bool log_event = true;
+		if (log_event) {
+			info("%s: syscfg program not found, can not get KNL modes",
+			     __func__);
+			log_event = false;
+		}
+		*avail_modes = NULL;
+		*current_mode = NULL;
+		return;
+	}
 
-	argv[0] = "syscfg";
-	argv[1] = "/d";
-	argv[2] = "BIOSSETTINGS";
-	argv[3] = "Cluster Mode";
-	argv[4] = NULL;
+	switch (knl_system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		argv[0] = "syscfg";
+		argv[1] = "/d";
+		argv[2] = "BIOSSETTINGS";
+		argv[3] = "Cluster Mode";
+		argv[4] = NULL;
+		break;
+	case KNL_SYSTEM_TYPE_DELL:
+		argv[0] = "syscfg";
+		argv[1] = "--SystemMemoryModel";
+		argv[2] = NULL;
+		break;
+	default:
+		/* This should never happen */
+		error("%s: Unknown SystemType. %d", __func__, knl_system_type);
+		*avail_modes = NULL;
+		*current_mode = NULL;
+		return;
+	}
 	resp_msg = _run_script(syscfg_path, argv, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: syscfg (get cluster mode) status:%u response:%s",
@@ -745,10 +958,23 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	if (resp_msg == NULL) {
 		info("%s: syscfg returned no information", __func__);
 	} else {
+		tok = NULL;
 		_log_script_argv(argv, resp_msg);
-		tok = strstr(resp_msg, "Current Value : ");
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			tok = strstr(resp_msg, "Current Value : ");
+			len = 16;
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			tok = strstr(resp_msg, "SystemMemoryModel=");
+			len = 18;
+			break;
+		default:
+			/* already handled above, should never get here */
+			break;
+		}
 		if (tok) {
-			tok += 16;
+			tok += len;
 			if (!strncasecmp(tok, "All2All", 3)) {
 				cur_state = xstrdup("a2a");
 				cur_sep = ",";
@@ -766,34 +992,67 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 				cur_sep = ",";
 			}
 		}
-		if (slurm_strcasestr(resp_msg, "All2All")) {
+
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_DELL:
+			argv[0] = "syscfg";
+			argv[1] = "-h";
+			argv[2] = "--SystemMemoryModel";
+			argv[3] = NULL;
+
+			xfree(resp_msg);
+			resp_msg = _run_script(syscfg_path, argv, &status);
+			if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+				error("%s: syscfg (get cluster mode) status:%u response:%s",
+				      __func__, status, resp_msg);
+			}
+			if (resp_msg == NULL)
+				info("%s: syscfg -h --SystemMemoryModel returned no information", __func__);
+			break;
+		default:
+			break;
+		}
+
+		if (xstrcasestr(resp_msg, "All2All")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "a2a");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Hemisphere")) {
+		if (xstrcasestr(resp_msg, "Hemisphere")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "hemi");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Quadrant")) {
+		if (xstrcasestr(resp_msg, "Quadrant")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "quad");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "SNC-2")) {
+		if (xstrcasestr(resp_msg, "SNC-2")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "snc2");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "SNC-4")) {
+		if (xstrcasestr(resp_msg, "SNC-4")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "snc4");
 			avail_sep = ",";
 		}
 		xfree(resp_msg);
 	}
 
-	argv[0] = "syscfg";
-	argv[1] = "/d";
-	argv[2] = "BIOSSETTINGS";
-	argv[3] = "Memory Mode";
-	argv[4] = NULL;
+	switch (knl_system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		argv[0] = "syscfg";
+		argv[1] = "/d";
+		argv[2] = "BIOSSETTINGS";
+		argv[3] = "Memory Mode";
+		argv[4] = NULL;
+		break;
+	case KNL_SYSTEM_TYPE_DELL:
+		argv[0] = "syscfg";
+		argv[1] = "--ProcEmbMemMode";
+		argv[2] = NULL;
+		break;
+	default:
+		/* already handled above, should never get here */
+		break;
+	}
 	resp_msg = _run_script(syscfg_path, argv, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: syscfg (get memory mode) status:%u response:%s",
@@ -802,13 +1061,27 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	if (resp_msg == NULL) {
 		info("%s: syscfg returned no information", __func__);
 	} else {
+		tok = NULL;
 		_log_script_argv(argv, resp_msg);
-		tok = strstr(resp_msg, "Current Value : ");
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			tok = strstr(resp_msg, "Current Value : ");
+			len = 16;
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			tok = strstr(resp_msg, "ProcEmbMemMode=");
+			len = 15;
+			break;
+		default:
+			/* already handled above, should never get here */
+			break;
+		}
 		if (tok) {
-			tok += 16;
+			tok += len;
 			if (!strncasecmp(tok, "Cache", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "cache");
-			} else if (!strncasecmp(tok, "Flat", 3)) {
+			} else if (!strncasecmp(tok, "Flat", 3) ||
+				   !strncasecmp(tok, "Memory", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "flat");
 			} else if (!strncasecmp(tok, "Hybrid", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "hybrid");
@@ -818,23 +1091,45 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "auto");
 			}
 		}
-		if (slurm_strcasestr(resp_msg, "Cache")) {
+
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_DELL:
+			argv[0] = "syscfg";
+			argv[1] = "-h";
+			argv[2] = "--ProcEmbMemMode";
+			argv[3] = NULL;
+
+			xfree(resp_msg);
+			resp_msg = _run_script(syscfg_path, argv, &status);
+			if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+				error("%s: syscfg (get memory mode) status help:%u response:%s",
+				      __func__, status, resp_msg);
+			}
+			if (resp_msg == NULL)
+				info("%s: syscfg -h returned no information", __func__);
+			break;
+		default:
+			break;
+		}
+
+		if (xstrcasestr(resp_msg, "Cache")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "cache");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Flat")) {
+		if (xstrcasestr(resp_msg, "Flat") ||
+		    xstrcasestr(resp_msg, "Memory")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "flat");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Hybrid")) {
+		if (xstrcasestr(resp_msg, "Hybrid")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "hybrid");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Equal")) {
+		if (xstrcasestr(resp_msg, "Equal")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "equal");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Auto")) {
+		if (xstrcasestr(resp_msg, "Auto")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "auto");
 			/* avail_sep = ",";	CLANG error: Dead assignment */
 		}
@@ -878,7 +1173,7 @@ extern int node_features_p_job_valid(char *job_features)
 	    strchr(job_features, '|') ||
 	    strchr(job_features, '*'))
 		return ESLURM_INVALID_KNL;
-	
+
 	job_mcdram = _knl_mcdram_parse(job_features, "&,");
 	mcdram_cnt = _knl_mcdram_bits_cnt(job_mcdram);
 	if (mcdram_cnt > 1)			/* Multiple MCDRAM options */
@@ -981,7 +1276,7 @@ static char *_find_key_val(char *key, char *resp_msg)
  * RET error code */
 extern int node_features_p_node_set(char *active_features)
 {
-	char *resp_msg, *argv[10];
+	char *resp_msg, *argv[10], tmp[100];
 	char *key;
 	int error_code = SLURM_SUCCESS, status = 0;
 	char *mcdram_mode = NULL, *numa_mode = NULL;
@@ -993,13 +1288,33 @@ extern int node_features_p_node_set(char *active_features)
 		error("%s: SyscfgPath not configured", __func__);
 		return SLURM_ERROR;
 	}
+	if (syscfg_found == 0) {
+		/* This node on cluster lacks syscfg; should not be KNL.
+		 * This code should never be reached */
+		error("%s: syscfg program not found; can not set KNL modes",
+		      __func__);
+		return SLURM_ERROR;
+	}
 
 	/* Identify available Cluster/NUMA modes */
-	argv[0] = "syscfg";
-	argv[1] = "/d";
-	argv[2] = "BIOSSETTINGS";
-	argv[3] = "Cluster Mode";
-	argv[4] = NULL;
+	switch (knl_system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		argv[0] = "syscfg";
+		argv[1] = "/d";
+		argv[2] = "BIOSSETTINGS";
+		argv[3] = "Cluster Mode";
+		argv[4] = NULL;
+		break;
+	case KNL_SYSTEM_TYPE_DELL:
+		argv[0] = "syscfg";
+		argv[1] = "--SystemMemoryModel";
+		argv[2] = NULL;
+		break;
+	default:
+		/* This should never happen */
+		error("%s: Unknown SystemType. %d", __func__, knl_system_type);
+		return SLURM_ERROR;
+	}
 	resp_msg = _run_script(syscfg_path, argv, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: syscfg (get cluster mode) status:%u response:%s",
@@ -1022,19 +1337,41 @@ extern int node_features_p_node_set(char *active_features)
 			key = "SNC-4";
 		else
 			key = NULL;
-		numa_mode = _find_key_val(key, resp_msg);
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			numa_mode = _find_key_val(key, resp_msg);
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			numa_mode = xstrdup(key);
+		default:
+			break;
+		}
 		xfree(resp_msg);
 	}
 
 	/* Reset current Cluster/NUMA mode */
 	if (numa_mode) {
-		argv[0] = "syscfg";
-		argv[1] = "/bcs";
-		argv[2] = "";
-		argv[3] = "BIOSSETTINGS";
-		argv[4] = "Cluster Mode";
-		argv[5] = numa_mode;
-		argv[6] = NULL;
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			argv[0] = "syscfg";
+			argv[1] = "/bcs";
+			argv[2] = "";
+			argv[3] = "BIOSSETTINGS";
+			argv[4] = "Cluster Mode";
+			argv[5] = numa_mode;
+			argv[6] = NULL;
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			snprintf(tmp, sizeof(tmp),
+				 "--SystemMemoryModel=%s", numa_mode);
+			argv[0] = "syscfg";
+			argv[1] = tmp;
+			argv[2] = NULL;
+			break;
+		default:
+			/* already handled above, should never get here */
+			break;
+		}
 		resp_msg = _run_script(syscfg_path, argv, &status);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 			error("%s: syscfg (set cluster mode) status:%u response:%s",
@@ -1048,11 +1385,23 @@ extern int node_features_p_node_set(char *active_features)
 	}
 
 	/* Identify available Memory/MCDRAM modes */
-	argv[0] = "syscfg";
-	argv[1] = "/d";
-	argv[2] = "BIOSSETTINGS";
-	argv[3] = "Memory Mode";
-	argv[4] = NULL;
+	switch (knl_system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		argv[0] = "syscfg";
+		argv[1] = "/d";
+		argv[2] = "BIOSSETTINGS";
+		argv[3] = "Memory Mode";
+		argv[4] = NULL;
+		break;
+	case KNL_SYSTEM_TYPE_DELL:
+		argv[0] = "syscfg";
+		argv[1] = "--ProcEmbMemMode";
+		argv[2] = NULL;
+		break;
+	default:
+		/* already handled above, should never get here */
+		break;
+	}
 	resp_msg = _run_script(syscfg_path, argv, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: syscfg (get memory mode) status:%u response:%s",
@@ -1066,7 +1415,16 @@ extern int node_features_p_node_set(char *active_features)
 		if (strstr(active_features, "cache"))
 			key = "Cache";
 		else if (strstr(active_features, "flat"))
-			key = "Flat";
+			switch (knl_system_type) {
+			case KNL_SYSTEM_TYPE_INTEL:
+				key = "Flat";
+				break;
+			case KNL_SYSTEM_TYPE_DELL:
+				key = "Memory";
+				break;
+			default:
+				break;
+			}
 		else if (strstr(active_features, "hybrid"))
 			key = "Hybrid";
 		else if (strstr(active_features, "equal"))
@@ -1075,19 +1433,43 @@ extern int node_features_p_node_set(char *active_features)
 			key = "Auto";
 		else
 			key = NULL;
-		mcdram_mode = _find_key_val(key, resp_msg);
+
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			mcdram_mode = _find_key_val(key, resp_msg);
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			mcdram_mode = xstrdup(key);
+		default:
+			break;
+		}
 		xfree(resp_msg);
 	}
 
 	/* Reset current Memory/MCDRAM mode */
 	if (mcdram_mode) {
-		argv[0] = "syscfg";
-		argv[1] = "/bcs";
-		argv[2] = "";
-		argv[3] = "BIOSSETTINGS";
-		argv[4] = "Memory Mode";
-		argv[5] = mcdram_mode;
-		argv[6] = NULL;
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			argv[0] = "syscfg";
+			argv[1] = "/bcs";
+			argv[2] = "";
+			argv[3] = "BIOSSETTINGS";
+			argv[4] = "Memory Mode";
+			argv[5] = mcdram_mode;
+			argv[6] = NULL;
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			snprintf(tmp, sizeof(tmp),
+				 "--ProcEmbMemMode=%s", mcdram_mode);
+			argv[0] = "syscfg";
+			argv[1] = tmp;
+			argv[2] = NULL;
+			break;
+		default:
+			/* already handled above, should never get here */
+			break;
+		}
+
 		resp_msg = _run_script(syscfg_path, argv, &status);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 			error("%s: syscfg (set memory mode) status:%u response:%s",
@@ -1214,11 +1596,63 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features)
 	return node_features;
 }
 
+/* Perform set up for step launch
+ * mem_sort IN - Trigger sort of memory pages (KNL zonesort)
+ * numa_bitmap IN - NUMA nodes allocated to this job */
+extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
+{
+#ifdef HAVE_NUMA
+	if (mem_sort && (numa_available() != -1)) {
+//FIXME: after reboot of SchedMD KNL nodes, run:
+// insmod /home/tim/kmod/xppsl-addons/zonesort_module.ko
+		struct stat sb;
+		int buf_len, fd, i, len;
+		char buf[16];
+
+		if (stat(ZONE_SORT_PATH, &sb) == -1)
+			(void) system(MODPROBE_PATH " zonesort_module");
+		if ((fd = open(ZONE_SORT_PATH, O_WRONLY | O_SYNC)) == -1) {
+			error("%s: Could not open file %s: %m",
+			      __func__, ZONE_SORT_PATH);
+		} else {
+			len = numa_max_node() + 1;
+			for (i = 0; i < len; i++) {
+				if (numa_bitmap && !bit_test(numa_bitmap, i))
+					continue;
+				snprintf(buf, sizeof(buf), "%d", i);
+				buf_len = strlen(buf) + 1;
+				// info("SORT NUMA %s", buf);
+				if (write(fd, buf, buf_len) != buf_len) {
+					error("%s: Could not write file %s: %m",
+					      __func__, ZONE_SORT_PATH);
+				}
+			}
+			(void) close(fd);
+		}
+	}
+#endif
+}
+
 /* Determine if the specified user can modify the currently available node
  * features */
 extern bool node_features_p_user_update(uid_t uid)
 {
+	static int reboot_allowed = -1;
 	int i;
+
+	if (reboot_allowed == -1) {
+		char *reboot_program = slurm_get_reboot_program();
+		if (reboot_program && reboot_program[0])
+			reboot_allowed = 1;
+		else
+			reboot_allowed = 0;
+		xfree(reboot_program);
+	}
+
+	if (reboot_allowed != 1) {
+		info("Change in KNL mode not supported. No RebootProgram configured");
+		return false;
+	}
 
 	if (allowed_uid_cnt == 0)   /* Default is ALL users allowed to update */
 		return true;
@@ -1229,4 +1663,10 @@ extern bool node_features_p_user_update(uid_t uid)
 	}
 
 	return false;
+}
+
+/* Return estimated reboot time, in seconds */
+extern uint32_t node_features_p_boot_time(void)
+{
+	return boot_time;
 }

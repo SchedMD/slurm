@@ -5,7 +5,7 @@
  *  Author:  Ryan Cox <ryan_cox@byu.edu>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -148,10 +148,10 @@ static uid_t _get_job_uid(step_loc_t *stepd)
 {
 	uid_t uid = -1;
 	int fd;
-	uint16_t protocol_version;
 
 	fd = stepd_connect(stepd->directory, stepd->nodename,
-			   stepd->jobid, stepd->stepid, &protocol_version);
+			   stepd->jobid, stepd->stepid,
+			   &stepd->protocol_version);
 	if (fd < 0) {
 		/* It's normal for a step to exit */
 		debug3("unable to connect to step %u.%u on %s: %m",

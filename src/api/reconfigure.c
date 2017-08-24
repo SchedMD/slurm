@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,10 +37,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include <errno.h>
 #include <stdio.h>
@@ -130,7 +126,8 @@ slurm_shutdown (uint16_t options)
 	 * Explicity send the message to both primary
 	 *   and backup controllers
 	 */
-	(void) _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
+	if (!working_cluster_rec)
+		(void) _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
 	return _send_message_controller(PRIMARY_CONTROLLER,   &req_msg);
 }
 
@@ -155,8 +152,8 @@ int
 _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 {
 	int rc = SLURM_PROTOCOL_SUCCESS;
-	slurm_fd_t fd = -1;
-	slurm_msg_t *resp_msg = NULL;
+	int fd = -1;
+	slurm_msg_t resp_msg;
 
 	/* always going to one node (primary or backup per value of "dest") */
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
@@ -166,22 +163,23 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 		slurm_shutdown_msg_conn(fd);
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
 	}
-	resp_msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_msg_t_init(resp_msg);
+	slurm_msg_t_init(&resp_msg);
 
-	if ((rc = slurm_receive_msg(fd, resp_msg, 0)) != 0) {
+	if ((rc = slurm_receive_msg(fd, &resp_msg, 0)) != 0) {
+		slurm_free_msg_members(&resp_msg);
 		slurm_shutdown_msg_conn(fd);
 		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 	}
 
 	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
 		rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
-	else if (resp_msg->msg_type != RESPONSE_SLURM_RC)
+	else if (resp_msg.msg_type != RESPONSE_SLURM_RC)
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 	else
-		rc = slurm_get_return_code(resp_msg->msg_type,
-					   resp_msg->data);
-	slurm_free_msg(resp_msg);
+		rc = slurm_get_return_code(resp_msg.msg_type,
+					   resp_msg.data);
+
+	slurm_free_msg_members(&resp_msg);
 
 	if (rc)
 		slurm_seterrno_ret(rc);

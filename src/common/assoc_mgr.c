@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -1861,7 +1861,7 @@ static void _wr_rdlock(assoc_mgr_lock_datatype_t datatype)
 			assoc_mgr_locks.entity[read_lock(datatype)]++;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&locks_cond, &locks_mutex);
+			slurm_cond_wait(&locks_cond, &locks_mutex);
 		}
 	}
 	slurm_mutex_unlock(&locks_mutex);
@@ -1874,7 +1874,7 @@ static void _wr_rdunlock(assoc_mgr_lock_datatype_t datatype)
 	slurm_mutex_lock(&locks_mutex);
 	//info("read unlock on %d", datatype);
 	assoc_mgr_locks.entity[read_lock(datatype)]--;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
 
@@ -1894,7 +1894,7 @@ static void _wr_wrlock(assoc_mgr_lock_datatype_t datatype)
 				entity[write_wait_lock(datatype)]--;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&locks_cond, &locks_mutex);
+			slurm_cond_wait(&locks_cond, &locks_mutex);
 		}
 	}
 	slurm_mutex_unlock(&locks_mutex);
@@ -1907,7 +1907,7 @@ static void _wr_wrunlock(assoc_mgr_lock_datatype_t datatype)
 	slurm_mutex_lock(&locks_mutex);
 	//info("write unlock on %d", datatype);
 	assoc_mgr_locks.entity[write_lock(datatype)]--;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
 
@@ -2525,7 +2525,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 	if (user_pptr)
 		*user_pptr = found_user;
 
-	/* create coord_accts just incase the list does not exist */
+	/* create coord_accts just in case the list does not exist */
 	if (!found_user->coord_accts)
 		found_user->coord_accts =
 			list_create(slurmdb_destroy_coord_rec);
@@ -3486,6 +3486,9 @@ extern int assoc_mgr_update(List update_list, bool locked)
 			break;
 		case SLURMDB_ADD_TRES:
 			rc = assoc_mgr_update_tres(object, locked);
+			break;
+		case SLURMDB_UPDATE_FEDS:
+			/* Only handled in the slurmctld. */
 			break;
 		case SLURMDB_UPDATE_NOTSET:
 		default:
@@ -4618,6 +4621,9 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 		FREE_NULL_LIST(update_list);
 	}
 
+	if (resize_qos_bitstr && init_setup.resize_qos_notify)
+		init_setup.resize_qos_notify();
+
 	return rc;
 }
 
@@ -5337,7 +5343,7 @@ extern int load_assoc_usage(char *state_save_location)
 	uint32_t data_size = 0;
 	uint16_t ver = 0;
 	int state_fd;
-	char *data = NULL, *state_file;
+	char *data = NULL, *state_file, *tmp_str = NULL;
 	Buf buffer = NULL;
 	time_t buf_time;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK,
@@ -5383,9 +5389,7 @@ extern int load_assoc_usage(char *state_save_location)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_usage header is %u", ver);
-	/* We used to pack 1 here for the version, so we can't use
-	 * SLURM_MIN_PROTOCOL_VERSION to check until 2 versions after 15.08. */
-	if (ver > SLURM_PROTOCOL_VERSION) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		error("***********************************************");
 		error("Can not recover assoc_usage state, "
 		      "incompatible version, got %u need > %u <= %u", ver,
@@ -5403,22 +5407,14 @@ extern int load_assoc_usage(char *state_save_location)
 		uint32_t grp_used_wall = 0;
 		long double usage_raw = 0;
 		slurmdb_assoc_rec_t *assoc = NULL;
-		char *tmp_str = NULL;
 		uint32_t tmp32;
 		long double usage_tres_raw[g_tres_count];
 
-		if (ver >= SLURM_15_08_PROTOCOL_VERSION) {
-			safe_unpack32(&assoc_id, buffer);
-			safe_unpacklongdouble(&usage_raw, buffer);
-			safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
-			safe_unpack32(&grp_used_wall, buffer);
-		} else {
-			uint64_t tmp64;
-			safe_unpack32(&assoc_id, buffer);
-			safe_unpack64(&tmp64, buffer);
-			safe_unpack32(&grp_used_wall, buffer);
-			usage_raw = (long double)tmp64;
-		}
+		safe_unpack32(&assoc_id, buffer);
+		safe_unpacklongdouble(&usage_raw, buffer);
+		safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
+		safe_unpack32(&grp_used_wall, buffer);
+
 		assoc = _find_assoc_rec_id(assoc_id);
 
 		/* We want to do this all the way up to and including
@@ -5453,6 +5449,7 @@ extern int load_assoc_usage(char *state_save_location)
 unpack_error:
 	if (buffer)
 		free_buf(buffer);
+	xfree(tmp_str);
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
@@ -5463,7 +5460,7 @@ extern int load_qos_usage(char *state_save_location)
 	uint32_t data_size = 0;
 	uint16_t ver = 0;
 	int state_fd;
-	char *data = NULL, *state_file;
+	char *data = NULL, *state_file, *tmp_str = NULL;
 	Buf buffer = NULL;
 	time_t buf_time;
 	ListIterator itr = NULL;
@@ -5510,9 +5507,7 @@ extern int load_qos_usage(char *state_save_location)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in qos_usage header is %u", ver);
-	/* We used to pack 1 here for the version, so we can't use
-	 * SLURM_MIN_PROTOCOL_VERSION to check until 2 versions after 15.08. */
-	if (ver > SLURM_PROTOCOL_VERSION) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		error("***********************************************");
 		error("Can not recover qos_usage state, "
 		      "incompatible version, got %u need > %u <= %u", ver,
@@ -5532,20 +5527,12 @@ extern int load_qos_usage(char *state_save_location)
 		uint32_t tmp32;
 		long double usage_raw = 0;
 		slurmdb_qos_rec_t *qos = NULL;
-		char *tmp_str = NULL;
 
-		if (ver >= SLURM_15_08_PROTOCOL_VERSION) {
-			safe_unpack32(&qos_id, buffer);
-			safe_unpacklongdouble(&usage_raw, buffer);
-			safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
-			safe_unpack32(&grp_used_wall, buffer);
-		} else {
-			uint64_t tmp64 = 0;
-			safe_unpack32(&qos_id, buffer);
-			safe_unpack64(&tmp64, buffer);
-			safe_unpack32(&grp_used_wall, buffer);
-			usage_raw = (long double)tmp64;
-		}
+		safe_unpack32(&qos_id, buffer);
+		safe_unpacklongdouble(&usage_raw, buffer);
+		safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
+		safe_unpack32(&grp_used_wall, buffer);
+
 		while ((qos = list_next(itr)))
 			if (qos->id == qos_id)
 				break;
@@ -5570,6 +5557,7 @@ unpack_error:
 		free_buf(buffer);
 	if (itr)
 		list_iterator_destroy(itr);
+	xfree(tmp_str);
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
@@ -6144,4 +6132,66 @@ extern void assoc_mgr_get_default_qos_info(
 	}
 
 	return;
+}
+
+/* Calcuate a weighted tres value.
+ * IN: tres_cnt - array of tres values of size g_tres_count.
+ * IN: weights - weights to apply to tres values of size g_tres_count.
+ * IN: flags - priority flags (toogle between MAX or SUM of tres).
+ * IN: locked - whether the tres read assoc mgr lock is locked or not.
+ * RET: returns the calcuated tres weight.
+ */
+extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
+				      uint16_t flags, bool locked)
+{
+	int    i;
+	double to_bill_node   = 0.0;
+	double to_bill_global = 0.0;
+	double billable_tres  = 0.0;
+	assoc_mgr_lock_t tres_read_lock = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+		READ_LOCK, NO_LOCK, NO_LOCK };
+
+	/* We don't have any resources allocated, just return 0. */
+	if (!tres_cnt)
+		return 0.0;
+
+	/* Default to cpus if no weights given */
+	if (!weights)
+		return (double)tres_cnt[TRES_ARRAY_CPU];
+
+	if (!locked)
+		assoc_mgr_lock(&tres_read_lock);
+
+	for (i = 0; i < g_tres_count; i++) {
+		double tres_weight = weights[i];
+		char  *tres_type   = assoc_mgr_tres_array[i]->type;
+		double tres_value  = tres_cnt[i];
+
+		debug("TRES Weight: %s = %f * %f = %f",
+		      assoc_mgr_tres_name_array[i], tres_value, tres_weight,
+		      tres_value * tres_weight);
+
+		tres_value *= tres_weight;
+
+		if ((flags & PRIORITY_FLAGS_MAX_TRES) &&
+		    ((i == TRES_ARRAY_CPU) ||
+		     (i == TRES_ARRAY_MEM) ||
+		     (i == TRES_ARRAY_NODE) ||
+		     (!xstrcasecmp(tres_type, "gres"))))
+			to_bill_node = MAX(to_bill_node, tres_value);
+		else
+			to_bill_global += tres_value;
+	}
+
+	billable_tres = to_bill_node + to_bill_global;
+
+	debug("TRES Weighted: %s = %f",
+	      (flags & PRIORITY_FLAGS_MAX_TRES) ?
+	      "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
+	      billable_tres);
+
+	if (!locked)
+		assoc_mgr_unlock(&tres_read_lock);
+
+	return billable_tres;
 }

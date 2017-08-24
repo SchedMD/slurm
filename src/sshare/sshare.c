@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -63,7 +63,7 @@ uint32_t my_uid = 0;
 List clusters = NULL;
 uint16_t options = 0;
 
-int main (int argc, char *argv[])
+int main (int argc, char **argv)
 {
 	int opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -124,8 +124,6 @@ int main (int argc, char *argv[])
 			break;
 		case 'h':
 			print_fields_have_header = 0;
-			break;
-			exit(exit_code);
 			break;
 		case 'l':
 			long_flag = 1;
@@ -458,9 +456,8 @@ Usage:  sshare [OPTION]                                                    \n\
                            with the '--format' option                      \n\
     -l or --long           include normalized usage in output              \n\
     -m or --partition      print the partition part of the association     \n\
-    -M or --cluster=name   cluster to issue commands to.  Default is       \n\
-                           current cluster.  cluster with no name will     \n\
-                           reset to default.                               \n\
+    -M or --cluster=names  clusters to issue commands to.                  \n\
+                           NOTE: SlurmDBD must be up.                      \n\
     -n or --noheader       omit header from output                         \n\
     -o or --format=        Comma separated list of fields. (use            \n\
                            (\"--helpformat\" for a list of available fields).\n\

@@ -8,7 +8,7 @@
  *  Written by Yiannis Georgiou <yiannis.georgiou@bull.net>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -171,18 +171,18 @@ uint32_t powercap_get_cluster_min_watts(void)
 
 uint32_t powercap_get_cluster_current_cap(void)
 {
-	char *end_ptr = NULL, *sched_params, *tmp_ptr;
+	char *end_ptr = NULL, *power_params, *tmp_ptr;
 	uint32_t cap_watts = 0;
 
-	sched_params = slurm_get_power_parameters();
-	if (!sched_params)
+	power_params = slurm_get_power_parameters();
+	if (!power_params)
 		return cap_watts;
 
-	if ((tmp_ptr = strstr(sched_params, "cap_watts=INFINITE"))) {
+	if ((tmp_ptr = strstr(power_params, "cap_watts=INFINITE"))) {
 		cap_watts = INFINITE;
-	} else if ((tmp_ptr = strstr(sched_params, "cap_watts=UNLIMITED"))) {
+	} else if ((tmp_ptr = strstr(power_params, "cap_watts=UNLIMITED"))) {
 		cap_watts = INFINITE;
-	} else if ((tmp_ptr = strstr(sched_params, "cap_watts="))) {
+	} else if ((tmp_ptr = strstr(power_params, "cap_watts="))) {
 		cap_watts = strtol(tmp_ptr + 10, &end_ptr, 10);
 		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
 			cap_watts *= 1000;
@@ -190,7 +190,7 @@ uint32_t powercap_get_cluster_current_cap(void)
 			cap_watts *= 1000000;
 		}
 	}
-	xfree(sched_params);
+	xfree(power_params);
 
 	return cap_watts;
 }
@@ -218,25 +218,25 @@ static void _strip_cap_watts(char *tmp_ptr)
 
 int powercap_set_cluster_cap(uint32_t new_cap)
 {
-	char *sched_params, *sep, *tmp_ptr;
+	char *power_params, *sep, *tmp_ptr;
 
-	sched_params = slurm_get_power_parameters();
-	if (sched_params) {
-		while ((tmp_ptr = strstr(sched_params, "cap_watts="))) {
+	power_params = slurm_get_power_parameters();
+	if (power_params) {
+		while ((tmp_ptr = strstr(power_params, "cap_watts="))) {
 			_strip_cap_watts(tmp_ptr);
 		}
 	}
-	if (sched_params && sched_params[0])
+	if (power_params && power_params[0])
 		sep = ",";
 	else
 		sep = "";
 	if (new_cap == INFINITE)
-		xstrfmtcat(sched_params, "%scap_watts=INFINITE", sep);
+		xstrfmtcat(power_params, "%scap_watts=INFINITE", sep);
 	else
-		xstrfmtcat(sched_params, "%scap_watts=%u", sep, new_cap);
-	slurm_set_power_parameters(sched_params);
+		xstrfmtcat(power_params, "%scap_watts=%u", sep, new_cap);
+	slurm_set_power_parameters(power_params);
 	power_g_reconfig();
-	xfree(sched_params);
+	xfree(power_params);
 
 	return 0;
 }
@@ -343,7 +343,8 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t *idle_bitmap)
 	return max_watts;
 }
 
-uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when)
+uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when,
+			      bool reboot)
 {
 	uint32_t powercap = 0, resv_watts;
 
@@ -354,7 +355,7 @@ uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when)
 		return 0; /* should not happened */
 
 	/* get the amount of watts reserved for the job */
-	resv_watts = job_test_watts_resv(job_ptr, when);
+	resv_watts = job_test_watts_resv(job_ptr, when, reboot);
 
 	/* avoid underflow of the cap value, return at least 0 */
 	if (resv_watts > powercap)
@@ -400,7 +401,9 @@ int powercap_get_job_optimal_cpufreq(uint32_t powercap, int *allowed_freqs)
 	bit_not(tmp_bitmap);
 
 	cur_max_watts = powercap_get_node_bitmap_maxwatts_dvfs(tmp_bitmap,
-			  idle_node_bitmap,tmp_max_watts_dvfs,allowed_freqs,0);
+				idle_node_bitmap, tmp_max_watts_dvfs,
+				allowed_freqs, 0);
+	FREE_NULL_BITMAP(tmp_bitmap);
 
 	if (cur_max_watts > powercap) {
 		while (tmp_max_watts_dvfs[k] > powercap &&
@@ -409,13 +412,15 @@ int powercap_get_job_optimal_cpufreq(uint32_t powercap, int *allowed_freqs)
 		}
 		if (k == allowed_freqs[0] + 1)
 			k--;
-	} else
+	} else {
 		k = 1;
+	}
+	xfree(tmp_max_watts_dvfs);
 
 	return k;
 }
 
-int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap, 
+int *powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 				    uint32_t cpu_freq_min,
 				    uint32_t cpu_freq_max)
 {
@@ -426,7 +431,7 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 	uint32_t cpufreq;
 
 	if (!_powercap_enabled())
-		return 0;
+		return NULL;
 	if ((cpu_freq_min == NO_VAL) && (cpu_freq_max == NO_VAL)) {
 		allowed_freqs = xmalloc(sizeof(int) * 2);
 		/* allowed_freqs[0] = 0; Default value */
@@ -439,7 +444,7 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 			layouts_entity_get_kv(L_NAME, node_ptr->name,
 					L_NUM_FREQ, &num_freq, L_T_UINT16);
 			allowed_freqs = xmalloc(sizeof(int)*((int)num_freq+2));
-			allowed_freqs[-1] = (int) num_freq;
+			allowed_freqs[0] = (int) num_freq;
 			for (p = num_freq; p > 0; p--) {
 				sprintf(ename, "Cpufreq%d", p);
 				layouts_entity_get_kv(L_NAME,

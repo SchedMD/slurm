@@ -14,7 +14,7 @@
 #
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -450,15 +450,7 @@ if {$part_cores == 0} {
 #
 # Get the user name
 #
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-	}
-	eof {
-		wait
-	}
-}
+set user_name [get_my_user_name]
 
 set cons_res_actived 0
 if {$def_oversubscribe_force == 0} {

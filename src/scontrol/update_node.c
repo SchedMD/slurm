@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -49,7 +49,7 @@
  *			error message and returns 0
  */
 extern int
-scontrol_update_node (int argc, char *argv[])
+scontrol_update_node (int argc, char **argv)
 {
 	int i, j, rc = 0, update_cnt = 0;
 	uint16_t state_val;
@@ -260,7 +260,7 @@ done:	xfree(reason_str);
  *			error message and returns 0
  */
 extern int
-scontrol_update_front_end (int argc, char *argv[])
+scontrol_update_front_end (int argc, char **argv)
 {
 	int i, rc = 0, update_cnt = 0;
 	update_front_end_msg_t front_end_msg;

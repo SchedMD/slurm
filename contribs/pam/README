@@ -37,8 +37,7 @@ Description:
 Notes:
   This module will not work on systems where the hostname returned by the
      gethostname() differs from SLURM node name. This includes front-end
-     configurations (IBM BlueGene or Cray systems) or systems configured
-     in SLURM using the NodeHostName parameter.
+     configurations (IBM BlueGene or Cray/ALPS systems).
   rsh_kludge - The rsh service under RH71 (rsh-0.17-2.5) truncates the first
      character of this message.  The rsh client sends 3 NUL-terminated ASCII
      strings: client-user-name, server-user-name, and command string.  The

@@ -3,12 +3,12 @@
  *  job allocations.
  *****************************************************************************
  *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
-*   Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+*   Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -88,13 +88,13 @@ struct node_res_record {
 	uint16_t cores;			/* count of cores configured */
 	uint16_t vpus;			/* count of virtual cpus (hyperthreads)
 					 * configured per core */
-	uint32_t real_memory;		/* MB of real memory configured */
-	uint32_t mem_spec_limit;	/* MB of specialized/system memory */
+	uint64_t real_memory;		/* MB of real memory configured */
+	uint64_t mem_spec_limit;	/* MB of specialized/system memory */
 };
 
 /* per-node resource usage record */
 struct node_use_record {
-	uint32_t alloc_memory;		/* real memory reserved by already
+	uint64_t alloc_memory;		/* real memory reserved by already
 					 * scheduled jobs */
 	List gres_list;			/* list of gres state info managed by 
 					 * plugins */

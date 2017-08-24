@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@schedmd.com, da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -51,6 +51,7 @@
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
 #include "as_mysql_convert.h"
+#include "as_mysql_federation.h"
 #include "as_mysql_fix_runaway_jobs.h"
 #include "as_mysql_job.h"
 #include "as_mysql_jobacct_process.h"
@@ -129,6 +130,7 @@ char *cluster_day_table = "usage_day_table";
 char *cluster_hour_table = "usage_hour_table";
 char *cluster_month_table = "usage_month_table";
 char *cluster_table = "cluster_table";
+char *federation_table = "federation_table";
 char *event_table = "event_table";
 char *job_table = "job_table";
 char *last_ran_table = "last_ran_table";
@@ -344,10 +346,10 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 			(*already_flushed) = 1;
 			reset_mysql_conn(mysql_conn);
 		}
+		if (ret_list)
+			_process_running_jobs_result(cluster_name, result,
+						     ret_list);
 	}
-
-	if (ret_list)
-		_process_running_jobs_result(cluster_name, result, ret_list);
 
 	mysql_free_result(result);
 	return rc;
@@ -490,8 +492,8 @@ static bool _check_jobs_before_remove_without_assoctable(
 static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 {
 	storage_field_t acct_coord_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "acct", "tinytext not null" },
 		{ "user", "tinytext not null" },
@@ -499,8 +501,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t acct_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "description", "text not null" },
@@ -509,7 +511,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t tres_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
+		{ "creation_time", "bigint unsigned not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id", "int not null auto_increment" },
 		{ "type", "tinytext not null" },
@@ -518,8 +520,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t cluster_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "control_host", "tinytext not null default ''" },
@@ -530,12 +532,16 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "dimensions", "smallint unsigned default 1" },
 		{ "plugin_id_select", "smallint unsigned default 0" },
 		{ "flags", "int unsigned default 0" },
+		{ "federation", "tinytext not null" },
+		{ "fed_id", "int unsigned default 0 not null" },
+		{ "fed_state", "smallint unsigned not null" },
+		{ "fed_weight", "int unsigned default 1 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t clus_res_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "cluster", "tinytext not null" },
 		{ "res_id", "int not null" },
@@ -543,9 +549,19 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ NULL, NULL}
 	};
 
-	storage_field_t qos_table_fields[] = {
+	storage_field_t federation_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0" },
+		{ "name", "tinytext not null" },
+		{ "flags", "int unsigned default 0" },
+		{ "priority", "int unsigned default 0" },
+		{ NULL, NULL}
+	};
+
+	storage_field_t qos_table_fields[] = {
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "id", "int not null auto_increment" },
 		{ "name", "tinytext not null" },
@@ -580,8 +596,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t res_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "id", "int not null auto_increment" },
 		{ "name", "tinytext not null" },
@@ -596,7 +612,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	storage_field_t txn_table_fields[] = {
 		{ "id", "int not null auto_increment" },
-		{ "timestamp", "int unsigned default 0 not null" },
+		{ "timestamp", "bigint unsigned default 0 not null" },
 		{ "action", "smallint not null" },
 		{ "name", "text not null" },
 		{ "actor", "tinytext not null" },
@@ -606,8 +622,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t user_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "admin_level", "smallint default 1 not null" },
@@ -667,14 +683,22 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		/* "@mtrm := REPLACE(CONCAT(@mtrm, max_tres_run_mins), " */
 		/* "\\\',,\\\', \\\',\\\'), '); " */
 		"set @s = concat(@s, "
-		"'@mtpj := REPLACE(CONCAT(@mtpj, max_tres_pj), "
-		"\\\',,\\\', \\\',\\\'), "
-		"@mtpn := REPLACE(CONCAT(@mtpn, max_tres_pn), "
-		"\\\',,\\\', \\\',\\\'), "
-		"@mtmpj := REPLACE(CONCAT(@mtmpj, max_tres_mins_pj), "
-		"\\\',,\\\', \\\',\\\'), "
-		"@mtrm := REPLACE(CONCAT(@mtrm, max_tres_run_mins), "
-		"\\\',,\\\', \\\',\\\'), "
+		"'@mtpj := REPLACE(CONCAT(@mtpj, "
+		"if (@mtpj != \\\'\\\' && max_tres_pj != \\\'\\\', "
+		"\\\',\\\', \\\'\\\'), "
+		"max_tres_pj), \\\',,\\\', \\\',\\\'), "
+		"@mtpn := REPLACE(CONCAT(@mtpn, "
+		"if (@mtpn != \\\'\\\' && max_tres_pn != \\\'\\\', "
+		"\\\',\\\', \\\'\\\'), "
+		"max_tres_pn), \\\',,\\\', \\\',\\\'), "
+		"@mtmpj := REPLACE(CONCAT(@mtmpj, "
+		"if (@mtmpj != \\\'\\\' && max_tres_mins_pj != \\\'\\\', "
+		"\\\',\\\', \\\'\\\'), "
+		"max_tres_mins_pj), \\\',,\\\', \\\',\\\'), "
+		"@mtrm := REPLACE(CONCAT(@mtrm, "
+		"if (@mtrm != \\\'\\\' && max_tres_run_mins != \\\'\\\', "
+		"\\\',\\\', \\\'\\\'), "
+		"max_tres_run_mins), \\\',,\\\', \\\',\\\'), "
 		"@my_acct_new := parent_acct from \"', "
 		"cluster, '_', my_table, '\" where "
 		"acct = \\\'', @my_acct, '\\\' && user=\\\'\\\''); "
@@ -942,7 +966,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 					qos_table, now, now, qos);
 				if (debug_flags & DEBUG_FLAG_DB_QOS)
 					DB_DEBUG(mysql_conn->conn, "%s", query);
-				qos_id = mysql_db_insert_ret_id(
+				qos_id = (int)mysql_db_insert_ret_id(
 					mysql_conn, query);
 				if (!qos_id)
 					fatal("problem added qos '%s", qos);
@@ -962,7 +986,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 				qos_table, now, now);
 			if (debug_flags & DEBUG_FLAG_DB_QOS)
 				DB_DEBUG(mysql_conn->conn, "%s", query);
-			qos_id = mysql_db_insert_ret_id(mysql_conn, query);
+			qos_id = (int)mysql_db_insert_ret_id(mysql_conn, query);
 			if (!qos_id)
 				fatal("problem added qos 'normal");
 
@@ -976,6 +1000,11 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	/* This must be ran after create_cluster_tables() */
 	if (mysql_db_create_table(mysql_conn, user_table, user_table_fields,
+				  ", primary key (name(20)))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if (mysql_db_create_table(mysql_conn, federation_table,
+				  federation_table_fields,
 				  ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1081,8 +1110,8 @@ extern int create_cluster_assoc_table(
 	mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	storage_field_t assoc_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "is_def", "tinyint default 0 not null" },
 		{ "id_assoc", "int unsigned not null auto_increment" },
@@ -1131,11 +1160,11 @@ extern int create_cluster_assoc_table(
 extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	storage_field_t cluster_usage_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id_tres", "int not null" },
-		{ "time_start", "int unsigned not null" },
+		{ "time_start", "bigint unsigned not null" },
 		{ "count", "bigint unsigned default 0 not null" },
 		{ "alloc_secs", "bigint unsigned default 0 not null" },
 		{ "down_secs", "bigint unsigned default 0 not null" },
@@ -1147,8 +1176,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t event_table_fields[] = {
-		{ "time_start", "int unsigned not null" },
-		{ "time_end", "int unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned not null" },
+		{ "time_end", "bigint unsigned default 0 not null" },
 		{ "node_name", "tinytext default '' not null" },
 		{ "cluster_nodes", "text not null default ''" },
 		{ "reason", "tinytext not null" },
@@ -1159,21 +1188,22 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t id_usage_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id", "int unsigned not null" },
 		{ "id_tres", "int default 1 not null" },
-		{ "time_start", "int unsigned not null" },
+		{ "time_start", "bigint unsigned not null" },
 		{ "alloc_secs", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t job_table_fields[] = {
-		{ "job_db_inx", "int unsigned not null auto_increment" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "job_db_inx", "bigint unsigned not null auto_increment" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "account", "tinytext" },
+		{ "admin_comment", "text" },
 		{ "array_task_str", "text" },
 		{ "array_max_tasks", "int unsigned default 0 not null" },
 		{ "array_task_pending", "int unsigned default 0 not null" },
@@ -1193,19 +1223,19 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_user", "int unsigned not null" },
 		{ "id_group", "int unsigned not null" },
 		{ "kill_requid", "int default -1 not null" },
-		{ "mem_req", "int unsigned default 0 not null" },
+		{ "mem_req", "bigint unsigned default 0 not null" },
 		{ "nodelist", "text" },
 		{ "nodes_alloc", "int unsigned not null" },
 		{ "node_inx", "text" },
 		{ "partition", "tinytext not null" },
 		{ "priority", "int unsigned not null" },
-		{ "state", "smallint unsigned not null" },
+		{ "state", "int unsigned not null" },
 		{ "timelimit", "int unsigned default 0 not null" },
-		{ "time_submit", "int unsigned default 0 not null" },
-		{ "time_eligible", "int unsigned default 0 not null" },
-		{ "time_start", "int unsigned default 0 not null" },
-		{ "time_end", "int unsigned default 0 not null" },
-		{ "time_suspended", "int unsigned default 0 not null" },
+		{ "time_submit", "bigint unsigned default 0 not null" },
+		{ "time_eligible", "bigint unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned default 0 not null" },
+		{ "time_end", "bigint unsigned default 0 not null" },
+		{ "time_suspended", "bigint unsigned default 0 not null" },
 		{ "gres_req", "text not null default ''" },
 		{ "gres_alloc", "text not null default ''" },
 		{ "gres_used", "text not null default ''" },
@@ -1217,9 +1247,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t last_ran_table_fields[] = {
-		{ "hourly_rollup", "int unsigned default 0 not null" },
-		{ "daily_rollup", "int unsigned default 0 not null" },
-		{ "monthly_rollup", "int unsigned default 0 not null" },
+		{ "hourly_rollup", "bigint unsigned default 0 not null" },
+		{ "daily_rollup", "bigint unsigned default 0 not null" },
+		{ "monthly_rollup", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -1231,14 +1261,14 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "nodelist", "text not null default ''" },
 		{ "node_inx", "text not null default ''" },
 		{ "resv_name", "text not null" },
-		{ "time_start", "int unsigned default 0 not null"},
-		{ "time_end", "int unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned default 0 not null"},
+		{ "time_end", "bigint unsigned default 0 not null" },
 		{ "tres", "text not null default ''" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t step_table_fields[] = {
-		{ "job_db_inx", "int unsigned not null" },
+		{ "job_db_inx", "bigint unsigned not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "exit_code", "int default 0 not null" },
 		{ "id_step", "int not null" },
@@ -1250,9 +1280,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "step_name", "text not null" },
 		{ "task_cnt", "int unsigned not null" },
 		{ "task_dist", "smallint default 0 not null" },
-		{ "time_start", "int unsigned default 0 not null" },
-		{ "time_end", "int unsigned default 0 not null" },
-		{ "time_suspended", "int unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned default 0 not null" },
+		{ "time_end", "bigint unsigned default 0 not null" },
+		{ "time_suspended", "bigint unsigned default 0 not null" },
 		{ "user_sec", "int unsigned default 0 not null" },
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "int unsigned default 0 not null" },
@@ -1291,16 +1321,16 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t suspend_table_fields[] = {
-		{ "job_db_inx", "int unsigned not null" },
+		{ "job_db_inx", "bigint unsigned not null" },
 		{ "id_assoc", "int not null" },
-		{ "time_start", "int unsigned default 0 not null" },
-		{ "time_end", "int unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned default 0 not null" },
+		{ "time_end", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t wckey_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "is_def", "tinyint default 0 not null" },
 		{ "id_wckey", "int unsigned not null auto_increment" },
@@ -1840,7 +1870,8 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	if ((table == cluster_table) || (table == acct_coord_table)
 	    || (table == acct_table) || (table == qos_table)
 	    || (table == txn_table) || (table == user_table)
-	    || (table == res_table) || (table == clus_res_table))
+	    || (table == res_table) || (table == clus_res_table)
+	    || (table == federation_table))
 		cluster_centric = false;
 
 	if (vals && vals[1])
@@ -1913,7 +1944,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if ((table == cluster_table) || (table == acct_coord_table)
 	    || (table == acct_table) || (table == qos_table)
 	    || (table == txn_table) || (table == user_table)
-	    || (table == res_table) || (table == clus_res_table))
+	    || (table == res_table) || (table == clus_res_table)
+	    || (table == federation_table))
 		cluster_centric = false;
 
 	/* If we have jobs associated with this we do not want to
@@ -1921,13 +1953,14 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * corner cases most of the time this won't matter.
 	 */
 	if ((table == acct_coord_table) || (table == res_table)
-	    || (table == clus_res_table)) {
+	    || (table == clus_res_table) || (table == federation_table)) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
 	} else if ((table == qos_table) || (table == wckey_table)) {
-		has_jobs = _check_jobs_before_remove_without_assoctable(
-			mysql_conn, cluster_name, assoc_char);
+		if (cluster_name)
+			has_jobs = _check_jobs_before_remove_without_assoctable(
+				mysql_conn, cluster_name, assoc_char);
 	} else if (table != assoc_table) {
 		/* first check to see if we are running jobs now */
 		if (_check_jobs_before_remove(
@@ -1974,16 +2007,55 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	}
 
 	if (table != assoc_table) {
-		if (cluster_centric)
+		if (cluster_centric) {
 			xstrfmtcat(query,
 				   "update \"%s_%s\" set mod_time=%ld, "
 				   "deleted=1 where deleted=0 && (%s);",
 				   cluster_name, table, now, name_char);
-		else
+		} else if (table == federation_table) {
+			xstrfmtcat(query,
+				   "update %s set "
+				   "mod_time=%ld, deleted=1, "
+				   "flags=DEFAULT, "
+				   "priority=DEFAULT "
+				   "where deleted=0 && (%s);",
+				   federation_table, now,
+				   name_char);
+		} else if (table == qos_table) {
+			xstrfmtcat(query,
+				   "update %s set "
+				   "mod_time=%ld, deleted=1, "
+				   "grace_time=DEFAULT, "
+				   "max_jobs_pa=DEFAULT, "
+				   "max_jobs_per_user=DEFAULT, "
+				   "max_submit_jobs_pa=DEFAULT, "
+				   "max_submit_jobs_per_user=DEFAULT, "
+				   "max_tres_pa=DEFAULT, "
+				   "max_tres_pj=DEFAULT, "
+				   "max_tres_pn=DEFAULT, "
+				   "max_tres_pu=DEFAULT, "
+				   "max_tres_mins_pj=DEFAULT, "
+				   "max_tres_run_mins_pa=DEFAULT, "
+				   "max_tres_run_mins_pu=DEFAULT, "
+				   "min_tres_pj=DEFAULT, "
+				   "max_wall_duration_per_job=DEFAULT, "
+				   "grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
+				   "grp_tres=DEFAULT, "
+				   "grp_tres_mins=DEFAULT, "
+				   "grp_tres_run_mins=DEFAULT, "
+				   "grp_wall=DEFAULT, "
+				   "preempt=DEFAULT, "
+				   "priority=DEFAULT, "
+				   "usage_factor=DEFAULT, "
+				   "usage_thres=DEFAULT "
+				   "where deleted=0 && (%s);",
+				   qos_table, now, name_char);
+		} else {
 			xstrfmtcat(query,
 				   "update %s set mod_time=%ld, deleted=1 "
 				   "where deleted=0 && (%s);",
 				   table, now, name_char);
+		}
 	}
 
 	/* If we are removing assocs use the assoc_char since the
@@ -2019,45 +2091,12 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if (rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
-	} else if (table == qos_table) {
-		query = xstrdup_printf(
-			"update %s set "
-			"mod_time=%ld, deleted=1, "
-			"grace_time=DEFAULT, "
-			"max_jobs_pa=DEFAULT, "
-			"max_jobs_per_user=DEFAULT, "
-			"max_submit_jobs_pa=DEFAULT, "
-			"max_submit_jobs_per_user=DEFAULT, "
-			"max_tres_pa=DEFAULT, "
-			"max_tres_pj=DEFAULT, "
-			"max_tres_pn=DEFAULT, "
-			"max_tres_pu=DEFAULT, "
-			"max_tres_mins_pj=DEFAULT, "
-			"max_tres_run_mins_pa=DEFAULT, "
-			"max_tres_run_mins_pu=DEFAULT, "
-			"min_tres_pj=DEFAULT, "
-			"max_wall_duration_per_job=DEFAULT, "
-			"grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
-			"grp_tres=DEFAULT, "
-			"grp_tres_mins=DEFAULT, "
-			"grp_tres_run_mins=DEFAULT, "
-			"grp_wall=DEFAULT, "
-			"preempt=DEFAULT, "
-			"priority=DEFAULT, "
-			"usage_factor=DEFAULT, "
-			"usage_thres=DEFAULT "
-			"where (%s);",
-			qos_table, now,
-			name_char);
-		if (debug_flags & DEBUG_FLAG_DB_QOS)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		return rc;
 	} else if ((table == acct_coord_table)
 		   || (table == wckey_table)
 		   || (table == clus_res_table)
-		   || (table == res_table))
+		   || (table == res_table)
+		   || (table == federation_table)
+		   || (table == qos_table))
 		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the accounting tables
@@ -2592,6 +2631,12 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_add_clusters(mysql_conn, uid, cluster_list);
 }
 
+extern int acct_storage_p_add_federations(mysql_conn_t *mysql_conn,
+					  uint32_t uid, List federation_list)
+{
+	return as_mysql_add_federations(mysql_conn, uid, federation_list);
+}
+
 extern int acct_storage_p_add_tres(mysql_conn_t *mysql_conn,
 				   uint32_t uid, List tres_list_in)
 {
@@ -2657,6 +2702,14 @@ extern List acct_storage_p_modify_assocs(
 	slurmdb_assoc_rec_t *assoc)
 {
 	return as_mysql_modify_assocs(mysql_conn, uid, assoc_cond, assoc);
+}
+
+extern List acct_storage_p_modify_federations(
+				mysql_conn_t *mysql_conn, uint32_t uid,
+				slurmdb_federation_cond_t *fed_cond,
+				slurmdb_federation_rec_t *fed)
+{
+	return as_mysql_modify_federations(mysql_conn, uid, fed_cond, fed);
 }
 
 extern List acct_storage_p_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
@@ -2728,6 +2781,13 @@ extern List acct_storage_p_remove_assocs(
 	return as_mysql_remove_assocs(mysql_conn, uid, assoc_cond);
 }
 
+extern List acct_storage_p_remove_federations(
+					mysql_conn_t *mysql_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond)
+{
+	return as_mysql_remove_federations(mysql_conn, uid, fed_cond);
+}
+
 extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond)
 {
@@ -2770,6 +2830,12 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 					slurmdb_cluster_cond_t *cluster_cond)
 {
 	return as_mysql_get_clusters(mysql_conn, uid, cluster_cond);
+}
+
+extern List acct_storage_p_get_federations(mysql_conn_t *mysql_conn, uid_t uid,
+					   slurmdb_federation_cond_t *fed_cond)
+{
+	return as_mysql_get_federations(mysql_conn, uid, fed_cond);
 }
 
 extern List acct_storage_p_get_tres(
@@ -2869,10 +2935,11 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 				     time_t sent_start, time_t sent_end,
-				     uint16_t archive_data)
+				     uint16_t archive_data,
+				     rollup_stats_t *rollup_stats)
 {
-	return as_mysql_roll_usage(mysql_conn, sent_start,
-				   sent_end, archive_data);
+	return as_mysql_roll_usage(mysql_conn, sent_start, sent_end,
+				   archive_data, rollup_stats);
 }
 
 extern int acct_storage_p_fix_runaway_jobs(void *db_conn, uint32_t uid,
@@ -3109,4 +3176,19 @@ extern int acct_storage_p_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 		return ESLURM_DB_CONNECTION;
 
 	return as_mysql_reset_lft_rgt(mysql_conn, uid, cluster_list);
+}
+
+extern int acct_storage_p_get_stats(void *db_conn, bool dbd)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_clear_stats(void *db_conn, bool dbd)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_shutdown(void *db_conn, bool dbd)
+{
+	return SLURM_SUCCESS;
 }

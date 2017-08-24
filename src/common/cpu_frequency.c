@@ -8,7 +8,7 @@
  *  intel_pstate support
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,23 +37,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>     /* for PATH_MAX */
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "slurm/slurm.h"
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
+#include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
@@ -427,6 +424,10 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	char *cpu_str;
 	char *savestr = NULL;
 
+	if ((job->stepid == SLURM_BATCH_SCRIPT) ||
+	    (job->stepid == SLURM_EXTERN_CONT))
+		return;
+
 	debug_flags = slurm_get_debug_flags(); /* init for slurmstepd */
 	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
 		info("cpu_freq_cpuset_validate: request: min=(%12d  %8x) "
@@ -511,6 +512,10 @@ cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores)
 	uint16_t end    = USHRT_MAX;
 	uint16_t cpuidx =  0;
 	char *core_range;
+
+	if ((job->stepid == SLURM_BATCH_SCRIPT) ||
+	    (job->stepid == SLURM_EXTERN_CONT))
+		return;
 
 	debug_flags = slurm_get_debug_flags(); /* init for slurmstepd */
 	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
@@ -848,7 +853,7 @@ uint32_t
 _cpu_freq_freqspec_num(uint32_t cpu_freq, int cpuidx)
 {
 	int fx, j;
-	if (!cpufreq || (cpufreq[cpuidx].nfreq == (uint8_t) NO_VAL))
+	if (!cpufreq || !cpufreq[cpuidx].nfreq)
 		return NO_VAL;
 	/* assume the frequency list is in ascending order */
 	if (cpu_freq & CPU_FREQ_RANGE_FLAG) {	/* Named values */
@@ -877,19 +882,37 @@ _cpu_freq_freqspec_num(uint32_t cpu_freq, int cpuidx)
 			return NO_VAL;
 		}
 	}		
-	for (j = 0; j < cpufreq[cpuidx].nfreq; j++) {
+
+	/* check for request above or below available values */
+	if (cpu_freq < cpufreq[cpuidx].avail_freq[0]) {
+		error("Rounding requested frequency %d "
+		      "up to lowest available %d", cpu_freq,
+		      cpufreq[cpuidx].avail_freq[0]);
+		return cpufreq[cpuidx].avail_freq[0];
+	} else if (cpufreq[cpuidx].avail_freq[cpufreq[cpuidx].nfreq - 1]
+		   < cpu_freq) {
+		error("Rounding requested frequency %d "
+		      "down to highest available %d", cpu_freq,
+		      cpufreq[cpuidx].avail_freq[cpufreq[cpuidx].nfreq - 1]);
+		return cpufreq[cpuidx].avail_freq[cpufreq[cpuidx].nfreq - 1];
+	}
+
+	/* check for frequency, round up if no exact match */
+	for (j = 0; j < cpufreq[cpuidx].nfreq; ) {
 		if (cpu_freq == cpufreq[cpuidx].avail_freq[j]) {
 			return cpufreq[cpuidx].avail_freq[j];
 		}
-		if (j > 0) {
-			if ((cpu_freq > cpufreq[cpuidx].avail_freq[j-1]) &&
-			    (cpu_freq < cpufreq[cpuidx].avail_freq[j])) {
-				return cpufreq[cpuidx].avail_freq[j];
-			}
+		j++; 	/* step up to next element to round up *
+			 * safe to advance due to bounds checks above here */
+		if (cpu_freq < cpufreq[cpuidx].avail_freq[j]) {
+			info("Rounding requested frequency %d "
+			     "up to next available %d", cpu_freq,
+			     cpufreq[cpuidx].avail_freq[j]);
+			return cpufreq[cpuidx].avail_freq[j];
 		}
 	}
-
-	error("failed to find frequency %d on cpu=%d", cpu_freq, cpuidx);
+	/* loop above must return due to previous bounds checks
+	 * but return NO_VAL here anyways to silence compiler warnings */
 	return NO_VAL;
 }
 

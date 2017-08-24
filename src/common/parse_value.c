@@ -7,7 +7,7 @@
  *  for slurm-14.11.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,7 +43,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <unistd.h>
 #include <math.h>
 
@@ -146,6 +145,43 @@ int s_p_handle_uint32(uint32_t* data, const char* key, const char* value)
 		return SLURM_ERROR;
 	}
 	*data = (uint32_t)num;
+	return SLURM_SUCCESS;
+}
+
+int s_p_handle_uint64(uint64_t* data, const char* key, const char* value)
+{
+	char *endptr;
+	unsigned long long num;
+
+	errno = 0;
+	num = strtoull(value, &endptr, 0);
+	if ((endptr[0] == 'k') || (endptr[0] == 'K')) {
+		num *= 1024;
+		endptr++;
+	}
+	if ((num == 0 && errno == EINVAL)
+		|| (*endptr != '\0')) {
+		if ((xstrcasecmp(value, "UNLIMITED") == 0) ||
+			(xstrcasecmp(value, "INFINITE")  == 0)) {
+			num = INFINITE64;
+		} else {
+			error("%s value (%s) is not a valid number",
+				key, value);
+			return SLURM_ERROR;
+		}
+	} else if (errno == ERANGE) {
+		error("%s value (%s) is out of range", key, value);
+		return SLURM_ERROR;
+	} else if (value[0] == '-') {
+		error("%s value (%s) is less than zero", key,
+			value);
+		return SLURM_ERROR;
+	} else if (num > 0xffffffffffffffff) {
+		error("%s value (%s) is greater than 4294967295",
+			key, value);
+		return SLURM_ERROR;
+	}
+	*data = (uint64_t)num;
 	return SLURM_SUCCESS;
 }
 

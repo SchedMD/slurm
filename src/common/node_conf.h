@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,17 +42,9 @@
 #ifndef _HAVE_NODE_CONF_H
 #define _HAVE_NODE_CONF_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#endif
+#include "config.h"
 
+#include <inttypes.h>
 #include <time.h>
 
 #include "src/common/bitstring.h"
@@ -74,9 +66,11 @@ struct config_record {
 	uint16_t cores;		/* number of cores per CPU */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;	/* number of threads per core */
-	uint32_t mem_spec_limit; /* MB real memory for memory specialization */
-	uint32_t real_memory;	/* MB real memory on the node */
+	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
+	uint64_t real_memory;	/* MB real memory on the node */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
+	double  *tres_weights;	/* array of TRES weights */
+	char    *tres_weights_str; /* per TRES billing weight string */
 	uint32_t weight;	/* arbitrary priority of node for
 				 * scheduling work on */
 	char *feature;		/* arbitrary list of node's features */
@@ -97,6 +91,7 @@ struct node_record {
 					 * responding */
 	bool not_responding;		/* set if fails to respond,
 					 * clear after logging this */
+	time_t boot_req_time;		/* Time of node boot request */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
 	time_t slurmd_start_time;	/* Time of slurmd startup */
@@ -109,8 +104,8 @@ struct node_record {
 	char *cpu_spec_list;		/* node's specialized cpus */
 	uint16_t core_spec_cnt;		/* number of specialized cores on node*/
 	uint16_t threads;		/* number of threads per core */
-	uint32_t real_memory;		/* MB real memory on the node */
-	uint32_t mem_spec_limit;	/* MB memory limit for specialization */
+	uint64_t real_memory;		/* MB real memory on the node */
+	uint64_t mem_spec_limit;	/* MB memory limit for specialization */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
 	uint32_t up_time;		/* seconds since node boot */
 	struct config_record *config_ptr;  /* configuration spec ptr */
@@ -164,7 +159,7 @@ struct node_record {
 						 * to access contents */
 	uint32_t cpu_load;		/* CPU load * 100 */
 	time_t cpu_load_time;		/* Time when cpu_load last set */
-	uint32_t free_mem;		/* Free memory in MiB */
+	uint64_t free_mem;		/* Free memory in MiB */
 	time_t free_mem_time;		/* Time when free_mem last set */
 	uint16_t protocol_version;	/* Slurm version number */
 	char *version;			/* Slurm version */
@@ -219,9 +214,10 @@ hostlist_t bitmap2hostlist (bitstr_t *bitmap);
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
+ * IN tres_cnt - number of TRES configured on system (used on controller side)
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info (bool set_bitmap);
+extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt);
 
 /*
  * build_all_frontend_info - get a array of slurm_conf_frontend_t structures

@@ -20,12 +20,12 @@
  *  candidates.
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris jette <jette1@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -344,8 +344,8 @@ static int _get_nb_cpus(struct job_record *job_ptr)
 }
 
 /* Determine fair share association to use for some job */
-static slurmdb_assoc_rec_t *
-_get_job_fs_ass(char *job_type, struct job_record *job_ptr)
+static slurmdb_assoc_rec_t *_get_job_fs_ass(char *job_type,
+					    struct job_record *job_ptr)
 {
 	slurmdb_assoc_rec_t *temp_fs_ass =
 		(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
@@ -699,8 +699,8 @@ static bool _job_prio_preemptable(struct job_record *preemptor,
 /* Sort jobs by priority. Use runtime as secondary key */
 static int _sort_by_job_prio(void *x, void *y)
 {
-	struct job_record *job_ptr1 = (struct job_record *) x;
-	struct job_record *job_ptr2 = (struct job_record *) y;
+	struct job_record *job_ptr1 = *(struct job_record **) x;
+	struct job_record *job_ptr2 = *(struct job_record **) y;
 
 	if      (job_ptr1->priority > job_ptr2->priority)
 		return 1;
@@ -711,10 +711,7 @@ static int _sort_by_job_prio(void *x, void *y)
 	return 0;
 }
 
-/**************************************************************************/
-/*  TAG(                              init                              ) */
-/**************************************************************************/
-extern int init( void )
+extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *prio_type = slurm_get_priority_type();
@@ -732,17 +729,11 @@ extern int init( void )
 	return rc;
 }
 
-/**************************************************************************/
-/*  TAG(                              fini                              ) */
-/**************************************************************************/
 extern void fini(void)
 {
 	/* Empty. */
 }
 
-/**************************************************************************/
-/* TAG(                 find_preemptable_jobs                           ) */
-/**************************************************************************/
 extern List find_preemptable_jobs(struct job_record *job_ptr)
 {
 	ListIterator preemptee_candidate_iterator;
@@ -849,9 +840,6 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	return preemptee_job_list;
 }
 
-/**************************************************************************/
-/* TAG(                 job_preempt_mode                                ) */
-/**************************************************************************/
 extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 {
 	uint16_t mode;
@@ -874,17 +862,12 @@ extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 	return mode;
 }
 
-/**************************************************************************/
-/* TAG(                 preemption_enabled                              ) */
-/**************************************************************************/
 extern bool preemption_enabled(void)
 {
 	return (slurm_get_preempt_mode() != PREEMPT_MODE_OFF);
 }
 
-/***************************************************************************/
 /* Return true if the preemptor can preempt the preemptee, otherwise false */
-/***************************************************************************/
 extern bool job_preempt_check(job_queue_rec_t *preemptor,
 			      job_queue_rec_t *preemptee)
 {

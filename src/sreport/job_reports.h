@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,8 +43,8 @@
 
 #include "sreport.h"
 
-extern int job_sizes_grouped_by_top_acct(int argc, char *argv[]);
-extern int job_sizes_grouped_by_wckey(int argc, char *argv[]);
-extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char *argv[]);
+extern int job_sizes_grouped_by_top_acct(int argc, char **argv);
+extern int job_sizes_grouped_by_wckey(int argc, char **argv);
+extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char **argv);
 
 #endif

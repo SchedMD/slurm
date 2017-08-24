@@ -1,4 +1,4 @@
-.TH smap "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH smap "1" "Slurm Commands" "November 2016" "Slurm Commands"
 
 .SH "NAME"
 smap \- graphically view information about Slurm jobs, partitions, and set
@@ -79,6 +79,7 @@ name with the '\-n' option.
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.
+Note that the SlurmDBD must be up for this option to work properly.
 
 .TP
 \fB\-n\fR, \fB\-\-nodes\fR
@@ -390,8 +391,10 @@ running at reduced frequency).
 The node is presently being powered up or configured.
 .TP
 \fB$\fR
-The node is currently in a reservation with a flag value of "maintenance"
-or is scheduled to be rebooted.
+The node is currently in a reservation with a flag value of "maintenance".
+.TP
+\fB@\fR
+The node is pending reboot.
 .TP 12
 \fBALLOCATED\fR
 The node has been allocated to one or more jobs.
@@ -448,6 +451,9 @@ The node is not allocated to any jobs and is available for use.
 .TP
 \fBMAINT\fR
 The node is currently in a reservation with a flag value of "maintainence".
+.TP
+\fBREBOOT\fR
+The node is currently scheduled to be rebooted.
 .TP
 \fBUNKNOWN\fR
 The Slurm controller has just started and the node's state

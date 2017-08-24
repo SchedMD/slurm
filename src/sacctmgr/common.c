@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -292,6 +292,21 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Event");
 		field->len = 7;
 		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("Federation", object, MAX(command_len, 3))) {
+		field->type = PRINT_FEDERATION;
+		field->name = xstrdup("Federation");
+		field->len = 10;
+		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("FedState", object, MAX(command_len, 4))) {
+		field->type = PRINT_FEDSTATE;
+		field->name = xstrdup("FedState");
+		field->len = 12;
+		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("FedStateRaw", object, MAX(command_len, 9))) {
+		field->type = PRINT_FEDSTATERAW;
+		field->name = xstrdup("FedStateRaw");
+		field->len = 11;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("Flags", object, MAX(command_len, 2))) {
 		field->type = PRINT_FLAGS;
 		field->name = xstrdup("Flags");
@@ -696,6 +711,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("User");
 		field->len = 10;
 		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("Weight", object, MAX(command_len, 3))) {
+		field->type = PRINT_WEIGHT;
+		field->name = xstrdup("Weight");
+		field->len = 10;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("WCKeys", object, MAX(command_len, 2))) {
 		field->type = PRINT_WCKEYS;
 		field->name = xstrdup("WCKeys");
@@ -763,7 +783,7 @@ extern int commit_check(char *warning)
 		if ((ans = select(fd+1, &rfds, NULL, NULL, &tv)) <= 0)
 			break;
 
-		c = getchar();
+		c = (char) getchar();
 		printf("\n");
 	}
 	_nonblock(0);
@@ -860,6 +880,8 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 						      cluster, account,
 						      user);
 						rc = SLURM_ERROR;
+						slurmdb_destroy_update_object(
+							update_obj);
 						goto end_it;
 					}
 					list_append(update_obj->objects, rec);
@@ -878,6 +900,8 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 					      "database",
 					      cluster, account);
 					rc = SLURM_ERROR;
+					slurmdb_destroy_update_object(
+						update_obj);
 					goto end_it;
 				}
 				list_append(update_obj->objects, rec);
@@ -892,6 +916,8 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 				cluster_rec->control_host,
 				cluster_rec->control_port,
 				cluster_rec->rpc_version);
+		} else {
+			slurmdb_destroy_update_object(update_obj);
 		}
 		FREE_NULL_LIST(update_list);
 	}
@@ -920,7 +946,6 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 	slurmdb_update_object_t* update_obj = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
 	int rc = SLURM_SUCCESS;
-	bool free_cluster_name = 0;
 
 	cluster_list = qos_cond->description_list;
 	qos_cond->description_list = NULL;
@@ -976,6 +1001,7 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 			if (!rec) {
 				error("Failed to find QOS %s", qos_name);
 				rc = SLURM_ERROR;
+				slurmdb_destroy_update_object(update_obj);
 				goto end_it;
 			}
 			list_append(update_obj->objects, rec);
@@ -989,6 +1015,8 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 				cluster_rec->control_host,
 				cluster_rec->control_port,
 				cluster_rec->rpc_version);
+		} else {
+			slurmdb_destroy_update_object(update_obj);
 		}
 		FREE_NULL_LIST(update_list);
 	}
@@ -998,9 +1026,7 @@ end_it:
 
 	FREE_NULL_LIST(update_list);
 	FREE_NULL_LIST(local_qos_list);
-
-	if (free_cluster_name)
-		xfree(cluster_name);
+	xfree(cluster_name);
 
 	return rc;
 }
@@ -1789,6 +1815,64 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		       slurmdb_qos_str(g_qos_list, assoc->def_qos_id));
 	}
 
+}
+
+extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster)
+{
+	if (!cluster)
+		return;
+
+	if (cluster->name)
+		printf("  Name           = %s\n", cluster->name);
+	if (cluster->classification)
+		printf("  Classification = %s\n",
+		       get_classification_str(cluster->classification));
+	if (cluster->fed.name)
+		printf("  Federation     = %s\n", cluster->fed.name);
+	if (cluster->fed.state != NO_VAL) {
+		char *tmp_str = slurmdb_cluster_fed_states_str(
+						cluster->fed.state);
+		printf("  FedState       = %s\n", tmp_str);
+	}
+	if (cluster->fed.weight != NO_VAL)
+		printf("  Weight         = %u\n", cluster->fed.weight);
+}
+
+extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed)
+{
+	if (!fed)
+		return;
+
+	if (fed->name)
+		printf("  Name          = %s\n", fed->name);
+	if (fed->flags && (fed->flags != FEDERATION_FLAG_NOTSET)) {
+		char *mode = NULL;
+		char *tmp_flags =
+			slurmdb_federation_flags_str(fed->flags);
+		if (fed->flags & FEDERATION_FLAG_ADD)
+			mode = "+";
+		else if (fed->flags & FEDERATION_FLAG_REMOVE)
+			mode = "-";
+		else
+			mode = " ";
+		printf("  Flags        %s= %s\n", mode, tmp_flags);
+		xfree(tmp_flags);
+	}
+	if (fed->cluster_list) {
+		ListIterator itr = list_iterator_create(fed->cluster_list);
+		slurmdb_cluster_rec_t *cluster = NULL;
+		while ((cluster = list_next(itr))) {
+			char *tmp_name = cluster->name;
+			if (tmp_name &&
+			    (tmp_name[0] == '+' || tmp_name[0] == '-'))
+				printf("  Cluster      %c= %s\n",
+				       tmp_name[0], tmp_name + 1);
+			else
+				printf("  Cluster       = %s\n", tmp_name);
+
+		}
+		list_iterator_destroy(itr);
+	}
 }
 
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)

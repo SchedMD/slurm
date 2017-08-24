@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,7 +41,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_account_cond_t *acct_cond,
 		     List format_list)
 {
@@ -163,7 +163,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return 0;
 }
 
-static int _set_rec(int *start, int argc, char *argv[],
+static int _set_rec(int *start, int argc, char **argv,
 		    List acct_list,
 		    List cluster_list,
 		    slurmdb_account_rec_t *acct,
@@ -351,7 +351,7 @@ static int _isdefault(int cond_set, List acct_list, List assoc_list)
 	return rc;
 }
 
-extern int sacctmgr_add_account(int argc, char *argv[])
+extern int sacctmgr_add_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
@@ -377,7 +377,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	slurmdb_init_assoc_rec(start_assoc, 0);
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
@@ -385,15 +385,18 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		limit_set += _set_rec(&i, argc, argv, name_list, cluster_list,
 				      start_acct, start_assoc);
 	}
-	if (exit_code)
+	if (exit_code) {
+		slurmdb_destroy_assoc_rec(start_assoc);
+		slurmdb_destroy_account_rec(start_acct);
 		return SLURM_ERROR;
+	}
 
 	if (!name_list || !list_count(name_list)) {
 		FREE_NULL_LIST(name_list);
 		FREE_NULL_LIST(cluster_list);
 		slurmdb_destroy_assoc_rec(start_assoc);
 		slurmdb_destroy_account_rec(start_acct);
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Need name of account to add.\n");
 		return SLURM_SUCCESS;
 	} else {
@@ -409,7 +412,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	}
 
 	if (!local_account_list) {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem getting accounts from database.  "
 			"Contact your admin.\n");
 		FREE_NULL_LIST(name_list);
@@ -669,7 +672,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_list_account(int argc, char *argv[])
+extern int sacctmgr_list_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_cond_t *acct_cond =
@@ -857,7 +860,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_modify_account(int argc, char *argv[])
+extern int sacctmgr_modify_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_cond_t *acct_cond =
@@ -1041,7 +1044,7 @@ assoc_end:
 	return rc;
 }
 
-extern int sacctmgr_delete_account(int argc, char *argv[])
+extern int sacctmgr_delete_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_cond_t *acct_cond =

@@ -3,12 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2016 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,25 +38,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "src/common/proc_args.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/sbcast/sbcast.h"
@@ -74,9 +68,10 @@ static void     _usage( void );
 /*
  * parse_command_line, fill in params data structure with data
  */
-extern void parse_command_line(int argc, char *argv[])
+extern void parse_command_line(int argc, char **argv)
 {
-	char *end_ptr = NULL, *env_val = NULL;
+	char *sbcast_parameters;
+	char *end_ptr = NULL, *env_val = NULL, *sep, *tmp;
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
@@ -93,6 +88,17 @@ extern void parse_command_line(int argc, char *argv[])
 		{"usage",     no_argument,       0, OPT_LONG_USAGE},
 		{NULL,        0,                 0, 0}
 	};
+
+	if ((sbcast_parameters = slurm_get_sbcast_parameters()) &&
+	    (tmp = strcasestr(sbcast_parameters, "Compression="))) {
+		tmp += 12;
+		sep = strchr(tmp, ',');
+		if (sep)
+			sep[0] = '\0';
+		params.compress = parse_compress_type(tmp);
+		if (sep)
+			sep[0] = ',';
+	}
 
 	if ((env_val = getenv("SBCAST_COMPRESS")))
 		params.compress = parse_compress_type(env_val);
@@ -114,7 +120,7 @@ extern void parse_command_line(int argc, char *argv[])
 		params.timeout = (atoi(env_val) * 1000);
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "CfF:j:ps:t:vV",
+	while ((opt_char = getopt_long(argc, argv, "CfF:j:ps:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -180,7 +186,30 @@ extern void parse_command_line(int argc, char *argv[])
 	}
 
 	params.src_fname = xstrdup(argv[optind]);
-	params.dst_fname = xstrdup(argv[optind+1]);
+
+	if (argv[optind+1][0] == '/') {
+		params.dst_fname = xstrdup(argv[optind+1]);
+	} else if (sbcast_parameters &&
+		   (tmp = strcasestr(sbcast_parameters, "DestDir="))) {
+		tmp += 8;
+		sep = strchr(tmp, ',');
+		if (sep)
+			sep[0] = '\0';
+		xstrfmtcat(params.dst_fname, "%s/%s", tmp, argv[optind+1]);
+		if (sep)
+			sep[0] = ',';
+	} else {
+#ifdef HAVE_GET_CURRENT_DIR_NAME
+		tmp = get_current_dir_name();
+#else
+		tmp = malloc(PATH_MAX);
+		tmp = getcwd(tmp, PATH_MAX);
+#endif
+		xstrfmtcat(params.dst_fname, "%s/%s", tmp, argv[optind+1]);
+		free(tmp);
+	}
+
+	xfree(sbcast_parameters);
 
 	if (params.verbose)
 		_print_options();

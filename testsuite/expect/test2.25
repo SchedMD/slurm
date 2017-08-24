@@ -12,7 +12,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -122,21 +122,13 @@ proc delete_test_acct { } {
 delete_test_acct
 
 # Get username
-spawn $bin_id -u -n
-expect {
-	-re "($alpha_numeric_under)" {
-		set test_user $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set test_user [get_my_user_name]
 
 if {[test_using_slurmdbd]} {
 	# Add test Account
 	set acct_added 0
-	spawn $sacctmgr add -i account $test_acct
+	set cluster [get_cluster_name]
+	spawn $sacctmgr add -i account $test_acct cluster=$cluster
 	expect {
 		-re "Adding Account" {
 			set acct_added 1

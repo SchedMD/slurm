@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -26,6 +26,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "config.h"
 
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
@@ -47,8 +49,8 @@ typedef struct {
 	GtkTreeView  *treeview;
 } treedata_t;
 
-static gboolean control_key_in_effect = FALSE;
-static gboolean enter_key_in_effect = FALSE;
+static gboolean control_key_in_effect = false;
+static gboolean enter_key_in_effect = false;
 
 
 
@@ -164,7 +166,7 @@ static gboolean _frame_callback(GtkWindow *window,
 	}
 
 
-	return FALSE;
+	return false;
 }
 
 
@@ -506,12 +508,12 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 			     "model", model,
 			     "text-column", 0,
 			     "has-entry", 1,
-			     "editable", TRUE,
+			     "editable", true,
 			     NULL);
 	} else if (display_data->extra == EDIT_TEXTBOX) {
 		renderer = gtk_cell_renderer_text_new();
 		g_object_set(renderer,
-			     "editable", TRUE,
+			     "editable", true,
 			     NULL);
 	} else if (display_data->extra == EDIT_COLOR) {
 		GdkPixbuf *pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false,
@@ -525,7 +527,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 	if (model)
 		g_object_unref(model);
 
-	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_pack_start(col, renderer, true);
 
 	g_object_set_data(G_OBJECT(renderer), "column",
 			  GINT_TO_POINTER(display_data->id));
@@ -559,10 +561,10 @@ static void _toggle_state_changed(GtkCheckMenuItem *menuitem,
 				  display_data_t *display_data)
 {
 	if (display_data->show)
-		display_data->show = FALSE;
+		display_data->show = false;
 	else
-		display_data->show = TRUE;
-	toggled = TRUE;
+		display_data->show = true;
+	toggled = true;
 	refresh_main(NULL, NULL);
 }
 
@@ -571,9 +573,9 @@ static void _popup_state_changed(GtkCheckMenuItem *menuitem,
 {
 	popup_info_t *popup_win = (popup_info_t *) display_data->user_data;
 	if (display_data->show)
-		display_data->show = FALSE;
+		display_data->show = false;
 	else
-		display_data->show = TRUE;
+		display_data->show = true;
 	popup_win->toggled = 1;
 	(display_data->refresh)(NULL, display_data->user_data);
 }
@@ -683,25 +685,6 @@ extern char * replus (char *str)
 	}
 	return str;
 }
-
-extern char *delstr(char *str, char *orig)
-{
-	static char buffer[150];
-	char *p;
-
-	if (!(p = strstr(str, orig)))
-		return NULL;
-
-	strncpy(buffer, str, p-str);
-	strncpy(buffer+(p-str-1), p+strlen(orig), strlen(str)-(p-str));
-	buffer[strlen(str) - strlen(orig)] = '\0';
-
-	if (_DEBUG)
-		g_print("delstr: new string <%s>\n", buffer);
-
-	return buffer;
-}
-
 
 extern void free_switch_nodes_maps(
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr)
@@ -987,7 +970,7 @@ extern void set_page_opts(int page, display_data_t *display_data,
 				continue;
 			if (!strncasecmp(col_name, display_data->name,
 					 strlen(col_name))) {
-				display_data->show = TRUE;
+				display_data->show = true;
 				break;
 			}
 		}
@@ -1046,7 +1029,7 @@ extern GtkScrolledWindow *create_scrolled_window(void)
 {
 	GtkScrolledWindow *scrolled_window = NULL;
 	GtkWidget *table = NULL;
-	table = gtk_table_new(1, 1, FALSE);
+	table = gtk_table_new(1, 1, false);
 
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 
@@ -1067,7 +1050,7 @@ extern GtkWidget *create_entry(void)
 {
 	GtkWidget *entry = gtk_entry_new();
 
-	gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
+	gtk_entry_set_activates_default(GTK_ENTRY(entry), true);
 
 	return entry;
 }
@@ -1083,11 +1066,11 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 	int err;
 
 	if (display_data->id == TAB_PAGE) {
-		table = gtk_table_new(PAGE_CNT, 3, FALSE);
+		table = gtk_table_new(PAGE_CNT, 3, false);
 		image = gtk_image_new_from_stock(
 			GTK_STOCK_ADD, GTK_ICON_SIZE_SMALL_TOOLBAR);
 	} else {
-		table = gtk_table_new(1, 3, FALSE);
+		table = gtk_table_new(1, 3, false);
 		image = gtk_image_new_from_stock(
 			GTK_STOCK_DIALOG_ERROR, GTK_ICON_SIZE_SMALL_TOOLBAR);
 		g_signal_connect(G_OBJECT(close_button), "button-press-event",
@@ -1098,15 +1081,15 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 	gtk_container_add(GTK_CONTAINER(close_button), image);
 	gtk_widget_set_size_request(close_button, 10, 10);
 
-	//gtk_event_box_set_above_child(GTK_EVENT_BOX(close_button), FALSE);
+	//gtk_event_box_set_above_child(GTK_EVENT_BOX(close_button), false);
 
 	gtk_container_add(GTK_CONTAINER(event_box), label);
-	gtk_event_box_set_above_child(GTK_EVENT_BOX(event_box), FALSE);
+	gtk_event_box_set_above_child(GTK_EVENT_BOX(event_box), false);
 	g_signal_connect(G_OBJECT(event_box), "button-press-event",
 			 G_CALLBACK(tab_pressed),
 			 display_data);
 
-	gtk_table_set_homogeneous(GTK_TABLE(table), FALSE);
+	gtk_table_set_homogeneous(GTK_TABLE(table), false);
 	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
 	gtk_container_set_border_width(GTK_CONTAINER(table), 1);
 
@@ -1173,7 +1156,7 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 
 	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(treestore));
 
-	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer,
 					   "text", DISPLAY_NAME);
 	gtk_tree_view_column_add_attribute(col, renderer,
@@ -1185,7 +1168,7 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 
 	col = gtk_tree_view_column_new();
 	renderer = gtk_cell_renderer_text_new();
-	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer,
 					   "text", DISPLAY_VALUE);
 	gtk_tree_view_column_add_attribute(col, renderer,
@@ -1197,7 +1180,7 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 
 	col = gtk_tree_view_column_new();
 	renderer = gtk_cell_renderer_text_new();
-	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_set_visible(col, false);
 	gtk_tree_view_column_add_attribute(col, renderer,
 					   "text", DISPLAY_FONT);
@@ -1251,6 +1234,7 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 			if (!xstrcasecmp(display_data[i].name, "Node Count")
 			    || !xstrcasecmp(display_data[i].name, "CPU Count")
 			    || !xstrcasecmp(display_data[i].name, "Real Memory")
+			    || !xstrcasecmp(display_data[i].name, "Port")
 			    || !xstrcasecmp(display_data[i].name, "Tmp Disk")) {
 				gtk_tree_sortable_set_sort_func(
 					GTK_TREE_SORTABLE(treestore),
@@ -1388,7 +1372,7 @@ extern gboolean row_activated(GtkTreeView *tree_view, GtkTreePath *path,
 	/* display the full info */
 	if (!enter_key_in_effect)
 		(display_data->set_menu)(tree_view, NULL, path, FULL_CLICKED);
-	enter_key_in_effect = FALSE;
+	enter_key_in_effect = false;
 
 	return false;
 }
@@ -1397,12 +1381,12 @@ extern gboolean key_pressed(GtkTreeView *tree_view,
 			    GdkEventKey *event,
 			    const signal_params_t *signal_params)
 {
-	control_key_in_effect = FALSE;
-	enter_key_in_effect = FALSE;
+	control_key_in_effect = false;
+	enter_key_in_effect = false;
 
 	if ((event->keyval == GDK_Control_L) ||
 	    (event->keyval == GDK_Control_R))
-		control_key_in_effect = TRUE;
+		control_key_in_effect = true;
 	else if (event->keyval == GDK_Return) {
 		each_t each;
 		GtkTreeSelection *selection = NULL;
@@ -1421,11 +1405,11 @@ extern gboolean key_pressed(GtkTreeView *tree_view,
 			selection, _foreach_full_info, &each);
 		/*prevent row_activation from
 		 * performing a redundant 'full info'*/
-		enter_key_in_effect = TRUE;
+		enter_key_in_effect = true;
 
 	}
 
-	return FALSE;
+	return false;
 }/*key_pressed ^^^*/
 
 
@@ -1441,7 +1425,7 @@ extern gboolean key_released(GtkTreeView *tree_view,
 	if ((event->keyval != GDK_Up) &&
 	    (event->keyval != GDK_Down) &&
 	    (event->keyval != GDK_Return))
-		return TRUE;
+		return true;
 
 	gtk_tree_view_get_cursor(GTK_TREE_VIEW(tree_view), &path, &column);
 	if (path) {
@@ -1449,7 +1433,7 @@ extern gboolean key_released(GtkTreeView *tree_view,
 		gtk_tree_selection_select_path(selection, path);
 		gtk_tree_path_free(path);
 	}
-	return TRUE;
+	return true;
 
 
 }/*key_released ^^^*/
@@ -1460,8 +1444,8 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	GtkTreePath *path = NULL;
 	GtkTreePath *last_path = NULL;
 	GtkTreeSelection *selection = NULL;
-	gboolean did_something = FALSE;
-	gboolean selected_in_current_mix = FALSE;
+	gboolean did_something = false;
+	gboolean selected_in_current_mix = false;
 
 	if (!gtk_tree_view_get_path_at_pos(tree_view,
 					   (gint) event->x,
@@ -1478,9 +1462,9 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 			if (!(event->state & GDK_CONTROL_MASK))
 				gtk_tree_selection_unselect_all(selection);
 			refresh_main(NULL, NULL);
-			return TRUE;
+			return true;
 		}
-		return FALSE;
+		return false;
 	}
 
 	/* make the selection (highlight) here */
@@ -1530,7 +1514,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		   a way to know for sure the expander was clicked
 		   and not the actual column please fix this :).
 		*/
-		did_something = FALSE;
+		did_something = false;
 	} else if (event->button == 1) {
 		/*  left click */
 		if (!(event->state & GDK_CONTROL_MASK)
@@ -1558,9 +1542,9 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		    && !(event->state & GDK_SHIFT_MASK))
 			right_button_pressed(tree_view, path, event,
 					     signal_params, ROW_CLICKED);
-		did_something = TRUE;
+		did_something = true;
 	} else if (!working_sview_config.admin_mode)
-		did_something = TRUE;
+		did_something = true;
 	gtk_tree_path_free(path);
 
 	/* If control key held refresh main (which does the grid and
@@ -1568,7 +1552,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	   after left_button_pressed to get other things correct. */
 	if (event->state & GDK_CONTROL_MASK) {
 		refresh_main(NULL, NULL);
-		return FALSE; /*propagate event*/
+		return false; /*propagate event*/
 	}
 	return did_something;
 }
@@ -1642,10 +1626,10 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 
 	gtk_event_box_set_above_child(
 		GTK_EVENT_BOX(popup_win->event_box),
-		FALSE);
+		false);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup_win->popup)->vbox),
-			   popup_win->event_box, FALSE, FALSE, 0);
+			   popup_win->event_box, false, false, 0);
 
 	window = create_scrolled_window();
 	gtk_scrolled_window_set_policy(window,
@@ -1657,7 +1641,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	popup_win->grid_table = GTK_TABLE(bin->child);
 	popup_win->grid_button_list = NULL;
 
-	table = gtk_table_new(1, 2, FALSE);
+	table = gtk_table_new(1, 2, false);
 
 	gtk_table_attach(GTK_TABLE(table), GTK_WIDGET(window), 0, 1, 0, 1,
 			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
@@ -1673,7 +1657,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 				  1, 2, 0, 1);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup_win->popup)->vbox),
-			   table, TRUE, TRUE, 0);
+			   table, true, true, 0);
 
 	g_signal_connect(G_OBJECT(popup_win->popup), "delete_event",
 			 G_CALLBACK(delete_popup),
@@ -1811,7 +1795,7 @@ extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
 	list_iterator_destroy(itr);
 
 
-	return FALSE;
+	return false;
 }
 
 extern gboolean delete_popups(void)
@@ -1825,7 +1809,7 @@ extern gboolean delete_popups(void)
 	}
 	list_iterator_destroy(itr);
 
-	return FALSE;
+	return false;
 }
 
 extern void *popup_thr(popup_info_t *popup_win)
@@ -1948,7 +1932,7 @@ extern GtkWidget *create_pulldown_combo(display_data_t *display_data)
 
 	g_object_unref(store);
 	renderer = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, true);
 	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(combo), renderer,
 				      "text", 1);
 
@@ -1976,7 +1960,7 @@ extern char *get_reason(void)
 {
 	char *reason_str = NULL;
 	int len = 0;
-	GtkWidget *table = gtk_table_new(1, 2, FALSE);
+	GtkWidget *table = gtk_table_new(1, 2, false);
 	GtkWidget *label = gtk_label_new("Reason ");
 	GtkWidget *entry = gtk_entry_new();
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
@@ -1996,7 +1980,7 @@ extern char *get_reason(void)
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			   table, FALSE, FALSE, 0);
+			   table, false, false, 0);
 
 	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
 	gtk_table_attach_defaults(GTK_TABLE(table), entry, 1, 2, 0, 1);
@@ -2072,7 +2056,7 @@ extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,
 
 		renderer = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(entry),
-					   renderer, TRUE);
+					   renderer, true);
 		gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(entry),
 					      renderer, "text", 0);
 	} else if (display_data->extra == EDIT_TEXTBOX) {
@@ -2128,7 +2112,7 @@ extern void display_edit_note(char *edit_note)
 				    STATUS_ADMIN_EDIT,
 				    edit_note);
 	if (!sview_thread_new(_editing_thr, GINT_TO_POINTER(msg_id),
-			      FALSE, &error))
+			      false, &error))
 		g_printerr("Failed to create edit thread: %s\n",
 			   error->message);
 
@@ -2267,7 +2251,7 @@ extern void sview_radio_action_set_current_value(GtkRadioAction *action,
 		for (slist = group; slist; slist = slist->next) {
 			if (i == current_value) {
 				gtk_toggle_action_set_active(
-					GTK_TOGGLE_ACTION(slist->data), TRUE);
+					GTK_TOGGLE_ACTION(slist->data), true);
 				return;
 			}
 			i++;

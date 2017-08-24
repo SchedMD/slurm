@@ -133,8 +133,8 @@ function displayfile()
    "# SCHEDULING <br>" +
    "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
-   "#SchedulerPort=7321 <br>" +
    "SelectType=select/" + get_radio_value(document.config.select_type) + "<br>" +
+   get_select_type_params() + "<br>" +
    "# <br>" +
    "# <br>" +
    "# LOGGING AND ACCOUNTING <br>" +
@@ -381,13 +381,11 @@ Define the algorithm used to identify which processes are associated with a
 given job. This is used signal, kill, and account for the processes associated
 with a job step.<BR>
 Select one value for <B>ProctrackType</B>:<BR>
-<input type="radio" name="proctrack_type" value="aix"> <B>AIX</B>: Use AIX kernel
-extension, recommended for AIX systems<BR>
-<input type="radio" name="proctrack_type" value="cgroup"> <B>Cgroup</B>:  Use
+<input type="radio" name="proctrack_type" value="cgroup" checked> <B>Cgroup</B>:  Use
 Linux <i>cgroup</i> to create a job container and track processes.
 Build a <i>cgroup.conf</i> file as well<BR>
 <input type="radio" name="proctrack_type" value="cray"> <B>Cray</B>: Cray proprietary process tracking<BR>
-<input type="radio" name="proctrack_type" value="pgid" checked> <B>Pgid</B>: Use Unix
+<input type="radio" name="proctrack_type" value="pgid"> <B>Pgid</B>: Use Unix
 Process Group ID, processes changing their process group ID can escape from Slurm
 control<BR>
 <input type="radio" name="proctrack_type" value="linuxproc"> <B>LinuxProc</B>: Use
@@ -485,8 +483,6 @@ determined by system type<BR>
 Select one value for <B>JobAcctGatherType</B>:<BR>
 <input type="radio" name="job_acct_gather_type" value="none" checked> <B>None</B>: No
 job accounting<BR>
-<input type="radio" name="job_acct_gather_type" value="aix"> <B>AIX</B>: Specifc
-AIX process table information gathered, use with AIX systems only<BR>
 <input type="radio" name="job_acct_gather_type" value="linux"> <B>Linux</B>: Specifc
 Linux process table information gathered, use with Linux systems only<BR>
 

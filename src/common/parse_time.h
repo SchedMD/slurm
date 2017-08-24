@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,19 +39,7 @@
 #ifndef _PARSE_TIME_H_
 #define _PARSE_TIME_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif                        /* HAVE_INTTYPES_H */
-#else                           /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif
-
+#include <inttypes.h>
 #include <time.h>
 
 /* Convert string to equivalent time value

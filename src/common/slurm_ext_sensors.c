@@ -6,7 +6,7 @@
  *  Written by Bull-HN-PHX/Martin Perry,
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -144,7 +144,7 @@ extern void ext_sensors_destroy(ext_sensors_data_t *ext_sensors)
 extern void ext_sensors_data_pack(ext_sensors_data_t *ext_sensors, Buf buffer,
 				    uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!ext_sensors) {
 			pack64(0, buffer);
 			pack32(0, buffer);
@@ -157,39 +157,19 @@ extern void ext_sensors_data_pack(ext_sensors_data_t *ext_sensors, Buf buffer,
 		pack32(ext_sensors->temperature, buffer);
 		pack_time(ext_sensors->energy_update_time, buffer);
 		pack32(ext_sensors->current_watts, buffer);
-	} else {
-		if (!ext_sensors) {
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack_time((time_t)0, buffer);
-			pack32(0, buffer);
-			return;
-		}
-
-		pack32((uint32_t)ext_sensors->consumed_energy, buffer);
-		pack32(ext_sensors->temperature, buffer);
-		pack_time(ext_sensors->energy_update_time, buffer);
-		pack32(ext_sensors->current_watts, buffer);
 	}
 }
 
 extern int ext_sensors_data_unpack(ext_sensors_data_t **ext_sensors, Buf buffer,
 				     uint16_t protocol_version)
 {
-	uint32_t uint32_tmp;
 	ext_sensors_data_t *ext_sensors_ptr = ext_sensors_alloc();
 	*ext_sensors = ext_sensors_ptr;
 	if (ext_sensors_ptr == NULL)
 		return SLURM_ERROR;
 
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64(&ext_sensors_ptr->consumed_energy, buffer);
-		safe_unpack32(&ext_sensors_ptr->temperature, buffer);
-		safe_unpack_time(&ext_sensors_ptr->energy_update_time, buffer);
-		safe_unpack32(&ext_sensors_ptr->current_watts, buffer);
-	} else {
-		safe_unpack32(&uint32_tmp, buffer);
-		ext_sensors_ptr->consumed_energy = (uint64_t) uint32_tmp;
 		safe_unpack32(&ext_sensors_ptr->temperature, buffer);
 		safe_unpack_time(&ext_sensors_ptr->energy_update_time, buffer);
 		safe_unpack32(&ext_sensors_ptr->current_watts, buffer);

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,35 +36,26 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
-#include <stdlib.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <strings.h>
-#include <poll.h>
-#include <sys/time.h>
-
 #include <arpa/inet.h>
 #include <errno.h>
-
-/* include munge and syslog to log authentication faiulres */
-#include <munge.h>
+#include <netinet/in.h>
+#include <munge.h>	/* include munge and syslog to log auth failures */
+#include <poll.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/time.h>
 #include <syslog.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/fd.h"
+#include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/net.h"
-#include "src/common/fd.h"
 
 /*
  *  2008-07-03:
@@ -470,8 +461,8 @@ again:
 	if (mp->counter == 0) {
 		int j = 0;
 
-		memset (mp->fds, 0, sizeof (st->nprocs * sizeof (struct pollfd)));
-		memset (mp->mvmap, 0, sizeof (st->nprocs * sizeof (*mp->mvmap)));
+		memset(mp->fds,   0, st->nprocs * sizeof(struct pollfd));
+		memset(mp->mvmap, 0, st->nprocs * sizeof(struct mvapich_info *));
 		mp->nfds = 0;
 
 		for (i = 0; i < st->nprocs; i++) {
@@ -1229,7 +1220,7 @@ static void mvapich_barrier (mvapich_state_t *st)
 	mvapich_poll_reset (mp);
 	while ((m = mvapich_poll_next (mp, 0)))
 		mvapich_write (m, &m->rank, sizeof (m->rank));
-
+	mvapich_poll_destroy (mp);
 	return;
 }
 
@@ -2396,7 +2387,7 @@ mvapich_state_create(const mpi_plugin_client_info_t *job)
 	state->shutdown_complete = false;
 
 	slurm_mutex_init(&state->shutdown_lock);
-	pthread_cond_init(&state->shutdown_cond, NULL);
+	slurm_cond_init(&state->shutdown_cond, NULL);
 
 	*(state->job) = *job;
 
@@ -2411,7 +2402,7 @@ static void mvapich_state_destroy(mvapich_state_t *st)
 	close(st->shutdown_pipe[1]);
 
 	slurm_mutex_destroy(&st->shutdown_lock);
-	pthread_cond_destroy(&st->shutdown_cond);
+	slurm_cond_destroy(&st->shutdown_cond);
 
 	xfree(st);
 }
@@ -2545,7 +2536,7 @@ extern int mvapich_thr_destroy(mvapich_state_t *st)
 					if (time(NULL) >= ts.tv_sec) {
 						break;
 					}
-					pthread_cond_timedwait(
+					slurm_cond_timedwait(
 						&st->shutdown_cond,
 						&st->shutdown_lock, &ts);
 				}
@@ -2566,7 +2557,7 @@ void mvapich_thr_exit(mvapich_state_t *st)
 
 	st->shutdown_complete = true;
 
-	pthread_cond_signal(&st->shutdown_cond);
+	slurm_cond_signal(&st->shutdown_cond);
 	slurm_mutex_unlock(&st->shutdown_lock);
 
 	pthread_exit(NULL);

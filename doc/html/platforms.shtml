@@ -3,9 +3,6 @@
 <h1>Platforms</h1>
 <h2>Operating Systems</h2>
 <ul>
-<li><b>AIX</b> &mdash; Slurm support for AIX has been thoroughly tested, but we
-know of no AIX installations using Slurm after 2008. See
-<a href="ibm.html">IBM AIX User and Administrator Guide</a> for more information.</li>
 <li><b>FreeBSD</b> &mdash; Fully supported.</li>
 <li><b>Linux</b> &mdash; Slurm has been thoroughly tested on most popular Linux
 distributions using i386, ia64, and x86_64 architectures.</li>

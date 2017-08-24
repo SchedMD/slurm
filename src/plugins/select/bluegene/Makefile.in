@@ -92,12 +92,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_1 = bl ba
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_2 = libsched_if64.la
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_3 = libsched_if.la
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_4 = bl_bgq ba_bgq
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_5 = runjob_plugin.la
-@BLUEGENE_LOADED_TRUE@am__append_6 = \
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_1 = bl_bgq ba_bgq
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_2 = runjob_plugin.la
+@BLUEGENE_LOADED_TRUE@am__append_3 = \
 @BLUEGENE_LOADED_TRUE@			bg_core.c		\
 @BLUEGENE_LOADED_TRUE@			bg_core.h		\
 @BLUEGENE_LOADED_TRUE@			bg_defined_block.c	\
@@ -120,12 +117,13 @@ target_triplet = @target@
 @BLUEGENE_LOADED_TRUE@			bg_structs.h		\
 @BLUEGENE_LOADED_TRUE@			bridge_linker.h
 
-@BLUEGENE_LOADED_TRUE@am__append_7 = $(block_allocator_lib) $(BG_LDFLAGS)
+@BLUEGENE_LOADED_TRUE@am__append_4 = $(block_allocator_lib) $(BG_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@sbin_PROGRAMS = slurm_prolog$(EXEEXT) \
 @BLUEGENE_LOADED_TRUE@	slurm_epilog$(EXEEXT)
 subdir = src/plugins/select/bluegene
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
+	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -136,7 +134,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
 	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
-	$(top_srcdir)/auxdir/x_ac_aix.m4 \
 	$(top_srcdir)/auxdir/x_ac_blcr.m4 \
 	$(top_srcdir)/auxdir/x_ac_bluegene.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
@@ -164,7 +161,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
-	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
@@ -215,26 +211,6 @@ am__v_lt_1 =
 libconfigure_api_la_LIBADD =
 am_libconfigure_api_la_OBJECTS = configure_api.lo
 libconfigure_api_la_OBJECTS = $(am_libconfigure_api_la_OBJECTS)
-libsched_if_la_LIBADD =
-am__libsched_if_la_SOURCES_DIST = libsched_if64.c
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if_la_OBJECTS = libsched_if64.lo
-libsched_if_la_OBJECTS = $(am_libsched_if_la_OBJECTS)
-libsched_if_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libsched_if_la_LDFLAGS) $(LDFLAGS) -o \
-	$@
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if_la_rpath = -rpath \
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(pkglibdir)
-libsched_if64_la_LIBADD =
-am__libsched_if64_la_SOURCES_DIST = libsched_if64.c
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_OBJECTS = libsched_if64.lo
-libsched_if64_la_OBJECTS = $(am_libsched_if64_la_OBJECTS)
-libsched_if64_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libsched_if64_la_LDFLAGS) $(LDFLAGS) \
-	-o $@
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_rpath = -rpath \
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(pkglibdir)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurmhelper.la \
 	$(am__DEPENDENCIES_1)
@@ -346,14 +322,11 @@ am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(libba_common_la_SOURCES) $(libconfigure_api_la_SOURCES) \
-	$(libsched_if_la_SOURCES) $(libsched_if64_la_SOURCES) \
 	$(runjob_plugin_la_SOURCES) $(select_bluegene_la_SOURCES) \
 	$(nodist_EXTRA_select_bluegene_la_SOURCES) \
 	$(slurm_epilog_SOURCES) $(slurm_prolog_SOURCES)
 DIST_SOURCES = $(libba_common_la_SOURCES) \
 	$(libconfigure_api_la_SOURCES) \
-	$(am__libsched_if_la_SOURCES_DIST) \
-	$(am__libsched_if64_la_SOURCES_DIST) \
 	$(am__runjob_plugin_la_SOURCES_DIST) \
 	$(am__select_bluegene_la_SOURCES_DIST) \
 	$(am__slurm_epilog_SOURCES_DIST) \
@@ -398,7 +371,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = sfree bl ba bl_bgq ba_bgq
+DIST_SUBDIRS = sfree bl_bgq ba_bgq
 am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/auxdir/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
@@ -434,11 +407,9 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BGL_LOADED = @BGL_LOADED@
 BGQ_LOADED = @BGQ_LOADED@
 BG_INCLUDES = @BG_INCLUDES@
 BG_LDFLAGS = @BG_LDFLAGS@
-BG_L_P_LOADED = @BG_L_P_LOADED@
 BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
 BLCR_HOME = @BLCR_HOME@
 BLCR_LDFLAGS = @BLCR_LDFLAGS@
@@ -449,7 +420,6 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CHECK_CFLAGS = @CHECK_CFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
-CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CRAY_JOB_CPPFLAGS = @CRAY_JOB_CPPFLAGS@
@@ -494,7 +464,6 @@ GTK_LIBS = @GTK_LIBS@
 H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
-HAVE_AIX = @HAVE_AIX@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
@@ -526,7 +495,6 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -577,7 +545,6 @@ PMIX_V1_CPPFLAGS = @PMIX_V1_CPPFLAGS@
 PMIX_V1_LDFLAGS = @PMIX_V1_LDFLAGS@
 PMIX_V2_CPPFLAGS = @PMIX_V2_CPPFLAGS@
 PMIX_V2_LDFLAGS = @PMIX_V2_LDFLAGS@
-PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
@@ -585,7 +552,6 @@ PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
-REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
@@ -690,8 +656,7 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 AM_CPPFLAGS = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
-pkglib_LTLIBRARIES = select_bluegene.la $(am__append_2) \
-	$(am__append_3) $(am__append_5)
+pkglib_LTLIBRARIES = select_bluegene.la $(am__append_2)
 noinst_LTLIBRARIES = libba_common.la libconfigure_api.la
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la \
 	-lpthread $(DL_LIBS)
@@ -699,18 +664,13 @@ convenience_libs = $(top_builddir)/src/api/libslurmhelper.la \
 
 # These are needed for pack/unpack of structures for cross-cluster stuff
 select_bluegene_la_SOURCES = select_bluegene.c bg_job_info.c \
-	bg_job_info.h bg_node_info.c bg_node_info.h $(am__append_6)
+	bg_job_info.h bg_node_info.c bg_node_info.h $(am__append_3)
 libba_common_la_SOURCES = ba_common.c ba_common.h
 libconfigure_api_la_SOURCES = configure_api.c configure_api.h
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-select_bluegene_la_LIBADD = libba_common.la $(am__append_7)
-@BLUEGENE_LOADED_TRUE@SUBDIRS = sfree $(am__append_1) $(am__append_4)
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_SOURCES = libsched_if64.c
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_SOURCES = libsched_if64.c
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_bluegene_la_LIBADD = libba_common.la $(am__append_4)
+@BLUEGENE_LOADED_TRUE@SUBDIRS = sfree $(am__append_1)
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba_bgq/libblock_allocator.la
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba/libblock_allocator.la
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_SOURCES = runjob_plugin.cc
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
@@ -807,12 +767,6 @@ libba_common.la: $(libba_common_la_OBJECTS) $(libba_common_la_DEPENDENCIES) $(EX
 libconfigure_api.la: $(libconfigure_api_la_OBJECTS) $(libconfigure_api_la_DEPENDENCIES) $(EXTRA_libconfigure_api_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libconfigure_api_la_OBJECTS) $(libconfigure_api_la_LIBADD) $(LIBS)
 
-libsched_if.la: $(libsched_if_la_OBJECTS) $(libsched_if_la_DEPENDENCIES) $(EXTRA_libsched_if_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libsched_if_la_LINK) $(am_libsched_if_la_rpath) $(libsched_if_la_OBJECTS) $(libsched_if_la_LIBADD) $(LIBS)
-
-libsched_if64.la: $(libsched_if64_la_OBJECTS) $(libsched_if64_la_DEPENDENCIES) $(EXTRA_libsched_if64_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libsched_if64_la_LINK) $(am_libsched_if64_la_rpath) $(libsched_if64_la_OBJECTS) $(libsched_if64_la_LIBADD) $(LIBS)
-
 runjob_plugin.la: $(runjob_plugin_la_OBJECTS) $(runjob_plugin_la_DEPENDENCIES) $(EXTRA_runjob_plugin_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(runjob_plugin_la_LINK) $(am_runjob_plugin_la_rpath) $(runjob_plugin_la_OBJECTS) $(runjob_plugin_la_LIBADD) $(LIBS)
 
@@ -896,7 +850,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_status.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/configure_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsched_if64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runjob_plugin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_bluegene.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_epilog.Po@am__quote@

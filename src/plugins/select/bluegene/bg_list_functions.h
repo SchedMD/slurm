@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,7 +40,6 @@
 #define _BRIDGE_BG_LIST_FUNCTIONS_H_
 
 #include "src/common/read_config.h"
-#include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"

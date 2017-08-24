@@ -1,0 +1,132 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of srun --spread-job option.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2016 SchedMD LLC.
+# Written by Alejandro Sanchez <alex@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "1.114"
+set node_cnt    0
+set exit_code   0
+set partition [default_partition]
+
+proc run_spread_job { task_cnt } {
+	global max_job_delay srun scontrol bin_printenv number exit_code
+
+	set timeout $max_job_delay
+	set job_id 0
+	set srun_pid [spawn $srun -n $task_cnt --spread-job $bin_printenv SLURM_JOB_ID]
+	expect {
+		-re "($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $sun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		send_user "\nFAILURE: srun job ID not found\n"
+		exit 1
+	}
+
+	wait_for_job $job_id "DONE"
+	set timeout 10
+	set num_nodes 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "NumNodes=($number)" {
+			set num_nodes $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$num_nodes != $task_cnt} {
+		send_user "\nFAILURE: Invalid node count for job $job_id ($num_nodes != $task_cnt)\n"
+		set exit_code 1
+	}
+}
+
+print_header $test_id
+
+if {[test_select_type] != "cons_res"} {
+	send_user "\nWARNING: test is only compatible with a config of SelectType=select/cons_res\n"
+	exit 0
+}
+
+log_user 1
+spawn $sinfo -h -p $partition -t idle -o "NODES=%D CPUS=%c"
+expect {
+	-re "NODES=($number)" {
+		set node_cnt $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
+if {$node_cnt < 2} {
+	send_user "\nWARNING: Insufficient nodes for test in partition $partition ($node_cnt < 2)\n"
+	exit 0
+}
+
+if {$node_cnt > 8} {
+	set max_task_cnt 8
+} else {
+	set max_task_cnt $node_cnt
+}
+
+for {set inx 2} {$inx < $max_task_cnt} {incr inx 2} {
+	run_spread_job $inx
+	if {$exit_code != 0} {
+		break
+	}
+	sleep 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

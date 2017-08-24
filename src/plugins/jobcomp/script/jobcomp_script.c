@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -63,41 +63,34 @@
  *			represents the X, Y and Z dimension sizes
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
+#include "config.h"
 
 #if HAVE_PATHS_H
 #  include <paths.h>
 #endif
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/wait.h>
-#include <unistd.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/list.h"
+#include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/node_select.h"
-#include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -525,7 +518,7 @@ static void * _script_agent (void *args)
 		slurm_mutex_lock(&comp_list_mutex);
 
 		if (list_is_empty(comp_list) && !agent_exit)
-			pthread_cond_wait(&comp_list_cond, &comp_list_mutex);
+			slurm_cond_wait(&comp_list_cond, &comp_list_mutex);
 
 		/*
 		 * It is safe to unlock list mutex here. List has its
@@ -611,7 +604,7 @@ int slurm_jobcomp_log_record (struct job_record *record)
 
 	slurm_mutex_lock(&comp_list_mutex);
 	list_append(comp_list, job);
-	pthread_cond_broadcast(&comp_list_cond);
+	slurm_cond_broadcast(&comp_list_cond);
 	slurm_mutex_unlock(&comp_list_mutex);
 
 	return SLURM_SUCCESS;
@@ -634,7 +627,7 @@ static int _wait_for_thread (pthread_t thread_id)
 	int i;
 
 	for (i=0; i<20; i++) {
-		pthread_cond_broadcast(&comp_list_cond);
+		slurm_cond_broadcast(&comp_list_cond);
 		usleep(1000 * i);
 		if (pthread_kill(thread_id, 0))
 			return SLURM_SUCCESS;

@@ -6,7 +6,7 @@
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,28 +35,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
+#include "config.h"
 
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -105,20 +94,7 @@ extern slurmd_conf_t *conf;
 extern int
 get_procs(uint16_t *procs)
 {
-#ifdef LPAR_INFO_FORMAT2
-	/* AIX 5.3 only */
-	lpar_info_format2_t info;
-
-	*procs = 1;
-	if (lpar_get_info(LPAR_INFO_FORMAT2, &info, sizeof(info)) != 0) {
-		error("lpar_get_info() failed");
-		return EINVAL;
-	}
-
-	*procs = (uint16_t) info.online_vcpus;
-#else /* !LPAR_INFO_FORMAT2 */
-
-#  ifdef _SC_NPROCESSORS_ONLN
+#ifdef _SC_NPROCESSORS_ONLN
 	int my_proc_tally;
 
 	*procs = 1;
@@ -129,8 +105,7 @@ get_procs(uint16_t *procs)
 	}
 
 	*procs = (uint16_t) my_proc_tally;
-#  else
-#    ifdef HAVE_SYSCTLBYNAME
+#elif defined (HAVE_SYSCTLBYNAME)
 	int ncpu;
 	size_t len = sizeof(ncpu);
 
@@ -140,11 +115,9 @@ get_procs(uint16_t *procs)
 		return EINVAL;
 	}
 	*procs = (uint16_t) ncpu;
-#    else /* !HAVE_SYSCTLBYNAME */
+#else
 	*procs = 1;
-#    endif /* HAVE_SYSCTLBYNAME */
-#  endif /* _SC_NPROCESSORS_ONLN */
-#endif /* LPAR_INFO_FORMAT2 */
+#endif
 
 	return 0;
 }

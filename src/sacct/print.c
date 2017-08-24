@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -81,21 +81,21 @@ char *_elapsed_time(long secs, long usecs)
 	return str;
 }
 
-static char *_find_qos_name_from_list(
-	List qos_list, int qosid)
+static int _find_qosid_in_qos_list(void *x, void *key)
 {
-	ListIterator itr = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
+	slurmdb_qos_rec_t *qos = (slurmdb_qos_rec_t *) x;
+	int *qosid =  (int *) key;
+	return (*qosid == qos->id);
+}
+
+static char *_find_qos_name_from_list(List qos_list, int qosid)
+{
+	slurmdb_qos_rec_t *qos;
 
 	if (!qos_list || qosid == NO_VAL)
 		return NULL;
 
-	itr = list_iterator_create(qos_list);
-	while((qos = list_next(itr))) {
-		if (qosid == qos->id)
-			break;
-	}
-	list_iterator_destroy(itr);
+	qos = list_find_first(qos_list, _find_qosid_in_qos_list, &qosid);
 
 	if (qos)
 		return qos->name;
@@ -191,16 +191,13 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 	if (job_ptr->array_max_tasks)
 		xstrfmtcat(out_buf, "%c%u", '%', job_ptr->array_max_tasks);
 
+	bit_free(task_bitmap);
 	xfree(job_ptr->array_task_str);
 	job_ptr->array_task_str = out_buf;
 }
 
 void print_fields(type_t type, void *object)
 {
-	if (!object) {
-		fatal ("Job or step record is NULL");
-		return;
-	}
 
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
@@ -213,8 +210,14 @@ void print_fields(type_t type, void *object)
 	bool got_stats = false;
 	int cpu_tres_rec_count = 0;
 	int step_cpu_tres_rec_count = 0;
+	char tmp1[128];
 
-	switch(type) {
+	if (!object) {
+		fatal("Job or step record is NULL");
+		return;
+	}
+
+	switch (type) {
 	case JOB:
 		step = NULL;
 		if (!job->track_steps)
@@ -394,6 +397,21 @@ void print_fields(type_t type, void *object)
 
 			field->print_routine(field,
 					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_ADMIN_COMMENT:
+			switch(type) {
+			case JOB:
+				tmp_char = job->admin_comment;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_ASSOCID:
@@ -732,6 +750,25 @@ void print_fields(type_t type, void *object)
 			}
 			field->print_routine(field,
 					     (uint64_t)tmp_int,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_ELAPSED_RAW:
+			switch(type) {
+			case JOB:
+				tmp_int = job->elapsed;
+				break;
+			case JOBSTEP:
+				tmp_int = step->elapsed;
+				break;
+			case JOBCOMP:
+				tmp_int = job_comp->elapsed_time;
+				break;
+			default:
+				tmp_int = NO_VAL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_int,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_ELIGIBLE:
@@ -1253,23 +1290,23 @@ void print_fields(type_t type, void *object)
 				switch(type) {
 				case JOB:
 					if (!job->track_steps)
-						tmp_uint32 = job->stats.
+						tmp_uint64 = job->stats.
 							rss_max_taskid;
 					break;
 				case JOBSTEP:
-					tmp_uint32 = step->stats.rss_max_taskid;
+					tmp_uint64 = step->stats.rss_max_taskid;
 					break;
 				case JOBCOMP:
 				default:
-					tmp_uint32 = NO_VAL;
+					tmp_uint64 = NO_VAL64;
 					break;
 				}
-				if (tmp_uint32 == (uint32_t)NO_VAL)
-					tmp_uint32 = NO_VAL;
+				if (tmp_uint64 == (uint64_t)NO_VAL)
+					tmp_uint64 = NO_VAL64;
 			}
 
 			field->print_routine(field,
-					     tmp_uint32,
+					     tmp_uint64,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXVSIZE:
@@ -1684,24 +1721,24 @@ void print_fields(type_t type, void *object)
 		case PRINT_REQ_MEM:
 			switch(type) {
 			case JOB:
-				tmp_uint32 = job->req_mem;
+				tmp_uint64 = job->req_mem;
 				break;
 			case JOBSTEP:
-				tmp_uint32 = step->job_ptr->req_mem;
+				tmp_uint64 = step->job_ptr->req_mem;
 				break;
 			case JOBCOMP:
 			default:
-				tmp_uint32 = NO_VAL;
+				tmp_uint64 = NO_VAL64;
 				break;
 			}
 
-			if (tmp_uint32 != (uint32_t)NO_VAL) {
+			if (tmp_uint64 != (uint64_t)NO_VAL64) {
 				bool per_cpu = false;
-				if (tmp_uint32 & MEM_PER_CPU) {
-					tmp_uint32 &= (~MEM_PER_CPU);
+				if (tmp_uint64 & MEM_PER_CPU) {
+					tmp_uint64 &= (~MEM_PER_CPU);
 					per_cpu = true;
 				}
-				convert_num_unit((double)tmp_uint32,
+				convert_num_unit((double)tmp_uint64,
 						 outbuf, sizeof(outbuf),
 						 UNIT_MEGA, params.units,
 						 params.convert_flags);
@@ -1978,14 +2015,13 @@ void print_fields(type_t type, void *object)
 			xfree(tmp_char);
 			break;
 		case PRINT_TIMELIMIT:
-			switch(type) {
+			switch (type) {
 			case JOB:
 				if (job->timelimit == INFINITE)
 					tmp_char = "UNLIMITED";
 				else if (job->timelimit == NO_VAL)
 					tmp_char = "Partition_Limit";
 				else if (job->timelimit) {
-					char tmp1[128];
 					mins2time_str(job->timelimit,
 						      tmp1, sizeof(tmp1));
 					tmp_char = tmp1;
@@ -1997,7 +2033,6 @@ void print_fields(type_t type, void *object)
 				tmp_char = job_comp->timelimit;
 				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,

@@ -2,12 +2,12 @@
  *  proc_args.c - helper functions for command argument processing
  *****************************************************************************
  *  Copyright (C) 2007 Hewlett-Packard Development Company, L.P.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>.
  *  Written by Christopher Holmes <cholmes@hp.com>, who borrowed heavily
  *  from existing SLURM source code, particularly src/srun/opt.c
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,22 +36,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <string.h>		/* strcpy, strncasecmp */
-
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
+#include "config.h"
 
 #ifndef __USE_ISOC99
 #define __USE_ISOC99
-#endif
-
-#ifdef HAVE_LIMITS_H
-#  include <limits.h>
 #endif
 
 #ifndef _GNU_SOURCE
@@ -62,22 +50,25 @@
 #  define SYSTEM_DIMENSIONS 1
 #endif
 
+#include <ctype.h>		/* isdigit    */
 #include <fcntl.h>
+#include <limits.h>
+#include <pwd.h>		/* getpwuid   */
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv, strtoll */
-#include <pwd.h>		/* getpwuid   */
-#include <ctype.h>		/* isdigit    */
+#include <string.h>		/* strcpy, strncasecmp */
 #include <sys/param.h>		/* MAXPATHLEN */
-#include <sys/stat.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <unistd.h>
 
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/log.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -508,14 +499,10 @@ extern void verify_conn_type(const char *arg, uint16_t *conn_type)
 	char *arg_tmp = xstrdup(arg), *tok, *save_ptr = NULL;
 
 	if (working_cluster_rec) {
-		if (working_cluster_rec->flags & CLUSTER_FLAG_BGP)
-			got_bgp = 1;
-		else if (working_cluster_rec->flags & CLUSTER_FLAG_BGQ)
+		if (working_cluster_rec->flags & CLUSTER_FLAG_BGQ)
 			highest_dims = 4;
 	} else {
-#ifdef HAVE_BGP
-		got_bgp = 1;
-# elif defined HAVE_BGQ
+#if defined HAVE_BGQ
 		highest_dims = 4;
 #endif
 	}
@@ -601,11 +588,7 @@ char * base_name(char* command)
 	return name;
 }
 
-/*
- * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
- * or "T" at end and return the number in mega-bytes
- */
-long str_to_mbytes(const char *arg)
+static long _str_to_mbtyes(const char *arg, int use_gbytes)
 {
 	long result;
 	char *endptr;
@@ -614,7 +597,9 @@ long str_to_mbytes(const char *arg)
 	result = strtol(arg, &endptr, 10);
 	if ((errno != 0) && ((result == LONG_MIN) || (result == LONG_MAX)))
 		result = -1;
-	else if (endptr[0] == '\0')
+	else if ((endptr[0] == '\0') && (use_gbytes == 1))  /* GB default */
+		result *= 1024;
+	else if (endptr[0] == '\0')	/* MB default */
 		;
 	else if ((endptr[0] == 'k') || (endptr[0] == 'K'))
 		result = (result + 1023) / 1024;	/* round up */
@@ -628,6 +613,36 @@ long str_to_mbytes(const char *arg)
 		result = -1;
 
 	return result;
+}
+
+/*
+ * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
+ * or "T" at end and return the number in mega-bytes. Default units are MB.
+ */
+long str_to_mbytes(const char *arg)
+{
+	return _str_to_mbtyes(arg, 0);
+}
+
+/*
+ * str_to_mbytes2(): verify that arg is numeric with optional "K", "M", "G"
+ * or "T" at end and return the number in mega-bytes. Default units are GB
+ * if "SchedulerParameters=default_gbytes" is configured, otherwise MB.
+ */
+long str_to_mbytes2(const char *arg)
+{
+	static int use_gbytes = -1;
+
+	if (use_gbytes == -1) {
+		char *sched_params = slurm_get_sched_params();
+		if (sched_params && strstr(sched_params, "default_gbytes"))
+			use_gbytes = 1;
+		else
+			use_gbytes = 0;
+		xfree(sched_params);
+	}
+
+	return _str_to_mbtyes(arg, use_gbytes);
 }
 
 /* Convert a string into a node count */
@@ -842,12 +857,16 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 				     int *min_cores, int *min_threads,
 				     cpu_bind_type_t *cpu_bind_type)
 {
-	bool tmp_val,ret_val;
+	bool tmp_val, ret_val;
 	int i, j;
 	int max_sockets = 0, max_cores = 0, max_threads = 0;
 	const char *cur_ptr = arg;
 	char buf[3][48]; /* each can hold INT64_MAX - INT64_MAX */
 
+	if (!arg) {
+		error("%s: argument is NULL", __func__);
+		return false;
+	}
 	memset(buf, 0, sizeof(buf));
 	for (j = 0; j < 3; j++) {
 		for (i = 0; i < 47; i++) {
@@ -908,9 +927,9 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 		 cpu_bind_type_t *cpu_bind_type)
 {
 	char *buf, *p, *tok;
-	if (!arg) {
+
+	if (!arg)
 		return true;
-	}
 
 	buf = xstrdup(arg);
 	p = buf;
@@ -932,6 +951,7 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 "        memory_bound    use only one core in each socket\n"
 "        [no]multithread [don't] use extra threads with in-core multi-threading\n"
 "        help            show this help message\n");
+			xfree(buf);
 			return 1;
 		} else if (xstrcasecmp(tok, "compute_bound") == 0) {
 			*min_sockets = NO_VAL;
@@ -1141,7 +1161,7 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
 
-#if defined HAVE_BG && !defined HAVE_BG_L_P
+#if defined HAVE_BG
 	/* BGQ's runjob command required a fully qualified path */
 	if (((cmd[0] == '.') || (cmd[0] == '/')) &&
 	    (access(cmd, access_mode) == 0)) {
@@ -1303,41 +1323,8 @@ int sig_name2num(char *signal_name)
 	return sig;
 }
 
-
 /*
- * parse_uint32 - Convert anscii string to a 32 bit unsigned int.
- * IN      aval - ascii string.
- * IN/OUT  ival - 32 bit pointer.
- * RET     0 if no error, 1 otherwise.
- */
-extern int parse_uint32(char *aval, uint32_t *ival)
-{
-	/*
-	 * First,  convert the ascii value it to a
-	 * long long int. If the result is greater
-	 * than or equal to 0 and less than NO_VAL
-	 * set the value and return. Otherwise return
-	 * an error.
-	 */
-	uint32_t max32uint = (uint32_t) NO_VAL;
-	long long tval;
-	char *p;
-
-	/*
- 	 * Return error for invalid value.
-	 */
-	tval = strtoll(aval, &p, 10);
-	if (p[0] || (tval == LLONG_MIN) || (tval == LLONG_MAX) ||
-	    (tval < 0) || (tval >= max32uint))
-		return 1;
-
-	*ival = (uint32_t) tval;
-
-	return 0;
-}
-
-/*
- * parse_uint16 - Convert anscii string to a 16 bit unsigned int.
+ * parse_uint16 - Convert ascii string to a 16 bit unsigned int.
  * IN      aval - ascii string.
  * IN/OUT  ival - 16 bit pointer.
  * RET     0 if no error, 1 otherwise.
@@ -1356,7 +1343,7 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 	char *p;
 
 	/*
- 	 * Return error for invalid value.
+	 * Return error for invalid value.
 	 */
 	tval = strtoll(aval, &p, 10);
 	if (p[0] || (tval == LLONG_MIN) || (tval == LLONG_MAX) ||
@@ -1364,6 +1351,70 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 		return 1;
 
 	*ival = (uint16_t) tval;
+
+	return 0;
+}
+
+/*
+ * parse_uint32 - Convert ascii string to a 32 bit unsigned int.
+ * IN      aval - ascii string.
+ * IN/OUT  ival - 32 bit pointer.
+ * RET     0 if no error, 1 otherwise.
+ */
+extern int parse_uint32(char *aval, uint32_t *ival)
+{
+	/*
+	 * First,  convert the ascii value it to a
+	 * long long int. If the result is greater
+	 * than or equal to 0 and less than NO_VAL
+	 * set the value and return. Otherwise return
+	 * an error.
+	 */
+	uint32_t max32uint = (uint32_t) NO_VAL;
+	long long tval;
+	char *p;
+
+	/*
+	 * Return error for invalid value.
+	 */
+	tval = strtoll(aval, &p, 10);
+	if (p[0] || (tval == LLONG_MIN) || (tval == LLONG_MAX) ||
+	    (tval < 0) || (tval >= max32uint))
+		return 1;
+
+	*ival = (uint32_t) tval;
+
+	return 0;
+}
+
+/*
+ * parse_uint64 - Convert ascii string to a 64 bit unsigned int.
+ * IN      aval - ascii string.
+ * IN/OUT  ival - 64 bit pointer.
+ * RET     0 if no error, 1 otherwise.
+ */
+extern int parse_uint64(char *aval, uint64_t *ival)
+{
+	/*
+	 * First,  convert the ascii value it to an
+	 * unsigned long long. If the result is greater
+	 * than or equal to 0 and less than NO_VAL
+	 * set the value and return. Otherwise return
+	 * an error.
+	 */
+	uint64_t max64uint = NO_VAL64;
+	long long tval;
+	char *p;
+
+	/*
+ 	 * Return error for invalid value.
+	 */
+	tval = strtoll(aval, &p, 10);
+	if (p[0] || (tval == LLONG_MIN) || (tval == LLONG_MAX) ||
+	    (tval < 0) || (tval >= max64uint))
+		return 1;
+
+	*ival = (uint64_t) tval;
 
 	return 0;
 }
@@ -1745,6 +1796,8 @@ uint16_t parse_compress_type(const char *arg)
 		return COMPRESS_ZLIB;
 	else if (!strcasecmp(arg, "lz4"))
 		return COMPRESS_LZ4;
+	else if (!strcasecmp(arg, "none"))
+		return COMPRESS_OFF;
 
 	error("Compression type '%s' unknown, disabling compression support.",
 	      arg);

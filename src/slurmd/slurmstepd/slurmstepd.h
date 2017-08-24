@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,6 +40,8 @@
 #define _SLURMSTEPD_H
 
 #include "src/common/bitstring.h"
+#include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define STEPD_MESSAGE_COMP_WAIT 3 /* seconds */
 #define MAX_RETRIES    3
@@ -64,5 +66,9 @@ typedef struct {
 extern step_complete_t step_complete;
 
 extern slurmd_conf_t *conf;
+
+extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
+			 slurm_addr_t *cli, slurm_addr_t *self,
+			 int rc, bool only_mem);
 
 #endif /* !_SLURMSTEPD_H */

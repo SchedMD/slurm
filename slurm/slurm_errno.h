@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -190,6 +190,9 @@ enum {
 	ESLURM_INVALID_MCS_LABEL,
 	ESLURM_BURST_BUFFER_WAIT =			2100,
 	ESLURM_PARTITION_DOWN,
+	ESLURM_DUPLICATE_GRES,
+	ESLURM_JOB_SETTING_DB_INX,
+	ESLURM_RSV_ALREADY_STARTED,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
@@ -258,6 +261,10 @@ enum {
 	ESLURM_ONE_CHANGE,
 	ESLURM_BAD_NAME,
 	ESLURM_OVER_ALLOCATE,
+
+	/* Federation Errors */
+	ESLURM_FED_CLUSTER_MAX_CNT              = 7100,
+	ESLURM_FED_CLUSTER_MULTIPLE_ASSIGNMENT,
 
 	/* plugin and custom errors */
 	ESLURM_MISSING_TIME_LIMIT       = 8000,

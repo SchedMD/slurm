@@ -12,7 +12,7 @@
  *  Provide support for acct_gather_profile plugins based on HDF5 files.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com>.
+ *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,19 +43,7 @@
 #ifndef __ACCT_GATHER_HDF5_API_H__
 #define __ACCT_GATHER_HDF5_API_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#else				/* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif				/*  HAVE_CONFIG_H */
-
+#include <inttypes.h>
 #include <stdlib.h>
 
 #include <hdf5.h>

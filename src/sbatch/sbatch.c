@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,11 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <sys/resource.h> /* for RLIMIT_NOFILE */
+#include <fcntl.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +45,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>               /* MAXPATHLEN */
-#include <fcntl.h>
+#include <sys/resource.h> /* for RLIMIT_NOFILE */
 
 #include "slurm/slurm.h"
 
@@ -66,6 +62,7 @@
 
 #define MAX_RETRIES 15
 
+static void  _add_bb_to_script(char **script_body, char *burst_buffer_file);
 static void  _env_merge_filter(job_desc_msg_t *desc);
 static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static int   _check_cluster_specific_settings(job_desc_msg_t *desc);
@@ -79,13 +76,13 @@ static void  _set_submit_dir_env(void);
 static int   _set_umask_env(void);
 static int   _job_wait(uint32_t job_id);
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t desc;
 	submit_response_msg_t *resp;
 	char *script_name;
-	void *script_body;
+	char *script_body;
 	int script_size = 0;
 	int rc = 0, retries = 0;
 
@@ -129,6 +126,9 @@ int main(int argc, char *argv[])
 		exit(error_exit);
 	}
 
+	if (opt.burst_buffer_file)
+		_add_bb_to_script(&script_body, opt.burst_buffer_file);
+
 	if (spank_init_post_opt() < 0) {
 		error("Plugin stack post-option processing failed");
 		exit(error_exit);
@@ -161,13 +161,13 @@ int main(int argc, char *argv[])
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
+	desc.clusters = xstrdup(opt.clusters);
 	if (opt.clusters &&
 	    slurmdb_get_first_avail_cluster(&desc, opt.clusters,
 			&working_cluster_rec) != SLURM_SUCCESS) {
 		print_db_notok(opt.clusters, 0);
 		exit(error_exit);
 	}
-
 
 	if (_check_cluster_specific_settings(&desc) != SLURM_SUCCESS)
 		exit(error_exit);
@@ -221,9 +221,58 @@ int main(int argc, char *argv[])
 	if (opt.wait)
 		rc = _job_wait(resp->job_id);
 
+	xfree(desc.clusters);
+	xfree(desc.name);
 	xfree(desc.script);
+	env_array_free(desc.environment);
 	slurm_free_submit_response_response_msg(resp);
 	return rc;
+}
+
+/* Insert the contents of "burst_buffer_file" into "script_body" */
+static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
+{
+	char *orig_script = *script_body;
+	char *new_script, *sep, save_char;
+	int i;
+
+	if (!burst_buffer_file || (burst_buffer_file[0] == '\0'))
+		return;	/* No burst buffer file or empty file */
+
+	if (!orig_script) {
+		*script_body = xstrdup(burst_buffer_file);
+		return;
+	}
+
+	i = strlen(burst_buffer_file) - 1;
+	if (burst_buffer_file[i] != '\n')	/* Append new line as needed */
+		xstrcat(burst_buffer_file, "\n");
+
+	if (orig_script[0] != '#') {
+		/* Prepend burst buffer file */
+		new_script = xstrdup(burst_buffer_file);
+		xstrcat(new_script, orig_script);
+		*script_body = new_script;
+		return;
+	}
+
+	sep = strchr(orig_script, '\n');
+	if (sep) {
+		save_char = sep[1];
+		sep[1] = '\0';
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, burst_buffer_file);
+		sep[1] = save_char;
+		xstrcat(new_script, sep + 1);
+		*script_body = new_script;
+		return;
+	} else {
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, "\n");
+		xstrcat(new_script, burst_buffer_file);
+		*script_body = new_script;
+		return;
+	}
 }
 
 /* Wait for specified job ID to terminate, return it's exit code */
@@ -452,12 +501,12 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->mail_type = opt.mail_type;
 	if (opt.mail_user)
 		desc->mail_user = xstrdup(opt.mail_user);
-	if (opt.burst_buffer)
-		desc->burst_buffer = opt.burst_buffer;
 	if (opt.begin)
 		desc->begin_time = opt.begin;
 	if (opt.deadline)
 		desc->deadline = opt.deadline;
+	if (opt.delay_boot != NO_VAL)
+		desc->delay_boot = opt.delay_boot;
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
 	if (opt.comment)

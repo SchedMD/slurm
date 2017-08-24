@@ -13,7 +13,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,13 +42,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include <signal.h>
 #include <stdlib.h>
@@ -60,6 +56,7 @@
 #include <unistd.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
 #include "src/common/read_config.h"
@@ -69,21 +66,17 @@
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/slurmctld.h"
 
-#if defined (HAVE_DECL_STRSIGNAL) && !HAVE_DECL_STRSIGNAL
-#  ifndef strsignal
-     extern char *strsignal(int);
-#  endif
-#endif /* defined HAVE_DECL_STRSIGNAL && !HAVE_DECL_STRSIGNAL */
-
 #define _DEBUG			0
-#define PID_CNT			100
 #define MAX_SHUTDOWN_DELAY	10	/* seconds to wait for child procs
 					 * to exit after daemon shutdown
 					 * request, then orphan or kill proc */
 
 /* Records for tracking processes forked to suspend/resume nodes */
-pid_t  child_pid[PID_CNT];	/* pid of process		*/
-time_t child_time[PID_CNT];	/* start time of process	*/
+typedef struct proc_track_struct {
+	pid_t  child_pid;	/* pid of process		*/
+	time_t child_time;	/* start time of process	*/
+} proc_track_struct_t;
+static List proc_track_list = NULL;
 
 pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -110,11 +103,17 @@ static void  _do_suspend(char *host);
 static int   _init_power_config(void);
 static void *_init_power_save(void *arg);
 static int   _kill_procs(void);
-static int   _reap_procs(void);
+static void  _reap_procs(void);
 static void  _re_wake(void);
 static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id);
 static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
+
+static void _proc_track_list_del(void *x)
+{
+	xfree(x);
+}
+
 
 /* Perform any power change work to nodes */
 static void _do_power_work(time_t now)
@@ -215,6 +214,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, i);
 			bit_clear(avail_node_bitmap, i);
+			node_ptr->boot_req_time = now;
 			node_ptr->last_response = now + resume_timeout;
 			bit_set(booting_node_bitmap, i);
 			bit_set(resume_node_bitmap,  i);
@@ -321,6 +321,7 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 		bit_clear(power_node_bitmap, i);
 		bit_clear(avail_node_bitmap, i);
+		node_ptr->boot_req_time = now;
 		node_ptr->last_response = now + resume_timeout;
 		bit_set(booting_node_bitmap, i);
 		bit_set(resume_node_bitmap,  i);
@@ -447,11 +448,7 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 	if (child == 0) {
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		ctlconf = slurm_conf_lock();
 		setenv("SLURM_CONF", ctlconf->slurm_conf, 1);
 		slurm_conf_unlock();
@@ -463,39 +460,33 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 		error("fork: %m");
 	} else {
 		/* save the pid */
-		for (i = 0; i < PID_CNT; i++) {
-			if (child_pid[i])
-				continue;
-			child_pid[i]  = child;
-			child_time[i] = time(NULL);
-			break;
-		}
-		if (i == PID_CNT)
-			error("power_save: filled child_pid array");
+		proc_track_struct_t *proc_track;
+		proc_track = xmalloc(sizeof(proc_track_struct_t));
+		proc_track->child_pid = child;
+		proc_track->child_time = time(NULL);
+		list_append(proc_track_list, proc_track);
 	}
 	return child;
 }
 
-/* reap child processes previously forked to modify node state.
- * return the count of empty slots in the child_pid array */
-static int  _reap_procs(void)
+/* reap child processes previously forked to modify node state. */
+static void _reap_procs(void)
 {
-	int empties = 0, delay, i, max_timeout, rc, status;
+	int delay, max_timeout, rc, status;
+	ListIterator iter;
+	proc_track_struct_t *proc_track;
 
 	max_timeout = MAX(suspend_timeout, resume_timeout);
-	for (i=0; i<PID_CNT; i++) {
-		if (child_pid[i] == 0) {
-			empties++;
-			continue;
-		}
-		rc = waitpid(child_pid[i], &status, WNOHANG);
+	iter = list_iterator_create(proc_track_list);
+	while ((proc_track = list_next(iter))) {
+		rc = waitpid(proc_track->child_pid, &status, WNOHANG);
 		if (rc == 0)
 			continue;
 
-		delay = difftime(time(NULL), child_time[i]);
+		delay = difftime(time(NULL), proc_track->child_time);
 		if (delay > max_timeout) {
 			info("power_save: program %d ran for %d sec",
-			     (int) child_pid[i], delay);
+			     (int) proc_track->child_pid, delay);
 		}
 
 		if (WIFEXITED(status)) {
@@ -510,39 +501,39 @@ static int  _reap_procs(void)
 			      strsignal(WTERMSIG(status)));
 		}
 
-		child_pid[i]  = 0;
-		child_time[i] = (time_t) 0;
+		list_delete_item(iter);
 	}
-	return empties;
+	list_iterator_destroy(iter);
 }
 
 /* kill (or orphan) child processes previously forked to modify node state.
  * return the count of killed/orphaned processes */
 static int  _kill_procs(void)
 {
-	int killed = 0, i, rc, status;
+	int killed = 0, rc, status;
+	ListIterator iter;
+	proc_track_struct_t *proc_track;
 
-	for (i=0; i<PID_CNT; i++) {
-		if (child_pid[i] == 0)
-			continue;
-
-		rc = waitpid(child_pid[i], &status, WNOHANG);
+	iter = list_iterator_create(proc_track_list);
+	while ((proc_track = list_next(iter))) {
+		rc = waitpid(proc_track->child_pid, &status, WNOHANG);
 		if (rc == 0) {
 #ifdef  POWER_SAVE_KILL_PROCS
 			error("power_save: killing process %d",
-			      child_pid[i]);
-			kill((0-child_pid[i]), SIGKILL);
+			      proc_track->child_pid);
+			kill((0 - proc_track->child_pid), SIGKILL);
 #else
 			error("power_save: orphaning process %d",
-			      child_pid[i]);
+			      proc_track->child_pid);
 #endif
 			killed++;
 		} else {
 			/* process already completed */
 		}
-		child_pid[i]  = 0;
-		child_time[i] = (time_t) 0;
+		list_delete_item(iter);
 	}
+	list_iterator_destroy(iter);
+
 	return killed;
 }
 
@@ -554,8 +545,9 @@ static void _shutdown_power(void)
 	max_timeout = MAX(suspend_timeout, resume_timeout);
 	max_timeout = MIN(max_timeout, MAX_SHUTDOWN_DELAY);
 	/* Try to avoid orphan processes */
-	for (i=0; ; i++) {
-		proc_cnt = PID_CNT - _reap_procs();
+	for (i = 0; ; i++) {
+		_reap_procs();
+		proc_cnt = list_count(proc_track_list);
 		if (proc_cnt == 0)	/* all procs completed */
 			break;
 		if (i >= max_timeout) {
@@ -682,7 +674,7 @@ extern void config_power_mgr(void)
 			power_save_enabled = true;
 		power_save_config = true;
 	}
-	pthread_cond_signal(&power_cond);
+	slurm_cond_signal(&power_cond);
 	slurm_mutex_unlock(&power_mutex);
 }
 
@@ -700,6 +692,7 @@ extern void start_power_mgr(pthread_t *thread_id)
 		return;
 	}
 	power_save_started = true;
+	proc_track_list = list_create(_proc_track_list_del);
 	slurm_mutex_unlock(&power_mutex);
 
 	slurm_attr_init(&thread_attr);
@@ -718,7 +711,7 @@ extern bool power_save_test(void)
 
 	slurm_mutex_lock(&power_mutex);
 	while (!power_save_config) {
-		pthread_cond_wait(&power_cond, &power_mutex);
+		slurm_cond_wait(&power_cond, &power_mutex);
 	}
 	rc = power_save_enabled;
 	slurm_mutex_unlock(&power_mutex);
@@ -735,10 +728,10 @@ static void *_init_power_save(void *arg)
 {
         /* Locks: Read nodes */
         slurmctld_lock_t node_read_lock = {
-                NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+                NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
         /* Locks: Write nodes */
         slurmctld_lock_t node_write_lock = {
-                NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+                NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, boot_time = 0, last_power_scan = 0;
 
 	if (power_save_config && !power_save_enabled) {
@@ -752,10 +745,7 @@ static void *_init_power_save(void *arg)
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 
-		if (_reap_procs() < 2) {
-			debug("power_save programs getting backlogged");
-			continue;
-		}
+		_reap_procs();
 
 		if ((last_config != slurmctld_conf.last_update) &&
 		    (_init_power_config())) {
@@ -794,8 +784,10 @@ fini:	_clear_power_config();
 	FREE_NULL_BITMAP(resume_node_bitmap);
 	_shutdown_power();
 	slurm_mutex_lock(&power_mutex);
+	list_destroy(proc_track_list);
+	proc_track_list = NULL;
 	power_save_enabled = false;
-	pthread_cond_signal(&power_cond);
+	slurm_cond_signal(&power_cond);
 	slurm_mutex_unlock(&power_mutex);
 	pthread_exit(NULL);
 	return NULL;

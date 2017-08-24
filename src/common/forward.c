@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,29 +37,23 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 
 #include "src/common/forward.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_route.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_interface.h"
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif /* WITH_PTHREADS */
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #define MAX_RETRIES 3
 
@@ -93,7 +87,7 @@ void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 		 */
 		slurm_mutex_lock(fwd_tree->tree_mutex);
 		(*(fwd_tree->p_thr_count))--;
-		pthread_cond_signal(fwd_tree->notify);
+		slurm_cond_signal(fwd_tree->notify);
 		slurm_mutex_unlock(fwd_tree->tree_mutex);
 
 		xfree(fwd_tree);
@@ -106,7 +100,7 @@ void *_forward_thread(void *arg)
 	forward_struct_t *fwd_struct = fwd_msg->fwd_struct;
 	Buf buffer = init_buf(BUF_SIZE);	/* probably enough for header */
 	List ret_list = NULL;
-	slurm_fd_t fd = -1;
+	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
 	hostlist_t hl = hostlist_create(fwd_msg->header.forward.nodelist);
@@ -345,7 +339,7 @@ cleanup:
 	hostlist_destroy(hl);
 	destroy_forward(&fwd_msg->header.forward);
 	free_buf(buffer);
-	pthread_cond_signal(&fwd_struct->notify);
+	slurm_cond_signal(&fwd_struct->notify);
 	slurm_mutex_unlock(&fwd_struct->forward_mutex);
 	xfree(fwd_msg);
 
@@ -374,7 +368,7 @@ void *_fwd_tree_thread(void *arg)
 			slurm_mutex_lock(fwd_tree->tree_mutex);
 			mark_as_failed_forward(&fwd_tree->ret_list, name,
 					       SLURM_UNKNOWN_FORWARD_ADDR);
- 			pthread_cond_signal(fwd_tree->notify);
+ 			slurm_cond_signal(fwd_tree->notify);
 			slurm_mutex_unlock(fwd_tree->tree_mutex);
 			free(name);
 
@@ -432,7 +426,7 @@ void *_fwd_tree_thread(void *arg)
 
 			slurm_mutex_lock(fwd_tree->tree_mutex);
 			list_transfer(fwd_tree->ret_list, ret_list);
-			pthread_cond_signal(fwd_tree->notify);
+			slurm_cond_signal(fwd_tree->notify);
 			slurm_mutex_unlock(fwd_tree->tree_mutex);
 			FREE_NULL_LIST(ret_list);
 			/* try next node */
@@ -460,7 +454,7 @@ void *_fwd_tree_thread(void *arg)
 			mark_as_failed_forward(
 				&fwd_tree->ret_list, name,
 				SLURM_COMMUNICATIONS_CONNECTION_ERROR);
- 			pthread_cond_signal(fwd_tree->notify);
+ 			slurm_cond_signal(fwd_tree->notify);
 			slurm_mutex_unlock(fwd_tree->tree_mutex);
 			free(name);
 
@@ -703,7 +697,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 		return NULL;
 	}
 	slurm_mutex_init(&tree_mutex);
-	pthread_cond_init(&notify, NULL);
+	slurm_cond_init(&notify, NULL);
 
 	ret_list = list_create(destroy_data_info);
 
@@ -724,7 +718,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 	count = list_count(ret_list);
 	debug2("Tree head got back %d looking for %d", count, host_count);
 	while (thr_count > 0) {
-		pthread_cond_wait(&notify, &tree_mutex);
+		slurm_cond_wait(&notify, &tree_mutex);
 		count = list_count(ret_list);
 		debug2("Tree head got back %d", count);
 	}
@@ -733,7 +727,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 	slurm_mutex_unlock(&tree_mutex);
 
 	slurm_mutex_destroy(&tree_mutex);
-	pthread_cond_destroy(&notify);
+	slurm_cond_destroy(&notify);
 
 	return ret_list;
 }
@@ -777,8 +771,8 @@ extern void forward_wait(slurm_msg_t * msg)
 
 		debug2("Got back %d", count);
 		while ((count < msg->forward_struct->fwd_cnt)) {
-			pthread_cond_wait(&msg->forward_struct->notify,
-					  &msg->forward_struct->forward_mutex);
+			slurm_cond_wait(&msg->forward_struct->notify,
+					&msg->forward_struct->forward_mutex);
 
 			if (msg->ret_list != NULL) {
 				count = list_count(msg->ret_list);
@@ -819,7 +813,7 @@ void destroy_forward_struct(forward_struct_t *forward_struct)
 	if (forward_struct) {
 		xfree(forward_struct->buf);
 		slurm_mutex_destroy(&forward_struct->forward_mutex);
-		pthread_cond_destroy(&forward_struct->notify);
+		slurm_cond_destroy(&forward_struct->notify);
 		xfree(forward_struct);
 	}
 }

@@ -21,8 +21,8 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
- # Please also read the supplied file: DISCLAIMER.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the supplied file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
@@ -1815,4 +1815,52 @@ proc mod_resource {name mod_limits} {
 	}
 
 	return $exit_code
+}
+
+proc get_assoc_id {user acct cluster} {
+	global sacctmgr number
+
+	set exit_code 0
+
+	if { ![string length $user] } {
+		send_user "\nFAILURE: we need a user to check\n"
+		return 1
+	}
+
+	if { ![string length $acct] } {
+		send_user "\nFAILURE: we need a account to check\n"
+		return 1
+	}
+
+	if { ![string length $cluster] } {
+		send_user "\nFAILURE: we need a cluster to check\n"
+		return 1
+	}
+
+	log_user 0
+	set id -1
+	spawn $sacctmgr -p -n list assoc format=id where user=$user acct=$acct cluster=$cluster
+	expect {
+		-re "($number)\\|" {
+			if { $id != -1 } {
+				set new_id $expect_out(1,string)
+				send_user "FAILURE: For some reason we already have an association id $id but just got $new_id for $user, $acct, $cluster."
+				set id -1
+				exp_continue;
+			}
+			set id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+
+	}
+	log_user 1
+
+	return $id
 }

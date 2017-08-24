@@ -160,8 +160,8 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 		} else if ((slurmctld_conf.fast_schedule != 2)
 			   && (node->mem_size
 			       != node_ptr->config_ptr->real_memory)) {
-			fatal("slurm.conf: node %s has RealMemory=%u "
-			      "but configured as RealMemory=%u in your "
+			fatal("slurm.conf: node %s has RealMemory=%"PRIu64" "
+			      "but configured as RealMemory=%"PRIu64" in your "
 			      "slurm.conf",
 			      node_ptr->name, node->mem_size,
 			      node_ptr->config_ptr->real_memory);
@@ -709,7 +709,7 @@ struct basil_accel_param* build_accel_param(struct job_record* job_ptr)
 	bap_ptr = head;
 	bap_ptr->type = BA_GPU;	/* Currently BASIL only permits
 				 * generic resources of type GPU. */
-	bap_ptr->memory_mb = (uint32_t)gpu_mem_req;
+	bap_ptr->memory_mb = gpu_mem_req;
 	bap_ptr->next = NULL;
 
 	return head;
@@ -727,9 +727,10 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	/* mppmem must be at least 1 for gang scheduling to work so
 	 * if you are wondering why gang scheduling isn't working you
 	 * should check your slurm.conf for DefMemPerNode */
-	uint32_t mppdepth, mppnppn = INFINITE, mppwidth = 0,
-		mppmem = 0, node_min_mem = 0;
-	uint32_t resv_id, largest_cpus = 0, min_memory = INFINITE;
+	uint32_t mppdepth, mppnppn = INFINITE, mppwidth = 0;
+	uint64_t mppmem = 0, node_min_mem = 0;
+	uint32_t resv_id, largest_cpus = 0;
+	uint64_t min_memory = INFINITE64;
 	int i, first_bit, last_bit;
 	long rc;
 	char *user, batch_id[16];
@@ -796,7 +797,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 
 	for (i = first_bit; i <= last_bit; i++) {
 		struct node_record *node_ptr = node_record_table_ptr + i;
-		uint32_t node_cpus, node_mem;
+		uint32_t node_cpus;
+		uint64_t node_mem;
 		uint16_t threads = 1;
 		uint32_t basil_node_id;
 
@@ -829,7 +831,7 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 
 		if (cray_conf->sub_alloc) {
 			if (node_min_mem) {
-				int32_t tmp_mppmem;
+				int64_t tmp_mppmem;
 
 				/* If the job has requested memory use it (if
 				   lesser) for calculations.
@@ -974,8 +976,9 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	if (mppmem)
 		job_ptr->details->pn_min_memory = mppmem | MEM_PER_CPU;
 
-	info("ALPS RESERVATION #%u, JobId %u: BASIL -n %d -N %d -d %d -m %d",
-	     resv_id, job_ptr->job_id, mppwidth, mppnppn, mppdepth, mppmem);
+	info("ALPS RESERVATION #%u, JobId %u: BASIL -n %d -N %d -d %d "
+	     "-m %"PRIu64"", resv_id, job_ptr->job_id, mppwidth, mppnppn,
+	     mppdepth, mppmem);
 
 	return SLURM_SUCCESS;
 }

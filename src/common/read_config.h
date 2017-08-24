@@ -5,13 +5,13 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
- *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Mette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,6 +42,8 @@
 
 #ifndef _READ_CONFIG_H
 #define _READ_CONFIG_H
+
+#include "config.h"
 
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -105,7 +107,7 @@ extern char *default_plugstack;
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 #  define DEFAULT_LAUNCH_TYPE         "launch/runjob"
 #elif defined HAVE_LIBNRT
 #  define DEFAULT_LAUNCH_TYPE         "launch/poe"
@@ -118,7 +120,7 @@ extern char *default_plugstack;
 #define DEFAULT_MAIL_PROG           "/bin/mail"
 #define DEFAULT_MAX_ARRAY_SIZE      1001
 #define DEFAULT_MAX_JOB_COUNT       10000
-#define DEFAULT_MAX_JOB_ID          0x7fff0000
+#define DEFAULT_MAX_JOB_ID          0x03ff0000
 #define DEFAULT_MAX_STEP_COUNT      40000
 #define DEFAULT_MCS_PLUGIN          "mcs/none"
 #define DEFAULT_MEM_PER_CPU         0
@@ -129,16 +131,11 @@ extern char *default_plugstack;
 #define DEFAULT_MSG_AGGR_WINDOW_TIME 100
 #define DEFAULT_MSG_TIMEOUT         10
 #define DEFAULT_POWER_PLUGIN        ""
-#ifdef HAVE_AIX		/* AIX specific default configuration parameters */
-#  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
-#  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
+#define DEFAULT_CHECKPOINT_TYPE     "checkpoint/none"
+#if defined HAVE_REAL_CRAY/* ALPS requires cluster-unique job container IDs */
+#  define DEFAULT_PROCTRACK_TYPE    "proctrack/sgi_job"
 #else
-#  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/none"
-#  if defined HAVE_REAL_CRAY/* ALPS requires cluster-unique job container IDs */
-#    define DEFAULT_PROCTRACK_TYPE    "proctrack/sgi_job"
-#  else
-#    define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
-#  endif
+#  define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
 #endif
 #define DEFAULT_PREEMPT_TYPE        "preempt/none"
 #define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
@@ -150,8 +147,6 @@ extern char *default_plugstack;
 #define DEFAULT_RESUME_TIMEOUT      60
 #define DEFAULT_ROUTE_PLUGIN   	    "route/default"
 #define DEFAULT_SAVE_STATE_LOC      "/var/spool"
-#define DEFAULT_SCHEDROOTFILTER     1
-#define DEFAULT_SCHEDULER_PORT      7321
 #define DEFAULT_SCHED_LOG_LEVEL     0
 #define DEFAULT_SCHED_TIME_SLICE    30
 #define DEFAULT_SCHEDTYPE           "sched/backfill"
@@ -226,11 +221,12 @@ typedef struct slurm_conf_node {
 	uint16_t cores;         /* number of cores per CPU */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;       /* number of threads per core */
-	uint32_t real_memory;	/* MB real memory on the node */
-	uint32_t mem_spec_limit; /* MB real memory for memory specialization */
+	uint64_t real_memory;	/* MB real memory on the node */
+	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	char *reason;
 	char *state;
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
+	char *tres_weights_str;	/* per TRES billing weight string */
 	uint32_t weight;	/* arbitrary priority of node for
 				 * scheduling work on */
 } slurm_conf_node_t;
@@ -253,7 +249,7 @@ typedef struct slurm_conf_partition {
 	uint16_t cr_type;	/* Custom CR values for partition (supported
 				 * by select/cons_res plugin only) */
 	char *billing_weights_str;/* per TRES billing weights */
-	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
+	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	bool default_flag;	/* Set if default partition */
 	uint32_t default_time;	/* minutes or INFINITE */
 	uint16_t disable_root_jobs; /* if set then user root can't run
@@ -266,11 +262,13 @@ typedef struct slurm_conf_partition {
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
-	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
+	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t min_nodes;	/* per job */
 	char	*name;		/* name of the partition */
 	char 	*nodes;		/* comma delimited list names of nodes */
+	uint16_t over_time_limit; /* job's time limit can be exceeded by this
+				   * number of minutes before cancellation */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority_job_factor;	/* job priority weight factor */
 	uint16_t priority_tier;	/* tier for scheduling and preemption */
@@ -486,7 +484,7 @@ extern int slurm_conf_get_cpus_bsct(const char *node_name,
 extern int slurm_conf_get_res_spec_info(const char *node_name,
 					char **cpu_spec_list,
 					uint16_t *core_spec_cnt,
-					uint32_t *mem_spec_limit);
+					uint64_t *mem_spec_limit);
 
 /*
  * init_slurm_conf - initialize or re-initialize the slurm configuration

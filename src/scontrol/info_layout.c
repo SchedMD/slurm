@@ -5,7 +5,7 @@
  *  Written by Bull - Thomas Cadeau
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,7 +42,7 @@
  * IN layout_type - print information about the supplied layout 
  */
 extern void
-scontrol_print_layout (int argc, char *argv[])
+scontrol_print_layout (int argc, char **argv)
 {
 	int i = 0, tag_len = 0;
 	char *tag = NULL, *val = NULL;

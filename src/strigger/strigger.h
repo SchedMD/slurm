@@ -3,12 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2016 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,10 +41,6 @@
 #ifndef _STRIGGER_H
 #define _STRIGGER_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -51,6 +48,7 @@
 
 struct strigger_parameters {
 	bool     block_err;
+	bool     burst_buffer;
 	List     clusters;
 	uint16_t flags;
 	bool     front_end;
@@ -89,6 +87,6 @@ struct strigger_parameters {
 
 extern struct strigger_parameters params;
 
-extern void parse_command_line(int argc, char *argv[]);
+extern void parse_command_line(int argc, char **argv);
 
 #endif

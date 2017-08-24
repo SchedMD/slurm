@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,28 +40,8 @@
 #ifndef _SLURM_PROTOCOL_SOCKET_COMMON_H
 #define _SLURM_PROTOCOL_SOCKET_COMMON_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
-
+#include <inttypes.h>
 #include <netinet/in.h>
-
-#define AF_SLURM AF_INET
-#define SLURM_INADDR_ANY 0x00000000
-
-/* LINUX SPECIFIC */
-/* this is the slurm equivalent of the operating system file descriptor,
- * which in linux is just an int */
-typedef int32_t slurm_fd_t ;
 
 /* this is the slurm equivalent of the BSD sockets sockaddr
  * also defined in slurm/slurm.h for users */
@@ -69,17 +49,5 @@ typedef int32_t slurm_fd_t ;
 #  define  __slurm_addr_t_defined
    typedef struct sockaddr_in slurm_addr_t ;
 #endif
-
-/* this is the slurm equivalent of the BSD sockets fd_set */
-typedef fd_set slurm_fd_set ;
-typedef fd_set _slurm_fd_set ;
-/*{
-	int16_t family ;
-	uint16_t port ;
-	uint32_t address ;
-	char pad[16 - sizeof ( int16_t ) - sizeof (uint16_t) -
-	         sizeof (uint32_t) ] ;
-} ;
-*/
 
 #endif

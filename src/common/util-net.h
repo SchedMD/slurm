@@ -35,27 +35,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-
 #ifndef _UTIL_NET_H
 #define _UTIL_NET_H
 
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
-
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include <netdb.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
-
-#define HOSTENT_SIZE 8192               /* cf. Stevens UNPv1 11.15 p304 */
-
 
 struct hostent * get_host_by_name(const char *name,
     void *buf, int buflen, int *h_err);
@@ -83,51 +72,6 @@ const char * host_strerror(int h_err);
  *    get_host_by_name() or get_host_by_addr().
  */
 
-int host_name_to_addr4(const char *name, struct in_addr *addr);
-/*
- *  Converts the string (name) to an IPv4 address (addr).
- *  Returns 0 on success, or -1 on error.
- *  Note that this routine is thread-safe.
- */
-
-char * host_addr4_to_name(const struct in_addr *addr, char *dst, int dstlen);
-/*
- *  Converts an IPv4 address (addr) to a host name string residing in
- *    buffer (dst) of length (dstlen).
- *  Returns a ptr to the NULL-terminated string (dst) on success,
- *    or NULL on error.
- *  Note that this routine is thread-safe.
- */
-
-char * host_name_to_cname(const char *src, char *dst, int dstlen);
-/*
- *  Converts the hostname or IP address string (src) to the
- *    canonical name of the host residing in buffer (dst) of length (dstlen).
- *  Returns a ptr to the NULL-terminated string (dst) on success,
- *    or NULL on error.
- *  Note that this routine is thread-safe.
- */
-
-#ifndef HAVE_INET_PTON
-int inet_pton(int family, const char *str, void *addr);
-/*
- *  Convert from presentation format of an internet number in (str)
- *    to the binary network format, storing the result for interface
- *    type (family) in the socket address structure specified by (addr).
- *  Returns 1 if OK, 0 if input not a valid presentation format, -1 on error.
- */
-#endif /* !HAVE_INET_PTON */
-
-#ifndef HAVE_INET_NTOP
-const char * inet_ntop(int family, const void *addr, char *str, size_t len);
-/*
- *  Convert an Internet address in binary network format for interface
- *    type (family) in the socket address structure specified by (addr),
- *    storing the result in the buffer (str) of length (len).
- *  Returns ptr to result buffer if OK, or NULL on error.
- */
-#endif /* !HAVE_INET_NTOP */
-
 /* is_full_path()
  *
  * Test if the given path is a full or relative one.
@@ -146,6 +90,5 @@ extern char *make_full_path(char *);
 extern struct addrinfo *get_addr_info(const char *);
 extern int get_name_info(struct sockaddr *, socklen_t, char *);
 extern void free_addr_info(struct addrinfo *);
-
 
 #endif /* !_UTIL_NET_H */

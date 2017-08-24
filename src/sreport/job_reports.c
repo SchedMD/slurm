@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -240,7 +240,7 @@ static int _addto_uid_char_list(List char_list, char *names)
 	return count;
 }
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_job_cond_t *job_cond,
 		     List format_list, List grouping_list)
 {
@@ -609,7 +609,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	return SLURM_SUCCESS;
 }
 
-static int _run_report(int type, int argc, char *argv[])
+static int _run_report(int type, int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
@@ -869,17 +869,17 @@ end_it:
 	return rc;
 }
 
-extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
+extern int job_sizes_grouped_by_top_acct(int argc, char **argv)
 {
 	return _run_report(GROUPED_TOP_ACCT, argc, argv);
 }
 
-extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
+extern int job_sizes_grouped_by_wckey(int argc, char **argv)
 {
 	return _run_report(GROUPED_WCKEY, argc, argv);
 }
 
-extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char *argv[])
+extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char **argv)
 {
 	return _run_report(GROUPED_TOP_ACCT_AND_WCKEY, argc, argv);
 }

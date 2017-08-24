@@ -80,6 +80,13 @@ A comma delimited list of users allowed to modify a node's MCDRAM or NUMA state.
 If not specified then any user can change a node's state and reboot it.
 
 .TP
+\fBBootTime\fR
+Estimated time to reboot a node in seconds.
+Used as a basis for optimizing scheduling decisions.
+The default value is 300 seconds (5 minutes) for the "knl_generic" plugin
+and 2700 seconds (45 minutes) for the "knl_cray" plugin.
+
+.TP
 \fBCapmcPath\fR
 Fully qualified path to the \fBcapmc\fR program.
 The default value is "/opt/cray/capmc/default/bin/capmc".
@@ -136,12 +143,43 @@ This is option is used only by the campc_suspend and campc_resume programs
 (which power down and reboot nodes in the appropriate configuration).
 
 .TP
+\fBMcPath\fR
+Fully qualified path to memory controller device file directory.
+Children of this directory with names of the form "mc#/csrow#/ue_count"
+(i.e. the count of unrecoverable memory errors) will be monitored for non\-zero
+values.
+If such errors are detected, the node will be set to a DOWN state and the
+slurmd daemon will shutdown.
+The default value is "/sys/devices/system/edac/mc".
+See also \fBUmeCheckInterval\fR.
+
+.TP
 \fBSyscfgPath\fR
 Fully qualified path to Intel's \fBsyscfg\fR program, which identifies current
 KNL configuration by viewing BIOS settings.
 If not defined, the current BIOS setting will not be available.
 The default value is "/usr/bin/syscfg".
 This parameter is used only by the "knl_generic" plugin.
+
+.TP
+\fBSyscfgTimeout\fR
+Timeout for \fBsyscfg\fR program in milliseconds.
+Default value is 1000 milliseconds.
+
+.TP
+\fBSystemType\fR
+Used to distinguish the flavor of knl we are dealing with.
+Possible options are "Dell" and "Intel".
+The default value is "Intel".
+This parameter is used only by the "knl_generic" plugin.
+
+.TP
+\fBUmeCheckInterval\fR
+Interval, in microseconds, between checks for Uncorrectable Memory Errors (UME).
+If such errors are detected, the node will be set to a DOWN state and the
+slurmd daemon will shutdown.
+The default value is 0 (disabled).
+See also \fBMcPath\fR.
 
 .SH "EXAMPLE"
 .LP

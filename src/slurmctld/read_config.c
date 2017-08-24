@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,13 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef HAVE_SYS_SYSLOG_H
-#  include <sys/syslog.h>
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -53,8 +47,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -67,7 +61,6 @@
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
 #include "src/common/node_select.h"
-#include "src/common/parse_spec.h"
 #include "src/common/power.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobcomp.h"
@@ -81,6 +74,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/burst_buffer.h"
+#include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -112,6 +106,9 @@ static void _add_config_feature_inx(List feature_list, char *feature,
 				    int node_inx);
 static int  _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
+static int  _compare_hostnames(struct node_record *old_node_table,
+			       int old_node_count,
+			       struct node_record *node_table, int node_count);
 static void _gres_reconfig(bool reconfig);
 static int  _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
@@ -125,6 +122,7 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
+static int  _reset_node_bitmaps(void *x, void *arg);
 static int  _restore_job_dependencies(void);
 static int  _restore_node_state(int recover,
 				struct node_record *old_node_table_ptr,
@@ -138,10 +136,6 @@ static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
 static void _sync_nodes_to_suspended_job(struct job_record *job_ptr);
 static void _sync_part_prio(void);
 static int  _update_preempt(uint16_t old_enable_preempt);
-static int _compare_hostnames(struct node_record *old_node_table,
-							  int old_node_count,
-							  struct node_record *node_table,
-							  int node_count);
 
 
 /* Verify that Slurm directories are secure, not world writable */
@@ -267,10 +261,9 @@ static void _reorder_nodes_by_rank(void)
  */
 static void _build_bitmaps_pre_select(void)
 {
-	struct config_record *config_ptr;
 	struct part_record   *part_ptr;
 	struct node_record   *node_ptr;
-	ListIterator config_iterator, part_iterator;
+	ListIterator part_iterator;
 	int i;
 
 	/* scan partition table and identify nodes in each */
@@ -283,15 +276,7 @@ static void _build_bitmaps_pre_select(void)
 	list_iterator_destroy(part_iterator);
 
 	/* initialize the configuration bitmaps */
-	config_iterator = list_iterator_create(config_list);
-	while ((config_ptr = (struct config_record *)
-				      list_next(config_iterator))) {
-		FREE_NULL_BITMAP(config_ptr->node_bitmap);
-		config_ptr->node_bitmap =
-		    (bitstr_t *) bit_alloc(node_record_count);
-	}
-	list_iterator_destroy(config_iterator);
-
+	list_for_each(config_list, _reset_node_bitmaps, NULL);
 
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
@@ -302,6 +287,34 @@ static void _build_bitmaps_pre_select(void)
 	return;
 }
 
+static int _reset_node_bitmaps(void *x, void *arg)
+{
+	struct config_record *config_ptr = (struct config_record *) x;
+
+	FREE_NULL_BITMAP(config_ptr->node_bitmap);
+	config_ptr->node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+
+	return 0;
+}
+
+static int _set_share_node_bitmap(void *x, void *arg)
+{
+	bitstr_t *tmp_bits;
+	struct job_record *job_ptr = (struct job_record *) x;
+
+	if (!IS_JOB_RUNNING(job_ptr) ||
+	    (job_ptr->node_bitmap == NULL)        ||
+	    (job_ptr->details     == NULL)        ||
+	    (job_ptr->details->share_res != 0))
+		return 0;
+
+	tmp_bits = bit_copy(job_ptr->node_bitmap);
+	bit_not(tmp_bits);
+	bit_and(share_node_bitmap, tmp_bits);
+	FREE_NULL_BITMAP(tmp_bits);
+
+	return 0;
+}
 /*
  * _build_bitmaps - build node bitmaps to define which nodes are in which
  *    1) partition  2) configuration record  3) up state  4) idle state
@@ -315,9 +328,7 @@ static void _build_bitmaps_pre_select(void)
 static int _build_bitmaps(void)
 {
 	int i, error_code = SLURM_SUCCESS;
-	struct job_record    *job_ptr;
-	struct node_record   *node_ptr;
-	ListIterator job_iterator;
+	struct node_record *node_ptr;
 
 	last_node_update = time(NULL);
 	last_part_update = time(NULL);
@@ -339,23 +350,10 @@ static int _build_bitmaps(void)
 	up_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
 
 	/* Set all bits, all nodes initially available for sharing */
-	bit_nset(share_node_bitmap, 0, (node_record_count-1));
+	bit_set_all(share_node_bitmap);
 
 	/* identify all nodes non-sharable due to non-sharing jobs */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		bitstr_t *tmp_bits;
-		if (!IS_JOB_RUNNING(job_ptr) ||
-		    (job_ptr->node_bitmap == NULL)        ||
-		    (job_ptr->details     == NULL)        ||
-		    (job_ptr->details->share_res != 0))
-			continue;
-		tmp_bits = bit_copy(job_ptr->node_bitmap);
-		bit_not(tmp_bits);
-		bit_and(share_node_bitmap, tmp_bits);
-		FREE_NULL_BITMAP(tmp_bits);
-	}
-	list_iterator_destroy(job_iterator);
+	list_for_each(job_list, _set_share_node_bitmap, NULL);
 
 	/* scan all nodes and identify which are up, idle and
 	 * their configuration, resync DRAINED vs. DRAINING state */
@@ -455,7 +453,7 @@ static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 			xfree(node_rec->reason);
 			node_rec->reason = xstrdup(down->reason);
 			node_rec->reason_time = time(NULL);
-			node_rec->reason_uid = getuid();
+			node_rec->reason_uid = slurmctld_conf.slurm_user_id;
 		}
 		free(alias);
 	}
@@ -497,7 +495,7 @@ static int _build_all_nodeline_info(void)
 	int rc;
 
 	/* Load the node table here */
-	rc = build_all_nodeline_info(false);
+	rc = build_all_nodeline_info(false, slurmctld_tres_cnt);
 	rc = MAX(build_all_frontend_info(false), rc);
 
 	/* Now perform operations on the node table as needed by slurmctld */
@@ -696,6 +694,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->max_nodes_orig = part->max_nodes;
 	part_ptr->min_nodes      = part->min_nodes;
 	part_ptr->min_nodes_orig = part->min_nodes;
+	part_ptr->over_time_limit = part->over_time_limit;
 	part_ptr->preempt_mode   = part->preempt_mode;
 	part_ptr->priority_job_factor = part->priority_job_factor;
 	part_ptr->priority_tier  = part->priority_tier;
@@ -838,29 +837,40 @@ static int _build_all_partitionline_info(void)
 	return SLURM_SUCCESS;
 }
 
+static int _set_max_part_prio(void *x, void *arg)
+{
+	struct part_record *part_ptr = (struct part_record *) x;
+
+	if (part_ptr->priority_job_factor > part_max_priority)
+		part_max_priority = part_ptr->priority_job_factor;
+
+	return 0;
+}
+
+static int _reset_part_prio(void *x, void *arg)
+{
+	struct part_record *part_ptr = (struct part_record *) x;
+
+	/* protect against div0 if all partition priorities are zero */
+	if (part_max_priority == 0) {
+		part_ptr->norm_priority = 0;
+		return 0;
+	}
+
+	part_ptr->norm_priority = (double)part_ptr->priority_job_factor /
+				  (double)part_max_priority;
+
+	return 0;
+}
+
 /* _sync_part_prio - Set normalized partition priorities */
 static void _sync_part_prio(void)
 {
-	ListIterator itr = NULL;
-	struct part_record *part_ptr = NULL;
-
+	/* reset global value from part list */
 	part_max_priority = 0;
-	itr = list_iterator_create(part_list);
-	while ((part_ptr = list_next(itr))) {
-		if (part_ptr->priority_job_factor > part_max_priority)
-			part_max_priority = part_ptr->priority_job_factor;
-	}
-	list_iterator_destroy(itr);
-
-	if (part_max_priority) {
-		itr = list_iterator_create(part_list);
-		while ((part_ptr = list_next(itr))) {
-			part_ptr->norm_priority =
-				(double)part_ptr->priority_job_factor /
-				(double)part_max_priority;
-		}
-		list_iterator_destroy(itr);
-	}
+	list_for_each(part_list, _set_max_part_prio, NULL);
+	/* renormalize values after finding new max */
+	list_for_each(part_list, _reset_part_prio, NULL);
 }
 
 /*
@@ -1079,6 +1089,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		fatal("failed to initialize node selection plugin state, "
 		      "Clean start required.");
 	}
+
 	xfree(state_save_dir);
 	_gres_reconfig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
@@ -2157,8 +2168,10 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		} else if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
-		if (job_ptr->details &&
-		    (job_ptr->details->whole_node == 2)) {
+		if ((job_ptr->details &&
+		     (job_ptr->details->whole_node == WHOLE_NODE_USER)) ||
+		    (job_ptr->part_ptr &&
+		     (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER))) {
 			node_ptr->owner_job_cnt++;
 			node_ptr->owner = job_ptr->user_id;
 		}
@@ -2202,7 +2215,6 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
 			build_cg_bitmap(job_ptr);
 			job_ptr->end_time = MIN(job_ptr->end_time, now);
-			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
 			job_completion_logger(job_ptr, false);
@@ -2326,8 +2338,9 @@ static void _acct_restore_active_jobs(void)
 			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
 			if (!with_slurmdbd)
-				jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-			else if (job_ptr->db_index != NO_VAL)
+				jobacct_storage_g_job_start(
+					acct_db_conn, job_ptr);
+			else if (job_ptr->db_index != NO_VAL64)
 				job_ptr->db_index = 0;
 			step_iterator = list_iterator_create(
 				job_ptr->step_list);

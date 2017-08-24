@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -88,48 +88,48 @@ enum {
 static char *_initial_page_opts = "Name,State";
 
 static display_data_t display_data_front_end[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NAME, "Name", false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_COLOR,  NULL, TRUE, EDIT_COLOR,
+	{G_TYPE_STRING, SORTID_COLOR,  NULL, true, EDIT_COLOR,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL,
+	{G_TYPE_STRING, SORTID_STATE, "State", false, EDIT_MODEL,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime",
-	 FALSE, EDIT_NONE,
+	 false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_REASON, "Reason", false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Allow Groups", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Allow Groups", false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_ALLOW_USERS, "Allow Users", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_ALLOW_USERS, "Allow Users", false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_DENY_GROUPS, "Deny Groups", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_DENY_GROUPS, "Deny Groups", false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_DENY_USERS, "Deny Users", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_DENY_USERS, "Deny Users", false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_VERSION, "Version", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_VERSION, "Version", false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE,
+	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, false, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_INT,    SORTID_UPDATED,    NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT,    SORTID_UPDATED,    NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t options_data_front_end[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
-	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, FRONT_END_PAGE},
-	{G_TYPE_STRING, FRONT_END_PAGE, "Drain Front End Node", TRUE,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE},
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", true, FRONT_END_PAGE},
+	{G_TYPE_STRING, FRONT_END_PAGE, "Drain Front End Node", true,
 	 ADMIN_PAGE},
-	{G_TYPE_STRING, FRONT_END_PAGE, "Resume Front End Node", TRUE,
+	{G_TYPE_STRING, FRONT_END_PAGE, "Resume Front End Node", true,
 	 ADMIN_PAGE},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 
@@ -629,12 +629,12 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 	int changed = 1, j;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
-	static bool set_opts = FALSE;
+	static bool set_opts = false;
 
 	if (!set_opts)
 		set_page_opts(FRONT_END_PAGE, display_data_front_end,
 			      SORTID_CNT, _initial_page_opts);
-	set_opts = TRUE;
+	set_opts = true;
 
 	/* reset */
 	if (!table && !display_data) {
@@ -737,8 +737,8 @@ display_it:
 	view = INFO_VIEW;
 	_update_info_front_end(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
-	toggled = FALSE;
-	force_refresh = FALSE;
+	toggled = false;
+	force_refresh = false;
 reset_curs:
 	if (main_window && main_window->window)
 		gdk_window_set_cursor(main_window->window, NULL);
@@ -981,7 +981,7 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("resv got unknown type %d\n", id);
 	}
-	if (!sview_thread_new((gpointer)popup_thr, popup_win, FALSE, &error)) {
+	if (!sview_thread_new((gpointer)popup_thr, popup_win, false, &error)) {
 		g_printerr ("Failed to create resv popup thread: %s\n",
 			    error->message);
 		return;
@@ -1069,10 +1069,10 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 	label = gtk_label_new(tmp_char);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			   label, FALSE, FALSE, 0);
+			   label, false, false, 0);
 	if (entry)
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-				   entry, TRUE, TRUE, 0);
+				   entry, true, true, 0);
 	gtk_widget_show_all(popup);
 	rc = gtk_dialog_run (GTK_DIALOG(popup));
 

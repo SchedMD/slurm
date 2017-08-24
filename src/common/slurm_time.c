@@ -7,7 +7,7 @@
  *  Based upon glibc version 2.21 and the fork handler logic from Slurm.
  *****************************************************************************
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,16 +36,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
+#include <pthread.h>
 #include <time.h>
 
 #include "src/common/macros.h"
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
 
 static pthread_mutex_t  time_lock = PTHREAD_MUTEX_INITIALIZER;
 static void _atfork_child()  { pthread_mutex_init(&time_lock, NULL); }
@@ -58,13 +52,6 @@ inline static void _init(void)
 		at_forked = true;
 	}
 }
-#else
-
-inline static void _init(void)
-{
-	;
-}
-#endif
 
 extern char *slurm_asctime(const struct tm *tp)
 {

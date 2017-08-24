@@ -3,14 +3,14 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>,
  *    Christopher J. Morrone <morrone2@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,12 +42,10 @@
 #ifndef _HAVE_OPT_H
 #define _HAVE_OPT_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "src/common/macros.h" /* true and false */
@@ -83,9 +81,13 @@ typedef struct sbatch_options {
 	int cores_per_socket;	/* --cores-per-socket=n		*/
 	uint32_t job_flags;	/* --kill_invalid_dep, --gres-flags */
 	int threads_per_core;	/* --threads-per-core=n		*/
+	bool threads_per_core_set;/* --threads-per-core set explicitly set */
 	int ntasks_per_node;	/* --ntasks-per-node=n		*/
 	int ntasks_per_socket;	/* --ntasks-per-socket=n	*/
 	int ntasks_per_core;	/* --ntasks-per-core=n		*/
+	int ntasks_per_core_set; /* true if ntasks-per-core explicitly set */
+	char *hint_env;		/* SLURM_HINT env var setting	*/
+	bool hint_set;		/* --hint set explicitly set	*/
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool extra_set;		/* true if extra node info explicitly set */
@@ -137,8 +139,8 @@ typedef struct sbatch_options {
 	int minsockets;		/* --minsockets=n		*/
 	int mincores;		/* --mincores=n			*/
 	int minthreads;		/* --minthreads=n		*/
-	int mem_per_cpu;	/* --mem-per-cpu=n		*/
-	int realmem;		/* --mem=n			*/
+	int64_t mem_per_cpu;	/* --mem-per-cpu=n		*/
+	int64_t realmem;	/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	char *gres;		/* --gres			*/
@@ -185,10 +187,11 @@ typedef struct sbatch_options {
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	bool test_only;		/* --test-only			*/
-	char *burst_buffer;	/* -bb				*/
+	char *burst_buffer_file;/* --bbf			*/
 	uint8_t power_flags;	/* Power management options	*/
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	time_t deadline;	/* ---deadline                  */
+	uint32_t delay_boot;	/* --delay-boot			*/
 } opt_t;
 
 extern opt_t opt;
@@ -218,7 +221,7 @@ char *process_options_first_pass(int argc, char **argv);
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int process_options_second_pass(int argc, char *argv[], const char *file,
+int process_options_second_pass(int argc, char **argv, const char *file,
 				const void *script_body, int script_size);
 
 /* external functions available for SPANK plugins to modify the environment

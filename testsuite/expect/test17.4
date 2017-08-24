@@ -14,7 +14,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -49,22 +49,7 @@ print_header $test_id
 # Execute 'id' to determine my user and group ID...
 #
 
-spawn $bin_id
-expect {
-        -re "(uid=.*\n)" {
-		set login_grp_info $expect_out(1,string)
-		set got_login_grps 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-if {$got_login_grps == 0} {
-	send_user "\nFAILURE: Unable to get user and group ID info\n"
-	exit 1
-}
+set login_grp_info [get_my_id]
 
 #
 # Submit a slurm job that will execute 'id'

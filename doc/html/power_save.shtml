@@ -33,7 +33,7 @@ The following configuration parameters are available:
 <li><b>SuspendTime</b>:
 Nodes becomes eligible for power saving mode after being idle
 for this number of seconds.
-For efficient system utilization, it is recommeded that the value of SuspendTime
+For efficient system utilization, it is recommended that the value of SuspendTime
 be at least as large as the sum of SuspendTimeout plus ResumeTimeout.
 A negative number disables power saving mode.
 The default value is -1 (disabled).</li>
@@ -71,9 +71,11 @@ This program may use the <i>scontrol show node</i> command
 to insure that a node has booted and the <i>slurmd</i>
 daemon started.
 If the <i>slurmd</i> daemon fails to respond within the
-configured <b>SlurmdTimeout</b> value, the node will be
-placed in a DOWN state and the job requesting the node
-will be requeued.
+configured <b>SlurmdTimeout</b> value with an updated BootTime,
+the node will be placed in a DOWN state and the job requesting
+the node will be requeued. If the node isn't actually rebooted
+(i.e. when multiple-slurmd is configured) starting slurmd with
+"-b" option might be useful.
 For reasons of reliability, <b>ResumeProgram</b> may execute
 more than once for a node when the <b>slurmctld</b> daemon
 crashes and is restarted.</li>
@@ -88,8 +90,10 @@ The default value is 30 seconds.</li>
 <li><b>ResumeTimeout</b>:
 Maximum time permitted (in second) between when a node resume request
 is issued and when the node is actually available for use.
-Nodes which fail to respond in this time frame may be marked DOWN and
+Nodes which fail to respond in this time frame will be marked DOWN and
 the jobs scheduled on the node requeued.
+Nodes which reboot after this time frame will be marked DOWN with a reason of
+"unexpected reboot."
 The default value is 60 seconds.</li>
 
 <li><b>SuspendExcNodes</b>:
@@ -114,7 +118,7 @@ be increased above its default value of 10 seconds.</li>
 (primary and backup server nodes).
 Use of <i>sudo</i> may be required for <i>SlurmUser</i>to power down
 and restart nodes.
-If you need to conver. Slurm's hostlist expression into individual node
+If you need to convert Slurm's hostlist expression into individual node
 names, the <i>scontrol show hostnames</i> command may prove useful.
 The commands used to boot or shut down nodes will depend upon your
 cluster management tools.</p>

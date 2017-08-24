@@ -1,0 +1,78 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of srun not hanging on ignored stdin.
+#          See bug 3166
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Morris Jette <jette@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "1.115"
+set exit_code        0
+set file_in          "test$test_id.input"
+
+print_header $test_id
+
+print_time
+
+#
+# Submit a slurm job that will sleep briefly, ignoring stdin
+#
+set timeout $max_job_delay
+set match 0
+make_bash_script $file_in "dd if=/dev/zero bs=1k | $srun -v -N1 -t1 sleep 10"
+spawn ./$file_in
+expect {
+	-re "error" {
+		send_user "\nFAILURE: Unexpected error from srun\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "Dropped pending I/O" {
+		incr match
+		exp_continue
+	}	
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+# Note if timing dependent message is not logged, not really a problem
+if {$match != 1} {
+	send_user "\nWARNING: Dropped I/O not logged\n"
+}
+
+print_time
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS: No error reported\n"
+}
+exit $exit_code

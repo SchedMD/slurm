@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,40 +37,38 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
+#include <fcntl.h>
+#include <grp.h>
 #include <netdb.h>
-#include <string.h>
+#include <signal.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <string.h>
+#include <sys/param.h>           /* MAXPATHLEN */
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <sys/param.h>           /* MAXPATHLEN */
-#include <grp.h>
-
+#include <unistd.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/cbuf.h"
+#include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/hostlist.h"
+#include "src/common/io_hdr.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/plugstack.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/io_hdr.h"
-#include "src/common/forward.h"
-#include "src/common/fd.h"
-#include "src/common/uid.h"
-#include "src/common/proc_args.h"
 
 #include "src/api/step_launch.h"
 
@@ -103,7 +101,7 @@ typedef struct allocation_info {
 	uint32_t                stepid;
 } allocation_info_t;
 
-static int shepard_fd = -1;
+static int shepherd_fd = -1;
 static pthread_t signal_thread = (pthread_t) 0;
 static int pty_sigarray[] = { SIGWINCH, 0 };
 
@@ -129,8 +127,8 @@ static void  _set_prio_process_env(void);
 static int _set_rlimit_env(void);
 static void _set_submit_dir_env(void);
 static int _set_umask_env(void);
-static void _shepard_notify(int shepard_fd);
-static int _shepard_spawn(srun_job_t *job, bool got_alloc);
+static void _shepherd_notify(int shepherd_fd);
+static int _shepherd_spawn(srun_job_t *job, bool got_alloc);
 static void *_srun_signal_mgr(void *no_data);
 static void _step_opt_exclusive(void);
 static int _validate_relative(resource_allocation_response_msg_t *resp);
@@ -145,7 +143,8 @@ job_create_noalloc(void)
 {
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(allocation_info_t));
-	uint16_t cpn = 1;
+	uint16_t cpn[1];
+	uint32_t cpu_count_reps[1];
 	hostlist_t  hl = hostlist_create(opt.nodelist);
 
 	if (!hl) {
@@ -154,17 +153,19 @@ job_create_noalloc(void)
 	}
 	srand48(getpid());
 	ai->jobid          = MIN_NOALLOC_JOBID +
-		((uint32_t) lrand48() %
-		 (MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
+			     ((uint32_t) lrand48() %
+			      (MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
 	ai->stepid         = (uint32_t) (lrand48());
 	ai->nodelist       = opt.nodelist;
 	ai->nnodes         = hostlist_count(hl);
 
 	hostlist_destroy(hl);
 
-	cpn = (opt.ntasks + ai->nnodes - 1) / ai->nnodes;
-	ai->cpus_per_node  = &cpn;
-	ai->cpu_count_reps = &ai->nnodes;
+	cpn[0] = (opt.ntasks + ai->nnodes - 1) / ai->nnodes;
+	ai->cpus_per_node  = cpn;
+	cpu_count_reps[0] = ai->nnodes;
+	ai->cpu_count_reps = cpu_count_reps;
+	ai->num_cpu_groups = 1;
 
 	/*
 	 * Create job, then fill in host addresses
@@ -279,9 +280,10 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				buf = hostlist_ranged_string_xmalloc(inc_hl);
 				hostlist_delete(tmp_hl, buf);
 				xfree(buf);
-				while ((node_name = hostlist_shift(tmp_hl)) &&
-				       (i < diff)) {
+				while ((i < diff) &&
+				       (node_name = hostlist_shift(tmp_hl))) {
 					hostlist_push_host(inc_hl, node_name);
+					free(node_name);
 					i++;
 				}
 				hostlist_destroy(tmp_hl);
@@ -374,8 +376,12 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->cpus_per_node  = resp->cpus_per_node;
 	ai->cpu_count_reps = resp->cpu_count_reps;
 	ai->ntasks_per_board = resp->ntasks_per_board;
-	ai->ntasks_per_core = resp->ntasks_per_core;
-	ai->ntasks_per_socket = resp->ntasks_per_socket;
+
+	/* Here let the srun options override the allocation resp */
+	ai->ntasks_per_core = (opt.ntasks_per_core != NO_VAL) ?
+		opt.ntasks_per_core : resp->ntasks_per_core;
+	ai->ntasks_per_socket = (opt.ntasks_per_socket != NO_VAL) ?
+		opt.ntasks_per_socket : resp->ntasks_per_socket;
 
 	ai->partition = resp->partition;
 
@@ -578,7 +584,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			exit(error_exit);
 	} else {
 		/* Combined job allocation and job step launch */
-#if defined HAVE_FRONT_END && (!defined HAVE_BG || defined HAVE_BG_L_P || !defined HAVE_BG_FILES) && (!defined HAVE_REAL_CRAY)
+#if defined HAVE_FRONT_END && (!defined HAVE_BG || !defined HAVE_BG_FILES) && (!defined HAVE_REAL_CRAY)
 		uid_t my_uid = getuid();
 		if ((my_uid != 0) &&
 		    (my_uid != slurm_get_slurm_user_id())) {
@@ -649,7 +655,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		 * Spawn process to insure clean-up of job and/or step
 		 * on abnormal termination
 		 */
-		shepard_fd = _shepard_spawn(job, *got_alloc);
+		shepherd_fd = _shepherd_spawn(job, *got_alloc);
 	}
 
 	*p_job = job;
@@ -697,7 +703,7 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 		else
 			slurm_complete_job(job->jobid, *global_rc);
 	}
-	_shepard_notify(shepard_fd);
+	_shepherd_notify(shepherd_fd);
 
 cleanup:
 	if (signal_thread) {
@@ -726,7 +732,7 @@ update_job_state(srun_job_t *job, srun_job_state_t state)
 	slurm_mutex_lock(&job->state_mutex);
 	if (job->state < state) {
 		job->state = state;
-		pthread_cond_signal(&job->state_cond);
+		slurm_cond_signal(&job->state_cond);
 
 	}
 	slurm_mutex_unlock(&job->state_mutex);
@@ -804,7 +810,7 @@ _job_create_structure(allocation_info_t *ainfo)
 	debug2("creating job with %d tasks", opt.ntasks);
 
 	slurm_mutex_init(&job->state_mutex);
-	pthread_cond_init(&job->state_cond, NULL);
+	slurm_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
  	job->alias_list = xstrdup(ainfo->alias_list);
@@ -812,7 +818,7 @@ _job_create_structure(allocation_info_t *ainfo)
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
 
-#if defined HAVE_BG && !defined HAVE_BG_L_P
+#if defined HAVE_BG
 //#if defined HAVE_BGQ && defined HAVE_BG_FILES
 	/* Since the allocation will have the correct cnode count get
 	   it if it is available.  Else grab it from opt.min_nodes
@@ -1340,47 +1346,47 @@ static int _set_umask_env(void)
 	return SLURM_SUCCESS;
 }
 
-static void _shepard_notify(int shepard_fd)
+static void _shepherd_notify(int shepherd_fd)
 {
 	int rc;
 
 	while (1) {
-		rc = write(shepard_fd, "", 1);
+		rc = write(shepherd_fd, "", 1);
 		if (rc == -1) {
 			if ((errno == EAGAIN) || (errno == EINTR))
 				continue;
-			error("write(shepard): %m");
+			error("write(shepherd): %m");
 		}
 		break;
 	}
-	close(shepard_fd);
+	close(shepherd_fd);
 }
 
-static int _shepard_spawn(srun_job_t *job, bool got_alloc)
+static int _shepherd_spawn(srun_job_t *job, bool got_alloc)
 {
-	int shepard_pipe[2], rc;
-	pid_t shepard_pid;
+	int shepherd_pipe[2], rc;
+	pid_t shepherd_pid;
 	char buf[1];
 
-	if (pipe(shepard_pipe)) {
+	if (pipe(shepherd_pipe)) {
 		error("pipe: %m");
 		return -1;
 	}
 
-	shepard_pid = fork();
-	if (shepard_pid == -1) {
+	shepherd_pid = fork();
+	if (shepherd_pid == -1) {
 		error("fork: %m");
 		return -1;
 	}
-	if (shepard_pid != 0) {
-		close(shepard_pipe[0]);
-		return shepard_pipe[1];
+	if (shepherd_pid != 0) {
+		close(shepherd_pipe[0]);
+		return shepherd_pipe[1];
 	}
 
 	/* Wait for parent to notify of completion or I/O error on abort */
-	close(shepard_pipe[1]);
+	close(shepherd_pipe[1]);
 	while (1) {
-		rc = read(shepard_pipe[0], buf, 1);
+		rc = read(shepherd_pipe[0], buf, 1);
 		if (rc == 1) {
 			exit(0);
 		} else if (rc == 0) {
@@ -1491,6 +1497,6 @@ static int _validate_relative(resource_allocation_response_msg_t *resp)
 
 static void _call_spank_fini(void)
 {
-	if (-1 != shepard_fd)
+	if (-1 != shepherd_fd)
 		spank_fini(NULL);
 }

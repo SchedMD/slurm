@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -58,7 +58,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			       struct step_record *step_ptr);
 
-extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint32_t old_db_inx,
+extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint64_t old_db_inx,
 			    struct job_record *job_ptr);
 
 extern int as_mysql_flush_jobs_on_cluster(

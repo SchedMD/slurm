@@ -15,13 +15,7 @@ slurmd_LDADD = 					   \
 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)  \
 	../common/libslurmd_reverse_tree_math.la
 
-slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS)
-
-if HAVE_AIX
-# We need to set maxdata back to 0 because this effects the "max memory size"
-# ulimit, and the ulimit is inherited by child processes.
-slurmd_LDFLAGS += -Wl,-bmaxdata:0x0
-endif
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS) $(NUMA_LIBS)
 
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \

@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -82,7 +82,7 @@ extern List create_dynamic_block(List block_list,
 	memset(&blockreq, 0, sizeof(select_ba_request_t));
 	memcpy(start_geo, request->geometry, sizeof(start_geo));
 
-	/* We need to lock this just incase a blocks_overlap is called
+	/* We need to lock this just in case a blocks_overlap is called
 	   which will in turn reset and set the system as it sees fit.
 	*/
 	slurm_mutex_lock(&block_state_mutex);
@@ -755,14 +755,14 @@ static int _split_block(List block_list, List new_blocks,
 #ifdef HAVE_BGL
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("Asking for %u 32CNBlocks, and %u 128CNBlocks "
-		     "from a %u block, starting at ionode %d.",
+		     "from a %u block, starting at ionode %"BITSTR_FMT".",
 		     blockreq.small32, blockreq.small128,
 		     bg_record->cnode_cnt, start);
 #else
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("Asking for %u 16CNBlocks, %u 32CNBlocks, "
 		     "%u 64CNBlocks, %u 128CNBlocks, and %u 256CNBlocks "
-		     "from a %u block, starting at ionode %d.",
+		     "from a %u block, starting at ionode %"BITSTR_FMT".",
 		     blockreq.small16, blockreq.small32,
 		     blockreq.small64, blockreq.small128,
 		     blockreq.small256, bg_record->cnode_cnt, start);

@@ -9,7 +9,7 @@
  *  Largely re-written for NRT support by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -50,22 +50,14 @@
  *  put SLURM's libpermapi.so in /usr/lib64. IBM to address later.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <assert.h>
+#include <arpa/inet.h>
 #include <dlfcn.h>
+#include <nrt.h>
 #include <pthread.h>
 #include <stdlib.h>
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_NRT_H
-# include <nrt.h>
-#else
-# error "Must have nrt.h to compile this module!"
-#endif
-
-#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -3506,13 +3498,17 @@ unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
 
 /* Used by: all */
 extern int
-nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf,
+nrt_unpack_jobinfo(slurm_nrt_jobinfo_t **j_pptr, Buf buf,
 		   uint16_t protocol_version)
 {
 	int i;
+	slurm_nrt_jobinfo_t *j;
 
-	xassert(j);
+	xassert(j_pptr);
 	xassert(buf);
+
+	nrt_alloc_jobinfo(j_pptr);
+	j = *j_pptr;
 
 	safe_unpack32(&j->magic, buf);
 
@@ -3551,11 +3547,10 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf,
 
 unpack_error:
 	error("nrt_unpack_jobinfo error");
-	if (j->tableinfo) {
-		for (i = 0; i < j->tables_per_task; i++)
-			xfree(j->tableinfo[i].table);
-		xfree(j->tableinfo);
-	}
+
+	nrt_free_jobinfo(*j_pptr);
+	*j_pptr = NULL;
+
 	slurm_seterrno_ret(EUNPACK);
 	return SLURM_ERROR;
 }

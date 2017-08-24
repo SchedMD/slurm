@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -117,11 +117,12 @@ extern int validate_job_resv(struct job_record *job_ptr);
  *
  * IN job_ptr   - job to test
  * IN when      - when the job is expected to start
+ * IN reboot    - true if node reboot required to start job
  * RET burst buffer reservation structure, call
  *	 slurm_free_burst_buffer_info_msg() to free
  */
 extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
-						 time_t when);
+						 time_t when, bool reboot);
 
 /*
  * Determine how many licenses of the give type the specified job is
@@ -130,26 +131,23 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
  * IN job_ptr   - job to test
  * IN lic_name  - name of license
  * IN when      - when the job is expected to start
+ * IN reboot    - true if node reboot required to start job
  * RET number of licenses of this type the job is prevented from using
  */
 extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
-			     time_t when);
+			     time_t when, bool reboot);
 
 /*
- * Determine how many watts the specified job is prevented from using 
+ * Determine how many watts the specified job is prevented from using
  * due to reservations
- *
- * TODO: this code, replicated from job_test_lic_resv seems to not being
- * protected against consecutives reservations for which reserved watts
- * (or licenses count) can not be added directly. Thus, if the job
- * overlaps multiple non-overlapping reservations, it will be prevented
- * to use more watts (or licenses) than necessary.
  *
  * IN job_ptr   - job to test
  * IN when      - when the job is expected to start
+ * IN reboot    - true if node reboot required to start job
  * RET amount of watts the job is prevented from using
  */
-extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when);
+extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
+				    bool reboot);
 
 /*
  * Determine which nodes a job can use based upon reservations
@@ -161,6 +159,10 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when);
  *                   "when" as needed IF job has no reservervation
  * OUT node_bitmap - nodes which the job can use, caller must free
  * OUT exc_core_bitmap - cores which the job can NOT use, caller must free
+ * OUT resv_overlap - set to true if the job's run time and available nodes
+ *		      overlap with an advanced reservation, indicates that
+ *		      resources were removed from availability to the job
+ * IN reboot    - true if node reboot required to start job
  * RET	SLURM_SUCCESS if runable now
  *	ESLURM_RESERVATION_ACCESS access to reservation denied
  *	ESLURM_RESERVATION_INVALID reservation invalid
@@ -170,7 +172,8 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when);
  */
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
-			 bitstr_t **exc_core_bitmap, bool *resv_overlap);
+			 bitstr_t **exc_core_bitmap, bool *resv_overlap,
+			 bool reboot);
 
 /*
  * Note that a job is starting execution. If that job is associated with a
@@ -201,22 +204,13 @@ extern int job_test_resv_now(struct job_record *job_ptr);
  *	reserved resources. Don't go below job's time_min value. */
 extern void job_time_adj_resv(struct job_record *job_ptr);
 
-/* Begin scan of all jobs for valid reservations */
-extern void begin_job_resv_check(void);
-
-/* Test a particular job for valid reservation
- *
- * RET ESLURM_INVALID_TIME_VALUE if reservation is terminated
- *     SLURM_SUCCESS if reservation is still valid
- */
-extern int job_resv_check(struct job_record *job_ptr);
-
-/* Finish scan of all jobs for valid reservations
+/*
+ * Scan all jobs for valid reservations
  *
  * Purge vestigial reservation records.
  * Advance daily or weekly reservations that are no longer
  *	being actively used.
  */
-extern void fini_job_resv_check(void);
+extern void job_resv_check(void);
 
 #endif /* !_RESERVATION_H */

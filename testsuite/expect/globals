@@ -27,7 +27,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the supplied file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -246,6 +246,28 @@ cset super_user_set 0
 
 ################################################################
 #
+# Proc: print_time
+#
+# Purpose:  Print the current data and time
+#
+################################################################
+proc print_time { } {
+	global bin_date
+
+	send_user "\n"
+	spawn $bin_date
+	expect {
+		eof {
+			wait
+		}
+	}
+	send_user "\n"
+
+	return
+}
+
+################################################################
+#
 # Proc: cancel_job
 #
 # Purpose:  Cancel the specified job
@@ -255,7 +277,6 @@ cset super_user_set 0
 # Input: job_id  -- The SLURM job id of a job we want to cancel.
 #
 ################################################################
-
 proc cancel_job { job_id } {
 	global scancel bin_sleep
 
@@ -321,7 +342,46 @@ proc slow_kill { pid } {
 
 ################################################################
 #
-# Proc: get_my_nuid
+# Proc: get_my_id
+#
+# Purpose:  gets the id from the running user
+#
+# Returns: output of id
+#
+#
+################################################################
+
+proc get_my_id {} {
+
+	global bin_id number
+	set login_info -1
+
+	log_user 0
+
+	spawn $bin_id
+	expect {
+		-re "(uid=.*\n)" {
+			set login_info $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+
+	if {$login_info == -1} {
+		send_user "\nFAILURE: Unable to get user info\n"
+		exit 1
+	}
+
+	return $login_info
+}
+
+################################################################
+#
+# Proc: get_my_user_name
 #
 # Purpose:  gets the name uid from the running user
 #
@@ -330,16 +390,16 @@ proc slow_kill { pid } {
 #
 ################################################################
 
-proc get_my_nuid {  } {
+proc get_my_user_name {  } {
 	global bin_id alpha alpha_numeric
 
-	set uid -1
+	set user_name -1
 
 	log_user 0
 	spawn $bin_id -nu
 	expect {
 		-re "($alpha_numeric|$alpha)" {
-			set nuid $expect_out(1,string)
+			set user_name $expect_out(1,string)
 			exp_continue
 		}
 		eof {
@@ -348,7 +408,12 @@ proc get_my_nuid {  } {
 	}
 	log_user 1
 
-	return $nuid
+	if {$user_name == -1} {
+		send_user "\nFAILURE: Unable to get user name\n"
+		exit 1
+	}
+
+	return $user_name
 }
 
 ################################################################
@@ -433,16 +498,7 @@ proc get_my_gid {  } {
 proc kill_salloc {  } {
 	global bin_id bin_pkill bin_sleep number
 
-	spawn $bin_id -u
-	expect {
-		-re "($number)" {
-			set uid $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set uid [get_my_uid]
 	catch {exec $bin_pkill -INT -u $uid salloc}
 	catch {exec $bin_pkill -INT -u $uid salloc}
 	sleep  1
@@ -469,16 +525,7 @@ proc kill_salloc {  } {
 proc kill_srun {  } {
 	global bin_id bin_pkill bin_sleep number
 
-	spawn $bin_id -u
-	expect {
-		-re "($number)" {
-			set uid $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set uid [get_my_uid]
 	catch {exec $bin_pkill -INT -u $uid srun}
 	catch {exec $bin_pkill -INT -u $uid srun}
 	sleep  1
@@ -1037,7 +1084,7 @@ proc test_topology { } {
 
 ################################################################
 #
-# Proc: get_task_types
+# Proc: get_affinity_types
 #
 # Purpose: get the task plugins running with task/ stripped
 #
@@ -1067,6 +1114,34 @@ proc get_affinity_types { } {
 	}
 	log_user 1
 	return $affinity
+}
+
+################################################################
+#
+# Proc: get_affinity_params
+#
+# Purpose: get the task plugin parameters
+#
+# Returns Returns value of TaskPluginParam
+#
+################################################################
+proc get_affinity_params { } {
+	global scontrol alpha_comma_slash
+
+	log_user 0
+	set params ""
+	spawn $scontrol show config
+	expect {
+		-re "TaskPluginParam *= ($alpha_comma_slash)" {
+			set params $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $params
 }
 
 ################################################################
@@ -1293,32 +1368,6 @@ proc test_track_wckey { } {
 
 	log_user 1
 	return $track_wckey
-}
-
-################################################################
-# Proc: test_wiki_sched
-#
-# Return 1 if using sched/wiki or sched/wiki2 (Maui or Moab),
-#        0 otherwise
-################################################################
-proc test_wiki_sched { } {
-	global scontrol
-
-	log_user 0
-	set sched_wiki   0
-	spawn $scontrol show config
-	expect {
-		-re "SchedulerType *= sched/wiki" {
-			set sched_wiki 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $sched_wiki
 }
 
 ################################################################
@@ -1572,15 +1621,7 @@ proc get_default_acct { user } {
 	set def_acct ""
 
 	if { !$user } {
-		spawn $bin_id -un
-		expect {
-		       -re "($alpha_numeric_under)" {
-			   set user $expect_out(1,string)
-		       }
-		       eof {
-			   wait
-		       }
-		}
+		set user [get_my_user_name]
 	}
 
 	spawn $sacctmgr -n list user $user format="DefaultAccount"
@@ -1995,9 +2036,6 @@ proc get_cycle_count { } {
 	if {$enable_memory_leak_debug != 0} {
 		return 2
 	}
-	if {[test_wiki_sched] == 1} {
-		return 5
-	}
 	return 100
 }
 
@@ -2080,7 +2118,6 @@ proc test_select_type_params { type } {
 			break
 		}
 	}
-
 	log_user 1
 
 	return $ret
@@ -2127,17 +2164,7 @@ proc test_super_user { } {
 #	Check if user root
 #
 	log_user 0
-	spawn $bin_id -u
-	set uid -1
-	expect {
-		-re "($number)" {
-			set uid $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set uid [get_my_uid]
 	if {$uid == 0} {
 		log_user 1
 		set super_user 1
@@ -2148,17 +2175,8 @@ proc test_super_user { } {
 #
 #	Check if SlurmUser
 #
-	spawn $bin_id -un
-	set user ""
-	expect {
-		-re "($alpha_numeric_under)" {
-			set user $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set user [get_my_user_name]
+
 	spawn $scontrol show config
 	set slurm_user ""
 	expect {
@@ -2469,17 +2487,7 @@ proc is_super_user { } {
 	global alpha_numeric_under bin_id scontrol
 
 	log_user 0
-	set user_name "nobody"
-	spawn $bin_id -u -n
-	expect {
-		-re "($alpha_numeric_under)" {
-			set user_name $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set user_name [get_my_user_name]
 	if {[string compare $user_name "root"] == 0} {
 		log_user 1
 		return 1
@@ -2667,16 +2675,7 @@ proc check_accounting_admin_level { } {
 
 	log_user 0
 
-	spawn $bin_id -u -n
-	expect {
-		-re "($alpha_numeric_under)" {
-			set user_name $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set user_name [get_my_user_name]
 
 	if { ![string length $user_name] } {
 		send_user "FAILURE: No name returned from id\n"
@@ -4003,4 +4002,137 @@ proc check_hosts_contiguous {part check_hosts_list} {
 	}
 
 	return 0
+}
+
+
+#####################################################################
+#
+# Proc: stop_root_user
+#
+# Purpose:	Detect, warn, and stop root user
+#
+#
+# Input
+#
+# Returns: uid if not root user, exits otherwise
+#
+#####################################################################
+
+
+proc stop_root_user {} {
+
+	global bin_id number
+
+	set uid [get_my_uid]
+	if {$uid == -1} {
+		send_user "\nCan't get my uid\n"
+		exit 1
+	} elseif {$uid == 0} {
+		send_user "\nWARNING: Can't run this test as user root\n"
+		exit 0
+	}
+
+	return $uid
+}
+
+################################################################
+#
+# Proc: get_requeue_exit
+#
+# Purpose: get RequeueExit configuration parameter
+#
+# Returns RequeueExit number
+#
+################################################################
+proc get_requeue_exit { } {
+	global scontrol number exit_code
+
+	log_user 0
+	set re 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "RequeueExit *= ($number)" {
+			set re $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $re
+}
+
+################################################################
+#
+# Proc: get_requeue_exit_hold
+#
+# Purpose: get RequeueExitHold configuration parameter
+#
+# Returns RequeueExitHold number
+#
+################################################################
+proc get_requeue_exit_hold { } {
+	global scontrol number exit_code
+
+	log_user 0
+	set re 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "RequeueExitHold *= ($number)" {
+			set re $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $re
+}
+
+################################################################
+#
+# Proc: get_prolog
+#
+# Purpose: get Prolog configuration parameter
+#
+# Returns Prolog parameter
+#
+################################################################
+proc get_prolog { } {
+	global scontrol alpha_numeric exit_code
+
+	log_user 0
+	set prolog 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "^Prolog *= ($alpha_numeric)" {
+			set re $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $prolog
 }

@@ -5,7 +5,7 @@
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,11 +35,7 @@
 \*****************************************************************************/
 
 #ifndef _SLURM_POWER_H
-#define _SLURM_POWER_H 	1
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#define _SLURM_POWER_H
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"

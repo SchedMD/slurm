@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -40,6 +40,7 @@
 #include "as_mysql_cluster.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_rollup.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_time.h"
 
 time_t global_last_rollup = 0;
@@ -54,6 +55,7 @@ typedef struct {
 	int *rolledup;
 	pthread_mutex_t *rolledup_lock;
 	pthread_cond_t *rolledup_cond;
+	rollup_stats_t *rollup_stats;
 	time_t sent_end;
 	time_t sent_start;
 } local_rollup_t;
@@ -61,7 +63,7 @@ typedef struct {
 static void *_cluster_rollup_usage(void *arg)
 {
 	local_rollup_t *local_rollup = (local_rollup_t *)arg;
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
 	char timer_str[128];
 	mysql_conn_t mysql_conn;
 	MYSQL_RES *result = NULL;
@@ -79,6 +81,7 @@ static void *_cluster_rollup_usage(void *arg)
 	time_t day_end;
 	time_t month_start;
 	time_t month_end;
+	long rollup_time[ROLLUP_COUNT];
 	DEF_TIMERS;
 
 	char *update_req_inx[] = {
@@ -87,15 +90,8 @@ static void *_cluster_rollup_usage(void *arg)
 		"monthly_rollup"
 	};
 
-	enum {
-		UPDATE_HOUR,
-		UPDATE_DAY,
-		UPDATE_MONTH,
-		UPDATE_COUNT
-	};
-
-
 	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
+	memset(rollup_time, 0, sizeof(long) * ROLLUP_COUNT);
 	mysql_conn.rollback = 1;
 	mysql_conn.conn = local_rollup->mysql_conn->conn;
 	slurm_mutex_init(&mysql_conn.lock);
@@ -108,11 +104,10 @@ static void *_cluster_rollup_usage(void *arg)
 		goto end_it;
 
 	if (!local_rollup->sent_start) {
-		char *tmp = NULL;
-		int i=0;
-		xstrfmtcat(tmp, "%s", update_req_inx[i]);
-		for(i=1; i<UPDATE_COUNT; i++) {
-			xstrfmtcat(tmp, ", %s", update_req_inx[i]);
+		char *tmp = NULL, *sep = "";
+		for (i = 0; i < ROLLUP_COUNT; i++) {
+			xstrfmtcat(tmp, "%s%s", sep, update_req_inx[i]);
+			sep = ", ";
 		}
 		query = xstrdup_printf("select %s from \"%s_%s\"",
 				       tmp, local_rollup->cluster_name,
@@ -130,9 +125,9 @@ static void *_cluster_rollup_usage(void *arg)
 		xfree(query);
 		row = mysql_fetch_row(result);
 		if (row) {
-			last_hour = slurm_atoul(row[UPDATE_HOUR]);
-			last_day = slurm_atoul(row[UPDATE_DAY]);
-			last_month = slurm_atoul(row[UPDATE_MONTH]);
+			last_hour = slurm_atoul(row[ROLLUP_HOUR]);
+			last_day = slurm_atoul(row[ROLLUP_DAY]);
+			last_month = slurm_atoul(row[ROLLUP_MONTH]);
 			mysql_free_result(result);
 		} else {
 			time_t now = time(NULL);
@@ -305,6 +300,7 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "hourly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
+		rollup_time[ROLLUP_HOUR] += DELTA_TIMER;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
@@ -319,6 +315,7 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "daily_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
+		rollup_time[ROLLUP_DAY] += DELTA_TIMER;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
@@ -333,6 +330,7 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "monthly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
+		rollup_time[ROLLUP_MONTH] += DELTA_TIMER;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
@@ -396,9 +394,15 @@ end_it:
 
 	slurm_mutex_lock(local_rollup->rolledup_lock);
 	(*local_rollup->rolledup)++;
+	if (local_rollup->rollup_stats) {
+		for (i = 0; i < ROLLUP_COUNT; i++) {
+			local_rollup->rollup_stats->rollup_time[i] +=
+				rollup_time[i];
+		}
+	}
 	if ((rc != SLURM_SUCCESS) && ((*local_rollup->rc) == SLURM_SUCCESS))
 		(*local_rollup->rc) = rc;
-	pthread_cond_signal(local_rollup->rolledup_cond);
+	slurm_cond_signal(local_rollup->rolledup_cond);
 	slurm_mutex_unlock(local_rollup->rolledup_lock);
 	xfree(local_rollup);
 
@@ -629,12 +633,14 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *my_usage_table = NULL;
 	List usage_list = NULL;
-	char *id_str = NULL;
+	char *id_str = NULL, *name_char = NULL;
 	ListIterator itr = NULL, u_itr = NULL;
 	void *object = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 	slurmdb_accounting_rec_t *accounting_rec = NULL;
+	hostlist_t hl = NULL;
+	char id[100];
 
 	if (!object_list) {
 		error("We need an object to set data for getting usage");
@@ -644,28 +650,36 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
+	/* Previously this would just tack id's onto a long list.  It turns out
+	 * that isn't very efficient.  This attempts to combine id's into a
+	 * hostlist and then query id sets instead of against each id
+	 * separately.  This has proven to be much more efficient.
+	 */
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
+		name_char = "t3.id_assoc";
 		itr = list_iterator_create(object_list);
 		while ((assoc = list_next(itr))) {
-			if (id_str)
-				xstrfmtcat(id_str, " || t3.id_assoc=%d",
-					   assoc->id);
+			snprintf(id, sizeof(id), "%u", assoc->id);
+
+			if (hl)
+				hostlist_push_host_dims(hl, id, 1);
 			else
-				xstrfmtcat(id_str, "t3.id_assoc=%d", assoc->id);
+				hl = hostlist_create_dims(id, 1);
 		}
 		list_iterator_destroy(itr);
-
 		my_usage_table = assoc_day_table;
 		break;
 	case DBD_GET_WCKEY_USAGE:
+		name_char = "id";
 		itr = list_iterator_create(object_list);
 		while ((wckey = list_next(itr))) {
-			if (id_str)
-				xstrfmtcat(id_str, " || id=%d",
-					   wckey->id);
+			snprintf(id, sizeof(id), "%u", wckey->id);
+
+			if (hl)
+				hostlist_push_host_dims(hl, id, 1);
 			else
-				xstrfmtcat(id_str, "id=%d", wckey->id);
+				hl = hostlist_create_dims(id, 1);
 		}
 		list_iterator_destroy(itr);
 
@@ -675,6 +689,24 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		error("Unknown usage type %d", type);
 		return SLURM_ERROR;
 		break;
+	}
+
+	if (hl) {
+		unsigned long lo, hi;
+
+		xfree(id_str);
+
+		hostlist_sort(hl);
+		while (hostlist_pop_range_values(hl, &lo, &hi)) {
+			if (id_str)
+				xstrcat(id_str, " || ");
+			if (lo >= hi)
+				xstrfmtcat(id_str, "%s=%lu", name_char, lo);
+			else
+				xstrfmtcat(id_str, "%s between %lu and %lu",
+					   name_char, lo, hi);
+		}
+		hostlist_destroy(hl);
 	}
 
 	if (set_usage_information(&my_usage_table, type, &start, &end)
@@ -882,9 +914,9 @@ is_user:
 	return rc;
 }
 
-extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
-			       time_t sent_start, time_t sent_end,
-			       uint16_t archive_data)
+extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
+			       time_t sent_end, uint16_t archive_data,
+			       rollup_stats_t *rollup_stats)
 {
 	int rc = SLURM_SUCCESS;
 	int rolledup = 0;
@@ -901,7 +933,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	slurm_mutex_lock(&usage_rollup_lock);
 
 	slurm_mutex_init(&rolledup_lock);
-	pthread_cond_init(&rolledup_cond, NULL);
+	slurm_cond_init(&rolledup_cond, NULL);
 
 	//START_TIMER;
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
@@ -922,6 +954,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 		local_rollup->sent_end = sent_end;
 		local_rollup->sent_start = sent_start;
+		local_rollup->rollup_stats = rollup_stats;
 
 		/* _cluster_rollup_usage is responsible for freeing
 		   this local_rollup */
@@ -954,13 +987,13 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	while (rolledup < roll_started) {
-		pthread_cond_wait(&rolledup_cond, &rolledup_lock);
+		slurm_cond_wait(&rolledup_cond, &rolledup_lock);
 		debug2("Got %d of %d rolled up", rolledup, roll_started);
 	}
 	slurm_mutex_unlock(&rolledup_lock);
 	debug2("Everything rolled up");
 	slurm_mutex_destroy(&rolledup_lock);
-	pthread_cond_destroy(&rolledup_cond);
+	slurm_cond_destroy(&rolledup_cond);
 	/* END_TIMER; */
 	/* info("total time was %s", TIME_STR); */
 

@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -92,12 +92,16 @@ extern int epilog_slurmctld(struct job_record *job_ptr);
 
 /*
  * job_is_completing - Determine if jobs are in the process of completing.
+ * IN/OUT  eff_cg_bitmap - optional bitmap of all relevent completing nodes,
+ *                         relevenace determined by filtering via CompleteWait
+ *                         if NULL, function will terminate at first completing
+ *                         job
  * RET - True of any job is in the process of completing AND
  *	 CompleteWait is configured non-zero
  * NOTE: This function can reduce resource fragmentation, which is a
  * critical issue on Elan interconnect based systems.
  */
-extern bool job_is_completing(void);
+extern bool job_is_completing(bitstr_t *eff_cg_bitmap);
 
 /* Determine if a pending job will run using only the specified nodes
  * (in job_desc_msg->req_nodes), build response message and return
@@ -123,9 +127,19 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 			       struct job_record *job_ptr,
 			       uint16_t protocol_version);
 
-/* Return a node bitmap identifying which nodes must be rebooted for a job
- * to start. */
+/* Determine which nodes must be rebooted for a job
+ * IN job_ptr - pointer to job that will be initiated
+ * RET bitmap of nodes requiring a reboot
+ */
 extern bitstr_t *node_features_reboot(struct job_record *job_ptr);
+
+/* Determine if node boot required for this job
+ * IN job_ptr - pointer to job that will be initiated
+ * IN node_bitmap - nodes to be allocated
+ * RET - true if reboot required
+ */
+extern bool node_features_reboot_test(struct job_record *job_ptr,
+				      bitstr_t *node_bitmap);
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(struct job_record *job_ptr);

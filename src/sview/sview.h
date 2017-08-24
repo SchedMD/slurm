@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -28,32 +28,16 @@
 #ifndef _SVIEW_H
 #define _SVIEW_H
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#include "config.h"
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else				/* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif				/* HAVE_INTTYPES_H */
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
+#define _GNU_SOURCE
 
 #include <ctype.h>
+#include <inttypes.h>
+#include <getopt.h>
 #include <pwd.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -392,9 +376,9 @@ extern void destroy_grid_button(void *arg);
 extern grid_button_t *create_grid_button_from_another(
 	grid_button_t *grid_button, char *name, int color_inx);
 /* do not free the char * from this function it is static */
-extern char *change_grid_color(List button_list, int start, int end,
-			       int color_inx, bool change_unused,
-			       enum node_states state_override);
+extern void change_grid_color(List button_list, int start, int end,
+			      int color_inx, bool change_unused,
+			      enum node_states state_override);
 extern void change_grid_color_array(List button_list, int array_len,
 				    int *color_inx, bool *color_set_flag,
 				    bool only_change_unused,
@@ -566,7 +550,6 @@ extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr);
 // common.c
 extern char * replspace (char *str);
 extern char * replus (char *str);
-extern char *delstr(char *str, char *orig);
 extern void set_page_opts(int tab, display_data_t *display_data,
 			  int count, char* initial_opts);
 extern void free_switch_nodes_maps(switch_record_bitmaps_t

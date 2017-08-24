@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,6 +41,28 @@
 #include <sys/time.h>
 #include "src/common/log.h"
 #include "src/common/slurm_time.h"
+
+/* Return the number of micro-seconds between now and argument "tv",
+ * Initialize tv to NOW if zero on entry */
+extern int slurm_delta_tv(struct timeval *tv)
+{
+	struct timeval now = {0, 0};
+	int delta_t;
+
+	if (gettimeofday(&now, NULL))
+		return 1;		/* Some error */
+
+	if (tv->tv_sec == 0) {
+		tv->tv_sec  = now.tv_sec;
+		tv->tv_usec = now.tv_usec;
+		return 0;
+	}
+
+	delta_t  = (now.tv_sec - tv->tv_sec) * 1000000;
+	delta_t += (now.tv_usec - tv->tv_usec);
+
+	return delta_t;
+}
 
 /*
  * slurm_diff_tv_str - build a string showing the time difference between two

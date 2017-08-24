@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,25 +37,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include <ctype.h>
 #include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include <netinet/in.h>			/* for ntohs() */
 #include <poll.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
 #include <time.h>
-#include <netinet/in.h> /* for ntohs() */
+#include <unistd.h>
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #endif
-
-#include <stdlib.h>
 
 #include "slurm/slurm.h"
 #include "src/common/read_config.h"
@@ -395,18 +390,28 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
                        job_step_create_response_msg_t **resp)
 {
 	slurm_msg_t req_msg, resp_msg;
+	int delay, rc, retry = 0;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req;
-
+re_send:
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
-		if (_handle_rc_msg(&resp_msg) < 0)
+		rc = _handle_rc_msg(&resp_msg);
+		if ((rc < 0) && (errno == EAGAIN)) {
+			if (retry++ == 0) {
+				verbose("Slurm is busy, step creation delayed");
+				delay = (getpid() % 10) + 10;	/* 10-19 secs */
+			}
+			sleep(delay);
+			goto re_send;
+		}
+		if (rc < 0)
 			return SLURM_PROTOCOL_ERROR;
 		*resp = NULL;
 		break;

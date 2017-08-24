@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,9 +41,7 @@
 #ifndef _HAVE_OPT_H
 #define _HAVE_OPT_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <sys/types.h>
 #include <time.h>
@@ -81,9 +79,13 @@ typedef struct salloc_options {
 	int sockets_per_node;	/* --sockets-per-node=n		*/
 	int cores_per_socket;	/* --cores-per-socket=n		*/
 	int threads_per_core;	/* --threads-per-core=n		*/
+	bool threads_per_core_set;/* --threads-per-core set explicitly set */
 	int ntasks_per_node;	/* --ntasks-per-node=n		*/
 	int ntasks_per_socket;	/* --ntasks-per-socket=n	*/
 	int ntasks_per_core;	/* --ntasks-per-core=n		*/
+	bool ntasks_per_core_set; /* --ntasks-per-core set explicitly set */
+	char *hint_env;		/* SLURM_HINT env var setting	*/
+	bool hint_set;		/* --hint set explicitly set	*/
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool extra_set;		/* true if extra node info explicitly set */
@@ -125,8 +127,8 @@ typedef struct salloc_options {
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
-	int mem_per_cpu;	/* --mem_per_cpu=n		*/
-	int realmem;		/* --mem=n			*/
+	int64_t mem_per_cpu;	/* --mem_per_cpu=n		*/
+	int64_t realmem;	/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	char *gres;		/* --gres			*/
@@ -171,11 +173,12 @@ typedef struct salloc_options {
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	time_t deadline;	/* --deadline                   */
 	uint32_t job_flags;	/* --kill_invalid_dep, --gres-flags */
+	uint32_t delay_boot;	/* --delay-boot			*/
 } opt_t;
 
 extern opt_t opt;
 extern int error_exit;		/* exit code for slurm errors */
-extern int immediate_exit;	/* exit code for --imediate option & busy */
+extern int immediate_exit;	/* exit code for --immediate option & busy */
 
 /* process options:
  * 1. set defaults
@@ -183,7 +186,7 @@ extern int immediate_exit;	/* exit code for --imediate option & busy */
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int initialize_and_process_args(int argc, char *argv[]);
+int initialize_and_process_args(int argc, char **argv);
 
 /* set options based upon commandline args */
 void set_options(const int argc, char **argv);

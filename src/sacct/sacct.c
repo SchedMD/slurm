@@ -6,7 +6,7 @@
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,18 +37,17 @@
 
 #include "sacct.h"
 
-void invalidSwitchCombo(char *good, char *bad);
-
 /*
  * Globals
  */
 sacct_parameters_t params;
 print_field_t fields[] = {
+	{10, "Account", print_fields_str, PRINT_ACCOUNT},
+	{15, "AdminComment", print_fields_str, PRINT_ADMIN_COMMENT},
 	{10, "AllocCPUS", print_fields_uint, PRINT_ALLOC_CPUS},
 	{12, "AllocGRES", print_fields_str, PRINT_ALLOC_GRES},
 	{10, "AllocNodes", print_fields_str, PRINT_ALLOC_NODES},
 	{10, "AllocTRES", print_fields_str, PRINT_TRESA},
-	{10, "Account", print_fields_str, PRINT_ACCOUNT},
 	{7,  "AssocID", print_fields_uint, PRINT_ASSOCID},
 	{10, "AveCPU", print_fields_str, PRINT_AVECPU},
 	{10, "AveCPUFreq", print_fields_str, PRINT_ACT_CPUFREQ},
@@ -67,6 +66,7 @@ print_field_t fields[] = {
 	{10, "CPUTimeRAW", print_fields_uint64, PRINT_CPU_TIME_RAW},
 	{15, "DerivedExitCode", print_fields_str, PRINT_DERIVED_EC},
 	{10, "Elapsed", print_fields_time_from_secs, PRINT_ELAPSED},
+	{10, "ElapsedRaw", print_fields_uint32, PRINT_ELAPSED_RAW},
 	{19, "Eligible", print_fields_date, PRINT_ELIGIBLE},
 	{19, "End", print_fields_date, PRINT_END},
 	{8,  "ExitCode", print_fields_str, PRINT_EXITCODE},
@@ -176,11 +176,4 @@ int main(int argc, char **argv)
 
 	sacct_fini();
 	return (rc);
-}
-
-
-void invalidSwitchCombo(char *good, char *bad)
-{
-	fprintf(stderr, "\"%s\" may not be used with %s\n", good, bad);
-	return;
 }

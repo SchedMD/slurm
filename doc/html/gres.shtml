@@ -192,7 +192,7 @@ Intel&reg; Many Integrated Core (MIC) processor.
 Slurm sets an OFFLOAD_DEVICES environment variable, which controls the
 selection of MICs available to a job step.
 The OFFLOAD_DEVICES environment variable is used by both Intel
-LEO (Language Extensioins for Offload) and the MKL (Math Kernel Library)
+LEO (Language Extensions for Offload) and the MKL (Math Kernel Library)
 automatic offload.
 (This is very similar to how the CUDA_VISIBLE_DEVICES environment variable is
 used to control which GPUs can be used by CUDA&trade; software.)

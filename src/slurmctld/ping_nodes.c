@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,16 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
-#include <time.h>
+#include <pthread.h>
 #include <string.h>
+#include <time.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
@@ -55,9 +50,6 @@
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
-
-/* Attempt to fork a thread at most MAX_RETRIES times before aborting */
-#define MAX_RETRIES 10
 
 /* Request that nodes re-register at most every MAX_REG_FREQUENCY pings */
 #define MAX_REG_FREQUENCY 20
@@ -120,11 +112,13 @@ void ping_begin (void)
 void ping_end (void)
 {
 	slurm_mutex_lock(&lock_mutex);
-	if (ping_count > 0)
-		ping_count--;
-	else
-		fatal ("ping_count < 0");
-	ping_start = 0;
+	ping_count--;
+
+	if (ping_count == 0) /* no more running ping cycles */
+		ping_start = 0;
+	else if (ping_count < 0)
+		fatal("ping_count < 0");
+
 	slurm_mutex_unlock(&lock_mutex);
 }
 
@@ -401,12 +395,12 @@ extern void run_health_check(void)
 	 */
 	select_g_select_nodeinfo_set_all();
 
+#ifdef HAVE_FRONT_END
 	check_agent_args = xmalloc (sizeof (agent_arg_t));
 	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
 	check_agent_args->retry = 0;
 	check_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	check_agent_args->hostlist = hostlist_create(NULL);
-#ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if (IS_NODE_NO_RESPOND(front_end_ptr))
@@ -448,6 +442,11 @@ extern void run_health_check(void)
 		select_g_select_nodeinfo_set_all();
 	}
 
+	check_agent_args = xmalloc (sizeof (agent_arg_t));
+	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
+	check_agent_args->retry = 0;
+	check_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	check_agent_args->hostlist = hostlist_create(NULL);
 	for (i = 0; i < node_record_count; i++) {
 		if (run_cyclic) {
 			if (node_test_cnt++ >= node_limit)

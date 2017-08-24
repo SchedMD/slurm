@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,24 +42,24 @@ enum {
 };
 
 static display_data_t display_data_submit[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
-	{G_TYPE_STRING, SORTID_PARTITION, "PARTITION", TRUE, -1},
-	{G_TYPE_STRING, SORTID_AVAIL, "AVAIL", TRUE, -1},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "TIMELIMIT", TRUE, -1},
-	{G_TYPE_STRING, SORTID_NODES, "NODES", TRUE, -1},
+	{G_TYPE_INT, SORTID_POS, NULL, false, -1},
+	{G_TYPE_STRING, SORTID_PARTITION, "PARTITION", true, -1},
+	{G_TYPE_STRING, SORTID_AVAIL, "AVAIL", true, -1},
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "TIMELIMIT", true, -1},
+	{G_TYPE_STRING, SORTID_NODES, "NODES", true, -1},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "MIDPLANELIST", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "MIDPLANELIST", true, -1},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NODELIST", TRUE, -1},
+	{G_TYPE_STRING, SORTID_NODELIST, "NODELIST", true, -1},
 #endif
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	{G_TYPE_NONE, -1, NULL, false, -1}
 };
 
 static display_data_t options_data_submit[] = {
-	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, -1},
-	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, -1},
-	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", TRUE, -1},
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	{G_TYPE_STRING, JOB_PAGE, "Jobs", true, -1},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, -1},
+	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", true, -1},
+	{G_TYPE_NONE, -1, NULL, false, -1}
 };
 
 static display_data_t *local_display_data = NULL;
@@ -121,7 +121,7 @@ extern void row_clicked_submit(GtkTreeView *tree_view,
 
 	label = gtk_label_new(info);
 	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			 label, TRUE, TRUE, 0);
+			 label, true, true, 0);
 	xfree(info);
 	gtk_widget_show(label);
 

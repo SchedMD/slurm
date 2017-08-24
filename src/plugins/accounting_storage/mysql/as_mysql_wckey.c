@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -558,7 +558,8 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (debug_flags & DEBUG_FLAG_DB_WCKEY)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		object->id = mysql_db_insert_ret_id(mysql_conn, query);
+		object->id = (uint32_t)mysql_db_insert_ret_id(
+			mysql_conn, query);
 		xfree(query);
 		if (!object->id) {
 			error("Couldn't add wckey %s", object->name);

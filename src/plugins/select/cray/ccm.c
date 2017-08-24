@@ -7,7 +7,7 @@
  *  Written by Marlys Kohnke
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -37,16 +37,16 @@
 \*****************************************************************************/
 
 #define _GNU_SOURCE		/* needed for getline() */
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/pack.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/slurmctld/locks.h"
+
 #include "ccm.h"
 
 /* CCM use */
@@ -95,7 +95,7 @@ static char *_get_ccm_partition(ccm_config_t *ccm_config)
 			if (entry[num_read - 1] == '\n') {
 				entry[num_read - 1] = '\0';
 			}
-			if (slurm_strcasestr(entry, "CCM_QUEUES") == 0) {
+			if (xstrcasestr(entry, "CCM_QUEUES") == 0) {
 				continue;
 			}
 			/* Ignore a comment line */
@@ -279,6 +279,9 @@ static char *_ccm_create_nidlist_file(ccm_info_t *ccm_info)
 	char *unique_filenm = NULL;
 	FILE *tmp_fp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
+	slurm_step_layout_req_t step_layout_req;
+	uint16_t cpus_per_task_array[1];
+	uint32_t cpus_task_reps[1];
 
 	/*
 	 * Create a unique temp file; name of the file will be passed
@@ -309,15 +312,24 @@ static char *_ccm_create_nidlist_file(ccm_info_t *ccm_info)
 		debug3("CCM job %u nodes[%d] is %d",
 		       ccm_info->job_id, i, nodes[i]);
 	}
+
+	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
+
+	step_layout_req.node_list = ccm_info->nodelist;
+	step_layout_req.cpus_per_node = ccm_info->cpus_per_node;
+	step_layout_req.cpu_count_reps = ccm_info->cpu_count_reps;
+	step_layout_req.num_hosts = ccm_info->node_cnt;
+	step_layout_req.num_tasks = ccm_info->num_tasks;
+
+	cpus_per_task_array[0] = ccm_info->cpus_per_task;
+	cpus_task_reps[0] = step_layout_req.num_hosts;
+
+	step_layout_req.cpus_per_task = cpus_per_task_array;
+	step_layout_req.cpus_task_reps = cpus_task_reps;
+	step_layout_req.task_dist = ccm_info->task_dist;
+	step_layout_req.plane_size = ccm_info->plane_size;
 	/* Determine how many PEs(tasks) will be run on each node */
-	step_layout = slurm_step_layout_create(ccm_info->nodelist,
-					       ccm_info->cpus_per_node,
-					       ccm_info->cpu_count_reps,
-					       ccm_info->node_cnt,
-					       ccm_info->num_tasks,
-					       ccm_info->cpus_per_task,
-					       ccm_info->task_dist,
-					       ccm_info->plane_size);
+	step_layout = slurm_step_layout_create(&step_layout_req);
 	if (!step_layout) {
 		CRAY_ERR("CCM job %u slurm_step_layout_create failure",
 			 ccm_info->job_id);
@@ -564,7 +576,7 @@ extern void *ccm_begin(void *args)
 	char err_str_buf[128], srun_msg_buf[256];
 	struct job_record *job_ptr = (struct job_record *)args;
 	slurmctld_lock_t job_read_lock =
-		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	debug2("CCM job %u_ccm_begin partition %s", job_ptr->job_id,
 	       job_ptr->partition);
@@ -673,7 +685,7 @@ extern void *ccm_fini(void *args)
 	time_t delay;
 	struct job_record *job_ptr = (struct job_record *)args;
 	slurmctld_lock_t job_read_lock =
-		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	memset(&ccm_info, 0, sizeof(ccm_info_t));
 	lock_slurmctld(job_read_lock);

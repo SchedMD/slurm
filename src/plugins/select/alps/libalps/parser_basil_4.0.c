@@ -83,7 +83,7 @@ void eh_accel(struct ud *ud, const XML_Char **attrs)
 
 	strncpy(accel.family, attribs[3], sizeof(accel.family));
 
-	if (atou32(attribs[4], &accel.memory_mb) < 0)
+	if (atou64(attribs[4], &accel.memory_mb) < 0)
 		fatal("illegal Accelerator.memory_mb = %s", attribs[4]);
 
 	if (atou32(attribs[5], &accel.clock_mhz) < 0)

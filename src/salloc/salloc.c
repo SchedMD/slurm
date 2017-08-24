@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,18 +38,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <sys/resource.h> /* for struct rlimit */
 #include <dirent.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/param.h>
+#include <sys/resource.h> /* for struct rlimit */
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <termios.h>
@@ -92,7 +91,6 @@ extern uint64_t job_getjid(pid_t pid);
 extern pid_t getpgid(pid_t pid);
 #endif
 
-#define HASH_RECS	100
 #define MAX_RETRIES	10
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
@@ -162,7 +160,7 @@ static void _reset_input_mode (void)
 		tcsetpgrp(STDIN_FILENO, getpgid(getppid()));
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t desc;
@@ -338,6 +336,11 @@ int main(int argc, char *argv[])
 
 	/* become the user after the allocation has been requested. */
 	if (opt.uid != (uid_t) -1) {
+		/* drop extended groups before changing uid/gid */
+		if ((setgroups(0, NULL) < 0)) {
+			error("setgroups: %m");
+			exit(error_exit);
+		}
 		if (setuid(opt.uid) < 0) {
 			error("setuid: %m");
 			exit(error_exit);
@@ -452,7 +455,7 @@ int main(int argc, char *argv[])
 	if (allocation_state == REVOKED) {
 		error("Allocation was revoked for job %u before command could "
 		      "be run", alloc->job_id);
-		pthread_cond_broadcast(&allocation_state_cond);
+		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
 		if (slurm_complete_job(alloc->job_id, status) != 0) {
 			error("Unable to clean up allocation for job %u: %m",
@@ -461,7 +464,7 @@ int main(int argc, char *argv[])
 		return 1;
  	}
 	allocation_state = GRANTED;
-	pthread_cond_broadcast(&allocation_state_cond);
+	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	/*  Ensure that salloc has initial terminal foreground control.  */
@@ -481,9 +484,9 @@ int main(int argc, char *argv[])
 	}
 	slurm_mutex_lock(&allocation_state_lock);
 	if (suspend_flag)
-		pthread_cond_wait(&allocation_state_cond, &allocation_state_lock);
+		slurm_cond_wait(&allocation_state_cond, &allocation_state_lock);
 	command_pid = _fork_command(command_argv);
-	pthread_cond_broadcast(&allocation_state_cond);
+	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	/*
@@ -525,7 +528,7 @@ relinquish:
 		slurm_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
 	}
-	pthread_cond_broadcast(&allocation_state_cond);
+	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
@@ -664,8 +667,12 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;
 	desc->min_nodes = opt.min_nodes;
-	if (opt.nodes_set)
+
+	if (opt.max_nodes)
 		desc->max_nodes = opt.max_nodes;
+	else if (opt.nodes_set)
+		desc->max_nodes = opt.min_nodes;
+
 	desc->user_id = opt.uid;
 	desc->group_id = opt.gid;
 	if (opt.dependency)
@@ -796,6 +803,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->power_flags = opt.power_flags;
 	if (opt.mcs_label)
 		desc->mcs_label = xstrdup(opt.mcs_label);
+	if (opt.delay_boot != NO_VAL)
+		desc->delay_boot = opt.delay_boot;
 
 	return 0;
 }
@@ -896,7 +905,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			}
 		}
 		allocation_state = REVOKED;
-		pthread_cond_broadcast(&allocation_state_cond);
+		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
 		/*
 		 * Clean up child process: only if the forked process has not

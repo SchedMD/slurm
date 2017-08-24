@@ -2,32 +2,29 @@
 
 <h1>What's New</h1>
 
-<h2>Major Updates in Slurm Version 16.05</h2>
-<p>Slurm version 16.05 was released in May 2016.
+<h2>Major Updates in Slurm Version 17.02</h2>
+<p>Slurm version 17.02 was released in February 2017.
 See the RELEASE_NOTES and NEWS files included with the distribution for a more
 complete description of changes.
 Highlights of that release include:</p>
 <ul>
-<li>Added --deadline option to salloc, sbatch and srun. Jobs which can not be
-    completed by the user specified deadline will be terminated with a state of
-    "Deadline" or "DL".</li>
-<li>Add an "scontrol top &lt;jobid&gt;" command to re-order the priorities of a user's
-    pending jobs. May be disabled with the "disable_user_top" option in the
-    SchedulerParameters configuration parameter.</li>
-<li>Add Multi-Category Security (MCS) infrastructure to permit nodes to be bound
-    to specific users or groups.</li>
-<li>Add --gres-flags=enforce-binding option to salloc, sbatch and srun commands.
-    If set, the only CPUs available to the job will be those bound to the
-    selected GRES (i.e. the CPUs identifed in the gres.conf file will be
-    strictly enforced rather than advisory).</li>
-<li>Added new job dependency type of "aftercorr" which will start a task of a
-    job array after the corresponding task of another job array completes.</li>
-<li>Implemented and documented PMIX protocol which is used to bootstrap an
-    MPI job. PMIX is an alternative to PMI and PMI2.</li>
-<li>Added wrappers for LSF/OpenLava commands.</li>
-<li>Added Grid Engine options to qsub command wrapper.</li>
+<li>All memory values (in MB) are now 64 bit. Previously, nodes with more than
+    2 TB of memory would not schedule or enforce memory limits correctly.</li>
+<li>Automatically clean up task/cgroup cpuset and devices cgroups after steps
+    are completed.</li>
+<li>Added new sacctmgr commands: "shutdown" (shutdown the server), "list stats"
+    (get server statistics) "clear stats" (clear server statistics).</li>
+<li>Added burst buffer support for job arrays. Added new SchedulerParameters
+    configuration parameter of bb_array_stage_cnt=# to indicate how many pending
+    tasks of a job array should be made available for burst buffer resource
+    allocation.</li>
+<li>Added PrologFlags=Serial to disable concurrent execution of prolog/epilog
+    scripts.</li>
+<li>Added "MailDomain" configuration parameter to qualify email addresses.</li>
+<li>Added infrastructure for managing workload across a federation of clusters.
+    (partial functionality in version 17.02, fully operational in November 2017)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 28 April 2016</p>
+<p style="text-align:center;">Last modified 28 March 2017</p>
 
 <!--#include virtual="footer.txt"-->

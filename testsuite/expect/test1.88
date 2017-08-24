@@ -14,7 +14,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -109,7 +109,7 @@ make_bash_script $file_in "
 #
 set timeout $max_job_delay
 set no_start 0
-set sbatch_pid [spawn $sbatch -N1-3 -n6 --output=$file_out --error=$file_err -t1 $file_in]
+set sbatch_pid [spawn $sbatch -N1-6 -n6 --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,15 +35,14 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
 
+#include "config.h"
+
+#include <errno.h>
 #include <poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <errno.h>
 
 #include "src/common/fd.h"
 #include "src/common/eio.h"
@@ -291,8 +290,7 @@ int eio_handle_mainloop(eio_handle_t *eio)
 	xassert (eio != NULL);
 	xassert (eio->magic == EIO_MAGIC);
 
-	for (;;) {
-
+	while (1) {
 		/* Alloc memory for pfds and map if needed */
 		n = list_count(eio->obj_list);
 		if (maxnfds < n) {
@@ -303,12 +301,13 @@ int eio_handle_mainloop(eio_handle_t *eio)
 			 * Note: xrealloc() also handles initial malloc
 			 */
 		}
+		if (!pollfds)  /* Fix for CLANG false positive */
+			goto done;
 
 		debug4("eio: handling events for %d objects",
 		       list_count(eio->obj_list));
 		nfds = _poll_setup_pollfds(pollfds, map, eio->obj_list);
-		if ((nfds <= 0) ||
-		    (pollfds == NULL))	/* Fix for CLANG false positive */
+		if (nfds <= 0)
 			goto done;
 
 		/*
@@ -320,12 +319,14 @@ int eio_handle_mainloop(eio_handle_t *eio)
 
 		xassert(nfds <= maxnfds + 1);
 
+		/* Get shutdown_time to pass to _poll_internal */
 		slurm_mutex_lock(&eio->shutdown_mutex);
 		shutdown_time = eio->shutdown_time;
 		slurm_mutex_unlock(&eio->shutdown_mutex);
 		if (_poll_internal(pollfds, nfds, shutdown_time) < 0)
 			goto error;
 
+		/* See if we've been told to shut down by eio_signal_shutdown */
 		if (pollfds[nfds-1].revents & POLLIN)
 			_eio_wakeup_handler(eio);
 
@@ -360,7 +361,7 @@ _poll_internal(struct pollfd *pfds, unsigned int nfds, time_t shutdown_time)
 		timeout = -1;
 	while ((n = poll(pfds, nfds, timeout)) < 0) {
 		switch (errno) {
-		case EINTR :
+		case EINTR:
 			return 0;
 		case EAGAIN:
 			continue;

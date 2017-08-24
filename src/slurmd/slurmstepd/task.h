@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,15 +39,9 @@
 #ifndef _TASK_H
 #define _TASK_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
-
-#if HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 

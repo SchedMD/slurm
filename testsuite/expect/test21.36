@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Validates that sacctmgr runaway jobs returns runaway jobs
+#          Validates that sacctmgr show runawayjobs returns runawayjobs
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -11,7 +11,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://slurm.schedmd.com/>.
+# For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -34,13 +34,12 @@ source ./globals_accounting
 set test_id          21.36
 set sql_query        "test$test_id\-query.sql"
 set sql_query_rem    "test$test_id\-query-rem.sql"
-set cluster          "test$test_id\_clus"
+set cluster          [get_cluster_name]
 set account          "test$test_id\_acct"
 set user             "test$test_id\_user"
 set config_dir       ""
 set exit_code        1
 set access_err       0
-set test_conf_file   "/tmp/slurm.conf\_$test_id"
 
 # Cluster requirments
 array set clus_req {}
@@ -52,17 +51,24 @@ set acct_req(cluster) $cluster
 set user_req(account) $account
 set user_req(cluster) $cluster
 
+exec $bin_rm -f $sql_query $sql_query_rem
+
+# Make SQL file to remove the inserted job
+set file [open $sql_query_rem "w"]
+# This SQL statement is correct for our purposes (missing && infront of cluster)
+puts $file "delete from job_table where alloc_nodes=\'test21.36_node\' cluster=\'$cluster\';"
+close $file
+
 # Remove pre-existing items
 proc cleanup { } {
-	global cluster account user bin_rm sql_query sql_query_rem
-	remove_cluster "$cluster"
-	remove_acct "" $account
+	global cluster account user sql_query_rem
+	archive_load $sql_query_rem
 	remove_user "" "" $user
-	exec $bin_rm -f $sql_query $sql_query_rem
+	remove_acct "" $account
 }
 
 proc endit { } {
-	global exit_code
+	global exit_code bin_rm sql_query sql_query_rem
 	cleanup
 
 	if {$exit_code == 0} {
@@ -71,6 +77,8 @@ proc endit { } {
 		send_user "\nFAILURE\n"
 	}
 
+	exec $bin_rm -f $sql_query $sql_query_rem
+
 	exit $exit_code
 }
 
@@ -78,7 +86,7 @@ proc endit { } {
 print_header $test_id
 
 if {[test_using_slurmdbd] == 0} {
-	send_user "\nThis test can't be run without AccountStorageType=slurmdbd\n"
+	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
 	exit 0
 }
 if {[string compare [check_accounting_admin_level] "Administrator"]} {
@@ -88,27 +96,6 @@ if {[string compare [check_accounting_admin_level] "Administrator"]} {
 
 # Remove pre-existing items
 cleanup
-
-# DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
-# THIS COULD SERIOUSLY MESS UP YOUR DATABASE IF YOU ALTER THIS INCORRECTLY
-# JUST A FRIENDLY REMINDER ;)
-
-# Insert a job that has no end time and is still in running state
-set file [open $sql_query "w"]
-puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
-puts $file "('65536', '6', 'test21-36wckey', '1', '1002', '1002', 'debug', '', '$cluster', '$account', 1199170800, 1199170800, 1199170800, 0, '0', 'test21.32_job1', '0', '1', '0', '2', 2, '1=2', 'test21.36_node', '0', '0', '0')"
-puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);"
-close $file
-
-# Make SQL file to remove the inserted job
-set file [open $sql_query_rem "w"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_job_table\";"]
-close $file
-
-# Add Test Cluster
-if {[add_cluster $cluster [array get clus_req]]} {
-	endit
-}
 
 # Add Test Account
 if {[add_acct $account [array get acct_req]]} {
@@ -120,84 +107,30 @@ if {[add_user $user [array get user_req]]} {
 	endit
 }
 
-#
-# Get the slurm.conf path
-#
-set got_config 0
-log_user 0
-spawn $scontrol show config
-expect {
-	-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
-		set config_dir $expect_out(1,string)
-		set got_config 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$got_config == 0} {
-	send_user "\nFAILURE: Could not find configuration file location\n"
-	endit
+set assoc_id [get_assoc_id $user $account $cluster]
 
+if {$assoc_id == -1} {
+	endit
 }
+
+# DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
+# THIS COULD SERIOUSLY MESS UP YOUR DATABASE IF YOU ALTER THIS INCORRECTLY
+# JUST A FRIENDLY REMINDER ;)
+
+# SINCE THIS TEST HAS TO PUT A JOB INTO THE ACTUAL CLUSTER INSTEAD
+# OF A TEST CLUSTER THIS IS MORE IMPORTANT TO GET RIGHT.
+
+# Insert a job that has no end time and is still in running state
+set file [open $sql_query "w"]
+puts $file "insert into job_table (jobid, associd, cluster, uid, gid, `partition`, account, eligible, submit, start, end, name, state, priority, tres_req, tres_alloc, nodelist, alloc_nodes, qos, deleted) values"
+puts $file "('65536', '$assoc_id', '$cluster', '1002', '1002', 'debug', '$account', 1199170800, 1199170800, 1199170800, 0, 'test21.32_job1', '1', '2', '1=2,2=200,4=1', '1=2,2=200,4=1', 'test21.36_node', 'test21.36_node', '0', '0')"
+puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc);"
+close $file
+
+log_user 1
 
 # Get the current working directory
 set cwd "[$bin_pwd]"
-
-#
-# Copy the original slurm.conf file
-#
-spawn $bin_cp -v $config_dir/slurm.conf $test_conf_file
-expect {
-	timeout {
-		send_user "\nFAILURE: slurm.conf was not copied\n"
-		endit
-	}
-	eof {
-		wait
-	}
-}
-if {![file exists $test_conf_file]} {
-	send_user "\nFAILURE: slurm.conf was not copied\n"
-	endit
-}
-
-#
-# Add test cluster name to the slurm.conf
-#
-spawn $bin_sed -i "s/\\(ClusterName=\\).*/\\1$cluster/gI" $test_conf_file
-expect {
-	-re "sed:" {
-		send_user "\nERROR: Unable to make temp slurm.conf\n"
-		endit
-	}
-	eof {
-		wait
-	}
-}
-
-# Double check that cluster name was set correctly.
-set match 0
-spawn $bin_grep -i "^ClusterName=$cluster" $test_conf_file
-expect {
-        -nocase "ClusterName=$cluster" {
-		incr match
-	}
-	eof {
-		wait
-	}
-}
-
-if {$match == 0} {
-	send_user "\nERROR: $test_conf_file doesn't have correct cluster name\n"
-	endit
-}
 
 # Load a job to the database that has no end time.
 if {[archive_load $sql_query]} {
@@ -205,11 +138,9 @@ if {[archive_load $sql_query]} {
 	endit
 }
 
-# Test sacctmgr show runaway jobs
+# Test sacctmgr show runawayjobs
 set list_job 0
-# Use temp conf file to use different cluster name.
-set env(SLURM_CONF) $test_conf_file
-spawn $sacctmgr show -i runaway jobs
+spawn $sacctmgr show -i runawayjobs $cluster
 expect {
 	-re "NOTE: Runaway jobs" {
 		set list_job 1
@@ -232,7 +163,7 @@ if {$list_job != 1} {
 
 # Check that jobs were fixed
 set list_job 0
-spawn $sacctmgr show -i runaway jobs
+spawn $sacctmgr show -i runawayjobs $cluster
 expect {
 	-re "No runaway jobs found" {
 		set list_job 1

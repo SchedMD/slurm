@@ -3,7 +3,7 @@
 dnl Prologue
 dnl
 
-AC_INIT(slurm, m4_esyscmd([perl -ne 'print,exit if s/^\s*VERSION:\s*(\d*.\d*).\S*/\1/i' ./META | sed 's/^v//' | tr '-' '_' | tr -d '\n']), [slurm-dev@schedmd.com], [], [http://slurm.schedmd.com])
+AC_INIT(slurm, m4_esyscmd([perl -ne 'print,exit if s/^\s*VERSION:\s*(\d*.\d*).\S*/\1/i' ./META | sed 's/^v//' | tr '-' '_' | tr -d '\n']), [slurm-dev@schedmd.com], [], [https://slurm.schedmd.com])
 AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR([auxdir])
@@ -28,30 +28,17 @@ AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADERS([slurm/slurm.h])
 
-dnl This needs to be close to the front to set CFLAGS=-m64
 X_AC_RPATH
+
+dnl This sets the first compiler to be C instead of C++ (which would happen
+dnl if X_AC_BGQ was the first thing called.
+X_AC_DATABASES
 
 X_AC_BG
 
-X_AC_BGL
-
-dnl we need to know if this is a bgl in the Makefile.am to do
-dnl some things differently
-AM_CONDITIONAL(BGL_LOADED, test "x$ac_bluegene_loaded" = "xyes")
-AC_SUBST(BGL_LOADED)
-
-X_AC_BGP
-
-dnl ok now check if We have an L or P system, Q is handled differently
-dnl so handle it later.
-AM_CONDITIONAL(BG_L_P_LOADED, test "x$ac_bluegene_loaded" = "xyes")
-AC_SUBST(BG_L_P_LOADED)
-
-dnl ok now check if We are on a real L or P system, (test if to build srun
-dnl or not.  If we are emulating things we should build it.
-AM_CONDITIONAL(REAL_BG_L_P_LOADED, test "x$ac_real_bluegene_loaded" = "xyes")
-AC_SUBST(REAL_BG_L_P_LOADED)
-
+dnl This needs to be close to the front to set CFLAGS=-m64, but needs to
+dnl be after something that does a AC_LINK_IFELSE or the compiler configure
+dnl checks for will be C++ instead of C.
 X_AC_BGQ
 
 dnl We need to know if this is a Q system
@@ -69,15 +56,11 @@ AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
 AC_SUBST(BLUEGENE_LOADED)
 
 
-X_AC_AIX
-
 dnl
 dnl Check to see if this architecture should use slurm_* prefix function
 dnl aliases for plugins.
 dnl
 case "$host" in
-	*-*-aix*) AC_DEFINE(USE_ALIAS, 0,
-			[Define slurm_ prefix function aliases for plugins]) ;;
 	*darwin*) AC_DEFINE(USE_ALIAS, 0,
 			[Define slurm_ prefix function aliases for plugins]) ;;
 	*)        AC_DEFINE(USE_ALIAS, 1,
@@ -141,7 +124,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
-
+AC_HEADER_MAJOR
 
 dnl Checks for structures.
 dnl
@@ -158,10 +141,6 @@ X_AC_SLURM_PROGRAM_INVOCATION_NAME
 dnl Check if ptrace takes four or five arguments
 dnl
 X_AC_PTRACE
-
-dnl Check if setpgrp takes zero or two arguments
-dnl
-X_AC_SETPGRP
 
 dnl Check of sched_getaffinity exists and it's argument count
 dnl
@@ -190,6 +169,9 @@ dnl Checks for compiler characteristics.
 dnl
 AC_PROG_GCC_TRADITIONAL([])
 
+AX_GCC_BUILTIN(__builtin_clzll)
+AX_GCC_BUILTIN(__builtin_ctzll)
+AX_GCC_BUILTIN(__builtin_popcountll)
 
 dnl checks for library functions.
 dnl
@@ -219,13 +201,8 @@ AC_CHECK_FUNCS( \
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
 
-AC_CHECK_FUNCS(unsetenv, [have_unsetenv=yes])
-AM_CONDITIONAL(HAVE_UNSETENV, test "x$have_unsetenv" = "xyes")
-
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 
-# Always define WITH_PTHREADS if we make it this far
-AC_DEFINE(WITH_PTHREADS,1,[Define if you have pthreads.])
 LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
@@ -298,8 +275,6 @@ if test "x$ac_glib_test" != "xyes" -o "x$ac_gtk_test" != "xyes"; then
 fi
 
 AM_CONDITIONAL(BUILD_SVIEW, [test "x$ac_glib_test" = "xyes"] && [test "x$ac_gtk_test" = "xyes"])
-
-X_AC_DATABASES
 
 dnl Cray ALPS/Basil support depends on mySQL
 X_AC_CRAY
@@ -455,7 +430,6 @@ AC_CONFIG_FILES([Makefile
 		 contribs/sgather/Makefile
 		 contribs/sgi/Makefile
 		 contribs/sjobexit/Makefile
-		 contribs/slurmdb-direct/Makefile
 		 contribs/pmi2/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
@@ -536,7 +510,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/burst_buffer/cray/Makefile
 		 src/plugins/burst_buffer/generic/Makefile
 		 src/plugins/checkpoint/Makefile
-		 src/plugins/checkpoint/aix/Makefile
 		 src/plugins/checkpoint/blcr/Makefile
 		 src/plugins/checkpoint/blcr/cr_checkpoint.sh
 		 src/plugins/checkpoint/blcr/cr_restart.sh
@@ -559,7 +532,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct_gather/Makefile
 		 src/plugins/jobacct_gather/common/Makefile
 		 src/plugins/jobacct_gather/linux/Makefile
-		 src/plugins/jobacct_gather/aix/Makefile
 		 src/plugins/jobacct_gather/cgroup/Makefile
 		 src/plugins/jobacct_gather/none/Makefile
 		 src/plugins/jobcomp/Makefile
@@ -587,8 +559,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/launch/runjob/Makefile
 		 src/plugins/launch/slurm/Makefile
 		 src/plugins/mcs/Makefile
-		 src/plugins/mcs/none/Makefile
+		 src/plugins/mcs/account/Makefile
 		 src/plugins/mcs/group/Makefile
+		 src/plugins/mcs/none/Makefile
 		 src/plugins/mcs/user/Makefile
 		 src/plugins/node_features/Makefile
 		 src/plugins/node_features/knl_cray/Makefile
@@ -606,7 +579,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/priority/basic/Makefile
 		 src/plugins/priority/multifactor/Makefile
 		 src/plugins/proctrack/Makefile
-		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/cray/Makefile
 		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/pgid/Makefile
@@ -620,16 +592,12 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
 		 src/plugins/sched/hold/Makefile
-		 src/plugins/sched/wiki/Makefile
-		 src/plugins/sched/wiki2/Makefile
 		 src/plugins/select/Makefile
 		 src/plugins/select/alps/Makefile
 		 src/plugins/select/alps/libalps/Makefile
 		 src/plugins/select/alps/libemulate/Makefile
 		 src/plugins/select/bluegene/Makefile
-		 src/plugins/select/bluegene/ba/Makefile
 		 src/plugins/select/bluegene/ba_bgq/Makefile
-		 src/plugins/select/bluegene/bl/Makefile
 		 src/plugins/select/bluegene/bl_bgq/Makefile
 		 src/plugins/select/bluegene/sfree/Makefile
 		 src/plugins/select/cons_res/Makefile

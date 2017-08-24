@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -36,16 +36,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include "config.h"
 
-#include <string.h>
 #include <ctype.h>
-#include <stdlib.h>
-#include <libgen.h>
-#include <glob.h>
 #include <dlfcn.h>
+#include <glob.h>
+#include <libgen.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "src/common/plugin.h"
 #include "src/common/xmalloc.h"
@@ -1374,15 +1372,31 @@ static char * _opt_env_name (struct spank_plugin_opt *p, char *buf, size_t siz)
 
 static int _option_setenv (struct spank_plugin_opt *option)
 {
-	char var [1024];
+	char var[1024];
+	char *arg = option->optarg;
 
-	_opt_env_name (option, var, sizeof (var));
+	_opt_env_name(option, var, sizeof(var));
 
-	if (setenv (var, option->optarg, 1) < 0)
-	    error ("failed to set %s=%s in env", var, option->optarg);
+	/*
+	 * Old glibc behavior was to set the variable with an empty value if
+	 * the option was NULL. Newer glibc versions will segfault instead,
+	 * so feed it an empty string when necessary to maintain backwards
+	 * compatibility.
+	 */
+	if (!option->optarg)
+		arg = "";
 
-	if (dyn_spank_set_job_env (var, option->optarg, 1) < 0)
-	    error ("failed to set %s=%s in env", var, option->optarg);
+	if (setenv(var, arg, 1) < 0)
+		error("failed to set %s=%s in env", var, arg);
+
+	/*
+	 * Use the possibly-NULL value and let the command itself figure
+	 * out how to handle it. This will usually result in "(null)"
+	 * instead of "" used above.
+	 */
+
+	if (dyn_spank_set_job_env(var, option->optarg, 1) < 0)
+		error("failed to set %s=%s in env", var, option->optarg);
 
 	return (0);
 }
@@ -1868,6 +1882,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 {
 	int *p2int;
 	uint32_t *p2uint32;
+	uint64_t *p2uint64;
 	uint32_t  uint32;
 	uint16_t *p2uint16;
 	uid_t *p2uid;
@@ -2114,11 +2129,11 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 			*p2str = NULL;
 		break;
 	case S_JOB_ALLOC_MEM:
-		p2uint32 = va_arg(vargs, uint32_t *);
+		p2uint64 = va_arg(vargs, uint64_t *);
 		if (slurmd_job)
-			*p2uint32 = slurmd_job->job_mem;
+			*p2uint64 = slurmd_job->job_mem;
 		else
-			*p2uint32 = 0;
+			*p2uint64 = 0;
 		break;
 	case S_STEP_ALLOC_CORES:
 		p2str = va_arg(vargs, char **);
@@ -2128,11 +2143,11 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 			*p2str = NULL;
 		break;
 	case S_STEP_ALLOC_MEM:
-		p2uint32 = va_arg(vargs, uint32_t *);
+		p2uint64 = va_arg(vargs, uint64_t *);
 		if (slurmd_job)
-			*p2uint32 = slurmd_job->step_mem;
+			*p2uint64 = slurmd_job->step_mem;
 		else
-			*p2uint32 = 0;
+			*p2uint64 = 0;
 		break;
 	case S_SLURM_RESTART_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
@@ -2240,40 +2255,55 @@ spank_err_t spank_unsetenv (spank_t spank, const char *var)
 /*
  *  Dynamically loaded versions of spank_*_job_env
  */
-const char *dyn_spank_get_job_env (const char *name)
+const char *dyn_spank_get_job_env(const char *name)
 {
-	void *h = dlopen (NULL, 0);
+	void *h = dlopen(NULL, 0);
 	char * (*fn)(const char *n);
+	char *rc;
 
-	fn = dlsym (h, "spank_get_job_env");
-	if (fn == NULL)
+	fn = dlsym(h, "spank_get_job_env");
+	if (fn == NULL) {
+		(void) dlclose(h);
 		return NULL;
+	}
 
-	return ((*fn) (name));
+	rc = ((*fn) (name));
+/*	(void) dlclose(h);	NOTE: DO NOT CLOSE OR SPANK WILL BREAK */
+	return rc;
 }
 
-int dyn_spank_set_job_env (const char *n, const char *v, int overwrite)
+int dyn_spank_set_job_env(const char *n, const char *v, int overwrite)
 {
-	void *h = dlopen (NULL, 0);
+	void *h = dlopen(NULL, 0);
 	int (*fn)(const char *n, const char *v, int overwrite);
+	int rc;
 
-	fn = dlsym (h, "spank_set_job_env");
-	if (fn == NULL)
+	fn = dlsym(h, "spank_set_job_env");
+	if (fn == NULL) {
+		(void) dlclose(h);
 		return (-1);
+	}
 
-	return ((*fn) (n, v, overwrite));
+	rc = ((*fn) (n, v, overwrite));
+/*	(void) dlclose(h);	NOTE: DO NOT CLOSE OR SPANK WILL BREAK */
+	return rc;
 }
 
-extern int dyn_spank_unset_job_env (const char *n)
+extern int dyn_spank_unset_job_env(const char *n)
 {
-	void *h = dlopen (NULL, 0);
+	void *h = dlopen(NULL, 0);
 	int (*fn)(const char *n);
+	int rc;
 
-	fn = dlsym (h, "spank_unset_job_env");
-	if (fn == NULL)
+	fn = dlsym(h, "spank_unset_job_env");
+	if (fn == NULL) {
+		(void) dlclose(h);
 		return (-1);
+	}
 
-	return ((*fn) (n));
+	rc = ((*fn) (n));
+/*	(void) dlclose(h);	NOTE: DO NOT CLOSE OR SPANK WILL BREAK */
+	return rc;
 }
 
 static spank_err_t spank_job_control_access_check (spank_t spank)

@@ -4,14 +4,14 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -62,9 +62,7 @@
  *  used by the watchdog thread as well as the communication threads.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #if HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -74,12 +72,11 @@
 #include <pthread.h>
 #include <pwd.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <stdlib.h>
 
 #include "src/common/forward.h"
 #include "src/common/list.h"
@@ -207,17 +204,15 @@ static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
 static int agent_thread_cnt = 0;
-static uint16_t message_timeout = (uint16_t) NO_VAL;
+static uint16_t message_timeout = NO_VAL16;
 
 static pthread_mutex_t pending_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  pending_cond = PTHREAD_COND_INITIALIZER;
-static int pending_wait_time = (uint16_t) NO_VAL;
+static int pending_wait_time = NO_VAL16;
 static bool pending_mail = false;
 static pthread_t pending_thread_id = (pthread_t) 0;
 
 static bool run_scheduler    = false;
-static bool wiki2_sched      = false;
-static bool wiki2_sched_test = false;
 
 /*
  * agent - party responsible for transmitting an common RPC in parallel
@@ -252,13 +247,6 @@ void *agent(void *args)
 	     list_count(retry_list));
 #endif
 	slurm_mutex_lock(&agent_cnt_mutex);
-	if (!wiki2_sched_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (xstrcmp(sched_type, "sched/wiki2") == 0)
-			wiki2_sched = true;
-		xfree(sched_type);
-		wiki2_sched_test = true;
-	}
 
 	rpc_thread_cnt = 2 + MIN(agent_arg_ptr->node_count, AGENT_THREAD_COUNT);
 	while (1) {
@@ -268,7 +256,7 @@ void *agent(void *args)
 			agent_thread_cnt += rpc_thread_cnt;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
+			slurm_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
 		}
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
@@ -306,8 +294,8 @@ void *agent(void *args)
 		slurm_mutex_lock(&agent_info_ptr->thread_mutex);
 		while (agent_info_ptr->threads_active >=
 		       AGENT_THREAD_COUNT) {
-			pthread_cond_wait(&agent_info_ptr->thread_cond,
-					  &agent_info_ptr->thread_mutex);
+			slurm_cond_wait(&agent_info_ptr->thread_cond,
+					&agent_info_ptr->thread_mutex);
 		}
 
 		/* create thread specific data, NOTE: freed from
@@ -324,10 +312,8 @@ void *agent(void *args)
 					    (void *) task_specific_ptr))) {
 			error("pthread_create error %m");
 			if (agent_info_ptr->threads_active)
-				pthread_cond_wait(&agent_info_ptr->
-						  thread_cond,
-						  &agent_info_ptr->
-						  thread_mutex);
+				slurm_cond_wait(&agent_info_ptr->thread_cond,
+						&agent_info_ptr->thread_mutex);
 			else {
 				slurm_mutex_unlock(&agent_info_ptr->
 						     thread_mutex);
@@ -350,7 +336,7 @@ void *agent(void *args)
 	}
 	slurm_mutex_lock(&agent_info_ptr->thread_mutex);
 	while (agent_info_ptr->threads_active != 0) {
-		pthread_cond_wait(&agent_info_ptr->thread_cond,
+		slurm_cond_wait(&agent_info_ptr->thread_cond,
 				&agent_info_ptr->thread_mutex);
 	}
 	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
@@ -380,7 +366,7 @@ void *agent(void *args)
 	if ((agent_thread_cnt + AGENT_THREAD_COUNT + 2) < MAX_SERVER_THREADS)
 		spawn_retry_agent = true;
 
-	pthread_cond_broadcast(&agent_cnt_cond);
+	slurm_cond_broadcast(&agent_cnt_cond);
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	if (spawn_retry_agent)
@@ -420,8 +406,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
-	if (pthread_cond_init(&agent_info_ptr->thread_cond, NULL))
-		fatal("pthread_cond_init error %m");
+	slurm_cond_init(&agent_info_ptr->thread_cond, NULL);
 	agent_info_ptr->thread_count   = agent_arg_ptr->node_count;
 	agent_info_ptr->retry          = agent_arg_ptr->retry;
 	agent_info_ptr->threads_active = 0;
@@ -641,7 +626,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 {
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock =
-	    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	uint32_t job_id = 0, step_id = 0;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 
@@ -689,7 +674,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	int is_ret_list = 1;
 	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t node_write_lock =
-	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	int i;
 
@@ -702,7 +687,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			batch_job_launch_msg_t *launch_msg_ptr =
 					*agent_ptr->msg_args_pptr;
 			uint32_t job_id = launch_msg_ptr->job_id;
-			job_complete(job_id, 0, true, false, 0);
+			job_complete(job_id, slurmctld_conf.slurm_user_id,
+				     true, false, 0);
 		}
 		unlock_slurmctld(node_write_lock);
 	}
@@ -743,7 +729,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				down_msg = "";
 #else
 				drain_nodes(node_names,
-					    "Prolog/Epilog failure", getuid());
+					    "Prolog/Epilog failure",
+					    slurmctld_conf.slurm_user_id);
 				down_msg = ", set to state DRAIN";
 #endif
 				error("Prolog/Epilog failure on nodes %s%s",
@@ -754,7 +741,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				down_msg = "";
 #else
 				drain_nodes(node_names,
-					    "Duplicate jobid", getuid());
+					    "Duplicate jobid",
+					    slurmctld_conf.slurm_user_id);
 				down_msg = ", set to state DRAIN";
 #endif
 				error("Duplicate jobid on nodes %s%s",
@@ -851,13 +839,13 @@ static void *_thread_per_group_rpc(void *args)
 	int sig_array[2] = {SIGUSR1, 0};
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	/* Lock: Read node */
 	slurmctld_lock_t node_read_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	/* Lock: Write node */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(args != NULL);
 	xsignal(SIGUSR1, _sig_handler);
@@ -997,8 +985,8 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, getuid(), false, false,
-				     _wif_status());
+			job_complete(job_id, slurmctld_conf.slurm_user_id,
+				     false, false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_RESOURCE_ALLOCATION) &&
@@ -1101,7 +1089,7 @@ cleanup:
 						 thread_ptr->start_time);
 	/* Signal completion so another thread can replace us */
 	(*threads_active_ptr)--;
-	pthread_cond_signal(thread_cond_ptr);
+	slurm_cond_signal(thread_cond_ptr);
 	slurm_mutex_unlock(thread_mutex_ptr);
 	return (void *) NULL;
 }
@@ -1277,8 +1265,7 @@ static void *_agent_init(void *arg)
 	while (true) {
 		slurm_mutex_lock(&pending_mutex);
 		while (!slurmctld_config.shutdown_time &&
-		       !pending_mail &&
-		       (pending_wait_time == (uint16_t) NO_VAL)) {
+		       !pending_mail && (pending_wait_time == NO_VAL16)) {
 			ts.tv_sec  = time(NULL) + 2;
 			pthread_cond_timedwait(&pending_cond,
 					       &pending_mutex,
@@ -1291,7 +1278,7 @@ static void *_agent_init(void *arg)
 		mail_too = pending_mail;
 		min_wait = pending_wait_time;
 		pending_mail = false;
-		pending_wait_time = (uint16_t) NO_VAL;
+		pending_wait_time = NO_VAL16;
 		slurm_mutex_unlock(&pending_mutex);
 
 		_agent_retry(min_wait, mail_too);
@@ -1332,12 +1319,12 @@ extern void agent_init(void)
 extern void agent_trigger(int min_wait, bool mail_too)
 {
 	slurm_mutex_lock(&pending_mutex);
-	if ((pending_wait_time == (uint16_t) NO_VAL) ||
+	if ((pending_wait_time == NO_VAL16) ||
 	    (pending_wait_time >  min_wait))
 		pending_wait_time = min_wait;
 	if (mail_too)
 		pending_mail = mail_too;
-	pthread_cond_broadcast(&pending_cond);
+	slurm_cond_broadcast(&pending_cond);
 	slurm_mutex_unlock(&pending_mutex);
 }
 
@@ -1355,7 +1342,7 @@ static void _agent_retry(int min_wait, bool mail_too)
 	mail_info_t *mi = NULL;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&retry_mutex);
@@ -1497,7 +1484,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	if ((AGENT_THREAD_COUNT + 2) >= MAX_SERVER_THREADS)
 		fatal("AGENT_THREAD_COUNT value is too low relative to MAX_SERVER_THREADS");
 
-	if (message_timeout == (uint16_t) NO_VAL) {
+	if (message_timeout == NO_VAL16) {
 		message_timeout = MAX(slurm_get_msg_timeout(), 30);
 	}
 
@@ -1675,14 +1662,15 @@ static void *_mail_proc(void *arg)
 	if (pid < 0) {		/* error */
 		error("fork(): %m");
 	} else if (pid == 0) {	/* child */
-		int fd, i;
+		int fd_0, fd_1, fd_2, i;
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
-		fd = open("/dev/null", O_RDWR); // fd = 0
-		if (dup(fd) == -1)		// fd = 1
-			error("Couldn't do a dup for 1: %m");
-		if (dup(fd) == -1)		// fd = 2
-			error("Couldn't do a dup for 2 %m");
+		if ((fd_0 = open("/dev/null", O_RDWR)) == -1)	// fd = 0
+			error("Couldn't open /dev/null: %m");
+		if ((fd_1 = dup(fd_0)) == -1)			// fd = 1
+			error("Couldn't do a dup on fd 1: %m");
+		if ((fd_2 = dup(fd_0)) == -1)			// fd = 2
+			error("Couldn't do a dup on fd 2 %m");
 		execle(slurmctld_conf.mail_prog, "mail",
 			"-s", mi->message, mi->user_name,
 			NULL, NULL);
@@ -1842,9 +1830,14 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	char job_time[128], term_msg[128];
 	mail_info_t *mi = _mail_alloc();
 
-	if (!job_ptr->mail_user)
+	if (!job_ptr->mail_user) {
 		mi->user_name = uid_to_string((uid_t)job_ptr->user_id);
-	else
+		/* unqualified sender, append MailDomain if set */
+		if (slurmctld_conf.mail_domain) {
+			xstrcat(mi->user_name, "@");
+			xstrcat(mi->user_name, slurmctld_conf.mail_domain);
+		}
+	} else
 		mi->user_name = xstrdup(job_ptr->mail_user);
 
 	/* Use job array master record, if available */

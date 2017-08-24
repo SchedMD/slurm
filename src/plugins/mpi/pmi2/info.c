@@ -6,7 +6,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -51,6 +51,7 @@
 #include <unistd.h>
 #include "slurm/slurm.h"
 #include "src/srun/libsrun/launch.h"
+#include "src/common/strlcpy.h"
 #include "src/common/switch.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
@@ -84,7 +85,7 @@ enqueue_nag_req(int fd, int rank, char *key)
 	req = xmalloc(sizeof(nag_req_t));
 	req->fd = fd;
 	req->rank = rank;
-	strncpy(req->key, key, (PMI2_MAX_KEYLEN - 1));	/* Insure NULL at end */
+	strlcpy(req->key, key, PMI2_MAX_KEYLEN);
 
 	/* insert in the head */
 	req->next = nag_req_list;

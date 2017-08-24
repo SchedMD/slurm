@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,19 +39,7 @@
 #ifndef _SLURMD_H
 #define _SLURMD_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#else				/* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif				/*  HAVE_CONFIG_H */
-
+#include <inttypes.h>
 #include <pthread.h>
 #include <sys/types.h>
 
@@ -92,7 +80,7 @@ typedef struct slurmd_config {
 	uint16_t     threads;           /* thread per core count           */
 	char         *cpu_spec_list;    /* cpu specialization list         */
 	uint16_t     core_spec_cnt;     /* core specialization count       */
-	uint32_t     mem_spec_limit;    /* memory specialization limit     */
+	uint64_t     mem_spec_limit;    /* memory specialization limit     */
 	uint16_t     cores;             /* core per socket  count          */
 	uint16_t     conf_cpus;         /* conf file logical processors    */
 	uint16_t     conf_boards;       /* conf file boards count          */
@@ -104,7 +92,7 @@ typedef struct slurmd_config {
 	uint16_t     actual_sockets;    /* actual sockets count            */
 	uint16_t     actual_cores;      /* actual core count               */
 	uint16_t     actual_threads;    /* actual thread per core count    */
-	uint32_t     real_memory_size;  /* amount of real memory	   */
+	uint64_t     real_memory_size;  /* amount of real memory	   */
 	uint32_t     tmp_disk_space;    /* size of temporary disk	   */
 	uint32_t     up_time;		/* seconds since last boot time    */
 	uint16_t     block_map_size;	/* size of block map               */
@@ -136,7 +124,7 @@ typedef struct slurmd_config {
 	char         *task_prolog;	/* per-task prolog script          */
 	char         *task_epilog;	/* per-task epilog script          */
 	int           port;		/* local slurmd port               */
-	slurm_fd_t      lfd;		/* slurmd listen file descriptor   */
+	int           lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
 	uint16_t      log_fmt;          /* Log file timestamp format flag  */
@@ -171,10 +159,8 @@ typedef struct slurmd_config {
 
 	List		starting_steps; /* steps that are starting but cannot
 					   receive RPCs yet */
-	pthread_mutex_t	starting_steps_lock;
 	pthread_cond_t	starting_steps_cond;
 	List		prolog_running_jobs;
-	pthread_mutex_t	prolog_running_lock;
 	pthread_cond_t	prolog_running_cond;
 	char         *plugstack;	/* path to SPANK config file	*/
 	uint16_t      kill_wait;	/* seconds between SIGXCPU to SIGKILL

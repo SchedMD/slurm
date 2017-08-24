@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,10 +39,10 @@
 #include <stdlib.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/log.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_auth.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdb_defs.h"
@@ -74,10 +74,20 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 		FREE_NULL_LIST(cluster->accounting_list);
 		xfree(cluster->control_host);
 		xfree(cluster->dim_size);
+		xfree(cluster->fed.name);
+		slurm_persist_conn_destroy(cluster->fed.send);
 		xfree(cluster->name);
 		xfree(cluster->nodes);
 		slurmdb_destroy_assoc_rec(cluster->root_assoc);
 		xfree(cluster->tres_str);
+	}
+}
+
+static void _free_federation_rec_members(slurmdb_federation_rec_t *federation)
+{
+	if (federation) {
+		xfree(federation->name);
+		FREE_NULL_LIST(federation->cluster_list);
 	}
 }
 
@@ -95,6 +105,15 @@ static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 {
 	if (cluster_cond) {
 		FREE_NULL_LIST(cluster_cond->cluster_list);
+		FREE_NULL_LIST(cluster_cond->federation_list);
+	}
+}
+
+static void _free_federation_cond_members(slurmdb_federation_cond_t *fed_cond)
+{
+	if (fed_cond) {
+		FREE_NULL_LIST(fed_cond->cluster_list);
+		FREE_NULL_LIST(fed_cond->federation_list);
 	}
 }
 
@@ -275,13 +294,6 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 		return SLURM_ERROR;
 	}
 
-	if (cluster_rec->rpc_version < 8) {
-		debug("Slurmctld on '%s' must be running at least "
-		      "SLURM 2.2 for cross-cluster communication.",
-		      cluster_rec->name);
-		return SLURM_ERROR;
-	}
-
 	if ((plugin_id_select = select_get_plugin_id_pos(
 		     cluster_rec->plugin_id_select)) == SLURM_ERROR) {
 		error("Cluster '%s' has an unknown select plugin_id %u",
@@ -333,28 +345,28 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 
 static uint32_t _str_2_qos_flags(char *flags)
 {
-	if (slurm_strcasestr(flags, "DenyOnLimit"))
+	if (xstrcasestr(flags, "DenyOnLimit"))
 		return QOS_FLAG_DENY_LIMIT;
 
-	if (slurm_strcasestr(flags, "EnforceUsageThreshold"))
+	if (xstrcasestr(flags, "EnforceUsageThreshold"))
 		return QOS_FLAG_ENFORCE_USAGE_THRES;
 
-	if (slurm_strcasestr(flags, "PartitionMinNodes"))
+	if (xstrcasestr(flags, "PartitionMinNodes"))
 		return QOS_FLAG_PART_MIN_NODE;
 
-	if (slurm_strcasestr(flags, "PartitionMaxNodes"))
+	if (xstrcasestr(flags, "PartitionMaxNodes"))
 		return QOS_FLAG_PART_MAX_NODE;
 
-	if (slurm_strcasestr(flags, "PartitionTimeLimit"))
+	if (xstrcasestr(flags, "PartitionTimeLimit"))
 		return QOS_FLAG_PART_TIME_LIMIT;
 
-	if (slurm_strcasestr(flags, "RequiresReservation"))
+	if (xstrcasestr(flags, "RequiresReservation"))
 		return QOS_FLAG_REQ_RESV;
 
-	if (slurm_strcasestr(flags, "OverPartQOS"))
+	if (xstrcasestr(flags, "OverPartQOS"))
 		return QOS_FLAG_OVER_PART_QOS;
 
-	if (slurm_strcasestr(flags, "NoReserve"))
+	if (xstrcasestr(flags, "NoReserve"))
 		return QOS_FLAG_NO_RESERVE;
 
 	return 0;
@@ -730,7 +742,19 @@ extern void slurmdb_destroy_cluster_rec(void *object)
 
 	if (slurmdb_cluster) {
 		_free_cluster_rec_members(slurmdb_cluster);
+		slurm_mutex_destroy(&slurmdb_cluster->lock);
 		xfree(slurmdb_cluster);
+	}
+}
+
+extern void slurmdb_destroy_federation_rec(void *object)
+{
+	slurmdb_federation_rec_t *slurmdb_federation =
+		(slurmdb_federation_rec_t *)object;
+
+	if (slurmdb_federation) {
+		_free_federation_rec_members(slurmdb_federation);
+		xfree(slurmdb_federation);
 	}
 }
 
@@ -807,6 +831,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 	if (job) {
 		xfree(job->account);
+		xfree(job->admin_comment);
 		xfree(job->alloc_gres);
 		xfree(job->array_task_str);
 		xfree(job->blockid);
@@ -1036,6 +1061,17 @@ extern void slurmdb_destroy_cluster_cond(void *object)
 	if (slurmdb_cluster) {
 		_free_cluster_cond_members(slurmdb_cluster);
 		xfree(slurmdb_cluster);
+	}
+}
+
+extern void slurmdb_destroy_federation_cond(void *object)
+{
+	slurmdb_federation_cond_t *slurmdb_federation =
+		(slurmdb_federation_cond_t *)object;
+
+	if (slurmdb_federation) {
+		_free_federation_cond_members(slurmdb_federation);
+		xfree(slurmdb_federation);
 	}
 }
 
@@ -1420,7 +1456,22 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 	if (free_it)
 		_free_cluster_rec_members(cluster);
 	memset(cluster, 0, sizeof(slurmdb_cluster_rec_t));
-	cluster->flags = NO_VAL;
+	cluster->flags      = NO_VAL;
+	cluster->fed.state  = NO_VAL;
+	cluster->fed.weight = NO_VAL;
+	slurm_mutex_init(&cluster->lock);
+}
+
+extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
+					bool free_it)
+{
+	if (!federation)
+		return;
+
+	if (free_it)
+		_free_federation_rec_members(federation);
+	memset(federation, 0, sizeof(slurmdb_federation_rec_t));
+	federation->flags = FEDERATION_FLAG_NOTSET;
 }
 
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
@@ -1515,6 +1566,17 @@ extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
 	cluster->flags = NO_VAL;
 }
 
+extern void slurmdb_init_federation_cond(slurmdb_federation_cond_t *federation,
+					 bool free_it)
+{
+	if (!federation)
+		return;
+
+	if (free_it)
+		_free_federation_cond_members(federation);
+	memset(federation, 0, sizeof(slurmdb_federation_cond_t));
+}
+
 extern void slurmdb_init_res_cond(slurmdb_res_cond_t *res,
 				  bool free_it)
 {
@@ -1580,6 +1642,115 @@ extern uint32_t str_2_slurmdb_qos(List qos_list, char *level)
 		return qos->id;
 	else
 		return NO_VAL;
+}
+
+extern char *slurmdb_federation_flags_str(uint32_t flags)
+{
+	char *federation_flags = NULL;
+
+	if (flags & FEDERATION_FLAG_NOTSET)
+		return xstrdup("NotSet");
+
+	if (flags & FEDERATION_FLAG_LLC)
+		xstrcat(federation_flags, "LLC,");
+
+	if (federation_flags)
+		federation_flags[strlen(federation_flags)-1] = '\0';
+
+	return federation_flags;
+}
+
+static uint32_t _str_2_federation_flags(char *flags)
+{
+	if (xstrcasestr(flags, "LLC"))
+		return FEDERATION_FLAG_LLC;
+
+	return 0;
+}
+
+extern uint32_t str_2_federation_flags(char *flags, int option)
+{
+	uint32_t federation_flags = 0;
+	char *token, *my_flags, *last = NULL;
+
+	if (!flags) {
+		error("We need a federation flags string to translate");
+		return FEDERATION_FLAG_NOTSET;
+	} else if (atoi(flags) == -1) {
+		/* clear them all */
+		federation_flags = INFINITE;
+		federation_flags &= (~FEDERATION_FLAG_NOTSET &
+				     ~FEDERATION_FLAG_ADD);
+		return federation_flags;
+	}
+
+	my_flags = xstrdup(flags);
+	token = strtok_r(my_flags, ",", &last);
+	while (token) {
+		federation_flags |= _str_2_federation_flags(token);
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(my_flags);
+
+	if (!federation_flags)
+		federation_flags = FEDERATION_FLAG_NOTSET;
+	else if (option == '+')
+		federation_flags |= FEDERATION_FLAG_ADD;
+	else if (option == '-')
+		federation_flags |= FEDERATION_FLAG_REMOVE;
+
+	return federation_flags;
+}
+
+extern char *slurmdb_cluster_fed_states_str(uint32_t state)
+{
+	int  base        = (state & CLUSTER_FED_STATE_BASE);
+	bool drain_flag  = (state & CLUSTER_FED_STATE_DRAIN);
+	bool remove_flag = (state & CLUSTER_FED_STATE_REMOVE);
+
+	if (base == CLUSTER_FED_STATE_ACTIVE) {
+		if (remove_flag && drain_flag)
+			return "DRAIN+REMOVE";
+		else if (drain_flag)
+			return "DRAIN";
+		else
+			return "ACTIVE";
+	} else if (base == CLUSTER_FED_STATE_INACTIVE) {
+		if (remove_flag && drain_flag)
+			return "DRAINED+REMOVE";
+		else if (drain_flag)
+			return "DRAINED";
+		else
+			return "INACTIVE";
+	} else if (base == CLUSTER_FED_STATE_NA)
+		return "NA";
+
+	return "?";
+}
+
+extern uint32_t str_2_cluster_fed_states(char *state)
+{
+	uint32_t fed_state = 0;
+
+	if (!state) {
+		error("We need a cluster federation state string to translate");
+		return SLURM_ERROR;
+	}
+
+	if (!strncasecmp(state, "Active", strlen(state)))
+		fed_state = CLUSTER_FED_STATE_ACTIVE;
+	else if (!strncasecmp(state, "Inactive", strlen(state)))
+		fed_state = CLUSTER_FED_STATE_INACTIVE;
+	else if (!strncasecmp(state, "DRAIN", strlen(state))) {
+		fed_state = CLUSTER_FED_STATE_ACTIVE;
+		fed_state |= CLUSTER_FED_STATE_DRAIN;
+	} else if (!strncasecmp(state, "DRAIN+REMOVE", strlen(state))) {
+		fed_state = CLUSTER_FED_STATE_ACTIVE;
+		fed_state |= (CLUSTER_FED_STATE_DRAIN |
+			      CLUSTER_FED_STATE_REMOVE);
+	}
+
+	return fed_state;
 }
 
 extern char *slurmdb_qos_flags_str(uint32_t flags)
@@ -2165,16 +2336,16 @@ extern uint16_t str_2_classification(char *class)
 	if (!class)
 		return type;
 
-	if (slurm_strcasestr(class, "capac"))
+	if (xstrcasestr(class, "capac"))
 		type = SLURMDB_CLASS_CAPACITY;
-	else if (slurm_strcasestr(class, "capab"))
+	else if (xstrcasestr(class, "capab"))
 		type = SLURMDB_CLASS_CAPABILITY;
-	else if (slurm_strcasestr(class, "capap"))
+	else if (xstrcasestr(class, "capap"))
 		type = SLURMDB_CLASS_CAPAPACITY;
 
-	if (slurm_strcasestr(class, "*"))
+	if (xstrcasestr(class, "*"))
 		type |= SLURMDB_CLASSIFIED_FLAG;
-	else if (slurm_strcasestr(class, "class"))
+	else if (xstrcasestr(class, "class"))
 		type |= SLURMDB_CLASSIFIED_FLAG;
 
 	return type;
@@ -2213,13 +2384,13 @@ extern uint16_t str_2_slurmdb_problem(char *problem)
 	if (!problem)
 		return type;
 
-	if (slurm_strcasestr(problem, "account no assocs"))
+	if (xstrcasestr(problem, "account no assocs"))
 		type = SLURMDB_PROBLEM_USER_NO_ASSOC;
-	else if (slurm_strcasestr(problem, "account no users"))
+	else if (xstrcasestr(problem, "account no users"))
 		type = SLURMDB_PROBLEM_ACCT_NO_USERS;
-	else if (slurm_strcasestr(problem, "user no assocs"))
+	else if (xstrcasestr(problem, "user no assocs"))
 		type = SLURMDB_PROBLEM_USER_NO_ASSOC;
-	else if (slurm_strcasestr(problem, "user no uid"))
+	else if (xstrcasestr(problem, "user no uid"))
 		type = SLURMDB_PROBLEM_USER_NO_UID;
 
 	return type;
@@ -2821,6 +2992,23 @@ extern char *slurmdb_get_selected_step_id(
 	return job_id_str;
 }
 
+static int _find_char_in_list(void *name, void *key)
+{
+	char *name_str = (char *)name;
+	char *key_str  = (char *)key;
+
+	if (!xstrcmp(name_str,key_str))
+		return 1;
+
+	return 0;
+}
+
+/* Return the cluster with the fastest start_time.
+ *
+ * Note: The will_runs are not threaded. Currently it relies on the
+ * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
+ * an example of how to thread this.
+ */
 extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec)
 {
@@ -2831,6 +3019,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	ListIterator itr;
 	List cluster_list = NULL;
 	List ret_list = NULL;
+	List tried_feds = list_create(NULL);
 
 	*cluster_rec = NULL;
 	cluster_list = slurmdb_get_info_cluster(cluster_names);
@@ -2856,13 +3045,25 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	ret_list = list_create(_destroy_local_cluster_rec);
 	itr = list_iterator_create(cluster_list);
 	while ((working_cluster_rec = list_next(itr))) {
-		if ((local_cluster = _job_will_run(req)))
+
+		/* only try one cluster from each federation */
+		if (working_cluster_rec->fed.id &&
+		    list_find_first(tried_feds, _find_char_in_list,
+				    working_cluster_rec->fed.name))
+			continue;
+
+		if ((local_cluster = _job_will_run(req))) {
 			list_append(ret_list, local_cluster);
-		else
+			if (working_cluster_rec->fed.id)
+				list_append(tried_feds,
+					    working_cluster_rec->fed.name);
+		} else {
 			error("Problem with submit to cluster %s: %m",
 			      working_cluster_rec->name);
+		}
 	}
 	list_iterator_destroy(itr);
+	FREE_NULL_LIST(tried_feds);
 
 	/* restore working_cluster_rec in case it was already set */
 	if (*cluster_rec) {
@@ -2928,6 +3129,68 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 
 	FREE_NULL_LIST(out->qos_list);
 	out->qos_list = slurm_copy_char_list(in->qos_list);
+}
+
+extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
+				     slurmdb_cluster_rec_t *in)
+{
+	out->classification   = in->classification;
+	xfree(out->control_host);
+	out->control_host     = xstrdup(in->control_host);
+	out->control_port     = in->control_port;
+	out->dimensions       = in->dimensions;
+	xfree(out->fed.name);
+	out->fed.name         = xstrdup(in->fed.name);
+	out->fed.id           = in->fed.id;
+	out->fed.state        = in->fed.state;
+	out->fed.weight       = in->fed.weight;
+	out->flags            = in->flags;
+	xfree(out->name);
+	out->name             = xstrdup(in->name);
+	xfree(out->nodes);
+	out->nodes            = xstrdup(in->nodes);
+	out->plugin_id_select = in->plugin_id_select;
+	out->rpc_version      = in->rpc_version;
+	xfree(out->tres_str);
+	out->tres_str         = xstrdup(in->tres_str);
+
+	slurmdb_destroy_assoc_rec(out->root_assoc);
+	if (in->root_assoc) {
+		out->root_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+		slurmdb_init_assoc_rec(out->root_assoc, 0);
+		slurmdb_copy_assoc_rec_limits( out->root_assoc, in->root_assoc);
+	}
+
+	/* Not copied currently:
+	 * accounting_list
+	 * control_addr
+	 * dim_size
+	 * fed.recv
+	 * fed.send
+	 */
+}
+
+extern void slurmdb_copy_federation_rec(slurmdb_federation_rec_t *out,
+					slurmdb_federation_rec_t *in)
+{
+	xfree(out->name);
+	out->name     = xstrdup(in->name);
+	out->flags    = in->flags;
+
+	FREE_NULL_LIST(out->cluster_list);
+	if (in->cluster_list) {
+		slurmdb_cluster_rec_t *cluster_in = NULL;
+		ListIterator itr  = list_iterator_create(in->cluster_list);
+		out->cluster_list = list_create(slurmdb_destroy_cluster_rec);
+		while ((cluster_in = list_next(itr))) {
+			slurmdb_cluster_rec_t *cluster_out =
+				xmalloc(sizeof(slurmdb_cluster_rec_t));
+			slurmdb_init_cluster_rec(cluster_out, 0);
+			slurmdb_copy_cluster_rec(cluster_out, cluster_in);
+			list_append(out->cluster_list, cluster_out);
+		}
+		list_iterator_destroy(itr);
+	}
 }
 
 extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
@@ -3585,6 +3848,17 @@ extern int slurmdb_find_tres_in_list_by_type(void *x, void *key)
 	return 0;
 }
 
+extern int slurmdb_find_cluster_in_list(void *x, void *key)
+{
+	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
+	char *name = (char *)key;
+
+	if (!xstrcmp(object->name, name))
+		return 1;
+
+	return 0;
+}
+
 extern int slurmdb_find_cluster_accting_tres_in_list(void *x, void *key)
 {
 	slurmdb_cluster_accounting_rec_t *object =
@@ -3793,4 +4067,23 @@ extern int slurmdb_get_tres_base_unit(char *tres_type)
 	}
 
 	return ret_unit;
+}
+
+extern void slurmdb_destroy_stats_rec(void *object)
+{
+	slurmdb_stats_rec_t *rpc_stats = (slurmdb_stats_rec_t *) object;
+	if (object) {
+		xfree(rpc_stats->rollup_count);
+		xfree(rpc_stats->rollup_time);
+		xfree(rpc_stats->rollup_max_time);
+
+		xfree(rpc_stats->rpc_type_id);
+		xfree(rpc_stats->rpc_type_cnt);
+		xfree(rpc_stats->rpc_type_time);
+
+		xfree(rpc_stats->rpc_user_id);
+		xfree(rpc_stats->rpc_user_cnt);
+		xfree(rpc_stats->rpc_user_time);
+		xfree(object);
+	}
 }

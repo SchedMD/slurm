@@ -7,7 +7,7 @@
  *  Written by Danny Auble <auble1@llnl.gov> et. al.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -204,7 +204,7 @@ static void *_track_freeing_blocks(void *args)
 		bridge_status_update_block_list_state(track_list);
 
 		list_iterator_reset(itr);
-		/* just incase this changes from the update function */
+		/* just in case this changes from the update function */
 		track_cnt = list_count(track_list);
 		while ((bg_record = list_next(itr))) {
 			if (bg_record->magic != BLOCK_MAGIC) {
@@ -333,17 +333,17 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start,
 {
 	int rc;
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	/* Wait for the slurmd to begin the batch script, slurm_fail_job()
 	   is a no-op if issued prior to the script initiation do
-	   clean up just incase the fail job isn't ran. */
+	   clean up just in case the fail job isn't ran. */
 	if (wait_for_start)
 		sleep(2);
 
 	if (!slurmctld_locked)
 		lock_slurmctld(job_write_lock);
-	rc = job_requeue(0, job_id, -1, (uint16_t)NO_VAL, preempted, 0);
+	rc = job_requeue(0, job_id, NULL, preempted, 0);
 	if (rc == ESLURM_JOB_PENDING) {
 		error("%s: Could not requeue pending job %u", __func__, job_id);
 	} else if (rc != SLURM_SUCCESS) {
@@ -465,7 +465,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		*/
 		if (bg_record->state & BG_BLOCK_ERROR_FLAG) {
 			/* This will set the state to ERROR(Free)
-			 * just incase the state was ERROR(SOMETHING ELSE) */
+			 * just in case the state was ERROR(SOMETHING ELSE) */
 			bg_record->state = BG_BLOCK_ERROR_FLAG;
 			break;
 		} else if (!wait || (count >= 3))
@@ -701,7 +701,7 @@ extern int node_already_down(char *node_name)
  */
 extern const char *bg_err_str(int inx)
 {
-	static char tmp_char[10];
+	static char tmp_char[32];
 
 	switch (inx) {
 	case SLURM_SUCCESS:
