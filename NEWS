@@ -220,7 +220,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix for job --switch option on dragonfly network.
  -- In salloc with --uid option, drop supplementary groups before changing UID.
  -- jobcomp/elasticsearch - strip any trailing slashes from JobCompLoc.
- -- jobcomp/elasticsearch - fix memory leak when transferring generated buffer. 
+ -- jobcomp/elasticsearch - fix memory leak when transferring generated buffer.
+ -- Prevent slurmstepd ABRT when parsing gres.conf CPUs.
 
 * Changes in Slurm 17.02.7
 ==========================
