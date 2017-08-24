@@ -3619,7 +3619,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	uint32_t job_id = 0;
+	uint32_t job_id = 0, priority = 0;
 	struct job_record *job_ptr = NULL;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
@@ -3692,8 +3692,10 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		if (!job_ptr ||
 		    (error_code && job_ptr->job_state == JOB_FAILED))
 			reject_job = true;
-		else
+		else {
 			job_id = job_ptr->job_id;
+			priority = job_ptr->priority;
+		}
 
 		if (job_desc_msg->immediate &&
 		    (error_code != SLURM_SUCCESS)) {
@@ -3714,7 +3716,8 @@ send_msg:
 		else
 			slurm_send_rc_msg(msg, error_code);
 	} else {
-		info("%s: JobId=%u %s", __func__, job_id, TIME_STR);
+		info("%s: JobId=%u InitPrio=%u %s",
+		     __func__, job_id, priority, TIME_STR);
 		/* send job_ID */
 		submit_msg.job_id     = job_id;
 		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
