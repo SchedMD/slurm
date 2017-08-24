@@ -424,6 +424,7 @@ static opt_t *_get_first_opt(int pack_offset)
 	opt_iter = list_iterator_create(opt_list);
 	while ((opt_local = (opt_t *) list_next(opt_iter))) {
 		if (opt_local->pack_grp_bits &&
+		    (pack_offset >= 0) &&
 		    (pack_offset < bit_size(opt_local->pack_grp_bits)) &&
 		    bit_test(opt_local->pack_grp_bits, pack_offset))
 			break;

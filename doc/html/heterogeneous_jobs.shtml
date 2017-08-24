@@ -354,6 +354,22 @@ step allocations taking place, while others are delayed.
 Only after all job step allocations have been granted will the application
 being launched.</p>
 
+<p>The maximum pack group specified in a job step allocation (either explicitly
+specified or implied by the ":" separator) must not exceed the number of pack
+groups in the job allocation. For example</p>
+<pre>
+$ salloc -n1 -C alpha : -n2 -C beta bash
+salloc: Pending job allocation 1728
+salloc: Granted job allocation 1728
+$ srun --pack-group=0,1 hostname
+nid00001
+nid00008
+nid00008
+$ srun hostname : date : id
+error: Attempt to run a job step with pack group value of 2,
+       but the job allocation has maximum value of 1
+</pre>
+
 <h2><a name="env_var">Environment Variables</a></h2>
 
 <p>Slurm environment variables will be set independently for each component of

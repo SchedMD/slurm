@@ -757,7 +757,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	List job_resp_list = NULL, srun_job_list = NULL;
 	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
-	int i, max_pack_offset, pack_offset = -1;
+	int i, max_list_offset, max_pack_offset, pack_offset = -1;
 	opt_t *opt_local;
 	uint32_t my_job_id = 0;
 	bool begin_error_logged = false;
@@ -792,8 +792,27 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		if (create_job_step(job, false, &opt) < 0)
 			exit(error_exit);
 	} else if ((job_resp_list = existing_allocation())) {
+		max_list_offset = 0;
+		max_pack_offset = list_count(job_resp_list) - 1;
+		if (opt_list) {
+			opt_iter = list_iterator_create(opt_list);
+			while ((opt_local = (opt_t *) list_next(opt_iter))) {
+				if (opt_local->pack_grp_bits) {
+					i = bit_fls(opt_local->pack_grp_bits);
+					max_list_offset = MAX(max_list_offset,
+							      i);
+				}
+			}
+			list_iterator_destroy(opt_iter);
+			if (max_list_offset > max_pack_offset) {
+				error("Attempt to run a job step with pack group value of %d, "
+				      "but the job allocation has maximum value of %d",
+				      max_list_offset, max_pack_offset);
+				exit(1);
+			}
+		}
 		srun_job_list = list_create(NULL);
-		if (list_count(job_resp_list) > 1)
+		if (max_pack_offset > 0)
 			pack_offset = 0;
 		resp_iter = list_iterator_create(job_resp_list);
 		while ((resp = (resource_allocation_response_msg_t *)
