@@ -413,7 +413,7 @@ int main(int argc, char **argv)
 	}
 
 	/* become the user after the allocation has been requested. */
-	if (opt.uid != (uid_t) -1) {
+	if (opt.uid != getuid()) {
 		/* drop extended groups before changing uid/gid */
 		if ((setgroups(0, NULL) < 0)) {
 			error("setgroups: %m");
