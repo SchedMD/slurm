@@ -72,8 +72,8 @@ struct sess_record *session_ptr;
 #define DEBUG_MODULE 0 
 
 static void _init_proc(void);
-static int _parse_proc_stat(char* proc_stat, int *session, 
-			    unsigned long *time, long *resident_set_size);
+static void _parse_proc_stat(char* proc_stat, int *session, unsigned long *time,
+			     long *resident_set_size);
 extern int read_proc(void);
 
 #if DEBUG_MODULE
@@ -170,11 +170,9 @@ _init_proc (void)
  * OUT time - Location into which total user and system time (in seconds) 
  *	is written
  * OUT resident_set_size - Location into which the Resident Set Size is written
- * RET - zero or errno code
  */
-static int 
-_parse_proc_stat(char* proc_stat, int *session, unsigned long *time, 
-		 long *resident_set_size)
+static void _parse_proc_stat(char* proc_stat, int *session, unsigned long *time,
+			     long *resident_set_size)
 {
 	int pid, ppid, pgrp, tty, tpgid;
 	char cmd[16], state[1];
@@ -190,7 +188,12 @@ _parse_proc_stat(char* proc_stat, int *session, unsigned long *time,
 	char *str_ptr;
     
 	/* split into "PID (cmd" and "<rest>" */
-	str_ptr = (char *)strrchr(proc_stat, ')'); 
+	str_ptr = strrchr(proc_stat, ')');
+	if (!str_ptr) {
+		debug("%s: bad proc_stat: %s", __func__, proc_stat);
+		return;
+	}
+
 	*str_ptr = '\0';		/* replace trailing ')' with NULL */
 	/* parse these two strings separately, skipping the leading "(". */
 	memset (cmd, 0, sizeof(cmd));
@@ -219,7 +222,6 @@ _parse_proc_stat(char* proc_stat, int *session, unsigned long *time,
 	if (num < 13)
 		error("/proc entry too short (%s)", proc_stat);
 	*time = (utime + stime) / hertz;
-	return 0;
 }
 
 /* 
