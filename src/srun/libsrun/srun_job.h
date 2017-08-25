@@ -81,6 +81,7 @@ typedef struct srun_job {
 	int fir_nodeid;
 	uint32_t jobid;		/* assigned job id 	                  */
 	uint32_t stepid;	/* assigned step id 	                  */
+	uint32_t node_offset;	/* pack job node offset or NO_VAL */
 	uint32_t pack_ntasks;	/* total task count for entire pack job */
 	uint32_t pack_offset;	/* pack job offset or NO_VAL */
 	uint32_t task_offset;	/* pack job tsk offset or NO_VAL */

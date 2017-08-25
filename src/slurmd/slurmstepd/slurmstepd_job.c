@@ -308,6 +308,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->array_job_id  = msg->job_id;
 	job->array_task_id = NO_VAL;
+	job->node_offset = msg->node_offset;	/* Used for env vars */
 	job->pack_ntasks = msg->pack_ntasks;	/* Used for env vars */
 	job->pack_offset = msg->pack_offset;	/* Used for env vars & labels */
 	job->task_offset = msg->task_offset;	/* Used for env vars & labels */

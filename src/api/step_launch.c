@@ -151,7 +151,7 @@ static struct io_operations message_socket_ops = {
  * IN ptr - pointer to a structure allocated by the user.
  *      The structure will be initialized.
  */
-void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
+extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 {
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
@@ -164,6 +164,7 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 	ptr->cpu_freq_min = NO_VAL;
 	ptr->cpu_freq_max = NO_VAL;
 	ptr->cpu_freq_gov = NO_VAL;
+	ptr->node_offset  = NO_VAL;
 	ptr->pack_ntasks  = NO_VAL;
 	ptr->pack_offset  = NO_VAL;
 	ptr->task_offset  = NO_VAL;
@@ -252,9 +253,11 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		_decr_launch_count();
 		return SLURM_ERROR;
 	}
-	/* Now, hack the step_layout struct if the following it true.
-	   This looks like an ugly hack to support LAM/MPI's lamboot.
-	   NOTE: This also gets ran for BGQ systems. */
+	/*
+	 * Now, hack the step_layout struct if the following it true.
+	 * This looks like an ugly hack to support LAM/MPI's lamboot.
+	 * NOTE: This also gets ran for BGQ systems.
+	 */
 	if (mpi_hook_client_single_task_per_node()) {
 		for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
 			ctx->step_resp->step_layout->tasks[i] = 1;
@@ -290,6 +293,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
+	launch.node_offset = params->node_offset;
 	launch.pack_ntasks = params->pack_ntasks;
 	launch.pack_offset = params->pack_offset;
 	launch.task_offset = params->task_offset;
@@ -1777,8 +1781,10 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		hostlist_destroy(hl);
 	}
 
-	/* Extend timeout based upon BatchStartTime to permit for a long
-	 * running Prolog */
+	/*
+	 * Extend timeout based upon BatchStartTime to permit for a long
+	 * running Prolog
+	 */
 	if (timeout <= 0) {
 		timeout = (slurm_get_msg_timeout() +
 			   slurm_get_batch_start_timeout()) * 1000;

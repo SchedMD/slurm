@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
       spank_init_post_opt() function is executed once per job component.
     * Modify sbcast command and srun's --bcast option to support heterogeneous
       jobs.
+    * Set more environment variables for MPI: SLURM_GTIDS and SLURM_NODEID.
  -- Modify output of "--mpi=list" to avoid duplicates for version numbers in
     mpi/pmix plugin names.
 
