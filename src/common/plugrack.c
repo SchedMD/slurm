@@ -603,17 +603,34 @@ plugrack_finished_with_plugin( plugrack_t rack, plugin_handle_t plug )
 	return SLURM_ERROR;
 }
 
-int
-plugrack_print_all_plugin(plugrack_t rack)
+extern int plugrack_print_all_plugin(plugrack_t rack)
 {
 	ListIterator itr;
 	plugrack_entry_t *e = NULL;
+	char *sep, tmp[64];
+	int i;
 
 	xassert(rack->entries);
 	itr = list_iterator_create(rack->entries);
 	info("MPI types are...");
-	while ((e = list_next(itr)) != NULL ) {
-		info("%s", e->full_type);
+	while ((e = list_next(itr)) != NULL) {
+		/*
+		 * Support symbolic links for various pmix plugins with names
+		 * that contain version numbers without listing duplicates
+		 */
+		sep = strstr(e->fq_path, "/mpi_");
+		if (sep) {
+			sep += 5;
+			i = snprintf(tmp, sizeof(tmp), "mpi/%s", sep);
+			if (i >= sizeof(tmp))
+				tmp[sizeof(tmp)-1] = '\0';
+			sep = strstr(tmp, ".so");
+			if (sep)
+				sep[0] = '\0';
+			sep = tmp;
+		} else
+			sep = e->full_type;
+		info("%s", sep);
 	}
 	list_iterator_destroy(itr);
 
