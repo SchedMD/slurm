@@ -281,7 +281,10 @@ read_proc(void)
 			if (lseek(proc_fd, (off_t) 0, SEEK_SET) != 0) 
 				break;
 		}
-		fstat(proc_fd, &buffer);
+		if (fstat(proc_fd, &buffer) < 0) {
+			debug("%s: fstat(%s): %m", __func__, proc_name);
+			n = -1;
+		}
 		close(proc_fd);
 		if (n <= 0) 
 			continue;
