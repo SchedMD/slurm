@@ -60,7 +60,16 @@ if {[test_front_end]} {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
-exec $oshcc  -o $test_prog ${test_prog}.c -lshmem
+spawn $oshcc  -o $test_prog ${test_prog}.c -lshmem
+expect {
+	eof {
+		wait
+	}
+}
+if {![file exists $test_prog]} {
+	send_user "\nWARNING: Unable to build test program\n"
+	exit 0
+}
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err

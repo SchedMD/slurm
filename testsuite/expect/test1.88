@@ -70,12 +70,24 @@ if {[test_front_end]} {
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
 if {$use_pmi} {
-	set pmi_link "-rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi"
-	eval exec $mpicc -Xlinker $pmi_link -o $test_prog ${test_prog}.c
+	spawn $mpicc -Xlinker -rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi -o $test_prog ${test_prog}.c
+	expect {
+		eof {
+			wait
+		}
+	}
 } else {
-	exec $mpicc -o $test_prog ${test_prog}.c
+	spawn $mpicc -o $test_prog ${test_prog}.c
+	expect {
+		eof {
+			wait
+		}
+	}
 }
-
+if {![file exists $test_prog]} {
+	send_user "\nWARNING: Unable to build test program\n"
+	exit 0
+}
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
