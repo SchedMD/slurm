@@ -581,13 +581,15 @@ slurm_sbcast_lookup(slurm_t self, uint32_t job_id, uint32_t step_id)
 	PREINIT:
 		job_sbcast_cred_msg_t *info;
 		int rc;
+		uint32_t pack_job_offset = NO_VAL;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_sbcast_lookup(job_id, step_id, &info);
+		rc = slurm_sbcast_lookup(job_id, pack_job_offset, step_id,
+					 &info);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
 			sv_2mortal((SV*)RETVAL);

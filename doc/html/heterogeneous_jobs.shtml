@@ -474,6 +474,8 @@ components of a heterogeneous job.</p>
 
 <p>Heterogeneous jobs are not supported on IBM PE systems.</p>
 
+<p>Slurm's PERL APIs currently do not support heterogeneous jobs.</p>
+
 <h2><a name="sys_admin">System Administrator Information</a></h2>
 
 <p>The job submit plugin is invoked independently for each component of a
@@ -543,13 +545,13 @@ core, socket or node.
 Each component of a heterogeneous job counts as a "job" with respect to
 resource limits.</p>
 
-For example, a user might have a limit of 2 concurrent running jobs and submit
+<p>For example, a user might have a limit of 2 concurrent running jobs and submit
 a heterogeneous job with 3 components.
 Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 August 2017</p>
+<p style="text-align:center;">Last modified 25 August 2017</p>
 
 <!--#include virtual="footer.txt"-->
