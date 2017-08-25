@@ -629,7 +629,7 @@ extern int plugrack_print_all_plugin(plugrack_t rack)
 				sep[0] = '\0';
 			sep = tmp;
 		} else
-			sep = e->full_type;
+			sep = (char *) e->full_type;	/* Remove "const" */
 		info("%s", sep);
 	}
 	list_iterator_destroy(itr);
