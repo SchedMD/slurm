@@ -550,6 +550,9 @@ int _layouts_entity_set_kv(layout_t* l, entity_t* e, char* key, void* value,
 	case L_T_LONG_DOUBLE:
 		size = sizeof(long double);
 		break;
+	default:
+		value = NULL;
+		return SLURM_ERROR;
 	}
 	return entity_set_data(e, key_keydef, value, size);
 }
