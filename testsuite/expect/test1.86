@@ -459,13 +459,13 @@ expect {
 set matches 0
 send "$srun -l -n $processors $bin_printenv $node_name_env\r"
 expect {
+	"error:" {
+		incr matches
+		exp_continue
+	}
 	-re "0: *($alpha_numeric_under)" {
 		send_user "\nFAILURE: wrong node responded\n"
 		set exit_code   1
-		exp_continue
-	}
-	"error:" {
-		incr matches
 		exp_continue
 	}
 	"$prompt" {
