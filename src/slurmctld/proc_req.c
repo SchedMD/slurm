@@ -6448,7 +6448,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 	char *comment = NULL;
 	uint16_t port;
 	Buf ret_buf;
-	slurm_persist_conn_t *persist_conn, p_tmp;
+	slurm_persist_conn_t *persist_conn = NULL, p_tmp;
 	persist_init_req_msg_t *persist_init = msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
@@ -6512,7 +6512,7 @@ end_it:
 		      p_tmp.fd, uid);
 	}
 
-	if (rc) {
+	if (rc && persist_conn) {
 		/* Free AFTER message has been sent back to remote */
 		persist_conn->fd = -1;
 		slurm_persist_conn_destroy(persist_conn);
