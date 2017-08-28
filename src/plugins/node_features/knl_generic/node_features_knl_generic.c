@@ -1678,7 +1678,13 @@ extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
 		char buf[16];
 
 		if (stat(ZONE_SORT_PATH, &sb) == -1)
-			(void) system(MODPROBE_PATH " zonesort_module");
+			if (system(MODPROBE_PATH " zonesort_module")) {
+				/*
+				 * NOOP - compiling with optimizations throws
+				 * out a (void) cast and warns about ignoring
+				 * the return value
+				 */
+			}
 		if ((fd = open(ZONE_SORT_PATH, O_WRONLY | O_SYNC)) == -1) {
 			error("%s: Could not open file %s: %m",
 			      __func__, ZONE_SORT_PATH);
