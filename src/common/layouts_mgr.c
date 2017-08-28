@@ -888,7 +888,7 @@ static void _layouts_mgr_parse_global_conf(layouts_mgr_t* mgr)
 {
 	char* layouts;
 	char* parser;
-	char* saveptr;
+	char* saveptr = NULL;
 	char* slash;
 	layouts_conf_spec_t* nspec;
 
