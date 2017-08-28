@@ -2620,7 +2620,7 @@ static bool _verify_clustername(void)
 {
 	FILE *fp;
 	char *filename = NULL;
-	char name[512];
+	char name[512] = {0};
 	bool create_file = false;
 
 	xstrfmtcat(filename, "%s/clustername",
@@ -2628,7 +2628,10 @@ static bool _verify_clustername(void)
 
 	if ((fp = fopen(filename, "r"))) {
 		/* read value and compare */
-		fgets(name, sizeof(name), fp);
+		if (!fgets(name, sizeof(name), fp)) {
+			error("%s: reading cluster name from clustername file",
+			      __func__);
+		}
 		fclose(fp);
 		if (xstrcmp(name, slurmctld_conf.cluster_name)) {
 			fatal("CLUSTER NAME MISMATCH.\n"
