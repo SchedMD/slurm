@@ -412,8 +412,8 @@ int main(int argc, char **argv)
 		sleep(++retries);
 	}
 
-	/* become the user after the allocation has been requested. */
-	if (opt.uid != getuid()) {
+	/* If the requested uid is different than ours, become that uid */
+	if ((getuid() != opt.uid) && (opt.uid != (uid_t) -1)) {
 		/* drop extended groups before changing uid/gid */
 		if ((setgroups(0, NULL) < 0)) {
 			error("setgroups: %m");
