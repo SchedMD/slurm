@@ -279,16 +279,25 @@ extern void print_fields_double(print_field_t *field, double value, int last)
 		else if (print_fields_parsable_print && fields_delimiter)
 			printf("%f%s", value, fields_delimiter);
 		else {
-			int length, width =  abs_len;
+			int length, width = abs_len;
 			char *tmp = xmalloc(width + 10);
-			sprintf(tmp, "%*.*g", width, width, value);
+			sprintf(tmp, "%*f", abs_len, value);
 			length = strlen(tmp);
-			if (length > width)
-				width -= length - width;
-			if (field->len == abs_len)
-				printf("%*.*g ", width, width, value);
-			else
-				printf("%-*.*g ", width, width, value);
+			if (length > width) {
+				sprintf(tmp, "%*.*e", width, width, value);
+				length = strlen(tmp);
+				if (length > width)
+					width -= length - width;
+				if (field->len == abs_len)
+					printf("%*.*e ", width, width, value);
+				else
+					printf("%-*.*e ", width, width, value);
+			} else {
+				if (field->len == abs_len)
+					printf("%*f ", width, value);
+				else
+					printf("%-*f ", width, value);
+			}
 			xfree(tmp);
 		}
 	}
