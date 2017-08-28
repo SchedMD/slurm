@@ -293,6 +293,8 @@ int main(int argc, char **argv)
 		exit(error_exit);    /* error already logged */
 	}
 	_match_job_name(job_req_list, opt.job_name);
+	if (!job_req_list)
+		desc->bitflags &= (~JOB_SALLOC_FLAG);
 
 	/*
 	 * Job control for interactive salloc sessions: only if ...
@@ -694,10 +696,11 @@ static void _match_job_name(List job_req_list, char *job_name)
 
 	iter = list_iterator_create(job_req_list);
 	while ((desc = (job_desc_msg_t *) list_next(iter))) {
-		if ((i++ < cnt) && !xstrcmp(desc->name, "sh")) {
+		if ((i++ < cnt) && (desc->bitflags & JOB_SALLOC_FLAG)) {
 			xfree(desc->name);
 			desc->name = xstrdup(job_name);
 		}
+		desc->bitflags &= (~JOB_SALLOC_FLAG);
 	}
 	list_iterator_destroy(iter);
 }
@@ -785,6 +788,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->gres = xstrdup(opt.gres);
 	if (opt.immediate == 1)
 		desc->immediate = 1;
+	if (opt.default_job_name)
+		desc->bitflags |= JOB_SALLOC_FLAG;
 	desc->name = xstrdup(opt.job_name);
 	desc->reservation = xstrdup(opt.reservation);
 	desc->profile  = opt.profile;
@@ -920,7 +925,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.time_min  != NO_VAL)
 		desc->time_min = opt.time_min;
 	if (opt.job_flags)
-		desc->bitflags = opt.job_flags;
+		desc->bitflags |= opt.job_flags;
 	desc->shared = opt.shared;
 	desc->job_id = opt.jobid;
 

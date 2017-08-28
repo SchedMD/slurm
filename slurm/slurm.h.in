@@ -1025,6 +1025,7 @@ enum ctx_keys {
 #define JOB_PACK_FLAG      0x00002000	/* Heterogeneous job management flag */
 #define JOB_NTASKS_SET     0x00004000	/* --ntasks explicitly set */
 #define JOB_CPUS_SET       0x00008000	/* --cpus-per-tasks explicitly set */
+#define JOB_SALLOC_FLAG    0x00010000	/* For internal salloc/sbatch/srun use */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
