@@ -298,8 +298,10 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.pack_offset = params->pack_offset;
 	launch.task_offset = params->task_offset;
 	if (params->env == NULL) {
-		/* if the user didn't specify an environment, grab the
-		 * environment of the running process */
+		/*
+		 * If the user didn't specify an environment, then use the
+		 * environment of the running process
+		 */
 		env_array_merge(&env, (const char **)environ);
 	} else {
 		env_array_merge(&env, (const char **)params->env);

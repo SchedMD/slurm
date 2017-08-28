@@ -99,6 +99,7 @@ static struct termios termdefaults;
 static uint32_t global_rc = 0;
 static srun_job_t *job = NULL;
 
+extern char **environ;	/* job environment */
 bool srun_max_timer = false;
 bool srun_shutdown  = false;
 int sig_array[] = {
@@ -420,7 +421,10 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 		env->ws_col   = job->ws_col;
 		env->ws_row   = job->ws_row;
 	}
+
+	env->env = env_array_copy((const char **) environ);
 	setup_env(env, opt_local->preserve_env);
+	job->env = env->env;
 	xfree(env->task_count);
 	xfree(env);
 }

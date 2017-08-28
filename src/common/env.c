@@ -356,9 +356,9 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (env->cpus_per_task
-	   && setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%d",
-		      env->cpus_per_task) ) {
+	if (env->cpus_per_task &&
+	    setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%d",
+		    env->cpus_per_task) ) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
 		rc = SLURM_FAILURE;
 	}

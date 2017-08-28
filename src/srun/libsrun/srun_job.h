@@ -101,6 +101,7 @@ typedef struct srun_job {
 	int  rc;                /* srun return code                       */
 
 	char *alias_list;	/* node name/address/hostname aliases */
+	char **env;		/* pack-job specific environment */
 	char *nodelist;		/* nodelist in string form */
 	char *partition;	/* name of partition running job */
 
