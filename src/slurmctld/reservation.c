@@ -3632,8 +3632,6 @@ unpack_error:
 	error("Incomplete reservation data checkpoint file");
 	_validate_all_reservations();
 	info("Recovered state of %d reservations", list_count(resv_list));
-	if (resv_ptr)
-		_del_resv_rec(resv_ptr);
 	free_buf(buffer);
 	return EFAULT;
 }
