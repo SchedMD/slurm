@@ -147,7 +147,12 @@ make_bash_script $file_prog_sh2 "./$file_prog"
 exec $bin_cc -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
-if {[test_select_type_params "MEMORY"]} {
+if { ![string compare [get_affinity_types] "none"] } {
+	set affinity_mem 0
+} else {
+	set affinity_mem 1
+}
+if {[test_select_type_params "MEMORY"] || $affinity_mem} {
 	set job_mem  16
 } else {
 	set job_mem  1
