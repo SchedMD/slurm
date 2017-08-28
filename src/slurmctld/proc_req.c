@@ -3120,7 +3120,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	hostlist_t host_list = NULL;
 	char *this_node_name;
 	int node_inx = 0;
-	uint32_t node_cnt;
+	uint32_t node_cnt = 0;
 	DEF_TIMERS;
 	step_alloc_info_msg_t *job_info_msg =
 		(step_alloc_info_msg_t *) msg->data;
