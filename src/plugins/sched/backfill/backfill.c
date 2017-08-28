@@ -1028,8 +1028,8 @@ static int _attempt_backfill(void)
 	bool resv_overlap = false;
 	uint8_t save_share_res, save_whole_node;
 	int test_fini;
-	int user_part_inx1, user_part_inx2;
-	int part_inx, user_inx;
+	int user_part_inx1 = -1, user_part_inx2 = -1;
+	int part_inx = -1, user_inx = -1;
 	uint32_t qos_flags = 0;
 	time_t qos_blocked_until = 0, qos_part_blocked_until = 0;
 	/* QOS Read lock */
@@ -1392,8 +1392,6 @@ next_task:
 		/* Test to see if we've exceeded any per user/partition limit */
 		if (max_backfill_job_per_user_part) {
 			bool skip_job = false;
-			user_part_inx1 = -1;
-			user_part_inx2 = -1;
 			for (j = 0; j < bf_parts; j++) {
 				if (bf_user_part_ptr[j].part_ptr !=
 				    job_ptr->part_ptr)
@@ -1435,7 +1433,6 @@ next_task:
 		}
 		if (max_backfill_job_per_part) {
 			bool skip_job = false;
-			part_inx = -1;
 			for (j = 0; j < bf_parts; j++) {
 				if (bf_part_ptr[j] != job_ptr->part_ptr)
 					continue;
@@ -1499,7 +1496,6 @@ next_task:
 		}
 
 		if (max_backfill_job_per_user) {
-			user_inx = -1;
 			for (j = 0; j < nuser; j++) {
 				if (job_ptr->user_id == uid[j]) {
 					user_inx = j;
