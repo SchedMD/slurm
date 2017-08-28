@@ -377,8 +377,7 @@ static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 			   bool test_only)
 {
 	uint16_t *cpu_cnt, max_cpu_cnt = 0, part_lln_flag = 0;
-	uint32_t n;
-	int i_first, i_last;
+	int i, i_first, i_last;
 	int node_inx = -1;
 
 	if (cr_node_cnt != node_record_count) {
@@ -400,25 +399,25 @@ static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 		i_last  = bit_fls(node_map);
 	else
 		i_last = -2;
-	for (n = i_first; n <= i_last; n++) {
-		if (!bit_test(node_map, n))
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(node_map, i))
 			continue;
-		cpu_cnt[n] = _can_job_run_on_node(job_ptr, core_map, n,
+		cpu_cnt[i] = _can_job_run_on_node(job_ptr, core_map, i,
 						  node_usage, cr_type,
 						  test_only);
-		if (!(cr_type & CR_LLN) && !part_lln_flag && cpu_cnt[n]) {
+		if (!(cr_type & CR_LLN) && !part_lln_flag && cpu_cnt[i]) {
 			bit_nclear(node_map, 0, (node_record_count - 1));
-			bit_set(node_map, n);
-			node_inx = n;
+			bit_set(node_map, i);
+			node_inx = i;
 			break;	/* select/serial: only need one node */
 		}
 	}
 
 	if ((cr_type & CR_LLN) || part_lln_flag) {
-		for (n = i_first; n <= i_last; n++) {
-			if (cpu_cnt[n] > max_cpu_cnt) {
-				max_cpu_cnt = cpu_cnt[n];
-				node_inx = n;
+		for (i = i_first; i <= i_last; i++) {
+			if (cpu_cnt[i] > max_cpu_cnt) {
+				max_cpu_cnt = cpu_cnt[i];
+				node_inx = i;
 			}
 		}
 
