@@ -20,7 +20,6 @@ SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \
 	get_mach_stat.c get_mach_stat.h	\
-	read_proc.c 	        	\
 	slurmd_plugstack.c slurmd_plugstack.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)

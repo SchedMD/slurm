@@ -149,7 +149,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am__objects_1 = slurmd.$(OBJEXT) req.$(OBJEXT) get_mach_stat.$(OBJEXT) \
-	read_proc.$(OBJEXT) slurmd_plugstack.$(OBJEXT)
+	slurmd_plugstack.$(OBJEXT)
 am_slurmd_OBJECTS = $(am__objects_1)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -497,7 +497,6 @@ SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \
 	get_mach_stat.c get_mach_stat.h	\
-	read_proc.c 	        	\
 	slurmd_plugstack.c slurmd_plugstack.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
@@ -596,7 +595,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_mach_stat.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_proc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/req.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmd_plugstack.Po@am__quote@
