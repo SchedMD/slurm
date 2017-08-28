@@ -1974,7 +1974,7 @@ static List _license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 	char *merged_licenses;
 
 	license_list = license_validate(resv_desc_ptr->licenses, NULL, valid);
-	if (!valid || (resv_desc_ptr->licenses == NULL))
+	if (resv_desc_ptr->licenses == NULL)
 		return license_list;
 
 	merged_licenses = xstrdup(resv_desc_ptr->licenses);
