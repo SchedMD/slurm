@@ -4075,6 +4075,8 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 			int global_core_start;
 
 			node_bitmap_inx = bit_ffs(full_node_bitmap);
+			if (node_bitmap_inx < 0)
+				break;	/* No more nodes */
 			global_core_start =
 				cr_get_coremap_offset(node_bitmap_inx);
 			allocated = 0;
