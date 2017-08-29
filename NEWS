@@ -11,6 +11,9 @@ documents those changes that are of interest to users and administrators.
     field width. The sacctmgr and sshare commands are impacted.
  -- Make it so a backup DBD doesn't attempt to create database tables and
     relies on the primary to do so.
+ -- By default have Slurm dynamically link to libslurm.so instead of static
+    linking.  If static linking is desired configure with
+    --without-shared-libslurm.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

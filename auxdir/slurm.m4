@@ -96,8 +96,8 @@ dnl
 AC_DEFUN([X_AC_LIBSLURM], [
   AC_MSG_CHECKING([Link to libslurm.so instead of libslurm.o])
   AC_ARG_WITH([shared-libslurm],
-    AS_HELP_STRING(--with-shared-libslurm, use the shared libslurm lib instead of statically linking to libslurm.o - can dramatically reduce the footprint of Slurm.),
-    [x_ac_shared_libslurm=yes], [x_ac_shared_libslurm=no])
+    AS_HELP_STRING(--without-shared-libslurm, statically link to libslurm.o instead of the shared libslurm lib - can dramatically increase the footprint of Slurm.),
+    [x_ac_shared_libslurm=no], [x_ac_shared_libslurm=yes])
 
   if test "$x_ac_shared_libslurm" = no; then
     LIB_SLURM_BUILD='$(top_builddir)/src/api/libslurm.o'

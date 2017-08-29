@@ -1761,8 +1761,9 @@ Optional Packages:
   --with-cpusetdir=PATH   specify path to cpuset directory default is
                           /dev/cpuset
   --with-pam_dir=PATH     Specify path to PAM module installation
-  --with-shared-libslurm  use the shared libslurm lib instead of statically
-                          linking to libslurm.o - can dramatically reduce the
+  --without-shared-libslurm
+                          statically link to libslurm.o instead of the shared
+                          libslurm lib - can dramatically increase the
                           footprint of Slurm.
   --with-json=PATH        Specify path to json-c installation
   --with-dimensions=N     set system dimension count for generic computer
@@ -19399,9 +19400,9 @@ $as_echo_n "checking Link to libslurm.so instead of libslurm.o... " >&6; }
 
 # Check whether --with-shared-libslurm was given.
 if test "${with_shared_libslurm+set}" = set; then :
-  withval=$with_shared_libslurm; x_ac_shared_libslurm=yes
+  withval=$with_shared_libslurm; x_ac_shared_libslurm=no
 else
-  x_ac_shared_libslurm=no
+  x_ac_shared_libslurm=yes
 fi
 
 

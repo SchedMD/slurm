@@ -397,7 +397,7 @@ according to the Slurm
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?slurm_with_pmix:--with-pmix=%{?slurm_with_pmix}} \
 	%{?with_freeipmi:--with-freeipmi=%{?with_freeipmi}}\
-        %{?slurm_with_shared_libslurm:--with-shared-libslurm}\
+        %{?slurm_without_shared_libslurm:--without-shared-libslurm}\
         %{?with_cflags} \
 
 %__make %{?_smp_mflags}
