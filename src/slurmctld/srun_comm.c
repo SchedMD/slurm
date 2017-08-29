@@ -192,9 +192,8 @@ extern void srun_allocate (uint32_t job_id)
 				   job_ptr->start_protocol_ver);
 	} else if (_pending_pack_jobs(job_ptr)) {
 		return;
-	} else {
+	} else if ((pack_leader = find_job_record(job_ptr->pack_job_id))) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		pack_leader = find_job_record(job_ptr->pack_job_id);
 		slurm_set_addr(addr, pack_leader->alloc_resp_port,
 			       pack_leader->resp_host);
 		job_resp_list = list_create(_free_srun_alloc);
@@ -214,6 +213,9 @@ extern void srun_allocate (uint32_t job_id)
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   RESPONSE_JOB_PACK_ALLOCATION, job_resp_list,
 				   job_ptr->start_protocol_ver);
+	} else {
+		error("%s: Can not find pack job leader %u",
+		      __func__, job_ptr->pack_job_id);
 	}
 }
 
