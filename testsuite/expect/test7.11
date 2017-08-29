@@ -123,16 +123,16 @@ if {[file exists $spank_conf_file]} {
 		}
 	}
 
-	exec $bin_cp $spank_conf_file $orig_spank_conf
-	exec $bin_cp $spank_conf_file $new_spank_conf
+	exec $bin_cp -f $spank_conf_file $orig_spank_conf
+	exec $bin_cp -f $spank_conf_file $new_spank_conf
 	exec $bin_chmod 700 $spank_conf_file
 	exec $bin_chmod 700 $new_spank_conf
 } else {
-	exec $bin_cp /dev/null $new_spank_conf
+	exec $bin_cp -f /dev/null $new_spank_conf
 }
 
 exec $bin_echo "required ${file_prog}.so ${spank_out}" >>$new_spank_conf
-spawn $bin_cp $new_spank_conf $spank_conf_file
+spawn $bin_cp -f $new_spank_conf $spank_conf_file
 expect {
 	-re "Permission denied" {
 		send_user "\nWARNING: User lacks permission to update plugstack_conf file\n"
@@ -255,7 +255,7 @@ make_bash_script $file_in "
   $srun --test_suite=5 $bin_uname
   if test -f $orig_spank_conf
   then
-    $bin_cp $orig_spank_conf $spank_conf_file
+    $bin_cp -f $orig_spank_conf $spank_conf_file
   fi
 "
 set job_id 0
@@ -402,7 +402,7 @@ if {[wait_for_file $spank_out] == 0} {
 # Restore the original plugstack
 #
 if {[file exists $orig_spank_conf]} {
-	exec $bin_cp $orig_spank_conf $spank_conf_file
+	exec $bin_cp -f $orig_spank_conf $spank_conf_file
 } else {
 	exec $bin_rm -f $spank_conf_file
 }
