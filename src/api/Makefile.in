@@ -177,7 +177,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 libpmi_la_DEPENDENCIES = $(top_builddir)/src/api/libslurm.la
-am_libpmi_la_OBJECTS = pmi.lo strlcpy.lo
+am_libpmi_la_OBJECTS = pmi.lo
 libpmi_la_OBJECTS = $(am_libpmi_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -705,7 +705,7 @@ libslurmfull_la_LDFLAGS = \
 # when running "make install", but removing it prevents essential slurm
 # symbols from being available in programs linking with libpmi
 #
-libpmi_la_SOURCES = pmi.c $(top_builddir)/src/common/strlcpy.c
+libpmi_la_SOURCES = pmi.c
 libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         -version-info $(libpmi_current):$(libpmi_rev):$(libpmi_age) \
@@ -863,7 +863,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_ctx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_io.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_launch.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/submit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suspend.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topo_info.Plo@am__quote@
@@ -890,13 +889,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-strlcpy.lo: $(top_builddir)/src/common/strlcpy.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT strlcpy.lo -MD -MP -MF $(DEPDIR)/strlcpy.Tpo -c -o strlcpy.lo `test -f '$(top_builddir)/src/common/strlcpy.c' || echo '$(srcdir)/'`$(top_builddir)/src/common/strlcpy.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/strlcpy.Tpo $(DEPDIR)/strlcpy.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/common/strlcpy.c' object='strlcpy.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strlcpy.lo `test -f '$(top_builddir)/src/common/strlcpy.c' || echo '$(srcdir)/'`$(top_builddir)/src/common/strlcpy.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
