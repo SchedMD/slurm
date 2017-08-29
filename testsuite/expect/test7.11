@@ -250,7 +250,7 @@ exec $bin_rm -f $file_in
 send_user "\n\nTest locally logged messages..........\n\n"
 
 make_bash_script $file_in "
-  $bin_cp $new_spank_conf $spank_conf_file
+  $bin_cp -f $new_spank_conf $spank_conf_file
   $bin_sleep 1
   $srun --test_suite=5 $bin_uname
   if test -f $orig_spank_conf
