@@ -365,7 +365,8 @@ extern srun_job_t *job_step_create_allocation(
 		buf = hostlist_ranged_string_xmalloc(hl);
 		count = hostlist_count(hl);
 		hostlist_destroy(hl);
-		/* Don't reset the ai->nodelist because that is the
+		/*
+		 * Don't reset the ai->nodelist because that is the
 		 * nodelist we want to say the allocation is under
 		 * opt_local->nodelist is what is used for the allocation.
 		 */
@@ -675,7 +676,7 @@ static void _set_step_opts(opt_t *opt_local)
  * the job allocation request with its requested options.
  */
 static int _create_job_step(srun_job_t *job, bool use_all_cpus,
-			    List srun_job_list)
+			    List srun_job_list, uint32_t pack_jobid)
 {
 	ListIterator opt_iter = NULL, job_iter;
 	opt_t *opt_local = &opt;
@@ -688,6 +689,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			opt_iter = list_iterator_create(opt_list);
 		job_iter = list_iterator_create(srun_job_list);
 		while ((job = (srun_job_t *) list_next(job_iter))) {
+			if (pack_jobid)
+				job->pack_jobid = pack_jobid;
 			job->stepid = NO_VAL;
 			pack_ntasks += job->ntasks;
 		}
@@ -762,7 +765,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	srun_job_t *job = NULL;
 	int i, max_list_offset, max_pack_offset, pack_offset = -1;
 	opt_t *opt_local;
-	uint32_t my_job_id = 0;
+	uint32_t my_job_id = 0, pack_jobid = 0;
 	bool begin_error_logged = false;
 	bool core_spec_error_logged = false;
 #ifdef HAVE_NATIVE_CRAY
@@ -924,8 +927,14 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			      max_pack_offset, pack_offset);
 			exit(error_exit);
 		}
+		if (srun_job_list && (list_count(srun_job_list) > 1) &&
+		    opt_list && (list_count(opt_list) > 1) &&
+		    my_job_id && (opt.mpi_combine == true)) {
+			pack_jobid = my_job_id;
+		}
 
-		if (_create_job_step(job, false, srun_job_list) < 0) {
+		if (_create_job_step(job, false, srun_job_list, pack_jobid)
+		    < 0) {
 			if (*got_alloc)
 				slurm_complete_job(my_job_id, 1);
 			else
@@ -994,6 +1003,11 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			job = job_create_allocation(resp, &opt);
 			_set_step_opts(&opt);
 		}
+		if (srun_job_list && (list_count(srun_job_list) > 1) &&
+		    opt_list && (list_count(opt_list) > 1) &&
+		    my_job_id && (opt.mpi_combine == true)) {
+			pack_jobid = my_job_id;
+		}
 
 		/*
 		 *  Become --uid user
@@ -1001,7 +1015,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		if (_become_user () < 0)
 			info("Warning: Unable to assume uid=%u", opt.uid);
 
-		if (_create_job_step(job, true, srun_job_list) < 0) {
+		if (_create_job_step(job, true, srun_job_list, pack_jobid)
+		    < 0) {
 			slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
 		}
@@ -1196,6 +1211,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->nodelist = xstrdup(ainfo->nodelist);
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
+ 	job->pack_jobid  = NO_VAL;
  	job->pack_ntasks = NO_VAL;
  	job->pack_offset = NO_VAL;
  	job->task_offset = NO_VAL;

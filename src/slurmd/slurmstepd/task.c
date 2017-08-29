@@ -357,7 +357,10 @@ extern void exec_task(stepd_step_rec_t *job, int i)
 	job->envtp->sgtids = _uint32_array_to_str(job->node_tasks, gtids);
 	xfree(gtids);
 
-	job->envtp->jobid = job->jobid;
+	if (job->pack_jobid != NO_VAL)
+		job->envtp->jobid = job->pack_jobid;
+	else
+		job->envtp->jobid = job->jobid;
 	job->envtp->stepid = job->stepid;
 	job->envtp->nodeid = job->nodeid + node_offset;
 	job->envtp->cpus_on_node = job->cpus;

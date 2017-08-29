@@ -10262,6 +10262,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack32(msg->node_offset, buffer);
+		pack32(msg->pack_jobid, buffer);
 		pack32(msg->pack_ntasks, buffer);
 		pack32(msg->pack_offset, buffer);
 		pack32(msg->task_offset, buffer);
@@ -10549,6 +10550,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
 		safe_unpack32(&msg->node_offset, buffer);
+		safe_unpack32(&msg->pack_jobid, buffer);
 		safe_unpack32(&msg->pack_ntasks, buffer);
 		safe_unpack32(&msg->pack_offset, buffer);
 		safe_unpack32(&msg->task_offset, buffer);
@@ -10661,6 +10663,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
 		msg->node_offset = NO_VAL;
+		msg->pack_jobid  = NO_VAL;
 		msg->pack_ntasks = NO_VAL;
 		msg->pack_offset = NO_VAL;
 		msg->task_offset = NO_VAL;
@@ -10792,6 +10795,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
 		msg->node_offset = NO_VAL;
+		msg->pack_jobid  = NO_VAL;
 		msg->pack_ntasks = NO_VAL;
 		msg->pack_offset = NO_VAL;
 		msg->task_offset = NO_VAL;

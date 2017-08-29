@@ -165,6 +165,7 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 	ptr->cpu_freq_max = NO_VAL;
 	ptr->cpu_freq_gov = NO_VAL;
 	ptr->node_offset  = NO_VAL;
+	ptr->pack_jobid   = NO_VAL;
 	ptr->pack_ntasks  = NO_VAL;
 	ptr->pack_offset  = NO_VAL;
 	ptr->task_offset  = NO_VAL;
@@ -294,6 +295,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	launch.node_offset = params->node_offset;
+	launch.pack_jobid  = params->pack_jobid;
 	launch.pack_ntasks = params->pack_ntasks;
 	launch.pack_offset = params->pack_offset;
 	launch.task_offset = params->task_offset;
@@ -500,12 +502,15 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
+	launch.pack_jobid  = params->pack_jobid;
 	launch.pack_ntasks = params->pack_ntasks;
 	launch.pack_offset = params->pack_offset;
 	launch.task_offset = params->task_offset;
 	if (params->env == NULL) {
-		/* if the user didn't specify an environment, grab the
-		 * environment of the running process */
+		/*
+		 * if the user didn't specify an environment, grab the
+		 * environment of the running process
+		 */
 		env_array_merge(&env, (const char **)environ);
 	} else {
 		env_array_merge(&env, (const char **)params->env);

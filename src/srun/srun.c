@@ -390,7 +390,10 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 		if (job->pack_ntasks != NO_VAL)
 			env->ntasks = job->pack_ntasks;
 		env->task_count = _uint16_array_to_str(job->nhosts, tasks);
-		env->jobid = job->jobid;
+		if (job->pack_jobid != NO_VAL)
+			env->jobid = job->pack_jobid;
+		else
+			env->jobid = job->jobid;
 		env->stepid = job->stepid;
 		env->account = job->account;
 		env->qos = job->qos;

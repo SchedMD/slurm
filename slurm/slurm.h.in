@@ -1928,6 +1928,7 @@ typedef struct {
 	bool no_alloc;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
 	uint32_t node_offset;	/* Pack job node offset or NO_VAL */
+	uint32_t pack_jobid;	/* pack job ID or NO_VAL */
 	uint32_t pack_ntasks;	/* total task count for entire pack job */
 	uint32_t pack_offset;	/* Pack job offset or NO_VAL */
 	uint32_t task_offset;	/* Pack job tsk offset or NO_VAL */
