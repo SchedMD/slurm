@@ -169,7 +169,8 @@ typedef enum {
 		PRINT_USER,
 		PRINT_USERCPU,
 		PRINT_WCKEY,
-		PRINT_WCKEYID
+		PRINT_WCKEYID,
+		PRINT_WORK_DIR
 } sacct_print_types_t;
 
 typedef struct {

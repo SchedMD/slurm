@@ -2566,6 +2566,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.gres_req = job_start_msg->gres_req;
 	job.gres_used = job_start_msg->gres_used;
 	job.wckey = _replace_double_quotes(job_start_msg->wckey);
+	details.work_dir = _replace_double_quotes(job_start_msg->work_dir);
 	details.submit_time = job_start_msg->submit_time;
 
 	job.array_recs = &array_recs;

@@ -127,6 +127,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->gres_used);
 		xfree(req->tres_alloc_str);
 		xfree(req->tres_req_str);
+		xfree(req->work_dir);
 	}
 }
 
@@ -204,6 +205,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->job_state     = job_ptr->job_state;
 	req->name          = xstrdup(job_ptr->name);
 	req->nodes         = xstrdup(job_ptr->nodes);
+	req->work_dir      = xstrdup(job_ptr->details->work_dir);
 
 	if (job_ptr->node_bitmap) {
 		char temp_bit[BUF_SIZE];

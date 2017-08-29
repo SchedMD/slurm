@@ -4586,6 +4586,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->user_cpu_usec, buffer);
 		packstr(job->wckey, buffer);
 		pack32(job->wckeyid, buffer);
+		packstr(job->work_dir, buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		packstr(job->account, buffer);
 		packstr(job->admin_comment, buffer);
@@ -4829,6 +4830,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->wckey, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->wckeyid, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->work_dir, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->admin_comment, &uint32_tmp,

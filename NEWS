@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     --without-shared-libslurm.
  -- Change --workdir in sbatch to be --chdir as in all other commands (salloc,
     srun).
+ -- Add WorkDir to the job record in the database.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

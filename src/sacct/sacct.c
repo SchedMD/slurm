@@ -128,6 +128,7 @@ print_field_t fields[] = {
 	{10, "UserCPU", print_fields_str, PRINT_USERCPU},
 	{10, "WCKey", print_fields_str, PRINT_WCKEY},
 	{10, "WCKeyID", print_fields_uint, PRINT_WCKEYID},
+	{20, "WorkDir", print_fields_str, PRINT_WORK_DIR},
 	{0,  NULL, NULL, 0}};
 
 List jobs = NULL;

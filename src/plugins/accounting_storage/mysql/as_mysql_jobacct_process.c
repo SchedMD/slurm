@@ -98,6 +98,7 @@ char *job_req_inx[] = {
 	"t1.gres_used",
 	"t1.tres_alloc",
 	"t1.tres_req",
+	"t1.work_dir",
 	"t2.acct",
 	"t2.lft",
 	"t2.user"
@@ -148,6 +149,7 @@ enum {
 	JOB_REQ_GRES_USED,
 	JOB_REQ_TRESA,
 	JOB_REQ_TRESR,
+	JOB_REQ_WORK_DIR,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
 	JOB_REQ_USER_NAME,
@@ -600,6 +602,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		if (row[JOB_REQ_BLOCKID])
 			job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);
+
+		if (row[JOB_REQ_WORK_DIR])
+			job->work_dir = xstrdup(row[JOB_REQ_WORK_DIR]);
 
 		job->eligible = slurm_atoul(row[JOB_REQ_ELIGIBLE]);
 		job->submit = slurm_atoul(row[JOB_REQ_SUBMIT]);

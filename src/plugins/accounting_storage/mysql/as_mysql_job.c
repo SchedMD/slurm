@@ -575,6 +575,8 @@ no_rollup_change:
 			xstrcat(query, ", tres_alloc");
 		if (job_ptr->tres_req_str)
 			xstrcat(query, ", tres_req");
+		if (job_ptr->details->work_dir)
+			xstrcat(query, ", work_dir");
 
 		xstrfmtcat(query,
 			   ") values (%u, UNIX_TIMESTAMP(), "
@@ -623,6 +625,8 @@ no_rollup_change:
 			xstrfmtcat(query, ", '%s'", job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
 			xstrfmtcat(query, ", '%s'", job_ptr->tres_req_str);
+		if (job_ptr->details->work_dir)
+			xstrfmtcat(query, ", '%s'", job_ptr->details->work_dir);
 
 		xstrfmtcat(query,
 			   ") on duplicate key update "
@@ -681,6 +685,9 @@ no_rollup_change:
 		if (job_ptr->tres_req_str)
 			xstrfmtcat(query, ", tres_req='%s'",
 				   job_ptr->tres_req_str);
+		if (job_ptr->details->work_dir)
+			xstrfmtcat(query, ", work_dir='%s'",
+				   job_ptr->details->work_dir);
 
 		if (debug_flags & DEBUG_FLAG_DB_JOB)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -737,6 +744,9 @@ no_rollup_change:
 		if (job_ptr->tres_req_str)
 			xstrfmtcat(query, "tres_req='%s', ",
 				   job_ptr->tres_req_str);
+		if (job_ptr->details->work_dir)
+			xstrfmtcat(query, "work_dir='%s', ",
+				   job_ptr->details->work_dir);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "nodes_alloc=%u, id_qos=%u, "

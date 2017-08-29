@@ -774,6 +774,7 @@ typedef struct {
 	uint32_t user_cpu_usec;
 	char    *wckey;
 	uint32_t wckeyid;
+	char    *work_dir;
 } slurmdb_job_rec_t;
 
 typedef struct {
