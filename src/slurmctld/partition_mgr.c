@@ -1749,7 +1749,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	char *buf;
 	char *grp_buffer;
 	struct group grp, *grp_result;
-	char *groups, *saveptr, *one_group_name;
+	char *groups, *saveptr = NULL, *one_group_name;
 	int ret = 0;
 
 	if (part_ptr->allow_groups == NULL)

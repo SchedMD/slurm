@@ -546,8 +546,10 @@ extern int acct_gather_profile_p_create_dataset(
 			field_id = H5T_NATIVE_DOUBLE;
 			field_size = sizeof(double);
 			break;
-		case PROFILE_FIELD_NOT_SET:
-			break;
+		default:
+			error("%s: unknown field type:%d",
+			      __func__, dataset_loc->type);
+			continue;
 		}
 		if (H5Tinsert(dtype_id, dataset_loc->name,
 			      offset, field_id) < 0)

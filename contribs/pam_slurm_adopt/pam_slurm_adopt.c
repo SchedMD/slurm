@@ -102,7 +102,7 @@ static void _init_opts(void)
 	opts.action_no_jobs = CALLERID_ACTION_DENY;
 	opts.action_unknown = CALLERID_ACTION_NEWEST;
 	opts.action_adopt_failure = CALLERID_ACTION_ALLOW;
-	opts.action_generic_failure = CALLERID_ACTION_ALLOW;
+	opts.action_generic_failure = CALLERID_ACTION_IGNORE;
 	opts.log_level = LOG_LEVEL_INFO;
 	opts.node_name = NULL;
 }
@@ -571,7 +571,7 @@ static int _load_cgroup_config()
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 				__attribute__((unused)), int argc, const char **argv)
 {
-	int retval = PAM_IGNORE, rc, slurmrc, bufsize, user_jobs;
+	int retval = PAM_IGNORE, rc = PAM_IGNORE, slurmrc, bufsize, user_jobs;
 	char *user_name;
 	List steps = NULL;
 	step_loc_t *stepd = NULL;
