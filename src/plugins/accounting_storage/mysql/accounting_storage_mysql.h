@@ -106,6 +106,7 @@ extern List as_mysql_total_cluster_list;
 extern pthread_mutex_t as_mysql_cluster_list_lock;
 
 extern uint64_t debug_flags;
+extern bool backup_dbd;
 
 typedef enum {
 	QOS_LEVEL_NONE,

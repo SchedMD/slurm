@@ -147,6 +147,7 @@ char *step_view = "step_view";
 char *step_ext_view = "step_ext_view";
 
 uint64_t debug_flags = 0;
+bool backup_dbd = 0;
 
 static char *default_qos_str = NULL;
 
@@ -892,7 +893,15 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		error("issue converting tables before create");
 		return rc;
+	} else if (backup_dbd) {
+		/*
+		 * We do not want to create/check the database if we are the
+		 * backup (see Bug 3827). This is only handled on the primary.
+		 */
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		return rc;
 	}
+
 
 	/* might as well do all the cluster centric tables inside this
 	 * lock.  We need to do this on all the clusters deleted or
@@ -2416,6 +2425,17 @@ extern int init ( void )
 			fatal("%s requires ClusterName in slurm.conf",
 			      plugin_name);
 		xfree(cluster_name);
+	} else if (slurmdbd_conf && slurmdbd_conf->dbd_backup) {
+		char node_name_short[128];
+		char node_name_long[128];
+		if (gethostname(node_name_long, sizeof(node_name_long)))
+			fatal("getnodename: %m");
+		if (gethostname_short(node_name_short, sizeof(node_name_short)))
+			fatal("getnodename_short: %m");
+		if (!xstrcmp(node_name_short, slurmdbd_conf->dbd_backup) ||
+		    !xstrcmp(node_name_long, slurmdbd_conf->dbd_backup) ||
+		    !xstrcmp(slurmdbd_conf->dbd_backup, "localhost"))
+			backup_dbd = true;
 	}
 
 	mysql_db_info = create_mysql_db_info(SLURM_MYSQL_PLUGIN_AS);

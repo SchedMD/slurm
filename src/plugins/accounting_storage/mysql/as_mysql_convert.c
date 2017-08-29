@@ -269,7 +269,20 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 	if (db_curr_ver == CONVERT_VERSION) {
 		debug4("%s: No conversion needed, Horray!", __func__);
 		return SLURM_SUCCESS;
+	} else if (backup_dbd) {
+		/*
+		 * We do not want to create/check the database if we are the
+		 * backup (see Bug 3827). This is only handled on the primary.
+		 *
+		 * To avoid situations where someone might upgrade the database
+		 * through the backup we want to fatal so they know what
+		 * happened instead of potentially starting with the older
+		 * database.
+		 */
+		fatal("Backup DBD can not convert database, please start the primary DBD before starting the backup.");
+		return SLURM_ERROR;
 	}
+
 
 	/* make it up to date */
 	itr = list_iterator_create(as_mysql_total_cluster_list);

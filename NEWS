@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix QOS usage factor applying to individual TRES run minute usage.
  -- Print numbers using exponential format if required to fit in allocated
     field width. The sacctmgr and sshare commands are impacted.
+ -- Make it so a backup DBD doesn't attempt to create database tables and
+    relies on the primary to do so.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
