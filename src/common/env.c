@@ -733,8 +733,8 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-	if (env->nodelist
-	    && setenvf(&env->env, "SLURM_NODELIST", "%s", env->nodelist)) {
+	if (env->nodelist &&
+	    setenvf(&env->env, "SLURM_NODELIST", "%s", env->nodelist)) {
 		error("Unable to set SLURM_NODELIST environment var.");
 		rc = SLURM_FAILURE;
 	}
@@ -1209,8 +1209,10 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 
 	_setup_particulars(cluster_flags, dest, batch->select_jobinfo);
 
-	/* There is no explicit node count in the batch structure,
-	 * so we need to calculate the node count. */
+	/*
+	 * There is no explicit node count in the batch structure,
+	 * so we need to calculate the node count.
+	 */
 	for (i = 0; i < batch->num_cpu_groups; i++) {
 		step_layout_req.num_hosts += batch->cpu_count_reps[i];
 		num_cpus += batch->cpu_count_reps[i] * batch->cpus_per_node[i];

@@ -676,7 +676,8 @@ static void _set_step_opts(opt_t *opt_local)
  * the job allocation request with its requested options.
  */
 static int _create_job_step(srun_job_t *job, bool use_all_cpus,
-			    List srun_job_list, uint32_t pack_jobid)
+			    List srun_job_list, uint32_t pack_jobid,
+			    char *pack_nodelist)
 {
 	ListIterator opt_iter = NULL, job_iter;
 	opt_t *opt_local = &opt;
@@ -691,6 +692,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 		while ((job = (srun_job_t *) list_next(job_iter))) {
 			if (pack_jobid)
 				job->pack_jobid = pack_jobid;
+			if (pack_nodelist)
+				job->pack_nodelist = xstrdup(pack_nodelist);
 			job->stepid = NO_VAL;
 			pack_ntasks += job->ntasks;
 		}
@@ -756,6 +759,21 @@ static void _cancel_steps(List srun_job_list)
 	list_iterator_destroy(job_iter);
 }
 
+static void _compress_pack_nodelist(char *pack_nodelist)
+{
+	hostset_t hs;
+	size_t len;
+
+	if (!pack_nodelist || (pack_nodelist[0] == '\0'))
+		return;
+
+	len = strlen(pack_nodelist) + 1;
+	if ((hs = hostset_create(pack_nodelist))) {
+		(void) hostset_ranged_string(hs, len, pack_nodelist);
+		hostset_destroy(hs);
+	}
+}
+
 extern void create_srun_job(void **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals)
 {
@@ -766,6 +784,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	int i, max_list_offset, max_pack_offset, pack_offset = -1;
 	opt_t *opt_local;
 	uint32_t my_job_id = 0, pack_jobid = 0;
+	char *pack_nodelist = NULL;
 	bool begin_error_logged = false;
 	bool core_spec_error_logged = false;
 #ifdef HAVE_NATIVE_CRAY
@@ -823,6 +842,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		resp_iter = list_iterator_create(job_resp_list);
 		while ((resp = (resource_allocation_response_msg_t *)
 				list_next(resp_iter))) {
+			bool merge_nodelist = true;
 			_print_job_information(resp);
 			(void) get_next_opt(-2);
 			while ((opt_local = get_next_opt(pack_offset))) {
@@ -831,7 +851,14 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					if (resp->working_cluster_rec)
 						slurm_setup_remote_working_cluster(resp);
 				}
-
+				if (merge_nodelist) {
+					char *sep = "";
+					if (pack_nodelist)
+						sep = ",";
+					merge_nodelist = false;
+					xstrfmtcat(pack_nodelist, "%s%s",
+						   sep, resp->node_list);
+				}
 				select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
 							&resp->node_cnt);
 				if (opt_local->nodes_set_env  &&
@@ -931,10 +958,11 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		    opt_list && (list_count(opt_list) > 1) &&
 		    my_job_id && (opt.mpi_combine == true)) {
 			pack_jobid = my_job_id;
-		}
-
-		if (_create_job_step(job, false, srun_job_list, pack_jobid)
-		    < 0) {
+			_compress_pack_nodelist(pack_nodelist);
+		} else
+			xfree(pack_nodelist);
+		if (_create_job_step(job, false, srun_job_list, pack_jobid,
+				     pack_nodelist) < 0) {
 			if (*got_alloc)
 				slurm_complete_job(my_job_id, 1);
 			else
@@ -965,10 +993,15 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			resp_iter = list_iterator_create(job_resp_list);
 			while ((resp = (resource_allocation_response_msg_t *)
 				       list_next(resp_iter))) {
+				char *sep = "";
 				if (my_job_id == 0) {
 					my_job_id = resp->job_id;
 					*got_alloc = true;
 				}
+				if (pack_nodelist)
+					sep = ",";
+				xstrfmtcat(pack_nodelist, "%s%s",
+					   sep, resp->node_list);
 				opt_local = (opt_t *) list_next(opt_iter);
 				if (!opt_local)
 					break;
@@ -1007,16 +1040,17 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		    opt_list && (list_count(opt_list) > 1) &&
 		    my_job_id && (opt.mpi_combine == true)) {
 			pack_jobid = my_job_id;
-		}
+			_compress_pack_nodelist(pack_nodelist);
+		} else
+			xfree(pack_nodelist);
 
 		/*
 		 *  Become --uid user
 		 */
 		if (_become_user () < 0)
 			info("Warning: Unable to assume uid=%u", opt.uid);
-
-		if (_create_job_step(job, true, srun_job_list, pack_jobid)
-		    < 0) {
+		if (_create_job_step(job, true, srun_job_list, pack_jobid,
+				     pack_nodelist) < 0) {
 			slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
 		}

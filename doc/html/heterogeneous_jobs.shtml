@@ -378,7 +378,7 @@ In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
 of the pack leader and "SLURM_PACK_SIZE" will contain the number of components
 in the job. For example:</p>
 <pre>
-$  salloc -N1 : -N2 bash
+$ salloc -N1 : -N2 bash
 salloc: Pending job allocation 11741
 salloc: job 11741 queued and waiting for resources
 salloc: job 11741 has been allocated resources
@@ -391,6 +391,30 @@ SLURM_NNODES_PACK_GROUP_0=1
 SLURM_NNODES_PACK_GROUP_1=2
 SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
 SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+...
+</pre>
+
+<p>The various MPI implementations rely heavily upon Slurm environment variables
+for proper operation.
+A single MPI applications executing in a single MPI_COMM_WORLD require a
+uniform set of environment variables that reflect a single job allocation.
+The example below shows how Slurm sets environment variables for MPI.</p>
+<pre>
+$ salloc -N1 : -N2 bash
+salloc: Pending job allocation 11741
+salloc: job 11751 queued and waiting for resources
+salloc: job 11751 has been allocated resources
+$ env | grep SLURM
+SLURM_JOB_ID=11751
+SLURM_PACK_SIZE=2
+SLURM_JOB_ID_PACK_GROUP_0=11751
+SLURM_JOB_ID_PACK_GROUP_1=11752
+SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
+SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+...
+$ srun --pack-group=0,1 --mpi-combine=yes env | grep SLURM
+SLURM_JOB_ID=11751
+SLURM_JOB_NODELIST=nid[00001,00011-00012]
 ...
 </pre>
 
@@ -552,6 +576,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 August 2017</p>
+<p style="text-align:center;">Last modified 29 August 2017</p>
 
 <!--#include virtual="footer.txt"-->

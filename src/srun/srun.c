@@ -378,7 +378,10 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 				   &tasks);
 
 		env->select_jobinfo = job->select_jobinfo;
-		env->nodelist = job->nodelist;
+		if (job->pack_nodelist)
+			env->nodelist = job->pack_nodelist;
+		else
+			env->nodelist = job->nodelist;
 		env->partition = job->partition;
 		/*
 		 * If we didn't get the allocation don't overwrite the
