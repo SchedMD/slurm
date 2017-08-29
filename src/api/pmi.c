@@ -97,7 +97,6 @@
 
 #include "src/api/slurm_pmi.h"
 #include "src/common/macros.h"
-#include "src/common/strlcpy.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define KVS_STATE_LOCAL    0
@@ -913,7 +912,7 @@ static void _init_kvs( char kvsname[] )
 	kvs_recs[i].kvs_name = malloc(PMI_MAX_KVSNAME_LEN);
 	if (!kvs_recs[i].kvs_name)
 		pmi_nomem_error(__FILE__, __LINE__, "_init_kvs");
-	strlcpy(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN);
+	strncpy(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN);
 	kvs_recs[i].kvs_state = KVS_STATE_LOCAL;
 	kvs_recs[i].kvs_cnt = 0;
 	kvs_recs[i].kvs_inx = 0;
@@ -1168,7 +1167,7 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 				rc = PMI_FAIL;
 			} else {
 				rc = PMI_SUCCESS;
-				strlcpy(kvs_recs[i].kvs_values[j], value,
+				strncpy(kvs_recs[i].kvs_values[j], value,
 					PMI_MAX_VAL_LEN);
 			}
 			goto fini;
@@ -1202,9 +1201,9 @@ no_dup:
 			rc = PMI_FAIL;
 		} else {
 			rc = PMI_SUCCESS;
-			strlcpy(kvs_recs[i].kvs_values[j], value,
+			strncpy(kvs_recs[i].kvs_values[j], value,
 				PMI_MAX_VAL_LEN);
-			strlcpy(kvs_recs[i].kvs_keys[j], key, PMI_MAX_KEY_LEN);
+			strncpy(kvs_recs[i].kvs_keys[j], key, PMI_MAX_KEY_LEN);
 		}
 		goto fini;
 	}
@@ -1392,7 +1391,7 @@ int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int lengt
 			if (strlen(kvs_recs[i].kvs_values[j]) > (length-1))
 				rc = PMI_ERR_INVALID_LENGTH;
 			else {
-				strlcpy(value, kvs_recs[i].kvs_values[j],
+				strncpy(value, kvs_recs[i].kvs_values[j],
 					length);
 				rc = PMI_SUCCESS;
 			}
@@ -1475,8 +1474,8 @@ int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[]
 			if (kvs_recs[i].kvs_key_states[j] == KVS_KEY_STATE_DISABLED)
 				continue;
 
-			strlcpy(key, kvs_recs[i].kvs_keys[j], key_len);
-			strlcpy(val, kvs_recs[i].kvs_values[j],	val_len);
+			strncpy(key, kvs_recs[i].kvs_keys[j], key_len);
+			strncpy(val, kvs_recs[i].kvs_values[j],	val_len);
 			kvs_recs[i].kvs_inx = j;
 			rc = PMI_SUCCESS;
 			goto fini;
@@ -1553,8 +1552,8 @@ int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 			if (kvs_recs[i].kvs_key_states[j] == KVS_KEY_STATE_DISABLED)
 				continue;
 
-			strlcpy(key, kvs_recs[i].kvs_keys[j], key_len);
-			strlcpy(val, kvs_recs[i].kvs_values[j],	val_len);
+			strncpy(key, kvs_recs[i].kvs_keys[j], key_len);
+			strncpy(val, kvs_recs[i].kvs_values[j],	val_len);
 			kvs_recs[i].kvs_inx = j;
 			rc = PMI_SUCCESS;
 			goto fini;
@@ -1704,7 +1703,8 @@ int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
 			PMI_Free_keyvals(temp, s);
 			return PMI_FAIL;
 		}
-		strlcpy(temp[s].key, kp, len);
+		strncpy(temp[s].key, kp, len);
+		temp[s].key[len] = '\0';
 		if (!IsPmiKey(temp[s].key)) {
 			free(temp[s].key);
 			temp[s].key = NULL;
@@ -1720,7 +1720,8 @@ int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
 			PMI_Free_keyvals(temp, s+1);
 			return PMI_FAIL;
 		}
-		strlcpy(temp[s].val, vp, len);
+		strncpy(temp[s].val, vp, len);
+		temp[s].val[len] = '\0';
 		s++;
 		i++;  // try next args
 		cp = args[i];
@@ -1934,7 +1935,8 @@ int PMI_Get_options(char *str, int *length)
 
 	optlen = strlen(pmi_opt_str);
 	if (*length <= optlen) {
-		strlcpy(str, pmi_opt_str, *length);
+		strncpy(str, pmi_opt_str, *length-1);
+		str[*length-1] = '\0';
 		return PMI_ERR_NOMEM;
 	}
 
@@ -1948,7 +1950,8 @@ static int IsPmiKey(char * key) {
 	if (pmi_debug)
 		fprintf(stderr, "In: IsPmiKey\n");
 
-	strlcpy(strh, key, 5);
+	strncpy(strh, key, 4);
+	strh[4]='\0';
  	if (!strcmp(strh, "PMI_") && (strlen(key) > 4)) {
 		return 1;
 	}
