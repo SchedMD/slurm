@@ -1423,6 +1423,7 @@ extern int node_features_p_node_set(char *active_features)
 				key = "Memory";
 				break;
 			default:
+				key = NULL;
 				break;
 			}
 		else if (strstr(active_features, "hybrid"))
