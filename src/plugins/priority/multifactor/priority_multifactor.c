@@ -974,7 +974,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 {
 	slurmdb_qos_rec_t *qos;
 	slurmdb_assoc_rec_t *assoc;
-	double run_delta = 0.0, run_decay = 0.0;
+	double run_delta = 0.0, run_decay = 0.0, run_nodecay = 0.0;
 	double billable_tres = 0.0;
 	double real_decay = 0.0, real_nodecay = 0.0;
 	uint64_t tres_run_delta[slurmctld_tres_cnt];
@@ -1077,11 +1077,14 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	billable_tres = _calc_billable_tres(job_ptr, start_period);
 	real_decay    = run_decay * billable_tres;
 	real_nodecay  = run_delta * billable_tres;
+	run_nodecay   = run_delta;
 
 	qos = job_ptr->qos_ptr;
 	if (qos && (qos->usage_factor >= 0)) {
 		real_decay *= qos->usage_factor;
 		run_decay  *= qos->usage_factor;
+		real_nodecay *= qos->usage_factor;
+		run_nodecay  *= qos->usage_factor;
 	}
 	if (job_ptr->tres_alloc_cnt) {
 		for (i=0; i<slurmctld_tres_cnt; i++) {
@@ -1091,7 +1094,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 				job_ptr->tres_alloc_cnt[i];
 			tres_run_decay[i] = (long double)run_decay *
 				(long double)job_ptr->tres_alloc_cnt[i];
-			tres_run_nodecay[i] = (long double)run_delta *
+			tres_run_nodecay[i] = (long double)run_nodecay *
 				(long double)job_ptr->tres_alloc_cnt[i];
 		}
 	}
@@ -1101,7 +1104,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	/* now apply the usage factor for this qos */
 	if (qos) {
 		if (qos->flags & QOS_FLAG_NO_DECAY) {
-			qos->usage->grp_used_wall += run_delta;
+			qos->usage->grp_used_wall += run_nodecay;
 			qos->usage->usage_raw += (long double)real_nodecay;
 
 			_handle_qos_tres_run_secs(tres_run_nodecay,
@@ -1132,7 +1135,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 		/* 	run_decay *= qos->usage_factor; */
 		/* } */
 		if (qos->flags & QOS_FLAG_NO_DECAY) {
-			qos->usage->grp_used_wall += run_delta;
+			qos->usage->grp_used_wall += run_nodecay;
 			qos->usage->usage_raw += (long double)real_nodecay;
 
 			_handle_qos_tres_run_secs(tres_run_nodecay,
