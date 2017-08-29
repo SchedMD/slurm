@@ -764,6 +764,7 @@ static struct option long_options[] = {
 	{"cluster-constraint",required_argument,0, LONG_OPT_CLUSTER_CONSTRAINT},
 	{"constraint",    required_argument, 0, 'C'},
 	{"dependency",    required_argument, 0, 'd'},
+	{"chdir",         required_argument, 0, 'D'},
 	{"workdir",       required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
@@ -3433,7 +3434,7 @@ static void _usage(void)
 "              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
 "              [--input file] [--output file] [--error file]\n"
 "              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
-"              [--workdir=directory] [--oversubscibe] [-m dist] [-J jobname]\n"
+"              [--chdir=directory] [--oversubscibe] [-m dist] [-J jobname]\n"
 "              [--jobid=id] [--verbose] [--gid=group] [--uid=user]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
@@ -3476,7 +3477,7 @@ static void _help(void)
 "      --deadline=time         remove the job if no ending possible before\n"
 "                              this deadline (start > (deadline - time[-min]))\n"
 "      --delay-boot=mins       delay boot for desired node features\n"
-"  -D, --workdir=directory     set working directory for batch script\n"
+"  -D, --chdir=directory       set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
 "      --export[=names]        specify environment variables to export\n"
 "      --export-file=file|fd   specify environment variables file or file\n"

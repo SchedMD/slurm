@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- By default have Slurm dynamically link to libslurm.so instead of static
     linking.  If static linking is desired configure with
     --without-shared-libslurm.
+ -- Change --workdir in sbatch to be --chdir as in all other commands (salloc,
+    srun).
 
 * Changes in Slurm 17.11.0pre2
 ==============================
