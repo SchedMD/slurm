@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     srun).
  -- Add WorkDir to the job record in the database.
  -- Make the UsageFactor of a QOS work when a qos has the nodecay flag.
+ -- Add MaxQueryTimeRange option to slurmdbd.conf to limit accounting query
+    ranges when fetching job records.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
