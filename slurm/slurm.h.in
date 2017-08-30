@@ -191,6 +191,13 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define SLURM_ID_HASH_JOB_ID(hash_id) (uint32_t)(hash_id & 0x00000000FFFFFFFF)
 #define SLURM_ID_HASH_STEP_ID(hash_id) (uint32_t)(hash_id >> 32)
 
+/*
+ * Convert a hash ID to its legacy (pre-17.11) equivalent
+ * Used for backward compatibility for Cray PMI
+ */
+#define SLURM_ID_HASH_LEGACY(hash_id) \
+	((hash_id >> 32) * 10000000000 + (hash_id & 0x00000000FFFFFFFF))
+
 /* last entry must be JOB_END, keep in sync with job_state_string and
  *	job_state_string_compact. values may be ORed with JOB_STATE_FLAGS
  *	below.  */

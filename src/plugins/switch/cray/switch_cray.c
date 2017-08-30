@@ -609,6 +609,23 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		free_alpsc_pe_info(&alpsc_pe_info);
 		return SLURM_ERROR;
 	}
+
+	/*
+	 * Also write a placement file with the legacy apid to support old
+	 * statically linked Cray PMI applications. We can't simply symlink
+	 * the old format to the new because the apid is written to the file.
+	 */
+	if (sw_job->apid != SLURM_ID_HASH_LEGACY(sw_job->apid)) {
+		rc = alpsc_write_placement_file(&err_msg,
+			SLURM_ID_HASH_LEGACY(sw_job->apid),
+			cmd_index, &alpsc_pe_info, control_nid,	control_soc,
+			num_branches, &alpsc_branch_info);
+		ALPSC_CN_DEBUG("alpsc_write_placement_file");
+		if (rc != 1) {
+			free_alpsc_pe_info(&alpsc_pe_info);
+			return SLURM_ERROR;
+		}
+	}
 #endif
 	/* Clean up alpsc_pe_info*/
 	free_alpsc_pe_info(&alpsc_pe_info);
@@ -698,30 +715,10 @@ extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 
 #ifdef HAVE_NATIVE_CRAY
 	int rc;
-	char *path_name = NULL;
-
-	/*
-	 * Remove the APID directory LEGACY_SPOOL_DIR/<APID>
-	 */
-	path_name = xstrdup_printf(LEGACY_SPOOL_DIR "%" PRIu64, job->apid);
-
-	// Stolen from ALPS
-	recursive_rmdir(path_name);
-	xfree(path_name);
-
-	/*
-	 * Remove the ALPS placement file.
-	 * LEGACY_SPOOL_DIR/places<APID>
-	 */
-	path_name = xstrdup_printf(LEGACY_SPOOL_DIR "places%" PRIu64,
-				   job->apid);
-	rc = remove(path_name);
-	if (rc) {
-		CRAY_ERR("remove %s failed: %m", path_name);
-		xfree(path_name);
-		return SLURM_ERROR;
+	rc = remove_spool_files(job->apid);
+	if (rc != SLURM_SUCCESS) {
+	    return rc;
 	}
-	xfree(path_name);
 #endif
 
 #if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)

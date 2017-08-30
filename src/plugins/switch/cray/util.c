@@ -50,6 +50,7 @@
 
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
+static void _recursive_rmdir(const char *dirnm);
 
 /*
  * Create APID directory with given uid/gid as the owner.
@@ -63,19 +64,81 @@ int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid)
 
 	rc = mkdir(apid_dir, 0700);
 	if (rc) {
-		CRAY_ERR("mkdir failed to make directory %s: %m", apid_dir);
+		CRAY_ERR("mkdir %s failed: %m", apid_dir);
 		xfree(apid_dir);
 		return SLURM_ERROR;
 	}
 
 	rc = chown(apid_dir, uid, gid);
 	if (rc) {
+		CRAY_ERR("chown %s, %d, %d failed: %m",
+			 apid_dir, (int)uid, (int)gid);
 		xfree(apid_dir);
-		CRAY_ERR("chown failed: %m");
 		return SLURM_ERROR;
 	}
 
+	if (apid != SLURM_ID_HASH_LEGACY(apid)) {
+		char *oldapid_dir = xstrdup_printf(LEGACY_SPOOL_DIR "%" PRIu64,
+						   SLURM_ID_HASH_LEGACY(apid));
+		if (symlink(apid_dir, oldapid_dir)) {
+			CRAY_ERR("symlink %s, %s failed: %m",
+				apid_dir, oldapid_dir);
+			xfree(apid_dir);
+			xfree(oldapid_dir);
+			return SLURM_ERROR;
+		}
+		xfree(oldapid_dir);
+	}
+
 	xfree(apid_dir);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Clean up spool directory files, directories, and links
+ */
+int remove_spool_files(uint64_t apid)
+{
+	char *path_name = NULL;
+	uint64_t oldapid = SLURM_ID_HASH_LEGACY(apid);
+
+	// Remove the backwards compatibility apid directory symlink
+	if (apid != oldapid) {
+		path_name = xstrdup_printf(
+			LEGACY_SPOOL_DIR "%" PRIu64, oldapid);
+		if (remove(path_name)) {
+			CRAY_ERR("remove %s failed: %m", path_name);
+			xfree(path_name);
+			return SLURM_ERROR;
+		}
+		xfree(path_name);
+	}
+
+	// Remove the apid directory LEGACY_SPOOL_DIR/<APID>
+	path_name = xstrdup_printf(LEGACY_SPOOL_DIR "%" PRIu64, apid);
+	_recursive_rmdir(path_name);
+	xfree(path_name);
+
+	// Remove the backwards compatibility ALPS placement file
+	if (apid != oldapid) {
+		path_name = xstrdup_printf(LEGACY_SPOOL_DIR "places%" PRIu64,
+					   oldapid);
+		if (remove(path_name)) {
+			CRAY_ERR("remove %s failed: %m", path_name);
+			xfree(path_name);
+			return SLURM_ERROR;
+		}
+	}
+
+	// Remove the ALPS placement file LEGACY_SPOOL_DIR/places<APID>
+	path_name = xstrdup_printf(LEGACY_SPOOL_DIR "places%" PRIu64, apid);
+	if (remove(path_name)) {
+		CRAY_ERR("remove %s failed: %m", path_name);
+		xfree(path_name);
+		return SLURM_ERROR;
+	}
+
+	xfree(path_name);
 	return SLURM_SUCCESS;
 }
 
@@ -243,10 +306,8 @@ int list_str_to_array(char *list, int *cnt, int32_t **numbers)
  * all files and directories rooted in this name. Finally
  * the named directory will be deleted.
  * If called with a file name, only that file will be deleted.
- *
- * Stolen from the ALPS code base.  I may need to write my own.
  */
-void recursive_rmdir(const char *dirnm)
+static void _recursive_rmdir(const char *dirnm)
 {
 	int st;
 	size_t dirnm_len, fnm_len, name_len;
@@ -286,7 +347,7 @@ void recursive_rmdir(const char *dirnm)
 			continue;
 		}
 		if (st_buf.st_mode & S_IFDIR) {
-			recursive_rmdir(fnm);
+			_recursive_rmdir(fnm);
 		} else {
 
 			st = unlink(fnm);

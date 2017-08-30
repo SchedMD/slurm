@@ -444,9 +444,9 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	START_TIMER;
 
 	if (track_status) {
+		uint64_t apid = SLURM_ID_HASH(job->jobid, job->stepid);
 		// Get the lli file name
-		snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
-			 SLURM_ID_HASH(job->jobid, job->stepid));
+		snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE, apid);
 
 		// Unlink the file
 		errno = 0;
@@ -454,7 +454,19 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		if (rc == -1 && errno != ENOENT) {
 			CRAY_ERR("unlink(%s) failed: %m", llifile);
 		} else if (rc == 0) {
-			info("Unlinked %s", llifile);
+			debug("Unlinked %s", llifile);
+		}
+
+		// Unlink the backwards compatibility symlink
+		if (apid != SLURM_ID_HASH_LEGACY(apid)) {
+			snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
+				 SLURM_ID_HASH_LEGACY(apid));
+			rc = unlink(llifile);
+			if (rc == -1 && errno != ENOENT) {
+				CRAY_ERR("unlink(%s) failed: %m", llifile);
+			} else if (rc == 0) {
+				debug("Unlinked %s", llifile);
+			}
 		}
 	}
 
@@ -571,11 +583,12 @@ static void _alpsc_debug(const char *file, int line, const char *func,
 static int _make_status_file(stepd_step_rec_t *job)
 {
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
+	char oldllifile[LLI_STATUS_FILE_BUF_SIZE];
 	int rv, fd;
+	uint64_t apid = SLURM_ID_HASH(job->jobid, job->stepid);
 
 	// Get the lli file name
-	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
-		 SLURM_ID_HASH(job->jobid, job->stepid));
+	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE, apid);
 
 	// Make the file
 	errno = 0;
@@ -604,9 +617,21 @@ static int _make_status_file(stepd_step_rec_t *job)
 		TEMP_FAILURE_RETRY(close(fd));
 		return SLURM_ERROR;
 	}
-	info("Created file %s", llifile);
+	debug("Created file %s", llifile);
 
 	TEMP_FAILURE_RETRY(close(fd));
+
+	// Create a backwards compatibility link
+	if (apid != SLURM_ID_HASH_LEGACY(apid)) {
+		snprintf(oldllifile, sizeof(oldllifile), LLI_STATUS_FILE,
+			 SLURM_ID_HASH_LEGACY(apid));
+		rv = symlink(llifile, oldllifile);
+		if (rv == -1) {
+			CRAY_ERR("symlink(%s, %s) failed: %m",
+				 llifile, oldllifile);
+			return SLURM_ERROR;
+		}
+	}
 	return SLURM_SUCCESS;
 }
 
