@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Add LaunchParameters=batch_step_set_cpu_freq to allow the setting of the cpu
     frequency on the batch step.
  -- CRAY - Fix statically linked applications to CRAY's PMI.
+ -- Fix - Raise an error back to the user when trying to update currently
+    unsupported core-based reservations.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
