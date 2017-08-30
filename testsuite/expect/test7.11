@@ -205,7 +205,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: spank help message not in salloc help message\n"
+	send_user "\nFAILURE: spank help message not in salloc help message ($matches != 1)\n"
 	set exit_code 1
 }
 
@@ -236,7 +236,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: spank help message not in sbatch help message\n"
+	send_user "\nFAILURE: spank help message not in sbatch help message ($matches != 1)\n"
 	set exit_code 1
 }
 exec $bin_rm -f $file_in
@@ -250,11 +250,15 @@ exec $bin_rm -f $file_in
 send_user "\n\nTest locally logged messages..........\n\n"
 
 make_bash_script $file_in "
+  $bin_rm -f $spank_conf_file
+  $bin_sleep 5
   $bin_cp -f $new_spank_conf $spank_conf_file
   $bin_sleep 1
   $srun --test_suite=5 $bin_uname
   if test -f $orig_spank_conf
   then
+    $bin_rm -f $spank_conf_file
+    $bin_sleep 5
     $bin_cp -f $orig_spank_conf $spank_conf_file
   fi
 "
@@ -287,7 +291,7 @@ if {$job_id == 0} {
 	set exit_code 1
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: spank options not processed by sbatch\n"
+	send_user "\nFAILURE: spank options not processed by sbatch ($matches != 2)\n"
 	set exit_code 1
 }
 
@@ -329,8 +333,9 @@ if {[wait_for_file $file_out] == 0} {
 			wait
 		}
 	}
-	if {[expr $match1 + $match2 + $match3] != 3} {
-		send_user "\nFAILURE: local (srun) spank plugin failure\n"
+	set match [expr $match1 + $match2 + $match3]
+	if {$match != 3} {
+		send_user "\nFAILURE: local (srun) spank plugin failure ($match != 3)\n"
 		set exit_code 1
 	} else {
 		send_user "\nlocal (srun) spank plugin success\n"
@@ -380,13 +385,13 @@ if {[wait_for_file $spank_out] == 0} {
 		}
 	}
 	if {$matches_sbatch != 2} {
-		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch)\n"
+		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != 2)\n"
 		set exit_code 1
 	} elseif {$matches_srun != 2} {
-		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun)\n"
+		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != 2)\n"
 		set exit_code 1
 	} elseif {$matches != 4} {
-		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches)\n"
+		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != 4)\n"
 		set exit_code 1
 	} else {
 		send_user "\n remote (slurmd) spank plugin success\n"
