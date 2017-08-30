@@ -6630,9 +6630,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->vsize_factor, buffer);
 
 		pack16(build_ptr->wait_time, buffer);
-		pack16(build_ptr->z_16, buffer);
-		pack32(build_ptr->z_32, buffer);
-		packstr(build_ptr->z_char, buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		pack_time(build_ptr->last_update, buffer);
 
@@ -6912,9 +6909,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->vsize_factor, buffer);
 
 		pack16(build_ptr->wait_time, buffer);
-		pack16(build_ptr->z_16, buffer);
-		pack32(build_ptr->z_32, buffer);
-		packstr(build_ptr->z_char, buffer);
+		pack16(0, buffer);
+		pack32(0, buffer);
+		packnull(buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(build_ptr->last_update, buffer);
 
@@ -7195,9 +7192,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->vsize_factor, buffer);
 
 		pack16(build_ptr->wait_time, buffer);
-		pack16(build_ptr->z_16, buffer);
-		pack32(build_ptr->z_32, buffer);
-		packstr(build_ptr->z_char, buffer);
+		pack16(0, buffer);
+		pack32(0, buffer);
+		packnull(buffer);
 	} else {
 		error("_pack_slurm_ctl_conf_msg: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -7625,12 +7622,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->vsize_factor, buffer);
 
 		safe_unpack16(&build_ptr->wait_time, buffer);
-
-		safe_unpack16(&build_ptr->z_16, buffer);
-		safe_unpack32(&build_ptr->z_32, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->z_char, &uint32_tmp,
-				       buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		char *charptr_tmp;
+
 		/* unpack timestamp of snapshot */
 
 		safe_unpack_time(&build_ptr->last_update, buffer);
@@ -8031,12 +8025,13 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->wait_time, buffer);
 
-		safe_unpack16(&build_ptr->z_16, buffer);
-		safe_unpack32(&build_ptr->z_32, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->z_char, &uint32_tmp,
-				       buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
+		xfree(charptr_tmp);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t tmp_mem;
+		char *charptr_tmp;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -8438,10 +8433,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->wait_time, buffer);
 
-		safe_unpack16(&build_ptr->z_16, buffer);
-		safe_unpack32(&build_ptr->z_32, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->z_char, &uint32_tmp,
-				       buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
+		xfree(charptr_tmp);
 	} else {
 		error("_unpack_slurm_ctl_conf_msg: protocol_version "
 		      "%hu not supported", protocol_version);

@@ -2424,7 +2424,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->topology_plugin);
 	xfree (ctl_conf_ptr->unkillable_program);
 	xfree (ctl_conf_ptr->version);
-	xfree (ctl_conf_ptr->z_char);
 
 	if (purge_node_hash)
 		_free_name_hashtbl();
