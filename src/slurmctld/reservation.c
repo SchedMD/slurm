@@ -2490,9 +2490,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	/* FIXME: Support more core based reservation updates */
 #ifndef HAVE_BG
-	if ((resv_ptr->full_nodes == 0) &&
-	    (resv_desc_ptr->node_cnt || resv_desc_ptr->node_list) ||
-	    (resv_desc_ptr->core_cnt)) {
+	if ((!resv_ptr->full_nodes &&
+	     (resv_desc_ptr->node_cnt || resv_desc_ptr->node_list)) ||
+	    resv_desc_ptr->core_cnt) {
 		info("Core-based reservation %s can not be updated",
 		     resv_desc_ptr->name);
 		return ESLURM_CORE_RESERVATION_UPDATE;
