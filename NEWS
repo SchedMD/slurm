@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
  -- Make the UsageFactor of a QOS work when a qos has the nodecay flag.
  -- Add MaxQueryTimeRange option to slurmdbd.conf to limit accounting query
     ranges when fetching job records.
+ -- Add LaunchParameters=batch_step_set_cpu_freq to allow the setting of the cpu
+    frequency on the batch step.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

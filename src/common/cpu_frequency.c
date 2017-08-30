@@ -73,6 +73,8 @@
 static uint16_t cpu_freq_count = 0;
 static uint32_t cpu_freq_govs = 0; /* Governors allowed. */
 static uint64_t debug_flags = NO_VAL; /* init value for slurmd, slurmstepd */
+static int set_batch_freq = -1;
+
 static struct cpu_freq_data {
 	uint8_t  avail_governors;
 	uint8_t  nfreq;
@@ -425,7 +427,16 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	char *cpu_str;
 	char *savestr = NULL;
 
-	if ((job->stepid == SLURM_BATCH_SCRIPT) ||
+	if (set_batch_freq == -1) {
+		char *launch_params = slurm_get_launch_params();
+		if (xstrcasestr(launch_params, "batch_step_set_cpu_freq"))
+			set_batch_freq = 1;
+		else
+			set_batch_freq = 0;
+		xfree(launch_params);
+	}
+
+	if (((job->stepid == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
 	    (job->stepid == SLURM_EXTERN_CONT))
 		return;
 
@@ -514,7 +525,16 @@ cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores)
 	uint16_t cpuidx =  0;
 	char *core_range;
 
-	if ((job->stepid == SLURM_BATCH_SCRIPT) ||
+	if (set_batch_freq == -1) {
+		char *launch_params = slurm_get_launch_params();
+		if (xstrcasestr(launch_params, "batch_step_set_cpu_freq"))
+			set_batch_freq = 1;
+		else
+			set_batch_freq = 0;
+		xfree(launch_params);
+	}
+
+	if (((job->stepid == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
 	    (job->stepid == SLURM_EXTERN_CONT))
 		return;
 
