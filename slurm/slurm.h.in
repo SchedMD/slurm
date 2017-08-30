@@ -2296,7 +2296,7 @@ typedef struct resource_allocation_response_msg {
 	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
-	uint32_t num_cpu_groups;/* elements in below cpu arrays */
+	uint32_t num_cpu_groups;/* size of cpus_per_node and cpu_count_reps */
 	char *partition;	/* name of partition used to run job */
 	uint64_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,

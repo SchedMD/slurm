@@ -101,6 +101,13 @@ typedef struct allocation_info {
 	uint32_t                stepid;
 } allocation_info_t;
 
+typedef struct pack_resp_struct {
+	hostlist_t alias_list;
+	uint16_t *cpu_cnt;
+	hostlist_t host_list;
+} pack_resp_struct_t;
+
+
 static int shepherd_fd = -1;
 static pthread_t signal_thread = (pthread_t) 0;
 static int pty_sigarray[] = { SIGWINCH, 0 };
@@ -759,19 +766,139 @@ static void _cancel_steps(List srun_job_list)
 	list_iterator_destroy(job_iter);
 }
 
-static void _compress_pack_nodelist(char *pack_nodelist)
+static void _pack_struct_del(void *x)
 {
+	pack_resp_struct_t *pack_resp = (pack_resp_struct_t *) x;
+
+	if (pack_resp->alias_list)
+		hostlist_destroy(pack_resp->alias_list);
+	xfree(pack_resp->cpu_cnt);
+	if (pack_resp->host_list)
+		hostlist_destroy(pack_resp->host_list);
+	xfree(pack_resp);
+}
+
+static char *_compress_pack_nodelist(List used_resp_list)
+{
+	resource_allocation_response_msg_t *resp;
+	pack_resp_struct_t *pack_resp;
+	List pack_resp_list;
+	ListIterator resp_iter;
+	char *alias_name, *aliases = NULL, *tmp;
+	char *pack_nodelist = NULL, *node_name;
 	hostset_t hs;
-	size_t len;
+	int cnt, i, j, k, len = 0;
+	uint16_t *cpus;
+	uint32_t *reps, cpu_inx;
+	bool have_aliases = false;
 
-	if (!pack_nodelist || (pack_nodelist[0] == '\0'))
-		return;
+	if (!used_resp_list)
+		return pack_nodelist;
 
-	len = strlen(pack_nodelist) + 1;
-	if ((hs = hostset_create(pack_nodelist))) {
-		(void) hostset_ranged_string(hs, len, pack_nodelist);
-		hostset_destroy(hs);
+	cnt = list_count(used_resp_list);
+	pack_resp_list = list_create(_pack_struct_del);
+	hs = hostset_create("");
+	resp_iter = list_iterator_create(used_resp_list);
+	while ((resp = (resource_allocation_response_msg_t *)
+			list_next(resp_iter))) {
+		if (!resp->node_list)
+			continue;
+		len += strlen(resp->node_list);
+		hostset_insert(hs, resp->node_list);
+		pack_resp = xmalloc(sizeof(pack_resp_struct_t));
+		if (resp->alias_list) {
+			pack_resp->alias_list =
+				hostlist_create(resp->alias_list);
+			have_aliases = true;
+		}
+		pack_resp->cpu_cnt = xmalloc(sizeof(uint16_t) * resp->node_cnt);
+		pack_resp->host_list = hostlist_create(resp->node_list);
+		for (i = 0, k = 0; i < resp->num_cpu_groups; i++) {
+			for (j = 0; j < resp->cpu_count_reps[i]; j++) {
+				pack_resp->cpu_cnt[k++] =
+					resp->cpus_per_node[i];
+				if (k >= resp->node_cnt)
+					break;
+			}
+			if (k >= resp->node_cnt)
+				break;
+		}
+		list_append(pack_resp_list, pack_resp);
 	}
+	list_iterator_destroy(resp_iter);
+
+	len += (cnt + 16);
+	pack_nodelist = xmalloc(len);
+	(void) hostset_ranged_string(hs, len, pack_nodelist);
+
+	cpu_inx = 0;
+	cnt = hostset_count(hs);
+	cpus = xmalloc(sizeof(uint16_t) * (cnt + 1));
+	reps = xmalloc(sizeof(uint32_t) * (cnt + 1));
+	for (i = 0; i < cnt; i++) {
+		node_name = hostset_nth(hs, i);
+		resp_iter = list_iterator_create(pack_resp_list);
+		while ((pack_resp = (pack_resp_struct_t *)
+				    list_next(resp_iter))) {
+			j = hostlist_find(pack_resp->host_list, node_name);
+			if (j == -1)	/* node not in this pack job */
+				continue;
+			if (have_aliases) {
+				if (aliases)
+					xstrcat(aliases, ",");
+				if (pack_resp->alias_list) {
+					alias_name = hostlist_nth(
+						     pack_resp->alias_list, j);
+				} else
+					alias_name = NULL;
+				if (alias_name) {
+					xstrcat(aliases, alias_name);
+					free(alias_name);
+				} else {
+					xstrcat(aliases, node_name);
+				}
+			}
+			if (cpus[cpu_inx] == pack_resp->cpu_cnt[j]) {
+				reps[cpu_inx]++;
+			} else {
+				if (cpus[cpu_inx] != 0)
+					cpu_inx++;
+				cpus[cpu_inx] = pack_resp->cpu_cnt[j];
+				reps[cpu_inx]++;
+			}
+			break;
+		}
+		list_iterator_destroy(resp_iter);
+		free(node_name);
+	}
+
+	cpu_inx++;
+	tmp = uint32_compressed_to_str(cpu_inx, cpus, reps);
+	if (setenv("SLURM_JOB_CPUS_PER_NODE", tmp, 1) < 0) {
+		error("%s: Unable to set SLURM_JOB_CPUS_PER_NODE in environment",
+		      __func__);
+	}
+	xfree(tmp);
+
+	if (aliases) {
+		hostlist_t alias_list = NULL;
+		alias_list = hostlist_create(aliases);
+		i = strlen(aliases) + 1;
+		(void) hostlist_ranged_string(alias_list, i, aliases);
+		if (setenv("SLURM_NODE_ALIASES", aliases, 1) < 0) {
+			error("%s: Unable to set SLURM_NODE_ALIASES in environment",
+			      __func__);
+		}
+		hostlist_destroy(alias_list);
+		xfree(aliases);
+	}
+
+	xfree(reps);
+	xfree(cpus);
+	hostset_destroy(hs);
+	list_destroy(pack_resp_list);
+
+	return pack_nodelist;
 }
 
 extern void create_srun_job(void **p_job, bool *got_alloc,
@@ -779,6 +906,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 {
 	resource_allocation_response_msg_t *resp;
 	List job_resp_list = NULL, srun_job_list = NULL;
+	List used_resp_list = NULL;
 	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
 	int i, max_list_offset, max_pack_offset, pack_offset = -1;
@@ -837,6 +965,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			}
 		}
 		srun_job_list = list_create(NULL);
+		used_resp_list = list_create(NULL);
 		if (max_pack_offset > 0)
 			pack_offset = 0;
 		resp_iter = list_iterator_create(job_resp_list);
@@ -852,12 +981,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 						slurm_setup_remote_working_cluster(resp);
 				}
 				if (merge_nodelist) {
-					char *sep = "";
-					if (pack_nodelist)
-						sep = ",";
 					merge_nodelist = false;
-					xstrfmtcat(pack_nodelist, "%s%s",
-						   sep, resp->node_list);
+					list_append(used_resp_list, resp);
 				}
 				select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
 							&resp->node_cnt);
@@ -959,9 +1084,10 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		    opt_list && (list_count(opt_list) > 1) &&
 		    my_job_id && (opt.mpi_combine == true)) {
 			pack_jobid = my_job_id;
-			_compress_pack_nodelist(pack_nodelist);
-		} else
-			xfree(pack_nodelist);
+		}
+		if (list_count(job_resp_list) > 1)
+			pack_nodelist = _compress_pack_nodelist(used_resp_list);
+		list_destroy(used_resp_list);
 		if (_create_job_step(job, false, srun_job_list, pack_jobid,
 				     pack_nodelist) < 0) {
 			if (*got_alloc)
@@ -970,6 +1096,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 				_cancel_steps(srun_job_list);
 			exit(error_exit);
 		}
+		xfree(pack_nodelist);
 	} else {
 		/* Combined job allocation and job step launch */
 #if defined HAVE_FRONT_END && (!defined HAVE_BG || !defined HAVE_BG_FILES) && (!defined HAVE_REAL_CRAY)
@@ -994,15 +1121,10 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			resp_iter = list_iterator_create(job_resp_list);
 			while ((resp = (resource_allocation_response_msg_t *)
 				       list_next(resp_iter))) {
-				char *sep = "";
 				if (my_job_id == 0) {
 					my_job_id = resp->job_id;
 					*got_alloc = true;
 				}
-				if (pack_nodelist)
-					sep = ",";
-				xstrfmtcat(pack_nodelist, "%s%s",
-					   sep, resp->node_list);
 				opt_local = (opt_t *) list_next(opt_iter);
 				if (!opt_local)
 					break;
@@ -1041,9 +1163,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		    opt_list && (list_count(opt_list) > 1) &&
 		    my_job_id && (opt.mpi_combine == true)) {
 			pack_jobid = my_job_id;
-			_compress_pack_nodelist(pack_nodelist);
-		} else
-			xfree(pack_nodelist);
+			pack_nodelist = _compress_pack_nodelist(job_resp_list);
+		}
 
 		/*
 		 *  Become --uid user
@@ -1055,6 +1176,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
 		}
+		xfree(pack_nodelist);
 
 		global_resp = NULL;
 		if (opt_list) {
