@@ -117,6 +117,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     daemons get written to syslog.
  -- Add slurmdbd.conf configuration parameter DebugLevelSyslog to control which
     messages from the slurmdbd daemon get written to syslog.
+ -- Add slurmdbd.conf configuration parameter MaxQueryTimeRange to prevent
+    overly broad accounting database lookups from overwhelming SlurmDBD.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

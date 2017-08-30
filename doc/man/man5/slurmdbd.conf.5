@@ -342,6 +342,15 @@ in the C standard ctime() function form without the year but
 including the microseconds, the daemon's process ID and the current thread ID.
 
 .TP
+\fBMaxQueryTimeLimit\fR
+Return an error if a query is against too large of a time span, to prevent
+ill-formed queries from causing performance problems within SlurmDBD.
+Default value is INFINITE which allows any queries to proceed.
+User \fBSlurmUser\fR and \fBroot\fR are exempt from this restriction.
+Note that queries which attempt to return over 3GB of data will still
+fail to complete with ESLURM_RESULT_TOO_LARGE.
+
+.TP
 \fBMessageTimeout\fR
 Time permitted for a round\-trip communication to complete
 in seconds. Default value is 10 seconds.
