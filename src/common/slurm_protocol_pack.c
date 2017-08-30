@@ -2712,7 +2712,6 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		if (!object) {
-			char *null_str = NULL;
 			pack32(0, buffer);
 			pack32(0, buffer);
 
@@ -2723,7 +2722,7 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 			packdouble(0, buffer);
 
 			pack32(0, buffer);
-			packstr(null_str, buffer);
+			packnull(buffer);
 
 			return;
 		}
