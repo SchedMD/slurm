@@ -21969,68 +21969,97 @@ fi
 
 
 
-  _x_ac_ucx_dirs="/usr /usr/local"
+  _x_ac_ucx_dirs="/usr /usr/local /opt/ucx"
   _x_ac_ucx_libs="lib64 lib"
 
 
 # Check whether --with-ucx was given.
 if test "${with_ucx+set}" = set; then :
-  withval=$with_ucx; if test "x$with_ucx" != xno; then :
-  _x_ac_ucx_dirs="$with_ucx $_x_ac_ucx_dirs"
+  withval=$with_ucx; if test "x$with_ucx" != xno && test "x$with_ucx" != xyes; then :
+  _x_ac_ucx_dirs="$with_ucx"
 fi
+else
+  with_ucx=no
 fi
 
 
   if test "x$with_ucx" = xno; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for ucx disabled" >&5
-$as_echo "$as_me: WARNING: support for ucx disabled" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: support for ucx disabled" >&5
+$as_echo "$as_me: support for ucx disabled" >&6;}
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ucx installation" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ucx installation" >&5
 $as_echo_n "checking for ucx installation... " >&6; }
-if ${x_ac_cv_ucx_dir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $_x_ac_ucx_dirs" >&5
+$as_echo "$_x_ac_ucx_dirs" >&6; }
 
         for d in $_x_ac_ucx_dirs; do
-          test -d "$d" || continue
-          test -d "$d/include" || continue
-          test -d "$d/include/ucp" || continue
-          test -d "$d/include/ucp/api" || continue
-          test -d "$d/include/uct" || continue
-          test -d "$d/include/uct/api" || continue
           test -f "$d/include/ucp/api/ucp.h" || continue
-          test -f "$d/include/ucp/api/ucp_version.h" || continue
+          test -f "$d/include/uct/api/version.h" || continue
           for bit in $_x_ac_ucx_libs; do
+
+            x_ac_cv_ucx_dir=
+            x_ac_cv_ucx_libdir=
             test -d "$d/$bit" || continue
             _x_ac_ucx_cppflags_save="$CPPFLAGS"
             CPPFLAGS="-I$d/include $CPPFLAGS"
             _x_ac_ucx_libs_save="$LIBS"
-            LIBS="-L$d/$bit -lrrd $LIBS"
+            LIBS="-L$d/$bit -lucp $LIBS"
 
-            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ucp_cleanup in -lucp" >&5
+$as_echo_n "checking for ucp_cleanup in -lucp... " >&6; }
+if ${ac_cv_lib_ucp_ucp_cleanup+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lucp  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#include <ucp/api/ucp_version.h>
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char ucp_cleanup ();
 int
 main ()
 {
-
-
+return ucp_cleanup ();
   ;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  x_ac_cv_ucx_dir=$d
-                x_ac_cv_ucx_libdir=$d/$bit
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ucp_ucp_cleanup=yes
+else
+  ac_cv_lib_ucp_ucp_cleanup=no
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ucp_ucp_cleanup" >&5
+$as_echo "$ac_cv_lib_ucp_ucp_cleanup" >&6; }
+if test "x$ac_cv_lib_ucp_ucp_cleanup" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBUCP 1
+_ACEOF
 
-            if test -z "$x_ac_cv_ucx_dir" ||
-               test -z "$x_ac_cv_ucx_libdir"; then
-              { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ucx installation" >&5
-$as_echo "$as_me: WARNING: unable to locate ucx installation" >&2;}
-              continue
+  LIBS="-lucp $LIBS"
+
+fi
+
+
+            if  test "x$ac_cv_lib_ucp_ucp_cleanup" = xno ; then
+                continue
             fi
+
+            x_ac_cv_ucx_dir=$d
+            x_ac_cv_ucx_libdir=$d/$bit
+
+            { $as_echo "$as_me:${as_lineno-$LINENO}: ucx checking result: $x_ac_cv_ucx_libdir" >&5
+$as_echo "$as_me: ucx checking result: $x_ac_cv_ucx_libdir" >&6;}
 
             CPPFLAGS="$_x_ac_ucx_cppflags_save"
             LIBS="$_x_ac_ucx_libs_save"
@@ -22039,13 +22068,8 @@ $as_echo "$as_me: WARNING: unable to locate ucx installation" >&2;}
           test -n "$x_ac_cv_ucx_dir" && break
         done
 
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_ucx_dir" >&5
-$as_echo "$x_ac_cv_ucx_dir" >&6; }
-
     if test -z "$x_ac_cv_ucx_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ucx installation" >&5
-$as_echo "$as_me: WARNING: unable to locate ucx installation" >&2;}
+      as_fn_error $? "unable to locate ucx installation" "$LINENO" 5
     else
       UCX_CPPFLAGS="-I$x_ac_cv_ucx_dir/include"
       if test "$ac_with_rpath" = "yes"; then

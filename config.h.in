@@ -160,6 +160,9 @@
 /* Define to 1 if you have a functional curl library. */
 #undef HAVE_LIBCURL
 
+/* Define to 1 if you have the `ucp' library (-lucp). */
+#undef HAVE_LIBUCP
+
 /* Define to 1 if you have `z' library (-lz) */
 #undef HAVE_LIBZ
 
