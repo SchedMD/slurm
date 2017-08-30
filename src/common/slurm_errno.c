@@ -450,6 +450,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "You can not allocate more than 100% of a resource"	},
 	{ ESLURM_RESULT_TOO_LARGE,
 	  "Query result exceeds size limit"			},
+	{ ESLURM_DB_QUERY_TOO_WIDE,
+	  "Too wide of a date range in query"			},
 
 	/* Federation Errors */
 	{ ESLURM_FED_CLUSTER_MAX_CNT,

@@ -156,6 +156,7 @@ extern int read_slurmdbd_conf(void)
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
 		{"LogTimeFormat", S_P_STRING},
+		{"MaxQueryTimeRange", S_P_STRING},
 		{"MessageTimeout", S_P_UINT16},
 		{"PidFile", S_P_STRING},
 		{"PluginDir", S_P_STRING},
@@ -293,6 +294,13 @@ extern int read_slurmdbd_conf(void)
 			xfree(temp_str);
 		} else
 			slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
+
+		if (s_p_get_string(&temp_str, "MaxQueryTimeRange", tbl)) {
+			slurmdbd_conf->max_time_range = time_str2mins(temp_str);
+			xfree(temp_str);
+		} else {
+			slurmdbd_conf->max_time_range = INFINITE;
+		}
 
 		if (!s_p_get_uint16(&slurmdbd_conf->msg_timeout,
 				    "MessageTimeout", tbl))

@@ -1349,9 +1349,33 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 {
 	dbd_cond_msg_t *cond_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
+	slurmdb_job_cond_t *job_cond = msg->data;
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_JOBS_COND: called");
+
+	/* fail early if too wide a query */
+	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	    && (slurmdbd_conf->max_time_range != INFINITE)) {
+		time_t start, end;
+
+		start = job_cond->usage_start;
+
+		if (job_cond->usage_end)
+			end = job_cond->usage_end;
+		else
+			end = time(NULL);
+
+		if ((end - start) > slurmdbd_conf->max_time_range) {
+			info("Rejecting query > MaxQueryTimeRange from uid %u",
+			     *uid);
+			*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
+								ESLURM_DB_QUERY_TOO_WIDE,
+								slurm_strerror(ESLURM_DB_QUERY_TOO_WIDE),
+								DBD_GET_JOBS_COND);
+			return SLURM_ERROR;
+		}
+	}
 
 	list_msg.my_list = jobacct_storage_g_get_jobs_cond(
 		slurmdbd_conn->db_conn, *uid, cond_msg->cond);
