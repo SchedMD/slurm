@@ -227,7 +227,7 @@ static void _set_job_requeue_exit_value(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr,
 			      uint16_t signal,
 			      uint16_t flags);
-static void _signal_job(struct job_record *job_ptr, int signal);
+static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 			 bool indf_susp);
 static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
@@ -4687,15 +4687,12 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 			deallocate_nodes(job_ptr, false, false, preempt);
 			if (flags & KILL_FED_REQUEUE)
 				job_ptr->job_state &= (~JOB_REQUEUE);
-		} else if (job_ptr->batch_flag &&
-			   ((flags & KILL_FULL_JOB)  ||
-			    (flags & KILL_JOB_BATCH) ||
-			    (flags & KILL_STEPS_ONLY))) {
+		} else if (job_ptr->batch_flag && (flags & KILL_JOB_BATCH)) {
 			_signal_batch_job(job_ptr, signal, flags);
 		} else if ((flags & KILL_JOB_BATCH) && !job_ptr->batch_flag) {
 			return ESLURM_JOB_SCRIPT_MISSING;
 		} else {
-			_signal_job(job_ptr, signal);
+			_signal_job(job_ptr, signal, flags);
 		}
 		verbose("%s: %u of running %s successful 0x%x",
 			__func__, signal, jobid2str(job_ptr, jbuf,
@@ -13808,15 +13805,16 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 }
 
 /* Send specified signal to all steps associated with a job */
-static void _signal_job(struct job_record *job_ptr, int signal)
+static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags)
 {
 #ifndef HAVE_FRONT_END
 	int i;
 #endif
 	agent_arg_t *agent_args = NULL;
-	signal_job_msg_t *signal_job_msg = NULL;
+	kill_tasks_msg_t *signal_job_msg = NULL;
 	static int notify_srun_static = -1;
 	int notify_srun = 0;
+	uint32_t z = 0;
 
 	if (notify_srun_static == -1) {
 		/* do this for all but slurm (poe, aprun, etc...) */
@@ -13854,12 +13852,30 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	}
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type = REQUEST_SIGNAL_JOB;
+	agent_args->msg_type = REQUEST_SIGNAL_TASKS;
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create(NULL);
 	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;
-	signal_job_msg->signal = signal;
+
+	/*
+	 * We don't ever want to kill a step with this message.  The flags below
+	 * will make sure that does happen.  Just in case though, set the
+	 * step_id to an impossible number.
+	 */
+	signal_job_msg->job_step_id = slurmctld_conf.max_step_cnt + 1;
+
+	/*
+	 * Encode the flags for slurm stepd to know what steps get signaled
+	 * Here if we aren't signaling the full job we always only want to
+	 * signal all other steps.
+	 */
+	if (flags == KILL_FULL_JOB)
+		z = KILL_FULL_JOB << 24;
+	else
+		z = KILL_STEPS_ONLY << 24;
+
+	signal_job_msg->signal = z | signal;
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
