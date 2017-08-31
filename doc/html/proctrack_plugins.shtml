@@ -21,6 +21,7 @@ The major type must be &quot;proctrack.&quot;
 The minor type can be any recognizable abbreviation for the type
 of proctrack. We recommend, for example:</p>
 <ul>
+<li><b>cray</b> &mdash; Use Cray job containers.</li>
 <li><b>cgroup</b> &mdash; Use Linux cgroups for process tracking.</li>
 <li><b>linuxproc</b> &mdash; Perform process tracking based upon a scan
 of the Linux process table and use the parent process ID to determine
