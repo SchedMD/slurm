@@ -1065,6 +1065,13 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}	/* More pack job components */
 		list_iterator_destroy(resp_iter);
 
+		max_pack_offset = get_max_pack_group();
+		pack_offset = list_count(job_resp_list) - 1;
+		if (max_pack_offset > pack_offset) {
+			error("Requested pack_group offset exceeds highest pack job index (%d > %d)",
+			      max_pack_offset, pack_offset);
+			exit(error_exit);
+		}
 		i = list_count(srun_job_list);
 		if (i == 0) {
 			error("No directives to start application on any available "
@@ -1073,13 +1080,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}
 		if (i == 1)
 			FREE_NULL_LIST(srun_job_list);	/* Just use "job" */
-		max_pack_offset = get_max_pack_group();
-		pack_offset = list_count(job_resp_list) - 1;
-		if (max_pack_offset > pack_offset) {
-			error("Requested pack_group offset exceeds highest pack job index (%d > %d)",
-			      max_pack_offset, pack_offset);
-			exit(error_exit);
-		}
 		if (srun_job_list && (list_count(srun_job_list) > 1) &&
 		    opt_list && (list_count(opt_list) > 1) &&
 		    my_job_id && (opt.mpi_combine == true)) {
