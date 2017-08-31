@@ -230,6 +230,19 @@ static void  _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg);
 
 extern diag_stats_t slurmctld_diag_stats;
 
+#ifndef NDEBUG
+/*
+ * Used alongside the testsuite to signal that the RPC should be processed
+ * as an untrusted user, rather than the "real" account. (Which in a lot of
+ * testing is likely SlurmUser, and thus allowed to bypass many security
+ * checks.
+ *
+ * Implemented with a thread-local variable to apply only to the current
+ * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
+ */
+static __thread bool drop_priv = false;
+#endif
+
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
@@ -242,6 +255,11 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 
 	if (arg && (arg->newsockfd >= 0))
 		fd_set_nonblocking(arg->newsockfd);
+
+#ifndef NDEBUG
+	if ((msg->flags & SLURM_DROP_PRIV))
+		drop_priv = true;
+#endif
 
 	/* Just to validate the cred */
 	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred,
@@ -912,6 +930,10 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
  */
 extern bool validate_slurm_user(uid_t uid)
 {
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
 		return true;
 	else
@@ -926,6 +948,10 @@ extern bool validate_slurm_user(uid_t uid)
  */
 extern bool validate_super_user(uid_t uid)
 {
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
 	    SLURMDB_ADMIN_SUPER_USER)
@@ -942,6 +968,10 @@ extern bool validate_super_user(uid_t uid)
  */
 extern bool validate_operator(uid_t uid)
 {
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
 	    SLURMDB_ADMIN_OPERATOR)
