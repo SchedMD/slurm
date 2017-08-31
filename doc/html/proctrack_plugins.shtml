@@ -34,10 +34,6 @@ configuration file, <i>slurm.conf</i>.</li>
 <li><b>pgid</b> &mdash; Use process group ID to determine
 what processes are members of a Slurm job. NOTE: This mechanism is
 not entirely reliable for process tracking.</li>
-<li><b>sgj_job</b> &mdash; Use <a href="http://oss.sgi.com/projects/pagg/">
-SGI's Process Aggregates (PAGG) kernel module</a>.
-NOTE: This kernel module records every process creation
-and termination.</li>
 </ul>
 
 <p><span class="commandline">const char plugin_name[]</span><br>
