@@ -1068,7 +1068,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		max_pack_offset = get_max_pack_group();
 		pack_offset = list_count(job_resp_list) - 1;
 		if (max_pack_offset > pack_offset) {
-			error("Requested pack_group offset exceeds highest pack job index (%d > %d)",
+			error("Requested pack-group offset exceeds highest pack job index (%d > %d)",
 			      max_pack_offset, pack_offset);
 			exit(error_exit);
 		}
