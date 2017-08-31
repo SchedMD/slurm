@@ -5,8 +5,13 @@ import sys
 import os
 import codecs
 
+canonical_url = 'https://slurm.schedmd.com/'
+
 include_pat = r'(<!--\s*#include\s*virtual\s*=\s*"([^"]+)"\s*-->)'
 include_regex = re.compile(include_pat)
+
+canonical_pat = r'(<!--\s*#canonical\s*-->)'
+canonical_regex = re.compile(canonical_pat)
 
 url_pat = r'(\s+href\s*=\s*")([^"#]+)(#[^"]+)?(")'
 url_regex = re.compile(url_pat)
@@ -15,6 +20,7 @@ version_pat = r'(@SLURM_VERSION@)'
 version_regex = re.compile(version_pat)
 
 dirname = ''
+newfilename = ''
 
 def include_virtual(matchobj):
     global dirname
@@ -29,6 +35,10 @@ def include_virtual(matchobj):
         return lines
     else:
         return matchobj.group(0)
+
+def canonical_rewrite(matchobj):
+    global newfilename
+    return '<link rel="canonical" href="' + canonical_url + newfilename + '" />'
 
 def url_rewrite(matchobj):
     global dirname
@@ -73,6 +83,7 @@ for filename in files:
     for line in shtml.readlines():
         line = include_regex.sub(include_virtual, line)
         line = version_regex.sub(version_rewrite, line)
+        line = canonical_regex.sub(canonical_rewrite, line)
         line = url_regex.sub(url_rewrite, line)
         html.write(line)
 
