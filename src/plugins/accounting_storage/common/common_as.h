@@ -46,25 +46,12 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 
 extern void dump_update_list(List update_list);
 
-extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version);
-
 extern int set_usage_information(char **usage_table,
 				 slurmdbd_msg_type_t type,
 				 time_t *usage_start, time_t *usage_end);
 
-extern void merge_delta_qos_list(List qos_list, List delta_qos_list);
-
 extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 				    slurmdb_admin_level_t min_level);
-
-/*
- * is_user_coord - whether user is coord of account
- *
- * IN user: user
- * IN account: account
- * RET: 1 if user is coord of account
- */
-extern bool is_user_coord(slurmdb_user_rec_t *user, char *account);
 
 /*
  * is_user_any_coord - is the user coord of any account
