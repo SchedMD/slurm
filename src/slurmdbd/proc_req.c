@@ -234,6 +234,19 @@ static int   _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 static int   _step_start(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid);
 
+#ifndef NDEBUG
+/*
+ * Used alongside the testsuite to signal that the RPC should be processed
+ * as an untrusted user, rather than the "real" account. (Which in a lot of
+ * testing is likely SlurmUser, and thus allowed to bypass many security
+ * checks.
+ *
+ * Implemented with a thread-local variable to apply only to the current
+ * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
+ */
+static __thread bool drop_priv = false;
+#endif
+
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the conn.fd set before
  *       calling and db_conn and conn.version will be filled in with the init.
@@ -254,6 +267,7 @@ proc_req(void *conn, persist_msg_t *msg,
 
 	DEF_TIMERS;
 	START_TIMER;
+
 	switch (msg->msg_type) {
 	case REQUEST_PERSIST_INIT:
 		rc = _unpack_persist_init(
@@ -596,6 +610,10 @@ proc_req(void *conn, persist_msg_t *msg,
  */
 static bool _validate_slurm_user(uint32_t uid)
 {
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurmdbd_conf->slurm_user_id))
 		return true;
 
@@ -608,6 +626,10 @@ static bool _validate_slurm_user(uint32_t uid)
  */
 static bool _validate_super_user(uint32_t uid, slurmdbd_conn_t *dbd_conn)
 {
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurmdbd_conf->slurm_user_id) ||
 	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_SUPER_USER)
 		return true;
@@ -621,6 +643,10 @@ static bool _validate_super_user(uint32_t uid, slurmdbd_conn_t *dbd_conn)
  */
 static bool _validate_operator(uint32_t uid, slurmdbd_conn_t *dbd_conn)
 {
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurmdbd_conf->slurm_user_id) ||
 	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_OPERATOR)
 		return true;

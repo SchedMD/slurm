@@ -43,6 +43,7 @@
 #define PERSIST_FLAG_DBD            0x0001
 #define PERSIST_FLAG_RECONNECT      0x0002
 #define PERSIST_FLAG_ALREADY_INITED 0x0004
+#define PERSIST_FLAG_DROP_PRIV      0x0008 /* must match SLURM_DROP_PRIV */
 
 typedef struct {
 	uint16_t msg_type;	/* see slurmdbd_msg_type_t or
