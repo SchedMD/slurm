@@ -735,6 +735,11 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 	persist_init_req_msg_t *req_msg = smsg->data;
 	char *comment = NULL;
 
+#ifndef NDEBUG
+	if ((smsg->flags & SLURM_DROP_PRIV))
+		drop_priv = true;
+#endif
+
 	req_msg->uid = g_slurm_auth_get_uid(
 		slurmdbd_conn->conn->auth_cred, slurmdbd_conf->auth_info);
 

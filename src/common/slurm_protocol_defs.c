@@ -61,6 +61,10 @@
 #include "src/common/xstring.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 
+#ifndef NDEBUG
+uint16_t drop_priv_flag = 0;
+#endif
+
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
 ** for details.
@@ -107,6 +111,10 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 	msg->conn_fd = -1;
 	msg->msg_type = (uint16_t)NO_VAL;
 	msg->protocol_version = (uint16_t)NO_VAL;
+
+#ifndef NDEBUG
+	msg->flags = drop_priv_flag;
+#endif
 
 	forward_init(&msg->forward, NULL);
 
