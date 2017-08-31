@@ -58,7 +58,7 @@ typedef struct {
 			     Buf *out_buffer, uint32_t *uid);
 	void (*callback_fini)(void *arg);
 	char *cluster_name;
-	time_t comm_fail_time;	/* avoid constatnt error messages */
+	time_t comm_fail_time;	/* avoid constant error messages */
 	uint16_t my_port;
 	int fd;
 	uint16_t flags;

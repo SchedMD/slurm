@@ -611,8 +611,8 @@ typedef struct {
 struct slurmdb_cluster_rec {
 	List accounting_list; /* list of slurmdb_cluster_accounting_rec_t *'s */
 	uint16_t classification; /* how this machine is classified */
-	time_t comm_fail_time;	/* avoid constatnt error messages. For
-			         * convenience only. DOESN"T GET PACKED */
+	time_t comm_fail_time;	/* avoid constant error messages. For
+			         * convenience only. DOESN'T GET PACKED */
 	slurm_addr_t control_addr; /* For convenience only.
 				    * DOESN'T GET PACKED */
 	char *control_host;
