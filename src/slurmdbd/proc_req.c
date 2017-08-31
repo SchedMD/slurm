@@ -244,7 +244,7 @@ static int   _step_start(slurmdbd_conn_t *slurmdbd_conn,
  * Implemented with a thread-local variable to apply only to the current
  * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
  */
-static __thread bool drop_priv = false;
+__thread bool drop_priv = false;
 #endif
 
 /* Process an incoming RPC
