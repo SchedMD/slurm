@@ -62,6 +62,8 @@ extern char *wckey_day_table;
 extern char *wckey_hour_table;
 extern char *wckey_month_table;
 
+extern __thread bool drop_priv;
+
 /*
  * We want SLURMDB_MODIFY_ASSOC always to be the last
  */
@@ -466,6 +468,10 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
 	 * SLURMDBD!
 	 */
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if (slurmdbd_conf) {
 		/* We have to check the authentication here in the
 		 * plugin since we don't know what accounts are being
