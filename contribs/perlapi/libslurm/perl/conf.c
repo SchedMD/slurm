@@ -395,10 +395,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, vsize_factor, uint16_t);
 	STORE_FIELD(hv, conf, wait_time, uint16_t);
 
-	STORE_FIELD(hv, conf, z_16, uint16_t);
-	STORE_FIELD(hv, conf, z_32, uint32_t);
-	if (conf->z_char)
-		STORE_FIELD(hv, conf, z_char, charp);
 	return 0;
 }
 
@@ -609,9 +605,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, version, charp, FALSE);
 	FETCH_FIELD(hv, conf, vsize_factor, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, wait_time, uint16_t, TRUE);
-	FETCH_FIELD(hv, conf, z_16, uint16_t, FALSE);
-	FETCH_FIELD(hv, conf, z_32, uint32_t, FALSE);
-	FETCH_FIELD(hv, conf, z_char, charp, FALSE);
+
 	return 0;
 }
 
