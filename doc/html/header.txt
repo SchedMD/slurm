@@ -6,6 +6,8 @@
 
 	<title>Slurm Workload Manager</title>
 
+	<!--#canonical-->
+
 	<link rel="shortcut icon" href="favicon.ico" />
 
 	<link rel="stylesheet" type="text/css" href="fonts.css" />
