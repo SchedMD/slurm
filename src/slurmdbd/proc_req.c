@@ -63,6 +63,9 @@
 #include "src/slurmctld/slurmctld.h"
 
 /* Local functions */
+static bool  _validate_slurm_user(uint32_t uid);
+static bool  _validate_super_user(uint32_t uid, slurmdbd_conn_t *slurmdbd_conn);
+static bool  _validate_operator(uint32_t uid, slurmdbd_conn_t *slurmdbd_conn);
 static int   _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 				  persist_msg_t *msg, Buf *out_buffer,
 				  uint32_t *uid);
@@ -587,6 +590,44 @@ proc_req(void *conn, persist_msg_t *msg,
 	return rc;
 }
 
+/*
+ * _validate_slurm_user - validate that the uid is authorized to see
+ *      privileged data (either user root or SlurmUser)
+ */
+static bool _validate_slurm_user(uint32_t uid)
+{
+	if ((uid == 0) || (uid == slurmdbd_conf->slurm_user_id))
+		return true;
+
+	return false;
+}
+
+/*
+ * _validate_super_user - validate that the uid is authorized at the
+ *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
+ */
+static bool _validate_super_user(uint32_t uid, slurmdbd_conn_t *dbd_conn)
+{
+	if ((uid == 0) || (uid == slurmdbd_conf->slurm_user_id) ||
+	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_SUPER_USER)
+		return true;
+
+	return false;
+}
+
+/*
+ * _validate_operator - validate that the uid is authorized at the
+ *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
+ */
+static bool _validate_operator(uint32_t uid, slurmdbd_conn_t *dbd_conn)
+{
+	if ((uid == 0) || (uid == slurmdbd_conf->slurm_user_id) ||
+	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_OPERATOR)
+		return true;
+
+	return false;
+}
+
 static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 {
 	ListIterator itr;
@@ -779,9 +820,7 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn,
 
 	debug2("DBD_ADD_ASSOCS: called");
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_OPERATOR) {
+	if (!_validate_operator(*uid, slurmdbd_conn)) {
 		ListIterator itr = NULL;
 		ListIterator itr2 = NULL;
 		slurmdb_user_rec_t user;
@@ -967,7 +1006,7 @@ static int _add_reservation(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_rec_msg_t *rec_msg = msg->data;
 	char *comment = NULL;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_ADD_RESV message from invalid uid";
 		error("DBD_ADD_RESV message from invalid uid %u", *uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -994,9 +1033,7 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdb_archive_cond_t *arch_cond = NULL;
 
 	debug2("DBD_ARCHIVE_DUMP: called");
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
+	if (!_validate_super_user(*uid, slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
 		rc = ESLURM_ACCESS_DENIED;
@@ -1047,9 +1084,7 @@ static int _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = "SUCCESS";
 
 	debug2("DBD_ARCHIVE_LOAD: called");
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
+	if (!_validate_super_user(*uid, slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
 		rc = ESLURM_ACCESS_DENIED;
@@ -1076,7 +1111,7 @@ static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_CLUSTER_TRES message from invalid uid";
 		error("DBD_CLUSTER_TRES message from invalid uid %u", *uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -1355,7 +1390,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 	debug2("DBD_GET_JOBS_COND: called");
 
 	/* fail early if too wide a query */
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	if (!_validate_slurm_user(*uid)
 	    && (slurmdbd_conf->max_time_range != INFINITE)) {
 		time_t start, end;
 
@@ -1648,9 +1683,7 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	/* We have to check this here, and not in the plugin.  There
 	 * are places in the plugin that a non-admin can call this and
 	 * it be ok. */
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_OPERATOR) {
+	if (!_validate_operator(*uid, slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -1723,7 +1756,7 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_FLUSH_JOBS message from invalid uid";
 		error("DBD_FLUSH_JOBS message from invalid uid %u", *uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -1813,7 +1846,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_JOB_COMPLETE message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->conn->fd, comment, *uid);
@@ -1880,7 +1913,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_id_rc_msg_t id_rc_msg;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_JOB_START message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->conn->fd, comment, *uid);
@@ -1909,7 +1942,7 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_JOB_SUSPEND message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->conn->fd, comment, *uid);
@@ -2289,8 +2322,6 @@ static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 	int same_user = 0;
-	int admin_level = assoc_mgr_get_admin_level(slurmdbd_conn->db_conn,
-						    *uid);
 	slurmdb_user_cond_t *user_cond = NULL;
 	slurmdb_user_rec_t *user_rec = NULL;
 
@@ -2299,8 +2330,7 @@ static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 	user_cond = (slurmdb_user_cond_t *)get_msg->cond;
 	user_rec = (slurmdb_user_rec_t *)get_msg->rec;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && admin_level < SLURMDB_ADMIN_OPERATOR) {
+	if (!_validate_operator(*uid, slurmdbd_conn)) {
 		if (user_cond && user_cond->assoc_cond
 		    && user_cond->assoc_cond->user_list
 		    && (list_count(user_cond->assoc_cond->user_list) == 1)) {
@@ -2344,9 +2374,8 @@ is_same_user:
 		}
 	}
 
-	if ((user_rec->admin_level != SLURMDB_ADMIN_NOTSET)
-	    && (*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && (admin_level < SLURMDB_ADMIN_SUPER_USER)) {
+	if ((user_rec->admin_level != SLURMDB_ADMIN_NOTSET) &&
+	    !_validate_super_user(*uid, slurmdbd_conn)) {
 		comment = "You must be a super user to modify a users admin level";
 		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(
@@ -2444,7 +2473,7 @@ static int _modify_reservation(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_rec_msg_t *rec_msg = msg->data;
 	char *comment = NULL;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_MODIFY_RESV message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->conn->fd, comment, *uid);
@@ -2471,8 +2500,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-
-	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_NODE_STATE message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->conn->fd, comment, *uid);
@@ -2636,9 +2664,7 @@ static int   _reconfig(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
+	if (!_validate_super_user(*uid, slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -2668,7 +2694,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdb_cluster_rec_t cluster;
 	dbd_list_msg_t list_msg = { NULL };
 
-	if ((*uid != slurmdbd_conf->slurm_user_id) && (*uid != 0)) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_REGISTER_CTLD message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->conn->fd, comment, *uid);
@@ -3195,7 +3221,7 @@ static int _remove_reservation(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_rec_msg_t *rec_msg = msg->data;
 	char *comment = NULL;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_REMOVE_RESV message from invalid uid";
 		error("DBD_REMOVE_RESV message from invalid uid %u", *uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -3223,9 +3249,7 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 
 	info("DBD_ROLL_USAGE: called");
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_OPERATOR) {
+	if (!_validate_operator(*uid, slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
 		rc = ESLURM_ACCESS_DENIED;
@@ -3266,7 +3290,7 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_id_rc_msg_t *id_rc_msg;
 	/* DEF_TIMERS; */
 
-	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_SEND_MULT_JOB_START message from invalid uid";
 		error("%s %u", comment, *uid);
 		*out_buffer = slurm_persist_make_rc_msg(
@@ -3311,7 +3335,7 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	/* DEF_TIMERS; */
 
-	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_SEND_MULT_MSG message from invalid uid";
 		error("%s %u", comment, *uid);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -3367,7 +3391,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_STEP_COMPLETE message from invalid uid";
 		error("%s %u", comment, *uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -3435,7 +3459,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
+	if (!_validate_slurm_user(*uid)) {
 		comment = "DBD_STEP_START message from invalid uid";
 		error("%s %u", comment, *uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -3506,9 +3530,7 @@ static int  _get_stats(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
+	if (!_validate_super_user(*uid, slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -3535,9 +3557,7 @@ static int  _clear_stats(slurmdbd_conn_t *slurmdbd_conn,
 	int i, rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
+	if (!_validate_super_user(*uid, slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(
@@ -3576,9 +3596,7 @@ static int  _shutdown(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
+	if (!_validate_super_user(*uid, slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
