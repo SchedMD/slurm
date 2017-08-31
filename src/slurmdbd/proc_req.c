@@ -235,16 +235,7 @@ static int   _step_start(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid);
 
 #ifndef NDEBUG
-/*
- * Used alongside the testsuite to signal that the RPC should be processed
- * as an untrusted user, rather than the "real" account. (Which in a lot of
- * testing is likely SlurmUser, and thus allowed to bypass many security
- * checks.
- *
- * Implemented with a thread-local variable to apply only to the current
- * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
- */
-static __thread bool drop_priv = false;
+extern __thread bool drop_priv;
 #endif
 
 /* Process an incoming RPC

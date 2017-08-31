@@ -102,6 +102,10 @@ strong_alias(run_in_daemon, slurm_run_in_daemon);
 slurm_ctl_conf_t slurmctld_conf;
 bool ignore_state_errors = false;
 
+#ifndef NDEBUG
+uint16_t drop_priv_flag = 0;
+#endif
+
 static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 static slurm_ctl_conf_t *conf_ptr = &slurmctld_conf;

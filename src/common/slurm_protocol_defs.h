@@ -61,10 +61,6 @@
 #define MAX_SLURM_NAME 64
 #define FORWARD_INIT 0xfffe
 
-#ifndef NDEBUG
-extern uint16_t drop_priv_flag;
-#endif
-
 /* Defined job states */
 #define IS_JOB_PENDING(_X)		\
 	((_X->job_state & JOB_STATE_BASE) == JOB_PENDING)

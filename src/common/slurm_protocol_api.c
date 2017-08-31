@@ -107,6 +107,19 @@ static void _print_data(char *data, int len);
 /* define the slurmdbd_options flag */
 slurm_dbd_conf_t *slurmdbd_conf = NULL;
 
+#ifndef NDEBUG
+/*
+ * Used alongside the testsuite to signal that the RPC should be processed
+ * as an untrusted user, rather than the "real" account. (Which in a lot of
+ * testing is likely SlurmUser, and thus allowed to bypass many security
+ * checks.
+ *
+ * Implemented with a thread-local variable to apply only to the current
+ * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
+ */
+__thread bool drop_priv = false;
+#endif
+
 /**********************************************************************\
  * protocol configuration functions
 \**********************************************************************/
