@@ -2749,33 +2749,6 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 
 	FREE_NULL_LIST(list_msg.my_list);
 	FREE_NULL_LIST(cluster_q.cluster_list);
-	/*
-	 * Outgoing message header must have flag set:
-	 * out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
-	 */
-#if 0
-	{
-		/* Code to validate communications back to slurmctld */
-		int fd;
-		slurm_set_addr_char(&ctld_address, register_ctld_msg->port, ip);
-		fd =  slurm_open_msg_conn(&ctld_address);
-		if (fd < 0) {
-			error("CONN: can not open socket back to slurmctld",
-			      slurmdbd_conn->conn->fd);
-		} else {
-			slurm_msg_t out_msg;
-			slurm_msg_t_init(&out_msg);
-			out_msg.msg_type = REQUEST_PING;
-			out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
-			slurm_send_node_msg(slurmdbd_conn->conn->version,
-					    fd, &out_msg);
-			/* We probably need to add matching recv_msg function
-			 * for an arbitray fd or should these be fire
-			 * and forget? */
-			close(fd);
-		}
-	}
-#endif
 
 end_it:
 
