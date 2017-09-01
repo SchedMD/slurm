@@ -2352,7 +2352,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_specs->max_nodes = job_ptr->details->max_nodes;
 #endif
 
-	if (cpus_per_mp == (uint16_t)NO_VAL)
+	if (cpus_per_mp == NO_VAL16)
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_mp);
 	/* Below is done to get the correct cpu_count and then we need to set
@@ -4380,8 +4380,10 @@ static bool _is_mem_resv(void)
 	return mem_resv_value;
 }
 
-/* Process job step update request from specified user,
- * RET - 0 or error code */
+/*
+ * Process job step update request from specified user,
+ * RET - 0 or error code
+ */
 extern int update_step(step_update_request_msg_t *req, uid_t uid)
 {
 	struct job_record *job_ptr;
@@ -4398,14 +4400,16 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	}
 	if (req->jobacct) {
 		if (!validate_slurm_user(uid)) {
-			error("Security violation, STEP_UPDATE RPC "
-			      "from uid %d", uid);
+			error("Security violation, STEP_UPDATE RPC from uid %d",
+			      uid);
 			return ESLURM_USER_ID_MISSING;
 		}
-		/* Need to create a temporary step record (using some other
+		/*
+		 * Need to create a temporary step record (using some other
 		 * launch mechanism that didn't use srun to launch).  Don't use
 		 * _create_step_record though since we don't want to push it on
-		 * the job's step_list. */
+		 * the job's step_list.
+		 */
 		if (req->step_id == NO_VAL) {
 			step_ptr = xmalloc(sizeof(struct step_record));
 			step_ptr->job_ptr    = job_ptr;
@@ -4423,11 +4427,11 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 				return ESLURM_INVALID_JOB_ID;
 			if (!(step_ptr
 			      = find_step_record(job_ptr, req->step_id))) {
-				/* If updating this after the fact we
-				   need to remake the step so we can
-				   send the updated parts to
-				   accounting.
-				*/
+				/*
+				 * If updating this after the fact we need to
+				 * remake the step so we can send the updated
+				 * parts to accounting.
+				 */
 				step_ptr = xmalloc(sizeof(struct step_record));
 				step_ptr->job_ptr    = job_ptr;
 				step_ptr->jobacct    = jobacctinfo_create(NULL);
@@ -4443,8 +4447,10 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	/* No need to limit step time limit as job time limit will kill
-	 * any steps with any time limit */
+	/*
+	 * No need to limit step time limit as job time limit will kill
+	 * any steps with any time limit
+	 */
 	if (req->step_id == NO_VAL) {
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step2_ptr = (struct step_record *)
@@ -4472,9 +4478,11 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 				jobacct_storage_g_step_start(
 					acct_db_conn, step_ptr);
 			} else if (!step_ptr->exit_node_bitmap) {
-				/* If the exit_code is not NO_VAL then
+				/*
+				 * If the exit_code is not NO_VAL then
 				 * we need to initialize the node bitmap for
-				 * exited nodes for packing. */
+				 * exited nodes for packing.
+				 */
 				int nodes = bit_set_count(
 					step_ptr->step_node_bitmap);
 				step_ptr->exit_node_bitmap = bit_alloc(nodes);
@@ -4496,8 +4504,10 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	if (mod_cnt)
 		last_job_update = time(NULL);
 	if (new_step) {
-		/* This was a temporary step record, never linked to the job,
-		 * so there is no need to check SELECT_JOBDATA_CLEANING. */
+		/*
+		 * This was a temporary step record, never linked to the job,
+		 * so there is no need to check SELECT_JOBDATA_CLEANING.
+		 */
 		_free_step_rec(step_ptr);
 	}
 

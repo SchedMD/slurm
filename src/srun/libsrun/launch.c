@@ -387,7 +387,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, &job->stepid);
-	/*  Number of hosts in job may not have been initialized yet if
+	/*
+	 *  Number of hosts in job may not have been initialized yet if
 	 *    --jobid was used or only SLURM_JOB_ID was set in user env.
 	 *    Reset the value here just in case.
 	 */
