@@ -2949,7 +2949,7 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 {
 	struct job_record *job_ptr;
 	bitstr_t *avail_bitmap = NULL, *exc_core_bitmap = NULL;
-	bitstr_t *resv_bitmap = NULL;
+	bitstr_t *resv_bitmap = NULL, *used_bitmap = NULL;
 	pack_job_rec_t *rec;
 	ListIterator iter;
 	int mcs_select, rc = SLURM_SUCCESS;
@@ -2979,6 +2979,8 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 		}
 		bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
+		if (used_bitmap)
+			bit_and_not(avail_bitmap, used_bitmap);
 		filter_by_node_owner(job_ptr, avail_bitmap);
 		mcs_select = slurm_mcs_get_select(job_ptr);
 		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
@@ -3001,10 +3003,12 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 		rc = _start_job(job_ptr, resv_bitmap);
 		FREE_NULL_BITMAP(resv_bitmap);
 		if (rc == SLURM_SUCCESS) {
-			/* If the following fails because of network
+			/*
+			 * If the following fails because of network
 			 * connectivity, the origin cluster should ask
 			 * when it comes back up if the cluster_lock
-			 * cluster actually started the job */
+			 * cluster actually started the job
+			 */
 			fed_mgr_job_start(job_ptr, job_ptr->start_time);
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
 				info("Pack job %u+%u (%u) started",
@@ -3012,6 +3016,10 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 				     job_ptr->pack_job_offset,
 				     job_ptr->job_id);
 			}
+			if (!used_bitmap && job_ptr->node_bitmap)
+				used_bitmap = bit_copy(job_ptr->node_bitmap);
+			else if (job_ptr->node_bitmap)
+				bit_or(used_bitmap, job_ptr->node_bitmap);
 		} else {
 			fed_mgr_job_unlock(job_ptr);
 			error("Pack job %u+%u (%u) failed to start",
@@ -3040,6 +3048,7 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 			jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	}
 	list_iterator_destroy(iter);
+	FREE_NULL_BITMAP(used_bitmap);
 
 	return rc;
 }

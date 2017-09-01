@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
     * Modify sbcast command and srun's --bcast option to support heterogeneous
       jobs.
     * Set more environment variables for MPI: SLURM_GTIDS and SLURM_NODEID.
+    * Prevent a heterogeneous job allocation from including the same nodes in
+      multiple components (required by MPI jobs spanning components).
  -- Modify output of "--mpi=list" to avoid duplicates for version numbers in
     mpi/pmix plugin names.
 
