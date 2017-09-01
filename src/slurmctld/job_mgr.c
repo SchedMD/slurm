@@ -2753,6 +2753,7 @@ static void _remove_job_hash(struct job_record *job_entry)
 	job_pptr = &job_hash[JOB_HASH_INX(job_entry->job_id)];
 	while ((job_pptr != NULL) &&
 	       ((job_ptr = *job_pptr) != job_entry)) {
+		xassert(job_ptr->magic == JOB_MAGIC);
 		job_pptr = &job_ptr->job_next;
 	}
 	if (job_pptr == NULL) {
@@ -8619,16 +8620,7 @@ static void _list_delete_job(void *job_entry)
 	fed_mgr_remove_fed_job_info(job_ptr->job_id);
 
 	/* Remove the record from job hash table */
-	job_pptr = &job_hash[JOB_HASH_INX(job_ptr->job_id)];
-	while ((job_pptr != NULL) && (*job_pptr != NULL) &&
-	       ((tmp_ptr = *job_pptr) != (struct job_record *) job_entry)) {
-		xassert(tmp_ptr->magic == JOB_MAGIC);
-		job_pptr = &tmp_ptr->job_next;
-	}
-	if (job_pptr == NULL)
-		error("job hash error");
-	else
-		*job_pptr = job_ptr->job_next;
+	_remove_job_hash(job_ptr);
 
 	if (job_ptr->array_recs) {
 		job_array_size = MAX(1, job_ptr->array_recs->task_cnt);
