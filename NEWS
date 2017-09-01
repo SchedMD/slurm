@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
     * Set more environment variables for MPI: SLURM_GTIDS and SLURM_NODEID.
     * Prevent a heterogeneous job allocation from including the same nodes in
       multiple components (required by MPI jobs spanning components).
+    * Modify step create logic so that call components of a heterogeneous job
+      launched by a single srun command have the same step ID value.
  -- Modify output of "--mpi=list" to avoid duplicates for version numbers in
     mpi/pmix plugin names.
 

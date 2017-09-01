@@ -175,6 +175,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	slurm_step_ctx_params_t_init(&job->ctx_params);
 	job->ctx_params.job_id = job->jobid;
+	job->ctx_params.step_id = job->stepid;
 	job->ctx_params.uid = opt_local->uid;
 
 	/* Validate minimum and maximum node counts */

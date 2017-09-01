@@ -688,7 +688,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 {
 	ListIterator opt_iter = NULL, job_iter;
 	opt_t *opt_local = &opt;
-	uint32_t node_offset = 0;
+	uint32_t node_offset = 0, step_id = NO_VAL;
 	uint32_t pack_offset = 0, pack_ntasks = 0, task_offset = 0;
 	int rc = 0;
 
@@ -716,11 +716,15 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				job->node_offset = node_offset;
 				job->pack_ntasks = pack_ntasks;
 				job->task_offset = task_offset;
+				if (step_id != NO_VAL)
+					job->stepid = step_id;
 			} else
 				pack_offset++;
 			rc = create_job_step(job, use_all_cpus, opt_local);
 			if (rc < 0)
 				break;
+			if (step_id == NO_VAL)
+				step_id = job->stepid;
 			node_offset += job->nhosts;
 			task_offset += job->ntasks;
 		}

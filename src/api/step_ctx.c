@@ -121,6 +121,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	job_step_create_request_msg_t *step_req =
 		xmalloc(sizeof(job_step_create_request_msg_t));
 	step_req->job_id = step_params->job_id;
+	step_req->step_id = step_params->step_id;
 	step_req->user_id = (uint32_t)step_params->uid;
 	step_req->min_nodes = step_params->min_nodes;
 	step_req->max_nodes = step_params->max_nodes;
@@ -611,6 +612,7 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	ptr->task_dist = SLURM_DIST_CYCLIC;
 	ptr->plane_size = NO_VAL16;
 	ptr->resv_port_cnt = NO_VAL16;
+	ptr->step_id = NO_VAL;
 
 	ptr->uid = getuid();
 

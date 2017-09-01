@@ -98,8 +98,8 @@ static bitstr_t * _pick_step_nodes(struct job_record *job_ptr,
 static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
-static void _purge_duplicate_steps(struct job_record *job_ptr,
-				   job_step_create_request_msg_t *step_specs);
+static int _purge_duplicate_steps(struct job_record *job_ptr,
+				  job_step_create_request_msg_t *step_specs);
 static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 				uint32_t range_first, uint32_t range_last);
 static int _step_hostname_to_inx(struct step_record *step_ptr,
@@ -194,12 +194,12 @@ static struct step_record * _create_step_record(struct job_record *job_ptr,
 }
 
 /* Purge any duplicate job steps for this PID */
-static void _purge_duplicate_steps(struct job_record *job_ptr,
-				   job_step_create_request_msg_t *step_specs)
+static int _purge_duplicate_steps(struct job_record *job_ptr,
+				  job_step_create_request_msg_t *step_specs)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
-
+	int rc = SLURM_SUCCESS;
 	xassert(job_ptr);
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
@@ -212,8 +212,13 @@ static void _purge_duplicate_steps(struct job_record *job_ptr,
 			_free_step_rec(step_ptr);
 			break;
 		}
+		if ((step_specs->step_id != NO_VAL) &&
+		    (step_specs->step_id == step_ptr->step_id))
+			rc = ESLURM_DUPLICATE_STEP_ID;
 	}
 	list_iterator_destroy(step_iterator);
+
+	return rc;
 }
 
 /* The step with a state of PENDING is used as a placeholder for a host and
@@ -448,9 +453,9 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		     step_spec->cpu_freq_gov, step_spec->cpu_freq_max,
 		     step_spec->cpu_freq_min);
 	}
-	debug3("StepDesc: user_id=%u job_id=%u node_count=%u-%u cpu_count=%u "
-	       "num_tasks=%u",
-	       step_spec->user_id, step_spec->job_id,
+	debug3("StepDesc: user_id=%u job_id=%u step_id=%u node_count=%u-%u "
+	       "cpu_count=%u num_tasks=%u",
+	       step_spec->user_id, step_spec->job_id, step_spec->step_id,
 	       step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count, step_spec->num_tasks);
 	debug3("   cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u "
@@ -2242,7 +2247,17 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
-	_purge_duplicate_steps(job_ptr, step_specs);
+	/*
+	 * NOTE: We have already confirmed the UID originating
+	 * the request is identical with step_specs->user_id
+	 */
+	if (step_specs->user_id != job_ptr->user_id)
+		return ESLURM_ACCESS_DENIED ;
+
+	ret_code = _purge_duplicate_steps(job_ptr, step_specs);
+	if (ret_code != SLURM_SUCCESS)
+		return ret_code;
+
 	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
 		return ESLURM_DISABLED;
 
@@ -2254,11 +2269,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 		 * not being used. We have seen this problem with Moab. */
 		return ESLURM_DUPLICATE_JOB_ID;
 	}
-
-	/* NOTE: We have already confirmed the UID originating
-	 * the request is identical with step_specs->user_id */
-	if (step_specs->user_id != job_ptr->user_id)
-		return ESLURM_ACCESS_DENIED ;
 
 	if (batch_step) {
 		info("user %u attempting to run batch script within existing job %u",
@@ -2460,7 +2470,25 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 	step_ptr->start_time = time(NULL);
 	step_ptr->state      = JOB_RUNNING;
-	step_ptr->step_id    = job_ptr->next_step_id++;
+
+	if (step_specs->step_id != NO_VAL) {
+		step_ptr->step_id = step_specs->step_id;
+		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
+					    step_specs->step_id);
+		job_ptr->next_step_id++;
+	} else if (job_ptr->pack_job_id &&
+		   (job_ptr->pack_job_id != job_ptr->job_id)) {
+		struct job_record *pack_job;
+		pack_job = find_job_record(job_ptr->pack_job_id);
+		if (pack_job)
+			step_ptr->step_id = pack_job->next_step_id++;
+		else
+			step_ptr->step_id = job_ptr->next_step_id++;
+		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
+					    step_ptr->step_id++);
+	} else {
+		step_ptr->step_id = job_ptr->next_step_id++;
+	}
 
 	/* Here is where the node list is set for the step */
 	if (step_specs->node_list &&
