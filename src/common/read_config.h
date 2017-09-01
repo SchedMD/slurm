@@ -55,10 +55,6 @@ extern char *default_slurm_config_file;
 extern char *default_plugin_path;
 extern char *default_plugstack;
 
-#ifndef NDEBUG
-extern uint16_t drop_priv_flag;
-#endif
-
 #define ACCOUNTING_ENFORCE_ASSOCS 0x0001
 #define ACCOUNTING_ENFORCE_LIMITS 0x0002
 #define ACCOUNTING_ENFORCE_WCKEYS 0x0004

@@ -231,7 +231,16 @@ static void  _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg);
 extern diag_stats_t slurmctld_diag_stats;
 
 #ifndef NDEBUG
-extern __thread bool drop_priv;
+/*
+ * Used alongside the testsuite to signal that the RPC should be processed
+ * as an untrusted user, rather than the "real" account. (Which in a lot of
+ * testing is likely SlurmUser, and thus allowed to bypass many security
+ * checks.
+ *
+ * Implemented with a thread-local variable to apply only to the current
+ * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
+ */
+static __thread bool drop_priv = false;
 #endif
 
 /*
