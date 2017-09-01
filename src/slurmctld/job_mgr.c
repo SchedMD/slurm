@@ -235,7 +235,7 @@ static void _set_job_requeue_exit_value(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr,
 			      uint16_t signal,
 			      uint16_t flags);
-static void _signal_job(struct job_record *job_ptr, int signal);
+static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 			 bool indf_susp);
 static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
@@ -4926,15 +4926,12 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 			deallocate_nodes(job_ptr, false, false, preempt);
 			if (flags & KILL_FED_REQUEUE)
 				job_ptr->job_state &= (~JOB_REQUEUE);
-		} else if (job_ptr->batch_flag &&
-			   ((flags & KILL_FULL_JOB)  ||
-			    (flags & KILL_JOB_BATCH) ||
-			    (flags & KILL_STEPS_ONLY))) {
+		} else if (job_ptr->batch_flag && (flags & KILL_JOB_BATCH)) {
 			_signal_batch_job(job_ptr, signal, flags);
 		} else if ((flags & KILL_JOB_BATCH) && !job_ptr->batch_flag) {
 			return ESLURM_JOB_SCRIPT_MISSING;
 		} else {
-			_signal_job(job_ptr, signal);
+			_signal_job(job_ptr, signal, flags);
 		}
 		verbose("%s: %u of running %s successful 0x%x",
 			__func__, signal, jobid2str(job_ptr, jbuf,
@@ -5623,7 +5620,13 @@ static int _alt_part_test(struct part_record *part_ptr,
 	return SLURM_SUCCESS;
 }
 
-/* Test if this job can use this partition */
+/*
+ * Test if this job can use this partition
+ *
+ * NOTE: This function is also called with a dummy job_desc_msg_t from
+ * job_limits_check() if there is any new check added here you may also have to
+ * add that parameter to the job_desc_msg_t in that function.
+ */
 static int _part_access_check(struct part_record *part_ptr,
 			      job_desc_msg_t * job_desc, bitstr_t *req_bitmap,
 			      uid_t submit_uid, slurmdb_qos_rec_t *qos_ptr,
@@ -6130,6 +6133,9 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	uint32_t job_min_nodes, job_max_nodes;
 	uint32_t part_min_nodes, part_max_nodes;
 	uint32_t time_check;
+	job_desc_msg_t job_desc;
+	int rc;
+
 #ifdef HAVE_BG
 	static uint16_t cpus_per_node = 0;
 	if (!cpus_per_node)
@@ -6169,7 +6175,29 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		time_check = job_ptr->time_min;
 	else
 		time_check = job_ptr->time_limit;
-	if ((job_min_nodes > part_max_nodes) &&
+
+	/*
+	 * Here we need to pretend we are just submitting the job so we can
+	 * utilize the already existing function _part_access_check.  If
+	 * anything else is ever checked in that function this will most likely
+	 * have to be updated.
+	 */
+	memset(&job_desc, 0, sizeof(job_desc_msg_t));
+	job_desc.reservation = job_ptr->resv_name;
+	job_desc.user_id = job_ptr->user_id;
+	job_desc.alloc_node = job_ptr->alloc_node;
+	job_desc.min_cpus = detail_ptr->min_cpus;
+	job_desc.min_nodes = job_min_nodes;
+	job_desc.max_nodes = job_max_nodes;
+	job_desc.time_limit = job_ptr->time_limit;
+
+	if ((rc = _part_access_check(part_ptr, &job_desc, NULL,
+				     job_ptr->user_id, qos_ptr,
+				     job_ptr->account))) {
+		debug2("Job %u can't run in partition %s: %s",
+		       job_ptr->job_id, part_ptr->name, slurm_strerror(rc));
+		fail_reason = WAIT_PART_CONFIG;
+	} else if ((job_min_nodes > part_max_nodes) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
 		debug2("Job %u requested too many nodes (%u) of "
@@ -14323,15 +14351,16 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 }
 
 /* Send specified signal to all steps associated with a job */
-static void _signal_job(struct job_record *job_ptr, int signal)
+static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags)
 {
 #ifndef HAVE_FRONT_END
 	int i;
 #endif
 	agent_arg_t *agent_args = NULL;
-	signal_job_msg_t *signal_job_msg = NULL;
+	kill_tasks_msg_t *signal_job_msg = NULL;
 	static int notify_srun_static = -1;
 	int notify_srun = 0;
+	uint32_t z = 0;
 
 	if (notify_srun_static == -1) {
 		/* do this for all but slurm (poe, aprun, etc...) */
@@ -14369,12 +14398,30 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	}
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type = REQUEST_SIGNAL_JOB;
+	agent_args->msg_type = REQUEST_SIGNAL_TASKS;
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create(NULL);
 	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;
-	signal_job_msg->signal = signal;
+
+	/*
+	 * We don't ever want to kill a step with this message.  The flags below
+	 * will make sure that does happen.  Just in case though, set the
+	 * step_id to an impossible number.
+	 */
+	signal_job_msg->job_step_id = slurmctld_conf.max_step_cnt + 1;
+
+	/*
+	 * Encode the flags for slurm stepd to know what steps get signaled
+	 * Here if we aren't signaling the full job we always only want to
+	 * signal all other steps.
+	 */
+	if (flags == KILL_FULL_JOB)
+		z = KILL_FULL_JOB << 24;
+	else
+		z = KILL_STEPS_ONLY << 24;
+
+	signal_job_msg->signal = z | signal;
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);

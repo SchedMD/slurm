@@ -239,6 +239,10 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/elasticsearch - strip any trailing slashes from JobCompLoc.
  -- jobcomp/elasticsearch - fix memory leak when transferring generated buffer.
  -- Prevent slurmstepd ABRT when parsing gres.conf CPUs.
+ -- Fix sbatch --signal to signal all MPI ranks in a step instead of just those
+    on node 0.
+ -- Check multiple partition limits when scheduling a job that were previously
+    only checked on submit.
 
 * Changes in Slurm 17.02.7
 ==========================
