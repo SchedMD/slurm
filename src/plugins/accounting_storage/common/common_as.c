@@ -347,6 +347,53 @@ extern void dump_update_list(List update_list)
 
 
 /*
+ * cluster_first_reg - ask for controller to send nodes in a down state
+ *    and jobs pending or running on first registration.
+ *
+ * IN host: controller host
+ * IN port: controller port
+ * IN rpc_version: controller rpc version
+ * RET: error code
+ */
+extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
+{
+	slurm_addr_t ctld_address;
+	int fd;
+	int rc = SLURM_SUCCESS;
+
+	info("First time to register cluster requesting "
+	     "running jobs and system information.");
+
+	slurm_set_addr_char(&ctld_address, port, host);
+	fd = slurm_open_msg_conn(&ctld_address);
+	if (fd < 0) {
+		error("can not open socket back to slurmctld "
+		      "%s(%u): %m", host, port);
+		rc = SLURM_ERROR;
+	} else {
+		slurm_msg_t out_msg;
+		accounting_update_msg_t update;
+		/* We have to put this update message here so
+		   we can tell the sender to send the correct
+		   RPC version.
+		*/
+		memset(&update, 0, sizeof(accounting_update_msg_t));
+		update.rpc_version = rpc_version;
+		slurm_msg_t_init(&out_msg);
+		out_msg.msg_type = ACCOUNTING_FIRST_REG;
+		out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+		out_msg.data = &update;
+		slurm_send_node_msg(fd, &out_msg);
+		/* We probably need to add matching recv_msg function
+		 * for an arbitray fd or should these be fire
+		 * and forget?  For this, that we can probably
+		 * forget about it */
+		close(fd);
+	}
+	return rc;
+}
+
+/*
  * set_usage_information - set time and table information for getting usage
  *
  * OUT usage_table: which usage table to query
@@ -460,6 +507,44 @@ extern int set_usage_information(char **usage_table,
 	return SLURM_SUCCESS;
 }
 
+
+/*
+ * merge_delta_qos_list - apply delta_qos_list to qos_list
+ *
+ * IN/OUT qos_list: list of QOS'es
+ * IN delta_qos_list: list of delta QOS'es
+ */
+extern void merge_delta_qos_list(List qos_list, List delta_qos_list)
+{
+	ListIterator curr_itr = list_iterator_create(qos_list);
+	ListIterator new_itr = list_iterator_create(delta_qos_list);
+	char *new_qos = NULL, *curr_qos = NULL;
+
+	while((new_qos = list_next(new_itr))) {
+		if (new_qos[0] == '-') {
+			while((curr_qos = list_next(curr_itr))) {
+				if (!xstrcmp(curr_qos, new_qos+1)) {
+					list_delete_item(curr_itr);
+					break;
+				}
+			}
+			list_iterator_reset(curr_itr);
+		} else if (new_qos[0] == '+') {
+			while((curr_qos = list_next(curr_itr))) {
+				if (!xstrcmp(curr_qos, new_qos+1)) {
+					break;
+				}
+			}
+			if (!curr_qos) {
+				list_append(qos_list, xstrdup(new_qos+1));
+			}
+			list_iterator_reset(curr_itr);
+		}
+	}
+	list_iterator_destroy(new_itr);
+	list_iterator_destroy(curr_itr);
+}
+
 extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 				    slurmdb_admin_level_t min_level)
 {
@@ -484,6 +569,26 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 		is_admin = 0;
 
 	return is_admin;
+}
+
+extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
+{
+	ListIterator itr;
+	slurmdb_coord_rec_t *coord;
+
+	xassert(user);
+	xassert(account);
+
+	if (!user->coord_accts || !list_count(user->coord_accts))
+		return 0;
+
+	itr = list_iterator_create(user->coord_accts);
+	while((coord = list_next(itr))) {
+		if (!xstrcasecmp(coord->name, account))
+			break;
+	}
+	list_iterator_destroy(itr);
+	return coord ? 1 : 0;
 }
 
 extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
