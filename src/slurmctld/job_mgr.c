@@ -163,7 +163,6 @@ static void _add_job_array_hash(struct job_record *job_ptr);
 static int  _checkpoint_job_record (struct job_record *job_ptr,
 				    char *image_dir);
 static void _clear_job_gres_details(struct job_record *job_ptr);
-static int  _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest);
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				   uint32_t job_id);
 static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
@@ -536,7 +535,12 @@ static void _delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details);	/* Must be last */
 }
 
-/* delete_job_desc_files - delete job descriptor related files */
+/*
+ * delete_job_desc_files - delete job descriptor related files
+ *
+ * Note that this will be called on all individual job array tasks,
+ * even though (as of 17.11) individual directories are no longer created.
+ */
 extern void delete_job_desc_files(uint32_t job_id)
 {
 	char *dir_name = NULL, *file_name = NULL;
@@ -4062,10 +4066,6 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 		fatal("%s: job %u record lacks array structure",
 		      __func__, job_ptr->job_id);
 	}
-	if (_copy_job_desc_files(job_ptr_pend->job_id, job_ptr->job_id)) {
-		error("%s: failed to create working directory for job %u",
-		      __func__, job_ptr->job_id);
-	}
 
 	/* Copy most of original job data.
 	 * This could be done in parallel, but performance was worse. */
@@ -7103,38 +7103,6 @@ static bool _dup_job_file_test(uint32_t job_id)
 		return true;
 	}
 	return false;
-}
-
-/* _copy_job_desc_files - Create work directory for job array task.
- * No longer copies environment/script files. */
-static int
-_copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
-{
-	int error_code = SLURM_SUCCESS, hash;
-	char *dir_name;
-
-	/* Create directory based upon job ID due to limitations on the number
-	 * of files possible in a directory on some file system types (e.g.
-	 * up to 64k files on a FAT32 file system). */
-	hash = job_id_dest % 10;
-	dir_name = xstrdup_printf("%s/hash.%d",
-				  slurmctld_conf.state_save_location, hash);
-	(void) mkdir(dir_name, 0700);
-
-	/* Create job_id_dest specific directory */
-	xstrfmtcat(dir_name, "/job.%u", job_id_dest);
-	if (mkdir(dir_name, 0700)) {
-		if (!slurmctld_primary && (errno == EEXIST)) {
-			error("Apparent duplicate job ID %u. Two primary "
-			      "slurmctld daemons might currently be active",
-			      job_id_dest);
-		}
-		error("mkdir(%s) error %m", dir_name);
-		error_code = ESLURM_WRITING_TO_FILE;
-	}
-	xfree(dir_name);
-
-	return error_code;
 }
 
 /*
