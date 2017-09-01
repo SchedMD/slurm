@@ -1315,9 +1315,7 @@ _print_config(void)
 	       conf->actual_cores, conf->actual_threads);
 
 	get_memory(&conf->real_memory_size);
-	get_tmp_disk(&conf->tmp_disk_space, "/tmp");
-	printf("RealMemory=%"PRIu64" TmpDisk=%u\n",
-	       conf->real_memory_size, conf->tmp_disk_space);
+	printf("RealMemory=%"PRIu64"\n", conf->real_memory_size);
 
 	get_up_time(&conf->up_time);
 	secs  =  conf->up_time % 60;
