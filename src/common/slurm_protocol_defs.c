@@ -108,6 +108,10 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 	msg->msg_type = (uint16_t)NO_VAL;
 	msg->protocol_version = (uint16_t)NO_VAL;
 
+#ifndef NDEBUG
+	msg->flags = drop_priv_flag;
+#endif
+
 	forward_init(&msg->forward, NULL);
 
 	return;
