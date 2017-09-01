@@ -2763,22 +2763,6 @@ slurm_conf_init(const char *file_name)
 		return SLURM_ERROR;
 	}
 
-#ifndef NDEBUG
-	/*
-	 * This is done here to ensure all user commands parse this once at
-	 * launch, rather than trying to test this during each RPC call.
-	 * This environment variable is undocumented, and only
-	 * respected in development builds. When set, the remote end
-	 * will treat the request as if it was issued by an unprivileged
-	 * user account rather than the (likely elevated) privileges that
-	 * the account usually operates under. This makes it possible to
-	 * test various access controls while running the testsuite under
-	 * a single user account.
-	 */
-	if (getenv("SLURM_TESTSUITE_DROP_PRIV"))
-		drop_priv_flag = SLURM_DROP_PRIV;
-#endif
-
 	init_slurm_conf(conf_ptr);
 	if (_init_slurm_conf(file_name) != SLURM_SUCCESS)
 		fatal("Unable to process configuration file");
