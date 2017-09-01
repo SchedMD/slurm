@@ -5313,7 +5313,13 @@ static int _alt_part_test(struct part_record *part_ptr,
 	return SLURM_SUCCESS;
 }
 
-/* Test if this job can use this partition */
+/*
+ * Test if this job can use this partition
+ *
+ * NOTE: This function is also called with a dummy job_desc_msg_t from
+ * job_limits_check() if there is any new check added here you may also have to
+ * add that parameter to the job_desc_msg_t in that function.
+ */
 static int _part_access_check(struct part_record *part_ptr,
 			      job_desc_msg_t * job_desc, bitstr_t *req_bitmap,
 			      uid_t submit_uid, slurmdb_qos_rec_t *qos_ptr,
@@ -5828,6 +5834,9 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	uint32_t job_min_nodes, job_max_nodes;
 	uint32_t part_min_nodes, part_max_nodes;
 	uint32_t time_check;
+	job_desc_msg_t job_desc;
+	int rc;
+
 #ifdef HAVE_BG
 	static uint16_t cpus_per_node = 0;
 	if (!cpus_per_node)
@@ -5867,7 +5876,29 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		time_check = job_ptr->time_min;
 	else
 		time_check = job_ptr->time_limit;
-	if ((job_min_nodes > part_max_nodes) &&
+
+	/*
+	 * Here we need to pretend we are just submitting the job so we can
+	 * utilize the already existing function _part_access_check.  If
+	 * anything else is ever checked in that function this will most likely
+	 * have to be updated.
+	 */
+	memset(&job_desc, 0, sizeof(job_desc_msg_t));
+	job_desc.reservation = job_ptr->resv_name;
+	job_desc.user_id = job_ptr->user_id;
+	job_desc.alloc_node = job_ptr->alloc_node;
+	job_desc.min_cpus = detail_ptr->min_cpus;
+	job_desc.min_nodes = job_min_nodes;
+	job_desc.max_nodes = job_max_nodes;
+	job_desc.time_limit = job_ptr->time_limit;
+
+	if ((rc = _part_access_check(part_ptr, &job_desc, NULL,
+				     job_ptr->user_id, qos_ptr,
+				     job_ptr->account))) {
+		debug2("Job %u can't run in partition %s: %s",
+		       job_ptr->job_id, part_ptr->name, slurm_strerror(rc));
+		fail_reason = WAIT_PART_CONFIG;
+	} else if ((job_min_nodes > part_max_nodes) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
 		debug2("Job %u requested too many nodes (%u) of "

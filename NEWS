@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent slurmstepd ABRT when parsing gres.conf CPUs.
  -- Fix sbatch --signal to signal all MPI ranks in a step instead of just those
     on node 0.
+ -- Check multiple partition limits when scheduling a job that were previously
+    only checked on submit.
 
 * Changes in Slurm 17.02.7
 ==========================
