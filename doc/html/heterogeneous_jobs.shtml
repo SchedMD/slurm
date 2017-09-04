@@ -500,6 +500,9 @@ components of a heterogeneous job.</p>
 
 <p>Slurm's PERL APIs currently do not support heterogeneous jobs.</p>
 
+<p>The srun --multi-prog option can not be used to span more than one
+heterogeneous job component.</p>
+
 <h2><a name="sys_admin">System Administrator Information</a></h2>
 
 <p>The job submit plugin is invoked independently for each component of a
@@ -576,6 +579,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 August 2017</p>
+<p style="text-align:center;">Last modified 4 September 2017</p>
 
 <!--#include virtual="footer.txt"-->

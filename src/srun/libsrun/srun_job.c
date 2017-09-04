@@ -487,6 +487,7 @@ static void _pack_grp_test(List opt_list)
 	int pack_offset;
 	bitstr_t *master_map = NULL;
 	List missing_argv_list = NULL;
+	bool multi_pack = false, multi_prog = false;
 
 	if (opt_list) {
 		missing_argv_list = list_create(NULL);
@@ -510,12 +511,15 @@ static void _pack_grp_test(List opt_list)
 			} else {
 				if (bit_overlap(master_map,
 						opt_local->pack_grp_bits)) {
-					error("Duplicate pack groups in single srun not supported");
-					exit(error_exit);
+					fatal("Duplicate pack groups in single srun not supported");
 				}
 				bit_or(master_map, opt_local->pack_grp_bits);
 			}
+			if (opt_local->multi_prog)
+				multi_prog = true;
 		}
+		if (master_map && (bit_set_count(master_map) > 1))
+			multi_pack = true;
 		FREE_NULL_BITMAP(master_map);
 		list_iterator_destroy(iter);
 		list_destroy(missing_argv_list);
@@ -525,8 +529,15 @@ static void _pack_grp_test(List opt_list)
 	} else if (!opt.pack_group && opt.pack_grp_bits) {
 		if ((pack_offset = bit_ffs(opt.pack_grp_bits)) < 0)
 			pack_offset = 0;
+		else if (bit_set_count(opt.pack_grp_bits) > 1)
+			multi_pack = true;
+		if (opt.multi_prog)
+			multi_prog = true;
 		xstrfmtcat(opt.pack_group, "%d", pack_offset);
 	}
+
+	if (multi_pack && multi_prog)
+		fatal("--multi-prog option not supported with multiple pack groups");
 }
 
 /*
