@@ -47,6 +47,7 @@ if {![test_accting_steps]} {
 	send_user "(AccoutingStorageEnforce)\n"
 	exit 0
 }
+
 #
 # Test is incompatible with proctrack/aix, proctrack/rms, proctrack/sgi_job,
 # and proctrack/cray
@@ -85,6 +86,11 @@ expect {
 	}
 	-re "pmi2" {
 		send_user "\nWARNING: test incompatible with mpi/pmi2\n"
+		set invalid 1
+		exp_continue
+	}
+	-re "pmix" {
+		send_user "\nWARNING: test incompatible with mpi/pmix\n"
 		set invalid 1
 		exp_continue
 	}
