@@ -265,7 +265,10 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 
 	if (srun_job_list) {
 		int pack_step_cnt = list_count(srun_job_list);
+		first_job = (srun_job_t *) list_peek(srun_job_list);
 		if (!opt_list) {
+			if (first_job)
+				fini_srun(first_job, got_alloc, &global_rc, 0);
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
@@ -281,18 +284,26 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 
 		slurm_attr_init(&attr_steps);
 		opt_iter = list_iterator_create(opt_list);
-		step_cnt = list_count(opt_list);
 		while ((opt_local = (opt_t *) list_next(opt_iter))) {
 			int retries = 0;
 			job = (srun_job_t *) list_next(job_iter);
 			if (!job) {
+				slurm_mutex_lock(&step_mutex);
+				while (step_cnt > 0)
+					slurm_cond_wait(&step_cond,&step_mutex);
+				slurm_mutex_unlock(&step_mutex);
+				if (first_job) {
+					fini_srun(first_job, got_alloc,
+						  &global_rc, 0);
+				}
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),
 				      list_count(opt_list));
 			}
 
-			if (!first_job)
-				first_job = job;
+			slurm_mutex_lock(&step_mutex);
+			step_cnt++;
+			slurm_mutex_unlock(&step_mutex);
 			opts = xmalloc(sizeof(_launch_app_data_t));
 			opts->got_alloc   = got_alloc;
 			opts->job         = job;
@@ -441,7 +452,10 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 	opt_t *opt_local;
 
 	if (srun_job_list) {
+		srun_job_t *first_job = list_peek(srun_job_list);
 		if (!opt_list) {
+			if (first_job)
+				fini_srun(first_job, got_alloc, &global_rc, 0);
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
@@ -450,6 +464,10 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 		while ((opt_local = (opt_t *) list_next(opt_iter))) {
 			job = (srun_job_t *) list_next(job_iter);
 			if (!job) {
+				if (first_job) {
+					fini_srun(first_job, got_alloc,
+						  &global_rc, 0);
+				}
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),
 				      list_count(opt_list));
