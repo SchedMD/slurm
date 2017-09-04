@@ -300,6 +300,7 @@ bool pmixp_fd_write_ready(int fd, int *shutdown)
 	double start, cur;
 	pfd[0].fd = fd;
 	pfd[0].events = POLLOUT;
+	pfd[0].revents = 0;
 
 	gettimeofday(&tv,NULL);
 	start = tv.tv_sec + 1E-6*tv.tv_usec;
