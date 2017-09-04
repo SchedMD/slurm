@@ -128,22 +128,24 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 	char **argv;
 
 	if (opt_out_file && opt_arg) {
-		FILE *fp = fopen(opt_out_file, "a");
+		FILE *fp = NULL;
+		for (i = 0; (i < 10) && !fp; i++)
+			fp = fopen(opt_out_file, "a");
 		if (!fp)
-			return (-1);
+			return -1;
 		fprintf(fp, "slurm_spank_task_init: opt_arg=%d\n", opt_arg);
 		if (spank_get_item(sp, S_JOB_UID, &my_uid) == ESPANK_SUCCESS)
 			fprintf(fp, "spank_get_item: my_uid=%d\n", my_uid);
                 if (spank_get_item(sp, S_JOB_ARGV, &argc, &argv) ==
 		    ESPANK_SUCCESS) {
-			for (i=0; i<argc; i++) {
+			for (i = 0; i < argc; i++) {
 				fprintf(fp, "spank_get_item: argv[%d]=%s\n",
 					i, argv[i]);
 			}
 		}
 		fclose(fp);
 	}
-	return (0);
+	return 0;
 }
 
 /* Called from slurmd only, not tested here
@@ -155,13 +157,17 @@ int slurm_spank_task_exit(spank_t sp, int ac, char **av) */
 /* Called from both srun and slurmd */
 int slurm_spank_exit(spank_t sp, int ac, char **av)
 {
+	int i;
+
 	if (opt_out_file && opt_arg) {
-		FILE *fp = fopen(opt_out_file, "a");
+		FILE *fp = NULL;
+		for (i = 0; (i < 10) && !fp; i++)
+			fp = fopen(opt_out_file, "a");
 		if (!fp)
-			return (-1);
+			return -1;
 		fprintf(fp, "slurm_spank_exit: opt_arg=%d\n", opt_arg);
 		fclose(fp);
 	} else if (opt_arg)
 		slurm_info("slurm_spank_exit: opt_arg=%d", opt_arg);
-	return (0);
+	return 0;
 }
