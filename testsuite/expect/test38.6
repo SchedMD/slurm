@@ -1,16 +1,12 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
-#          Test of SPANK plugin
+# Purpose: Test of SPANK plugin with pack jobs
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2008-2009 Lawrence Livermore National Security.
-# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Morris Jette <jette1@llnl.gov>
-# CODE-OCEC-09-009. All rights reserved.
+# Copyright (C) 2017 SchedMD LLC
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
@@ -32,7 +28,7 @@
 ############################################################################
 source ./globals
 
-set test_id	    "7.11"
+set test_id	    "38.6"
 set cwd		    "[$bin_pwd]"
 set exit_code	    0
 set file_in         "${cwd}/test${test_id}.in"
@@ -54,6 +50,11 @@ if {[test_aix]} {
 }
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit $exit_code
+}
+set node_count [available_nodes "" ""]
+if {$node_count < 2} {
+        send_user "\nWARNING: Insufficient node count to run test\n"
         exit $exit_code
 }
 
@@ -144,104 +145,6 @@ expect {
 }
 
 #
-# Test of srun help message
-#
-# NOTE: Expect parsing failures have been noted running "$srun --help"
-#       directly, so we build a script containing a pipe to tail
-#
-
-send_user "\n\nTesting srun help message..........\n\n"
-
-make_bash_script $file_in "$srun --help | $bin_grep test"
-set matches 0
-set srun_pid [spawn $file_in]
-expect {
-	-re "Component of slurm test suite" {
-		incr matches
-		exp_continue
-	}
-	-re "Registered component of slurm test suite" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 2} {
-	send_user "\nFAILURE: spank help message not in srun help message\n"
-	set exit_code 1
-}
-
-#
-# Test of salloc help message
-#
-# NOTE: Expect parsing failures have been noted running "$salloc --help"
-#       directly, so we build a script containing a pipe to tail
-#
-
-send_user "\n\nTesting salloc help message..........\n\n"
-
-make_bash_script $file_in "$salloc --help | $bin_grep test"
-set matches 0
-set srun_pid [spawn $file_in]
-expect {
-	-re "Registered component of slurm test suite" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: spank help message not in salloc help message ($matches != 1)\n"
-	set exit_code 1
-}
-
-#
-# Test of sbatch help message
-#
-# NOTE: Expect parsing failures have been noted running "$sbatch --help"
-#       directly, so we build a script containing a pipe to tail
-#
-
-send_user "\n\nTesting sbatch help message..........\n\n"
-
-make_bash_script $file_in "$sbatch --help | $bin_grep test"
-set matches 0
-set srun_pid [spawn $file_in]
-expect {
-	-re "Registered component of slurm test suite" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: spank help message not in sbatch help message ($matches != 1)\n"
-	set exit_code 1
-}
-exec $bin_rm -f $file_in
-
-#
 # Test of locally logged messages().
 # We update the plugstatck.conf in this script since NFS delays may
 # prevent it from having the same state as the submit host.
@@ -251,17 +154,19 @@ send_user "\n\nTest locally logged messages..........\n\n"
 
 make_bash_script $file_in "
   $bin_rm -f $spank_conf_file
+  $bin_sleep 5
   $bin_cp -f $new_spank_conf $spank_conf_file
-  $srun --test_suite=5 $bin_uname
+  $srun --test_suite=5 --pack-group=0,1 --mpi-combine=yes $bin_uname
   if test -f $orig_spank_conf
   then
     $bin_rm -f $spank_conf_file
+    $bin_sleep 5
     $bin_cp -f $orig_spank_conf $spank_conf_file
   fi
 "
 set job_id 0
 set matches 0
-spawn $sbatch --test_suite_reg=4 -N1 -t1 -o $file_out $file_in
+spawn $sbatch --test_suite_reg=4 -t1 -o $file_out -n1 : -n1 $file_in
 expect {
 	-re "_test_opt_process: test_suite: opt_arg=4" {
 		incr matches
@@ -315,15 +220,15 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		-re "_test_opt_process: test_suite: opt_arg=5" {
-			set match1 1
+			incr match1
 			exp_continue
 		}
 		-re "slurm_spank_local_user_init" {
-			set match2 1
+			incr match2
 			exp_continue
 		}
 		-re "slurm_spank_exit: opt_arg=5" {
-			set match3 1
+			incr match3
 			exp_continue
 		}
 		eof {
@@ -331,8 +236,8 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	set match [expr $match1 + $match2 + $match3]
-	if {$match != 3} {
-		send_user "\nFAILURE: local (srun) spank plugin failure ($match != 3)\n"
+	if {$match != 4} {
+		send_user "\nFAILURE: local (srun) spank plugin failure ($match != 4)\n"
 		set exit_code 1
 	} else {
 		send_user "\nlocal (srun) spank plugin success\n"
@@ -384,11 +289,11 @@ if {[wait_for_file $spank_out] == 0} {
 	if {$matches_sbatch != 2} {
 		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != 2)\n"
 		set exit_code 1
-	} elseif {$matches_srun != 2} {
-		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != 2)\n"
+	} elseif {$matches_srun != 4} {
+		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != 4)\n"
 		set exit_code 1
-	} elseif {$matches != 4} {
-		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != 4)\n"
+	} elseif {$matches != 6} {
+		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != 6)\n"
 		set exit_code 1
 	} else {
 		send_user "\n remote (slurmd) spank plugin success\n"

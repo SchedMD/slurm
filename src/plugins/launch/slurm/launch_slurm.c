@@ -572,40 +572,47 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	return SLURM_SUCCESS;
 }
 
-static char **_build_user_env(opt_t *opt_local)
+static char **_build_user_env(srun_job_t *job, opt_t *opt_local)
 {
 	char **dest_array = NULL;
 	char *tmp_env, *tok, *save_ptr = NULL, *eq_ptr, *value;
 	bool all;
 
-	all = false;
-	tmp_env = xstrdup(opt_local->export_env);
-	tok = strtok_r(tmp_env, ",", &save_ptr);
-	while (tok) {
+	if (!opt_local->export_env) {
+		all = true;
+	} else {
+		all = false;
+		tmp_env = xstrdup(opt_local->export_env);
+		tok = strtok_r(tmp_env, ",", &save_ptr);
+		while (tok) {
+			if (xstrcasecmp(tok, "ALL") == 0)
+				all = true;
 
-		if (xstrcasecmp(tok, "ALL") == 0)
-			all = true;
-
-		if (!xstrcasecmp(tok, "NONE"))
-			break;
-		eq_ptr = strchr(tok, '=');
-		if (eq_ptr) {
-			eq_ptr[0] = '\0';
-			value = eq_ptr + 1;
-			env_array_overwrite(&dest_array, tok, value);
-		} else {
-			value = getenv(tok);
-			if (value)
+			if (!xstrcasecmp(tok, "NONE"))
+				break;
+			eq_ptr = strchr(tok, '=');
+			if (eq_ptr) {
+				eq_ptr[0] = '\0';
+				value = eq_ptr + 1;
 				env_array_overwrite(&dest_array, tok, value);
+			} else {
+				value = getenv(tok);
+				if (value) {
+					env_array_overwrite(&dest_array, tok,
+							    value);
+				}
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
 		}
-		tok = strtok_r(NULL, ",", &save_ptr);
+		xfree(tmp_env);
 	}
-	xfree(tmp_env);
 
-	if (all)
-		env_array_merge(&dest_array, (const char **) environ);
+	if (!job->env)
+		fatal("%s: job env is NULL", __func__);
+	else if (all)
+		env_array_merge(&dest_array, (const char **) job->env);
 	else
-		env_array_merge_slurm(&dest_array, (const char **) environ);
+		env_array_merge_slurm(&dest_array, (const char **) job->env);
 
 	return dest_array;
 }
@@ -666,6 +673,9 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.remote_output_filename =fname_remote_string(job->ofname);
 	launch_params.remote_input_filename = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename = fname_remote_string(job->efname);
+	launch_params.node_offset = job->node_offset;
+	launch_params.pack_jobid  = job->pack_jobid;
+	launch_params.pack_ntasks = job->pack_ntasks;
 	launch_params.pack_offset = job->pack_offset;
 	launch_params.task_offset = job->task_offset;
 	launch_params.partition = job->partition;
@@ -699,9 +709,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.ntasks_per_core    = job->ntasks_per_core;
 	launch_params.ntasks_per_socket  = job->ntasks_per_socket;
 	launch_params.no_alloc           = opt_local->no_alloc;
-
-	if (opt_local->export_env)
-		launch_params.env = _build_user_env(opt_local);
+	launch_params.env = _build_user_env(job, opt_local);
 
 	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
 
@@ -797,7 +805,6 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local)
 {
 	int rc = 0;
 
-//FIXME-PACK: should we create multiple steps in a single RPC or use threads?
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
 	    (retry_step_cnt < MAX_STEP_RETRIES)) {

@@ -256,6 +256,18 @@ an error.</p>
 <li>suspend</li>
 </ul>
 
+<p>The sbcast command supports heterogeneous job allocations. By default,
+sbcast will will copy files to all nodes in the job allocation. The -j/--jobid
+option can be used to copy files to individual components as shown below.</p>
+<pre>
+$ sbcast --jobid=123   data /tmp/data
+$ sbcast --jobid=123.0 app0 /tmp/app0
+$ sbcast --jobid=123.1 app1 /tmp/app1
+</pre>
+
+<p>The srun commands --bcast option will transfer files to the nodes associated
+with the application to be launched as specified by the --pack-group option.</p>
+
 <h3>Accounting</h3>
 
 <p>Slurm's accounting database records the pack_job_id and pack_job_offset
@@ -331,6 +343,33 @@ P0 1: nid00012
 P1 0: Wed Jul  5 16:23:07 MDT 2017
 </pre>
 
+<p>If multiple srun commands are executed concurrently, this may result in resource
+contention (e.g. memory limits preventing some job steps components from being
+allocated resources because of two srun commands executing at the same time).
+If the srun --pack-group option is used to create multiple job steps (for the
+different components of a heterogeneous job), those job steps will be created
+sequentially.
+When multiple srun commmands execute at the same time, this may result in some
+step allocations taking place, while others are delayed.
+Only after all job step allocations have been granted will the application
+being launched.</p>
+
+<p>The maximum pack group specified in a job step allocation (either explicitly
+specified or implied by the ":" separator) must not exceed the number of pack
+groups in the job allocation. For example</p>
+<pre>
+$ salloc -n1 -C alpha : -n2 -C beta bash
+salloc: Pending job allocation 1728
+salloc: Granted job allocation 1728
+$ srun --pack-group=0,1 hostname
+nid00001
+nid00008
+nid00008
+$ srun hostname : date : id
+error: Attempt to run a job step with pack group value of 2,
+       but the job allocation has maximum value of 1
+</pre>
+
 <h2><a name="env_var">Environment Variables</a></h2>
 
 <p>Slurm environment variables will be set independently for each component of
@@ -339,7 +378,7 @@ In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
 of the pack leader and "SLURM_PACK_SIZE" will contain the number of components
 in the job. For example:</p>
 <pre>
-$  salloc -N1 : -N2 bash
+$ salloc -N1 : -N2 bash
 salloc: Pending job allocation 11741
 salloc: job 11741 queued and waiting for resources
 salloc: job 11741 has been allocated resources
@@ -352,6 +391,30 @@ SLURM_NNODES_PACK_GROUP_0=1
 SLURM_NNODES_PACK_GROUP_1=2
 SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
 SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+...
+</pre>
+
+<p>The various MPI implementations rely heavily upon Slurm environment variables
+for proper operation.
+A single MPI applications executing in a single MPI_COMM_WORLD require a
+uniform set of environment variables that reflect a single job allocation.
+The example below shows how Slurm sets environment variables for MPI.</p>
+<pre>
+$ salloc -N1 : -N2 bash
+salloc: Pending job allocation 11741
+salloc: job 11751 queued and waiting for resources
+salloc: job 11751 has been allocated resources
+$ env | grep SLURM
+SLURM_JOB_ID=11751
+SLURM_PACK_SIZE=2
+SLURM_JOB_ID_PACK_GROUP_0=11751
+SLURM_JOB_ID_PACK_GROUP_1=11752
+SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
+SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+...
+$ srun --pack-group=0,1 --mpi-combine=yes env | grep SLURM
+SLURM_JOB_ID=11751
+SLURM_JOB_NODELIST=nid[00001,00011-00012]
 ...
 </pre>
 
@@ -377,6 +440,21 @@ salloc -N1 --mem=256GB -C haswell : \
        -n2176 -N32 --ntasks-per-core=1 -C knl bash
 srun master : slave &
 </pre>
+
+<p>The SLURM_PROCID and SLURM_TASKID environment variables will be set to
+reflect a global task rank (both environment variables will have the same value).
+With --mpi-combine=no,- each job component will have a SLURM_PROCID set to 0.
+With --mpi-combine=yes each spawned process will have a unique SLURM_PROCID.</p>
+
+<p>Similarly, the SLURM_NPROCS and SLURM_NTASKS environment variables will be set
+to reflect a global task count (both environment variables will have the same
+value).
+With --mpi-combine=no each job component will have SLURM_NTASKS set to the task
+count in that component.
+With --mpi-combine=yes SLURM_NTASKS will be set to the total count of tasks in
+all components.
+Note that the task rank and count values are needed by MPI and typically
+determined by examining Slurm environment variables.</p>
 
 <h2><a name="limitations">Limitations</a></h2>
 
@@ -420,10 +498,19 @@ components of a heterogeneous job.</p>
 
 <p>Heterogeneous jobs are not supported on IBM PE systems.</p>
 
+<p>Slurm's PERL APIs currently do not support heterogeneous jobs.</p>
+
+<p>The srun --multi-prog option can not be used to span more than one
+heterogeneous job component.</p>
+
 <h2><a name="sys_admin">System Administrator Information</a></h2>
 
 <p>The job submit plugin is invoked independently for each component of a
 heterogeneous job.</p>
+
+<p>The spank_init_post_opt() function is invoked once for each component of a
+heterogeneous job. This permits site defined options on a per job component
+basis.</p>
 
 <p>Scheduling of heterogeneous jobs is performed only by the sched/backfill
 plugin and all heterogeneous job components are either all scheduled at the same
@@ -485,13 +572,13 @@ core, socket or node.
 Each component of a heterogeneous job counts as a "job" with respect to
 resource limits.</p>
 
-For example, a user might have a limit of 2 concurrent running jobs and submit
+<p>For example, a user might have a limit of 2 concurrent running jobs and submit
 a heterogeneous job with 3 components.
 Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 August 2017</p>
+<p style="text-align:center;">Last modified 4 September 2017</p>
 
 <!--#include virtual="footer.txt"-->

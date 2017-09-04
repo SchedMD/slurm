@@ -140,11 +140,11 @@ expect {
 		set id_set $expect_out(1,string)
 		exp_continue
 	}
-	-re "CPUs/Task=4" {
+	-re "CPUs/Task=1" {
 		incr matches
 		exp_continue
 	}
-	-re "MinMemoryCPU=10M" {
+	-re "MinMemoryCPU=6M" {
 		incr matches
 		exp_continue
 	}

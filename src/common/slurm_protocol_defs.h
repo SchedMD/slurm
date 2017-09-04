@@ -735,6 +735,7 @@ typedef struct job_step_specs {
 	uint16_t port;		/* port to contact initiating srun */
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t resv_port_cnt;	/* reserve ports for MPI if set */
+	uint32_t step_id;	/* Desired step ID or NO_VAL */
 	uint32_t srun_pid;	/* PID of srun command, also see host */
 	uint32_t task_dist;	/* see enum task_dist_state in slurm.h */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
@@ -766,7 +767,11 @@ typedef struct job_step_create_response_msg {
 typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
+	uint32_t  node_offset;	/* pack job node offset of NO_VAL */
+	uint32_t  pack_jobid;	/* pack job ID or NO_VAL */
+	uint32_t  pack_ntasks;	/* total task count for entire pack job */
 	uint32_t  pack_offset;	/* pack job offset of NO_VAL */
+	uint32_t  task_offset;	/* pack job task ID offset of NO_VAL */
 	uint32_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  ntasks;	/* number of tasks in this job step   */
 	uint16_t  ntasks_per_board;/* number of tasks to invoke on each board */

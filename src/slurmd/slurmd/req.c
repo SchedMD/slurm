@@ -643,7 +643,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	buffer = init_buf(0);
 	msg.data = req;
 
-	if (protocol_version == (uint16_t)NO_VAL)
+	if (protocol_version == NO_VAL16)
 		proto = SLURM_PROTOCOL_VERSION;
 	else
 		proto = protocol_version;

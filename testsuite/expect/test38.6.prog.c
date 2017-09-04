@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  prog7.11.prog.c - SPANK plugin for testing purposes
+ *  prog38.6.prog.c - SPANK plugin for testing purposes
  *****************************************************************************
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

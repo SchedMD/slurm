@@ -99,6 +99,7 @@ static struct termios termdefaults;
 static uint32_t global_rc = 0;
 static srun_job_t *job = NULL;
 
+extern char **environ;	/* job environment */
 bool srun_max_timer = false;
 bool srun_shutdown  = false;
 int sig_array[] = {
@@ -264,7 +265,10 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 
 	if (srun_job_list) {
 		int pack_step_cnt = list_count(srun_job_list);
+		first_job = (srun_job_t *) list_peek(srun_job_list);
 		if (!opt_list) {
+			if (first_job)
+				fini_srun(first_job, got_alloc, &global_rc, 0);
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
@@ -280,18 +284,26 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 
 		slurm_attr_init(&attr_steps);
 		opt_iter = list_iterator_create(opt_list);
-		step_cnt = list_count(opt_list);
 		while ((opt_local = (opt_t *) list_next(opt_iter))) {
 			int retries = 0;
 			job = (srun_job_t *) list_next(job_iter);
 			if (!job) {
+				slurm_mutex_lock(&step_mutex);
+				while (step_cnt > 0)
+					slurm_cond_wait(&step_cond,&step_mutex);
+				slurm_mutex_unlock(&step_mutex);
+				if (first_job) {
+					fini_srun(first_job, got_alloc,
+						  &global_rc, 0);
+				}
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),
 				      list_count(opt_list));
 			}
 
-			if (!first_job)
-				first_job = job;
+			slurm_mutex_lock(&step_mutex);
+			step_cnt++;
+			slurm_mutex_unlock(&step_mutex);
 			opts = xmalloc(sizeof(_launch_app_data_t));
 			opts->got_alloc   = got_alloc;
 			opts->job         = job;
@@ -377,7 +389,10 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 				   &tasks);
 
 		env->select_jobinfo = job->select_jobinfo;
-		env->nodelist = job->nodelist;
+		if (job->pack_nodelist)
+			env->nodelist = job->pack_nodelist;
+		else
+			env->nodelist = job->nodelist;
 		env->partition = job->partition;
 		/*
 		 * If we didn't get the allocation don't overwrite the
@@ -386,8 +401,13 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 		if (got_alloc)
 			env->nhosts = job->nhosts;
 		env->ntasks = job->ntasks;
+		if (job->pack_ntasks != NO_VAL)
+			env->ntasks = job->pack_ntasks;
 		env->task_count = _uint16_array_to_str(job->nhosts, tasks);
-		env->jobid = job->jobid;
+		if (job->pack_jobid != NO_VAL)
+			env->jobid = job->pack_jobid;
+		else
+			env->jobid = job->jobid;
 		env->stepid = job->stepid;
 		env->account = job->account;
 		env->qos = job->qos;
@@ -418,7 +438,10 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 		env->ws_col   = job->ws_col;
 		env->ws_row   = job->ws_row;
 	}
+
+	env->env = env_array_copy((const char **) environ);
 	setup_env(env, opt_local->preserve_env);
+	job->env = env->env;
 	xfree(env->task_count);
 	xfree(env);
 }
@@ -429,7 +452,10 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 	opt_t *opt_local;
 
 	if (srun_job_list) {
+		srun_job_t *first_job = list_peek(srun_job_list);
 		if (!opt_list) {
+			if (first_job)
+				fini_srun(first_job, got_alloc, &global_rc, 0);
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
@@ -438,6 +464,10 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 		while ((opt_local = (opt_t *) list_next(opt_iter))) {
 			job = (srun_job_t *) list_next(job_iter);
 			if (!job) {
+				if (first_job) {
+					fini_srun(first_job, got_alloc,
+						  &global_rc, 0);
+				}
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),
 				      list_count(opt_list));
@@ -474,6 +504,10 @@ static int _file_bcast(opt_t *opt_local, srun_job_t *job)
 	params->fanout = 0;
 	params->job_id = job->jobid;
 	params->force = true;
+	if (opt_local->pack_grp_bits)
+		params->pack_job_offset = bit_ffs(opt_local->pack_grp_bits);
+	else
+		params->pack_job_offset = NO_VAL;
 	params->preserve = true;
 	params->src_fname = opt_local->argv[0];
 	params->step_id = job->stepid;

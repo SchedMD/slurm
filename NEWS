@@ -28,6 +28,24 @@ documents those changes that are of interest to users and administrators.
  -- Do not print TmpDisk space as part of 'slurmd -C' line.
  -- Fix to test MaxMemPerCPU/Node partition limits when scheduling, previously
     only checked on submit.
+ -- Work for heterogeneous job support (complete solution in v17.11):
+    * Set SLURM_PROCID environment variable to reflect global task rank (needed
+      by MPI).
+    * Set SLURM_NTASKS environment variable to reflect global task count (needed
+      by MPI).
+    * In srun, if only some steps are allocated and one step allocation fails,
+      then delete all allocated steps.
+    * Get SPANK plungins working with heterogeneous jobs. The
+      spank_init_post_opt() function is executed once per job component.
+    * Modify sbcast command and srun's --bcast option to support heterogeneous
+      jobs.
+    * Set more environment variables for MPI: SLURM_GTIDS and SLURM_NODEID.
+    * Prevent a heterogeneous job allocation from including the same nodes in
+      multiple components (required by MPI jobs spanning components).
+    * Modify step create logic so that call components of a heterogeneous job
+      launched by a single srun command have the same step ID value.
+ -- Modify output of "--mpi=list" to avoid duplicates for version numbers in
+    mpi/pmix plugin names.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

@@ -334,6 +334,8 @@ static void _opt_default(void)
 		opt.warn_signal		= 0;
 		opt.warn_time		= 0;
 		xfree(opt.wckey);
+	} else if (opt.default_job_name) {
+		xfree(opt.job_name);
 	}
 
 	/* All other options must be specified individually for each component
@@ -352,6 +354,7 @@ static void _opt_default(void)
 	opt.cpu_freq_min		= NO_VAL;
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
+	opt.default_job_name		= false;
 	opt.distribution		= SLURM_DIST_UNKNOWN;
 	/* opt.geometry[i]		= 0;	See above */
 	xfree(opt.hint_env);
@@ -1473,7 +1476,7 @@ static char *_get_shell(void)
 	return pw_ent_ptr->pw_shell;
 }
 
-static int _salloc_default_command (int *argcp, char **argvp[])
+static int _salloc_default_command(int *argcp, char **argvp[])
 {
 	slurm_ctl_conf_t *cf = slurm_conf_lock();
 
@@ -1482,15 +1485,15 @@ static int _salloc_default_command (int *argcp, char **argvp[])
 		 *  Set argv to "/bin/sh -c 'salloc_default_command'"
 		 */
 		*argcp = 3;
-		*argvp = xmalloc (sizeof (char *) * 4);
+		*argvp = xmalloc(sizeof (char *) * 4);
 		(*argvp)[0] = "/bin/sh";
 		(*argvp)[1] = "-c";
 		(*argvp)[2] = xstrdup (cf->salloc_default_command);
 		(*argvp)[3] = NULL;
 	} else {
 		*argcp = 1;
-		*argvp = xmalloc (sizeof (char *) * 2);
-		(*argvp)[0] = _get_shell ();
+		*argvp = xmalloc(sizeof (char *) * 2);
+		(*argvp)[0] = _get_shell();
 		(*argvp)[1] = NULL;
 	}
 
@@ -1590,8 +1593,11 @@ static bool _opt_verify(void)
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 		opt.gid = opt.egid;
 
-	if ((opt.no_shell == false) && (command_argc == 0))
-		_salloc_default_command (&command_argc, &command_argv);
+	if ((opt.no_shell == false) && (command_argc == 0)) {
+		_salloc_default_command(&command_argc, &command_argv);
+		if (!opt.job_name)
+			opt.default_job_name = true;
+	}
 
 	if ((opt.job_name == NULL) && (command_argc > 0))
 		opt.job_name = base_name(command_argv[0]);

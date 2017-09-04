@@ -121,6 +121,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	job_step_create_request_msg_t *step_req =
 		xmalloc(sizeof(job_step_create_request_msg_t));
 	step_req->job_id = step_params->job_id;
+	step_req->step_id = step_params->step_id;
 	step_req->user_id = (uint32_t)step_params->uid;
 	step_req->min_nodes = step_params->min_nodes;
 	step_req->max_nodes = step_params->max_nodes;
@@ -170,7 +171,8 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	/* First copy the user's step_params into a step request struct */
 	step_req = _create_step_request(step_params);
 
-	/* We will handle the messages in the step_launch.c mesage handler,
+	/*
+	 * We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
 	 * controller which port to use.
 	 */
@@ -231,7 +233,8 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	long elapsed_time;
 	DEF_TIMERS;
 
-	/* We will handle the messages in the step_launch.c mesage handler,
+	/*
+	 * We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
 	 * controller which port to use.
 	 */
@@ -605,10 +608,11 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	memset(ptr, 0, sizeof(slurm_step_ctx_params_t));
 
 	/* now set anything that shouldn't be 0 or NULL by default */
-	ptr->relative = (uint16_t)NO_VAL;
+	ptr->relative = NO_VAL16;
 	ptr->task_dist = SLURM_DIST_CYCLIC;
-	ptr->plane_size = (uint16_t)NO_VAL;
-	ptr->resv_port_cnt = (uint16_t)NO_VAL;
+	ptr->plane_size = NO_VAL16;
+	ptr->resv_port_cnt = NO_VAL16;
+	ptr->step_id = NO_VAL;
 
 	ptr->uid = getuid();
 

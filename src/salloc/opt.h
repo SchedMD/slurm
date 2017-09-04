@@ -101,6 +101,7 @@ typedef struct salloc_options {
 				 * when -m plane=<# of lllp per
 				 * plane> */
 	char *job_name;		/* --job-name=,     -J name	*/
+	bool default_job_name;	/* Set if no command or job name specified */
 	unsigned int jobid;	/* --jobid=jobid		*/
 	char *dependency;	/* --dependency, -P type:jobid	*/
 	int nice;		/* --nice			*/

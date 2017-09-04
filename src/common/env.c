@@ -278,7 +278,7 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		return ENOMEM;
 	}
 
-	if (envp && *envp) {
+	if (envp) {
 		if (env_array_overwrite(envp, name, value) == 1)
 			rc = 0;
 		else
@@ -356,9 +356,9 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (env->cpus_per_task
-	   && setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%d",
-		      env->cpus_per_task) ) {
+	if (env->cpus_per_task &&
+	    setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%d",
+		    env->cpus_per_task) ) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
 		rc = SLURM_FAILURE;
 	}
@@ -676,34 +676,34 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (!(cluster_flags & CLUSTER_FLAG_BG)
-	    && !(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
-		/* These aren't relavant to a system not using Slurm
-		   as the launcher.  Since there isn't a flag for that
-		   we check for the flags we do have.
-		*/
-		if (env->task_pid
-		    && setenvf(&env->env, "SLURM_TASK_PID", "%d",
+	if (!(cluster_flags & CLUSTER_FLAG_BG) &&
+	    !(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
+		/*
+		 * These aren't relavant to a system not using Slurm as the
+		 * launcher. Since there isn't a flag for that we check for
+		 * the flags we do have.
+		 */
+		if (env->task_pid &&
+		    setenvf(&env->env, "SLURM_TASK_PID", "%d",
 			       (int)env->task_pid)) {
 			error("Unable to set SLURM_TASK_PID environment "
 			      "variable");
 			rc = SLURM_FAILURE;
 		}
-		if (env->nodeid >= 0
-		    && setenvf(&env->env, "SLURM_NODEID", "%d", env->nodeid)) {
+		if ((env->nodeid >= 0) &&
+		    setenvf(&env->env, "SLURM_NODEID", "%d", env->nodeid)) {
 			error("Unable to set SLURM_NODEID environment");
 			rc = SLURM_FAILURE;
 		}
 
-		if (env->procid >= 0
-		    && setenvf(&env->env, "SLURM_PROCID", "%d", env->procid)) {
+		if ((env->procid >= 0) &&
+		    setenvf(&env->env, "SLURM_PROCID", "%d", env->procid)) {
 			error("Unable to set SLURM_PROCID environment");
 			rc = SLURM_FAILURE;
 		}
 
-		if (env->localid >= 0
-		    && setenvf(&env->env, "SLURM_LOCALID", "%d",
-			       env->localid)) {
+		if ((env->localid >= 0) &&
+		    setenvf(&env->env, "SLURM_LOCALID", "%d", env->localid)) {
 			error("Unable to set SLURM_LOCALID environment");
 			rc = SLURM_FAILURE;
 		}
@@ -733,8 +733,8 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-	if (env->nodelist
-	    && setenvf(&env->env, "SLURM_NODELIST", "%s", env->nodelist)) {
+	if (env->nodelist &&
+	    setenvf(&env->env, "SLURM_NODELIST", "%s", env->nodelist)) {
 		error("Unable to set SLURM_NODELIST environment var.");
 		rc = SLURM_FAILURE;
 	}
@@ -773,8 +773,8 @@ int setup_env(env_t *env, bool preserve_env)
 		setenvf (&env->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
 	}
 
-	if (env->sgtids
-	   && setenvf(&env->env, "SLURM_GTIDS", "%s", env->sgtids)) {
+	if (env->sgtids &&
+	    setenvf(&env->env, "SLURM_GTIDS", "%s", env->sgtids)) {
 		error("Unable to set SLURM_GTIDS environment variable");
 		rc = SLURM_FAILURE;
 	}
@@ -1209,8 +1209,10 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 
 	_setup_particulars(cluster_flags, dest, batch->select_jobinfo);
 
-	/* There is no explicit node count in the batch structure,
-	 * so we need to calculate the node count. */
+	/*
+	 * There is no explicit node count in the batch structure,
+	 * so we need to calculate the node count.
+	 */
 	for (i = 0; i < batch->num_cpu_groups; i++) {
 		step_layout_req.num_hosts += batch->cpu_count_reps[i];
 		num_cpus += batch->cpu_count_reps[i] * batch->cpus_per_node[i];

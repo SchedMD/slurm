@@ -335,29 +335,36 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 /*
  *  Current process is running as the user when this is called.
  */
-void
-exec_task(stepd_step_rec_t *job, int i)
+extern void exec_task(stepd_step_rec_t *job, int i)
 {
 	uint32_t *gtids;		/* pointer to array of ranks */
 	int fd, j;
 	stepd_step_task_info_t *task = job->task[i];
 	char **tmp_env;
 	int saved_errno;
+	uint32_t node_offset = 0, task_offset = 0;
 
+	if (job->node_offset != NO_VAL)
+		node_offset = job->node_offset;
+	if (job->task_offset != NO_VAL)
+		task_offset = job->task_offset;
 	if (i == 0)
 		_make_tmpdir(job);
 
 	gtids = xmalloc(job->node_tasks * sizeof(uint32_t));
 	for (j = 0; j < job->node_tasks; j++)
-		gtids[j] = job->task[j]->gtid;
+		gtids[j] = job->task[j]->gtid + task_offset;
 	job->envtp->sgtids = _uint32_array_to_str(job->node_tasks, gtids);
 	xfree(gtids);
 
-	job->envtp->jobid = job->jobid;
+	if (job->pack_jobid != NO_VAL)
+		job->envtp->jobid = job->pack_jobid;
+	else
+		job->envtp->jobid = job->jobid;
 	job->envtp->stepid = job->stepid;
-	job->envtp->nodeid = job->nodeid;
+	job->envtp->nodeid = job->nodeid + node_offset;
 	job->envtp->cpus_on_node = job->cpus;
-	job->envtp->procid = task->gtid;
+	job->envtp->procid = task->gtid + task_offset;
 	job->envtp->localid = task->id;
 	job->envtp->task_pid = getpid();
 	job->envtp->distribution = job->task_dist;
@@ -374,9 +381,11 @@ exec_task(stepd_step_rec_t *job, int i)
 	job->envtp->uid = job->uid;
 	job->envtp->user_name = xstrdup(job->user_name);
 
-	/* Modify copy of job's environment. Do not alter in place or
+	/*
+	 * Modify copy of job's environment. Do not alter in place or
 	 * concurrent searches of the environment can generate invalid memory
-	 * references. */
+	 * references.
+	 */
 	job->envtp->env = env_array_copy((const char **) job->env);
 	setup_env(job->envtp, false);
 	setenvf(&job->envtp->env, "SLURM_JOB_GID", "%d", job->gid);

@@ -343,6 +343,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Operation not permitted on individual component of heterogeneous job" },
 	{ ESLURM_CORE_RESERVATION_UPDATE,
 	  "Core-based reservation can not be updated"		},
+	{ ESLURM_DUPLICATE_STEP_ID,
+	  "Duplicate job step id"				},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
