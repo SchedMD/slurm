@@ -278,7 +278,7 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		return ENOMEM;
 	}
 
-	if (envp && *envp) {
+	if (envp) {
 		if (env_array_overwrite(envp, name, value) == 1)
 			rc = 0;
 		else
