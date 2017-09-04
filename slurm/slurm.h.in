@@ -501,7 +501,8 @@ enum job_state_reason {
 	WAIT_ACCOUNT_POLICY,          /* Generic accounting policy reason */
 
 	WAIT_FED_JOB_LOCK,            /* Can't get fed job lock */
-	FAIL_OOM		      /* Exhausted memory */
+	FAIL_OOM,		      /* Exhausted memory */
+	WAIT_PN_MEM_LIMIT	      /* MaxMemPer[CPU|Node] exceeded */
 };
 
 enum job_acct_types {

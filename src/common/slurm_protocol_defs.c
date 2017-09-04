@@ -1894,6 +1894,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "FedJobLock";
 	case FAIL_OOM:
 		return "OutOfMemory";
+	case WAIT_PN_MEM_LIMIT:
+		return "MaxMemPerLimit";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;

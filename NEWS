@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix - Raise an error back to the user when trying to update currently
     unsupported core-based reservations.
  -- Do not print TmpDisk space as part of 'slurmd -C' line.
+ -- Fix to test MaxMemPerCPU/Node partition limits when scheduling, previously
+    only checked on submit.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

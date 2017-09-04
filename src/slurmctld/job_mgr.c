@@ -253,6 +253,8 @@ static void _validate_job_files(List batch_dirs);
 static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 					struct part_record *part_ptr,
 					List part_list);
+static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
+			      struct part_record *part_ptr);
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
@@ -6251,6 +6253,34 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 			       job_ptr->job_id);
 			fail_reason = WAIT_QOS_THRES;
 		}
+	} else if (fail_reason == WAIT_NO_REASON) {
+		/*
+		 * Here we need to pretend we are just submitting the job so we
+		 * can utilize the already existing function _valid_pn_min_mem.
+		 * If anything else is ever checked in that function this will
+		 * most likely have to be updated. Some of the needed members
+		 * were already initialized above to call _part_access_check, as
+		 * well as the memset for job_desc.
+		 */
+		job_desc.pn_min_memory = detail_ptr->pn_min_memory;
+		job_desc.cpus_per_task = detail_ptr->cpus_per_task;
+		job_desc.num_tasks = detail_ptr->num_tasks;
+		//job_desc.min_cpus = detail_ptr->min_cpus; /* init'ed above */
+		job_desc.max_cpus = detail_ptr->max_cpus;
+		job_desc.shared = (uint16_t)detail_ptr->share_res;
+		job_desc.ntasks_per_node = detail_ptr->ntasks_per_node;
+		job_desc.pn_min_cpus = detail_ptr->pn_min_cpus;
+		job_desc.job_id = job_ptr->job_id;
+		if (!_valid_pn_min_mem(&job_desc, part_ptr)) {
+			/* debug2 message already logged inside the function. */
+			fail_reason = WAIT_PN_MEM_LIMIT;
+		} else {
+			/* Copy back to job_record adjusted members */
+			detail_ptr->pn_min_memory = job_desc.pn_min_memory;
+			detail_ptr->cpus_per_task = job_desc.cpus_per_task;
+			detail_ptr->min_cpus = job_desc.min_cpus;
+			detail_ptr->max_cpus = job_desc.max_cpus;
+		}
 	}
 
 	return (fail_reason);
@@ -7821,6 +7851,14 @@ static uint16_t _cpus_per_node_part(struct part_record *part_ptr)
 	return 0;
 }
 
+/*
+ * Test if this job exceeds any of MaxMemPer[CPU|Node] limits and potentially
+ * adjust mem / cpu ratios.
+ *
+ * NOTE: This function is also called with a dummy job_desc_msg_t from
+ * job_limits_check(), if there is any new check added here you may also have to
+ * add that parameter to the job_desc_msg_t in that function.
+ */
 static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 			      struct part_record *part_ptr)
 {
@@ -7874,6 +7912,9 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 	    ((sys_mem_limit & MEM_PER_CPU) == 0)) {
 		if (job_mem_limit <= sys_mem_limit)
 			return true;
+		debug2("Job %u mem=%"PRIu64"M > MaxMemPerNode=%"PRIu64"M in partition %s",
+		       job_desc_msg->job_id, job_mem_limit, sys_mem_limit,
+		       part_ptr->name);
 		return false;
 	}
 
@@ -7931,6 +7972,12 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 
 	if (job_mem_limit <= sys_mem_limit)
 		return true;
+
+	debug2("Job %u mem=%"PRIu64"M > MaxMemPer%s=%"PRIu64"M in partition:%s",
+	       job_desc_msg->job_id, job_mem_limit,
+	       (job_mem_limit & MEM_PER_CPU) ? "CPU" : "Node", sys_mem_limit,
+	       part_ptr->name);
+
 	return false;
 }
 
