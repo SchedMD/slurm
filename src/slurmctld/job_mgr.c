@@ -7914,7 +7914,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 			return true;
 		debug2("Job %u mem=%"PRIu64"M > MaxMemPerNode=%"PRIu64"M in partition %s",
 		       job_desc_msg->job_id, job_mem_limit, sys_mem_limit,
-		       part_ptr->name);
+		       (part_ptr && part_ptr->name) ? part_ptr->name : "N/A");
 		return false;
 	}
 
@@ -7976,7 +7976,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 	debug2("Job %u mem=%"PRIu64"M > MaxMemPer%s=%"PRIu64"M in partition:%s",
 	       job_desc_msg->job_id, job_mem_limit,
 	       (job_mem_limit & MEM_PER_CPU) ? "CPU" : "Node", sys_mem_limit,
-	       part_ptr->name);
+	       (part_ptr && part_ptr->name) ? part_ptr->name : "N/A");
 
 	return false;
 }
