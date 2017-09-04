@@ -3133,6 +3133,7 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 
 }
 
+#ifndef HAVE_FRONT_END
 static slurm_addr_t *_build_node_addr(char *node_list, uint32_t node_cnt,
 				      uint32_t pack_job_id)
 {
@@ -3170,6 +3171,7 @@ static slurm_addr_t *_build_node_addr(char *node_list, uint32_t node_cnt,
 		xfree(node_addr);
 	return node_addr;
 }
+#endif
 
 /* _slurm_rpc_job_sbcast_cred - process RPC to get details on existing job
  *	plus sbcast credential */
