@@ -5831,9 +5831,6 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	struct job_record *job_ptr = NULL;
 	slurmdb_qos_rec_t  *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
-	uint32_t job_min_nodes, job_max_nodes;
-	uint32_t part_min_nodes, part_max_nodes;
-	uint32_t time_check;
 	job_desc_msg_t job_desc;
 	int rc;
 
@@ -5853,29 +5850,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		return WAIT_NO_REASON;
 	}
 
-#ifdef HAVE_BG
-	/* The node counts have been altered to reflect slurm nodes instead of
-	 * cnodes, so we need to figure out the cnode count
-	 * by using the cpu counts.  The partitions have been altered as well
-	 * so we have to use the original values.
-	 */
-	job_min_nodes = detail_ptr->min_cpus / cpus_per_node;
-	job_max_nodes = detail_ptr->max_cpus / cpus_per_node;
-	part_min_nodes = part_ptr->min_nodes_orig;
-	part_max_nodes = part_ptr->max_nodes_orig;
-#else
-	job_min_nodes = detail_ptr->min_nodes;
-	job_max_nodes = detail_ptr->max_nodes;
-	part_min_nodes = part_ptr->min_nodes;
-	part_max_nodes = part_ptr->max_nodes;
-#endif
-
 	fail_reason = WAIT_NO_REASON;
-
-	if (check_min_time && job_ptr->time_min)
-		time_check = job_ptr->time_min;
-	else
-		time_check = job_ptr->time_limit;
 
 	/*
 	 * Here we need to pretend we are just submitting the job so we can
@@ -5888,33 +5863,45 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	job_desc.user_id = job_ptr->user_id;
 	job_desc.alloc_node = job_ptr->alloc_node;
 	job_desc.min_cpus = detail_ptr->min_cpus;
-	job_desc.min_nodes = job_min_nodes;
-	job_desc.max_nodes = job_max_nodes;
-	job_desc.time_limit = job_ptr->time_limit;
+#ifdef HAVE_BG
+	/* The node counts have been altered to reflect slurm nodes instead of
+	 * cnodes, so we need to figure out the cnode count
+	 * by using the cpu counts.  The partitions have been altered as well
+	 * so we have to use the original values.
+	 */
+	job_desc.min_nodes = detail_ptr->min_cpus / cpus_per_node;
+	job_desc.max_nodes = detail_ptr->max_cpus / cpus_per_node;
+#else
+	job_desc.min_nodes = detail_ptr->min_nodes;
+	/* _part_access_check looks for NO_VAL instead of 0 */
+	job_desc.max_nodes = detail_ptr->max_nodes ?
+		detail_ptr->max_nodes : NO_VAL;;
+#endif
+	if (check_min_time && job_ptr->time_min)
+		job_desc.time_limit = job_ptr->time_min;
+	else
+		job_desc.time_limit = job_ptr->time_limit;
 
 	if ((rc = _part_access_check(part_ptr, &job_desc, NULL,
 				     job_ptr->user_id, qos_ptr,
 				     job_ptr->account))) {
 		debug2("Job %u can't run in partition %s: %s",
 		       job_ptr->job_id, part_ptr->name, slurm_strerror(rc));
-		fail_reason = WAIT_PART_CONFIG;
-	} else if ((job_min_nodes > part_max_nodes) &&
-	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-				       & QOS_FLAG_PART_MAX_NODE)))) {
-		debug2("Job %u requested too many nodes (%u) of "
-		       "partition %s (MaxNodes %u)",
-		       job_ptr->job_id, job_min_nodes,
-		       part_ptr->name, part_max_nodes);
-		fail_reason = WAIT_PART_NODE_LIMIT;
-	} else if ((job_max_nodes != 0) &&  /* no max_nodes for job */
-		   ((job_max_nodes < part_min_nodes) &&
-		    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-					       QOS_FLAG_PART_MIN_NODE))))) {
-		debug2("Job %u requested too few nodes (%u) of "
-		       "partition %s (MinNodes %u)",
-		       job_ptr->job_id, job_max_nodes,
-		       part_ptr->name, part_min_nodes);
-		fail_reason = WAIT_PART_NODE_LIMIT;
+		switch (rc) {
+		case ESLURM_INVALID_TIME_LIMIT:
+			fail_reason = WAIT_PART_TIME_LIMIT;
+			break;
+		case ESLURM_INVALID_NODE_COUNT:
+			fail_reason = WAIT_PART_NODE_LIMIT;
+			break;
+		/* FIXME */
+		/* case ESLURM_TOO_MANY_REQUESTED_CPUS: */
+		/* 	failt_reason = NON_EXISTANT_WAIT_PART_CPU_LIMIT; */
+		/* 	break; */
+		default:
+			fail_reason = WAIT_PART_CONFIG;
+			break;
+		}
 	} else if (part_ptr->state_up == PARTITION_DOWN) {
 		debug2("Job %u requested down partition %s",
 		       job_ptr->job_id, part_ptr->name);
@@ -5923,14 +5910,6 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		debug2("Job %u requested inactive partition %s",
 		       job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_INACTIVE;
-	} else if ((time_check != NO_VAL) &&
-		   (time_check > part_ptr->max_time) &&
-		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-					     QOS_FLAG_PART_TIME_LIMIT)))) {
-		debug2("Job %u exceeds partition %s time limit (%u > %u)",
-		       job_ptr->job_id, part_ptr->name, time_check,
-		       part_ptr->max_time);
-		fail_reason = WAIT_PART_TIME_LIMIT;
 	} else if (qos_ptr && assoc_ptr &&
 		   (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
 		   (!fuzzy_equal(qos_ptr->usage_thres, NO_VAL))) {
