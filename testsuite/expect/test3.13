@@ -33,7 +33,7 @@
 ############################################################################
 source ./globals
 
-set test_id       "3.4"
+set test_id       "3.13"
 set authorized    1
 set exit_code     0
 set file_in       "test$test_id.input"
