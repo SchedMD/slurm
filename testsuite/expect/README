@@ -816,9 +816,10 @@ test37.16  Validate job cleanup when clusters are removed federation
 
 test38.#   Testing of heterogeneous jobs.
 =========================================
-test38.1   Validate sbatch pack job options.
-test38.2   Validate sbatch pack job environment variables.
-test38.3   Validate salloc pack job options.
-test38.4   Validate salloc pack job environment variables.
-test38.5   Validate squeue pack_job fields
-test38.6   Test of SPANK plugin with pack jobs
+test38.1   Validate sbatch heterogeneous job options.
+test38.2   Validate sbatch heterogeneous job environment variables.
+test38.3   Validate salloc heterogeneous job options.
+test38.4   Validate salloc heterogeneous job environment variables.
+test38.5   Validate squeue heterogeneous job fields
+test38.6   Test of SPANK plugin with heterogeneous jobs
+test38.7   Test of MPI with heterogeneous jobs.
