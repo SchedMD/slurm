@@ -2501,7 +2501,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		else
 			step_ptr->step_id = job_ptr->next_step_id++;
 		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
-					    step_ptr->step_id++);
+					    step_ptr->step_id);
 	} else {
 		step_ptr->step_id = job_ptr->next_step_id++;
 	}
