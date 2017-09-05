@@ -109,7 +109,6 @@ typedef struct {
 } table_t;
 
 static slurm_influxdb_conf_t influxdb_conf;
-static uint64_t debug_flags = 0;
 static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
 static stepd_step_rec_t *g_job = NULL;
 
@@ -294,8 +293,6 @@ extern int init(void)
 	if (!_run_in_daemon())
 		return SLURM_SUCCESS;
 
-	debug_flags = slurm_get_debug_flags();
-
 	datastr = xmalloc(BUF_SIZE);
 	return SLURM_SUCCESS;
 }
@@ -419,7 +416,7 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
-	if (debug_flags & DEBUG_FLAG_PROFILE)
+	if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
 		info("PROFILE: task_start");
 
 	return rc;
@@ -427,7 +424,7 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 
 extern int acct_gather_profile_p_task_end(pid_t taskpid)
 {
-	if (debug_flags & DEBUG_FLAG_PROFILE)
+	if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
 		info("PROFILE: task_end");
 	DEF_TIMERS;
 	START_TIMER;
