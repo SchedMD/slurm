@@ -161,7 +161,8 @@ if {$job_id == 0} {
 # Wait for job to complete
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
+	send_user "\nFAILURE: waiting for job $job_id to complete\n"
+	cancel_job $job_id
 	set exit_code 1
 }
 
