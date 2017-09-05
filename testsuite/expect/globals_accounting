@@ -412,12 +412,11 @@ proc remove_acct { cluster name } {
 #
 ########################################################################
 #
-# IN: acct_mod_desc_in - consist of the cluster,
+# IN: name - name of acct to modify
+#
+#     acct_mod_desc_in - consist of the cluster,
 #     description, organization, and parent.
 #     Stuff before the where.
-#
-#     acct_mod_acct_vals_in - account values consist of parent,
-#     organization, description
 #
 #     acct_mod_assoc_vals_in - association consist of
 #     fairshare, grpcpumin, grpcpurunmins, grpcpu, grpjob
@@ -425,6 +424,8 @@ proc remove_acct { cluster name } {
 #     maxcpu, maxjob, maxnode, maxsubmit, maxwall. Stuff
 #     after the set
 #
+#     acct_mod_acct_vals_in - account values consist of parent,
+#     organization, description
 ########################################################################
 proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_in } {
 
