@@ -66,6 +66,7 @@
 #include "src/common/macros.h"
 #include "src/slurmd/common/proctrack.h"
 
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -99,6 +100,7 @@ typedef struct {
 	char *host;
 	char *database;
 	uint32_t def;
+	char *rt_policy;
 } slurm_influxdb_conf_t;
 
 typedef struct {
@@ -122,6 +124,7 @@ static size_t   tables_cur_len = 0;
 static void _reset_slurm_profile_conf(void)
 {
 	xfree(influxdb_conf.host);
+	xfree(influxdb_conf.rt_policy);
 	influxdb_conf.def = ACCT_GATHER_PROFILE_ALL;
 }
 
@@ -201,8 +204,8 @@ static int _send_data(const char *data)
 
 	if (curl_handle) {
 		char *url = xstrdup(influxdb_conf.host);
-		xstrfmtcat(url, "/write?db=%s&rp=default&precision=s",
-				influxdb_conf.database);
+		xstrfmtcat(url, "/write?db=%s&rp=%s&precision=s",
+			   influxdb_conf.database, influxdb_conf.rt_policy);
 
 		chunk.message = xmalloc(1);
 		chunk.size = 0;
@@ -303,6 +306,7 @@ extern int fini(void)
 	xfree(datastr);
 	xfree(influxdb_conf.host);
 	xfree(influxdb_conf.database);
+	xfree(influxdb_conf.rt_policy);
 	return SLURM_SUCCESS;
 }
 
@@ -313,6 +317,7 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 		{"ProfileInfluxDBHost", S_P_STRING},
 		{"ProfileInfluxDBDatabase", S_P_STRING},
 		{"ProfileInfluxDBDefault", S_P_STRING},
+		{"ProfileInfluxDBRTPolicy", S_P_STRING},
 		{NULL} };
 
 	transfer_s_p_options(full_options, options, full_options_cnt);
@@ -337,6 +342,8 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		}
 		s_p_get_string(&influxdb_conf.database, 
 				"ProfileInfluxDBDatabase", tbl);
+		s_p_get_string(&influxdb_conf.rt_policy,
+			       "ProfileInfluxDBRTPolicy", tbl);
 	}
 
 	if (!influxdb_conf.host)
@@ -347,6 +354,10 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		fatal("No ProfileInfluxDBDatabase in your acct_gather.conf "
 				"file.  This is required to use the %s plugin",
 			       	plugin_type);
+
+	if (!influxdb_conf.rt_policy)
+		fatal("No ProfileInfluxDBRTPolicy in your acct_gather.conf file. This is required to use the %s plugin",
+		      plugin_type);
 
 	debug("%s loaded", plugin_name);
 }
@@ -559,6 +570,12 @@ extern void acct_gather_profile_p_conf_values(List *data)
 	key_pair->value = 
 		xstrdup(acct_gather_profile_to_string(influxdb_conf.def));
 	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ProfileInfluxDBRTPolicy");
+	key_pair->value = xstrdup(influxdb_conf.rt_policy);
+	list_append(*data, key_pair);
+
 	return;
 
 }
