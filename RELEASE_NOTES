@@ -87,6 +87,7 @@ HIGHLIGHTS
     order to pass switch information between clusters with different switch
     types.
  -- Changed default ProctrackType to cgroup.
+ -- Changed default sched_min_interval from 0 to 2 microseconds.
 
 RPMBUILD CHANGES
 ================

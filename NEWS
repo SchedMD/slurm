@@ -248,6 +248,7 @@ documents those changes that are of interest to users and administrators.
  -- Implement federated scheduling and federated status outputs.
  -- The '-q' option to srun has changed from being the short form of
     '--quit-on-interrupt' to '--qos'.
+ -- Change sched_min_interval default from 0 to 2 microseconds.
 
 * Changes in Slurm 17.02.8
 ==========================

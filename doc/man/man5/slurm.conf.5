@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "July 2017" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "September 2017" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2924,7 +2924,7 @@ This option specifies the minimum time between the end of one scheduling
 cycle and the beginning of the next scheduling cycle.
 A value of zero will disable throttling of the scheduling logic interval.
 The default value is 1,000,000 microseconds on Cray/ALPS systems and
-zero microseconds (throttling is disabled) on other systems.
+2 microseconds on other systems.
 .TP
 \fBspec_cores_first\fR
 Specialized cores will be selected from the first cores of the first sockets,

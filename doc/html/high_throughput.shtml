@@ -142,7 +142,7 @@ job to be started. However that triggering does not cause the scheduling logic
 to be started immediately, but only within the configured <b>sched_interval</b>.
 For example, if sched_min_interval=2 (seconds) and 100 jobs are submitted within
 a 2 second time window, then the scheduling logic will be executed one time
-rather than 100 times (with the default configuration).</li>
+rather than 100 times if sched_min_interval was set to 0 (no delay).</li>
 <li>Besides controlling how frequently the scheduling logic is executed, the
 <b>default_queue_depth</b> configuration parameter controls how many jobs are
 considered to be started in each scheduler iteration. The default value of
@@ -218,6 +218,6 @@ speedup can be achieved by setting the CommitDelay option in the
 
 </ul>
 
-<p style="text-align:center;">Last modified 3 May 2017</p>
+<p style="text-align:center;">Last modified 5 September 2017</p>
 
 <!--#include virtual="footer.txt"-->
