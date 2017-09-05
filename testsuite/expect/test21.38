@@ -1,0 +1,256 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          sacctmgr modify limits for nested accounts with multiple users
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Marshall Garey <marshall@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set test_id     "21.38"
+set exit_code   0
+set tc1         "test$test_id-cluster-1"
+set ta1         "test$test_id-account.1"
+set ta2         "test$test_id-account.2"
+set ta3         "test$test_id-account.3"
+set tu1         "test$test_id-user.1"
+set tu2         "test$test_id-user.2"
+set cpusval1    2
+set cpusval2    3
+set nodesval    5
+set access_err  0
+
+# Cluster
+array set clus_req {}
+
+# Accounts
+array set acct_req {}
+set acct_req(cluster) $tc1
+
+# User
+array set user_req {}
+set user_req(cluster) $tc1
+set user_req(account) $ta1,$ta2,$ta3
+
+# Mod account 1
+array set acct_mod_desc {}
+set acct_mod_desc(cluster) $tc1
+array set acct_mod_acct_vals {}
+array set acct_mod_assoc_vals {}
+set acct_mod_assoc_vals(parent) $ta1
+
+# Mod account 2
+array set acct_mod_desc2 {}
+array set acct_mod_acct_vals2 {}
+array set acct_mod_assoc_vals2 {}
+set acct_mod_assoc_vals2(maxcpus) $cpusval1
+
+# Mod account 3
+array set acct_mod_desc3 {}
+array set acct_mod_acct_vals3 {}
+array set acct_mod_assoc_vals3 {}
+set acct_mod_assoc_vals3(maxcpus) $cpusval2
+
+# Mod account 4
+array set acct_mod_desc4 {}
+array set acct_mod_acct_vals4 {}
+array set acct_mod_assoc_vals4 {}
+set acct_mod_assoc_vals4(maxnodes) $nodesval
+
+# Mod User 1
+array set user_mod_info {}
+set user_mod_info(cluster) $tc1
+array set user_mod_acct {
+	adminlevel    Operator
+}
+set user_mod_acct(defaultaccount) $ta2
+array set user_mod_assoc {}
+
+proc _clean_exit { exit_code } {
+	variable tu1
+	variable tu2
+	variable ta1
+	variable ta2
+	variable ta3
+	variable tc1
+	variable access_err
+	variable test_id
+
+	# Clean up and print success or failure.
+	incr exit_code [remove_user "" "" "$tu1,$tu2"]
+	incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
+	incr exit_code [remove_cluster "$tc1"]
+	if {$exit_code == 0} {
+		print_success $test_id
+	} else {
+		send_user "\nFAILURE\n"
+	}
+	exit $exit_code
+}
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
+# Make sure we have a clean system
+remove_user "" "" "$tu1,$tu2"
+remove_acct "" "$ta1,$ta2"
+remove_cluster "$tc1"
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
+
+# Add the cluster
+incr exit_code [add_cluster "$tc1" [array get clus_req]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+# Add the accounts (3 of them)
+incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+# Add the users (2 of them)
+incr exit_code [add_user "$tu1,$tu2" [array get user_req]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+# Modify the 2nd and 3rd accounts - make them children of the first
+# No need to check the changes. This is done in a different test.
+incr exit_code [mod_acct "$ta2,$ta3" [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+# Modify the top account (give it TRESlimit=cpu=number)
+incr exit_code [mod_acct "$ta1" [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+# Check the changes
+set matches 0
+set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres"]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		incr exit_code
+	}
+	-re "(($ta1|$ta2|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		incr exit_code
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 9} {
+	send_user "\nFAILURE:  Account modification 1 incorrect with only $matches out of 9.\n\n"
+	incr exit_code
+	[_clean_exit $exit_code]
+}
+
+# Modify the child account (give it TRESlimit=cpu)
+incr exit_code [mod_acct "$ta2" [array get acct_mod_desc3] [array get acct_mod_assoc_vals3] [array get acct_mod_acct_vals3]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+# Check the changes
+set matches 0
+set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres"]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr list assoc command\n"
+		incr exit_code
+	}
+	-re "(($ta1|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1)|($ta2\\|($tu1|$tu2){0,6}\\|cpu=$cpusval2)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE:sacctmgr list associations not responding\n\n"
+		slow_kill $my_pid
+		incr exit_code
+		[_clean_exit $exit_code]
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 9} {
+	send_user "\nFAILURE:  Account modification 2 incorrect with only $matches out of 9.\n\n"
+	incr exit_code
+	[_clean_exit $exit_code]
+}
+
+# Modify the child accounts (give them TRESlimit=node_limit)
+incr exit_code [mod_acct "$ta2,$ta3" [array get acct_mod_desc4] [array get acct_mod_assoc_vals4] [array get acct_mod_acct_vals4]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+# Check the changes
+set matches 0
+set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres"]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr list assoc command\n"
+		incr exit_code
+	}
+	-re "($ta1\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1)|($ta2\\|($tu1|$tu2){0,6}\\|cpu=$cpusval2,node=$nodesval)|($ta3\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1,node=$nodesval)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE:sacctmgr list associations not responding\n\n"
+		slow_kill $my_pid
+		incr exit_code
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 9} {
+	send_user "\nFAILURE:  Account modification 3 incorrect with only $matches out of 9.\n\n"
+	incr exit_code
+	[_clean_exit $exit_code]
+}
+
+[_clean_exit $exit_code]

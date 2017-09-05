@@ -676,6 +676,7 @@ test21.34  Validate that partition and job qos limits are enforced
 test21.35  Validate DenyOnLimit QoS flag is enforced on QoS and Associations.
 test21.36  Validate that sacctmgr lost jobs fixes lost jobs.
 test21.37  sacctmgr show stats
+test21.38  sacctmgr modify limits for nested accounts with multiple users
 
 test22.#   Testing of sreport commands and options.
 	   These also test the sacctmgr archive dump/load functions.
