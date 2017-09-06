@@ -148,8 +148,10 @@ expect {
 	}
 }
 
+exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
+
 # Append Prolog config to the slurm.conf
-exec $bin_echo "prolog=$cwd/$good_prolog" >> $config_dir/slurm.conf
+exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_dir/slurm.conf
 update_conf
 
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
@@ -211,8 +213,10 @@ expect {
 	}
 }
 
+exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
+
 # Append Prolog config to the slurm.conf
-exec $bin_echo "prolog=$cwd/$bad_prolog" >> $config_dir/slurm.conf
+exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_dir/slurm.conf
 update_conf
 
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
