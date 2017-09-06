@@ -121,6 +121,20 @@ static table_t *tables = NULL;
 static size_t   tables_max_len = 0;
 static size_t   tables_cur_len = 0;
 
+static void _free_tables(void)
+{
+	int i, j;
+	for (i = 0; i < tables_cur_len; i++) {
+		table_t *table = &(tables[i]);
+		for (j = 0; j < tables->size; j++)
+			xfree(table->names[j]);
+		xfree(table->name);
+		xfree(table->names);
+		xfree(table->types);
+	}
+	xfree(tables);
+}
+
 static void _reset_slurm_profile_conf(void)
 {
 	xfree(influxdb_conf.host);
@@ -302,7 +316,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	xfree(tables);
+	_free_tables();
 	xfree(datastr);
 	xfree(influxdb_conf.host);
 	xfree(influxdb_conf.database);
