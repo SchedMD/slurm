@@ -47,9 +47,18 @@ if {[test_front_end]} {
 	set task_num 2
 }
 
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes < 3} {
+	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
+	exit $exit_code
+}
+
 proc end_it { exit_code } {
 	global pack_job_id scancel
-	exec $scancel $pack_job_id
+	if {$pack_job_id > 0} {
+		exec $scancel $pack_job_id
+	}
 	exit $exit_code
 }
 
@@ -57,8 +66,8 @@ set pack_job_id 0
 set matches 0
 set index 0
 set sid 0
-
-spawn $salloc --exclusive -N1 : --exclusive -N1 : --exclusive -N1 $bin_bash
+set timeout $max_job_delay
+spawn $salloc -t1 --exclusive -N1 : --exclusive -N1 : --exclusive -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
 		set pack_job_id $expect_out(1,string)
@@ -73,7 +82,7 @@ expect {
 		#send_user "Job initiated\n"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds"
+		log_error "salloc : allocation not granted in $timeout seconds\n"
 		end_it 1
 	}
 	eof {
@@ -81,7 +90,7 @@ expect {
 	}
 }
 if {$pack_job_id == 0} {
-	log_error "salloc failure"
+	log_error "salloc failure\n"
 	end_it 1
 }
 
@@ -91,7 +100,6 @@ send_user "\n\nTest Sending Sacct To Various Components\n\n"
 
 set timeout 3
 set matches 0
-
 spawn $sacct -j $pack_job_id
 expect {
 	-re "$pack_job_id\\+\[0-2\]" {
@@ -99,119 +107,44 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacct not responding"
+		log_error "sacct not responding\n"
 		end_it 1
 	}
 	eof {
 		wait
 	}
 }
-if { $matches != 3} {
-	log_error "sacct failure $matches $expect_out(buffer)"
+if {$matches != 3} {
+	log_error "sacct failure ($matches != 3)\n"
 	end_it 1
 }
 
-set matches 0
-
-spawn $sacct -j $pack_job_id+0
-expect {
-	-re "$pack_job_id\\+0" {
-		incr matches
-		exp_continue
+for {set inx 0} {$inx < 3} {incr inx} {
+	send_user "\n\n"
+	set bad_matches 0
+	set matches 0
+	spawn $sacct -j $pack_job_id+$inx
+	expect {
+		-re "$pack_job_id\\+($number)" {
+			if {$expect_out(1,string) == $inx} {
+				incr matches
+			} else {
+				incr bad_matches
+			}
+			exp_continue
+		}
+		timeout {
+			log_error "sacct not responding\n"
+			end_it 1
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		log_error "sacct not responding"
+	if {$matches != 1 || $bad_matches != 0} {
+		log_error "sacct failure ($matches != 1 || $bad_matches != 0)\n"
 		end_it 1
 	}
-	eof {
-		wait
-	}
-}
-spawn $sacct -j $pack_job_id+0
-expect {
-	-re "$pack_job_id\\+\[1-2\]" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		log_error "sacct not responding"
-		end_it 1
-	}
-	eof {
-		wait
-	}
-}
-if { $matches != 1} {
-	log_error "sacct failure $matches $expect_out(buffer)"
-	end_it 1
-}
-
-set matches 0
-spawn $sacct -j $pack_job_id+1
-expect {
-	-re "$pack_job_id\\+1" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		log_error "sacct not responding"
-		end_it 1
-	}
-	eof {
-		wait
-	}
-}
-spawn $sacct -j $pack_job_id+1
-expect {
-	-re "$pack_job_id\\+\[02\]" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		log_error "sacct not responding"
-		end_it 1
-	}
-	eof {
-		wait
-	}
-}
-if { $matches != 1} {
-	log_error "sacct failure $matches $expect_out(buffer)"
-	end_it 1
-}
-
-set matches 0
-spawn $sacct -j $pack_job_id+2
-expect {
-	-re "$pack_job_id\\+2" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		log_error "sacct not responding"
-		end_it 1
-	}
-	eof {
-		wait
-	}
-}
-spawn $sacct -j $pack_job_id+2
-expect {
-	-re "$pack_job_id\\+\[01\]" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		log_error "sacct not responding"
-		end_it 1
-	}
-	eof {
-		wait
-	}
-}
-if { $matches != 1} {
-	log_error "sacct failure $matches $expect_out(buffer)"
-	end_it 1
 }
 
 send_user "\nSUCCESS\n"
