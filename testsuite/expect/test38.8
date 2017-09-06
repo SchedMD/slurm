@@ -1,0 +1,218 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of sacct functionality for heterogeneous jobs.
+#          sacct options j
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "38.8"
+
+print_header $test_id
+set prompt           "PROMPT: "
+
+set timeout 60
+
+if {[test_front_end]} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit $exit_code
+} elseif {[test_serial]} {
+	set task_num 1
+} else {
+	set task_num 2
+}
+
+proc end_it { exit_code } {
+	global pack_job_id scancel
+	exec $scancel $pack_job_id
+	exit $exit_code
+}
+
+set pack_job_id 0
+set matches 0
+set index 0
+set sid 0
+
+spawn $salloc --exclusive -N1 : --exclusive -N1 : --exclusive -N1 $bin_bash
+expect {
+	-re "job ($number) has been allocated resources" {
+		set pack_job_id $expect_out(1,string)
+		send "export PS1=\"$prompt\"\r"
+		exp_continue
+	}
+	-re "\"$prompt" {
+		# skip this, just echo of setting prompt"
+		exp_continue
+	}
+	-re "$prompt" {
+		#send_user "Job initiated\n"
+	}
+	timeout {
+		log_error "salloc : allocation not granted in $timeout seconds"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$pack_job_id == 0} {
+	log_error "salloc failure"
+	end_it 1
+}
+
+expect *
+
+send_user "\n\nTest Sending Sacct To Various Components\n\n"
+
+set timeout 3
+set matches 0
+
+spawn $sacct -j $pack_job_id
+expect {
+	-re "$pack_job_id\\+\[0-2\]" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "sacct not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if { $matches != 3} {
+	log_error "sacct failure $matches $expect_out(buffer)"
+	end_it 1
+}
+
+set matches 0
+
+spawn $sacct -j $pack_job_id+0
+expect {
+	-re "$pack_job_id\\+0" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "sacct not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+spawn $sacct -j $pack_job_id+0
+expect {
+	-re "$pack_job_id\\+\[1-2\]" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "sacct not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if { $matches != 1} {
+	log_error "sacct failure $matches $expect_out(buffer)"
+	end_it 1
+}
+
+set matches 0
+spawn $sacct -j $pack_job_id+1
+expect {
+	-re "$pack_job_id\\+1" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "sacct not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+spawn $sacct -j $pack_job_id+1
+expect {
+	-re "$pack_job_id\\+\[02\]" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "sacct not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if { $matches != 1} {
+	log_error "sacct failure $matches $expect_out(buffer)"
+	end_it 1
+}
+
+set matches 0
+spawn $sacct -j $pack_job_id+2
+expect {
+	-re "$pack_job_id\\+2" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "sacct not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+spawn $sacct -j $pack_job_id+2
+expect {
+	-re "$pack_job_id\\+\[01\]" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "sacct not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if { $matches != 1} {
+	log_error "sacct failure $matches $expect_out(buffer)"
+	end_it 1
+}
+
+send_user "\nSUCCESS\n"
+end_it 0

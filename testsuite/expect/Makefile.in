@@ -1055,6 +1055,7 @@ EXTRA_DIST = \
 	test38.6.prog.c			\
 	test38.7			\
 	test38.7.prog.c			\
+	test38.8			\
 	test38.9
 
 all: all-am
