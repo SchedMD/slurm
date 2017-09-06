@@ -10908,13 +10908,15 @@ _pack_cancel_tasks_msg(kill_tasks_msg_t * msg, Buf buffer,
 		       uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		pack16(msg->flags, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
-		pack32(msg->signal, buffer);
+		pack16(msg->signal, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t signal = msg->signal | (msg->flags << 24);
 		pack32((uint32_t)msg->job_id, buffer);
 		pack32((uint32_t)msg->job_step_id, buffer);
-		pack32((uint32_t)msg->signal, buffer);
+		pack32(signal, buffer);
 	} else {
 		error("_pack_cancel_tasks_msg: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -10931,13 +10933,17 @@ _unpack_cancel_tasks_msg(kill_tasks_msg_t ** msg_ptr, Buf buffer,
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack16(&msg->flags, buffer);
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
-		safe_unpack32(&msg->signal, buffer);
+		safe_unpack16(&msg->signal, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t signal;
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
-		safe_unpack32(&msg->signal, buffer);
+		safe_unpack32(&signal, buffer);
+		msg->flags = signal >> 24;
+		msg->signal = signal & 0xfff;
 	} else {
 		error("_unpack_cancel_tasks_msg: protocol_version "
 		      "%hu not supported", protocol_version);

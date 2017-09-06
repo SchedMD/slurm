@@ -750,6 +750,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	uint32_t signal;
 
 	safe_read(fd, &signal, sizeof(int));
+	safe_read(fd, &flag, sizeof(int));
 	flag = signal >> 24;
 	sig = signal & 0xfff;
 

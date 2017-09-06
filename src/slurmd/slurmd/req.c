@@ -161,7 +161,8 @@ static bool _is_batch_job_finished(uint32_t job_id);
 static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
-static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
+static int  _kill_all_active_steps(uint32_t jobid, int sig,
+				   int flags, bool batch);
 static void _launch_complete_add(uint32_t job_id);
 static void _launch_complete_log(char *type, uint32_t job_id);
 static void _launch_complete_rm(uint32_t job_id);
@@ -3065,19 +3066,19 @@ _rpc_acct_gather_energy(slurm_msg_t *msg)
 }
 
 static int
-_signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
-		uint32_t signal)
+_signal_jobstep(uint32_t jobid, uint32_t stepid, uint16_t signal,
+		uint16_t flags)
 {
-	int               fd, rc = SLURM_SUCCESS;
-	uid_t uid;
+	int fd, rc = SLURM_SUCCESS;
 	uint16_t protocol_version;
 
-	/*  There will be no stepd if the prolog is still running
-	 *   Return failure so caller can retry.
+	/*
+	 * There will be no stepd if the prolog is still running
+	 * Return failure so caller can retry.
 	 */
-	if (_prolog_is_running (jobid)) {
-		info ("signal %d req for %u.%u while prolog is running."
-		      " Returning failure.", signal, jobid, stepid);
+	if (_prolog_is_running(jobid)) {
+		info("signal %d req for %u.%u while prolog is running."
+		     " Returning failure.", signal, jobid, stepid);
 		return EAGAIN;
 	}
 
@@ -3089,25 +3090,11 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
-		debug("_signal_jobstep: couldn't read from the step %u.%u: %m",
-		      jobid, stepid);
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done2;
-	}
-
-	if ((req_uid != uid) && (!_slurm_authorized_user(req_uid))) {
-		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
-		      (long) req_uid, jobid, stepid, (long) uid);
-		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
-		goto done2;
-	}
-
-	rc = stepd_signal_container(fd, protocol_version, signal);
+	debug2("container signal %d to job %u.%u", signal, jobid, stepid);
+	rc = stepd_signal_container(fd, protocol_version, signal, flags);
 	if (rc == -1)
 		rc = ESLURMD_JOB_NOTRUNNING;
 
-done2:
 	close(fd);
 	return rc;
 }
@@ -3116,29 +3103,26 @@ static void
 _rpc_signal_tasks(slurm_msg_t *msg)
 {
 	int               rc = SLURM_SUCCESS;
-	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred,
-							 conf->auth_info);
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
-	uint32_t flag;
-	uint32_t sig;
 
-	flag = req->signal >> 24;
-	sig  = req->signal & 0xfff;
-
-	if (flag & KILL_FULL_JOB) {
+	/* security is handled when communicating with the stepd */
+	if (req->flags & KILL_FULL_JOB) {
 		debug("%s: sending signal %u to entire job %u flag %u",
-		      __func__, sig, req->job_id, flag);
-		_kill_all_active_steps(req->job_id, sig, true);
-	} else if (flag & KILL_STEPS_ONLY) {
+		      __func__, req->signal, req->job_id, req->flags);
+		_kill_all_active_steps(req->job_id, req->signal,
+				       req->flags, true);
+	} else if (req->flags & KILL_STEPS_ONLY) {
 		debug("%s: sending signal %u to all steps job %u flag %u",
-		      __func__, sig, req->job_id, flag);
-		_kill_all_active_steps(req->job_id, sig, false);
+		      __func__, req->signal, req->job_id, req->flags);
+		_kill_all_active_steps(req->job_id, req->signal,
+				       req->flags, false);
 	} else {
 		debug("%s: sending signal %u to step %u.%u flag %u", __func__,
-		      sig, req->job_id, req->job_step_id, flag);
-		rc = _signal_jobstep(req->job_id, req->job_step_id, req_uid,
-				     req->signal);
+		      req->signal, req->job_id, req->job_step_id, req->flags);
+		rc = _signal_jobstep(req->job_id, req->job_step_id,
+				     req->signal, req->flags);
 	}
+
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -3712,10 +3696,10 @@ _rpc_timelimit(slurm_msg_t *msg)
 	}
 
 	if (msg->msg_type == REQUEST_KILL_TIMELIMIT)
-		_kill_all_active_steps(req->job_id, SIG_TIME_LIMIT, true);
+		_kill_all_active_steps(req->job_id, SIG_TIME_LIMIT, 0, true);
 	else /* (msg->type == REQUEST_KILL_PREEMPTED) */
-		_kill_all_active_steps(req->job_id, SIG_PREEMPTED, true);
-	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, false);
+		_kill_all_active_steps(req->job_id, SIG_PREEMPTED, 0, true);
+	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, 0, false);
 	verbose("Job %u: timeout: sent SIGTERM to %d active steps",
 		req->job_id, nsteps);
 
@@ -4368,13 +4352,13 @@ static uid_t _get_job_uid(uint32_t jobid)
  * RET count of signaled job steps (plus batch script, if applicable)
  */
 static int
-_kill_all_active_steps(uint32_t jobid, int sig, bool batch)
+_kill_all_active_steps(uint32_t jobid, int sig, int flags, bool batch)
 {
 	List steps;
 	ListIterator i;
 	step_loc_t *stepd;
 	int step_cnt  = 0;
-	int fd;
+	int rc = SLURM_SUCCESS;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
@@ -4386,31 +4370,26 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 			continue;
 		}
 
-		if ((stepd->stepid == SLURM_BATCH_SCRIPT) && (!batch))
+		if ((stepd->stepid == SLURM_BATCH_SCRIPT) && !batch)
 			continue;
 
-		step_cnt++;
-
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   stepd->jobid, stepd->stepid,
-				   &stepd->protocol_version);
-		if (fd == -1) {
-			debug3("Unable to connect to step %u.%u",
-			       stepd->jobid, stepd->stepid);
+		if (_signal_jobstep(stepd->jobid, stepd->stepid, sig, flags)
+		    != SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
 			continue;
 		}
 
-		debug2("container signal %d to job %u.%u",
-		       sig, stepd->jobid, stepd->stepid);
-		if (stepd_signal_container(
-			    fd, stepd->protocol_version, sig) < 0)
-			debug("kill jobid=%u failed: %m", stepd->jobid);
-		close(fd);
+		step_cnt++;
 	}
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
+
 	if (step_cnt == 0)
-		debug2("No steps in jobid %u to send signal %d", jobid, sig);
+		debug2("No steps in jobid %u %s %d",
+		       jobid, (rc == SLURM_SUCCESS) ?
+		       "to send signal" : "were able to be signaled with",
+		       sig);
+
 	return step_cnt;
 }
 
@@ -4445,7 +4424,7 @@ extern int ume_notify(void)
 		debug2("container SIG_UME to job %u.%u",
 		       stepd->jobid, stepd->stepid);
 		if (stepd_signal_container(
-			    fd, stepd->protocol_version, SIG_UME) < 0)
+			    fd, stepd->protocol_version, 0, SIG_UME) < 0)
 			debug("kill jobid=%u failed: %m", stepd->jobid);
 		close(fd);
 	}
@@ -4969,7 +4948,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		msg->conn_fd = -1;
 	}
 
-	if (_kill_all_active_steps(req->job_id, SIG_ABORT, true)) {
+	if (_kill_all_active_steps(req->job_id, SIG_ABORT, 0, true)) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
@@ -5046,7 +5025,7 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 	 * Tasks might be stopped (possibly by a debugger)
 	 * so send SIGCONT first.
 	 */
-	_kill_all_active_steps(job_id, SIGCONT, true);
+	_kill_all_active_steps(job_id, SIGCONT, 0, true);
 	if (errno == ESLURMD_STEP_SUSPENDED) {
 		/*
 		 * If the job step is currently suspended, we don't
@@ -5055,7 +5034,7 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		debug2("Job is currently suspended, terminating");
 		nsteps = _terminate_all_steps(job_id, true);
 	} else {
-		nsteps = _kill_all_active_steps(job_id, SIGTERM, true);
+		nsteps = _kill_all_active_steps(job_id, SIGTERM, 0, true);
 	}
 
 	if ((nsteps == 0) && !conf->epilog) {
@@ -5314,17 +5293,17 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		}
 	}
 	if (IS_JOB_NODE_FAILED(req))
-		_kill_all_active_steps(req->job_id, SIG_NODE_FAIL, true);
+		_kill_all_active_steps(req->job_id, SIG_NODE_FAIL, 0, true);
 	if (IS_JOB_PENDING(req))
-		_kill_all_active_steps(req->job_id, SIG_REQUEUED, true);
+		_kill_all_active_steps(req->job_id, SIG_REQUEUED, 0, true);
 	else if (IS_JOB_FAILED(req))
-		_kill_all_active_steps(req->job_id, SIG_FAILURE, true);
+		_kill_all_active_steps(req->job_id, SIG_FAILURE, 0, true);
 
 	/*
 	 * Tasks might be stopped (possibly by a debugger)
 	 * so send SIGCONT first.
 	 */
-	_kill_all_active_steps(req->job_id, SIGCONT, true);
+	_kill_all_active_steps(req->job_id, SIGCONT, 0, true);
 	if (errno == ESLURMD_STEP_SUSPENDED) {
 		/*
 		 * If the job step is currently suspended, we don't
@@ -5333,7 +5312,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		debug2("Job is currently suspended, terminating");
 		nsteps = _terminate_all_steps(req->job_id, true);
 	} else {
-		nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
+		nsteps = _kill_all_active_steps(req->job_id, SIGTERM, 0, true);
 	}
 
 	if ((nsteps == 0) && !conf->epilog) {

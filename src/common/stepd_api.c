@@ -445,7 +445,7 @@ rwfail:
  * Send a signal to the proctrack container of a job step.
  */
 int
-stepd_signal_container(int fd, uint16_t protocol_version, int signal)
+stepd_signal_container(int fd, uint16_t protocol_version, int signal, int flags)
 {
 	int req = REQUEST_SIGNAL_CONTAINER;
 	int rc;
@@ -454,8 +454,12 @@ stepd_signal_container(int fd, uint16_t protocol_version, int signal)
 	safe_write(fd, &req, sizeof(int));
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_write(fd, &signal, sizeof(int));
+		safe_write(fd, &flags, sizeof(int));
 	} else {
-		safe_write(fd, &signal, sizeof(int));
+		int tmp_signal = (uint32_t)signal | (uint32_t)(flags << 24);
+		safe_write(fd, &tmp_signal, sizeof(int));
+
+	}
 
 	/* Receive the return code and errno */
 	safe_read(fd, &rc, sizeof(int));
@@ -702,7 +706,8 @@ stepd_cleanup_sockets(const char *directory, const char *nodename)
 				debug("Unable to connect to socket %s", path);
 			} else {
 				if (stepd_signal_container(
-					fd, protocol_version, SIGKILL) == -1) {
+					    fd, protocol_version, SIGKILL, 0)
+				    == -1) {
 					debug("Error sending SIGKILL to job step %u.%u",
 					      jobid, stepid);
 				}

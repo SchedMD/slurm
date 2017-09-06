@@ -5262,7 +5262,6 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 	bitoff_t i;
 	kill_tasks_msg_t *kill_tasks_msg = NULL;
 	agent_arg_t *agent_args = NULL;
-	uint32_t z = 0;
 
 	xassert(job_ptr);
 	xassert(job_ptr->batch_host);
@@ -5270,16 +5269,6 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 	if (i < 0) {
 		error("%s: JobId=%u lacks assigned nodes",
 		      __func__, job_ptr->job_id);
-		return;
-	}
-	if (flags > 0xff) {	/* Top 8 bits used for KILL_* flags */
-		error("%s: signal flags %u for job %u exceed limit",
-		      __func__, flags, job_ptr->job_id);
-		return;
-	}
-	if (signal > 0xfff) {	/* Top 8 bits used for KILL_* flags */
-		error("%s: signal value %u for job %u exceed limit",
-		      __func__, signal, job_ptr->job_id);
 		return;
 	}
 
@@ -5301,18 +5290,13 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 	kill_tasks_msg->job_id      = job_ptr->job_id;
 	kill_tasks_msg->job_step_id = NO_VAL;
 
-	/* Encode the flags for slurm stepd to know what steps get signaled */
-	if (flags == KILL_FULL_JOB)
-		z = KILL_FULL_JOB << 24;
-	else if (flags == KILL_JOB_BATCH)
-		z = KILL_JOB_BATCH << 24;
-	else if (flags == KILL_STEPS_ONLY)
-		z = KILL_STEPS_ONLY << 24;
-
-	kill_tasks_msg->signal = z | signal;
+	if (flags == KILL_FULL_JOB ||
+	    flags == KILL_JOB_BATCH ||
+	    flags == KILL_STEPS_ONLY)
+		kill_tasks_msg->flags = flags;
+	kill_tasks_msg->signal = signal;
 
 	agent_args->msg_args = kill_tasks_msg;
-	agent_args->node_count = 1;/* slurm/477 be sure to update node_count */
 	agent_queue_request(agent_args);
 	return;
 }
@@ -14354,7 +14338,6 @@ static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags)
 	kill_tasks_msg_t *signal_job_msg = NULL;
 	static int notify_srun_static = -1;
 	int notify_srun = 0;
-	uint32_t z = 0;
 
 	if (notify_srun_static == -1) {
 		/* do this for all but slurm (poe, aprun, etc...) */
@@ -14410,12 +14393,14 @@ static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags)
 	 * Here if we aren't signaling the full job we always only want to
 	 * signal all other steps.
 	 */
-	if (flags == KILL_FULL_JOB)
-		z = KILL_FULL_JOB << 24;
+	if (flags == KILL_FULL_JOB ||
+	    flags == KILL_JOB_BATCH ||
+	    flags == KILL_STEPS_ONLY)
+		signal_job_msg->flags = flags;
 	else
-		z = KILL_STEPS_ONLY << 24;
+		signal_job_msg->flags = KILL_STEPS_ONLY;
 
-	signal_job_msg->signal = z | signal;
+	signal_job_msg->signal = signal;
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);

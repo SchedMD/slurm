@@ -660,9 +660,10 @@ typedef struct step_complete_msg {
 } step_complete_msg_t;
 
 typedef struct kill_tasks_msg {
+	uint16_t flags;
 	uint32_t job_id;
 	uint32_t job_step_id;
-	uint32_t signal;
+	uint16_t signal;
 } kill_tasks_msg_t;
 
 typedef struct checkpoint_tasks_msg {

@@ -173,7 +173,8 @@ int stepd_signal_task_global(int fd, uint16_t protocol_version,
 /*
  * Send a signal to the proctrack container of a job step.
  */
-int stepd_signal_container(int fd, uint16_t protocol_version, int signal);
+int stepd_signal_container(int fd, uint16_t protocol_version, int signal,
+			   int flags);
 
 /*
  * Attach a client to a running job step.
