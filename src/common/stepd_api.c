@@ -452,7 +452,10 @@ stepd_signal_container(int fd, uint16_t protocol_version, int signal)
 	int errnum = 0;
 
 	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &signal, sizeof(int));
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_write(fd, &signal, sizeof(int));
+	} else {
+		safe_write(fd, &signal, sizeof(int));
 
 	/* Receive the return code and errno */
 	safe_read(fd, &rc, sizeof(int));
