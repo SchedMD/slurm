@@ -146,13 +146,6 @@ static void _free_tables(void)
 	xfree(tables);
 }
 
-static void _reset_slurm_profile_conf(void)
-{
-	xfree(influxdb_conf.host);
-	xfree(influxdb_conf.rt_policy);
-	influxdb_conf.def = ACCT_GATHER_PROFILE_ALL;
-}
-
 static uint32_t _determine_profile(void)
 {
 	uint32_t profile;
@@ -357,7 +350,7 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 {
 	char *tmp = NULL;
-	_reset_slurm_profile_conf();
+	influxdb_conf.def = ACCT_GATHER_PROFILE_ALL;
 	if (tbl) {
 		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
 		if (s_p_get_string(&tmp, "ProfileInfluxDBDefault", tbl)) {
