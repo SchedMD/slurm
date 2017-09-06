@@ -210,11 +210,6 @@ static void _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer,
 static int _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 				uint16_t protocol_version);
 
-static void _pack_signal_job_msg(signal_job_msg_t * msg, Buf buffer,
-				 uint16_t protocol_version);
-static int _unpack_signal_job_msg(signal_job_msg_t ** msg, Buf buffer,
-				  uint16_t protocol_version);
-
 static void _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer,
 				  uint16_t protocol_version);
 static int  _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer,
@@ -1192,10 +1187,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				    buffer,
 				    msg->protocol_version);
 		break;
-	case REQUEST_SIGNAL_JOB:
-		_pack_signal_job_msg((signal_job_msg_t *) msg->data, buffer,
-				     msg->protocol_version);
-		break;
 	case REQUEST_ABORT_JOB:
 	case REQUEST_KILL_PREEMPTED:
 	case REQUEST_KILL_TIMELIMIT:
@@ -1898,11 +1889,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		_unpack_job_step_pids(
 			(job_step_pids_t **)&msg->data,
 			buffer,	msg->protocol_version);
-		break;
-	case REQUEST_SIGNAL_JOB:
-		rc = _unpack_signal_job_msg((signal_job_msg_t **)&(msg->data),
-					    buffer,
-					    msg->protocol_version);
 		break;
 	case REQUEST_ABORT_JOB:
 	case REQUEST_KILL_PREEMPTED:
@@ -4891,51 +4877,6 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 
 unpack_error:
 	slurm_free_kill_job_msg(tmp_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static void
-_pack_signal_job_msg(signal_job_msg_t * msg, Buf buffer,
-		     uint16_t protocol_version)
-{
-	xassert(msg != NULL);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t)msg->job_id,  buffer);
-		pack32((uint32_t)msg->signal, buffer);
-	} else {
-		error("_pack_signal_job_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-	}
-	debug("_pack_signal_job_msg signal = %d", msg->signal);
-}
-
-static int
-_unpack_signal_job_msg(signal_job_msg_t ** msg, Buf buffer,
-		       uint16_t protocol_version)
-{
-	signal_job_msg_t *tmp_ptr;
-
-	/* alloc memory for structure */
-	xassert(msg);
-	tmp_ptr = xmalloc(sizeof(signal_job_msg_t));
-	*msg = tmp_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&(tmp_ptr->job_id), buffer);
-		safe_unpack32(&(tmp_ptr->signal), buffer);
-	} else {
-		error("_unpack_signal_job_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-		goto unpack_error;
-	}
-	debug("_unpack_signal_job_msg signal = %d", tmp_ptr->signal);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_signal_job_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

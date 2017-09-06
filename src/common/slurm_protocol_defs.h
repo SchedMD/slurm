@@ -355,7 +355,7 @@ typedef enum {
 	REQUEST_REATTACH_TASKS,
 	RESPONSE_REATTACH_TASKS,
 	REQUEST_KILL_TIMELIMIT,
-	REQUEST_SIGNAL_JOB,		/* 6010 */
+	REQUEST_SIGNAL_JOB,		/* 6010 */ /* DEFUNCT */
 	REQUEST_TERMINATE_JOB,
 	MESSAGE_EPILOG_COMPLETE,
 	REQUEST_ABORT_JOB,	/* job shouldn't be running, kill it without
@@ -919,11 +919,6 @@ typedef struct kill_job_msg {
 	time_t   time;		/* slurmctld's time of request */
 } kill_job_msg_t;
 
-typedef struct signal_job_msg {
-	uint32_t job_id;
-	uint32_t signal;
-} signal_job_msg_t;
-
 typedef struct job_time_msg {
 	uint32_t job_id;
 	time_t expiration_time;
@@ -1372,7 +1367,6 @@ extern void slurm_free_reattach_tasks_request_msg(
 extern void slurm_free_reattach_tasks_response_msg(
 		reattach_tasks_response_msg_t * msg);
 extern void slurm_free_kill_job_msg(kill_job_msg_t * msg);
-extern void slurm_free_signal_job_msg(signal_job_msg_t * msg);
 extern void slurm_free_update_job_time_msg(job_time_msg_t * msg);
 extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);
 extern void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);

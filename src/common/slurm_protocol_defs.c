@@ -1218,11 +1218,6 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 	}
 }
 
-extern void slurm_free_signal_job_msg(signal_job_msg_t * msg)
-{
-	xfree(msg);
-}
-
 extern void slurm_free_update_job_time_msg(job_time_msg_t * msg)
 {
 	xfree(msg);
@@ -4184,9 +4179,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_REATTACH_TASKS:
 		slurm_free_reattach_tasks_response_msg(data);
-		break;
-	case REQUEST_SIGNAL_JOB:
-		slurm_free_signal_job_msg(data);
 		break;
 	case REQUEST_ABORT_JOB:
 	case REQUEST_TERMINATE_JOB:
