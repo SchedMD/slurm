@@ -193,111 +193,113 @@ static size_t _write_callback(void *contents, size_t size, size_t nmemb,
 	return realsize;
 }
 
-/* Try to index job into elasticsearch */
+/* Try to send data to influxdb */
 static int _send_data(const char *data)
 {
-	if(data!=NULL && datastrlen+strlen(data) <= BUF_SIZE){
-		xstrcat(datastr,data);
-		datastrlen += strlen(data);
-		return SLURM_SUCCESS;
-	}
-
 	CURL *curl_handle = NULL;
 	CURLcode res;
 	struct http_response chunk;
 	int rc = SLURM_SUCCESS;
 	static int error_cnt = 0;
+	char *url = NULL, *token = NULL;
+
+	/*
+	 * Every compute node which is sampling data will try to establish a
+	 * different connection to the influxdb server. In order to reduce the
+	 * number of connections, every time a new sampled data comes in, it
+	 * is saved in the 'datastr' buffer. Once this buffer is full, then we
+	 * try to open the connection and send this buffer, instead of opening
+	 * one per sample.
+	 */
+	if (data && ((datastrlen + strlen(data)) <= BUF_SIZE)) {
+		xstrcat(datastr, data);
+		datastrlen += strlen(data);
+		return rc;
+	}
 
 	if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
-		debug("curl_global_init: %m");
+		debug("%s: curl_global_init: %m", plugin_type);
 		rc = SLURM_ERROR;
+		goto cleanup_global_init;
 	} else if ((curl_handle = curl_easy_init()) == NULL) {
-		debug("curl_easy_init: %m");
+		debug("%s: curl_easy_init: %m", plugin_type);
 		rc = SLURM_ERROR;
+		goto cleanup_easy_init;
 	}
 
-	if (curl_handle) {
-		char *url = xstrdup(influxdb_conf.host);
-		xstrfmtcat(url, "/write?db=%s&rp=%s&precision=s",
-			   influxdb_conf.database, influxdb_conf.rt_policy);
+	xstrfmtcat(url, "%s/write?db=%s&rp=%s&precision=s", influxdb_conf.host,
+		   influxdb_conf.database, influxdb_conf.rt_policy);
 
-		chunk.message = xmalloc(1);
-		chunk.size = 0;
+	chunk.message = xmalloc(1);
+	chunk.size = 0;
 
-		curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-		curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
-		curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, datastr);
-		curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE,
-				strlen(datastr));
-		curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1);
-		curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION,
-				_write_callback);
-		curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA,
-				(void *) &chunk);
+	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+	curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
+	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, datastr);
+	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, strlen(datastr));
+	curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1);
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, _write_callback);
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
 
-		res = curl_easy_perform(curl_handle);
-		if (res != CURLE_OK) {
-			debug2("Could not connect to: %s , reason: %s", url,
-					curl_easy_strerror(res));
-			rc = SLURM_ERROR;
-		} else {
-			char *token, *response;
-			response = xstrdup(chunk.message);
-			token = strtok(chunk.message, " ");
-			if (token == NULL) {
-				debug("Could not receive the HTTP response "
-						"status code from %s", url);
-				rc = SLURM_ERROR;
-			} else {
-				token = strtok(NULL, " ");
-				if ((xstrcmp(token, "100") == 0)) {
-					(void)  strtok(NULL, " ");
-					token = strtok(NULL, " ");
-				}
-				else if ((xstrcmp(token, "400") == 0)) {
-					debug("400: Bad Request");
-					rc = SLURM_ERROR;
-				}
-				else if ((xstrcmp(token, "404") == 0)) {
-					debug("404: Unacceptable request");
-					rc = SLURM_ERROR;
-				}
-				else if ((xstrcmp(token, "500") == 0)) {
-					debug("500: Internal Server Error");
-					rc = SLURM_ERROR;
-				}
-				else if (xstrcmp(token, "204") != 0) {
-					debug("HTTP status code %s received "
-							"from %s", token, url);
-					debug3("HTTP Response:\n%s", response);
-					rc = SLURM_ERROR;
-				} else {
-					debug("Data written");
-				}
-				xfree(response);
-			}
-		}
-		xfree(chunk.message);
-		curl_easy_cleanup(curl_handle);
-		xfree(url);
+	if ((res = curl_easy_perform(curl_handle)) != CURLE_OK) {
+		debug2("Could not connect to: %s , reason: %s", url,
+		       curl_easy_strerror(res));
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
+
+	token = strtok(chunk.message, " ");
+	if (token == NULL) {
+		debug("%s: Could not receive the HTTP response status code from %s",
+		      plugin_type, url);
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+
+	token = strtok(NULL, " ");
+	if ((xstrcmp(token, "100") == 0)) {
+		(void)  strtok(NULL, " ");
+		token = strtok(NULL, " ");
+	} else if ((xstrcmp(token, "400") == 0)) {
+		debug("%s: HTTP status code 400: Bad Request", plugin_type);
+		rc = SLURM_ERROR;
+	} else if ((xstrcmp(token, "404") == 0)) {
+		debug("%s: HTTP status code 404: Unacceptable request",
+		      plugin_type);
+		rc = SLURM_ERROR;
+	} else if ((xstrcmp(token, "500") == 0)) {
+		debug("%s: HTTP status code 500: Internal Server Error",
+		      plugin_type);
+		rc = SLURM_ERROR;
+	} else if (xstrcmp(token, "204") != 0) {
+		debug("%s: HTTP status code %s received from %s", plugin_type,
+		      token, url);
+		debug3("HTTP Response:\n%s", chunk.message);
+		rc = SLURM_ERROR;
+	} else
+		debug("%s: Data written", plugin_type);
+
+cleanup:
+	xfree(chunk.message);
+	xfree(url);
+cleanup_easy_init:
+	curl_easy_cleanup(curl_handle);
+cleanup_global_init:
 	curl_global_cleanup();
 
-	if (rc == SLURM_ERROR) {
-		if (((error_cnt++) % 100) == 0) {
-			/* Periodically log errors */
-			info("%s: Unable to push data, some data may be lost."
-				"Error count: %d ",plugin_type, error_cnt);
-		}
-	}
+	if (rc == SLURM_ERROR && ((error_cnt++ % 100) == 0))
+		/* Periodically log errors */
+		info("%s: Unable to push data, some data may be lost. Error count: %d",
+		     plugin_type, error_cnt);
 
-	if (data!=NULL) {
+	if (data) {
 		strcpy(datastr,data);
 		datastrlen = strlen(data);
-	}else{
-		strcpy(datastr,"");
+	} else {
+		datastr[0] = '\0';
 		datastrlen = 0;
 	}
+
 	return rc;
 }
 
