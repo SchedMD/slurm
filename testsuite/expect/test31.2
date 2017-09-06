@@ -141,7 +141,7 @@ spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
 expect {
 	timeout {
 		send_user "\nFAILURE: slurm.conf was not copied\n"
-		set exit_code 1
+		exit 1
 	}
 	eof {
 		wait
@@ -169,9 +169,10 @@ expect {
 	}
 }
 
-if {$job_id == 0} {
+if {$exit_code} {
 	send_user "\nFAILURE: sbatch did not submit job\n"
-	set exit_code 1
+	clean_up
+	exit $exit_code
 }
 
 wait_for_job $job_id "RUNNING"
@@ -201,16 +202,9 @@ if {$match == 0} {
 
 cancel_job $job_id
 
-
-spawn $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
-expect {
-	timeout {
-		send_user "\nFAILURE: slurm.conf was not copied\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+if {$exit_code} {
+	clean_up
+	exit $exit_code;
 }
 
 exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
@@ -234,10 +228,12 @@ expect {
 	}
 }
 
-if {$job_id == 0} {
+if {$exit_code} {
 	send_user "\nFAILURE: sbatch did not submit job\n"
-	set exit_code 1
+	clean_up
+	exit $exit_code
 }
+
 
 # Wait a bit for the pending reason to be set
 sleep 10
@@ -264,6 +260,12 @@ if {$match == 0} {
 	send_user "Job $job_id should be Pending and have reason: "
 	send_user "launch failed requeued held\n"
 	set exit_code 1
+}
+
+if {$exit_code} {
+	cancel_job $job_id
+	clean_up
+	exit $exit_code
 }
 
 # Check that the node that the job ran on is in fact drained
