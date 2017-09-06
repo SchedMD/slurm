@@ -5260,7 +5260,7 @@ static void
 _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 {
 	bitoff_t i;
-	kill_tasks_msg_t *kill_tasks_msg = NULL;
+	signal_tasks_msg_t *signal_tasks_msg = NULL;
 	agent_arg_t *agent_args = NULL;
 
 	xassert(job_ptr);
@@ -5286,17 +5286,17 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 		agent_args->protocol_version = node_ptr->protocol_version;
 #endif
 	agent_args->hostlist	= hostlist_create(job_ptr->batch_host);
-	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
-	kill_tasks_msg->job_id      = job_ptr->job_id;
-	kill_tasks_msg->job_step_id = NO_VAL;
+	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
+	signal_tasks_msg->job_id      = job_ptr->job_id;
+	signal_tasks_msg->job_step_id = NO_VAL;
 
 	if (flags == KILL_FULL_JOB ||
 	    flags == KILL_JOB_BATCH ||
 	    flags == KILL_STEPS_ONLY)
-		kill_tasks_msg->flags = flags;
-	kill_tasks_msg->signal = signal;
+		signal_tasks_msg->flags = flags;
+	signal_tasks_msg->signal = signal;
 
-	agent_args->msg_args = kill_tasks_msg;
+	agent_args->msg_args = signal_tasks_msg;
 	agent_queue_request(agent_args);
 	return;
 }
@@ -14335,7 +14335,7 @@ static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags)
 	int i;
 #endif
 	agent_arg_t *agent_args = NULL;
-	kill_tasks_msg_t *signal_job_msg = NULL;
+	signal_tasks_msg_t *signal_job_msg = NULL;
 	static int notify_srun_static = -1;
 	int notify_srun = 0;
 
@@ -14378,7 +14378,7 @@ static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags)
 	agent_args->msg_type = REQUEST_SIGNAL_TASKS;
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create(NULL);
-	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
+	signal_job_msg = xmalloc(sizeof(signal_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;
 
 	/*

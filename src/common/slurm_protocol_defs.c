@@ -1334,7 +1334,7 @@ extern void slurm_free_reattach_tasks_response_msg(
 	}
 }
 
-extern void slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg)
+extern void slurm_free_signal_tasks_msg(signal_tasks_msg_t *msg)
 {
 	xfree(msg);
 }
@@ -4165,7 +4165,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
-		slurm_free_kill_tasks_msg(data);
+		slurm_free_signal_tasks_msg(data);
 		break;
 	case REQUEST_CHECKPOINT_TASKS:
 		slurm_free_checkpoint_tasks_msg(data);

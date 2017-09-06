@@ -276,9 +276,9 @@ static int _unpack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t **
 						   msg_ptr, Buf buffer,
 						   uint16_t protocol_version);
 
-static void _pack_cancel_tasks_msg(kill_tasks_msg_t * msg, Buf buffer,
+static void _pack_cancel_tasks_msg(signal_tasks_msg_t *msg, Buf buffer,
 				   uint16_t protocol_version);
-static int _unpack_cancel_tasks_msg(kill_tasks_msg_t ** msg_ptr, Buf buffer,
+static int _unpack_cancel_tasks_msg(signal_tasks_msg_t **msg_ptr, Buf buffer,
 				    uint16_t protocol_version);
 
 static void _pack_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg, Buf buffer,
@@ -1118,7 +1118,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
-		_pack_cancel_tasks_msg((kill_tasks_msg_t *) msg->data,
+		_pack_cancel_tasks_msg((signal_tasks_msg_t *) msg->data,
 				       buffer,
 				       msg->protocol_version);
 		break;
@@ -1817,7 +1817,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
-		rc = _unpack_cancel_tasks_msg((kill_tasks_msg_t **) &
+		rc = _unpack_cancel_tasks_msg((signal_tasks_msg_t **) &
 					      (msg->data), buffer,
 					      msg->protocol_version);
 		break;
@@ -10904,7 +10904,7 @@ unpack_error:
 }
 
 static void
-_pack_cancel_tasks_msg(kill_tasks_msg_t * msg, Buf buffer,
+_pack_cancel_tasks_msg(signal_tasks_msg_t *msg, Buf buffer,
 		       uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
@@ -10924,12 +10924,12 @@ _pack_cancel_tasks_msg(kill_tasks_msg_t * msg, Buf buffer,
 }
 
 static int
-_unpack_cancel_tasks_msg(kill_tasks_msg_t ** msg_ptr, Buf buffer,
+_unpack_cancel_tasks_msg(signal_tasks_msg_t **msg_ptr, Buf buffer,
 			 uint16_t protocol_version)
 {
-	kill_tasks_msg_t *msg;
+	signal_tasks_msg_t *msg;
 
-	msg = xmalloc(sizeof(kill_tasks_msg_t));
+	msg = xmalloc(sizeof(signal_tasks_msg_t));
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
@@ -10952,7 +10952,7 @@ _unpack_cancel_tasks_msg(kill_tasks_msg_t ** msg_ptr, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_kill_tasks_msg(msg);
+	slurm_free_signal_tasks_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

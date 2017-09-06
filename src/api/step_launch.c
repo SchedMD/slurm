@@ -881,7 +881,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 {
 	int node_id, j, num_tasks;
 	slurm_msg_t req;
-	kill_tasks_msg_t msg;
+	signal_tasks_msg_t msg;
 	hostlist_t hl;
 	char *name = NULL;
 	List ret_list = NULL;

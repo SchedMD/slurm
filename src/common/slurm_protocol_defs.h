@@ -659,12 +659,12 @@ typedef struct step_complete_msg {
 	jobacctinfo_t *jobacct;
 } step_complete_msg_t;
 
-typedef struct kill_tasks_msg {
+typedef struct signal_tasks_msg {
 	uint16_t flags;
 	uint32_t job_id;
 	uint32_t job_step_id;
 	uint16_t signal;
-} kill_tasks_msg_t;
+} signal_tasks_msg_t;
 
 typedef struct checkpoint_tasks_msg {
 	uint32_t job_id;
@@ -1362,7 +1362,7 @@ extern void slurm_free_launch_tasks_response_msg(
 extern void slurm_free_task_user_managed_io_stream_msg(
 		task_user_managed_io_msg_t *msg);
 extern void slurm_free_task_exit_msg(task_exit_msg_t * msg);
-extern void slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg);
+extern void slurm_free_signal_tasks_msg(signal_tasks_msg_t * msg);
 extern void slurm_free_reattach_tasks_request_msg(
 		reattach_tasks_request_msg_t * msg);
 extern void slurm_free_reattach_tasks_response_msg(

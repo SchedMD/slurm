@@ -85,7 +85,7 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 				     *allocation, uint32_t signal)
 {
 	slurm_msg_t msg;
-	kill_tasks_msg_t rpc;
+	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
 	char *name = nodelist_nth_host(allocation->node_list, 0);
 	if (!name) {
@@ -121,7 +121,7 @@ static int _signal_job_step(const job_step_info_t *step,
 			    const resource_allocation_response_msg_t *
 			    allocation, uint16_t signal)
 {
-	kill_tasks_msg_t rpc;
+	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
 
 	/* same remote procedure call for each node */
@@ -137,7 +137,7 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 					* allocation)
 {
 	slurm_msg_t msg;
-	kill_tasks_msg_t rpc;
+	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
 	int i;
 	char *name = nodelist_nth_host(allocation->node_list, 0);
@@ -181,7 +181,7 @@ static int _terminate_job_step(const job_step_info_t *step,
 			       const resource_allocation_response_msg_t *
 			       allocation)
 {
-	kill_tasks_msg_t rpc;
+	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
 
 	/*
@@ -211,7 +211,7 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 {
 	int rc = SLURM_SUCCESS;
 	resource_allocation_response_msg_t *alloc_info = NULL;
-	kill_tasks_msg_t rpc;
+	signal_tasks_msg_t rpc;
 
 	if (slurm_allocation_lookup(job_id, &alloc_info)) {
 		rc = slurm_get_errno();

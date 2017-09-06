@@ -394,17 +394,17 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 		char *node_name, slurm_addr_t node_addr)
 {
 	agent_arg_t *agent_args;
-	kill_tasks_msg_t *kill_tasks_msg;
+	signal_tasks_msg_t *signal_tasks_msg;
 
-	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
-	kill_tasks_msg->job_id		= job_id;
-	kill_tasks_msg->job_step_id	= step_id;
-	kill_tasks_msg->signal		= signal;
+	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
+	signal_tasks_msg->job_id		= job_id;
+	signal_tasks_msg->job_step_id	= step_id;
+	signal_tasks_msg->signal		= signal;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type		= REQUEST_SIGNAL_TASKS;
 	agent_args->retry		= 1;
-	agent_args->msg_args		= kill_tasks_msg;
+	agent_args->msg_args		= signal_tasks_msg;
 	agent_args->hostlist = hostlist_create(node_name);
 	agent_args->node_count		= 1;
 

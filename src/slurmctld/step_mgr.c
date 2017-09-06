@@ -649,7 +649,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 #ifndef HAVE_FRONT_END
 	int i;
 #endif
-	kill_tasks_msg_t *kill_tasks_msg;
+	signal_tasks_msg_t *signal_tasks_msg;
 	agent_arg_t *agent_args = NULL;
 
 	xassert(step_ptr);
@@ -657,10 +657,10 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 	agent_args->msg_type = msg_type;
 	agent_args->retry    = 1;
 	agent_args->hostlist = hostlist_create(NULL);
-	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
-	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
-	kill_tasks_msg->job_step_id = step_ptr->step_id;
-	kill_tasks_msg->signal      = signal;
+	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
+	signal_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
+	signal_tasks_msg->job_step_id = step_ptr->step_id;
+	signal_tasks_msg->signal      = signal;
 
 #ifdef HAVE_FRONT_END
 	xassert(step_ptr->job_ptr->batch_host);
@@ -685,13 +685,13 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 #endif
 
 	if (agent_args->node_count == 0) {
-		xfree(kill_tasks_msg);
+		xfree(signal_tasks_msg);
 		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		return;
 	}
 
-	agent_args->msg_args = kill_tasks_msg;
+	agent_args->msg_args = signal_tasks_msg;
 	agent_queue_request(agent_args);
 	return;
 }
@@ -707,7 +707,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 			       uint16_t signal, slurm_msg_type_t msg_type)
 {
-	kill_tasks_msg_t *kill_tasks_msg;
+	signal_tasks_msg_t *signal_tasks_msg;
 	agent_arg_t *agent_args = NULL;
 
 	xassert(step_ptr);
@@ -732,11 +732,11 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 	if (!agent_args->hostlist)
 		fatal("Invalid node_name: %s", node_name);
 #endif
-	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
-	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
-	kill_tasks_msg->job_step_id = step_ptr->step_id;
-	kill_tasks_msg->signal      = signal;
-	agent_args->msg_args = kill_tasks_msg;
+	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
+	signal_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
+	signal_tasks_msg->job_step_id = step_ptr->step_id;
+	signal_tasks_msg->signal      = signal;
+	agent_args->msg_args = signal_tasks_msg;
 	agent_queue_request(agent_args);
 	return;
 }

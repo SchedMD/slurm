@@ -3103,7 +3103,7 @@ static void
 _rpc_signal_tasks(slurm_msg_t *msg)
 {
 	int               rc = SLURM_SUCCESS;
-	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
+	signal_tasks_msg_t *req = (signal_tasks_msg_t *) msg->data;
 
 	/* security is handled when communicating with the stepd */
 	if (req->flags & KILL_FULL_JOB) {
@@ -3176,7 +3176,7 @@ done:
 static void
 _rpc_terminate_tasks(slurm_msg_t *msg)
 {
-	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
+	signal_tasks_msg_t *req = (signal_tasks_msg_t *) msg->data;
 	int               rc = SLURM_SUCCESS;
 	int               fd;
 	uid_t             req_uid, uid;
