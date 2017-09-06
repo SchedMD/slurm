@@ -1,11 +1,11 @@
 /*****************************************************************************\
- *  acct_gather_profile_influxdb.c - slurm accounting plugin for
- *                               influxdb profiling.
+ *  acct_gather_profile_influxdb.c - slurm accounting plugin for influxdb
+ *				     profiling.
  *****************************************************************************
  *  Author: Carlos Fenoy Garcia
  *  Copyright (C) 2016 F. Hoffmann - La Roche
  *
- *  Based on the HDF5 profiling plugin and Elasticsearch job completion plugin
+ *  Based on the HDF5 profiling plugin and Elasticsearch job completion plugin.
  *  
  *  Portions Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
@@ -110,16 +110,27 @@ typedef struct {
 	char * name;
 } table_t;
 
+/* Type for handling HTTP responses */
+struct http_response {
+	char *message;
+	size_t size;
+};
+
+union data_t{
+	uint64_t u;
+	double	 d;
+};
+
 static slurm_influxdb_conf_t influxdb_conf;
 static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
 static stepd_step_rec_t *g_job = NULL;
 
-static char *datastr;
-static int datastrlen;
+static char *datastr = NULL;
+static int datastrlen = 0;
 
 static table_t *tables = NULL;
-static size_t   tables_max_len = 0;
-static size_t   tables_cur_len = 0;
+static size_t tables_max_len = 0;
+static size_t tables_cur_len = 0;
 
 static void _free_tables(void)
 {
@@ -171,11 +182,7 @@ static bool _run_in_daemon(void)
 	return run;
 }
 
-/* Type for handling HTTP responses */
-struct http_response {
-	char *message;
-	size_t size;
-};
+
 
 /* Callback to handle the HTTP response */
 static size_t _write_callback(void *contents, size_t size, size_t nmemb,
@@ -312,7 +319,7 @@ cleanup_global_init:
 
 /*
  * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
+ * are called. Put global initialization here.
  */
 extern int init(void)
 {
@@ -334,7 +341,7 @@ extern int fini(void)
 }
 
 extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
-		int *full_options_cnt)
+					       int *full_options_cnt)
 {
 	s_p_options_t options[] = {
 		{"ProfileInfluxDBHost", S_P_STRING},
@@ -354,29 +361,26 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 	if (tbl) {
 		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
 		if (s_p_get_string(&tmp, "ProfileInfluxDBDefault", tbl)) {
-			influxdb_conf.def = 
+			influxdb_conf.def =
 				acct_gather_profile_from_string(tmp);
-			if (influxdb_conf.def == ACCT_GATHER_PROFILE_NOT_SET) {
-				fatal("ProfileInfluxDBDefault can not be "
-					"set to %s, please specify a valid "
-					"option", tmp);
-			}
+			if (influxdb_conf.def == ACCT_GATHER_PROFILE_NOT_SET)
+				fatal("ProfileInfluxDBDefault can not be set to %s, please specify a valid option",
+				      tmp);
 			xfree(tmp);
 		}
-		s_p_get_string(&influxdb_conf.database, 
-				"ProfileInfluxDBDatabase", tbl);
+		s_p_get_string(&influxdb_conf.database,
+			       "ProfileInfluxDBDatabase", tbl);
 		s_p_get_string(&influxdb_conf.rt_policy,
 			       "ProfileInfluxDBRTPolicy", tbl);
 	}
 
 	if (!influxdb_conf.host)
-		fatal("No ProfileInfluxDBHost in your acct_gather.conf file.  "
-				"This is required to use the %s plugin", 
-				plugin_type);
+		fatal("No ProfileInfluxDBHost in your acct_gather.conf file. This is required to use the %s plugin",
+		      plugin_type);
+
 	if (!influxdb_conf.database)
-		fatal("No ProfileInfluxDBDatabase in your acct_gather.conf "
-				"file.  This is required to use the %s plugin",
-			       	plugin_type);
+		fatal("No ProfileInfluxDBDatabase in your acct_gather.conf file. This is required to use the %s plugin",
+		      plugin_type);
 
 	if (!influxdb_conf.rt_policy)
 		fatal("No ProfileInfluxDBRTPolicy in your acct_gather.conf file. This is required to use the %s plugin",
@@ -403,7 +407,7 @@ extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
 			break;
 		default:
 			debug2("acct_gather_profile_p_get info_type %d invalid",
-					info_type);
+			       info_type);
 	}
 }
 
@@ -433,7 +437,6 @@ extern int acct_gather_profile_p_node_step_end(void)
 
 	xassert(_run_in_daemon());
 
-
 	return rc;
 }
 
@@ -460,6 +463,7 @@ extern int acct_gather_profile_p_task_end(pid_t taskpid)
 {
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
 		info("PROFILE: task_end");
+
 	DEF_TIMERS;
 	START_TIMER;
 	_send_data(NULL);
@@ -473,9 +477,9 @@ extern int acct_gather_profile_p_create_group(const char* name)
 	return 0;
 }
 
-extern int acct_gather_profile_p_create_dataset(
-		const char* name, int parent, 
-		acct_gather_profile_dataset_t *dataset)
+extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
+						acct_gather_profile_dataset_t
+						*dataset)
 {
 	table_t * table;
 	acct_gather_profile_dataset_t *dataset_loc = dataset;
@@ -483,31 +487,33 @@ extern int acct_gather_profile_p_create_dataset(
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return SLURM_ERROR;
 
-	debug("acct_gather_profile_p_create_dataset %s", name);
+	debug("%s %s", __func__, name);
 
-	// compute the size of the type needed to create the table 
+	/* compute the size of the type needed to create the table */
 	if (tables_cur_len == tables_max_len) {
 		if (tables_max_len == 0)
 			++tables_max_len;
 		tables_max_len *= 2;
 		tables = xrealloc(tables, tables_max_len * sizeof(table_t));
 	}
+
 	table = &(tables[tables_cur_len]);
 	table->name = xstrdup(name);
 	table->size = 0;
+
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
-		table->names = xrealloc(table->names, 
+		table->names = xrealloc(table->names,
 				(table->size+1) * sizeof(char *));
-		table->types = xrealloc(table->types, 
+		table->types = xrealloc(table->types,
 				(table->size+1) * sizeof(char *));
 		(table->names)[table->size] = xstrdup(dataset_loc->name);
 		switch (dataset_loc->type) {
 			case PROFILE_FIELD_UINT64:
-				table->types[table->size] = 
+				table->types[table->size] =
 					PROFILE_FIELD_UINT64;
 				break;
 			case PROFILE_FIELD_DOUBLE:
-				table->types[table->size] = 
+				table->types[table->size] =
 					PROFILE_FIELD_DOUBLE;
 				break;
 			case PROFILE_FIELD_NOT_SET:
@@ -520,39 +526,31 @@ extern int acct_gather_profile_p_create_dataset(
 	return tables_cur_len - 1;
 }
 
-union data_t{
-	uint64_t u;
-	double	 d;
-};
-
 extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 		time_t sample_time)
 {
-
-
-
 	table_t *table = &tables[table_id];
 
 	int i = 0;
 	char *str = NULL;
-	for(;i<table->size;i++){
+
+	for(; i < table->size; i++) {
 		switch (table->types[i]) {
 			case PROFILE_FIELD_UINT64:
-				xstrfmtcat(str,"%s,job=%d,step=%d,task=%s,"
+				xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
 						"host=%s value=%"PRIu64" "
-						"%"PRIu64"\n",
-						table->names[i],g_job->jobid,
-						g_job->stepid,table->name,
-						g_job->node_name,
+						"%"PRIu64"\n", table->names[i],
+						g_job->jobid, g_job->stepid,
+						table->name, g_job->node_name,
 						((union data_t*)data)[i].u,
 						sample_time);
 				break;
 			case PROFILE_FIELD_DOUBLE:
-				xstrfmtcat(str,"%s,job=%d,step=%d,task=%s,"
+				xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
 						"host=%s value=%.2f %"PRIu64""
-						"\n",table->names[i], 
-						g_job->jobid,g_job->stepid,
-						table->name,g_job->node_name,
+						"\n", table->names[i],
+						g_job->jobid, g_job->stepid,
+						table->name, g_job->node_name,
 						((union data_t*)data)[i].d,
 						sample_time);
 				break;
@@ -566,8 +564,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 	_send_data(str);
 	END_TIMER;
 	xfree(str);
-	debug("PROFILE: took %s",TIME_STR);
-	debug("PROFILE: data sent");
+	debug("PROFILE: took %s to send data", TIME_STR);
 
 	return SLURM_SUCCESS;
 }
@@ -590,7 +587,7 @@ extern void acct_gather_profile_p_conf_values(List *data)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ProfileInfluxDBDefault");
-	key_pair->value = 
+	key_pair->value =
 		xstrdup(acct_gather_profile_to_string(influxdb_conf.def));
 	list_append(*data, key_pair);
 
@@ -607,6 +604,7 @@ extern bool acct_gather_profile_p_is_active(uint32_t type)
 {
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return false;
-	return (type == ACCT_GATHER_PROFILE_NOT_SET)
-		|| (g_profile_running & type);
+
+	return (type == ACCT_GATHER_PROFILE_NOT_SET) ||
+		(g_profile_running & type);
 }
