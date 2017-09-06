@@ -186,6 +186,13 @@ static size_t _write_callback(void *contents, size_t size, size_t nmemb,
 
 	mem->message = xrealloc(mem->message, mem->size + realsize + 1);
 
+	if (mem->message == NULL) {
+		/* out of memory! */
+		error("%s: not enough memory (realloc returned NULL)",
+		       __func__);
+		return 0;
+	}
+
 	memcpy(&(mem->message[mem->size]), contents, realsize);
 	mem->size += realsize;
 	mem->message[mem->size] = 0;
