@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix --with-shared-libslurm option to work correctly.
  -- Make it so only daemons log errors on configuration option duplicates.
+ -- Fix for ConstrainDevices=yes to work correctly.
 
 * Changes in Slurm 17.11.0
 ==========================

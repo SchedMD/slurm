@@ -362,17 +362,17 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		itr = list_iterator_create(device_list);
 		while ((gres_device = list_next(itr))) {
 			if (gres_device->alloc) {
-				debug("Allowing access to device %s for job",
-				      gres_device->path);
+				debug("Allowing access to device %s(%s) for job",
+				      gres_device->major, gres_device->path);
 				xcgroup_set_param(&job_devices_cg,
 						  "devices.allow",
-						  gres_device->path);
+						  gres_device->major);
 			} else {
 				debug("Not allowing access to device %s for job",
 				       gres_device->path);
 				xcgroup_set_param(&job_devices_cg,
 						  "devices.deny",
-						  gres_device->path);
+						  gres_device->major);
 			}
 		}
 		list_iterator_destroy(itr);
@@ -425,17 +425,18 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 			itr = list_iterator_create(device_list);
 			while ((gres_device = list_next(itr))) {
 				if (gres_device->alloc) {
-					debug("Allowing access to device %s for step",
+					debug("Allowing access to device %s(%s) for step",
+					      gres_device->major,
 					      gres_device->path);
 					xcgroup_set_param(&step_devices_cg,
 							  "devices.allow",
-							  gres_device->path);
+							  gres_device->major);
 				} else {
 					debug("Not allowing access to device %s for step",
 					      gres_device->path);
 					xcgroup_set_param(&step_devices_cg,
 							  "devices.deny",
-							  gres_device->path);
+							  gres_device->major);
 				}
 			}
 			list_iterator_destroy(itr);
