@@ -1283,7 +1283,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (node_ptr->name == '\0')
+		if (!node_ptr->name)
 			continue;
 		if ((rc = clusteracct_storage_g_node_down(
 			    acct_db_conn,
@@ -2228,7 +2228,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		uint64_t cpu_count = 0, mem_count = 0;
-		if (node_ptr->name == '\0')
+		if (!node_ptr->name)
 			continue;
 
 		if (slurmctld_conf.fast_schedule) {
