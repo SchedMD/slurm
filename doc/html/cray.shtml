@@ -193,7 +193,12 @@ details.</p>
   listed in this file it can be used to set up your Cray system to run
   Slurm natively.
 </p>
-
+<p>
+  On larger systems, you may wish to set the PMI_MMAP_SYNC_WAIT_TIME
+  environment variable in your users' profiles to a larger value than
+  the default (180 seconds) to prevent PMI from falsely detecting job
+  launch failures.
+</p>
 <h2><a name="ha">High Availability</a></h2>
 <p>
 A backup controller can be setup in or outside the Cray. However, when the
