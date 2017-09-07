@@ -264,6 +264,8 @@ documents those changes that are of interest to users and administrators.
     on node 0.
  -- Check multiple partition limits when scheduling a job that were previously
     only checked on submit.
+ -- Cray: Avoid running application/step Node Health Check on the external
+    job step.
 
 * Changes in Slurm 17.02.7
 ==========================

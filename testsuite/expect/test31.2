@@ -1,0 +1,300 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that a job is held and reason is set to launch
+#          failed requeued held when the prolog fails
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id         31.2
+set exit_code       0
+set good_prolog     "test$test_id\_good.sh"
+set bad_prolog      "test$test_id\_bad.sh"
+set test_node       [get_idle_node_in_part [default_partition]]
+set job_id          0
+set test_script     "test$test_id\.sh"
+
+print_header $test_id
+
+if { [test_super_user] == 0 } {
+	send_user "WARNING: Test can only be run as SlurmUser\n"
+	exit $exit_code
+}
+
+proc update_conf { } {
+	global scontrol exit_code
+
+	spawn $scontrol reconfigure
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	# Wait for the reconfigure to complete (especially with valgrind)
+	sleep 5
+}
+
+proc clean_up { } {
+
+	global cwd config_dir exit_code bin_rm bin_cp good_prolog bad_prolog
+	global update_conf scontrol test_node test_script
+
+	exec $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
+	exec $bin_rm $test_script $good_prolog $bad_prolog $cwd/slurm.conf.orig
+	update_conf
+
+	spawn $scontrol update node=$test_node state=idle
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not respinding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc cancel_job { job } {
+
+	global scancel exit_code
+
+	spawn $scancel $job
+	expect {
+		timeout {
+			send_user "\nFAILURE: scancel is not responing\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+make_bash_script $good_prolog "
+exit 0
+"
+make_bash_script $bad_prolog "
+exit 1
+"
+make_bash_script $test_script "
+sleep 20
+"
+
+# Get the location of the slurm.conf file
+set got_config 0
+spawn $scontrol show config
+expect {
+	-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
+		set config_dir $expect_out(1,string)
+		set got_config 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$got_config == 0} {
+	send_user "\nFAILURE: Could not identify slurm.conf location\n"
+	exit 1
+}
+
+#
+# Copy slurm.conf file
+#
+set cwd [$bin_pwd]
+exec $bin_rm -fr $cwd/slurm.conf.orig
+spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
+expect {
+	timeout {
+		send_user "\nFAILURE: slurm.conf was not copied\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
+
+# Append Prolog config to the slurm.conf
+exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_dir/slurm.conf
+update_conf
+
+spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$exit_code} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	clean_up
+	exit $exit_code
+}
+
+wait_for_job $job_id "RUNNING"
+
+# Check that the job was submitted with no error
+set match 0
+spawn $squeue -h -j$job_id -o%t|%r
+expect {
+	-re "R.None" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match == 0} {
+	send_user "\nFAILURE: job $job_id is not in the correct state."
+	send_user "Job $job_id should be Running and have reason: None\n"
+	set exit_code 1
+}
+
+cancel_job $job_id
+
+if {$exit_code} {
+	clean_up
+	exit $exit_code;
+}
+
+exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
+
+# Append Prolog config to the slurm.conf
+exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_dir/slurm.conf
+update_conf
+
+spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$exit_code} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	clean_up
+	exit $exit_code
+}
+
+
+# Wait a bit for the pending reason to be set
+sleep 10
+
+# Check that the job is held due to the failed prolog
+set match 0
+spawn $squeue -h -j$job_id -o%t|%r
+expect {
+	-re "PD.launch failed requeued held" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match == 0} {
+	send_user "\nFAILURE: job $job_id is not in the correct state. "
+	send_user "Job $job_id should be Pending and have reason: "
+	send_user "launch failed requeued held\n"
+	set exit_code 1
+}
+
+if {$exit_code} {
+	cancel_job $job_id
+	clean_up
+	exit $exit_code
+}
+
+# Check that the node that the job ran on is in fact drained
+set match 0
+spawn $sinfo -h -o%T -n$test_node
+expect {
+	-re "drained" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not repsonding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match == 0} {
+	send_user "\nFAILURE: node $test_node was not drained when "
+	send_user "it should be\n"
+	set exit_code 1
+}
+
+cancel_job $job_id
+clean_up
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
