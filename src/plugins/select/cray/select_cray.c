@@ -1111,6 +1111,11 @@ static void *_step_fini(void *args)
 	if (IS_CLEANING_COMPLETE(jobinfo)) {
 		debug("%s: NHC previously run for step %u.%u",
 		      __func__, step_ptr->job_ptr->job_id, step_ptr->step_id);
+		unlock_slurmctld(job_read_lock);
+	} else if (step_ptr->step_id == SLURM_EXTERN_CONT) {
+		debug2("%s: Job %u external container complete, no NHC",
+		       __func__, step_ptr->job_ptr->job_id);
+		unlock_slurmctld(job_read_lock);
 	} else {
 		/* Run application NHC */
 		nhc_info.is_step = true;
