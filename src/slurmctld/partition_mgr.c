@@ -1643,7 +1643,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->deny_accounts != NULL) {
 		xfree(part_ptr->deny_accounts);
-		if (part_desc->deny_accounts == '\0')
+		if (part_desc->deny_accounts[0] == '\0')
 			xfree(part_desc->deny_accounts);
 		part_ptr->deny_accounts = part_desc->deny_accounts;
 		part_desc->deny_accounts = NULL;

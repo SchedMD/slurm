@@ -324,7 +324,7 @@ char *getenvp(char **env, const char *name)
 	size_t len = strlen(name);
 	char **ep;
 
-	if ((env == NULL) || (env[0] == '\0'))
+	if ((env == NULL) || (env[0] == NULL))
 		return (NULL);
 
 	ep = _find_name_in_env (env, name);

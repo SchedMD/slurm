@@ -3783,7 +3783,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 			reason = node_ptr->reason;
 		else
 			reason = "First Registration";
-		if (node_ptr->name == '\0' ||
+		if (!node_ptr->name ||
 		   (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr) &&
 		    !IS_NODE_DOWN(node_ptr))) {
 			/* At this point, the node appears to be up,
