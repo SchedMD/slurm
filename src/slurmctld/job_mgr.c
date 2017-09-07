@@ -6308,7 +6308,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto cleanup_fail;
 		}
-		if ((job_desc->contiguous != (uint16_t) NO_VAL) &&
+		if ((job_desc->contiguous != NO_VAL16) &&
 		    (job_desc->contiguous))
 			bit_fill_gaps(req_bitmap);
 		i = bit_set_count(req_bitmap);
@@ -6319,8 +6319,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		if (job_desc->max_nodes &&
 		    (job_desc->min_nodes > job_desc->max_nodes)) {
 #if 0
-			info("_job_create: max node count less than required "
-			     "hostlist size for user %u", job_desc->user_id);
+			info("%s: max node count less than required hostlist "
+			     "size for user %u", __func__, job_desc->user_id);
 			job_desc->max_nodes = job_desc->min_nodes;
 #else
 			error_code = ESLURM_INVALID_NODE_COUNT;
@@ -6333,7 +6333,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 #else
 	if (job_desc->max_nodes == 0) {
 #endif
-		info("_job_create: max_nodes == 0");
+		info("%s: max_nodes == 0", __func__);
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup_fail;
 	}
@@ -6353,8 +6353,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	*/
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce, &assoc_ptr, false)) {
-		info("_job_create: invalid account or partition for user %u, "
-		     "account '%s', and partition '%s'",
+		info("%s: invalid account or partition for user %u, "
+		     "account '%s', and partition '%s'", __func__,
 		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		goto cleanup_fail;
@@ -6371,9 +6371,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 					       accounting_enforce, &assoc_ptr,
 					       false);
 		if (assoc_ptr) {
-			info("_job_create: account '%s' has no association "
-			     "for user %u using default account '%s'",
-			     job_desc->account, job_desc->user_id,
+			info("%s: account '%s' has no association for user %u "
+			     "using default account '%s'",
+			     __func__, job_desc->account, job_desc->user_id,
 			     assoc_rec.acct);
 			xfree(job_desc->account);
 		}
@@ -6443,8 +6443,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	    (!acct_policy_validate(job_desc, part_ptr,
 				   assoc_ptr, qos_ptr, NULL,
 				   &acct_policy_limit_set, 0))) {
-		info("_job_create: exceeded association/QOS limit "
-		     "for user %u", job_desc->user_id);
+		info("%s: exceeded association/QOS limit for user %u",
+		     __func__, job_desc->user_id);
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup_fail;
 	}
@@ -6558,8 +6558,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	if (job_desc->max_nodes &&
 	    (job_desc->max_nodes < job_desc->min_nodes)) {
-		info("_job_create: Job's max_nodes(%u) < min_nodes(%u)",
-		     job_desc->max_nodes, job_desc->min_nodes);
+		info("%s: Job's max_nodes(%u) < min_nodes(%u)",
+		     __func__, job_desc->max_nodes, job_desc->min_nodes);
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup_fail;
 	}
