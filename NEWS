@@ -266,6 +266,7 @@ documents those changes that are of interest to users and administrators.
     only checked on submit.
  -- Cray: Avoid running application/step Node Health Check on the external
     job step.
+ -- Optimization enhancements for partition based job preemption.
 
 * Changes in Slurm 17.02.7
 ==========================
