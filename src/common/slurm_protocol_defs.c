@@ -2619,6 +2619,7 @@ extern char *node_state_string(uint32_t inx)
 
 	if (maint_flag) {
 		if ((base == NODE_STATE_ALLOCATED) ||
+		    (base == NODE_STATE_DOWN) ||
 		    (base == NODE_STATE_MIXED))
 			;
 		else if (no_resp_flag)
@@ -2769,7 +2770,9 @@ extern char *node_state_string_compact(uint32_t inx)
 	inx = (inx & NODE_STATE_BASE);
 
 	if (maint_flag) {
-		if ((inx == NODE_STATE_ALLOCATED) || (inx == NODE_STATE_MIXED))
+		if ((inx == NODE_STATE_ALLOCATED) ||
+		    (inx == NODE_STATE_DOWN) ||
+		    (inx == NODE_STATE_MIXED))
 			;
 		else if (no_resp_flag)
 			return "MAINT*";

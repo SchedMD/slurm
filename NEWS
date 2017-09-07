@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Modify output of "--mpi=list" to avoid duplicates for version numbers in
     mpi/pmix plugin names.
  -- Allow nodes to be rebooted while in a maintenance reservation.
+ -- Show nodes as down even when nodes are in a maintenance reservation.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
