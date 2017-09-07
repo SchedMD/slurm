@@ -5872,8 +5872,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 	     i < node_record_count; i++, node_ptr++) {
 		if (!bit_test(bitmap, i))
 			continue;
-		if (IS_NODE_MAINT(node_ptr) || /* already on maintenance */
-		    IS_NODE_FUTURE(node_ptr) || IS_NODE_DOWN(node_ptr) ||
+		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_DOWN(node_ptr) ||
 		    (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))) {
 			bit_clear(bitmap, i);
 			continue;

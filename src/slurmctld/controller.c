@@ -1591,14 +1591,11 @@ static void _queue_reboot_msg(void)
 	want_nodes_reboot = false;
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (!IS_NODE_MAINT(node_ptr) && !IS_NODE_REBOOT(node_ptr))
+		/* Allow nodes in maintenance reservations to reboot
+		 * (they previously could not).
+		 */
+		if (!IS_NODE_REBOOT(node_ptr))
 			continue;	/* No reboot needed */
-		if (!IS_NODE_REBOOT(node_ptr) &&
-		    is_node_in_maint_reservation(i)) {
-			/* node in current maintenance reservation */
-			want_nodes_reboot = true;
-			continue;
-		}
 		if (IS_NODE_COMPLETING(node_ptr)) {
 			want_nodes_reboot = true;
 			continue;
@@ -1635,7 +1632,12 @@ static void _queue_reboot_msg(void)
 				node_ptr->protocol_version;
 		hostlist_push_host(reboot_agent_args->hostlist, node_ptr->name);
 		reboot_agent_args->node_count++;
-		node_ptr->node_state &= ~NODE_STATE_MAINT;
+		/*
+		 * node_ptr->node_state &= ~NODE_STATE_MAINT;
+		 * The NODE_STATE_MAINT bit will just get set again as long
+		 * as the node remains in the maintenance reservation, so
+		 * don't clear it here because it won't do anything.
+		 */
 		node_ptr->node_state &=  NODE_STATE_FLAGS;
 		node_ptr->node_state |=  NODE_STATE_DOWN;
 		bit_clear(avail_node_bitmap, i);
