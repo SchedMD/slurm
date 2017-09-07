@@ -1,0 +1,32 @@
+sudo: required
+language: c
+dist: trusty
+addons:
+  mariadb: '10.1'
+  apt:
+    packages:
+    - cmake
+    - libmunge-dev
+    - liblua5.2-dev
+    - munge
+    - expect
+    - libhwloc-dev
+    - libnuma1
+    - libnuma-dev
+    - libpam-dev
+    - libhwloc-dev
+    - gdb
+    - valgrind
+    - libfreeipmi-dev
+    - man2html
+compiler:
+  - clang
+  - gcc
+cache: ccache
+before_script:
+  - export PATH=/usr/lib/ccache:$PATH
+  - sudo mount -t tmpfs -o size=1024m tmpfs /tmp
+script:
+  - ./configure --enable-multiple-slurmd --prefix=/tmp/slurm/ > /dev/null
+  - make -j > /dev/null
+  - make -j install > /dev/null
