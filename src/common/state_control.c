@@ -188,17 +188,17 @@ extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 	tok = strtok_r(node_cnt, ",", &ptrptr);
 	while (tok) {
 		xrealloc(resv_msg_ptr->node_cnt,
-			sizeof(uint32_t) * (node_inx + 2));
+			 sizeof(uint32_t) * (node_inx + 2));
 		*free_tres_nodecnt = 1;
 		resv_msg_ptr->node_cnt[node_inx] =
 			strtol(tok, &endptr, 10);
 		if ((endptr != NULL) &&
 		    ((endptr[0] == 'k') ||
-		    (endptr[0] == 'K'))) {
+		     (endptr[0] == 'K'))) {
 			resv_msg_ptr->node_cnt[node_inx] *= 1024;
 		} else if ((endptr != NULL) &&
 			   ((endptr[0] == 'm') ||
-			   (endptr[0] == 'M'))) {
+			    (endptr[0] == 'M'))) {
 			resv_msg_ptr->node_cnt[node_inx] *= 1024 * 1024;
 		} else if ((endptr == NULL) ||
 			   (endptr[0] != '\0') ||
