@@ -573,11 +573,13 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 		len = sep - key;
 	else
 		len = strlen(key);
-	name = xmalloc(len + 16);
-	strlcpy(name, key, len);
+	if (!len) {
+		key = "resv";
+		len = strlen(key);
+	}
 
-	xstrfmtcat(name, "_%d", top_suffix);
-	len++;
+	name = xstrdup_printf("%.*s_%d", len, key, top_suffix);
+
 	xfree(resv_ptr->name);
 	resv_ptr->name = name;
 }
