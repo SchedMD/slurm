@@ -943,10 +943,6 @@ extern void set_job_tres_alloc_str(struct job_record *job_ptr,
  * This function can be called multiple times. */
 extern void backup_slurmctld_restart(void);
 
-/* Return the time stamp in the current job state save file, 0 is returned on
- * error */
-extern time_t get_last_state_write_time(void);
-
 /* Complete a batch job requeue logic after all steps complete so that
  * subsequent jobs appear in a separate accounting record. */
 extern void batch_requeue_fini(struct job_record  *job_ptr);
