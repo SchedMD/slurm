@@ -3296,6 +3296,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 		xstrfmtcat(script_file, "%s/script", job_dir);
 		if (job_ptr->batch_flag == 0)
 			rc = _build_bb_script(job_ptr, script_file);
+	}
 
 	/* Run "job_process" function, validates user script */
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
