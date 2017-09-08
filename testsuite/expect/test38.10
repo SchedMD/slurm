@@ -35,8 +35,6 @@ set test_id     "38.10"
 print_header $test_id
 set prompt           "PROMPT: "
 
-set timeout 60
-
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
@@ -122,22 +120,19 @@ set timeout 3
 check $pack_job_id 1 3
 
 exec $scontrol update job=$pack_job_id Timelimit=2
-
 check $pack_job_id 2 3
 
 exec $scontrol update job=$pack_job_id+0 Timelimit=5
-
-check $pack_job_id 5 1
+check $pack_job_id+0 5 1
 
 exec $scontrol update job=$pack_job_id+1 Timelimit=6
-
-check $pack_job_id 6 1
+check $pack_job_id+1 6 1
 
 exec $scontrol update job=$pack_job_id+2 Timelimit=7
+check $pack_job_id+2 7 1
 
-check $pack_job_id 7 1
-check $pack_job_id 6 1
-check $pack_job_id 5 1
+check $pack_job_id+1 6 1
+check $pack_job_id+0 5 1
 check $pack_job_id 2 0
 
 send_user "\nSUCCESS\n"

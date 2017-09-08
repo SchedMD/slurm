@@ -270,6 +270,14 @@ scontrol_get_job_state(uint32_t job_id)
 	return (uint16_t) NO_VAL;
 }
 
+static bool _pack_id_match(job_info_t *job_ptr, uint32_t pack_job_offset)
+{
+	if ((pack_job_offset == NO_VAL) ||
+	    (pack_job_offset == job_ptr->pack_job_offset))
+		return true;
+	return false;
+}
+
 static bool _task_id_in_job(job_info_t *job_ptr, uint32_t array_id)
 {
 	bitstr_t *array_bitmap;
@@ -294,12 +302,11 @@ static bool _task_id_in_job(job_info_t *job_ptr, uint32_t array_id)
  * scontrol_print_job - print the specified job's information
  * IN job_id - job's id or NULL to print information about all jobs
  */
-extern void
-scontrol_print_job (char * job_id_str)
+extern void scontrol_print_job(char * job_id_str)
 {
 	int error_code = SLURM_SUCCESS, i, print_cnt = 0;
 	uint32_t job_id = 0;
-	uint32_t array_id = NO_VAL;
+	uint32_t array_id = NO_VAL, pack_job_offset = NO_VAL;
 	job_info_msg_t * job_buffer_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	char *end_ptr = NULL;
@@ -310,7 +317,8 @@ scontrol_print_job (char * job_id_str)
 		 * Check that the input is a valid job id (i.e. 123 or 123_456).
 		 */
 		while (*tmp_job_ptr) {
-			if (!isdigit(*tmp_job_ptr) && (*tmp_job_ptr != '_')) {
+			if (!isdigit(*tmp_job_ptr) &&
+			    (*tmp_job_ptr != '_') && (*tmp_job_ptr != '+')) {
 				exit_code = 1;
 				slurm_seterrno(ESLURM_INVALID_JOB_ID);
 				if (quiet_flag != 1)
@@ -321,7 +329,9 @@ scontrol_print_job (char * job_id_str)
 		}
 		job_id = (uint32_t) strtol (job_id_str, &end_ptr, 10);
 		if (end_ptr[0] == '_')
-			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
+			array_id = strtol(end_ptr + 1, &end_ptr, 10);
+		if (end_ptr[0] == '+')
+			pack_job_offset = strtol(end_ptr + 1, &end_ptr, 10);
 	}
 
 	error_code = scontrol_load_job(&job_buffer_ptr, job_id);
@@ -343,6 +353,8 @@ scontrol_print_job (char * job_id_str)
 	     i < job_buffer_ptr->record_count; i++, job_ptr++) {
 		char *save_array_str = NULL;
 		uint32_t save_task_id = 0;
+		if (!_pack_id_match(job_ptr, pack_job_offset))
+			continue;
 		if (!_task_id_in_job(job_ptr, array_id))
 			continue;
 		if ((array_id != NO_VAL) && job_ptr->array_task_str) {
@@ -363,11 +375,14 @@ scontrol_print_job (char * job_id_str)
 		if (job_id_str) {
 			exit_code = 1;
 			if (quiet_flag != 1) {
-				if (array_id == (uint16_t) NO_VAL) {
-					printf("Job %u not found\n", job_id);
-				} else {
+				if (array_id != NO_VAL) {
 					printf("Job %u_%u not found\n",
 					       job_id, array_id);
+				} else if (pack_job_offset != NO_VAL) {
+					printf("Job %u+%u not found\n",
+					       job_id, pack_job_offset);
+				} else {
+					printf("Job %u not found\n", job_id);
 				}
 			}
 		} else if (quiet_flag != 1)
@@ -397,8 +412,8 @@ scontrol_print_step (char *job_step_id_str)
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
 		if (next_str[0] == '_')
-			array_id = (uint16_t) strtol(next_str+1, &next_str, 10);
-		if (next_str[0] == '.')
+			array_id = (uint32_t) strtol(next_str+1, &next_str, 10);
+		else if (next_str[0] == '.')
 			step_id = (uint32_t) strtol (next_str+1, NULL, 10);
 	}
 
@@ -411,7 +426,7 @@ scontrol_print_step (char *job_step_id_str)
 	    (last_array_id == array_id) && (last_step_id == step_id)) {
 		if (last_show_flags != show_flags)
 			old_job_step_info_ptr->last_update = (time_t) 0;
-		error_code = slurm_get_job_steps (
+		error_code = slurm_get_job_steps(
 			old_job_step_info_ptr->last_update,
 			job_id, step_id, &job_step_info_ptr,
 			show_flags);
@@ -422,7 +437,7 @@ scontrol_print_step (char *job_step_id_str)
 			job_step_info_ptr = old_job_step_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
-				printf ("slurm_get_job_steps no change in data\n");
+				printf("slurm_get_job_steps no change in data\n");
 		}
 	} else {
 		if (old_job_step_info_ptr) {
