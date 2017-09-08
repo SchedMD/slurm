@@ -827,3 +827,4 @@ test38.6   Test of SPANK plugin with heterogeneous jobs
 test38.7   Test of MPI with heterogeneous jobs.
 test38.8   Test of sacct functionality for heterogeneous jobs.
 test38.9   Validate srun --pack-group option.
+test38.10  Test of scontrol update job for heterogeneous jobs.

@@ -1,0 +1,144 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of scontrol update job for heterogeneous jobs.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "38.10"
+
+print_header $test_id
+set prompt           "PROMPT: "
+
+set timeout 60
+
+if {[test_front_end]} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit $exit_code
+} elseif {[test_serial]} {
+	set task_num 1
+} else {
+	set task_num 2
+}
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes < 3} {
+	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
+	exit $exit_code
+}
+
+proc end_it { exit_code } {
+	global pack_job_id scancel
+	if {$pack_job_id > 0} {
+		exec $scancel $pack_job_id
+	}
+	exit $exit_code
+}
+
+proc check { id tl matches } {
+	global scontrol
+
+	set count 0
+
+	spawn $scontrol show job=$id
+	expect {
+		-re "TimeLimit=00:0$tl:00" {
+			incr count
+			exp_continue
+		}
+		timeout {
+			log_error "scontrol not responding\n"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$count != $matches} {
+		log_error "scontrol failure ($count != 3)\n"
+		end_it 1
+	}
+}
+
+set pack_job_id 0
+set timeout $max_job_delay
+spawn $salloc -t1 --exclusive -N1 : --exclusive -N1 : --exclusive -N1 $bin_bash
+expect {
+	-re "job ($number) has been allocated resources" {
+		set pack_job_id $expect_out(1,string)
+		send "export PS1=\"$prompt\"\r"
+		exp_continue
+	}
+	-re "\"$prompt" {
+		# skip this, just echo of setting prompt"
+		exp_continue
+	}
+	-re "$prompt" {
+		#send_user "Job initiated\n"
+	}
+	timeout {
+		log_error "salloc : allocation not granted in $timeout seconds\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$pack_job_id == 0} {
+	log_error "salloc failure\n"
+	end_it 1
+}
+
+expect *
+
+set timeout 3
+
+check $pack_job_id 1 3
+
+exec $scontrol update job=$pack_job_id Timelimit=2
+
+check $pack_job_id 2 3
+
+exec $scontrol update job=$pack_job_id+0 Timelimit=5
+
+check $pack_job_id 5 1
+
+exec $scontrol update job=$pack_job_id+1 Timelimit=6
+
+check $pack_job_id 6 1
+
+exec $scontrol update job=$pack_job_id+2 Timelimit=7
+
+check $pack_job_id 7 1
+check $pack_job_id 6 1
+check $pack_job_id 5 1
+check $pack_job_id 2 0
+
+send_user "\nSUCCESS\n"
+end_it 0
