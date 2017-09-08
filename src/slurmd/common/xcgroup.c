@@ -554,57 +554,6 @@ int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 	return fstatus;
 }
 
-int xcgroup_set_params(xcgroup_t* cg, char* parameters)
-{
-	int fstatus = XCGROUP_ERROR;
-	char file_path[PATH_MAX];
-	char* cpath = cg->path;
-	char* params;
-	char* value;
-	char* p;
-	char* next;
-
-	params = (char*) xstrdup(parameters);
-
-	p = params;
-	while (p != NULL && *p != '\0') {
-		next = xstrchr(p, ' ');
-		if (next) {
-			*next='\0';
-			next++;
-			while (*next == ' ')
-				next++;
-		}
-		value = xstrchr(p, '=');
-		if (value != NULL) {
-			*value='\0';
-			value++;
-			if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, p)
-			     >= PATH_MAX) {
-				debug2("unable to build filepath for '%s' and"
-				       " parameter '%s' : %m", cpath, p);
-				goto next_loop;
-			}
-			fstatus = _file_write_content(file_path, value,
-						      strlen(value));
-			if (fstatus != XCGROUP_SUCCESS)
-				debug2("%s: unable to set parameter '%s' to "
-					"'%s' for '%s'", __func__, p, value,
-					cpath);
-			else
-				debug3("%s: parameter '%s' set to '%s' for '%s'",
-					__func__, p, value, cpath);
-		} else
-			debug2("%s: bad parameters format for entry '%s'",
-				__func__, p);
-	next_loop:
-		p = next;
-	}
-
-	xfree(params);
-	return fstatus;
-}
-
 int xcgroup_set_param(xcgroup_t* cg, char* param, char* content)
 {
 	int fstatus = XCGROUP_ERROR;

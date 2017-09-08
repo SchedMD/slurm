@@ -217,21 +217,6 @@ int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids);
 int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids);
 
 /*
- * set cgroup parameters using string of the form :
- * parameteres="param=value[ param=value]*"
- *
- * param must correspond to a file of the cgroup that
- * will be written with the value content
- *
- * i.e. xcgroup_set_params(&cg,"memory.swappiness=10");
- *
- * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
- */
-int xcgroup_set_params(xcgroup_t* cg, char* parameters);
-
-/*
  * set a cgroup parameter
  *
  * param must correspond to a file of the cgroup that
