@@ -248,13 +248,13 @@ read_proc(void)
 			hertz = 100;	/* default on many systems */
 		} 
 	} 
-	proc_stat_size = BUF_SIZE;
-	proc_stat = (char *) xmalloc(proc_stat_size + 1);
 	proc_fs = opendir("/proc");
 	if (proc_fs == NULL) {
 		error ("read_proc: opendir unable to open /proc %m");
 		return errno;
 	}
+	proc_stat_size = BUF_SIZE;
+	proc_stat = xmalloc(proc_stat_size + 1);
 	iteration++;
 
 	/* Read the entries */
@@ -268,7 +268,7 @@ read_proc(void)
 			error ("read_proc: process ID number too long");
 			continue;
 		} 
-		sprintf (proc_name, "/proc/%s/stat", proc_ent->d_name);
+		sprintf(proc_name, "/proc/%10.s/stat", proc_ent->d_name);
 		proc_fd = open (proc_name, O_RDONLY, 0);
 		if (proc_fd == -1) 
 			continue;  /* process is now gone */

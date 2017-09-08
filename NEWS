@@ -18,7 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray: Avoid running application/step Node Health Check on the external
     job step.
  -- Optimization enhancements for partition based job preemption.
- -- Address some build warnings from GCC 7.1.
+ -- Address some build warnings from GCC 7.1, and one possible memory leak if
+    /proc is inaccessible.
 
 * Changes in Slurm 17.02.7
 ==========================
