@@ -1670,3 +1670,68 @@ extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name)
 
 	return false;
 }
+
+/* Return true if pack job separator in the script */
+static bool _pack_check(char *tok)
+{
+	if (strncmp(tok+1, "SLURM",  5) &&
+	    strncmp(tok+1, "SBATCH", 6))
+		return false;
+	if (!strstr(tok+6, "packjob"))
+		return false;
+	return true;
+}
+
+/*
+ * Convert a pack job batch script into a script containing only the portions
+ * relevant to a specific pack job component.
+ *
+ * script IN - Whole job batch script
+ * pack_job_offset IN - Zero origin pack job component ID
+ * RET script for that job component, call xfree() to release memory
+ */
+extern char *bb_build_pack_script(char *script, uint32_t pack_job_offset)
+{
+	char *result = NULL, *tmp = NULL;
+	char *tok, *save_ptr = NULL;
+	bool fini = false;
+	int cur_offset = 0;
+
+	tmp = xstrdup(script);
+	tok = strtok_r(tmp, "\n", &save_ptr);
+	while (tok) {
+		if (!result) {
+			xstrfmtcat(result, "%s\n", tok);
+		} else if (tok[0] != '#') {
+			fini = true;
+		} else if (_pack_check(tok)) {
+			cur_offset++;
+			if (cur_offset > pack_job_offset)
+				fini = true;
+		} else if (cur_offset == pack_job_offset) {
+			xstrfmtcat(result, "%s\n", tok);
+		}
+		if (fini)
+			break;
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+
+	if (pack_job_offset == 0) {
+		while (tok) {
+			char *sep = "";
+			if ((tok[0] == '#') &&
+			    (((tok[1] == 'B') && (tok[2] == 'B')) ||
+			     ((tok[1] == 'D') && (tok[2] == 'W')))) {
+				sep = "#EXCLUDED ";
+				tok++;
+			}
+			xstrfmtcat(result, "%s%s\n", sep, tok);
+			tok = strtok_r(NULL, "\n", &save_ptr);
+		}
+	} else if (result) {
+		xstrcat(result, "exit 0\n");
+	}
+	xfree(tmp);
+
+	return result;
+}

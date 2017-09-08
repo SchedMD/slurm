@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow nodes to be rebooted while in a maintenance reservation.
  -- Show nodes as down even when nodes are in a maintenance reservation.
  -- Harden the slurmctld HA stack to mitigate certain split-brain issues.
+ -- Work for heterogeneous job support (complete solution in v17.11):
+    * Add burst buffer support.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

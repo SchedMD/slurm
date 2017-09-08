@@ -365,4 +365,14 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name);
 
+/*
+ * Convert a pack job batch script into a script containing only the portions
+ * relevant to a specific pack job component.
+ *
+ * script IN - Whole job batch script
+ * pack_job_offset IN - Zero origin pack job component ID
+ * RET script for that job component, call xfree() to release memory
+ */
+extern char *bb_build_pack_script(char *script, uint32_t pack_job_offset);
+
 #endif	/* __BURST_BUFFER_COMMON_H__ */

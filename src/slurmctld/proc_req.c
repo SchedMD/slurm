@@ -3867,11 +3867,12 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	ListIterator iter;
 	int error_code = SLURM_SUCCESS, alloc_only = 0;
 	DEF_TIMERS;
-	uint32_t pack_job_id = 0, pack_job_offset = 0;;
+	uint32_t pack_job_id = 0, pack_job_offset = 0;
 	struct job_record *job_ptr = NULL, *first_job_ptr = NULL;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
 	job_desc_msg_t *job_desc_msg;
+	char *script = NULL;
 	/* Locks: Read config, read job, read node, read partition */
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
@@ -3962,6 +3963,8 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	START_TIMER;	/* Restart after we have locks */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+		if (!script)
+			script = xstrdup(job_desc_msg->script);
 		if (pack_job_offset && job_desc_msg->script) {
 			info("%s: Pack job %u offset %u has script, being ignord",
 			     __func__, pack_job_id, pack_job_offset);
@@ -3972,6 +3975,10 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			/* Email notifications disable except for pack leader */
 			job_desc_msg->mail_type = 0;
 			xfree(job_desc_msg->mail_user);
+		}
+		if (!job_desc_msg->burst_buffer) {
+			job_desc_msg->script =
+				bb_g_build_pack_script(script, pack_job_offset);
 		}
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate, false,
@@ -4007,6 +4014,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			break;
 	}
 	list_iterator_destroy(iter);
+	xfree(script);
 
 	if ((pack_job_id == 0) && !reject_job) {
 		info("%s: No error, but no pack_job_id", __func__);

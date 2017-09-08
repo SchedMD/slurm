@@ -5,6 +5,7 @@
 <ul>
 <li><a href="#overview">Overview</a></li>
 <li><a href="#submitting">Submitting Jobs</a></li>
+<li><a href="#burst_buffer">Burst Buffers</a></li>
 <li><a href="#managing">Managing Jobs</a></li>
 <li><a href="#job_steps">Launching Applications (Job Steps)</a></li>
 <li><a href="#env_var">Environment Variables</a></li>
@@ -104,6 +105,11 @@ A list of propagated options follows.</p>
 <li>--workdir</li>
 </ul>
 
+<p>Some options should be specified only in the first job component.
+For example, specifyihg a batch job output file in the second job component's
+options will result in the first job component (where the batch script executes)
+using the default output file name.</p>
+
 <p>Environment variables used to specify default options for the job submit
 command will be applied to every component of the heterogeneous job
 (e.g. <i>SBATCH_ACCOUNT</i>).</p>
@@ -152,6 +158,58 @@ The heterogeneous job as a whole is also tested, but in a more limited
 fashion with respect to quality of service (QOS) limits.
 Each component of a heterogeneous job counts as a "job" with respect to
 resource limits.</p>
+
+<h2><a name="burst_buffer">Burst Buffers</a></h2>
+
+<p>A burst buffer can either be persistent or linked to a specific job ID
+(at least the Cray implementation).
+Since a heterogeneous job consists of multiple job IDs, a job-specific burst
+buffer will be associated with only one heterogeneous job component.
+Only a persistent burst buffer can be accessed by all components of a
+heterogeneous job.
+A sample batch script demonstrating this for a Cray system is appended.</p>
+
+<pre>
+#!/bin/bash
+#SBATCH --nodes=1 --constraint=haswell
+#BB create_persistent name=alpha capacity=10 access=striped type=scratch
+#DW persistentdw name=alpha
+#SBATCH packjob
+#SBATCH --nodes=16 --constraint=knl
+#DW persistentdw name=alpha
+...
+</pre>
+
+<p><b>NOTE:</b> Cray's DataWarp interface directly reads the job script, but
+has no knowledge of "Slurm's "packjob" directive, so Slurm internally rebuilds
+the script for each job component so that only that job components burst buffer
+directives are included in that script. The batch script first component of the
+job will be modified in order to replace the "#DW" directives of other
+job components with "#EXCLUDED DW" to prevent their interpretation by Cray
+infrastructure. Since the batch script will only be executed by the first job
+component, the subsequent job components will not include commands from the
+original script. An example is shown below:</p>
+
+<pre>
+<b>Rebuilt script for first job component</b>
+
+#!/bin/bash
+#SBATCH --nodes=1 --constraint=haswell
+#BB create_persistent name=alpha capacity=10 access=striped type=scratch
+#DW persistentdw name=alpha
+#SBATCH packjob
+#SBATCH --nodes=16 --constraint=knl
+#EXCLUDED DW persistentdw name=alpha
+...
+
+
+<b>Rebuilt script for second job component</b>
+
+#!/bin/bash
+#SBATCH --nodes=16 --constraint=knl
+#DW persistentdw name=alpha
+exit 0
+</pre>
 
 <h2><a name="managing">Managing Jobs</a></h2>
 
@@ -579,6 +637,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 September 2017</p>
+<p style="text-align:center;">Last modified 8 September 2017</p>
 
 <!--#include virtual="footer.txt"-->

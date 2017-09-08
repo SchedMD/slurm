@@ -114,6 +114,16 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg);
 
 /*
+ * Convert a pack job batch script into a script containing only the portions
+ * relevant to a specific pack job component.
+ *
+ * script IN - Whole job batch script
+ * pack_job_offset IN - Zero origin pack job component ID
+ * RET script for that job component, call xfree() to release memory
+ */
+extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset);
+
+/*
  * Fill in the tres_cnt (in MB) based off the job record
  * NOTE: Based upon job-specific burst buffers, excludes persistent buffers
  * IN job_ptr - job record

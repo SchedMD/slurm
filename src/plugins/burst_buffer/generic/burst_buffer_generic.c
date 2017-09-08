@@ -285,3 +285,16 @@ extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
 {
 	return NULL;
 }
+
+/*
+ * Convert a pack job batch script into a script containing only the portions
+ * relevant to a specific pack job component.
+ *
+ * script IN - Whole job batch script
+ * pack_job_offset IN - Zero origin pack job component ID
+ * RET script for that job component, call xfree() to release memory
+ */
+extern char *bb_p_build_pack_script(char *script, uint32_t pack_job_offset)
+{
+	return bb_build_pack_script(script, pack_job_offset);
+}

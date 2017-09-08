@@ -66,6 +66,8 @@ typedef struct slurm_bb_ops {
 					 uid_t submit_uid);
 	int		(*job_validate2)(struct job_record *job_ptr,
 					 char **err_msg);
+	char *		(*build_pack_script)(char *script,
+					     uint32_t pack_job_offset);
 	void		(*job_set_tres_cnt) (struct job_record *job_ptr,
 					     uint64_t *tres_cnt, bool locked);
 	time_t		(*job_get_est_start) (struct job_record *job_ptr);
@@ -91,6 +93,7 @@ static const char *syms[] = {
 	"bb_p_reconfig",
 	"bb_p_job_validate",
 	"bb_p_job_validate2",
+	"bb_p_build_pack_script",
 	"bb_p_job_set_tres_cnt",
 	"bb_p_job_get_est_start",
 	"bb_p_job_try_stage_in",
@@ -369,6 +372,41 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg)
 	END_TIMER2(__func__);
 
 	return rc;
+}
+
+/*
+ * Convert a pack job batch script into a script containing only the portions
+ * relevant to a specific pack job component.
+ *
+ * script IN - Whole job batch script
+ * pack_job_offset IN - Zero origin pack job component ID
+ * RET script for that job component, call xfree() to release memory
+ */
+extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
+{
+	DEF_TIMERS;
+	char *result = NULL;
+	int i;
+
+	START_TIMER;
+	(void) bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		if (i > 0) {
+			/*
+			 * This should not be a problem in practice.
+			 * All plugins call a single function in common.
+			 */
+			debug("%s: Only one burst buffer plugin currently supported",
+			      __func__);
+			break;
+		}
+		result = (*(ops[i].build_pack_script))(script, pack_job_offset);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return result;
 }
 
 /*

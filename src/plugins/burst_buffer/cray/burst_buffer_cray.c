@@ -2625,7 +2625,10 @@ static int _xlate_batch(struct job_descriptor *job_desc)
 		} else {
 			if (is_cont) {
 				if (line_type != prev_type) {
-					/* Mixing "#DW" with "#BB", error */
+					/*
+					 * Mixing "#DW" with "#BB" on same
+					 * (continued) line, error
+					 */
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 					break;
 				}
@@ -3293,7 +3296,6 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 		xstrfmtcat(script_file, "%s/script", job_dir);
 		if (job_ptr->batch_flag == 0)
 			rc = _build_bb_script(job_ptr, script_file);
-	}
 
 	/* Run "job_process" function, validates user script */
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
@@ -5285,4 +5287,17 @@ extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
 		xstrfmtcat(result, "%d=%"PRIu64, bb_state.tres_id, total);
 
 	return result;
+}
+
+/*
+ * Convert a pack job batch script into a script containing only the portions
+ * relevant to a specific pack job component.
+ *
+ * script IN - Whole job batch script
+ * pack_job_offset IN - Zero origin pack job component ID
+ * RET script for that job component, call xfree() to release memory
+ */
+extern char *bb_p_build_pack_script(char *script, uint32_t pack_job_offset)
+{
+	return bb_build_pack_script(script, pack_job_offset);
 }
