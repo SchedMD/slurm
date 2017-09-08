@@ -55,26 +55,19 @@
 #endif
 
 typedef struct xcgroup_ns {
-
 	char* mnt_point;  /* mount point to use for the associated cgroup */
 	char* mnt_args;   /* mount args to use in addition */
 
 	char* subsystems; /* list of comma separated subsystems to provide */
-
-	char* notify_prog;/* prog to use with notify on release action */
-
 } xcgroup_ns_t;
 
 typedef struct xcgroup {
-
 	xcgroup_ns_t* ns; /* xcgroup namespace of this xcgroup */
 	char*    name;    /* name of the xcgroup relative to the ns */
 	char*    path;    /* absolute path of the xcgroup in the ns */
 	uid_t    uid;     /* uid of the owner */
 	gid_t    gid;     /* gid of the owner */
 	int      fd;      /* used for locking */
-	uint32_t notify;  /* toggle notify_on_release flag (default=1) */
-
 } xcgroup_t;
 
 /*
