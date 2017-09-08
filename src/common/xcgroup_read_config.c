@@ -76,7 +76,6 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	if (slurm_cgroup_conf) {
 		slurm_cgroup_conf->cgroup_automount = false ;
 		xfree(slurm_cgroup_conf->cgroup_mountpoint);
-		xfree(slurm_cgroup_conf->cgroup_release_agent);
 		xfree(slurm_cgroup_conf->cgroup_prepend);
 		slurm_cgroup_conf->constrain_cores = false ;
 		slurm_cgroup_conf->task_affinity = false ;
@@ -157,7 +156,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"AllowedDevicesFile", S_P_STRING},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
-	char *conf_path = NULL;
+	char *conf_path = NULL, *tmp_str;
 	struct stat buf;
 
 	/* Set initial values */
@@ -190,11 +189,10 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 			slurm_cgroup_conf->cgroup_mountpoint =
 				xstrdup(DEFAULT_CGROUP_BASEDIR);
 
-		s_p_get_string(&slurm_cgroup_conf->cgroup_release_agent,
-			       "CgroupReleaseAgentDir", tbl);
-		if (! slurm_cgroup_conf->cgroup_release_agent)
-			slurm_cgroup_conf->cgroup_release_agent =
-				xstrdup("/etc/slurm/cgroup");
+		if (s_p_get_string(&tmp_str, "CgroupReleaseAgentDir", tbl)) {
+			xfree(tmp_str);
+			debug("Ignoring obsolete CgroupReleaseAgentDir option.");
+		}
 
 		/* cgroup prepend directory */
 #ifndef MULTIPLE_SLURMD
