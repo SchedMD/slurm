@@ -60,6 +60,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/heartbeat.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
@@ -160,19 +161,19 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 			/* primary no longer respond */
 			break;
 		} else {
-			time_t use_time, last_write;
+			time_t use_time, last_heartbeat;
 
-			last_write = get_last_state_write_time();
-			debug("%s: last_state_write_time %ld", __func__,
-			      last_write);
+			last_heartbeat = get_last_heartbeat();
+			debug("%s: last_heartbeat %ld", __func__,
+			      last_heartbeat);
 
-			if (last_write > last_controller_response) {
+			if (last_heartbeat > last_controller_response) {
 				error("Last message to the controller was at %ld,"
-				      " but the last state update was written at %ld,"
+				      " but the last heartbeat was written at %ld,"
 				      " trusting the filesystem instead of the network"
 				      " and not asserting control at this time.",
-				      last_controller_response, last_write);
-				use_time = last_write;
+				      last_controller_response, last_heartbeat);
+				use_time = last_heartbeat;
 			} else
 				use_time = last_controller_response;
 

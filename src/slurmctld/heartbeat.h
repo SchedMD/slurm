@@ -37,10 +37,18 @@
 #ifndef _SLURM_HEARTBEAT_H
 #define _SLURM_HEARTBEAT_H
 
+#include <time.h>	/* for time_t */
+
 /* launch heartbeat thread */
 extern void heartbeat_start(void);
 
 /* stop heartbeat thread */
 extern void heartbeat_stop(void);
+
+/*
+ * Returns the last timestamp from the heartbeat file,
+ * or zero on error.
+ */
+extern time_t get_last_heartbeat();
 
 #endif

@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include <pthread.h>
+#include <time.h>
 
 #include "src/common/fd.h"
 #include "src/common/xstring.h"
@@ -165,4 +166,40 @@ void heartbeat_stop(void)
 		slurm_cond_signal(&heartbeat_cond);
 	}
 	slurm_mutex_unlock(&heartbeat_mutex);
+}
+
+#define OPEN_RETRIES 3
+
+time_t get_last_heartbeat(void)
+{
+	char *file;
+	int fd, i;
+	uint64_t value;
+
+	file = xstrdup_printf("%s/heartbeat",
+			      slurmctld_conf.state_save_location);
+
+	/*
+	 * Retry the open() in case the primary is rearranging things
+	 * at the moment. Once opened, our handle should persist during
+	 * the shuffle, as the contents are left intact.
+	 */
+	for (i = 0; i < OPEN_RETRIES; i++) {
+		fd = open(file, O_RDONLY);
+		if (fd < 0) {
+			error("%s: heartbeat open attempt %d failed from %s.",
+			      __func__, i, file);
+			return 0;
+		}
+	}
+
+	if (read(fd, &value, sizeof(uint64_t)) != sizeof(uint64_t)) {
+		error("%s: heartbeat read failed from %s.",
+		      __func__, file);
+		value = 0;
+	}
+
+	close(fd);
+
+	return (time_t) NTOH_uint64(value);
 }
