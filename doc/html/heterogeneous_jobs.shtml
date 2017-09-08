@@ -188,7 +188,9 @@ job will be modified in order to replace the "#DW" directives of other
 job components with "#EXCLUDED DW" to prevent their interpretation by Cray
 infrastructure. Since the batch script will only be executed by the first job
 component, the subsequent job components will not include commands from the
-original script. An example is shown below:</p>
+original script. These scripts are build and managed by Slurm for internal
+purposes (and visiable from various Slurm commands) from a user script as shown
+above. An example is shown below:</p>
 
 <pre>
 <b>Rebuilt script for first job component</b>
