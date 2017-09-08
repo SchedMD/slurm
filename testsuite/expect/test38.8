@@ -31,12 +31,20 @@
 ############################################################################
 source ./globals
 
-set test_id     "38.8"
+set test_id	"38.8"
+set exit_code	0
+set prompt	"PROMPT: "
+set timeout	60
 
 print_header $test_id
-set prompt           "PROMPT: "
 
-set timeout 60
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit $exit_code
+}
 
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
