@@ -447,7 +447,7 @@ int xcgroup_instantiate(xcgroup_t* cg)
 	fstatus = XCGROUP_SUCCESS;
 
 	/* set notify on release flag */
-	xcgroup_set_params(cg, "notify_on_release=0");
+	xcgroup_set_param(cg, "notify_on_release", "0");
 
 	return fstatus;
 }
