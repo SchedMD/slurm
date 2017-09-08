@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
     mpi/pmix plugin names.
  -- Allow nodes to be rebooted while in a maintenance reservation.
  -- Show nodes as down even when nodes are in a maintenance reservation.
+ -- Harden the slurmctld HA stack to mitigate certain split-brain issues.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

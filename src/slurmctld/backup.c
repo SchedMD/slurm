@@ -160,12 +160,24 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 			/* primary no longer respond */
 			break;
 		} else {
-			uint32_t timeout;
-			lock_slurmctld(config_read_lock);
-			timeout = slurmctld_conf.slurmctld_timeout;
-			unlock_slurmctld(config_read_lock);
+			time_t use_time, last_write;
 
-			if ((time(NULL) - last_controller_response) > timeout)
+			last_write = get_last_state_write_time();
+			debug("%s: last_state_write_time %ld", __func__,
+			      last_write);
+
+			if (last_write > last_controller_response) {
+				error("Last message to the controller was at %ld,"
+				      " but the last state update was written at %ld,"
+				      " trusting the filesystem instead of the network"
+				      " and not asserting control at this time.",
+				      last_controller_response, last_write);
+				use_time = last_write;
+			} else
+				use_time = last_controller_response;
+
+			if ((time(NULL) - use_time) >
+			    slurmctld_conf.slurmctld_timeout)
 				break;
 		}
 	}

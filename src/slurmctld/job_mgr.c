@@ -183,7 +183,6 @@ static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  Buf buffer);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
 static void _get_batch_job_dir_ids(List batch_dirs);
-static time_t _get_last_state_write_time(void);
 static void _job_array_comp(struct job_record *job_ptr, bool was_running);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
@@ -676,7 +675,7 @@ int dump_all_job_state(void)
 	/* Check that last state file was written at expected time.
 	 * This is a check for two slurmctld daemons running at the same
 	 * time in primary mode (a split-brain problem). */
-	last_state_file_time = _get_last_state_write_time();
+	last_state_file_time = get_last_state_write_time();
 	if (last_file_write_time && last_state_file_time &&
 	    (last_file_write_time != last_state_file_time)) {
 		error("Bad job state save file time. We wrote it at time %u, "
@@ -854,8 +853,9 @@ extern void backup_slurmctld_restart(void)
 	last_file_write_time = (time_t) 0;
 }
 
-/* Return the time stamp in the current job state save file */
-static time_t _get_last_state_write_time(void)
+/* Return the time stamp in the current job state save file, 0 is returned on
+ * error */
+extern time_t get_last_state_write_time(void)
 {
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
 	uint32_t data_size = 0;
@@ -896,7 +896,7 @@ static time_t _get_last_state_write_time(void)
 	}
 	xfree(state_file);
 	if (error_code)
-		return error_code;
+		return buf_time;
 
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
