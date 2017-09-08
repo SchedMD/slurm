@@ -96,6 +96,7 @@
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
+#include "src/slurmctld/heartbeat.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/licenses.h"
@@ -522,6 +523,7 @@ int main(int argc, char **argv)
 		}
 
 		info("Running as primary controller");
+		heartbeat_start();
 		if ((slurmctld_config.resume_backup == false) &&
 		    (slurmctld_primary == 1)) {
 			trigger_primary_ctld_res_op();
@@ -645,6 +647,9 @@ int main(int argc, char **argv)
 		 * since it could wait a while waiting for spawned
 		 * processes to exit */
 		pthread_join(slurmctld_config.thread_id_power, NULL);
+
+		/* stop the heartbeat last */
+		heartbeat_stop();
 
 		if (slurmctld_config.resume_backup == false)
 			break;

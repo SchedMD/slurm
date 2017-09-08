@@ -26,6 +26,8 @@ slurmctld_SOURCES =     \
 	gang.h		\
 	groups.c	\
 	groups.h	\
+	heartbeat.c	\
+	heartbeat.h	\
 	job_mgr.c 	\
 	job_scheduler.c	\
 	job_scheduler.h	\

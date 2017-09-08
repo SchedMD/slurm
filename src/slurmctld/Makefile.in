@@ -151,16 +151,16 @@ PROGRAMS = $(sbin_PROGRAMS)
 am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	backup.$(OBJEXT) burst_buffer.$(OBJEXT) controller.$(OBJEXT) \
 	fed_mgr.$(OBJEXT) front_end.$(OBJEXT) gang.$(OBJEXT) \
-	groups.$(OBJEXT) job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) \
-	job_submit.$(OBJEXT) licenses.$(OBJEXT) locks.$(OBJEXT) \
-	node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
-	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
-	port_mgr.$(OBJEXT) power_save.$(OBJEXT) powercapping.$(OBJEXT) \
-	preempt.$(OBJEXT) proc_req.$(OBJEXT) read_config.$(OBJEXT) \
-	reservation.$(OBJEXT) sched_plugin.$(OBJEXT) \
-	slurmctld_plugstack.$(OBJEXT) srun_comm.$(OBJEXT) \
-	state_save.$(OBJEXT) statistics.$(OBJEXT) step_mgr.$(OBJEXT) \
-	trigger_mgr.$(OBJEXT)
+	groups.$(OBJEXT) heartbeat.$(OBJEXT) job_mgr.$(OBJEXT) \
+	job_scheduler.$(OBJEXT) job_submit.$(OBJEXT) \
+	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
+	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
+	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
+	powercapping.$(OBJEXT) preempt.$(OBJEXT) proc_req.$(OBJEXT) \
+	read_config.$(OBJEXT) reservation.$(OBJEXT) \
+	sched_plugin.$(OBJEXT) slurmctld_plugstack.$(OBJEXT) \
+	srun_comm.$(OBJEXT) state_save.$(OBJEXT) statistics.$(OBJEXT) \
+	step_mgr.$(OBJEXT) trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -517,6 +517,8 @@ slurmctld_SOURCES = \
 	gang.h		\
 	groups.c	\
 	groups.h	\
+	heartbeat.c	\
+	heartbeat.h	\
 	job_mgr.c 	\
 	job_scheduler.c	\
 	job_scheduler.h	\
@@ -666,6 +668,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gang.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/groups.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heartbeat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_scheduler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit.Po@am__quote@
