@@ -87,7 +87,7 @@ static void *_heartbeat_thread(void *no_data)
 		now = time(NULL);
 		ts.tv_sec = now + beat;
 
-		debug2("Heartbeat at %ld", now);
+		debug3("Heartbeat at %ld", now);
 		/*
 		 * Rebuild file path each beat just in case someone changes
 		 * StateSaveLocation and runs reconfigure.
@@ -121,8 +121,8 @@ static void *_heartbeat_thread(void *no_data)
 		/* shuffle files around */
 		(void) unlink(reg_file);
 		if (link(new_file, reg_file))
-			debug3("%s: unable to create link for %s -> %s, %m",
-			       __func__, new_file, reg_file);
+			debug("%s: unable to create link for %s -> %s, %m",
+			      __func__, new_file, reg_file);
 		(void) unlink(new_file);
 
 delay:
@@ -140,7 +140,7 @@ void heartbeat_start(void)
 	pthread_attr_t thread_attr;
 
 	if (!slurmctld_conf.backup_addr) {
-		debug2("No BackupController, not launching heartbeat.");
+		debug("No BackupController, not launching heartbeat.");
 		return;
 	}
 
