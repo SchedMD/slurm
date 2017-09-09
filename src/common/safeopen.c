@@ -61,6 +61,7 @@ FILE * safeopen(const char *path, const char *mode, int flags)
 	} else
 		oflags = O_RDONLY;
 
+	oflags |= O_CLOEXEC;
 	oflags |= !(flags & SAFEOPEN_NOCREATE)   ? O_CREAT : 0;
 	oflags |= (flags & SAFEOPEN_CREATE_ONLY) ? O_EXCL  : 0;
 

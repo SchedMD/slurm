@@ -342,13 +342,8 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->logfp = fp;
 	}
 
-	if (log->logfp) {
-		int fd;
-		if ((fd = fileno(log->logfp)) < 0)
-			log->logfp = NULL;
-		else
-			fd_set_close_on_exec(fd);
-	}
+	if (log->logfp && (fileno(log->logfp) < 0))
+		log->logfp = NULL;
 
 	log->initialized = 1;
  out:
@@ -424,13 +419,8 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 		sched_log->logfp = fp;
 	}
 
-	if (sched_log->logfp) {
-		int fd;
-		if ((fd = fileno(sched_log->logfp)) < 0)
-			sched_log->logfp = NULL;
-		else
-			fd_set_close_on_exec(fd);
-	}
+	if (sched_log->logfp && (fileno(sched_log->logfp) < 0))
+		sched_log->logfp = NULL;
 
 	sched_log->initialized = 1;
  out:
