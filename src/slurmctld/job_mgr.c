@@ -734,7 +734,7 @@ int dump_all_job_state(void)
 	}
 
 	lock_state_files();
-	log_fd = creat(new_file, 0600);
+	log_fd = open(new_file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, 0600);
 	if (log_fd < 0) {
 		error("Can't save state, create file %s error %m",
 		      new_file);
@@ -743,7 +743,6 @@ int dump_all_job_state(void)
 		int pos = 0, nwrite, amount, rc;
 		char *data;
 
-		fd_set_close_on_exec(log_fd);
 		nwrite = get_buf_offset(buffer);
 		data = (char *)get_buf_data(buffer);
 		high_buffer_size = MAX(nwrite, high_buffer_size);
