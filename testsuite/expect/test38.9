@@ -106,17 +106,18 @@ set timeout 30
 
 send_user "\n\nCollect Nodenames\n\n"
 
-send "$squeue -j $pack_job_id -o%N --noheader \r"
+send "$squeue -j $pack_job_id -o\"NAME=%N\" --noheader \r"
 expect {
 	-re "--noheader" {
 		exp_continue
 	}
-	-re "(\\S+)" {
-		if {![string match $expect_out(1,string) $prompt]} {
-			set component($index) $expect_out(1,string)
-			incr index
-			exp_continue
-		}
+	-re "NAME=($alpha_numeric_under)" {
+		set component($index) $expect_out(1,string)
+		incr index
+		exp_continue
+	}
+	-re "$prompt" {
+		#break
 	}
 	timeout {
 		log_error "squeue not responding"
