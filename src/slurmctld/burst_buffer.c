@@ -66,8 +66,6 @@ typedef struct slurm_bb_ops {
 					 uid_t submit_uid);
 	int		(*job_validate2)(struct job_record *job_ptr,
 					 char **err_msg);
-	char *		(*build_pack_script)(char *script,
-					     uint32_t pack_job_offset);
 	void		(*job_set_tres_cnt) (struct job_record *job_ptr,
 					     uint64_t *tres_cnt, bool locked);
 	time_t		(*job_get_est_start) (struct job_record *job_ptr);
@@ -93,7 +91,6 @@ static const char *syms[] = {
 	"bb_p_reconfig",
 	"bb_p_job_validate",
 	"bb_p_job_validate2",
-	"bb_p_build_pack_script",
 	"bb_p_job_set_tres_cnt",
 	"bb_p_job_get_est_start",
 	"bb_p_job_try_stage_in",
@@ -374,6 +371,18 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg)
 	return rc;
 }
 
+
+/* Return true if pack job separator in the script */
+static bool _pack_check(char *tok)
+{
+	if (strncmp(tok + 1, "SLURM",  5) &&
+	    strncmp(tok + 1, "SBATCH", 6))
+		return false;
+	if (!strstr(tok+6, "packjob"))
+		return false;
+	return true;
+}
+
 /*
  * Convert a pack job batch script into a script containing only the portions
  * relevant to a specific pack job component.
@@ -384,26 +393,48 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg)
  */
 extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
 {
+	char *result = NULL, *tmp = NULL;
+	char *tok, *save_ptr = NULL;
+	bool fini = false;
+	int cur_offset = 0;
 	DEF_TIMERS;
-	char *result = NULL;
-	int i;
 
 	START_TIMER;
-	(void) bb_g_init();
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; i < g_context_cnt; i++) {
-		if (i > 0) {
-			/*
-			 * This should not be a problem in practice.
-			 * All plugins call a single function in common.
-			 */
-			debug("%s: Only one burst buffer plugin currently supported",
-			      __func__);
-			break;
+	tmp = xstrdup(script);
+	tok = strtok_r(tmp, "\n", &save_ptr);
+	while (tok) {
+		if (!result) {
+			xstrfmtcat(result, "%s\n", tok);
+		} else if (tok[0] != '#') {
+			fini = true;
+		} else if (_pack_check(tok)) {
+			cur_offset++;
+			if (cur_offset > pack_job_offset)
+				fini = true;
+		} else if (cur_offset == pack_job_offset) {
+			xstrfmtcat(result, "%s\n", tok);
 		}
-		result = (*(ops[i].build_pack_script))(script, pack_job_offset);
+		if (fini)
+			break;
+		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
-	slurm_mutex_unlock(&g_context_lock);
+
+	if (pack_job_offset == 0) {
+		while (tok) {
+			char *sep = "";
+			if ((tok[0] == '#') &&
+			    (((tok[1] == 'B') && (tok[2] == 'B')) ||
+			     ((tok[1] == 'D') && (tok[2] == 'W')))) {
+				sep = "#EXCLUDED ";
+				tok++;
+			}
+			xstrfmtcat(result, "%s%s\n", sep, tok);
+			tok = strtok_r(NULL, "\n", &save_ptr);
+		}
+	} else if (result) {
+		xstrcat(result, "exit 0\n");
+	}
+	xfree(tmp);
 	END_TIMER2(__func__);
 
 	return result;
