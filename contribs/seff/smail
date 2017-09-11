@@ -30,7 +30,7 @@ array=($2)
 IFS=" "
 
 # Get the ClusterName
-ClusterName=`scontrol show config | grep ClusterName | awk '{printf("[%s]", $3)}'`
+ClusterName=`@bindir@/scontrol show config | grep ClusterName | awk '{printf("[%s]", $3)}'`
 subject="$ClusterName $@"
 recipient=$3
 
