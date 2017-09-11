@@ -52,6 +52,11 @@ documents those changes that are of interest to users and administrators.
  -- Work for heterogeneous job support (complete solution in v17.11):
     * Add burst buffer support.
     * Remove srun's --mpi-combine option (always combined).
+    * Add SchedulerParameters configuration option "enable_hetero_steps" to
+      enable job steps that span multiple components of a heterogeneous job.
+      Disabled by default as most MPI implementations and Slurm configurations
+      are not currently supported. Limitation to be removed in Slurm version
+      18.08.
  -- Add cluster name to smail tool email header.
  -- Speedup arbitrary distribution algorithm.
 

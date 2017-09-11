@@ -156,7 +156,7 @@ make_bash_script $file_in "
   $bin_rm -f $spank_conf_file
   $bin_sleep 5
   $bin_cp -f $new_spank_conf $spank_conf_file
-  $srun --test_suite=5 --pack-group=0,1 $bin_uname
+  $srun --mpi=none --test_suite=5 --pack-group=0,1 $bin_uname
   if test -f $orig_spank_conf
   then
     $bin_rm -f $spank_conf_file

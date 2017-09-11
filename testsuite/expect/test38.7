@@ -46,13 +46,18 @@ print_header $test_id
 # Test for existence of mpi compiler
 #
 if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
+	send_user "\nWARNING: mpicc not defined, can't perform MPI testing\n"
 	exit 0
 }
 if {[file executable $mpicc] == 0} {
 	send_user "\nWARNING: $mpicc does not exists\n"
 	exit 0
 }
+if {[test_pack_step] == 0} {
+	send_user "\nWARNING: heterogeneous steps not currently supported\n"
+	exit 0
+}
+
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit 0

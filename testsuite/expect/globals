@@ -4134,7 +4134,56 @@ proc get_prolog { } {
 	log_user 1
 
 	return $prolog
+}
 
+################################################################
+#
+# Proc: test_pack_step
+#
+# Returns 1 if steps can span multiple heterogeneous job allocations,
+#	  0 otherwise
+#
+################################################################
+proc test_pack_step { } {
+	global scontrol number
+
+	log_user 0
+	set pack_step 0
+	set major 0
+	set minor 0
+	spawn $scontrol -V
+	expect {
+		-re " ($number).($number).($number)" {
+			set version_major $expect_out(1,string)
+			set minor $expect_out(2,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$major >= 18} {
+		set pack_step 1
+	} elseif {$major == 17 && $minor == 11} {
+		spawn $scontrol show config
+		expect {
+			-re "enable_hetero_steps" {
+				set pack_step 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: scontrol not responding\n"
+			}
+			eof {
+				wait
+			}
+		}
+	}
+	log_user 1
+	return $pack_step
 }
 
 proc log_error {msg} {

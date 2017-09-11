@@ -370,6 +370,14 @@ component number zero. Some examples follow:</p>
 <li>--pack-group=1,3-5</li>
 </ul>
 
+<p><b>IMPORTANT:</b> The ability to execute a single application across more
+than one job allocation does not work in Slurm version 17.11 except in the
+case of OpenMPI with Slurm's mpi/pmi2 plugin or a non-MPI job with Slurm's
+mpi/none. We expect support for other MPI implementations in a future release
+of Slurm. Until that time, an appropriate error message will be reported unless
+Slurm's SchedulerParameters configuration parameter includes the option
+"enable_hetero_steps".</p>
+
 <p>By default, the applications launched by a single execution of the srun
 command (even for different components of the heterogeneous job) are combined
 into one MPI_COMM_WORLD with non-overlapping task IDs.</p>

@@ -134,7 +134,7 @@ send_user "\n\nTest Sending Jobs To Various Components\n\n"
 set timeout 3
 set matches 0
 
-send "$srun --pack-group=0 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --pack-group=0 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(0) {
 		incr matches
@@ -155,7 +155,7 @@ if { $matches != 1} {
 
 set matches 0
 
-send "$srun --pack-group=1 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --pack-group=1 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(1) {
 		incr matches
@@ -176,7 +176,7 @@ if { $matches != 1} {
 
 set matches 0
 
-send "$srun --pack-group=2 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --pack-group=2 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(2) {
 		incr matches
@@ -197,7 +197,7 @@ if { $matches != 1} {
 
 set matches 0
 
-send "$srun --pack-group=0-2 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --pack-group=0-2 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(0)|$component(1)|$component(2) {
 		incr matches
@@ -218,7 +218,7 @@ if { $matches != 3} {
 
 set matches 0
 
-send "$srun --pack-group=0,2 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --pack-group=0,2 printenv SLURMD_NODENAME\r"
 expect {
 	-re $component(2)|$component(0) {
 		incr matches
@@ -242,7 +242,7 @@ send_user "\n\nTesting Error Messages\n\n"
 
 set matches 0
 
-send "$srun --pack-group=0-3 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --pack-group=0-3 printenv SLURMD_NODENAME\r"
 expect {
 	-re "srun: error: Attempt to run a job step with pack group value of 3, but the job allocation has maximum value of 2" {
 		incr matches
@@ -262,7 +262,7 @@ if { $matches != 1} {
 }
 
 set matches 0
-send "$srun --pack-group=0,5 printenv SLURMD_NODENAME\r"
+send "$srun --mpi=none --pack-group=0,5 printenv SLURMD_NODENAME\r"
 expect {
 	-re "srun: error: Attempt to run a job step with pack group value of 5, but the job allocation has maximum value of 2" {
 		incr matches
@@ -282,7 +282,7 @@ if { $matches != 1} {
 }
 
 set matches 0
-send "$srun --pack-group=0 printenv SLURMD_NODENAME : --pack-group=0 env\r"
+send "$srun --mpi=none --pack-group=0 printenv SLURMD_NODENAME : --pack-group=0 env\r"
 expect {
 	-re "srun: fatal: Duplicate pack groups in single srun not supported" {
 		incr matches

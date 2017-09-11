@@ -251,6 +251,7 @@ typedef struct srun_options {
 extern int	error_exit;	/* exit code for slurm errors */
 extern resource_allocation_response_msg_t *global_resp;
 extern int	immediate_exit;	/* exit code for --imediate option & busy */
+extern char *	mpi_type;
 extern opt_t	opt;
 extern List	opt_list;
 extern int	sig_array[];

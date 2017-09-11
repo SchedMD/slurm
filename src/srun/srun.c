@@ -153,6 +153,18 @@ void cfmakeraw(struct termios *attr)
 }
 #endif
 
+static bool _enable_pack_steps(void)
+{
+	bool enabled = false;
+	char *sched_params = slurm_get_sched_params();
+	if (sched_params && strstr(sched_params, "enable_hetero_steps"))
+		enabled = true;
+	else if (strstr(mpi_type, "none"))
+		enabled = true;
+	xfree(sched_params);
+	return enabled;
+}
+
 int srun(int ac, char **av)
 {
 	int debug_level;
@@ -175,9 +187,11 @@ int srun(int ac, char **av)
 	_setup_env_working_cluster();
 
 	init_srun(ac, av, &logopt, debug_level, 1);
-	if (opt_list)
+	if (opt_list) {
+		if (!_enable_pack_steps())
+			fatal("Job steps that span multiple components of a heterogeneous job are not currently supported");
 		create_srun_job((void **) &srun_job_list, &got_alloc, 0, 1);
-	else
+	} else
 		create_srun_job((void **) &job, &got_alloc, 0, 1);
 
 	_setup_job_env(job, srun_job_list, got_alloc);

@@ -106,6 +106,8 @@ expect *
 
 send_user "\n\nTest Sending Sacct To Various Components\n\n"
 
+# Wait for accounting records to reach slurmdbd
+sleep 3
 set timeout 3
 set matches 0
 spawn $sacct -j $pack_job_id
