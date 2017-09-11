@@ -485,8 +485,6 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	hostlist_t step_alloc_hosts = NULL;
 
 	debug2("job list is %s", step_layout->node_list);
-	job_alloc_hosts = hostlist_create(step_layout->node_list);
-	itr = hostlist_iterator_create(job_alloc_hosts);
 	if (!arbitrary_nodes) {
 		error("no hostlist given for arbitrary dist");
 		return SLURM_ERROR;
@@ -500,9 +498,14 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 		      step_layout->task_cnt,
 		      hostlist_count(step_alloc_hosts),
 		      hostlist_count(step_alloc_hosts));
+		hostlist_destroy(step_alloc_hosts);
 		return SLURM_ERROR;
 	}
-	itr_task = hostlist_iterator_create(step_alloc_hosts);
+
+	job_alloc_hosts = hostlist_create(step_layout->node_list);
+	itr             = hostlist_iterator_create(job_alloc_hosts);
+	itr_task        = hostlist_iterator_create(step_alloc_hosts);
+
 	while((host = hostlist_next(itr))) {
 		step_layout->tasks[i] = 0;
 		while((host_task = hostlist_next(itr_task))) {
