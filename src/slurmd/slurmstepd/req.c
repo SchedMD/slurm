@@ -742,17 +742,13 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	int sig;
+	int sig, flag;
 	static int msg_sent = 0;
 	stepd_step_task_info_t *task;
 	uint32_t i;
-	uint32_t flag;
-	uint32_t signal;
 
-	safe_read(fd, &signal, sizeof(int));
+	safe_read(fd, &sig, sizeof(int));
 	safe_read(fd, &flag, sizeof(int));
-	flag = signal >> 24;
-	sig = signal & 0xfff;
 
 	debug("_handle_signal_container for step=%u.%u uid=%d signal=%d",
 	      job->jobid, job->stepid, (int) uid, sig);

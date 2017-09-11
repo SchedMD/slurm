@@ -3673,25 +3673,25 @@ _rpc_timelimit(slurm_msg_t *msg)
 		 * - send a SIGKILL to clean up
 		 */
 		if (msg->msg_type == REQUEST_KILL_TIMELIMIT) {
-			rc = _signal_jobstep(req->job_id, req->step_id, uid,
-					     SIG_TIME_LIMIT);
+			rc = _signal_jobstep(req->job_id, req->step_id,
+					     SIG_TIME_LIMIT, 0);
 		} else {
-			rc = _signal_jobstep(req->job_id, req->step_id, uid,
-					     SIG_PREEMPTED);
+			rc = _signal_jobstep(req->job_id, req->step_id,
+					     SIG_PREEMPTED, 0);
 		}
 		if (rc != SLURM_SUCCESS)
 			return;
-		rc = _signal_jobstep(req->job_id, req->step_id, uid, SIGCONT);
+		rc = _signal_jobstep(req->job_id, req->step_id, SIGCONT, 0);
 		if (rc != SLURM_SUCCESS)
 			return;
-		rc = _signal_jobstep(req->job_id, req->step_id, uid, SIGTERM);
+		rc = _signal_jobstep(req->job_id, req->step_id, SIGTERM, 0);
 		if (rc != SLURM_SUCCESS)
 			return;
 		cf = slurm_conf_lock();
 		delay = MAX(cf->kill_wait, 5);
 		slurm_conf_unlock();
 		sleep(delay);
-		_signal_jobstep(req->job_id, req->step_id, uid, SIGKILL);
+		_signal_jobstep(req->job_id, req->step_id, SIGKILL, 0);
 		return;
 	}
 
