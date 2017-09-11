@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
       18.08.
  -- Add cluster name to smail tool email header.
  -- Speedup arbitrary distribution algorithm.
+ -- Modify "srun --mpi=list" output to match valid option input by removing the
+    "mpi/" prefix on each line of output.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

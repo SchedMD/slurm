@@ -45,7 +45,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "mpi/none" {
+	-re "none" {
 		incr matches
 		exp_continue
 	}

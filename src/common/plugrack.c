@@ -621,7 +621,7 @@ extern int plugrack_print_all_plugin(plugrack_t rack)
 		sep = strstr(e->fq_path, "/mpi_");
 		if (sep) {
 			sep += 5;
-			i = snprintf(tmp, sizeof(tmp), "mpi/%s", sep);
+			i = snprintf(tmp, sizeof(tmp), "%s", sep);
 			if (i >= sizeof(tmp))
 				tmp[sizeof(tmp)-1] = '\0';
 			sep = strstr(tmp, ".so");
