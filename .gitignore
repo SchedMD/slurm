@@ -2,6 +2,7 @@
 *.la
 *.lo
 .*.swp
+.*.swo
 .deps
 .libs
 Makefile
