@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
     * Add burst buffer support.
     * Remove srun's --mpi-combine option (always combined).
  -- Add cluster name to smail tool email header.
+ -- Speedup arbitrary distribution algorithm.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
