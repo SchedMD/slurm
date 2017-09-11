@@ -184,11 +184,12 @@ time_t get_last_heartbeat(void)
 	 * at the moment. Once opened, our handle should persist during
 	 * the shuffle, as the contents are left intact.
 	 */
-	for (i = 0; i < OPEN_RETRIES; i++) {
+	for (i = 0; (i < OPEN_RETRIES) && (fd < 0); i++) {
 		fd = open(file, O_RDONLY);
 		if (fd < 0) {
 			error("%s: heartbeat open attempt %d failed from %s.",
 			      __func__, i, file);
+			xfree(file);
 			return 0;
 		}
 	}
@@ -200,6 +201,7 @@ time_t get_last_heartbeat(void)
 	}
 
 	close(fd);
+	xfree(file);
 
 	return (time_t) NTOH_uint64(value);
 }
