@@ -114,7 +114,6 @@
 #define OPT_POWER       0x1c
 #define OPT_THREAD_SPEC 0x1d
 #define OPT_BCAST       0x1e
-#define OPT_MPI_COMBINE	0x1f
 #define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
@@ -198,7 +197,6 @@
 #define LONG_OPT_PROFILE         0x157
 #define LONG_OPT_EXPORT          0x158
 #define LONG_OPT_SPREAD_JOB      0x159
-#define LONG_OPT_MPI_COMBINE     0x15a
 #define LONG_OPT_PACK_GROUP      0x15b
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_ACCEL_BIND      0x161
@@ -318,7 +316,6 @@ struct option long_options[] = {
 	{"minthreads",       required_argument, 0, LONG_OPT_MINTHREADS},
 	{"mloader-image",    required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
-	{"mpi-combine",      required_argument, 0, LONG_OPT_MPI_COMBINE},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 	{"network",          required_argument, 0, LONG_OPT_NETWORK},
@@ -748,7 +745,6 @@ static void _opt_default(void)
 		opt.max_exit_timeout	= 60; /* Warn user 60 sec after task exit */
 		opt.max_wait		= slurm_get_wait_time();
 		xfree(opt.mcs_label);
-		opt.mpi_combine		= true;
 		/* Default launch msg timeout           */
 		opt.msg_timeout		= slurm_get_msg_timeout();
 		opt.nice		= NO_VAL;
@@ -959,7 +955,6 @@ env_vars_t env_vars[] = {
 {"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
 {"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
 {"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL             },
-{"SLURM_MPI_COMBINE",	OPT_MPI_COMBINE,NULL,               NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
 {"SLURM_NETWORK",       OPT_STRING,     &opt.network,    &opt.network_set_env},
@@ -1215,17 +1210,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			exit(error_exit);
 		}
 		mpi_initialized = true;
-		break;
-
-	case OPT_MPI_COMBINE:
-		if (!strcasecmp(val, "yes"))
-			opt.mpi_combine = true;
-		else if (!strcasecmp(val, "no"))
-			opt.mpi_combine = false;
-		else {
-			error("Invalid --mpi-combine=%s", val);
-			exit(error_exit);
-		}
 		break;
 
 	case OPT_SIGNAL:
@@ -1785,18 +1769,6 @@ static void _set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			mpi_initialized = true;
-			break;
-		case LONG_OPT_MPI_COMBINE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (!strcasecmp(optarg, "yes"))
-				opt.mpi_combine = true;
-			else if (!strcasecmp(optarg, "no"))
-				opt.mpi_combine = false;
-			else {
-				error("Invalid --mpi-combine=%s", optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_PACK_GROUP:
 			/* Already parsed in _get_pack_group() */
@@ -3176,9 +3148,6 @@ static void _opt_list(void)
 	info("remote command    : `%s'", str);
 	xfree(str);
 
-	if (opt.mcs_label)
-		info("mcs-label         : %s",opt.mcs_label);
-	info("mpi_combine       : %s", opt.mpi_combine == true ? "YES" : "NO");
 	if (opt.pack_group)
 		info("pack_group        : %s",opt.pack_group);
 

@@ -723,14 +723,11 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
 			job->pack_offset = pack_offset;
-			if (opt.mpi_combine) {
-				job->node_offset = node_offset;
-				job->pack_ntasks = pack_ntasks;
-				job->task_offset = task_offset;
-				if (step_id != NO_VAL)
-					job->stepid = step_id;
-			} else
-				pack_offset++;
+			job->node_offset = node_offset;
+			job->pack_ntasks = pack_ntasks;
+			job->task_offset = task_offset;
+			if (step_id != NO_VAL)
+				job->stepid = step_id;
 			rc = create_job_step(job, use_all_cpus, opt_local);
 			if (rc < 0)
 				break;
@@ -1096,8 +1093,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		if (i == 1)
 			FREE_NULL_LIST(srun_job_list);	/* Just use "job" */
 		if (srun_job_list && (list_count(srun_job_list) > 1) &&
-		    opt_list && (list_count(opt_list) > 1) &&
-		    my_job_id && (opt.mpi_combine == true)) {
+		    opt_list && (list_count(opt_list) > 1) && my_job_id) {
 			pack_jobid = my_job_id;
 		}
 		if (list_count(job_resp_list) > 1)
@@ -1175,8 +1171,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			_set_step_opts(&opt);
 		}
 		if (srun_job_list && (list_count(srun_job_list) > 1) &&
-		    opt_list && (list_count(opt_list) > 1) &&
-		    my_job_id && (opt.mpi_combine == true)) {
+		    opt_list && (list_count(opt_list) > 1) && my_job_id) {
 			pack_jobid = my_job_id;
 			pack_nodelist = _compress_pack_nodelist(job_resp_list);
 		}

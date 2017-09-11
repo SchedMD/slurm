@@ -372,9 +372,7 @@ component number zero. Some examples follow:</p>
 
 <p>By default, the applications launched by a single execution of the srun
 command (even for different components of the heterogeneous job) are combined
-into one MPI_COMM_WORLD with non-overlapping task IDs. srun's "--mpi-combine=no"
-option will launch each component in the heterogeneous job in its own
-MPI_COMM_WORLD with a task ID starting at zero.</p>
+into one MPI_COMM_WORLD with non-overlapping task IDs.</p>
 
 <p>As with the salloc and sbatch commands, the ":" character is used to
 separate multiple components of a heterogeneous job.
@@ -386,21 +384,10 @@ If some heterogeneous job component lacks an application specification, the next
 application specification provided will be used for earlier components lacking
 one as shown below.</p>
 <pre>
-$ srun --label --mpi-combine=yes -n2 : -n1 hostname
+$ srun --label -n2 : -n1 hostname
 0: nid00012
 1: nid00012
 2: nid00013
-</pre>
-
-<p>srun's "--label" option will precede every line with the letter "P" and
-pack job offset followed by the task rank if the "--mpi-combine=no" option is
-used or a the application is launched on a subset of pack groups
-For example:</p>
-<pre>
-$ srun --label --mpi-combine=no -n2 hostname : -n1 date
-P0 0: nid00012
-P0 1: nid00012
-P1 0: Wed Jul  5 16:23:07 MDT 2017
 </pre>
 
 <p>If multiple srun commands are executed concurrently, this may result in resource
@@ -472,7 +459,7 @@ SLURM_JOB_ID_PACK_GROUP_1=11752
 SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
 SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
 ...
-$ srun --pack-group=0,1 --mpi-combine=yes env | grep SLURM
+$ srun --pack-group=0,1 env | grep SLURM
 SLURM_JOB_ID=11751
 SLURM_JOB_NODELIST=nid[00001,00011-00012]
 ...
@@ -503,16 +490,12 @@ srun master : slave &
 
 <p>The SLURM_PROCID and SLURM_TASKID environment variables will be set to
 reflect a global task rank (both environment variables will have the same value).
-With --mpi-combine=no,- each job component will have a SLURM_PROCID set to 0.
-With --mpi-combine=yes each spawned process will have a unique SLURM_PROCID.</p>
+Each spawned process will have a unique SLURM_PROCID.</p>
 
 <p>Similarly, the SLURM_NPROCS and SLURM_NTASKS environment variables will be set
 to reflect a global task count (both environment variables will have the same
 value).
-With --mpi-combine=no each job component will have SLURM_NTASKS set to the task
-count in that component.
-With --mpi-combine=yes SLURM_NTASKS will be set to the total count of tasks in
-all components.
+SLURM_NTASKS will be set to the total count of tasks in all components.
 Note that the task rank and count values are needed by MPI and typically
 determined by examining Slurm environment variables.</p>
 
@@ -524,11 +507,6 @@ This typically requires the backfill scheduler be able to allocate each
 component of a heterogeneous job on a different node in order to begin its
 resource allocation, even if multiple compoents of the job do actually get
 allocated resources on the same node.</p>
-
-<p>Use of a debugger requires that each srun command launch tasks in only
-one job component or the each launched task have a unique rank (i.e.
-"--mpi-combine=yes", the default).
-Otherwise duplicate ranks (task IDs) will not be recognized by the debugger.</p>
 
 <p>In a federation of clusters, a heterogeneous job will execute entirely on
 the cluster from which the job is submitted. The heterogeneous job will not
@@ -639,6 +617,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 September 2017</p>
+<p style="text-align:center;">Last modified 11 September 2017</p>
 
 <!--#include virtual="footer.txt"-->

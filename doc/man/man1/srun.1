@@ -1348,13 +1348,6 @@ This option applies to step allocations.
 .RE
 
 .TP
-\fB\-\-mpi\-combine\fR=\fIyes|no\fR
-Specify whether to combine applications launched by a single execution of the
-srun command (even for different components of the heterogenous job) into
-one MPI_COMM_WORLD (with non-overlapping task IDs) or a separate MPI_COMM_WORLD
-for each component. The default value is yes.
-
-.TP
 \fB\-\-multi\-prog\fR
 Run a job with different programs and different arguments for
 each task. In this case, the executable program specified is
@@ -2552,9 +2545,6 @@ Same as \fB\-\-mloader\-image\fR
 .TP
 \fBSLURM_MPI_TYPE\fR
 Same as \fB\-\-mpi\fR
-.TP
-\fBSLURM_MPI_COMBINE\fR
-Same as \fB\-\-mpi\-combine\fR
 .TP
 \fBSLURM_NETWORK\fR
 Same as \fB\-\-network\fR

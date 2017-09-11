@@ -243,7 +243,6 @@ typedef struct srun_options {
 	time_t deadline; 	/* --deadline                   */
 	uint32_t job_flags;	/* --gres-flags */
 	uint32_t delay_boot;	/* --delay-boot			*/
-	bool mpi_combine;	/* --mpi-combine		*/
 	char *pack_group;	/* --pack-group			*/
 	bitstr_t *pack_grp_bits;/* --pack-group	in bitmap form	*/
 	int pack_step_cnt;	/* Total count of pack groups to launch */
