@@ -302,13 +302,13 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			type = "Cnode Count";
 		else
 			type = "Core Count";
-		if (corecnt_supported() != SLURM_SUCCESS) {
+		if (state_control_corecnt_supported() != SLURM_SUCCESS) {
 			xstrcat(global_edit_error_msg, "CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto return_error;
 		}
-		if (parse_resv_corecnt(resv_msg, (char *)new_text,
-				       &free_tres_corecnt, false,
-				       &err_msg) == SLURM_ERROR) {
+		if (state_control_parse_resv_corecnt(resv_msg, (char *)new_text,
+						     &free_tres_corecnt, false,
+						     &err_msg) == SLURM_ERROR) {
 			global_edit_error_msg = xstrdup(err_msg);
 			xfree(err_msg);
 			goto return_error;
@@ -377,18 +377,20 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "users";
 		break;
 	case SORTID_TRES:
-		if (_parse_resv_tres((char *)new_text, resv_msg,
-				     &free_tres_license, &free_tres_bb,
-				     &free_tres_corecnt, &free_tres_nodecnt,
-				     &err_msg) == SLURM_ERROR) {
+		if (state_control_parse_resv_tres((char *)new_text, resv_msg,
+						  &free_tres_license,
+						  &free_tres_bb,
+						  &free_tres_corecnt,
+						  &free_tres_nodecnt, &err_msg)
+		    == SLURM_ERROR) {
 			global_edit_error_msg = xstrdup(err_msg);
 			xfree(err_msg);
 			goto return_error;
 		}
 		break;
 	case SORTID_WATTS:
-		if (parse_resv_watts((char *) new_text, resv_msg, &err_msg)
-		    == SLURM_ERROR) {
+		if (state_control_parse_resv_watts((char *) new_text, resv_msg,
+						   &err_msg) == SLURM_ERROR) {
 			global_edit_error_msg = xstrdup(err_msg);
 			xfree(err_msg);
 			goto return_error;
@@ -620,7 +622,7 @@ static void _layout_resv_record(GtkTreeView *treeview,
 						 SORTID_USERS),
 				   resv_ptr->users);
 
-	temp_char = watts_to_str(resv_ptr->resv_watts);
+	temp_char = state_control_watts_to_str(resv_ptr->resv_watts);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_resv,
 						 SORTID_WATTS),
@@ -657,7 +659,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	slurm_make_time_str((time_t *)&resv_ptr->start_time, tmp_start,
 			    sizeof(tmp_start));
 
-	tmp_watts = watts_to_str(resv_ptr->resv_watts);
+	tmp_watts = state_control_watts_to_str(resv_ptr->resv_watts);
 
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_resv_info_ptr->iter_ptr,

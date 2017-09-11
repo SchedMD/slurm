@@ -40,7 +40,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-extern char *watts_to_str(uint32_t watts)
+extern char *state_control_watts_to_str(uint32_t watts)
 {
 	char *str = NULL;
 
@@ -58,8 +58,9 @@ extern char *watts_to_str(uint32_t watts)
 	return str;
 }
 
-extern uint32_t parse_resv_watts(char *watts_str, resv_desc_msg_t *resv_msg_ptr,
-			     char **err_msg)
+extern uint32_t state_control_parse_resv_watts(char *watts_str,
+					       resv_desc_msg_t *resv_msg_ptr,
+					       char **err_msg)
 {
 	resv_msg_ptr->resv_watts = 0;
 	char *end_ptr = NULL;
@@ -85,7 +86,7 @@ extern uint32_t parse_resv_watts(char *watts_str, resv_desc_msg_t *resv_msg_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern int configured_tres(char *type)
+extern int state_control_configured_tres(char *type)
 {
 	int i, cc;
 	int rc = SLURM_ERROR;
@@ -111,7 +112,7 @@ cleanup:
 	return rc;
 }
 
-extern int corecnt_supported(void)
+extern int state_control_corecnt_supported(void)
 {
 	uint32_t select_type = slurmdb_setup_plugin_id_select();
 
@@ -122,9 +123,9 @@ extern int corecnt_supported(void)
 	return SLURM_SUCCESS;
 }
 
-extern int parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-			      int *free_tres_corecnt, bool from_tres,
-			      char **err_msg)
+extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
+					    char *val, int *free_tres_corecnt,
+					    bool from_tres, char **err_msg)
 {
 	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
 	int node_inx = 0;
@@ -224,10 +225,13 @@ extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 	return SLURM_SUCCESS;
 }
 
-extern int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
-			    int *free_tres_license, int *free_tres_bb,
-			    int *free_tres_corecnt, int *free_tres_nodecnt,
-			    char **err_msg)
+extern int state_control_parse_resv_tres(char *val,
+					 resv_desc_msg_t *resv_msg_ptr,
+					 int *free_tres_license,
+					 int *free_tres_bb,
+					 int *free_tres_corecnt,
+					 int *free_tres_nodecnt,
+					 char **err_msg)
 {
 	int i, ret, len;
 	char *tres_bb = NULL, *tres_license = NULL,
@@ -258,7 +262,7 @@ extern int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 		} else
 			type = compound;
 
-		if (configured_tres(compound) != SLURM_SUCCESS) {
+		if (state_control_configured_tres(compound) != SLURM_SUCCESS) {
 			xstrfmtcat(*err_msg,
 				   "couldn't identify configured TRES '%s'",
 				   compound);
@@ -321,13 +325,15 @@ extern int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 
 	if (tres_corecnt && tres_corecnt[0] != '\0') {
 		/* only have this on a cons_res machine */
-		ret = corecnt_supported();
+		ret = state_control_corecnt_supported();
 		if (ret != SLURM_SUCCESS) {
 			xstrfmtcat(*err_msg, "CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto error;
 		}
-		ret = parse_resv_corecnt(resv_msg_ptr, tres_corecnt,
-					 free_tres_corecnt, true, err_msg);
+		ret = state_control_parse_resv_corecnt(resv_msg_ptr,
+						       tres_corecnt,
+						       free_tres_corecnt, true,
+						       err_msg);
 		xfree(tres_corecnt);
 		if (ret != SLURM_SUCCESS)
 			goto error;

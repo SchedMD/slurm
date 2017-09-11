@@ -42,7 +42,7 @@
 /*
  * IN watts - resv_watts to convert to string format
  */
-extern char *watts_to_str(uint32_t watts);
+extern char *state_control_watts_to_str(uint32_t watts);
 
 /*
  * Parse reservation request option Watts
@@ -50,19 +50,20 @@ extern char *watts_to_str(uint32_t watts);
  * IN/OUT resv_msg_ptr - msg where resv_watts member is modified
  * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
  */
-extern uint32_t parse_resv_watts(char * watts_str, resv_desc_msg_t *resv_msg_ptr,
-			     char **err_msg);
+extern uint32_t state_control_parse_resv_watts(char * watts_str,
+					       resv_desc_msg_t *resv_msg_ptr,
+					       char **err_msg);
 
 /*
  * RET SLURM_SUCCESS if 'type' is a configured TRES.
  */
-extern int configured_tres(char *type);
+extern int state_control_configured_tres(char *type);
 
 /*
  * RET SLURM_SUCCESS if SelectType includes select/cons_res or if
  * SelectTypeParameters includes OTHER_CONS_RES on a Cray.
  */
-extern int corecnt_supported(void);
+extern int state_control_corecnt_supported(void);
 
 /*
  * Parse and process reservation request option CoreCnt= or TRES=cpu=
@@ -73,9 +74,9 @@ extern int corecnt_supported(void);
  * IN from_tres - used to discern if the count comes from TRES= or CoreCnt=
  * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
  */
-extern int parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-			      int *free_tres_corecnt, bool from_tres,
-			      char **err_msg);
+extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
+					    char *val, int *free_tres_corecnt,
+					    bool from_tres, char **err_msg);
 
 /*
  * Parse and process reservation request option NodeCnt= or TRES=node=
@@ -98,9 +99,12 @@ extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
  * IN/OUT free_tres_* - set to 1 if caller needs to free the specific member
  * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
  */
-extern int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
-			    int *free_tres_license, int *free_tres_bb,
-			    int *free_tres_corecnt, int *free_tres_nodecnt,
-			    char **err_msg);
+extern int state_control_parse_resv_tres(char *val,
+					 resv_desc_msg_t *resv_msg_ptr,
+					 int *free_tres_license,
+					 int *free_tres_bb,
+					 int *free_tres_corecnt,
+					 int *free_tres_nodecnt,
+					 char **err_msg);
 
 #endif /* !_STATE_CONTROL_H */

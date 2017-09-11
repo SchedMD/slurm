@@ -152,7 +152,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	watts_str = watts_to_str(resv_ptr->resv_watts);
+	watts_str = state_control_watts_to_str(resv_ptr->resv_watts);
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
 	xstrfmtcat(out,
