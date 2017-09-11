@@ -38,8 +38,6 @@ set exit_code    0
 set file_in      "test$test_id.in"
 set file_out     "test$test_id.out"
 
-set eol "\r\n"
-
 print_header $test_id
 
 proc sbatch {} {
@@ -102,7 +100,6 @@ proc cancel_all_jobs { } {
 
 	if {$job_id != 0} {
 		exec $scancel $job_id
-		sleep 5
 	}
 }
 

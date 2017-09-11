@@ -39,8 +39,6 @@ set test_id      "38.4"
 set exit_code    0
 set file_out     "test$test_id.out"
 
-set eol "\r\n"
-
 print_header $test_id
 
 proc salloc {} {
@@ -107,7 +105,6 @@ proc cancel_all_jobs { } {
 	global scancel job_id
 	if {$job_id != 0} {
 		exec $scancel $job_id
-		sleep 5
 	}
 }
 
