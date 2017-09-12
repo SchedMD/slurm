@@ -93,7 +93,9 @@ static srun_job_t *local_srun_job = NULL;
 static List local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
 static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t pack_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t pack_lock   = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  start_cond  = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static opt_t *opt_save = NULL;
 
 static List task_state_list = NULL;
@@ -624,6 +626,34 @@ static void _task_state_del(void *x)
 	task_state_destroy(task_state);
 }
 
+/*
+ * Return only after all pack job components reach this point (or timeout)
+ */
+static void _wait_all_pack_started(opt_t *opt_local)
+{
+	static int start_cnt = 0;
+	static int total_cnt = -1;
+	struct timeval  now;
+	struct timespec timeout;
+	int rc;
+
+	slurm_mutex_lock(&start_mutex);
+	if (total_cnt == -1)
+		total_cnt = opt_local->pack_step_cnt;
+	start_cnt++;
+	while (start_cnt < total_cnt) {
+		gettimeofday(&now, NULL);
+		timeout.tv_sec = now.tv_sec + 10;	/* 10 sec delay max */
+		timeout.tv_nsec = now.tv_usec * 1000;
+		rc = pthread_cond_timedwait(&start_cond, &start_mutex,
+					    &timeout);
+		if (rc == ETIMEDOUT)
+			break;
+	}
+	slurm_cond_broadcast(&start_cond);
+	slurm_mutex_unlock(&start_mutex);
+}
+
 extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				uint32_t *global_rc,
 				slurm_step_launch_callbacks_t *step_callbacks,
@@ -786,6 +816,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 						  job->task_offset,
 						  job->ntasks);
 		}
+
+		_wait_all_pack_started(opt_local);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 
 		if (opt_local->debugger_test)

@@ -922,7 +922,7 @@ RESEND:	slurm_msg_t_init(&req);
 		 * probably just means the tasks exited in the meanwhile.
 		 */
 		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID) &&
-		    (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)&&
+		    (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH) &&
 		    (rc != EAGAIN)) {
 			error("Failure sending signal %d to step %u.%u on node %s: %s",
 			      signo, ctx->job_id, ctx->step_resp->job_step_id,

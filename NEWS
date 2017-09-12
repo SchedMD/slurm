@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
       Disabled by default as most MPI implementations and Slurm configurations
       are not currently supported. Limitation to be removed in Slurm version
       18.08.
+    * Synchronize application launch across multiple components with debugger.
  -- Add cluster name to smail tool email header.
  -- Speedup arbitrary distribution algorithm.
  -- Modify "srun --mpi=list" output to match valid option input by removing the
