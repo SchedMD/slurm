@@ -432,10 +432,15 @@ extern int select_get_plugin_id_pos(uint32_t plugin_id)
 /* Get the plugin ID number. Unique for each select plugin type */
 extern int select_get_plugin_id(void)
 {
-	if (slurm_select_init(0) < 0)
-		return 0;
+	int plugin_pos;
 
-	return *(ops[select_context_default].plugin_id);
+	if (slurm_select_init(0) < 0)
+		return SLURM_ERROR;
+
+	plugin_pos = working_cluster_rec ?
+		working_cluster_rec->plugin_id_select : select_context_default;
+
+	return *(ops[plugin_pos].plugin_id);
 }
 
 /* If the slurmctld is running a linear based select plugin return 1
