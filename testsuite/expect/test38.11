@@ -1,0 +1,169 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate sbcast for a pack job allocation.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015-2107 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+# and Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id    38.11
+set script1   "test$test_id.in1"
+set script2   "test$test_id.in2"
+set exit_code  0
+set job_id     0
+set hostlist   ""
+set node1      ""
+set node2      ""
+
+print_header $test_id
+
+if {![test_accting_steps]} {
+	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
+	send_user "(AccountingStorageEnforce)\n"
+	exit 0
+}
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit 0
+} elseif {[slurmd_user_root] == 0} {
+	send_user "\nWARNING: This test requires that the SlurmdUser be root\n"
+	exit 0
+} elseif {[get_node_cnt] < 2} {
+	send_user "\nWARNING: This test requires that the configuration has at least 2 nodes.\n"
+	exit 0
+}
+
+spawn $bin_bash -c "exec $scontrol show hostnames \$($sinfo -tidle -h -o%N) | head -n2 |tr \'\n\' ' ' "
+expect {
+	-re "($alpha_numeric_under) ($alpha_numeric_under)" {
+		set node1 $expect_out(1,string)
+		set node2 $expect_out(2,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {![string compare $node1 ""] || ![string compare $node2 ""]} {
+	send_user "\nWARNING: Did not find at least 2 idle nodes\n"
+	exit 0
+}
+
+make_bash_script $script1 "
+
+$srun --pack-group=0 $bin_rm -f  /tmp/$test_id/$node1/test$test_id\_file
+$srun --pack-group=0 $bin_rm -fr /tmp/$test_id/$node1
+$srun --pack-group=1 $bin_rm -f  /tmp/$test_id/$node2/test$test_id\_file
+$srun --pack-group=1 $bin_rm -fr /tmp/$test_id/$node2
+$srun --pack-group=1 $bin_rm -fr /tmp/$test_id
+
+$srun -N1 -n1 --pack-group=0 mkdir /tmp/$test_id
+$srun -N1 -n1 --pack-group=1 mkdir /tmp/$test_id
+$srun -N1 -n1 --pack-group=0 mkdir /tmp/$test_id/$node1
+$srun -N1 -n1 --pack-group=1 mkdir /tmp/$test_id/$node2
+
+$srun -N1 -n1 --pack-group=1 ./$script2
+
+echo -n \"Checking node 1: \"
+$srun -Q -N1 -n1 --pack-group=1 ls /tmp/$test_id/$node2/test$test_id\_file
+
+echo -n \"Checking node 0: \"
+$srun -Q -N1 -n1 --pack-group=0 ls /tmp/$test_id/$node1/test$test_id\_file
+
+#$srun --pack-group=0 $bin_rm -f  /tmp/$test_id/$node1/test$test_id\_file
+#$srun --pack-group=0 $bin_rm -fr /tmp/$test_id/$node1
+#$srun --pack-group=1 $bin_rm -f  /tmp/$test_id/$node2/test$test_id\_file
+#$srun --pack-group=1 $bin_rm -fr /tmp/$test_id/$node2
+"
+
+make_bash_script $script2 "
+$sbcast -f -j\$SLURM_JOBID $srun /tmp/$test_id/\$SLURMD_NODENAME/test$test_id\_file
+"
+
+# Make allocations
+set timeout $max_job_delay
+set matches 0
+spawn $salloc -t5 --exclusive -N1 -w$node1 : --exclusive -N1 -w$node2 ./$script1
+expect {
+	-re "Permission denied" {
+		send_user "\nFAILURE: Unable to delete/create file, check permissions\n"
+		exit 1
+	}
+	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
+		send_user "\nWARNING: can't run this test\n"
+		exec $bin_rm -rf $script1 $script2
+		exit 0
+	}
+	-re "cannot create directory" {
+		send_user "\nThis error is expected when nodes share the "
+		send_user "same tmp directory\n"
+		exp_continue
+	}
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Checking node 1: */tmp/$test_id/$node2/test$test_id\_file" {
+		incr matches
+		exp_continue
+	}
+	-re "Checking node 0: */tmp/$test_id/$node1/test$test_id\_file" {
+		set matches -999
+		exp_continue
+	}
+	-re "Checking node 0: .*No such" {
+		send_user "\nThis error is expected\n"
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: Test job submission failed\n"
+	exit 1
+}
+if {$matches != 2} {
+	send_user "\nFAILURE: sbcast did not copy the file to the correct nodes ($matches != 2)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -rf $script1 $script2
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
