@@ -2462,18 +2462,12 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
 	list_iterator_destroy(iter);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-		if (!pack_leader) {
-			info("Batch pack job %u waiting for job %u to be ready",
-			     pack_job->job_id, pack_job->job_id);
-		} else if (pack_leader) {
+		if (pack_leader) {
 			info("Batch pack job %u being launched",
 			     pack_leader->job_id);
 		} else if (pack_job) {
 			info("Batch pack job %u waiting for job %u to be ready",
-			     pack_leader->job_id, pack_job->job_id);
-		} else {
-			error("Batch pack leader %u has empty pack_job_list",
-			      pack_leader->job_id);
+			     pack_job->pack_job_id, pack_job->job_id);
 		}
 	}
 
