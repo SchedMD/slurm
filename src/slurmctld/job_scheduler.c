@@ -1832,6 +1832,8 @@ next_task:
 			continue;
 		}
 
+		if (!job_ptr->part_ptr)
+			continue;
 		i = bit_overlap(avail_node_bitmap,
 				job_ptr->part_ptr->node_bitmap);
 		if ((job_ptr->details &&
