@@ -309,8 +309,8 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		if (state_control_parse_resv_corecnt(resv_msg, (char *)new_text,
 						     &free_tres_corecnt, false,
 						     &err_msg) == SLURM_ERROR) {
-			global_edit_error_msg = xstrdup(err_msg);
-			xfree(err_msg);
+			global_edit_error_msg = err_msg;
+			err_msg = NULL;
 			goto return_error;
 		}
 		break;
@@ -352,8 +352,8 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		if (parse_resv_nodecnt(resv_msg, (char *)new_text,
 				       &free_tres_nodecnt, false,
 				       &err_msg) == SLURM_ERROR) {
-			global_edit_error_msg = xstrdup(err_msg);
-			xfree(err_msg);
+			global_edit_error_msg = err_msg;
+			err_msg = NULL;
 			goto return_error;
 		}
 		break;
@@ -383,16 +383,16 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 						  &free_tres_corecnt,
 						  &free_tres_nodecnt, &err_msg)
 		    == SLURM_ERROR) {
-			global_edit_error_msg = xstrdup(err_msg);
-			xfree(err_msg);
+			global_edit_error_msg = err_msg;
+			err_msg = NULL;
 			goto return_error;
 		}
 		break;
 	case SORTID_WATTS:
 		if (state_control_parse_resv_watts((char *) new_text, resv_msg,
 						   &err_msg) == SLURM_ERROR) {
-			global_edit_error_msg = xstrdup(err_msg);
-			xfree(err_msg);
+			global_edit_error_msg = err_msg;
+			err_msg = NULL;
 			goto return_error;
 		}
 		type = "watts";
