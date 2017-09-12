@@ -79,6 +79,7 @@ if {![string compare $node1 ""] || ![string compare $node2 ""]} {
 
 set hostlist "$node1,$node2"
 
+
 make_bash_script $file_in1 "
 $srun $bin_rm -f /tmp/$node1/test$test_id\_file
 $srun $bin_rm -fr /tmp/$node1
@@ -111,6 +112,10 @@ set timeout $max_job_delay
 set matches 0
 spawn $salloc -N2 -w$hostlist -t1 ./$file_in1
 expect {
+	-re "Permission denied" {
+		send_user "\nFAILURE: Unable to delete/create file, check permissions\n"
+		exit 1
+	}
 	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
 		send_user "\nWARNING: can't run this test\n"
 		exec $bin_rm -rf $file_in1 $file_in2
