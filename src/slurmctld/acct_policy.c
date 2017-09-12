@@ -1012,7 +1012,7 @@ static bool _validate_tres_limits_for_qos(
 		if (divisor)
 			job_tres /= divisor;
 
-		if (out_grp_tres_array) {
+		if (out_grp_tres_array && grp_tres_array) {
 			if (out_grp_tres_array[i] == INFINITE64)
 				out_grp_tres_array[i] = grp_tres_array[i];
 
