@@ -118,7 +118,8 @@ and site reports.</p>
 <tr><td nowrap bgcolor="#F0F1C9">14:40 - 15:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>15:00 - 15:40</td><td>Technical</td><td>Jacobsen</td><td>cli_filter - A new plugin for client-side job filtration and manipulation</td></tr>
 <tr><td nowrap>15:40 - 16:10</td><td>Technical</td><td>Kumar, Weinberg, Hill</td><td>Offloading HPC workload on preemptable OpenStack instances without explicit checkpointing</td></tr>
- 
+<tr><td nowrap>16:10 - 16:40</td><td>Technical</td><td>Cardo</td><td>Managing Diversity in Complex Workloads in a Complex Environment</td></tr>
+
 <tr>
   <td bgcolor="#F0F1C9">19:00</td>
   <td bgcolor="#F0F1C9">Dinner</td>
@@ -318,7 +319,11 @@ KNL technology at its most efficient state.</p>
 </ul>
 <p>It is important to note that any cli_filter plugin should still be used with similar logic in job_submit to ensure that alternate means of submitting jobs (i.e., direct use of the slurm api) do not allow users to circumvent policy.</p>
 
+<h3>Managing Diversity in Complex Workloads in a Complex Environment</h3>
+<p>Nicholas Cardo</p>
+<p>The CSCS flagship system Piz Daint, a Cray XC50/XC40, has been designed with diversity as a key element.  Diversity in architectures, customers, workloads, frameworks, and expectations created a challenge for scheduling in order to maintain Service Level Agreements.  Adding in the demand of high throughput computing for one customer and containerized computing requirements, further complicated the situation.  Layered on top of all the diversity, are the policies governing the usage of the system. </p>
 
+<p>CSCS rose to the challenge and by utilizing the many options available in Slurm, overcame the diversity challenge and created an environment capable of delivering across all areas.  This presentation will focus on key challenges that needed to be addressed from each area and relate them to technical solutions in order overcome them.  An overview of the complexities of Piz Daint will be presented along with techniques used overcome the many challenges along with lessons learned.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
