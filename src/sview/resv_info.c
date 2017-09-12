@@ -79,7 +79,7 @@ enum {
 };
 
 /* extra field here is for choosing the type of edit you that will
- * take place. If you choose EDIT_MODEL (means only display a set of
+ * take place.  If you choose EDIT_MODEL (means only display a set of
  * known options) create it in function create_model_*.
  */
 

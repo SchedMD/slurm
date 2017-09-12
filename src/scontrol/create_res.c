@@ -159,8 +159,8 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 
 		} else if (plus_minus) {
 			exit_code = 1;
-			error("The +=/-= notation is not supported when "
-			      "updating %.*s.  %s", taglen, tag, msg);
+			error("The +=/-= notation is not supported when updating %.*s.  %s",
+			      taglen, tag, msg);
 			return SLURM_ERROR;
 
 		} else if (!strncasecmp(tag, "ReservationName",
@@ -275,7 +275,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			continue;
 		} else {
 			exit_code = 1;
-			error("Unknown parameter %s. %s", argv[i], msg);
+			error("Unknown parameter %s.  %s", argv[i], msg);
 			return SLURM_ERROR;
 		}
 	}
@@ -311,7 +311,7 @@ scontrol_update_res(int argc, char **argv)
 
 	if (resv_msg.name == NULL) {
 		exit_code = 1;
-		error("Reservation must be given. No reservation update.");
+		error("Reservation must be given.  No reservation update.");
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 	}
 
@@ -369,29 +369,26 @@ scontrol_create_res(int argc, char **argv)
 
 	if (resv_msg.start_time == (time_t)NO_VAL) {
 		exit_code = 1;
-		error("A start time must be given. No reservation created.");
+		error("A start time must be given.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.end_time == (time_t)NO_VAL &&
 	    resv_msg.duration == (uint32_t)NO_VAL) {
 		exit_code = 1;
-		error("An end time or duration must be given. "
-		      "No reservation created.");
+		error("An end time or duration must be given.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.end_time != (time_t)NO_VAL &&
 	    resv_msg.duration != (uint32_t)NO_VAL &&
 	    resv_msg.start_time + resv_msg.duration*60 != resv_msg.end_time) {
 		exit_code = 1;
-		error("StartTime + Duration does not equal EndTime. "
-		      "No reservation created.");
+		error("StartTime + Duration does not equal EndTime.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.start_time > resv_msg.end_time &&
 	    resv_msg.end_time != (time_t)NO_VAL) {
 		exit_code = 1;
-		error("Start time cannot be after end time. "
-		      "No reservation created.");
+		error("Start time cannot be after end time.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 
@@ -416,8 +413,7 @@ scontrol_create_res(int argc, char **argv)
 	    (resv_msg.flags != NO_VAL) &&
 	    (resv_msg.flags & RESERVE_FLAG_PART_NODES)) {
 		exit_code = 1;
-		error("Part_Nodes flag requires specifying a Partition. "
-		      "No reservation created.");
+		error("Part_Nodes flag requires specifying a Partition.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 
@@ -434,9 +430,7 @@ scontrol_create_res(int argc, char **argv)
 	    (resv_msg.resv_watts == NO_VAL)) {
 		if (resv_msg.partition == NULL) {
 			exit_code = 1;
-			error("CoreCnt, Nodes, NodeCnt, BurstBuffer, Licenses"
-			      "or Watts must be specified. No reservation "
-			      "created.");
+			error("CoreCnt, Nodes, NodeCnt, BurstBuffer, Licenses or Watts must be specified.  No reservation created.");
 			goto SCONTROL_CREATE_RES_CLEANUP;
 		}
 		if (resv_msg.flags == (uint16_t) NO_VAL)
@@ -448,8 +442,7 @@ scontrol_create_res(int argc, char **argv)
 	if ((resv_msg.users == NULL    || resv_msg.users[0] == '\0') &&
 	    (resv_msg.accounts == NULL || resv_msg.accounts[0] == '\0')) {
 		exit_code = 1;
-		error("Either Users or Accounts must be specified.  "
-		      "No reservation created.");
+		error("Either Users or Accounts must be specified.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.resv_watts != NO_VAL &&
@@ -459,8 +452,7 @@ scontrol_create_res(int argc, char **argv)
 	     (resv_msg.node_list != NULL && resv_msg.node_list[0] != '\0') ||
 	     (resv_msg.licenses  != NULL && resv_msg.licenses[0]  != '\0'))) {
 		exit_code = 1;
-		error("A power reservation must be empty and set the "
-		      "LICENSE_ONLY flag. No reservation created.");
+		error("A power reservation must be empty and set the LICENSE_ONLY flag.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	new_res_name = slurm_create_reservation(&resv_msg);
