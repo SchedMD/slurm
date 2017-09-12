@@ -1371,6 +1371,11 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					xmalloc(sizeof(uint32_t) *
 						(allowed_freqs[0]+1));
 			}
+			if (job_ptr->details->min_nodes == 0) {
+				error("%s: Job %u min_nodes is zero",
+				      __func__, job_ptr->job_id);
+				job_ptr->details->min_nodes = 1;
+			}
 			cpus_per_node = job_ptr->details->min_cpus /
 					job_ptr->details->min_nodes;
 			tmp_max_watts =
