@@ -113,7 +113,7 @@ and site reports.</p>
 <tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Lalli, Quan</td><td>Utilizing Slurm and Passive Nagios Plugins for Scalable KNL Compute Node Monitoring</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>12:50 - 13:40</td><td>Technical</td><td>Wickberg</td><td>Field Notes From the Frontlines of Slurm Support</td></tr>
-<tr><td nowrap>13:40 - 14:10</td><td>Technical</td><td>Brophy, Perry</td><td>TRES capability utilized to introduce luster and interconnect ofed accounting statistics</td></tr>
+<tr><td nowrap>13:40 - 14:10</td><td>Technical</td><td>Hasan, Kuo, Zhang, Dombrowski, Masover, Schmitz, Muriki, Qin</td><td>Building a Slurm Banking System</td></tr>
 <tr><td nowrap>14:10 - 14:40</td><td>Technical</td><td>Jette, Krause</td><td>Slurm as a Build Block for Modular Supercomputing with Heterogeneous Jobs</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">14:40 - 15:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>15:00 - 15:40</td><td>Technical</td><td>Jacobsen</td><td>cli_filter - A new plugin for client-side job filtration and manipulation</td></tr>
@@ -143,7 +143,7 @@ and site reports.</p>
 <tr><td nowrap>09:30 - 10:00</td><td>Site Report</td><td>Botts, Jacobsen</td><td>NERSC site report</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Auble</td><td>Slurm Roadmap - 17.11, 18.08 and beyond</td></tr>
-<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Hasan, Kuo, Zhang, Dombrowski, Masover, Schmitz, Muriki, Qin</td><td>Building a SLURM Banking System</td></tr>
+<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Brophy, Perry</td><td>TRES capability utilized to introduce luster and interconnect ofed accounting statistics</td></tr>
 <tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Beche</td><td>Enabling web-based interactive notebooks on geographically distributed HPC resources</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Perry, Mehlberg</td><td>Slurm SPANK Plugin for Singularity Ease of Use</td></tr>
@@ -227,7 +227,7 @@ and site reports.</p>
 <p>[7] Ju-Won Park, Jae Keun Yeom, Jinyong Jo, and Jaegyoon Hahm. Elastic Resource Provisioning to Expand the Capacity of Cluster in Hybrid Computing Infrastructure. In Proceedings of the 2014 IEEE/ACM 7th International Conference on Utility and Cloud Computing (UCC '14). pp. 780-785.</p>
 
 
-<h3>Building a SLURM Banking System</h3>
+<h3>Building a Slurm Banking System</h3>
 <p>
 	Sahil Hasan (Berkeley Research Computing, University of California, Berkeley)<Br>
 	Harrison Kuo (Berkeley Research Computing, University of California, Berkeley)<Br>
@@ -238,7 +238,7 @@ and site reports.</p>
 	Krishna Muriki (Berkeley Research Computing, University of California, Berkeley, High Performance Computing Services, Lawrence Berkeley National Lab)<Br>
 	Yong Qin (Berkeley Research Computing, University of California, Berkeley, High Performance Computing Services, Lawrence Berkeley National Lab)
 </p>
-<p>SLURM's intrinsic accounting infrastructure is focused on establishing limits on Trackable Resource Minutes (TRES-minutes) used by a specific SLURM account. Unaddressed by this model are use cases in which an account owner wants to parcel out fixed portions of their allocation to other users associated with the account. For example, a professor teaching a class of two hundred students may have been granted two million TRES-minutes, and may want to give every student in her class a limit of ten thousand minutes each in order to  foreclose the possibility that a few super-consuming students might exhaust their fellow students' fair share of the class allocation. To address use cases such as this, we have designed a system of plugins that enable easy sub-allocation of TRES-minutes within an account, and to track usage (burndown) of sub-allocations by modelling jobs as credit card transactions. In addition, we have built a graphical Django-based dashboard to aid account owners in adding users, changing allocations, generating visualizations to monitor burndown rates, etc. Our talk will focus upon the architecture and design supporting both the plugins and Django dashboard, as well as give an overview of the functionality both features will provide.</p>
+<p>Slurm's intrinsic accounting infrastructure is focused on establishing limits on Trackable Resource Minutes (TRES-minutes) used by a specific Slurm account. Unaddressed by this model are use cases in which an account owner wants to parcel out fixed portions of their allocation to other users associated with the account. For example, a professor teaching a class of two hundred students may have been granted two million TRES-minutes, and may want to give every student in her class a limit of ten thousand minutes each in order to  foreclose the possibility that a few super-consuming students might exhaust their fellow students' fair share of the class allocation. To address use cases such as this, we have designed a system of plugins that enable easy sub-allocation of TRES-minutes within an account, and to track usage (burndown) of sub-allocations by modelling jobs as credit card transactions. In addition, we have built a graphical Django-based dashboard to aid account owners in adding users, changing allocations, generating visualizations to monitor burndown rates, etc. Our talk will focus upon the architecture and design supporting both the plugins and Django dashboard, as well as give an overview of the functionality both features will provide.</p>
 
 <h3>Utilizing Slurm and Passive Nagios Plugins for Scalable KNL Compute Node Monitoring</h3>
 <p>Basil Lalli (SRE, NERSC)<br>Tony Quan (SRE, NERSC)</p>
@@ -291,7 +291,7 @@ KNL technology at its most efficient state.</p>
 
 <h3>Cyfronet site report</h3>
 <p>Maciej Pawlik (Cyfronet)</p>
-<p> Academic Computer Centre Cyfronet AGH-UST is one of the five HPC centers located in Poland. Cyfronet is currently the leader in terms of supplied computing power, with the flagship Top500-ranked, liquid-cooled production supercomputer - Prometheus. Prometheus, based on HPE Apollo 8000 platform, is currently the most powerful and most power-efficient supercomputer installation in Poland and Central Europe, with over 2200 nodes providing 2.4 PFlops and 2.068 GFlops/W respectively. It's main purpose is to provide free HPC resources for the scientific and research community in Poland. Job management and scheduling is handled by SLURM 17.02, with addition of some custom patches, tools and monitoring.</P>
+<p> Academic Computer Centre Cyfronet AGH-UST is one of the five HPC centers located in Poland. Cyfronet is currently the leader in terms of supplied computing power, with the flagship Top500-ranked, liquid-cooled production supercomputer - Prometheus. Prometheus, based on HPE Apollo 8000 platform, is currently the most powerful and most power-efficient supercomputer installation in Poland and Central Europe, with over 2200 nodes providing 2.4 PFlops and 2.068 GFlops/W respectively. It's main purpose is to provide free HPC resources for the scientific and research community in Poland. Job management and scheduling is handled by Slurm 17.02, with addition of some custom patches, tools and monitoring.</P>
 <p>Our patching efforts include improvements such as:</p>
 <ul>
   <li>Changes in power-saving procedure, e.g. hosts with DOWN state are not suspended (for diagnostic purposes)</li>
@@ -299,8 +299,8 @@ KNL technology at its most efficient state.</p>
   <li>Fixing some race conditions in slurmctld</li>
   <li>Proper handling of longer account names</li>
 </ul>
-<p>Prometheus relies on SLURM's "power saving" features, as powering down idle nodes has a significant impact on the power bill. It was found that power cycling nodes has a side effect of revealing hardware failures, which doesn't make vendors happy, but from the user's point of view, the integration of power saving was seamless.</p>
-<p>One of common complaints from our users was that some of the command line tools available in SLURM are rather cryptic for non-IT people and often have inconsistent parameters. This was addressed by implementing in-house scripts which wrap functionality of tools like scontrol, squeue, sstat, sacct. Homebrew scripts utilize a more user-centric approach, where it is much easier to assess the state of the jobs and its properties like CPU usage, memory allocation and efficiency for current and past jobs. A centralized project-based grant system is used for allocations also many tools for the support of both the enablement and accounting of the process have been developed. Monitoring is one of the key challenges of running HPC system and Prometheus is no exception. Data gathered from SLURM was incorporated into a custom Redis/Graphite monitoring stack, which enabled us to design dashboards specific for the system. Dashboards are split into two types, a node-centric and job-centric. The first type allows for quick assessment of a cluster state, by integrating node logical state (allocated, mixed etc.) with it's physical location and attributes (e.g. power draw, temperatures). While the latter type of dasbhords allows for monitoring individual users or accounts as they consume resources.</p>
+<p>Prometheus relies on Slurm's "power saving" features, as powering down idle nodes has a significant impact on the power bill. It was found that power cycling nodes has a side effect of revealing hardware failures, which doesn't make vendors happy, but from the user's point of view, the integration of power saving was seamless.</p>
+<p>One of common complaints from our users was that some of the command line tools available in Slurm are rather cryptic for non-IT people and often have inconsistent parameters. This was addressed by implementing in-house scripts which wrap functionality of tools like scontrol, squeue, sstat, sacct. Homebrew scripts utilize a more user-centric approach, where it is much easier to assess the state of the jobs and its properties like CPU usage, memory allocation and efficiency for current and past jobs. A centralized project-based grant system is used for allocations also many tools for the support of both the enablement and accounting of the process have been developed. Monitoring is one of the key challenges of running HPC system and Prometheus is no exception. Data gathered from Slurm was incorporated into a custom Redis/Graphite monitoring stack, which enabled us to design dashboards specific for the system. Dashboards are split into two types, a node-centric and job-centric. The first type allows for quick assessment of a cluster state, by integrating node logical state (allocated, mixed etc.) with it's physical location and attributes (e.g. power draw, temperatures). While the latter type of dasbhords allows for monitoring individual users or accounts as they consume resources.</p>
 <p>Work described above enabled us to provide a high quality service for our users, and in significant part will be shared with the HPC community. Prometheus has been running in production since 2015 and the software stack is still actively developed. With over 6 million finished jobs and over 330 supported scientific projects, enough experience has been gathered to present it and draw some plans for the future. </p>
 
 <h3>Site Report, NERSC.   Balancing the needs of thousands of users and many different workloads concurrently</h3>
@@ -322,6 +322,6 @@ KNL technology at its most efficient state.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 25 July 2017</p>
+<p style="text-align:center;">Last modified 12 September 2017</p>
 
 <!--#include virtual="footer.txt"-->
