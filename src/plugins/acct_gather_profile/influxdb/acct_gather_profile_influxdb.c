@@ -207,8 +207,9 @@ static int _send_data(const char *data)
 	CURLcode res;
 	struct http_response chunk;
 	int rc = SLURM_SUCCESS;
+	long response_code;
 	static int error_cnt = 0;
-	char *url = NULL, *token = NULL;
+	char *url = NULL;
 
 	/*
 	 * Every compute node which is sampling data will try to establish a
@@ -244,7 +245,6 @@ static int _send_data(const char *data)
 	curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
 	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, datastr);
 	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, strlen(datastr));
-	curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, _write_callback);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
 
@@ -255,36 +255,29 @@ static int _send_data(const char *data)
 		goto cleanup;
 	}
 
-	token = strtok(chunk.message, " ");
-	if (token == NULL) {
-		debug("%s: Could not receive the HTTP response status code from %s",
-		      plugin_type, url);
+	if ((res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE,
+				     &response_code)) != CURLE_OK) {
+		debug("%s: curl_easy_getinfo response code failed: %s",
+		      plugin_type, curl_easy_strerror(res));
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 
-	token = strtok(NULL, " ");
-	if ((xstrcmp(token, "100") == 0)) {
-		(void)  strtok(NULL, " ");
-		token = strtok(NULL, " ");
-	} else if ((xstrcmp(token, "400") == 0)) {
-		debug("%s: HTTP status code 400: Bad Request", plugin_type);
+	/* In general, status codes of the form 2xx indicate success,
+	 * 4xx indicate that InfluxDB could not understand the request, and
+	 * 5xx indicate that the system is overloaded or significantly impaired.
+	 * Errors are returned in JSON.
+	 * https://docs.influxdata.com/influxdb/v0.13/concepts/api/
+	 */
+	if (response_code >= 200 && response_code <= 205)
+		debug2("%s: data write success", plugin_type);
+	else {
 		rc = SLURM_ERROR;
-	} else if ((xstrcmp(token, "404") == 0)) {
-		debug("%s: HTTP status code 404: Unacceptable request",
-		      plugin_type);
-		rc = SLURM_ERROR;
-	} else if ((xstrcmp(token, "500") == 0)) {
-		debug("%s: HTTP status code 500: Internal Server Error",
-		      plugin_type);
-		rc = SLURM_ERROR;
-	} else if (xstrcmp(token, "204") != 0) {
-		debug("%s: HTTP status code %s received from %s", plugin_type,
-		      token, url);
-		debug3("HTTP Response:\n%s", chunk.message);
-		rc = SLURM_ERROR;
-	} else
-		debug("%s: Data written", plugin_type);
+		debug("%s: data write failed, response code: %ld", plugin_type,
+		      response_code);
+		debug3("%s: JSON response body: %s", plugin_type,
+		       chunk.message);
+	}
 
 cleanup:
 	xfree(chunk.message);
