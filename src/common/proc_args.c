@@ -1436,10 +1436,10 @@ extern int parse_int(const char *name, const char *val, bool positive)
 	    (positive && (result <= 0L))) {
 		error ("Invalid numeric value \"%s\" for %s.", val, name);
 		exit(1);
-	} else if (result > LONG_MAX) {
+	} else if (result == LONG_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, name);
 		exit(1);
-	} else if (result < LONG_MIN) {
+	} else if (result == LONG_MIN) {
 		error ("Numeric argument (%ld) to small for %s.", result, name);
 		exit(1);
 	}
