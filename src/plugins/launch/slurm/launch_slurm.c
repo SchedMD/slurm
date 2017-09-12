@@ -819,10 +819,9 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 
 		_wait_all_pack_started(opt_local);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
-
 		if (opt_local->debugger_test)
 			mpir_dump_proctable();
-		else
+		else if (opt_local->parallel_debug)
 			MPIR_Breakpoint(job);
 	} else {
 		info("Job step %u.%u aborted before step completely launched.",
