@@ -1714,10 +1714,11 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 	struct node_record *node_ptr;
 
 	node_ptr = old_node_table_ptr;
-	for (i=0; i< old_node_record_count; i++, node_ptr++)
-		purge_node_rec(node_ptr);
-
-	xfree(old_node_table_ptr);
+	if (old_node_table_ptr) {
+		for (i = 0; i< old_node_record_count; i++, node_ptr++)
+			purge_node_rec(node_ptr);
+		xfree(old_node_table_ptr);
+	}
 }
 
 /* Restore partition information from saved records */
