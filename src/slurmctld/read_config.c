@@ -2653,8 +2653,7 @@ unpack_error:
 	if (!ignore_state_errors)
 		fatal("Incomplete last_config_lite checkpoint file, start with '-i' to ignore this");
 	error("Incomplete last_config_lite checkpoint file");
-	if (buffer)
-		free_buf(buffer);
+	free_buf(buffer);
 
 	return SLURM_ERROR;
 }
