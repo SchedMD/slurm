@@ -173,7 +173,7 @@ void heartbeat_stop(void)
 time_t get_last_heartbeat(void)
 {
 	char *file;
-	int fd, i;
+	int fd = -1, i;
 	uint64_t value;
 
 	file = xstrdup_printf("%s/heartbeat",
@@ -185,13 +185,19 @@ time_t get_last_heartbeat(void)
 	 * the shuffle, as the contents are left intact.
 	 */
 	for (i = 0; (i < OPEN_RETRIES) && (fd < 0); i++) {
-		fd = open(file, O_RDONLY);
-		if (fd < 0) {
-			error("%s: heartbeat open attempt %d failed from %s.",
-			      __func__, i, file);
-			xfree(file);
-			return 0;
+		if (i) {
+			debug("%s: sleeping before attempt %d to open heartbeat",
+			      __func__, i);
+			usleep(100000);
 		}
+		fd = open(file, O_RDONLY);
+	}
+
+	if (fd < 0) {
+		error("%s: heartbeat open attempt failed from %s.",
+		      __func__, file);
+		xfree(file);
+		return 0;
 	}
 
 	if (read(fd, &value, sizeof(uint64_t)) != sizeof(uint64_t)) {
