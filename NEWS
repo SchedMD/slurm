@@ -284,6 +284,8 @@ documents those changes that are of interest to users and administrators.
  -- Optimization enhancements for partition based job preemption.
  -- Address some build warnings from GCC 7.1, and one possible memory leak if
     /proc is inaccessible.
+ -- If creating/altering a core based reservation with scontrol/sview on a
+    remote cluster correctly determine the select type.
 
 * Changes in Slurm 17.02.7
 ==========================

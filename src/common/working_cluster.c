@@ -217,8 +217,6 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 
 extern uint32_t slurmdb_setup_plugin_id_select(void)
 {
-	if (working_cluster_rec)
-		return working_cluster_rec->plugin_id_select;
 	return select_get_plugin_id();
 }
 
