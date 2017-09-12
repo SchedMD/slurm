@@ -286,6 +286,7 @@ documents those changes that are of interest to users and administrators.
     /proc is inaccessible.
  -- If creating/altering a core based reservation with scontrol/sview on a
     remote cluster correctly determine the select type.
+ -- Fix autoconf test for libcurl when clang is used.
 
 * Changes in Slurm 17.02.7
 ==========================
