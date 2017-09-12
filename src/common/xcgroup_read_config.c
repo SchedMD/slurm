@@ -276,7 +276,8 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
                                "AllowedDevicesFile", tbl);
                 if (! slurm_cgroup_conf->allowed_devices_file)
                         slurm_cgroup_conf->allowed_devices_file =
-                                xstrdup("/etc/slurm/cgroup_allowed_devices_file.conf");
+				get_extra_conf_path(
+					"cgroup_allowed_devices_file.conf");
 
 		s_p_hashtbl_destroy(tbl);
 	}
