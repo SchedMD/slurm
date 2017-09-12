@@ -339,7 +339,7 @@ If a pack_job_id value is specified as a job filter, then information about
 all components of that job will be reported as shown below.</p>
 
 <pre>
-$ sacct -j 67767+1
+$ sacct -j 67767
   JobID JobName Partition Account AllocCPUS     State ExitCode 
 ------- ------- --------- ------- --------- --------- -------- 
 67767+0     foo     debug    test         2 COMPLETED      0:0 
