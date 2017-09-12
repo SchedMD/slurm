@@ -58,7 +58,8 @@ if {[test_front_end] != 0} {
 	exit 0
 }
 
-spawn $bin_bash -c "exec $scontrol show hostnames \$($sinfo -tidle -h -o%N) | head -n2 |tr \'\n\' ' ' "
+set def_part [default_partition]
+spawn $bin_bash -c "exec $scontrol show hostnames \$($sinfo -tidle --partition=$def_part -h -o%N) | head -n2 |tr \'\n\' ' ' "
 expect {
 	-re "($alpha_numeric_under) ($alpha_numeric_under)" {
 		set node1 $expect_out(1,string)
@@ -80,39 +81,39 @@ if {![string compare $node1 ""] || ![string compare $node2 ""]} {
 
 make_bash_script $script1 "
 
-$srun --pack-group=0 $bin_rm -f  /tmp/$test_id/$node1/test$test_id\_file
-$srun --pack-group=0 $bin_rm -fr /tmp/$test_id/$node1
-$srun --pack-group=1 $bin_rm -f  /tmp/$test_id/$node2/test$test_id\_file
-$srun --pack-group=1 $bin_rm -fr /tmp/$test_id/$node2
-$srun --pack-group=1 $bin_rm -fr /tmp/$test_id
+$srun --pack-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file
+$srun --pack-group=0 $bin_rm -fr /tmp/test_${test_id}/$node1
+$srun --pack-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file
+$srun --pack-group=1 $bin_rm -fr /tmp/test_${test_id}/$node2
+$srun --pack-group=1 $bin_rm -fr /tmp/test_${test_id}
 
-$srun -N1 -n1 --pack-group=0 mkdir /tmp/$test_id
-$srun -N1 -n1 --pack-group=1 mkdir /tmp/$test_id
-$srun -N1 -n1 --pack-group=0 mkdir /tmp/$test_id/$node1
-$srun -N1 -n1 --pack-group=1 mkdir /tmp/$test_id/$node2
+$srun -N1 -n1 --pack-group=0 mkdir /tmp/test_${test_id}
+$srun -N1 -n1 --pack-group=1 mkdir /tmp/test_${test_id}
+$srun -N1 -n1 --pack-group=0 mkdir /tmp/test_${test_id}/$node1
+$srun -N1 -n1 --pack-group=1 mkdir /tmp/test_${test_id}/$node2
 
 $srun -N1 -n1 --pack-group=1 ./$script2
 
 echo -n \"Checking node 1: \"
-$srun -Q -N1 -n1 --pack-group=1 ls /tmp/$test_id/$node2/test$test_id\_file
+$srun -Q -N1 -n1 --pack-group=1 ls /tmp/test_${test_id}/$node2/test$test_id\_file
 
 echo -n \"Checking node 0: \"
-$srun -Q -N1 -n1 --pack-group=0 ls /tmp/$test_id/$node1/test$test_id\_file
+$srun -Q -N1 -n1 --pack-group=0 ls /tmp/test_${test_id}/$node1/test$test_id\_file
 
-#$srun --pack-group=0 $bin_rm -f  /tmp/$test_id/$node1/test$test_id\_file
-#$srun --pack-group=0 $bin_rm -fr /tmp/$test_id/$node1
-#$srun --pack-group=1 $bin_rm -f  /tmp/$test_id/$node2/test$test_id\_file
-#$srun --pack-group=1 $bin_rm -fr /tmp/$test_id/$node2
+$srun --pack-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file
+$srun --pack-group=0 $bin_rm -fr /tmp/test_${test_id}/$node1
+$srun --pack-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file
+$srun --pack-group=1 $bin_rm -fr /tmp/test_${test_id}/$node2
 "
 
 make_bash_script $script2 "
-$sbcast -f -j\$SLURM_JOBID $srun /tmp/$test_id/\$SLURMD_NODENAME/test$test_id\_file
+$sbcast -f -j\$SLURM_JOBID $srun /tmp/test_${test_id}/\$SLURMD_NODENAME/test$test_id\_file
 "
 
 # Make allocations
 set timeout $max_job_delay
 set matches 0
-spawn $salloc -t5 --exclusive -N1 -w$node1 : --exclusive -N1 -w$node2 ./$script1
+spawn $salloc -t1 --exclusive -N1 -w$node1 : --exclusive -N1 -w$node2 ./$script1
 expect {
 	-re "Permission denied" {
 		send_user "\nFAILURE: Unable to delete/create file, check permissions\n"
@@ -132,11 +133,11 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "Checking node 1: */tmp/$test_id/$node2/test$test_id\_file" {
+	-re "Checking node 1: */tmp/test_${test_id}/$node2/test$test_id\_file" {
 		incr matches
 		exp_continue
 	}
-	-re "Checking node 0: */tmp/$test_id/$node1/test$test_id\_file" {
+	-re "Checking node 0: */tmp/test_${test_id}/$node1/test$test_id\_file" {
 		set matches -999
 		exp_continue
 	}
