@@ -1625,10 +1625,10 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	if (private_data & PRIVATE_DATA_JOBS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
-			/* Only fill in the coordinator accounts here
-			   we will check them later when we actually
-			   try to get the jobs.
-			*/
+			/*
+			 * Only fill in the coordinator accounts here we will
+			 * check them later when we actually try to get the jobs
+			 */
 			is_user_any_coord(mysql_conn, &user);
 		}
 		if (!is_admin && !user.name) {
@@ -1647,13 +1647,13 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
-	for(i=1; i<JOB_REQ_COUNT; i++) {
+	for (i = 1; i < JOB_REQ_COUNT; i++) {
 		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
 	}
 
 	xfree(tmp2);
 	xstrfmtcat(tmp2, "%s", step_req_inx[0]);
-	for(i=1; i<STEP_REQ_COUNT; i++) {
+	for (i = 1; i < STEP_REQ_COUNT; i++) {
 		xstrfmtcat(tmp2, ", %s", step_req_inx[i]);
 	}
 
