@@ -1629,7 +1629,7 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 			 * Only fill in the coordinator accounts here we will
 			 * check them later when we actually try to get the jobs
 			 */
-			is_user_any_coord(mysql_conn, &user);
+			(void) is_user_any_coord(mysql_conn, &user);
 		}
 		if (!is_admin && !user.name) {
 			debug("User %u has no associations, and is not admin, "
