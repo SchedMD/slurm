@@ -1224,11 +1224,13 @@ extern void gs_fini(void)
 		thread_shutdown = true;
 		slurm_cond_signal(&term_cond);
 		slurm_mutex_unlock(&term_lock);
+		slurm_mutex_unlock(&thread_flag_mutex);
 		usleep(120000);
 		if (timeslicer_thread_id)
 			error("gang: timeslicer pthread still running");
+	} else {
+		slurm_mutex_unlock(&thread_flag_mutex);
 	}
-	slurm_mutex_unlock(&thread_flag_mutex);
 
 	FREE_NULL_LIST(preempt_job_list);
 
