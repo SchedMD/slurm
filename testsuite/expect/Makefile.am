@@ -634,7 +634,8 @@ EXTRA_DIST = \
 	test38.7.prog.c			\
 	test38.8			\
 	test38.9			\
-	test38.10
+	test38.10			\
+	test38.11
 
 distclean-local:
 	rm -rf *error *output
