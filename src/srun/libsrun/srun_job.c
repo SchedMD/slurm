@@ -1536,7 +1536,7 @@ static int _become_user (void)
 		return (error ("setgid: %m"));
 	}
 
-	initgroups (user, gid); /* Ignore errors */
+	(void) initgroups(user, gid); /* Ignore errors */
 	xfree(user);
 
 	if (setuid (opt.uid) < 0)
