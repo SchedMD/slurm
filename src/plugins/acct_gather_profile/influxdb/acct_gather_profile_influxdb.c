@@ -286,7 +286,7 @@ cleanup_global_init:
 		     plugin_type, error_cnt);
 
 	if (data) {
-		strcpy(datastr,data);
+		datastr = xstrdup(data);
 		datastrlen = strlen(data);
 	} else {
 		datastr[0] = '\0';
