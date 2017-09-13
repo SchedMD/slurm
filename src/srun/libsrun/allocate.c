@@ -139,7 +139,8 @@ static void _signal_while_allocating(int signo)
 	pthread_attr_t thread_attr;
 	int *local_signal;
 
-	/* There are places where _signal_while_allocating can't be
+	/*
+	 * There are places where _signal_while_allocating() can't be
 	 * put into a thread, but if this isn't on a separate thread
 	 * and we try to print something using the log functions and
 	 * it just so happens to be in a poll or something we can get
@@ -151,8 +152,10 @@ static void _signal_while_allocating(int signo)
 	local_signal = xmalloc(sizeof(int));
 	*local_signal = signo;
 	slurm_attr_init(&thread_attr);
-	pthread_create(&thread_id, &thread_attr,
-		       _safe_signal_while_allocating, local_signal);
+	while (pthread_create(&thread_id, &thread_attr,
+			     _safe_signal_while_allocating, local_signal)) {
+		usleep(10);	/* sleep and again */
+	}
 	slurm_attr_destroy(&thread_attr);
 }
 
