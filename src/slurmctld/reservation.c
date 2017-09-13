@@ -2225,8 +2225,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (xstrcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			if ((resv_desc_ptr->partition) &&
 			    (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES)) {
-				part_ptr = find_part_record(
-					resv_desc_ptr->partition);
 				node_bitmap = bit_copy(part_ptr->node_bitmap);
 			} else {
 				resv_desc_ptr->flags |= RESERVE_FLAG_ALL_NODES;
