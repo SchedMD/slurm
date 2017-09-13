@@ -214,6 +214,13 @@ order to troubleshoot any issues, it is recommended to temporarily increase
 the slurmd debug level to debug3 and add Profile to the debug flags. This can
 be accomplished by setting the slurm.conf SlurmdDebug and DebugFlags
 respectively or dynamically through scontrol setdebug and setdebugflags.
+.TP
+NOTE:
+Perhaps it's a good idea to use a monitoring and analytics tool such as Grafana
+on top of InfluxDB. This kind of tools permit to create dashboards, tables, and
+other graphics using the stored time series. This way, it is easier to correlate
+resource usage peaks reported by other node monitoring tools such as Ganglia
+with specific job step tasks.
 
 .TP
 \fBInfinibandOFED\fR
