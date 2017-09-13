@@ -42,7 +42,7 @@
 #include "src/common/macros.h"
 
 static pthread_mutex_t  time_lock = PTHREAD_MUTEX_INITIALIZER;
-static void _atfork_child()  { pthread_mutex_init(&time_lock, NULL); }
+static void _atfork_child()  { slurm_mutex_init(&time_lock); }
 static bool at_forked = false;
 
 inline static void _init(void)
