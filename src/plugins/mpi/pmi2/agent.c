@@ -300,6 +300,7 @@ static void *
 _agent(void * unused)
 {
 	eio_obj_t *tree_listen_obj, *task_obj;
+	eio_handle_t *orig_handle;
 	int i;
 
 	slurm_mutex_lock(&agent_mutex);
@@ -328,11 +329,12 @@ _agent(void * unused)
 
 	debug("mpi/pmi2: agent thread exit");
 
-	eio_handle_destroy(pmi2_handle);
-
 	slurm_mutex_lock(&agent_mutex);
 	agent_running = false;
+	orig_handle = pmi2_handle;
+	pmi2_handle = NULL;
 	slurm_mutex_unlock(&agent_mutex);
+	eio_handle_destroy(orig_handle);
 
 	return NULL;
 }

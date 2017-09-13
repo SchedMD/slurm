@@ -64,6 +64,8 @@ documents those changes that are of interest to users and administrators.
     "mpi/" prefix on each line of output.
  -- Automatically set the reservation's partition for the job if not the
     cluster default.
+ -- mpi/pmi2 plugin - vestigial pointer could be referenced at shutdown with
+    invalid memory reference resulting.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
