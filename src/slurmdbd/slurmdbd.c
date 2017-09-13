@@ -628,7 +628,7 @@ static void _set_work_dir(void)
 		slash_ptr = strrchr(work_dir, '/');
 		if (slash_ptr == work_dir)
 			work_dir[1] = '\0';
-		else
+		else if (slash_ptr)
 			slash_ptr[0] = '\0';
 		if ((access(work_dir, W_OK) != 0) || (chdir(work_dir) < 0))
 			error("chdir(%s): %m", work_dir);
