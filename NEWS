@@ -290,6 +290,9 @@ documents those changes that are of interest to users and administrators.
  -- If creating/altering a core based reservation with scontrol/sview on a
     remote cluster correctly determine the select type.
  -- Fix autoconf test for libcurl when clang is used.
+ -- Fix default location for cgroup_allowed_devices_file.conf to use correct
+    default path.
+ -- Document NewName option to sacctmgr.
 
 * Changes in Slurm 17.02.7
 ==========================
