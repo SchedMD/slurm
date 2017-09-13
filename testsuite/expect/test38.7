@@ -53,10 +53,6 @@ if {[file executable $mpicc] == 0} {
 	send_user "\nWARNING: $mpicc does not exists\n"
 	exit 0
 }
-if {[test_pack_step] == 0} {
-	send_user "\nWARNING: heterogeneous steps not currently supported\n"
-	exit 0
-}
 
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
@@ -99,6 +95,10 @@ if {![file exists $test_prog]} {
 	send_user "\nWARNING: Unable to build test program\n"
 	exit 0
 }
+
+########################################################################
+# TEST OF PACK GROUP 0
+########################################################################
 
 send_user "\n\nTEST OF PACK GROUP 0\n\n"
 
@@ -212,6 +212,10 @@ if {[wait_for_file $file_out] == 0} {
 	set exit_code 1
 }
 
+########################################################################
+# TEST OF PACK GROUP 1
+########################################################################
+
 send_user "\n\nTEST OF PACK GROUP 1\n\n"
 
 # Delete left-over stdout/err files
@@ -321,6 +325,15 @@ if {[wait_for_file $file_out] == 0} {
 	}
 } else {
 	set exit_code 1
+}
+
+########################################################################
+# TEST OF PACK GROUP 0,1
+########################################################################
+
+if {[test_pack_step] == 0} {
+	send_user "\nWARNING: heterogeneous steps not currently supported\n"
+	exit $exit_code
 }
 
 send_user "\n\nTEST OF PACK GROUP 0,1\n\n"
@@ -434,7 +447,11 @@ if {[wait_for_file $file_out] == 0} {
 	set exit_code 1
 }
 
-send_user "\n\nTEST OF PACK GROUP 1 then 0,1\n\n"
+########################################################################
+# TEST OF PACK GROUP 1 THEN 0,1
+########################################################################
+
+send_user "\n\nTEST OF PACK GROUP 1 THEN 0,1\n\n"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
