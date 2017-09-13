@@ -1,0 +1,224 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of sacct functionality for heterogeneous jobs.
+#          sacct options j
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id	"38.12"
+set exit_code	0
+set prompt	"PROMPT: "
+set timeout	60
+
+print_header $test_id
+
+
+if {[test_front_end]} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit $exit_code
+} elseif {[test_serial]} {
+	set task_num 1
+} else {
+	set task_num 2
+}
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes < 3} {
+	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
+	exit $exit_code
+}
+
+proc end_it { exit_code } {
+	global pack_job_id scancel
+	if {$pack_job_id > 0} {
+		exec $scancel $pack_job_id
+	}
+	exit $exit_code
+}
+
+set pack_job_id 0
+set component(0) 0
+set matches 0
+set index 0
+set timeout $max_job_delay
+spawn $salloc -t10 --exclusive -N1 : --exclusive -N1 : --exclusive -N1 $bin_bash
+expect {
+	-re "job ($number) has been allocated resources" {
+		set pack_job_id $expect_out(1,string)
+		send "export PS1=\"$prompt\"\r"
+		exp_continue
+	}
+	-re "\"$prompt" {
+		# skip this, just echo of setting prompt"
+		exp_continue
+	}
+	-re "$prompt" {
+		#send_user "Job initiated\n"
+	}
+	timeout {
+		log_error "salloc : allocation not granted in $timeout seconds\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$pack_job_id == 0} {
+	log_error "salloc failure\n"
+	end_it 1
+}
+
+send_user "\n\nCollect Nodenames\n\n"
+
+send "$squeue -j $pack_job_id -o\"NAME=%N\" --noheader\r"
+expect {
+	-re "--noheader" {
+		exp_continue
+	}
+	-re "NAME=($alpha_numeric_under)" {
+		set component($index) $expect_out(1,string)
+		incr index
+		exp_continue
+	}
+	-re "$prompt" {
+		#break
+	}
+	timeout {
+		log_error "squeue not responding"
+		end_it 1
+	}
+}
+if {$index != 3} {
+	log_error "squeue failure ($index != 3)"
+	end_it 1
+}
+
+send_user "\n\nTest Sending Srun w/ --label To Various Components\n\n"
+
+set matches 0
+send "$srun --label --mpi=none -n3 : -n4 : -n1 printenv SLURMD_NODENAME\r"
+expect {
+	-re "7: $component(2)" {
+		incr matches
+		exp_continue
+	}
+	-re "$prompt" {
+		send_user "\n\n"
+		#break
+	}
+	timeout {
+		log_error "srun not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	log_error "sacct failure ($matches != 1)\n"
+	end_it 1
+}
+
+set matches 0
+send "$srun --label --mpi=none -n3 : -n4 : -n1 printenv SLURMD_NODENAME\r"
+expect {
+	-re "\[3-6\]: $component(1)" {
+		incr matches
+		exp_continue
+	}
+	-re "$prompt" {
+		send_user "\n\n"
+		#break
+	}
+	timeout {
+		log_error "srun not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	log_error "sacct failure ($matches != 1)\n"
+	end_it 1
+}
+
+set matches 0
+send "$srun --label --mpi=none -n3 : -n4 : -n1 printenv SLURMD_NODENAME\r"
+expect {
+	-re "\[0-2\]: $component(0)" {
+		incr matches
+		exp_continue
+	}
+	-re "$prompt" {
+		#break
+	}
+	timeout {
+		log_error "srun not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 3} {
+	log_error "sacct failure ($matches != 1)\n"
+	end_it 1
+}
+
+
+for {set inx 0} {$inx < 3} {incr inx} {
+	send_user "\n\n"
+	set matches 0
+	send "$srun -n3 --label --mpi=none --pack-group=$inx printenv SLURMD_NODENAME\r"
+	expect {
+		-re "\[0-2\]: $component($inx)" {
+			incr matches
+			exp_continue
+		}
+		-re "$prompt" {
+			#break
+		}
+		timeout {
+			log_error "srun not responding\n"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 3} {
+		log_error "srun failure ($matches != 3)\n"
+		end_it 1
+	}
+}
+
+send_user "\nSUCCESS\n"
+end_it 0
