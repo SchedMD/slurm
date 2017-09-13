@@ -59,6 +59,7 @@ void step_terminate_monitor_start(stepd_step_rec_t *job)
 {
 	slurm_ctl_conf_t *conf;
 	pthread_attr_t attr;
+	int retries = 0;
 
 	slurm_mutex_lock(&lock);
 
@@ -73,7 +74,12 @@ void step_terminate_monitor_start(stepd_step_rec_t *job)
 	slurm_conf_unlock();
 
 	slurm_attr_init(&attr);
-	pthread_create(&tid, &attr, _monitor, job);
+	while (pthread_create(&tid, &attr, _monitor, job)) {
+		error("%s: pthread_create: %m", __func__);
+		if (++retries > 3)
+			fatal("%s: pthread_create: %m", __func__);
+		usleep(10);	/* sleep and again */
+	}
 	slurm_attr_destroy(&attr);
 	running_flag = 1;
 	recorded_jobid = job->jobid;
