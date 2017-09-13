@@ -1527,7 +1527,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		slurm_mutex_unlock(&job_limits_mutex);
 	}
 
-	slurm_get_stream_addr(msg->conn_fd, &self);
+	if (slurm_get_stream_addr(msg->conn_fd, &self)) {
+		error("%s: slurm_get_stream_addr(): %m", __func__);
+		errnum = errno;
+		goto done;
+	}
 
 	debug3("_rpc_launch_tasks: call to _forkexec_slurmstepd");
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
@@ -2016,12 +2020,15 @@ static void _spawn_prolog_stepd(slurm_msg_t *msg)
 		launch_req->tasks_to_launch[i] = 1;
 	}
 
-	slurm_get_stream_addr(msg->conn_fd, &self);
-	/* Since job could have been killed while the prolog was
+	/*
+	 * Since job could have been killed while the prolog was
 	 * running (especially on BlueGene, which can take minutes
 	 * for partition booting). Test if the credential has since
-	 * been revoked and exit as needed. */
-	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+	 * been revoked and exit as needed.
+	 */
+	if (slurm_get_stream_addr(msg->conn_fd, &self)) {
+		error("%s: slurm_get_stream_addr(): %m", __func__);
+	} else if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job %u already killed, do not launch extern step",
 		     req->job_id);
 	} else {
