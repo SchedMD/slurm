@@ -204,7 +204,8 @@ extern int init ( void )
 		      "Please use a database plugin");
 	}
 
-	/* This check for the slurm user id is a quick and dirty patch
+	/*
+	 * This check for the slurm user id is a quick and dirty patch
 	 * to see if the controller is calling this, since we open the
 	 * file in append mode stats could fail on it if the file
 	 * isn't world writable.
@@ -230,8 +231,10 @@ extern int init ( void )
 			xfree(log_file);
 			slurm_mutex_unlock( &logfile_lock );
 			return SLURM_ERROR;
-		} else
-			chmod(log_file, prot);
+		} else {
+			if (chmod(log_file, prot))
+				error("%s: chmod(%s):%m", __func__, log_file);
+		}
 
 		xfree(log_file);
 
@@ -240,8 +243,10 @@ extern int init ( void )
 		LOGFILE_FD = fileno(LOGFILE);
 		slurm_mutex_unlock( &logfile_lock );
 		storage_init = 1;
-		/* since this can be loaded from many different places
-		   only tell us once. */
+		/*
+		 * since this can be loaded from many different places
+		 * only tell us once.
+		 */
 		verbose("%s loaded", plugin_name);
 		first = 0;
 	} else {
