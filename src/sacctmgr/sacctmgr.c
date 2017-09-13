@@ -1042,8 +1042,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Names=, Partitions=, and QosLevel=             \n\
        modify user        - (set options) AdminLevel=, DefaultAccount=,    \n\
                             DefaultQOS=, DefaultWCKey=, Fairshare=,        \n\
-                            MaxTRESMins=, MaxTRES=, MaxJobs=, MaxNodes=,    \n\
-                            MaxSubmitJobs=, MaxWall=, and QosLevel=,       \n\
+                            MaxTRESMins=, MaxTRES=, MaxJobs=, MaxNodes=,   \n\
+                            MaxSubmitJobs=, MaxWall=, NewName=,            \n\
+                            and QosLevel=,                                 \n\
                             RawUsage= (with admin privileges only)         \n\
                             (where options) Accounts=, AdminLevel=,        \n\
                             Clusters=, DefaultAccount=, Names=,            \n\

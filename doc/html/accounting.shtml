@@ -667,6 +667,8 @@ is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 
 <li><b>Name=</b> User name</li>
 
+<li><b>NewName=</b> Use to rename a user in the accounting database</li>
+
 <li><b>Partition=</b> Name of Slurm partition this association applies to</li>
 
 </ul>
