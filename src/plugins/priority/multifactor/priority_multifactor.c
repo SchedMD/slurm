@@ -1263,7 +1263,7 @@ static void *_decay_thread(void *no_data)
 	if (last_reset == 0)
 		last_reset = start_time;
 
-	pthread_cond_signal(&decay_init_cond);
+	slurm_cond_signal(&decay_init_cond);
 	slurm_mutex_unlock(&decay_init_mutex);
 
 	_init_grp_used_cpu_run_secs(g_last_ran);

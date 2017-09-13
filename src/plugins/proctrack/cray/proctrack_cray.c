@@ -86,7 +86,7 @@ static void *_create_container_thread(void *args)
 	slurm_mutex_lock(&notify_mutex);
 
 	/* We need to signal failure or not */
-	pthread_cond_signal(&notify);
+	slurm_cond_signal(&notify);
 
 	/* Don't unlock the notify_mutex here, wait, it is not needed
 	 * and can cause deadlock if done. */
