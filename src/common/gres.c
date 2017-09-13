@@ -1697,7 +1697,7 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 		/* Should not reach this as if there are GRES id's then there
 		 * must have been a gres_conf_list.
 		 */
-		info("%s--The gres_conf_list is NULL!!!\n", __func__);
+		info("%s--The gres_conf_list is NULL!!!", __func__);
 		snprintf(gres_name, gres_name_len, "%u", gres_id);
 		return rc;
 	}

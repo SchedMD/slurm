@@ -504,7 +504,7 @@ static void _calc_device_major(char *dev_path[PATH_MAX],
 		stat(dev_path[k], &fs);
 		major = (int)major(fs.st_rdev);
 		minor = (int)minor(fs.st_rdev);
-		debug3("device : %s major %d, minor %d\n",
+		debug3("device : %s major %d, minor %d",
 			dev_path[k], major, minor);
 		memset(str1, 0, sizeof(str1));
 		if (S_ISBLK(fs.st_mode)) {
