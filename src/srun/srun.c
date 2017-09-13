@@ -364,6 +364,9 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 			       bool got_alloc)
 {
 	env_t *env = xmalloc(sizeof(env_t));
+	uint16_t *tasks = NULL;
+
+	xassert(job);
 
 	env->localid = -1;
 	env->nodeid  = -1;
@@ -397,36 +400,33 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 	env->comm_port = slurmctld_comm_addr.port;
 	if (opt_local->job_name)
 		env->job_name = opt_local->job_name;
-	if (job) {
-		uint16_t *tasks = NULL;
-		slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS,
-				   &tasks);
 
-		env->select_jobinfo = job->select_jobinfo;
-		if (job->pack_nodelist)
-			env->nodelist = job->pack_nodelist;
-		else
-			env->nodelist = job->nodelist;
-		env->partition = job->partition;
-		/*
-		 * If we didn't get the allocation don't overwrite the
-		 * previous info.
-		 */
-		if (got_alloc)
-			env->nhosts = job->nhosts;
-		env->ntasks = job->ntasks;
-		if (job->pack_ntasks != NO_VAL)
-			env->ntasks = job->pack_ntasks;
-		env->task_count = _uint16_array_to_str(job->nhosts, tasks);
-		if (job->pack_jobid != NO_VAL)
-			env->jobid = job->pack_jobid;
-		else
-			env->jobid = job->jobid;
-		env->stepid = job->stepid;
-		env->account = job->account;
-		env->qos = job->qos;
-		env->resv_name = job->resv_name;
-	}
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, &tasks);
+
+	env->select_jobinfo = job->select_jobinfo;
+	if (job->pack_nodelist)
+		env->nodelist = job->pack_nodelist;
+	else
+		env->nodelist = job->nodelist;
+	env->partition = job->partition;
+	/*
+	 * If we didn't get the allocation don't overwrite the previous info.
+	 */
+	if (got_alloc)
+		env->nhosts = job->nhosts;
+	env->ntasks = job->ntasks;
+	if (job->pack_ntasks != NO_VAL)
+		env->ntasks = job->pack_ntasks;
+	env->task_count = _uint16_array_to_str(job->nhosts, tasks);
+	if (job->pack_jobid != NO_VAL)
+		env->jobid = job->pack_jobid;
+	else
+		env->jobid = job->jobid;
+	env->stepid = job->stepid;
+	env->account = job->account;
+	env->qos = job->qos;
+	env->resv_name = job->resv_name;
+
 	if (opt_local->pty && (set_winsize(job) < 0)) {
 		error("Not using a pseudo-terminal, disregarding --pty option");
 		opt_local->pty = false;
