@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- Document NewName option to sacctmgr.
  -- Reject a second PMI2_Init call within a single step to prevent slurmstepd
     from hanging.
+ -- Handle old 32bit values stored in the database for requested memory
+    correctly in sacct.
 
 * Changes in Slurm 17.02.7
 ==========================
