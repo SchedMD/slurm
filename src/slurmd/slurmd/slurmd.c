@@ -407,17 +407,18 @@ _spawn_registration_engine(void)
 	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	if (rc != 0) {
 		errno = rc;
-		fatal("Unable to set detachstate on attr: %m");
+		fatal("%s: Unable to set detachstate on attr: %m", __func__);
 		slurm_attr_destroy(&attr);
 		return;
 	}
 
 	while (pthread_create(&id, &attr, &_registration_engine, NULL)) {
-		error("msg_engine: pthread_create: %m");
+		error("%s: pthread_create: %m", __func__);
 		if (++retries > 3)
-			fatal("msg_engine: pthread_create: %m");
+			fatal("%s: pthread_create: %m", __func__);
 		usleep(10);	/* sleep and again */
 	}
+	slurm_attr_destroy(&attr);
 
 	return;
 }
