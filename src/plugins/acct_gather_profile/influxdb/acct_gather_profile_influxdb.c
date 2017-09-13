@@ -135,6 +135,9 @@ static size_t tables_cur_len = 0;
 static void _free_tables(void)
 {
 	int i, j;
+
+	debug3("%s %s called", plugin_type, __func__);
+
 	for (i = 0; i < tables_cur_len; i++) {
 		table_t *table = &(tables[i]);
 		for (j = 0; j < tables->size; j++)
@@ -150,6 +153,7 @@ static uint32_t _determine_profile(void)
 {
 	uint32_t profile;
 
+	debug3("%s %s called", plugin_type, __func__);
 	xassert(g_job);
 
 	if (g_profile_running != ACCT_GATHER_PROFILE_NOT_SET)
@@ -167,6 +171,8 @@ static bool _run_in_daemon(void)
 	static bool set = false;
 	static bool run = false;
 
+	debug3("%s %s called", plugin_type, __func__);
+
 	if (!set) {
 		set = 1;
 		run = run_in_daemon("slurmstepd");
@@ -183,6 +189,8 @@ static size_t _write_callback(void *contents, size_t size, size_t nmemb,
 {
 	size_t realsize = size * nmemb;
 	struct http_response *mem = (struct http_response *) userp;
+
+	debug3("%s %s called", plugin_type, __func__);
 
 	mem->message = xrealloc(mem->message, mem->size + realsize + 1);
 
@@ -203,6 +211,9 @@ static int _send_data(const char *data)
 	long response_code;
 	static int error_cnt = 0;
 	char *url = NULL;
+	size_t length;
+
+	debug3("%s %s called", plugin_type, __func__);
 
 	/*
 	 * Every compute node which is sampling data will try to establish a
@@ -214,16 +225,23 @@ static int _send_data(const char *data)
 	 */
 	if (data && ((datastrlen + strlen(data)) <= BUF_SIZE)) {
 		xstrcat(datastr, data);
-		datastrlen += strlen(data);
+		length = strlen(data);
+		datastrlen += length;
+		if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
+			info("%s %s: %zu bytes of data added to buffer. New buffer size: %d",
+			      plugin_type, __func__, length, datastrlen);
 		return rc;
 	}
 
+	DEF_TIMERS;
+	START_TIMER;
+
 	if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
-		debug("%s: curl_global_init: %m", plugin_type);
+		error("%s %s: curl_global_init: %m", plugin_type, __func__);
 		rc = SLURM_ERROR;
 		goto cleanup_global_init;
 	} else if ((curl_handle = curl_easy_init()) == NULL) {
-		debug("%s: curl_easy_init: %m", plugin_type);
+		error("%s %s: curl_easy_init: %m", plugin_type, __func__);
 		rc = SLURM_ERROR;
 		goto cleanup_easy_init;
 	}
@@ -242,16 +260,17 @@ static int _send_data(const char *data)
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
 
 	if ((res = curl_easy_perform(curl_handle)) != CURLE_OK) {
-		debug2("Could not connect to: %s , reason: %s", url,
-		       curl_easy_strerror(res));
+		if ((error_cnt++ % 100) == 0)
+			error("%s %s: curl_easy_perform failed to send data (discarded). Reason: %s",
+			      plugin_type, __func__, curl_easy_strerror(res));
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 
 	if ((res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE,
 				     &response_code)) != CURLE_OK) {
-		debug("%s: curl_easy_getinfo response code failed: %s",
-		      plugin_type, curl_easy_strerror(res));
+		error("%s %s: curl_easy_getinfo response code failed: %s",
+		      plugin_type, __func__, curl_easy_strerror(res));
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
@@ -262,14 +281,21 @@ static int _send_data(const char *data)
 	 * Errors are returned in JSON.
 	 * https://docs.influxdata.com/influxdb/v0.13/concepts/api/
 	 */
-	if (response_code >= 200 && response_code <= 205)
-		debug2("%s: data write success", plugin_type);
-	else {
+	if (response_code >= 200 && response_code <= 205) {
+		debug2("%s %s: data write success", plugin_type, __func__);
+		if (error_cnt > 0)
+			error_cnt = 0;
+	} else {
 		rc = SLURM_ERROR;
-		debug("%s: data write failed, response code: %ld", plugin_type,
-		      response_code);
-		debug3("%s: JSON response body: %s", plugin_type,
-		       chunk.message);
+		debug2("%s %s: data write failed, response code: %ld",
+		       plugin_type, __func__, response_code);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE) {
+			/* Strip any trailing newlines. */
+			while (chunk.message[strlen(chunk.message) - 1] == '\n')
+				chunk.message[strlen(chunk.message) - 1] = '\0';
+			info("%s %s: JSON response body: %s", plugin_type,
+			     __func__, chunk.message);
+		}
 	}
 
 cleanup:
@@ -280,10 +306,10 @@ cleanup_easy_init:
 cleanup_global_init:
 	curl_global_cleanup();
 
-	if (rc == SLURM_ERROR && ((error_cnt++ % 100) == 0))
-		/* Periodically log errors */
-		info("%s: Unable to push data, some data may be lost. Error count: %d",
-		     plugin_type, error_cnt);
+	END_TIMER;
+	if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
+		debug("%s %s: took %s to send data", plugin_type, __func__,
+		      TIME_STR);
 
 	if (data) {
 		datastr = xstrdup(data);
@@ -302,6 +328,8 @@ cleanup_global_init:
  */
 extern int init(void)
 {
+	debug3("%s %s called", plugin_type, __func__);
+
 	if (!_run_in_daemon())
 		return SLURM_SUCCESS;
 
@@ -311,6 +339,8 @@ extern int init(void)
 
 extern int fini(void)
 {
+	debug3("%s %s called", plugin_type, __func__);
+
 	_free_tables();
 	xfree(datastr);
 	xfree(influxdb_conf.host);
@@ -322,6 +352,8 @@ extern int fini(void)
 extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 					       int *full_options_cnt)
 {
+	debug3("%s %s called", plugin_type, __func__);
+
 	s_p_options_t options[] = {
 		{"ProfileInfluxDBHost", S_P_STRING},
 		{"ProfileInfluxDBDatabase", S_P_STRING},
@@ -336,6 +368,9 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 {
 	char *tmp = NULL;
+
+	debug3("%s %s called", plugin_type, __func__);
+
 	influxdb_conf.def = ACCT_GATHER_PROFILE_ALL;
 	if (tbl) {
 		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
@@ -374,6 +409,8 @@ extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
 	uint32_t *uint32 = (uint32_t *) data;
 	char **tmp_char = (char **) data;
 
+	debug3("%s %s called", plugin_type, __func__);
+
 	switch (info_type) {
 		case ACCT_GATHER_PROFILE_DIR:
 			*tmp_char = xstrdup(influxdb_conf.host);
@@ -385,34 +422,38 @@ extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
 			*uint32 = g_profile_running;
 			break;
 		default:
-			debug2("acct_gather_profile_p_get info_type %d invalid",
-			       info_type);
+			debug2("%s %s: info_type %d invalid", plugin_type,
+			       __func__, info_type);
 	}
 }
 
 extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 {
 	int rc = SLURM_SUCCESS;
-
 	char *profile_str;
+
+	debug3("%s %s called", plugin_type, __func__);
 
 	xassert(_run_in_daemon());
 
 	g_job = job;
 	profile_str = acct_gather_profile_to_string(g_job->profile);
-	info("PROFILE: option --profile=%s", profile_str);
+	debug2("%s %s: option --profile=%s", plugin_type, __func__,
+	       profile_str);
 	g_profile_running = _determine_profile();
 	return rc;
 }
 
 extern int acct_gather_profile_p_child_forked(void)
 {
+	debug3("%s %s called", plugin_type, __func__);
 	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_profile_p_node_step_end(void)
 {
 	int rc = SLURM_SUCCESS;
+	debug3("%s %s called", plugin_type, __func__);
 
 	xassert(_run_in_daemon());
 
@@ -423,7 +464,9 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 {
 	int rc = SLURM_SUCCESS;
 
-	info("PROFILE: task_start with %d prof",g_profile_running);
+	debug3("%s %s called with %d prof", plugin_type, __func__,
+	       g_profile_running);
+
 	xassert(_run_in_daemon());
 	xassert(g_job);
 
@@ -432,27 +475,21 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
-		info("PROFILE: task_start");
-
 	return rc;
 }
 
 extern int acct_gather_profile_p_task_end(pid_t taskpid)
 {
-	if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
-		info("PROFILE: task_end");
+	debug3("%s %s called", plugin_type, __func__);
 
-	DEF_TIMERS;
-	START_TIMER;
 	_send_data(NULL);
-	END_TIMER;
-	debug("PROFILE: task_end took %s",TIME_STR);
 	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_profile_p_create_group(const char* name)
 {
+	debug3("%s %s called", plugin_type, __func__);
+
 	return 0;
 }
 
@@ -463,10 +500,10 @@ extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
 	table_t * table;
 	acct_gather_profile_dataset_t *dataset_loc = dataset;
 
+	debug3("%s %s called", plugin_type, __func__);
+
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return SLURM_ERROR;
-
-	debug("%s %s", __func__, name);
 
 	/* compute the size of the type needed to create the table */
 	if (tables_cur_len == tables_max_len) {
@@ -509,9 +546,10 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 		time_t sample_time)
 {
 	table_t *table = &tables[table_id];
-
 	int i = 0;
 	char *str = NULL;
+
+	debug3("%s %s called", plugin_type, __func__);
 
 	for(; i < table->size; i++) {
 		switch (table->types[i]) {
@@ -538,12 +576,8 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 		}
 	}
 
-	DEF_TIMERS;
-	START_TIMER;
 	_send_data(str);
-	END_TIMER;
 	xfree(str);
-	debug("PROFILE: took %s to send data", TIME_STR);
 
 	return SLURM_SUCCESS;
 }
@@ -551,6 +585,8 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 extern void acct_gather_profile_p_conf_values(List *data)
 {
 	config_key_pair_t *key_pair;
+
+	debug3("%s %s called", plugin_type, __func__);
 
 	xassert(*data);
 
@@ -581,6 +617,8 @@ extern void acct_gather_profile_p_conf_values(List *data)
 
 extern bool acct_gather_profile_p_is_active(uint32_t type)
 {
+	debug3("%s %s called", plugin_type, __func__);
+
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return false;
 
