@@ -1676,7 +1676,7 @@ This option applies to job allocations only.
 \fB\-\-profile\fR=<all|none|[energy[,|task[,|filesystem[,|network]]]]>
 enables detailed data collection by the acct_gather_profile plugin.
 Detailed data are typically time-series that are stored in an HDF5 file for
-the job.
+the job or an InfluxDB database depending on the configured plugin.
 
 .RS
 .TP 10
