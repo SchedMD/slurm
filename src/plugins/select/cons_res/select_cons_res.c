@@ -969,7 +969,10 @@ static int _job_expand(struct job_record *from_job_ptr,
 	bitstr_t *tmp_bitmap, *tmp_bitmap2;
 
 	xassert(from_job_ptr);
+	xassert(from_job_ptr->details);
 	xassert(to_job_ptr);
+	xassert(to_job_ptr->details);
+
 	if (from_job_ptr->job_id == to_job_ptr->job_id) {
 		error("select/cons_res: attempt to merge job %u with self",
 		      from_job_ptr->job_id);
@@ -1126,22 +1129,17 @@ static int _job_expand(struct job_record *from_job_ptr,
 	to_job_ptr->job_resrcs = new_job_resrcs_ptr;
 
 	to_job_ptr->cpu_cnt = to_job_ptr->total_cpus;
-	if (to_job_ptr->details) {
-		to_job_ptr->details->min_cpus = to_job_ptr->total_cpus;
-		to_job_ptr->details->max_cpus = to_job_ptr->total_cpus;
-	}
+	to_job_ptr->details->min_cpus = to_job_ptr->total_cpus;
+	to_job_ptr->details->max_cpus = to_job_ptr->total_cpus;
 	from_job_ptr->total_cpus   = 0;
 	from_job_resrcs_ptr->ncpus = 0;
-	if (from_job_ptr->details) {
-		from_job_ptr->details->min_cpus = 0;
-		from_job_ptr->details->max_cpus = 0;
-	}
+	from_job_ptr->details->min_cpus = 0;
+	from_job_ptr->details->max_cpus = 0;
 
 	from_job_ptr->total_nodes   = 0;
 	from_job_resrcs_ptr->nhosts = 0;
 	from_job_ptr->node_cnt      = 0;
-	if (from_job_ptr->details)
-		from_job_ptr->details->min_nodes = 0;
+	from_job_ptr->details->min_nodes = 0;
 	to_job_ptr->total_nodes     = new_job_resrcs_ptr->nhosts;
 	to_job_ptr->node_cnt        = new_job_resrcs_ptr->nhosts;
 
