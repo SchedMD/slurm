@@ -101,7 +101,11 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	/* Enable memory.use_hierarchy in the root of the cgroup.
 	 */
-	xcgroup_create(&memory_ns, &memory_cg, "", 0, 0);
+	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
+	    != XCGROUP_SUCCESS) {
+		error("task/cgroup: unable to create root memory cgroup: %m");
+		return SLURM_ERROR;
+	}
 	xcgroup_set_param(&memory_cg, "memory.use_hierarchy","1");
 	xcgroup_destroy(&memory_cg);
 
