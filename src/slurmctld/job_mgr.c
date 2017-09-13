@@ -5788,7 +5788,16 @@ static int _get_job_parts(job_desc_msg_t * job_desc,
 			}
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
-	} else {
+	} else if (job_desc->reservation && job_desc->reservation[0] != '\0' ) {
+		slurmctld_resv_t *resv_ptr = NULL;
+		resv_ptr = find_resv_name(job_desc->reservation);
+		if (resv_ptr)
+			part_ptr = resv_ptr->part_ptr;
+		if (part_ptr)
+			job_desc->partition = xstrdup(part_ptr->name);
+	}
+
+	if (!part_ptr) {
 		if (default_part_loc == NULL) {
 			error("%s: default partition not set", __func__);
 			return ESLURM_DEFAULT_PARTITION_NOT_SET;

@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
  -- Speedup arbitrary distribution algorithm.
  -- Modify "srun --mpi=list" output to match valid option input by removing the
     "mpi/" prefix on each line of output.
+ -- Automatically set the reservation's partition for the job if not the
+    cluster default.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
