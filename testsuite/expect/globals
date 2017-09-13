@@ -4155,7 +4155,7 @@ proc test_pack_step { } {
 	expect {
 		-re " ($number).($number).($number)" {
 			set version_major $expect_out(1,string)
-			set minor $expect_out(2,string)
+			set version_minor $expect_out(2,string)
 			exp_continue
 		}
 		timeout {
@@ -4165,9 +4165,9 @@ proc test_pack_step { } {
 			wait
 		}
 	}
-	if {$major >= 18} {
+	if {$version_major >= 18} {
 		set pack_step 1
-	} elseif {$major == 17 && $minor == 11} {
+	} elseif {$version_major == 17 && $version_minor == 11} {
 		spawn $scontrol show config
 		expect {
 			-re "enable_hetero_steps" {
