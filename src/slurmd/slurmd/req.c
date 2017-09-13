@@ -5885,12 +5885,12 @@ static int
 _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	DEF_TIMERS;
-	int rc, diff_time;
+	int rc, diff_time, retries = 0;
 	char *my_prolog;
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
 	static uint16_t timeout;
-	pthread_t       timer_id;
+	pthread_t       timer_id = 0;
 	pthread_attr_t  timer_attr;
 	pthread_cond_t  timer_cond  = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -5932,16 +5932,22 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	timer_struct.prolog_fini = &prolog_fini;
 	timer_struct.timer_cond  = &timer_cond;
 	timer_struct.timer_mutex = &timer_mutex;
-	pthread_create(&timer_id, &timer_attr, &_prolog_timer, &timer_struct);
+	while (pthread_create(&timer_id, &timer_attr, &_prolog_timer,
+			      &timer_struct)) {
+		error("%s: pthread_create: %m", __func__);
+		if (++retries > 3)
+			break;
+		usleep(10);	/* sleep and again */
+	}
 	START_TIMER;
 
-	if (timeout == (uint16_t)NO_VAL)
+	if (timeout == NO_VAL16) {
 		rc = _run_job_script("prolog", my_prolog, job_env->jobid,
 				     -1, my_env, job_env->uid);
-	else
+	} else {
 		rc = _run_job_script("prolog", my_prolog, job_env->jobid,
 				     timeout, my_env, job_env->uid);
-
+	}
 	END_TIMER;
 	info("%s: run job script took %s", __func__, TIME_STR);
 	slurm_mutex_lock(&timer_mutex);
@@ -5961,7 +5967,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	xfree(my_prolog);
 	_destroy_env(my_env);
 
-	pthread_join(timer_id, NULL);
+	if (timer_id)
+		pthread_join(timer_id, NULL);
 	if (script_lock)
 		slurm_mutex_unlock(&prolog_serial_mutex);
 
