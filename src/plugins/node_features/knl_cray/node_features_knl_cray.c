@@ -1778,24 +1778,15 @@ extern int init(void)
 	gres_plugin_add("hbm");
 
 	if (ume_check_interval && run_in_daemon("slurmd")) {
-		pthread_attr_t attr;
-		slurm_attr_init(&attr);
 		slurm_mutex_lock(&ume_mutex);
-		if (pthread_create(&ume_thread, &attr, _ume_agent, NULL)) {
-			error("%s: Unable to start UME monitor thread: %m",
-			       __func__);
-		}
+		slurm_thread_create(&ume_thread, _ume_agent, NULL);
 		slurm_mutex_unlock(&ume_mutex);
-		slurm_attr_destroy(&attr);
 	}
 
 	slurm_mutex_lock(&queue_mutex);
 	if (queue_thread == 0) {
-		pthread_attr_t attr;
-		slurm_attr_init(&attr);
 		/* since we do a join on this later we don't make it detached */
-		if (pthread_create(&queue_thread, &attr, _queue_agent, NULL))
-			fatal("Unable to start %s thread: %m", plugin_type);
+		slurm_thread_create(&queue_thread, _queue_agent, NULL);
 	}
 	slurm_mutex_unlock(&queue_mutex);
 
