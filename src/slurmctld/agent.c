@@ -122,7 +122,6 @@ typedef struct thd_complete {
 
 typedef struct thd {
 	pthread_t thread;		/* thread ID */
-	pthread_attr_t attr;		/* thread attributes */
 	state_t state;			/* thread state */
 	time_t start_time;		/* start time */
 	time_t end_time;		/* end time or delta time
@@ -185,7 +184,6 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static int  _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 			   int *count, int *spot);
 static void _sig_handler(int dummy);
-static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr);
 static void *_thread_per_group_rpc(void *args);
 static int   _valid_agent_arg(agent_arg_t *agent_arg_ptr);
 static void *_wdog(void *args);
@@ -210,7 +208,7 @@ static pthread_mutex_t pending_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  pending_cond = PTHREAD_COND_INITIALIZER;
 static int pending_wait_time = NO_VAL16;
 static bool pending_mail = false;
-static pthread_t pending_thread_id = (pthread_t) 0;
+static bool pending_thread_running = false;
 
 static bool run_scheduler    = false;
 
@@ -224,8 +222,7 @@ static bool run_scheduler    = false;
  */
 void *agent(void *args)
 {
-	int i, delay, rc, retries = 0;
-	pthread_attr_t attr_wdog;
+	int i, delay;
 	pthread_t thread_wdog = 0;
 	agent_arg_t *agent_arg_ptr = args;
 	agent_info_t *agent_info_ptr = NULL;
@@ -273,23 +270,11 @@ void *agent(void *args)
 	thread_ptr = agent_info_ptr->thread_struct;
 
 	/* start the watchdog thread */
-	slurm_attr_init(&attr_wdog);
-	if (pthread_attr_setdetachstate
-	    (&attr_wdog, PTHREAD_CREATE_JOINABLE))
-		error("pthread_attr_setdetachstate error %m");
-	while (pthread_create(&thread_wdog, &attr_wdog, _wdog,
-			      (void *) agent_info_ptr)) {
-		error("pthread_create error %m");
-		if (++retries > MAX_RETRIES)
-			fatal("Can't create pthread");
-		usleep(10000);	/* sleep and retry */
-	}
-	slurm_attr_destroy(&attr_wdog);
+	slurm_thread_create(&thread_wdog, _wdog, agent_info_ptr);
 
 	debug2("got %d threads to send out", agent_info_ptr->thread_count);
 	/* start all the other threads (up to AGENT_THREAD_COUNT active) */
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
-
 		/* wait until "room" for another thread */
 		slurm_mutex_lock(&agent_info_ptr->thread_mutex);
 		while (agent_info_ptr->threads_active >=
@@ -302,27 +287,9 @@ void *agent(void *args)
 		 *      _thread_per_group_rpc() */
 		task_specific_ptr = _make_task_data(agent_info_ptr, i);
 
-		slurm_attr_init(&thread_ptr[i].attr);
-		if (pthread_attr_setdetachstate(&thread_ptr[i].attr,
-						PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
-		while ((rc = pthread_create(&thread_ptr[i].thread,
-					    &thread_ptr[i].attr,
-					    _thread_per_group_rpc,
-					    (void *) task_specific_ptr))) {
-			error("pthread_create error %m");
-			if (agent_info_ptr->threads_active)
-				slurm_cond_wait(&agent_info_ptr->thread_cond,
-						&agent_info_ptr->thread_mutex);
-			else {
-				slurm_mutex_unlock(&agent_info_ptr->
-						     thread_mutex);
-				usleep(10000);	/* sleep and retry */
-				slurm_mutex_lock(&agent_info_ptr->
-						   thread_mutex);
-			}
-		}
-		slurm_attr_destroy(&thread_ptr[i].attr);
+		slurm_thread_create_detached(&thread_ptr[i].thread,
+					     _thread_per_group_rpc,
+					     task_specific_ptr);
 		agent_info_ptr->threads_active++;
 		slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 	}
@@ -1309,28 +1276,22 @@ static void *_agent_init(void *arg)
 	}
 
 	slurm_mutex_lock(&pending_mutex);
-	pending_thread_id = (pthread_t) 0;
+	pending_thread_running = false;
 	slurm_mutex_unlock(&pending_mutex);
 	return NULL;
 }
+
 extern void agent_init(void)
 {
-	pthread_attr_t thread_attr;
-
 	slurm_mutex_lock(&pending_mutex);
-	if (pending_thread_id != (pthread_t) 0) {
+	if (pending_thread_running) {
 		error("%s: thread already running", __func__);
 		slurm_mutex_unlock(&pending_mutex);
 		return;
 	}
 
-	slurm_attr_init(&thread_attr);
-	if (pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-	if (pthread_create(&pending_thread_id, &thread_attr, _agent_init, NULL))
-		fatal("pthread_create error %m");
+	slurm_thread_create_detached(NULL, _agent_init, NULL);
 	slurm_mutex_unlock(&pending_mutex);
-	slurm_attr_destroy(&thread_attr);
 }
 
 /*
@@ -1361,8 +1322,6 @@ static void _agent_retry(int min_wait, bool mail_too)
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
 	ListIterator retry_iter;
-	pthread_t thread_mail = 0;
-	pthread_attr_t attr_mail;
 	mail_info_t *mi = NULL;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
@@ -1463,31 +1422,21 @@ static void _agent_retry(int min_wait, bool mail_too)
 		agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 		xfree(queued_req_ptr);
 		if (agent_arg_ptr) {
-			_spawn_retry_agent(agent_arg_ptr);
+			debug2("Spawning RPC agent for msg_type %s",
+			       rpc_num2string(agent_arg_ptr->msg_type));
+			slurm_thread_create_detached(NULL, agent, agent_arg_ptr);
 		} else
 			error("agent_retry found record with no agent_args");
 	} else if (mail_too) {
 		slurm_mutex_lock(&agent_cnt_mutex);
 		slurm_mutex_lock(&mail_mutex);
 		while (mail_list && (agent_thread_cnt < MAX_SERVER_THREADS)) {
-			int retries = 0;
 			mi = (mail_info_t *) list_dequeue(mail_list);
 			if (!mi)
 				break;
 
 			agent_thread_cnt++;
-			slurm_attr_init(&attr_mail);
-			if (pthread_attr_setdetachstate
-			    (&attr_mail, PTHREAD_CREATE_DETACHED))
-				error("pthread_attr_setdetachstate error %m");
-			while (pthread_create(&thread_mail, &attr_mail,
-					      _mail_proc, (void *) mi)) {
-				error("pthread_create error %m");
-				if (++retries > MAX_RETRIES)
-					fatal("Can't create pthread");
-				usleep(10000);	/* sleep and retry */
-			}
-			slurm_attr_destroy(&attr_mail);
+			slurm_thread_create_detached(NULL, _mail_proc, mi);
 		}
 		slurm_mutex_unlock(&mail_mutex);
 		slurm_mutex_unlock(&agent_cnt_mutex);
@@ -1514,20 +1463,10 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
 		/* execute now */
-		pthread_attr_t attr_agent;
-		pthread_t thread_agent;
-		int rc;
-		slurm_attr_init(&attr_agent);
-		if (pthread_attr_setdetachstate
-				(&attr_agent, PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
-		rc = pthread_create(&thread_agent, &attr_agent,
-				    agent, (void *) agent_arg_ptr);
-		slurm_attr_destroy(&attr_agent);
-		if (rc == 0) {
-			usleep(10000);	/* give agent a chance to start */
-			return;
-		}
+		slurm_thread_create_detached(NULL, agent, agent_arg_ptr);
+		/* give agent a chance to start */
+		usleep(10000);
+		return;
 	}
 
 	queued_req_ptr = xmalloc(sizeof(queued_request_t));
@@ -1544,32 +1483,6 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	/* now process the request in a separate pthread
 	 * (if we can create another pthread to do so) */
 	agent_trigger(999, false);
-}
-
-/* _spawn_retry_agent - pthread_create an agent for the given task */
-static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
-{
-	int retries = 0;
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
-
-	if (agent_arg_ptr == NULL)
-		return;
-
-	debug2("Spawning RPC agent for msg_type %s",
-	       rpc_num2string(agent_arg_ptr->msg_type));
-	slurm_attr_init(&attr_agent);
-	if (pthread_attr_setdetachstate(&attr_agent,
-					PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-	while (pthread_create(&thread_agent, &attr_agent,
-			agent, (void *) agent_arg_ptr)) {
-		error("pthread_create error %m");
-		if (++retries > MAX_RETRIES)
-			fatal("Can't create pthread");
-		usleep(10000);	/* sleep and retry */
-	}
-	slurm_attr_destroy(&attr_agent);
 }
 
 /* agent_purge - purge all pending RPC requests */
