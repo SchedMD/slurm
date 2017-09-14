@@ -126,7 +126,6 @@ static void _exec_prog(slurm_msg_t *msg);
 static int  _msg_thr_create(struct step_launch_state *sls, int num_nodes);
 static void _handle_msg(void *arg, slurm_msg_t *msg);
 static int  _cr_notify_step_launch(slurm_step_ctx_t *ctx);
-static int  _start_io_timeout_thread(step_launch_state_t *sls);
 static void *_check_io_timeout(void *_sls);
 
 static struct io_operations message_socket_ops = {
@@ -1154,7 +1153,6 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	uint16_t port;
 	eio_obj_t *obj;
 	int i, rc = SLURM_SUCCESS;
-	pthread_attr_t attr;
 	uint16_t *ports;
 	uint16_t eio_timeout;
 
@@ -1197,15 +1195,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 		eio_new_initial_obj(sls->msg_handle, obj);
 	}
 
-	slurm_attr_init(&attr);
-	if (pthread_create(&sls->msg_thread, &attr,
-			   _msg_thr_internal, (void *)sls) != 0) {
-		error("pthread_create of message thread: %m");
-		/* make sure msg_thread is 0 so we don't wait on it. */
-		sls->msg_thread = 0;
-		rc = SLURM_ERROR;
-	}
-	slurm_attr_destroy(&attr);
+	slurm_thread_create(&sls->msg_thread, _msg_thr_internal, sls);
 	return rc;
 }
 
@@ -1427,19 +1417,8 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	slurm_mutex_lock(&sls->lock);
 
 	if (!sls->io_timeout_thread_created) {
-		if (_start_io_timeout_thread(sls)) {
-			/*
-			 * Should I abort here, because of the inability to
-			 * make a thread to verify the connection?
-			 */
-			error("Cannot create thread to verify I/O "
-			      "connections.");
-
-			sls->abort = true;
-			slurm_cond_broadcast(&sls->cond);
-			slurm_mutex_unlock(&sls->lock);
-			return;
-		}
+		slurm_thread_create(&sls->io_timeout_thread,
+				    _check_io_timeout, sls);
 	}
 
 	fail_nodes = hostset_create(step_missing->nodelist);
@@ -2013,27 +1992,6 @@ step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id)
 	slurm_mutex_unlock(&sls->lock);
 	return SLURM_SUCCESS;
 }
-
-
-static int
-_start_io_timeout_thread(step_launch_state_t *sls)
-{
-	int rc = SLURM_SUCCESS;
-	pthread_attr_t attr;
-	slurm_attr_init(&attr);
-
-	if (pthread_create(&sls->io_timeout_thread, &attr,
-			   _check_io_timeout, (void *)sls) != 0) {
-		error("pthread_create of io timeout thread: %m");
-		sls->io_timeout_thread = 0;
-		rc = SLURM_ERROR;
-	} else {
-		sls->io_timeout_thread_created = true;
-	}
-	slurm_attr_destroy(&attr);
-	return rc;
-}
-
 
 static void *
 _check_io_timeout(void *_sls)
