@@ -1433,7 +1433,7 @@ _sbatch()
     --mail-type) offer_list "BEGIN END FAIL REQUEUE ALL STAGE_OUT TIME_LIMIT\
 			     TIME_LIMIT_90 TIME_LIMIT_80 TIME_LIMIT_50" ;;
     --mem-bind) offer "quiet verbose none rank local map_mem: mask_mem:" ;;
-    --mpi) offer "lam mpich1_shmem mvapich openmpi none" ;;
+    --mpi) offer "openmpi pmi2 pmix none" ;;
     --propagate) offer_list "all as core cpu data fsize memlock \
 			      nofile nproc rss stack" ;;
     # TODO --network) _configured_interfaces ;;
@@ -1531,7 +1531,7 @@ _srun()
     --licenses|-L) offer_list "$(_licenses)" ;;
     --mail-type) offer_list "begin end fail requeue all" ;;
     --mem-bind) offer "none rank local map_mem: mask_mem:" ;;
-    --mpi) offer "lam mpich1_shmem mvapich openmpi pmi2 none" ;;
+    --mpi) offer "openmpi pmi2 pmix none" ;;
     --partition|-p) offer_list "$(_partitions)" ;;
     --profile) offer_list "all none energy task filesystem network" ;;
     --propagate) offer_list "all as core cpu data fsize memlock \

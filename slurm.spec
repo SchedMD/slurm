@@ -662,8 +662,6 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_slurm.so             &&
    echo %{_libdir}/slurm/launch_slurm.so             >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_aprun.so             &&
    echo %{_libdir}/slurm/launch_aprun.so             >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_mvapich.so              &&
-   echo %{_libdir}/slurm/mpi_mvapich.so              >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_pmix.so                 &&
    echo %{_libdir}/slurm/mpi_pmix.so                 >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_pmix_v1.so              &&
@@ -876,9 +874,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/mcs_none.so
 %{_libdir}/slurm/mcs_user.so
 %if ! %{slurm_with bluegene}
-%{_libdir}/slurm/mpi_lam.so
-%{_libdir}/slurm/mpi_mpich1_p4.so
-%{_libdir}/slurm/mpi_mpich1_shmem.so
 %{_libdir}/slurm/mpi_openmpi.so
 %{_libdir}/slurm/mpi_pmi2.so
 %endif

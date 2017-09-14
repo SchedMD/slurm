@@ -489,7 +489,6 @@ EXTRA_DIST = \
 	env_cache_builder.c	\
 	make-3.81.slurm.patch	\
 	make-4.0.slurm.patch	\
-	mpich1.slurm.patch	\
 	sgather			\
 	skilling.c		\
 	sjstat			\

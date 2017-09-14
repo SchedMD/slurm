@@ -66,12 +66,6 @@ of the Slurm contribs distribution follows:
 
   mic                [Tools for use on Intel MIC processors]
 
-  mpich1.slurm.patch [ Patch to mpich1/p4 library for Slurm job task launch ]
-     For Slurm based job initiations (from srun command), get the parameters
-     from environment variables as needed. This allows for a truly parallel
-     job launch using the existing "execer" mode of operation with slight
-     modification.
-
   openlava/          [ Wrapper Scripts for OpenLava/LSF migration to Slurm ]
      Helpful scripts to make transition to Slurm easier from OpenLava or LSF.
      These scripts are easily updatable if there is functionality missing.
