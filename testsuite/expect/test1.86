@@ -77,9 +77,14 @@ set env(PATH) "${slurm_dir}/bin:$env(PATH)"
 #
 # Submit a 2 node job
 #
+set job_id 0
 set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N2 -t1 ./$file_in]
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "salloc: error" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exec $bin_rm -f $file_in
@@ -459,11 +464,15 @@ expect {
 set matches 0
 send "$srun -l -n $processors $bin_printenv $node_name_env\r"
 expect {
-	"error:" {
+	-re "error:" {
 		incr matches
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "$job_id:" {
+#		Avoid confusiuon with task ID below
+		exp_continue
+	}
+	-re "($number): *($alpha_numeric_under)" {
 		send_user "\nFAILURE: wrong node responded\n"
 		set exit_code   1
 		exp_continue
