@@ -86,9 +86,8 @@ extern bool deadline_ok(struct job_record *job_ptr, char *func);
  * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	terminated.
  * IN job_ptr - pointer to job that has been terminated
- * RET SLURM_SUCCESS(0) or error code
  */
-extern int epilog_slurmctld(struct job_record *job_ptr);
+extern void epilog_slurmctld(struct job_record *job_ptr);
 
 /*
  * job_is_completing - Determine if jobs are in the process of completing.
@@ -151,9 +150,8 @@ extern void prolog_running_decr(struct job_record *job_ptr);
  * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	been allocated resources.
  * IN job_ptr - pointer to job that will be initiated
- * RET SLURM_SUCCESS(0) or error code
  */
-extern int prolog_slurmctld(struct job_record *job_ptr);
+extern void prolog_slurmctld(struct job_record *job_ptr);
 
 /*
  * reboot_job_nodes - Reboot the compute nodes allocated to a job.

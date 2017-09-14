@@ -2177,7 +2177,7 @@ static int _sync_nodes_to_jobs(bool reconfig)
 		    job_ptr->details && job_ptr->details->prolog_running) {
 			job_ptr->details->prolog_running = 0;
 			if (IS_JOB_CONFIGURING(job_ptr)) {
-				(void) prolog_slurmctld(job_ptr);
+				prolog_slurmctld(job_ptr);
 				(void) bb_g_job_begin(job_ptr);
 			}
 		}

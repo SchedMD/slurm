@@ -1077,19 +1077,8 @@ extern int schedule(uint32_t job_limit)
 	} else if (sched_pend_thread == 0) {
 		/* We don't want to run now, but also don't want to defer
 		 * this forever, so spawn a thread to run later */
-		pthread_attr_t attr_agent;
-		pthread_t thread_agent;
-		slurm_attr_init(&attr_agent);
-		if (pthread_attr_setdetachstate
-				(&attr_agent, PTHREAD_CREATE_DETACHED)) {
-			error("pthread_attr_setdetachstate error %m");
-		}
-		if (pthread_create(&thread_agent, &attr_agent, _sched_agent,
-				   NULL)) {
-			error("pthread_create error %m");
-		} else
-			sched_pend_thread = 1;
-		slurm_attr_destroy(&attr_agent);
+		sched_pend_thread = 1;
+		slurm_thread_create_detached(NULL, _sched_agent, NULL);
 		slurm_mutex_unlock(&sched_mutex);
 	} else {
 		/* Nothing to do, agent already pending */
@@ -3772,22 +3761,18 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
  * epilog_slurmctld - execute the epilog_slurmctld for a job that has just
  *	terminated.
  * IN job_ptr - pointer to job that has been terminated
- * RET SLURM_SUCCESS(0) or error code
  */
-extern int epilog_slurmctld(struct job_record *job_ptr)
+extern void epilog_slurmctld(struct job_record *job_ptr)
 {
-	int rc;
-	pthread_t thread_id_epilog;
-	pthread_attr_t thread_attr_epilog;
 	epilog_arg_t *epilog_arg;
 
 	if ((slurmctld_conf.epilog_slurmctld == NULL) ||
 	    (slurmctld_conf.epilog_slurmctld[0] == '\0'))
-		return SLURM_SUCCESS;
+		return;
 
 	if (access(slurmctld_conf.epilog_slurmctld, X_OK) < 0) {
 		error("Invalid EpilogSlurmctld: %m");
-		return errno;
+		return;
 	}
 
 	epilog_arg = xmalloc(sizeof(epilog_arg_t));
@@ -3795,25 +3780,8 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 	epilog_arg->epilog_slurmctld = xstrdup(slurmctld_conf.epilog_slurmctld);
 	epilog_arg->my_env = _build_env(job_ptr, true);
 
-	slurm_attr_init(&thread_attr_epilog);
-	pthread_attr_setdetachstate(&thread_attr_epilog,
-				    PTHREAD_CREATE_DETACHED);
 	job_ptr->epilog_running = true;
-	while (1) {
-		rc = pthread_create(&thread_id_epilog,
-				    &thread_attr_epilog,
-				    _run_epilog, (void *) epilog_arg);
-		if (rc == 0) {
-			slurm_attr_destroy(&thread_attr_epilog);
-			return SLURM_SUCCESS;
-		}
-		if (errno == EAGAIN)
-			continue;
-		error("pthread_create: %m");
-		slurm_attr_destroy(&thread_attr_epilog);
-		job_ptr->epilog_running = false;
-		return errno;
-	}
+	slurm_thread_create_detached(NULL, _run_epilog, epilog_arg);
 }
 
 static char **_build_env(struct job_record *job_ptr, bool is_epilog)
@@ -4064,9 +4032,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 #else
 extern int reboot_job_nodes(struct job_record *job_ptr)
 {
-	int i, i_first, i_last, rc;
-	pthread_t thread_id_prolog;
-	pthread_attr_t thread_attr_prolog;
+	int i, i_first, i_last;
 	agent_arg_t *reboot_agent_args = NULL;
 	reboot_msg_t *reboot_msg;
 	struct node_record *node_ptr;
@@ -4126,23 +4092,9 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	if (job_ptr->details)
 		job_ptr->details->prolog_running++;
 
-	slurm_attr_init(&thread_attr_prolog);
-	pthread_attr_setdetachstate(&thread_attr_prolog,
-				    PTHREAD_CREATE_DETACHED);
-	while (1) {
-		rc = pthread_create(&thread_id_prolog,
-				    &thread_attr_prolog,
-				    _wait_boot, (void *) job_ptr);
-		if (rc == 0) {
-			slurm_attr_destroy(&thread_attr_prolog);
-			return SLURM_SUCCESS;
-		}
-		if (errno == EAGAIN)
-			continue;
-		error("pthread_create: %m");
-		slurm_attr_destroy(&thread_attr_prolog);
-		return errno;
-	}
+	slurm_thread_create_detached(NULL, _wait_boot, job_ptr);
+
+	return SLURM_SUCCESS;
 }
 
 static void *_wait_boot(void *arg)
@@ -4230,21 +4182,16 @@ static void *_wait_boot(void *arg)
  * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	been allocated resources.
  * IN job_ptr - pointer to job that will be initiated
- * RET SLURM_SUCCESS(0) or error code
  */
-extern int prolog_slurmctld(struct job_record *job_ptr)
+extern void prolog_slurmctld(struct job_record *job_ptr)
 {
-	int rc;
-	pthread_t thread_id_prolog;
-	pthread_attr_t thread_attr_prolog;
-
 	if ((slurmctld_conf.prolog_slurmctld == NULL) ||
 	    (slurmctld_conf.prolog_slurmctld[0] == '\0'))
-		return SLURM_SUCCESS;
+		return;
 
 	if (access(slurmctld_conf.prolog_slurmctld, X_OK) < 0) {
 		error("Invalid PrologSlurmctld: %m");
-		return errno;
+		return;
 	}
 
 	if (job_ptr->details) {
@@ -4252,23 +4199,7 @@ extern int prolog_slurmctld(struct job_record *job_ptr)
 		job_ptr->job_state |= JOB_CONFIGURING;
 	}
 
-	slurm_attr_init(&thread_attr_prolog);
-	pthread_attr_setdetachstate(&thread_attr_prolog,
-				    PTHREAD_CREATE_DETACHED);
-	while (1) {
-		rc = pthread_create(&thread_id_prolog,
-				    &thread_attr_prolog,
-				    _run_prolog, (void *) job_ptr);
-		if (rc == 0) {
-			slurm_attr_destroy(&thread_attr_prolog);
-			return SLURM_SUCCESS;
-		}
-		if (errno == EAGAIN)
-			continue;
-		error("pthread_create: %m");
-		slurm_attr_destroy(&thread_attr_prolog);
-		return errno;
-	}
+	slurm_thread_create_detached(NULL, _run_prolog, job_ptr);
 }
 
 static void *_run_prolog(void *arg)
