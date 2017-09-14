@@ -4089,8 +4089,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	agent_queue_request(reboot_agent_args);
 
-	if (job_ptr->details)
-		job_ptr->details->prolog_running++;
+	job_ptr->details->prolog_running++;
 
 	slurm_thread_create_detached(NULL, _wait_boot, job_ptr);
 
