@@ -50,8 +50,6 @@
 #include "pmixp_utils.h"
 #include "pmixp_dconn.h"
 
-#define MAX_RETRIES 5
-
 static volatile bool _agent_is_running = false;
 static volatile bool _timer_is_running = false;
 static pthread_mutex_t _flag_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -329,24 +327,10 @@ static void *_pmix_timer_thread(void *unused)
 
 int pmixp_agent_start(void)
 {
-	int retries = 0;
-	pthread_attr_t attr;
-
 	_setup_timeout_fds();
 
-	slurm_attr_init(&attr);
-
 	/* start agent thread */
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	while ((errno = pthread_create(&_agent_tid, &attr,
-					_agent_thread, NULL))) {
-		if (++retries > MAX_RETRIES) {
-			PMIXP_ERROR_STD("pthread_create error");
-			slurm_attr_destroy(&attr);
-			return SLURM_ERROR;
-		}
-		sleep(1);
-	}
+	slurm_thread_create_detached(&_agent_tid, _agent_thread, NULL);
 	_agent_spawned = 1;
 
 	/* wait for the agent thread to initialize */
@@ -373,24 +357,13 @@ int pmixp_agent_start(void)
 	PMIXP_DEBUG("agent thread started: tid = %lu",
 		    (unsigned long) _agent_tid);
 
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	while ((errno = pthread_create(&_timer_tid, &attr, _pmix_timer_thread,
-				       NULL))) {
-		if (++retries > MAX_RETRIES) {
-			PMIXP_ERROR_STD("pthread_create error");
-			slurm_attr_destroy(&attr);
-			return SLURM_ERROR;
-		}
-		sleep(1);
-	}
+	slurm_thread_create_detached(&_timer_tid, _pmix_timer_thread, NULL);
 	_timer_spawned = 1;
 
 	/* wait for the agent thread to initialize */
 	while (!_run_flag_get(&_timer_is_running)) {
 		sched_yield();
 	}
-
-	slurm_attr_destroy(&attr);
 
 	PMIXP_DEBUG("timer thread started: tid = %lu",
 		    (unsigned long) _timer_tid);
