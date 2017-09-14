@@ -1702,7 +1702,6 @@ static void _set_usage_efctv(slurmdb_assoc_rec_t *assoc)
  */
 int init ( void )
 {
-	pthread_attr_t thread_attr;
 	char *temp = NULL;
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
@@ -1745,7 +1744,6 @@ int init ( void )
 			      "before we can init the priority/multifactor "
 			      "plugin");
 		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
-		slurm_attr_init(&thread_attr);
 
 		/* The decay_thread sets up some global variables that are
 		 * needed outside of the decay_thread (i.e. decay_factor,
@@ -1757,9 +1755,8 @@ int init ( void )
 		 * wait for it. */
 		slurm_mutex_lock(&decay_init_mutex);
 
-		if (pthread_create(&decay_handler_thread, &thread_attr,
-				   _decay_thread, NULL))
-			fatal("pthread_create error %m");
+		slurm_thread_create(&decay_handler_thread,
+				    _decay_thread, NULL);
 
 		slurm_cond_wait(&decay_init_cond, &decay_init_mutex);
 		slurm_mutex_unlock(&decay_init_mutex);
@@ -1767,12 +1764,8 @@ int init ( void )
 		/* This is here to join the decay thread so we don't core
 		 * dump if in the sleep, since there is no other place to join
 		 * we have to create another thread to do it. */
-		slurm_attr_init(&thread_attr);
-		if (pthread_create(&cleanup_handler_thread, &thread_attr,
-				   _cleanup_thread, NULL))
-			fatal("pthread_create error %m");
-
-		slurm_attr_destroy(&thread_attr);
+		slurm_thread_create(&cleanup_handler_thread,
+				    _cleanup_thread, NULL);
 	} else {
 		if (weight_fs) {
 			fatal("It appears you don't have any association "
