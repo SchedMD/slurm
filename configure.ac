@@ -623,10 +623,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/switch/nrt/Makefile
 		 src/plugins/switch/nrt/libpermapi/Makefile
 		 src/plugins/mpi/Makefile
-		 src/plugins/mpi/mpich1_p4/Makefile
-		 src/plugins/mpi/mpich1_shmem/Makefile
-		 src/plugins/mpi/mvapich/Makefile
-		 src/plugins/mpi/lam/Makefile
 		 src/plugins/mpi/none/Makefile
 		 src/plugins/mpi/openmpi/Makefile
 		 src/plugins/mpi/pmi2/Makefile
