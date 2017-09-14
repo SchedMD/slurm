@@ -252,8 +252,6 @@ msg_thr_create(stepd_step_rec_t *job)
 {
 	int fd;
 	eio_obj_t *eio_obj;
-	pthread_attr_t attr;
-	int rc = SLURM_SUCCESS, retries = 0;
 	errno = 0;
 	fd = _domain_socket_create(conf->spooldir, conf->node_name,
 				   job->jobid, job->stepid);
@@ -266,22 +264,9 @@ msg_thr_create(stepd_step_rec_t *job)
 	job->msg_handle = eio_handle_create(0);
 	eio_new_initial_obj(job->msg_handle, eio_obj);
 
-	slurm_attr_init(&attr);
+	slurm_thread_create(&job->msgid, _msg_thr_internal, job);
 
-	while (pthread_create(&job->msgid, &attr,
-			      &_msg_thr_internal, (void *)job)) {
-		error("msg_thr_create: pthread_create error %m");
-		if (++retries > MAX_RETRIES) {
-			error("msg_thr_create: Can't create pthread");
-			rc = SLURM_ERROR;
-			break;
-		}
-		usleep(10);	/* sleep and again */
-	}
-
-	slurm_attr_destroy(&attr);
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -331,9 +316,6 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	struct sockaddr_un addr;
 	int len = sizeof(addr);
 	struct request_params *param = NULL;
-	pthread_attr_t attr;
-	pthread_t id;
-	int retries = 0;
 
 	debug3("Called _msg_socket_accept");
 
@@ -364,32 +346,10 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
 
-	slurm_attr_init(&attr);
-	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0) {
-		error("Unable to set detachstate on attr: %m");
-		slurm_attr_destroy(&attr);
-		close(fd);
-		return SLURM_ERROR;
-	}
-
 	param = xmalloc(sizeof(struct request_params));
 	param->fd = fd;
 	param->job = job;
-	while (pthread_create(&id, &attr, &_handle_accept, (void *)param)) {
-		error("stepd_api message engine pthread_create: %m");
-		if (++retries > MAX_RETRIES) {
-			error("running handle_accept without "
-			      "starting a thread stepd will be "
-			      "unresponsive until done");
-			_handle_accept((void *)param);
-			info("stepd should be responsive now");
-			break;
-		}
-		usleep(10);	/* sleep and again */
-	}
-
-	slurm_attr_destroy(&attr);
-	param = NULL;
+	slurm_thread_create_detached(NULL, _handle_accept, param);
 
 	debug3("Leaving _msg_socket_accept");
 	return SLURM_SUCCESS;
@@ -1330,11 +1290,8 @@ static void *_wait_extern_pid(void *args)
 
 static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 {
-	pthread_t thread_id;
-	pthread_attr_t attr;
 	extern_pid_t *extern_pid;
 	jobacct_id_t jobacct_id;
-	int retries = 0, rc = SLURM_SUCCESS;
 
 	if (job->stepid != SLURM_EXTERN_CONT) {
 		error("%s: non-extern step (%u) given for job %u.",
@@ -1372,21 +1329,9 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 	}
 
 	/* spawn a thread that will wait on the pid given */
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	while (pthread_create(&thread_id, &attr,
-			      &_wait_extern_pid, (void *) extern_pid)) {
-		error("%s: pthread_create: %m", __func__);
-		if (++retries > MAX_RETRIES) {
-			error("%s: Can't create pthread", __func__);
-			rc = SLURM_FAILURE;
-			break;
-		}
-		usleep(10);	/* sleep and again */
-	}
-	slurm_attr_destroy(&attr);
+	slurm_thread_create_detached(NULL, _wait_extern_pid, extern_pid);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static int

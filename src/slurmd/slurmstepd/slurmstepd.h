@@ -44,7 +44,6 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define STEPD_MESSAGE_COMP_WAIT 3 /* seconds */
-#define MAX_RETRIES    3
 
 extern int slurmstepd_blocked_signals[];
 
