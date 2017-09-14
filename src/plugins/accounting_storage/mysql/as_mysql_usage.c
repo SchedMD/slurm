@@ -939,8 +939,6 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while ((cluster_name = list_next(itr))) {
-		pthread_t rollup_tid;
-		pthread_attr_t rollup_attr;
 		local_rollup_t *local_rollup = xmalloc(sizeof(local_rollup_t));
 
 		local_rollup->archive_data = archive_data;
@@ -970,16 +968,8 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 		 * fashion buys a bunch on systems with lots
 		 * (millions) of jobs.
 		 */
-		slurm_attr_init(&rollup_attr);
-		if (pthread_attr_setdetachstate(&rollup_attr,
-						PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
-
-		if (pthread_create(&rollup_tid, &rollup_attr,
-				   _cluster_rollup_usage,
-				   (void *)local_rollup))
-			fatal("pthread_create: %m");
-		slurm_attr_destroy(&rollup_attr);
+		slurm_thread_create_detached(NULL, _cluster_rollup_usage,
+					     local_rollup);
 		roll_started++;
 	}
 	slurm_mutex_lock(&rolledup_lock);
