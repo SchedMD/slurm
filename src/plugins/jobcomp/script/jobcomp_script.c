@@ -309,8 +309,10 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	return (j);
 }
 
-static void _jobcomp_info_destroy (struct jobcomp_info *j)
+static void _jobcomp_info_destroy(void *arg)
 {
+	struct jobcomp_info *j = (struct jobcomp_info *) arg;
+
 	if (j == NULL)
 		return;
 	xfree (j->account);
@@ -618,33 +620,20 @@ static void * _script_agent (void *args)
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init (void)
+extern int init(void)
 {
-	pthread_attr_t attr;
-
 	verbose("jobcomp/script plugin loaded init");
 
 	slurm_mutex_lock(&thread_flag_mutex);
 
 	if (comp_list)
-		error("Creating duplicate comp_list, possible memory leak");
-	if (!(comp_list = list_create((ListDelF) _jobcomp_info_destroy))) {
-		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
-	}
 
-	if (script_thread) {
-		debug2( "Script thread already running, not starting another");
-		slurm_mutex_unlock(&thread_flag_mutex);
-		return SLURM_ERROR;
-	}
+	comp_list = list_create(_jobcomp_info_destroy);
 
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&script_thread, &attr, _script_agent, NULL);
+	slurm_thread_create(&script_thread, _script_agent, NULL);
 
 	slurm_mutex_unlock(&thread_flag_mutex);
-	slurm_attr_destroy(&attr);
 
 	return SLURM_SUCCESS;
 }
@@ -695,43 +684,25 @@ extern const char * slurm_jobcomp_strerror(int errnum)
 	return _jobcomp_script_strerror (errnum);
 }
 
-static int _wait_for_thread (pthread_t thread_id)
-{
-	int i;
-
-	for (i=0; i<20; i++) {
-		slurm_cond_broadcast(&comp_list_cond);
-		usleep(1000 * i);
-		if (pthread_kill(thread_id, 0))
-			return SLURM_SUCCESS;
-	}
-
-	error("Could not kill jobcomp script pthread");
-	return SLURM_ERROR;
-}
-
 /* Called when script unloads */
 extern int fini ( void )
 {
-	int rc = SLURM_SUCCESS;
-
 	slurm_mutex_lock(&thread_flag_mutex);
 	if (script_thread) {
 		verbose("Script Job Completion plugin shutting down");
 		agent_exit = 1;
-		rc = _wait_for_thread(script_thread);
+		slurm_cond_broadcast(&comp_list_cond);
+		pthread_join(script_thread, NULL);
 		script_thread = 0;
 	}
 	slurm_mutex_unlock(&thread_flag_mutex);
 
 	xfree(script);
-	if (rc == SLURM_SUCCESS) {
-		slurm_mutex_lock(&comp_list_mutex);
-		FREE_NULL_LIST(comp_list);
-		slurm_mutex_unlock(&comp_list_mutex);
-	}
+	slurm_mutex_lock(&comp_list_mutex);
+	FREE_NULL_LIST(comp_list);
+	slurm_mutex_unlock(&comp_list_mutex);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*
