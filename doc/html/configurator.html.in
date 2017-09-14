@@ -514,16 +514,12 @@ handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
 Specify the type of MPI to be used by default. Slurm will configure environment
 variables accordingly. Users can over-ride this specification with an srun option.<BR>
 Select one value for <B>MpiDefault</B>:<BR>
-<input type="radio" name="mpi_default" value="mpich1_p4"> <B>MPICH1-P4</B><BR>
-<input type="radio" name="mpi_default" value="mpich1_shmem"> <B>MPICH1-SHMEM</B>:
-This also works for MVAPICH-SHMEM.<BR>
 <input type="radio" name="mpi_default" value="pmi2"> <B>MPI-PMI2</B>
-(For MPI2 and MVAPICH2)<BR>
+(For PMI2-supporting MPI implementations)<BR>
 <input type="radio" name="mpi_default" value="pmix"> <B>MPI-PMIx</B>
 (Exascale PMI implementation)<BR>
-<input type="radio" name="mpi_default" value="mvapich"> <B>MVAPICH</B><BR>
 <input type="radio" name="mpi_default" value="none" checked> <B>None</B>:
-+This works for most other MPI types including MPICH2, LAM MPI and Open MPI.<BR>
+ This works for most other MPI types.<BR>
 <P>
 
 <H2>Process Tracking</H2>
@@ -532,30 +528,20 @@ given job. This is used signal, kill, and account for the processes associated
 with a job step.<BR>
 Select one value for <B>ProctrackType</B>:<BR>
 <input type="radio" name="proctrack_type" value="cgroup" checked> <B>Cgroup</B>:  Use
-Linux <i>cgroups</i> to create a job container and track processes.
+Linux <i>cgroup</i> to create a job container and track processes.
 Build a <i>cgroup.conf</i> file as well<BR>
 <input type="radio" name="proctrack_type" value="cray"> <B>Cray</B>: Cray proprietary process tracking<BR>
+<input type="radio" name="proctrack_type" value="linuxproc"> <B>LinuxProc</B>: Use
+parent process ID records, processes can escape from Slurm control<BR>
 <input type="radio" name="proctrack_type" value="pgid"> <B>Pgid</B>: Use Unix
 Process Group ID, processes changing their process group ID can escape from Slurm
 control<BR>
-<input type="radio" name="proctrack_type" value="linuxproc"> <B>LinuxProc</B>: Use
-parent process ID records, required for MPICH-GM use, processes can escape
-from Slurm control<BR>
-<input type="radio" name="proctrack_type" value="rms"> <B>RMS</B>: Use Quadrics
-kernel infrastructure, recommended for systems where this is available<BR>
-<input type="radio" name="proctrack_type" value="sgi_job"> <B>SGI's PAGG
-module</B>: Use <A HREF="http://oss.sgi.com/projects/pagg/">SGI's Process
-Aggregates (PAGG) kernel module</A>, recommended where available<BR>
 <P>
 
 <H2>Resource Selection</H2>
 Define resource (node) selection algorithm to be used.<BR>
 Select one value for <B>SelectType</B>:<BR>
 <input type="radio" name="select_type" value="alps">
-<B>Alps</B>: Cray systems running ALPS only<BR>
-<input type="radio" name="select_type" value="bluegene">
-<B>BlueGene</B>: For IBM Blue Gene systems only<BR>
-<input type="radio" name="select_type" value="cons_res">
 <B>Cons_res</B>: Allocate individual processors and memory<BR>
 <input type="radio" name="select_type" value="cray">
 <B>Cray</B>: Cray systems running native Slurm without ALPS<BR>
