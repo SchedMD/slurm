@@ -45,8 +45,6 @@
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
 
-#define MAX_RETRIES 4
-
 /********************
  * Global Variables *
  ********************/
@@ -577,7 +575,6 @@ static List _query_fed_servers(slurmdb_federation_rec_t *fed,
 	List resp_msg_list;
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
-	pthread_attr_t load_attr;
 	ListIterator iter;
 	slurmdb_cluster_rec_t *cluster;
 	load_info_struct_t *load_args;
@@ -589,7 +586,6 @@ static List _query_fed_servers(slurmdb_federation_rec_t *fed,
 	resp_msg_list = list_create(_sinfo_list_delete);
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
-		int retries = 0;
 		if ((cluster->control_host == NULL) ||
 		    (cluster->control_host[0] == '\0'))
 			continue;	/* Cluster down */
@@ -598,20 +594,9 @@ static List _query_fed_servers(slurmdb_federation_rec_t *fed,
 		load_args->node_info_msg_list = node_info_msg_list;
 		load_args->part_info_msg_list = part_info_msg_list;
 		load_args->resp_msg_list = resp_msg_list;
-		slurm_attr_init(&load_attr);
-		if (pthread_attr_setdetachstate(&load_attr,
-						PTHREAD_CREATE_JOINABLE))
-			error("pthread_attr_setdetachstate error %m");
-		while (pthread_create(&load_thread[pthread_count], &load_attr,
-				      _load_job_prio_thread,
-				      (void *) load_args)) {
-			error("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			usleep(10000);	/* sleep and retry */
-		}
+		slurm_thread_create(&load_thread[pthread_count],
+				    _load_job_prio_thread, load_args);
 		pthread_count++;
-		slurm_attr_destroy(&load_attr);
 
 	}
 	list_iterator_destroy(iter);
@@ -700,8 +685,6 @@ static int _build_sinfo_data(List sinfo_list,
 			     partition_info_msg_t *partition_msg,
 			     node_info_msg_t *node_msg)
 {
-	pthread_attr_t attr_sinfo;
-	pthread_t thread_sinfo;
 	build_part_info_t *build_struct_ptr;
 	node_info_t *node_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
@@ -790,17 +773,8 @@ static int _build_sinfo_data(List sinfo_list,
 		sinfo_cnt++;
 		slurm_mutex_unlock(&sinfo_cnt_mutex);
 
-		slurm_attr_init(&attr_sinfo);
-		if (pthread_attr_setdetachstate
-		    (&attr_sinfo, PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
-		while (pthread_create(&thread_sinfo, &attr_sinfo,
-				      _build_part_info,
-				      (void *) build_struct_ptr)) {
-			error("pthread_create error %m");
-			usleep(10000);	/* sleep and retry */
-		}
-		slurm_attr_destroy(&attr_sinfo);
+		slurm_thread_create_detached(NULL, _build_part_info,
+					     build_struct_ptr);
 	}
 
 	slurm_mutex_lock(&sinfo_cnt_mutex);
