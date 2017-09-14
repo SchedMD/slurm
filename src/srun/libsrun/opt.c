@@ -1031,6 +1031,10 @@ static void _opt_env(int pack_offset)
 		xfree(opt.mem_bind);
 		opt.mem_bind_type = 0;
 	}
+
+	/* Process spank env options */
+	if (spank_process_env_options())
+		exit(error_exit);
 }
 
 
@@ -2281,9 +2285,8 @@ static void _set_options(const int argc, char **argv)
 			opt.quit_on_intr = true;
 			break;
 		default:
-			if (spank_process_option (opt_char, optarg) < 0) {
+			if (spank_process_option (opt_char, optarg) < 0)
 				exit(error_exit);
-			}
 		}
 	}
 

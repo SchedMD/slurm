@@ -110,6 +110,15 @@ struct option *spank_option_table_create (const struct option *orig_options);
 void spank_option_table_destroy (struct option *opt_table);
 
 /*
+ *  Process all spank options in the environment calling the options callback if
+ *  found. The option should handle being called twice -- environment variable
+ *  and by command line.
+ *
+ *  Returns <0 if any option's callback fails. Zero otherwise.
+ */
+extern int spank_process_env_options();
+
+/*
  *  Process a single spank option which was tagged by `optval' in the
  *   spank option table. If the option takes and argument (i.e. has_arg = 1)
  *   then optarg must be non-NULL.
