@@ -3111,10 +3111,10 @@ static void _rebuild_part_name_list(struct job_record  *job_ptr)
  * IN job_step_kill_msg - msg with specs on which job/step to cancel.
  * IN uid               - uid of user requesting job/step cancel.
  */
-extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
+static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 {
 	DEF_TIMERS;
-	/* Locks: Read config, write job, write node */
+	/* Locks: Read config, write job, write node, read fed */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	struct job_record *job_ptr;
@@ -3133,7 +3133,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 					job_step_kill_msg->flags, uid,
 					false);
 		unlock_slurmctld(job_write_lock);
-		END_TIMER2("_slurm_rpc_job_step_kill");
+		END_TIMER2(__func__);
 
 		/* return result */
 		if (error_code) {
@@ -3173,7 +3173,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 					     job_step_kill_msg->flags,
 					     uid);
 		unlock_slurmctld(job_write_lock);
-		END_TIMER2("_slurm_rpc_job_step_kill");
+		END_TIMER2(__func__);
 
 		/* return result */
 		if (error_code) {
@@ -3210,6 +3210,58 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	}
 
 	trace_job(job_ptr, __func__, "return");
+	return error_code;
+}
+
+/*
+ * Kill job or job step
+ *
+ * IN job_step_kill_msg - msg with specs on which job/step to cancel.
+ * IN uid               - uid of user requesting job/step cancel.
+ */
+extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
+{
+	/* Locks: Read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	struct job_record *job_ptr, *job_pack_ptr;
+	uint32_t *pack_job_ids = NULL;
+	int cnt, i, rc;
+	int error_code = SLURM_SUCCESS;
+	ListIterator iter;
+
+	lock_slurmctld(job_read_lock);
+	job_ptr = find_job_record(job_step_kill_msg->job_id);
+	if (job_ptr && job_ptr->pack_job_list &&
+	    (job_step_kill_msg->signal == SIGKILL) &&
+	    (job_step_kill_msg->job_step_id != SLURM_BATCH_SCRIPT)) {
+		cnt = list_count(job_ptr->pack_job_list);
+		pack_job_ids = xmalloc(sizeof(uint32_t) * cnt);
+		i = 0;
+		iter = list_iterator_create(job_ptr->pack_job_list);
+		while ((job_pack_ptr = (struct job_record *) list_next(iter))) {
+			pack_job_ids[i++] = job_pack_ptr->job_id;
+		}
+		list_iterator_destroy(iter);
+	}
+	unlock_slurmctld(job_read_lock);
+
+	if (!job_ptr) {
+		info("%s: invalid job id %u", __func__,
+		     job_step_kill_msg->job_id);
+		error_code = ESLURM_INVALID_JOB_ID;
+	} else if (pack_job_ids) {
+		for (i = 0; i < cnt; i++) {
+			job_step_kill_msg->job_id = pack_job_ids[i];
+			rc = _kill_job_step(job_step_kill_msg, uid);
+			if (rc != SLURM_SUCCESS)
+				error_code = rc;
+		}
+		xfree(pack_job_ids);
+	} else {
+		error_code = _kill_job_step(job_step_kill_msg, uid);
+	}
+
 	return error_code;
 }
 
