@@ -325,7 +325,8 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->eio     = eio_handle_create(0);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 
-	/* Based on my testing the next 3 lists here could use the
+	/*
+	 * Based on my testing the next 3 lists here could use the
 	 * eio_obj_destroy, but if you do you can get an invalid read.  Since
 	 * these stay until the end of the job it isn't that big of a deal.
 	 */

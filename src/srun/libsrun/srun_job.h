@@ -86,7 +86,7 @@ typedef struct srun_job {
 	char    *pack_nodelist;	/* node list for combined pack job */
 	uint32_t pack_ntasks;	/* total task count for entire pack job */
 	uint32_t pack_offset;	/* pack job offset or NO_VAL */
-	uint32_t task_offset;	/* pack job tsk offset or NO_VAL */
+	uint32_t task_offset;	/* pack job task offset or NO_VAL */
 
 	uint32_t cpu_count;	/* allocated CPUs */
 	uint32_t nhosts;	/* node count */
