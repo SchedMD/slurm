@@ -198,8 +198,8 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = mpich1_p4 mpich1_shmem mpichgm mpichmx mvapich none lam \
-	openmpi pmi2 pmix
+DIST_SUBDIRS = mpich1_p4 mpich1_shmem mpichmx mvapich none lam openmpi \
+	pmi2 pmix
 am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
@@ -488,8 +488,8 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@REAL_BGQ_LOADED_FALSE@SUBDIRS = mpich1_p4 mpich1_shmem mpichgm \
-@REAL_BGQ_LOADED_FALSE@	mpichmx mvapich none lam openmpi pmi2 \
+@REAL_BGQ_LOADED_FALSE@SUBDIRS = mpich1_p4 mpich1_shmem mpichmx \
+@REAL_BGQ_LOADED_FALSE@	mvapich none lam openmpi pmi2 \
 @REAL_BGQ_LOADED_FALSE@	$(am__append_1)
 
 #on a real BGQ do not compile any mpi plugins

@@ -345,20 +345,6 @@ to launch the tasks. A simple example is shown below.</p>
 <hr size=4 width="100%">
 
 
-<h2><a name="mpich_gm" href="http://www.myri.com/scs/download-mpichgm.html"><b>MPICH-GM</b></a></h2>
-
-<p>MPICH-GM jobs can be launched directly by <b>srun</b> command.
-Slurm's <i>mpichgm</i> MPI plugin must be used to establish communications
-between the launched tasks. This can be accomplished either using the Slurm
-configuration parameter <i>MpiDefault=mpichgm</i> in <b>slurm.conf</b>
-or srun's <i>--mpi=mpichgm</i> option.
-<pre>
-$ mpicc ...
-$ srun -n16 --mpi=mpichgm a.out
-</pre>
-<hr size=4 width="100%">
-
-
 <h2><a name="mpich_mx" href="http://www.myri.com/scs/download-mpichmx.html"><b>MPICH-MX</b></a></h2>
 
 <p>MPICH-MX jobs can be launched directly by <b>srun</b> command.
