@@ -222,7 +222,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->exit_code = job->exit_code;
 	j->derived_ec = job->derived_ec;
 	j->uid = job->user_id;
-	j->user_name = uid_to_string_cached((uid_t)job->user_id);
+	j->user_name = xstrdup(uid_to_string_cached((uid_t)job->user_id));
 	j->gid = job->group_id;
 	j->group_name = gid_to_string((gid_t)job->group_id);
 	j->name = xstrdup (job->name);
