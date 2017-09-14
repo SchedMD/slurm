@@ -172,8 +172,6 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 	uint16_t done_sig = 0;
 	struct job_record *job_ptr;
 	struct node_record *node_ptr;
-	pthread_attr_t attr;
-	pthread_t ckpt_agent_tid = 0;
 	char *nodelist;
 	struct ckpt_req *req_ptr;
 
@@ -248,21 +246,7 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 		req_ptr->sig_done = done_sig;
 		req_ptr->op = op;
 
-		slurm_attr_init(&attr);
-		if (pthread_attr_setdetachstate(&attr,
-						PTHREAD_CREATE_DETACHED)) {
-			error("pthread_attr_setdetachstate: %m");
-			rc = errno;
-			break;
-		}
-
-		if (pthread_create(&ckpt_agent_tid, &attr, _ckpt_agent_thr,
-				   req_ptr)) {
-			error("pthread_create: %m");
-			rc = errno;
-			break;
-		}
-		slurm_attr_destroy(&attr);
+		slurm_thread_create_detached(NULL, _ckpt_agent_thr, req_ptr);
 
 		break;
 
