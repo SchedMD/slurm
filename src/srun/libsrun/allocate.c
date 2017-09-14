@@ -135,8 +135,6 @@ static void *_safe_signal_while_allocating(void *in_data)
 
 static void _signal_while_allocating(int signo)
 {
-	pthread_t thread_id;
-	pthread_attr_t thread_attr;
 	int *local_signal;
 
 	/*
@@ -151,12 +149,8 @@ static void _signal_while_allocating(int signo)
 	 */
 	local_signal = xmalloc(sizeof(int));
 	*local_signal = signo;
-	slurm_attr_init(&thread_attr);
-	while (pthread_create(&thread_id, &thread_attr,
-			     _safe_signal_while_allocating, local_signal)) {
-		usleep(10);	/* sleep and again */
-	}
-	slurm_attr_destroy(&thread_attr);
+	slurm_thread_create_detached(NULL, _safe_signal_while_allocating,
+				     local_signal);
 }
 
 /* This typically signifies the job was cancelled by scancel */

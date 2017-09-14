@@ -1225,16 +1225,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
 				bool handle_signals, opt_t *opt_local)
 {
-	pthread_attr_t thread_attr;
-
 	if (handle_signals && !signal_thread) {
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&signal_thread, &thread_attr,
-				      _srun_signal_mgr, job)) {
-			error("pthread_create error %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
+		slurm_thread_create(&signal_thread, _srun_signal_mgr, job);
 	}
 
 	/* if running from poe This already happened in srun. */
