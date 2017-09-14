@@ -1795,19 +1795,13 @@ static void *_state_thread(void *no_data)
 /* Spawn thread to periodically save nonstop plugin state to disk */
 extern int spawn_state_thread(void)
 {
-	pthread_attr_t thread_attr_msg;
-
 	slurm_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
 		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
 
-	slurm_attr_init(&thread_attr_msg);
-	if (pthread_create(&msg_thread_id, &thread_attr_msg,
-			   _state_thread, NULL))
-		fatal("pthread_create %m");
-	slurm_attr_destroy(&thread_attr_msg);
+	slurm_thread_create(&msg_thread_id, _state_thread, NULL);
 	thread_running = true;
 	slurm_mutex_unlock(&thread_flag_mutex);
 
