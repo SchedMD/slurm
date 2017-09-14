@@ -452,7 +452,6 @@ static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks)
 	eio_obj_t *obj;
 	int i;
 	message_thread_state_t *mts;
-	pthread_attr_t attr;
 
 	debug("Entering _msg_thr_create()");
 	mts = (message_thread_state_t *)xmalloc(sizeof(message_thread_state_t));
@@ -474,14 +473,7 @@ static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks)
 		eio_new_initial_obj(mts->msg_handle, obj);
 	}
 
-	slurm_attr_init(&attr);
-	if (pthread_create(&mts->msg_thread, &attr,
-			   _msg_thr_internal, (void *)mts) != 0) {
-		error("pthread_create of message thread: %m");
-		slurm_attr_destroy(&attr);
-		goto fail;
-	}
-	slurm_attr_destroy(&attr);
+	slurm_thread_create(&mts->msg_thread, _msg_thr_internal, mts);
 
 	return mts;
 fail:
