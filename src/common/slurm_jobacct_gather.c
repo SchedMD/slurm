@@ -214,8 +214,6 @@ static bool _init_run_test(void)
 }
 
 /* _watch_tasks() -- monitor slurm jobs and track their memory usage
- *
- * IN, OUT:	Irrelevant; this is invoked by pthread_create()
  */
 
 static void *_watch_tasks(void *arg)
@@ -345,7 +343,6 @@ extern int jobacct_gather_fini(void)
 extern int jobacct_gather_startpoll(uint16_t frequency)
 {
 	int retval = SLURM_SUCCESS;
-	pthread_attr_t attr;
 
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
@@ -370,14 +367,9 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 	}
 
 	/* create polling thread */
-	slurm_attr_init(&attr);
-	if  (pthread_create(&watch_tasks_thread_id, &attr,
-			    &_watch_tasks, NULL)) {
-		debug("jobacct_gather failed to create _watch_tasks "
-		      "thread: %m");
-	} else
-		debug3("jobacct_gather dynamic logging enabled");
-	slurm_attr_destroy(&attr);
+	slurm_thread_create(&watch_tasks_thread_id, _watch_tasks, NULL);
+
+	debug3("jobacct_gather dynamic logging enabled");
 
 	return retval;
 }

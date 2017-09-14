@@ -210,7 +210,6 @@ extern int acct_gather_interconnect_fini(void)
 extern int acct_gather_interconnect_startpoll(uint32_t frequency)
 {
 	int retval = SLURM_SUCCESS;
-	pthread_attr_t attr;
 
 	if (acct_gather_interconnect_init() < 0)
 		return SLURM_ERROR;
@@ -230,12 +229,9 @@ extern int acct_gather_interconnect_startpoll(uint32_t frequency)
 	}
 
 	/* create polling thread */
-	slurm_attr_init(&attr);
-	if (pthread_create(&watch_node_thread_id, &attr, &_watch_node, NULL))
-		debug("%s: failed to create _watch_node thread: %m", __func__);
-	else
-		debug3("%s: dynamic logging enabled", __func__);
-	slurm_attr_destroy(&attr);
+	slurm_thread_create(&watch_node_thread_id, &_watch_node, NULL);
+
+	debug3("%s: dynamic logging enabled", __func__);
 
 	return retval;
 }

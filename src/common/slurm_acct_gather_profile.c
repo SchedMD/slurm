@@ -422,8 +422,6 @@ extern char *acct_gather_profile_dataset_str(
 
 extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 {
-	int retval = SLURM_SUCCESS;
-	pthread_attr_t attr;
 	int i;
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
 
@@ -434,7 +432,7 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	if (acct_gather_profile_running) {
 		slurm_mutex_unlock(&profile_running_mutex);
 		error("acct_gather_profile_startpoll: poll already started!");
-		return retval;
+		return SLURM_SUCCESS;
 	}
 	acct_gather_profile_running = true;
 	slurm_mutex_unlock(&profile_running_mutex);
@@ -493,17 +491,11 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	}
 
 	/* create polling thread */
-	slurm_attr_init(&attr);
+	slurm_thread_create(&timer_thread_id, _timer_thread, NULL);
 
-	if  (pthread_create(&timer_thread_id, &attr,
-			    &_timer_thread, NULL)) {
-		debug("acct_gather_profile_startpoll failed to create "
-		      "_timer_thread: %m");
-	} else
-		debug3("acct_gather_profile_startpoll dynamic logging enabled");
-	slurm_attr_destroy(&attr);
+	debug3("acct_gather_profile_startpoll dynamic logging enabled");
 
-	return retval;
+	return SLURM_SUCCESS;
 }
 
 extern void acct_gather_profile_endpoll(void)

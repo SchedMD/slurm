@@ -170,7 +170,6 @@ extern int acct_gather_filesystem_fini(void)
 extern int acct_gather_filesystem_startpoll(uint32_t frequency)
 {
 	int retval = SLURM_SUCCESS;
-	pthread_attr_t attr;
 
 	if (acct_gather_filesystem_init() < 0)
 		return SLURM_ERROR;
@@ -191,14 +190,9 @@ extern int acct_gather_filesystem_startpoll(uint32_t frequency)
 	}
 
 	/* create polling thread */
-	slurm_attr_init(&attr);
+	slurm_thread_create(&watch_node_thread_id, _watch_node, NULL);
 
-	if (pthread_create(&watch_node_thread_id, &attr, &_watch_node, NULL)) {
-		debug("acct_gather_filesystem failed to create _watch_node "
-			"thread: %m");
-	} else
-		debug3("acct_gather_filesystem dynamic logging enabled");
-	slurm_attr_destroy(&attr);
+	debug3("acct_gather_filesystem dynamic logging enabled");
 
 	return retval;
 }

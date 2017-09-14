@@ -1884,12 +1884,7 @@ static void _create_agent(void)
 	}
 
 	if (agent_tid == 0) {
-		pthread_attr_t agent_attr;
-		slurm_attr_init(&agent_attr);
-		if (pthread_create(&agent_tid, &agent_attr, _agent, NULL) ||
-		    (agent_tid == 0))
-			fatal("pthread_create: %m");
-		slurm_attr_destroy(&agent_attr);
+		slurm_thread_create(&agent_tid, _agent, NULL);
 	}
 }
 
