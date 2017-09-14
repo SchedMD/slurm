@@ -93,7 +93,6 @@ void block_sigwinch(void)
 void pty_thread_create(srun_job_t *job)
 {
 	slurm_addr_t pty_addr;
-	pthread_attr_t attr;
 	uint16_t *ports;
 
 	if ((ports = slurm_get_srun_port_range()))
@@ -112,13 +111,7 @@ void pty_thread_create(srun_job_t *job)
 	job->pty_port = ntohs(((struct sockaddr_in) pty_addr).sin_port);
 	debug2("initialized job control port %hu", job->pty_port);
 
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if ((pthread_create(&job->pty_id, &attr, &_pty_thread, (void *) job))) {
-		job->pty_id = 0;
-		error("pthread_create(pty_thread): %m");
-	}
-	slurm_attr_destroy(&attr);
+	slurm_thread_create_detached(NULL, _pty_thread, job);
 }
 
 static void  _handle_sigwinch(int sig)

@@ -115,7 +115,6 @@ typedef struct srun_job {
 	dynamic_plugin_data_t *select_jobinfo;
 
 	/* Pseudo terminial support */
-	pthread_t pty_id;	/* pthread to communicate window size changes */
 	int pty_fd;		/* file to communicate window size changes */
 	uint16_t pty_port;	/* used to communicate window size changes */
 	uint16_t ws_col;	/* window size, columns */
