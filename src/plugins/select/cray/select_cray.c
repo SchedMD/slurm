@@ -117,7 +117,6 @@ typedef enum {
 } npc_type_t;
 
 #define NODEINFO_MAGIC 0x85ad
-#define MAX_PTHREAD_RETRIES  1
 
 #define GET_BLADE_X(_X) \
 	(int16_t)((_X & 0x0000ffff00000000) >> 32)
@@ -829,16 +828,8 @@ static void _start_aeld_thread(void)
 
 	// Spawn the aeld thread, only in slurmctld.
 	if (!aeld_running && run_in_daemon("slurmctld")) {
-		pthread_attr_t attr;
 		aeld_running = 1;
-		slurm_attr_init(&attr);
-		if (pthread_create(&aeld_thread, &attr, _aeld_event_loop,
-				   NULL)) {
-			error("pthread_create of message thread: %m");
-			aeld_running = 0;
-		}
-
-		slurm_attr_destroy(&attr);
+		slurm_thread_create(&aeld_thread, _aeld_event_loop, NULL);
 	}
 }
 
@@ -1188,29 +1179,6 @@ static void *_step_fini(void *args)
 	_throttle_fini();
 
 	return NULL;
-}
-
-static void _spawn_cleanup_thread(
-	void *obj_ptr, void *(*start_routine) (void *))
-{
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
-	int retries;
-
-	/* spawn an agent */
-	slurm_attr_init(&attr_agent);
-	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-
-	retries = 0;
-	while (pthread_create(&thread_agent, &attr_agent,
-			      start_routine, obj_ptr)) {
-		error("pthread_create error %m");
-		if (++retries > MAX_PTHREAD_RETRIES)
-			fatal("Can't create pthread");
-		usleep(1000);	/* sleep and retry */
-	}
-	slurm_attr_destroy(&attr_agent);
 }
 
 static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
@@ -1634,8 +1602,9 @@ extern int select_p_job_init(List job_list)
 					    !IS_CLEANING_COMPLETE(jobinfo)) {
 						jobinfo->cleaning |=
 							CLEANING_STARTED;
-						_spawn_cleanup_thread(
-							step_ptr, _step_fini);
+						slurm_thread_create_detached(NULL,
+									     _step_fini,
+									     step_ptr);
 					}
 				}
 				list_iterator_destroy(itr_step);
@@ -1646,8 +1615,9 @@ extern int select_p_job_init(List job_list)
 				if (jobinfo &&
 				    IS_CLEANING_STARTED(jobinfo) &&
 				    !IS_CLEANING_COMPLETE(jobinfo)) {
-					_spawn_cleanup_thread(
-						job_ptr, _job_fini);
+					slurm_thread_create_detached(NULL,
+								     _job_fini,
+								     job_ptr);
 				}
 			}
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
@@ -2045,7 +2015,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 		      "this should never happen", __func__, job_ptr->job_id);
 	} else {
 		jobinfo->cleaning |= CLEANING_STARTED;
-		_spawn_cleanup_thread(job_ptr, _job_fini);
+		slurm_thread_create_detached(NULL, _job_fini, job_ptr);
 	}
 
 	return SLURM_SUCCESS;
@@ -2251,7 +2221,7 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 	} else {
 		jobinfo->killing = killing_step;
 		jobinfo->cleaning |= CLEANING_STARTED;
-		_spawn_cleanup_thread(step_ptr, _step_fini);
+		slurm_thread_create_detached(NULL, _step_fini, step_ptr);
 	}
 
 	END_TIMER;
