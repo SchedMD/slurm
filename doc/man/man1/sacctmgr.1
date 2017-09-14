@@ -684,8 +684,16 @@ The account name of the parent of this association.
 The name of a partition in the association.
 
 .TP
-\fIRawQOS\fP
-The numeric values of valid QOS\' for this association.
+\fIWithRawQOSLevel\fP
+Display QosLevel in an unevaluated raw format, consisting of a comma
+separated list of QOS names prepended with '' (nothing), '+' or '-' for
+the association. QOS names without +/- prepended were assigned (ie,
+sacctmgr modify ... set QosLevel=qos_name) for the entity listed or
+on one of its parents in the hierarchy. QOS names with +/- prepended
+indicate the QOS was added/filtered (ie, sacctmgr modify ... set
+QosLevel=[+-]qos_name) for the entity listed or on one of its parents
+in the hierarchy. Including WOPLimits will show exactly where each QOS
+was assigned, added or filtered in the hierarchy.
 
 .TP
 \fIRGT\fP

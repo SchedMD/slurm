@@ -1076,8 +1076,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             GrpMemory, GrpNodes, GrpSubmitJob, GrpWall,    \n\
                             ID, LFT, MaxTRESMins, MaxTRES,                  \n\
                             MaxJobs, MaxNodes, MaxSubmitJobs, MaxWall, QOS,\n\
-                            ParentID, ParentName, Partition, RawQOS, RGT,  \n\
-                            User                                           \n\
+                            ParentID, ParentName, Partition, RGT,          \n\
+                            User, WithRawQOS                               \n\
                                                                            \n\
        Cluster            - Classification, Cluster, ClusterNodes,         \n\
                             ControlHost, ControlPort, DefaultQOS,          \n\
