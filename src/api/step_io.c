@@ -58,7 +58,6 @@
 #include "src/api/step_io.h"
 #include "src/api/step_launch.h"
 
-#define MAX_RETRIES 3
 #define STDIO_MAX_FREE_BUF 1024
 
 struct io_buf {
@@ -1161,23 +1160,10 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 int
 client_io_handler_start(client_io_t *cio)
 {
-	int retries = 0;
-	pthread_attr_t attr;
-
 	xsignal(SIGTTIN, SIG_IGN);
 
-	slurm_attr_init(&attr);
-	while ((errno = pthread_create(&cio->ioid, &attr,
-				      &_io_thr_internal, (void *) cio))) {
-		if (++retries > MAX_RETRIES) {
-			error ("pthread_create error %m");
-			cio->ioid = 0;
-			slurm_attr_destroy(&attr);
-			return SLURM_ERROR;
-		}
-		sleep(1);	/* sleep and try again */
-	}
-	slurm_attr_destroy(&attr);
+	slurm_thread_create(&cio->ioid, _io_thr_internal, cio);
+
 	debug("Started IO server thread (%lu)", (unsigned long) cio->ioid);
 
 	return SLURM_SUCCESS;
@@ -1197,24 +1183,11 @@ static void *_kill_thr(void *args)
 
 static void _delay_kill_thread(pthread_t thread_id, int secs)
 {
-	pthread_t kill_id;
-	pthread_attr_t attr;
 	kill_thread_t *kt = xmalloc(sizeof(kill_thread_t));
-	int retries = 0;
 
 	kt->thread_id = thread_id;
 	kt->secs = secs;
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	while (pthread_create(&kill_id, &attr, &_kill_thr, (void *) kt)) {
-		error("_delay_kill_thread: pthread_create: %m");
-		if (++retries > MAX_RETRIES) {
-			error("_delay_kill_thread: Can't create pthread");
-			break;
-		}
-		usleep(10);	/* sleep and again */
-	}
-	slurm_attr_destroy(&attr);
+	slurm_thread_create_detached(NULL, _kill_thr, kt);
 }
 
 int
