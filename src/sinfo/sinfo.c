@@ -581,7 +581,7 @@ static List _query_fed_servers(slurmdb_federation_rec_t *fed,
 	int i;
 
 	/* Spawn one pthread per cluster to collect job information */
-	load_thread = xmalloc(sizeof(pthread_attr_t) *
+	load_thread = xmalloc(sizeof(pthread_t) *
 			      list_count(fed->cluster_list));
 	resp_msg_list = list_create(_sinfo_list_delete);
 	iter = list_iterator_create(fed->cluster_list);
