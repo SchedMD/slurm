@@ -50,8 +50,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define MAX_RETRIES 5
-
 /* Data structures for pthreads used to gather step information from multiple
  * clusters in parallel */
 typedef struct load_step_req_struct {
@@ -389,7 +387,6 @@ _load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 	uint32_t new_rec_cnt;
 	slurmdb_cluster_rec_t *cluster;
 	ListIterator iter;
-	pthread_attr_t load_attr;
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_step_req_struct_t *load_args;
@@ -399,11 +396,10 @@ _load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 
 	/* Spawn one pthread per cluster to collect step information */
 	resp_msg_list = list_create(NULL);
-	load_thread = xmalloc(sizeof(pthread_attr_t) *
+	load_thread = xmalloc(sizeof(pthread_t) *
 			      list_count(fed->cluster_list));
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
-		int retries = 0;
 		bool local_cluster = false;
 		if ((cluster->control_host == NULL) ||
 		    (cluster->control_host[0] == '\0'))
@@ -419,19 +415,9 @@ _load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 		load_args->local_cluster = local_cluster;
 		load_args->req_msg = req_msg;
 		load_args->resp_msg_list = resp_msg_list;
-		slurm_attr_init(&load_attr);
-		if (pthread_attr_setdetachstate(&load_attr,
-						PTHREAD_CREATE_JOINABLE))
-			error("pthread_attr_setdetachstate error %m");
-		while (pthread_create(&load_thread[pthread_count], &load_attr,
-				      _load_step_thread, (void *) load_args)) {
-			error("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			usleep(10000);	/* sleep and retry */
-		}
+		slurm_thread_create(&load_thread[pthread_count],
+				    _load_step_thread, load_args);
 		pthread_count++;
-		slurm_attr_destroy(&load_attr);
 
 	}
 	list_iterator_destroy(iter);
