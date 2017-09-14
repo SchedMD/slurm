@@ -231,10 +231,6 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 		xfree(check_ptr->error_msg);
 
 		req_ptr = xmalloc(sizeof(struct ckpt_req));
-		if (!req_ptr) {
-			rc = ENOMEM;
-			break;
-		}
 		req_ptr->gid = job_ptr->group_id;
 		req_ptr->uid = job_ptr->user_id;
 		req_ptr->job_id = job_id;
