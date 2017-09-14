@@ -125,7 +125,6 @@ static void  _usage(char *prog_name);
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
-	pthread_attr_t thread_attr;
 	char node_name_short[128];
 	char node_name_long[128];
 	void *db_conn = NULL;
@@ -176,19 +175,11 @@ int main(int argc, char **argv)
 		error("Unable to block signals");
 
 	/* Create attached thread for signal handling */
-	slurm_attr_init(&thread_attr);
-	if (pthread_create(&signal_handler_thread, &thread_attr,
-			   _signal_handler, NULL))
-		fatal("pthread_create %m");
-	slurm_attr_destroy(&thread_attr);
+	slurm_thread_create(&signal_handler_thread, _signal_handler, NULL);
 
 	registered_clusters = list_create(NULL);
 
-	slurm_attr_init(&thread_attr);
-	if (pthread_create(&commit_handler_thread, &thread_attr,
-			   _commit_handler, NULL))
-		fatal("pthread_create %m");
-	slurm_attr_destroy(&thread_attr);
+	slurm_thread_create(&commit_handler_thread, _commit_handler, NULL);
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 
@@ -252,21 +243,13 @@ int main(int argc, char **argv)
 
 		if (!shutdown_time) {
 			/* Create attached thread to process incoming RPCs */
-			slurm_attr_init(&thread_attr);
-			if (pthread_create(&rpc_handler_thread, &thread_attr,
-					   rpc_mgr, NULL))
-				fatal("pthread_create error %m");
-			slurm_attr_destroy(&thread_attr);
+			slurm_thread_create(&rpc_handler_thread, rpc_mgr, NULL);
 		}
 
 		if (!shutdown_time) {
 			/* Create attached thread to do usage rollup */
-			slurm_attr_init(&thread_attr);
-			if (pthread_create(&rollup_handler_thread,
-					   &thread_attr,
-					   _rollup_handler, db_conn))
-				fatal("pthread_create error %m");
-			slurm_attr_destroy(&thread_attr);
+			slurm_thread_create(&rollup_handler_thread,
+					    _rollup_handler, db_conn);
 		}
 
 		/* Daemon is fully operational here */
