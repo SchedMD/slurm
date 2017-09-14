@@ -85,34 +85,12 @@ static bool _in_slurmctld(void);
  */
 extern int start_lease_extender(void)
 {
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
-	int retries = 0;
-
 	// Start lease extender in the slurmctld
 	if (!_in_slurmctld())
 		return SLURM_SUCCESS;
 
-	/* spawn an agent */
-	slurm_attr_init(&attr_agent);
-	if (pthread_attr_setdetachstate(&attr_agent,
-					PTHREAD_CREATE_DETACHED)) {
-		CRAY_ERR("pthread_attr_setdetachstate error %m");
-	}
+	slurm_thread_create_detached(NULL, _lease_extender, NULL);
 
-	retries = 0;
-	while (pthread_create(&thread_agent, &attr_agent,
-			      &_lease_extender, NULL)) {
-		error("pthread_create error %m");
-		if (++retries > 1) {
-			CRAY_ERR("Can't create pthread");
-			slurm_attr_destroy(&attr_agent);
-			return SLURM_ERROR;
-		}
-
-		usleep(1000);	/* sleep and retry */
-	}
-	slurm_attr_destroy(&attr_agent);
 	return SLURM_SUCCESS;
 }
 

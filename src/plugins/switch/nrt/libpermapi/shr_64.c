@@ -399,8 +399,6 @@ static void _spawn_fe_agent(void)
 	int fe_comm_socket = -1;
 	slurm_addr_t comm_addr;
 	uint16_t comm_port;
-	pthread_attr_t agent_attr;
-	pthread_t agent_tid;
 	agent_data_t *agent_data_ptr;
 
 	/* Open socket for back-end program to communicate with */
@@ -425,15 +423,8 @@ static void _spawn_fe_agent(void)
 	agent_data_ptr = xmalloc(sizeof(agent_data_t));
 	agent_data_ptr->fe_auth_key = fe_auth_key;
 	agent_data_ptr->fe_comm_socket = fe_comm_socket;
-	slurm_attr_init(&agent_attr);
-	pthread_attr_setdetachstate(&agent_attr, PTHREAD_CREATE_DETACHED);
-	while ((pthread_create(&agent_tid, &agent_attr, &_agent_thread,
-			       (void *) agent_data_ptr))) {
-		if (errno != EAGAIN)
-			fatal("pthread_create(): %m");
-		sleep(1);
-	}
-	slurm_attr_destroy(&agent_attr);
+
+	slurm_thread_create_detached(NULL, _agent_thread, agent_data_ptr);
 }
 
 /*

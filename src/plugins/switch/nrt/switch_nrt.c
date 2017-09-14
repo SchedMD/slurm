@@ -57,7 +57,6 @@
 char local_dir_path[1024];
 bool nrt_need_state_save = false;
 
-static void _spawn_state_save_thread(char *dir);
 static int  _switch_p_libstate_save(char * dir_name, bool free_flag);
 
 /* Type for error string table entries */
@@ -296,7 +295,8 @@ extern int switch_p_libstate_restore ( char * dir_name, bool recover )
 		START_TIMER;
 		info("switch_p_libstate_restore() starting");
 	}
-	_spawn_state_save_thread(xstrdup(dir_name));
+	slurm_thread_create_detached(NULL, _state_save_thread,
+				     xstrdup(dir_name));
 	if (!recover)   /* clean start, no recovery */
 		return nrt_init();
 
@@ -1045,19 +1045,6 @@ static void *_state_save_thread(void *arg)
 	}
 
 	return NULL;
-}
-
-static void _spawn_state_save_thread(char *dir)
-{
-	pthread_attr_t attr;
-	pthread_t id;
-
-	slurm_attr_init(&attr);
-
-	if (pthread_create(&id, &attr, &_state_save_thread, (void *)dir) != 0)
-		error("Could not start switch/nrt state saving pthread");
-
-	slurm_attr_destroy(&attr);
 }
 
 extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
