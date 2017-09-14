@@ -145,7 +145,6 @@ extern int fini(void)
 
 extern int proctrack_p_create(stepd_step_rec_t *job)
 {
-	pthread_attr_t attr;
 	DEF_TIMERS;
 	START_TIMER;
 
@@ -180,8 +179,7 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 
 		*/
 		slurm_mutex_lock(&notify_mutex);
-		pthread_attr_init(&attr);
-		pthread_create(&threadid, &attr, _create_container_thread, job);
+		slurm_thread_create(&threadid, _create_container_thread, job);
 		slurm_cond_wait(&notify, &notify_mutex);
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
