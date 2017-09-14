@@ -263,8 +263,6 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	ListIterator opt_iter, job_iter;
 	opt_t *opt_local = NULL;
 	_launch_app_data_t *opts;
-	pthread_attr_t attr_steps;
-	pthread_t thread_steps = (pthread_t) 0;
 	int total_ntasks = 0, step_cnt = 0;
 	pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t step_cond   = PTHREAD_COND_INITIALIZER;
@@ -296,10 +294,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			mpir_init(total_ntasks);
 		}
 
-		slurm_attr_init(&attr_steps);
 		opt_iter = list_iterator_create(opt_list);
 		while ((opt_local = (opt_t *) list_next(opt_iter))) {
-			int retries = 0;
 			job = (srun_job_t *) list_next(job_iter);
 			if (!job) {
 				slurm_mutex_lock(&step_mutex);
@@ -326,18 +322,10 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			opts->step_cnt    = &step_cnt;
 			opts->step_mutex  = &step_mutex;
 			opt_local->pack_step_cnt = pack_step_cnt;
-			while (pthread_create(&thread_steps,
-					      &attr_steps, _launch_one_app,
-					      (void *) opts)) {
-				error("%s: pthread_create error %m", __func__);
-				if (++retries > 4) {
-					fatal("%s: Can't create pthread",
-					      __func__);
-				}
-				usleep(10000);  /* sleep and retry */
-			}
+
+			slurm_thread_create_detached(NULL, _launch_one_app,
+						     opts);
 		}
-		slurm_attr_destroy(&attr_steps);
 		list_iterator_destroy(job_iter);
 		list_iterator_destroy(opt_iter);
 		slurm_mutex_lock(&step_mutex);
