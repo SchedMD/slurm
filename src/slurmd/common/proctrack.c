@@ -319,18 +319,12 @@ static void *_sig_agent(void *args)
 static void _spawn_signal_thread(uint64_t cont_id, int signal)
 {
 	agent_arg_t *agent_arg_ptr;
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
 
-	slurm_attr_init(&attr_agent);
-	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->cont_id = cont_id;
 	agent_arg_ptr->signal  = signal;
-	(void) pthread_create(&thread_agent, &attr_agent,
-			     _sig_agent, (void *) agent_arg_ptr);
-	slurm_attr_destroy(&attr_agent);
+
+	slurm_thread_create_detached(NULL, _sig_agent, agent_arg_ptr);
 }
 
 /*
@@ -343,8 +337,6 @@ static void _spawn_signal_thread(uint64_t cont_id, int signal)
  */
 extern int proctrack_g_signal(uint64_t cont_id, int signal)
 {
-
-
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
 

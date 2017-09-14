@@ -198,7 +198,6 @@ static int       _set_slurmd_spooldir(void);
 static int       _set_topo_info(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
-static void      _spawn_registration_engine(void);
 static void      _term_handler(int);
 static void      _update_logging(void);
 static void      _update_nice(void);
@@ -367,7 +366,7 @@ main (int argc, char **argv)
 		fatal("failed to initialize slurmd_plugstack");
 
 	run_script_health_check();
-	_spawn_registration_engine();
+	slurm_thread_create_detached(NULL, _registration_engine, NULL);
 
 	msg_aggr_sender_init(conf->hostname, conf->port,
 			     conf->msg_aggr_window_time,
@@ -393,34 +392,6 @@ main (int argc, char **argv)
 	info("Slurmd shutdown completing");
 	log_fini();
        	return 0;
-}
-
-static void
-_spawn_registration_engine(void)
-{
-	int            rc;
-	pthread_attr_t attr;
-	pthread_t      id;
-	int            retries = 0;
-
-	slurm_attr_init(&attr);
-	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (rc != 0) {
-		errno = rc;
-		fatal("%s: Unable to set detachstate on attr: %m", __func__);
-		slurm_attr_destroy(&attr);
-		return;
-	}
-
-	while (pthread_create(&id, &attr, &_registration_engine, NULL)) {
-		error("%s: pthread_create: %m", __func__);
-		if (++retries > 3)
-			fatal("%s: pthread_create: %m", __func__);
-		usleep(10);	/* sleep and again */
-	}
-	slurm_attr_destroy(&attr);
-
-	return;
 }
 
 /* Spawn a thread to make sure we send at least one registration message to
@@ -538,43 +509,15 @@ _wait_for_all_threads(int secs)
 
 static void _handle_connection(int fd, slurm_addr_t *cli)
 {
-	int            rc;
-	pthread_attr_t attr;
-	pthread_t      id;
-	conn_t         *arg = xmalloc(sizeof(conn_t));
-	int            retries = 0;
+	conn_t *arg = xmalloc(sizeof(conn_t));
 
 	arg->fd       = fd;
 	arg->cli_addr = cli;
 
-	slurm_attr_init(&attr);
-	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (rc != 0) {
-		errno = rc;
-		xfree(arg);
-		error("Unable to set detachstate on attr: %m");
-		slurm_attr_destroy(&attr);
-		return;
-	}
-
 	fd_set_close_on_exec(fd);
 
 	_increment_thd_count();
-	while (pthread_create(&id, &attr, &_service_connection, (void *)arg)) {
-		error("msg_engine: pthread_create: %m");
-		if (++retries > 3) {
-			error("running service_connection without starting "
-			      "a new thread slurmd will be "
-			      "unresponsive until done");
-
-			_service_connection((void *) arg);
-			info("slurmd should be responsive now");
-			break;
-		}
-		usleep(10);	/* sleep and again */
-	}
-
-	return;
+	slurm_thread_create_detached(NULL, _service_connection, arg);
 }
 
 static void *

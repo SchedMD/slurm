@@ -5892,13 +5892,12 @@ static int
 _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	DEF_TIMERS;
-	int rc, diff_time, retries = 0;
+	int rc, diff_time;
 	char *my_prolog;
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
 	static uint16_t timeout;
-	pthread_t       timer_id = 0;
-	pthread_attr_t  timer_attr;
+	pthread_t       timer_id;
 	pthread_cond_t  timer_cond  = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 	timer_struct_t  timer_struct;
@@ -5933,19 +5932,13 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 		script_lock = true;
 	}
 
-	slurm_attr_init(&timer_attr);
 	timer_struct.job_id      = job_env->jobid;
 	timer_struct.msg_timeout = msg_timeout;
 	timer_struct.prolog_fini = &prolog_fini;
 	timer_struct.timer_cond  = &timer_cond;
 	timer_struct.timer_mutex = &timer_mutex;
-	while (pthread_create(&timer_id, &timer_attr, &_prolog_timer,
-			      &timer_struct)) {
-		error("%s: pthread_create: %m", __func__);
-		if (++retries > 3)
-			break;
-		usleep(10);	/* sleep and again */
-	}
+	slurm_thread_create(&timer_id, _prolog_timer, &timer_struct);
+
 	START_TIMER;
 
 	if (timeout == NO_VAL16) {
