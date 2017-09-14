@@ -243,6 +243,35 @@
 				"possible memory leak!: %m");		\
 	} while (0)
 
+#define slurm_thread_create(id, func, arg)				\
+	do {								\
+		pthread_attr_t attr;					\
+		slurm_attr_init(&attr);					\
+		if (pthread_create(id, &attr, func, arg))		\
+			fatal("%s: pthread_create error %m", __func__);	\
+		slurm_attr_destroy(&attr);				\
+	} while (0)
+
+/*
+ * As a special feature, if the id is NULL then the thread_id will be
+ * discarded. Useful when the thread is truly "fire and forget".
+ */
+#define slurm_thread_create_detached(id, func, arg)			\
+	do {								\
+		pthread_t *id_ptr, id_local;				\
+		pthread_attr_t attr;					\
+		id_ptr = (id) ? id : &id_local;				\
+		slurm_attr_init(&attr);					\
+		if (pthread_attr_setdetachstate(&attr,			\
+						PTHREAD_CREATE_DETACHED)) \
+			fatal("%s: pthread_attr_setdetachstate %m",	\
+			      __func__);				\
+		if (pthread_create(id_ptr, &attr, func, arg))		\
+			fatal("%s: pthread_create error %m", __func__);	\
+		slurm_attr_destroy(&attr);				\
+	} while (0)
+
+
 #define slurm_atoul(str) strtoul(str, NULL, 10)
 #define slurm_atoull(str) strtoull(str, NULL, 10)
 
