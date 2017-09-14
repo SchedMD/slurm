@@ -345,20 +345,6 @@ to launch the tasks. A simple example is shown below.</p>
 <hr size=4 width="100%">
 
 
-<h2><a name="mpich_mx" href="http://www.myri.com/scs/download-mpichmx.html"><b>MPICH-MX</b></a></h2>
-
-<p>MPICH-MX jobs can be launched directly by <b>srun</b> command.
-Slurm's <i>mpichmx</i> MPI plugin must be used to establish communications
-between the launched tasks. This can be accomplished either using the Slurm
-configuration parameter <i>MpiDefault=mpichmx</i> in <b>slurm.conf</b>
-or srun's <i>--mpi=mpichmx</i> option.
-<pre>
-$ mpicc ...
-$ srun -n16 --mpi=mpichmx a.out
-</pre>
-<hr size=4 width="100%">
-
-
 <h2><a name="mvapich" href="http://mvapich.cse.ohio-state.edu/"><b>MVAPICH</b></a></h2>
 
 <p>MVAPICH jobs can be launched directly by <b>srun</b> command.
@@ -513,6 +499,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 23 June 2015</p>
+<p style="text-align:center;">Last modified 14 September 2017</p>
 
 <!--#include virtual="footer.txt"-->

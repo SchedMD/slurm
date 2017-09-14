@@ -879,7 +879,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/mpi_lam.so
 %{_libdir}/slurm/mpi_mpich1_p4.so
 %{_libdir}/slurm/mpi_mpich1_shmem.so
-%{_libdir}/slurm/mpi_mpichmx.so
 %{_libdir}/slurm/mpi_openmpi.so
 %{_libdir}/slurm/mpi_pmi2.so
 %endif

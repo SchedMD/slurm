@@ -625,7 +625,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/Makefile
 		 src/plugins/mpi/mpich1_p4/Makefile
 		 src/plugins/mpi/mpich1_shmem/Makefile
-		 src/plugins/mpi/mpichmx/Makefile
 		 src/plugins/mpi/mvapich/Makefile
 		 src/plugins/mpi/lam/Makefile
 		 src/plugins/mpi/none/Makefile
