@@ -178,9 +178,6 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 	uint32_t job_id;
 	char *last_ptr = NULL, *new_dep = NULL, *tok, *type;
 	struct job_record *job_ptr;
-        pthread_attr_t attr;
-	pthread_t dep_thread;
-
 
 	tok = strtok_r(depend, ":", &last_ptr);
 	if (!xstrcmp(tok, "before"))
@@ -236,11 +233,7 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 			new_dep = NULL;
 			_decr_depend_cnt(job_ptr);
 
-			slurm_attr_init(&attr);
-			pthread_attr_setdetachstate(&attr,
-						    PTHREAD_CREATE_DETACHED);
-			pthread_create(&dep_thread, &attr, _dep_agent, job_ptr);
-			slurm_attr_destroy(&attr);
+			slurm_thread_create_detached(NULL, _dep_agent, job_ptr);
 		}
 		tok = strtok_r(NULL, ":", &last_ptr);
 	}
