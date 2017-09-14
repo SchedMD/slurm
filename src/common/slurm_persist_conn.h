@@ -104,10 +104,9 @@ extern void slurm_persist_conn_recv_server_fini(void);
  *                   -1 to get one inside the function.
  * IN - arg - arbitrary argument that will be sent to the callback as well as
  *            the callback in the persist_conn.
- * RET - SLURM_SUCCESS on success SLURM_ERROR else.
  */
-extern int slurm_persist_conn_recv_thread_init(
-	slurm_persist_conn_t *persist_conn, int thread_loc, void *arg);
+extern void slurm_persist_conn_recv_thread_init(slurm_persist_conn_t *persist_conn,
+						int thread_loc, void *arg);
 
 /* Increment thread_count and don't return until its value is no larger
  *	than MAX_THREAD_COUNT,

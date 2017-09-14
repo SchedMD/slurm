@@ -2892,7 +2892,6 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-	int rc = SLURM_SUCCESS;
 
 	lock_slurmctld(fed_read_lock);
 
@@ -2955,20 +2954,10 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 
 	unlock_slurmctld(fed_read_lock);
 
-	if (rc == SLURM_SUCCESS &&
-	    (rc = slurm_persist_conn_recv_thread_init(
-		    persist_conn, -1, persist_conn)
-	     != SLURM_SUCCESS)) {
-		*out_buffer = xstrdup_printf(
-			"Couldn't connect back to %s for some reason",
-			persist_conn->cluster_name);
-		error("%s: %s", __func__, *out_buffer);
-	}
+	slurm_persist_conn_recv_thread_init(persist_conn, -1, persist_conn);
+	_q_send_job_sync(cluster->name);
 
-	if (rc == SLURM_SUCCESS)
-		_q_send_job_sync(cluster->name);
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*

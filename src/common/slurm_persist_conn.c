@@ -403,17 +403,15 @@ extern void slurm_persist_conn_recv_server_fini(void)
 	slurm_mutex_unlock(&thread_count_lock);
 }
 
-extern int slurm_persist_conn_recv_thread_init(
-	slurm_persist_conn_t *persist_conn, int thread_loc, void *arg)
+extern void slurm_persist_conn_recv_thread_init(slurm_persist_conn_t *persist_conn,
+						int thread_loc, void *arg)
 {
-	int retry_cnt, rc = SLURM_SUCCESS;
 	persist_service_conn_t *service_conn;
-	pthread_attr_t attr;
 
 	if (thread_loc < 0)
 		thread_loc = slurm_persist_conn_wait_for_thread_loc();
 	if (thread_loc < 0)
-		return rc;
+		return;
 
 	service_conn = xmalloc(sizeof(persist_service_conn_t));
 
@@ -428,27 +426,10 @@ extern int slurm_persist_conn_recv_thread_init(
 	persist_conn->timeout = 0; /* If this isn't zero we won't wait forever
 				      like we want to.
 				   */
-	retry_cnt = 0;
-
-	slurm_attr_init(&attr);
 
 	//_service_connection(service_conn);
-	while (pthread_create(&persist_service_conn[thread_loc]->thread_id,
-			      &attr,
-			      _service_connection,
-			      (void *)service_conn)) {
-		if (retry_cnt > 0) {
-			error("%s: pthread_create failure, aborting RPC: %m",
-			      __func__);
-			rc = SLURM_ERROR;
-			break;
-		}
-		error("%s: pthread_create failure: %m", __func__);
-		retry_cnt++;
-		usleep(1000);	/* retry in 1 msec */
-	}
-	slurm_attr_destroy(&attr);
-	return rc;
+	slurm_thread_create(&persist_service_conn[thread_loc]->thread_id,
+			    _service_connection, service_conn);
 }
 
 /* Increment thread_count and don't return until its value is no larger
