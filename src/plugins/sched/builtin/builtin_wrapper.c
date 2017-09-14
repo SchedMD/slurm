@@ -59,8 +59,6 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int init(void)
 {
-	pthread_attr_t attr;
-
 	verbose( "sched: Built-in scheduler plugin loaded" );
 
 	slurm_mutex_lock( &thread_flag_mutex );
@@ -71,12 +69,10 @@ int init(void)
 		return SLURM_ERROR;
 	}
 
-	slurm_attr_init( &attr );
 	/* since we do a join on this later we don't make it detached */
-	if (pthread_create( &builtin_thread, &attr, builtin_agent, NULL))
-		error("Unable to start built-in scheduler thread: %m");
+	slurm_thread_create(&builtin_thread, builtin_agent, NULL);
+
 	slurm_mutex_unlock( &thread_flag_mutex );
-	slurm_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
 }

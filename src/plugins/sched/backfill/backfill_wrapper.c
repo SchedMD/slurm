@@ -60,11 +60,8 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int init( void )
 {
-	pthread_attr_t attr;
-
 	if (slurmctld_config.scheduling_disabled)
 		return SLURM_SUCCESS;
-
 
 	verbose( "sched: Backfill scheduler plugin loaded" );
 
@@ -76,12 +73,10 @@ int init( void )
 		return SLURM_ERROR;
 	}
 
-	slurm_attr_init( &attr );
 	/* since we do a join on this later we don't make it detached */
-	if (pthread_create( &backfill_thread, &attr, backfill_agent, NULL))
-		error("Unable to start backfill thread: %m");
+	slurm_thread_create(&backfill_thread, backfill_agent, NULL);
+
 	slurm_mutex_unlock( &thread_flag_mutex );
-	slurm_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
 }
