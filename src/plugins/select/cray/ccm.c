@@ -501,47 +501,6 @@ extern void ccm_get_config(void)
 }
 
 /*
- * Create a detached pthread to handle CCM prolog and epilog
- * activities.  This is only called if CCM is enabled and the batch job has
- * been identified as coming from a CCM partition.
- */
-extern void spawn_ccm_thread(
-	void *obj_ptr, void *(*start_routine) (void *))
-{
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
-	int retries;
-	struct job_record *job_ptr = (struct job_record *)obj_ptr;
-
-	/* spawn a pthread to start CCM prolog or epilog activities */
-	slurm_attr_init(&attr_agent);
-	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_DETACHED)) {
-		CRAY_ERR("CCM job %u pthread_attr_setdetachstate error %m",
-			 job_ptr->job_id);
-	}
-	retries = 0;
-	while (pthread_create(&thread_agent, &attr_agent,
-			      start_routine, obj_ptr)) {
-		CRAY_ERR("CCM job_id %u pthread_create error %m",
-			 job_ptr->job_id);
-		if (++retries > CCM_MAX_PTHREAD_RETRIES) {
-			if (!xstrcasecmp((char *)start_routine, "ccm_begin")) {
-				/* Decrement so job launch can continue */
-				debug("CCM job %u prolog_running_decr, cur %d",
-				      job_ptr->job_id,
-				      job_ptr->details->prolog_running);
-				prolog_running_decr(job_ptr);
-			}
-			fatal("CCM job %u _spawn_ccm_thread can't create "
-			      "pthread", job_ptr->job_id);
-		}
-		usleep(100000);	/* sleep 1/10th second and retry */
-	}
-	slurm_attr_destroy(&attr_agent);
-	return;
-}
-
-/*
  * Check if this batch job is being started from a CCM partition.
  * Returns 1 if so, otherwise 0.
  */
