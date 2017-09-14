@@ -737,21 +737,14 @@ static print_field_t *_get_print_field(char *object)
 	return field;
 }
 
-extern int notice_thread_init()
+extern void notice_thread_init()
 {
-	pthread_attr_t attr;
-
-	slurm_attr_init(&attr);
-	if (pthread_create(&lock_warning_thread, &attr,
-			   &_print_lock_warn, NULL))
-		error ("pthread_create error %m");
-	slurm_attr_destroy(&attr);
-	return SLURM_SUCCESS;
+	slurm_thread_create(&lock_warning_thread, _print_lock_warn, NULL);
 }
 
-extern int notice_thread_fini()
+extern void notice_thread_fini()
 {
-	return pthread_cancel(lock_warning_thread);
+	pthread_cancel(lock_warning_thread);
 }
 
 extern int commit_check(char *warning)
