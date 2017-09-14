@@ -927,19 +927,13 @@ static void _jobslist_del(void *x)
  */
 extern int init(void)
 {
-	pthread_attr_t thread_attr;
-	int rc = SLURM_SUCCESS;
-
 	jobslist = list_create(_jobslist_del);
-	slurm_attr_init(&thread_attr);
-	if (pthread_create(&job_handler_thread, &thread_attr,
-			   _process_jobs, NULL))
-		fatal("pthread_create error %m");
+	slurm_thread_create(&job_handler_thread, _process_jobs, NULL);
 	slurm_mutex_lock(&pend_jobs_lock);
 	(void) _load_pending_jobs();
 	slurm_mutex_unlock(&pend_jobs_lock);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
