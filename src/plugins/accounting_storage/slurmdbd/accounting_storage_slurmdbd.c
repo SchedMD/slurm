@@ -469,23 +469,16 @@ extern int init ( void )
 				  ACCOUNTING_ENFORCE_NO_JOBS)) {
 			/* only do this when job_list is defined
 			 * (in the slurmctld) */
-			pthread_attr_t thread_attr;
-			slurm_attr_init(&thread_attr);
-			if (pthread_create(&db_inx_handler_thread, &thread_attr,
-					   _set_db_inx_thread, NULL))
-				fatal("pthread_create error %m");
+			slurm_thread_create(&db_inx_handler_thread,
+					    _set_db_inx_thread, NULL);
 
 			/* This is here to join the db inx thread so
 			   we don't core dump if in the sleep, since
 			   there is no other place to join we have to
 			   create another thread to do it.
 			*/
-			slurm_attr_init(&thread_attr);
-			if (pthread_create(&cleanup_handler_thread,
-					   &thread_attr,
-					   _cleanup_thread, NULL))
-				fatal("pthread_create error %m");
-			slurm_attr_destroy(&thread_attr);
+			slurm_thread_create(&cleanup_handler_thread,
+					    _cleanup_thread, NULL);
 		}
 		first = 0;
 	} else {
