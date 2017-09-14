@@ -67,7 +67,6 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #define BUFFER_SIZE 1024
 #define MAX_ALLOC_WAIT 60	/* seconds */
 #define MIN_ALLOC_WAIT  5	/* seconds */
-#define MAX_RETRIES 5
 
 typedef struct {
 	slurm_addr_t address;
@@ -331,7 +330,6 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	int pthread_count = 0, i;
 	pthread_t *load_thread = 0;
 	load_willrun_req_struct_t *load_args;
-	pthread_attr_t load_attr;
 	ListIterator iter;
 	will_run_response_msg_t *earliest_resp = NULL;
 	load_willrun_resp_struct_t *tmp_resp;
@@ -340,17 +338,14 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	xassert(req);
 	xassert(will_run_resp);
 
-	slurm_attr_init(&load_attr);
-
 	*will_run_resp = NULL;
 
 	/* Spawn one pthread per cluster to collect job information */
 	resp_msg_list = list_create(NULL);
-	load_thread = xmalloc(sizeof(pthread_attr_t) *
+	load_thread = xmalloc(sizeof(pthread_t) *
 			      list_count(fed->cluster_list));
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *)list_next(iter))) {
-		int retries = 0;
 		if ((cluster->control_host == NULL) ||
 		    (cluster->control_host[0] == '\0'))
 			continue;	/* Cluster down */
@@ -359,17 +354,11 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 		load_args->cluster       = cluster;
 		load_args->req           = req;
 		load_args->resp_msg_list = resp_msg_list;
-		while (pthread_create(&load_thread[pthread_count], &load_attr,
-				      _load_willrun_thread, (void *)load_args)) {
-			error("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			usleep(10000);	/* sleep and retry */
-		}
+		slurm_thread_create(&load_thread[pthread_count],
+				    _load_willrun_thread, load_args);
 		pthread_count++;
 	}
 	list_iterator_destroy(iter);
-	slurm_attr_destroy(&load_attr);
 
 	/* Wait for all pthreads to complete */
 	for (i = 0; i < pthread_count; i++)
