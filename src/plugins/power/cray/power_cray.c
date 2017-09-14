@@ -1726,8 +1726,6 @@ static void _stop_power_agent(void)
  */
 extern int init(void)
 {
-	pthread_attr_t attr;
-
 	if (!run_in_daemon("slurmctld"))
 		return SLURM_SUCCESS;
 
@@ -1739,11 +1737,8 @@ extern int init(void)
 	}
 
 	_load_config();
-	slurm_attr_init(&attr);
 	/* Since we do a join on thread later, don't make it detached */
-	if (pthread_create(&power_thread, &attr, _power_agent, NULL))
-		error("Unable to start power thread: %m");
-	slurm_attr_destroy(&attr);
+	slurm_thread_create(&power_thread, _power_agent, NULL);
 	slurm_mutex_unlock(&thread_flag_mutex);
 
 	return SLURM_SUCCESS;
