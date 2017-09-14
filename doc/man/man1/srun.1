@@ -1299,18 +1299,6 @@ procedures.
 .B list
 Lists available mpi types to choose from.
 .TP
-.B lam
-Initiates one 'lamd' process per node and establishes necessary
-environment variables for LAM/MPI.
-.TP
-.B mpich1_shmem
-Initiates one process per node and establishes necessary
-environment variables for mpich1 shared memory model.
-This also works for mvapich built for shared memory.
-.TP
-.B mvapich
-For use with Infiniband.
-.TP
 .B openmpi
 For use with OpenMPI.
 .TP
@@ -2921,19 +2909,19 @@ There are three fundamentally different modes of operation used
 by these various MPI implementation.
 
 1. Slurm directly launches the tasks and performs initialization
-of communications (Quadrics MPI, MPICH2, MPICH-GM, MVAPICH, MVAPICH2
-and some MPICH1 modes). For example: "srun \-n16 a.out".
+of communications through the PMI2 or PMIx APIs.
+For example: "srun \-n16 a.out".
 
 2. Slurm creates a resource allocation for the job and then
-mpirun launches tasks using Slurm's infrastructure (OpenMPI,
-LAM/MPI, HP-MPI and some MPICH1 modes).
+mpirun launches tasks using Slurm's infrastructure (OpenMPI).
 
 3. Slurm creates a resource allocation for the job and then
 mpirun launches tasks using some mechanism other than Slurm,
-such as SSH or RSH (BlueGene MPI and some MPICH1 modes).
-These tasks initiated outside of Slurm's monitoring
+such as SSH or RSH.
+These tasks are initiated outside of Slurm's monitoring
 or control. Slurm's epilog should be configured to purge
-these tasks when the job's allocation is relinquished.
+these tasks when the job's allocation is relinquished,
+or the use of pam_slurm_adopt is highly recommended.
 
 See \fIhttps://slurm.schedmd.com/mpi_guide.html\fR
 for more information on use of these various MPI implementation
@@ -3061,7 +3049,7 @@ STEPID     PARTITION     USER      TIME NODELIST
 
 .fi
 .PP
-This example demonstrates how one executes a simple MPICH job.
+This example demonstrates how one executes a simple MPI job.
 We use \fBsrun\fR to build a list of machines (nodes) to be used by
 \fBmpirun\fR in its required format. A sample command line and
 the script to be executed follow.
@@ -3072,7 +3060,7 @@ the script to be executed follow.
 #!/bin/sh
 MACHINEFILE="nodes.$SLURM_JOB_ID"
 
-# Generate Machinefile for mpich such that hosts are in the same
+# Generate Machinefile for mpi such that hosts are in the same
 #  order as if run via srun
 #
 srun \-l /bin/hostname | sort \-n | awk '{print $2}' > $MACHINEFILE

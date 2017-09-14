@@ -50,7 +50,7 @@
   the <i>slurm-dev</i> mailing list?</a></li>
 <li><a href="#job_size">Can I change my job's size after it has started
   running?</a></li>
-<li><a href="#mpi_symbols">Why is my MPIHCH2 or MVAPICH2 job not running with
+<li><a href="#mpi_symbols">Why is my MPICH2 or MVAPICH2 job not running with
   Slurm? Why does the DAKOTA program not run with Slurm?</a></li>
 <li><a href="#estimated_start_time">Why does squeue (and "scontrol show
   jobid") sometimes not display a job's estimated start time?</a></li>
@@ -851,9 +851,9 @@ exit
 salloc: Relinquishing job allocation 65542
 </pre>
 
-<p><a name="mpi_symbols"><b>25. Why is my MPIHCH2 or MVAPICH2 job not running with
+<p><a name="mpi_symbols"><b>25. Why is my MPICH2 or MVAPICH2 job not running with
 Slurm? Why does the DAKOTA program not run with Slurm?</b></a><br>
-The Slurm library used to support MPIHCH2 or MVAPICH2 references a variety of
+The Slurm library used to support MPICH2 or MVAPICH2 references a variety of
 symbols. If those symbols resolve to functions or variables in your program
 rather than the appropriate library, the application will fail. For example
 <a href="http://dakota.sandia.gov">DAKOTA</a>, versions 5.1 and

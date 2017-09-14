@@ -144,16 +144,10 @@ https://github.com/grondo/io-watchdog</a></li><br>
 
 <li><b>MPI</b> versions supported</li>
 <ul>
-<li><a href="http://www.mpi-softtech.com/">ChaMPIon, MPI Software Technology</a></li>
-<li><a href="http://www.hp.com/go/mpi">HP-MPI</a></li>
-<li><a href="http://software.intel.com/en-us/articles/intel-mpi-library/">Intel-MPI</a></li>
-<li><a href="http://www.lam-mpi.org/">LAM/MPI</a></li>
-<li><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/">MPICH1</a></li>
-<li><a href="http://www.mcs.anl.gov/research/projects/mpich2/">MPICH2</a></li>
-<li><a href="http://mvapich.cse.ohio-state.edu/">MVAPICH</a></li>
-<li><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba">MVAPICH2</a></li>
-<li><a href="http://www.open-mpi.org">Open MPI</a></li>
-<li><a href="http://www.quadrics.com/">Quadrics MPI</a></li>
+<li><a href="https://software.intel.com/en-us/intel-mpi-library">Intel MPI</a></li>
+<li><a href="https://www.mpich.org/">MPICH (a.k.a. MPICH2 / MPICH2)</a></li>
+<li><a href="http://mvapich.cse.ohio-state.edu/">MVAPICH (a.k.a MVAPICH2)</a></li>
+<li><a href="https://www.open-mpi.org">Open MPI</a></li>
 </ul><br>
 
 <li><b>Workload Simulator</b><br>

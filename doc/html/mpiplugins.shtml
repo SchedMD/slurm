@@ -16,15 +16,9 @@ conform to the Slurm Plugin API with the following specifications:</p>
 The major type must be &quot;mpi.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
 <ul>
-<li><b>lam</b> &mdash; For use with LAM MPI.</li>
-<li><b>mpich-gm</b> &mdash; For use with MPICH-GM.</li>
-<li><b>mpich-mx</b> &mdash; For use with MPICH-MX.</li>
-<li><b>mpich1_p4</b> &mdash; For use with MPICH1 (P4 communications).</li>
-<li><b>mpich1_shmem</b> &mdash; For use with MPICH1 (Shmem communications).</li>
-<li><b>mvapich</b> &mdash; For use with MVAPICH.</li>
-<li><b>openmpi</b> &mdash; For use with OpenMPI.</li>
+<li><b>openmpi</b> &mdash; For use with older versions of OpenMPI.</li>
 <li><b>pmi2</b> &mdash; For use with MPI2 and MVAPICH2.</li>
-<li><b>pmix</b> &mdash; Exascale PMI implementation (currently supported by Open MPI starting from version 2.0)</li>
+<li><b>pmix</b> &mdash; Exascale PMI implementation (currently supported by OpenMPI starting from version 2.0)</li>
 <li><b>none</b> &mdash; For use with most other versions of MPI.</li>
 </ul>
 <p><span class="commandline">const char plugin_name[]</span><br>
@@ -145,6 +139,6 @@ the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 15 September 2017</p>
 
 <!--#include virtual="footer.txt"-->

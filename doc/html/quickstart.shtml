@@ -365,36 +365,29 @@ or as a single entity (e.g. delete an entire job array in a single command).</p>
 There are three fundamentally different modes of operation used
 by these various MPI implementation.
 <ol>
-<li>Slurm directly launches the tasks and performs initialization
-of communications (Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX,
-MVAPICH, MVAPICH2 and some MPICH1 modes).</li>
+<li>Slurm directly launches the tasks and performs initialization of
+communications through the PMI2 or PMIx APIs. (Supported by most
+modern MPI implementations.)</li>
 <li>Slurm creates a resource allocation for the job and then
-mpirun launches tasks using Slurm's infrastructure (OpenMPI,
-LAM/MPI and HP-MPI).</li>
+mpirun launches tasks using Slurm's infrastructure (older versions of
+OpenMPI).</li>
 <li>Slurm creates a resource allocation for the job and then
 mpirun launches tasks using some mechanism other than Slurm,
-such as SSH or RSH (BlueGene MPI and some MPICH1 modes).
+such as SSH or RSH.
 These tasks initiated outside of Slurm's monitoring
 or control. Slurm's epilog should be configured to purge
-these tasks when the job's allocation is relinquished. </li>
+these tasks when the job's allocation is relinquished. The
+use of pam_slurm_adopt is also strongly recommended.</li>
 </ol>
 <p>Links to instructions for using several varieties of MPI
 with Slurm are provided below.
 <ul>
-<li><a href="mpi_guide.html#bluegene_mpi">BlueGene MPI</a></li>
-<li><a href="mpi_guide.html#hp_mpi">HP-MPI</a></li>
 <li><a href="mpi_guide.html#intel_mpi">Intel MPI</a></li>
-<li><a href="mpi_guide.html#lam_mpi">LAM/MPI</a></li>
-<li><a href="mpi_guide.html#mpich1">MPICH1</a></li>
 <li><a href="mpi_guide.html#mpich2">MPICH2</a></li>
-<li><a href="mpi_guide.html#mpich_gm">MPICH-GM</a></li>
-<li><a href="mpi_guide.html#mpich_mx">MPICH-MX</a></li>
-<li><a href="mpi_guide.html#mvapich">MVAPICH</a></li>
 <li><a href="mpi_guide.html#mvapich2">MVAPICH2</a></li>
 <li><a href="mpi_guide.html#open_mpi">Open MPI</a></li>
-<li><a href="mpi_guide.html#quadrics_mpi">Quadrics MPI</a></li>
 </ul></p>
 
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 14 September 2017</p>
 
 <!--#include virtual="footer.txt"-->

@@ -4,19 +4,21 @@
 
 <p>MPI use depends upon the type of MPI being used.
 There are three fundamentally different modes of operation used
-by these various MPI implementations.</p>
+by these various MPI implementation.
 <ol>
-<li>Slurm directly launches the tasks and performs initialization
-of communications (UPC, Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX,
-MVAPICH, MVAPICH2, some MPICH1 modes, and OpenMPI version 1.5 or higher).</li>
+<li>Slurm directly launches the tasks and performs initialization of
+communications through the PMI2 or PMIx APIs. (Supported by most
+modern MPI implementations.)</li>
 <li>Slurm creates a resource allocation for the job and then
-mpirun launches tasks using Slurm's infrastructure (LAM/MPI and HP-MPI).</li>
+mpirun launches tasks using Slurm's infrastructure (older versions of
+OpenMPI).</li>
 <li>Slurm creates a resource allocation for the job and then
 mpirun launches tasks using some mechanism other than Slurm,
-such as SSH or RSH (BlueGene MPI and some MPICH1 modes).
-These tasks are initiated outside of Slurm's monitoring
+such as SSH or RSH.
+These tasks initiated outside of Slurm's monitoring
 or control. Slurm's epilog should be configured to purge
-these tasks when the job's allocation is relinquished. </li>
+these tasks when the job's allocation is relinquished. The
+use of pam_slurm_adopt is also strongly recommended.</li>
 </ol>
 <p><b>Note</b>: Slurm is not directly launching the user application in case 3,
 which may prevent the desired behavior of binding tasks to CPUs and/or
@@ -35,22 +37,13 @@ different MPI implementation is to be supported for an individual job.</p>
 <p>Links to instructions for using several varieties of MPI
 with Slurm are provided below.
 <ul>
-<li><a href="#bluegene_mpi">BlueGene MPI</a></li>
-<li><a href="#hp_mpi">HP-MPI</a></li>
 <li><a href="#intel_mpi">Intel-MPI</a></li>
-<li><a href="#lam_mpi">LAM/MPI</a></li>
-<li><a href="#mpich1">MPICH1</a></li>
 <li><a href="#mpich2">MPICH2</a></li>
-<li><a href="#mpich_gm">MPICH-GM</a></li>
-<li><a href="#mpich_mx">MPICH-MX</a></li>
-<li><a href="#mvapich">MVAPICH</a></li>
 <li><a href="#mvapich2">MVAPICH2</a></li>
 <li><a href="#open_mpi">Open MPI</a></li>
-<li><a href="#quadrics_mpi">Quadrics MPI</a></li>
 <li><a href="#UPC">UPC</a></li>
 </ul></p>
 <hr size=4 width="100%">
-
 
 <h2><a name="open_mpi" href="http://www.open-mpi.org/"><b>OpenMPI</b></a></h2>
 
@@ -208,56 +201,9 @@ Slurm Process Management Interface (PMI) library:</li>
 
 <p>Above information used by permission from <a href="http://www.intel.com">Intel</a>.
 For more information see
-<a href="http://software.intel.com/en-us/articles/intel-mpi-library/">Intel MPI Library</a>.
+<a href="https://software.intel.com/en-us/intel-mpi-library">Intel MPI Library</a>.
 
-<hr size=4 width="100%">
-
-<h2><a name="lam_mpi" href="http://www.lam-mpi.org/"><b>LAM/MPI</b></a></h2>
-
-<p>LAM/MPI relies upon the Slurm
-<span class="commandline">salloc</span> or <span class="commandline">sbatch</span>
-command to allocate. In either case, specify
-the maximum number of tasks required for the job. Then execute the
-<span class="commandline">lamboot</span> command to start lamd daemons.
-<span class="commandline">lamboot</span> utilize. Slurm's
-<span class="commandline">srun</span> command to launch these daemons.
-Do not directly execute the <span class="commandline">srun</span> command
-to launch LAM/MPI tasks. For example:
-<pre>
-$ salloc -n16 sh  # allocates 16 processors
-                  # and spawns shell for job
-&gt; lamboot
-&gt; mpirun -np 16 foo args
-1234 foo running on adev0 (o)
-2345 foo running on adev1
-etc.
-&gt; lamclean
-&gt; lamhalt
-&gt; exit            # exits shell spawned by
-                 # initial srun command
-</pre>
-
-<p>Note that any direct use of <span class="commandline">srun</span>
-will only launch one task per node when the LAM/MPI plugin is configured
-as the default plugin.  To launch more than one task per node using the
-<span class="commandline">srun</span> command, the <i>--mpi=none</i>
-option would be required to explicitly disable the LAM/MPI plugin
-if that is the system default.</p>
-<hr size=4 width="100%">
-
-
-<h2><a name="hp_mpi" href="http://www.hp.com/go/mpi"><b>HP-MPI</b></a></h2>
-
-<p>HP-MPI uses the
-<span class="commandline">mpirun</span> command with the <b>-srun</b>
-option to launch jobs. For example:
-<pre>
-$MPI_ROOT/bin/mpirun -TCP -srun -N8 ./a.out
-</pre></p>
-<hr size=4 width="100%">
-
-
-<h2><a name="mpich2" href="http://www.mcs.anl.gov/research/projects/mpich2/"><b>MPICH2</b></a></h2>
+<h2><a name="mpich2" href="https://www.mpich.org/"><b>MPICH (a.k.a. MPICH2)</b></a></h2>
 
 <p>MPICH2 jobs can be launched using the <b>srun</b> command using
   pmi 1 or 2, or <b>mpiexec</b>.
@@ -287,7 +233,7 @@ which provides the server side functionality but the client side must implement 
 and the other interface calls.<br>
 
 <p>
-You can refere yourself to <i>mpich2-1.5</i> implementation and configure MPICH to use PMI2 with the <i>--with-pmi=pmi2</i> configure option.<br>
+This does require that the MPICH intallation have been installed with the <i>--with-pmi=pmi2</i> configure option.<br>
 
 <p>
 To check if the MPI version you are using supports PMI2 check for PMI2_* symbols in the MPI library.
@@ -344,30 +290,7 @@ to launch the tasks. A simple example is shown below.</p>
 
 <hr size=4 width="100%">
 
-
-<h2><a name="mvapich" href="http://mvapich.cse.ohio-state.edu/"><b>MVAPICH</b></a></h2>
-
-<p>MVAPICH jobs can be launched directly by <b>srun</b> command.
-Slurm's <i>mvapich</i> MPI plugin must be used to establish communications
-between the launched tasks. This can be accomplished either using the Slurm
-configuration parameter <i>MpiDefault=mvapich</i> in <b>slurm.conf</b>
-or srun's <i>--mpi=mvapich</i> option.
-<pre>
-$ mpicc ...
-$ srun -n16 --mpi=mvapich a.out
-</pre>
-<b>NOTE:</b> If MVAPICH is used in the shared memory model, with all tasks
-running on a single node, then use the <i>mpich1_shmem</i> MPI plugin instead.<br>
-<b>NOTE (for system administrators):</b> Configure
-<i>PropagateResourceLimitsExcept=MEMLOCK</i> in <b>slurm.conf</b> and
-start the <i>slurmd</i> daemons with an unlimited locked memory limit.
-For more details, see
-<a href="http://mvapich.cse.ohio-state.edu/support/mvapich_user_guide.html#x1-420007.2.3">MVAPICH</a>
-documentation for "CQ or QP Creation failure".</p>
-<hr size=4 width="100%">
-
-
-<h2><a name="mvapich2" href="http://mvapich.cse.ohio-state.edu/static/media/mvapich/mvapich2-2.0-userguide.html"><b>MVAPICH2</b></a></h2>
+<h2><a name="mvapich2" href="http://mvapich.cse.ohio-state.edu/"><b>MVAPICH (a.k.a. MVAPICH2)</b></a></h2>
 
 <p>MVAPICH2 supports launching multithreaded programs by Slurm as well as
 mpirun_rsh.
@@ -388,101 +311,6 @@ $ srun -n16 --mpi=pmi2 a.out
 
 <p>For more information, please see the
 <a href="http://mvapich.cse.ohio-state.edu/static/media/mvapich/mvapich2-2.0-userguide.html">MVAPICH2 User Guide</a></p>
-
-<hr size=4 width="100%">
-
-
-<h2><a name="bluegene_mpi" href="http://www.research.ibm.com/bluegene/"><b>BlueGene MPI</b></a></h2>
-
-<p>IBM BlueGene/Q Systems rely upon Slurm to create a job's resource
-allocation.</p>
-
-<h3>BlueGene/Q</h3>
-<p>The BlueGene/Q systems support the ability to allocate different portions of
-a BlueGene block to different users and different jobs, so Slurm must be
-directly involved in each task launch request.</p>
-<p>
-<b>The following is subject to change in order to support debugging.</b>
-In order to accomplish this, Slurm's srun command is executed to launch tasks.
-The srun command creates a job step allocation which is linked to IBM's
-<span class="commandline">runjob</span> libraries which will launch
-the tasks within the allocated resources.</p>
-
-<p>See <a href="bluegene.html">BlueGene/Q User and Administrator Guide</a>
-for more information.</p>
-<hr size=4 width="100%">
-
-
-<h2><a name="mpich1" href="http://www-unix.mcs.anl.gov/mpi/mpich1/"><b>MPICH1</b></a></h2>
-
-<p>MPICH1 development ceased in 2005. It is recommended that you convert to
-MPICH2 or some other MPI implementation.
-If you still want to use MPICH1, note that it has several different
-programming models. If you are using the shared memory model
-(<i>DEFAULT_DEVICE=ch_shmem</i> in the mpirun script), then initiate
-the tasks using the <span class="commandline">srun</span> command
-with the <i>--mpi=mpich1_shmem</i> option.</p>
-<pre>
-$ srun -n16 --mpi=mpich1_shmem a.out
-</pre>
-
-<p>NOTE: Using a configuration of <i>MpiDefault=mpich1_shmem</i> will result in
-one task being launched per node with the expectation that the MPI library will
-launch the remaining tasks based upon environment variables set by Slurm.
-Non-MPI jobs started in this configuration will lack the mechanism to launch
-more than one task per node unless srun's <i>--mpi=none</i> option is used.</p>
-
-<p>If you are using MPICH P4 (<i>DEFAULT_DEVICE=ch_p4</i> in
-the mpirun script),
-then it is recommended that you apply the patch in the Slurm
-distribution's file <i>contribs/mpich1.slurm.patch</i>.
-Follow directions within the file to rebuild MPICH.
-Applications must be relinked with the new library.
-Initiate tasks using the
-<span class="commandline">srun</span> command with the
-<i>--mpi=mpich1_p4</i> option.</p>
-<pre>
-$ srun -n16 --mpi=mpich1_p4 a.out
-</pre>
-<p>Note tha. Slurm launches one task per node and the MPICH
-library linked within your applications launches the other
-tasks with shared memory used for communications between them.
-The only real anomaly is that all output from all spawned tasks
-on a node appear to Slurm as coming from the one task that it
-launched. If the srun --label option is used, the task ID labels
-will be misleading.</p>
-
-<p>Other MPICH1 programming models current rely upon the Slurm
-<span class="commandline">salloc</span> or
-<span class="commandline">sbatch</span> command to allocate resources.
-In either case, specify the maximum number of tasks required for the job.
-You may then need to build a list of hosts to be used and use that
-as an argument to the mpirun command.
-For example:
-<pre>
-$ cat mpich.sh
-#!/bin/bash
-srun hostname -s | sort -u >slurm.hosts
-mpirun [options] -machinefile slurm.hosts a.out
-rm -f slurm.hosts
-$ sbatch -n16 mpich.sh
-sbatch: Submitted batch job 1234
-</pre>
-<p>Note that in this example, mpirun uses the rsh command to launch
-tasks. These tasks are not managed b. Slurm since they are launched
-outside of its control.</p>
-
-<hr size=4 width="100%">
-
-<h2><a name="quadrics_mpi" href="http://www.quadrics.com/"><b>Quadrics MPI</b></a></h2>
-
-<p>Quadrics MPI relies upon Slurm to
-allocate resources for the job and <span class="commandline">srun</span>
-to initiate the tasks. One would build the MPI program in the normal manner
-then initiate it using a command line of this sort:</p>
-<pre>
-$ srun [options] &lt;program&gt; [program args]
-</pre>
 
 <hr size=4 width="100%">
 
