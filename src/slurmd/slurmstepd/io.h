@@ -116,7 +116,7 @@ int io_init_tasks_stdio(stepd_step_rec_t *job);
  * and opens 2*ntask initial connections for stdout/err, also appending these
  * to job->objs list.
  */
-int io_thread_start(stepd_step_rec_t *job);
+extern void io_thread_start(stepd_step_rec_t *job);
 
 int io_dup_stdio(stepd_step_task_info_t *t);
 

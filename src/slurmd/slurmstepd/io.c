@@ -866,8 +866,6 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	slurm_addr_t pty_addr;
 	uint16_t port_u;
 	struct window_info *win_info;
-	pthread_attr_t attr;
-	pthread_t win_id;
 
 #if 0
 	/* NOTE: SLURM_LAUNCH_NODE_IPADDR is not available at this point */
@@ -911,10 +909,7 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	win_info->task   = task;
 	win_info->job    = job;
 	win_info->pty_fd = pty_fd;
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (pthread_create(&win_id, &attr, &_window_manager, (void *) win_info))
-		error("pthread_create(pty_conn): %m");
+	slurm_thread_create_detached(NULL, _window_manager, win_info);
 }
 #endif
 
@@ -1187,27 +1182,9 @@ io_init_tasks_stdio(stepd_step_rec_t *job)
 	return rc;
 }
 
-int
-io_thread_start(stepd_step_rec_t *job)
+extern void io_thread_start(stepd_step_rec_t *job)
 {
-	pthread_attr_t attr;
-	int rc = 0, retries = 0;
-
-	slurm_attr_init(&attr);
-
-	while (pthread_create(&job->ioid, &attr, &_io_thr, (void *)job)) {
-		error("io_thread_start: pthread_create error %m");
-		if (++retries > MAX_RETRIES) {
-			error("io_thread_start: Can't create pthread");
-			rc = -1;
-			break;
-		}
-		usleep(10);	/* sleep and again */
-	}
-
-	slurm_attr_destroy(&attr);
-
-	return rc;
+	slurm_thread_create(&job->ioid, _io_thr, job);
 }
 
 

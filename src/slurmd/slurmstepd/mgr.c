@@ -639,10 +639,8 @@ claim:
 		      (u_long) sprivs.saved_uid, (u_long) sprivs.saved_gid);
 	}
 
-	if (!rc && !job->batch) {
-		if (io_thread_start(job) < 0)
-			rc = ESLURMD_IO_ERROR;
-	}
+	if (!rc && !job->batch)
+		io_thread_start(job);
 
 	debug2("Leaving  _setup_normal_io");
 	return rc;
@@ -2130,24 +2128,12 @@ static void *_kill_thr(void *args)
 
 static void _delay_kill_thread(pthread_t thread_id, int secs)
 {
-	pthread_t kill_id;
-	pthread_attr_t attr;
 	kill_thread_t *kt = xmalloc(sizeof(kill_thread_t));
-	int retries = 0;
 
 	kt->thread_id = thread_id;
 	kt->secs = secs;
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	while (pthread_create(&kill_id, &attr, &_kill_thr, (void *) kt)) {
-		error("_delay_kill_thread: pthread_create: %m");
-		if (++retries > MAX_RETRIES) {
-			error("_delay_kill_thread: Can't create pthread");
-			break;
-		}
-		usleep(10);	/* sleep and again */
-	}
-	slurm_attr_destroy(&attr);
+
+	slurm_thread_create_detached(NULL, _kill_thr, kt);
 }
 
 /*
