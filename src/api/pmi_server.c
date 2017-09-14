@@ -99,8 +99,6 @@ static void _print_kvs(void);
 static void _kvs_xmit_tasks(void)
 {
 	struct agent_arg *args;
-	pthread_attr_t attr;
-	pthread_t agent_id;
 
 #if _DEBUG
 	info("All tasks at barrier, transmit KVS keypairs now");
@@ -133,11 +131,7 @@ static void _kvs_xmit_tasks(void)
 	}
 
 	/* Spawn a pthread to transmit it */
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (pthread_create(&agent_id, &attr, _agent, (void *) args))
-		fatal("pthread_create");
-	slurm_attr_destroy(&attr);
+	slurm_thread_create_detached(NULL, _agent, args);
 }
 
 static void *_msg_thread(void *x)
@@ -186,8 +180,6 @@ static void *_agent(void *x)
 	int i, j, kvs_set_cnt = 0, host_cnt, pmi_fanout = 32;
 	int msg_sent = 0, max_forward = 0;
 	char *tmp, *fanout_off_host;
-	pthread_t msg_id;
-	pthread_attr_t attr;
 	DEF_TIMERS;
 
 	tmp = getenv("PMI_FANOUT");
@@ -201,8 +193,6 @@ static void *_agent(void *x)
 	/* only send one message to each host,
 	 * build table of the ports on each host */
 	START_TIMER;
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	kvs_set = xmalloc(sizeof(kvs_comm_set_t) * args->barrier_xmit_cnt);
 	for (i=0; i<args->barrier_xmit_cnt; i++) {
 		if (args->barrier_xmit_ptr[i].port == 0)
@@ -256,9 +246,9 @@ static void *_agent(void *x)
 			 * or for some other reason we only want
 			 * one pthread. */
 			_msg_thread((void *) msg_args);
-		} else if (pthread_create(&msg_id, &attr, _msg_thread,
-				(void *) msg_args)) {
-			fatal("pthread_create: %m");
+		} else {
+			slurm_thread_create_detached(NULL, _msg_thread,
+						     msg_args);
 		}
 	}
 
@@ -270,7 +260,6 @@ static void *_agent(void *x)
 	while (agent_cnt > 0)
 		slurm_cond_wait(&agent_cond, &agent_mutex);
 	slurm_mutex_unlock(&agent_mutex);
-	slurm_attr_destroy(&attr);
 
 	/* Release allocated memory */
 	for (i=0; i<kvs_set_cnt; i++)
