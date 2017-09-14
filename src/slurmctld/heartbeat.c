@@ -58,7 +58,6 @@
 
 static void *_heartbeat_thread(void *no_data);
 
-static pthread_t heartbeat_thread_id;
 static pthread_mutex_t heartbeat_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t heartbeat_cond = PTHREAD_COND_INITIALIZER;
 
@@ -137,24 +136,14 @@ delay:
 
 void heartbeat_start(void)
 {
-	pthread_attr_t thread_attr;
-
 	if (!slurmctld_conf.backup_addr) {
 		debug("No BackupController, not launching heartbeat.");
 		return;
 	}
 
 	slurm_mutex_lock(&heartbeat_mutex);
+	slurm_thread_create_detached(NULL, _heartbeat_thread, NULL);
 	heart_beating = true;
-
-	slurm_attr_init(&thread_attr);
-	if (pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-	while (pthread_create(&heartbeat_thread_id, &thread_attr,
-			      _heartbeat_thread, NULL)) {
-		error("pthread_create error %m");
-		sleep(1);
-	}
 	slurm_mutex_unlock(&heartbeat_mutex);
 }
 

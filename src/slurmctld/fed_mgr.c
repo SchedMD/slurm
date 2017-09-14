@@ -74,7 +74,7 @@ static int             agent_queue_size = 0;
 
 static pthread_cond_t  job_watch_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t job_watch_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_t       job_watch_thread_id = (pthread_t)0;
+static bool            job_watch_thread_running = false;
 static bool            stop_job_watch_thread = false;
 
 static bool inited = false;
@@ -654,7 +654,7 @@ static void *_job_watch_thread(void *arg)
 		unlock_slurmctld(job_write_fed_write_lock);
 	}
 
-	job_watch_thread_id = 0;
+	job_watch_thread_running = false;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("%s: exiting job watch thread", __func__);
@@ -664,23 +664,14 @@ static void *_job_watch_thread(void *arg)
 
 static void _spawn_job_watch_thread()
 {
-	pthread_attr_t thread_attr;
-
-	if (!job_watch_thread_id) {
-		slurm_attr_init(&thread_attr);
+	if (!job_watch_thread_running) {
 		/* Detach the thread since it will exit once the cluster is
 		 * drained or removed. */
-		pthread_attr_setdetachstate(&thread_attr,
-					    PTHREAD_CREATE_DETACHED);
-
 		slurm_mutex_lock(&job_watch_mutex);
 		stop_job_watch_thread = false;
-		if (pthread_create(&job_watch_thread_id, &thread_attr,
-				   _job_watch_thread, NULL))
-			fatal("pthread_create error %m");
+		job_watch_thread_running = true;
+		slurm_thread_create_detached(NULL, _job_watch_thread, NULL);
 		slurm_mutex_unlock(&job_watch_mutex);
-
-		slurm_attr_destroy(&thread_attr);
 	} else {
 		info("a job_watch_thread already exists");
 	}
@@ -688,7 +679,7 @@ static void _spawn_job_watch_thread()
 
 static void _remove_job_watch_thread()
 {
-	if (job_watch_thread_id) {
+	if (job_watch_thread_running) {
 		slurm_mutex_lock(&job_watch_mutex);
 		stop_job_watch_thread = true;
 		slurm_cond_broadcast(&job_watch_cond);
@@ -796,7 +787,7 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 		slurmctld_config.scheduling_disabled = true;
 		slurmctld_config.submissions_disabled = true;
 	}
-	if (!drain_flag && job_watch_thread_id)
+	if (!drain_flag)
 		_remove_job_watch_thread();
 }
 
@@ -2353,22 +2344,14 @@ end_it:
 
 static void _spawn_threads(void)
 {
-	pthread_attr_t thread_attr;
-
-	slurm_attr_init(&thread_attr);
-
 	slurm_mutex_lock(&agent_mutex);
-	if (pthread_create(&agent_thread_id, &thread_attr, _agent_thread, NULL))
-		fatal("pthread_create error %m");
+	slurm_thread_create(&agent_thread_id, _agent_thread, NULL);
 	slurm_mutex_unlock(&agent_mutex);
 
 	slurm_mutex_lock(&job_update_mutex);
-	if (pthread_create(&fed_job_update_thread_id, &thread_attr,
-			   _fed_job_update_thread, NULL))
-		fatal("pthread_create error %m");
+	slurm_thread_create(&fed_job_update_thread_id,
+			    _fed_job_update_thread, NULL);
 	slurm_mutex_unlock(&job_update_mutex);
-
-	slurm_attr_destroy(&thread_attr);
 }
 
 extern int fed_mgr_init(void *db_conn)

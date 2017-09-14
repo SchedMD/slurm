@@ -678,8 +678,6 @@ extern void config_power_mgr(void)
  */
 extern void start_power_mgr(pthread_t *thread_id)
 {
-	pthread_attr_t thread_attr;
-
 	slurm_mutex_lock(&power_mutex);
 	if (power_save_started) {     /* Already running */
 		slurm_mutex_unlock(&power_mutex);
@@ -689,13 +687,7 @@ extern void start_power_mgr(pthread_t *thread_id)
 	proc_track_list = list_create(_proc_track_list_del);
 	slurm_mutex_unlock(&power_mutex);
 
-	slurm_attr_init(&thread_attr);
-	while (pthread_create(thread_id, &thread_attr, _init_power_save,
-			      NULL)) {
-		error("pthread_create %m");
-		sleep(1);
-	}
-	slurm_attr_destroy(&thread_attr);
+	slurm_thread_create(thread_id, _init_power_save, NULL);
 }
 
 /* Report if node power saving is enabled */

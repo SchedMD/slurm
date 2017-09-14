@@ -99,7 +99,6 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	int i;
 	uint32_t trigger_type;
 	time_t last_ping = 0;
-	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t config_write_lock = {
@@ -117,25 +116,14 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	/*
 	 * create attached thread to process RPCs
 	 */
-	slurm_attr_init(&thread_attr_rpc);
-	while (pthread_create(&slurmctld_config.thread_id_rpc,
-			      &thread_attr_rpc, _background_rpc_mgr, NULL)) {
-		error("pthread_create error %m");
-		sleep(1);
-	}
-	slurm_attr_destroy(&thread_attr_rpc);
+	slurm_thread_create(&slurmctld_config.thread_id_rpc,
+			    _background_rpc_mgr, NULL);
 
 	/*
 	 * create attached thread for signal handling
 	 */
-	slurm_attr_init(&thread_attr_sig);
-	while (pthread_create(&slurmctld_config.thread_id_sig,
-			      &thread_attr_sig, _background_signal_hand,
-			      NULL)) {
-		error("pthread_create %m");
-		sleep(1);
-	}
-	slurm_attr_destroy(&thread_attr_sig);
+	slurm_thread_create(&slurmctld_config.thread_id_sig,
+			    _background_signal_hand, NULL);
 	trigger_type = TRIGGER_TYPE_BU_CTLD_RES_OP;
 	_trigger_slurmctld_event(trigger_type);
 

@@ -5337,10 +5337,7 @@ fini:	_free_script_arg(args);
 
 static void _run_script(char *script, slurmctld_resv_t *resv_ptr)
 {
-	int rc;
 	resv_thread_args_t *args;
-	pthread_t thread_id_prolog;
-	pthread_attr_t thread_attr_prolog;
 
 	if (!script || !script[0])
 		return;
@@ -5349,25 +5346,11 @@ static void _run_script(char *script, slurmctld_resv_t *resv_ptr)
 		return;
 	}
 
-	slurm_attr_init(&thread_attr_prolog);
-	pthread_attr_setdetachstate(&thread_attr_prolog,
-				    PTHREAD_CREATE_DETACHED);
 	args = xmalloc(sizeof(resv_thread_args_t));
 	args->script    = xstrdup(script);
 	args->resv_name = xstrdup(resv_ptr->name);
-	while (1) {
-		rc = pthread_create(&thread_id_prolog, &thread_attr_prolog,
-				    _fork_script, (void *) args);
-		if (rc != 0) {
-			if (errno == EAGAIN)
-				continue;
-			error("pthread_create: %m");
-		}
-		break;
-	}
-	slurm_attr_destroy(&thread_attr_prolog);
-	if (rc != 0)
-		_free_script_arg(args);
+
+	slurm_thread_create_detached(NULL, _fork_script, args);
 }
 
 /* Return the count of incomplete jobs associated with a given reservation */

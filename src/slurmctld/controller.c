@@ -246,7 +246,6 @@ static bool         _wait_for_server_thread(void);
 int main(int argc, char **argv)
 {
 	int cnt, error_code, i;
-	pthread_attr_t thread_attr;
 	struct stat stat_buf;
 	struct rlimit rlim;
 	/* Locks: Write configuration, job, node, and partition */
@@ -555,38 +554,20 @@ int main(int argc, char **argv)
 		 * create attached thread to process RPCs
 		 */
 		server_thread_incr();
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&slurmctld_config.thread_id_rpc,
-				      &thread_attr, _slurmctld_rpc_mgr,
-				      NULL)) {
-			error("pthread_create error %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
+		slurm_thread_create(&slurmctld_config.thread_id_rpc,
+				    _slurmctld_rpc_mgr, NULL);
 
 		/*
 		 * create attached thread for signal handling
 		 */
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&slurmctld_config.thread_id_sig,
-				      &thread_attr, _slurmctld_signal_hand,
-				      NULL)) {
-			error("pthread_create %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
+		slurm_thread_create(&slurmctld_config.thread_id_sig,
+				    _slurmctld_signal_hand, NULL);
 
 		/*
 		 * create attached thread for state save
 		 */
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&slurmctld_config.thread_id_save,
-				      &thread_attr, slurmctld_state_save,
-				      NULL)) {
-			error("pthread_create %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
+		slurm_thread_create(&slurmctld_config.thread_id_save,
+				    slurmctld_state_save, NULL);
 
 		/*
 		 * create attached thread for node power management
@@ -596,14 +577,8 @@ int main(int argc, char **argv)
 		/*
 		 * create attached thread for purging completed job files
 		 */
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&slurmctld_config.thread_id_purge_files,
-				      &thread_attr, _purge_files_thread,
-				      NULL)) {
-			error("pthread_create error %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
+		slurm_thread_create(&slurmctld_config.thread_id_purge_files,
+				    _purge_files_thread, NULL);
 
 		/*
 		 * process slurm background activities, could run as pthread
@@ -938,9 +913,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	slurm_addr_t cli_addr, srv_addr;
 	uint16_t port;
 	char ip[32];
-	pthread_t thread_id_rpc_req;
-	pthread_attr_t thread_attr_rpc_req;
-	int no_thread;
 	int fd_next = 0, i, nports;
 	fd_set rfds;
 	connection_arg_t *conn_arg = NULL;
@@ -959,12 +931,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("_slurmctld_rpc_mgr pid = %u", getpid());
-
-	/* threads to process individual RPC's are detached */
-	slurm_attr_init(&thread_attr_rpc_req);
-	if (pthread_attr_setdetachstate(&thread_attr_rpc_req,
-					PTHREAD_CREATE_DETACHED))
-		fatal("pthread_attr_setdetachstate %m");
 
 	/* set node_addr to bind to (NULL means any) */
 	if (slurmctld_conf.backup_controller && slurmctld_conf.backup_addr &&
@@ -1065,25 +1031,16 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			info("%s: accept() connection from %s", __func__, inetbuf);
 		}
 
-		if (slurmctld_config.shutdown_time)
-			no_thread = 1;
-		else if (pthread_create(&thread_id_rpc_req,
-					&thread_attr_rpc_req,
-					_service_connection,
-					(void *) conn_arg)) {
-			error("pthread_create: %m");
-			no_thread = 1;
-		} else
-			no_thread = 0;
-
-		if (no_thread) {
+		if (slurmctld_config.shutdown_time) {
 			slurmctld_diag_stats.proc_req_raw++;
-		       	_service_connection((void *) conn_arg);
-	       	}
+			_service_connection(conn_arg);
+		} else {
+			slurm_thread_create_detached(NULL, _service_connection,
+						     conn_arg);
+		}
 	}
 
 	debug3("_slurmctld_rpc_mgr shutting down");
-	slurm_attr_destroy(&thread_attr_rpc_req);
 	for (i=0; i<nports; i++)
 		(void) slurm_shutdown_msg_engine(sockfd[i]);
 	xfree(sockfd);
@@ -2115,15 +2072,8 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	   the database so we can update the assoc_ptr's in the jobs
 	*/
 	if (running_cache || num_jobs) {
-		pthread_attr_t thread_attr;
-
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&assoc_cache_thread, &thread_attr,
-				      _assoc_cache_mgr, NULL)) {
-			error("pthread_create error %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
+		slurm_thread_create(&assoc_cache_thread,
+				    _assoc_cache_mgr, NULL);
 	}
 
 }

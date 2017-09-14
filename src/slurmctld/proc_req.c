@@ -1159,15 +1159,7 @@ static void *_trigger_backfill_thread(void *args)
  * backfill scheduler can run immediately thereafter */
 static void _trigger_backfill(void)
 {
-	pthread_attr_t trigger_attr;
-	pthread_t trigger_thread;
-
-	slurm_attr_init(&trigger_attr);
-	if (pthread_attr_setdetachstate(&trigger_attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-	(void) pthread_create(&trigger_thread, &trigger_attr,
-			      _trigger_backfill_thread, NULL);
-	slurm_attr_destroy(&trigger_attr);
+	slurm_thread_create_detached(NULL, _trigger_backfill_thread, NULL);
 }
 
 /* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
