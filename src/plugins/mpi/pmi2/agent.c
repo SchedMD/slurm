@@ -61,8 +61,6 @@
 #include "pmi.h"
 #include "setup.h"
 
-#define MAX_RETRIES 5
-
 static int *initialized = NULL;
 static int *finalized = NULL;
 
@@ -354,24 +352,9 @@ static bool _agent_running_test(void)
 extern int
 pmi2_start_agent(void)
 {
-	int retries = 0;
-	pthread_attr_t attr;
-	pthread_t pmi2_agent_tid = 0;
+	slurm_thread_create_detached(NULL, _agent, NULL);
 
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	while ((errno = pthread_create(&pmi2_agent_tid, &attr,
-				       &_agent, NULL))) {
-		if (++retries > MAX_RETRIES) {
-			error ("mpi/pmi2: pthread_create error %m");
-			slurm_attr_destroy(&attr);
-			return SLURM_ERROR;
-		}
-		sleep(1);
-	}
-	slurm_attr_destroy(&attr);
-	debug("mpi/pmi2: started agent thread (%lu)",
-	      (unsigned long) pmi2_agent_tid);
+	debug("mpi/pmi2: started agent thread");
 
 	/* wait for the agent to start */
 	while (!_agent_running_test()) {

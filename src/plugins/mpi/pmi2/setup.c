@@ -730,31 +730,6 @@ _task_launch_detection(void *unused)
 	return NULL;
 }
 
-static int
-_setup_srun_task_launch_detection(void)
-{
-	int retries = 0;
-	pthread_t tid;
-	pthread_attr_t attr;
-
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	while ((errno = pthread_create(&tid, &attr,
-				       &_task_launch_detection, NULL))) {
-		if (++retries > 5) {
-			error ("mpi/pmi2: pthread_create error %m");
-			slurm_attr_destroy(&attr);
-			return SLURM_ERROR;
-		}
-		sleep(1);
-	}
-	slurm_attr_destroy(&attr);
-	debug("mpi/pmi2: task launch detection thread (%lu) started",
-	      (unsigned long) tid);
-
-	return SLURM_SUCCESS;
-}
-
 extern int
 pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env)
 {
@@ -782,11 +757,8 @@ pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env)
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
-	if (job_info.spawn_seq) {
-		rc = _setup_srun_task_launch_detection();
-		if (rc != SLURM_SUCCESS)
-			return rc;
-	}
+	if (job_info.spawn_seq)
+		slurm_thread_create_detached(NULL, _task_launch_detection, NULL);
 
 	return SLURM_SUCCESS;
 }
