@@ -40,10 +40,6 @@ setenv	SQUEUE_FORMAT	{%.8i %.8u %.7a %.14j %.3t %9r %19S %.10M %.10L %.5D %.4C}
 setenv	SQUEUE_ALL	{yes}	;# show hidden partitions, too
 setenv	SQUEUE_SORT	{-t,e,S}
 
-# logfile aliases
-set-alias sd_log	{tail -f "/ufs/slurm/var/log/slurmd.log"}
-set-alias sc_log	{tail -f "/ufs/slurm/var/log/slurmctld.log"}
-
 if {[exec id -u] == 0} {
 	prepend-path	PATH	"$slurmdir/sbin"
 	prepend-path	PATH	"$mungedir/sbin"
