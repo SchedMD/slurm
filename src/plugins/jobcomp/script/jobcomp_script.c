@@ -626,8 +626,10 @@ extern int init(void)
 
 	slurm_mutex_lock(&thread_flag_mutex);
 
-	if (comp_list)
+	if (comp_list) {
+		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
+	}
 
 	comp_list = list_create(_jobcomp_info_destroy);
 
