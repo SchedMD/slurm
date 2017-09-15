@@ -303,14 +303,18 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		else
 			type = "Core Count";
 		if (state_control_corecnt_supported() != SLURM_SUCCESS) {
-			global_edit_error_msg = g_strdup_printf("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
+			if (global_edit_error_msg)
+				g_free(global_edit_error_msg);
+			global_edit_error_msg = g_strdup("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto return_error;
 		}
 		if (state_control_parse_resv_corecnt(resv_msg, (char *)new_text,
 						     &free_tres_corecnt, false,
 						     &err_msg) == SLURM_ERROR) {
-			global_edit_error_msg = err_msg;
-			err_msg = NULL;
+			if (global_edit_error_msg)
+				g_free(global_edit_error_msg);
+			global_edit_error_msg = g_strdup(err_msg);
+			xfree(err_msg);
 			goto return_error;
 		}
 		break;
@@ -352,8 +356,10 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		if (parse_resv_nodecnt(resv_msg, (char *)new_text,
 				       &free_tres_nodecnt, false,
 				       &err_msg) == SLURM_ERROR) {
-			global_edit_error_msg = err_msg;
-			err_msg = NULL;
+			if (global_edit_error_msg)
+				g_free(global_edit_error_msg);
+			global_edit_error_msg = g_strdup(err_msg);
+			xfree(err_msg);
 			goto return_error;
 		}
 		break;
@@ -383,16 +389,20 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 						  &free_tres_corecnt,
 						  &free_tres_nodecnt, &err_msg)
 		    == SLURM_ERROR) {
-			global_edit_error_msg = err_msg;
-			err_msg = NULL;
+			if (global_edit_error_msg)
+				g_free(global_edit_error_msg);
+			global_edit_error_msg = g_strdup(err_msg);
+			xfree(err_msg);
 			goto return_error;
 		}
 		break;
 	case SORTID_WATTS:
 		if (state_control_parse_resv_watts((char *) new_text, resv_msg,
 						   &err_msg) == SLURM_ERROR) {
-			global_edit_error_msg = err_msg;
-			err_msg = NULL;
+			if (global_edit_error_msg)
+				g_free(global_edit_error_msg);
+			global_edit_error_msg = g_strdup(err_msg);
+			xfree(err_msg);
 			goto return_error;
 		}
 		type = "watts";
@@ -1679,6 +1689,8 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 					"values you wanted to change: %s",
 					global_edit_error_msg ?
 					global_edit_error_msg : "unknown");
+				if (global_edit_error_msg)
+					g_free(global_edit_error_msg);
 			} else if (!global_send_update_msg) {
 				temp = g_strdup_printf("No change detected.");
 			} else if (slurm_update_reservation(resv_msg)
