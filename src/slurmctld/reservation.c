@@ -484,7 +484,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 
 	char start_str[32] = "-1", end_str[32] = "-1", *flag_str = NULL;
 	char watts_str[32] = "n/a";
-	char *node_cnt_str = NULL;
+	char *node_cnt_str = NULL, *core_cnt_str = NULL;
 	int duration, i;
 
 	if (!(slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION))
@@ -522,15 +522,27 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 		}
 	}
 
+	if (resv_ptr->core_cnt) {
+		for (i = 0; resv_ptr->core_cnt[i]; i++) {
+			if (core_cnt_str) {
+				xstrfmtcat(core_cnt_str, ",%u",
+					   resv_ptr->core_cnt[i]);
+			} else {
+				xstrfmtcat(core_cnt_str, "%u",
+					   resv_ptr->core_cnt[i]);
+			}
+		}
+	}
+
 	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
-	     "Flags=%s NodeCnt=%s NodeList=%s Features=%s "
-	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s BurstBuffer=%s"
-	     "Watts=%s",
+	     "Flags=%s NodeCnt=%s CoreCnt=%s NodeList=%s Features=%s "
+	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s BurstBuffer=%s "
+	     "TRES=%s Watts=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
-	     flag_str, node_cnt_str, resv_ptr->node_list,
+	     flag_str, node_cnt_str, core_cnt_str, resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
 	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses,
-	     resv_ptr->burst_buffer, watts_str);
+	     resv_ptr->burst_buffer, resv_ptr->tres_str, watts_str);
 
 	xfree(flag_str);
 	xfree(node_cnt_str);

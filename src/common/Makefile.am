@@ -122,7 +122,8 @@ libcommon_la_SOURCES = 			\
 	xcgroup_read_config.c xcgroup_read_config.h \
 	xlua.c xlua.h                   \
 	callerid.c callerid.h		\
-	slurm_persist_conn.c slurm_persist_conn.h
+	slurm_persist_conn.c slurm_persist_conn.h \
+	state_control.c state_control.h
 
 
 EXTRA_libcommon_la_SOURCES = 		\

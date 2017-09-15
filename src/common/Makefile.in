@@ -182,7 +182,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
 	node_conf.lo gres.lo entity.lo layout.lo layouts_mgr.lo \
 	mapping.lo xcgroup_read_config.lo xlua.lo callerid.lo \
-	slurm_persist_conn.lo
+	slurm_persist_conn.lo state_control.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -648,7 +648,8 @@ libcommon_la_SOURCES = \
 	xcgroup_read_config.c xcgroup_read_config.h \
 	xlua.c xlua.h                   \
 	callerid.c callerid.h		\
-	slurm_persist_conn.c slurm_persist_conn.h
+	slurm_persist_conn.c slurm_persist_conn.h \
+	state_control.c state_control.h
 
 EXTRA_libcommon_la_SOURCES = \
 	uthash/LICENSE			\
@@ -825,6 +826,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdb_defs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdb_pack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_defs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_control.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strnatcmp.Plo@am__quote@
