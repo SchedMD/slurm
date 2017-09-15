@@ -71,7 +71,6 @@ void *db_conn = NULL;
 uint32_t my_uid = 0;
 slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 
-static void	_assoc_rep (int argc, char **argv);
 static char *	_build_cluster_string(void);
 static List	_build_tres_list(char *tres_str);
 static void	_cluster_rep (int argc, char **argv);
@@ -505,20 +504,6 @@ static void _cluster_rep (int argc, char **argv)
 }
 
 /*
- * _assoc_rep - Reports having to do with jobs
- * IN argc - count of arguments
- * IN argv - list of arguments
- */
-static void _assoc_rep (int argc, char **argv)
-{
-	int error_code = SLURM_SUCCESS;
-
-	if (error_code) {
-		exit_code = 1;
-	}
-}
-
-/*
  * _get_command - get a command from the user
  * OUT argc - location to store count of arguments
  * OUT argv - location to store the argument list
@@ -630,16 +615,7 @@ _process_command (int argc, char **argv)
 
 	command_len = strlen(argv[0]);
 
-	if ((strncasecmp (argv[0], "association", MAX(command_len, 1)) == 0)) {
-		if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-				        "too few arguments for keyword:%s\n",
-				        argv[0]);
-		} else
-			_assoc_rep((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "cluster",
+	if ((strncasecmp (argv[0], "cluster",
 				 MAX(command_len, 2)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
