@@ -180,11 +180,6 @@ mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 	return (void *)0xdeadbeef;
 }
 
-int p_mpi_hook_client_single_task_per_node(void)
-{
-	return false;
-}
-
 int p_mpi_hook_client_fini(void)
 {
 	return SLURM_SUCCESS;

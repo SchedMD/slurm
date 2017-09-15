@@ -75,7 +75,6 @@ static const char *syms[] = {
 	"p_mpi_hook_slurmstepd_prefork",
 	"p_mpi_hook_slurmstepd_task",
 	"p_mpi_hook_client_prelaunch",
-	"p_mpi_hook_client_single_task_per_node",
 	"p_mpi_hook_client_fini"
 };
 
@@ -194,21 +193,6 @@ mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 		return NULL;
 
 	return (*(ops.client_prelaunch))(job, env);
-}
-
-bool mpi_hook_client_single_task_per_node (void)
-{
-	if (_mpi_init(NULL) < 0)
-		return SLURM_ERROR;
-#if defined HAVE_BGQ
-//#if defined HAVE_BGQ && defined HAVE_BG_FILES
-	/* On BGQ systems we only want 1 task to be spawned since srun
-	   is wrapping runjob.
-	*/
-	return true;
-#else
-	return (*(ops.client_single_task))();
-#endif
 }
 
 int mpi_hook_client_fini (mpi_plugin_client_state_t *state)
