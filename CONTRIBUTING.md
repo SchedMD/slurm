@@ -11,7 +11,7 @@ bugs under "Contributions" category.
 CODING GUIDELINES
 -----------------
 Slurm loosely follows the Linux Kernel style guidelines
-(https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/process/coding-style.rst).
+(https://www.kernel.org/doc/html/latest/process/coding-style.html).
 If in doubt, please follow their example.
 
 A brief overview, with some notable exceptions:
