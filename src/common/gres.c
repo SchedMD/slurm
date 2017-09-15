@@ -2944,7 +2944,7 @@ static int _get_gres_req_cnt(
 	} else {
 		/* Did not find this GRES name, check for zero value */
 		num = strrchr(config, ':');
-		if (num) {
+		if (num && num[1] != '\0') {
 			*cnt_out = strtoll(num + 1, &last_num, 10);
 			if ((last_num[0] != '\0') || (*cnt_out != 0))
 				return SLURM_ERROR;
@@ -2995,16 +2995,15 @@ static int _job_state_validate(char *config, gres_job_state_t **gres_data,
 
 static bool _is_gres_cnt_zero(char *config)
 {
-	char *num = NULL;
+	char *num = NULL, *last_num = NULL;
 	long cnt;
 
 	num = strrchr(config, ':');
-	if (num)
-		cnt = strtol(num + 1, NULL, 10);
-	else
-		cnt = 1;
-	if (cnt == 0)
-		return true;
+	if (num && num[1] != '\0') {
+		cnt = strtol(num + 1, &last_num, 10);
+		if (cnt == 0 && last_num[0] == '\0')
+			return true;
+	}
 	return false;
 }
 

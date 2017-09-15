@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
     cluster default.
  -- mpi/pmi2 plugin - vestigial pointer could be referenced at shutdown with
     invalid memory reference resulting.
+ -- Fix to _is_gres_cnt_zero() return false for improper input string
 
 * Changes in Slurm 17.11.0pre2
 ==============================
