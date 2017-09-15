@@ -110,6 +110,27 @@ send_user "\n\nTest Sending Sacct To Various Components\n\n"
 sleep 3
 set timeout 3
 set matches 0
+set expected_matches 3
+set has_prolog_flags 0
+
+# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
+# launched on each node, so we need to check for 6 matches instead of 3.
+spawn $scontrol show config
+expect {
+	-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
+		set expected_matches 6
+		set has_prolog_flags 1
+	}
+	timeout {
+		log_error "scontrol show config not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Now test sacct
 spawn $sacct -j $pack_job_id
 expect {
 	-re "$pack_job_id\\+\[0-2\]" {
@@ -124,9 +145,14 @@ expect {
 		wait
 	}
 }
-if {$matches != 3} {
-	log_error "sacct failure ($matches != 3)\n"
+if {$matches != $expected_matches} {
+	log_error "sacct failure ($matches != $expected_matches)\n"
 	end_it 1
+}
+
+set expected_matches 1
+if {$has_prolog_flags} {
+	set expected_matches 2
 }
 
 for {set inx 0} {$inx < 3} {incr inx} {
@@ -151,7 +177,7 @@ for {set inx 0} {$inx < 3} {incr inx} {
 			wait
 		}
 	}
-	if {$matches != 1 || $bad_matches != 0} {
+	if {$matches != $expected_matches || $bad_matches != 0} {
 		log_error "sacct failure ($matches != 1 || $bad_matches != 0)\n"
 		end_it 1
 	}
