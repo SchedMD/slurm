@@ -69,6 +69,10 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmi2 plugin - vestigial pointer could be referenced at shutdown with
     invalid memory reference resulting.
  -- Fix to _is_gres_cnt_zero() return false for improper input string
+ -- Cleanup all pthread_create calls and replace with new slurm_thread_create
+    macro.
+ -- Removed obsolete MPI plugins. Remaining options are openmpi, pmi2, pmix.
+ -- Removed obsolete checkpoint/poe plugin.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
