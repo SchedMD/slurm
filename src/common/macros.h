@@ -243,6 +243,10 @@
 				"possible memory leak!: %m");		\
 	} while (0)
 
+/*
+ * Note that the attr argument is intentionally omitted, as it will
+ * be setup within the macro to Slurm's default options.
+ */
 #define slurm_thread_create(id, func, arg)				\
 	do {								\
 		pthread_attr_t attr;					\
@@ -253,8 +257,12 @@
 	} while (0)
 
 /*
- * As a special feature, if the id is NULL then the thread_id will be
- * discarded. Useful when the thread is truly "fire and forget".
+ * If the id is NULL then the thread_id will be discarded without needing
+ * to create a local pthread_t object first.
+ *
+ * This is only made available for detached threads - if you're creating
+ * an attached thread that you don't need to keep the id of, then you
+ * should really be making it detached.
  */
 #define slurm_thread_create_detached(id, func, arg)			\
 	do {								\
