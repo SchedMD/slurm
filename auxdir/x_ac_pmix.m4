@@ -114,6 +114,10 @@ AC_DEFUN([X_AC_PMIX],
     AC_SUBST(PMIX_V1_LDFLAGS)
     AC_SUBST(PMIX_V2_CPPFLAGS)
     AC_SUBST(PMIX_V2_LDFLAGS)
+
+    if test $_x_ac_pmix_v1_found = 0 && test $_x_ac_pmix_v2_found = 0; then
+      AC_MSG_WARN([unable to locate pmix installation])
+    fi
   fi
 
   AM_CONDITIONAL(HAVE_PMIX, [test $_x_ac_pmix_v1_found = "1"] ||

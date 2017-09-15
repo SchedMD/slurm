@@ -21707,6 +21707,11 @@ $as_echo "#define HAVE_PMIX 1" >>confdefs.h
 
 
 
+
+    if test $_x_ac_pmix_v1_found = 0 && test $_x_ac_pmix_v2_found = 0; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate pmix installation" >&5
+$as_echo "$as_me: WARNING: unable to locate pmix installation" >&2;}
+    fi
   fi
 
    if test $_x_ac_pmix_v1_found = "1" ||
