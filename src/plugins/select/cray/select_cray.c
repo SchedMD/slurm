@@ -1936,7 +1936,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 				debug("CCM job %u setting JOB_CONFIGURING",
 					job_ptr->job_id);
 				job_ptr->job_state |= JOB_CONFIGURING;
-				slurm_create_thread_detached(NULL, ccm_begin,
+				slurm_thread_create_detached(NULL, ccm_begin,
 							     job_ptr);
 			}
 		}
