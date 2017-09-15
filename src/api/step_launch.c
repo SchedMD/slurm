@@ -221,15 +221,13 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		slurm_seterrno(SLURM_MPI_PLUGIN_NAME_INVALID);
 		return SLURM_ERROR;
 	}
-	/*
-	 * Now, hack the step_layout struct if the following it true.
-	 * This looks like an ugly hack to support LAM/MPI's lamboot.
-	 * NOTE: This also gets ran for BGQ systems.
-	 */
-	if (mpi_hook_client_single_task_per_node()) {
-		for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
-			ctx->step_resp->step_layout->tasks[i] = 1;
-	}
+
+#if defined HAVE_BGQ
+	/* Now, hack the step_layout struct for BGQ systems. */
+	for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
+		ctx->step_resp->step_layout->tasks[i] = 1;
+#endif
+
 	if ((ctx->launch_state->mpi_state =
 	     mpi_hook_client_prelaunch(ctx->launch_state->mpi_info, &mpi_env))
 	    == NULL) {
@@ -440,15 +438,11 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 
 	memset(&launch, 0, sizeof(launch));
 
-	/*
-	 * Now, hack the step_layout struct if the following it true.
-	 * This looks like an ugly hack to support LAM/MPI's lamboot.
-	 * NOTE: This also gets ran for BGQ systems.
-	 */
-	if (mpi_hook_client_single_task_per_node()) {
-		for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
-			ctx->step_resp->step_layout->tasks[i] = 1;
-	}
+#if defined HAVE_BGQ
+	/* Now, hack the step_layout struct for BGQ systems. */
+	for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
+		ctx->step_resp->step_layout->tasks[i] = 1;
+#endif
 
 	/* Start tasks on compute nodes */
 	launch.job_id = ctx->step_req->job_id;
@@ -961,11 +955,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	   task to avoid overflows with large jobs. */
 	layout->node_cnt = layout->task_cnt = sls->tasks_requested = 1;
 #else
-	/* Hack for LAM-MPI's lamboot, launch one task per node */
-	if (mpi_hook_client_single_task_per_node())
-		sls->tasks_requested = layout->node_cnt;
-	else
-		sls->tasks_requested = layout->task_cnt;
+	sls->tasks_requested = layout->task_cnt;
 #endif
 	sls->tasks_started = bit_alloc(layout->task_cnt);
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
@@ -1003,14 +993,9 @@ void step_launch_state_alter(slurm_step_ctx_t *ctx)
 
 	xassert(sls);
 #if defined HAVE_BGQ
-//#if defined HAVE_BGQ && defined HAVE_BG_FILES
 	sls->tasks_requested = 1;
 #else
-	/* Hack for LAM-MPI's lamboot, launch one task per node */
-	if (mpi_hook_client_single_task_per_node())
-		sls->tasks_requested = layout->node_cnt;
-	else
-		sls->tasks_requested = layout->task_cnt;
+	sls->tasks_requested = layout->task_cnt;
 #endif
 	sls->tasks_started = bit_realloc(sls->tasks_started, layout->task_cnt);
 	sls->tasks_exited = bit_realloc(sls->tasks_exited, layout->task_cnt);
