@@ -191,7 +191,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 			     int pack_job_cnt)
 {
 	launch_tasks_request_msg_t launch;
-	int i;
 	char **env = NULL;
 	char **mpi_env = NULL;
 	int rc = SLURM_SUCCESS;
@@ -223,9 +222,12 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	}
 
 #if defined HAVE_BGQ
-	/* Now, hack the step_layout struct for BGQ systems. */
-	for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
-		ctx->step_resp->step_layout->tasks[i] = 1;
+	{
+		int i;
+		/* Now, hack the step_layout struct for BGQ systems. */
+		for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
+			ctx->step_resp->step_layout->tasks[i] = 1;
+	}
 #endif
 
 	if ((ctx->launch_state->mpi_state =
@@ -421,7 +423,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 				 char *node_list, int start_nodeid)
 {
 	launch_tasks_request_msg_t launch;
-	int i;
 	char **env = NULL;
 	char **mpi_env = NULL;
 	int rc = SLURM_SUCCESS;
@@ -439,9 +440,12 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	memset(&launch, 0, sizeof(launch));
 
 #if defined HAVE_BGQ
-	/* Now, hack the step_layout struct for BGQ systems. */
-	for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
-		ctx->step_resp->step_layout->tasks[i] = 1;
+	{
+		int i;
+		/* Now, hack the step_layout struct for BGQ systems. */
+		for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
+			ctx->step_resp->step_layout->tasks[i] = 1;
+	}
 #endif
 
 	/* Start tasks on compute nodes */
