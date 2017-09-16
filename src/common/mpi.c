@@ -63,7 +63,6 @@ typedef struct slurm_mpi_ops {
 	mpi_plugin_client_state_t *
 	             (*client_prelaunch)  (const mpi_plugin_client_info_t *job,
 					   char ***env);
-	bool         (*client_single_task)(void);
 	int          (*client_fini)       (mpi_plugin_client_state_t *);
 } slurm_mpi_ops_t;
 
