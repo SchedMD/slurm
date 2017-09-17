@@ -205,13 +205,6 @@ static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
 static int    _send_complete_batch_script_msg(stepd_step_rec_t *job,
 					      int err, int status);
 
-/*
- * Initialize the group list using the list of gids from the slurmd if
- * available.  Otherwise initialize the groups with initgroups().
- */
-static int _initgroups(stepd_step_rec_t *job);
-
-
 static stepd_step_rec_t *reattach_job;
 
 /*
@@ -2468,8 +2461,8 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 		return -1;
 	}
 
-	if (_initgroups(job) < 0) {
-		error("_initgroups: %m");
+	if (setgroups(job->ngids, job->gids) < 0) {
+		error("getgroups: %m");
 		return -1;
 	}
 
@@ -2646,98 +2639,6 @@ _become_user(stepd_step_rec_t *job, struct priv_state *ps)
 	}
 
 	return SLURM_SUCCESS;
-}
-
-#ifndef HAVE_NATIVE_CRAY
-/* _get_primary_group()
- */
-static int
-_get_primary_group(const char *user, gid_t *gid)
-{
-	struct passwd pwd;
-	struct passwd *pwd0 = NULL;
-	char buf[256];
-	int cc;
-
-	cc = getpwnam_r(user, &pwd, buf, sizeof(buf), &pwd0);
-	if ((cc != 0) || (pwd0 == NULL)) {
-		error("%s: getpwnam_r() failed: %m", __func__);
-		return -1;
-	}
-
-	*gid = pwd0->pw_gid;
-	return 0;
-}
-#endif
-
-static int
-_initgroups(stepd_step_rec_t *job)
-{
-#ifndef HAVE_NATIVE_CRAY
-	gid_t primary_gid = 0;
-#endif
-	int rc;
-
-	if (job->ngids > 0) {
-		xassert(job->gids);
-		debug2("Using gid list sent by slurmd");
-		return setgroups(job->ngids, job->gids);
-	}
-
-	debug2("Uncached user/gid: %s/%ld", job->user_name, (long)job->gid);
-	if ((rc = initgroups(job->user_name, job->gid))) {
-		if ((errno == EPERM) && (getuid() != (uid_t) 0)) {
-			debug("Error in initgroups(%s, %ld): %m",
-			      job->user_name, (long)job->gid);
-		} else {
-			error("Error in initgroups(%s, %ld): %m",
-			      job->user_name, (long)job->gid);
-		}
-		return -1;
-	}
-
-#ifndef HAVE_NATIVE_CRAY
-	/* LDAP on Native Cray is not sufficiently scalable to support the
-	 * getpwnam_r() call */
-	rc = _get_primary_group(job->user_name, &primary_gid);
-	if (rc < 0) {
-		error("%s: _get_primary_group() failed", __func__);
-		return -1;
-	}
-	/* If job->gid is not the primary group for the
-	 * user job->user_name then add the primary group
-	 * in the list of user groups.
-	 */
-	if (primary_gid != job->gid) {
-		int ngroups_max = sysconf(_SC_NGROUPS_MAX);
-		gid_t grps[ngroups_max];
-		int size, max;
-
-		max = ngroups_max;
-
-		size = getgrouplist(job->user_name,
-				    job->gid,
-				    grps,
-				    &ngroups_max);
-		if (size < 0) {
-			error("%s: getgrouplist() failed: %m", __func__);
-			return -1;
-		}
-		if (size > max - 1) {
-			error("\
-%s: too many groups %d max %d for user %s groups %d %d\n",
-			      __func__, size, max, job->user_name,
-			      primary_gid, job->gid);
-		}
-		grps[size++] = primary_gid;
-
-		if (setgroups(size, grps)) {
-			error("%s: setgroups() failed: %m", __func__);
-			return -1;
-		}
-	}
-#endif
-	return 0;
 }
 
 /*
