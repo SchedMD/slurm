@@ -62,6 +62,7 @@
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/gres.h"
+#include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
@@ -698,6 +699,7 @@ int main(int argc, char **argv)
 	route_fini();
 
 	/* purge remaining data structures */
+	group_cache_purge();
 	license_free();
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	slurm_crypto_fini();	/* must be after ctx_destroy */
@@ -1863,6 +1865,7 @@ static void *_slurmctld_background(void *no_data)
 			lock_slurmctld(part_write_lock);
 			load_part_uid_allow_list(slurmctld_conf.group_force);
 			unlock_slurmctld(part_write_lock);
+			group_cache_cleanup();
 		}
 
 		if (difftime(now, last_purge_job_time) >= purge_job_interval) {

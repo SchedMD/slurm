@@ -54,6 +54,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/gres.h"
+#include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/layouts_mgr.h"
 #include "src/common/list.h"
@@ -2779,6 +2780,8 @@ extern void launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->job_id = job_ptr->job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;
 	prolog_msg_ptr->gid = job_ptr->group_id;
+	prolog_msg_ptr->ngids = 0;
+	prolog_msg_ptr->gids = NULL;
 	prolog_msg_ptr->user_name = uid_to_string(job_ptr->user_id);
 	prolog_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	prolog_msg_ptr->nodes = xstrdup(job_ptr->nodes);
@@ -2790,6 +2793,13 @@ extern void launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);
 
+	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS)) {
+		/* lookup and send extended gids list */
+		prolog_msg_ptr->ngids = group_cache_lookup(prolog_msg_ptr->uid,
+							   prolog_msg_ptr->gid,
+							   prolog_msg_ptr->user_name,
+							   &prolog_msg_ptr->gids);
+	}
 	xassert(job_ptr->job_resrcs);
 	job_resrcs_ptr = job_ptr->job_resrcs;
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));

@@ -471,20 +471,18 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		      slurm_addr_t *cli, slurm_addr_t *self,
 		      hostset_t step_hset, uint16_t protocol_version)
 {
-	int len = 0;
+	int len = 0, ngids, i;
 	Buf buffer = NULL;
 	slurm_msg_t msg;
 	uid_t uid = (uid_t)-1;
-	gid_t gid = (uid_t)-1;
-	gids_t *gids = NULL;
+	gid_t gid = (gid_t)-1;
+	gid_t *gids;
+	uint32_t jobid = 0;
 
 	int rank, proto;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
-	char *user_name = NULL;
 	slurm_addr_t parent_addr = {0};
-	char pwd_buffer[PW_BUF_SIZE];
-	struct passwd pwd, *pwd_result;
 
 	slurm_msg_t_init(&msg);
 	/* send type over to slurmstepd */
@@ -608,9 +606,9 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	/* send req over to slurmstepd */
 	switch (type) {
 	case LAUNCH_BATCH_JOB:
+		jobid = ((batch_job_launch_msg_t *)req)->job_id;
 		gid = (uid_t)((batch_job_launch_msg_t *)req)->gid;
 		uid = (uid_t)((batch_job_launch_msg_t *)req)->uid;
-		user_name = ((batch_job_launch_msg_t *)req)->user_name;
 		msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
 	case LAUNCH_TASKS:
@@ -619,9 +617,9 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		 * auth credential in _rpc_launch_tasks().  req->gid
 		 * has NOT yet been checked!
 		 */
+		jobid = ((launch_tasks_request_msg_t *)req)->job_id;
 		gid = (uid_t)((launch_tasks_request_msg_t *)req)->gid;
 		uid = (uid_t)((launch_tasks_request_msg_t *)req)->uid;
-		user_name = ((launch_tasks_request_msg_t *)req)->user_name;
 		msg.msg_type = REQUEST_LAUNCH_TASKS;
 		break;
 	default:
@@ -647,57 +645,14 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	free_buf(buffer);
 	buffer = NULL;
 
-#ifdef HAVE_NATIVE_CRAY
-	/* Try to avoid calling this on a system which is a native
-	 * cray.  getpwuid_r is slow on the compute nodes and this has
-	 * in theory been verified earlier.
-	 */
-	if (!user_name) {
-#endif
-		/* send cached group ids array for the relevant uid */
-		debug3("_send_slurmstepd_init: call to getpwuid_r");
-		if (slurm_getpwuid_r(uid, &pwd, pwd_buffer, PW_BUF_SIZE,
-				     &pwd_result) || (pwd_result == NULL)) {
-			error("%s: getpwuid_r: %m", __func__);
-			len = 0;
-			safe_write(fd, &len, sizeof(int));
-			errno = ESLURMD_UID_NOT_FOUND;
-			return errno;
-		}
-		debug3("%s: return from getpwuid_r", __func__);
-		if (gid != pwd_result->pw_gid) {
-			debug("%s: Changing gid from %d to %d",
-			      __func__, gid, pwd_result->pw_gid);
-		}
-		gid = pwd_result->pw_gid;
-		if (!user_name)
-			user_name = pwd_result->pw_name;
-#ifdef HAVE_NATIVE_CRAY
+	ngids = group_cache_lookup_job(jobid, uid, gid, &gids);
+	safe_write(fd, &ngids, sizeof(int));
+	for (i = 0; i < ngids; i++) {
+		/* we assume sizeof(gid_t) == sizeof(uint32_t) */
+		safe_write(fd, &gids[i], sizeof(uint32_t));
 	}
-#endif
-	if (!user_name) {
-		/* Sanity check since gids_cache_lookup will fail
-		 * with a NULL. */
-		error("%s: No user name for %d: %m", __func__, uid);
-		len = 0;
-		safe_write(fd, &len, sizeof(int));
-		errno = ESLURMD_UID_NOT_FOUND;
-		return errno;
-	}
+	xfree(gids);
 
-	if ((gids = gids_cache_lookup(user_name, gid))) {
-		int i;
-		uint32_t tmp32;
-		safe_write(fd, &gids->ngids, sizeof(int));
-		for (i = 0; i < gids->ngids; i++) {
-			tmp32 = (uint32_t)gids->gids[i];
-			safe_write(fd, &tmp32, sizeof(uint32_t));
-		}
-		free_gids(gids);
-	} else {
-		len = 0;
-		safe_write(fd, &len, sizeof(int));
-	}
 	return 0;
 
 rwfail:
@@ -2086,6 +2041,11 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);
+
+		if (req->ngids && req->gids)
+			group_cache_push(req->job_id, req->uid, req->gid,
+					 req->user_name,
+					 req->ngids, &req->gids);
 
 		memset(&job_env, 0, sizeof(job_env_t));
 
@@ -6005,6 +5965,8 @@ _run_epilog(job_env_t *job_env)
 
 	xfree(my_epilog);
 	_destroy_env(my_env);
+
+	group_cache_remove_jobid(job_env->jobid);
 
 	diff_time = difftime(time(NULL), start_time);
 	if (diff_time >= (msg_timeout / 2)) {
