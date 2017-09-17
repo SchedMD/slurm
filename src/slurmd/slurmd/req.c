@@ -1518,26 +1518,25 @@ done:
 /*
  * Open file based upon permissions of a different user
  * IN path_name - name of file to open
+ * IN flags - flags to open() call
+ * IN mode - mode to open() call
+ * IN jobid - (optional) job id
+ * IN username - needed for group_cache_lookup call
  * IN uid - User ID to use for file access check
  * IN gid - Group ID to use for file access check
  * RET -1 on error, file descriptor otherwise
  */
-static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
+static int _open_as_other(char *path_name, int flags, int mode,
+			  uint32_t jobid, uid_t uid, gid_t gid)
 {
 	pid_t child;
-	gids_t *gids;
+	int ngids;
+	gid_t *gids;
 	int pipe[2];
 	int fd = -1, rc = 0;
 
-	if (!(gids = gids_cache_lookup(req->user_name, req->gid))) {
-		error("%s: gids_cache_lookup for %s failed",
-		      __func__, req->user_name);
-		return -1;
-	}
-
-	if ((rc = container_g_create(req->job_id))) {
-		error("%s: container_g_create(%u): %m", __func__, req->job_id);
-		free_gids(gids);
+	if ((rc = container_g_create(jobid))) {
+		error("%s: container_g_create(%u): %m", __func__, jobid);
 		return -1;
 	}
 
@@ -1545,21 +1544,22 @@ static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
 	 * with the container, and open the file for us. */
 	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
 		error("%s: Failed to open pipe: %m", __func__);
-		free_gids(gids);
 		return -1;
 	}
+
+	ngids = group_cache_lookup_job(jobid, uid, gid, &gids);
 
 	child = fork();
 	if (child == -1) {
 		error("%s: fork failure", __func__);
-		free_gids(gids);
+		xfree(gids);
 		close(pipe[0]);
 		close(pipe[1]);
 		return -1;
 	} else if (child > 0) {
 		close(pipe[0]);
 		(void) waitpid(child, &rc, 0);
-		free_gids(gids);
+		xfree(gids);
 		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0))
 			fd = _receive_fd(pipe[1]);
 		close(pipe[1]);
@@ -1575,8 +1575,8 @@ static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
 	 * condition where if this process makes a file or
 	 * detacts itself from a child before we add the pid
 	 * to the container in the parent of the fork. */
-	if (container_g_add_pid(req->job_id, getpid(), req->uid)) {
-		error("%s container_g_add_pid(%u): %m", __func__, req->job_id);
+	if (container_g_add_pid(jobid, getpid(), uid)) {
+		error("%s container_g_add_pid(%u): %m", __func__, jobid);
 		exit(SLURM_ERROR);
 	}
 
@@ -1594,52 +1594,53 @@ static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
 	 * Change the code below with caution.
 	\*********************************************************************/
 
-	if (setgroups(gids->ngids, gids->gids) < 0) {
-		error("%s: uid: %u setgroups failed: %m", __func__, req->uid);
+	if (setgroups(ngids, gids) < 0) {
+		error("%s: uid: %u setgroups failed: %m", __func__, uid);
 		exit(errno);
 	}
-	free_gids(gids);
+	xfree(gids);
 
-	if (setgid(req->gid) < 0) {
-		error("%s: uid:%u setgid(%u): %m", __func__, req->uid,req->gid);
+	if (setgid(gid) < 0) {
+		error("%s: uid:%u setgid(%u): %m", __func__, uid, gid);
 		exit(errno);
 	}
-	if (setuid(req->uid) < 0) {
-		error("%s: getuid(%u): %m", __func__, req->uid);
+	if (setuid(uid) < 0) {
+		error("%s: getuid(%u): %m", __func__, uid);
 		exit(errno);
 	}
 
-	fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644);
+	fd = open(path_name, flags, mode);
 	if (fd == -1) {
-		error("%s: uid:%u can't open `%s`: %m",
-		      __func__, req->uid, path_name);
-		exit(errno);
+		 error("%s: uid:%u can't open `%s`: %m",
+			__func__, uid, path_name);
+		 exit(errno);
 	}
 	_send_back_fd(pipe[0], fd);
 	close(fd);
 	exit(SLURM_SUCCESS);
 }
 
+
 static void
 _prolog_error(batch_job_launch_msg_t *req, int rc)
 {
 	char *err_name = NULL, *path_name = NULL;
 	int fd;
+	int flags = (O_CREAT|O_APPEND|O_WRONLY);
 
 	path_name = fname_create2(req);
-	if ((fd = _open_as_other(path_name, req)) == -1) {
+	if ((fd = _open_as_other(path_name, flags, 0644,
+				 req->job_id, req->uid, req->gid)) == -1) {
 		error("Unable to open %s: Permission denied", path_name);
 		xfree(path_name);
 		return;
 	}
 	xfree(path_name);
+
 	xstrfmtcat(err_name, "Error running slurm prolog: %d\n",
 		   WEXITSTATUS(rc));
 	safe_write(fd, err_name, strlen(err_name));
-	if (fchown(fd, (uid_t) req->uid, (gid_t) req->gid) == -1) {
-		error("%s: Couldn't change fd owner to %u:%u: %m",
-		      __func__, req->uid, req->gid);
-	}
+
 rwfail:
 	xfree(err_name);
 	close(fd);
@@ -4028,111 +4029,8 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 				     file_bcast_info_t *key)
 {
 	file_bcast_msg_t *req = msg->data;
-	int fd, flags, rc;
-	int pipe[2];
-	gids_t *gids;
-	pid_t child;
+	int fd, flags;
 	file_bcast_info_t *file_info;
-
-	if (!(gids = gids_cache_lookup(req->user_name, key->gid))) {
-		error("sbcast: gids_cache_lookup for %s failed", req->user_name);
-		return SLURM_ERROR;
-	}
-
-	if ((rc = container_g_create(key->job_id))) {
-		error("sbcast: container_g_create(%u): %m", key->job_id);
-		free_gids(gids);
-		return rc;
-	}
-
-	/* child process will setuid to the user, register the process
-	 * with the container, and open the file for us. */
-
-	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
-		error("%s: Failed to open pipe: %m", __func__);
-		free_gids(gids);
-		return SLURM_ERROR;
-	}
-
-	child = fork();
-	if (child == -1) {
-		error("sbcast: fork failure");
-		free_gids(gids);
-		close(pipe[0]);
-		close(pipe[1]);
-		return errno;
-	} else if (child > 0) {
-		/* get fd back from pipe */
-		close(pipe[0]);
-		waitpid(child, &rc, 0);
-		free_gids(gids);
-		if (rc) {
-			close(pipe[1]);
-			return WEXITSTATUS(rc);
-		}
-
-		fd = _receive_fd(pipe[1]);
-		close(pipe[1]);
-
-		file_info = xmalloc(sizeof(file_bcast_info_t));
-		file_info->fd = fd;
-		file_info->fname = xstrdup(req->fname);
-		file_info->uid = key->uid;
-		file_info->gid = key->gid;
-		file_info->job_id = key->job_id;
-		file_info->start_time = time(NULL);
-
-		//TODO: mmap the file here
-		_fb_wrlock();
-		list_append(file_bcast_list, file_info);
-		_fb_wrunlock();
-
-		return SLURM_SUCCESS;
-	}
-
-	/* child process below here */
-
-	close(pipe[1]);
-
-	/* container_g_add_pid needs to be called in the
-	   forked process part of the fork to avoid a race
-	   condition where if this process makes a file or
-	   detacts itself from a child before we add the pid
-	   to the container in the parent of the fork.
-	*/
-	if (container_g_add_pid(key->job_id, getpid(), key->uid)) {
-		error("container_g_add_pid(%u): %m", key->job_id);
-		exit(SLURM_ERROR);
-	}
-
-	/* The child actually performs the I/O and exits with
-	 * a return code, do not return! */
-
-	/*********************************************************************\
-	 * NOTE: It would be best to do an exec() immediately after the fork()
-	 * in order to help prevent a possible deadlock in the child process
-	 * due to locks being set at the time of the fork and being freed by
-	 * the parent process, but not freed by the child process. Performing
-	 * the work inline is done for simplicity. Note that the logging
-	 * performed by error() should be safe due to the use of
-	 * atfork_install_handlers() as defined in src/common/log.c.
-	 * Change the code below with caution.
-	\*********************************************************************/
-
-	if (setgroups(gids->ngids, gids->gids) < 0) {
-		error("sbcast: uid: %u setgroups failed: %m", key->uid);
-		exit(errno);
-	}
-	free_gids(gids);
-
-	if (setgid(key->gid) < 0) {
-		error("sbcast: uid:%u setgid(%u): %m", key->uid, key->gid);
-		exit(errno);
-	}
-	if (setuid(key->uid) < 0) {
-		error("sbcast: getuid(%u): %m", key->uid);
-		exit(errno);
-	}
 
 	flags = O_WRONLY | O_CREAT;
 	if (req->force)
@@ -4140,15 +4038,26 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	else
 		flags |= O_EXCL;
 
-	fd = open(key->fname, flags, 0700);
-	if (fd == -1) {
-		error("sbcast: uid:%u can't open `%s`: %m",
-		      key->uid, key->fname);
-		exit(errno);
+	if ((fd = _open_as_other(req->fname, flags, 0700,
+				 key->job_id, key->uid, key->gid)) == -1) {
+		error("Unable to open %s: Permission denied", req->fname);
+		return SLURM_ERROR;
 	}
-	_send_back_fd(pipe[0], fd);
-	close(fd);
-	exit(SLURM_SUCCESS);
+
+	file_info = xmalloc(sizeof(file_bcast_info_t));
+	file_info->fd = fd;
+	file_info->fname = xstrdup(req->fname);
+	file_info->uid = key->uid;
+	file_info->gid = key->gid;
+	file_info->job_id = key->job_id;
+	file_info->start_time = time(NULL);
+
+	//TODO: mmap the file here
+	_fb_wrlock();
+	list_append(file_bcast_list, file_info);
+	_fb_wrunlock();
+
+	return SLURM_SUCCESS;
 }
 
 static void
