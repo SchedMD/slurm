@@ -69,6 +69,7 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
+#include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -115,11 +116,6 @@
 
 #define MAX_CPU_CNT 1024
 #define MAX_NUMA_CNT 128
-
-typedef struct {
-	int ngids;
-	gid_t *gids;
-} gids_t;
 
 typedef struct {
 	uint32_t job_id;
@@ -209,8 +205,6 @@ static int  _run_epilog(job_env_t *job_env);
 static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred);
 static void _rpc_forward_data(slurm_msg_t *msg);
 static int  _rpc_network_callerid(slurm_msg_t *msg);
-static void _dealloc_gids(gids_t *p);
-
 
 static bool _pause_for_job_completion(uint32_t jobid, char *nodes,
 				      int maxtime);
@@ -225,8 +219,6 @@ static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
 			       uint16_t block_no, uint32_t *job_id);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
 static uid_t _get_job_uid(uint32_t jobid);
-
-static gids_t *_gids_cache_lookup(char *user, gid_t gid);
 
 static int  _add_starting_step(uint16_t type, void *req);
 static int  _remove_starting_step(uint16_t type, void *req);
@@ -693,7 +685,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		return errno;
 	}
 
-	if ((gids = _gids_cache_lookup(user_name, gid))) {
+	if ((gids = gids_cache_lookup(user_name, gid))) {
 		int i;
 		uint32_t tmp32;
 		safe_write(fd, &gids->ngids, sizeof(int));
@@ -701,7 +693,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 			tmp32 = (uint32_t)gids->gids[i];
 			safe_write(fd, &tmp32, sizeof(uint32_t));
 		}
-		_dealloc_gids(gids);
+		free_gids(gids);
 	} else {
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
@@ -1582,7 +1574,7 @@ static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
 	int pipe[2];
 	int fd = -1, rc = 0;
 
-	if (!(gids = _gids_cache_lookup(req->user_name, req->gid))) {
+	if (!(gids = gids_cache_lookup(req->user_name, req->gid))) {
 		error("%s: gids_cache_lookup for %s failed",
 		      __func__, req->user_name);
 		return -1;
@@ -1590,7 +1582,7 @@ static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
 
 	if ((rc = container_g_create(req->job_id))) {
 		error("%s: container_g_create(%u): %m", __func__, req->job_id);
-		_dealloc_gids(gids);
+		free_gids(gids);
 		return -1;
 	}
 
@@ -1598,21 +1590,21 @@ static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
 	 * with the container, and open the file for us. */
 	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
 		error("%s: Failed to open pipe: %m", __func__);
-		_dealloc_gids(gids);
+		free_gids(gids);
 		return -1;
 	}
 
 	child = fork();
 	if (child == -1) {
 		error("%s: fork failure", __func__);
-		_dealloc_gids(gids);
+		free_gids(gids);
 		close(pipe[0]);
 		close(pipe[1]);
 		return -1;
 	} else if (child > 0) {
 		close(pipe[0]);
 		(void) waitpid(child, &rc, 0);
-		_dealloc_gids(gids);
+		free_gids(gids);
 		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0))
 			fd = _receive_fd(pipe[1]);
 		close(pipe[1]);
@@ -1651,7 +1643,7 @@ static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
 		error("%s: uid: %u setgroups failed: %m", __func__, req->uid);
 		exit(errno);
 	}
-	_dealloc_gids(gids);
+	free_gids(gids);
 
 	if (setgid(req->gid) < 0) {
 		error("%s: uid:%u setgid(%u): %m", __func__, req->uid,req->gid);
@@ -4082,14 +4074,14 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	pid_t child;
 	file_bcast_info_t *file_info;
 
-	if (!(gids = _gids_cache_lookup(req->user_name, key->gid))) {
+	if (!(gids = gids_cache_lookup(req->user_name, key->gid))) {
 		error("sbcast: gids_cache_lookup for %s failed", req->user_name);
 		return SLURM_ERROR;
 	}
 
 	if ((rc = container_g_create(key->job_id))) {
 		error("sbcast: container_g_create(%u): %m", key->job_id);
-		_dealloc_gids(gids);
+		free_gids(gids);
 		return rc;
 	}
 
@@ -4098,14 +4090,14 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 
 	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
 		error("%s: Failed to open pipe: %m", __func__);
-		_dealloc_gids(gids);
+		free_gids(gids);
 		return SLURM_ERROR;
 	}
 
 	child = fork();
 	if (child == -1) {
 		error("sbcast: fork failure");
-		_dealloc_gids(gids);
+		free_gids(gids);
 		close(pipe[0]);
 		close(pipe[1]);
 		return errno;
@@ -4113,7 +4105,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		/* get fd back from pipe */
 		close(pipe[0]);
 		waitpid(child, &rc, 0);
-		_dealloc_gids(gids);
+		free_gids(gids);
 		if (rc) {
 			close(pipe[1]);
 			return WEXITSTATUS(rc);
@@ -4171,7 +4163,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		error("sbcast: uid: %u setgroups failed: %m", key->uid);
 		exit(errno);
 	}
-	_dealloc_gids(gids);
+	free_gids(gids);
 
 	if (setgid(key->gid) < 0) {
 		error("sbcast: uid:%u setgid(%u): %m", key->uid, key->gid);
@@ -6025,184 +6017,6 @@ _run_epilog(job_env_t *job_env)
 
 	return error_code;
 }
-
-
-/**********************************************************************/
-/* Because calling initgroups(2)/getgrouplist(3) can be expensive and */
-/* is not cached by sssd or nscd, we cache the group access list.     */
-/**********************************************************************/
-
-typedef struct gid_cache_s {
-	char *user;
-	time_t timestamp;
-	gid_t gid;
-	gids_t *gids;
-	struct gid_cache_s *next;
-} gids_cache_t;
-
-#define GIDS_HASH_LEN 64
-static gids_cache_t *gids_hashtbl[GIDS_HASH_LEN] = {NULL};
-static pthread_mutex_t gids_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static gids_t *
-_alloc_gids(int n, gid_t *gids)
-{
-	gids_t *new;
-
-	new = (gids_t *)xmalloc(sizeof(gids_t));
-	new->ngids = n;
-	new->gids = gids;
-	return new;
-}
-
-static void
-_dealloc_gids(gids_t *p)
-{
-	xfree(p->gids);
-	xfree(p);
-}
-
-/* Duplicate a gids_t struct.  */
-static gids_t *
-_gids_dup(gids_t *g)
-{
-	int buf_size;
-	gids_t *n = xmalloc(sizeof(gids_t));
-	n->ngids = g->ngids;
-	buf_size = g->ngids * sizeof(gid_t);
-	n->gids = xmalloc(buf_size);
-	memcpy(n->gids, g->gids, buf_size);
-	return n;
-}
-
-static gids_cache_t *
-_alloc_gids_cache(char *user, gid_t gid, gids_t *gids, gids_cache_t *next)
-{
-	gids_cache_t *p;
-
-	p = (gids_cache_t *)xmalloc(sizeof(gids_cache_t));
-	p->user = xstrdup(user);
-	p->timestamp = time(NULL);
-	p->gid = gid;
-	p->gids = gids;
-	p->next = next;
-	return p;
-}
-
-static void
-_dealloc_gids_cache(gids_cache_t *p)
-{
-	xfree(p->user);
-	_dealloc_gids(p->gids);
-	xfree(p);
-}
-
-static size_t
-_gids_hashtbl_idx(const char *user)
-{
-	uint64_t x = 0;
-	int i = 0;
-	/* copied from _get_hash_idx in slurmctld */
-	/* step through string, multiply value times position
-	 * to get a bit of entropy back */
-	while (*user) {
-		x += i++ * (int) *user++;
-	}
-
-	return x % GIDS_HASH_LEN;
-}
-
-void
-gids_cache_purge(void)
-{
-	int i;
-	gids_cache_t *p, *q;
-
-	slurm_mutex_lock(&gids_mutex);
-	for (i=0; i<GIDS_HASH_LEN; i++) {
-		p = gids_hashtbl[i];
-		while (p) {
-			q = p->next;
-			_dealloc_gids_cache(p);
-			p = q;
-		}
-		gids_hashtbl[i] = NULL;
-	}
-	slurm_mutex_unlock(&gids_mutex);
-}
-
-static void
-_gids_cache_register(char *user, gid_t gid, gids_t *gids)
-{
-	size_t idx;
-	gids_cache_t *p, *q;
-
-	idx = _gids_hashtbl_idx(user);
-	q = gids_hashtbl[idx];
-	p = _alloc_gids_cache(user, gid, gids, q);
-	gids_hashtbl[idx] = p;
-	debug2("Cached group access list for %s/%d", user, gid);
-}
-
-/* how many groups to use by default to avoid repeated calls to getgrouplist */
-#define NGROUPS_START 64
-
-static gids_t *_gids_cache_lookup(char *user, gid_t gid)
-{
-	size_t idx;
-	gids_cache_t *p;
-	bool found_but_old = false;
-	time_t now = 0;
-	int ngroups = NGROUPS_START;
-	gid_t *groups;
-	gids_t *ret_gids = NULL;
-
-	idx = _gids_hashtbl_idx(user);
-	slurm_mutex_lock(&gids_mutex);
-	p = gids_hashtbl[idx];
-	while (p) {
-		if (xstrcmp(p->user, user) == 0 && p->gid == gid) {
-			slurm_ctl_conf_t *cf = slurm_conf_lock();
-			int group_ttl = cf->group_time;
-			slurm_conf_unlock();
-			if (!group_ttl) {
-				ret_gids = _gids_dup(p->gids);
-				goto done;
-			}
-			now = time(NULL);
-			if (difftime(now, p->timestamp) < group_ttl) {
-				ret_gids = _gids_dup(p->gids);
-				goto done;
-			} else {
-				found_but_old = true;
-				break;
-			}
-		}
-		p = p->next;
-	}
-	/* Cache lookup failed or cached value was too old, fetch new
-	 * value and insert it into cache.  */
-	groups = xmalloc(ngroups * sizeof(gid_t));
-	while (getgrouplist(user, gid, groups, &ngroups) == -1) {
-		/* group list larger than array, resize array to fit */
-		groups = xrealloc(groups, ngroups * sizeof(gid_t));
-	}
-	if (found_but_old) {
-		xfree(p->gids->gids);
-		p->gids->gids = groups;
-		p->gids->ngids = ngroups;
-		p->timestamp = now;
-		ret_gids = _gids_dup(p->gids);
-	} else {
-		gids_t *gids = _alloc_gids(ngroups, groups);
-		_gids_cache_register(user, gid, gids);
-		ret_gids = _gids_dup(gids);
-	}
-done:
-	slurm_mutex_unlock(&gids_mutex);
-	return ret_gids;
-}
-
 
 extern void
 destroy_starting_step(void *x)

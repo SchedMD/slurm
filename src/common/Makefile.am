@@ -122,6 +122,7 @@ libcommon_la_SOURCES = 			\
 	xcgroup_read_config.c xcgroup_read_config.h \
 	xlua.c xlua.h                   \
 	callerid.c callerid.h		\
+	group_cache.c group_cache.h	\
 	slurm_persist_conn.c slurm_persist_conn.h \
 	state_control.c state_control.h
 

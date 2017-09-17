@@ -68,6 +68,7 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
+#include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -386,7 +387,7 @@ main (int argc, char **argv)
 	_slurmd_fini();
 	_destroy_conf();
 	slurm_crypto_fini();	/* must be after _destroy_conf() */
-	gids_cache_purge();
+	group_cache_purge();
 	file_bcast_purge();
 
 	info("Slurmd shutdown completing");
@@ -1035,7 +1036,7 @@ _reconfigure(void)
 	/*
 	 * Purge the username -> grouplist cache.
 	 */
-	gids_cache_purge();
+	group_cache_purge();
 
 	/* send reconfig to each stepd so they can refresh their log
 	 * file handle
