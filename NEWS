@@ -73,6 +73,10 @@ documents those changes that are of interest to users and administrators.
     macro.
  -- Removed obsolete MPI plugins. Remaining options are openmpi, pmi2, pmix.
  -- Removed obsolete checkpoint/poe plugin.
+ -- Add new SendGIDs option to PrologFlags field. When set, the extended gids
+    for a user will be looked up within slurmctld and pushed out to the slurmd,
+    avoiding a storm of simultaneous getgrouplist() calls on job launch that
+   can overwhelm the name services and lead to inconsistent results.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
