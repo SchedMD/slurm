@@ -347,28 +347,3 @@ extern void group_cache_remove_jobid(uint32_t jobid)
 
 	list_delete_all(gids_cache_list, _remove_jobid, &jobid);
 }
-
-/* temporary backwards compatibility below */
-
-extern void free_gids(gids_t *p)
-{
-	xfree(p->gids);
-	xfree(p);
-}
-
-extern gids_t *gids_cache_lookup(char *username, gid_t gid)
-{
-	gids_t *gids;
-	gids_cache_needle_t needle = {0};
-
-	if (uid_from_string(username, &needle.uid) < 0)
-		return NULL;
-
-	needle.username = username;
-	needle.gid = gid;
-
-	gids = xmalloc(sizeof(gids_t));
-	gids->ngids = _group_cache_lookup_internal(&needle, &gids->gids);
-
-	return gids;
-}

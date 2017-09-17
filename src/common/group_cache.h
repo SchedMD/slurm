@@ -82,16 +82,4 @@ void group_cache_purge(void);
 /* call periodically to remove stale records */
 void group_cache_cleanup(void);
 
-/* backwards compatibility */
-
-typedef struct {
-	int ngids;
-	gid_t *gids;
-} gids_t;
-
-gids_t *gids_cache_lookup(char *username, gid_t gid);
-
-void free_gids(gids_t *p);
-
-
 #endif
