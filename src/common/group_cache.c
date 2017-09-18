@@ -322,8 +322,11 @@ static int _cleanup_search(void *x, void *key)
 extern void group_cache_cleanup(void)
 {
 	time_t now = time(NULL);
+
+	slurm_mutex_lock(&gids_mutex);
 	if (gids_cache_list)
 		list_delete_all(gids_cache_list, _cleanup_search, &now);
+	slurm_mutex_unlock(&gids_mutex);
 }
 
 static int _remove_jobid(void *x, void *key)
@@ -345,5 +348,8 @@ extern void group_cache_remove_jobid(uint32_t jobid)
 	if (!(slurmctld_conf.prolog_flags | PROLOG_FLAG_SEND_GIDS))
 		return;
 
-	list_delete_all(gids_cache_list, _remove_jobid, &jobid);
+	slurm_mutex_lock(&gids_mutex);
+	if (gids_cache_list)
+		list_delete_all(gids_cache_list, _remove_jobid, &jobid);
+	slurm_mutex_unlock(&gids_mutex);
 }
