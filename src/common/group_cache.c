@@ -345,7 +345,7 @@ static int _remove_jobid(void *x, void *key)
  */
 extern void group_cache_remove_jobid(uint32_t jobid)
 {
-	if (!(slurmctld_conf.prolog_flags | PROLOG_FLAG_SEND_GIDS))
+	if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS))
 		return;
 
 	slurm_mutex_lock(&gids_mutex);
