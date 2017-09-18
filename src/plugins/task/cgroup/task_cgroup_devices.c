@@ -471,6 +471,14 @@ error:
 	xfree(gres_count);
 	xfree(gres_name);
 	xfree(dev_path);
+	for (k = 0; k < allow_lines; k++) {
+		xfree(allowed_dev_major[k]);
+	}
+	xfree(allowed_dev_major);
+
+	for (k = 0; k < gres_conf_lines; k++) {
+		xfree(gres_cgroup[k]);
+	}
 	xfree(gres_cgroup);
 
 	return fstatus;
@@ -546,6 +554,7 @@ static int read_allowed_devices_file(char **allowed_devices)
 						xstrdup(globbuf.gl_pathv[l]);
 					num_lines++;
 				}
+				globfree(&globbuf);
 			}
 		}
 		fclose ( file );

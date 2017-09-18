@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
     from hanging.
  -- Handle old 32bit values stored in the database for requested memory
     correctly in sacct.
+ -- Fix memory leaks in the task/cgroup plugin when constraining devices.
 
 * Changes in Slurm 17.02.7
 ==========================
