@@ -184,7 +184,8 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
 	node_conf.lo gres.lo entity.lo layout.lo layouts_mgr.lo \
 	mapping.lo xcgroup_read_config.lo xlua.lo callerid.lo \
-	group_cache.lo slurm_persist_conn.lo state_control.lo
+	group_cache.lo slurm_persist_conn.lo run_command.lo \
+	state_control.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -651,6 +652,7 @@ libcommon_la_SOURCES = \
 	callerid.c callerid.h		\
 	group_cache.c group_cache.h	\
 	slurm_persist_conn.c slurm_persist_conn.h \
+	run_command.c run_command.h	\
 	state_control.c state_control.h
 
 EXTRA_libcommon_la_SOURCES = \
@@ -798,6 +800,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print_fields.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_command.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/safeopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_accounting_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather.Plo@am__quote@

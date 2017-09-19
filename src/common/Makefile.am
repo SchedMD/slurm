@@ -124,6 +124,7 @@ libcommon_la_SOURCES = 			\
 	callerid.c callerid.h		\
 	group_cache.c group_cache.h	\
 	slurm_persist_conn.c slurm_persist_conn.h \
+	run_command.c run_command.h	\
 	state_control.c state_control.h
 
 
