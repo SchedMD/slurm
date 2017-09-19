@@ -249,7 +249,7 @@ string representation.
 SPANK plugins also have an interface through which they may define
 and implement extra job options. These options are made available to
 the user through Slurm commands such as \fBsrun\fR(1), \fBsalloc\fR(1),
-and \fBsbatch\fR(1). if the option is specified by the user, its value is
+and \fBsbatch\fR(1). If the option is specified by the user, its value is
 forwarded and registered with the plugin in slurmd when the job is run.
 In this way, \fBSPANK\fR plugins may dynamically provide new options and
 functionality to Slurm.
@@ -339,12 +339,15 @@ the use of \fBspank_option_register\fR is preferred. When using the
 filled with zeros. A \fBSPANK_OPTIONS_TABLE_END\fR macro is provided
 in \fB<slurm/spank.h>\fR for this purpose.
 .LP
-When an option is provided by the user on the local side, \fBSlurm\fR will
-immediately invoke the option's callback with \fIremote\fR=0. This
-is meant for the plugin to do local sanity checking of the option before
-the value is sent to the remote side during job launch. If the argument
-the user specified is invalid, the plugin should issue an error and
-issue a non\-zero return code from the callback.
+When an option is provided by the user on the local side, either by command line
+options or by environment variables, \fBSlurm\fR will immediately invoke the
+option's callback with \fIremote\fR=0. This is meant for the plugin to do local
+sanity checking of the option before the value is sent to the remote side during
+job launch. If the argument the user specified is invalid, the plugin should
+issue an error and issue a non\-zero return code from the callback. The plugin
+should be able to handle cases where the spank option is set multiple times
+through environment variables and command line options. Environment variables
+are processed before command line options.
 .LP
 On the remote side, options and their arguments are registered just
 after \fBSPANK\fR plugins are loaded and before the \fBspank_init\fR

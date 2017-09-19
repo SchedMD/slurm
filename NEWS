@@ -77,6 +77,9 @@ documents those changes that are of interest to users and administrators.
     for a user will be looked up within slurmctld and pushed out to the slurmd,
     avoiding a storm of simultaneous getgrouplist() calls on job launch that
    can overwhelm the name services and lead to inconsistent results.
+ -- Process spank environment variable options before processing spank command
+    line options. Spank plugins should be able to handle option callbacks being
+    called multiple times.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

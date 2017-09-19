@@ -69,6 +69,11 @@ NOTE: Starting in 17.11 the slurm commands and daemons dynamically link to
       the footprint of Slurm.  If for some reason this creates issues with
       your build you can configure slurm with --without-shared-libslurm.
 
+NOTE: Spank options handled in local and allocator contexts should be able to
+      handle being called multiple times. An option could be set multiple times
+      through environment variables and command line options. Environment
+      variables are processed first.
+
 HIGHLIGHTS
 ==========
  -- Added new advanced reservation flag of "flex", which permits jobs requesting

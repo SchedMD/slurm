@@ -540,6 +540,10 @@ static void _opt_env(void)
 			_process_env_var(e, val);
 		e++;
 	}
+
+	/* Process spank env options */
+	if (spank_process_env_options())
+		exit(error_exit);
 }
 
 static void
@@ -2093,11 +2097,8 @@ static void _set_options(int argc, char **argv)
 			opt.job_flags |= USE_MIN_NODES;
 			break;
 		default:
-			if (spank_process_option (opt_char, optarg) < 0) {
-				error("Unrecognized command line parameter %c",
-				      opt_char);
+			if (spank_process_option (opt_char, optarg) < 0)
 				exit(error_exit);
-			}
 		}
 	}
 
