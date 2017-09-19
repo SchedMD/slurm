@@ -439,6 +439,14 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 				    &job->resv_id);
 #endif
 
+	/* only need these values on the extern step, don't copy otherwise */
+	if ((msg->job_step_id == SLURM_EXTERN_CONT) && msg->x11) {
+		job->x11 = msg->x11;
+		job->x11_magic_cookie = xstrdup(msg->x11_magic_cookie);
+		job->x11_target_host = xstrdup(msg->x11_target_host);
+		job->x11_target_port = msg->x11_target_port;
+	}
+
 	get_cred_gres(msg->cred, conf->node_name,
 		      &job->job_gres_list, &job->step_gres_list);
 

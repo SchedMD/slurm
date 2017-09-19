@@ -8725,6 +8725,10 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack32(job_desc_ptr->bitflags, buffer);
 		pack32(job_desc_ptr->delay_boot, buffer);
+		pack16(job_desc_ptr->x11, buffer);
+		packstr(job_desc_ptr->x11_magic_cookie, buffer);
+		/* no x11_target_host here, alloc_node is equivalent */
+		pack16(job_desc_ptr->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		char **pelog_env = NULL;
 		packstr(job_desc_ptr->clusters, buffer);
@@ -9242,6 +9246,11 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
+		safe_unpack16(&job_desc_ptr->x11, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->x11_magic_cookie,
+				       &uint32_tmp, buffer);
+		/* no x11_target_host here, alloc_node is equivalent */
+		safe_unpack16(&job_desc_ptr->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp = 0;
 		char **pelog_env = NULL;
@@ -10286,6 +10295,11 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 						     buffer,
 						     protocol_version);
 		}
+
+		pack16(msg->x11, buffer);
+		packstr(msg->x11_magic_cookie, buffer);
+		packstr(msg->x11_target_host, buffer);
+		pack16(msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		char **pelog_env = NULL;
 		pack32(msg->job_id, buffer);
@@ -10611,6 +10625,12 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 						   buffer, protocol_version)) {
 			goto unpack_error;
 		}
+		safe_unpack16(&msg->x11, buffer);
+		safe_unpackstr_xmalloc(&msg->x11_magic_cookie, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->x11_target_host, &uint32_tmp,
+				       buffer);
+		safe_unpack16(&msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		char **pelog_env = NULL;
 		int rc;
@@ -11301,6 +11321,12 @@ _pack_prolog_launch_msg(
 		packstr(msg->std_err, buffer);
 		packstr(msg->std_out, buffer);
 		packstr(msg->work_dir, buffer);
+
+		pack16(msg->x11, buffer);
+		packstr(msg->x11_magic_cookie, buffer);
+		packstr(msg->x11_target_host, buffer);
+		pack16(msg->x11_target_port, buffer);
+
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
 			      buffer);
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
@@ -11371,6 +11397,13 @@ _unpack_prolog_launch_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint32_tmp,
 				       buffer);
+
+		safe_unpack16(&launch_msg_ptr->x11, buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_magic_cookie,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_target_host,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&launch_msg_ptr->x11_target_port, buffer);
 
 		safe_unpackstr_array(&launch_msg_ptr->spank_job_env,
 				     &launch_msg_ptr->spank_job_env_size,

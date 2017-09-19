@@ -843,6 +843,12 @@ typedef struct launch_tasks_request_msg {
 	dynamic_plugin_data_t *select_jobinfo; /* select context, opaque data */
 	char *alias_list;	/* node name/address/hostnamne aliases */
 	char *partition;	/* partition that job is running in */
+
+	/* only filled out if step is SLURM_EXTERN_CONT */
+	uint16_t x11;			/* X11 forwarding setup flags */
+	char *x11_magic_cookie;		/* X11 auth cookie to abuse */
+	char *x11_target_host;		/* X11 login node to connect back to */
+	uint16_t x11_target_port;	/* X11 target port */
 } launch_tasks_request_msg_t;
 
 typedef struct task_user_managed_io_msg {
@@ -968,6 +974,10 @@ typedef struct prolog_launch_msg {
 	uint32_t uid;
 	char *user_name;		/* job's user name */
 	char *work_dir;			/* full pathname of working directory */
+	uint16_t x11;			/* X11 forwarding setup flags */
+	char *x11_magic_cookie;		/* X11 auth cookie to abuse */
+	char *x11_target_host;		/* X11 login node to connect back to */
+	uint16_t x11_target_port;	/* X11 target port */
 } prolog_launch_msg_t;
 
 typedef struct batch_job_launch_msg {

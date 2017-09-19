@@ -1037,6 +1037,11 @@ enum ctx_keys {
 #define JOB_CPUS_SET       0x00008000	/* --cpus-per-tasks explicitly set */
 #define JOB_SALLOC_FLAG    0x00010000	/* For internal salloc/sbatch/srun use */
 
+#define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
+#define X11_FORWARD_BATCH	0x0002  /* only the batch node */
+#define X11_FORWARD_FIRST	0x0004	/* only the first node */
+#define X11_FORWARD_LAST	0x0008	/* only the last node */
+
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/
@@ -1562,6 +1567,10 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				   DON'T PACK */
 	uint32_t wait4switch;   /* Maximum time to wait for minimum switches */
 	char *wckey;            /* wckey for job */
+	uint16_t x11;		/* --x11 flags */
+	char *x11_magic_cookie;	/* automatically stolen from submit node */
+				/* no x11_target_host, alloc_node is the same */
+	uint16_t x11_target_port; /* target tcp port, 6000 + the display number */
 } job_desc_msg_t;
 
 typedef struct job_info {
