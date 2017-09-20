@@ -66,7 +66,7 @@ set component(0) 0
 set matches 0
 set index 0
 set timeout $max_job_delay
-spawn $salloc -t1 --exclusive -N1 : --exclusive -N1 : --exclusive -N1 $bin_bash
+spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
 		set pack_job_id $expect_out(1,string)
@@ -167,8 +167,9 @@ if {$matches != 1} {
 	log_error "sacct failure ($matches != 1)\n"
 	end_it 1
 }
+
 set matches 0
-send "$srun --label --mpi=none -n3 : -n4 : -n1 printenv SLURMD_NODENAME\r"
+send "$srun --label --mpi=none -O -n3 : -O -n4 : -n1 printenv SLURMD_NODENAME\r"
 expect {
 	-re "7: $component(2)" {
 		incr matches
@@ -192,7 +193,7 @@ if {$matches != 1} {
 }
 
 set matches 0
-send "$srun --label --mpi=none -n3 : -n4 : -n1 printenv SLURMD_NODENAME\r"
+send "$srun --label --mpi=none -O -n3 : -O -n4 : -n1 printenv SLURMD_NODENAME\r"
 expect {
 	-re "\[3-6\]: $component(1)" {
 		incr matches
@@ -216,7 +217,7 @@ if {$matches != 4} {
 }
 
 set matches 0
-send "$srun --label --mpi=none -n3 : -n4 : -n1 printenv SLURMD_NODENAME\r"
+send "$srun --label --mpi=none -O -n3 : -O -n4 : -n1 printenv SLURMD_NODENAME\r"
 expect {
 	-re "\[0-2\]: $component(0)" {
 		incr matches
@@ -242,7 +243,7 @@ if {$matches != 3} {
 for {set inx 0} {$inx < 3} {incr inx} {
 	send_user "\n\n"
 	set matches 0
-	send "$srun -n3 --label --mpi=none --pack-group=$inx printenv SLURMD_NODENAME\r"
+	send "$srun -O -n3 --label --mpi=none --pack-group=$inx printenv SLURMD_NODENAME\r"
 	expect {
 		-re "\[0-2\]: $component($inx)" {
 			incr matches

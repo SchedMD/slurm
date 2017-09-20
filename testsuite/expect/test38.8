@@ -75,7 +75,7 @@ set matches 0
 set index 0
 set sid 0
 set timeout $max_job_delay
-spawn $salloc -t1 --exclusive -N1 : --exclusive -N1 : --exclusive -N1 $bin_bash
+spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
 		set pack_job_id $expect_out(1,string)

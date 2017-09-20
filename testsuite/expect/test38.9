@@ -66,7 +66,7 @@ set matches 0
 set index 0
 set component(0) 0
 set timeout $max_job_delay
-set sid [spawn $salloc -t1 --exclusive -N1 : --exclusive -N1 : --exclusive -N1 $bin_bash]
+set sid [spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set pack_job_id $expect_out(1,string)
