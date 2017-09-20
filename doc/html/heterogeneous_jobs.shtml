@@ -54,6 +54,7 @@ A list of propagated options follows.</p>
 <li>--deadline</li>
 <li>--delay-boot</li>
 <li>--dependency</li>
+<li>--distribution</li>
 <li>--epilog            (option available only in srun)</li>
 <li>--error</li>
 <li>--export</li>
@@ -104,6 +105,22 @@ A list of propagated options follows.</p>
 <li>--wckey</li>
 <li>--workdir</li>
 </ul>
+
+<p>The task distribution specification applies separately within each job
+component. Consider for example a heterogeneous job with each component being
+allocated 4 CPUs on 2 nodes. In our example, job component zero is allocated
+2 CPUs on node "nid00001" and 2 CPUs on node "nid00002". Job component zero is
+allocated 2 CPUs on node "nid00003" and 2 CPUs on node "nid00004". A task
+distribution of "cyclic" will distribute the first 4 tasks in a cyclic fashion
+on nodes "nid00001" and "nid00002", then distribute the next 4 tasks in a cyclic
+fashion on nodes "nid00003" and "nid00004" as shown below.</p>
+
+<table width="100%" border=1 cellspacing=4 cellpadding=4>
+<tr><td align=center>Node nid00001</td><td align=center>Node nid00002</td><td align=center>Node nid00003</td><td align=center>Node nid00004</td></tr>
+<tr><td align=center nowrap>Rank 0</td><td align=center>Rank 1</td><td align=center>Rank 4</td><td align=center>Rank 5</td></tr>
+<tr><td align=center nowrap>Rank 2</td><td align=center>Rank 3</td><td align=center>Rank 6</td><td align=center>Rank 7</td></tr>
+</table>
+<br>
 
 <p>Some options should be specified only in the first job component.
 For example, specifyihg a batch job output file in the second job component's
@@ -409,6 +426,18 @@ step allocations taking place, while others are delayed.
 Only after all job step allocations have been granted will the application
 being launched.</p>
 
+<p>All components of a job step will have the same step ID value.
+If job steps are launched on subsets of the job components there may be gaps in
+the step ID values for individual job components.</p>
+<pre>
+$ salloc -n1 : -n2 beta bash
+salloc: Pending job allocation 1721
+salloc: Granted job allocation 1721
+$ srun --pack-group=0,1 true   # Launches steps 1721.0 and 1722.0
+$ srun --pack-group=0 t  rue   # Launches step  1721.1, no 1722.1
+$ srun --pack-group=0,1 true   # Launches steps 1721.2 and 1722.2
+</pre>
+
 <p>The maximum pack group specified in a job step allocation (either explicitly
 specified or implied by the ":" separator) must not exceed the number of pack
 groups in the job allocation. For example</p>
@@ -625,6 +654,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 September 2017</p>
+<p style="text-align:center;">Last modified 20 September 2017</p>
 
 <!--#include virtual="footer.txt"-->
