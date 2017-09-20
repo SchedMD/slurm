@@ -149,6 +149,9 @@ dnl Checks for types.
 dnl
 X_AC_SLURM_BIGENDIAN
 
+dnl check for presumed size of uid_t and gid_t
+X_AC_UID_GID_SIZE_CHECK
+
 dnl Check for JSON parser
 X_AC_JSON
 

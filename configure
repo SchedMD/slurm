@@ -19707,6 +19707,44 @@ $as_echo "#define SLURM_BIGENDIAN 1" >>confdefs.h
 
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for uid_t and gid_t data sizes)" >&5
+$as_echo_n "checking for uid_t and gid_t data sizes)... " >&6; }
+  if test "$cross_compiling" = yes; then :
+  uid_t_size_ok=yes
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+	#include <inttypes.h>
+	#include <sys/types.h>
+	int main(int argc, char **argv)
+	{
+		if (sizeof(uid_t) != sizeof(uint32_t) ||
+		    sizeof(gid_t) != sizeof(uint32_t))
+			return -1;
+		return 0;
+	}
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  uid_t_size_ok=yes
+else
+  uid_t_size_ok=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+  if test "$uid_t_size_ok" = "no"; then
+    as_fn_error $? "unexpected size for uid_t or gid_t" "$LINENO" 5
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  fi
+
+
+
 
   _x_ac_json_dirs="/usr /usr/local"
   _x_ac_json_libs="lib64 lib"
