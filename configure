@@ -841,9 +841,6 @@ EGREP
 GREP
 SED
 LIBTOOL
-WITH_CYGWIN_FALSE
-WITH_CYGWIN_TRUE
-SO_LDFLAGS
 BLUEGENE_LOADED
 BLUEGENE_LOADED_FALSE
 BLUEGENE_LOADED_TRUE
@@ -5645,27 +5642,6 @@ $as_echo "#define USE_ALIAS 0" >>confdefs.h
 $as_echo "#define USE_ALIAS 1" >>confdefs.h
  ;;
 esac
-
-ac_have_cygwin=no
-case "$host" in
-     	*cygwin)   LDFLAGS="$LDFLAGS -no-undefined"
-		   SO_LDFLAGS="$SO_LDFLAGS \$(top_builddir)/src/api/libslurmhelper.la"
-
-		   ac_have_cygwin=yes
-		   ;;
-	*solaris*) CC="/usr/sfw/bin/gcc"
-		   CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS -I/usr/sfw/include"
-		   LDFLAGS="$LDFLAGS -L/usr/sfw/lib"
-		   ;;
-esac
- if test x"$ac_have_cygwin" = x"yes"; then
-  WITH_CYGWIN_TRUE=
-  WITH_CYGWIN_FALSE='#'
-else
-  WITH_CYGWIN_TRUE='#'
-  WITH_CYGWIN_FALSE=
-fi
-
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -25697,10 +25673,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BLUEGENE_LOADED_TRUE}" && test -z "${BLUEGENE_LOADED_FALSE}"; then
   as_fn_error $? "conditional \"BLUEGENE_LOADED\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${WITH_CYGWIN_TRUE}" && test -z "${WITH_CYGWIN_FALSE}"; then
-  as_fn_error $? "conditional \"WITH_CYGWIN\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
