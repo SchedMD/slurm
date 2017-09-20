@@ -27,7 +27,7 @@ pam_slurm_la_SOURCES = pam_slurm.c
 
 pam_slurm_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 
-pam_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
+pam_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
 
 force:
 $(pam_slurm_la_LIBADD) : force

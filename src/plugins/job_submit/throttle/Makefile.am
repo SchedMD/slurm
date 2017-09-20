@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = job_submit_throttle.la
 
 # Job submit throttle plugin.
 job_submit_throttle_la_SOURCES = job_submit_throttle.c
-job_submit_throttle_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+job_submit_throttle_la_LDFLAGS = $(PLUGIN_FLAGS)

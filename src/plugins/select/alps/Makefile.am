@@ -17,7 +17,7 @@ select_alps_la_SOURCES = 	\
 	parser_common.h		\
 	cray_config.c		\
 	cray_config.h
-select_alps_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_alps_la_LDFLAGS = $(PLUGIN_FLAGS)
 
 select_alps_la_LIBADD   = ../other/libother_select.la
 

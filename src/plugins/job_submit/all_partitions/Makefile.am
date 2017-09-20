@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = job_submit_all_partitions.la
 
 # Job submit all_partitions plugin.
 job_submit_all_partitions_la_SOURCES = job_submit_all_partitions.c
-job_submit_all_partitions_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+job_submit_all_partitions_la_LDFLAGS = $(PLUGIN_FLAGS)

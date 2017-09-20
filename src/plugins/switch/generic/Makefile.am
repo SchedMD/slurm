@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = switch_generic.la
 
 # Null switch plugin.
 switch_generic_la_SOURCES = switch_generic.c
-switch_generic_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+switch_generic_la_LDFLAGS = $(PLUGIN_FLAGS)

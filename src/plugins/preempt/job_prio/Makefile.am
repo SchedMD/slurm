@@ -10,5 +10,5 @@ pkglib_LTLIBRARIES = preempt_job_prio.la
 
 preempt_job_prio_la_SOURCES = preempt_job_prio.c
 
-preempt_job_prio_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+preempt_job_prio_la_LDFLAGS = $(PLUGIN_FLAGS)
 

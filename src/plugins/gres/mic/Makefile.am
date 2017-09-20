@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = gres_mic.la
 
 # Gres MIC plugin.
 gres_mic_la_SOURCES = gres_mic.c
-gres_mic_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+gres_mic_la_LDFLAGS = $(PLUGIN_FLAGS)

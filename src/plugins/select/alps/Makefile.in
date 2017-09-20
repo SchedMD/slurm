@@ -569,7 +569,7 @@ pkglib_LTLIBRARIES = select_alps.la
 # Alps node selection plugin.
 select_alps_la_SOURCES = select_alps.c basil_interface.h nodespec.c \
 	parser_common.h cray_config.c cray_config.h $(am__append_1)
-select_alps_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_alps_la_LDFLAGS = $(PLUGIN_FLAGS)
 select_alps_la_LIBADD = ../other/libother_select.la $(am__append_2) \
 	$(am__append_3)
 @HAVE_ALPS_CRAY_TRUE@select_alps_la_CFLAGS = $(MYSQL_CFLAGS)

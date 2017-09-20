@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = mcs_user.la
 
 # mcs/user plugin.
 mcs_user_la_SOURCES = mcs_user.c
-mcs_user_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+mcs_user_la_LDFLAGS = $(PLUGIN_FLAGS)

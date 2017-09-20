@@ -16,4 +16,4 @@ launch_runjob_la_SOURCES += runjob_interface.cc
 #launch_runjob_la_LDFLAGS += $(RUNJOB_LDFLAGS)
 endif
 
-launch_runjob_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+launch_runjob_la_LDFLAGS = $(PLUGIN_FLAGS)

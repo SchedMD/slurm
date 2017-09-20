@@ -9,4 +9,4 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = topology_hypercube.la
 
 topology_hypercube_la_SOURCES = topology_hypercube.c
-topology_hypercube_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+topology_hypercube_la_LDFLAGS = $(PLUGIN_FLAGS)

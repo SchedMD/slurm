@@ -519,7 +519,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 @WITH_JSON_PARSER_TRUE@AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(DATAWARP_CPPFLAGS) $(JSON_CPPFLAGS)
 @WITH_JSON_PARSER_TRUE@pkglib_LTLIBRARIES = burst_buffer_cray.la
 @WITH_JSON_PARSER_TRUE@burst_buffer_cray_la_SOURCES = burst_buffer_cray.c
-@WITH_JSON_PARSER_TRUE@burst_buffer_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(DATAWARP_LDFLAGS) $(JSON_LDFLAGS)
+@WITH_JSON_PARSER_TRUE@burst_buffer_cray_la_LDFLAGS = $(PLUGIN_FLAGS) $(DATAWARP_LDFLAGS) $(JSON_LDFLAGS)
 @WITH_JSON_PARSER_TRUE@burst_buffer_cray_la_LIBADD = ../common/libburst_buffer_common.la
 @WITH_JSON_PARSER_FALSE@EXTRA_burst_buffer_cray_la_SOURCES = burst_buffer_cray.c
 all: all-am

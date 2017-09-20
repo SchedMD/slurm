@@ -520,7 +520,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) $(SSL_CPPFLAGS) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = $(openssl_lib)
 @HAVE_OPENSSL_TRUE@crypto_openssl_la_SOURCES = crypto_openssl.c
-@HAVE_OPENSSL_TRUE@crypto_openssl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(SSL_LDFLAGS)
+@HAVE_OPENSSL_TRUE@crypto_openssl_la_LDFLAGS = $(PLUGIN_FLAGS) $(SSL_LDFLAGS)
 @HAVE_OPENSSL_TRUE@crypto_openssl_la_LIBADD = $(SSL_LIBS)
 @HAVE_OPENSSL_FALSE@EXTRA_crypto_openssl_la_SOURCES = crypto_openssl.c
 all: all-am

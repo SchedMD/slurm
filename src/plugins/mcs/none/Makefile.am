@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = mcs_none.la
 
 # mcs/none plugin.
 mcs_none_la_SOURCES = mcs_none.c
-mcs_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+mcs_none_la_LDFLAGS = $(PLUGIN_FLAGS)

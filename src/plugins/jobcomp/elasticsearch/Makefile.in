@@ -524,7 +524,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(LIBCURL_CPPFLAGS)
 AS_ELASTICSEARCH_SOURCES = jobcomp_elasticsearch.c
 @WITH_CURL_TRUE@pkglib_LTLIBRARIES = jobcomp_elasticsearch.la
 @WITH_CURL_TRUE@jobcomp_elasticsearch_la_SOURCES = $(AS_ELASTICSEARCH_SOURCES)
-@WITH_CURL_TRUE@jobcomp_elasticsearch_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@WITH_CURL_TRUE@jobcomp_elasticsearch_la_LDFLAGS = $(PLUGIN_FLAGS)
 @WITH_CURL_TRUE@jobcomp_elasticsearch_la_LIBADD = $(LIBCURL)
 @WITH_CURL_FALSE@EXTRA_jobcomp_elasticsearch_la_SOURCES = $(AS_ELASTICSEARCH_SOURCES)
 all: all-am

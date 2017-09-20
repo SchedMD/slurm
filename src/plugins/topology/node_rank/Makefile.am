@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = topology_node_rank.la
 
 # Null topology plugin.
 topology_node_rank_la_SOURCES = topology_node_rank.c
-topology_node_rank_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+topology_node_rank_la_LDFLAGS = $(PLUGIN_FLAGS)

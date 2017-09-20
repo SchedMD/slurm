@@ -25,7 +25,7 @@ libhdf5_api_la_LIBADD = $(HDF5_LIBS)
 
 acct_gather_profile_hdf5_la_SOURCES = $(HDF5_SOURCES)
 acct_gather_profile_hdf5_la_LDFLAGS = \
-	$(SO_LDFLAGS) $(PLUGIN_FLAGS) $(HDF5_LDFLAGS)
+	$(PLUGIN_FLAGS) $(HDF5_LDFLAGS)
 acct_gather_profile_hdf5_la_LIBADD = $(HDF5_LIBS) libhdf5_api.la
 
 else

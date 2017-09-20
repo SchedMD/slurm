@@ -15,5 +15,5 @@ pkglib_LTLIBRARIES = $(MUNGE)
 
 # Munge authentication plugin
 auth_munge_la_SOURCES = auth_munge.c
-auth_munge_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
+auth_munge_la_LDFLAGS = $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
 auth_munge_la_LIBADD =  $(MUNGE_LIBS)

@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = core_spec_none.la
 
 # Null core specialization plugin.
 core_spec_none_la_SOURCES = core_spec_none.c
-core_spec_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+core_spec_none_la_LDFLAGS = $(PLUGIN_FLAGS)

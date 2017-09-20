@@ -9,5 +9,5 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 pkglib_LTLIBRARIES = job_submit_cray.la
 job_submit_cray_la_SOURCES = job_submit_cray.c
-job_submit_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+job_submit_cray_la_LDFLAGS = $(PLUGIN_FLAGS)
 

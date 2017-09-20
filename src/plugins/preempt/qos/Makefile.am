@@ -10,5 +10,5 @@ pkglib_LTLIBRARIES = preempt_qos.la
 
 preempt_qos_la_SOURCES = preempt_qos.c
 
-preempt_qos_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+preempt_qos_la_LDFLAGS = $(PLUGIN_FLAGS)
 

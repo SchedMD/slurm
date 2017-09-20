@@ -535,7 +535,7 @@ pkglib_LTLIBRARIES = launch_runjob.la
 launch_runjob_la_SOURCES = launch_runjob.c $(am__append_1)
 # because totalview needs the libraries on load we link in srun and not here.
 #launch_runjob_la_LDFLAGS += $(RUNJOB_LDFLAGS)
-launch_runjob_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+launch_runjob_la_LDFLAGS = $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:

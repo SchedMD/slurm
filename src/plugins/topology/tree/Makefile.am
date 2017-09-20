@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = topology_tree.la
 
 # Null topology plugin.
 topology_tree_la_SOURCES = topology_tree.c
-topology_tree_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+topology_tree_la_LDFLAGS = $(PLUGIN_FLAGS)

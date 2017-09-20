@@ -11,7 +11,7 @@ AM_CPPFLAGS = -DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
 
 pkglib_LTLIBRARIES = checkpoint_blcr.la
 checkpoint_blcr_la_SOURCES = checkpoint_blcr.c
-checkpoint_blcr_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+checkpoint_blcr_la_LDFLAGS = $(PLUGIN_FLAGS)
 
 dist_pkglibexec_SCRIPTS = cr_checkpoint.sh cr_restart.sh
 

@@ -14,4 +14,4 @@ topology_3d_torus_la_SOURCES =	\
 	hilbert.h		\
 	hilbert_slurm.c		\
 	topology_3d_torus.c
-topology_3d_torus_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+topology_3d_torus_la_LDFLAGS = $(PLUGIN_FLAGS)

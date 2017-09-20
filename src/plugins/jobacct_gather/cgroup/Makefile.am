@@ -15,7 +15,7 @@ jobacct_gather_cgroup_la_SOURCES = jobacct_gather_cgroup.c \
                                    jobacct_gather_cgroup_blkio.c \
                                    jobacct_gather_cgroup.h
 
-jobacct_gather_cgroup_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_gather_cgroup_la_LDFLAGS = $(PLUGIN_FLAGS)
 
 jobacct_gather_cgroup_la_LIBADD = ../common/libjobacct_gather_common.la
 

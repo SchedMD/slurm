@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = proctrack_pgid.la
 
 # Process group ID process tracking  plugin.
 proctrack_pgid_la_SOURCES = proctrack_pgid.c
-proctrack_pgid_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+proctrack_pgid_la_LDFLAGS = $(PLUGIN_FLAGS)

@@ -14,4 +14,4 @@ sched_builtin_la_SOURCES = \
 			builtin_wrapper.c \
 			builtin.c	\
 			builtin.h
-sched_builtin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+sched_builtin_la_LDFLAGS = $(PLUGIN_FLAGS)

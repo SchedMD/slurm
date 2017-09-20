@@ -675,13 +675,13 @@ select_bluegene_la_SOURCES = select_bluegene.c bg_job_info.c \
 	bg_job_info.h bg_node_info.c bg_node_info.h $(am__append_3)
 libba_common_la_SOURCES = ba_common.c ba_common.h
 libconfigure_api_la_SOURCES = configure_api.c configure_api.h
-select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_bluegene_la_LDFLAGS = $(PLUGIN_FLAGS)
 select_bluegene_la_LIBADD = libba_common.la $(am__append_4)
 @BLUEGENE_LOADED_TRUE@SUBDIRS = sfree $(am__append_1)
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba_bgq/libblock_allocator.la
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_SOURCES = runjob_plugin.cc
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_LDFLAGS = $(PLUGIN_FLAGS)
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_LIBADD = $(convenience_libs)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_LDADD = $(convenience_libs)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_SOURCES = slurm_prolog.c

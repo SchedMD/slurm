@@ -518,7 +518,7 @@ pkglib_LTLIBRARIES = $(MUNGE)
 
 # Munge crypto plugin
 crypto_munge_la_SOURCES = crypto_munge.c
-crypto_munge_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
+crypto_munge_la_LDFLAGS = $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
 crypto_munge_la_LIBADD = $(MUNGE_LIBS)
 all: all-am
 

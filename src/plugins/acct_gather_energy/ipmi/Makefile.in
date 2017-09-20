@@ -536,7 +536,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
 
 
 #acct_gather_energy_ipmi_la_CFLAGS = $(MYSQL_CFLAGS)
-@BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
+@BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_LDFLAGS = $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
 @BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_LIBADD = $(FREEIPMI_LIBS)
 @BUILD_IPMI_FALSE@EXTRA_acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
 @BUILD_IPMI_FALSE@                                     acct_gather_energy_ipmi_config.c \

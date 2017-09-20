@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = launch_poe.la
 
 launch_poe_la_SOURCES = launch_poe.c
 
-launch_poe_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+launch_poe_la_LDFLAGS = $(PLUGIN_FLAGS)

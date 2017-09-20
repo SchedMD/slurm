@@ -11,4 +11,4 @@ pkglib_LTLIBRARIES = ext_sensors_none.la
 # Null job completion logging plugin.
 ext_sensors_none_la_SOURCES = ext_sensors_none.c
 
-ext_sensors_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+ext_sensors_none_la_LDFLAGS = $(PLUGIN_FLAGS)

@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = switch_none.la
 
 # Null switch plugin.
 switch_none_la_SOURCES = switch_none.c
-switch_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+switch_none_la_LDFLAGS = $(PLUGIN_FLAGS)

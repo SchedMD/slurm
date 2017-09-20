@@ -19,7 +19,7 @@ acct_gather_interconnect_ofed_la_SOURCES = acct_gather_interconnect_ofed.c \
 
 acct_gather_interconnect_ofed_la_CFLAGS = $(OFED_CPPFLAGS)
 
-acct_gather_interconnect_ofed_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(OFED_LDFLAGS)
+acct_gather_interconnect_ofed_la_LDFLAGS = $(PLUGIN_FLAGS) $(OFED_LDFLAGS)
 acct_gather_interconnect_ofed_la_LIBADD = $(OFED_LIBS)
 
 else

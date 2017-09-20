@@ -513,7 +513,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_JOB_CPPFLAGS)
 @HAVE_REAL_CRAY_TRUE@PROC_PLUG = proctrack_cray.la
 pkglib_LTLIBRARIES = $(PROC_PLUG)
 proctrack_cray_la_SOURCES = proctrack_cray.c
-proctrack_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CRAY_JOB_LDFLAGS)
+proctrack_cray_la_LDFLAGS = $(PLUGIN_FLAGS) $(CRAY_JOB_LDFLAGS)
 all: all-am
 
 .SUFFIXES:

@@ -12,4 +12,4 @@ endif
 pkglib_LTLIBRARIES = $(PROC_PLUG)
 
 proctrack_cray_la_SOURCES = proctrack_cray.c
-proctrack_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CRAY_JOB_LDFLAGS)
+proctrack_cray_la_LDFLAGS = $(PLUGIN_FLAGS) $(CRAY_JOB_LDFLAGS)

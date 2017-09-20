@@ -514,7 +514,7 @@ pkglib_LTLIBRARIES = core_spec_cray.la
 # Cray core specialization plugin.
 core_spec_cray_la_SOURCES = core_spec_cray.c
 core_spec_cray_la_CPPFLAGS = $(CRAY_JOB_CPPFLAGS) $(AM_CPPFLAGS)
-core_spec_cray_la_LDFLAGS = $(CRAY_JOB_LDFLAGS) $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+core_spec_cray_la_LDFLAGS = $(CRAY_JOB_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:

@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = route_topology.la
 
 # topology route plugin.
 route_topology_la_SOURCES = route_topology.c
-route_topology_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+route_topology_la_LDFLAGS = $(PLUGIN_FLAGS)

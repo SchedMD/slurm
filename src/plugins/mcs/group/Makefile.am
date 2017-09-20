@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = mcs_group.la
 
 # mcs/group plugin.
 mcs_group_la_SOURCES = mcs_group.c
-mcs_group_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+mcs_group_la_LDFLAGS = $(PLUGIN_FLAGS)

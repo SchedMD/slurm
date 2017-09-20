@@ -593,7 +593,7 @@ HDF5_API_SOURCES = hdf5_api.c hdf5_api.h
 @BUILD_HDF5_TRUE@libhdf5_api_la_LIBADD = $(HDF5_LIBS)
 @BUILD_HDF5_TRUE@acct_gather_profile_hdf5_la_SOURCES = $(HDF5_SOURCES)
 @BUILD_HDF5_TRUE@acct_gather_profile_hdf5_la_LDFLAGS = \
-@BUILD_HDF5_TRUE@	$(SO_LDFLAGS) $(PLUGIN_FLAGS) $(HDF5_LDFLAGS)
+@BUILD_HDF5_TRUE@	$(PLUGIN_FLAGS) $(HDF5_LDFLAGS)
 
 @BUILD_HDF5_TRUE@acct_gather_profile_hdf5_la_LIBADD = $(HDF5_LIBS) libhdf5_api.la
 @BUILD_HDF5_FALSE@EXTRA_acct_gather_profile_hdf5_la_SOURCES = $(HDF5_SOURCES)

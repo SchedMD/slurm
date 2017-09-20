@@ -13,4 +13,4 @@ proctrack_linuxproc_la_SOURCES = \
 	proctrack_linuxproc.c \
 	kill_tree.c \
 	kill_tree.h
-proctrack_linuxproc_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+proctrack_linuxproc_la_LDFLAGS = $(PLUGIN_FLAGS)

@@ -596,7 +596,7 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 
 # Mysql storage plugin.
 @WITH_MYSQL_TRUE@accounting_storage_mysql_la_SOURCES = $(AS_MYSQL_SOURCES)
-@WITH_MYSQL_TRUE@accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@WITH_MYSQL_TRUE@accounting_storage_mysql_la_LDFLAGS = $(PLUGIN_FLAGS)
 @WITH_MYSQL_TRUE@accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 @WITH_MYSQL_TRUE@accounting_storage_mysql_la_LIBADD = \
 @WITH_MYSQL_TRUE@	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS) \

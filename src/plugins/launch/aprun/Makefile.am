@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = launch_aprun.la
 
 launch_aprun_la_SOURCES = launch_aprun.c
 
-launch_aprun_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+launch_aprun_la_LDFLAGS = $(PLUGIN_FLAGS)

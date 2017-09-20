@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = checkpoint_none.la
 
 # Null checkpoint plugin.
 checkpoint_none_la_SOURCES = checkpoint_none.c
-checkpoint_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+checkpoint_none_la_LDFLAGS = $(PLUGIN_FLAGS)

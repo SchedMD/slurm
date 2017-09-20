@@ -17,7 +17,7 @@ switch_cray_la_SOURCES = \
 	switch_cray.h \
 	util.c
 switch_cray_la_LDFLAGS = \
-	$(SO_LDFLAGS) \
+	\
 	$(PLUGIN_FLAGS) \
 	$(CRAY_SWITCH_LDFLAGS)
 switch_cray_la_CPPFLAGS = \

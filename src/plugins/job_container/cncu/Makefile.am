@@ -10,6 +10,6 @@ pkglib_LTLIBRARIES = job_container_cncu.la
 
 # job_container/cncu plugin.
 job_container_cncu_la_SOURCES = job_container_cncu.c
-job_container_cncu_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+job_container_cncu_la_LDFLAGS = $(PLUGIN_FLAGS) \
 	$(CRAY_JOB_LDFLAGS)
 

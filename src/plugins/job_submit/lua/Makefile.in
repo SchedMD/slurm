@@ -520,7 +520,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 # Job submit lua plugin.
 @HAVE_LUA_TRUE@pkglib_LTLIBRARIES = job_submit_lua.la
 @HAVE_LUA_TRUE@job_submit_lua_la_SOURCES = job_submit_lua.c
-@HAVE_LUA_TRUE@job_submit_lua_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(lua_LIBS)
+@HAVE_LUA_TRUE@job_submit_lua_la_LDFLAGS = $(PLUGIN_FLAGS) $(lua_LIBS)
 @HAVE_LUA_FALSE@EXTRA_job_submit_lua_la_SOURCES = job_submit_lua.c
 all: all-am
 

@@ -10,7 +10,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
 
 pkglib_LTLIBRARIES = power_cray.la
 power_cray_la_SOURCES = power_cray.c
-power_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(JSON_LDFLAGS)
+power_cray_la_LDFLAGS = $(PLUGIN_FLAGS) $(JSON_LDFLAGS)
 power_cray_la_LIBADD = ../common/libpower_common.la
 
 force:

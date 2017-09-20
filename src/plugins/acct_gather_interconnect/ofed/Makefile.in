@@ -532,7 +532,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @BUILD_OFED_TRUE@                                     acct_gather_interconnect_ofed.h
 
 @BUILD_OFED_TRUE@acct_gather_interconnect_ofed_la_CFLAGS = $(OFED_CPPFLAGS)
-@BUILD_OFED_TRUE@acct_gather_interconnect_ofed_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(OFED_LDFLAGS)
+@BUILD_OFED_TRUE@acct_gather_interconnect_ofed_la_LDFLAGS = $(PLUGIN_FLAGS) $(OFED_LDFLAGS)
 @BUILD_OFED_TRUE@acct_gather_interconnect_ofed_la_LIBADD = $(OFED_LIBS)
 @BUILD_OFED_FALSE@EXTRA_acct_gather_interconnect_ofed_la_SOURCES = \
 @BUILD_OFED_FALSE@	acct_gather_interconnect_ofed.c acct_gather_interconnect_ofed.h

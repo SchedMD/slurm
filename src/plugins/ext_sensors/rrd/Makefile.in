@@ -524,7 +524,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common  $(RRDTOOL_CPPFLAGS)
 @BUILD_RRD_TRUE@ext_sensors_rrd_la_SOURCES = ext_sensors_rrd.c \
 @BUILD_RRD_TRUE@	ext_sensors_rrd.h
 
-@BUILD_RRD_TRUE@ext_sensors_rrd_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(RRDTOOL_LDFLAGS)
+@BUILD_RRD_TRUE@ext_sensors_rrd_la_LDFLAGS = $(PLUGIN_FLAGS) $(RRDTOOL_LDFLAGS)
 @BUILD_RRD_TRUE@ext_sensors_rrd_la_LIBADD = $(RRDTOOL_LIBS)
 @BUILD_RRD_FALSE@EXTRA_ext_sensors_rrd_la_SOURCES = ext_sensors_rrd.c \
 @BUILD_RRD_FALSE@				   ext_sensors_rrd.h

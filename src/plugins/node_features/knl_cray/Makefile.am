@@ -10,7 +10,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(DATAWARP_CPPFLAGS) $(
 
 pkglib_LTLIBRARIES = node_features_knl_cray.la
 node_features_knl_cray_la_SOURCES = node_features_knl_cray.c
-node_features_knl_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(DATAWARP_LDFLAGS) $(JSON_LDFLAGS)
+node_features_knl_cray_la_LDFLAGS = $(PLUGIN_FLAGS) $(DATAWARP_LDFLAGS) $(JSON_LDFLAGS)
 
 force:
 $(node_features_knl_cray_la_LIBADD) : force

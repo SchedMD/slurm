@@ -10,5 +10,5 @@ pkglib_LTLIBRARIES = preempt_partition_prio.la
 
 preempt_partition_prio_la_SOURCES = preempt_partition_prio.c
 
-preempt_partition_prio_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+preempt_partition_prio_la_LDFLAGS = $(PLUGIN_FLAGS)
 

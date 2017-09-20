@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = launch_slurm.la
 
 launch_slurm_la_SOURCES = launch_slurm.c task_state.c task_state.h
 
-launch_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+launch_slurm_la_LDFLAGS = $(PLUGIN_FLAGS)

@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = job_submit_require_timelimit.la
 
 # Job submit require_timelimit plugin.
 job_submit_require_timelimit_la_SOURCES = job_submit_require_timelimit.c
-job_submit_require_timelimit_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+job_submit_require_timelimit_la_LDFLAGS = $(PLUGIN_FLAGS)

@@ -12,4 +12,4 @@ pkglib_LTLIBRARIES = select_cons_res.la
 select_cons_res_la_SOURCES =  select_cons_res.c select_cons_res.h \
                               dist_tasks.c dist_tasks.h \
 			      job_test.c job_test.h
-select_cons_res_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_cons_res_la_LDFLAGS = $(PLUGIN_FLAGS)

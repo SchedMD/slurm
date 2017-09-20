@@ -11,5 +11,5 @@ pkglib_LTLIBRARIES = acct_gather_energy_ibmaem.la
 # cpu/core energy accounting plugin.
 acct_gather_energy_ibmaem_la_SOURCES = acct_gather_energy_ibmaem.c
 
-acct_gather_energy_ibmaem_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+acct_gather_energy_ibmaem_la_LDFLAGS = $(PLUGIN_FLAGS)
 acct_gather_energy_ibmaem_la_LIBADD  = -lm

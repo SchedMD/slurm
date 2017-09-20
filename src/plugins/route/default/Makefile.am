@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = route_default.la
 
 # Null route plugin.
 route_default_la_SOURCES = route_default.c
-route_default_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+route_default_la_LDFLAGS = $(PLUGIN_FLAGS)

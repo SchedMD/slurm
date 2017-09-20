@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = checkpoint_ompi.la
 
 # OpenMPI checkpoint plugin.
 checkpoint_ompi_la_SOURCES = checkpoint_ompi.c
-checkpoint_ompi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+checkpoint_ompi_la_LDFLAGS = $(PLUGIN_FLAGS)

@@ -23,7 +23,7 @@ libba_common_la_SOURCES = ba_common.c ba_common.h
 
 libconfigure_api_la_SOURCES = configure_api.c configure_api.h
 
-select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_bluegene_la_LDFLAGS = $(PLUGIN_FLAGS)
 select_bluegene_la_LIBADD = libba_common.la
 
 if BLUEGENE_LOADED
@@ -40,7 +40,7 @@ if BGQ_LOADED
 
   pkglib_LTLIBRARIES += runjob_plugin.la
   runjob_plugin_la_SOURCES = runjob_plugin.cc
-  runjob_plugin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+  runjob_plugin_la_LDFLAGS = $(PLUGIN_FLAGS)
   runjob_plugin_la_LIBADD = $(convenience_libs)
 endif
 

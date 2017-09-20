@@ -9,4 +9,4 @@ PLUGIN_FLAGS = - -module -avoid-version --export-dynamic
 
 pkglib_LTLIBRARIES       = proctrack_lua.la
 proctrack_lua_la_SOURCES = proctrack_lua.c
-proctrack_lua_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(lua_LIBS)
+proctrack_lua_la_LDFLAGS = $(PLUGIN_FLAGS) $(lua_LIBS)

@@ -20,7 +20,7 @@ acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
 
 #acct_gather_energy_ipmi_la_CFLAGS = $(MYSQL_CFLAGS)
 
-acct_gather_energy_ipmi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
+acct_gather_energy_ipmi_la_LDFLAGS = $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
 acct_gather_energy_ipmi_la_LIBADD = $(FREEIPMI_LIBS)
 
 else

@@ -13,7 +13,7 @@ pkglib_LTLIBRARIES = ext_sensors_rrd.la
 ext_sensors_rrd_la_SOURCES = ext_sensors_rrd.c \
 	ext_sensors_rrd.h
 
-ext_sensors_rrd_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(RRDTOOL_LDFLAGS)
+ext_sensors_rrd_la_LDFLAGS = $(PLUGIN_FLAGS) $(RRDTOOL_LDFLAGS)
 ext_sensors_rrd_la_LIBADD = $(RRDTOOL_LIBS)
 
 else

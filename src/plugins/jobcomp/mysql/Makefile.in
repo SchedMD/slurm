@@ -526,7 +526,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @WITH_MYSQL_TRUE@jobcomp_mysql_la_SOURCES = jobcomp_mysql.c \
 @WITH_MYSQL_TRUE@			mysql_jobcomp_process.c mysql_jobcomp_process.h
 
-@WITH_MYSQL_TRUE@jobcomp_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@WITH_MYSQL_TRUE@jobcomp_mysql_la_LDFLAGS = $(PLUGIN_FLAGS)
 @WITH_MYSQL_TRUE@jobcomp_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 @WITH_MYSQL_TRUE@jobcomp_mysql_la_LIBADD = $(top_builddir)/src/database/libslurm_mysql.la \
 @WITH_MYSQL_TRUE@	$(MYSQL_LIBS)

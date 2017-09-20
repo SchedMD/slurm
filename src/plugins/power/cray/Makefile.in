@@ -515,7 +515,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 @WITH_JSON_PARSER_TRUE@AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
 @WITH_JSON_PARSER_TRUE@pkglib_LTLIBRARIES = power_cray.la
 @WITH_JSON_PARSER_TRUE@power_cray_la_SOURCES = power_cray.c
-@WITH_JSON_PARSER_TRUE@power_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(JSON_LDFLAGS)
+@WITH_JSON_PARSER_TRUE@power_cray_la_LDFLAGS = $(PLUGIN_FLAGS) $(JSON_LDFLAGS)
 @WITH_JSON_PARSER_TRUE@power_cray_la_LIBADD = ../common/libpower_common.la
 @WITH_JSON_PARSER_FALSE@EXTRA_power_cray_la_SOURCES = power_cray.c
 all: all-am

@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = auth_none.la
 
 # Null authentication plugin.
 auth_none_la_SOURCES = auth_none.c
-auth_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+auth_none_la_LDFLAGS = $(PLUGIN_FLAGS)

@@ -11,4 +11,4 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = sched_hold.la
 
 sched_hold_la_SOURCES = hold_wrapper.c
-sched_hold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+sched_hold_la_LDFLAGS = $(PLUGIN_FLAGS)

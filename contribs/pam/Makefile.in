@@ -524,7 +524,7 @@ pkglib_LTLIBRARIES = $(pam_lib)
 @HAVE_PAM_TRUE@rev = $(SLURM_API_REVISION)
 @HAVE_PAM_TRUE@pam_slurm_la_SOURCES = pam_slurm.c
 @HAVE_PAM_TRUE@pam_slurm_la_LIBADD = $(top_builddir)/src/api/libslurm.la
-@HAVE_PAM_TRUE@pam_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
+@HAVE_PAM_TRUE@pam_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
 #	Don't specify basename or version.map files in src/api will not be built
 #	@cd `dirname $@` && $(MAKE) `basename $@`
 @HAVE_PAM_FALSE@EXTRA_pam_slurm_la_SOURCES = pam_slurm.c

@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = job_submit_logging.la
 
 # Job submit logging plugin.
 job_submit_logging_la_SOURCES = job_submit_logging.c
-job_submit_logging_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+job_submit_logging_la_LDFLAGS = $(PLUGIN_FLAGS)

@@ -12,7 +12,7 @@ if WITH_CURL
 pkglib_LTLIBRARIES = jobcomp_elasticsearch.la
 
 jobcomp_elasticsearch_la_SOURCES = $(AS_ELASTICSEARCH_SOURCES)
-jobcomp_elasticsearch_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobcomp_elasticsearch_la_LDFLAGS = $(PLUGIN_FLAGS)
 jobcomp_elasticsearch_la_LIBADD = $(LIBCURL)
 
 else

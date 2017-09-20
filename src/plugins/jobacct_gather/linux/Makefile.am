@@ -11,7 +11,7 @@ pkglib_LTLIBRARIES = jobacct_gather_linux.la
 # Null job completion logging plugin.
 jobacct_gather_linux_la_SOURCES = jobacct_gather_linux.c
 
-jobacct_gather_linux_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_gather_linux_la_LDFLAGS = $(PLUGIN_FLAGS)
 
 jobacct_gather_linux_la_LIBADD = ../common/libjobacct_gather_common.la
 

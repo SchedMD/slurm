@@ -11,5 +11,5 @@ pkglib_LTLIBRARIES = select_cray.la
 
 # Cray node selection plugin.
 select_cray_la_SOURCES = ccm.c ccm.h select_cray.c
-select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CRAY_SELECT_LDFLAGS)
+select_cray_la_LDFLAGS = $(PLUGIN_FLAGS) $(CRAY_SELECT_LDFLAGS)
 select_cray_la_LIBADD  = ../other/libother_select.la

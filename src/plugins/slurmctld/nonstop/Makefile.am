@@ -22,5 +22,5 @@ slurmctld_nonstop_la_SOURCES = \
 	read_config.c	\
 	read_config.h
 
-slurmctld_nonstop_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
+slurmctld_nonstop_la_LDFLAGS = $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
 slurmctld_nonstop_la_LIBADD =  $(MUNGE_LIBS)

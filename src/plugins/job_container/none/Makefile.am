@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = job_container_none.la
 
 # job_container/none plugin.
 job_container_none_la_SOURCES = job_container_none.c
-job_container_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+job_container_none_la_LDFLAGS = $(PLUGIN_FLAGS)

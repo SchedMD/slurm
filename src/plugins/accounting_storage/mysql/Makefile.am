@@ -32,7 +32,7 @@ pkglib_LTLIBRARIES = accounting_storage_mysql.la
 
 # Mysql storage plugin.
 accounting_storage_mysql_la_SOURCES = $(AS_MYSQL_SOURCES)
-accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+accounting_storage_mysql_la_LDFLAGS = $(PLUGIN_FLAGS)
 accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 accounting_storage_mysql_la_LIBADD = \
 	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS) \
