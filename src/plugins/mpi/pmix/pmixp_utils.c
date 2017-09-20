@@ -295,7 +295,7 @@ bool pmixp_fd_read_ready(int fd, int *shutdown)
 bool pmixp_fd_write_ready(int fd, int *shutdown)
 {
 	struct pollfd pfd[1];
-	int rc;
+	int rc = 0;
 	struct timeval tv;
 	double start, cur;
 	pfd[0].fd = fd;
