@@ -185,7 +185,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	node_conf.lo gres.lo entity.lo layout.lo layouts_mgr.lo \
 	mapping.lo xcgroup_read_config.lo xlua.lo callerid.lo \
 	group_cache.lo slurm_persist_conn.lo run_command.lo \
-	state_control.lo
+	x11_util.lo state_control.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -653,6 +653,7 @@ libcommon_la_SOURCES = \
 	group_cache.c group_cache.h	\
 	slurm_persist_conn.c slurm_persist_conn.h \
 	run_command.c run_command.h	\
+	x11_util.c x11_util.h		\
 	state_control.c state_control.h
 
 EXTRA_libcommon_la_SOURCES = \
@@ -842,6 +843,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util-net.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/working_cluster.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/write_labelled_message.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xassert.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup_read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash.Plo@am__quote@

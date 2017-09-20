@@ -125,6 +125,7 @@ libcommon_la_SOURCES = 			\
 	group_cache.c group_cache.h	\
 	slurm_persist_conn.c slurm_persist_conn.h \
 	run_command.c run_command.h	\
+	x11_util.c x11_util.h		\
 	state_control.c state_control.h
 
 
