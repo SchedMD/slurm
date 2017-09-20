@@ -57,6 +57,7 @@
 char local_dir_path[1024];
 bool nrt_need_state_save = false;
 
+static void *_state_save_thread(void *arg);
 static int  _switch_p_libstate_save(char * dir_name, bool free_flag);
 
 /* Type for error string table entries */
