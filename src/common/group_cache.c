@@ -189,7 +189,7 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 
 	/* Cache lookup failed or entry value was too old, fetch new
 	 * value and insert it into cache.  */
-	while (getgrouplist(needle->username, needle->gid,
+	while (getgrouplist(entry->username, entry->gid,
 			    entry->gids, &entry->ngids) == -1) {
 		/* group list larger than array, resize array to fit */
 		entry->gids = xrealloc(entry->gids,
@@ -296,7 +296,7 @@ extern int group_cache_lookup_job(uint32_t jobid, uid_t uid, gid_t gid,
 	gids_cache_needle_t needle = {0};
 
 	needle.jobid = jobid;
-	needle.uid = gid;
+	needle.uid = uid;
 	needle.gid = gid;
 
 	return _group_cache_lookup_internal(&needle, gids);
