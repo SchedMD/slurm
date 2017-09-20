@@ -99,8 +99,6 @@ pdebug_trace_process(stepd_step_rec_t *job, pid_t pid)
 		if (_PTRACE(PT_DETACH, pid, (caddr_t)1, 0)) {
 #elif defined(PT_DETACH)
 		if (_PTRACE(PT_DETACH, pid, NULL, 0)) {
-#elif defined(__sun)
-		if (_PTRACE(7, pid, NULL, 0)) {
 #else
 		if (_PTRACE(PTRACE_DETACH, pid, NULL, 0)) {
 #endif
@@ -125,8 +123,6 @@ pdebug_stop_current(stepd_step_rec_t *job)
 	     && (_PTRACE(PT_TRACE_ME, 0, (caddr_t)0, 0) < 0) )
 #elif defined(PT_TRACE_ME)
 	     && (_PTRACE(PT_TRACE_ME, 0, NULL, 0) < 0) )
-#elif defined(__sun)
-	     && (_PTRACE(0, 0, NULL, 0) < 0))
 #else
 	     && (_PTRACE(PTRACE_TRACEME, 0, NULL, 0) < 0) )
 #endif

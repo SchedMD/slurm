@@ -24516,18 +24516,7 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
 fi
 
 
-  case "$host" in
-	*solaris*) have_solaris=yes ;;
-	*) have_solaris=no ;;
-  esac
-
-  if test   "$printf_null_ok" = "no" -a "$have_solaris" = "yes" -a -d /usr/lib64/0@0.so.1; then
-    as_fn_error $? "printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib64/0@0.so.1" "$LINENO" 5
-  elif test "$printf_null_ok" = "no" -a "$have_solaris" = "yes" -a -d /usr/lib/0@0.so.1; then
-    as_fn_error $? "printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib/0@0.so.1" "$LINENO" 5
-  elif test "$printf_null_ok" = "no" -a "$have_solaris" = "yes"; then
-    as_fn_error $? "printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119" "$LINENO" 5
-  elif test "$printf_null_ok" = "no"; then
+  if test "$printf_null_ok" = "no"; then
     as_fn_error $? "printf(\"%s\", NULL) results in abort" "$LINENO" 5
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5

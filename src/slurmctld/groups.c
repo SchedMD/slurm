@@ -207,9 +207,7 @@ extern uid_t *get_group_members(char *group_name)
 	}
 	endgrent();
 	setpwent();
-#if defined (__sun)
-	while ((pwd_result = getpwent_r(&pw, pw_buffer, PW_BUF_SIZE)) != NULL) {
-#elif defined (__APPLE__)
+#if defined (__APPLE__)
 	while ((pwd_result = getpwent()) != NULL) {
 #else
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {

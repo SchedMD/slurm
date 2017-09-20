@@ -433,18 +433,6 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	uint32_t minphysid = 0xffffffff;/* minimum "physical id" */
 	uint32_t mincoreid = 0xffffffff;/* minimum "core id" */
 	int i;
-#if defined (__sun)
-#if defined (_LP64)
-	int64_t curcpu, val, sockets, cores, threads;
-#else
-	int32_t curcpu, val, sockets, cores, threads;
-#endif
-	int32_t chip_id, core_id, ncore_per_chip, ncpu_per_chip;
-#else
-	FILE *cpu_info_file;
-	char buffer[128];
-	uint16_t curcpu, sockets, cores, threads;
-#endif
 
 	get_procs(&numproc);
 	*p_cpus = numproc;
@@ -456,24 +444,12 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	*p_block_map      = NULL;
 	*p_block_map_inv  = NULL;
 
-#if defined (__sun)
-	kstat_ctl_t   *kc;
-	kstat_t       *ksp;
-	kstat_named_t *knp;
-
-	kc = kstat_open();
-	if (kc == NULL) {
-		error ("get speed: kstat error %d", errno);
-		return errno;
-	}
-#else
 	cpu_info_file = fopen(_cpuinfo_path, "r");
 	if (cpu_info_file == NULL) {
 		error ("get_cpuinfo: error %d opening %s",
 			errno, _cpuinfo_path);
 		return errno;
 	}
-#endif
 
 	/* Note: assumes all processor IDs are within [0:numproc-1] */
 	/*       treats physical/core IDs as tokens, not indices */
@@ -481,69 +457,6 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		memset(cpuinfo, 0, numproc * sizeof(cpuinfo_t));
 	else
 		cpuinfo = xmalloc(numproc * sizeof(cpuinfo_t));
-
-#if defined (__sun)
-	ksp = kstat_lookup(kc, "cpu_info", -1, NULL);
-	for (; ksp != NULL; ksp = ksp->ks_next) {
-		if (xstrcmp(ksp->ks_module, "cpu_info"))
-			continue;
-
-		numcpu++;
-		kstat_read(kc, ksp, NULL);
-
-		knp = kstat_data_lookup(ksp, "chip_id");
-		chip_id = knp->value.l;
-		knp = kstat_data_lookup(ksp, "core_id");
-		core_id = knp->value.l;
-		knp = kstat_data_lookup(ksp, "ncore_per_chip");
-		ncore_per_chip = knp->value.l;
-		knp = kstat_data_lookup(ksp, "ncpu_per_chip");
-		ncpu_per_chip = knp->value.l;
-
-		if (chip_id >= numproc) {
-			debug("cpuid is %ld (> %d), ignored", curcpu, numproc);
-			continue;
-		}
-
-		cpuinfo[chip_id].seen = 1;
-		cpuinfo[chip_id].cpuid = chip_id;
-
-		maxcpuid = MAX(maxcpuid, chip_id);
-		mincpuid = MIN(mincpuid, chip_id);
-
-		for (i = 0; i < numproc; i++) {
-			if ((cpuinfo[i].coreid == core_id) &&
-			    (cpuinfo[i].corecnt))
-				break;
-		}
-
-		if (i == numproc) {
-			numcores++;
-		} else {
-			cpuinfo[i].corecnt++;
-		}
-
-		if (chip_id < numproc) {
-			cpuinfo[chip_id].corecnt++;
-			cpuinfo[chip_id].coreid = core_id;
-		}
-
-		maxcoreid = MAX(maxcoreid, core_id);
-		mincoreid = MIN(mincoreid, core_id);
-
-		if (ncore_per_chip > numproc) {
-			debug("cores is %u (> %d), ignored",
-			      ncore_per_chip, numproc);
-				continue;
-		}
-
-		if (chip_id < numproc)
-			cpuinfo[chip_id].cores = ncore_per_chip;
-
-		maxcores = MAX(maxcores, ncore_per_chip);
-		mincores = MIN(mincores, ncore_per_chip);
-	}
-#else
 
 	curcpu = 0;
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
@@ -628,7 +541,6 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	}
 
 	fclose(cpu_info_file);
-#endif
 
 	/*** Sanity check ***/
 	if (minsibs == 0) minsibs = 1;		/* guaranteee non-zero */

@@ -63,7 +63,7 @@
 #include <string.h>
 #include <syslog.h>
 
-#if defined(__sun) || defined(__APPLE__)
+#if defined(__APPLE__)
 #  include <sys/times.h>
 #  include <sys/types.h>
 #elif defined(__NetBSD__) || defined(__FreeBSD__)
@@ -209,11 +209,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 
 	if (tmp_fs_name == NULL)
 		tmp_fs_name = "/tmp";
-#if defined (__sun)
-	if (statfs(tmp_fs_name, &stat_buf, 0, 0) == 0) {
-#else
 	if (statfs(tmp_fs_name, &stat_buf) == 0) {
-#endif
 		total_size = (long)stat_buf.f_blocks;
 	}
 	else if (errno != ENOENT) {
@@ -231,7 +227,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 
 extern int get_up_time(uint32_t *up_time)
 {
-#if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 	clock_t tm;
 	struct tms buf;
 
@@ -270,7 +266,7 @@ extern int get_up_time(uint32_t *up_time)
 
 extern int get_cpu_load(uint32_t *cpu_load)
 {
-#if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 	/* Not sure how to get CPU load on above systems.
 	 * Perhaps some method below works. */
 	*cpu_load = 0;
@@ -290,7 +286,7 @@ extern int get_cpu_load(uint32_t *cpu_load)
 
 extern int get_free_mem(uint64_t *free_mem)
 {
-#if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 	/* Not sure how to get CPU load on above systems.
 	 * Perhaps some method below works. */
 	*free_mem = 0;
