@@ -301,6 +301,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			if (!tmp_task_cnt) {
 				fatal("%s: job %u has NULL task array",
 				      __func__, job->jobid);
+				break;	/* To eliminate CLANG error */
 			}
 			memcpy(pack_task_cnts + node_offset, tmp_task_cnt,
 			       sizeof(uint16_t) * job->nhosts);
@@ -312,6 +313,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			if (!tmp_tids) {
 				fatal("%s: job %u has NULL task ID array",
 				      __func__, job->jobid);
+				break;	/* To eliminate CLANG error */
 			}
 			for (node_inx = 0; node_inx < job->nhosts; node_inx++) {
 				uint32_t *node_tids;
@@ -359,13 +361,14 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),
 				      list_count(opt_list));
+				break;	/* To eliminate CLANG error */
 			}
 
 			slurm_mutex_lock(&step_mutex);
 			step_cnt++;
 			slurm_mutex_unlock(&step_mutex);
 			job->pack_node_list = xstrdup(pack_node_list);
-			if (pack_step_cnt > 1) {
+			if ((pack_step_cnt > 1) && pack_task_cnts) {
 				xassert(node_offset == job->pack_nnodes);
 //FIXME-PACK: We need to get pack_node_list, pack_task_cnts, pack_tids in same order
 				job->pack_task_cnts = xmalloc(sizeof(uint16_t) *
