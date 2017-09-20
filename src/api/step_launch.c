@@ -161,9 +161,10 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 	ptr->cpu_freq_gov = NO_VAL;
 	ptr->node_offset  = NO_VAL;
 	ptr->pack_jobid   = NO_VAL;
+	ptr->pack_nnodes  = NO_VAL;
 	ptr->pack_ntasks  = NO_VAL;
 	ptr->pack_offset  = NO_VAL;
-	ptr->task_offset  = NO_VAL;
+	ptr->pack_task_offset = NO_VAL;
 }
 
 /*
@@ -175,6 +176,34 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 extern int slurm_mpi_plugin_init(char *plugin_name)
 {
 	return mpi_hook_client_init(plugin_name);
+}
+
+/*
+ * For a pack job step, rebuild the MPI data structure to show what is running
+ * in a single MPI_COMM_WORLD
+ */
+static void _rebuild_mpi_layout(slurm_step_ctx_t *ctx,
+				const slurm_step_launch_params_t *params)
+{
+	slurm_step_layout_t *new_step_layout, *orig_step_layout;
+
+	ctx->launch_state->mpi_info->pack_jobid = params->pack_jobid;
+	new_step_layout = xmalloc(sizeof(slurm_step_layout_t));
+	orig_step_layout = ctx->launch_state->mpi_info->step_layout;
+	ctx->launch_state->mpi_info->step_layout = new_step_layout;
+	if (orig_step_layout->front_end) {
+		new_step_layout->front_end =
+			xstrdup(orig_step_layout->front_end);
+	}
+	new_step_layout->node_cnt = params->pack_nnodes;
+	new_step_layout->node_list = xstrdup(params->pack_node_list);
+	new_step_layout->plane_size = orig_step_layout->plane_size;
+	new_step_layout->start_protocol_ver =
+		orig_step_layout->start_protocol_ver;
+	new_step_layout->tasks = params->pack_task_cnts;
+	new_step_layout->task_cnt = params->pack_ntasks;
+	new_step_layout->task_dist = orig_step_layout->task_dist;
+	new_step_layout->tids = params->pack_tids;
 }
 
 /*
@@ -229,6 +258,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 			ctx->step_resp->step_layout->tasks[i] = 1;
 	}
 #endif
+	if (params->pack_jobid && (params->pack_jobid != NO_VAL))
+		_rebuild_mpi_layout(ctx, params);
 
 	if ((ctx->launch_state->mpi_state =
 	     mpi_hook_client_prelaunch(ctx->launch_state->mpi_info, &mpi_env))
@@ -259,9 +290,12 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	launch.node_offset = params->node_offset;
 	launch.pack_jobid  = params->pack_jobid;
+	launch.pack_nnodes = params->pack_nnodes;
 	launch.pack_ntasks = params->pack_ntasks;
 	launch.pack_offset = params->pack_offset;
-	launch.task_offset = params->task_offset;
+	launch.pack_task_offset = params->pack_task_offset;
+	launch.pack_task_cnts = params->pack_task_cnts;
+	launch.pack_node_list = params->pack_node_list;
 	if (params->env == NULL) {
 		/*
 		 * If the user didn't specify an environment, then use the
@@ -273,7 +307,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	}
 	if (params->pack_ntasks != NO_VAL)
 		preserve_env = true;
-	env_array_for_step(&env, ctx->step_resp,
+	env_array_for_step(&env, ctx->step_resp, &launch,
 			   ctx->launch_state->resp_port[0], preserve_env);
 	env_array_merge(&env, (const char **)mpi_env);
 	env_array_free(mpi_env);
@@ -350,7 +384,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 						 ctx->step_resp->cred,
 						 params->labelio,
 						 params->pack_offset,
-						 params->task_offset);
+						 params->pack_task_offset);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;
@@ -462,9 +496,12 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	launch.pack_jobid  = params->pack_jobid;
+	launch.pack_nnodes = params->pack_nnodes;
 	launch.pack_ntasks = params->pack_ntasks;
 	launch.pack_offset = params->pack_offset;
-	launch.task_offset = params->task_offset;
+	launch.pack_task_offset = params->pack_task_offset;
+	launch.pack_task_cnts = params->pack_task_cnts;
+	launch.pack_node_list = params->pack_node_list;
 	if (params->env == NULL) {
 		/*
 		 * if the user didn't specify an environment, grab the
@@ -478,7 +515,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		resp_port = first_ctx->launch_state->resp_port[0];
 	if (params->pack_ntasks != NO_VAL)
 		preserve_env = true;
-	env_array_for_step(&env, ctx->step_resp, resp_port, preserve_env);
+	env_array_for_step(&env, ctx->step_resp, &launch, resp_port,
+			   preserve_env);
 	env_array_merge(&env, (const char **)mpi_env);
 	env_array_free(mpi_env);
 
@@ -548,7 +586,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 						 ctx->step_resp->cred,
 						 params->labelio,
 						 params->pack_offset,
-						 params->task_offset);
+						 params->pack_task_offset);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;
@@ -972,7 +1010,9 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->resp_port = NULL;
 	sls->abort = false;
 	sls->abort_action_taken = false;
+	/* NOTE: No malloc() of sls->mpi_info required */
 	sls->mpi_info->jobid = ctx->step_req->job_id;
+	sls->mpi_info->pack_jobid = NO_VAL;
 	sls->mpi_info->stepid = ctx->step_resp->job_step_id;
 	sls->mpi_info->step_layout = layout;
 	sls->mpi_state = NULL;

@@ -103,26 +103,56 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 	_pmixp_job_info.uid = job->uid;
 	_pmixp_job_info.gid = job->gid;
 
-	/* This node info */
-	_pmixp_job_info.jobid = job->jobid;
-	_pmixp_job_info.stepid = job->stepid;
-	_pmixp_job_info.node_id = job->nodeid;
-	_pmixp_job_info.node_tasks = job->node_tasks;
+	if ((job->pack_jobid != 0) && (job->pack_jobid != NO_VAL)) {
+		_pmixp_job_info.jobid = job->pack_jobid;
+		_pmixp_job_info.stepid = job->stepid;
+		_pmixp_job_info.node_id = job->nodeid  + job->node_offset;
+		_pmixp_job_info.node_tasks = job->node_tasks;
+		_pmixp_job_info.ntasks = job->pack_ntasks;
+		_pmixp_job_info.nnodes = job->pack_nnodes;
+		msize = _pmixp_job_info.nnodes * sizeof(uint32_t);
+		_pmixp_job_info.task_cnts = xmalloc(msize);
+		for (i = 0; i < _pmixp_job_info.nnodes; i++)
+			_pmixp_job_info.task_cnts[i] = job->pack_task_cnts[i];
 
-	/* Global info */
-	_pmixp_job_info.ntasks = job->ntasks;
-	_pmixp_job_info.nnodes = job->nnodes;
-	msize = sizeof(*_pmixp_job_info.task_cnts) * job->nnodes;
-	_pmixp_job_info.task_cnts = xmalloc(msize);
-	for (i = 0; i < job->nnodes; i++) {
-		_pmixp_job_info.task_cnts[i] = job->task_cnts[i];
-	}
+		msize = _pmixp_job_info.node_tasks * sizeof(uint32_t);
+		_pmixp_job_info.gtids = xmalloc(msize);
+		for (i = 0; i < job->node_tasks; i++) {
+			_pmixp_job_info.gtids[i] = job->task[i]->gtid +
+						   job->pack_task_offset;
+		}
+	} else {
+		_pmixp_job_info.jobid = job->jobid;
+		_pmixp_job_info.stepid = job->stepid;
+		_pmixp_job_info.node_id = job->nodeid;
+		_pmixp_job_info.node_tasks = job->node_tasks;
+		_pmixp_job_info.ntasks = job->ntasks;
+		_pmixp_job_info.nnodes = job->nnodes;
+		msize = _pmixp_job_info.nnodes * sizeof(uint32_t);
+		_pmixp_job_info.task_cnts = xmalloc(msize);
+		for (i = 0; i < _pmixp_job_info.nnodes; i++)
+			_pmixp_job_info.task_cnts[i] = job->task_cnts[i];
 
-	msize = _pmixp_job_info.node_tasks * sizeof(uint32_t);
-	_pmixp_job_info.gtids = xmalloc(msize);
-	for (i = 0; i < job->node_tasks; i++) {
-		_pmixp_job_info.gtids[i] = job->task[i]->gtid;
+		msize = _pmixp_job_info.node_tasks * sizeof(uint32_t);
+		_pmixp_job_info.gtids = xmalloc(msize);
+		for (i = 0; i < job->node_tasks; i++)
+			_pmixp_job_info.gtids[i] = job->task[i]->gtid;
 	}
+#if 0
+	if ((job->pack_jobid != 0) && (job->pack_jobid != NO_VAL))
+		info("PACK JOBID:%u", _pmixp_job_info.jobid);
+	else
+		info("JOBID:%u", _pmixp_job_info.jobid);
+	info("STEPID:%u", _pmixp_job_info.stepid);
+	info("NODEID:%u", _pmixp_job_info.node_id);
+	info("NODE_TASKS:%u", _pmixp_job_info.node_tasks);
+	info("NTASKS:%u", _pmixp_job_info.ntasks);
+	info("NNODES:%u", _pmixp_job_info.nnodes);
+	for (i = 0; i < _pmixp_job_info.nnodes; i++)
+		info("TASK_CNT[%d]:%u", i,_pmixp_job_info.task_cnts[i]);
+	for (i = 0; i < job->node_tasks; i++)
+		info("GTIDS[%d]:%u", i, _pmixp_job_info.gtids[i]);
+#endif
 
 	/* Setup hostnames and job-wide info */
 	if ((rc = _resources_set(env))) {

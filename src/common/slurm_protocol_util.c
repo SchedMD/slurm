@@ -167,6 +167,8 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 
 	debug3("job_id: %u", msg->job_id);
 	debug3("job_step_id: %u", msg->job_step_id);
+	if (msg->pack_jobid != NO_VAL)
+		debug3("pack_jobid: %u", msg->pack_jobid);
 	if (msg->pack_offset != NO_VAL)
 		debug3("pack_offset: %u", msg->pack_offset);
 	debug3("uid: %u", msg->uid);

@@ -263,12 +263,14 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	ListIterator opt_iter, job_iter;
 	opt_t *opt_local = NULL;
 	_launch_app_data_t *opts;
-	int total_ntasks = 0, step_cnt = 0;
+	int total_ntasks = 0, total_nnodes = 0, step_cnt = 0, node_offset = 0;
 	pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t step_cond   = PTHREAD_COND_INITIALIZER;
 	srun_job_t *first_job = NULL;
-	char *launch_type;
+	char *launch_type, *pack_node_list = NULL;
 	bool need_mpir = false;
+	uint16_t *tmp_task_cnt = NULL, *pack_task_cnts = NULL;
+	uint32_t **tmp_tids = NULL, **pack_tids = NULL;
 
 	launch_type = slurm_get_launch_type();
 	if (launch_type && strstr(launch_type, "slurm"))
@@ -286,13 +288,61 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		}
 
 		job_iter = list_iterator_create(srun_job_list);
-		if (need_mpir) {
-			while ((job = (srun_job_t *) list_next(job_iter))) {
-				total_ntasks += job->ntasks;
+		while ((job = (srun_job_t *) list_next(job_iter))) {
+			char *node_list = NULL;
+			int i, node_inx;
+			total_ntasks += job->ntasks;
+			total_nnodes += job->nhosts;
+
+			xrealloc(pack_task_cnts, sizeof(uint16_t)*total_nnodes);
+			(void) slurm_step_ctx_get(job->step_ctx,
+						  SLURM_STEP_CTX_TASKS,
+						  &tmp_task_cnt);
+			if (!tmp_task_cnt) {
+				fatal("%s: job %u has NULL task array",
+				      __func__, job->jobid);
 			}
-			list_iterator_reset(job_iter);
-			mpir_init(total_ntasks);
+			memcpy(pack_task_cnts + node_offset, tmp_task_cnt,
+			       sizeof(uint16_t) * job->nhosts);
+
+			xrealloc(pack_tids, sizeof(uint32_t *) * total_nnodes);
+			(void) slurm_step_ctx_get(job->step_ctx,
+						  SLURM_STEP_CTX_TIDS,
+						  &tmp_tids);
+			if (!tmp_tids) {
+				fatal("%s: job %u has NULL task ID array",
+				      __func__, job->jobid);
+			}
+			for (node_inx = 0; node_inx < job->nhosts; node_inx++) {
+				uint32_t *node_tids;
+				node_tids = xmalloc(sizeof(uint32_t *) *
+						    tmp_task_cnt[node_inx]);
+				for (i = 0; i < tmp_task_cnt[node_inx]; i++) {
+					node_tids[i] = tmp_tids[node_inx][i] +
+						       job->pack_task_offset;
+				}
+				pack_tids[node_offset + node_inx] =
+					node_tids;
+			}
+
+			(void) slurm_step_ctx_get(job->step_ctx,
+						  SLURM_STEP_CTX_NODE_LIST,
+						  &node_list);
+			if (!node_list) {
+				fatal("%s: job %u has NULL hostname",
+				      __func__, job->jobid);
+			}
+			if (pack_node_list)
+				xstrfmtcat(pack_node_list, ",%s", node_list);
+			else
+				pack_node_list = xstrdup(node_list);
+			xfree(node_list);
+			node_offset += job->nhosts;
 		}
+		list_iterator_reset(job_iter);
+
+		if (need_mpir)
+			mpir_init(total_ntasks);
 
 		opt_iter = list_iterator_create(opt_list);
 		while ((opt_local = (opt_t *) list_next(opt_iter))) {
@@ -314,6 +364,19 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			slurm_mutex_lock(&step_mutex);
 			step_cnt++;
 			slurm_mutex_unlock(&step_mutex);
+			job->pack_node_list = xstrdup(pack_node_list);
+			if (pack_step_cnt > 1) {
+				xassert(node_offset == job->pack_nnodes);
+//FIXME-PACK: We need to get pack_node_list, pack_task_cnts, pack_tids in same order
+				job->pack_task_cnts = xmalloc(sizeof(uint16_t) *
+							      job->pack_nnodes);
+				memcpy(job->pack_task_cnts, pack_task_cnts,
+				       sizeof(uint16_t) * job->pack_nnodes);
+				job->pack_tids = xmalloc(sizeof(uint32_t *) *
+							 job->pack_nnodes);
+				memcpy(job->pack_tids, pack_tids,
+				       sizeof(uint32_t *) * job->pack_nnodes);
+			}
 			opts = xmalloc(sizeof(_launch_app_data_t));
 			opts->got_alloc   = got_alloc;
 			opts->job         = job;
@@ -326,6 +389,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			slurm_thread_create_detached(NULL, _launch_one_app,
 						     opts);
 		}
+		xfree(pack_node_list);
+		xfree(pack_task_cnts);
 		list_iterator_destroy(job_iter);
 		list_iterator_destroy(opt_iter);
 		slurm_mutex_lock(&step_mutex);
@@ -392,8 +457,8 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, &tasks);
 
 	env->select_jobinfo = job->select_jobinfo;
-	if (job->pack_nodelist)
-		env->nodelist = job->pack_nodelist;
+	if (job->pack_node_list)
+		env->nodelist = job->pack_node_list;
 	else
 		env->nodelist = job->nodelist;
 	env->partition = job->partition;

@@ -1940,9 +1940,13 @@ typedef struct {
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
 	uint32_t node_offset;	/* Pack job node offset or NO_VAL */
 	uint32_t pack_jobid;	/* pack job ID or NO_VAL */
+	uint32_t pack_nnodes;	/* total task count for entire pack job */
 	uint32_t pack_ntasks;	/* total task count for entire pack job */
+	uint16_t *pack_task_cnts; /* Number of tasks on each node in pack job */
+	uint32_t **pack_tids;	/* Task IDs on each node in pack job */
 	uint32_t pack_offset;	/* Pack job offset or NO_VAL */
-	uint32_t task_offset;	/* Pack job tsk offset or NO_VAL */
+	uint32_t pack_task_offset; /* Pack job task offset or NO_VAL */
+	char *pack_node_list;	/* Pack step node list */
 	bool parallel_debug;
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *task_prolog;

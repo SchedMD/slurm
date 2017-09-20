@@ -61,6 +61,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/strlcpy.h"
@@ -1374,23 +1375,29 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
  *	SLURM_LAUNCH_NODE_IPADDR
  *
  */
-void
+extern void
 env_array_for_step(char ***dest,
 		   const job_step_create_response_msg_t *step,
+		   launch_tasks_request_msg_t *launch,
 		   uint16_t launcher_port,
 		   bool preserve_env)
 {
 	char *tmp, *tpn;
-	uint32_t node_cnt = step->step_layout->node_cnt;
+	uint32_t node_cnt = step->step_layout->node_cnt, task_cnt;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	tpn = uint16_array_to_str(step->step_layout->node_cnt,
-				  step->step_layout->tasks);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST",
-				"%s", step->step_layout->node_list);
-	env_array_append_fmt(dest, "SLURM_JOB_NODELIST",
-			     "%s", step->step_layout->node_list);
+
+	if (launch->pack_node_list) {
+		tmp = launch->pack_node_list;
+		env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", tmp);
+		env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", tmp);
+	} else {
+		tmp = step->step_layout->node_list;
+		env_array_append_fmt(dest, "SLURM_JOB_NODELIST", "%s", tmp);
+	}
+	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST", "%s", tmp);
+
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		char geo_char[HIGHEST_DIMENSIONS+1];
 
@@ -1413,11 +1420,33 @@ env_array_for_step(char ***dest,
 					"%s", geo_char);
 	}
 
-	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES",
-				"%u", node_cnt);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS",
-				"%u", step->step_layout->task_cnt);
+	if (launch->pack_nnodes && (launch->pack_nnodes != NO_VAL))
+		node_cnt = launch->pack_nnodes;
+	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES", "%u", node_cnt);
+
+	if (launch->pack_ntasks && (launch->pack_ntasks != NO_VAL))
+		task_cnt = launch->pack_ntasks;
+	else
+		task_cnt = step->step_layout->task_cnt;
+	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS", "%u", task_cnt);
+
+	if (launch->pack_task_cnts) {
+		tpn = uint16_array_to_str(launch->pack_nnodes,
+					  launch->pack_task_cnts);
+		env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s",
+					tpn);
+		env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u",
+					launch->pack_nnodes);
+	} else {
+		tpn = uint16_array_to_str(step->step_layout->node_cnt,
+					  step->step_layout->tasks);
+		if (!preserve_env) {
+			env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE",
+						"%s", tpn);
+		}
+	}
 	env_array_overwrite_fmt(dest, "SLURM_STEP_TASKS_PER_NODE", "%s", tpn);
+
 	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_PORT",
 				"%hu", launcher_port);
 	if (step->resv_ports) {
@@ -1437,15 +1466,11 @@ env_array_for_step(char ***dest,
 	/* OBSOLETE, but needed by some MPI implementations, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
 	if (!preserve_env) {
-		env_array_overwrite_fmt(dest, "SLURM_NNODES",
-					"%u", node_cnt);
-		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",
-					step->step_layout->task_cnt);
+		env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", node_cnt);
+		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u", task_cnt);
 		/* keep around for old scripts */
 		env_array_overwrite_fmt(dest, "SLURM_NPROCS",
 					"%u", step->step_layout->task_cnt);
-		env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s",
-					tpn);
 	}
 	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_PORT",
 				"%hu", launcher_port);

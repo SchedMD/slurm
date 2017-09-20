@@ -346,8 +346,8 @@ extern void exec_task(stepd_step_rec_t *job, int i)
 
 	if (job->node_offset != NO_VAL)
 		node_offset = job->node_offset;
-	if (job->task_offset != NO_VAL)
-		task_offset = job->task_offset;
+	if (job->pack_task_offset != NO_VAL)
+		task_offset = job->pack_task_offset;
 	if (i == 0)
 		_make_tmpdir(job);
 

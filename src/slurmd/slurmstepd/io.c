@@ -562,8 +562,8 @@ _local_file_write(eio_obj_t *obj, List objs)
 		(client->out_msg->length - client->out_remaining);
 	n = write_labelled_message(obj->fd, buf, client->out_remaining,
 				   header.gtaskid, client->job->pack_offset,
-				   client->job->task_offset, client->labelio,
-				   client->taskid_width);
+				   client->job->pack_task_offset,
+				   client->labelio, client->taskid_width);
 	if (n < 0) {
 		client->out_eof = true;
 		_free_all_outgoing_msgs(client->msg_queue, client->job);

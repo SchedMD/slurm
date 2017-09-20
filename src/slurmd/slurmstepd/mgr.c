@@ -1969,8 +1969,8 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 	char **tmp_env;
 	uint32_t task_offset = 0;
 
-	if (job->task_offset != NO_VAL)
-		task_offset = job->task_offset;
+	if (job->pack_task_offset != NO_VAL)
+		task_offset = job->pack_task_offset;
 	do {
 		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
 		if (pid == -1) {

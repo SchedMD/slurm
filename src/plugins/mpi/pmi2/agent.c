@@ -65,7 +65,9 @@ static int *initialized = NULL;
 static int *finalized = NULL;
 
 static eio_handle_t *pmi2_handle;
+static volatile bool agent_started;
 static volatile bool agent_running;
+static volatile bool agent_stopped;
 static pthread_mutex_t agent_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool _tree_listen_readable(eio_obj_t *obj);
@@ -352,9 +354,17 @@ static bool _agent_running_test(void)
 extern int
 pmi2_start_agent(void)
 {
-	slurm_thread_create_detached(NULL, _agent, NULL);
+	bool is_started;
 
-	debug("mpi/pmi2: started agent thread");
+	slurm_mutex_lock(&agent_mutex);
+	is_started = agent_started;
+	agent_started = true;
+	slurm_mutex_unlock(&agent_mutex);
+
+	if (!is_started) {
+		slurm_thread_create_detached(NULL, _agent, NULL);
+		debug("mpi/pmi2: started agent thread");
+	}
 
 	/* wait for the agent to start */
 	while (!_agent_running_test()) {
@@ -370,14 +380,21 @@ pmi2_start_agent(void)
 extern int
 pmi2_stop_agent(void)
 {
-	/* brake eio loop */
-	if (pmi2_handle != NULL) {
+	bool is_stopped;
+
+	slurm_mutex_lock(&agent_mutex);
+	is_stopped = agent_stopped;
+	agent_stopped = true;
+	slurm_mutex_unlock(&agent_mutex);
+
+	if (!is_stopped && pmi2_handle)
 		eio_signal_shutdown(pmi2_handle);
-		/* wait for the agent to finish */
-		while (_agent_running_test()) {
-			sched_yield();
-		}
+
+	/* wait for the agent to finish */
+	while (_agent_running_test()) {
+		sched_yield();
 	}
+
 	return SLURM_SUCCESS;
 }
 

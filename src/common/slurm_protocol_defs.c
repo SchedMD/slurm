@@ -1271,6 +1271,8 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 		}
 		xfree(msg->global_task_ids);
 	}
+	xfree(msg->pack_node_list);
+	xfree(msg->pack_task_cnts);
 	xfree(msg->tasks_to_launch);
 	xfree(msg->resp_port);
 	xfree(msg->io_port);

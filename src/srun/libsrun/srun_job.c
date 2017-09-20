@@ -699,7 +699,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 {
 	ListIterator opt_iter = NULL, job_iter;
 	opt_t *opt_local = &opt;
-	uint32_t node_offset = 0, step_id = NO_VAL;
+	uint32_t node_offset = 0, pack_nnodes = 0, step_id = NO_VAL;
 	uint32_t pack_offset = 0, pack_ntasks = 0, task_offset = 0;
 	int rc = 0;
 
@@ -710,9 +710,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 		while ((job = (srun_job_t *) list_next(job_iter))) {
 			if (pack_jobid)
 				job->pack_jobid = pack_jobid;
-			if (pack_nodelist)
-				job->pack_nodelist = xstrdup(pack_nodelist);
 			job->stepid = NO_VAL;
+			pack_nnodes += job->nhosts;
 			pack_ntasks += job->ntasks;
 		}
 
@@ -724,8 +723,9 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				fatal("%s: opt_list too short", __func__);
 			job->pack_offset = pack_offset;
 			job->node_offset = node_offset;
+			job->pack_nnodes = pack_nnodes;
 			job->pack_ntasks = pack_ntasks;
-			job->task_offset = task_offset;
+			job->pack_task_offset = task_offset;
 			if (step_id != NO_VAL)
 				job->stepid = step_id;
 			rc = create_job_step(job, use_all_cpus, opt_local);
@@ -1371,9 +1371,10 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
  	job->pack_jobid  = NO_VAL;
- 	job->pack_ntasks = NO_VAL;
+	job->pack_nnodes = NO_VAL;
+	job->pack_ntasks = NO_VAL;
  	job->pack_offset = NO_VAL;
- 	job->task_offset = NO_VAL;
+	job->pack_task_offset = NO_VAL;
 
 #if defined HAVE_BG
 //#if defined HAVE_BGQ && defined HAVE_BG_FILES

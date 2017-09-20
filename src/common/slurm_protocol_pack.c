@@ -10202,9 +10202,15 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack32(msg->job_step_id, buffer);
 		pack32(msg->node_offset, buffer);
 		pack32(msg->pack_jobid, buffer);
+		pack32(msg->pack_nnodes, buffer);
+		if (msg->pack_nnodes != NO_VAL) {
+			pack16_array(msg->pack_task_cnts, msg->pack_nnodes,
+				     buffer);
+		}
 		pack32(msg->pack_ntasks, buffer);
 		pack32(msg->pack_offset, buffer);
-		pack32(msg->task_offset, buffer);
+		pack32(msg->pack_task_offset, buffer);
+		packstr(msg->pack_node_list, buffer);
 		pack32(msg->ntasks, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
@@ -10490,9 +10496,18 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->job_step_id, buffer);
 		safe_unpack32(&msg->node_offset, buffer);
 		safe_unpack32(&msg->pack_jobid, buffer);
+		safe_unpack32(&msg->pack_nnodes, buffer);
+		if (msg->pack_nnodes != NO_VAL) {
+			safe_unpack16_array(&msg->pack_task_cnts,
+					    &uint32_tmp, buffer);
+			if (uint32_tmp != msg->pack_nnodes)
+				goto unpack_error;
+		}
 		safe_unpack32(&msg->pack_ntasks, buffer);
 		safe_unpack32(&msg->pack_offset, buffer);
-		safe_unpack32(&msg->task_offset, buffer);
+		safe_unpack32(&msg->pack_task_offset, buffer);
+		safe_unpackstr_xmalloc(&msg->pack_node_list, &uint32_tmp,
+				       buffer);
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
 		safe_unpack16(&msg->ntasks_per_core, buffer);
@@ -10603,9 +10618,10 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->job_step_id, buffer);
 		msg->node_offset = NO_VAL;
 		msg->pack_jobid  = NO_VAL;
+		msg->pack_nnodes = NO_VAL;
 		msg->pack_ntasks = NO_VAL;
 		msg->pack_offset = NO_VAL;
-		msg->task_offset = NO_VAL;
+		msg->pack_task_offset = NO_VAL;
 		safe_unpack32(&uint32_tmp, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -10735,9 +10751,10 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->job_step_id, buffer);
 		msg->node_offset = NO_VAL;
 		msg->pack_jobid  = NO_VAL;
+		msg->pack_nnodes = NO_VAL;
 		msg->pack_ntasks = NO_VAL;
 		msg->pack_offset = NO_VAL;
-		msg->task_offset = NO_VAL;
+		msg->pack_task_offset = NO_VAL;
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
 		safe_unpack16(&msg->ntasks_per_core, buffer);
