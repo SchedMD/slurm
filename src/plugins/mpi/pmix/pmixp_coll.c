@@ -1177,6 +1177,10 @@ proceed:
 int pmixp_coll_contrib_parent(pmixp_coll_t *coll, uint32_t peerid,
 			     uint32_t seq, Buf buf)
 {
+#ifdef PMIXP_COLL_DEBUG
+	char *nodename = NULL;
+	int lpeerid = -1;
+#endif
 	char *data_src = NULL, *data_dst = NULL;
 	uint32_t size;
 	int expected_peerid;
@@ -1203,8 +1207,8 @@ int pmixp_coll_contrib_parent(pmixp_coll_t *coll, uint32_t peerid,
 	}
 
 #ifdef PMIXP_COLL_DEBUG
-	char *nodename = pmixp_info_job_host(peerid);
-	int lpeerid = hostlist_find(coll->peers_hl, nodename);
+	nodename = pmixp_info_job_host(peerid);
+	lpeerid = hostlist_find(coll->peers_hl, nodename);
 	/* Mark this event */
 	PMIXP_DEBUG("%p: contrib/rem from %s:%d(%d): state=%s, size=%u",
 		    coll, nodename, peerid, lpeerid,
@@ -1320,10 +1324,12 @@ proceed:
 	_progress_coll(coll);
 
 #ifdef PMIXP_COLL_DEBUG
-	PMIXP_DEBUG("%p: finish: node=%s:%d(%d), state=%s",
-		    coll, nodename, peerid, lpeerid,
-		    pmixp_coll_state2str(coll->state));
-	xfree(nodename);
+	if (nodename) {
+		PMIXP_DEBUG("%p: finish: node=%s:%d(%d), state=%s",
+			    coll, nodename, peerid, lpeerid, "TBD");
+			    pmixp_coll_state2str(coll->state));
+		xfree(nodename);
+	}
 #endif
 	/* unlock the structure */
 	slurm_mutex_unlock(&coll->lock);
