@@ -88,8 +88,8 @@ different values can be configured on each partition when
 <I>PreemptType=preempt/partition_prio</I>. Note that when specified 
 on a partition, a compatible mode must also be specified system-wide;
 specifically if a PreemptMode is set to SUSPEND for any partition, then
-the system-wide PreemptMode must include the GANG parameter so the module
-responsible for resuming jobs executes.
+the system-wide PreemptMode must include the GANG and SUSPEND parameters so the
+module responsible for resuming jobs executes.
 Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>,
 <I>SUSPEND</I> or <I>REQUEUE</I> depending on the desired action for low
 priority jobs.
@@ -441,6 +441,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 6 March 2017</p>
+<p style="text-align:center;">Last modified 20 September 2017</p>
 
 <!--#include virtual="footer.txt"-->

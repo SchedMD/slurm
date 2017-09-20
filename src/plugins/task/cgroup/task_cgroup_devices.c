@@ -287,7 +287,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		return SLURM_ERROR;
 	}
 
-	info("task/cgroup: manage devices jor job '%u'", jobid);
+	debug2("task/cgroup: manage devices jor job '%u'", jobid);
 
 	 /*
 	  * collect info concerning the gres.conf file
@@ -370,8 +370,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	 * to be allowed by* default.
 	 */
 	for (k = 0; k < allow_lines; k++) {
-		info("Default access allowed to device %s",
-		     allowed_dev_major[k]);
+		debug2("Default access allowed to device %s for job",
+		       allowed_dev_major[k]);
 		xcgroup_set_param(&job_devices_cg, "devices.allow",
 				  allowed_dev_major[k]);
 	}
@@ -381,11 +381,13 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
          */
 	for (k = 0; k < gres_conf_lines; k++) {
 		if (gres_job_bit_alloc[k] == 1) {
-			info("Allowing access to device %s", gres_cgroup[k]);
+			debug2("Allowing access to device %s for job",
+			       gres_cgroup[k]);
 			xcgroup_set_param(&job_devices_cg, "devices.allow",
                                           gres_cgroup[k]);
 		} else {
-			info("Not allowing access to device %s", gres_cgroup[k]);
+			debug2("Not allowing access to device %s for job",
+			       gres_cgroup[k]);
 			xcgroup_set_param(&job_devices_cg, "devices.deny",
 					  gres_cgroup[k]);
 		}
@@ -426,7 +428,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		 * are supposed to be allowed by default.
 		 */
 		for (k = 0; k < allow_lines; k++) {
-			info("Default access allowed to device %s",
+			debug2("Default access allowed to device %s for step",
 			     allowed_dev_major[k]);
 			xcgroup_set_param(&step_devices_cg, "devices.allow",
 					  allowed_dev_major[k]);
@@ -438,14 +440,14 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		 */
 		for (k = 0; k < gres_conf_lines; k++) {
 			if (gres_step_bit_alloc[k] == 1) {
-				info("Allowing access to device %s for step",
-				     gres_cgroup[k]);
+				debug2("Allowing access to device %s for step",
+				       gres_cgroup[k]);
 				xcgroup_set_param(&step_devices_cg,
 						 "devices.allow",
 						  gres_cgroup[k]);
 			} else {
-				info("Not allowing access to device %s for step",
-				     gres_cgroup[k]);
+				debug2("Not allowing access to device %s for step",
+				       gres_cgroup[k]);
 				xcgroup_set_param(&step_devices_cg,
 						 "devices.deny",
 						  gres_cgroup[k]);
@@ -471,6 +473,14 @@ error:
 	xfree(gres_count);
 	xfree(gres_name);
 	xfree(dev_path);
+	for (k = 0; k < allow_lines; k++) {
+		xfree(allowed_dev_major[k]);
+	}
+	xfree(allowed_dev_major);
+
+	for (k = 0; k < gres_conf_lines; k++) {
+		xfree(gres_cgroup[k]);
+	}
 	xfree(gres_cgroup);
 
 	return fstatus;
@@ -504,7 +514,7 @@ static void _calc_device_major(char *dev_path[PATH_MAX],
 		stat(dev_path[k], &fs);
 		major = (int)major(fs.st_rdev);
 		minor = (int)minor(fs.st_rdev);
-		debug3("device : %s major %d, minor %d\n",
+		debug3("device : %s major %d, minor %d",
 			dev_path[k], major, minor);
 		memset(str1, 0, sizeof(str1));
 		if (S_ISBLK(fs.st_mode)) {
@@ -546,6 +556,7 @@ static int read_allowed_devices_file(char **allowed_devices)
 						xstrdup(globbuf.gl_pathv[l]);
 					num_lines++;
 				}
+				globfree(&globbuf);
 			}
 		}
 		fclose ( file );

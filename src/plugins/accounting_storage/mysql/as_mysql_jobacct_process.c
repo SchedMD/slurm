@@ -738,7 +738,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			job->req_gres = xstrdup(row[JOB_REQ_GRES_REQ]);
 		else
 			job->req_gres = xstrdup("");
-		job->req_mem = slurm_atoul(row[JOB_REQ_REQ_MEM]);
+		job->req_mem = slurm_atoull(row[JOB_REQ_REQ_MEM]);
 		job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
 		job->show_full = 1;
