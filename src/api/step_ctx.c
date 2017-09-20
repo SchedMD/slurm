@@ -397,6 +397,7 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 	uint16_t **uint16_array_pptr = (uint16_t **) NULL;
 	uint32_t *uint32_ptr;
 	uint32_t **uint32_array_pptr = (uint32_t **) NULL;
+	uint32_t ***uint32_array_ppptr = (uint32_t ***) NULL;
 	char **char_array_pptr = (char **) NULL;
 	job_step_create_response_msg_t ** step_resp_pptr;
 	slurm_cred_t  **cred;     /* Slurm job credential    */
@@ -435,6 +436,10 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 		*uint32_array_pptr =
 			ctx->step_resp->step_layout->tids[node_inx];
 		break;
+	case SLURM_STEP_CTX_TIDS:
+		uint32_array_ppptr = (uint32_t ***) va_arg(ap, void *);
+		*uint32_array_ppptr = ctx->step_resp->step_layout->tids;
+		break;
 
 	case SLURM_STEP_CTX_RESP:
 		step_resp_pptr = (job_step_create_response_msg_t **)
@@ -463,6 +468,11 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 		char_array_pptr = (char **) va_arg(ap, void *);
 		*char_array_pptr = nodelist_nth_host(
 			ctx->step_resp->step_layout->node_list, node_inx);
+		break;
+	case SLURM_STEP_CTX_NODE_LIST:
+		char_array_pptr = (char **) va_arg(ap, void *);
+		*char_array_pptr =
+			xstrdup(ctx->step_resp->step_layout->node_list);
 		break;
 	case SLURM_STEP_CTX_USER_MANAGED_SOCKETS:
 		int_ptr = va_arg(ap, int *);

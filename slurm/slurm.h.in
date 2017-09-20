@@ -924,7 +924,9 @@ enum ctx_keys {
 	SLURM_STEP_CTX_NUM_HOSTS,
 	SLURM_STEP_CTX_HOST,
 	SLURM_STEP_CTX_JOBID,
-	SLURM_STEP_CTX_USER_MANAGED_SOCKETS
+	SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
+	SLURM_STEP_CTX_NODE_LIST,	/* step's node list, must xfree */
+	SLURM_STEP_CTX_TIDS	/* get array of task IDs for all nodes */
 };
 
 /* CR_CPU, CR_SOCKET and CR_CORE are mututally exclusive
