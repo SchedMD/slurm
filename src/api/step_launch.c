@@ -1204,7 +1204,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 		int cc;
 
 		if (ports)
-			cc = net_stream_listen_ports(&sock, &port, ports);
+			cc = net_stream_listen_ports(&sock, &port, ports, false);
 		else
 			cc = net_stream_listen(&sock, &port);
 		if (cc < 0) {

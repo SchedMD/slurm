@@ -1128,7 +1128,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 		if (ports)
 			cc = net_stream_listen_ports(&cio->listensock[i],
 						     &cio->listenport[i],
-						     ports);
+						     ports, false);
 		else
 			cc = net_stream_listen(&cio->listensock[i],
 					       &cio->listenport[i]);

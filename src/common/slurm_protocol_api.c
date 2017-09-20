@@ -98,7 +98,7 @@ static int message_timeout = -1;
 static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
 static int   _unpack_msg_uid(Buf buffer);
-static bool  _is_port_ok(int, uint16_t);
+static bool  _is_port_ok(int, uint16_t, bool);
 
 #if _DEBUG
 static void _print_data(char *data, int len);
@@ -2927,7 +2927,7 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
 		return -1;
 	}
 
-	port = sock_bind_range(s, ports);
+	port = sock_bind_range(s, ports, false);
 	if (port < 0) {
 		close(s);
 		return -1;
@@ -5070,10 +5070,15 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 	sin->sin_addr.s_addr = s_addr;
 }
 
-/* sock_bind_range()
+/*
+ * Check if we can bind() the socket s to port port.
+ *
+ * IN: s - socket
+ * IN: port - port number to attempt to bind
+ * IN: local - only bind to localhost if true
+ * OUT: true/false if port was bound successfully
  */
-int
-sock_bind_range(int s, uint16_t *range)
+int sock_bind_range(int s, uint16_t *range, bool local)
 {
 	uint32_t count;
 	uint32_t min;
@@ -5090,7 +5095,7 @@ sock_bind_range(int s, uint16_t *range)
 	count = num;
 
 	do {
-		if (_is_port_ok(s, port))
+		if (_is_port_ok(s, port, local))
 			return port;
 
 		if (port == max)
@@ -5106,16 +5111,22 @@ sock_bind_range(int s, uint16_t *range)
 	return -1;
 }
 
-/* _is_port_ok()
- *
+/*
  * Check if we can bind() the socket s to port port.
+ *
+ * IN: s - socket
+ * IN: port - port number to attempt to bind
+ * IN: local - only bind to localhost if true
+ * OUT: true/false if port was bound successfully
  */
-static bool
-_is_port_ok(int s, uint16_t port)
+static bool _is_port_ok(int s, uint16_t port, bool local)
 {
 	struct sockaddr_in sin;
 
 	slurm_setup_sockaddr(&sin, port);
+
+	if (local)
+		sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
 	if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 		debug("%s: bind() failed port %d sock %d %m",

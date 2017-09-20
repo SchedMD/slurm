@@ -196,8 +196,7 @@ extern int net_set_keep_alive(int sock)
 
 /* net_stream_listen_ports()
  */
-int
-net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports)
+int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local)
 {
 	int cc;
 	int val;
@@ -212,7 +211,7 @@ net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports)
 		return -1;
 	}
 
-	cc = sock_bind_range(*fd, ports);
+	cc = sock_bind_range(*fd, ports, local);
 	if (cc < 0) {
 		close(*fd);
 		return -1;

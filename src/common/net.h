@@ -61,6 +61,6 @@ extern int net_set_low_water(int sock, socklen_t size);
 /* set keep alive time on socket */
 extern int net_set_keep_alive(int sock);
 
-extern int net_stream_listen_ports(int *, uint16_t *, uint16_t *);
+extern int net_stream_listen_ports(int *, uint16_t *, uint16_t *, bool);
 
 #endif /* !_NET_H */

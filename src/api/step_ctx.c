@@ -239,7 +239,7 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	 * controller which port to use.
 	 */
 	if ((ports = slurm_get_srun_port_range()))
-		cc = net_stream_listen_ports(&sock, &port, ports);
+		cc = net_stream_listen_ports(&sock, &port, ports, false);
 	else
 		cc = net_stream_listen(&sock, &port);
 	if (cc < 0) {

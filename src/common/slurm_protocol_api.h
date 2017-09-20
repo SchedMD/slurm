@@ -947,7 +947,7 @@ extern int slurm_init_msg_engine_ports(uint16_t *);
  *
  * Try to bind() sock to any port in a given interval of ports
  */
-extern int sock_bind_range(int, uint16_t *);
+extern int sock_bind_range(int, uint16_t *, bool local);
 
 /* In the socket implementation it creates a socket, binds to it, and
  *	listens for connections.

@@ -121,7 +121,7 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 
 	ports = slurm_get_srun_port_range();
 	if (ports)
-		cc = net_stream_listen_ports(&sock, port, ports);
+		cc = net_stream_listen_ports(&sock, port, ports, false);
 	else
 		cc = net_stream_listen(&sock, port);
 	if (cc < 0) {
