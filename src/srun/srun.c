@@ -317,7 +317,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			}
 			for (node_inx = 0; node_inx < job->nhosts; node_inx++) {
 				uint32_t *node_tids;
-				node_tids = xmalloc(sizeof(uint32_t *) *
+				node_tids = xmalloc(sizeof(uint32_t) *
 						    tmp_task_cnt[node_inx]);
 				for (i = 0; i < tmp_task_cnt[node_inx]; i++) {
 					node_tids[i] = tmp_tids[node_inx][i] +
