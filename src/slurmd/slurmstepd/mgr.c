@@ -484,20 +484,20 @@ cleanup:
 	return NULL;
 }
 
-static void
-_set_job_log_prefix(stepd_step_rec_t *job)
+static void _set_job_log_prefix(stepd_step_rec_t *job)
 {
-	char buf[256];
+	char *buf;
 
-	if (job->jobid > MAX_NOALLOC_JOBID)
-		return;
+	if (job->stepid == SLURM_BATCH_SCRIPT) {
+		buf = xstrdup_printf("[%u.batch] ", job->jobid);
+	} else if (job->stepid == SLURM_EXTERN_CONT) {
+		buf = xstrdup_printf("[%u.extern] ", job->jobid);
+	} else {
+		buf = xstrdup_printf("[%u.%u] ", job->jobid, job->stepid);
+	}
 
-	if ((job->jobid >= MIN_NOALLOC_JOBID) || (job->stepid == NO_VAL))
-		snprintf(buf, sizeof(buf), "[%u]", job->jobid);
-	else
-		snprintf(buf, sizeof(buf), "[%u.%u]", job->jobid, job->stepid);
-
-	log_set_fpfx(buf);
+	/* note: will claim ownership of buf, do not free */
+	log_set_fpfx(&buf);
 }
 
 static int

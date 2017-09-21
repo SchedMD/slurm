@@ -497,15 +497,15 @@ void log_reinit(void)
 	slurm_mutex_init(&log_lock);
 }
 
-void log_set_fpfx(char *prefix)
+void log_set_fpfx(char **prefix)
 {
 	slurm_mutex_lock(&log_lock);
 	xfree(log->fpfx);
-	if (!prefix)
+	if (!*prefix)
 		log->fpfx = xstrdup("");
 	else {
-		log->fpfx = xstrdup(prefix);
-		xstrcatchar(log->fpfx, ' ');
+		log->fpfx = *prefix;
+		prefix = NULL;
 	}
 	slurm_mutex_unlock(&log_lock);
 }
