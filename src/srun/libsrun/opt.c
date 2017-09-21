@@ -2362,6 +2362,8 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 
 	command_args = opt.argc;
 
+	if (!xstrcmp(mpi_type, "list"))
+		(void) mpi_hook_client_init(mpi_type);
 	if (!rest && !opt.test_only)
 		fatal("No command given to execute.");
 
