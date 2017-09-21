@@ -221,7 +221,6 @@ time_t	srun_begin_time = 0;
 int	_verbose = 0;
 
 /*---- forward declarations of static variables and functions  ----*/
-static bool mpi_initialized = false;
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
 	{"account",          required_argument, 0, 'A'},
@@ -1215,13 +1214,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_MPI:
 		xfree(mpi_type);
 		mpi_type = xstrdup(val);
-		if (mpi_hook_client_init((char *)val) == SLURM_ERROR) {
-			error("\"%s=%s\" -- invalid MPI type, "
-			      "--mpi=list for acceptable types.",
-			      e->var, val);
-			exit(error_exit);
-		}
-		mpi_initialized = true;
 		break;
 
 	case OPT_SIGNAL:
@@ -1773,14 +1765,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(mpi_type);
 			mpi_type = xstrdup(optarg);
-			if (mpi_hook_client_init((char *)optarg)
-			    == SLURM_ERROR) {
-				error("\"--mpi=%s\" -- long invalid MPI type, "
-				      "--mpi=list for acceptable types.",
-				      optarg);
-				exit(error_exit);
-			}
-			mpi_initialized = true;
 			break;
 		case LONG_OPT_PACK_GROUP:
 			/* Already parsed in _get_pack_group() */
@@ -2841,10 +2825,14 @@ static bool _opt_verify(void)
 				  &opt.cpu_bind_type))
 		exit(error_exit);
 
-	if (!mpi_initialized) {
+	if (!mpi_type)
 		mpi_type = slurm_get_mpi_default();
-		(void) mpi_hook_client_init(NULL);
+	if (mpi_hook_client_init(mpi_type) == SLURM_ERROR) {
+		error("invalid MPI type '%s', --mpi=list for acceptable types",
+		      mpi_type);
+		exit(error_exit);
 	}
+	xfree(mpi_type);
 
 	if (!opt.job_name)
 		opt.job_name = xstrdup(opt.cmd_name);
