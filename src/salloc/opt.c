@@ -70,6 +70,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/uid.h"
+#include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/util-net.h"
@@ -172,6 +173,7 @@
 #define LONG_OPT_DEADLINE        0x166
 #define LONG_OPT_DELAY_BOOT      0x167
 #define LONG_OPT_CLUSTER_CONSTRAINT 0x168
+#define LONG_OPT_X11             0x170
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -334,6 +336,7 @@ static void _opt_default(void)
 		opt.warn_signal		= 0;
 		opt.warn_time		= 0;
 		xfree(opt.wckey);
+		opt.x11			= 0;
 	} else if (opt.default_job_name) {
 		xfree(opt.job_name);
 	}
@@ -778,6 +781,7 @@ static void _set_options(int argc, char **argv)
 		{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
 		{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
+		{"x11",           optional_argument, 0, LONG_OPT_X11},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
@@ -1402,6 +1406,12 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_USE_MIN_NODES:
 			opt.job_flags |= USE_MIN_NODES;
 			break;
+		case LONG_OPT_X11:
+			if (optarg)
+				opt.x11 = x11_str2flags(optarg);
+			else
+				opt.x11 = X11_FORWARD_ALL;
+			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0)
 				exit(error_exit);
@@ -1857,6 +1867,11 @@ static bool _opt_verify(void)
 		if (sched_params && strstr(sched_params, "salloc_wait_nodes"))
 			opt.wait_all_nodes = 1;
 		xfree(sched_params);
+	}
+
+	if (opt.x11) {
+		opt.x11_target_port = x11_get_display_port();
+		opt.x11_magic_cookie = x11_get_xauth();
 	}
 
 	return verified;

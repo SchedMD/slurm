@@ -801,6 +801,12 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->profile  = opt.profile;
 	desc->wckey  = xstrdup(opt.wckey);
 
+	desc->x11 = opt.x11;
+	if (desc->x11) {
+		desc->x11_magic_cookie = xstrdup(opt.x11_magic_cookie);
+		desc->x11_target_port = opt.x11_target_port;
+	}
+
 	desc->cpu_freq_min = opt.cpu_freq_min;
 	desc->cpu_freq_max = opt.cpu_freq_max;
 	desc->cpu_freq_gov = opt.cpu_freq_gov;

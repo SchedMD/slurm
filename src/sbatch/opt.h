@@ -192,6 +192,10 @@ typedef struct sbatch_options {
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	time_t deadline;	/* ---deadline                  */
 	uint32_t delay_boot;	/* --delay-boot			*/
+	uint16_t x11;		/* --x11			*/
+	char *x11_magic_cookie;	/* cookie retrieved from xauth */
+	/* no x11_target_host here, alloc_host will be equivalent */
+	uint16_t x11_target_port; /* target display TCP port on localhost */
 } opt_t;
 
 typedef struct sbatch_env_opts {
