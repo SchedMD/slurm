@@ -77,22 +77,27 @@ proc delete_object { object names } {
 		-re "privilege to perform this action" {
 			send_user "FAILURE: don't have privileges."
 			incr rc
+			exp_continue
 		}
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr rc
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr rc
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr rc
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr rc
+			exp_continue
 		}
 		-re "Deleting $object" {
 			incr matches
@@ -219,6 +224,7 @@ set my_pid [spawn $sacctmgr -i add cluster $tc1 federation=$fed1]
 expect {
 	-re "The federation $fed1 doesn't exist." {
 		incr matches
+		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
