@@ -433,6 +433,9 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	uint32_t minphysid = 0xffffffff;/* minimum "physical id" */
 	uint32_t mincoreid = 0xffffffff;/* minimum "core id" */
 	int i;
+	FILE *cpu_info_file;
+	char buffer[128];
+	uint16_t curcpu, sockets, cores, threads;
 
 	get_procs(&numproc);
 	*p_cpus = numproc;
