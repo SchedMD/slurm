@@ -595,6 +595,11 @@ if {$job_id == 0} {
 		sleep 12
 	}
 
+#
+#	Wait for accounting data to be propagated to slurmdbd
+#
+	sleep 10
+
 	set matches [sacct_job b $job_id]
 	if {$matches != 2} {
 		send_user "\nFAILURE: sacct -b failed ($matches != 2)\n"
@@ -707,7 +712,6 @@ if {$job_id == 0} {
 #
 # Use sacctmgr to delete the test account
 #
-
 set damatches 0
 set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
 expect {

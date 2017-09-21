@@ -332,6 +332,11 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 #
+# Wait for accounting data to be propagated to slurmdbd
+#
+sleep 10
+
+#
 # Report basic sacct info
 #
 spawn $sacct --noheader -P --job=$job_id.$step_id --format jobid,jobname,state,exitcode
