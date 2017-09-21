@@ -1233,8 +1233,17 @@ expect {
 	"(N/y):" {
 		incr matches
 		send "y"
-		expect eof
 	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+expect {
 	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
 		slow_kill $my_pid
@@ -1500,8 +1509,16 @@ set matches 0
 # set state to something other than ACTIVE, it should stay the same.
 set my_pid [spawn $sacctmgr -i modify cluster $tc4 set fedstate=DRAIN]
 expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
-expect -re $
+
 set my_pid [spawn $sacctmgr -i modify cluster $tc4 set federation=$fed3]
 expect {
 	-re "The cluster $tc4 is already assigned to federation $fed3" {
@@ -1669,8 +1686,16 @@ if {$exit_code || $matches != 2} {
 # same thing for modifying federation - state should go to active
 set my_pid [spawn $sacctmgr -i modify cluster $tc4 set fedstate=DRAIN]
 expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
-expect -re $
+
 set matches 0
 set my_pid [spawn $sacctmgr -i modify federation $fed3 set clusters+=$tc4]
 expect {
@@ -1814,8 +1839,6 @@ if {$exit_code || $matches != 1} {
 	end_it 1
 }
 
-
-
 #####################################
 # TEST: modify federation change clusters - must remove others
 #####################################
@@ -1826,8 +1849,15 @@ if {$exit_code || $matches != 1} {
 # unset clusters
 set my_pid [spawn $sacctmgr -i modify cluster $tc1 $tc2 $tc3 set federation=]
 expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
-expect -re $
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify federation $fed1 set clusters=$tc1,$tc2]
@@ -1960,6 +1990,7 @@ expect {
 		wait
 	}
 }
+send_user "\\nPIDa $my_pid\\n"
 if {$exit_code || $matches != 3} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
@@ -2023,6 +2054,7 @@ expect {
 		wait
 	}
 }
+send_user "\\nPIDc $my_pid\\n"
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
@@ -2088,11 +2120,11 @@ expect {
 		wait
 	}
 }
+send_user "\\nPIDe $my_pid\\n"
 if {$exit_code || $matches != 2} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
 }
-
 
 set matches 0
 set my_pid [spawn $sacctmgr -i modify federation $fed1 set clusters-=$tc1,$tc3]
@@ -2241,6 +2273,7 @@ expect {
 		wait
 	}
 }
+send_user "\\nPID $my_pid\\n"
 if {$exit_code || $matches != 6} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
@@ -2345,8 +2378,15 @@ if {$exit_code || $matches != 4} {
 #####################################
 set my_pid [spawn $sacctmgr -i delete federation $fed2 $fed3]
 expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
-expect -re $
 
 set matches 0
 set my_pid [spawn $sacctmgr -i add federation $fed2 clusters=$tc1,$tc2]
@@ -2535,8 +2575,15 @@ if {$exit_code || $matches != 5} {
 # unset federations
 set my_pid [spawn $sacctmgr -i modify federation $fed1 set clusters=]
 expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
-expect -re $
 
 set matches 0
 set tmp_clusters ""
