@@ -154,15 +154,12 @@ send_user "\n\nTest locally logged messages..........\n\n"
 
 make_bash_script $file_in "
   $bin_rm -f $spank_conf_file
-  $bin_sleep 1
   $bin_cp -f $new_spank_conf $spank_conf_file
-  $bin_sleep 8
+  $bin_sleep 30
   $srun --mpi=none --test_suite=5 --pack-group=0,1 $bin_uname
-  $bin_sleep 1
   if test -f $orig_spank_conf
   then
     $bin_rm -f $spank_conf_file
-    $bin_sleep 1
     $bin_cp -f $orig_spank_conf $spank_conf_file
   fi
 "
@@ -194,8 +191,8 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	set exit_code 1
 }
-if {$matches != 2} {
-	send_user "\nFAILURE: spank options not processed by sbatch ($matches != 2)\n"
+if {$matches != 3} {
+	send_user "\nFAILURE: spank options not processed by sbatch ($matches != 3)\n"
 	set exit_code 1
 }
 
