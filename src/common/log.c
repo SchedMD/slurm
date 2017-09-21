@@ -501,7 +501,7 @@ void log_set_fpfx(char **prefix)
 {
 	slurm_mutex_lock(&log_lock);
 	xfree(log->fpfx);
-	if (!*prefix)
+	if (!prefix || !*prefix)
 		log->fpfx = xstrdup("");
 	else {
 		log->fpfx = *prefix;
