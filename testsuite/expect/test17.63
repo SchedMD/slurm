@@ -129,7 +129,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Check for desired output
 #
 set nodes 0
-if {[file exist $file_out]} {
+if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
 		-re "($number)" {
