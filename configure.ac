@@ -421,8 +421,6 @@ AC_CONFIG_FILES([Makefile
 		 contribs/seff/Makefile
 		 contribs/torque/Makefile
 		 contribs/openlava/Makefile
-		 contribs/phpext/Makefile
-		 contribs/phpext/slurm_php/config.m4
 		 contribs/sgather/Makefile
 		 contribs/sgi/Makefile
 		 contribs/sjobexit/Makefile

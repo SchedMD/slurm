@@ -78,10 +78,6 @@ of the Slurm contribs distribution follows:
      API to Slurm using perl.  Making available all Slurm command that exist
      in the Slurm proper API.
 
-  phpext/   	     [ PHP API to Slurm source ]
-     API to Slurm using php.  Not a complete API, but offers quite a few
-     interfaces to existing Slurm proper APIs.
-
   pmi2/              [ PMI2 client library ]
      User applications can link with this library to use Slurm's mpi/pmi2
      plugin.

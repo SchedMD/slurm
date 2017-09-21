@@ -15,7 +15,6 @@ autom4te.cache
 /contribs/cray/slurmconfgen.py
 /contribs/perlapi/libslurm/perl/Makefile.PL
 /contribs/perlapi/libslurmdb/perl/Makefile.PL
-/contribs/phpext/slurm_php/config.m4
 /doc/html/*.html
 !/doc/html/review_release.html
 /etc/cgroup.release_common.example
