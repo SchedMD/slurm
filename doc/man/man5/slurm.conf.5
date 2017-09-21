@@ -3715,6 +3715,14 @@ Overrides automatic binding.
 Bind to threads by default.
 Overrides automatic binding.
 .TP
+\fBSlurmdOffSpec\fR
+If specialized cores or CPUs are identified for the node (i.e. the
+\fBCoreSpecCount\fR or \fBCpuSpecList\fR are configured for the node),
+then Slurm daemons running on the compute node (i.e. slurmd and slurmstepd)
+should run outside of those resources (i.e. specialized resources are
+completely unavailable to Slurm daemons and jobs spawned by Slurm).
+This option may not be used with the \fBtask/cray\fR plugin.
+.TP
 \fBVerbose\fR
 Verbosely report binding before tasks run.
 Overrides user options.
@@ -4077,15 +4085,16 @@ The default value is 1.
 
 .TP
 \fBCoreSpecCount\fR
-Number of cores on which Slurm compute node daemons (slurmd, slurmstepd) will
-be confined. These cores will not be available for allocation to user jobs.
-Isolation of the Slurm daemons from user jobs may improve
-performance.  If this option and \fBCPUSpecList\fR are both designated for a
+Number of cores reserved for system use.
+These cores will not be available for allocation to user jobs.
+Depending upon the \fBTaskPluginParameter\fR option of \fBSlurmOffSpec\fR,
+Slurm daemons (i.e. slurmd and slurmstepd) may either be confined to these
+resources (the default) or prevented from using these resources.
+Isolation of the Slurm daemons from user jobs may improve application performance.
+If this option and \fBCpuSpecList\fR are both designated for a
 node, an error is generated.  For information on the algorithm used by Slurm
 to select the cores refer to the core specialization documentation
-( https://slurm.schedmd.com/core_spec.html ). This option has no effect
-unless cgroup job confinement is also configured (\fBTaskPlugin=task/cgroup\fR
-with \fBConstrainCores=yes\fR in cgroup.conf).
+(https://slurm.schedmd.com/core_spec.html).
 
 .TP
 \fBCoresPerSocket\fR
@@ -4107,13 +4116,16 @@ If \fBCPUs\fR is omitted, it will be set equal to the product of
 The default value is 1.
 
 .TP
-\fBCPUSpecList\fR
-A comma delimited list of Slurm abstract CPU IDs on which Slurm compute
-node daemons (slurmd, slurmstepd) will be confined. The list will be expanded
-to include all other CPUs, if any, on the same cores. These cores will not be
-available for allocation to user jobs. Isolation of the
-Slurm daemons from user jobs may improve performance.  If this option
-and \fBCoreSpecCount\fR are both designated for a node, an error is generated.
+\fBCpuSpecList\fR
+A comma delimited list of Slurm abstract CPU IDs reserved for system use.
+The list will be expanded to include all other CPUs, if any, on the same cores.
+These cores will not be available for allocation to user jobs.
+Depending upon the \fBTaskPluginParameter\fR option of \fBSlurmOffSpec\fR,
+Slurm daemons (i.e. slurmd and slurmstepd) may either be confined to these
+resources (the default) or prevented from using these resources.
+Isolation of the Slurm daemons from user jobs may improve application performance.
+If this option and \fBCoreSpecCount\fR are both designated for a node,
+an error is generated.
 This option has no effect unless cgroup job confinement is also configured
 (\fBTaskPlugin=task/cgroup\fR with \fBConstrainCores=yes\fR in cgroup.conf).
 

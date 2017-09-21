@@ -42,6 +42,9 @@
 
 #include "config.h"
 
+/* Needed for sched_setaffinity */
+#define _GNU_SOURCE
+
 #if HAVE_HWLOC
 #  include <hwloc.h>
 #endif
@@ -51,6 +54,7 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <pthread.h>
+#include <sched.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -2061,7 +2065,12 @@ static bool _is_core_spec_cray(void)
  */
 static int _core_spec_init(void)
 {
+	int i, rval;
 	pid_t pid;
+	uint32_t task_params;
+	bool slurmd_off_spec;
+	bitstr_t *res_mac_bitmap;
+	cpu_set_t mask;
 
 	if ((conf->core_spec_cnt == 0) && (conf->cpu_spec_list == NULL)) {
 		debug("Resource spec: No specialized cores configured by "
@@ -2071,12 +2080,6 @@ static int _core_spec_init(void)
 	if (_is_core_spec_cray()) {	/* No need to use cgroups */
 		debug("Using core_spec/cray to manage specialized cores");
 		return SLURM_SUCCESS;
-	}
-	if (!check_corespec_cgroup_job_confinement()) {
-		error("Resource spec: cgroup job confinement not configured. "
-		     "CoreSpec requires TaskPlugin=task/cgroup and "
-		     "ConstrainCores=yes in cgroup.conf");
-		return SLURM_ERROR;
 	}
 
 	ncores = conf->sockets * conf->cores;
@@ -2113,25 +2116,71 @@ static int _core_spec_init(void)
 			return SLURM_ERROR;
 		}
 	}
-	if (init_system_cpuset_cgroup() != SLURM_SUCCESS) {
-		error("Resource spec: unable to initialize system "
-		      "cpuset cgroup");
-		_resource_spec_fini();
-		return SLURM_ERROR;
-	}
-	if (set_system_cgroup_cpus(res_mac_cpus) != SLURM_SUCCESS) {
-		error("Resource spec: unable to set reserved CPU IDs in "
-		      "system cpuset cgroup");
-		_resource_spec_fini();
-		return SLURM_ERROR;
-	}
+
 	pid = getpid();
-	if (attach_system_cpuset_pid(pid) != SLURM_SUCCESS) {
-		error("Resource spec: unable to attach slurmd to "
-		      "system cpuset cgroup");
-		_resource_spec_fini();
-		return SLURM_ERROR;
+	task_params = slurm_get_task_plugin_param();
+	slurmd_off_spec = (task_params & SLURMD_OFF_SPEC);
+
+	if (check_corespec_cgroup_job_confinement()) {
+		if (init_system_cpuset_cgroup() != SLURM_SUCCESS) {
+			error("Resource spec: unable to initialize system "
+			      "cpuset cgroup");
+			_resource_spec_fini();
+			return SLURM_ERROR;
+		}
+		if (slurmd_off_spec) {
+			char other_mac_cpus[1024];
+			res_mac_bitmap = bit_alloc(ncpus);
+			bit_unfmt(res_mac_bitmap, res_mac_cpus);
+			bit_not(res_mac_bitmap);
+			bit_fmt(other_mac_cpus, sizeof(other_mac_cpus),
+				res_mac_bitmap);
+			bit_free(res_mac_bitmap);
+			rval = set_system_cgroup_cpus(other_mac_cpus);
+		} else {
+			rval = set_system_cgroup_cpus(res_mac_cpus);
+		}
+		if (rval != SLURM_SUCCESS) {
+			error("Resource spec: unable to set reserved CPU IDs in "
+			      "system cpuset cgroup");
+			_resource_spec_fini();
+			return SLURM_ERROR;
+		}
+		if (attach_system_cpuset_pid(pid) != SLURM_SUCCESS) {
+			error("Resource spec: unable to attach slurmd to "
+			      "system cpuset cgroup");
+			_resource_spec_fini();
+			return SLURM_ERROR;
+		}
+	} else {
+		res_mac_bitmap = bit_alloc(ncpus);
+		bit_unfmt(res_mac_bitmap, res_mac_cpus);
+		CPU_ZERO(&mask);
+		for (i = 0; i < ncpus; i++) {
+			bool cpu_in_spec = bit_test(res_mac_bitmap, i);
+			if (slurmd_off_spec != cpu_in_spec) {
+				CPU_SET(i, &mask);
+}
+		}
+		bit_free(res_mac_bitmap);
+
+#ifdef __FreeBSD__
+		rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID,
+					  pid, sizeof(cpu_set_t), &mask);
+#elif defined(SCHED_GETAFFINITY_THREE_ARGS)
+		rval = sched_setaffinity(pid, sizeof(cpu_set_t), &mask);
+#else
+		rval = sched_setaffinity(pid, &mask);
+#endif
+
+		if (rval != 0) {
+			error("Resource spec: unable to establish slurmd CPU "
+			      "affinity: %m");
+			_resource_spec_fini();
+			return SLURM_ERROR;
+		}
 	}
+
 	info("Resource spec: Reserved abstract CPU IDs: %s", res_abs_cpus);
 	info("Resource spec: Reserved machine CPU IDs: %s", res_mac_cpus);
 	_resource_spec_fini();

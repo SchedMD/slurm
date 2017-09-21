@@ -809,7 +809,11 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 	/* default binding if auto binding doesn't match. */
 	CPU_AUTO_BIND_TO_THREADS = 0x04000,
 	CPU_AUTO_BIND_TO_CORES   = 0x10000,
-	CPU_AUTO_BIND_TO_SOCKETS = 0x20000
+	CPU_AUTO_BIND_TO_SOCKETS = 0x20000,
+
+	/* the following is used only as a flag for expressing
+	 * the contents of TaskPluginParams */
+	SLURMD_OFF_SPEC            = 0x40000
 } cpu_bind_type_t;
 
 /* Flag to indicate that cpu_freq is a range: low,medium,high,high-1

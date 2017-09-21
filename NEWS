@@ -80,6 +80,11 @@ documents those changes that are of interest to users and administrators.
  -- Process spank environment variable options before processing spank command
     line options. Spank plugins should be able to handle option callbacks being
     called multiple times.
+ -- Add support for specialized cores with task/affinity plugin (previously
+    only supported with task/cgroup plugin).
+ -- Add "TaskPluginParam=SlurmdOffSpec" option that will prevent the Slurm
+    compute node daemons (slurmd and slurmstepd) from executing on specialized
+    cores.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

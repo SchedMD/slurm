@@ -4327,6 +4327,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 							"value: %s",val_ptr);
 					return SLURM_ERROR;
 				}
+			} else if (xstrcasecmp(tok, "SlurmdOffSpec") == 0) {
+				if (xstrcasestr(conf->task_plugin, "cray")) {
+					error("TaskPluginParam=SlurmdOffSpec "
+					      "invalid with TaskPlugin=task/cray");
+					return SLURM_ERROR;
+				}
+				conf->task_plugin_param |= SLURMD_OFF_SPEC;
 			} else {
 				error("Bad TaskPluginParam: %s", tok);
 				return SLURM_ERROR;
