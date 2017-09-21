@@ -505,7 +505,7 @@ void log_set_fpfx(char **prefix)
 		log->fpfx = xstrdup("");
 	else {
 		log->fpfx = *prefix;
-		prefix = NULL;
+		*prefix = NULL;
 	}
 	slurm_mutex_unlock(&log_lock);
 }
