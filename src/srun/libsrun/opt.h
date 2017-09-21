@@ -246,6 +246,10 @@ typedef struct srun_options {
 	char *pack_group;	/* --pack-group			*/
 	bitstr_t *pack_grp_bits;/* --pack-group	in bitmap form	*/
 	int pack_step_cnt;	/* Total count of pack groups to launch */
+	uint16_t x11;           /* --x11			*/
+	char *x11_magic_cookie; /* cookie retrieved from xauth */
+	/* no x11_target_host here, alloc_host will be equivalent */
+	uint16_t x11_target_port; /* target display TCP port on localhost */
 } opt_t;
 
 extern int	error_exit;	/* exit code for slurm errors */

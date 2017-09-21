@@ -71,6 +71,7 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/uid.h"
+#include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/util-net.h"
@@ -206,6 +207,7 @@
 #define LONG_OPT_DELAY_BOOT      0x167
 #define LONG_OPT_CLUSTER_CONSTRAINT 0x168
 #define LONG_OPT_QUIT_ON_INTR    0x169
+#define LONG_OPT_X11             0x170
 
 extern char **environ;
 
@@ -354,6 +356,7 @@ struct option long_options[] = {
 	{"use-min-nodes",    no_argument,       0, LONG_OPT_USE_MIN_NODES},
 	{"usage",            no_argument,       0, LONG_OPT_USAGE},
 	{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
+	{"x11",              optional_argument, 0, LONG_OPT_X11},
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:M:n:N:"
@@ -2276,6 +2279,12 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_QUIT_ON_INTR:
 			opt.quit_on_intr = true;
 			break;
+		case LONG_OPT_X11:
+			if (optarg)
+				opt.x11 = x11_str2flags(optarg);
+			else
+				opt.x11 = X11_FORWARD_ALL;
+			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0)
 				exit(error_exit);
@@ -2838,6 +2847,11 @@ static bool _opt_verify(void)
 
 	if (!opt.job_name)
 		opt.job_name = xstrdup(opt.cmd_name);
+
+	if (opt.x11) {
+		opt.x11_target_port = x11_get_display_port();
+		opt.x11_magic_cookie = x11_get_xauth();
+	}
 
 	return verified;
 }

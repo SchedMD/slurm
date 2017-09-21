@@ -167,7 +167,6 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	int i, j, rc;
 	unsigned long step_wait = 0;
 	uint16_t base_dist, slurmctld_timeout;
-
 	if (!job) {
 		error("launch_common_create_job_step: no job given");
 		return SLURM_ERROR;

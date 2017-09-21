@@ -931,6 +931,11 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local)
 		j->acctg_freq     = xstrdup(opt_local->acctg_freq);
 	j->reservation    = opt_local->reservation;
 	j->wckey          = opt_local->wckey;
+	j->x11 = opt.x11;
+	if (j->x11) {
+		j->x11_magic_cookie = xstrdup(opt.x11_magic_cookie);
+		j->x11_target_port = opt.x11_target_port;
+	}
 
 	j->req_nodes      = xstrdup(opt_local->nodelist);
 

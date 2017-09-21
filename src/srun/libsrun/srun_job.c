@@ -931,6 +931,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	bool network_error_logged = false;
 #endif
 	bool node_cnt_error_logged = false;
+	bool x11_error_logged = false;
 
 	/*
 	 * now global "opt" should be filled in and available,
@@ -1066,6 +1067,11 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 				if (opt_local->begin && !begin_error_logged) {
 					error("--begin is ignored because nodes are already allocated.");
 					begin_error_logged = true;
+				}
+				if (opt_local->x11 && !x11_error_logged) {
+					error("Ignoring --x11 option for a job step within an "
+					      "existing job. Set x11 options at job allocation time.");
+					x11_error_logged = true;
 				}
 				job = job_step_create_allocation(resp,
 								 opt_local);
