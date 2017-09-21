@@ -4153,7 +4153,9 @@ for user allocations.
 If the task/cgroup plugin is configured and that plugin constrains memory
 allocations (i.e. \fBTaskPlugin=task/cgroup\fR in slurm.conf, plus
 \fBConstrainRAMSpace=yes\fR in cgroup.conf), then Slurm compute node daemons
-(slurmd plus slurmstepd) will be allocated the specified memory limit.
+(slurmd plus slurmstepd) will be allocated the specified memory limit. Note that
+having the Memory set in \fBSelectTypeParameters\fR as any of the options that
+has it as a consumable resource is needed for this option to work.
 The daemons will not be killed if they exhaust the memory allocation
 (ie. the Out-Of-Memory Killer is disabled for the daemon's memory cgroup).
 If the task/cgroup plugin is not configured, the specified memory will only be
@@ -4180,7 +4182,12 @@ See \fBCPUs\fR.
 .TP
 \fBRealMemory\fR
 Size of real memory on the node in megabytes (e.g. "2048").
-The default value is 1.
+The default value is 1. Lowering RealMemory with the goal of setting
+aside some amount for the OS and not available for job allocations
+will not work as intended if Memory is not set as a consumable
+resource in \fBSelectTypeParameters\fR. So one of the *_Memory
+options need to be enabled for that goal to be accomplished.
+Also see \fBMemSpecLimit\fR.
 
 .TP
 \fBReason\fR
