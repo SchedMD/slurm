@@ -4121,8 +4121,10 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 		      __func__, job_ptr->job_id);
 	}
 
-	/* Copy most of original job data.
-	 * This could be done in parallel, but performance was worse. */
+	/*
+	 * Copy most of original job data.
+	 * This could be done in parallel, but performance was worse.
+	 */
 	save_job_id   = job_ptr_pend->job_id;
 	save_job_next = job_ptr_pend->job_next;
 	save_details  = job_ptr_pend->details;
@@ -4299,6 +4301,9 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	details_new->std_in = xstrdup(job_details->std_in);
 	details_new->std_out = xstrdup(job_details->std_out);
 	details_new->work_dir = xstrdup(job_details->work_dir);
+
+	if (job_ptr->fed_details)
+		add_fed_job_info(job_ptr);
 
 	return job_ptr_pend;
 }

@@ -1219,7 +1219,7 @@ static int _find_sibling_by_id(void *x, void *key)
 	return 0;
 }
 
-static void _add_fed_job_info(struct job_record *job_ptr)
+extern void add_fed_job_info(struct job_record *job_ptr)
 {
 	fed_job_info_t *job_info;
 
@@ -1657,7 +1657,7 @@ send_msg:
 		      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)))
 			job_ptr->job_state |= JOB_REVOKED;
 
-		_add_fed_job_info(job_ptr);
+		add_fed_job_info(job_ptr);
 		schedule_job_save();	/* Has own locks */
 		schedule_node_save();	/* Has own locks */
 		queue_job_scheduler();
@@ -3556,7 +3556,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	update_job_fed_details(job_ptr);
 
 	/* Add record to fed job table */
-	_add_fed_job_info(job_ptr);
+	add_fed_job_info(job_ptr);
 
 	return SLURM_SUCCESS;
 }

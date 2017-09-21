@@ -43,6 +43,7 @@
 extern slurmdb_federation_rec_t *fed_mgr_fed_rec;
 extern slurmdb_cluster_rec_t    *fed_mgr_cluster_rec;
 
+extern void      add_fed_job_info(struct job_record *job_ptr);
 extern int       fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 					  char **out_buffer);
 extern char     *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids);
