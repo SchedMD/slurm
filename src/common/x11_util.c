@@ -128,7 +128,7 @@ extern char *x11_get_xauth(void)
 				      "[[:space:]]+MIT-MAGIC-COOKIE-1"
 				      "[[:space:]]+([[:xdigit:]]+)\n$";
 
-	xauth_argv = xmalloc(sizeof(char **) * 10);
+	xauth_argv = xmalloc(sizeof(char *) * 10);
 	xauth_argv[0] = xstrdup("xauth");
 	xauth_argv[1] = xstrdup("list");
 	xauth_argv[2] = xstrdup(getenv("DISPLAY"));
@@ -167,7 +167,7 @@ extern int x11_set_xauth(char *cookie, uint16_t port)
 	char *result;
 	char **xauth_argv;
 
-	xauth_argv = xmalloc(sizeof(char **) * 10);
+	xauth_argv = xmalloc(sizeof(char *) * 10);
 	xauth_argv[0] = xstrdup("xauth");
 	xauth_argv[1] = xstrdup("-q");
 	xauth_argv[2] = xstrdup("add");
