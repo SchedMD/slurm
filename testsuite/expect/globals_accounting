@@ -73,18 +73,22 @@ proc add_cluster { name clus_req_in } {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Adding Cluster" {
 			incr matches
@@ -137,18 +141,22 @@ proc remove_cluster {name} {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Deleting clusters" {
 			incr matches
@@ -214,18 +222,22 @@ proc mod_cluster { name clus_req_in } {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Modified cluster" {
 			incr matches
@@ -287,18 +299,22 @@ proc add_acct { name acct_req_in } {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Adding Account" {
 			incr matches
@@ -359,18 +375,22 @@ proc remove_acct { cluster name } {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "$check" {
 			incr matches
@@ -392,8 +412,7 @@ proc remove_acct { cluster name } {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem deleting account.
-	got $matches\n"
+		send_user "\nFAILURE:  sacctmgr had a problem deleting account. got $matches\n"
 		incr exit_code 1
 	}
 
@@ -490,54 +509,56 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 	incr expected $acct_stuff
 	incr expected $assoc_stuff
 
-		set my_pid [eval spawn $sacctmgr -i modify account $scommand $wcommand ]
-		expect {
-			-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-				send_user "FAILURE: there was a problem with the sacctmgr command\n"
-				incr exit_code 1
-			}
-			-re "Problem getting" {
-				send_user "FAILURE: there was a problem getting information from the database\n"
-				incr exit_code 1
-			}
-			-re "Problem adding" {
-				send_user "FAILURE: there was an unknown problem\n"
-				incr exit_code 1
-			}
-			-re "No associations" {
-				send_user "FAILURE: your command didn't return anything\n"
-				incr exit_code 1
-			}
-			-re "Modified accounts" {
-				incr matches
-				exp_continue
-			}
-			-re "Modified account associations" {
-				incr matches
-				exp_continue
-			}
-			timeout {
-				send_user "\nFAILURE: sacctmgr add not responding\n"
-				slow_kill $my_pid
-				incr exit_code 1
-			}
-			eof {
-				wait
-			}
+	set my_pid [eval spawn $sacctmgr -i modify account $scommand $wcommand ]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+			exp_continue
 		}
-
-		if {$matches != $expected} {
-			send_user "\nFAILURE:  sacctmgr had a problem modifying account.
-	got $matches needed $expected\n"
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+			exp_continue
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+			exp_continue
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+			exp_continue
+		}
+		-re "Modified accounts" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified account associations" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
 			incr exit_code 1
 		}
-
-		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
-			incr exit_code 1
+		eof {
+			wait
 		}
-		return $exit_code
+	}
 
+	if {$matches != $expected} {
+		send_user "\nFAILURE:  sacctmgr had a problem modifying account. got $matches needed $expected\n"
+		incr exit_code 1
+	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	return $exit_code
 }
 
 #
@@ -572,18 +593,22 @@ proc add_user { name user_req_in } {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Adding User" {
 			incr matches
@@ -654,18 +679,22 @@ proc remove_user { cluster acct user } {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "$check" {
 			incr matches
@@ -791,18 +820,22 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Modified user associations" {
 			incr matches
@@ -864,18 +897,22 @@ proc add_qos {name qos_req_in} {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting qos's from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Adding QOS" {
 			incr matches
@@ -937,9 +974,11 @@ proc mod_qos { qos_name qos_mod_val_in} {
 	expect {
 		-re "Modified qos" {
 			incr change_cnt
+			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE sacctmgr not responding\n"
+			send_user "\nFAILURE:sacctmgr not responding\n"
+			slow_kill $my_pid
 			set exit_code 1
 		}
 		eof {
@@ -977,18 +1016,22 @@ proc remove_qos {name} {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Deleting QOS" {
 			incr matches
@@ -1054,18 +1097,22 @@ proc add_coor { accounts names } {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Adding Coordinator" {
 			incr matches
@@ -1125,18 +1172,22 @@ proc remove_coor { accounts names } {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "No associations" {
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "$check" {
 			incr matches
@@ -1185,6 +1236,7 @@ proc archive_load { file } {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "SUCCESS" {
 			incr matches
@@ -1235,14 +1287,17 @@ proc add_resource {name res_limits} {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting system resources from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Adding Resource" {
 			incr matches
@@ -1292,14 +1347,17 @@ proc add_clus_res {name allowed} {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting cluster resources from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Adding cluster resource(s)" {
 			incr matches
@@ -1347,17 +1405,21 @@ proc remove_res {name} {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re " Deleting system resource" {
 			incr matches
+			exp_continue
 		}
 		-re " Nothing deleted" {
 			incr nothing
@@ -1407,14 +1469,17 @@ proc remove_clus_res {name} {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem getting" {
 			send_user "FAILURE: there was a problem getting information from the database\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Problem adding" {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
+			exp_continue
 		}
 		-re "Deleting cluster resource" {
 			incr matches
@@ -1483,7 +1548,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 	log_user 0
 	set check_val 0
 	if {$assoc == 1} {
-		spawn $sacctmgr list cluster $type=$name -p -n format=Cluster,$format_str
+		set my_pid [eval spawn $sacctmgr list cluster $type=$name -p -n format=Cluster,$format_str]
 		expect {
 			-re "$exp" {
 				set check_val 1
@@ -1491,6 +1556,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 			}
 			timeout {
 				send_user "\nFAILURE: sacctmgr is not responding\n"
+				slow_kill $my_pid
 				set exit_code 1
 			}
 			eof {
@@ -1504,7 +1570,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 		}
 
 	} elseif {$assoc == 2} {
-		spawn $sacctmgr list assoc $type=$name -p -n format=account,$format_str
+		set my_pid [eval spawn $sacctmgr list assoc $type=$name -p -n format=account,$format_str]
 		expect {
 			-re "$exp" {
 				set check_val 1
@@ -1512,6 +1578,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 			}
 			timeout {
 				send_user "\nFAILURE: sacctmgr is not responding\n"
+				slow_kill $my_pid
 				set exit_code 1
 			}
 			eof {
@@ -1524,7 +1591,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 			set exit_code 1
 		}
 	} elseif {$assoc == 3} {
-		spawn $sacctmgr list assoc $type=$name -p -n format=user,$format_str
+		set my_pid [eval spawn $sacctmgr list assoc $type=$name -p -n format=user,$format_str]
 		expect {
 			-re "$exp" {
 				set check_val 1
@@ -1532,6 +1599,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 			}
 			timeout {
 				send_user "\nFAILURE: sacctmgr is not responding\n"
+				slow_kill $my_pid
 				set exit_code 1
 			}
 			eof {
@@ -1543,10 +1611,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 			set exit_code 1
 		}
 	}
-
-
 	log_user 1
-
 }
 
 ################################################################
@@ -1565,14 +1630,16 @@ proc reset_account_usage { cluster acct } {
 		set cluster [get_cluster_name]
 	}
 
-	spawn $sacctmgr -i mod account $acct cluster=$cluster set RawUsage=0
+	set my_pid [eval spawn $sacctmgr -i mod account $acct cluster=$cluster set RawUsage=0]
 	expect {
 		-re "error:" {
 			send_user "\nFAILURE something went wrong with sacctmgr command\n"
 			set exit_code 1
+			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE sacctmgr not responding\n"
+			send_user "\nFAILURE:sacctmgr not responding\n"
+			slow_kill $my_pid
 			set exit_code 1
 		}
 		eof {
@@ -1597,14 +1664,16 @@ proc reset_qos_usage { cluster qos } {
 		set cluster [get_cluster_name]
 	}
 
-	spawn $sacctmgr -i mod qos $qos cluster=$cluster set RawUsage=0
+	set my_pid [eval spawn $sacctmgr -i mod qos $qos cluster=$cluster set RawUsage=0\
 	expect {
 		-re "error:" {
 			send_user "\nFAILURE something went wrong with sacctmgr command\n"
 			set exit_code 1
+			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE sacctmgr not responding\n"
+			send_user "\nFAILURE:sacctmgr not responding\n"
+			slow_kill $my_pid
 			set exit_code 1
 		}
 		eof {
@@ -1630,11 +1699,15 @@ proc check_wckey_tracking { } {
 
 	log_user 0
 	set wckey 0
-	spawn $sacctmgr show config
+	set my_pid [eval spawn $sacctmgr show config]
 	expect {
 		-re "TrackWCKey *= Yes" {
 			set wckey 1
 			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE:sacctmgr not responding\n"
+			slow_kill $my_pid
 		}
 		eof {
 			wait
@@ -1682,7 +1755,7 @@ proc check_qos_limits { name qos_req } {
 
 	log_user 0
 	set match 0
-	spawn $sacctmgr -n -p show qos $name "$command"
+	set my_pid [eval spawn $sacctmgr -n -p show qos $name "$command"]
 	expect {
 		-re "($values)" {
 			set match 1
@@ -1690,6 +1763,7 @@ proc check_qos_limits { name qos_req } {
 		}
 		timeout {
 			send_user "\nFAILURE: sacctmgr is not responding\n"
+			slow_kill $my_pid
 			set exit_code 1
 		}
 		eof {
@@ -1739,7 +1813,7 @@ proc check_resource_limits { name res_limits } {
 
 	log_user 0
 	set match 0
-	spawn $sacctmgr -p -n list resource $name $command
+	set my_pid [eval spawn $sacctmgr -p -n list resource $name $command]
 	expect {
 		-nocase -re "$values" {
 			set match 1
@@ -1747,6 +1821,7 @@ proc check_resource_limits { name res_limits } {
 		}
 		timeout {
 			send_user "\nFAILURE: sacctmgr is not responding\n"
+			slow_kill $my_pid
 			set exit_code 1
 		}
 		eof {
@@ -1795,7 +1870,7 @@ proc mod_resource {name mod_limits} {
 
 	log_user 0
 	set match 0
-	spawn $sacctmgr -i mod resource where name=$name set $commands
+	set my_pid [eval spawn $sacctmgr -i mod resource where name=$name set $commands]
 	expect {
 		-re "Modified server resources ..." {
 			set match 1
@@ -1803,6 +1878,7 @@ proc mod_resource {name mod_limits} {
 		}
 		timeout {
 			send_user "\nFAILURE: sacctmgr is not responding\n"
+			slow_kill $my_pid
 			set exit_code 1
 		}
 		eof {
@@ -1840,7 +1916,7 @@ proc get_assoc_id {user acct cluster} {
 
 	log_user 0
 	set id -1
-	spawn $sacctmgr -p -n list assoc format=id where user=$user acct=$acct cluster=$cluster
+	set my_pid [eval spawn $sacctmgr -p -n list assoc format=id where user=$user acct=$acct cluster=$cluster]
 	expect {
 		-re "($number)\\|" {
 			if { $id != -1 } {
@@ -1854,6 +1930,7 @@ proc get_assoc_id {user acct cluster} {
 		}
 		timeout {
 			send_user "\nFAILURE: sacctmgr is not responding\n"
+			slow_kill $my_pid
 			set exit_code 1
 		}
 		eof {
