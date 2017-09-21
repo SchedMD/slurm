@@ -1990,7 +1990,6 @@ expect {
 		wait
 	}
 }
-send_user "\\nPIDa $my_pid\\n"
 if {$exit_code || $matches != 3} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
@@ -2054,7 +2053,6 @@ expect {
 		wait
 	}
 }
-send_user "\\nPIDc $my_pid\\n"
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
@@ -2120,7 +2118,6 @@ expect {
 		wait
 	}
 }
-send_user "\\nPIDe $my_pid\\n"
 if {$exit_code || $matches != 2} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
@@ -2273,7 +2270,6 @@ expect {
 		wait
 	}
 }
-send_user "\\nPID $my_pid\\n"
 if {$exit_code || $matches != 6} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
