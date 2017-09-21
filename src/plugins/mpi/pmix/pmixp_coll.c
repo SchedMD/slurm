@@ -1326,7 +1326,7 @@ proceed:
 #ifdef PMIXP_COLL_DEBUG
 	if (nodename) {
 		PMIXP_DEBUG("%p: finish: node=%s:%d(%d), state=%s",
-			    coll, nodename, peerid, lpeerid, "TBD");
+			    coll, nodename, peerid, lpeerid,
 			    pmixp_coll_state2str(coll->state));
 		xfree(nodename);
 	}
