@@ -832,3 +832,4 @@ test38.11  Validate sbcast for a pack job allocation.
 test38.12  Test label option with pack job allocation.
 test38.13  Test that job arrays of pack jobs are rejected
 test38.14  Test pack job step output file labling and different commands/args
+test38.15  Test for proper handling of different rank end times

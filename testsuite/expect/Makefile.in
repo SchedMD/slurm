@@ -1063,7 +1063,8 @@ EXTRA_DIST = \
 	test38.11			\
 	test38.12			\
 	test38.13			\
-	test38.14
+	test38.14			\
+	test38.15
 
 all: all-am
 

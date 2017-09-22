@@ -1,0 +1,167 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test for proper handling of different rank end times
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Morris <jette@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id	"38.15"
+set exit_code	0
+set file_in	"test$test_id.input"
+set prompt	"PROMPT: "
+set timeout	60
+
+print_header $test_id
+
+if {[test_front_end]} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit $exit_code
+}
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes < 3} {
+	send_user "\nWARNING: Need 3 or more nodes in default partition\n"
+	exit $exit_code
+}
+
+proc end_it { exit_code } {
+	global pack_job_id scancel
+	if {$pack_job_id > 0} {
+		exec $scancel $pack_job_id
+	}
+	exit $exit_code
+}
+
+set pack_job_id 0
+set component(0) 0
+set matches 0
+set index 0
+set timeout $max_job_delay
+spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
+expect {
+	-re "job ($number) has been allocated resources" {
+		set pack_job_id $expect_out(1,string)
+		send "export PS1=\"$prompt\"\r"
+		exp_continue
+	}
+	-re "\"$prompt" {
+		# skip this, just echo of setting prompt"
+		exp_continue
+	}
+	-re "$prompt" {
+		#send_user "Job initiated\n"
+	}
+	timeout {
+		log_error "salloc : allocation not granted in $timeout seconds\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$pack_job_id == 0} {
+	log_error "salloc failure\n"
+	end_it 1
+}
+
+make_bash_script $file_in "
+#!/bin/bash
+sleep_time=`expr 3 - \$SLURM_PROCID`
+sleep \$sleep_time
+env | grep SLURMD
+"
+
+set matches 0
+send "$srun --label --mpi=none --pack-group=0-2 $file_in\r"
+expect {
+	-re "($number): SLURMD" {
+		incr matches
+		exp_continue
+	}
+	-re "$prompt" {
+		send_user "\n\n"
+		#break
+	}
+	timeout {
+		log_error "srun not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 3} {
+	log_error "srun output failure ($matches != 3)\n"
+	end_it 1
+}
+
+make_bash_script $file_in "
+#!/bin/bash
+sleep_time=`expr \$SLURM_PROCID`
+sleep \$sleep_time
+env | grep SLURMD
+"
+
+set matches 0
+send "$srun --label --mpi=none --pack-group=0-2 $file_in\r"
+expect {
+	-re "($number): SLURMD" {
+		incr matches
+		exp_continue
+	}
+	-re "$prompt" {
+		send_user "\n\n"
+		#break
+	}
+	timeout {
+		log_error "srun not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 3} {
+	log_error "srun output failure ($matches != 3)\n"
+	end_it 1
+}
+
+send "exit\r"
+expect {
+	timeout {
+		log_error "srun not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+
+exec $bin_rm -f $file_in
+send_user "\nSUCCESS\n"
+end_it 0
