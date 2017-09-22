@@ -258,6 +258,83 @@ relaunch:
 	return NULL;
 }
 
+/*
+ * The pack_node_list may not be ordered across multiple components, which can
+ * cause problems for some MPI implementations. Put the pack_node_list records
+ * in alphabetic order and reorder pack_task_cnts pack_tids to match
+ */
+static void _reorder_pack_recs(char **in_node_list, uint16_t **in_task_cnts,
+			       uint32_t ***in_tids, int total_nnodes)
+{
+	hostlist_t in_hl, out_hl;
+	uint16_t *out_task_cnts = NULL;
+	uint32_t **out_tids = NULL;
+	char *hostname;
+	int i, j;
+
+	in_hl = hostlist_create(*in_node_list);
+	if (!in_hl) {
+		error("%s: Invalid hostlist(%s)", __func__, *in_node_list);
+		return;
+	}
+	out_hl = hostlist_copy(in_hl);
+	hostlist_sort(out_hl);
+	hostlist_uniq(out_hl);
+	i = hostlist_count(out_hl);
+	if (i != total_nnodes) {
+		error("%s: Invalid hostlist(%s) count(%d)", __func__,
+		      *in_node_list, total_nnodes);
+		goto fini;
+	}
+
+	out_task_cnts = xmalloc(sizeof(uint16_t) * total_nnodes);
+	out_tids = xmalloc(sizeof(uint32_t *) * total_nnodes);
+	for (i = 0; i < total_nnodes; i++) {
+		hostname = hostlist_nth(out_hl, i);
+		if (!hostname) {
+			error("%s: Invalid hostlist(%s) count(%d)", __func__,
+			      *in_node_list, total_nnodes);
+			break;
+		}
+		j = hostlist_find(in_hl, hostname);
+		if (j == -1) {
+			error("%s: Invalid hostlist(%s) parsing", __func__,
+			      *in_node_list);
+			free(hostname);
+			break;
+		}
+		out_task_cnts[i] = in_task_cnts[0][j];
+		out_tids[i] = in_tids[0][j];
+		free(hostname);
+	}
+
+	if (i >= total_nnodes) {	/* Success */
+		xfree(*in_node_list);
+		*in_node_list = hostlist_ranged_string_xmalloc(out_hl);
+		xfree(*in_task_cnts);
+		*in_task_cnts = out_task_cnts;
+		out_task_cnts = NULL;
+		xfree(*in_tids);
+		*in_tids = out_tids;
+		out_tids = NULL;
+	}
+
+#if 0
+	info("NODE_LIST[%d]:%s", total_nnodes, *in_node_list);
+	for (i = 0; i < total_nnodes; i++) {
+		info("TASK_CNT[%d]:%u", i, in_task_cnts[0][i]);
+		for (j = 0; j < in_task_cnts[0][i]; j++) {
+			info("TIDS[%d][%d]: %u", i, j, in_tids[0][i][j]);
+		}
+	}
+#endif
+
+fini:	hostlist_destroy(in_hl);
+	hostlist_destroy(out_hl);
+	xfree(out_task_cnts);
+	xfree(out_tids);
+}
+
 static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 {
 	ListIterator opt_iter, job_iter;
@@ -342,6 +419,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			node_offset += job->nhosts;
 		}
 		list_iterator_reset(job_iter);
+		_reorder_pack_recs(&pack_node_list, &pack_task_cnts,
+				   &pack_tids, total_nnodes);
 
 		if (need_mpir)
 			mpir_init(total_ntasks);
@@ -370,7 +449,6 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			job->pack_node_list = xstrdup(pack_node_list);
 			if ((pack_step_cnt > 1) && pack_task_cnts) {
 				xassert(node_offset == job->pack_nnodes);
-//FIXME-PACK: We need to get pack_node_list, pack_task_cnts, pack_tids in same order
 				job->pack_task_cnts = xmalloc(sizeof(uint16_t) *
 							      job->pack_nnodes);
 				memcpy(job->pack_task_cnts, pack_task_cnts,
