@@ -830,3 +830,4 @@ test38.9   Validate srun --pack-group option.
 test38.10  Test of scontrol update job for heterogeneous jobs.
 test38.11  Validate sbcast for a pack job allocation.
 test38.12  Test label option with pack job allocation.
+test38.13  Test that job arrays of pack jobs are rejected
