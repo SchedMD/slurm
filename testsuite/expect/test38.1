@@ -46,22 +46,20 @@ proc sbatch {} {
 
 	set matches 0
 	set job_id 0
-	set command "$sbatch -t1 -o /dev/null $file_in"
-	set regex "Submitted batch job ($number).+"
 
-	spawn {*}$command
+	set sbatch_pid [spawn $sbatch -t1 -o /dev/null $file_in]
 	expect {
 		-re "Batch job submission failed" {
 			log_warn "Unable to execute test due to system configuration"
 			end_it 0
 		}
-		-re "$regex" {
+		-re "Submitted batch job ($number)" {
 			incr matches
 			set job_id $expect_out(1,string)
-
 		}
 		timeout {
 			log_error "sbatch not responding"
+			slow_kill $sbatch_pid
 			end_it 1
 		}
 		eof {
