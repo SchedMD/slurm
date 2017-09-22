@@ -27,6 +27,7 @@ Lead Slurm developers are:
 <li><a href="http://www.fhcrc.org">Fred Hutchinson Cancer Research Center</a></li>
 <li><a href="http://www.hp.com">HP</a></li>
 <li><a href="http://www.intel.com">Intel</a></li>
+<li><a href="http://www.fz-juelich.de/ias/jsc">J&uuml;lich Supercomputing Center</a></li>
 <li><a href="http://www.mellanox.com">Mellanox</a></li>
 <li><a href="http://www.llnl.gov">Lawrence Livermore National Laboratory</a></li>
 <li><a href="http://www.lanl.gov">Los Alamos National Laboratory</a></li>
@@ -96,7 +97,7 @@ Lead Slurm developers are:
 <br>
 <li>Phil Eckert (Lawrence Livermore National Laboratory)</li>
 <li>Robbert Eggermont (Delft University of Technology, Netherlands)</li>
-<li>Joey Ekstrom (Lawrence Livermore National Laboratory/Brigham Young University)</li>
+<li>Joey Ekstrom (Lawrence Livermore National Laboratory)</li>
 <li>Andrew Elwell</li>
 <li>Josh England (TGS Management Corporation)</li>
 <li>Kent Engstr&ouml;m  (National Supercomputer Centre, Sweden)</li>
@@ -106,6 +107,7 @@ Lead Slurm developers are:
 <li>Carles Fenoy (Barcelona Supercomputing Center, Spain)</li>
 <li>Broi Franco (ION)</li>
 <li>Damien Fran&ccedil;ois (Universit&eacute; catholique de Louvain, Belgium)</li>
+<li>Jeff Frey (University of Deleware)</li>
 <br>
 <li>Jim Garlick (Lawrence Livermore National Laboratory)</li>
 <li>Didier Gazen (Laboratoire d'Aerologie, France)</li>
@@ -244,7 +246,7 @@ Lead Slurm developers are:
 <li>Prashanth Tamraparni (HP, India)</li>
 <li>Koji Tanaka (Indiana University)</li>
 <li>Jimmy Tang (Trinity College, Ireland)</li>
-<li>Kevin Tew (Lawrence Livermore National Laboratory/Brigham Young University)</li>
+<li>Kevin Tew (Lawrence Livermore National Laboratory)</li>
 <li>John Thiltges (University of Nebraska-Lincoln)</li>
 <li>Adam Todorski (Rensselaer Polytechnic Institute)</li>
 <li>Giovanni Torres (National Institutes of Health)</li>
@@ -269,6 +271,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 10 August 2017</p>
+<p style="text-align:center;">Last modified 22 September 2017</p>
 
 <!--#include virtual="footer.txt"-->
