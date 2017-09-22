@@ -688,36 +688,38 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 {
 	char        *buf = NULL;
 	char        *p   = NULL;
-	size_t      len = (size_t) 0;
-	char        tmp[LINEBUFSIZE];
-	int         unprocessed = 0;
 	int         long_long = 0;
 
-	while (*fmt != '\0') {
+	/* Growable temp buffer that starts on the stack: */
+	size_t      tmp_len = LINEBUFSIZE;
+	char        tmp_stack[tmp_len];
+	char        *tmp = tmp_stack;
 
+	while (*fmt != '\0') {
 		if ((p = (char *)strchr(fmt, '%')) == NULL) {
-			/* no more format chars */
+			/*
+			 * no more format sequences, append the rest of fmt and
+			 * exit the loop
+			 */
 			xstrcat(buf, fmt);
 			break;
+		} else {	/* *p == '%' */
+			int was_handled = 1;
 
-		} else {        /* *p == '%' */
-			/* take difference from fmt to just before `%' */
-			len = (size_t) ((long)(p) - (long)fmt);
-			/* append from fmt to p into buf if there's
-			 * anythere there
+			/*
+			 * append from fmt to p (not including p) into buf if
+			 * there's anythere there:
 			 */
-			if (len > 0)
-				xstrncat(buf, fmt, len);
+			if (p > fmt)
+				xstrncat(buf, fmt, p - fmt);
 
 			switch (*(++p)) {
 		        case '%':	/* "%%" => "%" */
 				xstrcatchar(buf, '%');
 				break;
-
 			case 'm':	/* "%m" => strerror(errno) */
 				xslurm_strerrorcat(buf);
 				break;
-
 			case 't': 	/* "%t" => locally preferred date/time*/
 				xstrftimecat(buf, "%x %X");
 				break;
@@ -729,28 +731,35 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					xiso8601timecat(buf, true);
 				else {
 					switch (log->fmt) {
-					case LOG_FMT_ISO8601_MS: /* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
+					case LOG_FMT_ISO8601_MS:
+						/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
 						xiso8601timecat(buf, true);
 						break;
-					case LOG_FMT_ISO8601: /* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
+					case LOG_FMT_ISO8601:
+						/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
 						xiso8601timecat(buf, false);
 						break;
-					case LOG_FMT_RFC5424_MS: /* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
+					case LOG_FMT_RFC5424_MS:
+						/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
 						xrfc5424timecat(buf, true);
 						break;
-					case LOG_FMT_RFC5424:  /* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
+					case LOG_FMT_RFC5424:
+						/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
 						xrfc5424timecat(buf, false);
 						break;
 					case LOG_FMT_CLOCK:
 						/* "%M" => "usec" */
 #if defined(__FreeBSD__)
-						snprintf(tmp, sizeof(tmp), "%d", clock());
+						snprintf(tmp, tmp_len, "%d",
+							 clock());
 #else
-						snprintf(tmp, sizeof(tmp), "%ld", clock());
+						snprintf(tmp, tmp_len, "%ld",
+							 clock());
 #endif
 						xstrcat(buf, tmp);
 						break;
-					case LOG_FMT_SHORT: /* "%M" => "Mon DD hh:mm:ss"         */
+					case LOG_FMT_SHORT:
+						/* "%M" => "Mon DD hh:mm:ss" */
 						xstrftimecat(buf, "%b %d %T");
 						break;
 					case LOG_FMT_THREAD_ID:
@@ -761,126 +770,249 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				}
 				break;
 			case 's':	/* "%s" => append string */
-				/* we deal with this case for efficiency */
-				if (unprocessed == 0)
-					xstrcat(buf, va_arg(ap, char *));
-				else
-					xstrcat(buf, "%s");
+				xstrcat(buf, va_arg(ap, char *));
 				break;
 			case 'f': 	/* "%f" => append double */
-				/* again, we only handle this for efficiency */
-				if (unprocessed == 0) {
-					snprintf(tmp, sizeof(tmp), "%f",
-						 va_arg(ap, double));
-					xstrcat(buf, tmp);
-				} else
-					xstrcat(buf, "%f");
+				snprintf(tmp, tmp_len, "%f",
+					va_arg(ap, double));
+				xstrcat(buf, tmp);
 				break;
-			case 'd':
-				if (unprocessed == 0) {
-					snprintf(tmp, sizeof(tmp), "%d",
-						 va_arg(ap, int));
-					xstrcat(buf, tmp);
-				} else
-					xstrcat(buf, "%d");
+			case 'd': 	/* "%d" => append int */
+				snprintf(tmp, tmp_len, "%d",
+					va_arg(ap, int));
+				xstrcat(buf, tmp);
 				break;
-			case 'u':
-				if (unprocessed == 0) {
-					snprintf(tmp, sizeof(tmp), "%u",
-						 va_arg(ap, int));
-					xstrcat(buf, tmp);
-				} else
-					xstrcat(buf, "%u");
+			case 'u': 	/* "%u" => append unsigned int */
+				snprintf(tmp, tmp_len, "%u",
+					va_arg(ap, unsigned));
+				xstrcat(buf, tmp);
 				break;
-			case 'l':
-				if ((unprocessed == 0) && (*(p+1) == 'l')) {
+			case 'l':  /* "%l.." => append with long modifier */
+				if (*(p+1) == 'l') {
 					long_long = 1;
 					p++;
 				}
-
-				if ((unprocessed == 0) && (*(p+1) == 'u')) {
+				switch (*(p + 1)) {
+				case 'u':
 					if (long_long) {
-						snprintf(tmp, sizeof(tmp),
+						/* "%llu" => append long long unsigned */
+						snprintf(tmp, tmp_len,
 							"%llu",
-							 va_arg(ap,
-								long long unsigned));
+							va_arg(ap,
+							       long long unsigned));
 						long_long = 0;
-					} else
-						snprintf(tmp, sizeof(tmp),
-							 "%lu",
-							 va_arg(ap,
-								long unsigned));
-					xstrcat(buf, tmp);
-					p++;
-				} else if ((unprocessed==0) && (*(p+1)=='d')) {
+					} else {
+						/* "%lu" => append long unsigned */
+						snprintf(tmp, tmp_len,
+							"%lu",
+							va_arg(ap,
+							       long unsigned));
+					}
+					break;
+				case 'd':
 					if (long_long) {
-						snprintf(tmp, sizeof(tmp),
+						/* "%lld" => append long long int */
+						snprintf(tmp, tmp_len,
 							"%lld",
-							 va_arg(ap,
-								long long int));
+							va_arg(ap,
+							long long int));
 						long_long = 0;
-					} else
-						snprintf(tmp, sizeof(tmp),
-							 "%ld",
-							 va_arg(ap, long int));
-					xstrcat(buf, tmp);
-					p++;
-				} else if ((unprocessed==0) && (*(p+1)=='f')) {
+					} else {
+						/* "%ld" => append long int */
+						snprintf(tmp, tmp_len,
+							"%ld",
+							va_arg(ap, long int));
+					}
+					break;
+
+				case 'f':
 					if (long_long) {
-						xstrcat(buf, "%llf");
+						/* "%llf" behavior iffy, let vsnprintf() do it */
+						was_handled = 0;
 						long_long = 0;
-					} else
-						snprintf(tmp, sizeof(tmp),
-							 "%lf",
-							 va_arg(ap, double));
-					xstrcat(buf, tmp);
-					p++;
-				} else if ((unprocessed==0) && (*(p+1)=='x')) {
+					} else {
+						/* "%lf" => append double */
+						snprintf(tmp, tmp_len,
+							"%lf",
+							va_arg(ap, double));
+					}
+					break;
+				case 'x':
 					if (long_long) {
-						snprintf(tmp, sizeof(tmp),
-							 "%llx",
-							 va_arg(ap,
-								long long int));
+						/* "%llx" => append long long int (hexadecimal) */
+						snprintf(tmp, tmp_len,
+							"%llx",
+							va_arg(ap,
+							long long int));
 						long_long = 0;
-					} else
-						snprintf(tmp, sizeof(tmp),
-							 "%lx",
-							 va_arg(ap, long int));
+					} else {
+						/* "%lx" => append long int (hexadecimal) */
+						snprintf(tmp, tmp_len,
+						"%lx",
+						va_arg(ap, long int));
+					}
+					break;
+
+				default:
+					/* "%l..." isn't one we know, let vsnprintf() do it */
+					was_handled = 0;
+					break;
+				}
+				if ( was_handled ) {
+					/*
+					 * One of the shortcuts above took care
+					 * of this, so append its output to
+					 * buf and move along:
+					 */
 					xstrcat(buf, tmp);
 					p++;
-				} else if (long_long) {
-					xstrcat(buf, "%ll");
-					long_long = 0;
-				} else
-					xstrcat(buf, "%l");
+				}  else if (long_long)
+					p--;
 				break;
 			case 'L':
-				if ((unprocessed==0) && (*(p+1)=='f')) {
-					snprintf(tmp, sizeof(tmp), "%Lf",
-						 va_arg(ap, long double));
+				if (*(p+1)=='f') {
+					snprintf(tmp, tmp_len, "%Lf",
+						va_arg(ap, long double));
 					xstrcat(buf, tmp);
 					p++;
-				} else
-					xstrcat(buf, "%L");
+				} else {
+					was_handled = 0;
+				}
 				break;
-			default:	/* try to handle the rest  */
-				xstrcatchar(buf, '%');
-				xstrcatchar(buf, *p);
-				unprocessed++;
+			default:
+				was_handled = 0;
 				break;
 			}
+			if (!was_handled) {
+				/*
+				 * Anything we don't explicitly process should
+				 * be passed to vsnprintf() to be handled now.
+				 */
+				va_list       ap_local;
+				char          *p_end = strchr(p, '%');
+				char          *fmt_local;
+				int        output_len;
 
+				va_copy(ap_local, ap);
+				if (!p_end) {
+					fmt_local = p - 1;
+				} else {
+					fmt_local = xstrndup(p - 1, p_end - p + 1);
+					if (fmt_local == NULL) {
+						/*
+						 * We must be outta memory...
+						 * guess we're all done.
+						 */
+						break;
+					}
+				}
+
+				/*
+				 * Given our current tmp buffer, try the
+				 * vsnprintf().  Use ap so that we've advanced
+				 * it beyond these arguments no matter what.
+				 */
+				output_len = vsnprintf(tmp, tmp_len, fmt_local, ap);
+				if ((output_len > -1) &&
+				    (output_len < tmp_len)) {
+					/* We had enough space, hurray! */
+				} else if (output_len >= tmp_len) {
+					/*
+					 * If we're lucky enough to be using a C
+					 * library that returns a target length
+					 * for the vsnprintf(), then allocate
+					 * that much space and get out quickly.
+					 *
+					 * glibc >= 2.1 has this behavior,
+					 * previous versions do not
+					 */
+					char      *tmp_new = NULL;
+					size_t    tmp_new_len = output_len + 1;
+
+					/* Match tmp_new_len to a multiple of LINEBUFSIZE */
+					tmp_new_len = (tmp_new_len / LINEBUFSIZE) +
+						      ((tmp_new_len % LINEBUFSIZE) ? 1 : 0);
+					tmp_new_len *= LINEBUFSIZE;
+
+					if (tmp != tmp_stack) {
+						tmp_new = xrealloc(tmp,
+								   tmp_new_len);
+					} else {
+						tmp_new = xmalloc(tmp_new_len);
+					}
+					if (tmp_new) {
+						tmp = tmp_new;
+						tmp_len = tmp_new_len;
+					}
+					vsnprintf(tmp, tmp_len, fmt_local,
+						  ap_local);
+				} else {
+					/*
+					 * We'll need to iteratively increase
+					 * the size of the tmp buffer until
+					 * vsnprintf() succeeds.
+					 */
+					int done = 0;
+					do {
+						va_list   ap_copy;
+						size_t    tmp_new_len;
+						char      *tmp_new;
+
+						tmp_new_len = tmp_len +
+							      LINEBUFSIZE;
+						if (tmp != tmp_stack) {
+							tmp_new = xrealloc(tmp,
+								tmp_new_len);
+						} else {
+							tmp_new = xmalloc(tmp_new_len);
+						}
+						if (tmp_new) {
+							tmp = tmp_new;
+							tmp_len = tmp_new_len;
+						} else {
+							done = 1;
+						}
+						va_copy(ap_copy, ap_local);
+						output_len = vsnprintf(tmp,
+								tmp_len,
+								fmt_local,
+								ap_copy);
+						va_end(ap_copy);
+
+						if ((output_len > -1) &&
+						    (output_len < tmp_len))
+							done = 1;
+					} while (!done);
+				}
+				/*
+				 * Whatever was produced in tmp,
+				 * add it to our output string:
+				 */
+				xstrcat(buf, tmp);
+				/* Dealloc any local copy of the format substring: */
+				if (fmt_local != p - 1)
+					xfree(fmt_local);
+				/* Cleanup our stashed var arg state copy: */
+				va_end(ap_local);
+				if (!p_end) {
+					/* All done, exit the loop: */
+					break;
+				}
+
+				/*
+				 * Start next iteration on the next format
+				 * sequence we already found:
+				 */
+				fmt = p_end;
+				continue;
+			}
 		}
-
 		fmt = p + 1;
 	}
 
-	if (unprocessed > 0) {
-		vsnprintf(tmp, sizeof(tmp)-1, buf, ap);
-		xfree(buf);
-		return xstrdup(tmp);
-	}
-
+	/* Did we end up allocating tmp on the heap? */
+	if (tmp != tmp_stack)
+		xfree(tmp);
 	return buf;
 }
 
