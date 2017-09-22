@@ -46,7 +46,7 @@ if {$nb_nodes < 2} {
 
 exec $bin_rm -f $file_out
 set timeout $max_job_delay
-set srun_pid [spawn $srun -t1 -n1 -l -o $file_out $bin_echo one : -n1 $bin_echo two]
+set srun_pid [spawn $srun -t1 -n1 -l -o $file_out --mpi=none $bin_echo one : -n1 $bin_echo two]
 expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
