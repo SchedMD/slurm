@@ -1,0 +1,87 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test pack job step output file labling and different commands/args
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Morris Jette <jette@schedmd.com>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id	"38.14"
+set exit_code	0
+set file_out    test${test_id}.output
+set pack_job_id	0
+
+print_header $test_id
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes < 2} {
+	send_user "\nWARNING: Need 2 or more nodes in default partition\n"
+	exit $exit_code
+}
+
+exec $bin_rm -f $file_out
+set timeout $max_job_delay
+set srun_pid [spawn $srun -t1 -n1 -l -o $file_out $bin_echo one : -n1 $bin_echo two]
+expect {
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {[wait_for_file $file_out] == 0} {
+	set matches 0
+	spawn $bin_sort $file_out
+	expect {
+		-re "0: one" {
+			incr matches
+			exp_continue
+		}
+		-re "1: two" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 2} {
+		send_user "\nFAILURE: srun output file contents invalid\n"
+		set exit_code 1
+	}
+} else {
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_out
+}
+exit $exit_code
