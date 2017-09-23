@@ -70,7 +70,8 @@ typedef enum {
 	REQUEST_STEP_MEM_LIMITS,
 	REQUEST_STEP_UID,
 	REQUEST_STEP_NODEID,
-	REQUEST_ADD_EXTERN_PID
+	REQUEST_ADD_EXTERN_PID,
+	REQUEST_X11_DISPLAY,
 } step_msg_t;
 
 typedef enum {
@@ -214,6 +215,13 @@ bool stepd_pid_in_container(int fd, uint16_t protocol_version, pid_t pid);
  * jobacct_gather and proctrack plugins.
  */
 extern int stepd_add_extern_pid(int fd, uint16_t protocol_version, pid_t pid);
+
+/*
+ * Fetch the display number if this extern step is providing x11 tunneling.
+ * Returns 0 to indicate no display forwarded.
+ * (The implementation will never use local X11 display number zero.)
+ */
+extern int stepd_get_x11_display(int fd, uint16_t protocol_version);
 
 /*
  * Return the process ID of the slurmstepd.

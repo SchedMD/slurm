@@ -74,6 +74,7 @@ strong_alias(stepd_available, slurm_stepd_available);
 strong_alias(stepd_connect, slurm_stepd_connect);
 strong_alias(stepd_get_uid, slurm_stepd_get_uid);
 strong_alias(stepd_add_extern_pid, slurm_stepd_add_extern_pid);
+strong_alias(stepd_get_x11_display, slurm_stepd_get_x11_display);
 
 static bool
 _slurm_authorized_user()
@@ -769,6 +770,25 @@ extern int stepd_add_extern_pid(int fd, uint16_t protocol_version, pid_t pid)
 
 	debug("Leaving stepd_add_extern_pid");
 	return rc;
+rwfail:
+	return SLURM_ERROR;
+}
+
+extern int stepd_get_x11_display(int fd, uint16_t protocol_version)
+{
+	int req = REQUEST_X11_DISPLAY;
+	int display = 0;
+
+	safe_write(fd, &req, sizeof(int));
+
+	/*
+	 * Receive the display number,
+	 * or zero if x11 forwarding is not setup
+	 */
+	safe_read(fd, &display, sizeof(int));
+
+	debug("Leaving stepd_get_x11_display");
+	return display;
 rwfail:
 	return SLURM_ERROR;
 }

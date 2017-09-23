@@ -238,7 +238,8 @@ typedef struct {
 					 * native Cray systems */
 	bool		oom_error;	/* step out of memory error */
 
-	uint16_t x11;			/* only used for extern step */
+	uint16_t x11;			/* only set for extern step */
+	int x11_display;		/* display number if x11 forwarding setup */
 	char *x11_magic_cookie;		/* xauth magic cookie value */
 	char *x11_target_host;		/* remote machine to connect back to */
 	uint16_t x11_target_port;	/* remote x11 port to connect back to */

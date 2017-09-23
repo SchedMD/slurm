@@ -90,6 +90,7 @@ static int _handle_pid_in_container(int fd, stepd_step_rec_t *job);
 static void *_wait_extern_pid(void *args);
 static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid);
 static int _handle_add_extern_pid(int fd, stepd_step_rec_t *job);
+static int _handle_x11_display(int fd, stepd_step_rec_t *job);
 static int _handle_daemon_pid(int fd, stepd_step_rec_t *job);
 static int _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid);
@@ -547,6 +548,10 @@ _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 	case REQUEST_ADD_EXTERN_PID:
 		debug("Handling REQUEST_ADD_EXTERN_PID");
 		rc = _handle_add_extern_pid(fd, job);
+		break;
+	case REQUEST_X11_DISPLAY:
+		debug("Handling REQUEST_X11_DISPLAY");
+		rc = _handle_x11_display(fd, job);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -1348,6 +1353,17 @@ _handle_add_extern_pid(int fd, stepd_step_rec_t *job)
 	safe_write(fd, &rc, sizeof(int));
 
 	debug("Leaving _handle_add_extern_pid");
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
+static int _handle_x11_display(int fd, stepd_step_rec_t *job)
+{
+	/* Send the display number. zero indicates no display setup */
+	safe_write(fd, &job->x11_display, sizeof(int));
+
+	debug("Leaving _handle_get_x11_display");
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;
