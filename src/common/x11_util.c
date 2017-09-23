@@ -108,7 +108,7 @@ extern int x11_get_display_port(void)
 		      "Cannot use X11 forwarding.");
 		exit(-1);
 	}
-	port_period = '\0';
+	*port_period = '\0';
 
 	port = atoi(port_split) + X11_TCP_PORT_OFFSET;
 
