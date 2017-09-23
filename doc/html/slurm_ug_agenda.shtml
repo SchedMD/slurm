@@ -107,8 +107,8 @@ and site reports.</p>
  </tr>
 
 <tr><td bgcolor="#F0F1C9">08:00 - 08:30</td><td colspan="3" bgcolor="#F0F1C9">Registration </td></tr>
-<tr><td nowrap>08:30 - 08:45</td><td>Welcome</td><td>TBD</td><td>Welcome</td></tr>
-<tr><td nowrap>08:45 - 09:30</td><td>Keynote</td><td>TBD</td><td>TBD</td></tr>
+<tr><td nowrap>08:30 - 08:45</td><td>Welcome</td><td>Paul, Jette</td><td>Welcome</td></tr>
+<tr><td nowrap>08:45 - 09:30</td><td>Keynote</td><td>Kim</td><td>Supernova Cosmology &amp; Supercomputing</td></tr>
 <tr><td nowrap>09:30 - 10:00</td><td>Tutorial </td><td>Wickberg</td><td>Slurm Introduction</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Senator</td><td>A /resource-manager file system (rmfs)</td></tr>
