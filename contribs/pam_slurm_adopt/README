@@ -90,6 +90,13 @@ This module has the following options (* = default):
     log_level - See SlurmdDebug in slurm.conf(5) for available options. The
                 default log_level is info.
 
+    disable_x11 - turn off Slurm built-in X11 forwarding support.
+
+        1  = Do not check for Slurm's X11 forwarding support, and no not
+             alter the DISPLAY variable.
+        0* = If the step the job is adopted into has X11 enabled, set
+             the DISPLAY variable in the processes environment accordingly.
+
 SLURM.CONF CONFIGURATION
   PrologFlags=contain must be set in slurm.conf. This sets up the "extern" step
   into which ssh-launched processes will be adopted.
