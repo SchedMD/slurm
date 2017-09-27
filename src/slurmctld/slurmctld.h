@@ -937,6 +937,12 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
  */
 extern bool allocated_session_in_use(job_desc_msg_t *new_alloc);
 
+/* set the tres_req_str and tres_req_fmt_str for the job.  assoc_mgr_locked
+ * is set if the assoc_mgr read lock is already set.
+ */
+extern void set_job_tres_req_str(struct job_record *job_ptr,
+				   bool assoc_mgr_locked);
+
 /* set the tres_alloc_str and tres_alloc_fmt_str for the job.  assoc_mgr_locked
  * is set if the assoc_mgr read lock is already set.
  */

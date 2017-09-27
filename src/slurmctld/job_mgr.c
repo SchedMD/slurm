@@ -826,6 +826,28 @@ static int _open_job_state_file(char **state_file)
 	return state_fd;
 }
 
+extern void set_job_tres_req_str(struct job_record *job_ptr,
+				 bool assoc_mgr_locked)
+{
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+	xassert(job_ptr);
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
+	xfree(job_ptr->tres_req_str);
+	job_ptr->tres_req_str = assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_req_cnt, TRES_STR_FLAG_SIMPLE, true);
+
+	xfree(job_ptr->tres_fmt_req_str);
+	job_ptr->tres_fmt_req_str = assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_req_cnt, TRES_STR_CONVERT_UNITS, true);
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
+}
+
 extern void set_job_tres_alloc_str(struct job_record *job_ptr,
 				   bool assoc_mgr_locked)
 {
@@ -7596,7 +7618,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	 */
 	job_ptr->tres_req_cnt = job_desc->tres_req_cnt;
 	job_desc->tres_req_cnt = NULL;
-	set_job_tres_alloc_str(job_ptr, false);
+	set_job_tres_req_str(job_ptr, false);
 	_add_job_hash(job_ptr);
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
@@ -8366,7 +8388,7 @@ extern void job_set_req_tres(
 			      true);
 
 	/* now that the array is filled lets make the string from it */
-	set_job_tres_alloc_str(job_ptr, true);
+	set_job_tres_req_str(job_ptr, true);
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
@@ -11487,7 +11509,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			detail_ptr->min_cpus = job_specs->min_cpus;
 			job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
 				(uint64_t)detail_ptr->min_cpus;
-			set_job_tres_alloc_str(job_ptr, false);
+			set_job_tres_req_str(job_ptr, false);
 		}
 	}
 	if (job_specs->max_cpus != NO_VAL) {
@@ -11507,7 +11529,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			/* revert it */
 			job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
 				(uint64_t)detail_ptr->min_cpus;
-			set_job_tres_alloc_str(job_ptr, false);
+			set_job_tres_req_str(job_ptr, false);
 		}
 		if (save_max_cpus) {
 			detail_ptr->max_cpus = save_max_cpus;
@@ -11633,7 +11655,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		job_ptr->tres_req_cnt[TRES_ARRAY_NODE] =
 			(uint64_t)detail_ptr->min_nodes;
-		set_job_tres_alloc_str(job_ptr, false);
+		set_job_tres_req_str(job_ptr, false);
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
@@ -12037,7 +12059,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				acct_policy_limit_set.tres[TRES_ARRAY_MEM];
 			job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
 				detail_ptr->pn_min_memory;
-			set_job_tres_alloc_str(job_ptr, false);
+			set_job_tres_req_str(job_ptr, false);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -12217,7 +12239,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				      job_ptr->details->min_nodes : 0,
 				      job_ptr->tres_req_cnt,
 				      true);
-		set_job_tres_alloc_str(job_ptr, true);
+		set_job_tres_req_str(job_ptr, true);
 		assoc_mgr_unlock(&locks);
 	}
 
@@ -12472,7 +12494,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			license_set_job_tres_cnt(job_ptr->license_list,
 						 job_ptr->tres_req_cnt,
 						 true);
-			set_job_tres_alloc_str(job_ptr, true);
+			set_job_tres_req_str(job_ptr, true);
 			assoc_mgr_unlock(&locks);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (operator || (license_list == NULL))) {
