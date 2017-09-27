@@ -741,6 +741,24 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
 		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
+		if (object->req_mem) {
+			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+			if ((tmp_uint64 & 0x80000000) &&
+			    (tmp_uint64 < 0x100000000)) {
+				/*
+				 * Handle old conversion of memory
+				 * stored incorrectly in the database.
+				 * This will be fixed in 17.11 and we
+				 * can remove this check.  0x80000000
+				 * was the old value of MEM_PER_CPU
+				 */
+				tmp_uint64 &= (~0x80000000);
+				tmp_uint64 |= MEM_PER_CPU;
+				xfree(object->req_mem);
+				object->req_mem = xstrdup_printf("%"PRIu64,
+								 tmp_uint64);
+			}
+		}
 		unpackstr_ptr(&object->resvid, &tmp32, buffer);
 		unpackstr_ptr(&object->start, &tmp32, buffer);
 		unpackstr_ptr(&object->state, &tmp32, buffer);
@@ -780,6 +798,24 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
 		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
+		if (object->req_mem) {
+			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+			if ((tmp_uint64 & 0x80000000) &&
+			    (tmp_uint64 < 0x100000000)) {
+				/*
+				 * Handle old conversion of memory
+				 * stored incorrectly in the database.
+				 * This will be fixed in 17.11 and we
+				 * can remove this check.  0x80000000
+				 * was the old value of MEM_PER_CPU
+				 */
+				tmp_uint64 &= (~0x80000000);
+				tmp_uint64 |= MEM_PER_CPU;
+				xfree(object->req_mem);
+				object->req_mem = xstrdup_printf("%"PRIu64,
+								 tmp_uint64);
+			}
+		}
 		unpackstr_ptr(&object->resvid, &tmp32, buffer);
 		unpackstr_ptr(&object->start, &tmp32, buffer);
 		unpackstr_ptr(&object->state, &tmp32, buffer);
@@ -819,6 +855,24 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
 		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
+		if (object->req_mem) {
+			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+			if ((tmp_uint64 & 0x80000000) &&
+			    (tmp_uint64 < 0x100000000)) {
+				/*
+				 * Handle old conversion of memory
+				 * stored incorrectly in the database.
+				 * This will be fixed in 17.11 and we
+				 * can remove this check.  0x80000000
+				 * was the old value of MEM_PER_CPU
+				 */
+				tmp_uint64 &= (~0x80000000);
+				tmp_uint64 |= MEM_PER_CPU;
+				xfree(object->req_mem);
+				object->req_mem = xstrdup_printf("%"PRIu64,
+								 tmp_uint64);
+			}
+		}
 		unpackstr_ptr(&object->resvid, &tmp32, buffer);
 		object->pack_job_id = "0";
 		object->pack_job_offset = "4294967294";
@@ -857,6 +911,24 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
 		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
+		if (object->req_mem) {
+			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+			if ((tmp_uint64 & 0x80000000) &&
+			    (tmp_uint64 < 0x100000000)) {
+				/*
+				 * Handle old conversion of memory
+				 * stored incorrectly in the database.
+				 * This will be fixed in 17.11 and we
+				 * can remove this check.  0x80000000
+				 * was the old value of MEM_PER_CPU
+				 */
+				tmp_uint64 &= (~0x80000000);
+				tmp_uint64 |= MEM_PER_CPU;
+				xfree(object->req_mem);
+				object->req_mem = xstrdup_printf("%"PRIu64,
+								 tmp_uint64);
+			}
+		}
 		unpackstr_ptr(&object->resvid, &tmp32, buffer);
 		object->pack_job_id = "0";
 		object->pack_job_offset = "4294967294";
