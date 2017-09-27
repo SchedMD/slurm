@@ -39,7 +39,7 @@
 #include "as_mysql_convert.h"
 
 /* Any time you have to add to an existing convert update this number. */
-#define CONVERT_VERSION 2
+#define CONVERT_VERSION 3
 
 static uint32_t db_curr_ver = NO_VAL;
 
@@ -189,6 +189,20 @@ static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 			error("Can't convert %s_%s info: %m",
 			      cluster_name, job_table);
 		xfree(query);
+	}
+
+	if (db_curr_ver < 3) {
+		query = xstrdup_printf("update \"%s_%s\" set mem_req = 0x8000000000000000 | (mem_req ^ 0x80000000) where (mem_req & 0xffffffff80000000) = 0x80000000;",
+				       cluster_name, job_table);
+
+		debug("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
+			error("Can't convert %s_%s info: %m",
+			      cluster_name, job_table);
+		xfree(query);
+
+		if (rc != SLURM_SUCCESS)
+			return rc;
 	}
 
 	return rc;
