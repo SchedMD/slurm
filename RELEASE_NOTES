@@ -26,7 +26,7 @@ under the [mysqld] reference in the my.cnf file and restarting the mysqld. The
 buffer pool size must be smaller than the size of the MySQL tmpdir. This is
 needed when converting large tables over to the new database schema.
 
-Slurm can be upgraded from version 16.05 or 17.02 to version 17.02 without loss
+Slurm can be upgraded from version 16.05 or 17.02 to version 17.11 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
