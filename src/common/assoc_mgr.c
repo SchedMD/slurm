@@ -6113,6 +6113,8 @@ extern char *assoc_mgr_make_tres_str_from_array(
 				   tres_str ? "," : "",
 				   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
 		else {
+			if (tres_cnt[i] == NO_VAL64)
+				continue;
 			if ((flags & TRES_STR_CONVERT_UNITS) &&
 			    ((assoc_mgr_tres_array[i]->id == TRES_MEM) ||
 			     (assoc_mgr_tres_array[i]->type &&
