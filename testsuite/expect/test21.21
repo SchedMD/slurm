@@ -48,6 +48,7 @@ set timeout     60
 set test_node   " "
 # cr_core = 1 / cr_cpu = 0
 set selectparam  0
+set one_task_pc  0
 
 # test maxjob maxnode maxsubmit maxwall
 array set acct_mod_desc {}
@@ -88,9 +89,15 @@ if { [string compare [priority_type] multifactor] } {
 	exit $exit_code
 }
 
+
 # Determine what the selecttype param is
 if {[test_select_type_params "CR_CORE"]} {
 	set selectparam 1
+}
+
+# Determine what the selecttype param is
+if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+	set one_task_pc 1
 }
 
 set got_node 0
@@ -167,7 +174,7 @@ proc assoc_setup { limit_type limit_val } {
 
 proc _test_limits { } {
 	global file_in srun sbatch squeue scancel bin_id number bin_sleep bin_rm ta maxjob_lim maxsub_lim
-	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals acct_mod_assoc_test_vals
+	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals acct_mod_assoc_test_vals one_task_pc nthreads
 
 	set exit_code 0
 
@@ -177,6 +184,10 @@ proc _test_limits { } {
 		if { [string compare $option "maxjobsub"] &&
 		     [string compare $option "grpjobsub"] } {
 			assoc_setup $option $acct_mod_assoc_vals($option)
+
+			if { ![string compare $option "maxcpumins"] && $one_task_pc } {
+				set acct_mod_assoc_vals(maxcpumins) "-n [expr [lindex $acct_mod_assoc_vals(maxcpumins) 1] / $nthreads]"
+			}
 
 			if { ![string compare $option "grpwall"] } {
 				if { [inc21_21_grpwall $option \

@@ -97,6 +97,7 @@ set time_spacing 1
 
 # cr_core = 1 / cr_cpu = 0
 set selectparam  0
+set one_task_pc  0
 
 # mod qos
 array set mod_qos_vals {
@@ -184,6 +185,11 @@ if {[test_select_type_params "CR_CORE"]} {
 	set selectparam 1
 }
 
+# Determine what the selecttype param is
+if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+	set one_task_pc 1
+}
+
 set got_node 0
 spawn $srun -N1 printenv SLURM_NODELIST
 expect {
@@ -237,6 +243,8 @@ if {$totcpus == 0} {
 	set maxcpu_num [expr $totcpus - $nthreads]
 	set maxcpumin_num $totcpus
 }
+
+
 
 # Get the number of nodes in the default partition
 set num_nodes 0
@@ -454,6 +462,11 @@ set mod_qos_vals(GrpNodes) "-1"
 set mod_qos_vals(GrpCpus) $grcpu_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
+
+if { $one_task_pc } {
+	set grcpu_num [expr $grcpu_num / $nthreads]
+}
+
 inc21_30_2
 if {$exit_code != 0} {
 	endit
@@ -490,6 +503,12 @@ set mod_qos_vals(GrpSubmit) "-1"
 set mod_qos_vals(MaxCpus) $maxcpu_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
+
+if { $one_task_pc } {
+	set maxcpu_num [expr $maxcpu_num / $nthreads]
+}
+
+
 inc21_30_5
 if {$exit_code != 0} {
 	endit
@@ -538,6 +557,9 @@ set mod_qos_vals(MaxSubmitJobs) "-1"
 set mod_qos_vals(GrpCpuMin) $grpcpumin_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
+if { $one_task_pc } {
+	set grpcpumin_num [expr $grpcpumin_num / $nthreads]
+}
 inc21_30_9
 if {$exit_code != 0 } {
 	endit
@@ -552,6 +574,9 @@ if { $prio_multifactor != 0 } {
 	set mod_qos_vals(GrpCpuRunMin) $grpcpurunmin_num
 	mod_qos $qostest [array get mod_qos_vals]
 	sleep $time_spacing
+	if { $one_task_pc } {
+		set grpcpurunmin_num [expr $grpcpurunmin_num / $nthreads]
+	}
 	inc21_30_10
 	if {$exit_code != 0 } {
 		endit
@@ -592,6 +617,9 @@ if { $prio_multifactor != 0 } {
 set mod_qos_vals(MaxCpuMin) $maxcpumin_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
+if { $one_task_pc } {
+	set maxcpumin_num [expr $maxcpumin_num / $nthreads]
+}
 inc21_30_13
 if {$exit_code != 0 } {
 	endit
@@ -622,6 +650,9 @@ if {$selectparam} {
 set mod_qos_vals(MaxCpusPerUser) $maxcpuspu_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
+if { $one_task_pc } {
+	set maxcpuspu_num [expr $maxcpuspu_num / $nthreads]
+}
 inc21_30_15
 if {$exit_code != 0 } {
 	endit
