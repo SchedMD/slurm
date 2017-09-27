@@ -50,11 +50,11 @@ AC_DEFUN([X_AC_CRAY],
 
   AC_ARG_ENABLE(
     [native-cray],
-    AS_HELP_STRING(--enable-native-cray,Run SLURM natively on a Cray without ALPS),
+    AS_HELP_STRING(--disable-native-cray,Use ALPS instead of run Slurm natively on a Cray),
       [ case "$enableval" in
-	yes) ac_have_native_cray="yes" ;;
-	 no) ac_have_native_cray="no"  ;;
-	  *) AC_MSG_ERROR([bad value "$enableval" for --enable-native-cray])  ;;
+	yes) ac_have_native_cray="no" ;;
+	 no) ac_have_native_cray="yes"  ;;
+	  *) AC_MSG_ERROR([bad value "$enableval" for --disable-native-cray])  ;;
       esac ]
   )
 

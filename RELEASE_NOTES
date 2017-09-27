@@ -93,6 +93,8 @@ HIGHLIGHTS
     types.
  -- Changed default ProctrackType to cgroup.
  -- Changed default sched_min_interval from 0 to 2 microseconds.
+ -- CRAY: --enable-native-cray is no longer an option and is on by default.
+    If you want to run with ALPS please configure with --disable-native-cray.
 
 RPMBUILD CHANGES
 ================

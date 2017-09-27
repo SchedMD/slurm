@@ -1720,7 +1720,7 @@ Optional Features:
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-alps-cray-emulation
                           Run SLURM in an emulated Cray mode
-  --enable-native-cray    Run SLURM natively on a Cray without ALPS
+  --disable-native-cray   Use ALPS instead of run Slurm natively on a Cray
   --enable-cray-network   Run SLURM on a non-Cray system with a Cray network
   --enable-really-no-cray Disable cray support for eslogin machines
   --enable-developer      enable developer options (asserts, -Werror - also
@@ -23145,9 +23145,9 @@ fi
   # Check whether --enable-native-cray was given.
 if test "${enable_native_cray+set}" = set; then :
   enableval=$enable_native_cray;  case "$enableval" in
-	yes) ac_have_native_cray="yes" ;;
-	 no) ac_have_native_cray="no"  ;;
-	  *) as_fn_error $? "bad value \"$enableval\" for --enable-native-cray" "$LINENO" 5  ;;
+	yes) ac_have_native_cray="no" ;;
+	 no) ac_have_native_cray="yes"  ;;
+	  *) as_fn_error $? "bad value \"$enableval\" for --disable-native-cray" "$LINENO" 5  ;;
       esac
 
 fi

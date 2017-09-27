@@ -85,6 +85,8 @@ documents those changes that are of interest to users and administrators.
  -- Add "TaskPluginParam=SlurmdOffSpec" option that will prevent the Slurm
     compute node daemons (slurmd and slurmstepd) from executing on specialized
     cores.
+ -- CRAY - Make native mode default, use --disable-native-cray to use ALPS
+    instead of native Slurm.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
