@@ -196,7 +196,7 @@ extern int task_cgroup_devices_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 {
-	int f, k, rc, gres_conf_lines, allow_lines;
+	int f, k, rc, gres_conf_lines = 0, allow_lines = 0;
 	int fstatus = SLURM_ERROR;
 	char **gres_name = NULL;
 	char **gres_cgroup = NULL, **dev_path = NULL;
