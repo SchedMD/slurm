@@ -956,6 +956,9 @@ extern int gres_plugin_node_config_devices_path(char ***dev_path,
 	hostlist_t hl;
 
 	gres_plugin_init();
+	if (gres_context_cnt == 0)
+		return 0;
+
 	gres_conf_file = get_extra_conf_path("gres.conf");
 	if (stat(gres_conf_file, &config_stat) < 0) {
 		error("can't stat gres.conf file %s: %m", gres_conf_file);

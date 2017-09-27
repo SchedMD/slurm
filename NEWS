@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     plugin when constraining devices.
  -- Fix issue that would deny the stepd access to /dev/null where GRES has a
     'type' but no file defined.
+ -- Fix issue where the slurmstepd would fatal on job launch if you have no
+    gres listed in your slurm.conf but some in gres.conf.
 
 * Changes in Slurm 17.02.7
 ==========================
