@@ -197,16 +197,20 @@ static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 static int _convert_step_table(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
-	char *query = xstrdup_printf("update \"%s_%s\" set consumed_energy=%"
-				     PRIu64" where consumed_energy=%u;",
-				     cluster_name, step_table,
-				     NO_VAL64, NO_VAL);
+	char *query;
 
-	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
-		error("Can't convert %s_%s info: %m",
-		      cluster_name, step_table);
-	xfree(query);
+	if (db_curr_ver < 1) {
+		query = xstrdup_printf("update \"%s_%s\" set consumed_energy=%"
+				       PRIu64" where consumed_energy=%u;",
+				       cluster_name, step_table,
+				       NO_VAL64, NO_VAL);
+
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
+			error("Can't convert %s_%s info: %m",
+			      cluster_name, step_table);
+		xfree(query);
+	}
 
 	return rc;
 }
@@ -300,8 +304,7 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 {
 	char *query;
-	MYSQL_RES *result = NULL;
-	int i = 0, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	ListIterator itr;
 	char *cluster_name;
 
@@ -316,49 +319,7 @@ extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 	/* make it up to date */
 	itr = list_iterator_create(as_mysql_total_cluster_list);
 	while ((cluster_name = list_next(itr))) {
-		query = xstrdup_printf("select tres_alloc from \"%s_%s\" where "
-				       "tres_alloc like '%%,%d=%%' limit 1;",
-				       cluster_name, job_table, TRES_ENERGY);
-
-		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-			xfree(query);
-			error("QUERY BAD: No count col name for cluster %s, this should never happen",
-			      cluster_name);
-			continue;
-		}
-		xfree(query);
-
-		i = mysql_num_rows(result);
-		mysql_free_result(result);
-		result = NULL;
-		if (i) {
-			debug2("Conversion on cluster %s not needed",
-			       cluster_name);
-			continue;
-		} else {
-			/* Need to check if the database is empty */
-			query = xstrdup_printf(
-				"select tres_alloc from \"%s_%s\" limit 1;",
-				cluster_name, job_table);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			if (!(result = mysql_db_query_ret(
-				      mysql_conn, query, 0))) {
-				xfree(query);
-				continue;
-			}
-			xfree(query);
-			i = mysql_num_rows(result);
-			mysql_free_result(result);
-			result = NULL;
-
-			if (!i) {
-				debug2("Conversion on cluster %s not needed, it doesn't have any rows in the table",
-				       cluster_name);
-				continue;
-			}
-		}
-
+		/* Convert the step tables */
 		info("converting step table for %s", cluster_name);
 		if ((rc = _convert_step_table(mysql_conn, cluster_name)
 		     != SLURM_SUCCESS))
