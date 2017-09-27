@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leaks in the task/cgroup plugin when constraining devices.
  -- Make extremely verbose info messages debug2 messages in the task/cgroup
     plugin when constraining devices.
+ -- Fix issue that would deny the stepd access to /dev/null where GRES has a
+    'type' but no file defined.
 
 * Changes in Slurm 17.02.7
 ==========================
