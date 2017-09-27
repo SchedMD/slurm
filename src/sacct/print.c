@@ -1752,18 +1752,8 @@ extern void print_fields(type_t type, void *object)
 				if (tmp_uint64 & MEM_PER_CPU) {
 					tmp_uint64 &= (~MEM_PER_CPU);
 					per_cpu = true;
-				} else if ((tmp_uint64 & 0x80000000) &&
-					   (tmp_uint64 < 0x100000000)) {
-					/*
-					 * Handle old conversion of memory
-					 * stored incorrectly in the database.
-					 * This will be fixed in 17.11 and we
-					 * can remove this check.  0x80000000
-					 * was the old value of MEM_PER_CPU
-					 */
-					tmp_uint64 &= (~0x80000000);
-					per_cpu = true;
 				}
+
 				convert_num_unit((double)tmp_uint64,
 						 outbuf, sizeof(outbuf),
 						 UNIT_MEGA, params.units,
