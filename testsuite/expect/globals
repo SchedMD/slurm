@@ -4197,3 +4197,21 @@ proc log_warn {msg} {
 proc log_info {msg} {
 	send_user "INFO:    $msg\n"
 }
+
+proc in_fed {} {
+	global scontrol
+
+	spawn $scontrol show fed
+	expect {
+		-re "Federation" {
+			return 1
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+		}
+		eof {
+			wait
+		}
+	}
+	return 0
+}

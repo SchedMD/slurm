@@ -87,7 +87,7 @@ set job_id  0
 set matches 0
 set salloc_pid [spawn $salloc --immediate -t1 $bin_pwd]
 expect {
-	-re "error" {
+	-re "error: Job submit/allocate failed" {
 		send_user "This error is not unexpected, no worries\n"
 		incr matches
 		exp_continue

@@ -76,6 +76,12 @@ set timeout $max_job_delay
 set salloc_pid [spawn $salloc -t1 -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
 #set salloc_pid [spawn $salloc -t1 -p $partition -N1-2 -n$ncpus $bin_printenv SLURM_NNODES]
 expect {
+	-re "salloc: Pending job allocation $number" {
+		exp_continue
+	}
+	-re "salloc: job $number queued and waiting for resources" {
+		exp_continue
+	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue

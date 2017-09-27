@@ -75,6 +75,12 @@ set nodes 0
 set timeout $max_job_delay
 set srun_pid [spawn $srun -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
 expect {
+	-re "srun: job $number queued and waiting for resources" {
+		exp_continue
+	}
+	-re "srun: job $number has been allocated resources" {
+		exp_continue
+	}
 	-re "($number)" {
 		set nodes $expect_out(1,string)
 		if {$nodes != 1} {
