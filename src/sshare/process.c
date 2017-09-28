@@ -63,6 +63,7 @@ print_field_t fields[] = {
 	{10, "User", print_fields_str, PRINT_USER},
 	{30, "GrpTRESMins", _print_tres, PRINT_TRESMINS},
 	{30, "TRESRunMins", _print_tres, PRINT_RUNMINS},
+	{30, "GrpTRESRaw", _print_tres, PRINT_GRPTRESRAW},
 	{0,  NULL, NULL, 0}
 };
 
@@ -226,6 +227,7 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 		char *tmp_char = NULL;
 		char *local_acct = NULL;
 		print_field_t *field = NULL;
+		uint64_t tres_raw[tres_cnt];
 
 		if ((options & PRINT_USERS_ONLY) && share->user == 0)
 			continue;
@@ -340,6 +342,15 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 			case PRINT_TRESMINS:
 				field->print_routine(field,
 						     share->tres_grp_mins,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_GRPTRESRAW:
+				/* convert to ints and minutes */
+				for (i=0; i<tres_cnt; i++)
+					tres_raw[i] = (uint64_t)
+						(share->usage_tres_raw[i] / 60);
+				field->print_routine(field,
+						     tres_raw,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_RUNMINS:

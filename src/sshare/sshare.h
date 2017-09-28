@@ -96,7 +96,8 @@ enum {
 	PRINT_RAWU,
 	PRINT_RUNMINS,
 	PRINT_USER,
-	PRINT_LEVELFS
+	PRINT_LEVELFS,
+	PRINT_GRPTRESRAW
 };
 
 extern int exit_code;	/* sshare's exit code, =1 on any error at any time */
