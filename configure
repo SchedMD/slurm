@@ -23114,7 +23114,7 @@ fi
 
 
 
-  ac_have_native_cray="no"
+  ac_have_native_cray="yes"
   ac_have_alps_cray="no"
   ac_have_real_cray="no"
   ac_have_alps_emulation="no"
@@ -23134,7 +23134,7 @@ fi
   # Check whether --enable-cray-emulation was given.
 if test "${enable_cray_emulation+set}" = set; then :
   enableval=$enable_cray_emulation;  case "$enableval" in
-	yes) ac_have_alps_cray_emulation="yes" ;;
+	yes) ac_have_alps_cray_emulation="yes" ac_have_native_cray="no" ;;
 	 no) ac_have_alps_cray_emulation="no"  ;;
 	  *) as_fn_error $? "bad value \"$enableval\" for --enable-alps-cray-emulation" "$LINENO" 5  ;;
       esac
@@ -23145,8 +23145,8 @@ fi
   # Check whether --enable-native-cray was given.
 if test "${enable_native_cray+set}" = set; then :
   enableval=$enable_native_cray;  case "$enableval" in
-	yes) ac_have_native_cray="no" ;;
-	 no) ac_have_native_cray="yes"  ;;
+	yes) ac_have_native_cray="yes" ;;
+	 no) ac_have_native_cray="no"  ;;
 	  *) as_fn_error $? "bad value \"$enableval\" for --disable-native-cray" "$LINENO" 5  ;;
       esac
 
@@ -23156,7 +23156,7 @@ fi
   # Check whether --enable-cray-network was given.
 if test "${enable_cray_network+set}" = set; then :
   enableval=$enable_cray_network;  case "$enableval" in
-	yes) ac_have_cray_network="yes" ;;
+	yes) ac_have_cray_network="yes" ac_have_native_cray="no" ;;
 	 no) ac_have_cray_network="no"  ;;
 	  *) as_fn_error $? "bad value \"$enableval\" for --enable-cray-network" "$LINENO" 5 ;:
       esac
@@ -23166,7 +23166,7 @@ fi
   # Check whether --enable-really-no-cray was given.
 if test "${enable_really_no_cray+set}" = set; then :
   enableval=$enable_really_no_cray;  case "$enableval" in
-   yes) ac_really_no_cray="yes" ;;
+   yes) ac_really_no_cray="yes" ac_have_native_cray="no" ;;
     no) ac_really_no_cray="no"  ;;
      *) as_fn_error $? "bad value \"$enableval\" for --enable-really-no-cray" "$LINENO" 5  ;;
       esac
@@ -23174,7 +23174,12 @@ if test "${enable_really_no_cray+set}" = set; then :
 fi
 
 
-  if test "$ac_have_alps_emulation" = "yes"; then
+  if test "$ac_really_no_cray" = "yes"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Ignoring any potential Cray system" >&5
+$as_echo "$as_me: Ignoring any potential Cray system" >&6;}
+    ac_have_alps_cray="no"
+    ac_have_real_cray="no"
+  elif test "$ac_have_alps_emulation" = "yes"; then
     ac_have_alps_cray="yes"
     { $as_echo "$as_me:${as_lineno-$LINENO}: Running A ALPS Cray system against an ALPS emulation" >&5
 $as_echo "$as_me: Running A ALPS Cray system against an ALPS emulation" >&6;}
@@ -23190,7 +23195,24 @@ $as_echo "$as_me: Running in Cray emulation mode" >&6;}
 $as_echo "#define HAVE_ALPS_CRAY_EMULATION 1" >>confdefs.h
 
 
-  elif test "$ac_have_native_cray" = "yes" || test "$ac_have_cray_network" = "yes" ; then
+  elif test "$ac_have_native_cray" = "no" && test "$ac_have_cray_network" = "no" ; then
+    # Check for a Cray-specific file:
+    #  * older XT systems use an /etc/xtrelease file
+    #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
+    #  * both have an /etc/xthostname
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a Cray XT or XE system running on ALPS or ALPS simulator" >&5
+$as_echo_n "checking whether this is a Cray XT or XE system running on ALPS or ALPS simulator... " >&6; }
+
+    if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
+      ac_have_alps_cray="yes"
+      ac_have_real_cray="yes"
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_alps_cray" >&5
+$as_echo "$ac_have_alps_cray" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a Cray XT or XE system" >&5
+$as_echo_n "checking whether this is a Cray XT or XE system... " >&6; }
+
     _x_ac_cray_job_dir="job/default"
     _x_ac_cray_alpscomm_dir="alpscomm/default"
 
@@ -23369,14 +23391,16 @@ rm -f core conftest.err conftest.$ac_objext \
     done
 
     if test -z "$have_cray_files"; then
-      as_fn_error $? "Unable to locate Cray APIs (usually in /opt/cray/alpscomm and /opt/cray/job)" "$LINENO" 5
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: Unable to locate Cray APIs (usually in /opt/cray/alpscomm and /opt/cray/job)" >&5
+$as_echo "Unable to locate Cray APIs (usually in /opt/cray/alpscomm and /opt/cray/job)" >&6; }
+      ac_have_native_cray="no"
     else
       if test "$ac_have_native_cray" = "yes"; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: Running on a Cray system in native mode without ALPS" >&5
-$as_echo "$as_me: Running on a Cray system in native mode without ALPS" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Running on a Cray system in native mode without ALPS" >&5
+$as_echo "Running on a Cray system in native mode without ALPS" >&6; }
       elif test "$ac_have_cray_network" = "yes"; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: Running on a system with a Cray network" >&5
-$as_echo "$as_me: Running on a system with a Cray network" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Running on a system with a Cray network" >&5
+$as_echo "Running on a system with a Cray network" >&6; }
       fi
     fi
 
@@ -23401,27 +23425,9 @@ $as_echo "#define SYSTEM_DIMENSIONS 3" >>confdefs.h
 $as_echo "#define HAVE_CRAY_NETWORK 1" >>confdefs.h
 
     fi
-
-  else
-    # Check for a Cray-specific file:
-    #  * older XT systems use an /etc/xtrelease file
-    #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
-    #  * both have an /etc/xthostname
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a Cray XT or XE system running on ALPS or ALPS simulator" >&5
-$as_echo_n "checking whether this is a Cray XT or XE system running on ALPS or ALPS simulator... " >&6; }
-
-    if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
-      ac_have_alps_cray="yes"
-      ac_have_real_cray="yes"
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_alps_cray" >&5
-$as_echo "$ac_have_alps_cray" >&6; }
   fi
 
-  if test "$ac_really_no_cray" = "yes"; then
-    ac_have_alps_cray="no"
-    ac_have_real_cray="no"
-  fi
+
   if test "$ac_have_alps_cray" = "yes"; then
     # libexpat is always required for the XML-RPC interface, but it is only
     # needed in the select plugin, so set it up here instead of everywhere.

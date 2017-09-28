@@ -24,7 +24,7 @@
 
 AC_DEFUN([X_AC_CRAY],
 [
-  ac_have_native_cray="no"
+  ac_have_native_cray="yes"
   ac_have_alps_cray="no"
   ac_have_real_cray="no"
   ac_have_alps_emulation="no"
@@ -42,7 +42,7 @@ AC_DEFUN([X_AC_CRAY],
     [cray-emulation],
     AS_HELP_STRING(--enable-alps-cray-emulation,Run SLURM in an emulated Cray mode),
       [ case "$enableval" in
-	yes) ac_have_alps_cray_emulation="yes" ;;
+	yes) ac_have_alps_cray_emulation="yes" ac_have_native_cray="no" ;;
 	 no) ac_have_alps_cray_emulation="no"  ;;
 	  *) AC_MSG_ERROR([bad value "$enableval" for --enable-alps-cray-emulation])  ;;
       esac ]
@@ -52,8 +52,8 @@ AC_DEFUN([X_AC_CRAY],
     [native-cray],
     AS_HELP_STRING(--disable-native-cray,Use ALPS instead of run Slurm natively on a Cray),
       [ case "$enableval" in
-	yes) ac_have_native_cray="no" ;;
-	 no) ac_have_native_cray="yes"  ;;
+	yes) ac_have_native_cray="yes" ;;
+	 no) ac_have_native_cray="no"  ;;
 	  *) AC_MSG_ERROR([bad value "$enableval" for --disable-native-cray])  ;;
       esac ]
   )
@@ -62,7 +62,7 @@ AC_DEFUN([X_AC_CRAY],
     [cray-network],
     AS_HELP_STRING(--enable-cray-network,Run SLURM on a non-Cray system with a Cray network),
       [ case "$enableval" in
-	yes) ac_have_cray_network="yes" ;;
+	yes) ac_have_cray_network="yes" ac_have_native_cray="no" ;;
 	 no) ac_have_cray_network="no"  ;;
 	  *) AC_MSG_ERROR([bad value "$enableval" for --enable-cray-network]) ;:
       esac ]
@@ -71,13 +71,17 @@ AC_DEFUN([X_AC_CRAY],
     [really-no-cray],
     AS_HELP_STRING(--enable-really-no-cray,Disable cray support for eslogin machines),
       [ case "$enableval" in
-   yes) ac_really_no_cray="yes" ;;
+   yes) ac_really_no_cray="yes" ac_have_native_cray="no" ;;
     no) ac_really_no_cray="no"  ;;
      *) AC_MSG_ERROR([bad value "$enableval" for --enable-really-no-cray])  ;;
       esac ]
   )
 
-  if test "$ac_have_alps_emulation" = "yes"; then
+  if test "$ac_really_no_cray" = "yes"; then
+    AC_MSG_NOTICE([Ignoring any potential Cray system])
+    ac_have_alps_cray="no"
+    ac_have_real_cray="no"
+  elif test "$ac_have_alps_emulation" = "yes"; then
     ac_have_alps_cray="yes"
     AC_MSG_NOTICE([Running A ALPS Cray system against an ALPS emulation])
     AC_DEFINE(HAVE_ALPS_EMULATION, 1, [Define to 1 if running against an ALPS emulation])
@@ -87,7 +91,21 @@ AC_DEFUN([X_AC_CRAY],
     AC_MSG_NOTICE([Running in Cray emulation mode])
     AC_DEFINE(HAVE_ALPS_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system using ALPS])
 
-  elif test "$ac_have_native_cray" = "yes" || test "$ac_have_cray_network" = "yes" ; then
+  elif test "$ac_have_native_cray" = "no" && test "$ac_have_cray_network" = "no" ; then
+    # Check for a Cray-specific file:
+    #  * older XT systems use an /etc/xtrelease file
+    #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
+    #  * both have an /etc/xthostname
+    AC_MSG_CHECKING([whether this is a Cray XT or XE system running on ALPS or ALPS simulator])
+
+    if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
+      ac_have_alps_cray="yes"
+      ac_have_real_cray="yes"
+    fi
+    AC_MSG_RESULT([$ac_have_alps_cray])
+  else
+    AC_MSG_CHECKING([whether this is a Cray XT or XE system])
+
     _x_ac_cray_job_dir="job/default"
     _x_ac_cray_alpscomm_dir="alpscomm/default"
 
@@ -184,12 +202,13 @@ AC_DEFUN([X_AC_CRAY],
     done
 
     if test -z "$have_cray_files"; then
-      AC_MSG_ERROR([Unable to locate Cray APIs (usually in /opt/cray/alpscomm and /opt/cray/job)])
+      AC_MSG_RESULT([Unable to locate Cray APIs (usually in /opt/cray/alpscomm and /opt/cray/job)])
+      ac_have_native_cray="no"
     else
       if test "$ac_have_native_cray" = "yes"; then
-        AC_MSG_NOTICE([Running on a Cray system in native mode without ALPS])
+        AC_MSG_RESULT([Running on a Cray system in native mode without ALPS])
       elif test "$ac_have_cray_network" = "yes"; then
-        AC_MSG_NOTICE([Running on a system with a Cray network])
+        AC_MSG_RESULT([Running on a system with a Cray network])
       fi
     fi
 
@@ -204,25 +223,9 @@ AC_DEFUN([X_AC_CRAY],
       AC_DEFINE(SYSTEM_DIMENSIONS,  3, [3-dimensional architecture])
       AC_DEFINE(HAVE_CRAY_NETWORK,  1, [Define to 1 for systems with a Cray network])
     fi
-
-  else
-    # Check for a Cray-specific file:
-    #  * older XT systems use an /etc/xtrelease file
-    #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
-    #  * both have an /etc/xthostname
-    AC_MSG_CHECKING([whether this is a Cray XT or XE system running on ALPS or ALPS simulator])
-
-    if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
-      ac_have_alps_cray="yes"
-      ac_have_real_cray="yes"
-    fi
-    AC_MSG_RESULT([$ac_have_alps_cray])
   fi
 
-  if test "$ac_really_no_cray" = "yes"; then
-    ac_have_alps_cray="no"
-    ac_have_real_cray="no"
-  fi
+
   if test "$ac_have_alps_cray" = "yes"; then
     # libexpat is always required for the XML-RPC interface, but it is only
     # needed in the select plugin, so set it up here instead of everywhere.
