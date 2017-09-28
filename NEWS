@@ -87,6 +87,8 @@ documents those changes that are of interest to users and administrators.
     cores.
  -- CRAY - Make native mode default, use --disable-native-cray to use ALPS
     instead of native Slurm.
+ -- Add ability to prevent suspension of some count of nodes in a specified
+    range using the SuspendExcNodes configuration parameter.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

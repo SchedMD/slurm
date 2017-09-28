@@ -46,6 +46,7 @@
 
 #define _GNU_SOURCE
 
+#include <limits.h>	/* For LONG_MIN, LONG_MAX */
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -91,7 +92,14 @@ time_t last_config = (time_t) 0, last_suspend = (time_t) 0;
 time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
 uint16_t slurmd_timeout;
 
+typedef struct exc_node_partital {
+	int exc_node_cnt;
+	bitstr_t *exc_node_cnt_bitmap;
+} exc_node_partital_t;
+List partial_node_list;
+
 bitstr_t *exc_node_bitmap = NULL;
+
 bitstr_t *suspend_node_bitmap = NULL, *resume_node_bitmap = NULL;
 int   suspend_cnt,   resume_cnt;
 float suspend_cnt_f, resume_cnt_f;
@@ -114,6 +122,131 @@ static void _proc_track_list_del(void *x)
 	xfree(x);
 }
 
+static void _exc_node_part_free(void *x)
+{
+	exc_node_partital_t *ext_part_struct = (exc_node_partital_t *) x;
+	FREE_NULL_BITMAP(ext_part_struct->exc_node_cnt_bitmap);
+	xfree(ext_part_struct);
+}
+
+static int _parse_exc_nodes(void)
+{
+	int rc;
+	char *end_ptr = NULL, *save_ptr = NULL, *sep, *tmp, *tok;
+
+	sep = strchr(exc_nodes, ':');
+	if (!sep)
+		return node_name2bitmap(exc_nodes, false, &exc_node_bitmap);
+
+	partial_node_list = list_create(_exc_node_part_free);
+	tmp = xstrdup(exc_nodes);
+	tok = strtok_r(tmp, ":", &save_ptr);
+	while (tok) {
+		bitstr_t *exc_node_cnt_bitmap = NULL;
+		long ext_node_cnt = 0;
+		exc_node_partital_t *ext_part_struct;
+
+		rc = node_name2bitmap(tok, false, &exc_node_cnt_bitmap);
+		if ((rc != SLURM_SUCCESS) || !exc_node_cnt_bitmap)
+			break;
+		tok = strtok_r(NULL, ",", &save_ptr);
+		if (tok) {
+			ext_node_cnt = strtol(tok, &end_ptr, 10);
+			if ((end_ptr[0] != '\0') || (ext_node_cnt < 1) ||
+			    (ext_node_cnt >
+			     bit_set_count(exc_node_cnt_bitmap))) {
+				FREE_NULL_BITMAP(exc_node_cnt_bitmap);
+				rc = SLURM_ERROR;
+				break;
+			}
+		} else {
+			ext_node_cnt = bit_set_count(exc_node_cnt_bitmap);
+		}	
+		ext_part_struct = xmalloc(sizeof(exc_node_partital_t));
+		ext_part_struct->exc_node_cnt = (int) ext_node_cnt;
+		ext_part_struct->exc_node_cnt_bitmap = exc_node_cnt_bitmap;
+		list_append(partial_node_list, ext_part_struct);
+		tok = strtok_r(NULL, ":", &save_ptr);
+	}
+	if (rc != SLURM_SUCCESS)
+		FREE_NULL_LIST(partial_node_list);
+
+	return rc;
+}
+
+/*
+ * Print elements of the excluded nodes with counts
+ */
+static int _list_part_node_lists(void *x, void *arg)
+{
+	exc_node_partital_t *ext_part_struct = (exc_node_partital_t *) x;
+	char *tmp = bitmap2node_name(ext_part_struct->exc_node_cnt_bitmap);
+	info("power_save module, exclude %d nodes from %s",
+	     ext_part_struct->exc_node_cnt, tmp);
+	xfree(tmp);
+	return 0;
+
+}
+
+/*
+ * Select the nodes specific nodes to be excluded from consideration for
+ * suspension based upon the node states and specified count. Nodes which
+ * can not be used (e.g. ALLOCATED, DOWN, DRAINED, etc.).
+ */
+static int _pick_exc_nodes(void *x, void *arg)
+{
+	bitstr_t **orig_exc_nodes = (bitstr_t **) arg;
+	exc_node_partital_t *ext_part_struct = (exc_node_partital_t *) x;
+	bitstr_t *exc_node_cnt_bitmap;
+	int i, i_first, i_last;
+	int avail_node_cnt, exc_node_cnt;
+	struct node_record *node_ptr;
+
+
+	avail_node_cnt = bit_set_count(ext_part_struct->exc_node_cnt_bitmap);
+	if (ext_part_struct->exc_node_cnt >= avail_node_cnt) {
+		/* Exclude all nodes in this set */
+		exc_node_cnt_bitmap =
+			bit_copy(ext_part_struct->exc_node_cnt_bitmap);
+	} else {
+		i = bit_size(ext_part_struct->exc_node_cnt_bitmap);
+		exc_node_cnt_bitmap = bit_alloc(i);
+		i_first = bit_ffs(ext_part_struct->exc_node_cnt_bitmap);
+		if (i_first >= 0)
+			i_last = bit_fls(ext_part_struct->exc_node_cnt_bitmap);
+		else
+			i_last = i_first - 1;
+		exc_node_cnt = ext_part_struct->exc_node_cnt;
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(ext_part_struct->exc_node_cnt_bitmap, i))
+				continue;
+			node_ptr = node_record_table_ptr + i;
+			if (!IS_NODE_IDLE(node_ptr)			||
+			    IS_NODE_COMPLETING(node_ptr)		||
+			    IS_NODE_DOWN(node_ptr)			||
+			    IS_NODE_DRAIN(node_ptr)			||
+			    IS_NODE_POWER_UP(node_ptr)			||
+			    IS_NODE_POWER_SAVE(node_ptr)		||
+			    (node_ptr->sus_job_cnt > 0))
+				continue;
+			bit_set(exc_node_cnt_bitmap, i);
+			if (--exc_node_cnt <= 0)
+				break;
+		}
+	}
+
+	if (*orig_exc_nodes == NULL)
+		*orig_exc_nodes = exc_node_cnt_bitmap;
+	else
+		bit_or(*orig_exc_nodes, exc_node_cnt_bitmap);
+#if _DEBUG
+	char *tmp = bitmap2node_name(*orig_exc_nodes);
+	info("power_save module, excluded nodes %s", tmp);
+	xfree(tmp);
+#endif
+
+	return 0;
+}
 
 /* Perform any power change work to nodes */
 static void _do_power_work(time_t now)
@@ -121,15 +254,14 @@ static void _do_power_work(time_t now)
 	int i, wake_cnt = 0, sleep_cnt = 0, susp_total = 0;
 	time_t delta_t;
 	uint32_t susp_state;
+	bitstr_t *avoid_node_bitmap = NULL;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
 	bool run_suspend = false;
 
 	if (last_work_scan == 0) {
-		if (exc_nodes &&
-		    (node_name2bitmap(exc_nodes, false, &exc_node_bitmap))) {
+		if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
 			error("Invalid SuspendExcNodes %s ignored", exc_nodes);
-		}
 
 		if (exc_parts) {
 			char *tmp = NULL, *one_part = NULL, *part_list = NULL;
@@ -159,6 +291,11 @@ static void _do_power_work(time_t now)
 			info("power_save module, excluded nodes %s", tmp);
 			xfree(tmp);
 		}
+		if (partial_node_list) {
+			(void) list_for_each(partial_node_list,
+					     _list_part_node_lists, NULL);
+
+		}
 	}
 
 	/* Set limit on counts of nodes to have state changed */
@@ -187,6 +324,18 @@ static void _do_power_work(time_t now)
 	}
 
 	last_work_scan = now;
+
+	/* Identify nodes to avoid considering for suspend */
+	if (partial_node_list) {
+		(void) list_for_each(partial_node_list, _pick_exc_nodes,
+				     &avoid_node_bitmap);
+	}
+	if (exc_node_bitmap) {
+		if (avoid_node_bitmap)
+			bit_or(avoid_node_bitmap, exc_node_bitmap);
+		else
+			avoid_node_bitmap = bit_copy(exc_node_bitmap);
+	}
 
 	/* Build bitmaps identifying each node which should change state */
 	for (i = 0, node_ptr = node_record_table_ptr;
@@ -231,8 +380,8 @@ static void _do_power_work(time_t now)
 		    (!IS_NODE_POWER_UP(node_ptr))			&&
 		    (node_ptr->last_idle != 0)				&&
 		    (node_ptr->last_idle < (now - idle_time))		&&
-		    ((exc_node_bitmap == NULL) ||
-		     (bit_test(exc_node_bitmap, i) == 0))) {
+		    ((avoid_node_bitmap == NULL) ||
+		     (bit_test(avoid_node_bitmap, i) == 0))) {
 			if (sleep_node_bitmap == NULL) {
 				sleep_node_bitmap =
 					bit_alloc(node_record_count);
@@ -252,6 +401,7 @@ static void _do_power_work(time_t now)
 			last_suspend = now;
 		}
 	}
+	FREE_NULL_BITMAP(avoid_node_bitmap);
 	if (((now - last_log) > 600) && (susp_total > 0)) {
 		info("Power save mode: %d nodes", susp_total);
 		last_log = now;
@@ -572,6 +722,7 @@ static void _clear_power_config(void)
 	xfree(exc_nodes);
 	xfree(exc_parts);
 	FREE_NULL_BITMAP(exc_node_bitmap);
+	FREE_NULL_LIST(partial_node_list);
 }
 
 /* Initialize power_save module parameters.
