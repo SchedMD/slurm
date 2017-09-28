@@ -195,7 +195,7 @@ static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 		query = xstrdup_printf("update \"%s_%s\" set mem_req = 0x8000000000000000 | (mem_req ^ 0x80000000) where (mem_req & 0xffffffff80000000) = 0x80000000;",
 				       cluster_name, job_table);
 
-		debug("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
 			error("Can't convert %s_%s info: %m",
 			      cluster_name, job_table);
