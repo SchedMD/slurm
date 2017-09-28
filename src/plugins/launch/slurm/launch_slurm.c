@@ -738,7 +738,6 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.preserve_env       = opt_local->preserve_env;
 	launch_params.spank_job_env      = opt_local->spank_job_env;
 	launch_params.spank_job_env_size = opt_local->spank_job_env_size;
-	launch_params.user_managed_io    = opt_local->user_managed_io;
 	launch_params.ntasks_per_board   = job->ntasks_per_board;
 	launch_params.ntasks_per_core    = job->ntasks_per_core;
 	launch_params.ntasks_per_socket  = job->ntasks_per_socket;
