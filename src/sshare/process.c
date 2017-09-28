@@ -53,17 +53,17 @@ print_field_t fields[] = {
 	{10, "Cluster", print_fields_str, PRINT_CLUSTER},
 	{13, "EffectvUsage", print_fields_double, PRINT_EUSED},
 	{10, "FairShare", print_fields_double, PRINT_FSFACTOR},
+	{30, "GrpTRESMins", _print_tres, PRINT_TRESMINS},
+	{30, "GrpTRESRaw", _print_tres, PRINT_GRPTRESRAW},
+	{6,  "ID", print_fields_uint, PRINT_ID},
 	{10, "LevelFS", print_fields_double, PRINT_LEVELFS},
-	{6, "ID", print_fields_uint, PRINT_ID},
 	{11, "NormShares", print_fields_double, PRINT_NORMS},
 	{11, "NormUsage", print_fields_double, PRINT_NORMU},
 	{12, "Partition", print_fields_str, PRINT_PART},
 	{10, "RawShares", print_fields_uint32, PRINT_RAWS},
 	{11, "RawUsage", print_fields_uint64, PRINT_RAWU},
-	{10, "User", print_fields_str, PRINT_USER},
-	{30, "GrpTRESMins", _print_tres, PRINT_TRESMINS},
 	{30, "TRESRunMins", _print_tres, PRINT_RUNMINS},
-	{30, "GrpTRESRaw", _print_tres, PRINT_GRPTRESRAW},
+	{10, "User", print_fields_str, PRINT_USER},
 	{0,  NULL, NULL, 0}
 };
 
