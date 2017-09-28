@@ -2843,7 +2843,6 @@ static bool _opt_verify(void)
 		      mpi_type);
 		exit(error_exit);
 	}
-	xfree(mpi_type);
 
 	if (!opt.job_name)
 		opt.job_name = xstrdup(opt.cmd_name);
