@@ -275,7 +275,12 @@ int main(int argc, char **argv)
 		sleep(++retries);
 	}
 
-	if (resp && resp->job_submit_user_msg) {
+	if (!resp) {
+		error("Batch job submission failed: %m");
+		exit(error_exit);
+	}
+
+	if (resp->job_submit_user_msg) {
 		buf = xstrdup(resp->job_submit_user_msg);
 		line = strtok_r(buf, "\n", &ptrptr);
 		while (line) {
