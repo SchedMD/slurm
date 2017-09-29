@@ -3575,6 +3575,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		packstr(msg->alias_list, buffer);
 		packstr_array(msg->environment, msg->env_size, buffer);
 		pack32(msg->error_code, buffer);
+		packstr(msg->job_submit_user_msg, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->node_cnt, buffer);
 
@@ -3713,6 +3714,8 @@ _unpack_resource_allocation_response_msg(
 		safe_unpackstr_array(&tmp_ptr->environment,
 				     &tmp_ptr->env_size, buffer);
 		safe_unpack32(&tmp_ptr->error_code, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->job_submit_user_msg,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->node_cnt, buffer);
 
