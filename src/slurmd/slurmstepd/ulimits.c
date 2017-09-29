@@ -46,12 +46,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "src/common/log.h"
 #include "src/common/env.h" /* For unsetenvp() */
-#include "src/common/strlcpy.h"
-#include "src/common/xmalloc.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/strlcpy.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -216,21 +217,21 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 	char max[24], cur[24], req[24];
 	struct rlimit r;
 	bool u_req_propagate;  /* e.g. true if 'srun --propagate' */
+	char *env_name = NULL, *rlimit_name;
 
-	char env_name[25] = "SLURM_RLIMIT_";
-	char *rlimit_name = &env_name[6];
-
-	strcpy( &env_name[sizeof("SLURM_RLIMIT_")-1], rli->name );
-
-	if (_get_env_val( env, env_name, &env_value, &u_req_propagate )){
-		debug( "Couldn't find %s in environment", env_name );
+	xstrfmtcat(env_name, "SLURM_RLIMIT_%s", rli->name);
+	rlimit_name = env_name + 6;
+	if (_get_env_val(env, env_name, &env_value, &u_req_propagate)) {
+		debug("Couldn't find %s in environment", env_name);
+		xfree(env_name);
 		return SLURM_ERROR;
 	}
 
 	/*
 	 * Users shouldn't get the SLURM_RLIMIT_* env vars in their environ
 	 */
-	unsetenvp( env, env_name );
+	unsetenvp(env, env_name);
+	xfree(env_name);
 
 	/*
 	 * We'll only attempt to set the propagated soft rlimit when indicated
