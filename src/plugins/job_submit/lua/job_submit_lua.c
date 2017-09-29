@@ -209,9 +209,18 @@ static int _log_lua_error (lua_State *L)
 static int _log_lua_user_msg (lua_State *L)
 {
 	const char *msg = lua_tostring(L, -1);
+	char *tmp = NULL;
 
-	xfree(user_msg);
-	user_msg = xstrdup(msg);
+	if (user_msg) {
+		xstrfmtcat(tmp, "%s\n%s", user_msg, msg);
+		xfree(user_msg);
+		user_msg = tmp;
+		tmp = NULL;
+	} else {
+		xfree(user_msg);
+		user_msg = xstrdup(msg);
+	}
+
 	return (0);
 }
 
@@ -1619,11 +1628,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 	}
 	_stack_dump("job_submit, after lua_pcall", L);
 	if (user_msg) {
-		if (err_msg) {
-			*err_msg = user_msg;
-			user_msg = NULL;
-		} else
-			xfree(user_msg);
+		*err_msg = user_msg;
+		user_msg = NULL;
 	}
 
 out:	slurm_mutex_unlock (&lua_lock);

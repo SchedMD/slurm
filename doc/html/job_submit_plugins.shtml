@@ -94,9 +94,8 @@ to examine the available partitions, reservations, etc.
 <span class="commandline">error_msg</span>
 (output) If the argument is not null, then a plugin generated error message
 can be stored here. The error message is expected to have allocated memory
-which Slurm will release using the xfree function. The error message is
-propagated to the caller only when the return code of this function is
-not SLURM_SUCCESS.<br>
+which Slurm will release using the xfree function. The error message is always
+propagated to the caller, no matter the return code.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.

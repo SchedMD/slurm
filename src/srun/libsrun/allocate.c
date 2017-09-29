@@ -484,6 +484,7 @@ extern resource_allocation_response_msg_t *
 	job_desc_msg_t *j;
 	slurm_allocation_callbacks_t callbacks;
 	int i;
+	char *line = NULL, *buf = NULL, *ptrptr = NULL;
 
 	if (opt_local->relative_set && opt_local->relative)
 		fatal("--relative option invalid for job allocation request");
@@ -538,6 +539,16 @@ extern resource_allocation_response_msg_t *
 		} else if (!resp && !_retry()) {
 			break;
 		}
+	}
+
+	if (resp && resp->job_submit_user_msg) {
+		buf = xstrdup(resp->job_submit_user_msg);
+		line = strtok_r(buf, "\n", &ptrptr);
+		while (line) {
+			info("%s", line);
+			line = strtok_r(NULL, "\n", &ptrptr);
+		}
+		xfree(buf);
 	}
 
 	if (resp && !destroy_job) {

@@ -3242,6 +3242,7 @@ extern void slurm_free_resource_allocation_response_msg_members (
 				xfree(msg->environment[i]);
 			xfree(msg->environment);
 		}
+		xfree(msg->job_submit_user_msg);
 		xfree(msg->node_addr);
 		xfree(msg->node_list);
 		xfree(msg->partition);
@@ -3312,7 +3313,10 @@ extern void slurm_free_job_step_create_response_msg(
  */
 extern void slurm_free_submit_response_response_msg(submit_response_msg_t * msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->job_submit_user_msg);
+		xfree(msg);
+	}
 }
 
 

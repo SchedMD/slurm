@@ -191,6 +191,7 @@ int main(int argc, char **argv)
 	bool pack_fini = false;
 	int pack_argc, pack_inx, pack_argc_off;
 	char **pack_argv;
+	char *line = NULL, *buf = NULL, *ptrptr = NULL;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
 	ListIterator iter_req, iter_resp;
@@ -469,6 +470,17 @@ int main(int argc, char **argv)
 	} else if (!allocation_interrupted) {
 		/* Allocation granted to regular job */
 		my_job_id = alloc->job_id;
+
+		if (alloc && alloc->job_submit_user_msg) {
+			buf = xstrdup(alloc->job_submit_user_msg);
+			line = strtok_r(buf, "\n", &ptrptr);
+			while (line) {
+				info("%s", line);
+				line = strtok_r(NULL, "\n", &ptrptr);
+			}
+			xfree(buf);
+		}
+
 		info("Granted job allocation %u", my_job_id);
 
 		if (_proc_alloc(alloc) != SLURM_SUCCESS)
