@@ -2333,7 +2333,7 @@ static int _convert_spec_cores(void)
  */
 static int _validate_and_convert_cpu_list(void)
 {
-	int core_off, thread_off;
+	int core_off, thread_inx, thread_off;
 
 	/* create CPU bitmap from input CPU list */
 	if (bit_unfmt(res_cpu_bitmap, conf->cpu_spec_list) != 0) {
@@ -2349,9 +2349,11 @@ static int _validate_and_convert_cpu_list(void)
 	for (core_off = 0; core_off < ncores; core_off++) {
 		if (bit_test(res_core_bitmap, core_off) == 1) {
 			for (thread_off = 0; thread_off < conf->threads;
-			     thread_off++)
-				bit_set(res_cpu_bitmap,
-					(core_off*conf->threads) + thread_off);
+			     thread_off++) {
+				thread_inx = (core_off * (int) conf->threads) +
+					     thread_off;
+				bit_set(res_cpu_bitmap, thread_inx);
+			}
 		}
 	}
 	bit_fmt(res_abs_cpus, sizeof(res_abs_cpus), res_cpu_bitmap);
