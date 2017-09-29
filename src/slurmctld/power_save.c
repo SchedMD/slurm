@@ -168,6 +168,7 @@ static int _parse_exc_nodes(void)
 		list_append(partial_node_list, ext_part_struct);
 		tok = strtok_r(NULL, ":", &save_ptr);
 	}
+	xfree(tmp);
 	if (rc != SLURM_SUCCESS)
 		FREE_NULL_LIST(partial_node_list);
 
