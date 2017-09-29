@@ -3943,14 +3943,14 @@ _pack_submit_response_msg(submit_response_msg_t * msg, Buf buffer,
 	xassert(msg != NULL);
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
-		pack32((uint32_t)msg->job_id, buffer);
-		pack32((uint32_t)msg->step_id, buffer);
-		pack32((uint32_t)msg->error_code, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->error_code, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t)msg->job_id, buffer);
-		pack32((uint32_t)msg->step_id, buffer);
-		pack32((uint32_t)msg->error_code, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->error_code, buffer);
 	} else
 		error("%s: protocol_version %hu not supported", __func__,
 		      protocol_version);
