@@ -309,6 +309,12 @@ below or with the environment variable setting of "SLURM_MPI_TYPE=pmi2".</p>
 $ srun -n16 --mpi=pmi2 a.out
 </pre>
 
+<p>MVAPICH2 can be built using the following options:<br>
+--with-pmi=pmi2 \<br>
+--with-pm=slurm \<br>
+--with-slurm=&lt;install directory&gt; \<br>
+--enable-slurm=yes</p>
+
 <p>For more information, please see the
 <a href="http://mvapich.cse.ohio-state.edu/static/media/mvapich/mvapich2-2.0-userguide.html">MVAPICH2 User Guide</a></p>
 
@@ -327,6 +333,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 14 September 2017</p>
+<p style="text-align:center;">Last modified 29 September 2017</p>
 
 <!--#include virtual="footer.txt"-->
