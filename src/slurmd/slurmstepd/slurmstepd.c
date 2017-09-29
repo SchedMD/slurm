@@ -315,7 +315,7 @@ static int get_jobid_uid_from_env (uint32_t *jobidp, uid_t *uidp)
 
 static int _handle_spank_mode (int argc, char **argv)
 {
-	char prefix[64] = "spank-";
+	char *prefix = NULL;
 	const char *mode = argv[2];
 	uid_t uid = (uid_t) -1;
 	uint32_t jobid = (uint32_t) -1;
@@ -329,8 +329,9 @@ static int _handle_spank_mode (int argc, char **argv)
 	/*
 	 *  Make our log prefix into spank-prolog: or spank-epilog:
 	 */
-	strcat (prefix, mode);
+	xstrfmtcat(prefix, "spank-%s", mode);
 	log_init(prefix, lopts, LOG_DAEMON, NULL);
+	xfree(prefix);
 
 	/*
 	 *  When we are started from slurmd, a lightweight config is
