@@ -16421,40 +16421,6 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 		job_desc->fed_siblings_viable =
 			job_ptr->fed_details->siblings_viable;
 	}
-#if 0
-	/* select_jobinfo is unused at job submit time, only it's
-	 * components are set. We recover those from the structure below.
-	 * job_desc->select_jobinfo = select_g_select_jobinfo_copy(job_ptr->
-							    select_jobinfo); */
-
-	/* The following fields are used only on BlueGene systems.
-	 * Since BlueGene does not use the checkpoint/restart logic today,
-	 * we do not them. */
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_GEOMETRY,
-				    &job_desc->geometry);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CONN_TYPE,
-				    &job_desc->conn_type);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_REBOOT,
-				    &job_desc->reboot);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_ROTATE,
-				    &job_desc->rotate);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLRTS_IMAGE,
-				    &job_desc->blrtsimage);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_LINUX_IMAGE,
-				    &job_desc->linuximage);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_MLOADER_IMAGE,
-				    &job_desc->mloaderimage);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_RAMDISK_IMAGE,
-				    &job_desc->ramdiskimage);
-#endif
 
 	return job_desc;
 }
