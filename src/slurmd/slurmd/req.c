@@ -1356,6 +1356,12 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
 		goto done;
 	}
+	if (nodeid < 0) {
+		info("%s: Invalid node list (%s not in %s)", __func__,
+		     conf->node_name, req->complete_nodelist);
+		errnum = ESLURM_INVALID_NODE_NAME;
+		goto done;
+	}
 
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
 	info("launch task %u.%u request from %u.%u@%s (port %hu)", req->job_id,
