@@ -217,7 +217,6 @@ static int _log_lua_user_msg (lua_State *L)
 		user_msg = tmp;
 		tmp = NULL;
 	} else {
-		xfree(user_msg);
 		user_msg = xstrdup(msg);
 	}
 

@@ -1065,7 +1065,7 @@ static int _pack_job_cancel(void *x, void *arg)
 
 static void _build_alloc_msg(struct job_record *job_ptr,
 			     resource_allocation_response_msg_t *alloc_msg,
-			     int error_code, char * job_submit_user_msg)
+			     int error_code, char *job_submit_user_msg)
 {
 	int i;
 
@@ -1455,7 +1455,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	}
 
 	/*
-	 * In validate_job_create_req, err_msg is currently only modified in
+	 * In validate_job_create_req(), err_msg is currently only modified in
 	 * the call to job_submit_plugin_submit. We save the err_msg in a temp
 	 * char *job_submit_user_msg because err_msg can be overwritten later
 	 * in the calls to fed_mgr_job_allocate and/or job_allocate, and we
@@ -1535,7 +1535,8 @@ send_msg:
 		_build_alloc_msg(job_ptr, &alloc_msg, error_code,
 				 job_submit_user_msg);
 
-		/* This check really isn't needed, but just doing it
+		/*
+		 * This check really isn't needed, but just doing it
 		 * to be more complete.
 		 */
 		if (do_unlock) {
@@ -3803,6 +3804,14 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		unlock_slurmctld(job_read_lock);
 	}
 
+	/*
+	 * In validate_job_create_req(), err_msg is currently only modified in
+	 * the call to job_submit_plugin_submit. We save the err_msg in a temp
+	 * char *job_submit_user_msg because err_msg can be overwritten later
+	 * in the calls to fed_mgr_job_allocate and/or job_allocate, and we
+	 * need the job submit plugin value to build the resource allocation
+	 * response in the call to _build_alloc_msg.
+	 */
 	if (err_msg)
 		job_submit_user_msg = xstrdup(err_msg);
 

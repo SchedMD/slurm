@@ -90,6 +90,8 @@ documents those changes that are of interest to users and administrators.
  -- Add ability to prevent suspension of some count of nodes in a specified
     range using the SuspendExcNodes configuration parameter.
  -- Add SLURM_WCKEY to PrologSlurmctld and EpilogSlurmctld  environment.
+ -- Return user response string in response to successful job allocation request
+    not only on failure. Set in LUA using function 'slurm.user_msg("STRING")'.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

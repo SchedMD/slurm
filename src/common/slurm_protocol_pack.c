@@ -3951,9 +3951,10 @@ _pack_submit_response_msg(submit_response_msg_t * msg, Buf buffer,
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
 		pack32(msg->error_code, buffer);
-	} else
+	} else {
 		error("%s: protocol_version %hu not supported", __func__,
 		      protocol_version);
+	}
 }
 
 static int
