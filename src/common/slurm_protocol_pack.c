@@ -3946,6 +3946,7 @@ _pack_submit_response_msg(submit_response_msg_t * msg, Buf buffer,
 		pack32((uint32_t)msg->job_id, buffer);
 		pack32((uint32_t)msg->step_id, buffer);
 		pack32((uint32_t)msg->error_code, buffer);
+		packstr(msg->job_submit_user_msg, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32((uint32_t)msg->job_id, buffer);
 		pack32((uint32_t)msg->step_id, buffer);
@@ -3960,6 +3961,7 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, Buf buffer,
 			    uint16_t protocol_version)
 {
 	submit_response_msg_t *tmp_ptr;
+	uint32_t uint32_tmp;
 
 	/* alloc memory for structure */
 	xassert(msg != NULL);
@@ -3971,6 +3973,8 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, Buf buffer,
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->step_id, buffer);
 		safe_unpack32(&tmp_ptr->error_code, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->job_submit_user_msg,
+				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->step_id, buffer);
