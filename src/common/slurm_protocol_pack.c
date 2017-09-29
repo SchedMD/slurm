@@ -3570,7 +3570,51 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 {
 	xassert(msg != NULL);
 
-	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		packstr(msg->account, buffer);
+		packstr(msg->alias_list, buffer);
+		packstr_array(msg->environment, msg->env_size, buffer);
+		pack32(msg->error_code, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->node_cnt, buffer);
+
+		/* pack node_addr after node_cnt -- need it for unpacking */
+		if (msg->node_addr && msg->node_cnt > 0) {
+			pack8(1, buffer); /* non-null node_addr */
+			_pack_slurm_addr_array(msg->node_addr, msg->node_cnt,
+					       buffer, protocol_version);
+		} else
+			pack8(0, buffer);
+
+		packstr(msg->node_list, buffer);
+		pack16(msg->ntasks_per_board, buffer);
+		pack16(msg->ntasks_per_core, buffer);
+		pack16(msg->ntasks_per_socket, buffer);
+		pack32(msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups) {
+			pack16_array(msg->cpus_per_node,
+				     msg->num_cpu_groups,
+				     buffer);
+			pack32_array(msg->cpu_count_reps,
+				     msg->num_cpu_groups,
+				     buffer);
+		}
+		packstr(msg->partition, buffer);
+		pack64(msg->pn_min_memory, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->resv_name, buffer);
+		select_g_select_jobinfo_pack(msg->select_jobinfo,
+					     buffer,
+					     protocol_version);
+
+		if (msg->working_cluster_rec) {
+			pack8(1, buffer);
+			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
+						 protocol_version, buffer);
+		} else
+			pack8(0, buffer);
+
+	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		packstr(msg->alias_list, buffer);
 		packstr_array(msg->environment, msg->env_size, buffer);
@@ -3661,7 +3705,66 @@ _unpack_resource_allocation_response_msg(
 	tmp_ptr = xmalloc(sizeof(resource_allocation_response_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->account, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->alias_list, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_array(&tmp_ptr->environment,
+				     &tmp_ptr->env_size, buffer);
+		safe_unpack32(&tmp_ptr->error_code, buffer);
+		safe_unpack32(&tmp_ptr->job_id, buffer);
+		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+
+		/* unpack node_addr after node_cnt -- need it to unpack */
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
+						     &uint32_tmp, buffer,
+						     protocol_version))
+				goto unpack_error;
+			if (uint32_tmp != tmp_ptr->node_cnt)
+				goto unpack_error;
+		} else
+			tmp_ptr->node_addr = NULL;
+
+		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
+				       buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_core, buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_socket, buffer);
+		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
+		if (tmp_ptr->num_cpu_groups > 0) {
+			safe_unpack16_array(&tmp_ptr->cpus_per_node,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+			safe_unpack32_array(&tmp_ptr->cpu_count_reps,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+		} else {
+			tmp_ptr->cpus_per_node = NULL;
+			tmp_ptr->cpu_count_reps = NULL;
+		}
+		safe_unpackstr_xmalloc(&tmp_ptr->partition, &uint32_tmp,
+				       buffer);
+		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->qos, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->resv_name, &uint32_tmp,
+				       buffer);
+		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			slurmdb_unpack_cluster_rec(
+					(void **)&tmp_ptr->working_cluster_rec,
+					protocol_version, buffer);
+		}
+
+	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->account, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->alias_list, &uint32_tmp,
