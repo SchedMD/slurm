@@ -2490,8 +2490,11 @@ _reclaim_privileges(struct priv_state *ps)
 	} else if (setegid(ps->saved_gid) < 0) {
 		error("setegid: %m");
 		rc = -1;
-	} else
-		setgroups(ps->ngids, ps->gid_list);
+	} else if (setgroups(ps->ngids, ps->gid_list) < 0) {
+		error("setgroups: %m");
+		rc = -1;
+	}
+
 done:
 	xfree(ps->gid_list);
 
