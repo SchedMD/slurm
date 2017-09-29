@@ -1065,7 +1065,7 @@ static int _pack_job_cancel(void *x, void *arg)
 
 static void _build_alloc_msg(struct job_record *job_ptr,
 			     resource_allocation_response_msg_t *alloc_msg,
-			     int error_code)
+			     int error_code, char * job_submit_user_msg)
 {
 	int i;
 
@@ -1089,6 +1089,7 @@ static void _build_alloc_msg(struct job_record *job_ptr,
 	}
 
 	alloc_msg->error_code     = error_code;
+	alloc_msg->job_submit_user_msg = xstrdup(job_submit_user_msg);
 	alloc_msg->job_id         = job_ptr->job_id;
 	alloc_msg->node_cnt       = job_ptr->node_cnt;
 	alloc_msg->node_list      = xstrdup(job_ptr->nodes);
@@ -1350,7 +1351,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 				resp = list_create(_del_alloc_pack_msg);
 			alloc_msg = xmalloc_nz(
 				sizeof(resource_allocation_response_msg_t));
-			_build_alloc_msg(job_ptr, alloc_msg, error_code);
+			_build_alloc_msg(job_ptr, alloc_msg, error_code, NULL);
 			list_append(resp, alloc_msg);
 			if (slurmctld_conf.debug_flags &
 			    DEBUG_FLAG_HETERO_JOBS) {
@@ -1419,7 +1420,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	struct job_record *job_ptr = NULL;
 	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
-	char *err_msg = NULL;
+	char *err_msg = NULL, *job_submit_user_msg = NULL;
 
 	START_TIMER;
 
@@ -1452,6 +1453,17 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
+
+	/*
+	 * In validate_job_create_req, err_msg is currently only modified in
+	 * the call to job_submit_plugin_submit. We save the err_msg in a temp
+	 * char *job_submit_user_msg because err_msg can be overwritten later
+	 * in the calls to fed_mgr_job_allocate and/or job_allocate, and we
+	 * need the job submit plugin value to build the resource allocation
+	 * response in the call to _build_alloc_msg.
+	 */
+	if (err_msg)
+		job_submit_user_msg = xstrdup(err_msg);
 
 #if HAVE_ALPS_CRAY
 	/*
@@ -1520,7 +1532,8 @@ send_msg:
 		info("sched: %s JobId=%u NodeList=%s %s", __func__,
 		     job_ptr->job_id, job_ptr->nodes, TIME_STR);
 
-		_build_alloc_msg(job_ptr, &alloc_msg, error_code);
+		_build_alloc_msg(job_ptr, &alloc_msg, error_code,
+				 job_submit_user_msg);
 
 		/* This check really isn't needed, but just doing it
 		 * to be more complete.
@@ -1562,6 +1575,7 @@ send_msg:
 			slurm_send_rc_msg(msg, error_code);
 	}
 	xfree(err_msg);
+	xfree(job_submit_user_msg);
 }
 
 /* _slurm_rpc_dump_conf - process RPC for Slurm configuration information */
