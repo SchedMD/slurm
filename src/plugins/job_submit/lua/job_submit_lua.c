@@ -209,9 +209,18 @@ static int _log_lua_error (lua_State *L)
 static int _log_lua_user_msg (lua_State *L)
 {
 	const char *msg = lua_tostring(L, -1);
+	char *tmp = NULL;
 
-	xfree(user_msg);
-	user_msg = xstrdup(msg);
+	if (user_msg) {
+		xstrfmtcat(tmp, "%s\n%s", user_msg, msg);
+		xfree(user_msg);
+		user_msg = tmp;
+		tmp = NULL;
+	} else {
+		xfree(user_msg);
+		user_msg = xstrdup(msg);
+	}
+
 	return (0);
 }
 
