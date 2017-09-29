@@ -1628,11 +1628,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 	}
 	_stack_dump("job_submit, after lua_pcall", L);
 	if (user_msg) {
-		if (err_msg) {
-			*err_msg = user_msg;
-			user_msg = NULL;
-		} else
-			xfree(user_msg);
+		*err_msg = user_msg;
+		user_msg = NULL;
 	}
 
 out:	slurm_mutex_unlock (&lua_lock);
