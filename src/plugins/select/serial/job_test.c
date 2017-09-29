@@ -221,9 +221,9 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      enum node_cr_state job_node_req)
 {
 	struct node_record *node_ptr;
-	uint32_t i, gres_cpus, gres_cores;
+	uint32_t gres_cpus, gres_cores;
 	uint64_t free_mem, min_mem;
-	int i_first, i_last;
+	int i, i_first, i_last;
 	int core_start_bit, core_end_bit, cpus_per_core;
 	List gres_list;
 
