@@ -755,10 +755,11 @@ size_t _file_getsize(int fd)
 	offset = lseek(fd, 0, SEEK_CUR);
 	if (offset < 0)
 		return -1;
-	lseek(fd, 0, SEEK_SET);
+	if (lseek(fd, 0, SEEK_SET) < 0)
+		error("%s: lseek(0): %m", __func__);
 
 	/* get file size */
-	fsize=0;
+	fsize = 0;
 	do {
 		rc = read(fd, (void*)&c, 1);
 		if (rc > 0)
@@ -766,7 +767,8 @@ size_t _file_getsize(int fd)
 	} while ((rc < 0 && errno == EINTR) || rc > 0);
 
 	/* restore position */
-	lseek(fd, offset, SEEK_SET);
+	if (lseek(fd, offset, SEEK_SET) < 0)
+		error("%s: lseek(): %m", __func__);
 
 	if (rc < 0)
 		return -1;
@@ -793,7 +795,7 @@ int _file_write_uint64s(char* file_path, uint64_t* values, int nb)
 
 	/* add one value per line */
 	fstatus = XCGROUP_SUCCESS;
-	for (i=0 ; i < nb ; i++) {
+	for (i = 0; i < nb ; i++) {
 
 		value = values[i];
 
