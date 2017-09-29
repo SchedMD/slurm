@@ -235,10 +235,12 @@ static int _pick_exc_nodes(void *x, void *arg)
 		}
 	}
 
-	if (*orig_exc_nodes == NULL)
+	if (*orig_exc_nodes == NULL) {
 		*orig_exc_nodes = exc_node_cnt_bitmap;
-	else
+	} else {
 		bit_or(*orig_exc_nodes, exc_node_cnt_bitmap);
+		FREE_NULL_BITMAP(exc_node_cnt_bitmap);
+	}
 #if _DEBUG
 	char *tmp = bitmap2node_name(*orig_exc_nodes);
 	info("power_save module, excluded nodes %s", tmp);
