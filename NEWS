@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where the slurmstepd would fatal on job launch if you have no
     gres listed in your slurm.conf but some in gres.conf.
  -- Fix validating time spec to correctly validate various time formats.
+ -- Make scontrol work correctly with job update timelimit [+|-]=.
 
 * Changes in Slurm 17.02.7
 ==========================

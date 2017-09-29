@@ -815,9 +815,9 @@ days\-hours:minutes:seconds.
 Time resolution is one minute and second values are rounded up to
 the next minute.
 If changing the time limit of a job, either specify a new time limit value or
-precede the time with a "+" or "\-" to increment or decrement the current
-time limit (e.g. "TimeLimit=+30"). In order to increment or decrement the
-current time limit, the \fIJobId\fP specification must precede the
+precede the time and equal sign with a "+" or "\-" to increment or decrement the
+current time limit (e.g. "TimeLimit+=30"). In order to increment or decrement
+the current time limit, the \fIJobId\fP specification must precede the
 \fITimeLimit\fP specification.
 Only the Slurm administrator or root can increase job's TimeLimit.
 
