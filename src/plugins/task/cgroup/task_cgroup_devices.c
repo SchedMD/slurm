@@ -323,8 +323,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 
 		gres_job_bit_alloc = xmalloc(sizeof (int) *
 					     (gres_conf_lines + 32));
-		gres_plugin_job_state_file(job_gres_list, gres_job_bit_alloc,
-					   gres_count);
+		gres_plugin_state_file(job_gres_list, gres_count, true,
+				       gres_job_bit_alloc);
 	}
 
 	/*
@@ -422,8 +422,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		/* fetch information about step GRES devices allocation */
 		gres_step_bit_alloc = xmalloc(sizeof (int) *
 					      (gres_conf_lines + 32));
-		gres_plugin_step_state_file(step_gres_list, gres_step_bit_alloc,
-					    gres_count);
+		gres_plugin_state_file(step_gres_list, gres_count, false,
+				       gres_step_bit_alloc);
 
 		/*
 		 * with the current cgroup devices subsystem design (whitelist

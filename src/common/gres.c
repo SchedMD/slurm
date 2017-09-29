@@ -4864,13 +4864,14 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
-				       int *gres_count)
+extern void gres_plugin_state_file(List gres_list, int *gres_count,
+				   bool is_job, int *gres_bit_alloc)
 {
 	int i, j, gres_cnt = 0, len, p, found = 0;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
-	gres_job_state_t *gres_job_ptr;
+	bitstr_t **local_bit_alloc = NULL;
+	uint32_t node_cnt;
 
 	if (gres_list == NULL || !gres_count || !gres_bit_alloc)
 		return;
@@ -4885,15 +4886,26 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 			if (gres_ptr->plugin_id != gres_context[j].plugin_id)
 				continue;
 			found = 1;
-			gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
-			if ((gres_job_ptr != NULL) &&
-			    (gres_job_ptr->node_cnt == 1) &&
-			    (gres_job_ptr->gres_bit_alloc != NULL) &&
-			    (gres_job_ptr->gres_bit_alloc[0] != NULL)) {
-			     	len = bit_size(gres_job_ptr->gres_bit_alloc[0]);
+			if (is_job) {
+				gres_job_state_t *gres_data_ptr =
+					(gres_job_state_t *)
+					gres_ptr->gres_data;
+				local_bit_alloc = gres_data_ptr->gres_bit_alloc;
+				node_cnt = gres_data_ptr->node_cnt;
+			} else {
+				gres_step_state_t *gres_data_ptr =
+					(gres_step_state_t *)
+					gres_ptr->gres_data;
+				local_bit_alloc = gres_data_ptr->gres_bit_alloc;
+				node_cnt = gres_data_ptr->node_cnt;
+			}
+			if (gres_ptr->gres_data &&
+			    (node_cnt == 1) &&
+			    local_bit_alloc &&
+			    local_bit_alloc[0]) {
+				len = bit_size(local_bit_alloc[0]);
 				for (i = 0; i < len; i++) {
-					if (!bit_test(gres_job_ptr->
-						      gres_bit_alloc[0], i))
+					if (!bit_test(local_bit_alloc[0], i))
 						gres_bit_alloc[gres_cnt] = 0;
 					else
 						gres_bit_alloc[gres_cnt] = 1;
@@ -4912,7 +4924,6 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 }
-
 
 static void _step_state_delete(void *gres_data)
 {
@@ -6275,59 +6286,6 @@ extern int gres_plugin_node_count(List gres_list, int arr_len,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
-}
-
-extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
-					int *gres_count)
-{
-	int i, j, p, gres_cnt = 0, len, found;
-	ListIterator gres_iter;
-	gres_state_t *gres_ptr;
-	gres_step_state_t *gres_step_ptr;
-
-	if (gres_list == NULL || !gres_count || !gres_bit_alloc)
-		return;
-	(void) gres_plugin_init();
-
-	slurm_mutex_lock(&gres_context_lock);
-	gres_iter = list_iterator_create(gres_list);
-
-	for (j=0; j<gres_context_cnt; j++) {
-		found = 0;
-		list_iterator_reset(gres_iter);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))){
-			if (gres_ptr->plugin_id !=
-			    gres_context[j].plugin_id) {
-				continue;
-			}
-			found = 1;
-			gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
-			if ((gres_step_ptr != NULL) &&
-			    (gres_step_ptr->node_cnt == 1) &&
-			    (gres_step_ptr->gres_bit_alloc != NULL) &&
-			    (gres_step_ptr->gres_bit_alloc[0] != NULL)) {
-				len = bit_size(gres_step_ptr->gres_bit_alloc[0]);
-				for (i=0; i<len; i++) {
-					 if (!bit_test(gres_step_ptr->
-						       gres_bit_alloc[0], i))
-						 gres_bit_alloc[gres_cnt] = 0;
-					 else
-						 gres_bit_alloc[gres_cnt] = 1;
-					gres_cnt++;
-				}
-			}
-			break;
-		}
-		if (found == 0) {
-			for (p=0; p<gres_count[j]; p++){
-				gres_bit_alloc[gres_cnt] = 0;
-				gres_cnt++;
-			}
-		}
-	}
-
-	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
