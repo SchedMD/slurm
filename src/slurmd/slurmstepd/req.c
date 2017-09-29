@@ -1607,8 +1607,9 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	safe_read(fd, buf, len);
 	buffer = create_buf(buf, len);
 	buf = NULL;
-	jobacctinfo_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
-			   PROTOCOL_TYPE_SLURM, buffer, 1);
+	if (jobacctinfo_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
+			       PROTOCOL_TYPE_SLURM, buffer, 1) != SLURM_SUCCESS)
+		goto rwfail;
 	free_buf(buffer);
 
 	/*
@@ -1616,15 +1617,17 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	 */
 	slurm_mutex_lock(&step_complete.lock);
 	lock_set = true;
-	if (! step_complete.wait_children) {
+	if (!step_complete.wait_children) {
 		rc = -1;
 		errnum = ETIMEDOUT; /* not used anyway */
 		goto timeout;
 	}
 
-	/* SlurmUser or root can craft a launch without a valid credential
+	/*
+	 * SlurmUser or root can craft a launch without a valid credential
 	 * ("srun --no-alloc ...") and no tree information can be built
-	 *  without the hostlist from the credential. */
+	 *  without the hostlist from the credential.
+	 */
 	if (step_complete.rank >= 0) {
 #if 0
 		char bits_string[128];
@@ -1650,9 +1653,11 @@ timeout:
 	jobacctinfo_destroy(jobacct);
 	/*********************************************/
 
-	/* Send the return code and errno, we do this within the locked
+	/*
+	 * Send the return code and errno, we do this within the locked
 	 * region to ensure that the stepd doesn't exit before we can
-	 * perform this send. */
+	 * perform this send.
+	 */
 	safe_write(fd, &rc, sizeof(int));
 	safe_write(fd, &errnum, sizeof(int));
 	slurm_cond_signal(&step_complete.cond);
