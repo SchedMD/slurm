@@ -395,7 +395,8 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 {
 	resource_allocation_response_msg_t *alloc;
-	uint32_t pack_node_cnt = 0, pack_job_id = 0;
+	uint32_t inx = 0, pack_node_cnt = 0, pack_job_id = 0;
+	char *buf, *ptrptr = NULL, *line;
 	ListIterator iter;
 
 	xassert(resp);
@@ -404,6 +405,16 @@ static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 		pack_node_cnt += alloc->node_cnt;
 		if (pack_job_id == 0)
 			pack_job_id = alloc->job_id;
+		if (alloc->job_submit_user_msg) {
+			buf = xstrdup(alloc->job_submit_user_msg);
+			line = strtok_r(buf, "\n", &ptrptr);
+			while (line) {
+				info("%d: %s", inx, line);
+				line = strtok_r(NULL, "\n", &ptrptr);
+			}
+			xfree(buf);
+		}
+		inx++;
 	}
 	list_iterator_destroy(iter);
 
@@ -529,7 +540,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 		} else if (immediate_flag) {
 			debug("Immediate allocation not granted");
 		} else {
-			/* no, we need to wait for a response */
+			/* no, logs user messages and wait for a response */
 			FREE_NULL_LIST(resp);
 			if (pending_callback != NULL)
 				pending_callback(job_id);

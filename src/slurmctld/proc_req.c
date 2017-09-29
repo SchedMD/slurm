@@ -1168,7 +1168,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 {
 	static int select_serial = -1;
 	static int active_rpc_cnt = 0;
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS, inx, pack_cnt = -1;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg;
 	List job_req_list = (List) msg->data;
@@ -1179,7 +1179,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 					 slurmctld_config.auth_info);
 	uint32_t job_uid = NO_VAL;
 	struct job_record *job_ptr, *first_job_ptr;
-	char *err_msg = NULL;
+	char *err_msg = NULL, **job_submit_user_msg = NULL;
 	ListIterator iter;
 	bool priv_user;
 	time_t min_begin = time(NULL) + PACK_DELAY;	/* Delay start */
@@ -1222,10 +1222,13 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 
 	debug2("sched: Processing RPC: REQUEST_JOB_PACK_ALLOCATION from uid=%d",
 	       uid);
+	pack_cnt = list_count(job_req_list);
+	job_submit_user_msg = xmalloc(sizeof(char *) * pack_cnt);
 	priv_user = validate_slurm_user(uid);
 	submit_job_list = list_create(NULL);
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
+	inx = 0;
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
 		if (job_uid == NO_VAL)
@@ -1256,7 +1259,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 
 		/* Locks are for job_submit plugin use */
-		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
+		error_code = validate_job_create_req(job_desc_msg,uid,
+						     &job_submit_user_msg[inx++]);
 		if (error_code)
 			break;
 
@@ -1344,6 +1348,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 				tmp_offset[0] = '\0';
 			tmp_offset = tmp_str + 1;
 		}
+		inx = 0;
 		iter = list_iterator_create(submit_job_list);
 		while ((job_ptr = (struct job_record *) list_next(iter))) {
 			job_ptr->pack_job_id_set = xstrdup(tmp_offset);
@@ -1351,7 +1356,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 				resp = list_create(_del_alloc_pack_msg);
 			alloc_msg = xmalloc_nz(
 				sizeof(resource_allocation_response_msg_t));
-			_build_alloc_msg(job_ptr, alloc_msg, error_code, NULL);
+			_build_alloc_msg(job_ptr, alloc_msg, error_code,
+					 job_submit_user_msg[inx++]);
 			list_append(resp, alloc_msg);
 			if (slurmctld_conf.debug_flags &
 			    DEBUG_FLAG_HETERO_JOBS) {
@@ -1386,8 +1392,11 @@ send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
 			slurm_send_rc_msg(msg, error_code);
-		xfree(err_msg);
 	}
+	xfree(err_msg);
+	for (inx = 0; inx < pack_cnt; inx++)
+		xfree(job_submit_user_msg[inx]);
+	xfree(job_submit_user_msg);
 
 	if (jobid_hostset)
 		hostset_destroy(jobid_hostset);
@@ -3892,7 +3901,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	static int select_serial = -1;
 	static int active_rpc_cnt = 0;
 	ListIterator iter;
-	int error_code = SLURM_SUCCESS, alloc_only = 0;
+	int error_code = SLURM_SUCCESS, alloc_only = 0, inx = 0;
 	DEF_TIMERS;
 	uint32_t pack_job_id = 0, pack_job_offset = 0;
 	struct job_record *job_ptr = NULL, *first_job_ptr = NULL;
@@ -3910,7 +3919,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	uint32_t job_uid = NO_VAL;
-	char *err_msg = NULL;
+	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 	bool is_super_user;
 	List submit_job_list = NULL;
@@ -3975,6 +3984,22 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			reject_job = true;
 			break;
 		}
+
+		if (err_msg) {
+			char *save_ptr = NULL, *tok;
+			tok = strtok_r(err_msg, "\n", &save_ptr);
+			while (tok) {
+				char *sep = "";
+				if (job_submit_user_msg)
+					sep = "\n";
+				xstrfmtcat(job_submit_user_msg, "%s%d: %s",
+					   sep, inx, tok);
+				tok = strtok_r(NULL, "\n", &save_ptr);
+			}
+			xfree(err_msg);
+		}
+		inx++;
+
 		job_desc_msg->begin_time = MAX(job_desc_msg->begin_time,
 					       min_begin);
 	}
@@ -3982,6 +4007,17 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	unlock_slurmctld(job_read_lock);
 	if (error_code != SLURM_SUCCESS)
 		goto send_msg;
+
+	/*
+	 * In validate_job_create_req, err_msg is currently only modified in
+	 * the call to job_submit_plugin_submit. We save the err_msg in a temp
+	 * char *job_submit_user_msg because err_msg can be overwritten later
+	 * in the calls to job_allocate, and we need the job submit plugin value
+	 * to build the resource allocation response in the call to
+	 * _build_alloc_msg.
+	 */
+	if (err_msg)
+		job_submit_user_msg = xstrdup(err_msg);
 
 	/* Create new job allocations */
 	submit_job_list = list_create(NULL);
@@ -4108,6 +4144,7 @@ send_msg:
 		submit_msg.job_id     = pack_job_id;
 		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
 		submit_msg.error_code = error_code;
+		submit_msg.job_submit_user_msg = job_submit_user_msg;
 		slurm_msg_t_init(&response_msg);
 		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
@@ -4121,6 +4158,7 @@ send_msg:
 	if (jobid_hostset)
 		hostset_destroy(jobid_hostset);
 	xfree(err_msg);
+	xfree(job_submit_user_msg);
 }
 
 /* _slurm_rpc_update_job - process RPC to update the configuration of a
