@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t *desc = NULL;
-	submit_response_msg_t *resp;
+	submit_response_msg_t *resp = NULL;
 	char *script_name;
 	char *script_body;
 	char *line = NULL, *buf = NULL, *ptrptr = NULL;
@@ -254,8 +254,7 @@ int main(int argc, char **argv)
 		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) {
 			msg = "Slurm job queue full, sleeping and retrying";
 		} else if (errno == ESLURM_NODES_BUSY) {
-			msg = "Job step creation temporarily disabled, "
-			      "retrying";
+			msg = "Job creation temporarily disabled, retrying";
 		} else if (errno == EAGAIN) {
 			msg = "Slurm temporarily unable to accept job, "
 			      "sleeping and retrying";
@@ -272,6 +271,7 @@ int main(int argc, char **argv)
 			info("%s", msg); /* Not an error, powering up nodes */
 		else
 			error("%s", msg);
+		slurm_free_submit_response_response_msg(resp);
 		sleep(++retries);
 	}
 
