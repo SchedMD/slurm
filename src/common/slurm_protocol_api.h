@@ -224,7 +224,7 @@ extern char *slurm_get_reboot_program(void);
 extern uint16_t slurm_get_tcp_timeout(void);
 
 /* slurm_api_set_default_config
- *	called by the send_controller_msg function to insure that at least
+ *	called by the send_controller_msg function to ensure that at least
  *	the compiled in default slurm_protocol_config object is initialized
  * RET int 		- return code
  */

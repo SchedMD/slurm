@@ -371,7 +371,7 @@ will wait until the job's block has relinquished the resources acquired
 by the job and is no longer usable by this job. It is recommended that
 you construct a script that serves this function and calls the
 supplied program <i>sbin/slurm_epilog</i>.
-The prolog and epilog programs are used to insure proper synchronization
+The prolog and epilog programs are used to ensure proper synchronization
 between the <i>slurmctld</i> daemon, the user job, and MMCS.
 A multitude of other functions may also be placed into the prolog and
 epilog as desired (e.g. enabling/disabling user logins, purging file systems,
@@ -499,7 +499,7 @@ Make sure you know what you doing to assure the blocks will
 boot without dependency on the state of any midplane
 not included the block.</p>
 
-<p>In the two previous modes you must insure that the midplanes
+<p>In the two previous modes you must ensure that the midplanes
 defined in <i>bluegene.conf</i> are consistent with
 those defined in <i>slurm.conf</i>.
 Note the <i>bluegene.conf</i> file contains only the numeric

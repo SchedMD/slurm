@@ -697,7 +697,7 @@ struct job_record {
 					 * pending state and set this
 					 * instead of total_nodes */
 	char *nodes_completing;		/* nodes still in completing state
-					 * for this job, used to insure
+					 * for this job, used to ensure
 					 * epilog is not re-run for job */
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
@@ -2495,7 +2495,7 @@ extern void update_job_fed_details(struct job_record *job_ptr);
 
 /*
  * purge_job_record - purge specific job record. No testing is performed to
- *	insure the job records has no active references. Use only for job
+ *	ensure the job records has no active references. Use only for job
  *	records that were never fully operational (e.g. WILL_RUN test, failed
  *	job load, failed job create, etc.).
  * IN job_id - job_id of job record to be purged

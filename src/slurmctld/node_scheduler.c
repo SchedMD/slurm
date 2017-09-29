@@ -2278,7 +2278,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	      _sort_node_set);
 	_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
 
-	/* insure that selected nodes are in these node sets */
+	/* ensure that selected nodes are in these node sets */
 	if (job_ptr->details->req_node_bitmap) {
 		error_code = _nodes_in_sets(job_ptr->details->req_node_bitmap,
 					    node_set_ptr, node_set_size);
@@ -3683,7 +3683,7 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
 		return;
 	}
 
-	/* Use hostlist here to insure ordering of info matches that of srun */
+	/* Use hostlist here to ensure ordering of info matches that of srun */
 	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
 	job_ptr->total_nodes = job_ptr->node_cnt = hostlist_count(host_list);

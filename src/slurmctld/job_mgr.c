@@ -6390,7 +6390,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	user_submit_priority = job_desc->priority;
 
-	/* insure that selected nodes are in this partition */
+	/* ensure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
 		error_code = node_name2bitmap(job_desc->req_nodes, false,
 					      &req_bitmap);
@@ -10412,7 +10412,7 @@ void purge_old_job(void)
 
 /*
  * purge_job_record - purge specific job record. No testing is performed to
- *	insure the job records has no active references. Use only for job
+ *	ensure the job records has no active references. Use only for job
  *	records that were never fully operational (e.g. WILL_RUN test, failed
  *	job load, failed job create, etc.).
  * IN job_id - job_id of job record to be purged
@@ -10689,7 +10689,7 @@ extern uint32_t get_next_job_id(bool test_only)
 }
 
 /*
- * _set_job_id - set a default job_id, insure that it is unique
+ * _set_job_id - set a default job_id, ensure that it is unique
  * IN job_ptr - pointer to the job_record
  */
 static int _set_job_id(struct job_record *job_ptr)
@@ -11498,7 +11498,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	       job_specs->min_nodes, job_specs->max_nodes,
 	       job_specs->min_cpus, job_specs->max_cpus);
 
-	/* Reset min and max cpu counts as needed, insure consistency */
+	/* Reset min and max cpu counts as needed, ensure consistency */
 	if (job_specs->min_cpus != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -11605,7 +11605,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	/* Reset min and max node counts as needed, insure consistency */
+	/* Reset min and max node counts as needed, ensure consistency */
 	if (job_specs->min_nodes != NO_VAL) {
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			;	/* shrink running job, processed later */

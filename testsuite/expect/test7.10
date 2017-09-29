@@ -71,7 +71,7 @@ set srun_pid [spawn $srun -N1 -t1 $bin_id]
 expect {
 	-re "(uid=.*\n)" {
 		send_user "\nFAILURE: srun ran with bogus getuid functions\n"
-		send_user "  Make sure you are not running with auth/none to insure security\n"
+		send_user "  Make sure you are not running with auth/none to ensure security\n"
 		set exit_code 1
 		exp_continue
 	}

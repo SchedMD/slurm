@@ -1216,7 +1216,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 
 	if (!slurm_started) {
 		/*
-		 * Spawn process to insure clean-up of job and/or step
+		 * Spawn process to ensure clean-up of job and/or step
 		 * on abnormal termination
 		 */
 		shepherd_fd = _shepherd_spawn(job, srun_job_list, *got_alloc);

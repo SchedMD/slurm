@@ -279,7 +279,7 @@ checkpointed job resume execution.</li>
 <li><b>slurm_reconfigure</b> &mdash; Update slurm daemons
 based upon current <i>slurm.conf</i> configuration file.
 Use this after updating the configuration file to
-insure that it takes effect.</li>
+ensure that it takes effect.</li>
 
 <li><b>slurm_shutdown</b> &mdash; Terminate slurm daemons.</li>
 

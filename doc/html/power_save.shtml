@@ -68,7 +68,7 @@ The argument to the program will be the names of nodes to
 be removed from power savings mode (using Slurm's hostlist
 expression format).
 This program may use the <i>scontrol show node</i> command
-to insure that a node has booted and the <i>slurmd</i>
+to ensure that a node has booted and the <i>slurmd</i>
 daemon started.
 If the <i>slurmd</i> daemon fails to respond within the
 configured <b>SlurmdTimeout</b> value with an updated BootTime,
@@ -239,7 +239,7 @@ may not accurately describe the actual node state.
 In the case of a failed <b>SuspendProgram</b>, the negative impact is
 limited to increased power consumption, so no special action is
 currently taken to execute <b>SuspendProgram</b> multiple times in
-order to insure the node is in a reduced power mode.
+order to ensure the node is in a reduced power mode.
 The case of a failed <b>ResumeProgram</b> is more serious in that the
 node could be placed into a DOWN state and/or jobs could fail.
 In order to minimize this risk, when the <i>slurmctld</i> daemon is

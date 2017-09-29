@@ -267,7 +267,7 @@ $ scontrol delete ReservationName=alan_6
 <p>By default, reservations must not overlap. They must either include
 different nodes or operate at different times. If specific nodes
 are not specified when a reservation is created, Slurm will
-automatically select nodes to avoid overlap and insure that
+automatically select nodes to avoid overlap and ensure that
 the selected nodes are available when the reservation begins.</p>
 
 <p>There is very limited support for overlapping reservations
@@ -290,7 +290,7 @@ reservation except that is it not logged in the accounting system as nodes
 reserved for maintenance.
 It requires the use of the "overlap" flag when creating the second
 reservation.
-This might be used to insure availability of resources for a specific
+This might be used to ensure availability of resources for a specific
 user within a group having a reservation.
 Using the previous example of alan and brenda having a 10 node reservation
 for 60 minutes, we might want to reserve 4 nodes of that for for brenda

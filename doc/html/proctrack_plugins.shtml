@@ -99,7 +99,7 @@ The system <span class="commandline">_init()</span> is called before the SLURM
 
 <p class="commandline">int proctrack_p_create (stepd_step_rec_t *job);</p>
 <p style="margin-left:.2in"><b>Description</b>: Create a container.
-The caller should insure that be valid
+The caller should ensure that be valid
 <span class="commandline">proctrack_p_destroy()</span> is called.
 This function must put the container ID directory in the job structure's
 variable <i>cont_id</i>.</p>

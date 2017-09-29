@@ -78,7 +78,7 @@ is a job inspection tool for examining and debugging parallel programs, primaril
 It's an open source, non-interactive, command line, scriptable tool intended for use by programmers and system administrators alike.</li>
 </ul><br>
 
-<li><b>Digital signatures</b> (Cypto plugin) are used to insure message are not altered.</li>
+<li><b>Digital signatures</b> (Cypto plugin) are used to ensure message are not altered.</li>
 <ul>
 <li><b>MUNGE</b> (recommended)<br>
 MUNGE can be used at an alternative to OpenSSL.

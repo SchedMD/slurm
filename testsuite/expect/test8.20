@@ -143,7 +143,7 @@ if {$actual_job_size != $job_size} {
 }
 
 #
-# Create job step allocations and insure they are the right size and
+# Create job step allocations and ensure they are the right size and
 # fall within the c-nodes allocated to the job
 #
 # NOTE: Change this to increment step size by one once SLURM logic can

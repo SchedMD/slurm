@@ -619,11 +619,11 @@ SDBuser=alps_user
 SDBdb=XT5istanbul
 </pre>
 
-<p>One additional configuration script can be used to insure that the slurmd
+<p>One additional configuration script can be used to ensure that the slurmd
 daemons execute with the highest resource limits possible, overriding default
 limits on Suse systems. Depending upon what resource limits are propagated
 from the user's environment, lower limits may apply to user jobs, but this
-script will insure that higher limits are possible. Copy the file
+script will ensure that higher limits are possible. Copy the file
 <i>contribs/cray/etc_sysconfig_slurm</i> into <i>/etc/sysconfig/slurm</i>
 for these limits to take effect. This script is executed from
 <i>/etc/init.d/slurm</i>, which is typically executed to start the Slurm

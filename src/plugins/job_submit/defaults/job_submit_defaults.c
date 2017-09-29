@@ -90,7 +90,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 	if (job_desc->acctg_freq)
 		acctg_freq = atoi(job_desc->acctg_freq);
 	/* This example code will prevent users from setting an accounting
-	 * frequency of less than 30 seconds in order to insure more precise
+	 * frequency of less than 30 seconds in order to ensure more precise
 	 *  accounting. Also remove any QOS value set by the user in order
 	 * to use the default value from the database. */
 	if (acctg_freq < MIN_ACCTG_FREQUENCY) {
@@ -119,7 +119,7 @@ extern int job_modify(struct job_descriptor *job_desc,
 	if (job_desc->acctg_freq)
 		acctg_freq = atoi(job_desc->acctg_freq);
 	/* This example code will prevent users from setting an accounting
-	 * frequency of less than 30 seconds in order to insure more precise
+	 * frequency of less than 30 seconds in order to ensure more precise
 	 *  accounting. Also remove any QOS value set by the user in order
 	 * to use the default value from the database. */
 	if (acctg_freq < MIN_ACCTG_FREQUENCY) {

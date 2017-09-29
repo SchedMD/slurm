@@ -590,7 +590,7 @@ basis.</p>
 <p>Scheduling of heterogeneous jobs is performed only by the sched/backfill
 plugin and all heterogeneous job components are either all scheduled at the same
 time or deferred.
-In order to insure the timely initiation of both heterogeneous and
+In order to ensure the timely initiation of both heterogeneous and
 non-heterogeneous jobs, the backfill scheduler alternates between two different
 modes on each iteration.
 In the first mode, if a heterogeneous job component can not be initiated
@@ -640,7 +640,7 @@ fashion with respect to quality of service (QOS) limits.
 This is due to the complexity of each job component having up to three sets of
 limits (association, job QOS and partition QOS).
 Note that successful submission of any job (heterogeneous or otherwise) does
-not insure the job will be able to start without exceeding some limit.
+not ensure the job will be able to start without exceeding some limit.
 For example a job's CPU limit test does not consider that CPUs might not be
 allocated individually, but resource allocations might be performed by whole
 core, socket or node.

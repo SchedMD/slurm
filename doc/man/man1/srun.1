@@ -730,7 +730,7 @@ shell invoked on the allocated node. If that shell is not invoked with the
 \fB\-\-exclusive\fR option, then it may create a job step with four tasks
 using the \fB\-\-exclusive\fR option and not conflict with the remote shell's
 resource allocation.
-Use the \fB\-\-exclusive\fR option to invoke every job step to insure distinct
+Use the \fB\-\-exclusive\fR option to invoke every job step to ensure distinct
 resources for each step.
 
 Note that all CPUs allocated to a job are available
@@ -1185,7 +1185,7 @@ at the level of the cores within a processor while memory binding will
 be performed at the level of nodes, where the definition of "nodes"
 may differ from system to system.
 By default no memory binding is performed; any task using any CPU can use
-any memory. This option is typically used to insure that each task is bound to
+any memory. This option is typically used to ensure that each task is bound to
 the memory closest to it's assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 If you want greater control, try running a simple test code with the
@@ -2059,7 +2059,7 @@ Specify how long to wait after the first task terminates before terminating
 all remaining tasks. A value of 0 indicates an unlimited wait (a warning will
 be issued after 60 seconds). The default value is set by the WaitTime
 parameter in the slurm configuration file (see \fBslurm.conf(5)\fR). This
-option can be useful to insure that a job is terminated in a timely fashion
+option can be useful to ensure that a job is terminated in a timely fashion
 in the event that one or more tasks terminate prematurely.
 Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
 over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task

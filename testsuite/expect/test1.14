@@ -58,7 +58,7 @@ if {[test_launch_poe]} {
 # Delete left-over input script
 # Build input script file
 # Run one more step than allocated CPUs and make sure it waits
-# The "sleep 4" is meant to insure the earlier job steps start first
+# The "sleep 4" is meant to ensure the earlier job steps start first
 #
 exec $bin_rm -f $file_in $file_in2 $file_out $file_out2
 make_bash_script $file_in "
@@ -153,7 +153,7 @@ if {$exit_code == 0} {
 # Delete left-over input script
 # Build another input script file
 # Run one more step than allocated CPUs with immediate option and make aborts
-# The "sleep" is meant to insure the earlier job steps start first
+# The "sleep" is meant to ensure the earlier job steps start first
 #
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "

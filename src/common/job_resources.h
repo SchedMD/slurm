@@ -51,7 +51,7 @@
  * core_bitmap		- Bitmap of allocated cores for all nodes and sockets
  * core_bitmap_used	- Bitmap of cores allocated to job steps
  * cores_per_socket	- Count of cores per socket on this node, build by
- *			  build_job_resources() and insures consistent
+ *			  build_job_resources() and ensures consistent
  *			  interpretation of core_bitmap
  * cpus			- Count of desired/allocated CPUs per node for job/step
  * cpus_used		- For a job, count of CPUs per node used by job steps
@@ -74,10 +74,10 @@
  * ncpus		- Number of processors in the allocation
  * sock_core_rep_count	- How many consecutive nodes that sockets_per_node
  *			  and cores_per_socket apply to, build by
- *			  build_job_resources() and insures consistent
+ *			  build_job_resources() and ensures consistent
  *			  interpretation of core_bitmap
  * sockets_per_node	- Count of sockets on this node, build by
- *			  build_job_resources() and insures consistent
+ *			  build_job_resources() and ensures consistent
  *			  interpretation of core_bitmap
  * whole_node		- Job allocated full node (used only by select/cons_res)
  *

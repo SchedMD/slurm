@@ -132,7 +132,7 @@ users should have consistent names and IDs.</p>
 
 <p><b>NOTE:</b> Only lowercase usernames are supported.
 
-<p>The best way to insure security of the data is by authenticating
+<p>The best way to ensure security of the data is by authenticating
 communications to the SlurmDBD and we recommend
 <a href="https://dun.github.io/munge/">MUNGE</a> for that purpose.
 If you have one cluster managed by Slurm and execute the SlurmDBD

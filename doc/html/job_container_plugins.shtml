@@ -88,7 +88,7 @@ The system <span class="commandline">_init()</span> is called before the SLURM
 
 <p class="commandline">int container_p_create (uint32_t job_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Create a container.
-The caller should insure that be valid
+The caller should ensure that the valid
 <span class="commandline">container_p_delete()</span> is called.</p>
 <p style="margin-left:.2in"><b>Argument</b>:
 <span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input)

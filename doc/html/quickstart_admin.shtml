@@ -497,7 +497,7 @@ The <b>JobCredentialPrivateKey</b> file must be readable only by <b>SlurmUser</b
 The <b>JobCredentialPublicCertificate</b> file must be readable by all users.
 Note that you should build the key files on one node and then distribute
 them to all nodes in the cluster.
-This insures that all nodes have a consistent set of digital signature
+This ensures that all nodes have a consistent set of digital signature
 keys.
 These keys are used by <i>slurmctld</i> to construct a job step
 credential, which is sent to <i>srun</i> and then forwarded to
@@ -719,7 +719,7 @@ has no guarantee of working.</p>
 <p><b>Be mindful of your configured SlurmdTimeout and SlurmctldTimeout values</b>.
 If the Slurm daemon's are down for longer than the specified timeout during an
 upgrade, nodes may be marked DOWN and their jobs killed.
-You can either increase the timeout values during an upgrade or insure that the
+You can either increase the timeout values during an upgrade or ensure that the
 slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
 The recommended upgrade order is as follows:</p>
 <ol>

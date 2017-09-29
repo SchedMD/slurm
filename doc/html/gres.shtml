@@ -171,7 +171,7 @@ for the <i>sbatch</i> command only reflects the GPUs allocated to that job
 on that node, node zero of the allocation).
 CUDA version 3.1 (or higher) uses this environment
 variable in order to run multiple jobs or job steps on a node with GPUs
-and insure that the resources assigned to each are unique. In the example
+and ensure that the resources assigned to each are unique. In the example
 above, the allocated node may have four or more graphics devices. In that
 case, CUDA_VISIBLE_DEVICES will reference unique devices for each file and
 the output might resemble this:</P>
@@ -183,7 +183,7 @@ JobStep=1234.2 CUDA_VISIBLE_DEVICES=3
 </PRE>
 
 <P>NOTE: Be sure to specify the <I>File</I> parameters in the <I>gres.conf</I>
-file and insure they are in the increasing numeric order.</P>
+file and ensure they are in the increasing numeric order.</P>
 <!-------------------------------------------------------------------------->
 <h2>MIC Management</h2>
 

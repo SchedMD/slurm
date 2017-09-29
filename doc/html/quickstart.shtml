@@ -259,7 +259,7 @@ In this example the script name is <i>my.script</i> and we explicitly use
 the nodes adev9 and adev10 (<i>-w "adev[9-10]"</i>, note the use of a
 node range expression).
 We also explicitly state that the subsequent job steps will spawn four tasks
-each, which will insure that our allocation contains at least four processors
+each, which will ensure that our allocation contains at least four processors
 (one processor per task to be launched).
 The output will appear in the file my.stdout ("-o my.stdout").
 This script contains a timelimit for the job embedded within itself.

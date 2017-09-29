@@ -447,7 +447,7 @@ executed (i.e. the name returned by the command "hostname \-s").
 This value must be specified.
 In order to support some high availability architectures, multiple
 hostnames may be listed with comma separators and one \fBControlAddr\fR
-must be specified. The high availability system must insure that the
+must be specified. The high availability system must ensure that the
 slurmctld daemon is running on only one of these hosts at a time.
 See the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
@@ -1377,7 +1377,7 @@ The default value is 1001.
 \fBMaxJobCount\fR
 The maximum number of jobs Slurm can have in its active database
 at one time. Set the values of \fBMaxJobCount\fR and \fBMinJobAge\fR
-to insure the slurmctld daemon does not exhaust its memory or other
+to ensure the slurmctld daemon does not exhaust its memory or other
 resources. Once this limit is reached, requests to submit additional
 jobs will fail. The default value is 10000 jobs.
 NOTE: Each task of a job array counts as one job even though they will not
@@ -1500,7 +1500,7 @@ necessitate higher values.
 \fBMinJobAge\fR
 The minimum age of a completed job before its record is purged from
 Slurm's active database. Set the values of \fBMaxJobCount\fR and
-  to insure the slurmctld daemon does not exhaust
+to ensure the slurmctld daemon does not exhaust
 its memory or other resources. The default value is 300 seconds.
 A value of zero prevents any job record purging.
 In order to eliminate some possible race conditions, the minimum non\-zero
@@ -4311,11 +4311,11 @@ Total size of temporary disk storage in \fBTmpFS\fR in megabytes
 identifies the location which jobs should use for temporary storage.
 Note this does not indicate the amount of free
 space available to the user on the node, only the total file
-system size. The system administration should insure this file
+system size. The system administration should ensure this file
 system is purged as needed so that user jobs have access to
 most of this space.
 The Prolog and/or Epilog programs (specified in the configuration file)
-might be used to insure the file system is kept clean.
+might be used to ensure the file system is kept clean.
 The default value is 0.
 
 .TP
@@ -4713,7 +4713,7 @@ Maximum number of CPUs on any node available to all jobs from this partition.
 This can be especially useful to schedule GPUs. For example a node can be
 associated with two Slurm partitions (e.g. "cpu" and "gpu") and the
 partition/queue "cpu" could be limited to only a subset of the node's CPUs,
-insuring that one or more CPUs would be available to jobs in the "gpu"
+ensuring that one or more CPUs would be available to jobs in the "gpu"
 partition/queue.
 
 .TP
@@ -5465,7 +5465,7 @@ and permissions appropriately.
 See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information
 about the various files and directories used by Slurm.
 .LP
-It is recommended that the logrotate utility be used to insure that
+It is recommended that the logrotate utility be used to ensure that
 various log files do not become too large.
 This also applies to text files used for accounting,
 process tracking, and the slurmdbd log if they are used.

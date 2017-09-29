@@ -345,7 +345,7 @@ extern void delete_step_records (struct job_record *job_ptr)
 
 /*
  * step_list_purge - Simple purge of a job's step list records. No testing is
- *	performed to insure the step records has no active references.
+ *	performed to ensure the step records has no active references.
  *	**ONLY CALL WHEN FREEING MEMORY AT END OF JOB**
  * IN job_ptr - pointer to job table entry to have step records removed
  */

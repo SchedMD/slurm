@@ -151,7 +151,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   The original plugin-specific features are "flat,hemi", while
   features configured outside of the domain of this plugin are "knl,rack1".
   In this case, this function's return value will be "knl,rack1,cache,quad".
-  This function may also be used to insure a specific ordering of features
+  This function may also be used to ensure a specific ordering of features
   (e.g. on a KNL node, always put the MCDRAM mode before the NUMA mode).
   Executed from the slurmctld daemon only.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
