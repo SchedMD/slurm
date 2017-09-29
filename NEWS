@@ -89,6 +89,7 @@ documents those changes that are of interest to users and administrators.
     instead of native Slurm.
  -- Add ability to prevent suspension of some count of nodes in a specified
     range using the SuspendExcNodes configuration parameter.
+ -- Add SLURM_WCKEY to PrologSlurmctld and EpilogSlurmctld  environment.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

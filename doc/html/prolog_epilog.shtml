@@ -423,6 +423,10 @@ User ID of the job's owner.</li>
 
 <li><b>SLURM_JOB_USER</b>
 User name of the job's owner.</li>
+
+<li><b>SLURM_WCKEY</b>
+User name of the job's wckey (if any).
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 </ul>
 
 <p>Plugins functions are may also be useful to execute logic at various well
@@ -448,6 +452,6 @@ PrologSlurmctld fails.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 9 January 2017</p>
+<p style="text-align:center;">Last modified 29 September 2017</p>
 
 <!--#include virtual="footer.txt"-->

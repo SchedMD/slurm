@@ -3878,6 +3878,9 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 	name = uid_to_string((uid_t) job_ptr->user_id);
 	setenvf(&my_env, "SLURM_JOB_USER", "%s", name);
 	xfree(name);
+	if (job_ptr->wckey) {
+		setenvf(&my_env, "SLURM_WCKEY", "%s", job_ptr->wckey);
+	}
 
 	return my_env;
 }
