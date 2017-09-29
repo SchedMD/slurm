@@ -1,0 +1,225 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test environment variables needed by MPI.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id	"38.16"
+set exit_code	0
+set prompt	"PROMPT: "
+set file_in	"test$test_id.bash"
+set file_out	"test$test_id.out"
+set timeout	60
+
+print_header $test_id
+
+if {[test_front_end]} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit $exit_code
+}
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes < 2} {
+	send_user "\nWARNING: Need 2 or more nodes in default partition\n"
+	exit $exit_code
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "
+  $bin_env | grep SLURM_NODELIST
+"
+exec $bin_rm -f $file_out
+
+proc end_it { exit_code } {
+	global pack_job_id scancel
+	if {$pack_job_id > 0} {
+		exec $scancel $pack_job_id
+	}
+	exit $exit_code
+}
+
+set pack_job_id 0
+set component(0) 0
+set matches 0
+set index 0
+set timeout $max_job_delay
+spawn $salloc -t2 -N1 : -N1 $bin_bash
+expect {
+	-re "job ($number) has been allocated resources" {
+		set pack_job_id $expect_out(1,string)
+		send "export PS1=\"$prompt\"\r"
+		exp_continue
+	}
+	-re "\"$prompt" {
+		# skip this, just echo of setting prompt"
+		exp_continue
+	}
+	-re "$prompt" {
+		#send_user "Job initiated\n"
+	}
+	timeout {
+		log_error "salloc : allocation not granted in $timeout seconds\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$pack_job_id == 0} {
+	log_error "salloc failure\n"
+	end_it 1
+}
+
+send_user "\n\nCollect Nodename for each job component\n\n"
+
+send "$squeue -j $pack_job_id -o\"NAME=%N\" --noheader\r"
+expect {
+	-re "--noheader" {
+		exp_continue
+	}
+	-re "NAME=($alpha_numeric_under)" {
+		set component($index) $expect_out(1,string)
+		incr index
+		exp_continue
+	}
+	-re "$prompt" {
+		#break
+	}
+	timeout {
+		log_error "squeue not responding"
+		end_it 1
+	}
+}
+if {$index != 2} {
+	log_error "squeue failure ($index != 2)"
+	end_it 1
+}
+
+send_user "\n\nTest environment variables needed by MPI\n\n"
+
+set matches 0
+send "$srun --label --mpi=none --pack-group=0,1 -l -o$file_out $file_in\r"
+expect {
+	-re "$prompt" {
+		send_user "\n\n"
+		#break
+	}
+	timeout {
+		log_error "srun not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: srun output file not found\n"
+	end_it 1
+}
+
+set pack_nodelist ""
+send "$bin_sort $file_out\r"
+expect {
+	-re "0: SLURM_NODELIST=($alpha_numeric_nodelist)" {
+		set pack_nodelist $expect_out(1,string)
+		incr matches
+		exp_continue
+	}
+	-re "0: SLURM_NODELIST_PACK_GROUP_0=$component(0)" {
+		incr matches
+		exp_continue
+	}
+	-re "0: SLURM_NODELIST_PACK_GROUP_1=$component(1)" {
+		incr matches
+		exp_continue
+	}
+	-re "1: SLURM_NODELIST=$pack_nodelist" {
+		incr matches
+		exp_continue
+	}
+	-re "1: SLURM_NODELIST_PACK_GROUP_0=$component(0)" {
+		incr matches
+		exp_continue
+	}
+	-re "1: SLURM_NODELIST_PACK_GROUP_1=$component(1)" {
+		incr matches
+		exp_continue
+	}
+	-re "$prompt" {
+		send_user "\n\n"
+		#break
+	}
+	timeout {
+		log_error "sort not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 6} {
+	log_error "srun failure ($matches != 6)\n"
+	end_it 1
+}
+
+send "exit\r"
+expect {
+	timeout {
+		log_error "srun not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+
+send_user "\n\nValidate combined hostlist\n\n"
+
+set matches 0
+spawn $scontrol show hostnames $pack_nodelist
+expect {
+	-re "$component(0)|$component(1)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding"
+		end_it 1
+	}
+}
+if {$matches != 2} {
+	log_error "srun combined hostlist is bad ($matches != 2)\n"
+	end_it 1
+}
+
+exec $bin_rm -f $file_in $file_out
+send_user "\nSUCCESS\n"
+end_it 0
