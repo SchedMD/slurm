@@ -3768,7 +3768,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
-	char *err_msg = NULL;
+	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 
 	START_TIMER;
@@ -3802,6 +3802,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
+
+	if (err_msg)
+		job_submit_user_msg = xstrdup(err_msg);
 
 	if (error_code) {
 		reject_job = true;
@@ -3857,6 +3860,7 @@ send_msg:
 		submit_msg.job_id     = job_id;
 		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
 		submit_msg.error_code = error_code;
+		submit_msg.job_submit_user_msg = job_submit_user_msg;
 		slurm_msg_t_init(&response_msg);
 		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
@@ -3870,6 +3874,7 @@ send_msg:
 		queue_job_scheduler();
 	}
 	xfree(err_msg);
+	xfree(job_submit_user_msg);
 }
 
 /* _slurm_rpc_submit_batch_pack_job - process RPC to submit a batch pack job */
