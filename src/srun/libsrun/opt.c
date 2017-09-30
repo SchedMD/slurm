@@ -789,6 +789,7 @@ static void _opt_default(void)
 		opt.uid			= uid;
 		opt.unbuffered		= false;
 		opt.user		= uid_to_string(uid);
+		opt.user_managed_io	= false;
 		if (xstrcmp(opt.user, "nobody") == 0)
 			fatal("Invalid user id: %u", uid);
 		opt.warn_flags		= 0;
