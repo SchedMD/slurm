@@ -5980,6 +5980,7 @@ static int
 _unpack_job_info_members(job_info_t * job, Buf buffer,
 			 uint16_t protocol_version)
 {
+	char *tmp_str;
 	uint32_t uint32_tmp = 0;
 	multi_core_data_t *mc_ptr;
 
@@ -6043,7 +6044,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job->batch_script, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->burst_buffer, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->burst_buffer_state, &uint32_tmp,
 				       buffer);
@@ -6194,7 +6194,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job->batch_script, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_str, &uint32_tmp, buffer);
+		xfree(tmp_str); /* was batch_script */
 		safe_unpackstr_xmalloc(&job->burst_buffer, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->burst_buffer_state, &uint32_tmp,
 				       buffer);
@@ -6340,7 +6341,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job->batch_script, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_str, &uint32_tmp, buffer);
+		xfree(tmp_str); /* was batch_script */
 		safe_unpackstr_xmalloc(&job->burst_buffer, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);

@@ -823,16 +823,6 @@ static int _process_command (int argc, char **argv)
 		}
 		detail_flag = 1;
 	}
-	else if (strncasecmp (tag, "script", MAX(tag_len, 3)) == 0) {
-		if (argc > 1) {
-			exit_code = 1;
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n",
-				 tag);
-			return 0;
-		}
-		detail_flag = 2;
-	}
 	else if ((strncasecmp (tag, "errnumstr", MAX(tag_len, 2)) == 0) ||
 		 (strncasecmp (tag, "errnostr", MAX(tag_len, 2)) == 0)) {
 		if (argc != 2) {

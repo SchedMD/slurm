@@ -1033,14 +1033,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, "SpreadJob=Yes");
 	}
 
-	/****** Last line ******/
-	if (job_ptr->batch_script) {
-		xstrcat(out, line_end);
-		xstrcat(out, "BatchScript=\n");
-		xstrcat(out, job_ptr->batch_script);
-	}
-	/* NOTE: Keep BatchScript last so it is more easily readable */
-
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
 		xstrcat(out, "\n");

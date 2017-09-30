@@ -95,6 +95,9 @@ HIGHLIGHTS
  -- Changed default sched_min_interval from 0 to 2 microseconds.
  -- CRAY: --enable-native-cray is no longer an option and is on by default.
     If you want to run with ALPS please configure with --disable-native-cray.
+ -- Added new 'scontrol write batch_script <jobid>' command to fetch a job's
+    batch script. Removed the ability to see the script as part of the
+    'scontrol -vv show job' command.
 
 RPMBUILD CHANGES
 ================

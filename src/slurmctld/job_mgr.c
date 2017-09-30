@@ -9378,16 +9378,6 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->comment, buffer);
 		packstr(dump_job_ptr->gres, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
-		if (!IS_JOB_COMPLETED(dump_job_ptr) &&
-		    (show_flags & SHOW_DETAIL2) &&
-		    ((dump_job_ptr->user_id == (uint32_t) uid) ||
-		     validate_operator(uid))) {
-			char *batch_script = get_job_script(dump_job_ptr);
-			packstr(batch_script, buffer);
-			xfree(batch_script);
-		} else {
-			packnull(buffer);
-		}
 		packstr(dump_job_ptr->burst_buffer, buffer);
 		packstr(dump_job_ptr->burst_buffer_state, buffer);
 
@@ -9573,16 +9563,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->comment, buffer);
 		packstr(dump_job_ptr->gres, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
-		if (!IS_JOB_COMPLETED(dump_job_ptr) &&
-		    (show_flags & SHOW_DETAIL2) &&
-		    ((dump_job_ptr->user_id == (uint32_t) uid) ||
-		     validate_operator(uid))) {
-			char *batch_script = get_job_script(dump_job_ptr);
-			packstr(batch_script, buffer);
-			xfree(batch_script);
-		} else {
-			packnull(buffer);
-		}
+		packnull(buffer); /* was batch_script */
 		packstr(dump_job_ptr->burst_buffer, buffer);
 		packstr(dump_job_ptr->burst_buffer_state, buffer);
 
@@ -9747,16 +9728,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->comment, buffer);
 		packstr(dump_job_ptr->gres, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
-		if (!IS_JOB_COMPLETED(dump_job_ptr) &&
-		    (show_flags & SHOW_DETAIL2) &&
-		    ((dump_job_ptr->user_id == (uint32_t) uid) ||
-		     validate_operator(uid))) {
-			char *batch_script = get_job_script(dump_job_ptr);
-			packstr(batch_script, buffer);
-			xfree(batch_script);
-		} else {
-			packnull(buffer);
-		}
+		packnull(buffer); /* was batch_script */
 		packstr(dump_job_ptr->burst_buffer, buffer);
 
 		assoc_mgr_lock(&locks);

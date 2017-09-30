@@ -1590,7 +1590,6 @@ typedef struct job_info {
 	uint32_t assoc_id;	/* association id for job */
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	char *batch_host;	/* name of host running batch script */
-	char *batch_script;	/* contents of batch script */
 	uint32_t bitflags;      /* Various job flags */
 	uint16_t boards_per_node;  /* boards per node required by job   */
 	char *burst_buffer;	/* burst buffer specifications */
