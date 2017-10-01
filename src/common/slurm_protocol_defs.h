@@ -458,12 +458,12 @@ typedef struct slurm_msg {
 				 buffer starts. */
 	Buf buffer; /* DON't PACK! ptr to buffer that msg was unpacked from. */
 	slurm_persist_conn_t *conn; /* DON'T PACK OR FREE! this is here to
-				     * distinquish a persistant connection from
+				     * distinquish a persistent connection from
 				     * a normal connection it should be filled
 				     * in with the connection before sending the
 				     * message so that it is handled correctly.
 				     */
-	int conn_fd; /* Only used when the message isn't on a persistant
+	int conn_fd; /* Only used when the message isn't on a persistent
 		      * connection. */
 	void *data;
 	uint32_t data_size;
