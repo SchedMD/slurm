@@ -1618,8 +1618,8 @@ static void _show_it(int argc, char **argv)
 				fprintf(stderr,
 					"too many arguments for keyword:%s\n",
 					argv[0]);
-		}
-		_print_daemons ();
+		} else
+			_print_daemons();
 	} else if (strncasecmp (tag, "Federations",  MAX(tag_len, 1)) == 0) {
 		scontrol_print_federation();
 	} else if (strncasecmp (tag, "FrontendName",  MAX(tag_len, 1)) == 0) {
