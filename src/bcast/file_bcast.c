@@ -394,7 +394,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	else
 		block_len = MIN((512 * 1024), f_stat.st_size);
 
-	bzero(&bcast_msg, sizeof(file_bcast_msg_t));
+	memset(&bcast_msg, 0, sizeof(file_bcast_msg_t));
 	bcast_msg.fname		= params->dst_fname;
 	bcast_msg.block_no	= 1;
 	bcast_msg.force		= params->force;

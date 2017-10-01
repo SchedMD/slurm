@@ -1410,7 +1410,7 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 		}
 	}
 
-	bzero(&req, sizeof(job_id_msg_t));
+	memset(&req, 0, sizeof(job_id_msg_t));
 	slurm_msg_t_init(&req_msg);
 	req.job_id       = job_id;
 	req.show_flags   = show_flags;
@@ -1660,7 +1660,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	slurm_msg_t_init(&req);
 	slurm_msg_t_init(&resp);
 
-	bzero(&msg, sizeof(job_id_msg_t));
+	memset(&msg, 0, sizeof(job_id_msg_t));
 	msg.job_id   = job_id;
 	req.msg_type = REQUEST_JOB_READY;
 	req.data     = &msg;

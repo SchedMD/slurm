@@ -3833,7 +3833,7 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		if (adapter_name == NULL)
 			continue;
 
-		bzero(&table_info, sizeof(nrt_table_info_t));
+		memset(&table_info, 0, sizeof(nrt_table_info_t));
 		table_info.num_tasks = jp->tableinfo[i].table_length;
 		table_info.job_key = jp->job_key;
 		/* Enable job preeption and release of resources */
@@ -3848,7 +3848,7 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 			table_info.is_user_space = 1;
 		if (jp->ip_v4)
 			table_info.is_ipv4 = 1;
-		/* IP V6: table_info.is_ipv4 initialized above by bzero() */
+		/* IP V6: table_info.is_ipv4 initialized above by memset() */
 		table_info.context_id = jp->tableinfo[i].context_id;
 		table_info.table_id = jp->tableinfo[i].table_id;
 		if (job_name) {

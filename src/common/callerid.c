@@ -146,8 +146,8 @@ static int _find_match_in_tcp_file(
 
 	/* Zero out the IPs. Not strictly necessary but it will look much better
 	 * in a debugger since IPv4 only uses 4 out of 16 bytes. */
-	bzero(&conn_row.ip_dst, 16);
-	bzero(&conn_row.ip_src, 16);
+	memset(&conn_row.ip_dst, 0, 16);
+	memset(&conn_row.ip_src, 0, 16);
 
 	fp = fopen(path, "r");
 	if (!fp)

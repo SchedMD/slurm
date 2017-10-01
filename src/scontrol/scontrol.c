@@ -691,7 +691,7 @@ static int _reboot_nodes(char *node_list, bool asap)
 
 	slurm_msg_t_init(&msg);
 
-	bzero(&req, sizeof(reboot_msg_t));
+	memset(&req, 0, sizeof(reboot_msg_t));
 	req.node_list = node_list;
 	if (asap)
 		req.flags |= REBOOT_FLAGS_ASAP;

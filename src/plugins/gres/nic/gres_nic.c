@@ -208,7 +208,7 @@ static bool _use_local_device_index(void)
 		return use_local_index;
 
 	/* Read and parse cgroup.conf */
-	bzero(&slurm_cgroup_conf, sizeof(slurm_cgroup_conf_t));
+	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
 	if (read_slurm_cgroup_conf(&slurm_cgroup_conf) != SLURM_SUCCESS)
 		return use_local_index;
 	if (slurm_cgroup_conf.constrain_devices)
