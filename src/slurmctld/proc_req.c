@@ -2904,7 +2904,7 @@ static void _slurm_rpc_event_log(slurm_msg_t * msg)
 	event_log_msg = (slurm_event_log_msg_t *) msg->data;
 	if (!validate_slurm_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, NODE_REGISTER RPC from uid=%d", uid);
+		error("Security violation, REQUEST_EVENT_LOG from uid=%d", uid);
 	} else if (event_log_msg->level == LOG_LEVEL_ERROR) {
 		error("%s", event_log_msg->string);
 	} else if (event_log_msg->level == LOG_LEVEL_INFO) {
