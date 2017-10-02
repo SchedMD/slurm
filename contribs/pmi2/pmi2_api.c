@@ -1466,16 +1466,16 @@ fn_fail:
 
 static int PMIi_ReadRaw( int fd, char *buf )
 {
-    int pmi2_errno = PMI2_SUCCESS;
+	int pmi2_errno = PMI2_SUCCESS;
 	int data_len, nbytes, offset;
 
-    PMI2U_printf("[BEGIN]");
+	PMI2U_printf("[BEGIN]");
 
 	do {
 		nbytes = read(fd, &data_len, sizeof data_len);
 	} while (nbytes == -1 && errno == EINTR);
 
-    PMI2U_printf("[PMIi_ReadRaw] data_len=%d", data_len);
+	PMI2U_printf("[PMIi_ReadRaw] data_len=%d", data_len);
 
 	offset = 0;
 	do
@@ -1491,10 +1491,10 @@ static int PMIi_ReadRaw( int fd, char *buf )
 	while (offset < data_len);
 
 fn_exit:
-    PMI2U_printf("[END]");
-    return pmi2_errno;
+	PMI2U_printf("[END]");
+	return pmi2_errno;
 fn_fail:
-    goto fn_exit;
+	goto fn_exit;
 }
 
 /* Note that we fill in the fields in a command that is provided.

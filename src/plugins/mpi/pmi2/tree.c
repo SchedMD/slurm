@@ -333,7 +333,7 @@ _handle_allgather_resp(int fd, Buf buf)
 	uint32_t seq;
 	int result_len, maxlen = PMI2_MAX_VALLEN;
 	char *result_buf = NULL, *errmsg;
-    PMI2ShmemRegion *shmem = &PMI2_Shmem_allgather;
+	PMI2ShmemRegion *shmem = &PMI2_Shmem_allgather;
 
 	debug3("mpi/pmi2: in _handle_allgather_resp");
 
@@ -351,26 +351,26 @@ _handle_allgather_resp(int fd, Buf buf)
 		waiting_kvs_resp = 0;
 	}
 
-    if (use_shmem_allgather) {
-        kvs_destroy_shmem(shmem);
-        sprintf(shmem->filename, PMI2_SHMEM_FILENAME_ALLGATHER, job_info.jobid, job_info.stepid);
-        shmem->filesize = job_info.ntasks * maxlen * sizeof (char);
-        debug("Allgather filename: %s, size: %d", shmem->filename, shmem->filesize);
-        kvs_create_shmem(shmem);
-        _sort_gathered_values(buf, shmem->addr, maxlen);
-    } else {
-        result_len = job_info.ntasks * maxlen * sizeof (char);
-        result_buf = xmalloc(result_len);
-        memset(result_buf, '\0', result_len);
-        _sort_gathered_values(buf, result_buf, maxlen);
-    }
+	if (use_shmem_allgather) {
+		kvs_destroy_shmem(shmem);
+		sprintf(shmem->filename, PMI2_SHMEM_FILENAME_ALLGATHER, job_info.jobid, job_info.stepid);
+		shmem->filesize = job_info.ntasks * maxlen * sizeof (char);
+		debug("Allgather filename: %s, size: %d", shmem->filename, shmem->filesize);
+		kvs_create_shmem(shmem);
+		_sort_gathered_values(buf, shmem->addr, maxlen);
+	} else {
+		result_len = job_info.ntasks * maxlen * sizeof (char);
+		result_buf = xmalloc(result_len);
+		memset(result_buf, '\0', result_len);
+		_sort_gathered_values(buf, result_buf, maxlen);
+	}
 
 resp:
-    if (use_shmem_allgather) {
-	    rc = send_shmem_allgather_resp_to_clients(rc, errmsg, shmem);
-    } else {
-	    rc = send_allgather_resp_to_clients(result_buf, result_len);
-    }
+	if (use_shmem_allgather) {
+		rc = send_shmem_allgather_resp_to_clients(rc, errmsg, shmem);
+	} else {
+		rc = send_allgather_resp_to_clients(result_buf, result_len);
+	}
 	if (rc != SLURM_SUCCESS) {
 		slurm_kill_job_step(job_info.jobid, job_info.stepid, SIGKILL);
 	}

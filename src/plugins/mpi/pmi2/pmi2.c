@@ -166,7 +166,7 @@ static int
 _handle_finalize(int fd, int lrank, client_req_t *req)
 {
 	client_resp_t *resp;
-    static int count = 0;
+	static int count = 0;
 	int rc = 0;
 
 	resp = client_resp_new();
@@ -178,9 +178,9 @@ _handle_finalize(int fd, int lrank, client_req_t *req)
 	shutdown(fd, SHUT_RDWR);
 	close(fd);
 	task_finalize(lrank);
-    if (++count == job_info.ltasks) {
-        kvs_destroy_shmem(&PMI2_Shmem_allgather);
-    }
+	if (++count == job_info.ltasks) {
+		kvs_destroy_shmem(&PMI2_Shmem_allgather);
+	}
 	return rc;
 }
 
@@ -193,7 +193,7 @@ _handle_abort(int fd, int lrank, client_req_t *req)
 	debug3("mpi/pmi2: in _handle_abort");
 	client_req_parse_body(req);
 	client_req_get_bool(req, ISWORLD_KEY, &is_world);
-    /* no response needed. just cancel the job step if required */
+	/* no response needed. just cancel the job step if required */
 	if (is_world) {
         kvs_destroy_shmem(&PMI2_Shmem_allgather);
 		slurm_kill_job_step(job_info.jobid, job_info.stepid, SIGKILL);
@@ -238,13 +238,13 @@ _handle_allgather(int fd, int lrank, client_req_t *req)
 {
 	int rc = SLURM_SUCCESS;
 	char *val = NULL;
-    bool use_shmem = false;
+	bool use_shmem = false;
 
 	debug2("mpi/pmi2: in _handle_allgather");
 	client_req_parse_body(req);
 	client_req_get_str(req, VALUE_KEY, &val);
 	client_req_get_bool(req, USE_SHMEM_KEY, &use_shmem);
-    use_shmem_allgather = use_shmem;
+	use_shmem_allgather = use_shmem;
 
 	rc = allgather_add(job_info.gtids[lrank], val);
 
