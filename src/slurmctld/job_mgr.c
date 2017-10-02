@@ -5337,7 +5337,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
 		((job_desc->reservation == NULL) ||
 		(resv_name_leng == 0))) {
-		info("%s: uid %u access to partition %s "
+		debug2("%s: uid %u access to partition %s "
 		     "denied, requires reservation", __func__,
 		     (unsigned int) submit_uid, part_ptr->name);
 		return ESLURM_ACCESS_DENIED;
@@ -5346,7 +5346,7 @@ static int _part_access_check(struct part_record *part_ptr,
 
 	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
 	    (!job_desc->reservation || !strlen(job_desc->reservation))) {
-		info("%s: uid %u access to partition %s "
+		debug2("%s: uid %u access to partition %s "
 		     "denied, requires reservation", __func__,
 		     (unsigned int) submit_uid, part_ptr->name);
 		return ESLURM_ACCESS_DENIED;
@@ -5354,7 +5354,7 @@ static int _part_access_check(struct part_record *part_ptr,
 
 	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0) &&
 	    (submit_uid != slurmctld_conf.slurm_user_id)) {
-		info("%s: uid %u access to partition %s "
+		debug2("%s: uid %u access to partition %s "
 		     "denied, not root", __func__,
 		     (unsigned int) submit_uid, part_ptr->name);
 		return ESLURM_ACCESS_DENIED;
@@ -5367,14 +5367,14 @@ static int _part_access_check(struct part_record *part_ptr,
 	}
 
 	if (validate_group(part_ptr, job_desc->user_id) == 0) {
-		info("%s: uid %u access to partition %s "
+		debug2("%s: uid %u access to partition %s "
 		     "denied, bad group", __func__,
 		     (unsigned int) job_desc->user_id, part_ptr->name);
 		return ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 	}
 
 	if (validate_alloc_node(part_ptr, job_desc->alloc_node) == 0) {
-		info("%s: uid %u access to partition %s "
+		debug2("%s: uid %u access to partition %s "
 		     "denied, bad allocating node: %s", __func__,
 		     (unsigned int) job_desc->user_id, part_ptr->name,
 		     job_desc->alloc_node);
@@ -5385,7 +5385,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	    (job_desc->min_cpus != NO_VAL)) {
 
 		if (job_desc->min_cpus > part_ptr->total_cpus) {
-			info("%s: Job requested too many "
+			debug2("%s: Job requested too many "
 			     "cpus (%u) of partition %s(%u)", __func__,
 			     job_desc->min_cpus, part_ptr->name,
 			     part_ptr->total_cpus);
@@ -5393,7 +5393,7 @@ static int _part_access_check(struct part_record *part_ptr,
 		} else if (job_desc->min_cpus >
 			   (part_ptr->max_cpus_per_node *
 			    part_ptr->total_nodes)) {
-			info("%s: Job requested too many "
+			debug2("%s: Job requested too many "
 			     "cpus (%u) of partition %s(%u)", __func__,
 			     job_desc->min_cpus, part_ptr->name,
 			     (part_ptr->max_cpus_per_node *
@@ -5408,14 +5408,14 @@ static int _part_access_check(struct part_record *part_ptr,
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
 	    (job_desc->min_nodes != NO_VAL) &&
 	    (job_desc->min_nodes > total_nodes)) {
-		info("%s: Job requested too many nodes (%u) "
+		debug2("%s: Job requested too many nodes (%u) "
 		     "of partition %s(%u)", __func__,
 		     job_desc->min_nodes, part_ptr->name, total_nodes);
 		return ESLURM_INVALID_NODE_COUNT;
 	}
 
 	if (req_bitmap && !bit_super_set(req_bitmap, part_ptr->node_bitmap)) {
-		info("%s: requested nodes %s not in partition %s", __func__,
+		debug2("%s: requested nodes %s not in partition %s", __func__,
 		     job_desc->req_nodes, part_ptr->name);
 		return ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 	}
@@ -5441,7 +5441,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	    (job_min_nodes < min_nodes_tmp) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MIN_NODE)))) {
-		info("%s: Job requested for nodes (%u) "
+		debug2("%s: Job requested for nodes (%u) "
 		     "smaller than partition %s(%u) min nodes", __func__,
 		     job_min_nodes, part_ptr->name, min_nodes_tmp);
 		return  ESLURM_INVALID_NODE_COUNT;
@@ -5452,7 +5452,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	    (job_max_nodes > max_nodes_tmp) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
-		info("%s: Job requested for nodes (%u) greater than partition"
+		debug2("%s: Job requested for nodes (%u) greater than partition"
 		     " %s(%u) max nodes", __func__, job_max_nodes,
 		     part_ptr->name, max_nodes_tmp);
 		return ESLURM_INVALID_NODE_COUNT;
@@ -5462,7 +5462,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	    (job_desc->time_limit != NO_VAL) &&
 	    (job_desc->time_limit > part_ptr->max_time) &&
 	    (!qos_ptr || !(qos_ptr->flags & QOS_FLAG_PART_TIME_LIMIT))) {
-		info("%s: Job time limit (%u) exceeds limit of partition "
+		debug2("%s: Job time limit (%u) exceeds limit of partition "
 		     "%s(%u)", __func__, job_desc->time_limit, part_ptr->name,
 		     part_ptr->max_time);
 		return ESLURM_INVALID_TIME_LIMIT;
