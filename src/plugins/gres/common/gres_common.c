@@ -119,7 +119,8 @@ extern int common_node_config_load(List gres_conf_list,
 
 	if (rc == SLURM_SUCCESS) {
 		for (i = 0; i < loc_num_avail_devices; i++)
-			info("%s %d is device number %d", gres_name, i, loc_avail_devices[i]);
+			info("%s %d is device number %d",
+			     gres_name, i, loc_avail_devices[i]);
 
 		*num_avail_devices = loc_num_avail_devices;
 		*avail_devices = loc_avail_devices;
