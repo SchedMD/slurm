@@ -48,7 +48,7 @@ extern int common_node_config_load(List gres_conf_list,
 	int i, rc = SLURM_SUCCESS;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	int avail_device_inx = 0, loc_num_avail_devices = 0, nb_devices = 0;
+	int avail_device_inx = 0, loc_num_avail_devices = 0;
 	int *loc_avail_devices = 0;
 
 	xassert(gres_conf_list);
@@ -61,18 +61,13 @@ extern int common_node_config_load(List gres_conf_list,
 		    xstrcmp(gres_slurmd_conf->name, gres_name))
 			continue;
 
-		nb_devices++;
+		loc_num_avail_devices++;
 	}
 	list_iterator_destroy(iter);
 	xfree(*avail_devices);	/* No-op if NULL */
-	loc_num_avail_devices = -1;
-	/* (Re-)Allocate memory if number of files changed */
-	if (nb_devices > loc_num_avail_devices) {
-		loc_avail_devices = (int *) xmalloc(sizeof(int) * nb_devices);
-		loc_num_avail_devices = nb_devices;
-		for (i = 0; i < loc_num_avail_devices; i++)
-			loc_avail_devices[i] = -1;
-	}
+	loc_avail_devices = xmalloc(sizeof(int) * loc_num_avail_devices);
+	for (i = 0; i < loc_num_avail_devices; i++)
+		loc_avail_devices[i] = -1;
 
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
