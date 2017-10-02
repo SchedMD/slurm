@@ -1073,7 +1073,11 @@ extern int scontrol_batch_script(int argc, char **argv)
 	else
 		filename = xstrdup_printf("slurm-%u.sh", jobid);
 
-	out = fopen(filename, "w");
+	if (!(out = fopen(filename, "w"))) {
+		fprintf(stderr, "failed to open file `%s`: %m\n", filename);
+		return errno;
+	}
+
 	exit_code = slurm_job_batch_script(out, jobid);
 	fclose(out);
 	if (exit_code != SLURM_SUCCESS) {
