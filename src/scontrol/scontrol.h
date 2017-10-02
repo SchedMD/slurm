@@ -98,6 +98,7 @@ extern reserve_info_msg_t *old_res_info_ptr;
 extern slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr;
 
 extern int	parse_requeue_flags(char *s, uint32_t *flags);
+extern int	scontrol_batch_script(int argc, char **argv);
 extern int	scontrol_callerid(int argc, char **argv);
 extern int	scontrol_checkpoint(char *op, char *job_step_id_str, int argc,
 				    char **argv);

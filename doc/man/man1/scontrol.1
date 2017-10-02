@@ -464,6 +464,13 @@ or in the batch script itself if nodes are powered down and restarted
 automatically as needed.
 
 .TP
+\fBwrite batch_script\fP \fIjob_id optional_filename\fP
+Write the batch script for a given job_id to a file. The file will default to
+\fIslurm-\<job_id\>.sh\fP if the optional filename argument is not given.
+The batch script can only be retrieved by an admin or operator, or by the
+owner of the job.
+
+.TP
 \fBwrite config\fP
 Write the current configuration to a file with the naming convention of
 "slurm.conf.<datetime>" in the same directory as the original slurm.conf

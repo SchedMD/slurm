@@ -262,6 +262,7 @@ int main(int argc, char **argv)
 		}
 	}
 	FREE_NULL_LIST(clusters);
+	slurm_conf_destroy();
 	exit(exit_code);
 }
 
@@ -1293,23 +1294,38 @@ static int _process_command (int argc, char **argv)
 		_show_it (argc, argv);
 	}
 	else if (strncasecmp (tag, "write", MAX(tag_len, 5)) == 0) {
-		if (argc > 2) {
-			exit_code = 1;
-			fprintf(stderr,
-				"too many arguments for keyword:%s\n",
-				tag);
-		} else if (argc < 2) {
+		if (argc < 2) {
 			exit_code = 1;
 			fprintf(stderr,
 				"too few arguments for keyword:%s\n",
 				tag);
-		} else if (xstrcmp(argv[1], "config")) {
-			exit_code = 1;
-			fprintf (stderr,
-				 "invalid write argument:%s\n",
-				 argv[1]);
+		} else if (!strncasecmp(argv[1], "batch_script",
+					MAX(strlen(argv[1]), 5))) {
+			/* write batch_script <jobid> <optional filename> */
+			if (argc > 4) {
+				exit_code = 1;
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					tag);
+			} else {
+				scontrol_batch_script(argc-2, &argv[2]);
+			}
+		} else if (!strncasecmp(argv[1], "config",
+					MAX(strlen(argv[1]), 6))) {
+			/* write config */
+			if (argc > 2) {
+				exit_code = 1;
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					tag);
+			} else {
+				_write_config();
+			}
 		} else {
-			_write_config ();
+			exit_code = 1;
+			fprintf(stderr,
+				"invalid write argument:%s\n",
+				argv[1]);
 		}
 	}
 	else if (strncasecmp (tag, "takeover", MAX(tag_len, 8)) == 0) {
@@ -2076,6 +2092,11 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      version                  display tool version number.                 \n\
      wait_job <job_id>        wait until the nodes allocated to the job    \n\
 			      are booted and usable                        \n\
+     write batch_script <job_id> <optional filename>                       \n\
+                              Write the batch script for a given job to a  \n\
+                              local file. Default is slurm-<job_id>.sh if  \n\
+                              the (optional) filename is not given.        \n\
+     write config             Write config to slurm.conf.<datetime>        \n\
      !!                       Repeat the last command entered.             \n\
 									   \n\
   <ENTITY> may be \"aliases\", \"assoc_mgr\" \"burstBuffer\",              \n\

@@ -1055,3 +1055,35 @@ extern int scontrol_callerid(int argc, char **argv)
 		return SLURM_SUCCESS;
 	}
 }
+
+extern int scontrol_batch_script(int argc, char **argv)
+{
+	char *filename;
+	FILE *out;
+	int exit_code;
+	uint32_t jobid;
+
+	if (argc < 1)
+		return SLURM_ERROR;
+
+	jobid = atoll(argv[0]);
+
+	if (argc > 1)
+		filename = xstrdup(argv[1]);
+	else
+		filename = xstrdup_printf("slurm-%u.sh", jobid);
+
+	out = fopen(filename, "w");
+	exit_code = slurm_job_batch_script(out, jobid);
+	fclose(out);
+	if (exit_code != SLURM_SUCCESS) {
+		unlink(filename);
+		slurm_perror("job script retrieval failed");
+	} else if (quiet_flag != 1) {
+		printf("batch script for job %u written to %s\n",
+		       jobid, filename);
+	}
+	xfree(filename);
+
+	return exit_code;
+}

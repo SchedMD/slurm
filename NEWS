@@ -92,6 +92,8 @@ documents those changes that are of interest to users and administrators.
  -- Add SLURM_WCKEY to PrologSlurmctld and EpilogSlurmctld  environment.
  -- Return user response string in response to successful job allocation request
     not only on failure. Set in LUA using function 'slurm.user_msg("STRING")'.
+ -- Add 'scontrol write batch_script <jobid>' command to retrieve the batch
+    script for a given job.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
