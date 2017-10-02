@@ -64,6 +64,7 @@ extern int common_node_config_load(List gres_conf_list,
 		loc_num_avail_devices++;
 	}
 	list_iterator_destroy(iter);
+	*num_avail_devices = -1;
 	xfree(*avail_devices);	/* No-op if NULL */
 	loc_avail_devices = xmalloc(sizeof(int) * loc_num_avail_devices);
 	for (i = 0; i < loc_num_avail_devices; i++)
