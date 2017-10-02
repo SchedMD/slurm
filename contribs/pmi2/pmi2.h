@@ -52,6 +52,8 @@ static const char NAMEUNPUBLISH_CMD[]     = "name-unpublish";
 static const char NAMEUNPUBLISHRESP_CMD[] = "name-unpublish-response";
 static const char NAMELOOKUP_CMD[]        = "name-lookup";
 static const char NAMELOOKUPRESP_CMD[]    = "name-lookup-response";
+static const char ALLGATHER_CMD[]         = "allgather";
+static const char ALLGATHERRESP_CMD[]     = "allgather-response";
 
 static const char PMIJOBID_KEY[]          = "pmijobid";
 static const char PMIRANK_KEY[]           = "pmirank";
@@ -450,6 +452,12 @@ int PMI2_KVS_Put(const char key[], const char value[]);
   
 @*/
 int PMI2_KVS_Fence(void);
+
+int PMI2_KVS_Ifence(void);
+int PMI2_KVS_Wait(void);
+
+int PMI2_Iallgather(const char value[]);
+int PMI2_Iallgather_wait(void *result);
 
 /*@
   PMI2_KVS_Get - returns the value associated with key in the key-value

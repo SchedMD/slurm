@@ -87,6 +87,7 @@ typedef struct pmi2_tree_info {
 	uint16_t pmi_port;	 /* PMI2 comm port of this srun */
 	slurm_addr_t *srun_addr; /* PMI2 comm address parent srun */
 	uint32_t *children_kvs_seq; /* sequence number of children nodes */
+	uint32_t *children_allg_seq; /* sequence number of children nodes */
 } pmi2_tree_info_t;
 
 

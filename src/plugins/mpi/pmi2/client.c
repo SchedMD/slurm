@@ -521,6 +521,17 @@ client_req_get_bool(client_req_t *req, const char *key, bool *pval)
 
 /* ************************************************************ */
 
+extern int
+client_resp_send_raw(int fd, const void *buf, int len_buf)
+{
+	safe_write(fd, &len_buf, sizeof len_buf);
+	safe_write(fd, buf, len_buf);
+	return SLURM_SUCCESS;
+
+rwfail:
+	return SLURM_ERROR;
+}
+
 extern client_resp_t *
 client_resp_new(void)
 {
@@ -616,4 +627,49 @@ send_kvs_fence_resp_to_clients(int rc, char *errmsg)
 	}
 	client_resp_free(resp);
 	return rc;
+}
+
+extern int
+send_allgather_resp_to_clients(const void *buf, int len_buf)
+{
+	int i;
+	int rc = SLURM_SUCCESS;
+	debug2("send_allgather_resp_to_clients: %d bytes", len_buf);
+
+	for (i = 0; i < job_info.ltasks; i ++) {
+		rc = client_resp_send_raw(STEPD_PMI_SOCK(i), buf, len_buf);
+	}
+
+	return rc;
+}
+
+extern int
+send_shmem_allgather_resp_to_clients(int rc, char *errmsg, PMI2ShmemRegion *shmem)
+{
+    int i;
+    client_resp_t *resp;
+    char *msg;
+
+    resp = client_resp_new();
+    if (rc != 0 && errmsg != NULL) {
+        msg = _str_replace(errmsg, ';', '_');
+        client_resp_append(resp, CMD_KEY"="ALLGATHERRESP_CMD";"
+                RC_KEY"=%d;"ERRMSG_KEY"=%s;",
+                rc, msg);
+        xfree(msg);
+    } else {
+        client_resp_append(resp, CMD_KEY"="ALLGATHERRESP_CMD";"
+                RC_KEY"=%d;", rc);
+        if (shmem != NULL && shmem->fd != -1) {
+            client_resp_append(resp,
+                    SHMEMFILENAME_KEY"=%s;"SHMEMFILESIZE_KEY"=%d;",
+                    shmem->filename, shmem->filesize);
+        }
+    }
+
+    for (i = 0; i < job_info.ltasks; i ++) {
+        rc = client_resp_send(resp, STEPD_PMI_SOCK(i));
+    }
+    client_resp_free(resp);
+    return rc;
 }

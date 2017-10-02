@@ -87,6 +87,13 @@
         free ((void*)( pmi2u_chkmem_stk_[--pmi2u_chkmem_stk_sp_] )); \
 }
 
+typedef struct {
+    int fd;
+    void *addr;
+    char filename[256];
+    int filesize;
+} PMI2ShmemRegion;
+
 /* prototypes for PMIU routines */
 void PMI2U_Set_rank( int PMI_rank );
 void PMI2U_SetServer( void );
@@ -96,6 +103,8 @@ int  PMI2U_parse_keyvals( char *st );
 void PMI2U_dump_keyvals( void );
 char *PMI2U_getval( const char *keystr, char *valstr, int vallen );
 void PMI2U_chgval( const char *keystr, char *valstr );
+int PMI2U_Create_shmem(PMI2ShmemRegion *shmem);
+int PMI2U_Destroy_shmem(PMI2ShmemRegion *shmem);
 int MPIU_Strncpy(char *, const char *, size_t);
 
 #endif /* PMI2UTIL_H_INCLUDED */

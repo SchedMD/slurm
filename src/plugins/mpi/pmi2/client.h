@@ -41,6 +41,7 @@
 #include <inttypes.h>
 
 #include "spawn.h"
+#include "shmem.h"
 
 #define PMI11_VERSION 1
 #define PMI11_SUBVERSION 1
@@ -82,6 +83,7 @@ extern spawn_subcmd_t *client_req_parse_spawn_subcmd(client_req_t *req);
 
 extern client_resp_t *client_resp_new(void);
 extern int  client_resp_send(client_resp_t *req, int fd);
+extern int  client_resp_send_raw(int fd, const void *buf, int len_buf);
 extern void client_resp_free(client_resp_t *resp);
 /* XXX: this requires CPP */
 #define client_resp_append(msg, fmt, ...) do { \
@@ -90,5 +92,7 @@ extern void client_resp_free(client_resp_t *resp);
 
 
 extern int send_kvs_fence_resp_to_clients(int rc, char *errmsg);
+extern int send_allgather_resp_to_clients(const void *buf, int len_buf);
+extern int send_shmem_allgather_resp_to_clients(int rc, char *errmsg, PMI2ShmemRegion *shmem);
 
 #endif	/* _CLIENT_H */

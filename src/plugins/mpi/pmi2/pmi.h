@@ -148,6 +148,8 @@
 #define NAMELOOKUPRESP_CMD     "name-lookup-response"
 #define SPAWN_CMD              "spawn"
 #define SPAWNRESP_CMD          "spawn-response"
+#define ALLGATHER_CMD          "allgather"
+#define ALLGATHERRESP_CMD      "allgather-response"
 #define RING_CMD               "ring"
 #define RINGRESP_CMD           "ring-response"
 
@@ -209,6 +211,9 @@
 #define RING_COUNT_KEY    "ring-count"
 #define RING_LEFT_KEY     "ring-left"
 #define RING_RIGHT_KEY    "ring-right"
+#define SHMEMFILENAME_KEY "shmemfilename"
+#define SHMEMFILESIZE_KEY "shmemfilesize"
+#define USE_SHMEM_KEY     "use-shmem"
 
 #define TRUE_VAL          "TRUE"
 #define FALSE_VAL         "FALSE"
@@ -237,7 +242,6 @@
 /* old PMIv1 envs */
 #define PMI2_PMI_DEBUGGED_ENV   "PMI_DEBUG"
 #define PMI2_KVS_NO_DUP_KEYS_ENV "SLURM_PMI_KVS_NO_DUP_KEYS"
-
 
 extern int handle_pmi1_cmd(int fd, int lrank);
 extern int handle_pmi2_cmd(int fd, int lrank);

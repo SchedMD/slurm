@@ -1,12 +1,22 @@
 /*****************************************************************************\
- **  tree.h - PMI tree communication handling code
+ **  shmem.h - Shared Memory manipulation functions
  *****************************************************************************
- *  Copyright (C) 2011-2012 National University of Defense Technology.
- *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
+ *  Copyright (C) 2016 The Ohio State University
+ *  This file was developed by the team members of The
+ *  Ohio State University's Network-Based Computing Laboratory (NBCL),
+ *  headed by Professor Dhabaleswar K. (DK) Panda.
+ *  Contact:
+ *  Prof. Dhabaleswar K. (DK) Panda
+ *  Dept. of Computer Science and Engineering
+ *  The Ohio State University
+ *  2015 Neil Avenue
+ *  Columbus, OH - 43210-1277
+ *  Tel: (614)-292-5199; Fax: (614)-292-2911
+ *  E-mail:panda@cse.ohio-state.edu
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <https://slurm.schedmd.com/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,30 +45,26 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _TREE_H
-#define _TREE_H
+#ifndef _SHMEM_H
+#define _SHMEM_H
 
-enum {
-	TREE_CMD_KVS_FENCE,
-	TREE_CMD_KVS_FENCE_RESP,
-	TREE_CMD_SPAWN,
-	TREE_CMD_SPAWN_RESP,
-	TREE_CMD_NAME_PUBLISH,
-	TREE_CMD_NAME_UNPUBLISH,
-	TREE_CMD_NAME_LOOKUP,
-	TREE_CMD_ALLGATHER,
-	TREE_CMD_ALLGATHER_RESP,
-	TREE_CMD_RING,
-	TREE_CMD_RING_RESP,
-	TREE_CMD_COUNT
-};
+#if     HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
+#define PMI2_SHMEM_FILENAME_ALLGATHER  "/tmp/SLURM_PMI2_SHMEM_ALLG_%llu_%llu.tmp"
 
-extern int handle_tree_cmd(int fd);
-extern int tree_msg_to_srun(uint32_t len, char *msg);
-extern int tree_msg_to_srun_with_resp(uint32_t len, char *msg, Buf *resp_ptr);
-extern int tree_msg_to_spawned_sruns(uint32_t len, char *msg);
+typedef struct {
+    int fd;
+    void *addr;
+    char filename[256];
+    int filesize;
+} PMI2ShmemRegion;
 
+extern int use_shmem_allgather;
+extern PMI2ShmemRegion PMI2_Shmem_allgather;
 
+extern int   kvs_create_shmem(PMI2ShmemRegion *shmem);
+extern int   kvs_destroy_shmem(PMI2ShmemRegion *shmem);
 
-#endif	/* _TREE_H */
+#endif	/* _SHMEM_H */

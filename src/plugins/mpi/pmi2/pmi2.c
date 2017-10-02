@@ -57,6 +57,7 @@
 #include "agent.h"
 #include "nameserv.h"
 #include "ring.h"
+#include "shmem.h"
 
 /* PMI2 command handlers */
 static int _handle_fullinit(int fd, int lrank, client_req_t *req);
@@ -76,6 +77,7 @@ static int _handle_name_publish(int fd, int lrank, client_req_t *req);
 static int _handle_name_unpublish(int fd, int lrank, client_req_t *req);
 static int _handle_name_lookup(int fd, int lrank, client_req_t *req);
 static int _handle_spawn(int fd, int lrank, client_req_t *req);
+static int _handle_allgather(int fd, int lrank, client_req_t *req);
 
 
 static struct {
@@ -99,6 +101,7 @@ static struct {
 	{ NAMEUNPUBLISH_CMD,     _handle_name_unpublish },
 	{ NAMELOOKUP_CMD,        _handle_name_lookup },
 	{ SPAWN_CMD,             _handle_spawn },
+	{ ALLGATHER_CMD,         _handle_allgather },
 	{ NULL, NULL},
 };
 
@@ -163,6 +166,7 @@ static int
 _handle_finalize(int fd, int lrank, client_req_t *req)
 {
 	client_resp_t *resp;
+    static int count = 0;
 	int rc = 0;
 
 	resp = client_resp_new();
@@ -174,6 +178,9 @@ _handle_finalize(int fd, int lrank, client_req_t *req)
 	shutdown(fd, SHUT_RDWR);
 	close(fd);
 	task_finalize(lrank);
+    if (++count == job_info.ltasks) {
+        kvs_destroy_shmem(&PMI2_Shmem_allgather);
+    }
 	return rc;
 }
 
@@ -186,8 +193,9 @@ _handle_abort(int fd, int lrank, client_req_t *req)
 	debug3("mpi/pmi2: in _handle_abort");
 	client_req_parse_body(req);
 	client_req_get_bool(req, ISWORLD_KEY, &is_world);
-	/* no response needed. just cancel the job step if required */
+    /* no response needed. just cancel the job step if required */
 	if (is_world) {
+        kvs_destroy_shmem(&PMI2_Shmem_allgather);
 		slurm_kill_job_step(job_info.jobid, job_info.stepid, SIGKILL);
 	}
 	return rc;
@@ -222,6 +230,36 @@ _handle_job_disconnect(int fd, int lrank, client_req_t *req)
 {
 	int rc = SLURM_SUCCESS;
 	error("mpi/pmi2: job disconnect not implemented for now");
+	return rc;
+}
+
+static int
+_handle_allgather(int fd, int lrank, client_req_t *req)
+{
+	int rc = SLURM_SUCCESS;
+	char *val = NULL;
+    bool use_shmem = false;
+
+	debug2("mpi/pmi2: in _handle_allgather");
+	client_req_parse_body(req);
+	client_req_get_str(req, VALUE_KEY, &val);
+	client_req_get_bool(req, USE_SHMEM_KEY, &use_shmem);
+    use_shmem_allgather = use_shmem;
+
+	rc = allgather_add(job_info.gtids[lrank], val);
+
+	if (tasks_to_wait == 0 && children_to_wait == 0) {
+		tasks_to_wait = job_info.ltasks;
+		children_to_wait = tree_info.num_children;
+	}
+	tasks_to_wait --;
+
+	if (tasks_to_wait == 0 && children_to_wait == 0) {
+		rc = allgather_send();
+		waiting_kvs_resp = 1;
+	}
+
+	debug2("mpi/pmi2: out _handle_allgather");
 	return rc;
 }
 

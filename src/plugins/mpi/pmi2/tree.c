@@ -58,6 +58,7 @@
 #include "pmi.h"
 #include "nameserv.h"
 #include "ring.h"
+#include "shmem.h"
 
 static int _handle_kvs_fence(int fd, Buf buf);
 static int _handle_kvs_fence_resp(int fd, Buf buf);
@@ -66,6 +67,8 @@ static int _handle_spawn_resp(int fd, Buf buf);
 static int _handle_name_publish(int fd, Buf buf);
 static int _handle_name_unpublish(int fd, Buf buf);
 static int _handle_name_lookup(int fd, Buf buf);
+static int _handle_allgather(int fd, Buf buf);
+static int _handle_allgather_resp(int fd, Buf buf);
 static int _handle_ring(int fd, Buf buf);
 static int _handle_ring_resp(int fd, Buf buf);
 
@@ -81,6 +84,8 @@ static int (*tree_cmd_handlers[]) (int fd, Buf buf) = {
 	_handle_name_publish,
 	_handle_name_unpublish,
 	_handle_name_lookup,
+	_handle_allgather,
+	_handle_allgather_resp,
 	_handle_ring,
 	_handle_ring_resp,
 	NULL
@@ -94,10 +99,14 @@ static char *tree_cmd_names[] = {
 	"TREE_CMD_NAME_PUBLISH",
 	"TREE_CMD_NAME_UNPUBLISH",
 	"TREE_CMD_NAME_LOOKUP",
+	"TREE_CMD_ALLGATHER",
+	"TREE_CMD_ALLGATHER_RESP",
 	"TREE_CMD_RING",
 	"TREE_CMD_RING_RESP",
 	NULL,
 };
+
+/**************************************************************/
 
 static int
 _handle_kvs_fence(int fd, Buf buf)
@@ -222,6 +231,160 @@ unpack_error:
 	errmsg = "mpi/pmi2: unpack kvs error in fence resp";
 	goto resp;
 }
+
+/**************************************************************/
+
+static int
+_sort_gathered_values(Buf buf, char *addr, int maxlen)
+{
+    int rc = SLURM_SUCCESS;
+    uint32_t rank, temp32;
+
+    debug3("mpi/pmi2: _sort_gathered_values");
+
+    temp32 = remaining_buf(buf);
+    while (remaining_buf(buf) > 0) {
+        safe_unpack32(&rank, buf);
+        unpackmem(&addr[rank*maxlen], &temp32, buf);
+    }
+
+out:
+    return rc;
+
+unpack_error:
+    error("mpi/pmi2: unpack error in allgather resp");
+    rc = SLURM_ERROR;
+    goto out;
+}
+
+
+static int
+_handle_allgather(int fd, Buf buf)
+{
+	uint32_t from_nodeid, num_children, temp32, seq;
+	char *from_node = NULL;
+	int rc = SLURM_SUCCESS;
+
+	safe_unpack32(&from_nodeid, buf);
+	safe_unpackstr_xmalloc(&from_node, &temp32, buf);
+	safe_unpack32(&num_children, buf);
+	safe_unpack32(&seq, buf);
+
+	debug3("mpi/pmi2: in _handle_allgather, from node %u(%s) representing"
+	       " %u offspring, seq=%u", from_nodeid, from_node, num_children,
+	       seq);
+	if (seq != allg_seq) {
+		error("mpi/pmi2: invalid kvs seq from node %u(%s) ignored, "
+		      "expect %u got %u", 
+		      from_nodeid, from_node, allg_seq, seq);
+		goto out;
+	}
+	if (seq == tree_info.children_allg_seq[from_nodeid]) {
+		info("mpi/pmi2: duplicate ALLGATHER request from node %u(%s) "
+		      "ignored, seq=%u", from_nodeid, from_node, seq);
+		goto out;
+	}
+	tree_info.children_allg_seq[from_nodeid] = seq;
+	
+	if (tasks_to_wait == 0 && children_to_wait == 0) {
+		tasks_to_wait = job_info.ltasks;
+		children_to_wait = tree_info.num_children;
+	}
+	children_to_wait -= num_children;
+
+	allgather_merge(buf);
+
+	if (children_to_wait == 0 && tasks_to_wait == 0) {
+
+		rc = allgather_send();
+		if (rc != SLURM_SUCCESS) {
+			if (in_stepd()) {
+				error("mpi/pmi2: failed to send allgather kvs"
+				      " to %s",
+				      tree_info.parent_node ?: "srun");
+			} else {
+				error("mpi/pmi2: failed to send allgather kvs"
+				      " to compute nodes");
+			}
+			/* cancel the step to avoid tasks hang */
+			slurm_kill_job_step(job_info.jobid, job_info.stepid,
+					    SIGKILL);
+		} else {
+			if (in_stepd())
+				waiting_kvs_resp = 1;
+		}
+	}
+	debug3("mpi/pmi2: out _handle_allgather, tasks_to_wait=%d, "
+	       "children_to_wait=%d", tasks_to_wait, children_to_wait);
+out:
+	xfree(from_node);
+	return rc;
+
+unpack_error:
+	error("mpi/pmi2: failed to unpack allgather message");
+	rc = SLURM_ERROR;
+	goto out;
+}
+
+static int
+_handle_allgather_resp(int fd, Buf buf)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t seq;
+	int result_len, maxlen = PMI2_MAX_VALLEN;
+	char *result_buf = NULL, *errmsg;
+    PMI2ShmemRegion *shmem = &PMI2_Shmem_allgather;
+
+	debug3("mpi/pmi2: in _handle_allgather_resp");
+
+	safe_unpack32(&seq, buf);
+	debug("_handle_allgather_resp, seq: %u", seq);
+	if (seq != allg_seq - 1) {
+		error("mpi/pmi2: invalid kvs seq from srun, expect %u"
+		      " got %u", allg_seq - 1, seq);
+		return SLURM_ERROR;
+	}
+	if (! waiting_kvs_resp) {
+		debug("mpi/pmi2: duplicate ALLGATHER_RESP from srun ignored");
+		return rc;
+	} else {
+		waiting_kvs_resp = 0;
+	}
+
+    if (use_shmem_allgather) {
+        kvs_destroy_shmem(shmem);
+        sprintf(shmem->filename, PMI2_SHMEM_FILENAME_ALLGATHER, job_info.jobid, job_info.stepid);
+        shmem->filesize = job_info.ntasks * maxlen * sizeof (char);
+        debug("Allgather filename: %s, size: %d", shmem->filename, shmem->filesize);
+        kvs_create_shmem(shmem);
+        _sort_gathered_values(buf, shmem->addr, maxlen);
+    } else {
+        result_len = job_info.ntasks * maxlen * sizeof (char);
+        result_buf = xmalloc(result_len);
+        memset(result_buf, '\0', result_len);
+        _sort_gathered_values(buf, result_buf, maxlen);
+    }
+
+resp:
+    if (use_shmem_allgather) {
+	    rc = send_shmem_allgather_resp_to_clients(rc, errmsg, shmem);
+    } else {
+	    rc = send_allgather_resp_to_clients(result_buf, result_len);
+    }
+	if (rc != SLURM_SUCCESS) {
+		slurm_kill_job_step(job_info.jobid, job_info.stepid, SIGKILL);
+	}
+	xfree(result_buf);
+	return rc;
+
+unpack_error:
+	error("mpi/pmi2: unpack error in allgather resp");
+	errmsg = "mpi/pmi2: unpack error in allgather resp";
+	rc = SLURM_ERROR;
+	goto resp;
+}
+
+/**************************************************************/
 
 /* only called in srun */
 static int

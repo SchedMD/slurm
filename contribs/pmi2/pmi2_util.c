@@ -17,6 +17,10 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 
 #include "pmi2_util.h"
 
@@ -215,6 +219,36 @@ void PMI2U_chgval(const char *keystr, char *valstr) {
     }
 }
 
+int PMI2U_Create_shmem(PMI2ShmemRegion *shmem)
+{
+    struct stat file_status;
+
+    if ((shmem->fd = open(shmem->filename, O_RDONLY)) < 0) {
+        return -1;
+    }
+
+    do {
+        if (fstat(shmem->fd, &file_status) != 0) {
+            return -1;
+        }
+        usleep(1);
+    } while (file_status.st_size != shmem->filesize);
+
+    shmem->addr = mmap(0, shmem->filesize, (PROT_READ), (MAP_SHARED), shmem->fd, 0);
+
+    return 0;
+}
+
+int PMI2U_Destroy_shmem(PMI2ShmemRegion *shmem)
+{
+    munmap(shmem->addr, shmem->filesize);
+    close(shmem->fd);
+    shmem->fd = -1;
+    shmem->addr = NULL;
+    shmem->filesize = 0;
+    return 0;
+}
+
 /* This code is borrowed from mpich2-1.5/src/pm/util/safestr2.c.
    The reason is to keep the save code logic around strncpy() as
    as in the original PMI2 implementation.
@@ -273,3 +307,4 @@ MPIU_Strncpy(char *dest, const char *src, size_t n)
 	    return 1;
     }
 }
+

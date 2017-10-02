@@ -51,6 +51,8 @@ int children_to_wait = 0;
 int kvs_seq = 1; /* starting from 1 */
 int waiting_kvs_resp = 0;
 
+/* for allgather */
+int allg_seq = 1; /* starting from 1 */
 
 /* bucket of key-value pairs */
 typedef struct kvs_bucket {
@@ -65,6 +67,10 @@ static uint32_t hash_size = 0;
 static char *temp_kvs_buf = NULL;
 static int temp_kvs_cnt = 0;
 static int temp_kvs_size = 0;
+
+static char *allgather_buf = NULL;
+static int allgather_cnt = 0;
+static int allgather_size = 0;
 
 static int no_dup_keys = 0;
 
@@ -325,3 +331,154 @@ kvs_clear(void)
 
 	return SLURM_SUCCESS;
 }
+
+/**************************************************************/
+
+extern int
+allgather_init(void)
+{
+	uint16_t cmd;
+	uint32_t nodeid, num_children, size;
+	Buf buf = NULL;
+
+	xfree(allgather_buf);
+	allgather_cnt = 0;
+	allgather_size = TEMP_KVS_SIZE_INC;
+	allgather_buf = xmalloc(allgather_size);
+
+	/* put the tree cmd here to simplify message sending */
+	if (in_stepd()) {
+		cmd = TREE_CMD_ALLGATHER;
+	} else {
+		cmd = TREE_CMD_ALLGATHER_RESP;
+	}
+
+	buf = init_buf(1024);
+	pack16(cmd, buf);
+	if (in_stepd()) {
+		nodeid = job_info.nodeid;
+		/* XXX: TBC */
+		num_children = tree_info.num_children + 1;
+
+		pack32((uint32_t)nodeid, buf); /* from_nodeid */
+		packstr(tree_info.this_node, buf); /* from_node */
+		pack32((uint32_t)num_children, buf); /* num_children */
+		pack32(allg_seq, buf);
+	} else {
+		pack32(allg_seq, buf);
+	}
+	size = get_buf_offset(buf);
+	if (allgather_cnt + size > allgather_size) {
+		allgather_size += TEMP_KVS_SIZE_INC;
+		xrealloc(allgather_buf, allgather_size);
+	}
+	memcpy(&allgather_buf[allgather_cnt], get_buf_data(buf), size);
+	allgather_cnt += size;
+	free_buf(buf);
+
+	tasks_to_wait = 0;
+	children_to_wait = 0;
+
+	return SLURM_SUCCESS;
+}
+
+extern int
+allgather_add(int rank, char *val)
+{
+	Buf buf;
+	uint32_t size;
+
+	if ( val == NULL )
+		return SLURM_SUCCESS;
+
+	buf = init_buf(PMI2_MAX_VALLEN + 3 * sizeof(uint32_t));
+	pack32(rank, buf);
+	packstr(val, buf);
+	size = get_buf_offset(buf);
+	if (allgather_cnt + size > allgather_size) {
+		allgather_size += TEMP_KVS_SIZE_INC;
+		xrealloc(allgather_buf, allgather_size);
+	}
+	memcpy(&allgather_buf[allgather_cnt], get_buf_data(buf), size);
+	allgather_cnt += size;
+	free_buf(buf);
+
+	return SLURM_SUCCESS;
+}
+
+extern int
+allgather_merge(Buf buf)
+{
+	char *data;
+	uint32_t offset, size;
+
+	size = remaining_buf(buf);
+	if (size == 0) {
+		return SLURM_SUCCESS;
+	}
+	data = get_buf_data(buf);
+	offset = get_buf_offset(buf);
+
+	if (allgather_cnt + size > allgather_size) {
+		allgather_size += size;
+		xrealloc(allgather_buf, allgather_size);
+	}
+	memcpy(&allgather_buf[allgather_cnt], &data[offset], size);
+	allgather_cnt += size;
+
+	return SLURM_SUCCESS;
+}
+
+extern int
+allgather_send(void)
+{
+	int rc = SLURM_ERROR, retry = 0;
+	unsigned int delay = 1;
+	hostlist_t hl = NULL;
+	char free_hl = 0;
+
+	if (! in_stepd()) {	/* srun */
+		hl = hostlist_create(job_info.step_nodelist);
+		free_hl = 1;
+	} else if (tree_info.parent_node != NULL) {
+		hl = hostlist_create(tree_info.parent_node);
+		free_hl = 1;
+	}
+
+
+	/* cmd included in allgather_buf */
+	allg_seq ++; /* expecting new kvs after now */
+
+	while (1) {
+		if (retry == 1) {
+			verbose("failed to send allgather kvs, rc=%d, retrying", rc);
+		}
+
+		if (! in_stepd()) {	/* srun */
+			rc = tree_msg_to_stepds(hl,
+						allgather_cnt,
+						allgather_buf);
+		} else if (tree_info.parent_node != NULL) {
+			/* non-first-level stepds */
+			rc = tree_msg_to_stepds(hl,
+						allgather_cnt,
+						allgather_buf);
+		} else {		/* first level stepds */
+			rc = tree_msg_to_srun(allgather_cnt, allgather_buf);
+		}
+		if (rc == SLURM_SUCCESS)
+			break;
+		retry ++;
+		if (retry >= MAX_RETRIES)
+			break;
+		/* wait, in case parent stepd / srun not ready */
+		sleep(delay);
+		delay *= 2;
+	}
+	allgather_init();	/* clear old allgather kvs */
+	if( free_hl ){
+		hostlist_destroy(hl);
+	}
+	return rc;
+}
+

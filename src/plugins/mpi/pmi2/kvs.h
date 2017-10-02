@@ -43,16 +43,21 @@
 #include "src/common/xstring.h"
 #include "src/common/pack.h"
 
-
 extern int tasks_to_wait;
 extern int children_to_wait;
 extern int kvs_seq;
+extern int allg_seq;
 extern int waiting_kvs_resp;
 
 extern int   temp_kvs_init(void);
 extern int   temp_kvs_add(char *key, char *val);
 extern int   temp_kvs_merge(Buf buf);
 extern int   temp_kvs_send(void);
+
+extern int   allgather_init(void);
+extern int   allgather_add(int rank, char *val);
+extern int   allgather_merge(Buf buf);
+extern int   allgather_send(void);
 
 extern int   kvs_init(void);
 extern char *kvs_get(char *key);

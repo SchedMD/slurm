@@ -177,7 +177,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 mpi_pmi2_la_DEPENDENCIES = $(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
 am_mpi_pmi2_la_OBJECTS = mpi_pmi2.lo agent.lo client.lo kvs.lo info.lo \
-	pmi1.lo pmi2.lo setup.lo spawn.lo tree.lo nameserv.lo ring.lo
+	pmi1.lo pmi2.lo setup.lo spawn.lo tree.lo nameserv.lo ring.lo shmem.lo
 mpi_pmi2_la_OBJECTS = $(am_mpi_pmi2_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -522,6 +522,7 @@ mpi_pmi2_la_SOURCES = mpi_pmi2.c \
 	spawn.c spawn.h \
 	tree.c tree.h \
 	nameserv.c nameserv.h \
+	shmem.c shmem.h \
 	ring.c ring.h
 
 mpi_pmi2_la_LDFLAGS = $(PLUGIN_FLAGS)
@@ -618,6 +619,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spawn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shmem.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

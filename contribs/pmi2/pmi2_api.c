@@ -35,6 +35,7 @@ typedef enum {
 } PMI2State;
 
 static PMI2State PMI2_initialized = PMI2_UNINITIALIZED;
+static PMI2ShmemRegion PMI2_Shmem_allgather  = { .fd=-1, .addr=NULL, .filesize=0 };
 
 static int PMI2_debug = 0;
 static int PMI2_fd = -1;
@@ -92,6 +93,7 @@ static void init_kv_strdup_intsuffix(PMI2_Keyvalpair *kv, const char key_prefix[
 static int getPMIFD(void);
 static int PMIi_ReadCommandExp( int fd, PMI2_Command *cmd, const char *exp, int* rc, const char **errmsg );
 static int PMIi_ReadCommand( int fd, PMI2_Command *cmd );
+static int PMIi_ReadRaw( int fd, char *buf );
 
 static int PMIi_WriteSimpleCommand( int fd, PMI2_Command *resp, const char cmd[], PMI2_Keyvalpair *pairs[], int npairs);
 static int PMIi_WriteSimpleCommandStr( int fd, PMI2_Command *resp, const char cmd[], ...);
@@ -356,6 +358,10 @@ int PMI2_Finalize(void)
         pmi2_errno = PMIi_ReadCommandExp(PMI2_fd, &cmd, FINALIZERESP_CMD, &rc, &errmsg);
         if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_ReadCommandExp");
         PMI2U_ERR_CHKANDJUMP(rc, pmi2_errno, PMI2_ERR_OTHER, "**pmi2_finalize %s", errmsg ? errmsg : "unknown");
+        if (PMI2_Shmem_allgather.fd != -1) {
+            pmi2_errno = PMI2U_Destroy_shmem(&PMI2_Shmem_allgather);
+            if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMI2U_Destroy_shmem");
+        }
 
         free(cmd.command);
         freepairs(cmd.pairs, cmd.nPairs);
@@ -753,6 +759,47 @@ fn_fail:
     goto fn_exit;
 }
 
+int PMI2_KVS_Ifence(void)
+{
+    int pmi2_errno = PMI2_SUCCESS;
+    PMI2_Command cmd = {0};
+
+    PMI2U_printf("[BEGIN]");
+
+    pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, KVSFENCE_CMD, NULL);
+    if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_WriteSimpleCommandStr");
+
+fn_exit:
+    free(cmd.command);
+    freepairs(cmd.pairs, cmd.nPairs);
+    PMI2U_printf("[END]");
+    return pmi2_errno;
+fn_fail:
+    goto fn_exit;
+}
+
+int PMI2_KVS_Wait(void)
+{
+    int pmi2_errno = PMI2_SUCCESS;
+    PMI2_Command cmd = {0};
+    int rc;
+    const char *errmsg;
+
+    PMI2U_printf("[BEGIN]");
+
+    pmi2_errno = PMIi_ReadCommandExp(PMI2_fd, &cmd, KVSFENCERESP_CMD, &rc, &errmsg);
+    if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_ReadCommandExp");
+    PMI2U_ERR_CHKANDJUMP(rc, pmi2_errno, PMI2_ERR_OTHER, "**pmi2_kvsfence %s", errmsg ? errmsg : "unknown");
+
+fn_exit:
+    free(cmd.command);
+    freepairs(cmd.pairs, cmd.nPairs);
+    PMI2U_printf("[END]");
+    return pmi2_errno;
+fn_fail:
+    goto fn_exit;
+}
+
 int PMI2_KVS_Get(const char *jobid, int src_pmi_id, const char key[], char value [], int maxValue, int *valLen)
 {
     int pmi2_errno = PMI2_SUCCESS;
@@ -794,6 +841,98 @@ int PMI2_KVS_Get(const char *jobid, int src_pmi_id, const char key[], char value
     PMI2U_printf("[END]");
     return pmi2_errno;
  fn_fail:
+    goto fn_exit;
+}
+
+int PMI2_Iallgather(const char value[])
+{
+    int pmi2_errno = PMI2_SUCCESS;
+    PMI2_Command cmd = {0};
+
+    PMI2U_printf("[BEGIN]");
+
+    pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, ALLGATHER_CMD, VALUE_KEY, value, NULL);
+    if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_WriteSimpleCommandStr");
+
+fn_exit:
+    free(cmd.command);
+    freepairs(cmd.pairs, cmd.nPairs);
+    PMI2U_printf("[END]");
+    return pmi2_errno;
+fn_fail:
+    goto fn_exit;
+}
+
+int PMI2_Iallgather_wait(void *results)
+{
+    int pmi2_errno = PMI2_SUCCESS;
+
+    PMI2U_printf("[BEGIN]");
+
+    pmi2_errno = PMIi_ReadRaw(PMI2_fd, results);
+    if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_ReadRaw");
+
+fn_exit:
+    PMI2U_printf("[END]");
+    return pmi2_errno;
+fn_fail:
+    goto fn_exit;
+}
+
+int PMI2_SHMEM_Iallgather(const char value[])
+{
+    int pmi2_errno = PMI2_SUCCESS;
+    PMI2_Command cmd = {0};
+
+    PMI2U_printf("[BEGIN]");
+
+    pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, ALLGATHER_CMD,
+                    VALUE_KEY, value, USE_SHMEM_KEY, TRUE_VAL, NULL);
+    if (pmi2_errno)
+        PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_WriteSimpleCommandStr");
+
+fn_exit:
+    free(cmd.command);
+    freepairs(cmd.pairs, cmd.nPairs);
+    PMI2U_printf("[END]");
+    return pmi2_errno;
+fn_fail:
+    goto fn_exit;
+}
+
+int PMI2_SHMEM_Iallgather_wait(void **results)
+{
+    int rc, found;
+    PMI2_Command cmd = {0};
+    int pmi2_errno = PMI2_SUCCESS;
+    int shmem_filename_len;
+    const char *shmem_filename;
+    const char *errmsg;
+
+    PMI2U_printf("[BEGIN]");
+    if (PMI2_Shmem_allgather.fd != -1) PMI2U_Destroy_shmem(&PMI2_Shmem_allgather);
+
+    pmi2_errno = PMIi_ReadCommandExp(PMI2_fd, &cmd, ALLGATHERRESP_CMD, &rc, &errmsg);
+    if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_ReadCommandExp");
+    PMI2U_ERR_CHKANDJUMP(rc, pmi2_errno, PMI2_ERR_OTHER, "**pmi2_allgather %s", errmsg ? errmsg : "unknown");
+
+    found = getval(cmd.pairs, cmd.nPairs, SHMEMFILENAME_KEY, &shmem_filename, &shmem_filename_len);
+    PMI2U_ERR_CHKANDJUMP(found == -1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
+    strncpy(PMI2_Shmem_allgather.filename, shmem_filename, shmem_filename_len);
+
+    found = getvalint(cmd.pairs, cmd.nPairs, SHMEMFILESIZE_KEY, &PMI2_Shmem_allgather.filesize);
+    PMI2U_ERR_CHKANDJUMP(found != 1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
+    found = PMI2U_Create_shmem(&PMI2_Shmem_allgather);
+    PMI2U_ERR_CHKANDJUMP(found != 0, pmi2_errno, PMI2_ERR_OTHER, "**intern");
+
+    *results = PMI2_Shmem_allgather.addr;
+
+fn_exit:
+    free(cmd.command);
+    freepairs(cmd.pairs, cmd.nPairs);
+    PMI2U_printf("[END]");
+    return pmi2_errno;
+fn_fail:
     goto fn_exit;
 }
 
@@ -1324,6 +1463,39 @@ fn_fail:
     goto fn_exit;
 }
 
+
+static int PMIi_ReadRaw( int fd, char *buf )
+{
+    int pmi2_errno = PMI2_SUCCESS;
+	int data_len, nbytes, offset;
+
+    PMI2U_printf("[BEGIN]");
+
+	do {
+		nbytes = read(fd, &data_len, sizeof data_len);
+	} while (nbytes == -1 && errno == EINTR);
+
+    PMI2U_printf("[PMIi_ReadRaw] data_len=%d", data_len);
+
+	offset = 0;
+	do
+	{
+		do {
+			nbytes = read(fd, &buf[offset], data_len - offset);
+		} while (nbytes == -1 && errno == EINTR);
+
+		PMI2U_ERR_CHKANDJUMP(nbytes <= 0, pmi2_errno, PMI2_ERR_OTHER, "**read %s", strerror(errno));
+
+		offset += nbytes;
+	}
+	while (offset < data_len);
+
+fn_exit:
+    PMI2U_printf("[END]");
+    return pmi2_errno;
+fn_fail:
+    goto fn_exit;
+}
 
 /* Note that we fill in the fields in a command that is provided.
    We may want to share these routines with the PMI version 2 server */
