@@ -786,6 +786,12 @@ extern int scontrol_update_job(int argc, char **argv)
 					return 0;
 				}
 				job_msg.admin_comment = add_info;
+				/*
+				 * Mark as unset so we know we handled this
+				 * correctly as there is a check later to make
+				 * sure we know we got a +-.
+				 */
+				add_info = NULL;
 			} else
 				job_msg.admin_comment = val;
 			update_cnt++;
@@ -871,6 +877,12 @@ extern int scontrol_update_job(int argc, char **argv)
 					time_limit = job_current_time -
 						     time_limit;
 				}
+				/*
+				 * Mark as unset so we know we handled this
+				 * correctly as there is a check later to make
+				 * sure we know we got a +-.
+				 */
+				add_info = NULL;
 			}
 			job_msg.time_limit = time_limit;
 			update_cnt++;
@@ -1268,6 +1280,12 @@ extern int scontrol_update_job(int argc, char **argv)
 			fprintf (stderr, "Update of this parameter is not "
 				 "supported: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
+			return 0;
+		}
+
+		if (add_info) {
+			error("Option %s does not accept [+|-]= syntax", tag);
+			exit_code = 1;
 			return 0;
 		}
 	}
