@@ -125,7 +125,7 @@ extern int node_config_load(List gres_conf_list)
 	while ((gres_slurmd_conf = list_next(iter))) {
 		if (xstrcmp(gres_slurmd_conf->name, gres_name))
 			continue;
-		if (gres_slurmd_conf->file)
+		if (gres_slurmd_conf->has_file == 1)
 			nb_gpu++;
 	}
 	list_iterator_destroy(iter);
@@ -141,8 +141,9 @@ extern int node_config_load(List gres_conf_list)
 
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
-		if ((xstrcmp(gres_slurmd_conf->name, gres_name) == 0) &&
-		    gres_slurmd_conf->file) {
+		if ((gres_slurmd_conf->has_file == 1) &&
+		    gres_slurmd_conf->file &&
+		    !xstrcmp(gres_slurmd_conf->name, gres_name)) {
 			/* Populate gpu_devices array with number
 			 * at end of the file name */
 			char *bracket, *fname, *tmp_name;

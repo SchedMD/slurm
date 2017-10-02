@@ -1282,7 +1282,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 					count64 = MAX_GRES_BITMAP;
 				}
 				if (has_file)	/* Don't clear if already set */
-					gres_context[j].has_file = has_file;
+					gres_context[j].has_file = true;
 				break;
 	 		}
 			if (j >= gres_context_cnt) {
