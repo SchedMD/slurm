@@ -39,8 +39,25 @@ set part_name      "QA_TEST"
 
 print_header $test_id
 
-# This test will not work for user root since they always see all partitions
-stop_root_user
+#
+# This test can only be run on a development build. If this is not a development
+# build, then exit with a warning, but don't fail the test.
+# We know it's a development build if the slurm_testsuite_dev_build variable is
+# set in globals.local to a nonzero value.
+#
+if { ![info exists slurm_testsuite_dev_build] || !$slurm_testsuite_dev_build } {
+	send_user "
+		WARNING: Cannot run this test on a non-development
+		build. If you are on a development build, set
+		slurm_testsuite_dev_build in globals.local in order to
+		run this test.\n"
+	exit 0
+}
+
+#
+# Set the environment variable to drop privileges for the current test.
+#
+set ::env(SLURM_TESTSUITE_DROP_PRIV) 1
 
 #
 # Confirm that no hidden partition is seen by default
@@ -126,6 +143,11 @@ if {$found == 1} {
 	send_user "\nFAILURE: partition $part_name already exists\n"
 	exit 1
 }
+
+#
+# Unset the drop privileges environment variable so a partition can be created.
+#
+unset ::env(SLURM_TESTSUITE_DROP_PRIV)
 
 #
 # Create a new partition
