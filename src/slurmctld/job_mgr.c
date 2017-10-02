@@ -13603,22 +13603,16 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	agent_queue_request(agent_info);
 }
 
-
 /*
- * job_alloc_info - get details about an existing job allocation
+ * job_alloc_info_ptr - get details about an existing job allocation
  * IN uid - job issuing the code
- * IN job_id - ID of job for which info is requested
- * OUT job_pptr - set to pointer to job record
+ * IN job_ptr - pointer to job record
+ * NOTE: See job_alloc_info() if job pointer not known
  */
-extern int
-job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
+extern int job_alloc_info_ptr(uint32_t uid, struct job_record *job_ptr)
 {
-	struct job_record *job_ptr;
 	uint8_t prolog = 0;
 
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL)
-		return ESLURM_INVALID_JOB_ID;
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
 	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
@@ -13641,8 +13635,27 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 		set_job_alias_list(job_ptr);
 	}
 
-	*job_pptr = job_ptr;
 	return SLURM_SUCCESS;
+}
+
+/*
+ * job_alloc_info - get details about an existing job allocation
+ * IN uid - job issuing the code
+ * IN job_id - ID of job for which info is requested
+ * OUT job_pptr - set to pointer to job record
+ * NOTE: See job_alloc_info_ptr() if job pointer is known
+ */
+extern int job_alloc_info(uint32_t uid, uint32_t job_id,
+			  struct job_record **job_pptr)
+{
+	struct job_record *job_ptr;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	if (job_pptr)
+		*job_pptr = job_ptr;
+	return job_alloc_info_ptr(uid, job_ptr);
 }
 
 /*

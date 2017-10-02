@@ -1225,9 +1225,19 @@ extern void delete_job_desc_files(uint32_t job_id);
  * IN uid - job issuing the code
  * IN job_id - ID of job for which info is requested
  * OUT job_pptr - set to pointer to job record
+ * NOTE: See job_alloc_info_ptr() if job pointer is known
  */
 extern int job_alloc_info(uint32_t uid, uint32_t job_id,
 			  struct job_record **job_pptr);
+
+/*
+ * job_alloc_info_ptr - get details about an existing job allocation
+ * IN uid - job issuing the code
+ * IN job_ptr - pointer to job record
+ * NOTE: See job_alloc_info() if job pointer not known
+ */
+extern int job_alloc_info_ptr(uint32_t uid, struct job_record *job_ptr);
+
 /*
  * job_allocate - create job_records for the supplied job specification and
  *	allocate nodes for it.
