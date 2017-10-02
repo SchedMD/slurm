@@ -1344,6 +1344,7 @@ slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
 extern void slurm_free_job_info(job_info_t * job);
 extern void slurm_free_job_info_members(job_info_t * job);
 
+extern void slurm_free_batch_script_msg(char *msg);
 extern void slurm_free_job_id_msg(job_id_msg_t * msg);
 extern void slurm_free_job_user_id_msg(job_user_id_msg_t * msg);
 extern void slurm_free_job_id_request_msg(job_id_request_msg_t * msg);

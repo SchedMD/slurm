@@ -710,6 +710,11 @@ extern void slurm_free_reroute_msg(reroute_msg_t *msg)
 	}
 }
 
+extern void slurm_free_batch_script_msg(char *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_job_id_msg(job_id_msg_t * msg)
 {
 	xfree(msg);
@@ -4143,7 +4148,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_job_id_msg(data);
 		break;
 	case RESPONSE_BATCH_SCRIPT:
-		xfree(data);
+		slurm_free_batch_script_msg(data);
+		break;
 	case REQUEST_JOB_USER_INFO:
 		slurm_free_job_user_id_msg(data);
 		break;
