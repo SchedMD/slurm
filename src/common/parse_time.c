@@ -143,17 +143,22 @@ _is_valid_timespec(const char *s)
 	int digit;
 	int dash;
 	int colon;
-
+	bool already_digit = false;
 	digit = dash = colon = 0;
 
 	while (*s) {
 		if (*s >= '0' && *s <= '9') {
-			++digit;
+			if (!already_digit) {
+				++digit;
+				already_digit = true;
+			}
 		} else if (*s == '-') {
+			already_digit = false;
 			++dash;
 			if (colon)
 				return false;
 		} else if (*s == ':') {
+			already_digit = false;
 			++colon;
 		} else {
 			return false;
