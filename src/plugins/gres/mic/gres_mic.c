@@ -56,6 +56,8 @@
 #include "src/common/list.h"
 #include "src/common/xstring.h"
 
+#include "../common/gres_common.h"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -97,57 +99,11 @@ static int nb_available_files;
  */
 extern int node_config_load(List gres_conf_list)
 {
-	int i, rc = SLURM_SUCCESS;
-	ListIterator iter;
-	gres_slurmd_conf_t *gres_slurmd_conf;
-	int nb_mic = 0;	/* Number of MICs in the list */
-	int available_files_index = 0;
-
-	xassert(gres_conf_list);
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(iter))) {
-		if (xstrcmp(gres_slurmd_conf->name, gres_name))
-			continue;
-		if (gres_slurmd_conf->has_file == 1)
-			nb_mic++;
-	}
-	list_iterator_destroy(iter);
-	mic_devices = NULL;
-	nb_available_files = -1;
-
-	/* (Re-)Allocate memory if number of files changed */
-	if (nb_mic != nb_available_files) {
-		xfree(mic_devices);	/* No-op if NULL */
-		mic_devices = (int *) xmalloc(sizeof(int) * nb_mic);
-		nb_available_files = nb_mic;
-		for (i = 0; i < nb_available_files; i++)
-			mic_devices[i] = -1;
-	}
-
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(iter))) {
-		if ((gres_slurmd_conf->has_file == 1) &&
-		    gres_slurmd_conf->file &&
-		    !xstrcmp(gres_slurmd_conf->name, gres_name)) {
-			/* Populate mic_devices array with number
-			 * at end of the file name */
-			for (i = 0; gres_slurmd_conf->file[i]; i++) {
-				if (!isdigit(gres_slurmd_conf->file[i]))
-					continue;
-				mic_devices[available_files_index] =
-					atoi(gres_slurmd_conf->file + i);
-				break;
-			}
-			available_files_index++;
-		}
-	}
-	list_iterator_destroy(iter);
-
+	int rc = common_node_config_load(gres_conf_list, gres_name,
+					 &mic_devices,
+					 &nb_available_files);
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
-
-	for (i = 0; i < nb_available_files; i++)
-		info("mic %d is device number %d", i, mic_devices[i]);
 
 	return rc;
 }

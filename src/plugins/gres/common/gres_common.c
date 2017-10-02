@@ -34,3 +34,96 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <ctype.h>
+
+#include "gres_common.h"
+
+#include "src/common/xstring.h"
+
+extern int common_node_config_load(List gres_conf_list,
+				   char *gres_name,
+				   int **avail_devices,
+				   int *num_avail_devices)
+{
+	int i, rc = SLURM_SUCCESS;
+	ListIterator iter;
+	gres_slurmd_conf_t *gres_slurmd_conf;
+	int avail_device_inx = 0, loc_num_avail_devices = 0, nb_devices = 0;
+	int *loc_avail_devices = 0;
+
+	xassert(gres_conf_list);
+	xassert(avail_devices);
+
+	iter = list_iterator_create(gres_conf_list);
+	while ((gres_slurmd_conf = list_next(iter))) {
+		if (xstrcmp(gres_slurmd_conf->name, gres_name))
+			continue;
+		if (gres_slurmd_conf->has_file == 1)
+			nb_devices++;
+	}
+	list_iterator_destroy(iter);
+	xfree(*avail_devices);	/* No-op if NULL */
+	loc_num_avail_devices = -1;
+	/* (Re-)Allocate memory if number of files changed */
+	if (nb_devices > loc_num_avail_devices) {
+		loc_avail_devices = (int *) xmalloc(sizeof(int) * nb_devices);
+		loc_num_avail_devices = nb_devices;
+		for (i = 0; i < loc_num_avail_devices; i++)
+			loc_avail_devices[i] = -1;
+	}
+
+	iter = list_iterator_create(gres_conf_list);
+	while ((gres_slurmd_conf = list_next(iter))) {
+		if ((gres_slurmd_conf->has_file == 1) &&
+		    gres_slurmd_conf->file &&
+		    !xstrcmp(gres_slurmd_conf->name, gres_name)) {
+			/* Populate loc_avail_devices array with number
+			 * at end of the file name */
+			char *bracket, *fname, *tmp_name;
+			hostlist_t hl;
+			bracket = strrchr(gres_slurmd_conf->file, '[');
+			if (bracket)
+				tmp_name = xstrdup(bracket);
+			else
+				tmp_name = xstrdup(gres_slurmd_conf->file);
+			hl = hostlist_create(tmp_name);
+			xfree(tmp_name);
+			if (!hl) {
+				rc = EINVAL;
+				break;
+			}
+			while ((fname = hostlist_shift(hl))) {
+				if (avail_device_inx ==
+				    loc_num_avail_devices) {
+					loc_num_avail_devices++;
+					xrealloc(loc_num_avail_devices,
+						 sizeof(int) *
+						 loc_num_avail_devices);
+					loc_avail_devices[avail_device_inx] =
+						-1;
+				}
+				for (i = 0; fname[i]; i++) {
+					if (!isdigit(fname[i]))
+						continue;
+					loc_avail_devices[avail_device_inx] =
+						atoi(fname + i);
+					break;
+				}
+				avail_device_inx++;
+				free(fname);
+			}
+			hostlist_destroy(hl);
+		}
+	}
+	list_iterator_destroy(iter);
+
+	if (rc == SLURM_SUCCESS) {
+		for (i = 0; i < loc_num_avail_devices; i++)
+			info("%s %d is device number %d", gres_name, i, loc_avail_devices[i]);
+
+		*num_avail_devices = loc_num_avail_devices;
+		*avail_devices = loc_avail_devices;
+	}
+
+	return rc;
+}

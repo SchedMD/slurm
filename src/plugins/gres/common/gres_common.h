@@ -37,4 +37,23 @@
 #ifndef _HAVE_GRES_COMMON_H
 #define _HAVE_GRES_COMMON_H
 
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
+#include "src/common/slurm_xlator.h"
+
+#include "src/common/gres.h"
+#include "src/common/list.h"
+
+/*
+ * Common validation for what was read in from the gres.conf.
+ * IN gres_conf_list
+ * IN gres_name
+ * OUT num_avail_devices
+ * OUT avail_devices
+ */
+extern int common_node_config_load(List gres_conf_list,
+				   char *gres_name,
+				   int **avail_devices,
+				   int *num_avail_devices);
 #endif

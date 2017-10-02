@@ -58,6 +58,8 @@
 #include "src/common/xcgroup_read_config.c"
 #include "src/common/xstring.h"
 
+#include "../common/gres_common.h"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -114,79 +116,12 @@ extern int fini(void)
  */
 extern int node_config_load(List gres_conf_list)
 {
-	int i, rc = SLURM_SUCCESS;
-	ListIterator iter;
-	gres_slurmd_conf_t *gres_slurmd_conf;
-	int nb_gpu = 0;	/* Number of GPUs in the list */
-	int available_files_index = 0;
-
-	xassert(gres_conf_list);
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(iter))) {
-		if (xstrcmp(gres_slurmd_conf->name, gres_name))
-			continue;
-		if (gres_slurmd_conf->has_file == 1)
-			nb_gpu++;
-	}
-	list_iterator_destroy(iter);
-	xfree(gpu_devices);	/* No-op if NULL */
-	nb_available_files = -1;
-	/* (Re-)Allocate memory if number of files changed */
-	if (nb_gpu > nb_available_files) {
-		gpu_devices = (int *) xmalloc(sizeof(int) * nb_gpu);
-		nb_available_files = nb_gpu;
-		for (i = 0; i < nb_available_files; i++)
-			gpu_devices[i] = -1;
-	}
-
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(iter))) {
-		if ((gres_slurmd_conf->has_file == 1) &&
-		    gres_slurmd_conf->file &&
-		    !xstrcmp(gres_slurmd_conf->name, gres_name)) {
-			/* Populate gpu_devices array with number
-			 * at end of the file name */
-			char *bracket, *fname, *tmp_name;
-			hostlist_t hl;
-			bracket = strrchr(gres_slurmd_conf->file, '[');
-			if (bracket)
-				tmp_name = xstrdup(bracket);
-			else
-				tmp_name = xstrdup(gres_slurmd_conf->file);
-			hl = hostlist_create(tmp_name);
-			xfree(tmp_name);
-			if (!hl) {
-				rc = EINVAL;
-				break;
-			}
-			while ((fname = hostlist_shift(hl))) {
-				if (available_files_index ==
-				    nb_available_files) {
-					nb_available_files++;
-					xrealloc(gpu_devices, sizeof(int) *
-						 nb_available_files);
-					gpu_devices[available_files_index] = -1;
-				}
-				for (i = 0; fname[i]; i++) {
-					if (!isdigit(fname[i]))
-						continue;
-					gpu_devices[available_files_index] =
-						atoi(fname + i);
-					break;
-				}
-				available_files_index++;
-				free(fname);
-			}
-			hostlist_destroy(hl);
-		}
-	}
-	list_iterator_destroy(iter);
+	int rc = common_node_config_load(gres_conf_list, gres_name,
+					 &gpu_devices,
+					 &nb_available_files);
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
-
-	for (i = 0; i < nb_available_files; i++)
-		info("gpu %d is device number %d", i, gpu_devices[i]);
 
 	return rc;
 }
