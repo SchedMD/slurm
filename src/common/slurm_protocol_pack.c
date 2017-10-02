@@ -67,7 +67,6 @@
 #include "src/common/xstring.h"
 #include "src/common/xassert.h"
 
-
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_block_info_resp_msg(msg,buf)	_pack_buffer_msg(msg,buf)
@@ -458,6 +457,11 @@ static void _pack_job_info_list_msg(List job_resp_list, Buf buffer,
 				    uint16_t protocol_version);
 static int _unpack_job_info_list_msg(List *job_resp_list, Buf buffer,
 				     uint16_t protocol_version);
+
+static void _pack_job_script_msg(char *msg, Buf buffer,
+				 uint16_t protocol_version);
+static int _unpack_job_script_msg(char **msg, Buf buffer,
+				  uint16_t protocol_version);
 
 static int _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer,
 				uint16_t protocol_version);
@@ -926,6 +930,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_JOB_INFO:
 		_pack_job_info_msg((slurm_msg_t *) msg, buffer);
 		break;
+	case RESPONSE_BATCH_SCRIPT:
+		_pack_job_script_msg((char *) msg->data, buffer,
+				     msg->protocol_version);
+		break;
 	case RESPONSE_PARTITION_INFO:
 		_pack_partition_info_msg((slurm_msg_t *) msg, buffer);
 		break;
@@ -1337,6 +1345,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_top_job_msg((top_job_msg_t *)msg->data, buffer,
 				  msg->protocol_version);
 		break;
+	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
 		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer,
@@ -1607,6 +1616,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_job_info_msg((job_info_msg_t **) & (msg->data),
 					  buffer,
 					  msg->protocol_version);
+		break;
+	case RESPONSE_BATCH_SCRIPT:
+		rc = _unpack_job_script_msg((char **) &(msg->data),
+					    buffer,
+					    msg->protocol_version);
 		break;
 	case RESPONSE_PARTITION_INFO:
 		rc = _unpack_partition_info_msg((partition_info_msg_t **) &
@@ -2054,6 +2068,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_top_job_msg((top_job_msg_t **) &msg->data, buffer,
 					 msg->protocol_version);
 		break;
+	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
 		rc = _unpack_job_ready_msg((job_id_msg_t **)
@@ -5813,6 +5828,28 @@ _pack_buffer_msg(slurm_msg_t * msg, Buf buffer)
 {
 	xassert(msg != NULL);
 	packmem_array(msg->data, msg->data_size, buffer);
+}
+
+static void _pack_job_script_msg(char *msg, Buf buffer,
+				 uint16_t protocol_version)
+{
+	packstr(msg, buffer);
+}
+
+static int _unpack_job_script_msg(char **msg, Buf buffer,
+				  uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	xassert(msg != NULL);
+
+	safe_unpackstr_xmalloc(msg, &uint32_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(*msg);
+	*msg = NULL;
+	return SLURM_ERROR;
 }
 
 static int

@@ -1272,6 +1272,43 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 }
 
 /*
+ * slurm_job_batch_script - retrieve the batch script for a given jobid
+ * returns SLURM_SUCCESS, or appropriate error code
+ */
+extern int slurm_job_batch_script(FILE *out, uint32_t jobid)
+{
+	job_id_msg_t msg;
+	slurm_msg_t req, resp;
+	int rc = SLURM_SUCCESS;
+
+	slurm_msg_t_init(&req);
+	slurm_msg_t_init(&resp);
+
+	memset(&msg, 0, sizeof(job_id_msg_t));
+	msg.job_id = jobid;
+	req.msg_type = REQUEST_BATCH_SCRIPT;
+	req.data = &msg;
+
+	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec) < 0)
+		return SLURM_ERROR;
+
+	if (resp.msg_type == RESPONSE_BATCH_SCRIPT) {
+		if (fprintf(out, "%s", (char *) resp.data) < 0)
+			rc = SLURM_ERROR;
+		xfree(resp.data);
+	} else if (resp.msg_type == RESPONSE_SLURM_RC) {
+		rc = ((return_code_msg_t *) resp.data)->return_code;
+		slurm_free_return_code_msg(resp.data);
+		if (rc)
+			slurm_seterrno_ret(rc);
+	} else {
+		rc = SLURM_ERROR;
+	}
+
+	return rc;
+}
+
+/*
  * slurm_load_jobs - issue RPC to get all job configuration
  *	information if changed since update_time
  * IN update_time - time of current configuration data

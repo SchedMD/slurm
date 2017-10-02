@@ -4138,10 +4138,13 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_REQUEUE:
 		slurm_free_requeue_msg(data);
 		break;
+	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
 		slurm_free_job_id_msg(data);
 		break;
+	case RESPONSE_BATCH_SCRIPT:
+		xfree(data);
 	case REQUEST_JOB_USER_INFO:
 		slurm_free_job_user_id_msg(data);
 		break;
@@ -4629,6 +4632,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_FED_INFO";
 	case RESPONSE_FED_INFO:
 		return "RESPONSE_FED_INFO";
+	case REQUEST_BATCH_SCRIPT:
+		return "REQUEST_BATCH_SCRIPT";
+	case RESPONSE_BATCH_SCRIPT:
+		return "RESPONSE_BATCH_SCRIPT";
 
 	case REQUEST_UPDATE_JOB:				/* 3001 */
 		return "REQUEST_UPDATE_JOB";

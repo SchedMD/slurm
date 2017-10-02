@@ -204,6 +204,8 @@ Changed the following enums and #defines
 Added the following API's
 =========================
 Added slurm_kill_job_msg: to send prepared job_step_kill_msg_t.
+Added slurm_job_batch_script: to retrieve the batch script for a given jobid
+	into a local file.
 
 Changed the following API's
 ============================

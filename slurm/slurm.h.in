@@ -3311,6 +3311,12 @@ extern int slurm_submit_batch_pack_job(List job_req_list,
 extern void slurm_free_submit_response_response_msg(submit_response_msg_t *msg);
 
 /*
+ * slurm_job_batch_script - retrieve the batch script for a given jobid
+ * returns SLURM_SUCCESS, or appropriate error code
+ */
+extern int slurm_job_batch_script(FILE *out, uint32_t jobid);
+
+/*
  * slurm_job_will_run - determine if a job would execute immediately if
  *	submitted now
  * IN job_desc_msg - description of resource allocation request

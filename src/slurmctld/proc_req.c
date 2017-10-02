@@ -144,6 +144,7 @@ inline static void  _slurm_rpc_complete_batch_script(slurm_msg_t * msg,
 						     bool *run_scheduler,
 						     bool running_composite);
 inline static void  _slurm_rpc_complete_prolog(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_front_end(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
@@ -339,6 +340,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_JOB_INFO_SINGLE:
 		_slurm_rpc_dump_job_single(msg);
+		break;
+	case REQUEST_BATCH_SCRIPT:
+		_slurm_rpc_dump_batch_script(msg);
 		break;
 	case REQUEST_SHARE_INFO:
 		_slurm_rpc_get_shares(msg);
@@ -2571,6 +2575,56 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		(void) schedule_job_save();	/* Has own locking */
 	if (dump_node)
 		(void) schedule_node_save();	/* Has own locking */
+}
+
+static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	int rc = SLURM_SUCCESS;
+	slurm_msg_t response_msg;
+	struct job_record *job_ptr;
+	char *script;
+	job_id_msg_t *job_id_msg = (job_id_msg_t *) msg->data;
+	/* Locks: Read config, job, and node info */
+	slurmctld_lock_t job_read_lock = {
+		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
+					 slurmctld_config.auth_info);
+
+	START_TIMER;
+	debug3("Processing RPC: REQUEST_BATCH_SCRIPT from uid=%d for job=%u",
+	       uid, job_id_msg->job_id);
+	lock_slurmctld(job_read_lock);
+
+	if ((job_ptr = find_job_record(job_id_msg->job_id))) {
+		if (!validate_operator(uid) && job_ptr->requid != uid) {
+			rc = ESLURM_USER_ID_MISSING;
+		} else {
+			script = get_job_script(job_ptr);
+			if (!script)
+				rc = ESLURM_JOB_SCRIPT_MISSING;
+		}
+	} else {
+		rc = ESLURM_INVALID_JOB_ID;
+	}
+
+	unlock_slurmctld(job_read_lock);
+	END_TIMER2("_slurm_rpc_dump_batch_script");
+
+	/* init response_msg structure */
+	if (rc != SLURM_SUCCESS) {
+		slurm_send_rc_msg(msg, rc);
+	} else {
+		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
+		response_msg.address = msg->address;
+		response_msg.conn = msg->conn;
+		response_msg.msg_type = RESPONSE_BATCH_SCRIPT;
+		response_msg.data = script;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		xfree(script);
+	}
 }
 
 /* _slurm_rpc_job_step_create - process RPC to create/register a job step
