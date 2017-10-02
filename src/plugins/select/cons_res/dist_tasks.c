@@ -333,6 +333,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	int tmp_cpt = 0;
 	int count, cpu_min, b_min, elig, s_min, comb_idx, sock_idx;
 	int elig_idx, comb_brd_idx, sock_list_idx, comb_min, board_num;
+	int sock_per_comb;
 	int* boards_core_cnt;
 	int* sort_brds_core_cnt;
 	int* board_combs;
@@ -346,7 +347,6 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	uint16_t ncores_nb;
 	uint16_t nsockets_nb;
 	uint16_t sock_per_brd;
-	uint16_t sock_per_comb;
 	uint16_t req_cores,best_fit_cores = 0;
 	uint32_t best_fit_location = 0;
 	uint64_t ncomb_brd;
