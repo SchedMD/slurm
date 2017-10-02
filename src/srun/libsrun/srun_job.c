@@ -102,9 +102,10 @@ typedef struct allocation_info {
 } allocation_info_t;
 
 typedef struct pack_resp_struct {
-	hostlist_t alias_list;
+	char **alias_list;
 	uint16_t *cpu_cnt;
 	hostlist_t host_list;
+	uint32_t node_cnt;
 } pack_resp_struct_t;
 
 
@@ -781,9 +782,13 @@ static void _cancel_steps(List srun_job_list)
 static void _pack_struct_del(void *x)
 {
 	pack_resp_struct_t *pack_resp = (pack_resp_struct_t *) x;
+	int i;
 
-	if (pack_resp->alias_list)
-		hostlist_destroy(pack_resp->alias_list);
+	if (pack_resp->alias_list) {
+		for (i = 0; i < pack_resp->node_cnt; i++)
+			xfree(pack_resp->alias_list[i]);
+		xfree(pack_resp->alias_list);
+	}
 	xfree(pack_resp->cpu_cnt);
 	if (pack_resp->host_list)
 		hostlist_destroy(pack_resp->host_list);
@@ -796,7 +801,7 @@ static char *_compress_pack_nodelist(List used_resp_list)
 	pack_resp_struct_t *pack_resp;
 	List pack_resp_list;
 	ListIterator resp_iter;
-	char *alias_name, *aliases = NULL, *tmp;
+	char *aliases = NULL, *save_ptr = NULL, *tok, *tmp;
 	char *pack_nodelist = NULL, *node_name;
 	hostset_t hs;
 	int cnt, i, j, k, len = 0;
@@ -818,10 +823,27 @@ static char *_compress_pack_nodelist(List used_resp_list)
 		len += strlen(resp->node_list);
 		hostset_insert(hs, resp->node_list);
 		pack_resp = xmalloc(sizeof(pack_resp_struct_t));
+		pack_resp->node_cnt = resp->node_cnt;
+		/*
+		 * alias_list contains <NodeName>:<NodeAddr>:<NodeHostName>
+		 * values in comma separated list
+		 */
 		if (resp->alias_list) {
-			pack_resp->alias_list =
-				hostlist_create(resp->alias_list);
 			have_aliases = true;
+			pack_resp->alias_list = xmalloc(sizeof(char *) *
+							resp->node_cnt);
+			tmp = xstrdup(resp->alias_list);
+			i = 0;
+			tok = strtok_r(tmp, ",", &save_ptr);
+			while (tok) {
+				if (i >= resp->node_cnt) {
+					fatal("%s: Invalid alias_list",
+					      __func__);
+				}
+				pack_resp->alias_list[i++] = xstrdup(tok);
+				tok = strtok_r(NULL, ",", &save_ptr);
+			}
+			xfree(tmp);
 		}
 		pack_resp->cpu_cnt = xmalloc(sizeof(uint16_t) * resp->node_cnt);
 		pack_resp->host_list = hostlist_create(resp->node_list);
@@ -858,16 +880,14 @@ static char *_compress_pack_nodelist(List used_resp_list)
 			if (have_aliases) {
 				if (aliases)
 					xstrcat(aliases, ",");
-				if (pack_resp->alias_list) {
-					alias_name = hostlist_nth(
-						     pack_resp->alias_list, j);
-				} else
-					alias_name = NULL;
-				if (alias_name) {
-					xstrcat(aliases, alias_name);
-					free(alias_name);
+				if (pack_resp->alias_list &&
+				    pack_resp->alias_list[j]) {
+					xstrcat(aliases,
+						pack_resp->alias_list[j]);
 				} else {
-					xstrcat(aliases, node_name);
+					xstrfmtcat(aliases, "%s:%s:%s",
+						   node_name, node_name,
+						   node_name);
 				}
 			}
 			if (cpus[cpu_inx] == pack_resp->cpu_cnt[j]) {
@@ -893,15 +913,10 @@ static char *_compress_pack_nodelist(List used_resp_list)
 	xfree(tmp);
 
 	if (aliases) {
-		hostlist_t alias_list = NULL;
-		alias_list = hostlist_create(aliases);
-		i = strlen(aliases) + 1;
-		(void) hostlist_ranged_string(alias_list, i, aliases);
 		if (setenv("SLURM_NODE_ALIASES", aliases, 1) < 0) {
 			error("%s: Unable to set SLURM_NODE_ALIASES in environment",
 			      __func__);
 		}
-		hostlist_destroy(alias_list);
 		xfree(aliases);
 	}
 

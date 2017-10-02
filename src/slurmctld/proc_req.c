@@ -3183,6 +3183,8 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 				      __func__, job_ptr->pack_job_id);
 				continue;
 			}
+			if (pack_job->job_id != job_info_msg->job_id)
+				(void) job_alloc_info_ptr(uid, pack_job);
 			job_info_resp_msg = build_job_info_resp(pack_job);
 			if (working_cluster_rec) {
 				job_info_resp_msg->working_cluster_rec =
@@ -3294,9 +3296,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 			iter = list_iterator_create(job_ptr->pack_job_list);
 			while ((job_pack_ptr =
 			        (struct job_record *) list_next(iter))) {
-				error_code = job_alloc_info(uid,
-							job_pack_ptr->job_id,
-							&job_ptr);
+				error_code = job_alloc_info_ptr(uid,
+							        job_pack_ptr);
 				if (error_code)
 					break;
 				if (!job_pack_ptr->node_bitmap) {
