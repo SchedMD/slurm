@@ -1664,7 +1664,7 @@ proc reset_qos_usage { cluster qos } {
 		set cluster [get_cluster_name]
 	}
 
-	set my_pid [eval spawn $sacctmgr -i mod qos $qos cluster=$cluster set RawUsage=0\
+	set my_pid [eval spawn $sacctmgr -i mod qos $qos cluster=$cluster set RawUsage=0]
 	expect {
 		-re "error:" {
 			send_user "\nFAILURE something went wrong with sacctmgr command\n"
