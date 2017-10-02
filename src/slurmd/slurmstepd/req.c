@@ -1571,7 +1571,7 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	int step_rc;
 	char *buf = NULL;
 	int len;
-	Buf buffer;
+	Buf buffer = NULL;
 	bool lock_set = false;
 
 	debug("_handle_completion for job %u.%u",
@@ -1670,7 +1670,7 @@ rwfail:	if (lock_set) {
 		slurm_cond_signal(&step_complete.cond);
 		slurm_mutex_unlock(&step_complete.lock);
 	}
-	xfree(buf);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_FAILURE;
 }
 
