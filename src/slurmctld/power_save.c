@@ -131,7 +131,7 @@ static void _exc_node_part_free(void *x)
 
 static int _parse_exc_nodes(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	char *end_ptr = NULL, *save_ptr = NULL, *sep, *tmp, *tok;
 
 	sep = strchr(exc_nodes, ':');
