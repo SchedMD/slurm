@@ -56,10 +56,12 @@ extern int common_node_config_load(List gres_conf_list,
 
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
-		if (xstrcmp(gres_slurmd_conf->name, gres_name))
+		if ((gres_slurmd_conf->has_file != 1) ||
+		    !gres_slurmd_conf->file ||
+		    xstrcmp(gres_slurmd_conf->name, gres_name))
 			continue;
-		if (gres_slurmd_conf->has_file == 1)
-			nb_devices++;
+
+		nb_devices++;
 	}
 	list_iterator_destroy(iter);
 	xfree(*avail_devices);	/* No-op if NULL */
@@ -74,46 +76,44 @@ extern int common_node_config_load(List gres_conf_list,
 
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
-		if ((gres_slurmd_conf->has_file == 1) &&
-		    gres_slurmd_conf->file &&
-		    !xstrcmp(gres_slurmd_conf->name, gres_name)) {
-			/* Populate loc_avail_devices array with number
-			 * at end of the file name */
-			char *bracket, *fname, *tmp_name;
-			hostlist_t hl;
-			bracket = strrchr(gres_slurmd_conf->file, '[');
-			if (bracket)
-				tmp_name = xstrdup(bracket);
-			else
-				tmp_name = xstrdup(gres_slurmd_conf->file);
-			hl = hostlist_create(tmp_name);
-			xfree(tmp_name);
-			if (!hl) {
-				rc = EINVAL;
+		char *bracket, *fname, *tmp_name;
+		hostlist_t hl;
+		if ((gres_slurmd_conf->has_file != 1) ||
+		    !gres_slurmd_conf->file ||
+		    xstrcmp(gres_slurmd_conf->name, gres_name))
+			continue;
+		/* Populate loc_avail_devices array with number
+		 * at end of the file name */
+		bracket = strrchr(gres_slurmd_conf->file, '[');
+		if (bracket)
+			tmp_name = xstrdup(bracket);
+		else
+			tmp_name = xstrdup(gres_slurmd_conf->file);
+		hl = hostlist_create(tmp_name);
+		xfree(tmp_name);
+		if (!hl) {
+			rc = EINVAL;
+			break;
+		}
+		while ((fname = hostlist_shift(hl))) {
+			if (avail_device_inx ==
+			    loc_num_avail_devices) {
+				loc_num_avail_devices++;
+				xrealloc(loc_num_avail_devices,
+					 sizeof(int) * loc_num_avail_devices);
+				loc_avail_devices[avail_device_inx] = -1;
+			}
+			for (i = 0; fname[i]; i++) {
+				if (!isdigit(fname[i]))
+					continue;
+				loc_avail_devices[avail_device_inx] =
+					atoi(fname + i);
 				break;
 			}
-			while ((fname = hostlist_shift(hl))) {
-				if (avail_device_inx ==
-				    loc_num_avail_devices) {
-					loc_num_avail_devices++;
-					xrealloc(loc_num_avail_devices,
-						 sizeof(int) *
-						 loc_num_avail_devices);
-					loc_avail_devices[avail_device_inx] =
-						-1;
-				}
-				for (i = 0; fname[i]; i++) {
-					if (!isdigit(fname[i]))
-						continue;
-					loc_avail_devices[avail_device_inx] =
-						atoi(fname + i);
-					break;
-				}
-				avail_device_inx++;
-				free(fname);
-			}
-			hostlist_destroy(hl);
+			avail_device_inx++;
+			free(fname);
 		}
+		hostlist_destroy(hl);
 	}
 	list_iterator_destroy(iter);
 
