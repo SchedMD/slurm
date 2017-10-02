@@ -518,6 +518,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/ext_sensors/rrd/Makefile
 		 src/plugins/ext_sensors/none/Makefile
 		 src/plugins/gres/Makefile
+		 src/plugins/gres/common/Makefile
 		 src/plugins/gres/gpu/Makefile
 		 src/plugins/gres/nic/Makefile
 		 src/plugins/gres/mic/Makefile
