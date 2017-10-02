@@ -92,8 +92,7 @@ extern int common_node_config_load(List gres_conf_list,
 			break;
 		}
 		while ((fname = hostlist_shift(hl))) {
-			if (avail_device_inx ==
-			    loc_num_avail_devices) {
+			if (avail_device_inx == loc_num_avail_devices) {
 				loc_num_avail_devices++;
 				xrealloc(loc_avail_devices,
 					 sizeof(int) * loc_num_avail_devices);
