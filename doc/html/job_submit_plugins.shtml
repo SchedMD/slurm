@@ -238,14 +238,14 @@ vi job_submit_mine.c
 
 # Copy up a dependency file
 cp ~/SLURM/slurm.build/src/plugins/job_submit/partition/.deps/job_submit_partition.Plo \
-   .deps/job_submit_nine.Plo
+   .deps/job_submit_mine.Plo
 
 # Compile
 gcc -DHAVE_CONFIG_H -I~/SLURM/slurm.build -I~/slurm.git \
    -g -O2 -pthread -fno-gcse -Werror -Wall -g -O0       \
    -fno-strict-aliasing -MT job_submit_mine.lo          \
    -MD -MP -MF .deps/job_submit_mine.Tpo                \
-   -c job_submit_mine.c -o job_submit_mine.o
+   -c job_submit_mine.c -o .libs/job_submit_mine.o
 
 # Some clean up
 mv -f .deps/job_submit_mine.Tpo .deps/job_submit_mine.Plo
