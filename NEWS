@@ -95,6 +95,8 @@ documents those changes that are of interest to users and administrators.
  -- Add 'scontrol write batch_script <jobid>' command to retrieve the batch
     script for a given job.
  -- Remove option to display the batch script as part of 'scontrol show job'.
+ -- Modify PMI2 plugin to addlbarrier and lallgather functions for MVAPICH2 and
+    use shared memory for on-node communications.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
