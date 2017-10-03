@@ -59,7 +59,7 @@ slurmctld_comm_addr_t slurmctld_comm_addr;
  * be freed with slurm_free_resource_allocation_response_msg()
  */
 extern resource_allocation_response_msg_t *
-	allocate_nodes(bool handle_signals, opt_t *opt_local);
+	allocate_nodes(bool handle_signals, slurm_opt_t *opt_local);
 
 /*
  * Allocate nodes for heterogeneous/pack job from the slurm controller -- 
@@ -108,7 +108,7 @@ extern List existing_allocation(void);
  *
  * Returns -1 if job step creation failure, 0 otherwise
  */
-int create_job_step(srun_job_t *j, bool use_all_cpus, opt_t *opt_local);
+int create_job_step(srun_job_t *j, bool use_all_cpus, slurm_opt_t *opt_local);
 
 /* set the job for debugging purpose */
 void set_allocate_job(srun_job_t *job);

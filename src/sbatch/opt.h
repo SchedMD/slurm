@@ -51,152 +51,7 @@
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
 #include "src/common/slurmdb_defs.h"
-
-#ifndef SYSTEM_DIMENSIONS
-#  define SYSTEM_DIMENSIONS 1
-#endif
-
-typedef struct sbatch_options {
-	char *clusters;		/* cluster to run this on. */
-	char *progname;		/* argv[0] of this program or   */
-
-	/* batch script argv and argc, if provided on the command line */
-	int script_argc;
-	char **script_argv;
-	char *user;		/* local username		*/
-	uid_t uid;		/* local uid			*/
-	gid_t gid;		/* local gid			*/
-	uid_t euid;		/* effective user --uid=user	*/
-	gid_t egid;		/* effective group --gid=group	*/
- 	char *cwd;		/* current working directory	*/
-	int  ntasks;		/* --ntasks=n,      -n n	*/
-	bool ntasks_set;	/* true if ntasks explicitly set */
-	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
-	bool cpus_set;		/* true if cpus_per_task explicitly set */
-	int  min_nodes;		/* --nodes=n,       -N n	*/
-	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/
-	bool nodes_set;		/* true if nodes explicitly set */
-	int sockets_per_node;	/* --sockets-per-node=n		*/
-	int cores_per_socket;	/* --cores-per-socket=n		*/
-	uint32_t job_flags;	/* --kill_invalid_dep, --gres-flags */
-	int threads_per_core;	/* --threads-per-core=n		*/
-	bool threads_per_core_set;/* --threads-per-core set explicitly set */
-	int ntasks_per_node;	/* --ntasks-per-node=n		*/
-	int ntasks_per_socket;	/* --ntasks-per-socket=n	*/
-	int ntasks_per_core;	/* --ntasks-per-core=n		*/
-	int ntasks_per_core_set; /* true if ntasks-per-core explicitly set */
-	char *hint_env;		/* SLURM_HINT env var setting	*/
-	bool hint_set;		/* --hint set explicitly set	*/
-	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
-	char *mem_bind;		/* binding map for map/mask_mem	*/
-	bool extra_set;		/* true if extra node info explicitly set */
-	int  time_limit;	/* --time,   -t	(int minutes)	*/
-	char *time_limit_str;	/* --time,   -t (string)	*/
-	int  time_min;		/* --min-time 	(int minutes)	*/
-	char *time_min_str;	/* --min-time (string)		*/
-	char *partition;	/* --partition=n,   -p n   	*/
-	uint32_t profile;	/* --profile=[all | none}       */
-	enum task_dist_states
-	        distribution;	/* --distribution=, -m dist	*/
-        uint32_t plane_size;    /* lllp distribution -> plane_size for
-				 * when -m plane=<# of lllp per
-				 * plane> */
-	char *job_name;		/* --job-name=,     -J name	*/
-	unsigned int jobid;     /* --jobid=jobid                */
-	bool jobid_set;		/* true of jobid explicitly set */
-	char *mpi_type;		/* --mpi=type			*/
-	char *dependency;	/* --dependency, -P type:jobid	*/
-	int nice;		/* --nice			*/
-	uint32_t priority;	/* --priority                   */
-	char *account;		/* --account, -U acct_name	*/
-	char *comment;		/* --comment			*/
-	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
-	char *qos;		/* --qos			*/
-	int immediate;		/* -i, --immediate      	*/
-	uint16_t warn_flags;	/* --signal=flags:<int>@<time>	*/
-	uint16_t warn_signal;	/* --signal=flags:<int>@<time>	*/
-	uint16_t warn_time;	/* --signal=flags:<int>@<time>	*/
-
-	bool hold;		/* --hold, -H			*/
-	bool parsable;		/* --parsable			*/
-	bool no_kill;		/* --no-kill, -k		*/
-	int requeue;		/* --requeue and --no-requeue	*/
-	uint8_t open_mode;	/* --open-mode			*/
-	char *acctg_freq;	/* --acctg-freq=<type1>=<freq1>,*/
-				/* 	<type2>=<freq2>,...	*/
-	bool overcommit;	/* --overcommit -O		*/
-	uint16_t shared;	/* --share,   -s		*/
-	char *licenses;		/* --licenses, -L		*/
-	char *network;		/* --network=			*/
-	int  quiet;
-	int  verbose;
-	uint16_t wait_all_nodes;  /* --wait-nodes-ready=val	*/
-	char *wrap;
-
-	/* constraint options */
-	int mincpus;		/* --mincpus=n			*/
-	int minsockets;		/* --minsockets=n		*/
-	int mincores;		/* --mincores=n			*/
-	int minthreads;		/* --minthreads=n		*/
-	int64_t mem_per_cpu;	/* --mem-per-cpu=n		*/
-	int64_t realmem;	/* --mem=n			*/
-	long tmpdisk;		/* --tmp=n			*/
-	char *constraints;	/* --constraints=, -C constraint*/
-	char *c_constraints;	/* --cluster-constraints=       */
-	char *gres;		/* --gres			*/
-	bool contiguous;	/* --contiguous			*/
-	char *nodelist;		/* --nodelist=node1,node2,...	*/
-	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-
-	/* BLUEGENE SPECIFIC */
-	uint16_t geometry[HIGHEST_DIMENSIONS]; /* --geometry, -g	*/
-	bool reboot;		/* --reboot			*/
-	bool no_rotate;		/* --no_rotate, -R		*/
-	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* --conn-type 	*/
-	char *blrtsimage;       /* --blrts-image BlrtsImage for block */
-	char *linuximage;       /* --linux-image LinuxImage for block */
-	char *mloaderimage;     /* --mloader-image mloaderImage for block */
-	char *ramdiskimage;     /* --ramdisk-image RamDiskImage for block */
-	/*********************/
-
-	char *array_inx;	/* -a, --array			*/
-	time_t begin;		/* --begin			*/
-	uint16_t mail_type;	/* --mail-type			*/
-	char *mail_user;	/* --mail-user			*/
-	char *ifname;		/* input file name		*/
-	char *ofname;		/* output file name		*/
-	char *efname;		/* error file name		*/
-	int get_user_env_time;	/* --get-user-env[=timeout]	*/
-	int get_user_env_mode;	/* --get-user-env=[S|L]         */
-	char *export_env;	/* --export			*/
-	char *export_file;	/* --export-file=file		*/
-	bool wait;		/* -W, --wait			*/
-	char *wckey;            /* --wckey workload characterization key */
-	char *reservation;      /* --reservation */
- 	int ckpt_interval;	/* --checkpoint (int minutes)   */
- 	char *ckpt_interval_str;/* --checkpoint (string)        */
- 	char *ckpt_dir;		/* --checkpoint-dir (string)    */
-	int req_switch;		/* Minimum number of switches   */
-	int wait4switch;	/* Maximum time to wait for minimum switches */
-	char **spank_job_env;	/* SPANK controlled environment for job
-				 * Prolog and Epilog		*/
-	int spank_job_env_size;	/* size of spank_job_env	*/
-	int umask;		/* job umask for PBS		*/
-	int core_spec;		/* --core-spec=n,      -S n	*/
-	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
-	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
-	uint32_t cpu_freq_gov;  /* cpu frequency governor */
-	bool test_only;		/* --test-only			*/
-	char *burst_buffer_file;/* --bbf			*/
-	uint8_t power_flags;	/* Power management options	*/
-	char *mcs_label;	/* mcs label if mcs plugin in use */
-	time_t deadline;	/* ---deadline                  */
-	uint32_t delay_boot;	/* --delay-boot			*/
-	uint16_t x11;		/* --x11			*/
-	char *x11_magic_cookie;	/* cookie retrieved from xauth */
-	/* no x11_target_host here, alloc_host will be equivalent */
-	uint16_t x11_target_port; /* target display TCP port on localhost */
-} opt_t;
+#include "src/common/slurm_opt.h"
 
 typedef struct sbatch_env_opts {
 	uint32_t cpus_per_task;
@@ -212,7 +67,8 @@ typedef struct sbatch_env_opts {
 	uint32_t plane_size;
 } sbatch_env_t;
 
-extern opt_t opt;
+extern slurm_opt_t opt;
+extern sbatch_opt_t sbopt;
 extern sbatch_env_t pack_env;
 extern int   error_exit;
 extern int   ignore_pbs;

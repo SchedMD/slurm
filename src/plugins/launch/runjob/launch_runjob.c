@@ -250,11 +250,13 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
+extern int launch_p_setup_srun_opt(char **rest, slurm_opt_t *opt_local)
 {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
 	int i;
 	int command_pos = 0;
 	uint32_t taskid = NO_VAL;
+	xassert(srun_opt);
 
 	if (opt_local->reboot) {
 		info("WARNING: If your job is smaller than the block "
@@ -268,10 +270,10 @@ extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 	 * A bit of setup for IBM's runjob.  runjob only has so many
 	 *  options, so it isn't that bad.
 	 */
-	if (!opt_local->test_only) {
+	if (!srun_opt->test_only) {
 	 	/*
-		 * Since we need the opt_local->argc to allocate the
-		 * opt_local->argv array we need to do this before actually
+		 * Since we need the srun_opt->argc to allocate the
+		 * srun_opt->argv array we need to do this before actually
 		 * messing with things. All the extra options added to argv
 		 * will be handled after the allocation.
 		 *
@@ -281,23 +283,23 @@ extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 		 */
 		command_pos = 7;
 
-		if (opt_local->cwd_set)
+		if (srun_opt->cwd_set)
 			command_pos += 2;
-		if (opt_local->labelio)
+		if (srun_opt->labelio)
 			command_pos += 2;
 		if (_verbose)
 			command_pos += 2;
 		if (opt_local->quiet)
 			command_pos += 2;
-		if (opt_local->ifname) {
-			if (!parse_uint32(opt_local->ifname, &taskid)
+		if (srun_opt->ifname) {
+			if (!parse_uint32(srun_opt->ifname, &taskid)
 			    && ((int) taskid < opt_local->ntasks)) {
 				command_pos += 2;
 			}
 		}
-		if (opt_local->launcher_opts) {
+		if (srun_opt->launcher_opts) {
 			char *save_ptr = NULL, *tok;
-			char *tmp = xstrdup(opt_local->launcher_opts);
+			char *tmp = xstrdup(srun_opt->launcher_opts);
 			tok = strtok_r(tmp, " ", &save_ptr);
 			while (tok) {
 				command_pos++;
@@ -306,9 +308,9 @@ extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 			xfree(tmp);
 		}
 
-		if (opt_local->export_env) {
-			for (i = 0; opt_local->export_env[i]; i++) {
-				if (opt_local->export_env[i] == ',')
+		if (srun_opt->export_env) {
+			for (i = 0; srun_opt->export_env[i]; i++) {
+				if (srun_opt->export_env[i] == ',')
 					command_pos++;
 			}
 			command_pos += 5;	/* baseline overhead */
@@ -317,76 +319,76 @@ extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 
 	/* We need to do +2 here just in case multi-prog is needed (we
 	 * add an extra argv on so just make space for it). */
-	opt_local->argv = (char **) xmalloc((sizeof(char *) *
-					    opt_local->argc + command_pos + 2) );
+	srun_opt->argv = xmalloc((sizeof(char *)
+				 * srun_opt->argc + command_pos + 2));
 
-	if (!opt_local->test_only) {
+	if (!srun_opt->test_only) {
 		i = 0;
 		/* First arg has to be something when sending it to the
 		   runjob api.  This can be anything, we put runjob
 		   here so --launch-cmd looks nice :), but it doesn't matter.
 		*/
-		opt_local->argv[i++] = xstrdup("runjob");
+		srun_opt->argv[i++] = xstrdup("runjob");
 		/* srun launches tasks using runjob API. Slurmd is not used */
 		/* We are always going to set ntasks_per_node and ntasks */
 		// if (opt_local->ntasks_per_node != NO_VAL) {
-		opt_local->argv[i++]  = xstrdup("-p");
-		opt_local->argv[i++]  = xstrdup_printf("%d",
+		srun_opt->argv[i++]  = xstrdup("-p");
+		srun_opt->argv[i++]  = xstrdup_printf("%d",
 						opt_local->ntasks_per_node);
 		// }
 
 		// if (opt_local->ntasks_set) {
-		opt_local->argv[i++]  = xstrdup("--np");
-		opt_local->argv[i++]  = xstrdup_printf("%d", opt_local->ntasks);
+		srun_opt->argv[i++]  = xstrdup("--np");
+		srun_opt->argv[i++]  = xstrdup_printf("%d", opt_local->ntasks);
 		// }
 
-		if (opt_local->cwd_set) {
-			opt_local->argv[i++]  = xstrdup("--cwd");
-			opt_local->argv[i++]  = xstrdup(opt_local->cwd);
+		if (srun_opt->cwd_set) {
+			srun_opt->argv[i++]  = xstrdup("--cwd");
+			srun_opt->argv[i++]  = xstrdup(opt_local->cwd);
 		}
 
-		if (opt_local->labelio) {
-			opt_local->argv[i++]  = xstrdup("--label");
-			opt_local->argv[i++]  = xstrdup("short");
+		if (srun_opt->labelio) {
+			srun_opt->argv[i++]  = xstrdup("--label");
+			srun_opt->argv[i++]  = xstrdup("short");
 			/* Since we are getting labels from runjob. and we
 			 * don't want 2 sets (slurm's will always be 000)
 			 * remove it case. */
-			opt_local->labelio = 0;
+			srun_opt->labelio = 0;
 		}
 
 		if (opt_local->quiet) {
-			opt_local->argv[i++]  = xstrdup("--verbose");
-			opt_local->argv[i++]  = xstrdup("OFF");
+			srun_opt->argv[i++]  = xstrdup("--verbose");
+			srun_opt->argv[i++]  = xstrdup("OFF");
 		}
 
 		if (_verbose) {
-			opt_local->argv[i++]  = xstrdup("--verbose");
-			opt_local->argv[i++]  = xstrdup_printf("%d", _verbose);
+			srun_opt->argv[i++]  = xstrdup("--verbose");
+			srun_opt->argv[i++]  = xstrdup_printf("%d", _verbose);
 		}
 
 		if (taskid != NO_VAL) {
-			opt_local->argv[i++]  = xstrdup("--stdinrank");
-			opt_local->argv[i++]  = xstrdup_printf("%u", taskid);
+			srun_opt->argv[i++]  = xstrdup("--stdinrank");
+			srun_opt->argv[i++]  = xstrdup_printf("%u", taskid);
 		}
 
-		if (opt_local->launcher_opts) {
+		if (srun_opt->launcher_opts) {
 			char *save_ptr = NULL, *tok;
-			char *tmp = xstrdup(opt_local->launcher_opts);
+			char *tmp = xstrdup(srun_opt->launcher_opts);
 			tok = strtok_r(tmp, " ", &save_ptr);
 			while (tok) {
-				opt_local->argv[i++]  = xstrdup(tok);
+				srun_opt->argv[i++]  = xstrdup(tok);
 				tok = strtok_r(NULL, " ", &save_ptr);
 			}
 			xfree(tmp);
 		}
 
-		if (opt_local->export_env) {
+		if (srun_opt->export_env) {
 			char *tmp_env, *tok, *save_ptr = NULL, *eq_ptr;
 			bool has_equal = false;
-			opt_local->argv[i++]  = xstrdup("--exp-env");
-			opt_local->argv[i++]  = xstrdup("SLURM_JOB_ID");
-			opt_local->argv[i++]  = xstrdup("SLURM_STEP_ID");
-			tmp_env = xstrdup(opt_local->export_env);
+			srun_opt->argv[i++]  = xstrdup("--exp-env");
+			srun_opt->argv[i++]  = xstrdup("SLURM_JOB_ID");
+			srun_opt->argv[i++]  = xstrdup("SLURM_STEP_ID");
+			tmp_env = xstrdup(srun_opt->export_env);
 			tok = strtok_r(tmp_env, ",", &save_ptr);
 			while (tok) {
 				if (!xstrcasecmp(tok, "NONE"))
@@ -395,18 +397,18 @@ extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 				if (eq_ptr)
 					has_equal = true;
 				else
-					opt_local->argv[i++]  = xstrdup(tok);
+					srun_opt->argv[i++]  = xstrdup(tok);
 				tok = strtok_r(NULL, ",", &save_ptr);
 			}
 			xfree(tmp_env);
 			if (has_equal) {
-				opt_local->argv[i++]  = xstrdup("--envs");
-				tmp_env = xstrdup(opt_local->export_env);
+				srun_opt->argv[i++]  = xstrdup("--envs");
+				tmp_env = xstrdup(srun_opt->export_env);
 				tok = strtok_r(tmp_env, ",", &save_ptr);
 				while (tok) {
 					eq_ptr = strchr(tok, '=');
 					if (eq_ptr)
-						opt_local->argv[i++]  = xstrdup(tok);
+						srun_opt->argv[i++]  = xstrdup(tok);
 					tok = strtok_r(NULL, ",", &save_ptr);
 				}
 				xfree(tmp_env);
@@ -415,42 +417,47 @@ extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 			/* Export all the environment so the
 			 * runjob_mux will get the correct info about
 			 * the job, namely the block. */
-			opt_local->argv[i++] = xstrdup("--env-all");
+			srun_opt->argv[i++] = xstrdup("--env-all");
 		}
 
 		/* With runjob anything after a ':' is treated as the actual
 		 * job, which in this case is exactly what it is.  So, very
 		 * sweet. */
-		opt_local->argv[i++] = xstrdup(":");
+		srun_opt->argv[i++] = xstrdup(":");
 		command_pos = i;
-		opt_local->argc += command_pos;
+		srun_opt->argc += command_pos;
 
 		/* Set default job name to the executable name rather than
 		 * "runjob" */
-		if (!opt_local->job_name_set_cmd &&
-		    (command_pos < opt_local->argc)) {
-			opt_local->job_name_set_cmd = true;
+		if (!srun_opt->job_name_set_cmd &&
+		    (command_pos < srun_opt->argc)) {
+			srun_opt->job_name_set_cmd = true;
 			opt_local->job_name = xstrdup(rest[0]);
 		}
 	}
 	return command_pos;
 }
 
-extern int launch_p_handle_multi_prog_verify(int command_posm, opt_t *opt_local)
+extern int launch_p_handle_multi_prog_verify(int command_posm,
+					     slurm_opt_t *opt_local)
 {
 	return 0;
 }
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local)
+				    sig_atomic_t *destroy_job,
+				    slurm_opt_t *opt_local)
 {
-	if (opt_local->launch_cmd) {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
+	xassert(srun_opt);
+
+	if (srun_opt->launch_cmd) {
 		int i = 0;
 		char *cmd_line = NULL;
 
-		while (opt_local->argv[i])
-			xstrfmtcat(cmd_line, "%s ", opt_local->argv[i++]);
+		while (srun_opt->argv[i])
+			xstrfmtcat(cmd_line, "%s ", srun_opt->argv[i++]);
 		printf("%s\n", cmd_line);
 		xfree(cmd_line);
 		exit(0);
@@ -463,15 +470,17 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				uint32_t *global_rc,
 				slurm_step_launch_callbacks_t *step_callbacks,
-				opt_t *opt_local)
+				slurm_opt_t *opt_local)
 {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
 	pthread_t msg_thread;
+	xassert(srun_opt);
 
 	local_srun_job = job;
 
 	msg_thread = _spawn_msg_handler();
 
-	*global_rc = runjob_launch(opt_local->argc, opt_local->argv,
+	*global_rc = runjob_launch(srun_opt->argc, srun_opt->argv,
 				   cio_fds->input.fd,
 				   cio_fds->out.fd,
 				   cio_fds->err.fd);
@@ -485,7 +494,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	return SLURM_SUCCESS;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc,
+			      slurm_opt_t *opt_local)
 {
 	return SLURM_SUCCESS;
 }

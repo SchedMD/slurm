@@ -613,7 +613,7 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 		verbose("mpi/pmi2: failed to find symbol 'opt'");
 		job_info.srun_opt = NULL;
 	} else {
-		job_info.srun_opt = (opt_t *)sym;
+		job_info.srun_opt = (slurm_opt_t *)sym;
 	}
 	dlclose(handle);
 

@@ -43,6 +43,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_xlator.h"
 #include "src/api/pmi_server.h"
 #include "src/srun/libsrun/allocate.h"
@@ -96,7 +97,7 @@ static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t pack_lock   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  start_cond  = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t start_mutex = PTHREAD_MUTEX_INITIALIZER;
-static opt_t *opt_save = NULL;
+static slurm_opt_t *opt_save = NULL;
 
 static List task_state_list = NULL;
 static time_t launch_start_time;
@@ -210,21 +211,24 @@ static void _update_task_exit_state(task_state_t task_state, uint32_t ntasks,
 
 static int _kill_on_bad_exit(void)
 {
-	if (!opt_save || (opt_save->kill_bad_exit == NO_VAL))
+	xassert(opt_save->srun_opt);
+	if (!opt_save || (opt_save->srun_opt->kill_bad_exit == NO_VAL))
 		return slurm_get_kill_on_bad_exit();
-	return opt_save->kill_bad_exit;
+	return opt_save->srun_opt->kill_bad_exit;
 }
 
 static void _setup_max_wait_timer(void)
 {
+	xassert(opt_save->srun_opt);
 	/*
 	 *  If these are the first tasks to finish we need to
 	 *   start a timer to kill off the job step if the other
-	 *   tasks don't finish within opt_save->max_wait seconds.
+	 *   tasks don't finish within opt_save->srun_opt->max_wait seconds.
 	 */
-	verbose("First task exited. Terminating job in %ds",opt_save->max_wait);
+	verbose("First task exited. Terminating job in %ds",
+		opt_save->srun_opt->max_wait);
 	srun_max_timer = true;
-	alarm(opt_save->max_wait);
+	alarm(opt_save->srun_opt->max_wait);
 }
 
 static const char *_taskstr(int n)
@@ -239,7 +243,7 @@ static int _is_openmpi_port_error(int errcode)
 {
 	if (errcode != OPEN_MPI_PORT_ERROR)
 		return 0;
-	if (opt_save && (opt_save->resv_port_cnt == NO_VAL))
+	if (opt_save && (opt_save->srun_opt->resv_port_cnt == NO_VAL))
 		return 0;
 	if (difftime(time(NULL), launch_start_time) > slurm_get_msg_timeout())
 		return 0;
@@ -451,7 +455,7 @@ static void _task_finish(task_exit_msg_t *msg)
 		(void) _step_signal(SIG_TERM_KILL);
 
 	if (task_state_first_exit(task_state_list) && opt_save &&
-	    (opt_save->max_wait > 0))
+	    (opt_save->srun_opt->max_wait > 0))
 		_setup_max_wait_timer();
 
 	last_task_exit_rc = msg->return_code;
@@ -523,33 +527,38 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
+extern int launch_p_setup_srun_opt(char **rest, slurm_opt_t *opt_local)
 {
-	if (opt_local->debugger_test && opt_local->parallel_debug)
-		MPIR_being_debugged  = 1;
+	srun_opt_t *srun_opt = opt_local->srun_opt;
+	xassert(srun_opt);
+	if (srun_opt->debugger_test && srun_opt->parallel_debug)
+		MPIR_being_debugged = 1;
 
 	/*
 	 * We need to do +2 here just in case multi-prog is needed
 	 * (we add an extra argv on so just make space for it).
 	 */
-	opt_local->argv = (char **) xmalloc((opt_local->argc + 2) *
-					    sizeof(char *));
+	srun_opt->argv = xmalloc((srun_opt->argc + 2) * sizeof(char *));
 
 	return 0;
 }
 
-extern int launch_p_handle_multi_prog_verify(int command_pos, opt_t *opt_local)
+extern int launch_p_handle_multi_prog_verify(int command_pos,
+					     slurm_opt_t *opt_local)
 {
-	if (opt_local->multi_prog) {
-		if (opt_local->argc < 1) {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
+	xassert(srun_opt);
+
+	if (srun_opt->multi_prog) {
+		if (srun_opt->argc < 1) {
 			error("configuration file not specified");
 			exit(error_exit);
 		}
-		_load_multi(&opt_local->argc, opt_local->argv);
-		if (verify_multi_name(opt_local->argv[command_pos],
+		_load_multi(&srun_opt->argc, srun_opt->argv);
+		if (verify_multi_name(srun_opt->argv[command_pos],
 				      &opt_local->ntasks,
 				      &opt_local->ntasks_set,
-				      &opt_local->multi_prog_cmds))
+				      &srun_opt->multi_prog_cmds))
 			exit(error_exit);
 		return 1;
 	} else
@@ -558,7 +567,7 @@ extern int launch_p_handle_multi_prog_verify(int command_pos, opt_t *opt_local)
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local)
+				    sig_atomic_t *destroy_job, slurm_opt_t *opt_local)
 {
 	if (launch_common_create_job_step(job, use_all_cpus,
 					  signal_function, destroy_job,
@@ -574,17 +583,19 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	return SLURM_SUCCESS;
 }
 
-static char **_build_user_env(srun_job_t *job, opt_t *opt_local)
+static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
 	char **dest_array = NULL;
 	char *tmp_env, *tok, *save_ptr = NULL, *eq_ptr, *value;
 	bool all;
+	xassert(srun_opt);
 
-	if (!opt_local->export_env) {
+	if (!srun_opt->export_env) {
 		all = true;
 	} else {
 		all = false;
-		tmp_env = xstrdup(opt_local->export_env);
+		tmp_env = xstrdup(srun_opt->export_env);
 		tok = strtok_r(tmp_env, ",", &save_ptr);
 		while (tok) {
 			if (xstrcasecmp(tok, "ALL") == 0)
@@ -629,17 +640,19 @@ static void _task_state_del(void *x)
 /*
  * Return only after all pack job components reach this point (or timeout)
  */
-static void _wait_all_pack_started(opt_t *opt_local)
+static void _wait_all_pack_started(slurm_opt_t *opt_local)
 {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
 	static int start_cnt = 0;
 	static int total_cnt = -1;
 	struct timeval  now;
 	struct timespec timeout;
 	int rc;
+	xassert(srun_opt);
 
 	slurm_mutex_lock(&start_mutex);
 	if (total_cnt == -1)
-		total_cnt = opt_local->pack_step_cnt;
+		total_cnt = srun_opt->pack_step_cnt;
 	start_cnt++;
 	while (start_cnt < total_cnt) {
 		gettimeofday(&now, NULL);
@@ -657,13 +670,15 @@ static void _wait_all_pack_started(opt_t *opt_local)
 extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				uint32_t *global_rc,
 				slurm_step_launch_callbacks_t *step_callbacks,
-				opt_t *opt_local)
+				slurm_opt_t *opt_local)
 {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
 	int rc = SLURM_SUCCESS;
 	task_state_t task_state;
 	bool first_launch = false;
+	xassert(srun_opt);
 
 	slurm_step_launch_params_t_init(&launch_params);
 	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
@@ -693,13 +708,13 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 
 	launch_params.gid = opt_local->gid;
 	launch_params.alias_list = job->alias_list;
-	launch_params.argc = opt_local->argc;
-	launch_params.argv = opt_local->argv;
-	launch_params.multi_prog = opt_local->multi_prog ? true : false;
+	launch_params.argc = srun_opt->argc;
+	launch_params.argv = srun_opt->argv;
+	launch_params.multi_prog = srun_opt->multi_prog ? true : false;
 	launch_params.cwd = opt_local->cwd;
-	launch_params.slurmd_debug = opt_local->slurmd_debug;
-	launch_params.buffered_stdio = !opt_local->unbuffered;
-	launch_params.labelio = opt_local->labelio ? true : false;
+	launch_params.slurmd_debug = srun_opt->slurmd_debug;
+	launch_params.buffered_stdio = !srun_opt->unbuffered;
+	launch_params.labelio = srun_opt->labelio ? true : false;
 	launch_params.remote_output_filename = fname_remote_string(job->ofname);
 	launch_params.remote_input_filename  = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename  = fname_remote_string(job->efname);
@@ -714,17 +729,17 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.pack_node_list = job->pack_node_list;
 	launch_params.partition = job->partition;
 	launch_params.profile = opt_local->profile;
-	launch_params.task_prolog = opt_local->task_prolog;
-	launch_params.task_epilog = opt_local->task_epilog;
-	launch_params.cpu_bind = opt_local->cpu_bind;
-	launch_params.cpu_bind_type = opt_local->cpu_bind_type;
+	launch_params.task_prolog = srun_opt->task_prolog;
+	launch_params.task_epilog = srun_opt->task_epilog;
+	launch_params.cpu_bind = srun_opt->cpu_bind;
+	launch_params.cpu_bind_type = srun_opt->cpu_bind_type;
 	launch_params.mem_bind = opt_local->mem_bind;
 	launch_params.mem_bind_type = opt_local->mem_bind_type;
-	launch_params.accel_bind_type = opt_local->accel_bind_type;
-	launch_params.open_mode = opt_local->open_mode;
+	launch_params.accel_bind_type = srun_opt->accel_bind_type;
+	launch_params.open_mode = srun_opt->open_mode;
 	if (opt_local->acctg_freq)
 		launch_params.acctg_freq = opt_local->acctg_freq;
-	launch_params.pty = opt_local->pty;
+	launch_params.pty = srun_opt->pty;
 	if (opt_local->cpus_set)
 		launch_params.cpus_per_task	= opt_local->cpus_per_task;
 	else
@@ -733,16 +748,16 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.cpu_freq_max       = opt_local->cpu_freq_max;
 	launch_params.cpu_freq_gov       = opt_local->cpu_freq_gov;
 	launch_params.task_dist          = opt_local->distribution;
-	launch_params.ckpt_dir		 = opt_local->ckpt_dir;
-	launch_params.restart_dir        = opt_local->restart_dir;
-	launch_params.preserve_env       = opt_local->preserve_env;
+	launch_params.ckpt_dir		 = srun_opt->ckpt_dir;
+	launch_params.restart_dir        = srun_opt->restart_dir;
+	launch_params.preserve_env       = srun_opt->preserve_env;
 	launch_params.spank_job_env      = opt_local->spank_job_env;
 	launch_params.spank_job_env_size = opt_local->spank_job_env_size;
-	launch_params.user_managed_io    = opt_local->user_managed_io;
+	launch_params.user_managed_io    = srun_opt->user_managed_io;
 	launch_params.ntasks_per_board   = job->ntasks_per_board;
 	launch_params.ntasks_per_core    = job->ntasks_per_core;
 	launch_params.ntasks_per_socket  = job->ntasks_per_socket;
-	launch_params.no_alloc           = opt_local->no_alloc;
+	launch_params.no_alloc           = srun_opt->no_alloc;
 	launch_params.env = _build_user_env(job, opt_local);
 
 	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
@@ -774,8 +789,11 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 			 * Save opt_local paramters since _task_finish()
 			 * will lack the values
 			 */
-			opt_save = xmalloc(sizeof(opt_t));
-			memcpy(opt_save, opt_local, sizeof(opt_t));
+			opt_save = xmalloc(sizeof(slurm_opt_t));
+			memcpy(opt_save, opt_local, sizeof(slurm_opt_t));
+			opt_save->srun_opt = xmalloc(sizeof(srun_opt_t));
+			memcpy(opt_save->srun_opt, srun_opt,
+			       sizeof(srun_opt_t));
 		}
 		slurm_mutex_unlock(&launch_lock);
 	}
@@ -784,7 +802,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_start_time = time(NULL);
 	if (first_launch) {
 		if (slurm_step_launch(job->step_ctx, &launch_params,		// CALL HERE
-				      &callbacks, opt_local->pack_step_cnt)
+				      &callbacks,
+				      srun_opt->pack_step_cnt)
 				!= SLURM_SUCCESS) {
 			rc = errno;
 			*local_global_rc = errno;
@@ -812,7 +831,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		/*
 		 * Only set up MPIR structures if the step launched correctly
 		 */
-		if (opt_local->multi_prog) {
+		if (srun_opt->multi_prog) {
 			mpir_set_multi_name(job->ntasks,
 					    launch_params.argv[0]);
 		} else {
@@ -823,9 +842,9 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 
 		_wait_all_pack_started(opt_local);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
-		if (opt_local->debugger_test)
+		if (srun_opt->debugger_test)
 			mpir_dump_proctable();
-		else if (opt_local->parallel_debug)
+		else if (srun_opt->parallel_debug)
 			MPIR_Breakpoint(job);
 	} else {
 		info("Job step %u.%u aborted before step completely launched.",
@@ -836,7 +855,7 @@ cleanup:
 	return rc;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, slurm_opt_t *opt_local)
 {
 	int rc = 0;
 

@@ -470,7 +470,7 @@ _exec_srun_single(spawn_req_t *req, char **env)
 	j = 0;
 	argv[j ++] = "srun";
 	argv[j ++] = "--mpi=pmi2";
-	if (job_info.srun_opt && job_info.srun_opt->no_alloc) {
+	if (job_info.srun_opt && job_info.srun_opt->srun_opt->no_alloc) {
 		argv[j ++] = "--no-alloc";
 		xstrfmtcat(argv[j ++], "--nodelist=%s",
 			   job_info.srun_opt->nodelist);
@@ -573,7 +573,7 @@ _exec_srun_multiple(spawn_req_t *req, char **env)
 	argv[j ++] = "srun";
 	argv[j ++] = "--mpi=pmi2";
 	xstrfmtcat(argv[j ++], "--ntasks=%d", ntasks);
-	if (job_info.srun_opt && job_info.srun_opt->no_alloc) {
+	if (job_info.srun_opt && job_info.srun_opt->srun_opt->no_alloc) {
 		argv[j ++] = "--no-alloc";
 		xstrfmtcat(argv[j ++], "--nodelist=%s",
 			   job_info.srun_opt->nodelist);
@@ -691,7 +691,7 @@ spawn_job_wait(void)
 	int exited, i, wait;
 
 	if (job_info.srun_opt) {
-		wait = job_info.srun_opt->max_wait;
+		wait = job_info.srun_opt->srun_opt->max_wait;
 	} else {
 		wait = 0;
 	}

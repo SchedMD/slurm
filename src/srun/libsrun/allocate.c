@@ -94,7 +94,7 @@ static uint32_t pending_job_id = 0;
 /*
  * Static Prototypes
  */
-static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local);
+static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local);
 static void _set_pending_job_id(uint32_t job_id);
 static void _signal_while_allocating(int signo);
 
@@ -426,7 +426,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 }
 #endif	/* HAVE_BG */
 
-static int _allocate_test(opt_t *opt_local)
+static int _allocate_test(slurm_opt_t *opt_local)
 {
 	job_desc_msg_t *j;
 	int rc;
@@ -452,11 +452,11 @@ extern int allocate_test(void)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator iter;
-	opt_t *opt_local;
+	slurm_opt_t *opt_local;
 
 	if (opt_list) {
 		iter = list_iterator_create(opt_list);
-		while ((opt_local = (opt_t *) list_next(iter))) {
+		while ((opt_local = list_next(iter))) {
 			if ((rc = _allocate_test(opt_local)) != SLURM_SUCCESS)
 				break;
  		}
@@ -477,16 +477,18 @@ extern int allocate_test(void)
  * be freed with slurm_free_resource_allocation_response_msg()
  */
 extern resource_allocation_response_msg_t *
-	allocate_nodes(bool handle_signals, opt_t *opt_local)
+	allocate_nodes(bool handle_signals, slurm_opt_t *opt_local)
 
 {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j;
 	slurm_allocation_callbacks_t callbacks;
 	int i;
 	char *line = NULL, *buf = NULL, *ptrptr = NULL;
+	xassert(srun_opt);
 
-	if (opt_local->relative_set && opt_local->relative)
+	if (srun_opt->relative_set && srun_opt->relative)
 		fatal("--relative option invalid for job allocation request");
 
 	if ((j = _job_desc_msg_create_from_opts(&opt)) == NULL)
@@ -639,17 +641,19 @@ List allocate_pack_nodes(bool handle_signals)
 	job_desc_msg_t *j, *first_job = NULL;
 	slurm_allocation_callbacks_t callbacks;
 	ListIterator opt_iter, resp_iter;
-	opt_t *opt_local, *first_opt = NULL;
+	slurm_opt_t *opt_local, *first_opt = NULL;
 	List job_req_list = NULL, job_resp_list = NULL;
 	uint32_t my_job_id = 0;
 	int i, k;
 
 	job_req_list = list_create(NULL);
 	opt_iter = list_iterator_create(opt_list);
-	while ((opt_local = (opt_t *) list_next(opt_iter))) {
+	while ((opt_local = list_next(opt_iter))) {
+		srun_opt_t *srun_opt = opt_local->srun_opt;
+		xassert(srun_opt);
 		if (!first_opt)
 			first_opt = opt_local;
-		if (opt_local->relative_set && opt_local->relative)
+		if (srun_opt->relative_set && srun_opt->relative)
 			fatal("--relative option invalid for job allocation request");
 
 		if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL)
@@ -726,7 +730,7 @@ List allocate_pack_nodes(bool handle_signals)
 
 		opt_iter  = list_iterator_create(opt_list);
 		resp_iter = list_iterator_create(job_resp_list);
-		while ((opt_local = (opt_t *) list_next(opt_iter))) {
+		while ((opt_local = list_next(opt_iter))) {
 			resp = (resource_allocation_response_msg_t *)
 			       list_next(resp_iter);
 			if (!resp)
@@ -836,7 +840,7 @@ extern List existing_allocation(void)
 
 	old_job_id = (uint32_t) opt.jobid;
 	if (slurm_pack_job_lookup(old_job_id, &job_resp_list) < 0) {
-		if (opt.parallel_debug || opt.jobid_set)
+		if (opt.srun_opt->parallel_debug || opt.jobid_set)
 			return NULL;    /* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE)
 			error("SLURM job %u has expired", old_job_id);
@@ -892,10 +896,12 @@ int slurmctld_msg_init(void)
  * Create job description structure based off srun options
  * (see opt.h)
  */
-static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local)
+static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 	hostlist_t hl = NULL;
+	xassert(srun_opt);
 
 	slurm_init_job_desc_msg(j);
 #if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
@@ -932,11 +938,11 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local)
 	if (opt_local->job_name)
 		j->name   = opt_local->job_name;
 	else
-		j->name   = opt_local->cmd_name;
-	if (opt_local->argc > 0) {
+		j->name = srun_opt->cmd_name;
+	if (srun_opt->argc > 0) {
 		j->argc    = 1;
 		j->argv    = (char **) xmalloc(sizeof(char *) * 2);
-		j->argv[0] = xstrdup(opt_local->argv[0]);
+		j->argv[0] = xstrdup(srun_opt->argv[0]);
 	}
 	if (opt_local->acctg_freq)
 		j->acctg_freq     = xstrdup(opt_local->acctg_freq);
@@ -980,7 +986,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local)
 		j->threads_per_core    = opt_local->threads_per_core;
 		/* if 1 always make sure affinity knows about it */
 		if (j->threads_per_core == 1)
-			opt_local->cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
+			srun_opt->cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
 	}
 	j->user_id        = opt_local->uid;
 	j->dependency     = opt_local->dependency;
@@ -988,10 +994,10 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local)
 		j->nice   = NICE_OFFSET + opt_local->nice;
 	if (opt_local->priority)
 		j->priority = opt_local->priority;
-	if (opt_local->cpu_bind)
-		j->cpu_bind       = opt_local->cpu_bind;
-	if (opt_local->cpu_bind_type)
-		j->cpu_bind_type  = opt_local->cpu_bind_type;
+	if (srun_opt->cpu_bind)
+		j->cpu_bind = srun_opt->cpu_bind;
+	if (srun_opt->cpu_bind_type)
+		j->cpu_bind_type = srun_opt->cpu_bind_type;
 	if (opt_local->delay_boot != NO_VAL)
 		j->delay_boot = opt_local->delay_boot;
 	if (opt_local->mem_bind)
@@ -1014,8 +1020,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local)
 
 	if (opt_local->mail_user)
 		j->mail_user = opt_local->mail_user;
-	if (opt_local->burst_buffer)
-		j->burst_buffer = opt_local->burst_buffer;
+	if (srun_opt->burst_buffer)
+		j->burst_buffer = srun_opt->burst_buffer;
 	if (opt_local->begin)
 		j->begin_time = opt_local->begin;
 	if (opt_local->deadline)
@@ -1072,7 +1078,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local)
 		j->max_nodes    = opt_local->min_nodes;
 	}
 	if (opt_local->pn_min_cpus != NO_VAL)
-		j->pn_min_cpus    = opt_local->pn_min_cpus;
+		j->pn_min_cpus = opt_local->pn_min_cpus;
 	if (opt_local->pn_min_memory != NO_VAL64)
 		j->pn_min_memory = opt_local->pn_min_memory;
 	else if (opt_local->mem_per_cpu != NO_VAL64)
@@ -1152,7 +1158,8 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 	}
 }
 
-extern int create_job_step(srun_job_t *job, bool use_all_cpus, opt_t *opt_local)
+extern int create_job_step(srun_job_t *job, bool use_all_cpus,
+			   slurm_opt_t *opt_local)
 {
 	return launch_g_create_job_step(job, use_all_cpus,
 					_signal_while_allocating,

@@ -980,12 +980,12 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	total_node_list = hostlist_ranged_string_xmalloc(total_hl);
 	node_cnt = hostlist_count(total_hl);
 
-	opt.argc = my_argc;
-	opt.argv = my_argv;
-	opt.user_managed_io = true;
+	sropt.argc = my_argc;
+	sropt.argv = my_argv;
+	sropt.user_managed_io = true;
 	/* Disable binding of the pvmd12 task so it has access to all resources
 	 * allocated to the job step and can use them for spawned tasks. */
-	opt.cpu_bind_type = CPU_BIND_NONE;
+	sropt.cpu_bind_type = CPU_BIND_NONE;
 	orig_task_num = task_num;
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
 						total_node_list,
@@ -1044,7 +1044,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	   dangling reference set here.  This shouldn't matter, but
 	   Clang reported it so we are making things quite here.
 	*/
-	opt.argv = NULL;
+	sropt.argv = NULL;
 	return 0;
 }
 
@@ -1403,7 +1403,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		setenv("SLURM_JOB_NODELIST", job->nodelist, 1);
 	}
 
-	if (!opt.preserve_env) {
+	if (!sropt.preserve_env) {
 		snprintf(value, sizeof(value), "%u", job->ntasks);
 		setenv("SLURM_NTASKS", value, 1);
 		snprintf(value, sizeof(value), "%u", job->nhosts);
@@ -1651,7 +1651,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 			xfree(opt.network);
 			if (adapter_use) {
 				if (!xstrcmp(adapter_use, "dedicated"))
-					opt.exclusive = true;
+					sropt.exclusive = true;
 				xfree(adapter_use);
 			}
 			if (collectives) {
@@ -1708,14 +1708,14 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	/* This has to be done after init_srun so as to not get over
 	   written. */
 	if (getenv("SLURM_PRESERVE_ENV"))
-		opt.preserve_env = true;
+		sropt.preserve_env = true;
 	if ((tmp_char = getenv("SRUN_EXC_NODES")))
 		opt.exc_nodes = xstrdup(tmp_char);
 	if ((tmp_char = getenv("SRUN_WITH_NODES")))
 		opt.nodelist = xstrdup(tmp_char);
 	if ((tmp_char = getenv("SRUN_RELATIVE"))) {
-		opt.relative = atoi(tmp_char);
-		opt.relative_set = 1;
+		sropt.relative = atoi(tmp_char);
+		sropt.relative_set = 1;
 	}
 
 	if (pm_type == PM_PMD) {
@@ -1746,7 +1746,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		job->jobid = job_id;
 		job->stepid = step_id;
 
-		opt.ifname = opt.ofname = opt.efname = "/dev/null";
+		sropt.ifname = sropt.ofname = sropt.efname = "/dev/null";
 		job_update_io_fnames(job, &opt);
 	} else if (pm_type == PM_POE) {
 		/* Create agent thread to forward job credential needed for

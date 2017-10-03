@@ -42,10 +42,6 @@
 
 #include "config.h"
 
-#ifndef SYSTEM_DIMENSIONS
-#  define SYSTEM_DIMENSIONS 1
-#endif
-
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
@@ -54,6 +50,7 @@
 #include "src/common/env.h"
 #include "src/common/list.h"
 #include "src/common/macros.h" /* true and false */
+#include "src/common/slurm_opt.h"
 
 #define DEFAULT_IMMEDIATE	1
 #define MAX_THREADS		60
@@ -64,217 +61,17 @@ extern int _verbose;
 
 extern enum modes mode;
 
-typedef struct srun_options {
-	char *clusters;		/* cluster to run this on. */
-	char *progname;		/* argv[0] of this program or
-				 * configuration file if multi_prog */
-	bool multi_prog;	/* multiple programs to execute */
-	int32_t multi_prog_cmds; /* number of commands in multi prog file */
-	char *user;		/* local username		*/
-	uid_t uid;		/* local uid			*/
-	gid_t gid;		/* local gid			*/
-	uid_t euid;		/* effective user --uid=user	*/
-	gid_t egid;		/* effective group --gid=group	*/
-	char *cwd;		/* current working directory	*/
-	bool cwd_set;		/* true if cwd is explicitly set */
-
-	int  ntasks;		/* --ntasks=n,      -n n	*/
-	bool ntasks_set;	/* true if ntasks explicitly set */
-	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
-	bool cpus_set;		/* true if cpus_per_task explicitly set */
-	int32_t max_threads;	/* --threads, -T (threads in srun) */
-	int32_t min_nodes;	/* --nodes=n,       -N n	*/
-	int32_t max_nodes;	/* --nodes=x-n,       -N x-n	*/
-	int32_t sockets_per_node; /* --sockets-per-node=n      */
-	int32_t cores_per_socket; /* --cores-per-socket=n      */
-	int32_t threads_per_core; /* --threads-per-core=n      */
-	bool threads_per_core_set;/* --threads-per-core set explicitly set */
-	int32_t ntasks_per_node;   /* --ntasks-per-node=n	*/
-	int32_t ntasks_per_socket; /* --ntasks-per-socket=n	*/
-	int ntasks_per_core;	/* --ntasks-per-core=n		*/
-	bool ntasks_per_core_set; /* --ntasks-per-core set explicitly set */
-	char *hint_env;		/* SLURM_HINT env var setting	*/
-	bool hint_set;		/* --hint set explicitly set	*/
-	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
-	bool cpu_bind_type_set;	/* --cpu_bind set explicitly set */
-	char *cpu_bind;		/* binding map for map/mask_cpu */
-	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
-	char *mem_bind;		/* binding map for map/mask_mem	*/
-	uint16_t accel_bind_type; /* --accel-bind= */
-	bool nodes_set;		/* true if nodes explicitly set */
-	bool nodes_set_env;	/* true if nodes set via SLURM_NNODES */
-	bool nodes_set_opt;	/* true if nodes explicitly set using
-				 * command line option */
-	bool extra_set;		/* true if extra node info explicitly set */
-	int  time_limit;	/* --time,   -t	(int minutes)	*/
-	char *time_limit_str;	/* --time,   -t (string)	*/
-	int  time_min;		/* --min-time   (int minutes)	*/
-	char *time_min_str;	/* --min-time (string)		*/
-	int  ckpt_interval;	/* --checkpoint (int minutes)	*/
-	char *ckpt_interval_str;/* --checkpoint (string)	*/
-	char *ckpt_dir;  	/* --checkpoint-dir (string)   */
-	bool exclusive;		/* --exclusive			*/
-	uint16_t compress;	/* --compress (for --bcast option) */
-	char *bcast_file;	/* --bcast, copy executable to compute nodes */
-	bool bcast_flag;	/* --bcast, copy executable to compute nodes */
-	int  resv_port_cnt;	/* --resv_ports			*/
-	char *partition;	/* --partition=n,   -p n   	*/
-	enum task_dist_states
-	        distribution;	/* --distribution=, -m dist	*/
-        uint32_t plane_size;    /* lllp distribution -> plane_size for
-				 * when -m plane=<# of lllp per
-				 * plane> */
-	char *cmd_name;		/* name of command to execute	*/
-	char *job_name;		/* --job-name=,     -J name	*/
-	bool job_name_set_cmd;	/* true if job_name set by cmd line option */
-	bool job_name_set_env;	/* true if job_name set by env var */
-	unsigned int jobid;     /* --jobid=jobid                */
-	bool jobid_set;		/* true if jobid explicitly set */
-	char *dependency;	/* --dependency, -P type:jobid	*/
-	int nice;		/* --nice			*/
-	uint32_t priority;	/* --priority */
-	char *account;		/* --account, -U acct_name	*/
-	char *comment;		/* --comment			*/
-	char *qos;		/* --qos			*/
-	char *ofname;		/* --output -o filename         */
-	char *ifname;		/* --input  -i filename         */
-	char *efname;		/* --error, -e filename         */
-
-	int  slurmd_debug;	/* --slurmd-debug, -D           */
-
-	/* no longer need these, they are set globally : 	*/
-	/*int verbose;*/	/* -v, --verbose		*/
-	/*int debug;*/		/* -d, --debug			*/
-
-	int immediate;		/* -I, --immediate=secs      	*/
-	uint16_t warn_flags;	/* --signal=flags:<int>@<time>	*/
-	uint16_t warn_signal;	/* --signal=flags:<int>@<time>	*/
-	uint16_t warn_time;	/* --signal=flags:<int>@<time>	*/
-
-	bool hold;		/* --hold, -H			*/
-	char *hostfile;         /* location of hostfile if there is one */
-	bool labelio;		/* --label-output, -l		*/
-	bool unbuffered;        /* --unbuffered,   -u           */
-	bool allocate;		/* --allocate, 	   -A		*/
-	bool noshell;		/* --no-shell                   */
-	bool overcommit;	/* --overcommit,   -O		*/
-	bool no_kill;		/* --no-kill, -k		*/
-	int32_t kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
-	uint16_t shared;	/* --share,   -s		*/
-	int  max_wait;		/* --wait,    -W		*/
-	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
-	bool disable_status;    /* --disable-status, -X         */
-	int  quiet;
-	bool parallel_debug;	/* srun controlled by debugger	*/
-	bool debugger_test;	/* --debugger-test		*/
-	bool test_only;		/* --test-only			*/
-	uint32_t profile;	/* --profile=[all | none}       */
-	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
-	char *task_epilog;	/* --task-epilog=		*/
-	char *task_prolog;	/* --task-prolog=		*/
-	char *licenses;		/* --licenses, -L		*/
-	bool preserve_env;	/* --preserve-env		*/
-	char *export_env;	/* --export			*/
-
-	/* constraint options */
-	int32_t pn_min_cpus;	/* --mincpus=n			*/
-	int64_t pn_min_memory;	/* --mem=n			*/
-	int64_t mem_per_cpu;	/* --mem-per-cpu=n		*/
-	long pn_min_tmp_disk;	/* --tmp=n			*/
-	char *constraints;	/* --constraints=, -C constraint*/
-	char *c_constraints;	/* --cluster-constraints=       */
-	char *gres;		/* --gres=			*/
-	bool contiguous;	/* --contiguous			*/
-	char *nodelist;		/* --nodelist=node1,node2,...	*/
-	char *alloc_nodelist;   /* grabbed from the environment */
-	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-	int  relative;		/* --relative -r N              */
-	bool relative_set;
-	bool no_alloc;		/* --no-allocate, -Z		*/
-	int  max_launch_time;   /* Undocumented                 */
-	int  max_exit_timeout;  /* Undocumented                 */
-	int  msg_timeout;       /* Undocumented                 */
-	bool launch_cmd;        /* --launch_cmd                 */
-	char *launcher_opts;	/* --launcher-opts commands to be sent
-				 * to the external launcher command if
-				 * not SLURM */
-	char *network;		/* --network=			*/
-	bool network_set_env;	/* true if network set by env var */
-
-	/* BLUEGENE SPECIFIC */
-	uint16_t geometry[HIGHEST_DIMENSIONS]; /* --geometry, -g */
-	bool reboot;		/* --reboot			*/
-	bool no_rotate;		/* --no_rotate, -R		*/
-	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* --conn-type 	*/
-	char *blrtsimage;       /* --blrtsimage BlrtsImage for block */
-	char *linuximage;       /* --linuximage LinuxImage for block */
-	char *mloaderimage;     /* --mloaderimage mloaderImage for block */
-	char *ramdiskimage;     /* --ramdiskimage RamDiskImage for block */
-	/*********************/
-
-	char *prolog;           /* --prolog                     */
-	char *epilog;           /* --epilog                     */
-	time_t begin;		/* --begin			*/
-	uint16_t mail_type;	/* --mail-type			*/
-	char *mail_user;	/* --mail-user			*/
-	uint8_t open_mode;	/* --open-mode=append|truncate	*/
-	char *acctg_freq;	/* --acctg-freq=<type1>=<freq1>,*/
-				/* 	<type2>=<freq2>,...	*/
-	bool pty;		/* --pty			*/
-	char *restart_dir;	/* --restart                    */
-	int argc;		/* length of argv array		*/
-	char **argv;		/* left over on command line	*/
-	char *wckey;            /* --wckey workload characterization key */
-	char *reservation;      /* --reservation		*/
-	char **spank_job_env;	/* SPANK controlled environment for job
-				 * Prolog and Epilog		*/
-	int spank_job_env_size;	/* size of spank_job_env	*/
-	int req_switch;		/* Minimum number of switches	*/
-	int wait4switch;	/* Maximum time to wait for minimum switches */
-	bool user_managed_io;   /* 0 for "normal" IO, 1 for "user manged" IO */
-	int core_spec;		/* --core-spec=n,      -S n	*/
-	bool core_spec_set;	/* true if core_spec explicitly set */
-	char *burst_buffer;	/* -bb				*/
-	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
-	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
-	uint32_t cpu_freq_gov;  /* cpu frequency governor */
-	uint8_t power_flags;	/* Power management options	*/
-	char *mcs_label;	/* mcs label if mcs plugin in use */
-	time_t deadline; 	/* --deadline                   */
-	uint32_t job_flags;	/* --gres-flags */
-	uint32_t delay_boot;	/* --delay-boot			*/
-	char *pack_group;	/* --pack-group			*/
-	bitstr_t *pack_grp_bits;/* --pack-group	in bitmap form	*/
-	int pack_step_cnt;	/* Total count of pack groups to launch */
-	uint16_t x11;           /* --x11			*/
-	char *x11_magic_cookie; /* cookie retrieved from xauth */
-	/* no x11_target_host here, alloc_host will be equivalent */
-	uint16_t x11_target_port; /* target display TCP port on localhost */
-} opt_t;
-
 extern int	error_exit;	/* exit code for slurm errors */
 extern resource_allocation_response_msg_t *global_resp;
 extern int	immediate_exit;	/* exit code for --imediate option & busy */
 extern char *	mpi_type;
-extern opt_t	opt;
+extern slurm_opt_t opt;
+extern srun_opt_t sropt;
 extern List	opt_list;
 extern int	sig_array[];
 extern time_t	srun_begin_time; /* begin time of srun process */
 extern bool	srun_max_timer;
 extern bool	srun_shutdown;
-
-/* return whether any constraints were specified by the user
- * (if new constraints are added above, might want to add them to this
- *  macro or move this to a function if it gets a little complicated)
- */
-#define constraints_given() ((opt.pn_min_cpus     != NO_VAL) || \
-			     (opt.pn_min_memory   != NO_VAL64) || \
-			     (opt.job_max_memory  != NO_VAL64) || \
-			     (opt.pn_min_tmp_disk != NO_VAL) || \
-			     (opt.pn_min_sockets  != NO_VAL) || \
-			     (opt.pn_min_cores    != NO_VAL) || \
-			     (opt.pn_min_threads  != NO_VAL) || \
-			     (opt.contiguous))
 
 /*
  * process options:
@@ -305,7 +102,7 @@ extern void init_spank_env(void);
  * pack_offset IN - Offset into pack job, -1 if regular job, -2 to reset
  * RET - Pointer to next matching option structure or NULL if none found
  */
-extern opt_t *get_next_opt(int pack_offset);
+extern slurm_opt_t *get_next_opt(int pack_offset);
 
 /*
  * Return maximum pack_group value for any step launch option request

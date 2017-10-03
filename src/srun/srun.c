@@ -67,6 +67,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/switch.h"
@@ -110,7 +111,7 @@ typedef struct _launch_app_data
 {
 	bool		got_alloc;
 	srun_job_t *	job;
-	opt_t *		opt_local;
+	slurm_opt_t	*opt_local;
 	int *		step_cnt;
 	pthread_cond_t *step_cond;
 	pthread_mutex_t *step_mutex;
@@ -119,7 +120,7 @@ typedef struct _launch_app_data
 /*
  * forward declaration of static funcs
  */
-static int   _file_bcast(opt_t *opt_local, srun_job_t *job);
+static int   _file_bcast(slurm_opt_t *opt_local, srun_job_t *job);
 static void  _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc);
 static void *_launch_one_app(void *data);
 static void  _pty_restore(void);
@@ -128,7 +129,7 @@ static void  _set_node_alias(void);
 static void  _setup_env_working_cluster(void);
 static void  _setup_job_env(srun_job_t *job, List srun_job_list,
 			    bool got_alloc);
-static void  _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
+static void  _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 				bool got_alloc);
 static int   _slurm_debug_env_val (void);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
@@ -212,7 +213,7 @@ static void *_launch_one_app(void *data)
 	static bool            launch_begin = false;
 	static bool            launch_fini  = false;
 	_launch_app_data_t *opts = (_launch_app_data_t *) data;
-	opt_t *opt_local = opts->opt_local;
+	slurm_opt_t *opt_local = opts->opt_local;
 	srun_job_t *job  = opts->job;
 	bool got_alloc   = opts->got_alloc;
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
@@ -339,7 +340,7 @@ fini:	hostlist_destroy(in_hl);
 static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 {
 	ListIterator opt_iter, job_iter;
-	opt_t *opt_local = NULL;
+	slurm_opt_t *opt_local = NULL;
 	_launch_app_data_t *opts;
 	int total_ntasks = 0, total_nnodes = 0, step_cnt = 0, node_offset = 0;
 	pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -427,7 +428,9 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			mpir_init(total_ntasks);
 
 		opt_iter = list_iterator_create(opt_list);
-		while ((opt_local = (opt_t *) list_next(opt_iter))) {
+		while ((opt_local = list_next(opt_iter))) {
+			srun_opt_t *srun_opt = opt_local->srun_opt;
+			xassert(srun_opt);
 			job = (srun_job_t *) list_next(job_iter);
 			if (!job) {
 				slurm_mutex_lock(&step_mutex);
@@ -466,7 +469,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			opts->step_cond   = &step_cond;
 			opts->step_cnt    = &step_cnt;
 			opts->step_mutex  = &step_mutex;
-			opt_local->pack_step_cnt = pack_step_cnt;
+			srun_opt->pack_step_cnt = pack_step_cnt;
 
 			slurm_thread_create_detached(NULL, _launch_one_app,
 						     opts);
@@ -489,17 +492,19 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		opts->got_alloc   = got_alloc;
 		opts->job         = job;
 		opts->opt_local   = &opt;
-		opt.pack_step_cnt = 1;
+		sropt.pack_step_cnt = 1;
 		_launch_one_app(opts);
 		fini_srun(job, got_alloc, &global_rc, 0);
 	}
 }
 
-static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
+static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 			       bool got_alloc)
 {
 	env_t *env = xmalloc(sizeof(env_t));
 	uint16_t *tasks = NULL;
+	srun_opt_t *srun_opt = opt_local->srun_opt;
+	xassert(srun_opt);
 
 	xassert(job);
 
@@ -508,7 +513,7 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 	env->procid  = -1;
 	env->stepid  = -1;
 
-	if (opt_local->bcast_flag)
+	if (srun_opt->bcast_flag)
 		_file_bcast(opt_local, job);
 	if (opt_local->cpus_set)
 		env->cpus_per_task = opt_local->cpus_per_task;
@@ -521,8 +526,8 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 	env->distribution = opt_local->distribution;
 	if (opt_local->plane_size != NO_VAL)
 		env->plane_size = opt_local->plane_size;
-	env->cpu_bind_type = opt_local->cpu_bind_type;
-	env->cpu_bind = opt_local->cpu_bind;
+	env->cpu_bind_type = srun_opt->cpu_bind_type;
+	env->cpu_bind = srun_opt->cpu_bind;
 
 	env->cpu_freq_min = opt_local->cpu_freq_min;
 	env->cpu_freq_max = opt_local->cpu_freq_max;
@@ -530,8 +535,8 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 	env->mem_bind_type = opt_local->mem_bind_type;
 	env->mem_bind = opt_local->mem_bind;
 	env->overcommit = opt_local->overcommit;
-	env->slurmd_debug = opt_local->slurmd_debug;
-	env->labelio = opt_local->labelio;
+	env->slurmd_debug = srun_opt->slurmd_debug;
+	env->labelio = srun_opt->labelio;
 	env->comm_port = slurmctld_comm_addr.port;
 	if (opt_local->job_name)
 		env->job_name = opt_local->job_name;
@@ -562,11 +567,11 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 	env->qos = job->qos;
 	env->resv_name = job->resv_name;
 
-	if (opt_local->pty && (set_winsize(job) < 0)) {
+	if (srun_opt->pty && (set_winsize(job) < 0)) {
 		error("Not using a pseudo-terminal, disregarding --pty option");
-		opt_local->pty = false;
+		srun_opt->pty = false;
 	}
-	if (opt_local->pty) {
+	if (srun_opt->pty) {
 		struct termios term;
 		int fd = STDIN_FILENO;
 
@@ -589,7 +594,7 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 	}
 
 	env->env = env_array_copy((const char **) environ);
-	setup_env(env, opt_local->preserve_env);
+	setup_env(env, srun_opt->preserve_env);
 	job->env = env->env;
 	xfree(env->task_count);
 	xfree(env);
@@ -598,7 +603,7 @@ static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
 static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 {
 	ListIterator opt_iter, job_iter;
-	opt_t *opt_local;
+	slurm_opt_t *opt_local;
 
 	if (srun_job_list) {
 		srun_job_t *first_job = list_peek(srun_job_list);
@@ -610,7 +615,7 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 		}
 		job_iter  = list_iterator_create(srun_job_list);
 		opt_iter  = list_iterator_create(opt_list);
-		while ((opt_local = (opt_t *) list_next(opt_iter))) {
+		while ((opt_local = list_next(opt_iter))) {
 			job = (srun_job_t *) list_next(job_iter);
 			if (!job) {
 				if (first_job) {
@@ -632,20 +637,22 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 	}
 }
 
-static int _file_bcast(opt_t *opt_local, srun_job_t *job)
+static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 {
+	srun_opt_t *srun_opt = opt_local->srun_opt;
 	struct bcast_parameters *params;
 	int rc;
+	xassert(srun_opt);
 
-	if ((opt_local->argc == 0) || (opt_local->argv[0] == NULL)) {
+	if ((srun_opt->argc == 0) || (srun_opt->argv[0] == NULL)) {
 		error("No command name to broadcast");
 		return SLURM_ERROR;
 	}
 	params = xmalloc(sizeof(struct bcast_parameters));
 	params->block_size = 8 * 1024 * 1024;
-	params->compress = opt_local->compress;
-	if (opt_local->bcast_file) {
-		params->dst_fname = xstrdup(opt_local->bcast_file);
+	params->compress = srun_opt->compress;
+	if (srun_opt->bcast_file) {
+		params->dst_fname = xstrdup(srun_opt->bcast_file);
 	} else {
 		xstrfmtcat(params->dst_fname, "%s/slurm_bcast_%u.%u",
 			   opt_local->cwd, job->jobid, job->stepid);
@@ -653,20 +660,20 @@ static int _file_bcast(opt_t *opt_local, srun_job_t *job)
 	params->fanout = 0;
 	params->job_id = job->jobid;
 	params->force = true;
-	if (opt_local->pack_grp_bits)
-		params->pack_job_offset = bit_ffs(opt_local->pack_grp_bits);
+	if (srun_opt->pack_grp_bits)
+		params->pack_job_offset = bit_ffs(srun_opt->pack_grp_bits);
 	else
 		params->pack_job_offset = NO_VAL;
 	params->preserve = true;
-	params->src_fname = opt_local->argv[0];
+	params->src_fname = srun_opt->argv[0];
 	params->step_id = job->stepid;
 	params->timeout = 0;
 	params->verbose = 0;
 
 	rc = bcast_file(params);
 	if (rc == SLURM_SUCCESS) {
-		xfree(opt_local->argv[0]);
-		opt_local->argv[0] = params->dst_fname;
+		xfree(srun_opt->argv[0]);
+		srun_opt->argv[0] = params->dst_fname;
 	} else {
 		xfree(params->dst_fname);
 	}

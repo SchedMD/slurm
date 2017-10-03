@@ -216,7 +216,8 @@ resource_allocation_response_msg_t *global_resp = NULL;
 int	error_exit = 1;
 int	immediate_exit = 1;
 char *	mpi_type = NULL;
-opt_t	opt;
+slurm_opt_t opt;
+srun_opt_t sropt;
 List 	opt_list = NULL;
 int	pass_number = 0;
 time_t	srun_begin_time = 0;
@@ -363,8 +364,8 @@ char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:M:n:N:"
 		   "o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
 
 
-static opt_t *_get_first_opt(int pack_offset);
-static opt_t *_get_next_opt(int pack_offset, opt_t *opt_last);
+static slurm_opt_t *_get_first_opt(int pack_offset);
+static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last);
 
 static int  _get_task_count(void);
 
@@ -404,28 +405,29 @@ static bool  _valid_node_list(char **node_list_pptr);
  * pack_offset IN - Offset into pack job or -1 if regular job
  * RET - Pointer to option structure or NULL if none found
  */
-static opt_t *_get_first_opt(int pack_offset)
+static slurm_opt_t *_get_first_opt(int pack_offset)
 {
 	ListIterator opt_iter;
-	opt_t *opt_local;
+	slurm_opt_t *opt_local;
 
 	if (!opt_list) {
-		if (!opt.pack_grp_bits && (pack_offset == -1))
+		if (!sropt.pack_grp_bits && (pack_offset == -1))
 			return &opt;
-		if (opt.pack_grp_bits &&
+		if (sropt.pack_grp_bits &&
 		    (pack_offset >= 0) &&
-		    (pack_offset < bit_size(opt.pack_grp_bits)) &&
-		    bit_test(opt.pack_grp_bits, pack_offset))
+		    (pack_offset < bit_size(sropt.pack_grp_bits)) &&
+		    bit_test(sropt.pack_grp_bits, pack_offset))
 			return &opt;
 		return NULL;
 	}
 
 	opt_iter = list_iterator_create(opt_list);
-	while ((opt_local = (opt_t *) list_next(opt_iter))) {
-		if (opt_local->pack_grp_bits &&
-		    (pack_offset >= 0) &&
-		    (pack_offset < bit_size(opt_local->pack_grp_bits)) &&
-		    bit_test(opt_local->pack_grp_bits, pack_offset))
+	while ((opt_local = list_next(opt_iter))) {
+		srun_opt_t *srun_opt = opt_local->srun_opt;
+		xassert(srun_opt);
+		if (srun_opt->pack_grp_bits && (pack_offset >= 0)
+		    && (pack_offset < bit_size(srun_opt->pack_grp_bits))
+		    && bit_test(srun_opt->pack_grp_bits, pack_offset))
 			break;
 	}
 	list_iterator_destroy(opt_iter);
@@ -439,27 +441,28 @@ static opt_t *_get_first_opt(int pack_offset)
  * opt_last IN - past option structure found for this pack offset
  * RET - Pointer to option structure or NULL if none found
  */
-static opt_t *_get_next_opt(int pack_offset, opt_t *opt_last)
+static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last)
 {
 	ListIterator opt_iter;
-	opt_t *opt_local;
+	slurm_opt_t *opt_local;
 	bool found_last = false;
 
 	if (!opt_list)
 		return NULL;
 
 	opt_iter = list_iterator_create(opt_list);
-	while ((opt_local = (opt_t *) list_next(opt_iter))) {
+	while ((opt_local = list_next(opt_iter))) {
+		srun_opt_t *srun_opt = opt_local->srun_opt;
+		xassert(srun_opt);
 		if (!found_last) {
 			if (opt_last == opt_local)
 				found_last = true;
 			continue;
 		}
 
-		if (opt_local->pack_grp_bits &&
-		    (pack_offset >= 0) &&
-		    (pack_offset < bit_size(opt_local->pack_grp_bits)) &&
-		    bit_test(opt_local->pack_grp_bits, pack_offset))
+		if (srun_opt->pack_grp_bits && (pack_offset >= 0)
+		    && (pack_offset < bit_size(srun_opt->pack_grp_bits))
+		    && bit_test(srun_opt->pack_grp_bits, pack_offset))
 			break;
 	}
 	list_iterator_destroy(opt_iter);
@@ -472,10 +475,10 @@ static opt_t *_get_next_opt(int pack_offset, opt_t *opt_last)
  * pack_offset IN - Offset into pack job, -1 if regular job, -2 to reset
  * RET - Pointer to next matching option structure or NULL if none found
  */
-extern opt_t *get_next_opt(int pack_offset)
+extern slurm_opt_t *get_next_opt(int pack_offset)
 {
 	static int offset_last = -2;
-	static opt_t *opt_last = NULL;
+	static slurm_opt_t *opt_last = NULL;
 
 	if (pack_offset == -2) {
 		offset_last = -2;
@@ -498,33 +501,37 @@ extern opt_t *get_next_opt(int pack_offset)
 extern int get_max_pack_group(void)
 {
 	ListIterator opt_iter;
-	opt_t *opt_local;
+	slurm_opt_t *opt_local;
 	int max_pack_offset = 0, pack_offset = 0;
 
 	if (opt_list) {
 		opt_iter = list_iterator_create(opt_list);
-		while ((opt_local = (opt_t *) list_next(opt_iter))) {
-			if (opt_local->pack_grp_bits)
-				pack_offset = bit_fls(opt_local->pack_grp_bits);
+		while ((opt_local = list_next(opt_iter))) {
+			srun_opt_t *srun_opt = opt_local->srun_opt;
+			xassert(srun_opt);
+			if (srun_opt->pack_grp_bits)
+				pack_offset = bit_fls(srun_opt->pack_grp_bits);
 			if (pack_offset >= max_pack_offset)
 				max_pack_offset = pack_offset;
 		}
 		list_iterator_destroy(opt_iter);
 	} else {
-		if (opt.pack_grp_bits)
-			max_pack_offset = bit_fls(opt.pack_grp_bits);
+		if (sropt.pack_grp_bits)
+			max_pack_offset = bit_fls(sropt.pack_grp_bits);
 	}
 
 	return max_pack_offset;
 }
 
-static opt_t *_opt_copy(void)
+static slurm_opt_t *_opt_copy(void)
 {
-	opt_t *opt_dup;
+	slurm_opt_t *opt_dup;
 
-	opt_dup = xmalloc(sizeof(opt_t));
-	memcpy(opt_dup, &opt, sizeof(opt_t));
-	opt_dup->cmd_name = xstrdup(opt.cmd_name);
+	opt_dup = xmalloc(sizeof(slurm_opt_t));
+	memcpy(opt_dup, &opt, sizeof(slurm_opt_t));
+	opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
+	memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
+	opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
 
 	return opt_dup;
 }
@@ -580,7 +587,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		if (_verbose)
 			_opt_list();
 
-		if (opt.launch_cmd) {
+		if (sropt.launch_cmd) {
 			char *launch_type = slurm_get_launch_type();
 			if (!xstrcmp(launch_type, "launch/slurm")) {
 				error("--launch-cmd option is invalid with %s",
@@ -604,9 +611,11 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	bit_free(pack_grp_bits);
 
 	if (opt_list && pending_append) {		/* Last record */
-		opt_t *opt_dup;
-		opt_dup = xmalloc(sizeof(opt_t));
-		memcpy(opt_dup, &opt, sizeof(opt_t));
+		slurm_opt_t *opt_dup;
+		opt_dup = xmalloc(sizeof(slurm_opt_t));
+		memcpy(opt_dup, &opt, sizeof(slurm_opt_t));
+		opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
+		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
 		list_append(opt_list, opt_dup);
 		pending_append = false;
 	}
@@ -711,85 +720,88 @@ static void _opt_default(void)
 	uid_t uid = getuid();
 
 	if (pass_number == 1) {
+		opt.salloc_opt = NULL;
+		opt.sbatch_opt = NULL;
+		opt.srun_opt = &sropt;
 		xfree(opt.account);
 		xfree(opt.acctg_freq);
-		opt.allocate		= false;
+		sropt.allocate		= false;
 		opt.begin		= (time_t) 0;
 		xfree(opt.c_constraints);
-		xfree(opt.ckpt_dir);
-		opt.ckpt_dir			= slurm_get_checkpoint_dir();
-		opt.ckpt_interval		= 0;
-		xfree(opt.ckpt_interval_str);
+		xfree(sropt.ckpt_dir);
+		sropt.ckpt_dir			= slurm_get_checkpoint_dir();
+		sropt.ckpt_interval		= 0;
+		xfree(sropt.ckpt_interval_str);
 		xfree(opt.clusters);
-		xfree(opt.cmd_name);
+		xfree(sropt.cmd_name);
 		xfree(opt.comment);
 		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
 			error("getcwd failed: %m");
 			exit(error_exit);
 		}
 		opt.cwd			= xstrdup(buf);
-		opt.cwd_set		= false;
+		sropt.cwd_set		= false;
 		opt.deadline		= 0;
-		opt.debugger_test	= false;
+		sropt.debugger_test	= false;
 		opt.delay_boot		= NO_VAL;
 		xfree(opt.dependency);
-		opt.disable_status	= false;
+		sropt.disable_status	= false;
 		opt.distribution	= SLURM_DIST_UNKNOWN;
 		opt.egid		= (gid_t) -1;
-		xfree(opt.efname);
-		xfree(opt.epilog);
-		opt.epilog		= slurm_get_srun_epilog();
+		xfree(sropt.efname);
+		xfree(sropt.epilog);
+		sropt.epilog		= slurm_get_srun_epilog();
 		xfree(opt.exc_nodes);
-		xfree(opt.export_env);
+		xfree(sropt.export_env);
 		opt.euid		= (uid_t) -1;
 		opt.gid			= getgid();
 		opt.hold		= false;
-		xfree(opt.ifname);
+		xfree(sropt.ifname);
 		opt.immediate		= 0;
 		opt.jobid		= NO_VAL;
 		opt.jobid_set		= false;
 		xfree(opt.job_name);
-		opt.job_name_set_cmd	= false;
-		opt.job_name_set_env	= false;
-		opt.kill_bad_exit	= NO_VAL;
-		opt.labelio		= false;
-		opt.max_exit_timeout	= 60; /* Warn user 60 sec after task exit */
-		opt.max_wait		= slurm_get_wait_time();
+		sropt.job_name_set_cmd	= false;
+		sropt.job_name_set_env	= false;
+		sropt.kill_bad_exit	= NO_VAL;
+		sropt.labelio		= false;
+		sropt.max_exit_timeout	= 60; /* Warn user 60 sec after task exit */
+		sropt.max_wait		= slurm_get_wait_time();
 		xfree(opt.mcs_label);
 		/* Default launch msg timeout           */
-		opt.msg_timeout		= slurm_get_msg_timeout();
+		sropt.msg_timeout		= slurm_get_msg_timeout();
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
-		opt.no_alloc		= false;
-		opt.noshell		= false;
-		xfree(opt.ofname);
-		opt.open_mode		= 0;
-		opt.parallel_debug	= false;
-		opt.pty			= false;
-		opt.preserve_env	= false;
+		sropt.no_alloc		= false;
+		sropt.noshell		= false;
+		xfree(sropt.ofname);
+		sropt.open_mode		= 0;
+		sropt.parallel_debug	= false;
+		sropt.pty			= false;
+		sropt.preserve_env	= false;
 		opt.priority		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		xfree(opt.progname);
-		xfree(opt.prolog);
-		opt.prolog		= slurm_get_srun_prolog();
-		xfree(opt.propagate); 	 /* propagate specific rlimits */
-		opt.quit_on_intr	= false;
+		xfree(sropt.prolog);
+		sropt.prolog		= slurm_get_srun_prolog();
+		xfree(sropt.propagate); 	 /* propagate specific rlimits */
+		sropt.quit_on_intr	= false;
 		xfree(opt.qos);
 		opt.quiet		= 0;
 		opt.reboot		= false;
 		xfree(opt.reservation);
-		opt.slurmd_debug	= LOG_LEVEL_QUIET;
-		xfree(opt.task_epilog);
-		xfree(opt.task_prolog);
-		opt.test_only		= false;
+		sropt.slurmd_debug	= LOG_LEVEL_QUIET;
+		xfree(sropt.task_epilog);
+		xfree(sropt.task_prolog);
+		sropt.test_only		= false;
 		opt.time_limit		= NO_VAL;
 		xfree(opt.time_limit_str);
 		opt.time_min		= NO_VAL;
 		xfree(opt.time_min_str);
 		opt.uid			= uid;
-		opt.unbuffered		= false;
+		sropt.unbuffered	= false;
 		opt.user		= uid_to_string(uid);
-		opt.user_managed_io	= false;
+		sropt.user_managed_io	= false;
 		if (xstrcmp(opt.user, "nobody") == 0)
 			fatal("Invalid user id: %u", uid);
 		opt.warn_flags		= 0;
@@ -803,28 +815,28 @@ static void _opt_default(void)
 	 * All other options must be specified individually for each component
 	 * of the job. Do not use xfree() as the pointers have been copied
 	 */
-	opt.alloc_nodelist		= NULL;
-	opt.accel_bind_type		= 0;
-	opt.bcast_file			= NULL;
-	opt.bcast_flag			= false;
-	opt.accel_bind_type		= 0;
+	sropt.alloc_nodelist		= NULL;
+	sropt.accel_bind_type		= 0;
+	sropt.bcast_file		= NULL;
+	sropt.bcast_flag		= false;
+	sropt.accel_bind_type		= 0;
 	opt.blrtsimage			= NULL;
-	opt.burst_buffer		= NULL;
+	sropt.burst_buffer		= NULL;
 	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]	= NO_VAL16;
 		opt.geometry[i]		= 0;
 	}
-	opt.compress			= 0;
+	sropt.compress			= 0;
 
 	opt.constraints			= NULL;
 	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
-	opt.core_spec_set		= false;
+	sropt.core_spec_set		= false;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
-	opt.cpu_bind			= NULL;
-	opt.cpu_bind_type		= 0;
-	opt.cpu_bind_type_set		= false;
-	opt.exclusive			= false;
+	sropt.cpu_bind			= NULL;
+	sropt.cpu_bind_type		= 0;
+	sropt.cpu_bind_type_set		= false;
+	sropt.exclusive			= false;
 	opt.cpu_freq_min		= NO_VAL;
 	opt.cpu_freq_max		= NO_VAL;
 	opt.cpu_freq_gov		= NO_VAL;
@@ -835,11 +847,11 @@ static void _opt_default(void)
 	opt.gres			= NULL;
 	opt.hint_env			= NULL;
 	opt.hint_set			= false;
-	opt.hostfile			= NULL;
-	opt.exclusive			= false;
+	sropt.hostfile			= NULL;
+	sropt.exclusive			= false;
 	opt.job_flags			= 0;
-	opt.launch_cmd			= false;
-	opt.launcher_opts		= NULL;
+	sropt.launch_cmd		= false;
+	sropt.launcher_opts		= NULL;
 	opt.linuximage			= NULL;
 	launch_params = slurm_get_launch_params();
 	if (launch_params && strstr(launch_params, "mem_sort"))
@@ -848,23 +860,23 @@ static void _opt_default(void)
 	opt.licenses			= NULL;
 	opt.mail_type			= 0;
 	opt.mail_user			= NULL;
-	opt.max_threads			= MAX_THREADS;
-	pmi_server_max_threads(opt.max_threads);
+	sropt.max_threads		= MAX_THREADS;
+	pmi_server_max_threads(sropt.max_threads);
 	opt.max_nodes			= 0;
 	opt.mem_bind			= NULL;
 	opt.mem_bind_type		= 0;
 	opt.mem_per_cpu			= NO_VAL64;
 	opt.min_nodes			= 1;
 	opt.mloaderimage		= NULL;
-	opt.multi_prog			= false;
-	opt.multi_prog_cmds		= 0;
+	sropt.multi_prog			= false;
+	sropt.multi_prog_cmds		= 0;
 	opt.network			= NULL;
-	opt.network_set_env		= false;
+	sropt.network_set_env		= false;
 	opt.no_rotate			= false;
 	opt.nodelist			= NULL;
 	opt.nodes_set			= false;
-	opt.nodes_set_env		= false;
-	opt.nodes_set_opt		= false;
+	sropt.nodes_set_env		= false;
+	sropt.nodes_set_opt		= false;
 	opt.ntasks			= 1;
 	opt.ntasks_per_core		= NO_VAL;
 	opt.ntasks_per_core_set 	= false;
@@ -872,8 +884,8 @@ static void _opt_default(void)
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_set			= false;
 	opt.overcommit			= false;
-	opt.pack_group			= NULL;
-	opt.pack_grp_bits		= NULL;
+	sropt.pack_group		= NULL;
+	sropt.pack_grp_bits		= NULL;
 	opt.partition			= NULL;
 	opt.plane_size			= NO_VAL;
 	opt.pn_min_cpus			= NO_VAL;
@@ -881,11 +893,11 @@ static void _opt_default(void)
 	opt.pn_min_tmp_disk		= NO_VAL;
 	opt.power_flags			= 0;
 	opt.ramdiskimage		= NULL;
-	opt.relative			= NO_VAL;
-	opt.relative_set		= false;
+	sropt.relative			= NO_VAL;
+	sropt.relative_set		= false;
 	opt.req_switch			= -1;
-	opt.resv_port_cnt		= NO_VAL;
-	opt.restart_dir			= NULL;
+	sropt.resv_port_cnt		= NO_VAL;
+	sropt.restart_dir		= NULL;
 	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.spank_job_env_size		= 0;
@@ -897,10 +909,10 @@ static void _opt_default(void)
 	/*
 	 * Reset some default values if running under a parallel debugger
 	 */
-	if ((opt.parallel_debug = _under_parallel_debugger())) {
-		opt.max_threads		= 1;
-		pmi_server_max_threads(opt.max_threads);
-		opt.msg_timeout		= 15;
+	if ((sropt.parallel_debug = _under_parallel_debugger())) {
+		sropt.max_threads		= 1;
+		pmi_server_max_threads(sropt.max_threads);
+		sropt.msg_timeout		= 15;
 	}
 }
 
@@ -923,15 +935,15 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-{"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL             },
+{"SLURMD_DEBUG",        OPT_INT,        &sropt.slurmd_debug,NULL             },
 {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL             },
 {"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
 {"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL             },
-{"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
+{"SLURM_BURST_BUFFER",  OPT_STRING,     &sropt.burst_buffer,NULL             },
 {"SLURM_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL             },
-{"SLURM_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL         },
-{"SLURM_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL             },
+{"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
+{"SLURM_CHECKPOINT_DIR",OPT_STRING,     &sropt.ckpt_dir,    NULL             },
 {"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
 {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL             },
@@ -943,11 +955,11 @@ env_vars_t env_vars[] = {
 {"SLURM_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL             },
 {"SLURM_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL             },
 {"SLURM_DEPENDENCY",    OPT_STRING,     &opt.dependency,    NULL             },
-{"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL             },
+{"SLURM_DISABLE_STATUS",OPT_INT,        &sropt.disable_status,NULL           },
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
-{"SLURM_EPILOG",        OPT_STRING,     &opt.epilog,        NULL             },
+{"SLURM_EPILOG",        OPT_STRING,     &sropt.epilog,      NULL             },
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
-{"SLURM_EXPORT_ENV",    OPT_STRING,     &opt.export_env,    NULL             },
+{"SLURM_EXPORT_ENV",    OPT_STRING,     &sropt.export_env,  NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
 {"SLURM_GRES",          OPT_STRING,     &opt.gres,          NULL             },
 {"SLURM_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL             },
@@ -957,9 +969,9 @@ env_vars_t env_vars[] = {
 /* SLURM_JOBID was used in slurm version 1.3 and below, it is now vestigial */
 {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_JOB_ID",        OPT_INT,        &opt.jobid,         NULL             },
-{"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &opt.job_name_set_env},
-{"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL             },
-{"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL             },
+{"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &sropt.job_name_set_env},
+{"SLURM_KILL_BAD_EXIT", OPT_INT,        &sropt.kill_bad_exit,NULL            },
+{"SLURM_LABELIO",       OPT_INT,        &sropt.labelio,     NULL             },
 {"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL             },
 {"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
@@ -967,45 +979,45 @@ env_vars_t env_vars[] = {
 {"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
-{"SLURM_NETWORK",       OPT_STRING,     &opt.network,    &opt.network_set_env},
+{"SLURM_NETWORK",       OPT_STRING,     &opt.network,  &sropt.network_set_env},
 {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL             },
-{"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL             },
+{"SLURM_NODELIST",      OPT_STRING,     &sropt.alloc_nodelist,NULL           },
 {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL             },
 {"SLURM_NTASKS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
 {"SLURM_NPROCS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
 {"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
-{"SLURM_NTASKS_PER_NODE", OPT_INT,      &opt.ntasks_per_node, NULL           },
+{"SLURM_NTASKS_PER_NODE", OPT_INT,      &opt.ntasks_per_node,NULL            },
 {"SLURM_NTHREADS_PER_CORE",OPT_NTHREADS,NULL,               NULL             },
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
 {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
 {"SLURM_POWER",         OPT_POWER,      NULL,               NULL             },
 {"SLURM_PROFILE",       OPT_PROFILE,    NULL,               NULL             },
-{"SLURM_PROLOG",        OPT_STRING,     &opt.prolog,        NULL             },
+{"SLURM_PROLOG",        OPT_STRING,     &sropt.prolog,      NULL             },
 {"SLURM_QOS",           OPT_STRING,     &opt.qos,           NULL             },
 {"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
 {"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
 {"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
-{"SLURM_RESTART_DIR",   OPT_STRING,     &opt.restart_dir ,  NULL             },
+{"SLURM_RESTART_DIR",   OPT_STRING,     &sropt.restart_dir, NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
 {"SLURM_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL             },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
-{"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
-{"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL             },
-{"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL             },
-{"SLURM_TASK_EPILOG",   OPT_STRING,     &opt.task_epilog,   NULL             },
-{"SLURM_TASK_PROLOG",   OPT_STRING,     &opt.task_prolog,   NULL             },
+{"SLURM_STDERRMODE",    OPT_STRING,     &sropt.efname,      NULL             },
+{"SLURM_STDINMODE",     OPT_STRING,     &sropt.ifname,      NULL             },
+{"SLURM_STDOUTMODE",    OPT_STRING,     &sropt.ofname,      NULL             },
+{"SLURM_TASK_EPILOG",   OPT_STRING,     &sropt.task_epilog, NULL             },
+{"SLURM_TASK_PROLOG",   OPT_STRING,     &sropt.task_prolog, NULL             },
 {"SLURM_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL             },
-{"SLURM_THREADS",       OPT_INT,        &opt.max_threads,   NULL             },
+{"SLURM_THREADS",       OPT_INT,        &sropt.max_threads, NULL             },
 {"SLURM_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL             },
-{"SLURM_UNBUFFEREDIO",  OPT_INT,        &opt.unbuffered,    NULL             },
+{"SLURM_UNBUFFEREDIO",  OPT_INT,        &sropt.unbuffered,  NULL             },
 {"SLURM_USE_MIN_NODES", OPT_USE_MIN_NODES, NULL,            NULL             },
-{"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL             },
+{"SLURM_WAIT",          OPT_INT,        &sropt.max_wait,    NULL             },
 {"SLURM_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL             },
 {"SLURM_WCKEY",         OPT_STRING,     &opt.wckey,         NULL             },
-{"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
+{"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &sropt.cwd_set   },
 {NULL, 0, NULL, NULL}
 };
 
@@ -1036,8 +1048,8 @@ static void _opt_env(int pack_offset)
 
 	/* Running srun within an existing srun. Don't inherit values. */
 	if (getenv("SLURM_STEP_ID")) {
-		xfree(opt.cpu_bind);
-		opt.cpu_bind_type = 0;
+		xfree(sropt.cpu_bind);
+		sropt.cpu_bind_type = 0;
 		xfree(opt.mem_bind);
 		opt.mem_bind_type = 0;
 	}
@@ -1086,7 +1098,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_COMPRESS:
-		opt.compress = parse_compress_type(val);
+		sropt.compress = parse_compress_type(val);
 		break;
 
 	case OPT_DISTRIB:
@@ -1101,9 +1113,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_CPU_BIND:
-		xfree(opt.cpu_bind);
-		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
-					  &opt.cpu_bind_type))
+		xfree(sropt.cpu_bind);
+		if (slurm_verify_cpu_bind(val, &sropt.cpu_bind,
+					  &sropt.cpu_bind_type))
 			exit(error_exit);
 		break;
 
@@ -1124,15 +1136,15 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_NODES:
-		opt.nodes_set_env = get_resource_arg_range( val ,"OPT_NODES",
+		sropt.nodes_set_env = get_resource_arg_range( val ,"OPT_NODES",
 							     &opt.min_nodes,
 							     &opt.max_nodes,
 							     false);
-		if (opt.nodes_set_env == false) {
+		if (sropt.nodes_set_env == false) {
 			error("\"%s=%s\" -- invalid node count. ignoring...",
 			      e->var, val);
 		} else
-			opt.nodes_set = opt.nodes_set_env;
+			opt.nodes_set = sropt.nodes_set_env;
 		break;
 
 	case OPT_OVERCOMMIT:
@@ -1141,7 +1153,7 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_EXCLUSIVE:
 		if (val[0] == '\0') {
-			opt.exclusive = true;
+			sropt.exclusive = true;
 			opt.shared = JOB_SHARED_NONE;
 		} else if (!xstrcasecmp(val, "user")) {
 			opt.shared = JOB_SHARED_USER;
@@ -1154,30 +1166,30 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_EXPORT:
-		xfree(opt.export_env);
-		opt.export_env = xstrdup(val);
+		xfree(sropt.export_env);
+		sropt.export_env = xstrdup(val);
 		break;
 
 	case OPT_BCAST:
 		if (val) {
-			xfree(opt.bcast_file);
-			opt.bcast_file = xstrdup(val);
+			xfree(sropt.bcast_file);
+			sropt.bcast_file = xstrdup(val);
 		}
-		opt.bcast_flag = true;
+		sropt.bcast_flag = true;
 		break;
 
 	case OPT_RESV_PORTS:
 		if (val)
-			opt.resv_port_cnt = strtol(val, NULL, 10);
+			sropt.resv_port_cnt = strtol(val, NULL, 10);
 		else
-			opt.resv_port_cnt = 0;
+			sropt.resv_port_cnt = 0;
 		break;
 
 	case OPT_OPEN_MODE:
 		if ((val[0] == 'a') || (val[0] == 'A'))
-			opt.open_mode = OPEN_MODE_APPEND;
+			sropt.open_mode = OPEN_MODE_APPEND;
 		else if ((val[0] == 't') || (val[0] == 'T'))
-			opt.open_mode = OPEN_MODE_TRUNCATE;
+			sropt.open_mode = OPEN_MODE_TRUNCATE;
 		else
 			error("Invalid SLURM_OPEN_MODE: %s. Ignored", val);
 		break;
@@ -1293,24 +1305,24 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
 		case LONG_OPT_PACK_GROUP:
-			xfree(opt.pack_group);
-			opt.pack_group = xstrdup(optarg);
+			xfree(sropt.pack_group);
+			sropt.pack_group = xstrdup(optarg);
 		}
 	}
 	spank_option_table_destroy(optz);
 
-	if (!opt.pack_group) {
+	if (!sropt.pack_group) {
 		bit_set(pack_grp_bits, default_pack_offset);
 		return pack_grp_bits;
 	}
 
-	if (opt.pack_group[0] == '[')
-		tmp = xstrdup(opt.pack_group);
+	if (sropt.pack_group[0] == '[')
+		tmp = xstrdup(sropt.pack_group);
 	else
-		xstrfmtcat(tmp, "[%s]", opt.pack_group);
+		xstrfmtcat(tmp, "[%s]", sropt.pack_group);
 	hl = hostlist_create(tmp);
 	if (!hl) {
-		error("Invalid --pack-group value: %s", opt.pack_group);
+		error("Invalid --pack-group value: %s", sropt.pack_group);
 		exit(error_exit);
 	}
 	xfree(tmp);
@@ -1319,7 +1331,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		char *end_ptr = NULL;
 		i = strtol(tmp, &end_ptr, 10);
 		if ((i < 0) || (i >= MAX_PACK_COUNT) || (end_ptr[0] != '\0')) {
-			error("Invalid --pack-group value: %s", opt.pack_group);
+			error("Invalid --pack-group value: %s", sropt.pack_group);
 			exit(error_exit);
 		}
 		bit_set(pack_grp_bits, i);
@@ -1327,7 +1339,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	}
 	hostlist_destroy(hl);
 	if (bit_ffs(pack_grp_bits) == -1) {	/* No bits set */
-		error("Invalid --pack-group value: %s", opt.pack_group);
+		error("Invalid --pack-group value: %s", sropt.pack_group);
 		exit(error_exit);
 	}
 
@@ -1377,13 +1389,13 @@ static void _set_options(const int argc, char **argv)
 						&opt.sockets_per_node,
 						&opt.cores_per_socket,
 						&opt.threads_per_core,
-						&opt.cpu_bind_type);
+						&sropt.cpu_bind_type);
 			if (opt.extra_set == false) {
 				error("invalid resource allocation -B `%s'",
 					optarg);
 				exit(error_exit);
 			}
-			opt.cpu_bind_type_set = true;
+			sropt.cpu_bind_type_set = true;
 			opt.threads_per_core_set = true;
 			break;
 		case (int)'c':
@@ -1407,7 +1419,7 @@ static void _set_options(const int argc, char **argv)
 		case (int)'D':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.cwd_set = true;
+			sropt.cwd_set = true;
 			xfree(opt.cwd);
 			if (is_full_path(optarg))
 				opt.cwd = xstrdup(optarg);
@@ -1417,19 +1429,19 @@ static void _set_options(const int argc, char **argv)
 		case (int)'e':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			if (opt.pty) {
+			if (sropt.pty) {
 				fatal("--error incompatible with --pty "
 				      "option");
 				exit(error_exit);
 			}
-			xfree(opt.efname);
+			xfree(sropt.efname);
 			if (xstrcasecmp(optarg, "none") == 0)
-				opt.efname = xstrdup("/dev/null");
+				sropt.efname = xstrdup("/dev/null");
 			else
-				opt.efname = xstrdup(optarg);
+				sropt.efname = xstrdup(optarg);
 			break;
 		case (int)'E':
-			opt.preserve_env = true;
+			sropt.preserve_env = true;
 			break;
 		case (int)'g':
 			if (!optarg)
@@ -1443,15 +1455,15 @@ static void _set_options(const int argc, char **argv)
 		case (int)'i':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			if (opt.pty) {
+			if (sropt.pty) {
 				fatal("--input incompatible with --pty option");
 				exit(error_exit);
 			}
-			xfree(opt.ifname);
+			xfree(sropt.ifname);
 			if (xstrcasecmp(optarg, "none") == 0)
-				opt.ifname = xstrdup("/dev/null");
+				sropt.ifname = xstrdup("/dev/null");
 			else
-				opt.ifname = xstrdup(optarg);
+				sropt.ifname = xstrdup(optarg);
 			break;
 		case (int)'I':
 			if (optarg)
@@ -1465,7 +1477,7 @@ static void _set_options(const int argc, char **argv)
 		case (int)'J':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.job_name_set_cmd = true;
+			sropt.job_name_set_cmd = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
@@ -1474,12 +1486,12 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'K':
 			if (optarg)
-				opt.kill_bad_exit = strtol(optarg, NULL, 10);
+				sropt.kill_bad_exit = strtol(optarg, NULL, 10);
 			else
-				opt.kill_bad_exit = 1;
+				sropt.kill_bad_exit = 1;
 			break;
 		case (int)'l':
-			opt.labelio = true;
+			sropt.labelio = true;
 			break;
 		case 'L':
 			if (!optarg)
@@ -1516,32 +1528,32 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			nodes_set_opt = true;
-			opt.nodes_set_opt =
+			sropt.nodes_set_opt =
 				get_resource_arg_range( optarg,
 							"requested node count",
 							&opt.min_nodes,
 							&opt.max_nodes, true );
 
-			if (opt.nodes_set_opt == false) {
+			if (sropt.nodes_set_opt == false) {
 				error("invalid resource allocation -N `%s'",
 				      optarg);
 				exit(error_exit);
 			} else
-				opt.nodes_set = opt.nodes_set_opt;
+				opt.nodes_set = sropt.nodes_set_opt;
 			break;
 		case (int)'o':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			if (opt.pty) {
+			if (sropt.pty) {
 				error("--output incompatible with --pty "
 				      "option");
 				exit(error_exit);
 			}
-			xfree(opt.ofname);
+			xfree(sropt.ofname);
 			if (xstrcasecmp(optarg, "none") == 0)
-				opt.ofname = xstrdup("/dev/null");
+				sropt.ofname = xstrdup("/dev/null");
 			else
-				opt.ofname = xstrdup(optarg);
+				sropt.ofname = xstrdup(optarg);
 			break;
 		case (int)'O':
 			opt.overcommit = true;
@@ -1571,8 +1583,8 @@ static void _set_options(const int argc, char **argv)
 		case (int)'r':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.relative = _get_int(optarg, "relative", false);
-			opt.relative_set = true;
+			sropt.relative = _get_int(optarg, "relative", false);
+			sropt.relative_set = true;
 			break;
 		case (int)'R':
 			opt.no_rotate = true;
@@ -1584,7 +1596,7 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.core_spec = _get_int(optarg, "core_spec", false);
-			opt.core_spec_set = true;
+			sropt.core_spec_set = true;
 			break;
 		case (int)'t':
 			if (!optarg)
@@ -1595,12 +1607,12 @@ static void _set_options(const int argc, char **argv)
 		case (int)'T':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.max_threads =
+			sropt.max_threads =
 				_get_int(optarg, "max_threads", true);
-			pmi_server_max_threads(opt.max_threads);
+			pmi_server_max_threads(sropt.max_threads);
 			break;
 		case (int)'u':
-			opt.unbuffered = true;
+			sropt.unbuffered = true;
 			break;
 		case (int)'v':
 			max_verbose++;
@@ -1618,7 +1630,7 @@ static void _set_options(const int argc, char **argv)
 		case (int)'W':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.max_wait = _get_int(optarg, "wait", false);
+			sropt.max_wait = _get_int(optarg, "wait", false);
 			break;
 		case (int)'x':
 			xfree(opt.exc_nodes);
@@ -1627,10 +1639,10 @@ static void _set_options(const int argc, char **argv)
 				exit(error_exit);
 			break;
 		case (int)'X':
-			opt.disable_status = true;
+			sropt.disable_status = true;
 			break;
 		case (int)'Z':
-			opt.no_alloc = true;
+			sropt.no_alloc = true;
 			uname(&name);
 			if (xstrcasecmp(name.sysname, "AIX") == 0)
 				opt.network = xstrdup("ip");
@@ -1654,7 +1666,7 @@ static void _set_options(const int argc, char **argv)
 			break;
                 case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
-				opt.exclusive = true;
+				sropt.exclusive = true;
 				opt.shared = JOB_SHARED_NONE;
 			} else if (!xstrcasecmp(optarg, "user")) {
 				opt.shared = JOB_SHARED_USER;
@@ -1666,27 +1678,27 @@ static void _set_options(const int argc, char **argv)
 			}
                         break;
 		case LONG_OPT_EXPORT:
-			xfree(opt.export_env);
-			opt.export_env = xstrdup(optarg);
+			xfree(sropt.export_env);
+			sropt.export_env = xstrdup(optarg);
 			break;
                 case LONG_OPT_BCAST:
 			if (optarg) {
-				xfree(opt.bcast_file);
-				opt.bcast_file = xstrdup(optarg);
+				xfree(sropt.bcast_file);
+				sropt.bcast_file = xstrdup(optarg);
 			}
-			opt.bcast_flag = true;
+			sropt.bcast_flag = true;
                         break;
                 case LONG_OPT_CPU_BIND:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.cpu_bind);
-			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
-						  &opt.cpu_bind_type))
+			xfree(sropt.cpu_bind);
+			if (slurm_verify_cpu_bind(optarg, &sropt.cpu_bind,
+						  &sropt.cpu_bind_type))
 				exit(error_exit);
-			opt.cpu_bind_type_set = true;
+			sropt.cpu_bind_type_set = true;
 			break;
 		case LONG_OPT_LAUNCH_CMD:
-			opt.launch_cmd = true;
+			sropt.launch_cmd = true;
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (!optarg)
@@ -1774,9 +1786,9 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_RESV_PORTS:
 			if (optarg)
-				opt.resv_port_cnt = strtol(optarg, NULL, 10);
+				sropt.resv_port_cnt = strtol(optarg, NULL, 10);
 			else
-				opt.resv_port_cnt = 0;
+				sropt.resv_port_cnt = 0;
 			break;
 		case LONG_OPT_TMP:
 			if (!optarg)
@@ -1796,13 +1808,13 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_TIMEO:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.msg_timeout =
+			sropt.msg_timeout =
 				_get_int(optarg, "msg-timeout", true);
 			break;
 		case LONG_OPT_XTO:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.max_exit_timeout =
+			sropt.max_exit_timeout =
 				_get_int(optarg, "max-exit-timeout", true);
 			break;
 		case LONG_OPT_UID:
@@ -1833,19 +1845,19 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			if (isdigit(optarg[0]))
-				opt.slurmd_debug =
+				sropt.slurmd_debug =
 					_get_int(optarg, "slurmd-debug", false);
 			else
-				opt.slurmd_debug = log_string2num(optarg);
+				sropt.slurmd_debug = log_string2num(optarg);
 			break;
 		case LONG_OPT_DEBUG_TS:
-			opt.debugger_test    = true;
+			sropt.debugger_test    = true;
 			/* make other parameters look like debugger
 			 * is really attached */
-			opt.parallel_debug   = true;
-			opt.max_threads     = 1;
-			pmi_server_max_threads(opt.max_threads);
-			opt.msg_timeout     = 15;
+			sropt.parallel_debug   = true;
+			sropt.max_threads     = 1;
+			pmi_server_max_threads(sropt.max_threads);
+			sropt.msg_timeout     = 15;
 			break;
 		case 'h':
 		case LONG_OPT_HELP:
@@ -1860,7 +1872,7 @@ static void _set_options(const int argc, char **argv)
 			verify_conn_type(optarg, opt.conn_type);
 			break;
 		case LONG_OPT_TEST_ONLY:
-			opt.test_only = true;
+			sropt.test_only = true;
 			break;
 		case LONG_OPT_NETWORK:
 			if (!optarg)
@@ -1868,38 +1880,38 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
 			setenv("SLURM_NETWORK", opt.network, 1);
-			opt.network_set_env = false;
+			sropt.network_set_env = false;
 			break;
 		case LONG_OPT_PROPAGATE:
-			xfree(opt.propagate);
+			xfree(sropt.propagate);
 			if (optarg)
-				opt.propagate = xstrdup(optarg);
+				sropt.propagate = xstrdup(optarg);
 			else
-				opt.propagate = xstrdup("ALL");
+				sropt.propagate = xstrdup("ALL");
 			break;
 		case LONG_OPT_PROLOG:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.prolog);
-			opt.prolog = xstrdup(optarg);
+			xfree(sropt.prolog);
+			sropt.prolog = xstrdup(optarg);
 			break;
 		case LONG_OPT_EPILOG:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.epilog);
-			opt.epilog = xstrdup(optarg);
+			xfree(sropt.epilog);
+			sropt.epilog = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_SPEC:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.burst_buffer);
-			opt.burst_buffer = xstrdup(optarg);
+			xfree(sropt.burst_buffer);
+			sropt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.burst_buffer);
-			opt.burst_buffer = _read_file(optarg);
+			xfree(sropt.burst_buffer);
+			sropt.burst_buffer = _read_file(optarg);
 			break;
 		case LONG_OPT_BEGIN:
 			if (!optarg)
@@ -1935,14 +1947,14 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_TASK_PROLOG:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.task_prolog);
-			opt.task_prolog = xstrdup(optarg);
+			xfree(sropt.task_prolog);
+			sropt.task_prolog = xstrdup(optarg);
 			break;
 		case LONG_OPT_TASK_EPILOG:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.task_epilog);
-			opt.task_epilog = xstrdup(optarg);
+			xfree(sropt.task_epilog);
+			sropt.task_epilog = xstrdup(optarg);
 			break;
 		case LONG_OPT_NICE: {
 			long long tmp_nice;
@@ -1988,7 +2000,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		}
 		case LONG_OPT_MULTI:
-			opt.multi_prog = true;
+			sropt.multi_prog = true;
 			break;
 		case LONG_OPT_COMMENT:
 			if (!optarg)
@@ -2059,7 +2071,7 @@ static void _set_options(const int argc, char **argv)
 					&opt.cores_per_socket,
 					&opt.threads_per_core,
 					&opt.ntasks_per_core,
-					&opt.cpu_bind_type)) {
+					&sropt.cpu_bind_type)) {
 				exit(error_exit);
 			}
 			opt.hint_set = true;
@@ -2099,13 +2111,13 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H
-			opt.pty = true;
-			opt.unbuffered = true;	/* implicit */
-			if (opt.ifname)
+			sropt.pty = true;
+			sropt.unbuffered = true;	/* implicit */
+			if (sropt.ifname)
 				tmp_str = "--input";
-			else if (opt.ofname)
+			else if (sropt.ofname)
 				tmp_str = "--output";
-			else if (opt.efname)
+			else if (sropt.efname)
 				tmp_str = "--error";
 			else
 				tmp_str = NULL;
@@ -2120,16 +2132,16 @@ static void _set_options(const int argc, char **argv)
 #endif
 			break;
 		case LONG_OPT_CHECKPOINT:
-			xfree(opt.ckpt_interval_str);
-			opt.ckpt_interval_str = xstrdup(optarg);
+			xfree(sropt.ckpt_interval_str);
+			sropt.ckpt_interval_str = xstrdup(optarg);
 			break;
 		case LONG_OPT_OPEN_MODE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			if ((optarg[0] == 'a') || (optarg[0] == 'A'))
-				opt.open_mode = OPEN_MODE_APPEND;
+				sropt.open_mode = OPEN_MODE_APPEND;
 			else if ((optarg[0] == 't') || (optarg[0] == 'T'))
-				opt.open_mode = OPEN_MODE_TRUNCATE;
+				sropt.open_mode = OPEN_MODE_TRUNCATE;
 			else {
 				error("Invalid --open-mode argument: %s. Ignored",
 				      optarg);
@@ -2161,20 +2173,20 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_LAUNCHER_OPTS:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.launcher_opts);
-			opt.launcher_opts = xstrdup(optarg);
+			xfree(sropt.launcher_opts);
+			sropt.launcher_opts = xstrdup(optarg);
 			break;
 		case LONG_OPT_CHECKPOINT_DIR:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.ckpt_dir);
-			opt.ckpt_dir = xstrdup(optarg);
+			xfree(sropt.ckpt_dir);
+			sropt.ckpt_dir = xstrdup(optarg);
 			break;
 		case LONG_OPT_RESTART_DIR:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.restart_dir);
-			opt.restart_dir = xstrdup(optarg);
+			xfree(sropt.restart_dir);
+			sropt.restart_dir = xstrdup(optarg);
 			break;
 		case LONG_OPT_SIGNAL:
 			if (!optarg)
@@ -2248,16 +2260,16 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			if (strchr(optarg, 'v'))
-				opt.accel_bind_type |= ACCEL_BIND_VERBOSE;
+				sropt.accel_bind_type |= ACCEL_BIND_VERBOSE;
 			if (strchr(optarg, 'g'))
-				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_GPU;
+				sropt.accel_bind_type |= ACCEL_BIND_CLOSEST_GPU;
 			if (strchr(optarg, 'm'))
-				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_MIC;
+				sropt.accel_bind_type |= ACCEL_BIND_CLOSEST_MIC;
 			if (strchr(optarg, 'n'))
-				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_NIC;
+				sropt.accel_bind_type |= ACCEL_BIND_CLOSEST_NIC;
 			break;
 		case LONG_OPT_COMPRESS:
-			opt.compress = parse_compress_type(optarg);
+			sropt.compress = parse_compress_type(optarg);
 			break;
 		case LONG_OPT_SPREAD_JOB:
 			opt.job_flags |= SPREAD_JOB;
@@ -2277,7 +2289,7 @@ static void _set_options(const int argc, char **argv)
 			opt.job_flags |= USE_MIN_NODES;
 			break;
 		case LONG_OPT_QUIT_ON_INTR:
-			opt.quit_on_intr = true;
+			sropt.quit_on_intr = true;
 			break;
 		case LONG_OPT_X11:
 			if (optarg)
@@ -2317,8 +2329,8 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	char *fullpath, *launch_params;
 	bool test_exec = false;
 
-	opt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
-	bit_set(opt.pack_grp_bits, pack_offset);
+	sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
+	bit_set(sropt.pack_grp_bits, pack_offset);
 
 	if ((opt.pn_min_memory > -1) && (opt.mem_per_cpu > -1)) {
 		if (opt.pn_min_memory < opt.mem_per_cpu) {
@@ -2328,12 +2340,12 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 		}
 	}
 
-	if (opt.pty) {
+	if (sropt.pty) {
 		char *launch_type = slurm_get_launch_type();
 		if (xstrcmp(launch_type, "launch/slurm")) {
 			error("--pty not currently supported with %s "
 			      "configuration, ignoring option", launch_type);
-			opt.pty = false;
+			sropt.pty = false;
 		}
 		xfree(launch_type);
 	}
@@ -2351,7 +2363,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
-	if (opt.nodelist && (!opt.test_only)) {
+	if (opt.nodelist && (!sropt.test_only)) {
 #ifdef HAVE_BG
 		info("\tThe nodelist option should only be used if\n"
 		     "\tthe block you are asking for can be created.\n"
@@ -2362,18 +2374,18 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 #endif
 	}
 
-	opt.argc = 0;
+	sropt.argc = 0;
 	if (optind < argc) {
 		rest = argv + optind;
-		while ((rest[opt.argc] != NULL) && strcmp(rest[opt.argc], ":"))
-			opt.argc++;
+		while ((rest[sropt.argc] != NULL) && strcmp(rest[sropt.argc], ":"))
+			sropt.argc++;
 	}
 
-	command_args = opt.argc;
+	command_args = sropt.argc;
 
 	if (!xstrcmp(mpi_type, "list"))
 		(void) mpi_hook_client_init(mpi_type);
-	if (!rest && !opt.test_only)
+	if (!rest && !sropt.test_only)
 		fatal("No command given to execute.");
 
 #if defined HAVE_BG
@@ -2382,7 +2394,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	 */
 	bg_figure_nodes_tasks(&opt.min_nodes, &opt.max_nodes,
 			      &opt.ntasks_per_node, &opt.ntasks_set,
-			      &opt.ntasks, opt.nodes_set, opt.nodes_set_opt,
+			      &opt.ntasks, opt.nodes_set, sropt.nodes_set_opt,
 			      opt.overcommit, 1);
 #endif
 
@@ -2396,23 +2408,23 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	 * the launch plugin.
 	 */
 #if defined HAVE_BG
-	if (opt.test_only && !opt.jobid_set && (opt.jobid != NO_VAL)) {
+	if (sropt.test_only && !opt.jobid_set && (opt.jobid != NO_VAL)) {
 		/* Do not perform allocate test, only disable use of "runjob" */
-		opt.test_only = false;
+		sropt.test_only = false;
 	}
 
 #endif
 	/* make sure we have allocated things correctly */
 	if (command_args)
-		xassert((command_pos + command_args) <= opt.argc);
+		xassert((command_pos + command_args) <= sropt.argc);
 
-	for (i = command_pos; i < opt.argc; i++) {
+	for (i = command_pos; i < sropt.argc; i++) {
 		if (!rest || !rest[i-command_pos])
 			break;
-		opt.argv[i] = xstrdup(rest[i-command_pos]);
-		// info("argv[%d]='%s'", i, opt.argv[i]);
+		sropt.argv[i] = xstrdup(rest[i-command_pos]);
+		// info("argv[%d]='%s'", i, sropt.argv[i]);
 	}
-	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
+	sropt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (getenv("SLURM_TEST_EXEC")) {
 		test_exec = true;
@@ -2425,25 +2437,25 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 #if defined HAVE_BG
 	/* BGQ's runjob command required a fully qualified path */
 	if (!launch_g_handle_multi_prog_verify(command_pos, &opt) &&
-	    (opt.argc > command_pos)) {
+	    (sropt.argc > command_pos)) {
 		if ((fullpath = search_path(opt.cwd,
-					    opt.argv[command_pos],
+					    sropt.argv[command_pos],
 					    false, X_OK, test_exec))) {
-			xfree(opt.argv[command_pos]);
-			opt.argv[command_pos] = fullpath;
+			xfree(sropt.argv[command_pos]);
+			sropt.argv[command_pos] = fullpath;
 		}
 	}
 #else
 	/* may exit() if an error with the multi_prog script */
 	(void) launch_g_handle_multi_prog_verify(command_pos, &opt);
 
-	if (!opt.multi_prog && (test_exec || opt.bcast_flag)) {
-		if ((fullpath = search_path(opt.cwd, opt.argv[command_pos],
+	if (!sropt.multi_prog && (test_exec || sropt.bcast_flag)) {
+		if ((fullpath = search_path(opt.cwd, sropt.argv[command_pos],
 					    false, X_OK, true))) {
-			xfree(opt.argv[command_pos]);
-			opt.argv[command_pos] = fullpath;
+			xfree(sropt.argv[command_pos]);
+			sropt.argv[command_pos] = fullpath;
 		} else {
-			fatal("Can not execute %s", opt.argv[command_pos]);
+			fatal("Can not execute %s", sropt.argv[command_pos]);
 		}
 	}
 #endif
@@ -2466,10 +2478,10 @@ static bool _opt_verify(void)
 	 *   these debug messages cause the generation of more
 	 *   debug messages ad infinitum)
 	 */
-	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2) {
-		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
+	if (sropt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2) {
+		sropt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
 		info("Using srun's max debug increment of %d",
-		     opt.slurmd_debug);
+		     sropt.slurmd_debug);
 	}
 
 	if (opt.quiet && _verbose) {
@@ -2477,36 +2489,36 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.no_alloc && !opt.nodelist) {
+	if (sropt.no_alloc && !opt.nodelist) {
 		error("must specify a node list with -Z, --no-allocate.");
 		verified = false;
 	}
 
-	if (opt.no_alloc && opt.exc_nodes) {
+	if (sropt.no_alloc && opt.exc_nodes) {
 		error("can not specify --exclude list with -Z, --no-allocate.");
 		verified = false;
 	}
 
-	if (opt.no_alloc && opt.relative_set) {
+	if (sropt.no_alloc && sropt.relative_set) {
 		error("do not specify -r,--relative with -Z,--no-allocate.");
 		verified = false;
 	}
 
-	if (opt.relative_set && (opt.exc_nodes || opt.nodelist)) {
+	if (sropt.relative_set && (opt.exc_nodes || opt.nodelist)) {
 		error("-r,--relative not allowed with "
 		      "-w,--nodelist or -x,--exclude.");
 		verified = false;
 	}
 
 	if (opt.hint_env &&
-	    (!opt.hint_set && !opt.cpu_bind_type_set &&
+	    (!opt.hint_set && !sropt.cpu_bind_type_set &&
 	     !opt.ntasks_per_core_set && !opt.threads_per_core_set)) {
 		if (verify_hint(opt.hint_env,
 				&opt.sockets_per_node,
 				&opt.cores_per_socket,
 				&opt.threads_per_core,
 				&opt.ntasks_per_core,
-				&opt.cpu_bind_type)) {
+				&sropt.cpu_bind_type)) {
 			exit(error_exit);
 		}
 	}
@@ -2514,9 +2526,9 @@ static bool _opt_verify(void)
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
-	if ((opt.argc > 0) && xstrcmp(opt.argv[0], ":")) {
-		xfree(opt.cmd_name);
-		opt.cmd_name = base_name(opt.argv[0]);
+	if ((sropt.argc > 0) && xstrcmp(sropt.argv[0], ":")) {
+		xfree(sropt.cmd_name);
+		sropt.cmd_name = base_name(sropt.argv[0]);
 	}
 
 	if (!opt.nodelist) {
@@ -2532,8 +2544,8 @@ static bool _opt_verify(void)
 			}
 			opt.distribution &= SLURM_DIST_STATE_FLAGS;
 			opt.distribution |= SLURM_DIST_ARBITRARY;
-			xfree(opt.hostfile);
-			opt.hostfile = xstrdup(opt.nodelist);
+			xfree(sropt.hostfile);
+			sropt.hostfile = xstrdup(opt.nodelist);
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
 				      "hostfile");
@@ -2544,9 +2556,9 @@ static bool _opt_verify(void)
 			}
 		}
 	} else {
-		xfree(opt.hostfile);
+		xfree(sropt.hostfile);
 		if (strstr(opt.nodelist, "/"))
-			opt.hostfile = xstrdup(opt.nodelist);
+			sropt.hostfile = xstrdup(opt.nodelist);
 		if (!_valid_node_list(&opt.nodelist))
 			exit(error_exit);
 	}
@@ -2562,7 +2574,7 @@ static bool _opt_verify(void)
 		}
 		if (!opt.nodes_set) {
 			opt.nodes_set = true;
-			opt.nodes_set_opt = true;
+			sropt.nodes_set_opt = true;
 			hostlist_uniq(hl);
 			opt.min_nodes = opt.max_nodes = hostlist_count(hl);
 		}
@@ -2643,24 +2655,24 @@ static bool _opt_verify(void)
 		/* if cpu_bind_type doesn't already have a auto pref,
 		 * choose the level based on the level of ntasks
 		 */
-		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
+		if (!(sropt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
 					   CPU_BIND_TO_CORES |
 					   CPU_BIND_TO_THREADS |
 					   CPU_BIND_TO_LDOMS |
 					   CPU_BIND_TO_BOARDS))) {
-			opt.cpu_bind_type |= CPU_BIND_TO_CORES;
+			sropt.cpu_bind_type |= CPU_BIND_TO_CORES;
 		}
 	}
 	if (opt.ntasks_per_socket > 0) {
 		/* if cpu_bind_type doesn't already have a auto pref,
 		 * choose the level based on the level of ntasks
 		 */
-		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
+		if (!(sropt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
 					   CPU_BIND_TO_CORES |
 					   CPU_BIND_TO_THREADS |
 					   CPU_BIND_TO_LDOMS |
 					   CPU_BIND_TO_BOARDS))) {
-			opt.cpu_bind_type |= CPU_BIND_TO_SOCKETS;
+			sropt.cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 		}
 	}
 
@@ -2737,7 +2749,7 @@ static bool _opt_verify(void)
 			      "nodes, setting nnodes to %d",
 			      opt.ntasks, opt.min_nodes, opt.ntasks);
 			opt.min_nodes = opt.ntasks;
-			opt.nodes_set_opt = true;
+			sropt.nodes_set_opt = true;
 			if (opt.max_nodes
 			    &&  (opt.min_nodes > opt.max_nodes) )
 				opt.max_nodes = opt.min_nodes;
@@ -2777,11 +2789,11 @@ static bool _opt_verify(void)
 	if (hl)
 		hostlist_destroy(hl);
 
-	if (opt.max_threads <= 0) {	/* set default */
+	if (sropt.max_threads <= 0) {	/* set default */
 		error("Thread value invalid, reset to 1");
-		opt.max_threads = 1;
-		pmi_server_max_threads(opt.max_threads);
-	} else if (opt.max_threads > MAX_THREADS) {
+		sropt.max_threads = 1;
+		pmi_server_max_threads(sropt.max_threads);
+	} else if (sropt.max_threads > MAX_THREADS) {
 		error("Thread value exceeds defined limit, reset to %d",
 		      MAX_THREADS);
 	}
@@ -2789,8 +2801,8 @@ static bool _opt_verify(void)
 	/*
 	 * --wait always overrides hidden max_exit_timeout
 	 */
-	if (opt.max_wait)
-		opt.max_exit_timeout = opt.max_wait;
+	if (sropt.max_wait)
+		sropt.max_exit_timeout = sropt.max_wait;
 
 	if (opt.time_limit_str) {
 		opt.time_limit = time_str2mins(opt.time_limit_str);
@@ -2814,17 +2826,17 @@ static bool _opt_verify(void)
 		error("Incompatible begin and deadline time specification");
 		exit(error_exit);
 	}
-	if (opt.ckpt_interval_str) {
-		opt.ckpt_interval = time_str2mins(opt.ckpt_interval_str);
-		if ((opt.ckpt_interval < 0) &&
-		    (opt.ckpt_interval != INFINITE)) {
+	if (sropt.ckpt_interval_str) {
+		sropt.ckpt_interval = time_str2mins(sropt.ckpt_interval_str);
+		if ((sropt.ckpt_interval < 0) &&
+		    (sropt.ckpt_interval != INFINITE)) {
 			error("Invalid checkpoint interval specification");
 			exit(error_exit);
 		}
 	}
 
-	if (! opt.ckpt_dir)
-		opt.ckpt_dir = xstrdup(opt.cwd);
+	if (!sropt.ckpt_dir)
+		sropt.ckpt_dir = xstrdup(opt.cwd);
 
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid))
 		opt.uid = opt.euid;
@@ -2832,8 +2844,8 @@ static bool _opt_verify(void)
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 		opt.gid = opt.egid;
 
-	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
-				  &opt.cpu_bind_type))
+	if (slurm_verify_cpu_bind(NULL, &sropt.cpu_bind,
+				  &sropt.cpu_bind_type))
 		exit(error_exit);
 
 	if (!mpi_type)
@@ -2845,7 +2857,7 @@ static bool _opt_verify(void)
 	}
 
 	if (!opt.job_name)
-		opt.job_name = xstrdup(opt.cmd_name);
+		opt.job_name = xstrdup(sropt.cmd_name);
 
 	if (opt.x11) {
 		opt.x11_target_port = x11_get_display_port();
@@ -3044,7 +3056,7 @@ static void _opt_list(void)
 	     acct_gather_profile_to_string(opt.profile));
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
-	info("burst_buffer   : `%s'", opt.burst_buffer);
+	info("burst_buffer   : `%s'", sropt.burst_buffer);
 	info("wckey          : `%s'", opt.wckey);
 	info("cpu_freq_min   : %u", opt.cpu_freq_min);
 	info("cpu_freq_max   : %u", opt.cpu_freq_max);
@@ -3057,31 +3069,31 @@ static void _opt_list(void)
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
 	info("cpu_bind       : %s (%u)",
-	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind, opt.cpu_bind_type);
+	     sropt.cpu_bind == NULL ? "default" : sropt.cpu_bind, sropt.cpu_bind_type);
 	info("mem_bind       : %s (%u)",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind, opt.mem_bind_type);
 	info("verbose        : %d", _verbose);
-	info("slurmd_debug   : %d", opt.slurmd_debug);
+	info("slurmd_debug   : %d", sropt.slurmd_debug);
 	if (opt.immediate <= 1)
 		info("immediate      : %s", tf_(opt.immediate));
 	else
 		info("immediate      : %d secs", (opt.immediate - 1));
-	info("label output   : %s", tf_(opt.labelio));
-	info("unbuffered IO  : %s", tf_(opt.unbuffered));
+	info("label output   : %s", tf_(sropt.labelio));
+	info("unbuffered IO  : %s", tf_(sropt.unbuffered));
 	info("overcommit     : %s", tf_(opt.overcommit));
-	info("threads        : %d", opt.max_threads);
+	info("threads        : %d", sropt.max_threads);
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
 	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
 	if (opt.time_min != NO_VAL)
 		info("time_min       : %d", opt.time_min);
-	if (opt.ckpt_interval)
-		info("checkpoint     : %d mins", opt.ckpt_interval);
-	info("checkpoint_dir : %s", opt.ckpt_dir);
-	if (opt.restart_dir)
-		info("restart_dir    : %s", opt.restart_dir);
-	info("wait           : %d", opt.max_wait);
+	if (sropt.ckpt_interval)
+		info("checkpoint     : %d mins", sropt.ckpt_interval);
+	info("checkpoint_dir : %s", sropt.ckpt_dir);
+	if (sropt.restart_dir)
+		info("restart_dir    : %s", sropt.restart_dir);
+	info("wait           : %d", sropt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
@@ -3090,11 +3102,11 @@ static void _opt_list(void)
 	info("dependency     : %s", opt.dependency);
 	if (opt.gres)
 		info("gres           : %s", opt.gres);
-	info("exclusive      : %s", tf_(opt.exclusive));
-	if (opt.bcast_file)
-		info("bcast          : %s", opt.bcast_file);
+	info("exclusive      : %s", tf_(sropt.exclusive));
+	if (sropt.bcast_file)
+		info("bcast          : %s", sropt.bcast_file);
 	else
-		info("bcast          : %s", tf_(opt.bcast_flag));
+		info("bcast          : %s", tf_(sropt.bcast_flag));
 	info("qos            : %s", opt.qos);
 	if (opt.shared != (uint16_t) NO_VAL)
 		info("oversubscribe  : %u", opt.shared);
@@ -3111,7 +3123,7 @@ static void _opt_list(void)
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
-	info("preserve_env   : %s", tf_(opt.preserve_env));
+	info("preserve_env   : %s", tf_(sropt.preserve_env));
 
 	if (opt.linuximage)
 		info("CnloadImage    : %s", opt.linuximage);
@@ -3122,7 +3134,7 @@ static void _opt_list(void)
 
 	info("network        : %s", opt.network);
 	info("propagate      : %s",
-	     opt.propagate == NULL ? "NONE" : opt.propagate);
+	     sropt.propagate == NULL ? "NONE" : sropt.propagate);
 	if (opt.begin) {
 		char time_str[32];
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
@@ -3133,13 +3145,13 @@ static void _opt_list(void)
 		slurm_make_time_str(&opt.deadline, time_str, sizeof(time_str));
 		info("deadline       : %s", time_str);
 	}
-	info("prolog         : %s", opt.prolog);
-	info("epilog         : %s", opt.epilog);
+	info("prolog         : %s", sropt.prolog);
+	info("epilog         : %s", sropt.epilog);
 	info("mail_type      : %s", print_mail_type(opt.mail_type));
 	info("mail_user      : %s", opt.mail_user);
-	info("task_prolog    : %s", opt.task_prolog);
-	info("task_epilog    : %s", opt.task_epilog);
-	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
+	info("task_prolog    : %s", sropt.task_prolog);
+	info("task_epilog    : %s", sropt.task_epilog);
+	info("multi_prog     : %s", sropt.multi_prog ? "yes" : "no");
 	info("sockets-per-node  : %d", opt.sockets_per_node);
 	info("cores-per-socket  : %d", opt.cores_per_socket);
 	info("threads-per-core  : %d", opt.threads_per_core);
@@ -3154,16 +3166,16 @@ static void _opt_list(void)
 		     opt.core_spec & (~CORE_SPEC_THREAD));
 	} else
 		info("core-spec         : %d", opt.core_spec);
-	if (opt.resv_port_cnt != NO_VAL)
-		info("resv_port_cnt     : %d", opt.resv_port_cnt);
+	if (sropt.resv_port_cnt != NO_VAL)
+		info("resv_port_cnt     : %d", sropt.resv_port_cnt);
 	info("power             : %s", power_flags_str(opt.power_flags));
 
-	str = print_commandline(opt.argc, opt.argv);
+	str = print_commandline(sropt.argc, sropt.argv);
 	info("remote command    : `%s'", str);
 	xfree(str);
 
-	if (opt.pack_group)
-		info("pack_group        : %s",opt.pack_group);
+	if (sropt.pack_group)
+		info("pack_group        : %s", sropt.pack_group);
 
 	for (i = 0; i < opt.spank_job_env_size; i++)
 		info("spank_job_env[%d] : %s", i, opt.spank_job_env[i]);

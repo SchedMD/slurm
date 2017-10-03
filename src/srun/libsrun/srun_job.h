@@ -143,14 +143,14 @@ extern srun_job_t * job_create_noalloc(void);
  */
 extern srun_job_t *job_step_create_allocation(
 			resource_allocation_response_msg_t *resp,
-			opt_t *opt_local);
+			slurm_opt_t *opt_local);
 
 /*
  * Create an srun job structure from a resource allocation response msg
  */
 extern srun_job_t *job_create_allocation(
 			resource_allocation_response_msg_t *resp,
-			opt_t *opt_local);
+			slurm_opt_t *opt_local);
 
 extern void init_srun(int argc, char **argv,
 		      log_options_t *logopt, int debug_level,
@@ -160,7 +160,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals);
 
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
-				bool handle_signals, opt_t *opt_local);
+				bool handle_signals, slurm_opt_t *opt_local);
 
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 		      bool slurm_started);
@@ -168,7 +168,7 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 /*
  *  Update job filenames and modes for stderr, stdout, and stdin.
  */
-extern void job_update_io_fnames(srun_job_t *job, opt_t *opt_local);
+extern void job_update_io_fnames(srun_job_t *job, slurm_opt_t *opt_local);
 
 /* Set up port to handle messages from slurmctld */
 int slurmctld_msg_init(void);

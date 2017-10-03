@@ -47,6 +47,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_mpi.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -73,7 +74,7 @@ typedef struct pmi2_job_info {
 	char **job_env;	     /* environment of job. use in stepd */
 
 	MPIR_PROCDESC *MPIR_proctable;	/* used only in srun */
-	opt_t      *srun_opt;	/* used only in srun */
+	slurm_opt_t *srun_opt;		/* used only in srun */
 	char *resv_ports; /* MPI reserved ports */
 } pmi2_job_info_t;
 
