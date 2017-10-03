@@ -1075,6 +1075,7 @@ extern int scontrol_batch_script(int argc, char **argv)
 
 	if (!(out = fopen(filename, "w"))) {
 		fprintf(stderr, "failed to open file `%s`: %m\n", filename);
+		xfree(filename);
 		return errno;
 	}
 
