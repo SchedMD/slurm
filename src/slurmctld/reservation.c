@@ -1633,7 +1633,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 	char *core_inx_str = NULL;
 
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
-	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
+	xassert((resv_ptr->magic = RESV_MAGIC));	/* Sets value */
 	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
@@ -2411,7 +2411,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->license_list	= license_list;
 	license_list = NULL;
 	resv_ptr->resv_id       = top_suffix;
-	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
+	xassert((resv_ptr->magic = RESV_MAGIC));	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
 	resv_ptr->node_cnt	= total_node_cnt;
 	resv_ptr->node_list	= resv_desc_ptr->node_list;

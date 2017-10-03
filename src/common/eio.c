@@ -115,7 +115,7 @@ eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 	fd_set_close_on_exec(eio->fds[0]);
 	fd_set_close_on_exec(eio->fds[1]);
 
-	xassert(eio->magic = EIO_MAGIC);
+	xassert((eio->magic = EIO_MAGIC));
 
 	eio->obj_list = list_create(eio_obj_destroy);
 	eio->new_objs = list_create(eio_obj_destroy);
@@ -138,7 +138,7 @@ void eio_handle_destroy(eio_handle_t *eio)
 	FREE_NULL_LIST(eio->new_objs);
 	slurm_mutex_destroy(&eio->shutdown_mutex);
 
-	xassert(eio->magic = ~EIO_MAGIC);
+	xassert((eio->magic = ~EIO_MAGIC));
 	xfree(eio);
 }
 

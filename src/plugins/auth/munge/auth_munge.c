@@ -202,7 +202,7 @@ slurm_auth_credential_t *slurm_auth_create(char *opts)
 	cred->len      = 0;
 	cred->cr_errno = SLURM_SUCCESS;
 
-	xassert(cred->magic = MUNGE_MAGIC);
+	xassert((cred->magic = MUNGE_MAGIC));
 
 	/*
 	 *  Temporarily block SIGALARM to avoid misleading
@@ -422,7 +422,7 @@ slurm_auth_unpack( Buf buf )
 	cred->len      = 0;
 	cred->cr_errno = SLURM_SUCCESS;
 
-	xassert(cred->magic = MUNGE_MAGIC);
+	xassert((cred->magic = MUNGE_MAGIC));
 
 	safe_unpackstr_malloc(&cred->m_str, &size, buf);
 	return cred;
