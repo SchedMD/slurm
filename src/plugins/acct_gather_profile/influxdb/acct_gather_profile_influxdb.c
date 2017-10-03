@@ -100,7 +100,9 @@ typedef struct {
 	char *host;
 	char *database;
 	uint32_t def;
+	char *password;
 	char *rt_policy;
+	char *username;
 } slurm_influxdb_conf_t;
 
 typedef struct {
@@ -253,9 +255,15 @@ static int _send_data(const char *data)
 	chunk.size = 0;
 
 	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+	if (influxdb_conf.password)
+		curl_easy_setopt(curl_handle, CURLOPT_PASSWORD,
+				 influxdb_conf.password);
 	curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
 	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, datastr);
 	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, strlen(datastr));
+	if (influxdb_conf.username)
+		curl_easy_setopt(curl_handle, CURLOPT_USERNAME,
+				 influxdb_conf.username);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, _write_callback);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
 
@@ -345,7 +353,9 @@ extern int fini(void)
 	xfree(datastr);
 	xfree(influxdb_conf.host);
 	xfree(influxdb_conf.database);
+	xfree(influxdb_conf.password);
 	xfree(influxdb_conf.rt_policy);
+	xfree(influxdb_conf.username);
 	return SLURM_SUCCESS;
 }
 
@@ -358,7 +368,9 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 		{"ProfileInfluxDBHost", S_P_STRING},
 		{"ProfileInfluxDBDatabase", S_P_STRING},
 		{"ProfileInfluxDBDefault", S_P_STRING},
+		{"ProfileInfluxDBPass", S_P_STRING},
 		{"ProfileInfluxDBRTPolicy", S_P_STRING},
+		{"ProfileInfluxDBUser", S_P_STRING},
 		{NULL} };
 
 	transfer_s_p_options(full_options, options, full_options_cnt);
@@ -384,8 +396,12 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		}
 		s_p_get_string(&influxdb_conf.database,
 			       "ProfileInfluxDBDatabase", tbl);
+		s_p_get_string(&influxdb_conf.password,
+			       "ProfileInfluxDBPass", tbl);
 		s_p_get_string(&influxdb_conf.rt_policy,
 			       "ProfileInfluxDBRTPolicy", tbl);
+		s_p_get_string(&influxdb_conf.username,
+			       "ProfileInfluxDBUser", tbl);
 	}
 
 	if (!influxdb_conf.host)
@@ -394,6 +410,10 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 
 	if (!influxdb_conf.database)
 		fatal("No ProfileInfluxDBDatabase in your acct_gather.conf file. This is required to use the %s plugin",
+		      plugin_type);
+
+	if (influxdb_conf.password && !influxdb_conf.username)
+		fatal("No ProfileInfluxDBUser in your acct_gather.conf file. This is required if ProfileInfluxDBPass is specified to use the %s plugin",
 		      plugin_type);
 
 	if (!influxdb_conf.rt_policy)
@@ -607,8 +627,18 @@ extern void acct_gather_profile_p_conf_values(List *data)
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ProfileInfluxDBPass");
+	key_pair->value = xstrdup(influxdb_conf.password);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ProfileInfluxDBRTPolicy");
 	key_pair->value = xstrdup(influxdb_conf.rt_policy);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ProfileInfluxDBUser");
+	key_pair->value = xstrdup(influxdb_conf.username);
 	list_append(*data, key_pair);
 
 	return;
