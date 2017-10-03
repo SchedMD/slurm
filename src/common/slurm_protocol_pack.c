@@ -6302,6 +6302,19 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _list_find_conf_entry(void *entry, void *key)
+{
+	config_key_pair_t *entry_ptr = NULL;
+
+	if (key == NULL)
+		return 1;
+
+	entry_ptr = (config_key_pair_t *) entry;
+	if (xstrcasecmp(entry_ptr->name, (char *) key) == 0)
+		return 1;
+	return 0;
+}
+
 static void
 _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			 uint16_t protocol_version)
@@ -6325,14 +6338,29 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			count = list_count(build_ptr->acct_gather_conf);
 		else
 			count = NO_VAL;
+
+		if (list_find_first(build_ptr->acct_gather_conf,
+				    _list_find_conf_entry,
+				    "ProfileInfluxDBPass"))
+			count--;
+		if (list_find_first(build_ptr->acct_gather_conf,
+				    _list_find_conf_entry,
+				    "ProfileInfluxDBUser"))
+			count--;
+
 		pack32(count, buffer);
 		if (count && (count != NO_VAL)) {
 			ListIterator itr = list_iterator_create(
 				(List)build_ptr->acct_gather_conf);
 			config_key_pair_t *key_pair = NULL;
 			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
+				if (xstrcasecmp(key_pair->name,
+						"ProfileInfluxDBPass") &&
+				    xstrcasecmp(key_pair->name,
+						"ProfileInfluxDBUser"))
+					pack_config_key_pair(key_pair,
+							     protocol_version,
+							     buffer);
 			}
 			list_iterator_destroy(itr);
 		}
