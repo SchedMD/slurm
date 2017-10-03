@@ -61,7 +61,6 @@
 #include "kvs.h"
 #include "agent.h"
 #include "nameserv.h"
-#include "shmem.h"
 
 /* client command handlers */
 static int _handle_get_maxes(int fd, int lrank, client_req_t *req);

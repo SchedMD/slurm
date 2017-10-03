@@ -52,8 +52,6 @@ static const char NAMEUNPUBLISH_CMD[]     = "name-unpublish";
 static const char NAMEUNPUBLISHRESP_CMD[] = "name-unpublish-response";
 static const char NAMELOOKUP_CMD[]        = "name-lookup";
 static const char NAMELOOKUPRESP_CMD[]    = "name-lookup-response";
-static const char ALLGATHER_CMD[]         = "allgather";
-static const char ALLGATHERRESP_CMD[]     = "allgather-response";
 static const char RING_CMD[]              = "ring";
 static const char RINGRESP_CMD[]          = "ring-response";
 
@@ -88,9 +86,6 @@ static const char INFOVAL_KEY[]           = "infoval%d";
 static const char RING_COUNT_KEY[]        = "ring-count";
 static const char RING_LEFT_KEY[]         = "ring-left";
 static const char RING_RIGHT_KEY[]        = "ring-right";
-static const char SHMEMFILENAME_KEY[]     = "shmemfilename";
-static const char SHMEMFILESIZE_KEY[]     = "shmemfilesize";
-static const char USE_SHMEM_KEY[]         = "use-shmem";
 
 static const char TRUE_VAL[]              = "TRUE";
 static const char FALSE_VAL[]             = "FALSE";
@@ -495,15 +490,6 @@ int PMI2_KVS_Put(const char key[], const char value[]);
   
 @*/
 int PMI2_KVS_Fence(void);
-
-int PMI2_KVS_IFence(void);
-int PMI2_KVS_IWait(void);
-
-int PMI2_Iallgather(const char value[]);
-int PMI2_Iallgather_Wait(void *result);
-
-int PMI2_SHMEM_Iallgather(const char value[]);
-int PMI2_SHMEM_Iallgather_Wait(void **result);
 
 /*@
   PMI2_KVS_Get - returns the value associated with key in the key-value

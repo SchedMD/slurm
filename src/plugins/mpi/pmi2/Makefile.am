@@ -18,7 +18,6 @@ mpi_pmi2_la_SOURCES = mpi_pmi2.c \
 	spawn.c spawn.h \
 	tree.c tree.h \
 	nameserv.c nameserv.h \
-	shmem.c shmem.h \
 	ring.c ring.h
 
 mpi_pmi2_la_LDFLAGS = $(PLUGIN_FLAGS)

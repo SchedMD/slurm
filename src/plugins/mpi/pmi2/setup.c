@@ -262,9 +262,7 @@ _setup_stepd_tree_info(const stepd_step_rec_t *job, char ***env)
 	/* init kvs seq to 0. TODO: reduce array size */
 	tree_info.children_kvs_seq = xmalloc(sizeof(uint32_t) *
 					     job_info.nnodes);
-	tree_info.children_allg_seq = xmalloc(sizeof(uint32_t) *
-					     job_info.nnodes);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -330,10 +328,6 @@ _setup_stepd_kvs(const stepd_step_rec_t *job, char ***env)
 
 	kvs_seq = 1;
 	rc = temp_kvs_init();
-	if (rc != SLURM_SUCCESS)
-		return rc;
-
-	rc = allgather_init();
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -661,9 +655,7 @@ _setup_srun_tree_info(const mpi_plugin_client_info_t *job)
 	/* init kvs seq to 0. TODO: reduce array size */
 	tree_info.children_kvs_seq = xmalloc(sizeof(uint32_t) *
 					     job_info.nnodes);
-	tree_info.children_allg_seq = xmalloc(sizeof(uint32_t) *
-					     job_info.nnodes);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -687,7 +679,6 @@ _setup_srun_kvs(const mpi_plugin_client_info_t *job)
 
 	kvs_seq = 1;
 	rc = temp_kvs_init();
-	rc = allgather_init();
 	return rc;
 }
 
