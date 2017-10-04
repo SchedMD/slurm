@@ -1612,7 +1612,8 @@ static void *_start_stage_in(void *x)
 		info("%s: dws_data_in for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 		_log_script_argv(data_in_argv, resp_msg);
-		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
+		    !strstr(resp_msg, "No matching session")) {
 			trigger_burst_buffer();
 			error("%s: dws_data_in for job %u status:%u "
 			      "response:%s",
@@ -1866,7 +1867,8 @@ static void *_start_stage_out(void *x)
 			     __func__, stage_args->job_id, TIME_STR);
 		}
 		_log_script_argv(data_out_argv, resp_msg);
-		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
+		    !strstr(resp_msg, "No matching session")) {
 			trigger_burst_buffer();
 			error("%s: dws_data_out for job %u "
 			      "status:%u response:%s",
@@ -2030,11 +2032,15 @@ static void *_start_teardown(void *x)
 	info("%s: teardown for job %u ran for %s",
 	     __func__, teardown_args->job_id, TIME_STR);
 	_log_script_argv(teardown_argv, resp_msg);
-	/* "Teardown" is run at every termination of every job that _might_
+	/*
+	 * "Teardown" is run at every termination of every job that _might_
 	 * have a burst buffer, so an error of "token not found" should be
-	 * fairly common and not indicative of a problem. */
+	 * fairly common and not indicative of a problem.
+	 */
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
-	    (!resp_msg || !strstr(resp_msg, "token not found"))) {
+	    (!resp_msg ||
+	     (!strstr(resp_msg, "No matching session") &&
+	      !strstr(resp_msg, "token not found")))) {
 		bool hurry = false;
 		trigger_burst_buffer();
 		error("%s: %s: teardown for job %u status:%u response:%s",
