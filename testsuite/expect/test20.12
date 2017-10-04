@@ -53,7 +53,7 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_exp
 	set env($variable1_name) $variable1_value
 	set env($variable2_name) $variable2_value
 
-	set qsub_base_options [concat -l walltime=1:00 -r $file_err -o $file_out $file_in]
+	set qsub_base_options [concat -l walltime=1:00 -r $file_err -o $file_out ./$file_in]
 	set qsub_options [concat $qsub_extra_options $qsub_base_options]
 
 	eval spawn $qsub [lrange $qsub_options 0 end]
