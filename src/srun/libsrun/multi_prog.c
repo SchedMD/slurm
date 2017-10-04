@@ -182,7 +182,7 @@ extern int
 mpir_set_multi_name(int ntasks, const char *config_fname)
 {
 	FILE *config_fd;
-	char line[256];
+	char line[BUF_SIZE];
 	char *ranks, *exec_name, *p, *ptrptr;
 	int line_num = 0;
 
@@ -418,7 +418,7 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
 		  int32_t *ncmds)
 {
 	FILE *config_fd;
-	char line[256];
+	char line[BUF_SIZE];
 	char *ranks, *exec_name, *p, *ptrptr;
 	int line_num = 0, i, rc = 0;
 	bitstr_t *task_mask;
