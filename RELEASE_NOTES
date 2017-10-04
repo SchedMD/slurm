@@ -76,6 +76,9 @@ NOTE: Spank options handled in local and allocator contexts should be able to
 
 HIGHLIGHTS
 ==========
+ -- X11 support is not fully integrated with the main Slurm code. Remove any
+    X11 plugin configured in your plugstack.conf file to avoid errors being
+    logged about conflicting options.
  -- Added new advanced reservation flag of "flex", which permits jobs requesting
     the reservation to begin prior to the reservation's start time and use
     resources inside or outside of the reservation. A typical use case is to
