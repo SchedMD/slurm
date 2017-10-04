@@ -340,6 +340,8 @@ documents those changes that are of interest to users and administrators.
  -- Reduce the visibily of a number of warnings in _part_access_check.
  -- Prevent segfault in sacctmgr if no association name is specified for
     an update command.
+ -- burst_buffer/cray plugin modified to work with changes in Cray UP06
+    software release.
 
 * Changes in Slurm 17.02.7
 ==========================

@@ -643,35 +643,36 @@ adev0: scontrol shutdown
 
 <h2><a name="upgrade"></a>Upgrades</h2>
 
-<p>Background: The Slurm version numbers contain three digits, which represent
-the major, minor and micro release numbers in that order (e.g. 16.05.3 is
-major=16, minor=05, micro=3).
+<p>Background: The Slurm version numbers contain three digits which represent
+the major and micro release numbers. The combination of the first and second
+digits in the version designate the major release. The third digit in the
+version designates the micro release (e.g. 16.05.3 is major=16.05, micro=3).
 The major release number indicates the last two digits in the year of release
-and the minor release number indicates the month of release.
+followed by the month of release.
 Thus version 16.05.x was initially released in May 2016.
 Changes in the RPCs (remote procedure calls) and state files will only be made
-if the major and/or minor release number changes, which typically happens
+if the major release number changes, which typically happens
 about once every nine months or so.
-A list of recent major/minor Slurm releases is shown below.</p>
+A list of recent major Slurm releases is shown below.</p>
 <ul>
 <li>15.08.x  (Released August 2015)</li>
 <li>16.05.x  (Released May 2016)</li>
 <li>17.02.x  (Released February 2017)</li>
 </ul>
 
-<p>Slurm's MPI libraries may also change if the major and/or minor release number
-change, requiring applications be re-linked (behavior may vary depending upon
+<p>Slurm's MPI libraries may also change if the major release number change,
+requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
-Slurm daemons will support RPCs and state files from the two previous minor
-releases (e.g. a version 16.05.x SlurmDBD will support slurmctld daemons and
-commands with a version of 16.05.x, 15.08.x or 14.11.x).
+Slurm daemons will support RPCs and state files from the two previous major
+releases (e.g. a version 17.02.x SlurmDBD will support slurmctld daemons and
+commands with a version of 17.02.x, 16.05.x or 15.08.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the micro release number generally represent only bug fixes,
 but may also include very minor enhancements.</p>
 
-<p>If the SlurmDBD daemon is used, it must be at the same or higher minor
+<p>If the SlurmDBD daemon is used, it must be at the same or higher major
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
 from 16.05.x to 17.02.x) <b>always upgrade the SlurmDBD daemon first</b>.
@@ -768,6 +769,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 1 March 2017</p>
+<p style="text-align:center;">Last modified 04 October 2017</p>
 
 <!--#include virtual="footer.txt"-->

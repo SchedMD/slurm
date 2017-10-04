@@ -6,25 +6,26 @@
 
 <p>Slurm uses RPCs (Remote Procedure Calls) to communicate between
 daemons and commands.
-The format of many RPCs change between major and/or minor Slurm releases
-(the release numbers are major.minor.micro and changes in the micro number
+The format of many RPCs change between major Slurm releases
+(the first two release digits designates the major and the last one the micro,
+17.02.7 is major=17.02, micro=7, and changes in the micro number
 indicate bug fixes since the previous release, while changes in the
-major or minor numbers indicate fundamental changes in logic).
+major number indicate fundamental changes in logic).
 The reason for format changes is typically new fields being added for new
 Slurm capabilities.
 Slurm communications support the most current release plus the two previous
-release major and/or minor releases.
-For example, Slurm version 15.08.x daemons can communicate with Slurm commands
-from version 14.03.x, 14.11.x and 15.08.x.
+major releases.
+For example, Slurm version 17.02.x daemons can communicate with Slurm commands
+from version 17.02.x, 16.05.x and 15.08.x.
 The same is true for state save files.
-Slurm can be upgraded through two major or minor releases without loss of data
+Slurm can be upgraded through two major releases without loss of data
 since the older state files are still recognized.
 Slurm commands initiated under one version of Slurm can also continue to
-execute and communicate with the Slurm daemons through two release upgrades
-of the daemons.
-Upgrades beyond two releases will result in unrecognized state information,
-but intermediate upgrades can be performed to reformat the state information
-and prevent its loss.
+execute and communicate with the Slurm daemons through two major release
+upgrades of the daemons.
+Upgrades beyond two major releases will result in unrecognized state
+information, but intermediate upgrades can be performed to reformat the state
+information and prevent its loss.
 As new versions of Slurm are released, support for the oldest communication
 protocols is removed from the code.</p>
 
