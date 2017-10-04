@@ -1167,6 +1167,24 @@ static void _trigger_backfill(void)
 	slurm_thread_create_detached(NULL, _trigger_backfill_thread, NULL);
 }
 
+static bool _sched_backfill(void)
+{
+	static int backfill = -1;
+
+	if (backfill == -1) {
+		char *sched_type = slurm_get_sched_type();
+		if (!xstrcmp(sched_type, "sched/backfill"))
+			backfill = 1;
+		else
+			backfill = 0;
+		xfree(sched_type);
+	}
+
+	if (backfill)
+		return true;
+	return false;
+}
+
 /* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
 static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 {
@@ -1207,6 +1225,10 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	if (slurmctld_config.submissions_disabled || (select_serial == 1)) {
 		info("Submissions disabled on system");
 		error_code = ESLURM_SUBMISSIONS_DISABLED;
+		goto send_msg;
+	}
+	if (!_sched_backfill()) {
+		error_code = ESLURM_NOT_SUPPORTED;
 		goto send_msg;
 	}
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
@@ -3989,6 +4011,13 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		info("REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d with empty job list",
 		     uid);
 		error_code = SLURM_ERROR;
+		reject_job = true;
+		goto send_msg;
+	}
+	if (!_sched_backfill()) {
+		error_code = ESLURM_NOT_SUPPORTED;
+		reject_job = true;
+		goto send_msg;
 	}
 	if (select_serial == -1) {
 		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
@@ -3999,13 +4028,13 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	if (slurmctld_config.submissions_disabled || (select_serial == 1)) {
 		info("Submissions disabled on system");
 		error_code = ESLURM_SUBMISSIONS_DISABLED;
+		reject_job = true;
+		goto send_msg;
 	}
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
 		info("REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d with empty job list",
 		     uid);
 		error_code = SLURM_ERROR;
-	}
-	if (error_code) {
 		reject_job = true;
 		goto send_msg;
 	}
