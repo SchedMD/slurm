@@ -1,0 +1,167 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate scontrol top command to priority order jobs.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC
+# Written by Morris Jette <jette-at-schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id		"2.26"
+set exit_code		0
+set file_in		"test$test_id.input"
+set job_name		"test$test_id"
+
+proc submit_job { } {
+	global sbatch file_in job_name number
+
+	set job_id 0
+	spawn $sbatch -N1 -t1 --output=/dev/null --job-name=$job_name --begin=now+5 $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	return $job_id
+}
+
+proc load_job_prio { } {
+	global squeue job_id job_name prio number
+
+	set prio(0) 0
+	set prio(1) 0
+	set prio(2) 0
+
+	spawn $squeue --name=$job_name -o "JOB_ID=%A PRIO=%Q"
+	expect {
+		-re "JOB_ID=($number) PRIO=($number)" {
+			if {$job_id(0) == $expect_out(1,string) } {
+				set prio(0) $expect_out(2,string)
+			} elseif {$job_id(1) == $expect_out(1,string) } {
+				set prio(1) $expect_out(2,string)
+			} elseif {$job_id(2) == $expect_out(1,string) } {
+				set prio(2) $expect_out(2,string)
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc end_it { } {
+	global exit_code job_id scancel
+	if {$job_id(0) > 0} {
+		exec $scancel $job_id(0)
+	}
+	if {$job_id(1) > 0} {
+		exec $scancel $job_id(1)
+	}
+	if {$job_id(2) > 0} {
+		exec $scancel $job_id(2)
+	}
+	exit $exit_code
+}
+
+print_header $test_id
+
+#
+# Submit a slurm job to wait in pending state
+#
+send_user "\nSubmit jobs\n\n"
+make_bash_script $file_in "
+  $bin_sleep 600
+"
+set job_id(0) [submit_job]
+set job_id(1) [submit_job]
+set job_id(2) [submit_job]
+if {$job_id(0) == 0 || $job_id(1) == 0 || $job_id(2) == 0} {
+	send_user "\nFAILURE: failed to submit jobs\n"
+	set exit_code 1
+	end_it
+}
+
+send_user "\nReport initial job priorities\n\n"
+load_job_prio
+
+send_user "\Reset and test job priorities\n\n"
+spawn $scontrol top $job_id(2),$job_id(1)
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+load_job_prio
+if {$prio(2) <= $prio(1) || $prio(1) <= $prio(0)} {
+	send_user "\nFAILURE: job priorities not reset as expected ($prio(2) <= $prio(1) <= $prio(0))\n"
+	set exit_code 1
+	end_it
+}
+
+send_user "\Reset and test job priorities\n\n"
+spawn $scontrol top $job_id(0)
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+load_job_prio
+if {$prio(0) <= $prio(1) || $prio(0) <= $prio(2)} {
+	send_user "\nFAILURE: job priorities not reset as expected ($prio(0) <= $prio(1) && $prio(0) <= $prio(2))\n"
+	set exit_code 1
+	end_it
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+end_it
