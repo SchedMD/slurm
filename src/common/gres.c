@@ -5906,7 +5906,18 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 		job_gres_iter = list_iterator_create(job_gres_list);
 		while ((job_gres_ptr = (gres_state_t *)
 				list_next(job_gres_iter))) {
-			if (step_gres_ptr->plugin_id == job_gres_ptr->plugin_id)
+			gres_job_state_t  *d_job_gres_ptr =
+				(gres_job_state_t *) job_gres_ptr->gres_data;
+			gres_step_state_t *d_step_gres_ptr =
+				(gres_step_state_t *) step_gres_ptr->gres_data;
+			/*
+			 * Here we need to check the type along with the
+			 * plugin_id just in case we have more than one plugin
+			 * with the same name.
+			 */
+			if (step_gres_ptr->plugin_id == job_gres_ptr->plugin_id
+			    && !xstrcmp(d_job_gres_ptr->type_model,
+					d_step_gres_ptr->type_model))
 				break;
 		}
 		list_iterator_destroy(job_gres_iter);
@@ -6031,14 +6042,25 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 
 	slurm_mutex_lock(&gres_context_lock);
 	step_gres_iter = list_iterator_create(step_gres_list);
-	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
-		job_gres_iter = list_iterator_create(job_gres_list);
-		while ((job_gres_ptr = (gres_state_t *)
-				list_next(job_gres_iter))) {
-			if (step_gres_ptr->plugin_id == job_gres_ptr->plugin_id)
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((step_gres_ptr = list_next(step_gres_iter))) {
+		list_iterator_reset(job_gres_iter);
+		while ((job_gres_ptr = list_next(job_gres_iter))) {
+			gres_job_state_t  *d_job_gres_ptr =
+				(gres_job_state_t *) job_gres_ptr->gres_data;
+			gres_step_state_t *d_step_gres_ptr =
+				(gres_step_state_t *) step_gres_ptr->gres_data;
+			/*
+			 * Here we need to check the type along with the
+			 * plugin_id just in case we have more than one plugin
+			 * with the same name.
+			 */
+			if (step_gres_ptr->plugin_id == job_gres_ptr->plugin_id
+			    && !xstrcmp(d_job_gres_ptr->type_model,
+					d_step_gres_ptr->type_model))
 				break;
 		}
-		list_iterator_destroy(job_gres_iter);
+
 		if (job_gres_ptr == NULL)
 			continue;
 
@@ -6055,6 +6077,7 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 			break;
 		}
 	}
+	list_iterator_destroy(job_gres_iter);
 	list_iterator_destroy(step_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 
