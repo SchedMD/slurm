@@ -708,25 +708,31 @@ int main(int argc, char **argv)
 	usleep(500000);
 }
 #else
-	/* Give REQUEST_SHUTDOWN a chance to get propagated,
-	 * up to 3 seconds. */
-	for (i=0; i<30; i++) {
+	/*
+	 * Give REQUEST_SHUTDOWN a chance to get propagated, up to 3 seconds.
+	 */
+	for (i = 0; i < 30; i++) {
 		agent_purge();
 		cnt = get_agent_count();
 		if (cnt == 0)
 			break;
 		usleep(100000);
 	}
+	if (i >= 30)
+		info("Dropped %d hung communications to shutdown", cnt);
 
-	/* do this outside of MEMORY_LEAK_DEBUG so that remote connections get
-	 * closed. */
+	/*
+	 * do this outside of MEMORY_LEAK_DEBUG so that remote connections get
+	 * closed.
+	 */
 
 #ifdef HAVE_BG
-	/* Always call slurm_select_fini() on some systems like
-	   BlueGene we need to make sure other processes are ended
-	   or we could get a random core from within it's
-	   underlying infrastructure.
-	*/
+	/*
+	 * Always call slurm_select_fini() on some systems like
+	 * BlueGene we need to make sure other processes are ended
+	 * or we could get a random core from within it's
+	 * underlying infrastructure.
+	 */
         slurm_select_fini();
 #endif
 
@@ -734,8 +740,8 @@ int main(int argc, char **argv)
 
 	xfree(slurmctld_config.auth_info);
 	if (cnt) {
-		info("Slurmctld shutdown completing with %d active agent "
-		     "thread", cnt);
+		info("Slurmctld shutdown completing with %d active agent thread",
+		     cnt);
 	}
 	log_fini();
 	sched_log_fini();
