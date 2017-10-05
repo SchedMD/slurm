@@ -329,9 +329,10 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	}
 
 	/****** Line ******/
-	if (node_ptr->os)
+	if (node_ptr->os) {
 		xstrfmtcat(out, "OS=%s ", node_ptr->os);
-	xstrcat(out, line_end);
+		xstrcat(out, line_end);
+	}
 
 	/****** Line ******/
 	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
