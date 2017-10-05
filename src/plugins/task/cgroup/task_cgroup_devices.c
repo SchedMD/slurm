@@ -77,7 +77,7 @@ static void _calc_device_major(char *dev_path[PATH_MAX],
 			       char *dev_major[PATH_MAX],
 			       int lines);
 
-static int read_allowed_devices_file(char *allowed_devices[PATH_MAX]);
+static int _read_allowed_devices_file(char *allowed_devices[PATH_MAX]);
 
 extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
@@ -330,7 +330,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
          * create the entry with major minor for the default allowed devices
          * read from the file
          */
-	allow_lines = read_allowed_devices_file(allowed_devices);
+	allow_lines = _read_allowed_devices_file(allowed_devices);
 	_calc_device_major(allowed_devices, allowed_dev_major, allow_lines);
 
 	/*
@@ -483,10 +483,10 @@ static void _calc_device_major(char *dev_path[PATH_MAX],
 }
 
 
-static int read_allowed_devices_file(char **allowed_devices)
+static int _read_allowed_devices_file(char **allowed_devices)
 {
 
-	FILE *file = fopen (cgroup_allowed_devices_file, "r" );
+	FILE *file = fopen(cgroup_allowed_devices_file, "r");
 	int i, l, num_lines = 0;
 	char line[256];
 	glob_t globbuf;
@@ -495,14 +495,14 @@ static int read_allowed_devices_file(char **allowed_devices)
 		line[i] = '\0';
 
 	if ( file != NULL ){
-		while ( fgets ( line, sizeof line, file ) != NULL ){
+		while (fgets(line, sizeof(line), file)) {
 			line[strlen(line)-1] = '\0';
 
 			/* global pattern matching and return the list of matches*/
-			if (glob(line, GLOB_NOSORT, NULL, &globbuf) != 0){
+			if (glob(line, GLOB_NOSORT, NULL, &globbuf)) {
 				debug3("Device %s does not exist", line);
-			}else{
-				for(l=0; l < globbuf.gl_pathc; l++){
+			} else {
+				for (l=0; l < globbuf.gl_pathc; l++) {
 					allowed_devices[num_lines] =
 						xstrdup(globbuf.gl_pathv[l]);
 					num_lines++;
@@ -510,10 +510,11 @@ static int read_allowed_devices_file(char **allowed_devices)
 				globfree(&globbuf);
 			}
 		}
-		fclose ( file );
+		fclose(file);
 	}
 	else
-		perror (cgroup_allowed_devices_file);
+		fatal("%s: %s does not exist, please create this file.",
+		      __func__, cgroup_allowed_devices_file);
 
 	return num_lines;
 }
