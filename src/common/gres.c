@@ -6242,7 +6242,6 @@ extern void gres_plugin_send_stepd(int fd)
 		if (gres_context[i].ops.send_stepd == NULL)
 			continue;	/* No plugin to call */
 		(*(gres_context[i].ops.send_stepd)) (fd);
-		break;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }
@@ -6259,7 +6258,6 @@ extern void gres_plugin_recv_stepd(int fd)
 		if (gres_context[i].ops.recv_stepd == NULL)
 			continue;	/* No plugin to call */
 		(*(gres_context[i].ops.recv_stepd)) (fd);
-		break;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }
