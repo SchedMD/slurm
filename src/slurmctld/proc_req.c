@@ -3358,7 +3358,11 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		}
 	}
 
-	if (job_ptr && (job_info_msg->step_id != NO_VAL)) {
+	if (!validate_operator(uid) && job_ptr->user_id != uid)
+		error_code = ESLURM_USER_ID_MISSING;
+
+	if ((error_code == SLURM_SUCCESS) && job_ptr
+	    && (job_info_msg->step_id != NO_VAL)) {
 		step_ptr = find_step_record(job_ptr, job_info_msg->step_id);
 		if (!step_ptr) {
 			job_ptr = NULL;
