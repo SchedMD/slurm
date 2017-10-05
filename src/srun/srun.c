@@ -549,19 +549,20 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	else
 		env->nodelist = job->nodelist;
 	env->partition = job->partition;
-	/*
-	 * If we didn't get the allocation don't overwrite the previous info.
-	 */
-	if (got_alloc)
-		env->nhosts = job->nhosts;
-	env->ntasks = job->ntasks;
+	if (job->pack_nnodes != NO_VAL)
+		env->nhosts = job->pack_nnodes;
+	else if (got_alloc)	/* Don't overwrite unless we got allocation */
+		env->nhosts = job->ntasks;
 	if (job->pack_ntasks != NO_VAL)
 		env->ntasks = job->pack_ntasks;
+	else
+		env->ntasks = job->ntasks;
 	env->task_count = _uint16_array_to_str(job->nhosts, tasks);
 	if (job->pack_jobid != NO_VAL)
 		env->jobid = job->pack_jobid;
 	else
 		env->jobid = job->jobid;
+	env->ntasks = job->ntasks;
 	env->stepid = job->stepid;
 	env->account = job->account;
 	env->qos = job->qos;

@@ -60,6 +60,7 @@ documents those changes that are of interest to users and administrators.
     * Synchronize application launch across multiple components with debugger.
     * Modify slurm_kill_job_step() to cancel all components of a heterogeneous
       job step (used by MPI).
+    * Set SLURM_JOB_NUM_NODES environment variable as needed by MVAPICH.
  -- Add cluster name to smail tool email header.
  -- Speedup arbitrary distribution algorithm.
  -- Modify "srun --mpi=list" output to match valid option input by removing the
