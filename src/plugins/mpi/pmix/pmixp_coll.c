@@ -438,7 +438,7 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf)
 	set_buf_offset(coll->buf, get_buf_offset(coll->buf) + size);
 
 	/* increase number of individual contributions */
-	coll->ch_contribs[nodeid]++;
+	coll->ch_contribs[nodeid] = true;
 
 	/* increase number of total contributions */
 	coll->contrib_cntr++;
