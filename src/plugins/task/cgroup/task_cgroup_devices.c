@@ -514,7 +514,10 @@ static void _calc_device_major(char *dev_path[PATH_MAX],
 		lines = PATH_MAX;
 	}
 	for (k = 0; k < lines; k++) {
-		stat(dev_path[k], &fs);
+		if (stat(dev_path[k], &fs) < 0) {
+			error("task/cgroup: stat(%s): %m", dev_path[k]);
+			continue;
+		}
 		major = (int)major(fs.st_rdev);
 		minor = (int)minor(fs.st_rdev);
 		debug3("device : %s major %d, minor %d",
