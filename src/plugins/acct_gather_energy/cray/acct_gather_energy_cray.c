@@ -108,12 +108,13 @@ static uint64_t _get_latest_stats(int type)
 	}
 
 	if (!(fp = fopen(file_name, "r"))) {
-		error("_get_latest_stats: unable to open %s", file_name);
+		error("%s: unable to open %s", __func__, file_name);
 		return data;
 	}
 
 	fd = fileno(fp);
-	fcntl(fd, F_SETFD, FD_CLOEXEC);
+	if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
+		error("%s: fcntl(%s): %m", __func__, file_name);
 	num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
 	if (num_read > 0) {
 		sbuf[num_read] = '\0';
