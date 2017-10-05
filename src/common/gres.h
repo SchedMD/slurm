@@ -235,15 +235,14 @@ extern int gres_plugin_node_config_devices_path(char ***dev_path,
 						char *node_name);
 
 /*
- * Provide information about the allocate gres devices for a particular job
+ * Set GRES devices as allocated or not for a particular job
  * IN gres_list - allocated gres devices
- * IN gres_count - count of gres.conf records for each gres name
  * IN is_job - if is job function expects gres_job_state_t's else
  *             gres_step_state_t's
- * OUT gres_bit_alloc - the exact devices which are allocated
+ * RET - List of gres_device_t containing all devices from all GRES with alloc
+ *       set correctly if the device is allocated to the job/step.
  */
-extern void gres_plugin_state_file(List gres_list, int *gres_count,
-				   bool is_job, int *gres_bit_alloc);
+extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job);
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_plugin_send_stepd(int fd);

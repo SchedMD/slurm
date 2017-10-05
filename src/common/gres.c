@@ -106,6 +106,7 @@ typedef struct slurm_gres_ops {
 						  uint32_t node_inx,
 						  enum gres_step_data_type data_type,
 						  void *data);
+	List            (*get_devices)		( void );
 } slurm_gres_ops_t;
 
 /* Gres plugin context, one for each gres type */
@@ -325,6 +326,7 @@ static int _load_gres_plugin(char *plugin_name,
 		"recv_stepd",
 		"job_info",
 		"step_info",
+		"get_devices",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -4864,65 +4866,93 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-extern void gres_plugin_state_file(List gres_list, int *gres_count,
-				   bool is_job, int *gres_bit_alloc)
+extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 {
-	int i, j, gres_cnt = 0, len, p, found = 0;
-	ListIterator gres_iter;
+	int i, j;
+	ListIterator gres_itr, dev_itr;
 	gres_state_t *gres_ptr;
 	bitstr_t **local_bit_alloc = NULL;
 	uint32_t node_cnt;
+	gres_device_t *gres_device;
+	List gres_devices;
+	List device_list = NULL;
+	bool already_seen[gres_context_cnt];
 
-	if (gres_list == NULL || !gres_count || !gres_bit_alloc)
-		return;
+	if (!gres_list)
+		return NULL;
+
 	(void) gres_plugin_init();
 
+	memset(already_seen, 0, sizeof(already_seen));
+
 	slurm_mutex_lock(&gres_context_lock);
-	gres_iter = list_iterator_create(gres_list);
-	for (j = 0; j < gres_context_cnt; j++) {
-		found = 0;
-		list_iterator_reset(gres_iter);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id != gres_context[j].plugin_id)
-				continue;
-			found = 1;
-			if (is_job) {
-				gres_job_state_t *gres_data_ptr =
-					(gres_job_state_t *)
-					gres_ptr->gres_data;
-				local_bit_alloc = gres_data_ptr->gres_bit_alloc;
-				node_cnt = gres_data_ptr->node_cnt;
-			} else {
-				gres_step_state_t *gres_data_ptr =
-					(gres_step_state_t *)
-					gres_ptr->gres_data;
-				local_bit_alloc = gres_data_ptr->gres_bit_alloc;
-				node_cnt = gres_data_ptr->node_cnt;
-			}
-			if (gres_ptr->gres_data &&
-			    (node_cnt == 1) &&
-			    local_bit_alloc &&
-			    local_bit_alloc[0]) {
-				len = bit_size(local_bit_alloc[0]);
-				for (i = 0; i < len; i++) {
-					if (!bit_test(local_bit_alloc[0], i))
-						gres_bit_alloc[gres_cnt] = 0;
-					else
-						gres_bit_alloc[gres_cnt] = 1;
-					gres_cnt++;
-				}
-			}
-			break;
+	gres_itr = list_iterator_create(gres_list);
+	while ((gres_ptr = list_next(gres_itr))) {
+		for (j = 0; j < gres_context_cnt; j++) {
+			if (gres_ptr->plugin_id == gres_context[j].plugin_id)
+				break;
 		}
-		if (found == 0) {
-			for (p = 0; p < gres_count[j]; p++) {
-				gres_bit_alloc[gres_cnt] = 0;
-				gres_cnt++;
-			}
+
+		if (j >= gres_context_cnt) {
+			error("We were unable to find the gres in the context!!!  This should never happen");
+			continue;
 		}
+
+		if (is_job) {
+			gres_job_state_t *gres_data_ptr =
+				(gres_job_state_t *)gres_ptr->gres_data;
+			local_bit_alloc = gres_data_ptr->gres_bit_alloc;
+			node_cnt = gres_data_ptr->node_cnt;
+		} else {
+			gres_step_state_t *gres_data_ptr =
+				(gres_step_state_t *)gres_ptr->gres_data;
+			local_bit_alloc = gres_data_ptr->gres_bit_alloc;
+			node_cnt = gres_data_ptr->node_cnt;
+		}
+
+		if (!gres_ptr->gres_data ||
+		    (node_cnt != 1) ||
+		    !local_bit_alloc ||
+		    !local_bit_alloc[0])
+			continue;
+
+		gres_devices = (*(gres_context[j].ops.get_devices))();
+		if (!gres_devices) {
+			error("We should had got gres_devices, but for some reason none were set in the plugin.");
+			continue;
+		} else if ((int)bit_size(local_bit_alloc[0]) !=
+			   list_count(gres_devices)) {
+			error("We got %d gres devices when we were only told about %d.  This should never happen.",
+			      list_count(gres_devices),
+			      (int)bit_size(local_bit_alloc[0]));
+			continue;
+
+		}
+
+		dev_itr = list_iterator_create(gres_devices);
+		i = 0;
+		while ((gres_device = list_next(dev_itr))) {
+			if (!device_list)
+				device_list = list_create(NULL);
+			if (!already_seen[j]) {
+				if (!bit_test(local_bit_alloc[0], i))
+					gres_device->alloc = 0;
+				else
+					gres_device->alloc = 1;
+				list_append(device_list, gres_device);
+			} else
+				if (bit_test(local_bit_alloc[0], i))
+					gres_device->alloc = 1;
+			//info("%d is %d", i, gres_device->alloc);
+			i++;
+		}
+		list_iterator_destroy(dev_itr);
+		already_seen[j] = true;
 	}
-	list_iterator_destroy(gres_iter);
+	list_iterator_destroy(gres_itr);
 	slurm_mutex_unlock(&gres_context_lock);
+
+	return device_list;
 }
 
 static void _step_state_delete(void *gres_data)

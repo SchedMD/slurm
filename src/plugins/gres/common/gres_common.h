@@ -49,11 +49,31 @@
  * Common validation for what was read in from the gres.conf.
  * IN gres_conf_list
  * IN gres_name
- * OUT num_avail_devices
- * OUT avail_devices
+ * OUT gres_devices
  */
 extern int common_node_config_load(List gres_conf_list,
 				   char *gres_name,
-				   int **avail_devices,
-				   int *num_avail_devices);
+				   List *gres_devices);
+
+/*
+ * Test if GRES env variables should be set to global device ID or a device
+ * ID that always starts at zero (based upon what the application can see).
+ * RET true if TaskPlugin=task/cgroup AND ConstrainDevices=yes (in cgroup.conf).
+ */
+extern bool common_use_local_device_index(void);
+
+/* set the environment for a job/step with the appropriate values */
+extern void common_gres_set_env(List gres_devices, char ***env_ptr,
+				void *gres_ptr, int node_inx,
+				bitstr_t *usable_gres, char *prefix,
+				int *local_inx,
+				char **local_list, char **global_list,
+				bool reset, bool is_job);
+
+/* Send GRES information from slurmd on the specified file descriptor */
+extern void common_send_stepd(int fd, List gres_devices);
+
+/* Receive GRES information from slurmd on the specified file descriptor */
+extern void common_recv_stepd(int fd, List *gres_devices);
+
 #endif

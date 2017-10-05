@@ -39,87 +39,293 @@
 #include "gres_common.h"
 
 #include "src/common/xstring.h"
+#include "src/common/xcgroup_read_config.h"
 
 extern int common_node_config_load(List gres_conf_list,
 				   char *gres_name,
-				   int **avail_devices,
-				   int *num_avail_devices)
+				   List *gres_devices)
 {
 	int i, rc = SLURM_SUCCESS;
-	ListIterator iter;
+	ListIterator itr;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	int avail_device_inx = 0, loc_num_avail_devices = 0;
-	int *loc_avail_devices = 0;
+	hostlist_t hl;
+	char *slash, *root_path, *one_name;
+	gres_device_t *gres_device;
 
 	xassert(gres_conf_list);
-	xassert(avail_devices);
+	xassert(gres_devices);
 
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(iter))) {
+	itr = list_iterator_create(gres_conf_list);
+	while ((gres_slurmd_conf = list_next(itr))) {
 		if ((gres_slurmd_conf->has_file != 1) ||
 		    !gres_slurmd_conf->file ||
 		    xstrcmp(gres_slurmd_conf->name, gres_name))
 			continue;
-
-		loc_num_avail_devices++;
-	}
-	list_iterator_destroy(iter);
-	*num_avail_devices = -1;
-	xfree(*avail_devices);	/* No-op if NULL */
-	loc_avail_devices = xmalloc(sizeof(int) * loc_num_avail_devices);
-	for (i = 0; i < loc_num_avail_devices; i++)
-		loc_avail_devices[i] = -1;
-
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(iter))) {
-		char *bracket, *fname, *tmp_name;
-		hostlist_t hl;
-		if ((gres_slurmd_conf->has_file != 1) ||
-		    !gres_slurmd_conf->file ||
-		    xstrcmp(gres_slurmd_conf->name, gres_name))
-			continue;
-		/* Populate loc_avail_devices array with number
-		 * at end of the file name */
-		bracket = strrchr(gres_slurmd_conf->file, '[');
-		if (bracket)
-			tmp_name = xstrdup(bracket);
-		else
-			tmp_name = xstrdup(gres_slurmd_conf->file);
-		hl = hostlist_create(tmp_name);
-		xfree(tmp_name);
-		if (!hl) {
-			rc = EINVAL;
-			break;
+		root_path = xstrdup(gres_slurmd_conf->file);
+		slash = strrchr(root_path, '/');
+		if (slash) {
+			hl = hostlist_create(slash + 1);
+			slash[1] = '\0';
+		} else {
+			hl = hostlist_create(root_path);
+			root_path[0] = '\0';
 		}
-		while ((fname = hostlist_shift(hl))) {
-			if (avail_device_inx == loc_num_avail_devices) {
-				loc_num_avail_devices++;
-				xrealloc(loc_avail_devices,
-					 sizeof(int) * loc_num_avail_devices);
-				loc_avail_devices[avail_device_inx] = -1;
-			}
-			for (i = 0; fname[i]; i++) {
-				if (!isdigit(fname[i]))
+
+		if (!hl) {
+			error("can't parse gres.conf file record (%s)",
+			      gres_slurmd_conf->file);
+			xfree(root_path);
+			continue;
+		}
+		while ((one_name = hostlist_shift(hl))) {
+			if (!*gres_devices)
+				*gres_devices =
+					list_create(destroy_gres_device);
+
+			gres_device = xmalloc(sizeof(gres_device_t));
+			list_append(*gres_devices, gres_device);
+
+			xstrfmtcat(gres_device->path, "%s%s",
+				   root_path, one_name);
+
+			gres_device->major = gres_device_major(
+				gres_device->path);
+
+			for (i = 0; one_name[i]; i++) {
+				if (!isdigit(one_name[i]))
 					continue;
-				loc_avail_devices[avail_device_inx] =
-					atoi(fname + i);
+				gres_device->dev_num = atoi(one_name + i);
 				break;
 			}
-			avail_device_inx++;
-			free(fname);
+			info("%s device number %d(%s):%s",
+			     gres_name, gres_device->dev_num,
+			     gres_device->path, gres_device->major);
+			free(one_name);
 		}
 		hostlist_destroy(hl);
+		xfree(root_path);
 	}
-	list_iterator_destroy(iter);
-
-	if (rc == SLURM_SUCCESS) {
-		for (i = 0; i < loc_num_avail_devices; i++)
-			info("%s %d is device number %d",
-			     gres_name, i, loc_avail_devices[i]);
-
-		*num_avail_devices = loc_num_avail_devices;
-		*avail_devices = loc_avail_devices;
-	}
+	list_iterator_destroy(itr);
 
 	return rc;
+}
+
+extern bool common_use_local_device_index(void)
+{
+	slurm_cgroup_conf_t slurm_cgroup_conf;
+	char *task_plugin = slurm_get_task_plugin();
+	bool use_cgroup = false;
+	static bool use_local_index = false;
+	static bool is_set = false;
+
+	if (is_set)
+		return use_local_index;
+	is_set = true;
+
+	if (!task_plugin)
+		return use_local_index;
+
+	if (strstr(task_plugin, "cgroup"))
+		use_cgroup = true;
+	xfree(task_plugin);
+	if (!use_cgroup)
+		return use_local_index;
+
+	/* Read and parse cgroup.conf */
+	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
+	if (read_slurm_cgroup_conf(&slurm_cgroup_conf) != SLURM_SUCCESS)
+		return use_local_index;
+	if (slurm_cgroup_conf.constrain_devices)
+		use_local_index = true;
+	free_slurm_cgroup_conf(&slurm_cgroup_conf);
+
+	return use_local_index;
+}
+
+extern void common_gres_set_env(List gres_devices, char ***env_ptr,
+				void *gres_ptr, int node_inx,
+				bitstr_t *usable_gres, char *prefix,
+				int *local_inx,
+				char **local_list, char **global_list,
+				bool reset, bool is_job)
+{
+	int i, len;
+	bitstr_t *bit_alloc = NULL;
+	bool use_local_dev_index = common_use_local_device_index();
+	bool alloc_cnt = false;
+	gres_device_t *gres_device, *first_device = NULL;
+	ListIterator itr;
+
+	if (!gres_devices)
+		return;
+
+	xassert(local_list);
+	xassert(global_list);
+
+	if (is_job) {
+		gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
+		if (gres_job_ptr &&
+		    (node_inx >= 0) &&
+		    (node_inx < gres_job_ptr->node_cnt) &&
+		    gres_job_ptr->gres_bit_alloc &&
+		    gres_job_ptr->gres_bit_alloc[node_inx]) {
+			bit_alloc = gres_job_ptr->gres_bit_alloc[node_inx];
+		} else if (gres_job_ptr && (gres_job_ptr->gres_cnt_alloc > 0))
+			alloc_cnt = true;
+
+	} else {
+		gres_step_state_t *gres_step_ptr =
+			(gres_step_state_t *) gres_ptr;
+		if (gres_step_ptr &&
+		    (gres_step_ptr->node_cnt == 1) &&
+		    gres_step_ptr->gres_bit_alloc &&
+		    gres_step_ptr->gres_bit_alloc[0]) {
+			bit_alloc = gres_step_ptr->gres_bit_alloc[0];
+		} else if (gres_step_ptr && (gres_step_ptr->gres_cnt_alloc > 0))
+			alloc_cnt = true;
+	}
+
+	/* If we are resetting and we don't have a usable_gres we just exit */
+	if (reset && !usable_gres)
+		return;
+
+	if (bit_alloc) {
+		len = bit_size(bit_alloc);
+		if (len != list_count(gres_devices)) {
+			error("%s: gres list is not equal to the number of gres_devices.  This should never happen.",
+			      __func__);
+			return;
+		}
+
+		i = -1;
+		itr = list_iterator_create(gres_devices);
+		while ((gres_device = list_next(itr))) {
+			i++;
+			if (!bit_test(bit_alloc, i))
+				continue;
+			if (reset) {
+				if (!first_device)
+					first_device = gres_device;
+				if (!bit_test(usable_gres, i))
+					continue;
+			}
+			if (*global_list) {
+				xstrcat(*global_list, ",");
+				xstrcat(*local_list,  ",");
+			}
+
+			xstrfmtcat(*local_list, "%s%d",
+				   prefix, use_local_dev_index ?
+				   (*local_inx)++ : gres_device->dev_num);
+			//info("looking at %d and %d", i, gres_device->dev_num);
+			xstrfmtcat(*global_list, "%s%d",
+				   prefix, gres_device->dev_num);
+		}
+		list_iterator_destroy(itr);
+
+		if (reset && !*global_list && first_device) {
+			xstrfmtcat(*local_list, "%s%d",
+				   prefix, use_local_dev_index ?
+				   (*local_inx)++ : first_device->dev_num);
+			xstrfmtcat(*global_list, "%s%d",
+				   prefix, first_device->dev_num);
+		}
+	} else if (alloc_cnt) {
+		/* The gres.conf file must identify specific device files
+		 * in order to set the CUDA_VISIBLE_DEVICES env var */
+		debug("%s: unable to set env vars, no device files configured",
+		      __func__);
+	} else if (!*global_list) {
+		xstrcat(*global_list, "NoDevFiles");
+		xstrcat(*local_list, "NoDevFiles");
+	}
+}
+
+extern void common_send_stepd(int fd, List gres_devices)
+{
+	int i;
+	int cnt = 0;
+	gres_device_t *gres_device;
+	ListIterator itr;
+
+	if (gres_devices)
+		cnt = list_count(gres_devices);
+	safe_write(fd, &cnt, sizeof(int));
+
+	if (!cnt)
+		return;
+
+	itr = list_iterator_create(gres_devices);
+	while ((gres_device = list_next(itr))) {
+		safe_write(fd, &gres_device->dev_num, sizeof(int));
+		if (gres_device->major) {
+			i = strlen(gres_device->major);
+			safe_write(fd, &i, sizeof(int));
+			safe_write(fd, gres_device->major, i);
+		} else {
+			i = 0;
+			safe_write(fd, &i, sizeof(int));
+		}
+
+		if (gres_device->path) {
+			i = strlen(gres_device->path);
+			safe_write(fd, &i, sizeof(int));
+			safe_write(fd, gres_device->path, i);
+		} else {
+			i = 0;
+			safe_write(fd, &i, sizeof(int));
+		}
+	}
+	list_iterator_destroy(itr);
+
+	return;
+
+rwfail:
+	error("%s: failed", __func__);
+	return;
+}
+
+extern void common_recv_stepd(int fd, List *gres_devices)
+{
+	int i, cnt, len;
+	gres_device_t *gres_device;
+
+	xassert(gres_devices);
+
+	safe_read(fd, &cnt, sizeof(int));
+	if (*gres_devices) {
+		list_destroy(*gres_devices);
+		*gres_devices = NULL;
+	}
+	if (!cnt)
+		return;
+	*gres_devices = list_create(destroy_gres_device);
+
+	for (i = 0; i < cnt; i++) {
+		gres_device = xmalloc(sizeof(gres_device_t));
+		/*
+		 * Since we are pulling from a list we need to append here
+		 * instead of push.
+		 */
+		list_append(*gres_devices, gres_device);
+		safe_read(fd, &gres_device->dev_num, sizeof(int));
+		safe_read(fd, &len, sizeof(int));
+		if (len) {
+			gres_device->major = xmalloc(sizeof(char) * len);
+			safe_read(fd, gres_device->major, len);
+		}
+		safe_read(fd, &len, sizeof(int));
+		if (len) {
+			gres_device->path = xmalloc(sizeof(char) * len);
+			safe_read(fd, gres_device->path, len);
+		}
+		/* info("adding %d %s %s", gres_device->dev_num, */
+		/*      gres_device->major, gres_device->path); */
+	}
+
+	return;
+
+rwfail:
+	error("%s: failed", __func__);
+	return;
 }
