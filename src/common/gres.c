@@ -4612,31 +4612,30 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
 
+	if (!job_gres_list)
+		return;
+
 	(void) gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	for (i=0; i<gres_context_cnt; i++) {
-		if (gres_context[i].ops.job_set_env == NULL)
-			continue;	/* No plugin to call */
-		if (job_gres_list) {
-			gres_iter = list_iterator_create(job_gres_list);
-			while ((gres_ptr = (gres_state_t *)
-					   list_next(gres_iter))) {
-				if (gres_ptr->plugin_id !=
-				    gres_context[i].plugin_id)
-					continue;
-				(*(gres_context[i].ops.job_set_env))
-					(job_env_ptr, gres_ptr->gres_data,
-					 node_inx);
+	gres_iter = list_iterator_create(job_gres_list);
+	while ((gres_ptr = list_next(gres_iter))) {
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
 				break;
-			}
-			list_iterator_destroy(gres_iter);
 		}
-		if (gres_ptr == NULL) { /* No data found */
-			(*(gres_context[i].ops.job_set_env))
-					(job_env_ptr, NULL, node_inx);
+		if (i >= gres_context_cnt) {
+			error("%s: gres not found in context.  This should never happen",
+			      __func__);
+			continue;
 		}
+
+		if (!gres_context[i].ops.job_set_env)
+			continue;	/* No plugin to call */
+		(*(gres_context[i].ops.job_set_env))
+			(job_env_ptr, gres_ptr->gres_data, node_inx);
 	}
+	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
@@ -5555,63 +5554,57 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 	bool bind_mic = accel_bind_type & ACCEL_BIND_CLOSEST_MIC;
 	bitstr_t *usable_gres = NULL;
 
+	if (step_gres_list == NULL)
+		return;
+
 	(void) gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	for (i = 0; i < gres_context_cnt; i++) {
-		if (gres_context[i].ops.step_set_env == NULL)
+	gres_iter = list_iterator_create(step_gres_list);
+	while ((gres_ptr = list_next(gres_iter))) {
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
+				break;
+		}
+		if (i >= gres_context_cnt) {
+			error("%s: gres not found in context.  This should never happen",
+			      __func__);
+			continue;
+		}
+
+		if (!gres_context[i].ops.step_set_env)
 			continue;	/* No plugin to call */
 		if (bind_gpu || bind_mic || bind_nic) {
 			if (!xstrcmp(gres_context[i].gres_name, "gpu")) {
 				if (!bind_gpu)
 					continue;
-				usable_gres = _get_usable_gres(i);
 			} else if (!xstrcmp(gres_context[i].gres_name, "mic")) {
 				if (!bind_mic)
 					continue;
-				usable_gres = _get_usable_gres(i);
 			} else if (!xstrcmp(gres_context[i].gres_name, "nic")) {
 				if (!bind_nic)
 					continue;
-				usable_gres = _get_usable_gres(i);
 			} else {
 				continue;
 			}
+			usable_gres = _get_usable_gres(i);
 		}
-		if (step_gres_list) {
-			gres_iter = list_iterator_create(step_gres_list);
-			while ((gres_ptr = (gres_state_t *)
-					   list_next(gres_iter))) {
-				if (gres_ptr->plugin_id !=
-				    gres_context[i].plugin_id)
-					continue;
-				if (accel_bind_type) {
-					(*(gres_context[i].ops.step_reset_env))
-						(job_env_ptr,
-						 gres_ptr->gres_data,
-						 usable_gres);
-				} else {
-					(*(gres_context[i].ops.step_set_env))
-						(job_env_ptr,
-						 gres_ptr->gres_data);
-				}
-				break;
-			}
-			list_iterator_destroy(gres_iter);
-		}
-		if (gres_ptr == NULL) { /* No data found */
-			if (accel_bind_type) {
-				(*(gres_context[i].ops.step_reset_env))
-					(job_env_ptr, NULL, NULL);
-			} else {
-				(*(gres_context[i].ops.step_set_env))
-					(job_env_ptr, NULL);
-			}
-		}
+
+		if (accel_bind_type)
+			(*(gres_context[i].ops.step_reset_env))
+				(job_env_ptr,
+				 gres_ptr->gres_data,
+				 usable_gres);
+		else
+			(*(gres_context[i].ops.step_set_env))
+				(job_env_ptr,
+				 gres_ptr->gres_data);
+
 		FREE_NULL_BITMAP(usable_gres);
 	}
+	list_iterator_destroy(gres_iter);
+
 	slurm_mutex_unlock(&gres_context_lock);
-	FREE_NULL_BITMAP(usable_gres);
 }
 
 static void _step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id,
