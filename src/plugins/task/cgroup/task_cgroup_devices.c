@@ -82,6 +82,7 @@ static int read_allowed_devices_file(char *allowed_devices[PATH_MAX]);
 extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	uint16_t cpunum;
+	FILE *file = fopen (cgroup_allowed_devices_file, "r" );
 
 	/* initialize cpuinfo internal data */
 	if ( xcpuinfo_init() != XCPUINFO_SUCCESS )
@@ -99,8 +100,6 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		goto error;
 	}
 
-	(void) gres_plugin_node_config_load(cpunum, conf->node_name, NULL);
-
 	strcpy(cgroup_allowed_devices_file,
 	       slurm_cgroup_conf->allowed_devices_file);
 	if (xcgroup_ns_create(slurm_cgroup_conf, &devices_ns, "", "devices")
@@ -108,6 +107,14 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		error("task/cgroup: unable to create devices namespace");
 		goto error;
 	}
+
+	file = fopen(cgroup_allowed_devices_file, "r" );
+	if (!file) {
+		error("task/cgroup: %s doesn't exist, this is needed for proper functionality when Constraining Devices", cgroup_allowed_devices_file);
+		goto error;
+	} else
+		fclose(file);
+
 
 	return SLURM_SUCCESS;
 
