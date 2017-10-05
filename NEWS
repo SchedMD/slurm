@@ -348,6 +348,7 @@ documents those changes that are of interest to users and administrators.
     an update command.
  -- burst_buffer/cray plugin modified to work with changes in Cray UP06
     software release.
+ -- Fix job reasons for jobs that are violating assoc MaxTRESPerNode limits.
 
 * Changes in Slurm 17.02.7
 ==========================
