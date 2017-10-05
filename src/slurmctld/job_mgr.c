@@ -15680,7 +15680,8 @@ static int _set_top(List top_job_list, uid_t uid)
 			job_ptr->details->nice += delta_nice;
 			job_ptr->bit_flags &= (~TOP_PRIO_TMP);
 			total_delta -= delta_nice;
-			other_job_cnt--;
+			if (--other_job_cnt == 0)
+				break;	/* Count will match list size anyway */
 		}
 		list_iterator_destroy(iter);
 	}
