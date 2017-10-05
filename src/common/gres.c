@@ -664,7 +664,7 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 
 	if (p->cpus) {
 		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s "
-		     "CPUs=%s CpuCnt=%u",
+		     "Cores=%s CoreCnt=%u",
 		     p->name, p->type, p->count, p->plugin_id, p->file, p->cpus,
 		     p->cpu_cnt);
 	} else if (p->file) {
@@ -762,7 +762,9 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 {
 	static s_p_options_t _gres_options[] = {
 		{"Count", S_P_STRING},	/* Number of Gres available */
-		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
+		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource
+					 * (deprecated, use Cores) */
+		{"Cores" , S_P_STRING},	/* Cores to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
 		{"Name",  S_P_STRING},	/* Gres name */
 		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
@@ -790,22 +792,22 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	}
 
 	p->cpu_cnt = gres_cpu_cnt;
-	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
+	if (s_p_get_string(&p->cpus, "Cores", tbl) ||
+	    s_p_get_string(&p->cpus, "CPUs", tbl)) {
 		char *local_cpus = NULL;
 		p->cpus_bitmap = bit_alloc(gres_cpu_cnt);
 		if (xcpuinfo_ops.xcpuinfo_abs_to_mac) {
 			i = (xcpuinfo_ops.xcpuinfo_abs_to_mac)
 				(p->cpus, &local_cpus);
 			if (i != SLURM_SUCCESS) {
-				fatal("Invalid gres data for %s, CPUs=%s",
+				fatal("Invalid gres data for %s, Cores=%s",
 				      p->name, p->cpus);
 			}
 		} else
 			local_cpus = xstrdup(p->cpus);
 		if ((bit_size(p->cpus_bitmap) == 0) ||
 		    bit_unfmt(p->cpus_bitmap, local_cpus) != 0) {
-			fatal("Invalid gres data for %s, CPUs=%s (only %u CPUs"
-			      " are available)",
+			fatal("Invalid gres data for %s, Cores=%s (only %u Cores  are available)",
 			      p->name, p->cpus, gres_cpu_cnt);
 		}
 		xfree(local_cpus);
@@ -877,6 +879,7 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 	static s_p_options_t _gres_options[] = {
 		{"Count", S_P_STRING},	/* Number of Gres available */
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
+		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
 		{"Name",  S_P_STRING},	/* Gres name */
 		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */

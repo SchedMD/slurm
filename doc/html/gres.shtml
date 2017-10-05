@@ -49,7 +49,7 @@ NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,bandwidth:lustre:no_consume:4G
 
 <P>Each compute node with generic resources must also contain a <I>gres.conf</I>
 file describing which resources are available on the node, their count, 
-associated device files and CPUs which should be used with those resources.
+associated device files and cores which should be used with those resources.
 The configuration parameters available are:</P>
 
 <UL>
@@ -63,19 +63,24 @@ to multiply the number by 1024, 1048576 or 1073741824 respectively
 (e.g. "Count=10G"). Note that Count is a 32-bit field and the maximum value
 is 4,294,967,295.</LI>
 
-<LI><B>CPUs</B>
-Specify the CPU index numbers for the specific CPUs which can
+<LI><B>Cores</B>
+Specify the first thread CPU index numbers for the specific cores which can
 use this resource.
 For example, it may be strongly preferable
-to use specific CPUs with specific devices (e.g. on a NUMA
-architecture). Multiple CPUs may be specified using a comma
+to use specific cores with specific devices (e.g. on a NUMA
+architecture). Multiple cores may be specified using a comma
 delimited list or a range may be specified using a "-" separator
-(e.g. "0,1,2,3" or "0-3").
-<B>If specified, then only the identified CPUs can be allocated with each
-generic resource; an attempt to use other CPUs will not be honored.</B>
-If not specified, then any CPU can be used with the resources.
-If any CPU can be effectively used with the resources, then do not specify the
-CPUs option for improved speed in the Slurm scheduling logic.
+(e.g. "0,1,2,3" or "0\-3").
+<B>If specified, then only the identified cores can be allocated with each generic
+resource; an attempt to use other cores will not be honored.</B>
+If not specified, then any core can be used with the resources, which also
+increases the speed of Slurm's scheduling algorithm.
+If any core can be effectively used with the resources, then do not specify the
+Cores option for improved speed in the Slurm scheduling logic.
+
+<B>NOTE:</B> If your cores contain multiple threads only list the first thread
+of each core.  The logic is such that it uses core instead of thread scheduling
+per GRES.
 
 <LI><B>File</B> Fully qualified pathname of the device files associated with a
 resource.

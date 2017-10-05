@@ -30,27 +30,24 @@ otherwise the default value is one. A suffix of "K", "M", "G", "T" or "P" may be
 used to multiply the number by 1024, 1048576, 1073741824, etc. respectively.
 
 .TP
-\fBCPUs\fR
-Specify the CPU index numbers for the specific CPUs which can
+\fBCores\fR
+Specify the first thread CPU index numbers for the specific cores which can
 use this resource.
 For example, it may be strongly preferable
-to use specific CPUs with specific devices (e.g. on a NUMA
-architecture). Multiple CPUs may be specified using a comma
+to use specific cores with specific devices (e.g. on a NUMA
+architecture). Multiple cores may be specified using a comma
 delimited list or a range may be specified using a "\-" separator
 (e.g. "0,1,2,3" or "0\-3").
-If specified, then only the identified CPUs can be allocated with each generic
-resource; an attempt to use other CPUs will not be honored.
-If not specified, then any CPU can be used with the resources, which also
+If specified, then only the identified cores can be allocated with each generic
+resource; an attempt to use other cores will not be honored.
+If not specified, then any core can be used with the resources, which also
 increases the speed of Slurm's scheduling algorithm.
-If any CPU can be effectively used with the resources, then do not specify the
-\fBCPUs\fR option for improved speed in the Slurm scheduling logic.
+If any core can be effectively used with the resources, then do not specify the
+\fBcores\fR option for improved speed in the Slurm scheduling logic.
 
-\fBNOTE:\fR Since Slurm must be able to perform resource management on heterogeneous
-clusters having various CPU ID numbering schemes, specify the Slurm CPU index
-numbers
-(CPU_ID = Board_ID x threads_per_board +
-Socket_ID x threads_per_socket +
-Core_ID x threads_per_core + Thread_ID).
+\fBNOTE:\fR If your cores contain multiple threads only list the first thread
+of each core.  The logic is such that it uses core instead of thread scheduling
+per GRES.
 
 .TP
 \fBFile\fR
