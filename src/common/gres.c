@@ -206,9 +206,6 @@ static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 static int	_parse_gres_config2(void **dest, slurm_parser_enum_t type,
 				    const char *key, const char *value,
 				    const char *line, char **leftover);
-static void	_process_gres_slurmd_config_array(
-	gres_slurmd_conf_t **gres_array, int count, int *array_pos,
-	int *array_len, char ***gres_name, char ***dev_path);
 static void	_set_gres_cnt(char *orig_config, char **new_config,
 			      uint64_t new_cnt, char *gres_name,
 			      char *gres_name_colon, int gres_name_colon_len);
@@ -906,61 +903,6 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 	return _parse_gres_config(dest, type, key, NULL, line, leftover);
 }
 
-static void _process_gres_slurmd_config_array(
-	gres_slurmd_conf_t **gres_array, int count,
-	int *array_pos, int *array_len,
-	char ***gres_name, char ***dev_path)
-{
-	int i, local_pos = *array_pos, local_len = *array_len;
-	char *slash, *root_path, *one_name;
-	char **local_gres = *gres_name, **local_dev = *dev_path;
-	hostlist_t hl;
-
-	for (i = 0; i < count; i++) {
-		if (!gres_array[i] || !gres_array[i]->file ||
-		    gres_array[i]->has_file == 2)
-			continue;
-		root_path = xstrdup(gres_array[i]->file);
-		slash = strrchr(root_path, '/');
-		if (slash) {
-			hl = hostlist_create(slash + 1);
-			slash[1] = '\0';
-		} else {
-			hl = hostlist_create(root_path);
-			root_path[0] = '\0';
-		}
-		if (hl == NULL) {
-			error("can't parse gres.conf file record (%s)",
-			      gres_array[i]->file);
-		} else {
-			while ((one_name = hostlist_shift(hl))) {
-				if ((local_pos + 1) > local_len) {
-					local_len += 128;
-					local_dev = xrealloc(local_dev,
-							     (sizeof(char *)
-							      * local_len));
-					local_gres = xrealloc(
-						local_gres,
-						(sizeof(char *) * local_len));
-				}
-				xstrfmtcat(local_dev[local_pos], "%s%s",
-					   root_path, one_name);
-				local_gres[local_pos] =	gres_array[i]->name;
-				local_pos++;
-				free(one_name);
-			}
-			hostlist_destroy(hl);
-		}
-		xfree(root_path);
-		gres_array[i] = NULL;
-	}
-
-	*array_pos = local_pos;
-	*array_len = local_len;
-	*dev_path = local_dev;
-	*gres_name = local_gres;
-}
-
 static void _validate_config(slurm_gres_context_t *context_ptr)
 {
 	ListIterator iter;
@@ -994,59 +936,6 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 		}
 	}
 	list_iterator_destroy(iter);
-}
-
-extern int gres_plugin_node_config_devices_path(char ***dev_path,
-						char ***gres_name,
-						char *node_name)
-{
-	static s_p_options_t _gres_options[] = {
-		{"Name",     S_P_ARRAY, _parse_gres_config,  NULL},
-		{"NodeName", S_P_ARRAY, _parse_gres_config2, NULL},
-		{NULL}
-	};
-
-	int count = 0, array_len = 0;
-	int ret_count = 0;
-	struct stat config_stat;
-	s_p_hashtbl_t *tbl;
-	gres_slurmd_conf_t **gres_array;
-	char *gres_conf_file;
-
-	gres_plugin_init();
-	if (gres_context_cnt == 0)
-		return 0;
-
-	gres_conf_file = get_extra_conf_path("gres.conf");
-	if (stat(gres_conf_file, &config_stat) < 0) {
-		error("can't stat gres.conf file %s: %m", gres_conf_file);
-		xfree(gres_conf_file);
-		return 0;
-	}
-
-	slurm_mutex_lock(&gres_context_lock);
-	if (!gres_node_name && node_name)
-		gres_node_name = xstrdup(node_name);
-	tbl = s_p_hashtbl_create(_gres_options);
-	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
-		fatal("error opening/reading %s", gres_conf_file);
-	FREE_NULL_LIST(gres_conf_list);
-	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
-
-	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl))
-		_process_gres_slurmd_config_array(
-			gres_array, count, &ret_count, &array_len,
-			gres_name, dev_path);
-	if (s_p_get_array((void ***) &gres_array, &count, "NodeName", tbl))
-		_process_gres_slurmd_config_array(
-			gres_array, count, &ret_count, &array_len,
-			gres_name, dev_path);
-
-	s_p_hashtbl_destroy(tbl);
-	slurm_mutex_unlock(&gres_context_lock);
-	xfree(gres_conf_file);
-
-	return ret_count;
 }
 
 /* No gres.conf file found.

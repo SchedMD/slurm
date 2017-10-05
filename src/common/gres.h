@@ -224,17 +224,6 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 extern int gres_plugin_node_config_pack(Buf buffer);
 
 /*
- * Return information about the configured gres devices on the node
- * OUT dev_path - the devices paths as written on gres.conf file
- * OUT gres_name - the names of the devices (ex. gpu, nic,..)
- * IN node_name - Name of this compute node
- * OUT int - number of records in dev_path and gres_name
- */
-extern int gres_plugin_node_config_devices_path(char ***dev_path,
-						char ***gres_name,
-						char *node_name);
-
-/*
  * Set GRES devices as allocated or not for a particular job
  * IN gres_list - allocated gres devices
  * IN is_job - if is job function expects gres_job_state_t's else
