@@ -441,7 +441,7 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 	FREE_NULL_LIST(ctx->job_list);
 	FREE_NULL_LIST(ctx->state_list);
 
-	xassert(ctx->magic = ~CRED_CTX_MAGIC);
+	xassert((ctx->magic = ~CRED_CTX_MAGIC));
 
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_mutex_destroy(&ctx->mutex);
@@ -918,7 +918,7 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	FREE_NULL_LIST(cred->step_gres_list);
 	xfree(cred->step_hostlist);
 	xfree(cred->signature);
-	xassert(cred->magic = ~CRED_MAGIC);
+	xassert((cred->magic = ~CRED_MAGIC));
 
 	slurm_mutex_unlock(&cred->mutex);
 	slurm_mutex_destroy(&cred->mutex);
@@ -1629,7 +1629,7 @@ _slurm_cred_ctx_alloc(void)
 	ctx->expiry_window = cred_expire;
 	ctx->exkey_exp     = (time_t) -1;
 
-	xassert(ctx->magic = CRED_CTX_MAGIC);
+	xassert((ctx->magic = CRED_CTX_MAGIC));
 
 	slurm_mutex_unlock(&ctx->mutex);
 	return ctx;
@@ -1644,7 +1644,7 @@ _slurm_cred_alloc(void)
 	slurm_mutex_init(&cred->mutex);
 	cred->uid = (uid_t) -1;
 
-	xassert(cred->magic = CRED_MAGIC);
+	xassert((cred->magic = CRED_MAGIC));
 
 	return cred;
 }
