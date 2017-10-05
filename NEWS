@@ -96,6 +96,9 @@ documents those changes that are of interest to users and administrators.
  -- Add 'scontrol write batch_script <jobid>' command to retrieve the batch
     script for a given job.
  -- Remove option to display the batch script as part of 'scontrol show job'.
+ -- On native Cray system the configured RebootProgram is executed on on the
+    head node by the slurmctld daemon rather than by the slurmd daemons on the
+    compute nodes. The "capmc_resume" program from "contribs/cray" can be used.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
