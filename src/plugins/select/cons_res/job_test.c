@@ -783,11 +783,11 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      bitstr_t *exc_core_bitmap, bool qos_preemptor)
 {
 	struct node_record *node_ptr;
-	uint32_t i, j, gres_cpus, gres_cores;
+	uint32_t j, gres_cpus, gres_cores;
 	uint64_t free_mem, min_mem;
 	int core_start_bit, core_end_bit, cpus_per_core;
 	List gres_list;
-	int i_first, i_last;
+	int i, i_first, i_last;
 
 	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 		uint16_t min_cpus;
