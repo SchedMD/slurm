@@ -500,41 +500,19 @@ extern int task_cgroup_devices_attach_task(stepd_step_rec_t *job)
 }
 
 static void _calc_device_major(char *dev_path[PATH_MAX],
-				char *dev_major[PATH_MAX],
-				int lines)
+			       char *dev_major[PATH_MAX],
+			       int lines)
 {
 
-	int k, major, minor;
-	char str1[256], str2[256];
-	struct stat fs;
+	int k;
 
 	if (lines > PATH_MAX) {
 		error("task/cgroup: more devices configured than table size "
 		      "(%d > %d)", lines, PATH_MAX);
 		lines = PATH_MAX;
 	}
-	for (k = 0; k < lines; k++) {
-		if (stat(dev_path[k], &fs) < 0) {
-			error("task/cgroup: stat(%s): %m", dev_path[k]);
-			continue;
-		}
-		major = (int)major(fs.st_rdev);
-		minor = (int)minor(fs.st_rdev);
-		debug3("device : %s major %d, minor %d",
-			dev_path[k], major, minor);
-		memset(str1, 0, sizeof(str1));
-		if (S_ISBLK(fs.st_mode)) {
-			sprintf(str1, "b %d:", major);
-			//info("device is block ");
-		}
-		if (S_ISCHR(fs.st_mode)) {
-			sprintf(str1, "c %d:", major);
-			//info("device is character ");
-		}
-		sprintf(str2, "%d rwm", minor);
-		strcat(str1, str2);
-		dev_major[k] = xstrdup((char *)str1);
-	}
+	for (k = 0; k < lines; k++)
+		dev_major[k] = gres_device_major(dev_path[k]);
 }
 
 

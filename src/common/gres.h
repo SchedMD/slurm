@@ -809,6 +809,9 @@ extern void gres_set_job_tres_cnt(List gres_list,
 extern void gres_set_node_tres_cnt(List gres_list, uint64_t *tres_cnt,
 				   bool locked);
 
+/* return the major info from a given path of a device */
+extern char *gres_device_major(char *dev_path);
+
 extern void destroy_gres_device(void *p);
 
 #endif /* !_GRES_H */
