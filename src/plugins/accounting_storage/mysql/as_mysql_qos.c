@@ -79,31 +79,39 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 			    bitstr_t *preempt_bitstr)
 {
 	slurmdb_qos_rec_t qos_rec;
-	int rc = 0, i=0;
+	int rc = 0, i = 0;
 
 	xassert(preempt_bitstr);
 
 	/* check in the preempt list for all qos's preempted */
-	for(i=0; i<bit_size(preempt_bitstr); i++) {
+	for (i = 0; i < bit_size(preempt_bitstr); i++) {
 		if (!bit_test(preempt_bitstr, i))
 			continue;
 
 		memset(&qos_rec, 0, sizeof(qos_rec));
 		qos_rec.id = i;
-		assoc_mgr_fill_in_qos(mysql_conn, &qos_rec,
-				      ACCOUNTING_ENFORCE_QOS,
-				      NULL, 0);
-		/* check if the begin_qosid is preempted by this qos
-		 * if so we have a loop */
+		if (assoc_mgr_fill_in_qos(mysql_conn, &qos_rec,
+					  ACCOUNTING_ENFORCE_QOS, NULL, 0) !=
+		    SLURM_SUCCESS) {
+			error("QOS ID %d not found", i);
+			rc = 1;
+			break;
+		}
+		/*
+		 * check if the begin_qosid is preempted by this qos
+		 * if so we have a loop
+		 */
 		if (qos_rec.preempt_bitstr
 		    && bit_test(qos_rec.preempt_bitstr, begin_qosid)) {
-			error("QOS id %d has a loop at QOS %s",
+			error("QOS ID %d has a loop at QOS %s",
 			      begin_qosid, qos_rec.name);
 			rc = 1;
 			break;
 		} else if (qos_rec.preempt_bitstr) {
-			/* check this qos' preempt list and make sure
-			   no loops exist there either */
+			/*
+			 * check this qos' preempt list and make sure
+			 * no loops exist there either
+			 */
 			if ((rc = _preemption_loop(mysql_conn, begin_qosid,
 						   qos_rec.preempt_bitstr)))
 				break;
