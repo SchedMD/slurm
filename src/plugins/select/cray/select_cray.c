@@ -1096,6 +1096,11 @@ static void *_step_fini(void *args)
 		      __func__);
 		return NULL;
 	}
+	if (!step_ptr->job_ptr) {
+		error("%s: step_ptr->job_ptr is NULL, this should never happen",
+		      __func__);
+		return NULL;
+	}
 
 	lock_slurmctld(job_read_lock);
 	memset(&nhc_info, 0, sizeof(nhc_info_t));
@@ -1115,7 +1120,8 @@ static void *_step_fini(void *args)
 		nhc_info.apid = SLURM_ID_HASH(step_ptr->job_ptr->job_id,
 					      step_ptr->step_id);
 
-		/* If we are killing the step it is usually because we
+		/*
+		 * If we are killing the step it is usually because we
 		 * can't kill it normally.  So NHC will start before
 		 * the step ends.  Setting the exit_code to SIGKILL
 		 * will make NHC do extra tests hopefully helping the
@@ -1146,8 +1152,7 @@ static void *_step_fini(void *args)
 	/* NHC has completed, release the step's resources */
 	_throttle_start();
 	lock_slurmctld(job_write_lock);
-	if (!step_ptr->job_ptr ||
-	    (step_ptr->job_ptr->job_id != nhc_info.jobid)) {
+	if (step_ptr->job_ptr->job_id != nhc_info.jobid) {
 		error("%s: For some reason we don't have a valid job_ptr for "
 		      "job %u APID %"PRIu64".  This should never happen.",
 		      __func__, nhc_info.jobid, nhc_info.apid);
