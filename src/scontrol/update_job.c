@@ -470,15 +470,11 @@ scontrol_hold(char *op, char *job_str)
 	/* set current user, needed e.g., for AllowGroups checks */
 	for (i = 0, job_ptr = jobs->job_array; i < jobs->record_count;
 	     i++, job_ptr++) {
-		if (job_name &&
-		    ((job_ptr->name == NULL) ||
-		     xstrcmp(job_name, job_ptr->name)))
+		if (xstrcmp(job_name, job_ptr->name))
 			continue;
 
 		if (!IS_JOB_PENDING(job_ptr)) {
 			if (job_ptr->array_task_id != NO_VAL)
-				continue;
-			if (job_name)
 				continue;
 			slurm_seterrno(ESLURM_JOB_NOT_PENDING);
 			rc = MAX(rc, ESLURM_JOB_NOT_PENDING);
