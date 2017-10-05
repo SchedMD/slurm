@@ -148,11 +148,6 @@ if {[wait_for_file $file_out] != 0} {
 set pack_nodelist ""
 send "$bin_sort $file_out\r"
 expect {
-	-re "0: SLURM_NODELIST=($alpha_numeric_nodelist)" {
-		set pack_nodelist $expect_out(1,string)
-		incr matches
-		exp_continue
-	}
 	-re "0: SLURM_NODELIST_PACK_GROUP_0=$component(0)" {
 		incr matches
 		exp_continue
@@ -161,7 +156,8 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "1: SLURM_NODELIST=$pack_nodelist" {
+	-re "0: SLURM_NODELIST=($alpha_numeric_nodelist)" {
+		set pack_nodelist $expect_out(1,string)
 		incr matches
 		exp_continue
 	}
@@ -170,6 +166,10 @@ expect {
 		exp_continue
 	}
 	-re "1: SLURM_NODELIST_PACK_GROUP_1=$component(1)" {
+		incr matches
+		exp_continue
+	}
+	-re "1: SLURM_NODELIST=$pack_nodelist" {
 		incr matches
 		exp_continue
 	}
