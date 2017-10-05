@@ -41,9 +41,6 @@ set job_id2     0
 
 print_header $test_id
 
-send_user "\WARNING: TEST BROKEN BY NEW DEVELOPMENT FOR BUG 4199. NEEDS WORK\n"
-exit 0
-
 set select_type [test_select_type]
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
@@ -59,6 +56,22 @@ if {![string compare $select_type "bluegene"]} {
 		send_user "\nWARNING: This test is incompatible with exclusive node allocations and only one node\n"
 		exit $exit_code
 	}
+}
+
+proc end_it {code} {
+	global job_id1 job_id2 bin_rm test_id
+
+	if {$job_id1} {
+		cancel_job $job_id1
+	}
+	if {$job_id2} {
+		cancel_job $job_id2
+	}
+	exec $bin_rm -f slurm-$job_id1.sh $test_id.sh
+	if {$code == 0} {
+		send_user "\nSUCCESS\n"
+	}
+	exit $code
 }
 
 if {[test_launch_poe]} {
@@ -145,13 +158,9 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "BatchScript=" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -168,13 +177,9 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "BatchScript=" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -182,7 +187,7 @@ expect {
 }
 if {$matches != 2} {
 	send_user "\nFAILURE: scontrol failed to find matching job ($matches != 2)\n"
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -200,13 +205,9 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "BatchScript=" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\n FAILURE scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -223,13 +224,9 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "BatchScript=" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -244,7 +241,7 @@ if {$is_bluegene == 0} {
 }
 if {$matches != $match_target} {
 	send_user "\nFAILURE: scontrol failed to find matching job ($matches != $match_target)\n"
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -262,13 +259,9 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "BatchScript=" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\n FAILURE scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -285,13 +278,9 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "BatchScript=" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -299,14 +288,15 @@ expect {
 
 }
 if {$is_bluegene == 0} {
-	set match_target 6
+	set match_target 4
 } else {
 #	No CPU_IDs on Bluegene
-	set match_target 4
+	set match_target 2
 }
+
 if {$matches != $match_target} {
 	send_user "\nFAILURE: scontrol failed to find matching job ($matches != $match_target)\n"
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -321,12 +311,12 @@ expect {
 	}
 	-re "JobId=" {
 		send_user "\nFAILURE: scontrol filter by job id\n"
-		set exit_code 1
+		end_it 1
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -334,7 +324,7 @@ expect {
 }
 if {$matches != 1} {
 	send_user "\nFAILURE: scontrol failed to find requested job\n"
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -354,7 +344,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -362,7 +352,7 @@ expect {
 }
 if {[test_alps] == 0 && $matches != 1} {
 	send_user "\nFAILURE: scontrol failed to find all job steps\n"
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -377,12 +367,12 @@ expect {
 	}
 	-re "StepId=" {
 		send_user "\nFAILURE: scontrol filter by step id\n"
-		set exit_code 1
+		end_it 1
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -390,7 +380,7 @@ expect {
 }
 if {[test_alps] == 0 && $matches != 1} {
 	send_user "\nFAILURE: scontrol failed to specific job step\n"
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -403,22 +393,22 @@ spawn $scontrol show step $job_id3.$step_id
 expect {
 	-re "StepId=$job_id3.$step_id " {
 		send_user "\nFAILURE: scontrol found unexpected job step\n"
-		set exit_code 1
+		end_it 1
 		exp_continue
 	}
 	-re "Invalid job id" {
-		send_user "\nNo worries, error expectd\n"
+		send_user "\nNo worries, error expected\n"
 		incr matches
 		exp_continue
 	}
 	-re "StepId=" {
 		send_user "\nFAILURE: scontrol filter by step id\n"
-		set exit_code 1
+		end_it 1
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -426,12 +416,97 @@ expect {
 }
 if {[test_alps] == 0 && $matches != 1} {
 	send_user "\nFAILURE: scontrol found unexpected job step\n"
-	set exit_code 1
+	end_it 1
 }
 
-cancel_job $job_id1
-cancel_job $job_id2
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+
+#
+# write batch_script to file
+#
+set matches 0
+spawn $scontrol write batch_script $job_id1
+expect {
+	-re "batch script for job $job_id1 written to slurm-$job_id1.sh" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
 }
-exit $exit_code
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol failed to write batch script\n"
+	end_it 1
+}
+
+set matches 0
+spawn $scontrol write batch_script $job_id2 $test_id.sh
+expect {
+	-re "batch script for job $job_id2 written to $test_id.sh" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol failed to write batch script\n"
+	end_it 1
+}
+
+set matches 0
+spawn ls slurm-$job_id1.sh
+expect {
+	-re "ls: cannot access" {
+		end_it 1
+	}
+	-re "slurm-$job_id1.sh" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: Could not find file\n"
+	end_it 1
+}
+
+set matches 0
+spawn ls $test_id.sh
+expect {
+	-re "ls: cannot access" {
+		end_it 1
+	}
+	-re "$test_id.sh" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: Could not find file\n"
+	end_it 1
+}
+
+end_it 0
