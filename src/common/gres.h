@@ -54,6 +54,13 @@ enum {
 	GRES_VAL_TYPE_ALLOC  = 3
 };
 
+typedef struct {
+	int alloc;
+	int dev_num;
+	char *major;
+	char *path;
+} gres_device_t;
+
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
 	/* Count of gres available in this configuration record */
@@ -801,5 +808,7 @@ extern void gres_set_job_tres_cnt(List gres_list,
  */
 extern void gres_set_node_tres_cnt(List gres_list, uint64_t *tres_cnt,
 				   bool locked);
+
+extern void destroy_gres_device(void *p);
 
 #endif /* !_GRES_H */

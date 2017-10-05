@@ -6832,3 +6832,14 @@ extern void gres_set_node_tres_cnt(List gres_list,
 	_set_type_tres_cnt(GRES_STATE_TYPE_NODE,
 			   gres_list, 0, tres_cnt, locked);
 }
+
+extern void destroy_gres_device(void *p)
+{
+	gres_device_t *gres_device = (gres_device_t *)p;
+	if (!gres_device)
+		return;
+
+	xfree(gres_device->path);
+	xfree(gres_device->major);
+	xfree(gres_device);
+}
