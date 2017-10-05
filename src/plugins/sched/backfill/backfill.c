@@ -1308,7 +1308,7 @@ static int _attempt_backfill(void)
 			qos_blocked_until = 0;
 		}
 
-		if (job_ptr->part_ptr->qos_ptr)
+		if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr)
 			qos_part_blocked_until =
 				job_ptr->part_ptr->qos_ptr->blocked_until;
 		else
