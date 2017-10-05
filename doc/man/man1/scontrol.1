@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "November 2016" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "March 2017" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -417,9 +417,10 @@ primary Slurm controller is scheduled down.
 (Note: Slurm's primary controller will take the control back at startup.)
 
 .TP
-\fBtop\fP \fIjob_id\fP
-Move the specified job ID to the top of the queue of jobs belonging to the
+\fBtop\fP \fIjob_list\fP
+Move the specified job IDs to the top of the queue of jobs belonging to the
 identical user ID, partition name, account, and QOS.
+The job_list argument is a comma separated ordered list of job IDs.
 Any job not matching \fBall\fP of those fields will not be effected.
 Only jobs submitted to a single partition will be effected.
 This operation changes the order of jobs by adjusting job nice values.

@@ -2073,7 +2073,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
 			      (the primary controller will be stopped)     \n\
      suspend <job_list>       susend specified job (see resume)            \n\
-     top <job_id>             Put specified job first in queue for user    \n\
+     top <job_list>           Put specified job first in queue for user    \n\
      takeover                 ask slurm backup controller to take over     \n\
      uhold <jobid_list>       place user hold on specified job (see hold)  \n\
      update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\

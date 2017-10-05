@@ -15528,85 +15528,171 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 	return rc;
 }
 
-static int _set_top(struct job_record *job_ptr, uid_t uid)
+static int _top_job_flag_clear(void *x, void *arg)
 {
-	ListIterator job_iterator;
-	struct job_record *job_test_ptr, **job_adj_list;
-	uint32_t adj_prio, high_prio = 0, delta_nice, max_delta;
-	int i, high_prio_job_cnt = 0, max_adj_jobs = 1024;
+	struct job_record *job_ptr = (struct job_record *) x;
+	job_ptr->bit_flags &= (~TOP_PRIO_TMP);
+	return 0;
+}
+
+/* This sorts so the highest priorities come off the list first */
+static int _top_job_prio_sort(void *x, void *y)
+{
+	uint32_t *prio1, *prio2;
+	prio1 = *(uint32_t **) x;
+	prio2 = *(uint32_t **) y;
+	if (*prio1 < *prio2)
+		return 1;
+	if (*prio1 > *prio2)
+		return -1;
+	return 0;
+}
+
+static void _top_job_prio_del(void *x)
+{
+	xfree(x);
+}
+
+static int _set_top(List top_job_list, uid_t uid)
+{
+	List prio_list, other_job_list;
+	ListIterator iter;
+	struct job_record *job_ptr, *first_job_ptr = NULL;
+	int rc = SLURM_SUCCESS, rc2 = SLURM_SUCCESS;
+	uint32_t last_prio = NO_VAL, next_prio;
+	int64_t delta_prio, delta_nice, total_delta = 0;
+	int other_job_cnt = 0;
+	uint32_t *prio_elem;
 
 	xassert(job_list);
+	xassert(top_job_list);
+	prio_list = list_create(_top_job_prio_del);
+	(void) list_for_each(job_list, _top_job_flag_clear, NULL);
 
-	if ((job_ptr->user_id != uid) && (uid != 0)) {
-		error("Security violation: REQUEST_TOP_JOB for job %u "
-		      "from uid=%d", job_ptr->job_id, uid);
-		return ESLURM_ACCESS_DENIED;
-	}
-
-	if (!IS_JOB_PENDING(job_ptr) || (job_ptr->details == NULL))
-		return ESLURM_JOB_NOT_PENDING;
-
-	if (job_ptr->part_ptr_list)
-		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-
-	if (job_ptr->priority == 0)
-		return ESLURM_JOB_HELD;
-
-	/* Identify the jobs which we can adjust the nice value of */
-	job_adj_list = xmalloc(sizeof(struct job_record *) * max_adj_jobs);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_test_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_test_ptr == job_ptr) ||
-		    (job_test_ptr->details == NULL) ||
-		    (job_test_ptr->part_ptr_list) ||
-		    (job_test_ptr->priority == 0) ||
-		    (job_test_ptr->assoc_ptr != job_ptr->assoc_ptr) ||
-		    (job_test_ptr->part_ptr  != job_ptr->part_ptr)  ||
-		    (job_test_ptr->priority  <  job_ptr->priority)  ||
-		    (job_test_ptr->qos_ptr   != job_ptr->qos_ptr)   ||
-		    (job_test_ptr->user_id   != job_ptr->user_id)   ||
-		    (!IS_JOB_PENDING(job_test_ptr)))
+	/* Validate the jobs in our "top" list */
+	iter = list_iterator_create(top_job_list);
+	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		if ((job_ptr->user_id != uid) && (uid != 0)) {
+			error("Security violation: REQUEST_TOP_JOB for job %u from uid=%d",
+			      job_ptr->job_id, uid);
+			rc = ESLURM_ACCESS_DENIED;
+			break;
+		}
+		if (!IS_JOB_PENDING(job_ptr) || (job_ptr->details == NULL)) {
+			debug("%s: Job %u not pending",
+			      __func__, job_ptr->job_id);
+			list_remove(iter);
+			rc2 = ESLURM_JOB_NOT_PENDING;
 			continue;
-		high_prio = MAX(job_test_ptr->priority, high_prio);
-		job_adj_list[high_prio_job_cnt++] = job_test_ptr;
-		if (high_prio_job_cnt >= max_adj_jobs) {
-			max_adj_jobs *= 2;
-			job_adj_list = xrealloc(job_adj_list,
-						sizeof(struct job_record *) *
-						max_adj_jobs);
 		}
+		if (job_ptr->part_ptr_list) {
+			debug("%s: Job %u in partition list",
+			      __func__, job_ptr->job_id);
+			list_remove(iter);
+			rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+			break;
+		}
+		if (job_ptr->priority == 0) {
+			debug("%s: Job %u is held",
+			      __func__, job_ptr->job_id);
+			list_remove(iter);
+			rc2 = ESLURM_JOB_HELD;
+			continue;
+		}
+		if (job_ptr->bit_flags & TOP_PRIO_TMP) {
+			/* Duplicate job ID */
+			list_remove(iter);
+			continue;		
+		}
+		if (!first_job_ptr)
+			first_job_ptr = job_ptr;
+		job_ptr->bit_flags |= TOP_PRIO_TMP;
+		prio_elem = xmalloc(sizeof(uint32_t));
+		*prio_elem = job_ptr->priority;
+		list_append(prio_list, prio_elem);
 	}
-	list_iterator_destroy(job_iterator);
+	list_iterator_destroy(iter);
+	if (rc != SLURM_SUCCESS) {
+		FREE_NULL_LIST(prio_list);
+		return rc;
+	}
+	if (!first_job_ptr) {
+		FREE_NULL_LIST(prio_list);
+		return rc2;
+	}
 
-	/* Now adjust nice values and priorities of effected jobs */
-	if (high_prio >= job_ptr->priority) {
-		delta_nice = high_prio - job_ptr->priority;
-		delta_nice = MIN(job_ptr->details->nice, delta_nice);
-		job_ptr->priority += delta_nice;
+	/* Identify other jobs which we can adjust the nice value of */
+	other_job_list = list_create(NULL);
+	iter = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		if ((job_ptr->bit_flags & TOP_PRIO_TMP) ||
+		    (job_ptr->details == NULL) ||
+		    (job_ptr->part_ptr_list)   ||
+		    (job_ptr->priority == 0)   ||
+		    (job_ptr->assoc_ptr != first_job_ptr->assoc_ptr) ||
+		    (job_ptr->part_ptr  != first_job_ptr->part_ptr)  ||
+		    (job_ptr->qos_ptr   != first_job_ptr->qos_ptr)   ||
+		    (job_ptr->user_id   != first_job_ptr->user_id)   ||
+		    (!IS_JOB_PENDING(job_ptr)))
+			continue;
+		other_job_cnt++;
+		job_ptr->bit_flags |= TOP_PRIO_TMP;
+		prio_elem = xmalloc(sizeof(uint32_t));
+		*prio_elem = job_ptr->priority;
+		list_append(prio_list, prio_elem);
+		list_append(other_job_list, job_ptr);
+	}
+	list_iterator_destroy(iter);
+
+	/* Now adjust nice values and priorities of the listed "top" jobs */
+	list_sort(prio_list, _top_job_prio_sort);
+	iter = list_iterator_create(top_job_list);
+	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		prio_elem = list_pop(prio_list);
+		next_prio = *prio_elem;
+		xfree(prio_elem);
+		if ((last_prio != NO_VAL) && (next_prio == last_prio))
+			next_prio = last_prio - 1;
+		last_prio = next_prio;
+		delta_prio = (int64_t) next_prio - job_ptr->priority;
+		delta_nice = MIN(job_ptr->details->nice, delta_prio);
+		total_delta += delta_nice;
+		job_ptr->priority = next_prio;
 		job_ptr->details->nice -= delta_nice;
-		for (i = 0; i < high_prio_job_cnt; i++) {
-			adj_prio = delta_nice / (high_prio_job_cnt - i);
-			job_test_ptr = job_adj_list[i];
-			if (job_test_ptr->priority == high_prio)
-				adj_prio = MAX(adj_prio, 1);  /* ensure lower */
-			adj_prio = MIN((job_test_ptr->priority - 1), adj_prio);
-			max_delta = (uint32_t) 0xffffffff -
-				    job_test_ptr->details->nice;
-			adj_prio = MIN(max_delta, adj_prio);
-			job_test_ptr->priority -= adj_prio;
-			job_test_ptr->details->nice += adj_prio;
-			if (delta_nice >= adj_prio)
-				delta_nice -= adj_prio;
-		}
-		last_job_update = time(NULL);
+		job_ptr->bit_flags &= (~TOP_PRIO_TMP);
 	}
-	xfree(job_adj_list);
+	list_iterator_destroy(iter);
+	FREE_NULL_LIST(prio_list);
 
-	return SLURM_SUCCESS;
+	/* Now adjust nice values and priorities of remaining effected jobs */
+	if (other_job_cnt) {
+		iter = list_iterator_create(other_job_list);
+		while ((job_ptr = (struct job_record *) list_next(iter))) {
+			delta_prio = total_delta / other_job_cnt;
+			next_prio = job_ptr->priority - delta_prio;
+			if (next_prio >= last_prio) {
+				next_prio = last_prio - 1;
+				delta_prio = job_ptr->priority - next_prio;
+			
+			}
+			delta_nice = delta_prio;
+			job_ptr->priority = next_prio;
+			job_ptr->details->nice += delta_nice;
+			job_ptr->bit_flags &= (~TOP_PRIO_TMP);
+			total_delta -= delta_nice;
+			other_job_cnt--;
+		}
+		list_iterator_destroy(iter);
+	}
+	FREE_NULL_LIST(other_job_list);
+
+	last_job_update = time(NULL);
+
+	return rc;
 }
 
 /*
- * job_set_top - Move the specified job to the top of the queue (at least
+ * job_set_top - Move the specified jobs to the top of the queue (at least
  *	for that user ID, partition, account, and QOS).
  *
  * IN top_ptr - user request
@@ -15620,10 +15706,11 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
+	List top_job_list = NULL;
+	char *job_str_tmp = NULL, *tok, *save_ptr = NULL, *end_ptr = NULL;
 	struct job_record *job_ptr = NULL;
 	long int long_id;
 	uint32_t job_id = 0, task_id = 0;
-	char *end_ptr = NULL;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 
@@ -15642,42 +15729,54 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		}
 	}
 
-	long_id = strtol(top_ptr->job_id_str, &end_ptr, 10);
-	if ((long_id <= 0) || (long_id == LONG_MAX) ||
-	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
-		info("%s: invalid job id %s", __func__, top_ptr->job_id_str);
-		rc = ESLURM_INVALID_JOB_ID;
-		goto reply;
-	}
-	job_id = (uint32_t) long_id;
-	if ((end_ptr[0] == '\0') ||	/* Single job (or full job array) */
-	    ((end_ptr[0] == '_') && (end_ptr[1] == '*') &&
-	     (end_ptr[2] == '\0'))) {
-		job_ptr = find_job_record(job_id);
-		if (!job_ptr) {
+	top_job_list = list_create(NULL);
+	job_str_tmp = xstrdup(top_ptr->job_id_str);
+	tok = strtok_r(job_str_tmp, ",", &save_ptr);
+	while (tok) {
+		long_id = strtol(tok, &end_ptr, 10);
+		if ((long_id <= 0) || (long_id == LONG_MAX) ||
+		    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
+			info("%s: invalid job id %s", __func__, tok);
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
-		rc = _set_top(job_ptr, uid);
-		goto reply;
+		job_id = (uint32_t) long_id;
+		if ((end_ptr[0] == '\0') || /* Single job (or full job array) */
+		    ((end_ptr[0] == '_') && (end_ptr[1] == '*') &&
+		     (end_ptr[2] == '\0'))) {
+			job_ptr = find_job_record(job_id);
+			if (!job_ptr) {
+				rc = ESLURM_INVALID_JOB_ID;
+				goto reply;
+			}
+			list_append(top_job_list, job_ptr);
+		} else if (end_ptr[0] != '_') {        /* Invalid job ID spec */
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
+		} else {		/* Single task of a job array */
+			task_id = strtol(end_ptr + 1, &end_ptr, 10);
+			if (end_ptr[0] != '\0') {      /* Invalid job ID spec */
+				rc = ESLURM_INVALID_JOB_ID;
+				goto reply;
+			}
+			job_ptr = find_job_array_rec(job_id, task_id);
+			if (!job_ptr) {
+				rc = ESLURM_INVALID_JOB_ID;
+				goto reply;
+			}
+			list_append(top_job_list, job_ptr);
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
 	}
-	if (end_ptr[0] != '_') {	/* Invalid job ID specification */
-		rc = ESLURM_INVALID_JOB_ID;
-		goto reply;
-	}
-	task_id = strtol(end_ptr + 1, &end_ptr, 10);
-	if (end_ptr[0] != '\0') {	/* Invalid job ID specification */
-		rc = ESLURM_INVALID_JOB_ID;
-		goto reply;
-	}
-	job_ptr = find_job_array_rec(job_id, task_id);
-	if (!job_ptr) {
-		rc = ESLURM_INVALID_JOB_ID;
-		goto reply;
-	}
-	rc = _set_top(job_ptr, uid);
 
-    reply:
+	if (list_count(top_job_list) == 0) {
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	rc = _set_top(top_job_list, uid);
+
+reply:	FREE_NULL_LIST(top_job_list);
+	xfree(job_str_tmp);
 	if (conn_fd >= 0) {
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = protocol_version;
