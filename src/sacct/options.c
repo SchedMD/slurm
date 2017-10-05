@@ -1017,8 +1017,11 @@ extern void parse_command_line(int argc, char **argv)
 		}
 		xfree(acct_type);
 	} else {
-		slurm_acct_storage_init(params.opt_filein);
-
+		if (slurm_acct_storage_init(params.opt_filein) !=
+		    SLURM_SUCCESS) {
+			fprintf(stderr, "SLURM unable to initialize storage plugin\n");
+			exit(1);
+		}
 		acct_type = slurm_get_accounting_storage_type();
 		if ((xstrcmp(acct_type, "accounting_storage/none") == 0)
 		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
