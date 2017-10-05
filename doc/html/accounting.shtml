@@ -21,8 +21,7 @@ these plugins include:</p>
 <ul>
 <li><b>AccountingStorageType</b> controls how detailed job and job
 step information is recorded. You can store this information in a
-text file, <a href="http://www.mysql.com/">MySQL</a>
-or MariaDB database (using the InnoDB storage engine), optionally using SlurmDBD for added security.</li>
+text file or into SlurmDBD.</li>
 <li><b>JobAcctGatherType</b> is operating system dependent and
 controls what mechanism is used to collect accounting information.
 Supported values are <i>jobacct_gather/linux</i>

@@ -135,14 +135,11 @@ on the start of the slurmctld.
 .TP
 \fBAccountingStorageType\fR
 The accounting storage mechanism type.  Acceptable values at
-present include "accounting_storage/filetxt",
-"accounting_storage/mysql", "accounting_storage/none"
+present include "accounting_storage/filetxt", "accounting_storage/none"
 and "accounting_storage/slurmdbd".  The
 "accounting_storage/filetxt" value indicates that accounting records
 will be written to the file specified by the
-\fBAccountingStorageLoc\fR parameter.  The "accounting_storage/mysql"
-value indicates that accounting records will be written to a MySQL or
-MariaDB database specified by the \fBAccountingStorageLoc\fR parameter.
+\fBAccountingStorageLoc\fR parameter.
 The "accounting_storage/slurmdbd" value indicates that accounting records
 will be written to the Slurm DBD, which manages an underlying MySQL
 database. See "man slurmdbd" for more information.  The

@@ -3496,6 +3496,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		else
 			conf->accounting_storage_type =
 				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
+	} else {
+		if (xstrcasestr(conf->accounting_storage_type, "mysql"))
+			fatal("AccountingStorageType=accounting_storage/mysql "
+			      "only permitted in SlurmDBD.");
 	}
 
 	(void) s_p_get_string(&conf->node_features_plugins,
