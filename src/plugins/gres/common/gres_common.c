@@ -113,7 +113,7 @@ extern int common_node_config_load(List gres_conf_list,
 extern bool common_use_local_device_index(void)
 {
 	slurm_cgroup_conf_t slurm_cgroup_conf;
-	char *task_plugin = slurm_get_task_plugin();
+	char *task_plugin;
 	bool use_cgroup = false;
 	static bool use_local_index = false;
 	static bool is_set = false;
@@ -122,6 +122,7 @@ extern bool common_use_local_device_index(void)
 		return use_local_index;
 	is_set = true;
 
+	task_plugin = slurm_get_task_plugin();
 	if (!task_plugin)
 		return use_local_index;
 
@@ -311,12 +312,12 @@ extern void common_recv_stepd(int fd, List *gres_devices)
 		safe_read(fd, &gres_device->dev_num, sizeof(int));
 		safe_read(fd, &len, sizeof(int));
 		if (len) {
-			gres_device->major = xmalloc(sizeof(char) * len);
+			gres_device->major = xmalloc(sizeof(char) * (len + 1));
 			safe_read(fd, gres_device->major, len);
 		}
 		safe_read(fd, &len, sizeof(int));
 		if (len) {
-			gres_device->path = xmalloc(sizeof(char) * len);
+			gres_device->path = xmalloc(sizeof(char) * (len + 1));
 			safe_read(fd, gres_device->path, len);
 		}
 		/* info("adding %d %s %s", gres_device->dev_num, */

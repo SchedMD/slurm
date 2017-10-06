@@ -1239,8 +1239,8 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 	xassert(job_gres_list);
 	xassert(step_gres_list);
 
-	*job_gres_list  = NULL;
-	*step_gres_list = NULL;
+	FREE_NULL_LIST(*job_gres_list);
+	FREE_NULL_LIST(*step_gres_list);
 	if ((cred->job_gres_list == NULL) && (cred->step_gres_list == NULL))
 		return;
 

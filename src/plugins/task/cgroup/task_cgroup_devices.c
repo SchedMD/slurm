@@ -332,6 +332,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
          */
 	allow_lines = _read_allowed_devices_file(allowed_devices);
 	_calc_device_major(allowed_devices, allowed_dev_major, allow_lines);
+	for (k = 0; k < allow_lines; k++)
+		xfree(allowed_devices[k]);
 
 	/*
 	 * with the current cgroup devices subsystem design (whitelist only
