@@ -106,6 +106,10 @@ documents those changes that are of interest to users and administrators.
     billable TRES calculated by the job's partition's TRESBillingWeights.
  -- sbatch - force line-buffered output so 'sbatch -W' returns the jobid
     over a piped output immediately.
+ -- Regular user use of "scontrol top" command is now diabled. Use the
+    configuration parameter "SchedulerParameters=enable_user_top" to enable
+    that functionality. The configuration parameter
+    "SchedulerParameters=disable_user_top" will be silently ignored.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

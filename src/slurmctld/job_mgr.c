@@ -15723,10 +15723,10 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		uid = 0;
 	} else {
 		char *sched_params;
-		bool disable_user_top = false;
+		bool disable_user_top = true;
 		sched_params = slurm_get_sched_params();
-		if (sched_params && strstr(sched_params, "disable_user_top"))
-			disable_user_top = true;
+		if (sched_params && strstr(sched_params, "enable_user_top"))
+			disable_user_top = false;
 		xfree(sched_params);
 		if (disable_user_top) {
 			rc = ESLURM_ACCESS_DENIED;

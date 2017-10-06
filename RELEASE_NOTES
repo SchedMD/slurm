@@ -103,6 +103,10 @@ HIGHLIGHTS
     'scontrol -vv show job' command.
  -- Add new "billing" TRES which allows jobs to be limited based on the job's
     billable TRES calculated by the job's partition's TRESBillingWeights.
+ -- Regular user use of "scontrol top" command is now diabled. Use the
+    configuration parameter "SchedulerParameters=enable_user_top" to enable
+    that functionality. The configuration parameter
+    "SchedulerParameters=disable_user_top" will be silently ignored.
 
 RPMBUILD CHANGES
 ================
