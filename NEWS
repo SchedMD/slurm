@@ -110,6 +110,7 @@ documents those changes that are of interest to users and administrators.
     configuration parameter "SchedulerParameters=enable_user_top" to enable
     that functionality. The configuration parameter
     "SchedulerParameters=disable_user_top" will be silently ignored.
+ -- Add -TALL to sreport.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

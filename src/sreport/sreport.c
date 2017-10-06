@@ -326,6 +326,9 @@ static List _build_tres_list(char *tres_str)
 		fatal("Problem getting TRES data: %m");
 		exit(1);
 	}
+	/* To get all the TRES just say "ALL" */
+	if (!xstrcmp(tres_str, "ALL"))
+		return tres_list;
 
 	iter = list_iterator_create(tres_list);
 	while ((tres = list_next(iter))) {
@@ -815,6 +818,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\
      -t <time_format>: Second, Minute, Hour, Percent, SecPer, MinPer, HourPer\n\
+     -T pr --tres: comma separated list of TRES, or 'ALL' for all TRES     \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
