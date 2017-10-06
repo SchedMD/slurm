@@ -502,7 +502,25 @@ enum job_state_reason {
 
 	WAIT_FED_JOB_LOCK,            /* Can't get fed job lock */
 	FAIL_OOM,		      /* Exhausted memory */
-	WAIT_PN_MEM_LIMIT	      /* MaxMemPer[CPU|Node] exceeded */
+	WAIT_PN_MEM_LIMIT,	      /* MaxMemPer[CPU|Node] exceeded */
+
+	/* exceeded Billing TRES limits */
+	WAIT_ASSOC_GRP_BILLING,             /* GrpTRES           */
+	WAIT_ASSOC_GRP_BILLING_MIN,         /* GrpTRESMins       */
+	WAIT_ASSOC_GRP_BILLING_RUN_MIN,     /* GrpTRESRunMins    */
+	WAIT_ASSOC_MAX_BILLING_PER_JOB,     /* MaxTRESPerJob     */
+	WAIT_ASSOC_MAX_BILLING_PER_NODE,    /* MaxTRESPerNode    */
+	WAIT_ASSOC_MAX_BILLING_MINS_PER_JOB,/* MaxTRESMinsPerJob */
+
+	WAIT_QOS_GRP_BILLING,               /* GrpTRES           */
+	WAIT_QOS_GRP_BILLING_MIN,           /* GrpTRESMins       */
+	WAIT_QOS_GRP_BILLING_RUN_MIN,       /* GrpTRESRunMins    */
+	WAIT_QOS_MAX_BILLING_PER_JOB,       /* MaxTRESPerJob     */
+	WAIT_QOS_MAX_BILLING_PER_NODE,      /* MaxTRESPerNode    */
+	WAIT_QOS_MAX_BILLING_PER_USER,      /* MaxTRESPerUser    */
+	WAIT_QOS_MAX_BILLING_MINS_PER_JOB,  /* MaxTRESMinsPerJob */
+	WAIT_QOS_MAX_BILLING_PER_ACCT,      /* MaxTRESPerAcct    */
+	WAIT_QOS_MIN_BILLING,               /* MinTRESPerJob     */
 };
 
 enum job_acct_types {

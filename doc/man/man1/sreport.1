@@ -58,6 +58,14 @@ Trackable resource (TRES) to report values for.
 By default CPU resource use is reported.
 Multiple TRES names may be separated using a comma separated list for all
 reports except the job reports, which can only support a single TRES name.
+
+The "Reported" Billing TRES is calculated from the largest Billing TRES of each
+node multiplied by the time frame. For example, if a node is part of multiple
+partitions and each has a different TRESBillingWeights defined the Billing TRES
+for the node will be the highest of the partitions.  If TRESBillingWeights is
+not defined on any partition for a node then the Billing TRES will be equal to
+the number of CPUs on the node.
+
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Print detailed event logging.

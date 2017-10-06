@@ -833,8 +833,8 @@ is running is placed here.
 
 .TP
 \fITRES\fP
-Trackable RESources (BB (Burst buffer), CPU, Energy, GRES, License, Memory, and
-Node) this cluster is accounting for.
+Trackable RESources (Billing, BB (Burst buffer), CPU, Energy, GRES, License,
+Memory, and Node) this cluster is accounting for.
 
 .P
 NOTE: You can also view the information about the root association for
@@ -1737,6 +1737,12 @@ allocated to two jobs, this is counted as two allocated nodes).
 
 NOTE: When dealing with Memory as a TRES all limits are in MB.
 
+NOTE: The Billing TRES is calculated from a partition's TRESBillingWeights. It
+is temporarily calculated during scheduling for each partition to enforce
+billing TRES limits. The final Billing TRES is calculated after the job has been
+allocated resources. The final number can be seen in \fBscontrol show jobs\fP
+and \fBsacct\fP output.
+
 .SH "GLOBAL FORMAT OPTION"
 When using the format option for listing various fields you can put a
 %NUMBER afterwards to specify how many characters should be printed.
@@ -2265,6 +2271,8 @@ An example of listing trackable resources
     energy                          3
 .br
       node                          4
+.br
+   billing                          5
 .br
       gres         gpu:tesla     1001
 .br

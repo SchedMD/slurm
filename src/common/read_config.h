@@ -68,7 +68,7 @@ extern uint16_t drop_priv_flag;
 #define ACCOUNTING_ENFORCE_NO_STEPS 0x0040
 #define ACCOUNTING_ENFORCE_TRES   0x0080
 
-#define DEFAULT_ACCOUNTING_TRES  "cpu,mem,energy,node"
+#define DEFAULT_ACCOUNTING_TRES  "cpu,mem,energy,node,billing"
 #define DEFAULT_ACCOUNTING_DB      "slurm_acct_db"
 #define DEFAULT_ACCOUNTING_ENFORCE  0
 #define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"

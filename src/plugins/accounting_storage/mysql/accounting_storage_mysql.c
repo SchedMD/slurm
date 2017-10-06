@@ -855,13 +855,15 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			"(%ld, %d, 'cpu'), "
 			"(%ld, %d, 'mem'), "
 			"(%ld, %d, 'energy'), "
-			"(%ld, %d, 'node') "
+			"(%ld, %d, 'node'), "
+			"(%ld, %d, 'billing') "
 			"on duplicate key update deleted=0, type=VALUES(type);",
 			tres_table,
 			now, TRES_CPU,
 			now, TRES_MEM,
 			now, TRES_ENERGY,
-			now, TRES_NODE);
+			now, TRES_NODE,
+			now, TRES_BILLING);
 		if (debug_flags & DEBUG_FLAG_DB_QOS)
 			DB_DEBUG(mysql_conn->conn, "%s", query);
 		rc = mysql_db_query(mysql_conn, query);

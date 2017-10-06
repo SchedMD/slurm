@@ -1424,6 +1424,8 @@ static int _init_tres(void)
 			tres_rec->id = TRES_ENERGY;
 		else if (!xstrcasecmp(temp_char, "node"))
 			tres_rec->id = TRES_NODE;
+		else if (!xstrcasecmp(temp_char, "billing"))
+			tres_rec->id = TRES_BILLING;
 		else if (!strncasecmp(temp_char, "bb/", 3)) {
 			tres_rec->type[2] = '\0';
 			tres_rec->name = xstrdup(temp_char+3);
@@ -2120,6 +2122,40 @@ static int _add_node_gres_tres(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * Set the node's billing tres to the highest billing of all partitions that the
+ * node is a part of.
+ */
+static void _set_node_billing_tres(struct node_record *node_ptr,
+				   uint64_t cpu_count,
+				   bool assoc_mgr_locked)
+{
+	int i;
+	struct part_record *part_ptr = NULL;
+	double max_billing = 0;
+	xassert(node_ptr);
+
+	for (i = 0; i < node_ptr->part_cnt; i++) {
+		double tmp_billing;
+		part_ptr = node_ptr->part_pptr[i];
+		if (!part_ptr->billing_weights)
+			continue;
+
+		tmp_billing = assoc_mgr_tres_weighted(node_ptr->tres_cnt,
+						part_ptr->billing_weights,
+						slurmctld_conf.priority_flags,
+						assoc_mgr_locked);
+		max_billing = MAX(max_billing, tmp_billing);
+	}
+
+	/* Set to the configured cpu_count if no partition has
+	 * tresbillingweights set because the job will be allocated the job's
+	 * cpu count if there are no tresbillingweights defined. */
+	if (!max_billing)
+		max_billing = cpu_count;
+	node_ptr->tres_cnt[TRES_ARRAY_BILLING] = max_billing;
+}
+
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */
 extern void set_cluster_tres(bool assoc_mgr_locked)
@@ -2127,6 +2163,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	struct node_record *node_ptr;
 	slurmdb_tres_rec_t *tres_rec, *cpu_tres = NULL, *mem_tres = NULL;
 	int i;
+	uint64_t cluster_billing = 0;
 	char *unique_tres = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -2207,6 +2244,9 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		list_for_each(assoc_mgr_tres_list,
 			      _add_node_gres_tres, node_ptr);
 
+		_set_node_billing_tres(node_ptr, cpu_count, true);
+		cluster_billing += node_ptr->tres_cnt[TRES_ARRAY_BILLING];
+
 		xfree(node_ptr->tres_str);
 		node_ptr->tres_str =
 			assoc_mgr_make_tres_str_from_array(node_ptr->tres_cnt,
@@ -2227,6 +2267,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		cpu_tres->count = cluster_cpus;
 
 	assoc_mgr_tres_array[TRES_ARRAY_NODE]->count = node_record_count;
+	assoc_mgr_tres_array[TRES_ARRAY_BILLING]->count = cluster_billing;
 
 	set_partition_tres();
 

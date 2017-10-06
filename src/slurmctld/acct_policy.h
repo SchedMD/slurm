@@ -114,14 +114,16 @@ extern bool acct_policy_validate_pack(List submit_job_list);
  *	association limits prevent the job from ever running (lowered
  *	limits since job submission), then cancel the job.
  */
-extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr);
+extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
+						bool assoc_mgr_locked);
 
 /*
  * acct_policy_job_runnable_post_select - After nodes have been
  *	selected for the job verify the counts don't exceed aggregated limits.
  */
 extern bool acct_policy_job_runnable_post_select(
-	struct job_record *job_ptr, uint64_t *tres_req_cnt);
+	struct job_record *job_ptr, uint64_t *tres_req_cnt,
+	bool assoc_mgr_locked);
 
 /*
  * Determine of the specified job can execute right now or is currently

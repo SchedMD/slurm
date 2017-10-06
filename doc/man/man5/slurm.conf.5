@@ -4961,7 +4961,8 @@ See also the "Alternate" partition specification.
 .TP
 \fBTRESBillingWeights\fR
 TRESBillingWeights is used to define the billing weights of each TRES type that
-will be used in calculating the usage of a job.
+will be used in calculating the usage of a job. The calculated usage is used
+when calculating fairshare and when enforcing the TRES billing limit on jobs.
 
 Billing weights are specified as a comma\-separated list of
 \fI<TRES Type>\fR=\fI<TRES Billing Weight>\fR pairs.
@@ -4989,10 +4990,9 @@ will be MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0.
 If TRESBillingWeights is not defined then the job is billed against the total
 number of allocated CPUs.
 
-\fBNOTE:\fR TRESBillingWeights is only used when calculating fairshare and
-doesn't affect job priority directly as it is currently not used for the size of
-the job. If you want TRES' to play a role in the job's priority then refer to
-the PriorityWeightTRES option.
+\fBNOTE:\fR TRESBillingWeights doesn't affect job priority directly as it is
+currently not used for the size of the job. If you want TRES' to play a role in
+the job's priority then refer to the PriorityWeightTRES option.
 
 .RE
 

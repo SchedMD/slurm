@@ -62,6 +62,7 @@ typedef enum {
 	TRES_MEM,
 	TRES_ENERGY,
 	TRES_NODE,
+	TRES_BILLING,
 	TRES_STATIC_CNT
 } tres_types_t;
 

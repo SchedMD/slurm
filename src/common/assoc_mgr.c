@@ -6205,6 +6205,9 @@ extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 		char  *tres_type   = assoc_mgr_tres_array[i]->type;
 		double tres_value  = tres_cnt[i];
 
+		if (i == TRES_ARRAY_BILLING)
+			continue;
+
 		debug("TRES Weight: %s = %f * %f = %f",
 		      assoc_mgr_tres_name_array[i], tres_value, tres_weight,
 		      tres_value * tres_weight);

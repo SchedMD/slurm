@@ -742,57 +742,6 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 	return slurm_mktime(&last_tm);
 }
 
-
-/*
- * Calculate billable TRES based on partition's defined BillingWeights. If none
- * is defined, return total_cpus.  This is cached on job_ptr->billable_tres and
- * is updated if the job was resized since the last iteration.
- */
-static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
-{
-	xassert(job_ptr);
-
-	struct part_record *part_ptr = job_ptr->part_ptr;
-
-	/* We don't have any resources allocated, just return 0. */
-	if (!job_ptr->tres_alloc_cnt)
-		return 0;
-
-	/* Don't recalculate unless the job is new or resized */
-	if ((!fuzzy_equal(job_ptr->billable_tres, NO_VAL)) &&
-	    difftime(job_ptr->resize_time, start_time) < 0.0)
-		return job_ptr->billable_tres;
-
-	if (priority_debug)
-		info("BillingWeight: job %d is either new or it was resized",
-		     job_ptr->job_id);
-
-	/* No billing weights defined. Return CPU count */
-	if (!part_ptr || !part_ptr->billing_weights) {
-		job_ptr->billable_tres = job_ptr->total_cpus;
-		return job_ptr->billable_tres;
-	}
-
-	if (priority_debug)
-		info("BillingWeight: job %d using \"%s\" from partition %s",
-		     job_ptr->job_id, part_ptr->billing_weights_str,
-		     job_ptr->part_ptr->name);
-
-	job_ptr->billable_tres =
-		assoc_mgr_tres_weighted(job_ptr->tres_alloc_cnt,
-					part_ptr->billing_weights, flags,
-					false);
-
-	if (priority_debug)
-		info("BillingWeight: Job %d %s = %f", job_ptr->job_id,
-		     (flags & PRIORITY_FLAGS_MAX_TRES) ?
-		     "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
-		     job_ptr->billable_tres);
-
-	return job_ptr->billable_tres;
-}
-
-
 static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 				      uint64_t *tres_run_delta,
 				      uint32_t job_id,
@@ -1074,7 +1023,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	memset(tres_run_delta, 0, sizeof(tres_run_delta));
 	assoc_mgr_lock(&locks);
 
-	billable_tres = _calc_billable_tres(job_ptr, start_period);
+	billable_tres = calc_job_billable_tres(job_ptr, start_period, true);
 	real_decay    = run_decay * billable_tres;
 	real_nodecay  = run_delta * billable_tres;
 	run_nodecay   = run_delta;

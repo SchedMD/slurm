@@ -216,6 +216,43 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 			break;
 		}
 		break;
+	case TRES_ARRAY_BILLING:
+		switch (unk_reason) {
+		case WAIT_ASSOC_GRP_UNK:
+			return WAIT_ASSOC_GRP_BILLING;
+		case WAIT_ASSOC_GRP_UNK_MIN:
+			return WAIT_ASSOC_GRP_BILLING_MIN;
+		case WAIT_ASSOC_GRP_UNK_RUN_MIN:
+			return WAIT_ASSOC_GRP_BILLING_RUN_MIN;
+		case WAIT_ASSOC_MAX_UNK_PER_JOB:
+			return WAIT_ASSOC_MAX_BILLING_PER_JOB;
+		case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
+			return WAIT_ASSOC_MAX_BILLING_MINS_PER_JOB;
+		case WAIT_ASSOC_MAX_UNK_PER_NODE:
+			return WAIT_ASSOC_MAX_BILLING_PER_NODE;
+		case WAIT_QOS_GRP_UNK:
+			return WAIT_QOS_GRP_BILLING;
+		case WAIT_QOS_GRP_UNK_MIN:
+			return WAIT_QOS_GRP_BILLING_MIN;
+		case WAIT_QOS_GRP_UNK_RUN_MIN:
+			return WAIT_QOS_GRP_BILLING_RUN_MIN;
+		case WAIT_QOS_MAX_UNK_PER_JOB:
+			return WAIT_QOS_MAX_BILLING_PER_JOB;
+		case WAIT_QOS_MAX_UNK_PER_NODE:
+			return WAIT_QOS_MAX_BILLING_PER_NODE;
+		case WAIT_QOS_MAX_UNK_PER_ACCT:
+			return WAIT_QOS_MAX_BILLING_PER_ACCT;
+		case WAIT_QOS_MAX_UNK_PER_USER:
+			return WAIT_QOS_MAX_BILLING_PER_USER;
+		case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
+			return WAIT_QOS_MAX_BILLING_MINS_PER_JOB;
+		case WAIT_QOS_MIN_UNK:
+			return WAIT_QOS_MIN_BILLING;
+		default:
+			return unk_reason;
+			break;
+		}
+		break;
 	default:
 		if (!xstrcmp("gres", assoc_mgr_tres_array[tres_pos]->type))
 			switch (unk_reason) {
@@ -3085,7 +3122,8 @@ extern bool acct_policy_job_runnable_state(struct job_record *job_ptr)
  *	association limits prevent the job from ever running (lowered
  *	limits since job submission), then cancel the job.
  */
-extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
+extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
+						bool assoc_mgr_locked)
 {
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
@@ -3122,7 +3160,8 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 
 	slurmdb_init_qos_rec(&qos_rec, 0, INFINITE);
 
-	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
 
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
@@ -3290,7 +3329,8 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 		parent = 1;
 	}
 end_it:
-	assoc_mgr_unlock(&locks);
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
 	slurmdb_free_qos_rec_members(&qos_rec);
 
 	return rc;
@@ -3301,7 +3341,8 @@ end_it:
  *	selected for the job verify the counts don't exceed aggregated limits.
  */
 extern bool acct_policy_job_runnable_post_select(
-	struct job_record *job_ptr, uint64_t *tres_req_cnt)
+	struct job_record *job_ptr, uint64_t *tres_req_cnt,
+	bool assoc_mgr_locked)
 {
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
@@ -3369,7 +3410,8 @@ extern bool acct_policy_job_runnable_post_select(
 
 	slurmdb_init_qos_rec(&qos_rec, 0, INFINITE);
 
-	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
 
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
@@ -3686,7 +3728,8 @@ extern bool acct_policy_job_runnable_post_select(
 		parent = 1;
 	}
 end_it:
-	assoc_mgr_unlock(&locks);
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
 	slurmdb_free_qos_rec_members(&qos_rec);
 
 	return rc;

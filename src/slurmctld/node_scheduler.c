@@ -2197,11 +2197,13 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	assoc_mgr_lock_t qos_read_lock =
 		{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 		  NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t job_read_locks = { READ_LOCK, NO_LOCK, READ_LOCK,
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	if (!acct_policy_job_runnable_pre_select(job_ptr))
+	if (!acct_policy_job_runnable_pre_select(job_ptr, false))
 		return ESLURM_ACCOUNTING_POLICY;
 
 	part_ptr = job_ptr->part_ptr;
@@ -2346,13 +2348,20 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		selected_node_cnt);
 	tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
+	assoc_mgr_lock(&job_read_locks);
 	gres_set_job_tres_cnt(job_ptr->gres_list,
 			      selected_node_cnt,
 			      tres_req_cnt,
-			      false);
+			      true);
+
+	tres_req_cnt[TRES_ARRAY_BILLING] =
+		assoc_mgr_tres_weighted(tres_req_cnt,
+					job_ptr->part_ptr->billing_weights,
+					slurmctld_conf.priority_flags, true);
 
 	if (!test_only && (selected_node_cnt != NO_VAL) &&
-	    !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt)) {
+	    !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt, true)) {
+		assoc_mgr_unlock(&job_read_locks);
 		/* If there was an reason we couldn't schedule before hand we
 		 * want to check if an accounting limit was also breached.  If
 		 * it was we want to override the other reason so if we are
@@ -2365,6 +2374,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup;
 	}
+	assoc_mgr_unlock(&job_read_locks);
 
 	/* set up the cpu_cnt here so we can decrement it as nodes
 	 * free up. total_cpus is set within _get_req_features */

@@ -16,20 +16,29 @@ Current TRES Types are:
 <li>License</li>
 <li>Mem (Memory)</li>
 <li>Node</li>
+<li>Billing</li>
 </ul>
+
+<p>
+  The Billing TRES is calculated from a partition's TRESBillingWeights. It is
+  temporarily calculated during scheduling for each partition to enforce billing
+  TRES limits. The final Billing TRES is calculated after the job has been
+  allocated resources. The final number can be seen in <i>scontrol show jobs</i>
+  and <i>sacct</i> output.
+</p>
 
 <h2>slurm.conf settings</h2>
 <ul>
 <li><b>AccountingStorageTRES</b>
 <p>Used to define which TRES are
-  to be tracked on the system. By default CPU, Energy, Memory and Node
+  to be tracked on the system. By default Billing, CPU, Energy, Memory and Node
   are tracked.  This will be the case whether specified or not. The
   following example:
 </p>
   <pre>AccountingStorageTRES=gres/craynetwork,license/iop1,bb/cray</pre>
 <p>
-  will track cpu, energy, memory and nodes along with a GRES called craynetwork
-  as well as a license called iop1.  It will also track usage on a
+  will track billing, cpu, energy, memory and nodes along with a GRES called
+  craynetwork as well as a license called iop1.  It will also track usage on a
   Cray burst buffer. Whenever these resources are used on the
   cluster they are recorded. TRES are automatically set up in the database
   on the start of the slurmctld.
@@ -51,6 +60,12 @@ Current TRES Types are:
 <p>Applicable only if PriorityType=priority/multifactor and if
 AccountingStorageTRES is configured with each TRES Type.
 The default values are 0.</p>
+
+<p>
+  The Billing TRES is not avaiable for priority calculations because the number
+  isn't generated until after the job has been allocated resources -- since the
+  number can change for different partitions.
+<p>
 </li>
 
 <li><b>TRESBillingWeights</b>
@@ -107,6 +122,13 @@ the PriorityWeightTRES option.
 <p><b>NOTE:</b> As with PriorityWeightTRES only TRES defined in
   AccountingStorageTRES are available for TRESBillingWeights.
 </p>
+
+<p><b>NOTE:</b> Jobs can be limited based off of the calculated TRES billing
+value. See <a href="resource_limits.html">Resource Limits</a> documentation for
+more information.
+</p>
+
+<p><b>NOTE:</b> If a Billing TRES is defined as a weight, it is ignored.</p>
 </li>
 
 </ul>
@@ -127,6 +149,14 @@ the PriorityWeightTRES option.
   option <i>--tres=</i> will have sreport generate reports available
   for the requested TRES types.  More information about these reports
   can be found on the <a href="sreport.html">sreport manpage</a>.
+</p>
+<p>
+  In <i>sreport</i>, the "Reported" Billing TRES is calculated from the largest
+  Billing TRES of each node multiplied by the time frame. For example, if a node
+  is part of multiple partitions and each has a different TRESBillingWeights
+  defined the Billing TRES for the node will be the highest of the partitions.
+  If TRESBillingWeights is not defined on any partition for a node then the
+  Billing TRES will be equal to the number of CPUs on the node.
 </p>
 <p style="text-align:center;">Last modified 19 October 2015</p>
 

@@ -102,6 +102,8 @@ documents those changes that are of interest to users and administrators.
  -- Modify "scontrol top" command to accept a comma separated list of job IDs
     as an argument rather than a single job ID.
  -- Add MemorySwappiness value to cgroup.conf.
+ -- Add new "billing" TRES which allows jobs to be limited based on the job's
+    billable TRES calculated by the job's partition's TRESBillingWeights.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

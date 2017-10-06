@@ -8451,6 +8451,10 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 			      job_ptr->tres_alloc_cnt,
 			      true);
 
+	/* Do this last as it calculates off of everything else. */
+	job_ptr->tres_alloc_cnt[TRES_ARRAY_BILLING] =
+		calc_job_billable_tres(job_ptr, job_ptr->start_time, true);
+
 	/* now that the array is filled lets make the string from it */
 	set_job_tres_alloc_str(job_ptr, true);
 
@@ -17364,3 +17368,59 @@ extern resource_allocation_response_msg_t *
 
 	return job_info_resp_msg;
 }
+
+/*
+ * Calculate billable TRES based on partition's defined BillingWeights. If none
+ * is defined, return total_cpus. This is cached on job_ptr->billable_tres and
+ * is updated if the job was resized since the last iteration.
+ *
+ * IN job_ptr          - job to calc billable tres on
+ * IN start_time       - time the has started or been resized
+ * IN assoc_mgr_locked - whether the tres assoc lock is set or not
+ */
+extern double calc_job_billable_tres(struct job_record *job_ptr,
+				     time_t start_time, bool assoc_mgr_locked)
+{
+	xassert(job_ptr);
+
+	struct part_record *part_ptr = job_ptr->part_ptr;
+
+	/* We don't have any resources allocated, just return 0. */
+	if (!job_ptr->tres_alloc_cnt)
+		return 0;
+
+	/* Don't recalculate unless the job is new or resized */
+	if ((!fuzzy_equal(job_ptr->billable_tres, NO_VAL)) &&
+	    difftime(job_ptr->resize_time, start_time) < 0.0)
+		return job_ptr->billable_tres;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PRIO)
+		info("BillingWeight: job %d is either new or it was resized",
+		     job_ptr->job_id);
+
+	/* No billing weights defined. Return CPU count */
+	if (!part_ptr || !part_ptr->billing_weights) {
+		job_ptr->billable_tres = job_ptr->total_cpus;
+		return job_ptr->billable_tres;
+	}
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PRIO)
+		info("BillingWeight: job %d using \"%s\" from partition %s",
+		     job_ptr->job_id, part_ptr->billing_weights_str,
+		     job_ptr->part_ptr->name);
+
+	job_ptr->billable_tres =
+		assoc_mgr_tres_weighted(job_ptr->tres_alloc_cnt,
+					part_ptr->billing_weights,
+					slurmctld_conf.priority_flags,
+					assoc_mgr_locked);
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PRIO)
+		info("BillingWeight: Job %d %s = %f", job_ptr->job_id,
+		     (slurmctld_conf.priority_flags & PRIORITY_FLAGS_MAX_TRES) ?
+		     "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
+		     job_ptr->billable_tres);
+
+	return job_ptr->billable_tres;
+}
+

@@ -101,6 +101,8 @@ HIGHLIGHTS
  -- Added new 'scontrol write batch_script <jobid>' command to fetch a job's
     batch script. Removed the ability to see the script as part of the
     'scontrol -vv show job' command.
+ -- Add new "billing" TRES which allows jobs to be limited based on the job's
+    billable TRES calculated by the job's partition's TRESBillingWeights.
 
 RPMBUILD CHANGES
 ================

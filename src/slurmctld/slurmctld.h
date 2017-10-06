@@ -194,6 +194,7 @@ enum {
 	TRES_ARRAY_MEM,
 	TRES_ARRAY_ENERGY,
 	TRES_ARRAY_NODE,
+	TRES_ARRAY_BILLING,
 	TRES_ARRAY_TOTAL_CNT
 };
 
@@ -2543,5 +2544,17 @@ set_remote_working_response(resource_allocation_response_msg_t *resp,
  * Free job's fed_details ptr.
  */
 extern void free_job_fed_details(job_fed_details_t **fed_details_pptr);
+
+/*
+ * Calculate billable TRES based on partition's defined BillingWeights. If none
+ * is defined, return total_cpus. This is cached on job_ptr->billable_tres and
+ * is updated if the job was resized since the last iteration.
+ *
+ * IN job_ptr          - job to calc billable tres on
+ * IN start_time       - time the has started or been resized
+ * IN assoc_mgr_locked - whether the tres assoc lock is set or not
+ */
+extern double calc_job_billable_tres(struct job_record *job_ptr,
+				     time_t start_time, bool assoc_mgr_locked);
 
 #endif /* !_HAVE_SLURMCTLD_H */

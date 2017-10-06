@@ -1906,6 +1906,36 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "OutOfMemory";
 	case WAIT_PN_MEM_LIMIT:
 		return "MaxMemPerLimit";
+	case WAIT_ASSOC_GRP_BILLING:
+		return "AssocGrpBilling";
+	case WAIT_ASSOC_GRP_BILLING_MIN:
+		return "AssocGrpBillingMinutes";
+	case WAIT_ASSOC_GRP_BILLING_RUN_MIN:
+		return "AssocGrpBillingRunMinutes";
+	case WAIT_ASSOC_MAX_BILLING_PER_JOB:
+		return "AssocMaxBillingPerJob";
+	case WAIT_ASSOC_MAX_BILLING_PER_NODE:
+		return "AssocMaxBillingPerNode";
+	case WAIT_ASSOC_MAX_BILLING_MINS_PER_JOB:
+		return "AssocMaxBillingMinutesPerJob";
+	case WAIT_QOS_GRP_BILLING:
+		return "QOSGrpBilling";
+	case WAIT_QOS_GRP_BILLING_MIN:
+		return "QOSGrpBillingMinutes";
+	case WAIT_QOS_GRP_BILLING_RUN_MIN:
+		return "QOSGrpBillingRunMinutes";
+	case WAIT_QOS_MAX_BILLING_PER_JOB:
+		return "QOSMaxBillingPerJob";
+	case WAIT_QOS_MAX_BILLING_PER_NODE:
+		return "QOSMaxBillingPerNode";
+	case WAIT_QOS_MAX_BILLING_PER_USER:
+		return "QOSMaxBillingPerUser";
+	case WAIT_QOS_MAX_BILLING_MINS_PER_JOB:
+		return "QOSMaxBillingMinutesPerJob";
+	case WAIT_QOS_MAX_BILLING_PER_ACCT:
+		return "MaxBillingPerAccount";
+	case WAIT_QOS_MIN_BILLING:
+		return "QOSMinBilling";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
@@ -1928,7 +1958,9 @@ extern bool job_state_qos_grp_limit(enum job_state_reason state_reason)
 	    (state_reason >= WAIT_QOS_GRP_LIC &&
 	     state_reason <= WAIT_QOS_GRP_LIC_RUN_MIN) ||
 	    (state_reason >= WAIT_QOS_GRP_BB &&
-	     state_reason <= WAIT_QOS_GRP_BB_RUN_MIN))
+	     state_reason <= WAIT_QOS_GRP_BB_RUN_MIN) ||
+	    (state_reason >= WAIT_QOS_GRP_BILLING &&
+	     state_reason <= WAIT_QOS_GRP_BILLING_RUN_MIN))
 		return true;
 	return false;
 }
