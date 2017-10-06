@@ -104,6 +104,8 @@ documents those changes that are of interest to users and administrators.
  -- Add MemorySwappiness value to cgroup.conf.
  -- Add new "billing" TRES which allows jobs to be limited based on the job's
     billable TRES calculated by the job's partition's TRESBillingWeights.
+ -- sbatch - force line-buffered output so 'sbatch -W' returns the jobid
+    over a piped output immediately.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

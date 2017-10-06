@@ -92,6 +92,12 @@ int main(int argc, char **argv)
 	List job_env_list = NULL, job_req_list = NULL;
 	sbatch_env_t *local_env = NULL;
 
+	/* force line-buffered output on non-tty outputs */
+	if (!isatty(STDOUT_FILENO))
+		setvbuf(stdout, NULL, _IOLBF, 0);
+	if (!isatty(STDERR_FILENO))
+		setvbuf(stderr, NULL, _IOLBF, 0);
+
 	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
