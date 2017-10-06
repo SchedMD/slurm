@@ -4789,6 +4789,9 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 			continue;
 		}
 
+		if (!gres_ptr->gres_data)
+			continue;
+
 		if (is_job) {
 			gres_job_state_t *gres_data_ptr =
 				(gres_job_state_t *)gres_ptr->gres_data;
@@ -4801,8 +4804,7 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 			node_cnt = gres_data_ptr->node_cnt;
 		}
 
-		if (!gres_ptr->gres_data ||
-		    (node_cnt != 1) ||
+		if ((node_cnt != 1) ||
 		    !local_bit_alloc ||
 		    !local_bit_alloc[0])
 			continue;
