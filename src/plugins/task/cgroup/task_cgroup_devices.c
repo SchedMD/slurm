@@ -82,7 +82,7 @@ static int _read_allowed_devices_file(char *allowed_devices[PATH_MAX]);
 extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	uint16_t cpunum;
-	FILE *file = fopen (cgroup_allowed_devices_file, "r" );
+	FILE *file = NULL;
 
 	/* initialize cpuinfo internal data */
 	if ( xcpuinfo_init() != XCPUINFO_SUCCESS )
