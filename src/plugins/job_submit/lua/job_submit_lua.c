@@ -732,6 +732,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->end_time);
 	} else if (!xstrcmp(name, "environment")) {
 		_push_job_env ((struct job_descriptor *)job_desc); // No const
+	} else if (!xstrcmp(name, "extra")) {
+		lua_pushstring (L, job_desc->extra);
 	} else if (!xstrcmp(name, "exc_nodes")) {
 		lua_pushstring (L, job_desc->exc_nodes);
 	} else if (!xstrcmp(name, "features")) {
@@ -951,6 +953,11 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->delay_boot = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "end_time")) {
 		job_desc->end_time = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "extra")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->extra);
+		if (strlen(value_str))
+			job_desc->extra = xstrdup(value_str);
 	} else if (!xstrcmp(name, "exc_nodes")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->exc_nodes);

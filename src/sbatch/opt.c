@@ -326,6 +326,7 @@ static void _opt_default(bool first_pass)
 		xfree(opt.dependency);
 		opt.egid		= (gid_t) -1;
 		xfree(sbopt.efname);
+		xfree(opt.extra);
 		xfree(opt.exc_nodes);
 		xfree(sbopt.export_env);
 		xfree(sbopt.export_file);

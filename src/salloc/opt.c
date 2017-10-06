@@ -307,6 +307,7 @@ static void _opt_default(void)
 		xfree(opt.dependency);
 		opt.egid		= (gid_t) -1;
 		opt.euid		= (uid_t) -1;
+		xfree(opt.extra);
 		xfree(opt.exc_nodes);
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;

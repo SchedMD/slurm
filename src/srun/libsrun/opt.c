@@ -751,6 +751,7 @@ static void _opt_default(void)
 		xfree(sropt.efname);
 		xfree(sropt.epilog);
 		sropt.epilog		= slurm_get_srun_epilog();
+		xfree(opt.extra);
 		xfree(opt.exc_nodes);
 		xfree(sropt.export_env);
 		opt.euid		= (uid_t) -1;

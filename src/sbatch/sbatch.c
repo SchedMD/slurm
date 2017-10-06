@@ -554,6 +554,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	}
 
 	desc->req_nodes = xstrdup(opt.nodelist);
+	desc->extra = xstrdup(opt.extra);
 	desc->exc_nodes = xstrdup(opt.exc_nodes);
 	desc->partition = xstrdup(opt.partition);
 	desc->profile = opt.profile;

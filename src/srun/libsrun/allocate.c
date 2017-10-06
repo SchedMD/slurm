@@ -975,6 +975,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		      "specify a nodelist or hostfile with the -w option");
 		return NULL;
 	}
+	j->extra = opt_local->extra;
 	j->exc_nodes      = opt_local->exc_nodes;
 	j->partition      = opt_local->partition;
 	j->min_nodes      = opt_local->min_nodes;

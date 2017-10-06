@@ -276,6 +276,7 @@ typedef struct slurm_options {
 	/*********************/
 
 	time_t begin;			/* --begin			*/
+	char *extra;			/* unused			*/
 	uint16_t mail_type;		/* --mail-type			*/
 	char *mail_user;		/* --mail-user			*/
 	int get_user_env_time;		/* --get-user-env[=timeout]	*/

@@ -823,6 +823,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 				xfree(msg->environment[i]);
 			xfree(msg->environment);
 		}
+		xfree(msg->extra);
 		xfree(msg->std_err);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);

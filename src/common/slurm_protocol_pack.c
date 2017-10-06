@@ -8894,6 +8894,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack32(job_desc_ptr->bitflags, buffer);
 		pack32(job_desc_ptr->delay_boot, buffer);
+		packstr(job_desc_ptr->extra, buffer);
 		pack16(job_desc_ptr->x11, buffer);
 		packstr(job_desc_ptr->x11_magic_cookie, buffer);
 		/* no x11_target_host here, alloc_node is equivalent */
@@ -9415,6 +9416,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->extra, &uint32_tmp,
+				       buffer);
 		safe_unpack16(&job_desc_ptr->x11, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->x11_magic_cookie,
 				       &uint32_tmp, buffer);
