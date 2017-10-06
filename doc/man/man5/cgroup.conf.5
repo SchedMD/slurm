@@ -83,6 +83,9 @@ to \fBAllowedRAMSpace\fR. The supplied percentage may be expressed as a
 floating point number, e.g. 50.5.  If the limit is exceeded, the job steps
 will be killed and a warning message will be written to standard error.
 Also see \fBConstrainSwapSpace\fR.
+NOTE: Setting AllowedSwapSpace to 0 does not restrict the Linux kernel from
+using swap space. To control how the kernel uses swap space, see
+\fBMemorySwappiness\fR.
 
 .TP
 \fBConstrainCores\fR=<yes|no>
@@ -152,6 +155,16 @@ The default value is 100.
 \fBMaxKmemPercent\fR=\fIPERCENT\fR
 Set an upper bound in percent of total Kmem for a job. The \fIPERCENT\fR may be an
 arbitrary floating point number. The default value is 100.
+
+.TP
+\fBMemorySwappiness\fR=<number>
+Configure the kernel's priority for swapping out anonymous pages (such as
+program data) verses file cache pages for the job cgroup. Valid values are
+between 0 and 100, inclusive. A value of 0 prevents the kernel from swapping
+out program data. A value of 100 gives equal priorioty to swapping out file
+cache or anonymous pages. If not set, then the kernel's default swappiness
+value will be used. Either \fBConstrainRAMSpace\fR or \fBConstrainSwapSpace\fR
+must be set to \fByes\fR in order for this parameter to be applied.
 
 .TP
 \fBMinKmemSpace\fR=<number>

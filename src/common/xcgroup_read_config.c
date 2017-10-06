@@ -93,6 +93,7 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		slurm_cgroup_conf->memlimit_enforcement = 0 ;
 		slurm_cgroup_conf->memlimit_threshold = 100 ;
 		slurm_cgroup_conf->constrain_devices = false ;
+		slurm_cgroup_conf->memory_swappiness = NO_VAL64;
 		xfree(slurm_cgroup_conf->allowed_devices_file);
 	}
 }
@@ -154,6 +155,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"MemoryLimitThreshold", S_P_STRING},
 		{"ConstrainDevices", S_P_BOOLEAN},
 		{"AllowedDevicesFile", S_P_STRING},
+		{"MemorySwappiness", S_P_UINT64},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
@@ -251,6 +253,15 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 		(void) s_p_get_uint64 (&slurm_cgroup_conf->min_ram_space,
 				      "MinRAMSpace", tbl);
+
+		if (s_p_get_uint64(&slurm_cgroup_conf->memory_swappiness,
+				     "MemorySwappiness", tbl)) {
+			if (slurm_cgroup_conf->memory_swappiness > 100) {
+				error("Value for MemorySwappiness is too high,"
+				      " rounding down to 100.");
+				slurm_cgroup_conf->memory_swappiness = 100;
+			}
+		}
 
 		/* Memory limits */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->memlimit_enforcement,

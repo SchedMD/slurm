@@ -101,6 +101,7 @@ documents those changes that are of interest to users and administrators.
     compute nodes. The "capmc_resume" program from "contribs/cray" can be used.
  -- Modify "scontrol top" command to accept a comma separated list of job IDs
     as an argument rather than a single job ID.
+ -- Add MemorySwappiness value to cgroup.conf.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
