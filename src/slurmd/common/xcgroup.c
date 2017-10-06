@@ -560,6 +560,11 @@ int xcgroup_set_param(xcgroup_t* cg, char* param, char* content)
 	char file_path[PATH_MAX];
 	char* cpath = cg->path;
 
+	if (!content) {
+		debug2("%s: no content given, nothing to do.", __func__);
+		return fstatus;
+	}
+
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
 		debug2("unable to build filepath for '%s' and"
 		       " parameter '%s' : %m", cpath, param);
