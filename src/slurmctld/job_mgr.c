@@ -10642,7 +10642,7 @@ extern uint32_t get_next_job_id(bool test_only)
 	max_jobs = slurmctld_conf.max_job_id - slurmctld_conf.first_job_id;
 	tmp_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 
-	/* Insure no conflict in job id if we roll over 32 bits */
+	/* Ensure no conflict in job id if we roll over 32 bits */
 	for (i = 0; i < max_jobs; i++) {
 		if (++tmp_id_sequence >= slurmctld_conf.max_job_id)
 			tmp_id_sequence = slurmctld_conf.first_job_id;

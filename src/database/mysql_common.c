@@ -66,7 +66,7 @@ static void _destroy_db_key(void *arg)
 	}
 }
 
-/* NOTE: Insure that mysql_conn->lock is set on function entry */
+/* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static int _clear_results(MYSQL *db_conn)
 {
 	MYSQL_RES *result = NULL;
@@ -91,7 +91,7 @@ static int _clear_results(MYSQL *db_conn)
 	return SLURM_SUCCESS;
 }
 
-/* NOTE: Insure that mysql_conn->lock is set on function entry */
+/* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static MYSQL_RES *_get_first_result(MYSQL *db_conn)
 {
 	MYSQL_RES *result = NULL;
@@ -110,7 +110,7 @@ static MYSQL_RES *_get_first_result(MYSQL *db_conn)
 	return NULL;
 }
 
-/* NOTE: Insure that mysql_conn->lock is set on function entry */
+/* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static MYSQL_RES *_get_last_result(MYSQL *db_conn)
 {
 	MYSQL_RES *result = NULL;
@@ -131,7 +131,7 @@ static MYSQL_RES *_get_last_result(MYSQL *db_conn)
 	return last_result;
 }
 
-/* NOTE: Insure that mysql_conn->lock is set on function entry */
+/* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static int _mysql_query_internal(MYSQL *db_conn, char *query)
 {
 	int rc = SLURM_SUCCESS;
@@ -181,7 +181,7 @@ end_it:
 	return rc;
 }
 
-/* NOTE: Insure that mysql_conn->lock is NOT set on function entry */
+/* NOTE: Ensure that mysql_conn->lock is NOT set on function entry */
 static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 				     storage_field_t *fields, char *ending)
 {
@@ -539,7 +539,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	return SLURM_SUCCESS;
 }
 
-/* NOTE: Insure that mysql_conn->lock is set on function entry */
+/* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static int _create_db(char *db_name, mysql_db_info_t *db_info)
 {
 	char create_line[50];

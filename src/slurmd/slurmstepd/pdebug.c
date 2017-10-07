@@ -149,7 +149,7 @@ static int _being_traced(pid_t pid)
 	fclose(fp);
 	if ((n == 0) || (n == max_len))
 		return -1;
-	buf[n] = '\0';	/* Insure string is terminated */
+	buf[n] = '\0';	/* Ensure string is terminated */
 	if ((match = strstr(buf, "TracerPid:")) == NULL)
 		return -1;
 	if (sscanf(match, "TracerPid:\t%d", &tracer_id) == EOF)

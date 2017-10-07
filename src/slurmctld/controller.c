@@ -2557,7 +2557,7 @@ void update_logging(void)
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
 		if (!slurmctld_conf.slurmctld_logfile &&
 		    (slurmctld_conf.slurmctld_syslog_debug == LOG_LEVEL_QUIET)){
-			/* Insure fatal errors get logged somewhere */
+			/* Ensure fatal errors get logged somewhere */
 			log_opts.syslog_level = LOG_LEVEL_FATAL;
 		} else {
 			log_opts.syslog_level =

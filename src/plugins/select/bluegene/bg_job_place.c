@@ -516,7 +516,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		}
 
 		/*
-		 * Insure that any required nodes are in this BG block
+		 * Ensure that any required nodes are in this BG block
 		 */
 		if (job_ptr->details->req_node_bitmap
 		    && (!bit_super_set(job_ptr->details->req_node_bitmap,

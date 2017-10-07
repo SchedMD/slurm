@@ -90,7 +90,7 @@
 } while (0)
 
 
-/* Insure valid bitmap size, prevent overflow in buffer size calcuation */
+/* Ensure valid bitmap size, prevent overflow in buffer size calcuation */
 #define _assert_valid_size(bit) do {	\
 	assert((bit) >= 0);		\
 	assert((bit) <= 0x40000000); 	\

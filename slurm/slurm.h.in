@@ -1016,7 +1016,7 @@ enum ctx_keys {
 
 #define PROP_PRIO_OFF		0x0000	/* Do not propagage user nice value */
 #define PROP_PRIO_ON		0x0001	/* Propagate user nice value */
-#define PROP_PRIO_NICER		0x0002	/* Insure that user tasks have a nice
+#define PROP_PRIO_NICER		0x0002	/* Ensure that user tasks have a nice
 					 * value that is higher than slurmd */
 
 #define PRIORITY_FLAGS_ACCRUE_ALWAYS	0x0001	/* Flag to always accrue age

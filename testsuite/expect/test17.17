@@ -92,7 +92,7 @@ make_bash_script $file_in "$srun $bin_sleep 5"
 
 #
 # Submit two jobs to the same node, one with no sharing, the other
-# with sharing permitted. Insure the first job completes before the
+# with sharing permitted. Ensure the first job completes before the
 # second job is started.
 #
 set sbatch_pid [spawn $sbatch -N1 --exclusive --nodelist=$nodelist_name -t1 --output=$file_out --error=$file_err  $file_in]

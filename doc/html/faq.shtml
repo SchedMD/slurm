@@ -1307,7 +1307,7 @@ to relocate them. In order to do so, follow this procedure:</p>
 make sure the permissions allow the <i>SlurmUser</i> to read and write it.
 <li>Restart all Slurm daemons</li>
 </ol>
-<p>There should be no loss of any running or pending jobs. Insure that
+<p>There should be no loss of any running or pending jobs. Ensure that
 any nodes added to the cluster have a current <i>slurm.conf</i> file
 installed.
 <b>CAUTION:</b> If two nodes are simultaneously configured as the primary

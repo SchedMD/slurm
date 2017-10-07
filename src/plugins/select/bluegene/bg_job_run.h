@@ -66,7 +66,7 @@ extern int sync_jobs(List job_list);
  * RET - SLURM_SUCCESS or an error code
  *
  * NOTE: This happens in parallel with srun and slurmd terminating
- * the job. Insure that this function, mpirun and the epilog can
+ * the job. Ensure that this function, mpirun and the epilog can
  * all deal with termination race conditions.
  */
 extern int term_job(struct job_record *job_ptr);

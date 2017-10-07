@@ -785,7 +785,7 @@ extern int start_job(struct job_record *job_ptr)
  * RET - SLURM_SUCCESS or an error code
  *
  * NOTE: This happens in parallel with srun and slurmd terminating
- * the job. Insure that this function, mpirun and the epilog can
+ * the job. Ensure that this function, mpirun and the epilog can
  * all deal with termination race conditions.
  */
 int term_job(struct job_record *job_ptr)
@@ -830,7 +830,7 @@ extern int sync_jobs(List job_list)
 		return SLURM_ERROR;
 	}
 	slurm_mutex_lock(&block_state_mutex);
-	/* Insure that all running jobs own the specified block */
+	/* Ensure that all running jobs own the specified block */
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
 		bg_action_t *bg_action_ptr = NULL;
@@ -920,7 +920,7 @@ extern int sync_jobs(List job_list)
 		FREE_NULL_LIST(kill_list);
 	}
 
-	/* Insure that all other blocks are free of users */
+	/* Ensure that all other blocks are free of users */
 	if (block_list) {
 		itr = list_iterator_create(block_list);
 		while ((bg_record = list_next(itr))) {

@@ -266,7 +266,7 @@ extern int switch_init(bool only_default)
 	if (switch_context_default == -1)
 		fatal("Can't find plugin for %s", switch_type);
 
-	/* Insure that plugin_id is valid and unique */
+	/* Ensure that plugin_id is valid and unique */
 	for (i = 0; i < switch_context_cnt; i++) {
 		for (j = i+1; j < switch_context_cnt; j++) {
 			if (*(ops[i].plugin_id) !=

@@ -205,7 +205,7 @@ command "<i>scontrol wait_job $SLURM_JOB_ID</i>" within the script or by
 adding that command to the system <i>Prolog</i> or <i>PrologSlurmctld</i>
 as configured in <i>slurm.conf</i>, which would create the delay for all jobs
 on the system.
-Insure that the <i>Prolog</i> code is zero to avoid draining the node
+Ensure that the <i>Prolog</i> code is zero to avoid draining the node
 (do not use the scontrol exit code to avoid draining the node on error,
 for example if the job is explicitly cancelled during startup).</p>
 

@@ -467,7 +467,7 @@ extern int gres_plugin_init(void)
 	}
 	xfree(names);
 
-	/* Insure that plugin_id is valid and unique */
+	/* Ensure that plugin_id is valid and unique */
 	for (i=0; i<gres_context_cnt; i++) {
 		for (j=i+1; j<gres_context_cnt; j++) {
 			if (gres_context[i].plugin_id !=

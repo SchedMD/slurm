@@ -2790,7 +2790,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 			break;
 		}
 	}
-	/* Insure that all child processes get killed, one last time */
+	/* Ensure that all child processes get killed, one last time */
 	killpg(cpid, SIGKILL);
 
 	return status;

@@ -1893,7 +1893,7 @@ static void _update_logging(void)
 		o->stderr_level = LOG_LEVEL_QUIET;
 		if (!conf->logfile &&
 		    (conf->syslog_debug == LOG_LEVEL_QUIET)) {
-			/* Insure fatal errors get logged somewhere */
+			/* Ensure fatal errors get logged somewhere */
  			o->syslog_level = LOG_LEVEL_FATAL;
 		} else {
 			o->syslog_level = conf->syslog_debug;
