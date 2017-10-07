@@ -2369,6 +2369,7 @@ typedef struct partition_info_msg {
 
 typedef struct will_run_response_msg {
 	uint32_t job_id;	/* ID of job to start */
+	char *job_submit_user_msg; /* job submit plugin user_msg */
 	char *node_list;	/* nodes where job will start */
 	List preemptee_job_id;	/* jobs preempted to start this job */
 	uint32_t proc_cnt;	/* CPUs allocated to job at start */

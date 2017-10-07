@@ -610,6 +610,17 @@ int slurm_job_will_run(job_desc_msg_t *req)
 	else
 		rc = slurm_job_will_run2(req, &will_run_resp);
 
+	if (will_run_resp && will_run_resp->job_submit_user_msg) {
+		char *line = NULL, *buf = NULL, *ptrptr = NULL;
+		buf = xstrdup(will_run_resp->job_submit_user_msg);
+		line = strtok_r(buf, "\n", &ptrptr);
+		while (line) {
+			info("%s", line);
+			line = strtok_r(NULL, "\n", &ptrptr);
+		}
+		xfree(buf);
+	}
+
 	if ((rc == 0) && will_run_resp) {
 		if (cluster_flags & CLUSTER_FLAG_BG)
 			type = "cnodes";
@@ -658,7 +669,7 @@ extern int slurm_pack_job_will_run(List job_req_list)
 	job_desc_msg_t *req;
 	will_run_response_msg_t *will_run_resp;
 	char buf[64], local_hostname[64] = "", *sep = "";
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, inx = 0;
 	char *type = "processors";
 	ListIterator iter, itr;
 	time_t first_start = (time_t) 0;
@@ -679,6 +690,18 @@ extern int slurm_pack_job_will_run(List job_req_list)
 
 		will_run_resp = NULL;
 		rc = slurm_job_will_run2(req, &will_run_resp);
+
+		if (will_run_resp && will_run_resp->job_submit_user_msg) {
+			char *line = NULL, *buf = NULL, *ptrptr = NULL;
+			buf = xstrdup(will_run_resp->job_submit_user_msg);
+			line = strtok_r(buf, "\n", &ptrptr);
+			while (line) {
+				info("%d: %s", inx, line);
+				line = strtok_r(NULL, "\n", &ptrptr);
+			}
+			xfree(buf);
+		}
+
 		if ((rc == SLURM_SUCCESS) && will_run_resp) {
 			if (first_job_id == 0)
 				first_job_id = will_run_resp->job_id;
@@ -709,6 +732,7 @@ extern int slurm_pack_job_will_run(List job_req_list)
 			req->alloc_node = NULL;
 		if (rc != SLURM_SUCCESS)
 			break;
+		inx++;
 	}
 	list_iterator_destroy(iter);
 

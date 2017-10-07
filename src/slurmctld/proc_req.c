@@ -2885,7 +2885,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
-	char *err_msg = NULL;
+	char *err_msg = NULL, *job_submit_user_msg = NULL;
 
 	if (slurmctld_config.submissions_disabled) {
 		info("Submissions disabled on system");
@@ -2913,6 +2913,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
+
+	if (err_msg)
+		job_submit_user_msg = xstrdup(err_msg);
 
 	if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
 		job_desc_msg->resp_host = xmalloc(16);
@@ -2959,6 +2962,8 @@ send_reply:
 		response_msg.conn = msg->conn;
 		response_msg.msg_type = RESPONSE_JOB_WILL_RUN;
 		response_msg.data = resp;
+		resp->job_submit_user_msg = job_submit_user_msg;
+		job_submit_user_msg = NULL;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		slurm_free_will_run_response_msg(resp);
 		debug2("_slurm_rpc_job_will_run success %s", TIME_STR);
@@ -2968,6 +2973,7 @@ send_reply:
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 	xfree(err_msg);
+	xfree(job_submit_user_msg);
 }
 
 static void _slurm_rpc_event_log(slurm_msg_t * msg)

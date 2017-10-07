@@ -14665,6 +14665,7 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer,
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
+		packstr(msg->job_submit_user_msg, buffer);
 		packstr(msg->node_list, buffer);
 
 		if (msg->preemptee_job_id)
@@ -14737,6 +14738,8 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer,
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr_xmalloc(&msg->job_submit_user_msg, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
 
 		safe_unpack32(&count, buffer);
