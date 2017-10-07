@@ -2562,18 +2562,14 @@ _slurmd_job_log_init(stepd_step_rec_t *job)
 }
 
 
-static void
-_setargs(stepd_step_rec_t *job)
+static void _setargs(stepd_step_rec_t *job)
 {
-	if (job->jobid > MAX_NOALLOC_JOBID)
-		return;
-
-	if ((job->jobid >= MIN_NOALLOC_JOBID) || (job->stepid == NO_VAL))
-		setproctitle("[%u]",    job->jobid);
+	if (job->stepid == SLURM_BATCH_SCRIPT)
+		setproctitle("[%u.batch]", job->jobid);
+	else if (job->stepid == SLURM_EXTERN_CONT)
+		setproctitle("[%u.extern]", job->jobid);
 	else
 		setproctitle("[%u.%u]", job->jobid, job->stepid);
-
-	return;
 }
 
 /*
