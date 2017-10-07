@@ -19,8 +19,7 @@ slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS) $(NUMA_LIBS)
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \
-	get_mach_stat.c get_mach_stat.h	\
-	slurmd_plugstack.c slurmd_plugstack.h
+	get_mach_stat.c get_mach_stat.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
 

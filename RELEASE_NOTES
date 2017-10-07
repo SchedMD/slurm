@@ -208,7 +208,7 @@ Added reroute_msg_t to route a message to a different cluster.
 
 Removed members from the following struct definitions
 =====================================================
-In slurm_ctl_conf_t: Removed group_info.
+In slurm_ctl_conf_t: Removed group_info and slurmd_plugstack.
 
 Changed the following enums and #defines
 ========================================
@@ -226,3 +226,4 @@ Removed the following API's
 ===========================
 Removed unused slurm_allocation_lookup() and rename slurm_allocation_lookup_lite() to
 	slurm_allocation_lookup().
+Removed unused slurm_get_slurmd_plugstack() function.

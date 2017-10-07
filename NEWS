@@ -111,6 +111,7 @@ documents those changes that are of interest to users and administrators.
     that functionality. The configuration parameter
     "SchedulerParameters=disable_user_top" will be silently ignored.
  -- Add -TALL to sreport.
+ -- Removed unused SlurmdPlugstack option and associated framework.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

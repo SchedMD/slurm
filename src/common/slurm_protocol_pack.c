@@ -6705,7 +6705,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->slurmd_debug, buffer);
 		packstr(build_ptr->slurmd_logfile, buffer);
 		packstr(build_ptr->slurmd_pidfile, buffer);
-		packstr(build_ptr->slurmd_plugstack, buffer);
 		pack32(build_ptr->slurmd_port, buffer);
 
 		packstr(build_ptr->slurmd_spooldir, buffer);
@@ -6985,7 +6984,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->slurmd_debug, buffer);
 		packstr(build_ptr->slurmd_logfile, buffer);
 		packstr(build_ptr->slurmd_pidfile, buffer);
-		packstr(build_ptr->slurmd_plugstack, buffer);
+		packnull(buffer); /* was slurmd_plugstack */
 		pack32(build_ptr->slurmd_port, buffer);
 
 		packstr(build_ptr->slurmd_spooldir, buffer);
@@ -7267,7 +7266,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->slurmd_debug, buffer);
 		packstr(build_ptr->slurmd_logfile, buffer);
 		packstr(build_ptr->slurmd_pidfile, buffer);
-		packstr(build_ptr->slurmd_plugstack, buffer);
+		packnull(buffer); /* was slurmd_plugstack */
 		if (!(cluster_flags & CLUSTER_FLAG_MULTSD))
 			pack32(build_ptr->slurmd_port, buffer);
 
@@ -7676,8 +7675,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmd_pidfile, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&build_ptr->slurmd_plugstack,
-				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->slurmd_port, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->slurmd_spooldir,
@@ -8079,8 +8076,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmd_pidfile, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&build_ptr->slurmd_plugstack,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
+		xfree(charptr_tmp); /* was slurmd_plugstack */
 		safe_unpack32(&build_ptr->slurmd_port, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->slurmd_spooldir,
@@ -8486,8 +8483,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmd_pidfile, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&build_ptr->slurmd_plugstack,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
+		xfree(charptr_tmp); /* was slurmd_plugstack */
 		if (!(cluster_flags & CLUSTER_FLAG_MULTSD))
 			safe_unpack32(&build_ptr->slurmd_port, buffer);
 

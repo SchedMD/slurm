@@ -111,7 +111,6 @@
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
-#include "src/slurmd/slurmd/slurmd_plugstack.h"
 #include "src/slurmd/common/xcpuinfo.h"
 
 #define GETOPT_ARGS	"bcCd:Df:hL:Mn:N:vV"
@@ -363,12 +362,6 @@ main (int argc, char **argv)
 	list_install_fork_handlers();
 	slurm_conf_install_fork_handlers();
 	record_launched_jobs();
-
-	/*
-	 * Initialize any plugins
-	 */
-	if (slurmd_plugstack_init())
-		fatal("failed to initialize slurmd_plugstack");
 
 	run_script_health_check();
 	slurm_thread_create_detached(NULL, _registration_engine, NULL);

@@ -27,7 +27,6 @@ SUBDIRS = \
 	sched			\
 	select			\
 	slurmctld		\
-	slurmd			\
 	switch			\
 	task			\
 	topology

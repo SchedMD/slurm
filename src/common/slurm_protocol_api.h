@@ -281,13 +281,6 @@ char *slurm_get_node_features_plugins(void);
  */
 char *slurm_get_slurmctld_plugstack(void);
 
-/* slurm_get_slurmd_plugstack
- * get slurmd_plugstack from slurmctld_conf object from
- * slurmd_conf object
- * RET char *   - slurmd_plugstack, MUST be xfreed by caller
- */
-char *slurm_get_slurmd_plugstack(void);
-
 /* slurm_get_slurmctld_timeout
  * get slurmctld_timeout from slurmctld_conf object from
  * slurmctld_conf object
