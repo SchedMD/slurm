@@ -6769,6 +6769,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 
 	persist_conn->callback_proc = _process_persist_conn;
 
+	persist_conn->persist_type = persist_init->persist_type;
 	persist_conn->rem_port = persist_init->port;
 	persist_conn->rem_host = xmalloc_nz(sizeof(char) * 16);
 
@@ -6783,7 +6784,10 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 	persist_conn->version = persist_init->version;
 	memcpy(&p_tmp, persist_conn, sizeof(slurm_persist_conn_t));
 
-	rc = fed_mgr_add_sibling_conn(persist_conn, &comment);
+	if (persist_init->persist_type == PERSIST_TYPE_FED)
+		rc = fed_mgr_add_sibling_conn(persist_conn, &comment);
+	else
+		rc = SLURM_ERROR;
 end_it:
 
 	/* If people are really hammering the fed_mgr we could get into trouble

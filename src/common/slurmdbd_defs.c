@@ -443,6 +443,7 @@ static void _open_slurmdbd_conn(bool need_db)
 		slurmdbd_conn = xmalloc(sizeof(slurm_persist_conn_t));
 		slurmdbd_conn->flags =
 			PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT;
+		slurmdbd_conn->persist_type = PERSIST_TYPE_DBD;
 		slurmdbd_conn->cluster_name = xstrdup(slurmdbd_cluster);
 
 		slurmdbd_conn->timeout = (slurm_get_msg_timeout() + 35) * 1000;

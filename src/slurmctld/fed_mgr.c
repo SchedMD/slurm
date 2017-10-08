@@ -330,6 +330,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 
 		/* Since this connection is coming from us, make it so ;) */
 		persist_conn->cluster_name = xstrdup(slurmctld_conf.cluster_name);
+		persist_conn->persist_type = PERSIST_TYPE_FED;
 		persist_conn->my_port = slurmctld_conf.slurmctld_port;
 		persist_conn->rem_host = xstrdup(cluster->control_host);
 		persist_conn->rem_port = cluster->control_port;
