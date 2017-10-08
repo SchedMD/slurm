@@ -402,10 +402,6 @@ typedef enum {
 	RESPONSE_MESSAGE_COMPOSITE,
 } slurm_msg_type_t;
 
-typedef enum {
-	CREDENTIAL1
-} slurm_credential_type_t;
-
 /*****************************************************************************\
  * core api configuration struct
 \*****************************************************************************/
