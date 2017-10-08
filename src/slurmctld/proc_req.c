@@ -6724,10 +6724,6 @@ static int _process_persist_conn(void *arg,
 	return SLURM_SUCCESS;
 }
 
-/* _slurm_rpc_assoc_mgr_info()
- *
- * Pack the assoc_mgr lists and return it back to the caller.
- */
 static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 {
 	DEF_TIMERS;
