@@ -44,6 +44,14 @@
 #define PERSIST_FLAG_RECONNECT      0x0002
 #define PERSIST_FLAG_ALREADY_INITED 0x0004
 
+typedef enum {
+	PERSIST_TYPE_NONE = 0,
+	PERSIST_TYPE_DBD,
+	PERSIST_TYPE_FED,
+	PERSIST_TYPE_HA_CTL,
+	PERSIST_TYPE_HA_DBD,
+} persist_conn_type_t;
+
 typedef struct {
 	uint16_t msg_type;	/* see slurmdbd_msg_type_t or
 				 * slurm_msg_type_t */
@@ -63,6 +71,7 @@ typedef struct {
 	int fd;
 	uint16_t flags;
 	bool inited;
+	persist_conn_type_t persist_type;
 	char *rem_host;
 	uint16_t rem_port;
 	time_t *shutdown;
@@ -74,6 +83,7 @@ typedef struct {
 
 typedef struct {
 	char *cluster_name;     /* cluster this message is coming from */
+	uint16_t persist_type;	/* really persist_conn_type_t, uint16_t on wire */
 	uint16_t port;          /* If you want to open a new connection, this is
 				 *  the port to talk to. */
 	uint16_t version;	/* protocol version */
