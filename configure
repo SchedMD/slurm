@@ -4865,8 +4865,8 @@ $as_echo "#define HAVE_MYSQL 1" >>confdefs.h
 			else
 				MYSQL_CFLAGS=""
 				MYSQL_LIBS=""
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** MySQL test program execution failed." >&5
-$as_echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** MySQL test program execution failed. A thread-safe MySQL library is required." >&5
+$as_echo "$as_me: WARNING: *** MySQL test program execution failed. A thread-safe MySQL library is required." >&2;}
 			fi
 		fi
       	fi

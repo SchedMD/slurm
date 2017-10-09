@@ -67,7 +67,7 @@ AC_DEFUN([X_AC_DATABASES],
 			else
 				MYSQL_CFLAGS=""
 				MYSQL_LIBS=""
-				AC_MSG_WARN([*** MySQL test program execution failed.])
+				AC_MSG_WARN([*** MySQL test program execution failed. A thread-safe MySQL library is required.])
 			fi
 		fi
       	fi
