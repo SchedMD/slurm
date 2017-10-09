@@ -4867,54 +4867,10 @@ $as_echo "MySQL $mysql_config_major_version.$mysql_config_minor_version.$mysql_c
 $as_echo "#define HAVE_MYSQL 1" >>confdefs.h
 
 			else
-				MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --include`
-				MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs`
-				save_CFLAGS="$CFLAGS"
-				save_LIBS="$LIBS"
-       				CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
-				LIBS="$MYSQL_LIBS $save_LIBS"
-				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <mysql.h>
-int
-main ()
-{
-
-							MYSQL mysql;
-							(void) mysql_init(&mysql);
-							(void) mysql_close(&mysql);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_have_mysql="yes"
-else
-  ac_have_mysql="no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-				CFLAGS="$save_CFLAGS"
-				LIBS="$save_LIBS"
-
-				if test "$ac_have_mysql" = yes; then
-					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: MySQL (non-threaded) test program built properly." >&5
-$as_echo "MySQL (non-threaded) test program built properly." >&6; }
-
-
-
-$as_echo "#define MYSQL_NOT_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define HAVE_MYSQL 1" >>confdefs.h
-
-				else
-					MYSQL_CFLAGS=""
-					MYSQL_LIBS=""
-					{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** MySQL test program execution failed." >&5
+				MYSQL_CFLAGS=""
+				MYSQL_LIBS=""
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** MySQL test program execution failed." >&5
 $as_echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
-				fi
 			fi
 		fi
       	fi
