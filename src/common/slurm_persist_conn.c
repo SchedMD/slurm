@@ -1007,6 +1007,7 @@ unpack_error:
 extern void slurm_persist_pack_init_req_msg(
 	persist_init_req_msg_t *msg, Buf buffer)
 {
+	/* always send version field first for backwards compatibility */
 	pack16(msg->version, buffer);
 
 	if (msg->version >= SLURM_17_11_PROTOCOL_VERSION) {
