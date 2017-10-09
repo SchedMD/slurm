@@ -992,9 +992,6 @@ _read_config(void)
 static void
 _reconfigure(void)
 {
-	List steps;
-	ListIterator i;
-	step_loc_t *stepd;
 	bool did_change;
 
 	_reconfig = 0;
@@ -1034,29 +1031,6 @@ _reconfigure(void)
 	 * Purge the username -> grouplist cache.
 	 */
 	group_cache_purge();
-
-	/* send reconfig to each stepd so they can refresh their log
-	 * file handle
-	 */
-
-	steps = stepd_available(conf->spooldir, conf->node_name);
-	i = list_iterator_create(steps);
-	while ((stepd = list_next(i))) {
-		int fd;
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   stepd->jobid, stepd->stepid,
-				   &stepd->protocol_version);
-		if (fd == -1)
-			continue;
-
-		if (stepd_reconfig(fd, stepd->protocol_version)
-		    != SLURM_SUCCESS)
-			debug("Reconfig jobid=%u.%u failed: %m",
-			      stepd->jobid, stepd->stepid);
-		close(fd);
-	}
-	list_iterator_destroy(i);
-	FREE_NULL_LIST(steps);
 
 	gres_plugin_reconfig(&did_change);
 	(void) switch_g_reconfig();
@@ -1860,6 +1834,9 @@ _kill_old_slurmd(void)
 /* Reset slurmd logging based upon configuration parameters */
 static void _update_logging(void)
 {
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
 	log_options_t *o = &conf->log_opts;
 	slurm_ctl_conf_t *cf;
 
@@ -1911,6 +1888,29 @@ static void _update_logging(void)
 		log_set_argv0(buf);
 	}
 #endif
+
+	/*
+	 * Send reconfig to each stepd so they will rotate as well.
+	 */
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((stepd = list_next(i))) {
+		int fd;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid,
+				   &stepd->protocol_version);
+		if (fd == -1)
+			continue;
+
+		if (stepd_reconfig(fd, stepd->protocol_version)
+		    != SLURM_SUCCESS)
+			debug("Reconfig jobid=%u.%u failed: %m",
+			      stepd->jobid, stepd->stepid);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	FREE_NULL_LIST(steps);
 }
 
 /* Reset slurmd nice value */
