@@ -191,6 +191,7 @@ typedef enum {
 
 	/* RESERVATION */
 	PRINT_ASSOC_NAME = 10000,
+	PRINT_UNUSED,
 
 } sacctmgr_print_t;
 

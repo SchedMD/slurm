@@ -536,7 +536,8 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		"resv_name",
 		"time_start",
 		"time_end",
-		"tres"
+		"tres",
+		"unused_wall"
 	};
 
 	enum {
@@ -549,6 +550,7 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		RESV_REQ_START,
 		RESV_REQ_END,
 		RESV_REQ_TRES,
+		RESV_REQ_UNUSED,
 		RESV_REQ_COUNT
 	};
 
@@ -653,6 +655,7 @@ empty:
 		resv->time_end = slurm_atoul(row[RESV_REQ_END]);
 		resv->flags = slurm_atoul(row[RESV_REQ_FLAGS]);
 		resv->tres_str = xstrdup(row[RESV_REQ_TRES]);
+		resv->unused_wall = slurm_atoul(row[RESV_REQ_UNUSED]);
 	}
 
 	FREE_NULL_LIST(local_cluster_list);

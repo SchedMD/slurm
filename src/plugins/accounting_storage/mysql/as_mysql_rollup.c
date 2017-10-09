@@ -86,6 +86,7 @@ typedef struct {
 			      over of type local_id_usage_t */
 	List loc_tres;
 	time_t start;
+	int unused_wall;
 } local_resv_usage_t;
 
 static void _destroy_local_tres_usage(void *object)
@@ -972,7 +973,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		"flags",
 		"tres",
 		"time_start",
-		"time_end"
+		"time_end",
+		"unused_wall"
 	};
 	char *resv_str = NULL;
 	enum {
@@ -982,6 +984,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		RESV_REQ_TRES,
 		RESV_REQ_START,
 		RESV_REQ_END,
+		RESV_REQ_UNUSED,
 		RESV_REQ_COUNT
 	};
 
@@ -1074,9 +1077,17 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			time_t row_start = slurm_atoul(row[RESV_REQ_START]);
 			time_t row_end = slurm_atoul(row[RESV_REQ_END]);
 			uint32_t row_flags = slurm_atoul(row[RESV_REQ_FLAGS]);
+			int unused;
 			int resv_seconds;
-			if (row_start < curr_start)
+			if (row_start <= curr_start) {
 				row_start = curr_start;
+				/*
+				 * We want the total unused here so if we are
+				 * reerolling set it back to 0
+				 */
+				unused = 0;
+			} else
+				unused = slurm_atoul(row[RESV_REQ_UNUSED]);
 
 			if (!row_end || row_end > curr_end)
 				row_end = curr_end;
@@ -1101,6 +1112,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			r_usage->start = row_start;
 			r_usage->end = row_end;
+			r_usage->unused_wall = unused + resv_seconds;
 			list_append(resv_usage_list, r_usage);
 
 			/* Since this reservation was added to the
@@ -1352,11 +1364,19 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 					loc_seconds = (temp_end - temp_start);
 
-					if (loc_seconds > 0)
+					if (loc_seconds > 0) {
 						_add_time_tres_list(
 							r_usage->loc_tres,
 							loc_tres, TIME_ALLOC,
 							loc_seconds, 1);
+						if (r_usage->unused_wall >=
+						    loc_seconds)
+							r_usage->unused_wall -=
+								loc_seconds;
+						else
+							r_usage->unused_wall =
+								0;
+					}
 				}
 
 				_transfer_loc_tres(&loc_tres, a_usage);
@@ -1437,10 +1457,15 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		/* now figure out how much more to add to the
 		   associations that could had run in the reservation
 		*/
+		query = NULL;
 		list_iterator_reset(r_itr);
 		while ((r_usage = list_next(r_itr))) {
 			ListIterator t_itr;
 			local_tres_usage_t *loc_tres;
+
+			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%u where id_resv=%u;",
+				   cluster_name, resv_table,
+				   r_usage->unused_wall, r_usage->id);
 
 			if (!r_usage->loc_tres ||
 			    !list_count(r_usage->loc_tres))
@@ -1496,6 +1521,17 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				list_iterator_destroy(tmp_itr);
 			}
 			list_iterator_destroy(t_itr);
+		}
+
+		if (query) {
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			rc = mysql_db_query(mysql_conn, query);
+			xfree(query);
+			if (rc != SLURM_SUCCESS) {
+				error("couldn't update reservations with unused time");
+				goto end_it;
+			}
 		}
 
 		/* now apply the down time from the slurmctld disconnects */

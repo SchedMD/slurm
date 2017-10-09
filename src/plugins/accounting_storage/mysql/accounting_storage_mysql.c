@@ -1289,6 +1289,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "time_start", "bigint unsigned default 0 not null"},
 		{ "time_end", "bigint unsigned default 0 not null" },
 		{ "tres", "text not null default ''" },
+		{ "unused_wall", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 

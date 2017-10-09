@@ -128,6 +128,7 @@ typedef struct {
 	char *time_end;
 	char *time_start;
 	char *tres_str;
+	char *unused_wall;
 } local_resv_t;
 
 typedef struct {
@@ -336,6 +337,7 @@ char *resv_req_inx[] = {
 	"resv_name",
 	"time_start",
 	"time_end",
+	"unused_wall",
 };
 
 enum {
@@ -348,6 +350,7 @@ enum {
 	RESV_REQ_NAME,
 	RESV_REQ_START,
 	RESV_REQ_END,
+	RESV_REQ_UNUSED,
 	RESV_REQ_COUNT
 };
 
@@ -994,6 +997,7 @@ static void _pack_local_resv(local_resv_t *object,
 	packstr(object->time_end, buffer);
 	packstr(object->time_start, buffer);
 	packstr(object->tres_str, buffer);
+	packstr(object->unused_wall, buffer);
 }
 
 /* this needs to be allocated before calling, and since we aren't
@@ -1014,6 +1018,7 @@ static int _unpack_local_resv(local_resv_t *object,
 		unpackstr_ptr(&object->time_end, &tmp32, buffer);
 		unpackstr_ptr(&object->time_start, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_str, &tmp32, buffer);
+		unpackstr_ptr(&object->unused_wall, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		unpackstr_ptr(&object->assocs, &tmp32, buffer);
 		unpackstr_ptr(&object->flags, &tmp32, buffer);
@@ -2201,6 +2206,7 @@ static Buf _pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 		resv.time_end = row[RESV_REQ_END];
 		resv.time_start = row[RESV_REQ_START];
 		resv.tres_str = row[RESV_REQ_TRES];
+		resv.unused_wall = row[RESV_REQ_UNUSED];
 
 		_pack_local_resv(&resv, SLURM_PROTOCOL_VERSION, buffer);
 	}
@@ -2247,7 +2253,8 @@ static char *_load_resvs(uint16_t rpc_version, Buf buffer,
 			   object.node_inx,
 			   object.name,
 			   object.time_start,
-			   object.time_end);
+			   object.time_end,
+			   object.unused_wall);
 
 		if (rpc_version < SLURM_15_08_PROTOCOL_VERSION)
 			xfree(object.tres_str);

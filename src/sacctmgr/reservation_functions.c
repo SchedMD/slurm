@@ -201,7 +201,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
 		 */
 		slurm_addto_char_list(format_list,
 				      "Cluster,Name%15,TRES%30,"
-				      "TimeStart,TimeEnd");
+				      "TimeStart,TimeEnd,Unused");
 	}
 
 	reservation_list = acct_storage_g_get_reservations(
@@ -291,6 +291,12 @@ int sacctmgr_list_reservation(int argc, char **argv)
 						     tmp_char,
 						     field_count);
 				xfree(tmp_char);
+				break;
+			case PRINT_UNUSED:
+				field->print_routine(
+					field,
+					reservation->unused_wall,
+					field_count);
 				break;
 			}
 		}

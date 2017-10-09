@@ -2300,6 +2300,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 			pack_time(0, buffer);
 			packnull(buffer);
 			pack32((uint32_t)NO_VAL, buffer);
+			pack32(0, buffer);
 			return;
 		}
 
@@ -2330,6 +2331,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
+		pack32(object->unused_wall, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
@@ -2420,6 +2422,7 @@ extern int slurmdb_unpack_reservation_rec(void **object,
 				list_append(object_ptr->tres_list, tmp_info);
 			}
 		}
+		safe_unpack32(&object_ptr->unused_wall, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp,
 				       buffer);
