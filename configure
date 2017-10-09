@@ -5354,9 +5354,6 @@ fi
 		bg_default_dirs=""
 	elif test "x$bgq_emulation" = "xyes"; then
 
-$as_echo "#define HAVE_4D 1" >>confdefs.h
-
-
 $as_echo "#define SYSTEM_DIMENSIONS 4" >>confdefs.h
 
 
@@ -5526,9 +5523,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
       		BG_INCLUDES="$bg_includes"
 		CFLAGS="$CFLAGS -m64"
    		CXXFLAGS="$CXXFLAGS $CFLAGS"
-
-$as_echo "#define HAVE_4D 1" >>confdefs.h
-
 
 $as_echo "#define SYSTEM_DIMENSIONS 4" >>confdefs.h
 
