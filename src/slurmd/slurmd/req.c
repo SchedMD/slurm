@@ -1527,7 +1527,6 @@ done:
  * IN flags - flags to open() call
  * IN mode - mode to open() call
  * IN jobid - (optional) job id
- * IN username - needed for group_cache_lookup call
  * IN uid - User ID to use for file access check
  * IN gid - Group ID to use for file access check
  * RET -1 on error, file descriptor otherwise
