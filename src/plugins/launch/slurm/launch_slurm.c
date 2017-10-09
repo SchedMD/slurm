@@ -365,7 +365,7 @@ static void _task_finish(task_exit_msg_t *msg)
 
 	/*
 	 * Only build the "tasks" and "hosts" strings as needed.
-	 * Buidling them can take multiple milliseconds
+	 * Building them can take multiple milliseconds
 	 */
 	if (((msg->return_code & 0xff) == SIG_OOM) && !oom_printed) {
 		build_task_string = true;
