@@ -137,7 +137,11 @@ int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);
 typedef struct {
 	uint32_t  jobid;
 	uint32_t  stepid;
-	uid_t     uid;
+	uid_t uid;
+	gid_t gid;
+	char *user_name;
+	int ngids;
+	gid_t *gids;
 
 	/* job_core_bitmap and step_core_bitmap cover the same set of nodes,
 	 * namely the set of nodes allocated to the job. The core and socket

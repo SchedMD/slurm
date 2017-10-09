@@ -161,6 +161,12 @@ struct slurm_job_credential {
 	uint32_t  jobid;	/* Job ID associated with this cred	*/
 	uint32_t  stepid;	/* Job step ID for this credential	*/
 	uid_t     uid;		/* user for which this cred is valid	*/
+	gid_t     gid;		/* user's primary group id 		*/
+	char *user_name;	/* user_name as a string		*/
+	int ngids;		/* number of extended group ids sent in
+				 * credential. if 0, these will need to
+				 * be fetched locally instead. */
+	gid_t *gids;		/* extended group ids for user		*/
 
 	uint64_t  job_mem_limit;/* MB of memory reserved per node OR
 				 * real memory per CPU | MEM_PER_CPU,
@@ -544,6 +550,10 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->jobid  = arg->jobid;
 	cred->stepid = arg->stepid;
 	cred->uid    = arg->uid;
+	cred->gid    = arg->gid;
+	cred->user_name = xstrdup(arg->user_name);
+	cred->ngids = 0;
+	cred->gids = NULL;
 	cred->job_core_spec   = arg->job_core_spec;
 	cred->job_gres_list   = gres_plugin_job_state_dup(arg->job_gres_list);
 	cred->step_gres_list  = gres_plugin_step_state_dup(arg->step_gres_list);
@@ -623,6 +633,15 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->jobid  = cred->jobid;
 	rcred->stepid = cred->stepid;
 	rcred->uid    = cred->uid;
+	rcred->gid    = cred->gid;
+	rcred->user_name = xstrdup(cred->user_name);
+	rcred->ngids = cred->ngids;
+	if (rcred->ngids) {
+		int array_size = rcred->ngids * sizeof(gid_t);
+		rcred->gids = xmalloc(array_size);
+		memcpy(rcred->gids, cred->gids, array_size);
+	} else
+		rcred->gids = NULL;
 	rcred->job_core_spec  = cred->job_core_spec;
 	rcred->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	rcred->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
@@ -675,6 +694,15 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->jobid    = arg->jobid;
 	cred->stepid   = arg->stepid;
 	cred->uid      = arg->uid;
+	cred->gid      = arg->gid;
+	cred->user_name = xstrdup(arg->user_name);
+	cred->ngids = arg->ngids;
+	if (cred->ngids) {
+		int array_size = cred->ngids * sizeof(gid_t);
+		cred->gids = xmalloc(array_size);
+		memcpy(cred->gids, arg->gids, array_size);
+	} else
+		cred->gids = NULL;
 	cred->job_core_spec  = arg->job_core_spec;
 	cred->job_mem_limit  = arg->job_mem_limit;
 	cred->step_mem_limit = arg->step_mem_limit;
@@ -733,6 +761,8 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 
 void slurm_cred_free_args(slurm_cred_arg_t *arg)
 {
+	xfree(arg->user_name);
+	xfree(arg->gids);
 	FREE_NULL_BITMAP(arg->job_core_bitmap);
 	FREE_NULL_BITMAP(arg->step_core_bitmap);
 	xfree(arg->cores_per_socket);
@@ -757,6 +787,15 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->jobid    = cred->jobid;
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
+	arg->gid      = cred->gid;
+	arg->user_name = xstrdup(cred->user_name);
+	arg->ngids = cred->ngids;
+	if (arg->ngids) {
+		int array_size = arg->ngids * sizeof(gid_t);
+		arg->gids = xmalloc(array_size);
+		memcpy(arg->gids, cred->gids, array_size);
+	} else
+		arg->gids = NULL;
 	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	arg->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
 	arg->job_core_spec  = cred->job_core_spec;
@@ -848,6 +887,15 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	arg->jobid    = cred->jobid;
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
+	arg->gid      = cred->gid;
+	arg->user_name = xstrdup(cred->user_name);
+	arg->ngids = cred->ngids;
+	if (arg->ngids) {
+		int array_size = arg->ngids * sizeof(gid_t);
+		arg->gids = xmalloc(array_size);
+		memcpy(arg->gids, cred->gids, array_size);
+	} else
+		arg->gids = NULL;
 	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	arg->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
 	arg->job_core_spec  = cred->job_core_spec;
@@ -905,6 +953,8 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	xassert(cred->magic == CRED_MAGIC);
 
 	slurm_mutex_lock(&cred->mutex);
+	xfree(cred->user_name);
+	xfree(cred->gids);
 #ifndef HAVE_BG
 	FREE_NULL_BITMAP(cred->job_core_bitmap);
 	FREE_NULL_BITMAP(cred->step_core_bitmap);
@@ -1290,7 +1340,7 @@ slurm_cred_pack(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 slurm_cred_t *
 slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 {
-	uint32_t     cred_uid, len;
+	uint32_t     cred_uid, cred_gid, u32_ngids, len;
 	slurm_cred_t *cred = NULL;
 	char       **sigp;
 	uint32_t     cluster_flags = slurmdb_setup_cluster_flags();
@@ -1304,6 +1354,11 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&cred->stepid, buffer);
 		safe_unpack32(&cred_uid, buffer);
 		cred->uid = cred_uid;
+		safe_unpack32(&cred_gid, buffer);
+		cred->gid = cred_gid;
+		safe_unpackstr_xmalloc(&cred->user_name, &len, buffer);
+		safe_unpack32_array(&cred->gids, &u32_ngids, buffer);
+		cred->ngids = u32_ngids;
 		if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
 						 cred->jobid, protocol_version)
 		    != SLURM_SUCCESS)
@@ -1359,6 +1414,9 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&cred->stepid, buffer);
 		safe_unpack32(&cred_uid, buffer);
 		cred->uid = cred_uid;
+		cred->gid = NO_VAL;
+		cred->ngids = 0;
+		cred->gids = NULL;
 		if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
 						 cred->jobid, protocol_version)
 		    != SLURM_SUCCESS)
@@ -1415,6 +1473,9 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&cred->stepid, buffer);
 		safe_unpack32(&cred_uid, buffer);
 		cred->uid = cred_uid;
+		cred->gid = NO_VAL;
+		cred->ngids = 0;
+		cred->gids = NULL;
 		if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
 						 cred->jobid, protocol_version)
 		    != SLURM_SUCCESS)
@@ -1698,6 +1759,7 @@ _slurm_cred_alloc(void)
 
 	slurm_mutex_init(&cred->mutex);
 	cred->uid = (uid_t) -1;
+	cred->gid = (gid_t) -1;
 
 	xassert((cred->magic = CRED_MAGIC));
 
@@ -1785,6 +1847,9 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 		pack32(cred->jobid, buffer);
 		pack32(cred->stepid, buffer);
 		pack32(cred_uid, buffer);
+		pack32(cred->gid, buffer);
+		packstr(cred->user_name, buffer);
+		pack32_array(cred->gids, cred->ngids, buffer);
 
 		(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
 						  cred->jobid, false,
