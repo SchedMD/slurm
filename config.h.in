@@ -94,9 +94,6 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
 
-/* Define to 1 if function EVP_MD_CTX_cleanup exists. */
-#undef HAVE_EVP_MD_CTX_CLEANUP
-
 /* Define to 1 if you have the `faccessat' function. */
 #undef HAVE_FACCESSAT
 

@@ -136,9 +136,6 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   		fi
   	fi
     fi
-  
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <openssl/evp.h>]], [[EVP_MD_CTX_cleanup(NULL);]])],[AC_DEFINE(HAVE_EVP_MD_CTX_CLEANUP, 1,
-               [Define to 1 if function EVP_MD_CTX_cleanup exists.])],[])
   else
     SSL_LIBS=""
     AC_MSG_WARN([could not find working OpenSSL library])

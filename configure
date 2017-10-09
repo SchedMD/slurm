@@ -24643,25 +24643,6 @@ $as_echo "#define HAVE_OPENSSL 1" >>confdefs.h
   		fi
   	fi
     fi
-
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <openssl/evp.h>
-int
-main ()
-{
-EVP_MD_CTX_cleanup(NULL);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-
-$as_echo "#define HAVE_EVP_MD_CTX_CLEANUP 1" >>confdefs.h
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
   else
     SSL_LIBS=""
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: could not find working OpenSSL library" >&5
