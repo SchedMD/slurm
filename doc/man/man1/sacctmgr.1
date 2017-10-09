@@ -292,8 +292,8 @@ Specifies, in units of seconds, the preemption grace time
 to be extended to a job which has been selected for preemption.
 The default value is zero, no preemption grace time is allowed on
 this QOS.
-.P
-NOTE: This value is only meaningful for QOS PreemptMode=CANCEL)
+
+NOTE: This value is only meaningful for QOS PreemptMode=CANCEL.
 
 .TP
 \fIGrpTRESMins\fP=<TRES=max TRES minutes,...>
@@ -301,11 +301,11 @@ The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
-.P
+
 NOTE: This limit is not enforced if set on the root
 association of a cluster.  So even though it may appear in sacctmgr
 output, it will not be enforced.
-.P
+
 ALSO NOTE: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
@@ -327,7 +327,7 @@ Maximum number of TRES running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
-.P
+
 NOTE: This limit only applies fully when using the Select Consumable
 Resource plugin.
 
@@ -349,11 +349,11 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
-.P
+
 NOTE: This limit is not enforced if set on the root association of a
 cluster.  So even though it may appear in sacctmgr output, it will not
 be enforced.
-.P
+
 ALSO NOTE: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
@@ -376,7 +376,7 @@ This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
-.P
+
 NOTE: This limit only applies fully when using the Select Consumable
 Resource plugin.
 
@@ -404,7 +404,7 @@ Default is the cluster's limit.
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
 To clear a previously set value use the modify command with a new value of \-1.
-.P
+
 NOTE: Changing this value will have no effect on any running or
 pending job.
 
