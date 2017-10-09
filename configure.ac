@@ -28,8 +28,6 @@ AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADERS([slurm/slurm.h])
 
-X_AC_RPATH
-
 dnl This sets the first compiler to be C instead of C++ (which would happen
 dnl if X_AC_BGQ was the first thing called.
 X_AC_DATABASES
