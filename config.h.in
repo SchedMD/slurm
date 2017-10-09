@@ -224,9 +224,6 @@
 /* Define to 1 if you have the <paths.h> header file. */
 #undef HAVE_PATHS_H
 
-/* define if you have permapi_h */
-#undef HAVE_PERMAPI_H
-
 /* Define to 1 if pmix library found */
 #undef HAVE_PMIX
 

@@ -23879,9 +23879,6 @@ $as_echo_n "checking Checking NRT and PERMAPI header files... " >&6; }
 
 $as_echo "#define HAVE_NRT_H 1" >>confdefs.h
 
-
-$as_echo "#define HAVE_PERMAPI_H 1" >>confdefs.h
-
          break;
       fi
    done

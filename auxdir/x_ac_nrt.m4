@@ -28,7 +28,6 @@ AC_DEFUN([X_AC_NRT],
          ac_have_nrt_h="yes"
          NRT_CPPFLAGS="-I$nrt_dir"
          AC_DEFINE(HAVE_NRT_H, 1, [define if you have nrt.h])
-         AC_DEFINE(HAVE_PERMAPI_H, 1, [define if you have permapi_h])
          break;
       fi
    done
