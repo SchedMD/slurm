@@ -1037,6 +1037,7 @@ with_munge
 enable_multiple_slurmd
 with_blcr
 with_libcurl
+enable_deprecated
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1736,6 +1737,7 @@ Optional Features:
                           disable salloc execution in the background
   --enable-multiple-slurmd
                           enable multiple-slurmd support
+  --enable-deprecated     enable deprecated
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -25412,6 +25414,34 @@ else
   BUILD_SMAP_TRUE='#'
   BUILD_SMAP_FALSE=
 fi
+
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether deprecated options are enabled" >&5
+$as_echo_n "checking whether deprecated options are enabled... " >&6; }
+  # Check whether --enable-deprecated was given.
+if test "${enable_deprecated+set}" = set; then :
+  enableval=$enable_deprecated;  case "$enableval" in
+        yes) x_ac_deprecated=yes ;;
+         no) x_ac_deprecated=no ;;
+          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+$as_echo "doh!" >&6; }
+             as_fn_error $? "bad value \"$enableval\" for --enable-deprecated" "$LINENO" 5 ;;
+      esac
+
+
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_deprecated=no}" >&5
+$as_echo "${x_ac_deprecated=no}" >&6; }
+
+  if test "$x_ac_deprecated" = no; then
+     if test "$ac_bluegene_loaded" = yes; then
+        as_fn_error $? "BlueGene support is deprecated and will be removed in a future release. SchedMD customers are encouraged to contact support to discuss further. Use --enable-deprecated to build." "$LINENO" 5
+     elif test "$ac_have_alps_cray" = yes; then
+        as_fn_error $? "Cray/ALPS support is deprecated and will be removed in a future release. Please consider using Native Cray mode. SchedMD customers are encouraged to contact support to discuss further. Use --enable-deprecated to build." "$LINENO" 5
+     fi
+   fi
 
 
 

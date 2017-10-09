@@ -399,6 +399,9 @@ if test "x$ac_have_some_curses" = "xyes" ; then
 fi
 AM_CONDITIONAL(BUILD_SMAP, test "x$ac_build_smap" = "xyes")
 
+dnl This needs to come last so it can detect deprecated options in use.
+X_AC_DEPRECATED
+
 dnl All slurm Makefiles:
 
 AC_CONFIG_FILES([Makefile

@@ -74,6 +74,10 @@ NOTE: Spank options handled in local and allocator contexts should be able to
       through environment variables and command line options. Environment
       variables are processed first.
 
+NOTE: IBM BlueGene/Q and Cray/ALPS modes are deprecated and will be removed
+      in an upcoming release. You must add the --enable-deprecated option to
+      configure to build these targets.
+
 HIGHLIGHTS
 ==========
  -- X11 support is not fully integrated with the main Slurm code. Remove any
