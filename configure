@@ -729,6 +729,9 @@ HAVE_SOME_CURSES
 HAVE_SOME_CURSES_FALSE
 HAVE_SOME_CURSES_TRUE
 NCURSES
+SSH2_LIBS
+SSH2_LDFLAGS
+SSH2_CPPFLAGS
 HAVE_UCX_FALSE
 HAVE_UCX_TRUE
 UCX_LIBS
@@ -1008,6 +1011,8 @@ with_pmix
 with_freeipmi
 with_rrdtool
 with_ucx
+enable_x11
+with_ssh2
 enable_glibtest
 enable_gtktest
 with_alps_emulation
@@ -1714,6 +1719,7 @@ Optional Features:
   --enable-load-env-no-login
                           enable --get-user-env option to load user
                           environment without .login
+  --disable-x11           disable internal x11 support
   --disable-glibtest      do not try to compile and run a test GLIB program
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-alps-cray-emulation
@@ -1777,6 +1783,7 @@ Optional Packages:
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-ucx=PATH         Build with Unified Communication X library support
+  --with-ssh2=PATH        Specify path to ssh2 installation
   --with-alps-emulation   Run SLURM against an emulated ALPS system - requires
                           option cray.conf [default=no]
   --with-cray_dir=PATH    Specify path to Cray file installation - /opt/cray
@@ -21959,6 +21966,123 @@ else
   HAVE_UCX_FALSE=
 fi
 
+
+
+  _x_ac_ssh2_dirs="/usr /usr/local"
+  _x_ac_ssh2_libs="lib64 lib"
+  have_ssh2=0
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Slurm internal x11 support is disabled" >&5
+$as_echo_n "checking whether Slurm internal x11 support is disabled... " >&6; }
+  # Check whether --enable-x11 was given.
+if test "${enable_x11+set}" = set; then :
+  enableval=$enable_x11;  case "$enableval" in
+        yes) x_ac_x11=yes ;;
+         no) x_ac_x11=no ;;
+          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+$as_echo "doh!" >&6; }
+             as_fn_error $? "bad value \"$enableval\" for --diable-x11" "$LINENO" 5
+      esac
+
+
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_x11=no}" >&5
+$as_echo "${x_ac_x11=no}" >&6; }
+
+  if test "$x_ac_x11" = yes; then
+      with_ssh2=no
+  fi
+
+
+# Check whether --with-ssh2 was given.
+if test "${with_ssh2+set}" = set; then :
+  withval=$with_ssh2; if test "x$with_ssh2" != xno; then :
+  _x_ac_ssh2_dirs="$with_ssh2 $_x_ac_ssh2_dirs"
+fi
+fi
+
+
+  if test "x$with_ssh2" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for ssh2 disabled" >&5
+$as_echo "$as_me: WARNING: support for ssh2 disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ssh2 installation" >&5
+$as_echo_n "checking for ssh2 installation... " >&6; }
+if ${x_ac_cv_ssh2_dir+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+        for d in $_x_ac_ssh2_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/libssh2.h" || continue
+          for bit in $_x_ac_ssh2_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_ssh2_cppflags_save="$CPPFLAGS"
+            CPPFLAGS="-I$d/include $CPPFLAGS"
+            _x_ac_ssh2_libs_save="$LIBS"
+            LIBS="-L$d/$bit -lssh2 $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char libssh2_init ();
+int
+main ()
+{
+return libssh2_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  x_ac_cv_ssh2_dir=$d
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+            CPPFLAGS="$_x_ac_ssh2_cppflags_save"
+            LIBS="$_x_ac_ssh2_libs_save"
+            test -n "$x_ac_cv_ssh2_dir" && break
+          done
+          test -n "$x_ac_cv_ssh2_dir" && break
+        done
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_ssh2_dir" >&5
+$as_echo "$x_ac_cv_ssh2_dir" >&6; }
+
+    if test -z "$x_ac_cv_ssh2_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ssh2 installation" >&5
+$as_echo "$as_me: WARNING: unable to locate ssh2 installation" >&2;}
+    else
+      SSH2_CPPFLAGS="-I$x_ac_cv_ssh2_dir/include"
+      if test "$ac_with_rpath" = "yes"; then
+        SSH2_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ssh2_dir/$bit -L$x_ac_cv_ssh2_dir/$bit"
+      else
+        SSH2_LDFLAGS="-L$x_ac_cv_ssh2_dir/$bit"
+      fi
+      SSH2_LIBS="-lssh2"
+      have_ssh2=1
+
+$as_echo "#define HAVE_SSH2 1" >>confdefs.h
+
+    fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define WITHOUT_SLURM_Xll $have_ssh2
+_ACEOF
+
+
+
+
+  fi
 
 
 
