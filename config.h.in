@@ -266,7 +266,7 @@
 /* Define to 1 if you have the <socket.h> header file. */
 #undef HAVE_SOCKET_H
 
-/* Define to 1 if ssh2 library found */
+/* Define to 1 if libssh2 found */
 #undef HAVE_SSH2
 
 /* Define to 1 if you have the `statfs' function. */
@@ -610,8 +610,8 @@
 /* Define the project's version. */
 #undef VERSION
 
-/* Using internal Slurm x11 support */
-#undef WITH_SLURM_Xll
+/* Using internal Slurm X11 support */
+#undef WITH_SLURM_X11
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

@@ -12,41 +12,43 @@
 # Copyright 2017 SchedMD LLC. All rights reserved.
 #
 
-
 AC_DEFUN([X_AC_SSH2],
 [
   _x_ac_ssh2_dirs="/usr /usr/local"
   _x_ac_ssh2_libs="lib64 lib"
-  have_ssh2=0
+  x_ac_x11=yes
 
-  AC_MSG_CHECKING([whether Slurm internal x11 support is disabled])
+  AC_MSG_CHECKING([whether Slurm internal X11 support is disabled])
   AC_ARG_ENABLE(
     [x11],
-    AS_HELP_STRING(--disable-x11, disable internal x11 support),
+    AS_HELP_STRING(--disable-x11, disable internal X11 support),
     [ case "$enableval" in
         yes) x_ac_x11=yes ;;
          no) x_ac_x11=no ;;
           *) AC_MSG_RESULT([doh!])
-             AC_MSG_ERROR([bad value "$enableval" for --diable-x11])
+             AC_MSG_ERROR([bad value "$enableval" for --disable-x11])
       esac
     ]
   )
   AC_MSG_RESULT([${x_ac_x11=no}])
 
-  if test "$x_ac_x11" = yes; then
-      with_ssh2=no
+  if test "$x_ac_x11" = no; then
+      with_libssh2=no
   fi
 
   AC_ARG_WITH(
-    [ssh2],
-    AS_HELP_STRING(--with-ssh2=PATH,Specify path to ssh2 installation),
-        [AS_IF([test "x$with_ssh2" != xno],[_x_ac_ssh2_dirs="$with_ssh2 $_x_ac_ssh2_dirs"])])
+    [libssh2],
+    AS_HELP_STRING(--with-libssh2=PATH,Specify path to ssh2 installation),
+    [AS_IF([test "x$with_libssh2" != xno],
+           [_x_ac_ssh2_dirs="$with_libssh2 $_x_ac_ssh2_dirs"])
+    ]
+  )
 
-  if [test "x$with_ssh2" = xno]; then
-    AC_MSG_WARN([support for ssh2 disabled])
+  if [test "x$with_libssh2" = xno]; then
+    AC_MSG_NOTICE([support for libssh2 disabled])
   else
     AC_CACHE_CHECK(
-      [for ssh2 installation],
+      [for libssh2 installation],
       [x_ac_cv_ssh2_dir],
       [
         for d in $_x_ac_ssh2_dirs; do
@@ -71,7 +73,8 @@ AC_DEFUN([X_AC_SSH2],
       ])
 
     if test -z "$x_ac_cv_ssh2_dir"; then
-      AC_MSG_WARN([unable to locate ssh2 installation])
+      AC_MSG_WARN([unable to locate libssh2 installation])
+      AC_MSG_WARN([Slurm internal X11 support disabled])
     else
       SSH2_CPPFLAGS="-I$x_ac_cv_ssh2_dir/include"
       if test "$ac_with_rpath" = "yes"; then
@@ -80,11 +83,10 @@ AC_DEFUN([X_AC_SSH2],
         SSH2_LDFLAGS="-L$x_ac_cv_ssh2_dir/$bit"
       fi
       SSH2_LIBS="-lssh2"
-      have_ssh2=1
-      AC_DEFINE(HAVE_SSH2, 1, [Define to 1 if ssh2 library found])
+      AC_DEFINE(HAVE_SSH2, 1, [Define to 1 if libssh2 found])
+      AC_DEFINE(WITH_SLURM_X11, 1, [Using internal Slurm X11 support])
     fi
 
-    AC_DEFINE_UNQUOTED(WITH_SLURM_Xll, $have_ssh2, [Using internal Slurm x11 support])
     AC_SUBST(SSH2_CPPFLAGS)
     AC_SUBST(SSH2_LDFLAGS)
     AC_SUBST(SSH2_LIBS)

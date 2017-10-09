@@ -1012,7 +1012,7 @@ with_freeipmi
 with_rrdtool
 with_ucx
 enable_x11
-with_ssh2
+with_libssh2
 enable_glibtest
 enable_gtktest
 with_alps_emulation
@@ -1719,7 +1719,7 @@ Optional Features:
   --enable-load-env-no-login
                           enable --get-user-env option to load user
                           environment without .login
-  --disable-x11           disable internal x11 support
+  --disable-x11           disable internal X11 support
   --disable-glibtest      do not try to compile and run a test GLIB program
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-alps-cray-emulation
@@ -1783,7 +1783,7 @@ Optional Packages:
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-ucx=PATH         Build with Unified Communication X library support
-  --with-ssh2=PATH        Specify path to ssh2 installation
+  --with-libssh2=PATH     Specify path to ssh2 installation
   --with-alps-emulation   Run SLURM against an emulated ALPS system - requires
                           option cray.conf [default=no]
   --with-cray_dir=PATH    Specify path to Cray file installation - /opt/cray
@@ -21970,10 +21970,10 @@ fi
 
   _x_ac_ssh2_dirs="/usr /usr/local"
   _x_ac_ssh2_libs="lib64 lib"
-  have_ssh2=0
+  x_ac_x11=yes
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Slurm internal x11 support is disabled" >&5
-$as_echo_n "checking whether Slurm internal x11 support is disabled... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Slurm internal X11 support is disabled" >&5
+$as_echo_n "checking whether Slurm internal X11 support is disabled... " >&6; }
   # Check whether --enable-x11 was given.
 if test "${enable_x11+set}" = set; then :
   enableval=$enable_x11;  case "$enableval" in
@@ -21981,7 +21981,7 @@ if test "${enable_x11+set}" = set; then :
          no) x_ac_x11=no ;;
           *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
 $as_echo "doh!" >&6; }
-             as_fn_error $? "bad value \"$enableval\" for --diable-x11" "$LINENO" 5
+             as_fn_error $? "bad value \"$enableval\" for --disable-x11" "$LINENO" 5
       esac
 
 
@@ -21990,25 +21990,27 @@ fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_x11=no}" >&5
 $as_echo "${x_ac_x11=no}" >&6; }
 
-  if test "$x_ac_x11" = yes; then
-      with_ssh2=no
+  if test "$x_ac_x11" = no; then
+      with_libssh2=no
   fi
 
 
-# Check whether --with-ssh2 was given.
-if test "${with_ssh2+set}" = set; then :
-  withval=$with_ssh2; if test "x$with_ssh2" != xno; then :
-  _x_ac_ssh2_dirs="$with_ssh2 $_x_ac_ssh2_dirs"
-fi
+# Check whether --with-libssh2 was given.
+if test "${with_libssh2+set}" = set; then :
+  withval=$with_libssh2; if test "x$with_libssh2" != xno; then :
+  _x_ac_ssh2_dirs="$with_libssh2 $_x_ac_ssh2_dirs"
 fi
 
 
-  if test "x$with_ssh2" = xno; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for ssh2 disabled" >&5
-$as_echo "$as_me: WARNING: support for ssh2 disabled" >&2;}
+fi
+
+
+  if test "x$with_libssh2" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: support for libssh2 disabled" >&5
+$as_echo "$as_me: support for libssh2 disabled" >&6;}
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ssh2 installation" >&5
-$as_echo_n "checking for ssh2 installation... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libssh2 installation" >&5
+$as_echo_n "checking for libssh2 installation... " >&6; }
 if ${x_ac_cv_ssh2_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
@@ -22058,8 +22060,10 @@ fi
 $as_echo "$x_ac_cv_ssh2_dir" >&6; }
 
     if test -z "$x_ac_cv_ssh2_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ssh2 installation" >&5
-$as_echo "$as_me: WARNING: unable to locate ssh2 installation" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libssh2 installation" >&5
+$as_echo "$as_me: WARNING: unable to locate libssh2 installation" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Slurm internal X11 support disabled" >&5
+$as_echo "$as_me: WARNING: Slurm internal X11 support disabled" >&2;}
     else
       SSH2_CPPFLAGS="-I$x_ac_cv_ssh2_dir/include"
       if test "$ac_with_rpath" = "yes"; then
@@ -22068,16 +22072,13 @@ $as_echo "$as_me: WARNING: unable to locate ssh2 installation" >&2;}
         SSH2_LDFLAGS="-L$x_ac_cv_ssh2_dir/$bit"
       fi
       SSH2_LIBS="-lssh2"
-      have_ssh2=1
 
 $as_echo "#define HAVE_SSH2 1" >>confdefs.h
 
+
+$as_echo "#define WITH_SLURM_X11 1" >>confdefs.h
+
     fi
-
-
-cat >>confdefs.h <<_ACEOF
-#define WITH_SLURM_Xll $have_ssh2
-_ACEOF
 
 
 
