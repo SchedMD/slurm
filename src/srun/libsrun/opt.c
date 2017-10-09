@@ -357,7 +357,9 @@ struct option long_options[] = {
 	{"use-min-nodes",    no_argument,       0, LONG_OPT_USE_MIN_NODES},
 	{"usage",            no_argument,       0, LONG_OPT_USAGE},
 	{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
+#ifdef WITH_SLURM_X11
 	{"x11",              optional_argument, 0, LONG_OPT_X11},
+#endif
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:M:n:N:"

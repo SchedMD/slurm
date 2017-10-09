@@ -879,7 +879,9 @@ static struct option long_options[] = {
 	{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
+#ifdef WITH_SLURM_X11
 	{"x11",           optional_argument, 0, LONG_OPT_X11},
+#endif
 	{NULL,            0,                 0, 0}
 };
 

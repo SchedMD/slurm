@@ -786,7 +786,9 @@ static void _set_options(int argc, char **argv)
 		{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
 		{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
+#ifdef WITH_SLURM_X11
 		{"x11",           optional_argument, 0, LONG_OPT_X11},
+#endif
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
