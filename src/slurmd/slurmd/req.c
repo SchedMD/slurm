@@ -937,17 +937,12 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	hostset_t	s_hset = NULL;
 	bool		user_ok = _slurm_authorized_user(uid);
 	int		host_index = -1;
-	int		rc;
 	slurm_cred_t    *cred = req->cred;
 	uint32_t	jobid = req->job_id;
 	uint32_t	stepid = req->job_step_id;
 	int		tasks_to_launch = req->tasks_to_launch[node_id];
 	uint32_t	job_cpus = 0, step_cpus = 0;
 
-	/*
-	 * First call slurm_cred_verify() so that all valid
-	 * credentials are checked
-	 */
 	if (user_ok && (req->flags & LAUNCH_NO_ALLOC)) {
 		/* If we didn't allocate then the cred isn't valid, just skip
 		 * checking.  This is only cool for root or SlurmUser */
@@ -956,17 +951,11 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		return SLURM_SUCCESS;
 	}
 
-	rc = slurm_cred_verify(conf->vctx, cred, &arg, protocol_version);
-	if (rc < 0) {
-		if ((!user_ok) || (errno != ESLURMD_INVALID_JOB_CREDENTIAL)) {
-			return SLURM_ERROR;
-		} else {
-			debug("_check_job_credential slurm_cred_verify failed:"
-			      " %m, but continuing anyway.");
-		}
-		*step_hset = NULL;
-		return SLURM_SUCCESS;
-	}
+	/*
+	 * First call slurm_cred_verify() so that all credentials are checked
+	 */
+	if (slurm_cred_verify(conf->vctx, cred, &arg, protocol_version) < 0)
+		return SLURM_ERROR;
 
 	if ((arg.jobid != jobid) || (arg.stepid != stepid)) {
 		error("job credential for %u.%u, expected %u.%u",
