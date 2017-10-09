@@ -242,9 +242,6 @@
 /* Define to 1 if pmix library found */
 #undef HAVE_PMIX
 
-/* Define if you have Posix semaphores. */
-#undef HAVE_POSIX_SEMS
-
 /* Define if libc sets program_invocation_name */
 #undef HAVE_PROGRAM_INVOCATION_NAME
 

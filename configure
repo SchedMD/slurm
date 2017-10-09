@@ -739,8 +739,6 @@ BUILD_RRD_TRUE
 RRDTOOL_LDFLAGS
 RRDTOOL_CPPFLAGS
 RRDTOOL_LIBS
-SEMAPHORE_LIBS
-SEMAPHORE_SOURCES
 BUILD_IPMI_FALSE
 BUILD_IPMI_TRUE
 FREEIPMI_LDFLAGS
@@ -21845,58 +21843,6 @@ else
   BUILD_IPMI_TRUE='#'
   BUILD_IPMI_FALSE=
 fi
-
-
-
-  SEMAPHORE_SOURCES=""
-  SEMAPHORE_LIBS=""
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sem_open in -lposix4" >&5
-$as_echo_n "checking for sem_open in -lposix4... " >&6; }
-if ${ac_cv_lib_posix4_sem_open+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lposix4  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char sem_open ();
-int
-main ()
-{
-return sem_open ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_posix4_sem_open=yes
-else
-  ac_cv_lib_posix4_sem_open=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_posix4_sem_open" >&5
-$as_echo "$ac_cv_lib_posix4_sem_open" >&6; }
-if test "x$ac_cv_lib_posix4_sem_open" = xyes; then :
-  SEMAPHORE_LIBS="-lposix4";
-
-$as_echo "#define HAVE_POSIX_SEMS 1" >>confdefs.h
-
-else
-  SEMAPHORE_SOURCES="semaphore.c"
-
-fi
-
-
 
 
 

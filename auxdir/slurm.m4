@@ -160,27 +160,8 @@ AC_DEFUN([X_AC_SLURM_BIGENDIAN],
 ])dnl AC_SLURM_BIGENDIAN
 
 dnl
-dnl AC_SLURM_SEMAPHORE
-dnl
-AC_DEFUN([X_AC_SLURM_SEMAPHORE],
-[
-  SEMAPHORE_SOURCES=""
-  SEMAPHORE_LIBS=""
-  AC_CHECK_LIB(
-    posix4,
-    sem_open,
-    [SEMAPHORE_LIBS="-lposix4";
-     AC_DEFINE(HAVE_POSIX_SEMS, 1, [Define if you have Posix semaphores.])],
-    [SEMAPHORE_SOURCES="semaphore.c"]
-  )
-  AC_SUBST(SEMAPHORE_SOURCES)
-  AC_SUBST(SEMAPHORE_LIBS)
-])dnl AC_SLURM_SEMAPHORE
-
-dnl
-dnl
-dnl
 dnl Perform SLURM Project version setup
+dnl
 AC_DEFUN([X_AC_SLURM_VERSION],
 [
 #
