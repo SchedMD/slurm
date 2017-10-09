@@ -1004,7 +1004,17 @@ static int _unpack_local_resv(local_resv_t *object,
 	uint32_t tmp32;
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		unpackstr_ptr(&object->assocs, &tmp32, buffer);
+		unpackstr_ptr(&object->flags, &tmp32, buffer);
+		unpackstr_ptr(&object->id, &tmp32, buffer);
+		unpackstr_ptr(&object->name, &tmp32, buffer);
+		unpackstr_ptr(&object->nodes, &tmp32, buffer);
+		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
+		unpackstr_ptr(&object->time_end, &tmp32, buffer);
+		unpackstr_ptr(&object->time_start, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_str, &tmp32, buffer);
+	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		unpackstr_ptr(&object->assocs, &tmp32, buffer);
 		unpackstr_ptr(&object->flags, &tmp32, buffer);
 		unpackstr_ptr(&object->id, &tmp32, buffer);
