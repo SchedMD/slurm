@@ -21381,7 +21381,6 @@ fi
 
   _x_ac_hwloc_dirs="/usr /usr/local"
   _x_ac_hwloc_libs="lib64 lib"
-  x_ac_cv_hwloc_pci="no"
 
 
 # Check whether --with-hwloc was given.
@@ -21435,22 +21434,6 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <hwloc.h>
-int
-main ()
-{
-int i = HWLOC_OBJ_PCI_DEVICE;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  x_ac_cv_hwloc_pci="yes"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
             CPPFLAGS="$_x_ac_hwloc_cppflags_save"
             LIBS="$_x_ac_hwloc_libs_save"
             test -n "$x_ac_cv_hwloc_dir" && break
@@ -21476,11 +21459,6 @@ $as_echo "$as_me: WARNING: unable to locate hwloc installation" >&2;}
 
 $as_echo "#define HAVE_HWLOC 1" >>confdefs.h
 
-      if test "$x_ac_cv_hwloc_pci" = "yes"; then
-
-$as_echo "#define HAVE_HWLOC_PCI 1" >>confdefs.h
-
-      fi
     fi
 
 

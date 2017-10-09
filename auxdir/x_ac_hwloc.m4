@@ -13,7 +13,6 @@ AC_DEFUN([X_AC_HWLOC],
 [
   _x_ac_hwloc_dirs="/usr /usr/local"
   _x_ac_hwloc_libs="lib64 lib"
-  x_ac_cv_hwloc_pci="no"
 
   AC_ARG_WITH(
     [hwloc],
@@ -40,9 +39,6 @@ AC_DEFUN([X_AC_HWLOC],
             AC_LINK_IFELSE(
               [AC_LANG_CALL([], hwloc_topology_init)],
               AS_VAR_SET(x_ac_cv_hwloc_dir, $d))
-            AC_TRY_LINK([#include <hwloc.h>],
-              [int i = HWLOC_OBJ_PCI_DEVICE;],
-              [x_ac_cv_hwloc_pci="yes"], [])
             CPPFLAGS="$_x_ac_hwloc_cppflags_save"
             LIBS="$_x_ac_hwloc_libs_save"
             test -n "$x_ac_cv_hwloc_dir" && break
@@ -62,9 +58,6 @@ AC_DEFUN([X_AC_HWLOC],
       fi
       HWLOC_LIBS="-lhwloc"
       AC_DEFINE(HAVE_HWLOC, 1, [Define to 1 if hwloc library found])
-      if test "$x_ac_cv_hwloc_pci" = "yes"; then
-        AC_DEFINE(HAVE_HWLOC_PCI, 1, [Define to 1 if hwloc library supports PCI devices])
-      fi
     fi
 
     AC_SUBST(HWLOC_LIBS)
