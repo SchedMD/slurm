@@ -1299,7 +1299,62 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 
 	cred = _slurm_cred_alloc();
 	slurm_mutex_lock(&cred->mutex);
-	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack32(&cred->jobid, buffer);
+		safe_unpack32(&cred->stepid, buffer);
+		safe_unpack32(&cred_uid, buffer);
+		cred->uid = cred_uid;
+		if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
+						 cred->jobid, protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (gres_plugin_step_state_unpack(&cred->step_gres_list,
+						  buffer, cred->jobid,
+						  cred->stepid,
+						  protocol_version)
+		    != SLURM_SUCCESS) {
+			goto unpack_error;
+		}
+		safe_unpack16(&cred->job_core_spec, buffer);
+		safe_unpack64(&cred->job_mem_limit, buffer);
+		safe_unpack64(&cred->step_mem_limit, buffer);
+		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
+		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
+		safe_unpack_time(&cred->ctime, buffer);
+
+		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+			uint32_t tot_core_cnt;
+			safe_unpack32(&tot_core_cnt, buffer);
+			unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
+			unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
+			safe_unpack16(&cred->core_array_size, buffer);
+			if (cred->core_array_size) {
+				safe_unpack16_array(&cred->cores_per_socket,
+						    &len,
+						    buffer);
+				if (len != cred->core_array_size)
+					goto unpack_error;
+				safe_unpack16_array(&cred->sockets_per_node,
+						    &len, buffer);
+				if (len != cred->core_array_size)
+					goto unpack_error;
+				safe_unpack32_array(&cred->sock_core_rep_count,
+						    &len,
+						    buffer);
+				if (len != cred->core_array_size)
+					goto unpack_error;
+			}
+			safe_unpack32(&cred->job_nhosts, buffer);
+			safe_unpackstr_xmalloc(&cred->job_hostlist, &len,
+					       buffer);
+		}
+
+		/* "sigp" must be last */
+		sigp = (char **) &cred->signature;
+		safe_unpackmem_xmalloc(sigp, &len, buffer);
+		cred->siglen = len;
+		xassert(len > 0);
+	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&cred->jobid, buffer);
 		safe_unpack32(&cred->stepid, buffer);
 		safe_unpack32(&cred_uid, buffer);
@@ -1726,7 +1781,48 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t cred_uid = (uint32_t) cred->uid;
 
-	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		pack32(cred->jobid, buffer);
+		pack32(cred->stepid, buffer);
+		pack32(cred_uid, buffer);
+
+		(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
+						  cred->jobid, false,
+						  protocol_version);
+		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
+					    cred->jobid, cred->stepid,
+					    protocol_version);
+		pack16(cred->job_core_spec, buffer);
+		pack64(cred->job_mem_limit, buffer);
+		pack64(cred->step_mem_limit, buffer);
+		packstr(cred->job_constraints, buffer);
+		packstr(cred->step_hostlist, buffer);
+		pack_time(cred->ctime, buffer);
+#ifndef HAVE_BG
+		{
+			uint32_t tot_core_cnt = 0;
+			if (cred->job_core_bitmap)
+				tot_core_cnt = bit_size(cred->job_core_bitmap);
+			pack32(tot_core_cnt, buffer);
+			pack_bit_str_hex(cred->job_core_bitmap, buffer);
+			pack_bit_str_hex(cred->step_core_bitmap, buffer);
+			pack16(cred->core_array_size, buffer);
+			if (cred->core_array_size) {
+				pack16_array(cred->cores_per_socket,
+					     cred->core_array_size,
+					     buffer);
+				pack16_array(cred->sockets_per_node,
+					     cred->core_array_size,
+					     buffer);
+				pack32_array(cred->sock_core_rep_count,
+					     cred->core_array_size,
+					     buffer);
+			}
+			pack32(cred->job_nhosts, buffer);
+			packstr(cred->job_hostlist, buffer);
+		}
+#endif
+	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		pack32(cred->jobid,          buffer);
 		pack32(cred->stepid,         buffer);
 		pack32(cred_uid,             buffer);
