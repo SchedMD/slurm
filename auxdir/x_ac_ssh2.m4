@@ -84,7 +84,7 @@ AC_DEFUN([X_AC_SSH2],
       AC_DEFINE(HAVE_SSH2, 1, [Define to 1 if ssh2 library found])
     fi
 
-    AC_DEFINE_UNQUOTED(WITHOUT_SLURM_Xll, $have_ssh2, [Not using internal Slurm x11 support])
+    AC_DEFINE_UNQUOTED(WITH_SLURM_Xll, $have_ssh2, [Using internal Slurm x11 support])
     AC_SUBST(SSH2_CPPFLAGS)
     AC_SUBST(SSH2_LDFLAGS)
     AC_SUBST(SSH2_LIBS)

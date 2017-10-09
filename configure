@@ -22076,7 +22076,7 @@ $as_echo "#define HAVE_SSH2 1" >>confdefs.h
 
 
 cat >>confdefs.h <<_ACEOF
-#define WITHOUT_SLURM_Xll $have_ssh2
+#define WITH_SLURM_Xll $have_ssh2
 _ACEOF
 
 

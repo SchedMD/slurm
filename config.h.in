@@ -610,8 +610,8 @@
 /* Define the project's version. */
 #undef VERSION
 
-/* Not using internal Slurm x11 support */
-#undef WITHOUT_SLURM_Xll
+/* Using internal Slurm x11 support */
+#undef WITH_SLURM_Xll
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
