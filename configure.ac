@@ -12,8 +12,6 @@ AC_CANONICAL_TARGET([])
 dnl the is a generic flag to avoid building things
 AM_CONDITIONAL(DONT_BUILD, test "1" = "0")
 
-X_AC_GPL_LICENSED
-
 # Determine project/version from META file.
 # Sets PACKAGE, VERSION, SLURM_VERSION
 X_AC_SLURM_VERSION

@@ -2924,12 +2924,6 @@ else
 fi
 
 
-
-
-$as_echo "#define GPL_LICENSED 1" >>confdefs.h
-
-
-
 # Determine project/version from META file.
 # Sets PACKAGE, VERSION, SLURM_VERSION
 

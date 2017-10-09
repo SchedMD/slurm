@@ -15,9 +15,6 @@
 /* Define to 1 if using glib-2.32.0 or higher */
 #undef GLIB_NEW_THREADS
 
-/* Define to 1 if licensed under terms of the GNU General Public License. */
-#undef GPL_LICENSED
-
 /* Define to 1 if using gtk+-2.14.0 or higher */
 #undef GTK2_USE_GET_FOCUS
 
