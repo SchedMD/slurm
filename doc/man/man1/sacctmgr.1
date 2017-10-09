@@ -1417,6 +1417,95 @@ of the time.  Setting this value to 0 will make it so that running
 jobs will not add time to fairshare or association/qos limits.  To
 clear a previously set value use the modify command with a new value of \-1.
 
+.SH "SPECIFICATIONS FOR RESERVATIONS"
+
+.TP
+\fIClusters\fP=<comma separated list of cluster names>
+List the reservations of the cluster(s).  Default is the cluster where the
+command was run.
+
+.TP
+\fIEnd\fP=<OPT>
+Period ending of reservations. Default is now.
+
+Valid time formats are...
+.sp
+HH:MM[:SS] [AM|PM]
+.br
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.br
+MM/DD[/YY]\-HH:MM[:SS]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]
+
+.TP
+\fIID\fP=<OPT>
+Comma separated list of reservation ids.
+
+.TP
+\fINames\fP=<OPT>
+Comma separated list of reservation names.
+
+.TP
+\fINodes\fP=<comma separated list of node names>
+Node names where reservation ran.
+
+.TP
+\fIStart\fP=<OPT>
+Period start of reservations.  Default is 00:00:00 of current day.
+
+Valid time formats are...
+.sp
+HH:MM[:SS] [AM|PM]
+.br
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.br
+MM/DD[/YY]\-HH:MM[:SS]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]
+
+.SH "LIST/SHOW RESERVATION FORMAT OPTIONS"
+
+.TP
+\fIAssociations\fP
+The id's of the associations able to run in the reservation.
+
+.TP
+\fICluster\fP
+Name of cluster reservation was on.
+
+.TP
+\fIEnd\fP
+End time of reservation.
+
+.TP
+\fIFlags\fP
+Flags on the reservation.
+
+.TP
+\fIID\fP
+Reservation ID.
+
+.TP
+\fIName\fP
+Name of this reservation.
+
+.TP
+\fINodeNames\fP
+List of nodes in the reservation.
+
+.TP
+\fIStart\fP
+Start time of reservation.
+
+.TP
+\fITRES\fP
+List of TRES in the reservation.
+
+.TP
+\fIUnusedWall\fP
+Wall clock time in seconds unused by any job.
+
 
 .SH "SPECIFICATIONS FOR RESOURCE"
 
@@ -1473,7 +1562,6 @@ been given to a cluster the resource will not be displayed with this flag.
 .P
 NOTE:  Resource is used to define each resource configured on a system
 available for usage by Slurm clusters.
-
 
 .SH "LIST/SHOW RESOURCE FORMAT OPTIONS"
 
