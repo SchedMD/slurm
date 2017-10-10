@@ -402,6 +402,13 @@ int main(int argc, char **argv)
 			slurmctld_conf.job_credential_private_key);
 	}
 
+	/*
+	 * Avoid constant strstr calls as part of step launch.
+	 * This could live elsewhere if someone finds a better home for it.
+	 */
+	slurmctld_config.send_groups_in_cred
+			= (strstr(slurmctld_conf.launch_params, "send_gids"));
+
 	/* Must set before plugins are loaded. */
 	if (slurmctld_conf.backup_controller &&
 	    ((xstrcmp(node_name_short,slurmctld_conf.backup_controller) == 0) ||
@@ -822,6 +829,13 @@ static void _reconfigure_slurm(void)
 		_update_cred_key();
 		set_slurmctld_state_loc();
 	}
+	/*
+	 * Avoid constant strstr calls as part of step launch.
+	 * This could live elsewhere if someone finds a better home for it.
+	 */
+	slurmctld_config.send_groups_in_cred
+			= (strstr(slurmctld_conf.launch_params, "send_gids"));
+
 	gs_reconfig();
 	unlock_slurmctld(config_write_lock);
 	assoc_mgr_set_missing_uids();

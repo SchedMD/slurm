@@ -2815,7 +2815,7 @@ extern void launch_prolog(struct job_record *job_ptr)
 	cred_arg.uid                 = job_ptr->user_id;
 	cred_arg.gid                 = job_ptr->group_id;
 	cred_arg.user_name           = prolog_msg_ptr->user_name;
-	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS)) {
+	if (slurmctld_config.send_groups_in_cred) {
 		/* lookup and send extended gids list */
 		cred_arg.ngids = group_cache_lookup(cred_arg.uid,
 						    cred_arg.gid,

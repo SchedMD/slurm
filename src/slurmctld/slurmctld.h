@@ -135,6 +135,7 @@ typedef struct slurmctld_config {
 	char *	auth_info;
 	time_t	boot_time;
 	int	daemonize;
+	bool	send_groups_in_cred;
 	bool	resume_backup;
 	bool    scheduling_disabled;
 	int	server_thread_count;

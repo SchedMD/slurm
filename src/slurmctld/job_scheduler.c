@@ -2282,7 +2282,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->user_name = uid_to_string(job_ptr->job_id);
 
-	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS)) {
+	if (slurmctld_config.send_groups_in_cred) {
 		/* lookup and send extended gids list */
 		launch_msg_ptr->ngids = group_cache_lookup(launch_msg_ptr->uid,
 							   launch_msg_ptr->gid,

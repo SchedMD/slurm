@@ -1018,7 +1018,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.uid      = job_ptr->user_id;
 	cred_arg.gid      = job_ptr->group_id;
 	cred_arg.user_name = uid_to_string(job_ptr->user_id);
-	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS)) {
+	if (slurmctld_config.send_groups_in_cred) {
 		/* lookup and send extended gids list */
 		cred_arg.ngids = group_cache_lookup(cred_arg.uid,
 						    cred_arg.gid,
