@@ -139,6 +139,8 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 	size_t tmp_buf_len = 256;
 	char tmp_buf[tmp_buf_len];
 	char *arg_buf = NULL;
+	bool last_line_break = false, line_break = false;
+	int line_len;
 
 
 	prog_argv = (char **)xmalloc(sizeof(char *) * MAX_ARGC);
@@ -160,7 +162,16 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 			goto fail;
 		}
 		line_num++;
-
+		line_len = strlen(line);
+		if (line[line_len - 1] == '\\')
+			line_break = true;
+		else
+			line_break = false;
+		if (last_line_break) {
+			last_line_break = line_break;
+			continue;
+		}
+		last_line_break = line_break;
 		p = line;
 		while ((*p != '\0') && isspace (*p)) /* remove leading spaces */
 			p++;
@@ -232,6 +243,12 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 				if (*args_spec != '\0') {
 					xstrcatchar(arg_buf, *args_spec);
 					args_spec++;
+				} else {
+					line = strtok_r(NULL, "\n", &ptrptr);
+					if (!line)
+						break;
+					line_num++;
+					args_spec = line;
 				}
 				goto CONT;
 
@@ -239,12 +256,21 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 				/* single quote,
 				 * preserve all characters quoted. */
 				p = ++args_spec;
-				while ((*args_spec != '\0') &&
+		LINE_BREAK:	while ((*args_spec != '\0') &&
 				       (*args_spec != '\'')) {
 					args_spec++;
 				}
 				if (*args_spec == '\0') {
 					/* closing quote not found */
+					if (*(args_spec - 1) == '\\') {
+						line = strtok_r(NULL, "\n",
+								&ptrptr);
+						if (line) {
+							line_num++;
+							args_spec = line;
+							goto LINE_BREAK;
+						}
+					}
 					error("Program arguments specification format invalid: %s.",
 					      prog_argv[prog_argc - 1]);
 					goto fail;
@@ -308,6 +334,9 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	char **tmp_args, **tmp_cmd, *one_rank;
 	uint32_t *ranks_node_id = NULL;	/* Node ID for each rank */
 	uint32_t *node_id2nid = NULL;	/* Map Slurm node ID to Cray NID name */
+	bool last_line_break = false, line_break = false;
+	char *last_rank_spec = NULL;
+	int args_len;
 	hostlist_t hl;
 
 	tmp_args = xmalloc(sizeof(char *) * job->ntasks);
@@ -323,6 +352,38 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		if (!line)
 			break;
 		line_num++;
+		if (line[strlen(line) - 1] == '\\')
+			line_break = true;
+		else
+			line_break = false;
+		if (last_line_break && last_rank_spec) {
+			tmp_str = xmalloc(strlen(last_rank_spec) + 3);
+			sprintf(tmp_str, "[%s]", last_rank_spec);
+			hl = hostlist_create(tmp_str);
+			xfree(tmp_str);
+			if (!hl)
+				goto fail;
+
+			while ((one_rank = hostlist_pop(hl))) {
+				rank_id = strtol(one_rank, &end_ptr, 10);
+				if ((end_ptr[0] != '\0') || (rank_id < 0) ||
+				    (rank_id >= job->ntasks)) {
+					free(one_rank);
+					hostlist_destroy(hl);
+					goto fail;
+				}
+				free(one_rank);
+				args_len = strlen(tmp_args[rank_id]);
+				if (!tmp_args[rank_id] ||
+				    tmp_args[rank_id][args_len - 1] != '\\')
+					goto fail;
+				tmp_args[rank_id][args_len -1] = '\0';
+				xstrcat(tmp_args[rank_id], line);
+			}
+			last_line_break = line_break;
+			continue;
+		}
+		last_line_break = line_break;
 
 		p = line;
 		while ((*p != '\0') && isspace(*p)) /* remove leading spaces */
@@ -382,6 +443,8 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 			tmp_cmd[rank_id] = xstrdup(cmd_spec);
 		}
 		hostlist_destroy(hl);
+		if (line_break)
+			last_rank_spec = rank_spec;
 	}
 	if (total_ranks != job->ntasks)
 		goto fail;
