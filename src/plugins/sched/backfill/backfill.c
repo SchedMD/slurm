@@ -2896,15 +2896,14 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	uint64_t **tres_alloc_save = NULL;
 
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-		READ_LOCK, NO_LOCK, NO_LOCK };
-
 	tres_alloc_save = xmalloc(sizeof(uint64_t *) *
 				  list_count(map->pack_job_list));
 	slurmctld_tres_size = sizeof(uint64_t) * slurmctld_tres_cnt;
 	iter = list_iterator_create(map->pack_job_list);
-	assoc_mgr_lock(&locks);
 	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+			READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
 		job_ptr = rec->job_ptr;
 		job_ptr->part_ptr = rec->part_ptr;
 		selected_node_cnt = job_ptr->node_cnt_wag;
@@ -2918,6 +2917,8 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 					       tres_req_cnt[TRES_ARRAY_CPU],
 					       selected_node_cnt);
 		tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
+
+		assoc_mgr_lock(&locks);
 		gres_set_job_tres_cnt(job_ptr->gres_list, selected_node_cnt,
 				      tres_req_cnt, true);
 
@@ -2930,6 +2931,7 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 		if (acct_policy_job_runnable_pre_select(job_ptr, true) &&
 		    acct_policy_job_runnable_post_select(job_ptr,
 							 tres_req_cnt, true)) {
+			assoc_mgr_unlock(&locks);
 			tres_alloc_save[begun_jobs++] = job_ptr->tres_alloc_cnt;
 			job_ptr->tres_alloc_cnt = xmalloc(slurmctld_tres_size);
 			memcpy(job_ptr->tres_alloc_cnt, tres_req_cnt,
@@ -2937,11 +2939,11 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 			acct_policy_job_begin(job_ptr);
 
 		} else {
+			assoc_mgr_unlock(&locks);
 			runnable = false;
 			break;
 		}
 	}
-	assoc_mgr_unlock(&locks);
 
 	list_iterator_reset(iter);
 	while ((rec = (pack_job_rec_t *) list_next(iter))) {
