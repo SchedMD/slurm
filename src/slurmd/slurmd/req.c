@@ -1529,11 +1529,10 @@ done:
  * RET -1 on error, file descriptor otherwise
  */
 static int _open_as_other(char *path_name, int flags, int mode,
-			  uint32_t jobid, uid_t uid, gid_t gid)
+			  uint32_t jobid, uid_t uid, gid_t gid,
+			  int ngids, gid_t *gids)
 {
 	pid_t child;
-	int ngids;
-	gid_t *gids;
 	int pipe[2];
 	int fd = -1, rc = 0;
 
@@ -1548,8 +1547,6 @@ static int _open_as_other(char *path_name, int flags, int mode,
 		error("%s: Failed to open pipe: %m", __func__);
 		return -1;
 	}
-
-	ngids = group_cache_lookup_job(jobid, uid, gid, &gids);
 
 	child = fork();
 	if (child == -1) {
@@ -1632,7 +1629,8 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 
 	path_name = fname_create2(req);
 	if ((fd = _open_as_other(path_name, flags, 0644,
-				 req->job_id, req->uid, req->gid)) == -1) {
+				 req->job_id, req->uid, req->gid,
+				 req->ngids, req->gids)) == -1) {
 		error("Unable to open %s: Permission denied", path_name);
 		xfree(path_name);
 		return;
@@ -4036,8 +4034,12 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 				     file_bcast_info_t *key)
 {
 	file_bcast_msg_t *req = msg->data;
-	int fd, flags;
+	int fd, flags, ngids;
 	file_bcast_info_t *file_info;
+	gid_t *gids;
+
+	/* the NULL username argument will be looked up if required */
+	ngids = group_cache_lookup(key->uid, key->gid, NULL, &gids);
 
 	flags = O_WRONLY | O_CREAT;
 	if (req->force)
@@ -4046,7 +4048,8 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		flags |= O_EXCL;
 
 	if ((fd = _open_as_other(req->fname, flags, 0700,
-				 key->job_id, key->uid, key->gid)) == -1) {
+				 key->job_id, key->uid, key->gid,
+				 ngids, gids)) == -1) {
 		error("Unable to open %s: Permission denied", req->fname);
 		return SLURM_ERROR;
 	}
