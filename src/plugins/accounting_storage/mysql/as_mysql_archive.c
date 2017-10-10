@@ -117,6 +117,7 @@ typedef struct {
 	char *uid;
 	char *wckey;
 	char *wckey_id;
+	char *work_dir;
 } local_job_t;
 
 typedef struct {
@@ -282,6 +283,7 @@ static char *job_req_inx[] = {
 	"id_user",
 	"wckey",
 	"id_wckey",
+	"work_dir",
 	"tres_alloc",
 	"tres_req",
 };
@@ -324,6 +326,7 @@ enum {
 	JOB_REQ_UID,
 	JOB_REQ_WCKEY,
 	JOB_REQ_WCKEYID,
+	JOB_REQ_WORK_DIR,
 	JOB_REQ_TRESA,
 	JOB_REQ_TRESR,
 	JOB_REQ_COUNT
@@ -648,6 +651,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->uid, buffer);
 	packstr(object->wckey, buffer);
 	packstr(object->wckey_id, buffer);
+	packstr(object->work_dir, buffer);
 }
 
 /* this needs to be allocated before calling, and since we aren't
@@ -720,6 +724,7 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->uid, &tmp32, buffer);
 		unpackstr_ptr(&object->wckey, &tmp32, buffer);
 		unpackstr_ptr(&object->wckey_id, &tmp32, buffer);
+		unpackstr_ptr(&object->work_dir, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		unpackstr_ptr(&object->account, &tmp32, buffer);
 		unpackstr_ptr(&object->admin_comment, &tmp32, buffer);
@@ -2095,6 +2100,7 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.uid = row[JOB_REQ_UID];
 		job.wckey = row[JOB_REQ_WCKEY];
 		job.wckey_id = row[JOB_REQ_WCKEYID];
+		job.work_dir = row[JOB_REQ_WORK_DIR];
 
 		_pack_local_job(&job, SLURM_PROTOCOL_VERSION, buffer);
 	}
@@ -2168,6 +2174,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.uid,
 			   object.wckey,
 			   object.wckey_id,
+			   object.work_dir,
 			   object.tres_alloc_str,
 			   object.tres_req_str);
 
