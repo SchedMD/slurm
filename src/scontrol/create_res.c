@@ -128,6 +128,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				resv_msg_ptr->accounts =
 					_process_plus_minus(plus_minus, val);
 				*free_acct_str = 1;
+				plus_minus = '\0';
 			} else {
 				resv_msg_ptr->accounts = val;
 			}
@@ -139,6 +140,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 					_process_plus_minus(plus_minus, val);
 				f = parse_resv_flags(tmp, msg);
 				xfree(tmp);
+				plus_minus = '\0';
 			} else {
 				f = parse_resv_flags(val, msg);
 			}
@@ -153,15 +155,10 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				resv_msg_ptr->users =
 					_process_plus_minus(plus_minus, val);
 				*free_user_str = 1;
+				plus_minus = '\0';
 			} else {
 				resv_msg_ptr->users = val;
 			}
-
-		} else if (plus_minus) {
-			exit_code = 1;
-			error("The +=/-= notation is not supported when updating %.*s.  %s",
-			      taglen, tag, msg);
-			return SLURM_ERROR;
 
 		} else if (!strncasecmp(tag, "ReservationName",
 			   MAX(taglen, 1))) {
@@ -278,6 +275,14 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			error("Unknown parameter %s.  %s", argv[i], msg);
 			return SLURM_ERROR;
 		}
+
+		if (plus_minus != '\0') {
+			exit_code = 1;
+			error("The +=/-= notation is not supported when updating %.*s.  %s",
+			      taglen, tag, msg);
+			return SLURM_ERROR;
+		}
+
 	}
 
 	return SLURM_SUCCESS;
