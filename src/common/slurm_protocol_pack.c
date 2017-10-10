@@ -10378,6 +10378,12 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
+
+		pack32(msg->uid, buffer);
+		pack32(msg->gid, buffer);
+		packstr(msg->user_name, buffer);
+		pack32_array(msg->gids, msg->ngids, buffer);
+
 		pack32(msg->node_offset, buffer);
 		pack32(msg->pack_jobid, buffer);
 		pack32(msg->pack_nnodes, buffer);
@@ -10393,10 +10399,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
 		pack16(msg->ntasks_per_socket, buffer);
-		pack32(msg->uid, buffer);
 		packstr(msg->partition, buffer);
-		packstr(msg->user_name, buffer);
-		pack32(msg->gid, buffer);
 		pack64(msg->job_mem_lim, buffer);
 		pack64(msg->step_mem_lim, buffer);
 
@@ -10677,6 +10680,12 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
+
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpack32(&msg->gid, buffer);
+		safe_unpackstr_xmalloc(&msg->user_name, &uint32_tmp, buffer);
+		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
+
 		safe_unpack32(&msg->node_offset, buffer);
 		safe_unpack32(&msg->pack_jobid, buffer);
 		safe_unpack32(&msg->pack_nnodes, buffer);
@@ -10695,10 +10704,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack16(&msg->ntasks_per_board, buffer);
 		safe_unpack16(&msg->ntasks_per_core, buffer);
 		safe_unpack16(&msg->ntasks_per_socket, buffer);
-		safe_unpack32(&msg->uid, buffer);
 		safe_unpackstr_xmalloc(&msg->partition, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg->user_name, &uint32_tmp, buffer);
-		safe_unpack32(&msg->gid, buffer);
 		safe_unpack64(&msg->job_mem_lim, buffer);
 		safe_unpack64(&msg->step_mem_lim, buffer);
 
