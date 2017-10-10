@@ -757,7 +757,6 @@ PMIX_V2_LDFLAGS
 PMIX_V2_CPPFLAGS
 PMIX_V1_LDFLAGS
 PMIX_V1_CPPFLAGS
-PMIX_LIBS
 HWLOC_LDFLAGS
 HWLOC_CPPFLAGS
 HWLOC_LIBS
@@ -21528,7 +21527,7 @@ else
         for d in $_x_ac_pmix_dirs; do
           test -d "$d" || continue
           test -d "$d/include" || continue
-          test -f "$d/include/pmix/pmix_common.h" || continue
+          test -f "$d/include/pmix/pmix_common.h" || test -f $d/include/pmix_common.h || continue
           test -f "$d/include/pmix_server.h" || continue
           for d1 in $_x_ac_pmix_libs; do
             test -d "$d/$d1" || continue
@@ -21608,7 +21607,7 @@ rm -f conftest.err conftest.i conftest.$ac_ext
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V1_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V1_LDFLAGS="-L$x_ac_cv_pmix_libdir"
+                PMIX_V1_CPPFLAGS+=" -DPMIXP_V1_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
 	      # We don't want to search the other lib after we found it in
 	      # one place or we might report a false duplicate if lib64 is a
@@ -21626,7 +21625,7 @@ rm -f conftest.err conftest.i conftest.$ac_ext
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V2_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V2_LDFLAGS="-L$x_ac_cv_pmix_libdir"
+		PMIX_V2_CPPFLAGS+=" -DPMIXP_V2_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
 	      # We don't want to search the other lib after we found it in
 	      # one place or we might report a false duplicate if lib64 is a
@@ -21640,10 +21639,8 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_pmix_dir" >&5
 $as_echo "$x_ac_cv_pmix_dir" >&6; }
 
-    PMIX_LIBS="-lpmix"
 
 $as_echo "#define HAVE_PMIX 1" >>confdefs.h
-
 
 
 
