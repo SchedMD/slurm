@@ -1139,7 +1139,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 	int rc;
 
 	*leftover = NULL;
-	if (strncasecmp("include", line, strlen("include")) == 0) {
+	if (xstrncasecmp("include", line, strlen("include")) == 0) {
 		ptr = (char *)line + strlen("include");
 
 		if (!isspace((int)*ptr))

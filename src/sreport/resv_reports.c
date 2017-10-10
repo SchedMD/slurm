@@ -105,45 +105,45 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!end && !strncasecmp(argv[i], "all_clusters",
-					       MAX(command_len, 1))) {
+		if (!end && !xstrncasecmp(argv[i], "all_clusters",
+					  MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 		} else if (!end
-			  || !strncasecmp (argv[i], "Names",
-					 MAX(command_len, 1))) {
+			  || !xstrncasecmp(argv[i], "Names",
+					   MAX(command_len, 1))) {
 			if (!resv_cond->name_list)
 				resv_cond->name_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(resv_cond->name_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Clusters",
+		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 1))) {
 			slurm_addto_char_list(resv_cond->cluster_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
+		} else if (!xstrncasecmp(argv[i], "End", MAX(command_len, 1))) {
 			resv_cond->time_end = parse_time(argv[i]+end, 1);
 			resv_cond->time_end = sanity_check_endtime(resv_cond->time_end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Flags",
+		} else if (!xstrncasecmp(argv[i], "Flags",
 					 MAX(command_len, 2))) {
 			resv_cond->flags = parse_resv_flags(argv[i]+end,
 							    __func__);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
 			if (format_list)
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Ids",
+		} else if (!xstrncasecmp(argv[i], "Ids",
 					 MAX(command_len, 1))) {
 			if (!resv_cond->id_list)
 				resv_cond->id_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(resv_cond->id_list, argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Nodes",
+		} else if (!xstrncasecmp(argv[i], "Nodes",
 					 MAX(command_len, 1))) {
 			if (resv_cond->nodes) {
 				error("You already specified nodes '%s' "
@@ -154,7 +154,7 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 			}
 			resv_cond->nodes = xstrdup(argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Start",
+		} else if (!xstrncasecmp(argv[i], "Start",
 					 MAX(command_len, 1))) {
 			resv_cond->time_start = parse_time(argv[i]+end, 1);
 			set = 1;
@@ -216,8 +216,8 @@ static int _setup_print_fields_list(List format_list)
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if (!strncasecmp("allocated", object,
-				MAX(command_len, 2))) {
+		if (!xstrncasecmp("allocated", object,
+				  MAX(command_len, 2))) {
 			field->type = PRINT_RESV_TRES_ALLOC;
 			field->name = xstrdup("Allocated");
 			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
@@ -227,30 +227,31 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 20;
 			field->print_routine = slurmdb_report_print_time;
-		} else if (!strncasecmp("Associations",
-				       object, MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("Associations",
+					 object, MAX(command_len, 2))) {
 			field->type = PRINT_RESV_ASSOCS;
 			field->name = xstrdup("Associations");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Cluster", object,
-				       MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("Cluster", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("End", object,
-				       MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("End", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_END;
 			field->name = xstrdup("End");
 			field->len = 19;
 			field->print_routine = print_fields_date;
-		} else if (!strncasecmp("Flags", object, MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("Flags", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_FLAGS;
 			field->name = xstrdup("Flags");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Idle", object, MAX(command_len, 1))) {
+		} else if (!xstrncasecmp("Idle", object, MAX(command_len, 1))) {
 			field->type = PRINT_RESV_TRES_IDLE;
 			field->name = xstrdup("Idle");
 			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
@@ -260,53 +261,55 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 20;
 			field->print_routine = slurmdb_report_print_time;
-		} else if (!strncasecmp("Name", object,
-				       MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("Name", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_NAME;
 			field->name = xstrdup("Name");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Nodes", object, MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("Nodes", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_NODES;
 			field->name = xstrdup("Nodes");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("ReservationId", object,
-					MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("ReservationId", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_ID;
 			field->name = xstrdup("Id");
 			field->len = 8;
 			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("Start", object,
-				       MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("Start", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_START;
 			field->name = xstrdup("Start");
 			field->len = 19;
 			field->print_routine = print_fields_date;
-		} else if (!strncasecmp("TotalTime", object,
-				       MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("TotalTime", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_TIME;
 			field->name = xstrdup("TotalTime");
 			field->len = 9;
 			field->print_routine = print_fields_time_from_secs;
-		} else if (!strncasecmp("TresCount", object,
-					MAX(command_len, 5)) ||
-			   !strncasecmp("CpuCount", object,
-					MAX(command_len, 2)) ||
-			   !strncasecmp("count", object, MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("TresCount", object,
+					 MAX(command_len, 5)) ||
+			   !xstrncasecmp("CpuCount", object,
+					 MAX(command_len, 2)) ||
+			   !xstrncasecmp("count", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_TRES_CNT;
 			field->name = xstrdup("TRES count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("TresName", object,
-					MAX(command_len, 5))) {
+		} else if (!xstrncasecmp("TresName", object,
+					 MAX(command_len, 5))) {
 			field->type = PRINT_RESV_TRES_NAME;
 			field->name = xstrdup("TRES Name");
 			field->len = 14;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("TresTime", object,
-					MAX(command_len, 2)) ||
-			   !strncasecmp("CpuTime", object,
+		} else if (!xstrncasecmp("TresTime", object,
+					 MAX(command_len, 2)) ||
+			   !xstrncasecmp("CpuTime", object,
 					 MAX(command_len, 5))) {
 			field->type = PRINT_RESV_TRES_USAGE;
 			field->name = xstrdup("TRES Time");

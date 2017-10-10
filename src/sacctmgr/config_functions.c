@@ -197,9 +197,9 @@ extern int sacctmgr_list_stats(int argc, char **argv)
 	}
 
 	if (argc) {
-		if (!strncasecmp(argv[0], "ave_time", 2))
+		if (!xstrncasecmp(argv[0], "ave_time", 2))
 			sort_by_ave_time = true;
-		else if (!strncasecmp(argv[0], "total_time", 2))
+		else if (!xstrncasecmp(argv[0], "total_time", 2))
 			sort_by_total_time = true;
 	}
 

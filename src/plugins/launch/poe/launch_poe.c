@@ -499,17 +499,17 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		token = strtok_r(network_str, ",", &save_ptr);
 		while (token) {
 			/* bulk_xfer options */
-			if (!strncasecmp(token, "bulk_xfer", 9)) {
+			if (!xstrncasecmp(token, "bulk_xfer", 9)) {
 				setenv("MP_USE_BULK_XFER", "yes", 1);
 				if (srun_opt->launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -use_bulk_xfer yes");
 			/* device name options */
-			} else if (!strncasecmp(token, "devname=", 8)) {
+			} else if (!xstrncasecmp(token, "devname=", 8)) {
 				/* Ignored by POE */
 
 			/* device type options */
-			} else if (!strncasecmp(token, "devtype=", 8)) {
+			} else if (!xstrncasecmp(token, "devtype=", 8)) {
 				type_ptr = token + 8;
 				if (!xstrcasecmp(type_ptr, "ib")) {
 					setenv("MP_DEVTYPE", type_ptr, 1);
@@ -528,7 +528,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				/* POE ignores other options */
 
 			/* instances options */
-			} else if (!strncasecmp(token, "instances=", 10)) {
+			} else if (!xstrncasecmp(token, "instances=", 10)) {
 				type_ptr = token + 10;
 				setenv("MP_INSTANCES", type_ptr, 1);
 				if (srun_opt->launch_cmd) {
@@ -558,13 +558,13 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			 *        the list in
 			 *        src/plugins/switch/net/switch_nrt.c
 			 */
-			} else if ((!strncasecmp(token, "lapi", 4)) ||
-				   (!strncasecmp(token, "mpi",  3)) ||
-				   (!strncasecmp(token, "pami", 4)) ||
-				   (!strncasecmp(token, "pgas", 4)) ||
-				   (!strncasecmp(token, "shmem",5)) ||
-				   (!strncasecmp(token, "test", 4)) ||
-				   (!strncasecmp(token, "upc",  3))) {
+			} else if ((!xstrncasecmp(token, "lapi", 4)) ||
+				   (!xstrncasecmp(token, "mpi",  3)) ||
+				   (!xstrncasecmp(token, "pami", 4)) ||
+				   (!xstrncasecmp(token, "pgas", 4)) ||
+				   (!xstrncasecmp(token, "shmem",5)) ||
+				   (!xstrncasecmp(token, "test", 4)) ||
+				   (!xstrncasecmp(token, "upc",  3))) {
 				if (!protocol_set) {
 					protocol_set = true;
 					protocol = NULL;
@@ -585,7 +585,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 					xstrfmtcat(poe_cmd_line,
 						   " -euidevice sn_single");
 			/* Collective Acceleration Units (CAU) */
-			} else if (!strncasecmp(token, "cau=", 4)) {
+			} else if (!xstrncasecmp(token, "cau=", 4)) {
 				setenv("MP_COLLECTIVE_GROUPS", token + 4, 1);
 				if (srun_opt->launch_cmd)
 					xstrfmtcat(poe_cmd_line,
@@ -594,7 +594,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				if (atoi(token + 4))
 					cau_set = true;
 			/* Immediate Send Slots Per Window */
-			} else if (!strncasecmp(token, "immed=", 6)) {
+			} else if (!xstrncasecmp(token, "immed=", 6)) {
 				setenv("MP_IMM_SEND_BUFFERS", token + 6, 1);
 				if (srun_opt->launch_cmd)
 					xstrfmtcat(poe_cmd_line,

@@ -91,15 +91,15 @@ static int _set_cond(int *start, int argc, char **argv,
 		else
 			command_len = end - 1;
 
-		if (!end && !strncasecmp(argv[i], "all_clusters",
-					       MAX(command_len, 1))) {
+		if (!end && !xstrncasecmp(argv[i], "all_clusters",
+					  MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 			continue;
-		} else if (!end && !strncasecmp(argv[i], "group",
-						MAX(command_len, 1))) {
+		} else if (!end && !xstrncasecmp(argv[i], "group",
+						 MAX(command_len, 1))) {
 			group_accts = 1;
 		} else if (!end
-			  || !strncasecmp (argv[i], "Users",
+			  || !xstrncasecmp(argv[i], "Users",
 					   MAX(command_len, 1))) {
 			if (!assoc_cond->user_list)
 				assoc_cond->user_list =
@@ -107,34 +107,34 @@ static int _set_cond(int *start, int argc, char **argv,
 			slurm_addto_char_list(assoc_cond->user_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Accounts",
+		} else if (!xstrncasecmp(argv[i], "Accounts",
 					 MAX(command_len, 2))
-			   || !strncasecmp(argv[i], "Acct",
-					   MAX(command_len, 4))) {
+			   || !xstrncasecmp(argv[i], "Acct",
+					    MAX(command_len, 4))) {
 			if (!assoc_cond->acct_list)
 				assoc_cond->acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->acct_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Clusters",
+		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 1))) {
 			slurm_addto_char_list(assoc_cond->cluster_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
+		} else if (!xstrncasecmp(argv[i], "End", MAX(command_len, 1))) {
 			assoc_cond->usage_end = parse_time(argv[i]+end, 1);
 			assoc_cond->usage_end = sanity_check_endtime(assoc_cond->usage_end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Start",
+		} else if (!xstrncasecmp(argv[i], "Start",
 					 MAX(command_len, 1))) {
 			assoc_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "TopCount",
+		} else if (!xstrncasecmp(argv[i], "TopCount",
 					 MAX(command_len, 1))) {
 			if (get_uint(argv[i]+end, &top_limit, "TopCount")
 			    != SLURM_SUCCESS)
@@ -197,18 +197,19 @@ static int _setup_print_fields_list(List format_list)
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if (!strncasecmp("Accounts", object, MAX(command_len, 1))) {
+		if (!xstrncasecmp("Accounts", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER_ACCT;
 			field->name = xstrdup("Account");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Cluster", object,
+		} else if (!xstrncasecmp("Cluster", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_USER_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Energy", object, MAX(command_len, 1))){
+		} else if (!xstrncasecmp("Energy", object,
+					 MAX(command_len, 1))) {
 			field->type = PRINT_USER_ENERGY;
 			field->name = xstrdup("Energy");
 			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
@@ -218,23 +219,25 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 10;
 			field->print_routine = slurmdb_report_print_time;
-		} else if (!strncasecmp("Login", object, MAX(command_len, 1))) {
+		} else if (!xstrncasecmp("Login", object,
+					 MAX(command_len, 1))) {
 			field->type = PRINT_USER_LOGIN;
 			field->name = xstrdup("Login");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Proper", object, MAX(command_len, 1))) {
+		} else if (!xstrncasecmp("Proper", object,
+					 MAX(command_len, 1))) {
 			field->type = PRINT_USER_PROPER;
 			field->name = xstrdup("Proper Name");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("TresName", object,
-				        MAX(command_len, 5))) {
+		} else if (!xstrncasecmp("TresName", object,
+					 MAX(command_len, 5))) {
 			field->type = PRINT_USER_TRES_NAME;
 			field->name = xstrdup("TRES Name");
 			field->len = 14;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Used", object, MAX(command_len, 1))) {
+		} else if (!xstrncasecmp("Used", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER_USED;
 			field->name = xstrdup("Used");
 			if (time_format == SLURMDB_REPORT_TIME_SECS_PER

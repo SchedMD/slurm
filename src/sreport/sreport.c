@@ -399,14 +399,14 @@ static void _job_rep (int argc, char **argv)
 
 	/* For backwards compatibility we just look at the 1st char
 	 * by default since Sizes was the original name */
-	if (!strncasecmp (argv[0], "SizesByAccount", MAX(command_len, 1))) {
+	if (!xstrncasecmp(argv[0], "SizesByAccount", MAX(command_len, 1))) {
 		error_code = job_sizes_grouped_by_top_acct(
 			(argc - 1), &argv[1]);
-	} else if (!strncasecmp (argv[0],
+	} else if (!xstrncasecmp(argv[0],
 				 "SizesByWcKey", MAX(command_len, 8))) {
 		error_code = job_sizes_grouped_by_wckey(
 			(argc - 1), &argv[1]);
-	} else if (!strncasecmp (argv[0],
+	} else if (!xstrncasecmp(argv[0],
 				"SizesByAccountAndWcKey",
 				MAX(command_len, 15))) {
 		error_code = job_sizes_grouped_by_top_acct_and_wckey(
@@ -433,7 +433,7 @@ static void _user_rep (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 
-	if (strncasecmp (argv[0], "Top", 1) == 0) {
+	if (xstrncasecmp(argv[0], "Top", 1) == 0) {
 		error_code = user_top((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
@@ -456,7 +456,7 @@ static void _resv_rep (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 
-	if (strncasecmp (argv[0], "Utilization", 1) == 0) {
+	if (xstrncasecmp(argv[0], "Utilization", 1) == 0) {
 		error_code = resv_utilization((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
@@ -479,17 +479,17 @@ static void _cluster_rep (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 
-	if (strncasecmp (argv[0], "AccountUtilizationByUser", 1) == 0) {
+	if (xstrncasecmp(argv[0], "AccountUtilizationByUser", 1) == 0) {
 		error_code = cluster_account_by_user((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "UserUtilizationByAccount", 18) == 0)
-		   || (strncasecmp (argv[0], "UA", 2) == 0)) {
+	} else if ((xstrncasecmp(argv[0], "UserUtilizationByAccount", 18) == 0)
+		   || (xstrncasecmp(argv[0], "UA", 2) == 0)) {
 		error_code = cluster_user_by_account((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "UserUtilizationByWckey", 18) == 0)
-		   || (strncasecmp (argv[0], "UW", 2) == 0)) {
+	} else if ((xstrncasecmp(argv[0], "UserUtilizationByWckey", 18) == 0)
+		   || (xstrncasecmp(argv[0], "UW", 2) == 0)) {
 		error_code = cluster_user_by_wckey((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Utilization", 2) == 0) {
+	} else if (xstrncasecmp(argv[0], "Utilization", 2) == 0) {
 		error_code = cluster_utilization((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "WCKeyUtilizationByUser", 1) == 0) {
+	} else if (xstrncasecmp(argv[0], "WCKeyUtilizationByUser", 1) == 0) {
 		error_code = cluster_wckey_by_user((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
@@ -618,8 +618,7 @@ _process_command (int argc, char **argv)
 
 	command_len = strlen(argv[0]);
 
-	if ((strncasecmp (argv[0], "cluster",
-				 MAX(command_len, 2)) == 0)) {
+	if ((xstrncasecmp(argv[0], "cluster", MAX(command_len, 2)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -628,7 +627,7 @@ _process_command (int argc, char **argv)
 				        argv[0]);
 		} else
 			_cluster_rep((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "help", MAX(command_len, 2)) == 0) {
+	} else if (xstrncasecmp(argv[0], "help", MAX(command_len, 2)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -636,7 +635,7 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		_usage ();
-	} else if ((strncasecmp (argv[0], "job", MAX(command_len, 1)) == 0)) {
+	} else if ((xstrncasecmp(argv[0], "job", MAX(command_len, 1)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -645,16 +644,16 @@ _process_command (int argc, char **argv)
 				        argv[0]);
 		} else
 			_job_rep((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "quiet", MAX(command_len, 4)) == 0) {
+	} else if (xstrncasecmp(argv[0], "quiet", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 				 argv[0]);
 		}
 		quiet_flag = 1;
-	} else if ((strncasecmp (argv[0], "exit", MAX(command_len, 1)) == 0) ||
-		   (strncasecmp (argv[0], "\\q", MAX(command_len, 2)) == 0) ||
-		   (strncasecmp (argv[0], "quit", MAX(command_len, 4)) == 0)) {
+	} else if ((xstrncasecmp(argv[0], "exit", MAX(command_len, 1)) == 0) ||
+		   (xstrncasecmp(argv[0], "\\q", MAX(command_len, 2)) == 0) ||
+		   (xstrncasecmp(argv[0], "quit", MAX(command_len, 4)) == 0)) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -662,14 +661,14 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		exit_flag = 1;
-	} else if (strncasecmp (argv[0], "local", MAX(command_len, 3)) == 0) {
+	} else if (xstrncasecmp(argv[0], "local", MAX(command_len, 3)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 				 argv[0]);
 		}
 		local_flag = true;
-	} else if (strncasecmp (argv[0], "nonparsable",
+	} else if (xstrncasecmp(argv[0], "nonparsable",
 				MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -677,7 +676,7 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		print_fields_parsable_print = 0;
-	} else if (strncasecmp (argv[0], "parsable",
+	} else if (xstrncasecmp(argv[0], "parsable",
 				MAX(command_len, 8)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -685,7 +684,7 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		print_fields_parsable_print = PRINT_FIELDS_PARSABLE_ENDING;
-	} else if (strncasecmp (argv[0], "parsable2",
+	} else if (xstrncasecmp(argv[0], "parsable2",
 				MAX(command_len, 9)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -693,9 +692,9 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		print_fields_parsable_print = PRINT_FIELDS_PARSABLE_NO_ENDING;
-	} else if ((strncasecmp (argv[0], "reservation",
+	} else if ((xstrncasecmp(argv[0], "reservation",
 				 MAX(command_len, 2)) == 0)
-		   || (strncasecmp (argv[0], "resv",
+		   || (xstrncasecmp(argv[0], "resv",
 				    MAX(command_len, 2)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
@@ -705,7 +704,7 @@ _process_command (int argc, char **argv)
 				        argv[0]);
 		} else
 			_resv_rep((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "sort", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "sort", MAX(command_len, 1)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -713,7 +712,7 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		} else
 			_set_sort(argv[1]);
-	} else if (strncasecmp (argv[0], "time", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "time", MAX(command_len, 1)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -721,7 +720,7 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		} else
 			_set_time_format(argv[1]);
-	} else if (strncasecmp (argv[0], "verbose", MAX(command_len, 4)) == 0) {
+	} else if (xstrncasecmp(argv[0], "verbose", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -729,7 +728,7 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		quiet_flag = -1;
-	} else if (strncasecmp (argv[0], "version", MAX(command_len, 4)) == 0) {
+	} else if (xstrncasecmp(argv[0], "version", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -737,7 +736,7 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		_print_version();
-	} else if ((strncasecmp (argv[0], "user", MAX(command_len, 1)) == 0)) {
+	} else if ((xstrncasecmp(argv[0], "user", MAX(command_len, 1)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -758,25 +757,25 @@ static int _set_time_format(char *format)
 {
 	int command_len = strlen(format);
 
-	if (strncasecmp (format, "SecPer", MAX(command_len, 6)) == 0) {
+	if (xstrncasecmp(format, "SecPer", MAX(command_len, 6)) == 0) {
 		time_format = SLURMDB_REPORT_TIME_SECS_PER;
 		time_format_string = "Seconds/Percentage of Total";
-	} else if (strncasecmp (format, "MinPer", MAX(command_len, 6)) == 0) {
+	} else if (xstrncasecmp(format, "MinPer", MAX(command_len, 6)) == 0) {
 		time_format = SLURMDB_REPORT_TIME_MINS_PER;
 		time_format_string = "Minutes/Percentage of Total";
-	} else if (strncasecmp (format, "HourPer", MAX(command_len, 6)) == 0) {
+	} else if (xstrncasecmp(format, "HourPer", MAX(command_len, 6)) == 0) {
 		time_format = SLURMDB_REPORT_TIME_HOURS_PER;
 		time_format_string = "Hours/Percentage of Total";
-	} else if (strncasecmp (format, "Seconds", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(format, "Seconds", MAX(command_len, 1)) == 0) {
 		time_format = SLURMDB_REPORT_TIME_SECS;
 		time_format_string = "Seconds";
-	} else if (strncasecmp (format, "Minutes", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(format, "Minutes", MAX(command_len, 1)) == 0) {
 		time_format = SLURMDB_REPORT_TIME_MINS;
 		time_format_string = "Minutes";
-	} else if (strncasecmp (format, "Hours", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(format, "Hours", MAX(command_len, 1)) == 0) {
 		time_format = SLURMDB_REPORT_TIME_HOURS;
 		time_format_string = "Hours";
-	} else if (strncasecmp (format, "Percent", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(format, "Percent", MAX(command_len, 1)) == 0) {
 		time_format = SLURMDB_REPORT_TIME_PERCENT;
 		time_format_string = "Percentage of Total";
 	} else {
@@ -791,9 +790,9 @@ static int _set_sort(char *format)
 {
 	int command_len = strlen(format);
 
-	if (strncasecmp (format, "Name", MAX(command_len, 1)) == 0) {
+	if (xstrncasecmp(format, "Name", MAX(command_len, 1)) == 0) {
 		sort_flag = SLURMDB_REPORT_SORT_NAME;
-	} else if (strncasecmp (format, "Time", MAX(command_len, 6)) == 0) {
+	} else if (xstrncasecmp(format, "Time", MAX(command_len, 6)) == 0) {
 		sort_flag = SLURMDB_REPORT_SORT_TIME;
 	} else {
 		fprintf (stderr, "unknown timesort format %s", format);

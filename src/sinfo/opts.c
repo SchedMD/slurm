@@ -536,8 +536,8 @@ _node_state_equal (int i, const char *str)
 {
 	int len = strlen (str);
 
-	if ((strncasecmp(node_state_string_compact(i), str, len) == 0) ||
-	    (strncasecmp(node_state_string(i),         str, len) == 0))
+	if ((xstrncasecmp(node_state_string_compact(i), str, len) == 0) ||
+	    (xstrncasecmp(node_state_string(i),         str, len) == 0))
 		return (true);
 	return (false);
 }
@@ -559,24 +559,24 @@ _node_state_id (char *str)
 			return (i);
 	}
 
-	if (strncasecmp("DRAIN", str, len) == 0)
+	if (xstrncasecmp("DRAIN", str, len) == 0)
 		return NODE_STATE_DRAIN;
-	if (strncasecmp("DRAINED", str, len) == 0)
+	if (xstrncasecmp("DRAINED", str, len) == 0)
 		return NODE_STATE_DRAIN | NODE_STATE_IDLE;
-	if (strncasecmp("ERROR", str, len) == 0)
+	if (xstrncasecmp("ERROR", str, len) == 0)
 		return NODE_STATE_ERROR;
-	if ((strncasecmp("RESV", str, len) == 0) ||
-	    (strncasecmp("RESERVED", str, len) == 0))
+	if ((xstrncasecmp("RESV", str, len) == 0) ||
+	    (xstrncasecmp("RESERVED", str, len) == 0))
 		return NODE_STATE_RES;
-	if ((strncasecmp("PERFCTRS", str, len) == 0) ||
-	    (strncasecmp("NPC", str, len) == 0))
+	if ((xstrncasecmp("PERFCTRS", str, len) == 0) ||
+	    (xstrncasecmp("NPC", str, len) == 0))
 		return NODE_STATE_NET;
-	if ((strncasecmp("DRAINING", str, len) == 0) ||
-	    (strncasecmp("DRNG", str, len) == 0))
+	if ((xstrncasecmp("DRAINING", str, len) == 0) ||
+	    (xstrncasecmp("DRNG", str, len) == 0))
 		return NODE_STATE_DRAIN | NODE_STATE_ALLOCATED;
 	if (_node_state_equal (NODE_STATE_COMPLETING, str))
 		return NODE_STATE_COMPLETING;
-	if (strncasecmp("NO_RESPOND", str, len) == 0)
+	if (xstrncasecmp("NO_RESPOND", str, len) == 0)
 		return NODE_STATE_NO_RESPOND;
 	if (_node_state_equal (NODE_STATE_POWER_SAVE, str))
 		return NODE_STATE_POWER_SAVE;

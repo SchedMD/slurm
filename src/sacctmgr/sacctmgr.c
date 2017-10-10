@@ -201,9 +201,9 @@ int main(int argc, char **argv)
 	if (errno != SLURM_SUCCESS) {
 		int tmp_errno = errno;
 		if ((input_field_count == 2) &&
-		   (!strncasecmp(argv[2], "Configuration", strlen(argv[1]))) &&
-		   ((!strncasecmp(argv[1], "list", strlen(argv[0]))) ||
-		    (!strncasecmp(argv[1], "show", strlen(argv[0]))))) {
+		   (!xstrncasecmp(argv[2], "Configuration", strlen(argv[1]))) &&
+		   ((!xstrncasecmp(argv[1], "list", strlen(argv[0]))) ||
+		    (!xstrncasecmp(argv[1], "show", strlen(argv[0]))))) {
 			if (tmp_errno == ESLURM_DB_CONNECTION) {
 				tmp_errno = 0;
 				sacctmgr_list_config(true);
@@ -393,12 +393,12 @@ static int _process_command (int argc, char **argv)
 
 	command_len = strlen(argv[0]);
 
-	if (strncasecmp (argv[0], "associations",
+	if (xstrncasecmp (argv[0], "associations",
 			 MAX(command_len, 3)) == 0) {
 		with_assoc_flag = 1;
-	} else if (strncasecmp (argv[0], "dump", MAX(command_len, 3)) == 0) {
+	} else if (xstrncasecmp(argv[0], "dump", MAX(command_len, 3)) == 0) {
 		sacctmgr_dump_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "help", MAX(command_len, 2)) == 0) {
+	} else if (xstrncasecmp(argv[0], "help", MAX(command_len, 2)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -406,9 +406,9 @@ static int _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		_usage ();
-	} else if (strncasecmp (argv[0], "load", MAX(command_len, 2)) == 0) {
+	} else if (xstrncasecmp(argv[0], "load", MAX(command_len, 2)) == 0) {
 		load_sacctmgr_cfg_file((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "oneliner",
+	} else if (xstrncasecmp(argv[0], "oneliner",
 				MAX(command_len, 1)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -417,16 +417,16 @@ static int _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		one_liner = 1;
-	} else if (strncasecmp (argv[0], "quiet", MAX(command_len, 4)) == 0) {
+	} else if (xstrncasecmp(argv[0], "quiet", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 				 argv[0]);
 		}
 		quiet_flag = 1;
-	} else if ((strncasecmp (argv[0], "exit", MAX(command_len, 4)) == 0) ||
-		   (strncasecmp (argv[0], "\\q", MAX(command_len, 2)) == 0) ||
-		   (strncasecmp (argv[0], "quit", MAX(command_len, 4)) == 0)) {
+	} else if ((xstrncasecmp(argv[0], "exit", MAX(command_len, 4)) == 0) ||
+		   (xstrncasecmp(argv[0], "\\q", MAX(command_len, 2)) == 0) ||
+		   (xstrncasecmp(argv[0], "quit", MAX(command_len, 4)) == 0)) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -434,27 +434,27 @@ static int _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		exit_flag = 1;
-	} else if ((strncasecmp (argv[0], "add", MAX(command_len, 3)) == 0) ||
-		   (strncasecmp (argv[0], "create",
+	} else if ((xstrncasecmp(argv[0], "add", MAX(command_len, 3)) == 0) ||
+		   (xstrncasecmp(argv[0], "create",
 				 MAX(command_len, 3)) == 0)) {
 		_add_it((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "archive",
+	} else if ((xstrncasecmp(argv[0], "archive",
 				 MAX(command_len, 3)) == 0)) {
 		_archive_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "clear", MAX(command_len, 3)) == 0) {
+	} else if (xstrncasecmp(argv[0], "clear", MAX(command_len, 3)) == 0) {
 		_clear_it((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "show", MAX(command_len, 3)) == 0) ||
-		   (strncasecmp (argv[0], "list", MAX(command_len, 3)) == 0)) {
+	} else if ((xstrncasecmp(argv[0], "show", MAX(command_len, 3)) == 0) ||
+		   (xstrncasecmp(argv[0], "list", MAX(command_len, 3)) == 0)) {
 		_show_it((argc - 1), &argv[1]);
-	} else if (!strncasecmp (argv[0], "modify", MAX(command_len, 1))
-		   || !strncasecmp (argv[0], "update", MAX(command_len, 1))) {
+	} else if (!xstrncasecmp(argv[0], "modify", MAX(command_len, 1))
+		   || !xstrncasecmp(argv[0], "update", MAX(command_len, 1))) {
 		_modify_it((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "delete",
+	} else if ((xstrncasecmp(argv[0], "delete",
 				 MAX(command_len, 3)) == 0) ||
-		   (strncasecmp (argv[0], "remove",
+		   (xstrncasecmp(argv[0], "remove",
 				 MAX(command_len, 3)) == 0)) {
 		_delete_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "verbose", MAX(command_len, 4)) == 0) {
+	} else if (xstrncasecmp(argv[0], "verbose", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -462,7 +462,7 @@ static int _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		quiet_flag = -1;
-	} else if (strncasecmp (argv[0], "readonly",
+	} else if (xstrncasecmp(argv[0], "readonly",
 				MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -471,7 +471,7 @@ static int _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		readonly_flag = 1;
-	} else if (strncasecmp (argv[0], "reconfigure",
+	} else if (xstrncasecmp(argv[0], "reconfigure",
 				MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -481,7 +481,7 @@ static int _process_command (int argc, char **argv)
 		}
 
 		slurmdb_reconfig(db_conn);
-	} else if (strncasecmp (argv[0], "rollup", MAX(command_len, 2)) == 0) {
+	} else if (xstrncasecmp(argv[0], "rollup", MAX(command_len, 2)) == 0) {
 		time_t my_start = 0;
 		time_t my_end = 0;
 		uint16_t archive_data = 0;
@@ -508,7 +508,7 @@ static int _process_command (int argc, char **argv)
 				acct_storage_g_commit(db_conn, 0);
 			}
 		}
-	} else if (strncasecmp (argv[0], "shutdown",
+	} else if (xstrncasecmp(argv[0], "shutdown",
 				MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -523,7 +523,7 @@ static int _process_command (int argc, char **argv)
 				slurm_strerror(rc));
 			exit_code = 1;
 		}
-	} else if (strncasecmp (argv[0], "version", MAX(command_len, 4)) == 0) {
+	} else if (xstrncasecmp(argv[0], "version", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -563,20 +563,20 @@ static void _add_it(int argc, char **argv)
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to add */
-	if (!strncasecmp(argv[0], "Account", MAX(command_len, 1))
-	    || !strncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
+	if (!xstrncasecmp(argv[0], "Account", MAX(command_len, 1))
+	    || !xstrncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "Cluster", MAX(command_len, 2))) {
+	} else if (!xstrncasecmp(argv[0], "Cluster", MAX(command_len, 2))) {
 		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "Coordinator", MAX(command_len, 2))) {
+	} else if (!xstrncasecmp(argv[0], "Coordinator", MAX(command_len, 2))) {
 		error_code = sacctmgr_add_coord((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "Federation", MAX(command_len, 1))) {
+	} else if (!xstrncasecmp(argv[0], "Federation", MAX(command_len, 1))) {
 		error_code = sacctmgr_add_federation((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "QOS", MAX(command_len, 1))) {
+	} else if (!xstrncasecmp(argv[0], "QOS", MAX(command_len, 1))) {
 		error_code = sacctmgr_add_qos((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 1))) {
+	} else if (!xstrncasecmp(argv[0], "Resource", MAX(command_len, 1))) {
 		error_code = sacctmgr_add_res((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "User", MAX(command_len, 1))) {
+	} else if (!xstrncasecmp(argv[0], "User", MAX(command_len, 1))) {
 		error_code = sacctmgr_add_user((argc - 1), &argv[1]);
 	} else {
 	helpme:
@@ -617,9 +617,9 @@ static void _archive_it(int argc, char **argv)
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to add */
-	if (strncasecmp (argv[0], "dump", MAX(command_len, 1)) == 0) {
+	if (xstrncasecmp(argv[0], "dump", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_archive_dump((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "load", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "load", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_archive_load((argc - 1), &argv[1]);
 	} else {
 	helpme:
@@ -650,7 +650,7 @@ static void _clear_it(int argc, char **argv)
 	command_len = strlen(argv[0]);
 
 	/* First identify the entity to list */
-	if (!strncasecmp(argv[0], "Stats", MAX(command_len, 1))) {
+	if (!xstrncasecmp(argv[0], "Stats", MAX(command_len, 1))) {
 		error_code = slurmdb_clear_stats(db_conn);
 	} else {
 	helpme:
@@ -686,48 +686,48 @@ static void _show_it(int argc, char **argv)
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to list */
-	if (strncasecmp(argv[0], "Accounts", MAX(command_len, 2)) == 0
-	    || !strncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
+	if (xstrncasecmp(argv[0], "Accounts", MAX(command_len, 2)) == 0
+	    || !xstrncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Associations",
+	} else if (xstrncasecmp(argv[0], "Associations",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_assoc((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Clusters",
+	} else if (xstrncasecmp(argv[0], "Clusters",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Configuration",
+	} else if (xstrncasecmp(argv[0], "Configuration",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_config(true);
-	} else if (strncasecmp(argv[0], "Events",
+	} else if (xstrncasecmp(argv[0], "Events",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_event((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Federation",
+	} else if (xstrncasecmp(argv[0], "Federation",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_federation((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Problems",
+	} else if (xstrncasecmp(argv[0], "Problems",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "RunawayJobs", MAX(command_len, 2)) ||
-		   !strncasecmp(argv[0], "OrphanJobs", MAX(command_len, 1)) ||
-		   !strncasecmp(argv[0], "LostJobs", MAX(command_len, 1))) {
+	} else if (!xstrncasecmp(argv[0], "RunawayJobs", MAX(command_len, 2)) ||
+		   !xstrncasecmp(argv[0], "OrphanJobs", MAX(command_len, 1)) ||
+		   !xstrncasecmp(argv[0], "LostJobs", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_runaway_jobs((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "QOS", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 4))) {
+	} else if (!xstrncasecmp(argv[0], "Resource", MAX(command_len, 4))) {
 		error_code = sacctmgr_list_res((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "Reservations", MAX(command_len, 4)) ||
-		   !strncasecmp(argv[0], "Resv", MAX(command_len, 4))) {
+	} else if (!xstrncasecmp(argv[0], "Reservations", MAX(command_len, 4))||
+		   !xstrncasecmp(argv[0], "Resv", MAX(command_len, 4))) {
 		error_code = sacctmgr_list_reservation((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "Stats", MAX(command_len, 1))) {
+	} else if (!xstrncasecmp(argv[0], "Stats", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_stats((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "Transactions", MAX(command_len, 1))
-		   || !strncasecmp(argv[0], "Txn", MAX(command_len, 1))) {
+	} else if (!xstrncasecmp(argv[0], "Transactions", MAX(command_len, 1))
+		   || !xstrncasecmp(argv[0], "Txn", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Users", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "WCKeys", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "WCKeys", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_wckey((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "tres", MAX(command_len, 2)) == 0) {
+	} else if (xstrncasecmp(argv[0], "tres", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_tres(argc - 1, &argv[1]);
 	} else {
 	helpme:
@@ -771,22 +771,22 @@ static void _modify_it(int argc, char **argv)
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to modify */
-	if (strncasecmp(argv[0], "Accounts", MAX(command_len, 1)) == 0
-	    || !strncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
+	if (xstrncasecmp(argv[0], "Accounts", MAX(command_len, 1)) == 0
+	    || !xstrncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Clusters",
+	} else if (xstrncasecmp(argv[0], "Clusters",
 				MAX(command_len, 5)) == 0) {
 		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Federation",
+	} else if (xstrncasecmp(argv[0], "Federation",
 			       MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_federation((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Job", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "Job", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_job((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "QOSs", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "QOSs", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_res((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Users", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
 	} else {
 	helpme:
@@ -826,23 +826,23 @@ static void _delete_it(int argc, char **argv)
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to delete */
-	if (strncasecmp(argv[0], "Accounts", MAX(command_len, 1)) == 0
-	    || !strncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
+	if (xstrncasecmp(argv[0], "Accounts", MAX(command_len, 1)) == 0
+	    || !xstrncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_delete_account((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Clusters",
+	} else if (xstrncasecmp(argv[0], "Clusters",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Coordinators",
+	} else if (xstrncasecmp(argv[0], "Coordinators",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_coord((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Federations",
+	} else if (xstrncasecmp(argv[0], "Federations",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_delete_federation((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "QOS", MAX(command_len, 2)) == 0) {
+	} else if (xstrncasecmp(argv[0], "QOS", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0){
 		error_code = sacctmgr_delete_res((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "Users", MAX(command_len, 1)) == 0) {
+	} else if (xstrncasecmp(argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
 	} else {
 	helpme:

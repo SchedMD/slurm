@@ -969,19 +969,19 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 		}
 		if (tok) {
 			tok += len;
-			if (!strncasecmp(tok, "All2All", 3)) {
+			if (!xstrncasecmp(tok, "All2All", 3)) {
 				cur_state = xstrdup("a2a");
 				cur_sep = ",";
-			} else if (!strncasecmp(tok, "Hemisphere", 3)) {
+			} else if (!xstrncasecmp(tok, "Hemisphere", 3)) {
 				cur_state = xstrdup("hemi");
 				cur_sep = ",";
-			} else if (!strncasecmp(tok, "Quadrant", 3)) {
+			} else if (!xstrncasecmp(tok, "Quadrant", 3)) {
 				cur_state = xstrdup("quad");
 				cur_sep = ",";
-			} else if (!strncasecmp(tok, "SNC-2", 5)) {
+			} else if (!xstrncasecmp(tok, "SNC-2", 5)) {
 				cur_state = xstrdup("snc2");
 				cur_sep = ",";
-			} else if (!strncasecmp(tok, "SNC-4", 5)) {
+			} else if (!xstrncasecmp(tok, "SNC-4", 5)) {
 				cur_state = xstrdup("snc4");
 				cur_sep = ",";
 			}
@@ -1072,16 +1072,16 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 		}
 		if (tok) {
 			tok += len;
-			if (!strncasecmp(tok, "Cache", 3)) {
+			if (!xstrncasecmp(tok, "Cache", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "cache");
-			} else if (!strncasecmp(tok, "Flat", 3) ||
-				   !strncasecmp(tok, "Memory", 3)) {
+			} else if (!xstrncasecmp(tok, "Flat", 3) ||
+				   !xstrncasecmp(tok, "Memory", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "flat");
-			} else if (!strncasecmp(tok, "Hybrid", 3)) {
+			} else if (!xstrncasecmp(tok, "Hybrid", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "hybrid");
-			} else if (!strncasecmp(tok, "Equal", 3)) {
+			} else if (!xstrncasecmp(tok, "Equal", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "equal");
-			} else if (!strncasecmp(tok, "Auto", 3)) {
+			} else if (!xstrncasecmp(tok, "Auto", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "auto");
 			}
 		}

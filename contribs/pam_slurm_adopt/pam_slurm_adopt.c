@@ -497,15 +497,15 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 	char *v;
 
 	for (; argc-- > 0; ++argv) {
-		if (!strncasecmp(*argv, "single_job_skip_rpc=0", 21))
+		if (!xstrncasecmp(*argv, "single_job_skip_rpc=0", 21))
 			opts.single_job_skip_rpc = 0;
-		else if (!strncasecmp(*argv, "ignore_root=0", 13))
+		else if (!xstrncasecmp(*argv, "ignore_root=0", 13))
 			opts.ignore_root = 0;
-		else if (!strncasecmp(*argv,"action_no_jobs=",15)) {
+		else if (!xstrncasecmp(*argv,"action_no_jobs=",15)) {
 			v = (char *)(15 + *argv);
-			if (!strncasecmp(v, "deny", 4))
+			if (!xstrncasecmp(v, "deny", 4))
 				opts.action_no_jobs = CALLERID_ACTION_DENY;
-			else if (!strncasecmp(v, "ignore", 6))
+			else if (!xstrncasecmp(v, "ignore", 6))
 				opts.action_no_jobs = CALLERID_ACTION_IGNORE;
 			else {
 				pam_syslog(pamh,
@@ -513,13 +513,13 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 					   "unrecognized action_no_jobs=%s, setting to 'deny'",
 					   v);
 			}
-		} else if (!strncasecmp(*argv,"action_unknown=",15)) {
+		} else if (!xstrncasecmp(*argv,"action_unknown=",15)) {
 			v = (char *)(15 + *argv);
-			if (!strncasecmp(v, "allow", 5))
+			if (!xstrncasecmp(v, "allow", 5))
 				opts.action_unknown = CALLERID_ACTION_ALLOW;
-			else if (!strncasecmp(v, "newest", 6))
+			else if (!xstrncasecmp(v, "newest", 6))
 				opts.action_unknown = CALLERID_ACTION_NEWEST;
-			else if (!strncasecmp(v, "deny", 4))
+			else if (!xstrncasecmp(v, "deny", 4))
 				opts.action_unknown = CALLERID_ACTION_DENY;
 			else {
 				pam_syslog(pamh,
@@ -527,15 +527,15 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 					   "unrecognized action_unknown=%s, setting to 'newest'",
 					   v);
 			}
-		} else if (!strncasecmp(*argv,"action_generic_failure=",23)) {
+		} else if (!xstrncasecmp(*argv,"action_generic_failure=",23)) {
 			v = (char *)(23 + *argv);
-			if (!strncasecmp(v, "allow", 5))
+			if (!xstrncasecmp(v, "allow", 5))
 				opts.action_generic_failure =
 					CALLERID_ACTION_ALLOW;
-			else if (!strncasecmp(v, "ignore", 6))
+			else if (!xstrncasecmp(v, "ignore", 6))
 				opts.action_generic_failure =
 					CALLERID_ACTION_IGNORE;
-			else if (!strncasecmp(v, "deny", 4))
+			else if (!xstrncasecmp(v, "deny", 4))
 				opts.action_generic_failure =
 					CALLERID_ACTION_DENY;
 			else {
@@ -544,13 +544,13 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 					   "unrecognized action_generic_failure=%s, setting to 'allow'",
 					   v);
 			}
-		} else if (!strncasecmp(*argv, "log_level=", 10)) {
+		} else if (!xstrncasecmp(*argv, "log_level=", 10)) {
 			v = (char *)(10 + *argv);
 			opts.log_level = _parse_log_level(pamh, v);
-		} else if (!strncasecmp(*argv, "nodename=", 9)) {
+		} else if (!xstrncasecmp(*argv, "nodename=", 9)) {
 			v = (char *)(9 + *argv);
 			opts.node_name = xstrdup(v);
-		} else if (!strncasecmp(*argv, "disable_x11=1", 13)) {
+		} else if (!xstrncasecmp(*argv, "disable_x11=1", 13)) {
 			opts.disable_x11 = true;
 		}
 	}

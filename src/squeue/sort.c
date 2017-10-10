@@ -117,8 +117,8 @@ void sort_job_list(List job_list)
 			reverse_order = true;
 
 		if ((CLUSTER_NAME_LEN <= (i + 1)) &&
-		    !strncasecmp(params.sort + (i - CLUSTER_NAME_LEN + 1),
-				 "cluster", CLUSTER_NAME_LEN))
+		    !xstrncasecmp(params.sort + (i - CLUSTER_NAME_LEN + 1),
+				  "cluster", CLUSTER_NAME_LEN))
 		{
 			if ((CLUSTER_NAME_LEN <= i) &&
 			    (params.sort[i - CLUSTER_NAME_LEN] == '-'))
@@ -223,8 +223,8 @@ void sort_step_list(List step_list)
 			reverse_order = true;
 
 		if ((CLUSTER_NAME_LEN <= (i + 1)) &&
-		    !strncasecmp(params.sort + (i - CLUSTER_NAME_LEN + 1),
-				 "cluster", CLUSTER_NAME_LEN)) {
+		    !xstrncasecmp(params.sort + (i - CLUSTER_NAME_LEN + 1),
+				  "cluster", CLUSTER_NAME_LEN)) {
 			if ((CLUSTER_NAME_LEN <= i) &&
 			    (params.sort[i - CLUSTER_NAME_LEN] == '-'))
 				reverse_order = true;

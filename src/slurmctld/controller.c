@@ -1439,21 +1439,21 @@ static int _init_tres(void)
 			tres_rec->id = TRES_NODE;
 		else if (!xstrcasecmp(temp_char, "billing"))
 			tres_rec->id = TRES_BILLING;
-		else if (!strncasecmp(temp_char, "bb/", 3)) {
+		else if (!xstrncasecmp(temp_char, "bb/", 3)) {
 			tres_rec->type[2] = '\0';
 			tres_rec->name = xstrdup(temp_char+3);
 			if (!tres_rec->name)
 				fatal("Burst Buffer type tres need to have a "
 				      "name, (i.e. bb/cray).  You gave %s",
 				      temp_char);
-		} else if (!strncasecmp(temp_char, "gres/", 5)) {
+		} else if (!xstrncasecmp(temp_char, "gres/", 5)) {
 			tres_rec->type[4] = '\0';
 			tres_rec->name = xstrdup(temp_char+5);
 			if (!tres_rec->name)
 				fatal("Gres type tres need to have a name, "
 				      "(i.e. Gres/GPU).  You gave %s",
 				      temp_char);
-		} else if (!strncasecmp(temp_char, "license/", 8)) {
+		} else if (!xstrncasecmp(temp_char, "license/", 8)) {
 			tres_rec->type[7] = '\0';
 			tres_rec->name = xstrdup(temp_char+8);
 			if (!tres_rec->name)

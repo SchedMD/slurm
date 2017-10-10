@@ -3215,7 +3215,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	/* validate new dependency string */
 	while (rc == SLURM_SUCCESS) {
  		/* test singleton dependency flag */
- 		if ( strncasecmp(tok, "singleton", 9) == 0 ) {
+ 		if (xstrncasecmp(tok, "singleton", 9) == 0) {
 			depend_type = SLURM_DEPEND_SINGLETON;
 			dep_ptr = xmalloc(sizeof(struct depend_spec));
 			dep_ptr->depend_type = depend_type;
@@ -3293,17 +3293,17 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		}
 
 		/* New format, <test>:job_ID */
-		if      (strncasecmp(tok, "afternotok", 10) == 0)
+		if      (xstrncasecmp(tok, "afternotok", 10) == 0)
 			depend_type = SLURM_DEPEND_AFTER_NOT_OK;
-		else if (strncasecmp(tok, "aftercorr", 9) == 0)
+		else if (xstrncasecmp(tok, "aftercorr", 9) == 0)
 			depend_type = SLURM_DEPEND_AFTER_CORRESPOND;
-		else if (strncasecmp(tok, "afterany", 8) == 0)
+		else if (xstrncasecmp(tok, "afterany", 8) == 0)
 			depend_type = SLURM_DEPEND_AFTER_ANY;
-		else if (strncasecmp(tok, "afterok", 7) == 0)
+		else if (xstrncasecmp(tok, "afterok", 7) == 0)
 			depend_type = SLURM_DEPEND_AFTER_OK;
-		else if (strncasecmp(tok, "after", 5) == 0)
+		else if (xstrncasecmp(tok, "after", 5) == 0)
 			depend_type = SLURM_DEPEND_AFTER;
-		else if (strncasecmp(tok, "expand", 6) == 0) {
+		else if (xstrncasecmp(tok, "expand", 6) == 0) {
 			if (!select_g_job_expand_allow()) {
 				rc = ESLURM_DEPENDENCY;
 				break;

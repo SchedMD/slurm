@@ -63,17 +63,17 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+		if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp(argv[i], "WithDeleted",
-						MAX(command_len, 5))) {
+		} else if (!end && !xstrncasecmp(argv[i], "WithDeleted",
+						 MAX(command_len, 5))) {
 			tres_cond->with_deleted = 1;
-		} else if (!end && !strncasecmp(argv[i], "where",
-						MAX(command_len, 5))) {
+		} else if (!end && !xstrncasecmp(argv[i], "where",
+						 MAX(command_len, 5))) {
 			continue;
 		} else if (!end
-			  || !strncasecmp(argv[i], "Type",
+			  || !xstrncasecmp(argv[i], "Type",
 					   MAX(command_len, 2))) {
 			if (!tres_cond->type_list) {
 				tres_cond->type_list =
@@ -83,7 +83,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				   tres_cond->type_list,
 				   argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp(argv[i], "Names",
+		} else if (!xstrncasecmp(argv[i], "Names",
 					 MAX(command_len, 1))) {
 			if (!tres_cond->name_list) {
 				tres_cond->name_list =
@@ -92,11 +92,11 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(tres_cond->name_list,
 						  argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp(argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp(argv[i], "Ids",
+		} else if (!xstrncasecmp(argv[i], "Ids",
 					 MAX(command_len, 1))) {
 			if (!tres_cond->id_list) {
 				tres_cond->id_list =
@@ -137,8 +137,8 @@ int sacctmgr_list_tres(int argc, char **argv)
 
     	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, tres_cond, format_list);
 	}

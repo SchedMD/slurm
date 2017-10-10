@@ -3236,7 +3236,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_EDIT;
 		entry = _admin_full_edit_part(part_msg, model, iter);
-	} else if (!strncasecmp("Update", type, 6)) {
+	} else if (!xstrncasecmp("Update", type, 6)) {
 		char *old_features = NULL;
 		if (got_features_edit_signal)
 			old_features = got_features_edit_signal;

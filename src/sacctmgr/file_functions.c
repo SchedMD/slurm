@@ -248,39 +248,39 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			file_opts->name = xstrdup(option);
 		} else if (end && !strlen(option)) {
 			debug("blank field given for %s discarding", sub);
-		} else if (!strncasecmp (sub, "AdminLevel",
+		} else if (!xstrncasecmp(sub, "AdminLevel",
 					 MAX(command_len, 2))) {
 			file_opts->admin = str_2_slurmdb_admin_level(option);
-		} else if (!strncasecmp (sub, "Coordinator",
+		} else if (!xstrncasecmp(sub, "Coordinator",
 					 MAX(command_len, 2))) {
 			if (!file_opts->coord_list)
 				file_opts->coord_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(file_opts->coord_list, option);
-		} else if (!strncasecmp (sub, "Classification",
+		} else if (!xstrncasecmp(sub, "Classification",
 					 MAX(command_len, 2))) {
 			file_opts->classification =
 				str_2_classification(option);
-		} else if (!strncasecmp (sub, "DefaultAccount",
+		} else if (!xstrncasecmp(sub, "DefaultAccount",
 					 MAX(command_len, 8))) {
 			file_opts->def_acct = xstrdup(option);
-		} else if (!strncasecmp (sub, "DefaultWCKey",
+		} else if (!xstrncasecmp(sub, "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			file_opts->def_wckey = xstrdup(option);
 			if (!file_opts->wckey_list)
 				file_opts->wckey_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(file_opts->wckey_list, option);
-		} else if (!strncasecmp (sub, "Description",
+		} else if (!xstrncasecmp(sub, "Description",
 					 MAX(command_len, 3))) {
 			file_opts->desc = xstrdup(option);
-		} else if (!strncasecmp (sub, "Organization",
+		} else if (!xstrncasecmp(sub, "Organization",
 					 MAX(command_len, 1))) {
 			file_opts->org = xstrdup(option);
-		} else if (!strncasecmp (sub, "Partition",
+		} else if (!xstrncasecmp(sub, "Partition",
 					 MAX(command_len, 1))) {
 			file_opts->assoc_rec.partition = xstrdup(option);
-		} else if (!strncasecmp (sub, "WCKeys",
+		} else if (!xstrncasecmp(sub, "WCKeys",
 					 MAX(command_len, 2))) {
 			if (!file_opts->wckey_list)
 				file_opts->wckey_list =
@@ -1606,10 +1606,10 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				end++;
 			}
 		}
-		if (!end && !strncasecmp(argv[i], "clean",
-					 MAX(command_len, 3))) {
+		if (!end && !xstrncasecmp(argv[i], "clean",
+					  MAX(command_len, 3))) {
 			start_clean = 1;
-		} else if (!end || !strncasecmp (argv[i], "File",
+		} else if (!end || !xstrncasecmp(argv[i], "File",
 						 MAX(command_len, 1))) {
 			if (file_name) {
 				exit_code=1;
@@ -1619,7 +1619,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				continue;
 			}
 			file_name = xstrdup(argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Cluster",
+		} else if (!xstrncasecmp(argv[i], "Cluster",
 					 MAX(command_len, 3))) {
 			if (cluster_name) {
 				exit_code=1;

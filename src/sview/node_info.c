@@ -1437,7 +1437,7 @@ extern int update_state_node(GtkDialog *dialog,
 	slurm_init_update_node_msg(node_msg);
 	node_msg->node_names = xstrdup(nodelist);
 
-	if (!strncasecmp("drain", type, 5)) {
+	if (!xstrncasecmp("drain", type, 5)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to drain node(s) %s?\n\n"
 			 "Please put reason.",
@@ -1445,13 +1445,13 @@ extern int update_state_node(GtkDialog *dialog,
 		entry = create_entry();
 		label = gtk_label_new(tmp_char);
 		state = NODE_STATE_DRAIN;
-	} else if (!strncasecmp("resume", type, 5)) {
+	} else if (!xstrncasecmp("resume", type, 5)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to resume node(s) %s?",
 			 nodelist);
 		label = gtk_label_new(tmp_char);
 		state = NODE_RESUME;
-	} else if (!strncasecmp("set", type, 3)) {
+	} else if (!xstrncasecmp("set", type, 3)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to down node(s) %s?\n\n"
 			 "Please put reason.",
@@ -1459,7 +1459,7 @@ extern int update_state_node(GtkDialog *dialog,
 		entry = create_entry();
 		label = gtk_label_new(tmp_char);
 		state = NODE_STATE_DOWN;
-	} else if (!strncasecmp("undrain", type, 5)) {
+	} else if (!xstrncasecmp("undrain", type, 5)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to undrain node(s) %s?",
 			 nodelist);
@@ -1467,7 +1467,7 @@ extern int update_state_node(GtkDialog *dialog,
 		state = NODE_STATE_UNDRAIN;
 	} else {
 
-		if (!strncasecmp("make", type, 4))
+		if (!xstrncasecmp("make", type, 4))
 			type = "idle";
 		for(i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);

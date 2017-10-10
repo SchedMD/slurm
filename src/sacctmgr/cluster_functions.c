@@ -74,26 +74,26 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+		if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp(argv[i], "where",
+		} else if (!end && !xstrncasecmp(argv[i], "where",
 					       MAX(command_len, 5))) {
 			continue;
 		} else if (!end &&
-			   !strncasecmp(argv[i], "WithDeleted",
+			   !xstrncasecmp(argv[i], "WithDeleted",
 					 MAX(command_len, 5))) {
 			with_deleted = 1;
 		} else if (!end &&
-			   !strncasecmp(argv[i], "WithFed",
+			   !xstrncasecmp(argv[i], "WithFed",
 					 MAX(command_len, 5))) {
 			with_fed = 1;
-		} else if (!end && !strncasecmp(argv[i], "WOLimits",
+		} else if (!end && !xstrncasecmp(argv[i], "WOLimits",
 						 MAX(command_len, 3))) {
 			without_limits = 1;
-		} else if (!end || !strncasecmp(argv[i], "Names",
+		} else if (!end || !xstrncasecmp(argv[i], "Names",
 						MAX(command_len, 1))
-			  || !strncasecmp(argv[i], "Clusters",
+			  || !xstrncasecmp(argv[i], "Clusters",
 					   MAX(command_len, 3))) {
 			if (!cluster_cond->cluster_list)
 				cluster_cond->cluster_list =
@@ -101,7 +101,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(cluster_cond->cluster_list,
 						 argv[i]+end))
 				a_set = 1;
-		} else if (!end || !strncasecmp(argv[i], "Federations",
+		} else if (!end || !xstrncasecmp(argv[i], "Federations",
 						MAX(command_len, 3))) {
 			if (!cluster_cond->federation_list)
 				cluster_cond->federation_list =
@@ -109,22 +109,22 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(cluster_cond->federation_list,
 						  argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp(argv[i], "Classification",
+		} else if (!xstrncasecmp(argv[i], "Classification",
 					 MAX(command_len, 3))) {
 			cluster_cond->classification =
 				str_2_classification(argv[i]+end);
 			if (cluster_cond->classification)
 				c_set = 1;
-		} else if (!strncasecmp(argv[i], "flags",
+		} else if (!xstrncasecmp(argv[i], "flags",
 					 MAX(command_len, 2))) {
 			cluster_cond->flags = slurmdb_str_2_cluster_flags(
 				argv[i]+end);
 			c_set = 1;
-		} else if (!strncasecmp(argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!end || !strncasecmp(argv[i], "PluginIDSelect",
+		} else if (!end || !xstrncasecmp(argv[i], "PluginIDSelect",
 						MAX(command_len, 1))) {
 			if (!cluster_cond->plugin_id_select_list)
 				cluster_cond->plugin_id_select_list =
@@ -133,7 +133,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				   cluster_cond->plugin_id_select_list,
 				   argv[i]+end))
 				c_set = 1;
-		} else if (!end || !strncasecmp(argv[i], "RPCVersions",
+		} else if (!end || !xstrncasecmp(argv[i], "RPCVersions",
 						MAX(command_len, 1))) {
 			if (!cluster_cond->rpc_version_list)
 				cluster_cond->rpc_version_list =
@@ -186,27 +186,27 @@ static int _set_rec(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp(argv[i], "set",
+		} else if (!end && !xstrncasecmp(argv[i], "set",
 					       MAX(command_len, 3))) {
 			continue;
 		} else if (!end
-			  || !strncasecmp(argv[i], "Names",
+			  || !xstrncasecmp(argv[i], "Names",
 					   MAX(command_len, 1))
-			  || !strncasecmp(argv[i], "Clusters",
+			  || !xstrncasecmp(argv[i], "Clusters",
 					   MAX(command_len, 3))) {
 			if (name_list)
 				slurm_addto_char_list(name_list,
 						      argv[i]+end);
-		} else if (!strncasecmp(argv[i], "Classification",
+		} else if (!xstrncasecmp(argv[i], "Classification",
 					 MAX(command_len, 3))) {
 			cluster->classification =
 				str_2_classification(argv[i]+end);
 			if (cluster->classification)
 				rec_set = 1;
-		} else if (!strncasecmp(argv[i], "Features",
+		} else if (!xstrncasecmp(argv[i], "Features",
 					MAX(command_len, 2))) {
 			if (*(argv[i]+end) == '\0' &&
 			    (option == '+' || option == '-')) {
@@ -227,11 +227,11 @@ static int _set_rec(int *start, int argc, char **argv,
 			}
 			rec_set = 1;
 
-		} else if (!strncasecmp(argv[i], "Federation",
+		} else if (!xstrncasecmp(argv[i], "Federation",
 					 MAX(command_len, 3))) {
 			cluster->fed.name = xstrdup(argv[i]+end);
 			rec_set = 1;
-		} else if (!strncasecmp(argv[i], "FedState",
+		} else if (!xstrncasecmp(argv[i], "FedState",
 					 MAX(command_len, 2))) {
 			if (cluster) {
 				cluster->fed.state =
@@ -245,23 +245,23 @@ static int _set_rec(int *start, int argc, char **argv,
 
 				rec_set = 1;
 			}
-		} else if (!strncasecmp(argv[i], "GrpCPURunMins",
+		} else if (!xstrncasecmp(argv[i], "GrpCPURunMins",
 					 MAX(command_len, 7)) ||
-			   !strncasecmp(argv[i], "GrpTRESRunMins",
+			   !xstrncasecmp(argv[i], "GrpTRESRunMins",
 					MAX(command_len, 8))) {
 			exit_code=1;
 			fprintf(stderr, "GrpTRESRunMins is not a valid option "
 				"for the root association of a cluster.\n");
 			break;
-		} else if (!strncasecmp(argv[i], "GrpCPUMins",
+		} else if (!xstrncasecmp(argv[i], "GrpCPUMins",
 					 MAX(command_len, 7)) ||
-			   !strncasecmp(argv[i], "GrpTRESMins",
+			   !xstrncasecmp(argv[i], "GrpTRESMins",
 					MAX(command_len, 8))) {
 			exit_code=1;
 			fprintf(stderr, "GrpTRESMins is not a valid option "
 				"for the root association of a cluster.\n");
 			break;
-		} else if (!strncasecmp(argv[i], "GrpWall",
+		} else if (!xstrncasecmp(argv[i], "GrpWall",
 					 MAX(command_len, 4))) {
 			exit_code=1;
 			fprintf(stderr, "GrpWall is not a valid option "
@@ -308,8 +308,8 @@ extern int sacctmgr_add_cluster(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		limit_set += _set_rec(&i, argc, argv,
 				      name_list, &start_assoc, start_cluster);
@@ -482,8 +482,8 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, cluster_cond, format_list);
 	}
@@ -738,12 +738,12 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
 			prev_set = _set_cond(&i, argc, argv,
 					     &cluster_cond, NULL);
 			cond_set |= prev_set;
-		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+		} else if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			prev_set = _set_rec(&i, argc, argv,
 					    NULL, assoc, cluster);
@@ -928,8 +928,8 @@ extern int sacctmgr_delete_cluster(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, cluster_cond, NULL);
 		cond_set |= prev_set;
@@ -1037,7 +1037,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 				end++;
 			}
 		}
-		if (!end || !strncasecmp(argv[i], "Cluster",
+		if (!end || !xstrncasecmp(argv[i], "Cluster",
 					 MAX(command_len, 1))) {
 			if (cluster_name) {
 				exit_code = 1;
@@ -1047,7 +1047,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 				continue;
 			}
 			cluster_name = xstrdup(argv[i]+end);
-		} else if (!strncasecmp(argv[i], "File",
+		} else if (!xstrncasecmp(argv[i], "File",
 					MAX(command_len, 1))) {
 			if (file_name) {
 				exit_code = 1;

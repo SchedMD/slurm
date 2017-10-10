@@ -56,15 +56,15 @@ static int _set_cond(int *start, int argc, char **argv,
 		}
 
 		if (!end ||
-		    !strncasecmp(argv[i], "Cluster", MAX(command_len, 1))) {
+		    !xstrncasecmp(argv[i], "Cluster", MAX(command_len, 1))) {
 			if (!job_cond->cluster_list)
 				job_cond->cluster_list =
 					list_create(slurm_destroy_char);
 			if (slurm_addto_char_list(job_cond->cluster_list,
 						  argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp(argv[i], "Format",
-					MAX(command_len, 1))) {
+		} else if (!xstrncasecmp(argv[i], "Format",
+					 MAX(command_len, 1))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else {
@@ -301,8 +301,8 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, job_cond, format_list);
 	}

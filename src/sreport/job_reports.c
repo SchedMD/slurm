@@ -263,27 +263,27 @@ static int _set_cond(int *start, int argc, char **argv,
 		else
 			command_len = end-1;
 
-		if (!end && !strncasecmp(argv[i], "all_clusters",
-					       MAX(command_len, 1))) {
+		if (!end && !xstrncasecmp(argv[i], "all_clusters",
+					  MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 			continue;
-		} else if (!end && !strncasecmp(argv[i], "PrintJobCount",
-					       MAX(command_len, 2))) {
+		} else if (!end && !xstrncasecmp(argv[i], "PrintJobCount",
+						 MAX(command_len, 2))) {
 			print_job_count = 1;
 			continue;
-		} else if (!end && !strncasecmp (argv[i], "FlatView",
-					 MAX(command_len, 2))) {
+		} else if (!end && !xstrncasecmp(argv[i], "FlatView",
+						 MAX(command_len, 2))) {
 			flat_view = true;
 			continue;
 		} else if (!end
-			  || !strncasecmp (argv[i], "Clusters",
+			  || !xstrncasecmp(argv[i], "Clusters",
 					   MAX(command_len, 1))) {
 			slurm_addto_char_list(job_cond->cluster_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Accounts",
+		} else if (!xstrncasecmp(argv[i], "Accounts",
 					 MAX(command_len, 2))
-			   || !strncasecmp(argv[i], "Acct",
+			   || !xstrncasecmp(argv[i], "Acct",
 					   MAX(command_len, 4))) {
 			if (!job_cond->acct_list)
 				job_cond->acct_list =
@@ -291,7 +291,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			slurm_addto_char_list(job_cond->acct_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Associations",
+		} else if (!xstrncasecmp(argv[i], "Associations",
 					 MAX(command_len, 2))) {
 			if (!job_cond->associd_list)
 				job_cond->associd_list =
@@ -299,29 +299,29 @@ static int _set_cond(int *start, int argc, char **argv,
 			slurm_addto_char_list(job_cond->associd_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
+		} else if (!xstrncasecmp(argv[i], "End", MAX(command_len, 1))) {
 			job_cond->usage_end = parse_time(argv[i]+end, 1);
 			job_cond->usage_end = sanity_check_endtime(job_cond->usage_end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Gid", MAX(command_len, 2))) {
+		} else if (!xstrncasecmp(argv[i], "Gid", MAX(command_len, 2))) {
 			if (!job_cond->groupid_list)
 				job_cond->groupid_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->groupid_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "grouping",
+		} else if (!xstrncasecmp(argv[i], "grouping",
 					 MAX(command_len, 2))) {
-			if (!strncasecmp(argv[i]+end, "individual", 1)) {
+			if (!xstrncasecmp(argv[i]+end, "individual", 1)) {
 				individual_grouping = 1;
 			} else if (grouping_list)
 					slurm_addto_char_list(grouping_list,
 							      argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Jobs",
+		} else if (!xstrncasecmp(argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i]+end;
 			slurmdb_selected_step_t *selected_step = NULL;
@@ -356,7 +356,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Nodes",
+		} else if (!xstrncasecmp(argv[i], "Nodes",
 					 MAX(command_len, 1))) {
 			if (job_cond->used_nodes) {
 				error("You already specified nodes '%s' "
@@ -367,7 +367,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 			job_cond->used_nodes = xstrdup(argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Partitions",
+		} else if (!xstrncasecmp(argv[i], "Partitions",
 					 MAX(command_len, 2))) {
 			if (!job_cond->partition_list)
 				job_cond->partition_list =
@@ -375,11 +375,11 @@ static int _set_cond(int *start, int argc, char **argv,
 			slurm_addto_char_list(job_cond->partition_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Start",
+		} else if (!xstrncasecmp(argv[i], "Start",
 					 MAX(command_len, 1))) {
 			job_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Users",
+		} else if (!xstrncasecmp(argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if (!job_cond->userid_list)
 				job_cond->userid_list =
@@ -387,7 +387,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			_addto_uid_char_list(job_cond->userid_list,
 					     argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Wckeys",
+		} else if (!xstrncasecmp(argv[i], "Wckeys",
 					 MAX(command_len, 2))) {
 			if (!job_cond->wckey_list)
 				job_cond->wckey_list =
@@ -454,53 +454,54 @@ static int _setup_print_fields_list(List format_list)
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if (!strncasecmp("Account", object, MAX(command_len, 1))
-		   || !strncasecmp("Acct", object, MAX(command_len, 4))) {
+		if (!xstrncasecmp("Account", object, MAX(command_len, 1))
+		   || !xstrncasecmp("Acct", object, MAX(command_len, 4))) {
 			field->type = PRINT_JOB_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Cluster", object,
-				       MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("Cluster", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_JOB_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Duration", object,
-				       MAX(command_len, 1))) {
+		} else if (!xstrncasecmp("Duration", object,
+					 MAX(command_len, 1))) {
 			field->type = PRINT_JOB_DUR;
 			field->name = xstrdup("Duration");
 			field->len = 12;
 			field->print_routine = print_fields_time;
-		} else if (!strncasecmp("JobCount", object,
-				       MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("JobCount", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_JOB_COUNT;
 			field->name = xstrdup("Job Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("NodeCount", object,
-				       MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("NodeCount", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_JOB_NODES;
 			field->name = xstrdup("Node Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("TresCount", object,
-					MAX(command_len, 5)) ||
-			   !strncasecmp("CpuCount", object,
-					MAX(command_len, 2)) ||
-			   !strncasecmp("count", object, MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("TresCount", object,
+					 MAX(command_len, 5)) ||
+			   !xstrncasecmp("CpuCount", object,
+					 MAX(command_len, 2)) ||
+			   !xstrncasecmp("count", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_JOB_TRES_COUNT;
 			field->name = xstrdup("TRES Count");
 			field->len = 10;
 			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("User", object,
-				       MAX(command_len, 1))) {
+		} else if (!xstrncasecmp("User", object,
+					 MAX(command_len, 1))) {
 			field->type = PRINT_JOB_USER;
 			field->name = xstrdup("User");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Wckey", object,
-				       MAX(command_len, 1))) {
+		} else if (!xstrncasecmp("Wckey", object,
+					 MAX(command_len, 1))) {
 			field->type = PRINT_JOB_WCKEY;
 			field->name = xstrdup("Wckey");
 			field->len = 9;

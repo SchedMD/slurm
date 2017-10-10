@@ -66,16 +66,16 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
+		if (!xstrncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp(argv[i], "where",
-						MAX(command_len, 5))) {
+		} else if (!end && !xstrncasecmp(argv[i], "where",
+						 MAX(command_len, 5))) {
 			continue;
-		} else if (!strncasecmp (argv[i], "Cluster",
+		} else if (!xstrncasecmp(argv[i], "Cluster",
 					 MAX(command_len, 1))) {
 			job_cond->cluster = xstrdup(argv[i]+end);
-		} else if (!strncasecmp (argv[i], "JobID",
+		} else if (!xstrncasecmp(argv[i], "JobID",
 					 MAX(command_len, 1))) {
 			job_cond->job_id = (uint32_t) strtol(argv[i]+end,
 							     &next_str, 10);
@@ -121,31 +121,31 @@ static int _set_rec(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
+		if (!xstrncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp(argv[i], "set",
-					       MAX(command_len, 3))) {
+		} else if (!end && !xstrncasecmp(argv[i], "set",
+						 MAX(command_len, 3))) {
 			continue;
 		} else if (!end) {
 			exit_code=1;
 			fprintf(stderr,
 				" Bad format on %s: End your option with "
 				"an '=' sign\n", argv[i]);
-		} else if ((!strncasecmp(argv[i], "DerivedExitCode",
-					 MAX(command_len, 12))) ||
-			   (!strncasecmp(argv[i], "DerivedEC",
-					 MAX(command_len, 9)))) {
+		} else if ((!xstrncasecmp(argv[i], "DerivedExitCode",
+					  MAX(command_len, 12))) ||
+			   (!xstrncasecmp(argv[i], "DerivedEC",
+					  MAX(command_len, 9)))) {
 			if (get_uint(argv[i]+end, &job->derived_ec,
 				     "DerivedExitCode") == SLURM_SUCCESS) {
 				set = 1;
 			}
-		} else if ((!strncasecmp(argv[i], "Comment",
-					 MAX(command_len, 7))) ||
-			   (!strncasecmp(argv[i], "DerivedExitString",
-					 MAX(command_len, 12))) ||
-			   (!strncasecmp(argv[i], "DerivedES",
-					 MAX(command_len, 9)))) {
+		} else if ((!xstrncasecmp(argv[i], "Comment",
+					  MAX(command_len, 7))) ||
+			   (!xstrncasecmp(argv[i], "DerivedExitString",
+					  MAX(command_len, 12))) ||
+			   (!xstrncasecmp(argv[i], "DerivedES",
+					  MAX(command_len, 9)))) {
 			if (job->derived_es)
 				xfree(job->derived_es);
 			job->derived_es = strip_quotes(argv[i]+end, NULL, 1);
@@ -174,11 +174,11 @@ extern int sacctmgr_modify_job(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
 			cond_set += _set_cond(&i, argc, argv, job_cond);
 
-		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+		} else if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			rec_set += _set_rec(&i, argc, argv, job);
 		} else {

@@ -479,7 +479,7 @@ void parse_command_line(int argc, char **argv)
 		command_len = strlen(start);
 
 		for (i = 0; fields[i].name; i++) {
-			if (!strncasecmp(fields[i].name, start, command_len))
+			if (!xstrncasecmp(fields[i].name, start, command_len))
 				goto foundfield;
 		}
 		error("Invalid field requested: \"%s\"", start);

@@ -189,8 +189,8 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 			newlen = atoi(tmp_char+1);
 		}
 		for (i = 0; fields[i].name; i++) {
-			if (!strncasecmp(fields[i].name,
-					 object, strlen(object))) {
+			if (!xstrncasecmp(fields[i].name, object,
+					  strlen(object))) {
 				if (newlen)
 					fields[i].len = newlen;
 

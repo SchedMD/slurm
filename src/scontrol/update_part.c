@@ -75,10 +75,10 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			return -1;
 		}
 
-		if (strncasecmp(tag, "PartitionName", MAX(taglen, 2)) == 0) {
+		if (xstrncasecmp(tag, "PartitionName", MAX(taglen, 2)) == 0) {
 			part_msg_ptr->name = val;
 			(*update_cnt_ptr)++;
-		} else if (strncasecmp(tag, "MaxTime", MAX(taglen, 4)) == 0) {
+		} else if (xstrncasecmp(tag, "MaxTime", MAX(taglen, 4)) == 0) {
 			int max_time = time_str2mins(val);
 			if ((max_time < 0) && (max_time != INFINITE)) {
 				exit_code = 1;
@@ -88,7 +88,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			part_msg_ptr->max_time = max_time;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "DefaultTime", MAX(taglen, 8)) == 0){
+		else if (xstrncasecmp(tag, "DefaultTime", MAX(taglen, 8)) == 0){
 			int default_time = time_str2mins(val);
 			if ((default_time < 0) && (default_time != INFINITE)) {
 				exit_code = 1;
@@ -98,8 +98,8 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			part_msg_ptr->default_time = default_time;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "MaxCPUsPerNode", MAX(taglen, 4))
-			  == 0) {
+		else if (xstrncasecmp(tag, "MaxCPUsPerNode",
+				      MAX(taglen, 4)) == 0) {
 			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
 			    (xstrcasecmp(val,"INFINITE") == 0)) {
 				part_msg_ptr->max_cpus_per_node =
@@ -111,7 +111,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "MaxNodes", MAX(taglen, 4)) == 0) {
+		else if (xstrncasecmp(tag, "MaxNodes", MAX(taglen, 4)) == 0) {
 			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
 			    (xstrcasecmp(val,"INFINITE") == 0))
 				part_msg_ptr->max_nodes = (uint32_t) INFINITE;
@@ -123,16 +123,16 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "MinNodes", MAX(taglen, 2)) == 0) {
+		else if (xstrncasecmp(tag, "MinNodes", MAX(taglen, 2)) == 0) {
 			min = 1;
 			verify_node_count(val, &min, &max);
 			part_msg_ptr->min_nodes = min;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "Default", MAX(taglen, 7)) == 0) {
-			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+		else if (xstrncasecmp(tag, "Default", MAX(taglen, 7)) == 0) {
+			if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_DEFAULT_CLR;
-			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_DEFAULT;
 			else {
 				exit_code = 1;
@@ -143,10 +143,10 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "DisableRootJobs", MAX(taglen, 1))) {
-			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+		else if (!xstrncasecmp(tag, "DisableRootJobs", MAX(taglen, 1))) {
+			if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_NO_ROOT_CLR;
-			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_NO_ROOT;
 			else {
 				exit_code = 1;
@@ -157,10 +157,10 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "ExclusiveUser", MAX(taglen, 1))) {
-			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+		else if (!xstrncasecmp(tag, "ExclusiveUser", MAX(taglen, 1))) {
+			if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_EXC_USER_CLR;
-			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_EXCLUSIVE_USER;
 			else {
 				exit_code = 1;
@@ -171,10 +171,10 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "Hidden", MAX(taglen, 1)) == 0) {
-			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+		else if (xstrncasecmp(tag, "Hidden", MAX(taglen, 1)) == 0) {
+			if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_HIDDEN_CLR;
-			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_HIDDEN;
 			else {
 				exit_code = 1;
@@ -185,10 +185,10 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "LLN", MAX(taglen, 1)) == 0) {
-			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+		else if (xstrncasecmp(tag, "LLN", MAX(taglen, 1)) == 0) {
+			if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_LLN_CLR;
-			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_LLN;
 			else {
 				exit_code = 1;
@@ -199,10 +199,10 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "RootOnly", MAX(taglen, 3)) == 0) {
-			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+		else if (xstrncasecmp(tag, "RootOnly", MAX(taglen, 3)) == 0) {
+			if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_ROOT_ONLY_CLR;
-			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_ROOT_ONLY;
 			else {
 				exit_code = 1;
@@ -213,10 +213,10 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "ReqResv", MAX(taglen, 3)) == 0) {
-			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+		else if (xstrncasecmp(tag, "ReqResv", MAX(taglen, 3)) == 0) {
+			if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_REQ_RESV_CLR;
-			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_REQ_RESV;
 			else {
 				exit_code = 1;
@@ -227,21 +227,21 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "OverSubscribe", MAX(taglen, 5)) ||
-			 !strncasecmp(tag, "Shared", MAX(taglen, 2))) {
+		else if (!xstrncasecmp(tag, "OverSubscribe", MAX(taglen, 5)) ||
+			 !xstrncasecmp(tag, "Shared", MAX(taglen, 2))) {
 			char *colon_pos = strchr(val, ':');
 			if (colon_pos) {
 				*colon_pos = '\0';
 				vallen = strlen(val);
 			}
-			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0) {
+			if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0) {
 				part_msg_ptr->max_share = 1;
 
-			} else if (strncasecmp(val, "EXCLUSIVE",
+			} else if (xstrncasecmp(val, "EXCLUSIVE",
 				   MAX(vallen, 1)) == 0) {
 				part_msg_ptr->max_share = 0;
 
-			} else if (strncasecmp(val, "YES", MAX(vallen, 1))
+			} else if (xstrncasecmp(val, "YES", MAX(vallen, 1))
 				   == 0) {
 				if (colon_pos) {
 					part_msg_ptr->max_share =
@@ -250,7 +250,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				} else {
 					part_msg_ptr->max_share = (uint16_t) 4;
 				}
-			} else if (strncasecmp(val, "FORCE", MAX(vallen, 1))
+			} else if (xstrncasecmp(val, "FORCE", MAX(vallen, 1))
 				   == 0) {
 				if (colon_pos) {
 					part_msg_ptr->max_share =
@@ -270,7 +270,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "OverTimeLimit", MAX(taglen, 5))
+		else if (xstrncasecmp(tag, "OverTimeLimit", MAX(taglen, 5))
 			  == 0) {
 			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
 			    (xstrcasecmp(val,"INFINITE") == 0)) {
@@ -283,7 +283,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "PreemptMode", MAX(taglen, 3)) == 0) {
+		else if (xstrncasecmp(tag, "PreemptMode", MAX(taglen, 3)) == 0) {
 			uint16_t new_mode = preempt_mode_num(val);
 			if (new_mode != (uint16_t) NO_VAL)
 				part_msg_ptr->preempt_mode = new_mode;
@@ -293,7 +293,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "Priority", MAX(taglen, 3))) {
+		else if (!xstrncasecmp(tag, "Priority", MAX(taglen, 3))) {
 			if (parse_uint16(val, &part_msg_ptr->priority_tier)) {
 				error("Invalid Priority value: %s", val);
 				return -1;
@@ -302,7 +302,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				part_msg_ptr->priority_tier;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag,"PriorityJobFactor",MAX(taglen, 3))) {
+		else if (!xstrncasecmp(tag,"PriorityJobFactor",MAX(taglen, 3))) {
 			if (parse_uint16(val,
 					 &part_msg_ptr->priority_job_factor)) {
 				error("Invalid PriorityJobFactor value: %s",
@@ -311,21 +311,21 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "PriorityTier", MAX(taglen, 3))) {
+		else if (!xstrncasecmp(tag, "PriorityTier", MAX(taglen, 3))) {
 			if (parse_uint16(val, &part_msg_ptr->priority_tier)) {
 				error("Invalid PriorityTier value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "State", MAX(taglen, 2)) == 0) {
-			if (strncasecmp(val, "INACTIVE", MAX(vallen, 1)) == 0)
+		else if (!xstrncasecmp(tag, "State", MAX(taglen, 2))) {
+			if (!xstrncasecmp(val, "INACTIVE", MAX(vallen, 1)))
 				part_msg_ptr->state_up = PARTITION_INACTIVE;
-			else if (strncasecmp(val, "DOWN", MAX(vallen, 1)) == 0)
+			else if (!xstrncasecmp(val, "DOWN", MAX(vallen, 1)))
 				part_msg_ptr->state_up = PARTITION_DOWN;
-			else if (strncasecmp(val, "UP", MAX(vallen, 1)) == 0)
+			else if (!xstrncasecmp(val, "UP", MAX(vallen, 1)))
 				part_msg_ptr->state_up = PARTITION_UP;
-			else if (strncasecmp(val, "DRAIN", MAX(vallen, 1)) == 0)
+			else if (!xstrncasecmp(val, "DRAIN", MAX(vallen, 1)))
 				part_msg_ptr->state_up = PARTITION_DRAIN;
 			else {
 				exit_code = 1;
@@ -336,46 +336,46 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "Nodes", MAX(taglen, 1))) {
+		else if (!xstrncasecmp(tag, "Nodes", MAX(taglen, 1))) {
 			part_msg_ptr->nodes = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "AllowGroups", MAX(taglen, 6))) {
+		else if (!xstrncasecmp(tag, "AllowGroups", MAX(taglen, 6))) {
 			part_msg_ptr->allow_groups = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "AllowAccounts", MAX(taglen, 6))) {
+		else if (!xstrncasecmp(tag, "AllowAccounts", MAX(taglen, 6))) {
 			part_msg_ptr->allow_accounts = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "AllowQos", MAX(taglen, 6))) {
+		else if (!xstrncasecmp(tag, "AllowQos", MAX(taglen, 6))) {
 			part_msg_ptr->allow_qos = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "DenyAccounts", MAX(taglen, 5))) {
+		else if (!xstrncasecmp(tag, "DenyAccounts", MAX(taglen, 5))) {
 			part_msg_ptr->deny_accounts = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "DenyQos", MAX(taglen, 5))) {
+		else if (!xstrncasecmp(tag, "DenyQos", MAX(taglen, 5))) {
 			part_msg_ptr->deny_qos = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "AllocNodes", MAX(taglen, 6))) {
+		else if (!xstrncasecmp(tag, "AllocNodes", MAX(taglen, 6))) {
 			part_msg_ptr->allow_alloc_nodes = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "Alternate", MAX(taglen, 3))) {
+		else if (!xstrncasecmp(tag, "Alternate", MAX(taglen, 3))) {
 			part_msg_ptr->alternate = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "GraceTime", MAX(taglen, 5))) {
+		else if (!xstrncasecmp(tag, "GraceTime", MAX(taglen, 5))) {
 			if (parse_uint32(val, &part_msg_ptr->grace_time)) {
 				error ("Invalid GraceTime value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "DefMemPerCPU", MAX(taglen, 10))) {
+		else if (!xstrncasecmp(tag, "DefMemPerCPU", MAX(taglen, 10))) {
 			if (parse_uint64(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerCPU value: %s", val);
 				return -1;
@@ -383,14 +383,14 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			part_msg_ptr->def_mem_per_cpu |= MEM_PER_CPU;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "DefMemPerNode", MAX(taglen, 10))) {
+		else if (!xstrncasecmp(tag, "DefMemPerNode", MAX(taglen, 10))) {
 			if (parse_uint64(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerNode value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "MaxMemPerCPU", MAX(taglen, 10))) {
+		else if (!xstrncasecmp(tag, "MaxMemPerCPU", MAX(taglen, 10))) {
 			if (parse_uint64(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerCPU value: %s", val);
 				return -1;
@@ -398,14 +398,14 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			part_msg_ptr->max_mem_per_cpu |= MEM_PER_CPU;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "MaxMemPerNode", MAX(taglen, 10))) {
+		else if (!xstrncasecmp(tag, "MaxMemPerNode", MAX(taglen, 10))) {
 			if (parse_uint64(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerNode value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "QoS", MAX(taglen, 3))) {
+		else if (!xstrncasecmp(tag, "QoS", MAX(taglen, 3))) {
 			part_msg_ptr->qos_char = val;
 			(*update_cnt_ptr)++;
 		}

@@ -1068,12 +1068,12 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 	gtk_dialog_add_button(GTK_DIALOG(popup),
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
-	if (!strncasecmp("Drain", type, 5)) {
+	if (!xstrncasecmp("Drain", type, 5)) {
 		new_type = "DRAIN";
 		reason = "\n\nPlease enter reason.";
 		state = NODE_STATE_DRAIN;
 		entry = create_entry();
-	} else if (!strncasecmp("Resume", type, 6)) {
+	} else if (!xstrncasecmp("Resume", type, 6)) {
 		new_type = "RESUME";
 		reason = "";
 		state = NODE_RESUME;

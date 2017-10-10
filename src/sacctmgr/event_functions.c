@@ -52,15 +52,15 @@ static uint32_t _decode_node_state(char *val)
 
 	vallen = strlen(val);
 
-	if (!strncasecmp(val, "DRAIN", MAX(vallen, 3)))
+	if (!xstrncasecmp(val, "DRAIN", MAX(vallen, 3)))
 		return NODE_STATE_DRAIN;
-	else if (!strncasecmp(val, "FAIL", MAX(vallen, 3)))
+	else if (!xstrncasecmp(val, "FAIL", MAX(vallen, 3)))
 		return NODE_STATE_FAIL;
 	else {
 		uint32_t j;
 		for (j = 0; j < NODE_STATE_END; j++) {
-			if (strncasecmp(node_state_string(j), val,
-					MAX(vallen, 3)) == 0){
+			if (xstrncasecmp(node_state_string(j), val,
+					 MAX(vallen, 3)) == 0){
 				return j;
 			}
 		}
@@ -295,17 +295,17 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!end && !strncasecmp(argv[i], "all_clusters",
-					       MAX(command_len, 5))) {
+		if (!end && !xstrncasecmp(argv[i], "all_clusters",
+					  MAX(command_len, 5))) {
 			local_cluster_flag = 1;
-		} else if (!end && !strncasecmp(argv[i], "all_time",
-					       MAX(command_len, 5))) {
+		} else if (!end && !xstrncasecmp(argv[i], "all_time",
+						 MAX(command_len, 5))) {
 			all_time_flag = 1;
-		} else if (!end && !strncasecmp(argv[i], "where",
-					MAX(command_len, 5))) {
+		} else if (!end && !xstrncasecmp(argv[i], "where",
+						 MAX(command_len, 5))) {
 			continue;
-		} else if (!end || (!strncasecmp (argv[i], "Events",
-						 MAX(command_len, 1)))) {
+		} else if (!end || (!xstrncasecmp(argv[i], "Events",
+						  MAX(command_len, 1)))) {
 			ListIterator itr = NULL;
 			List tmp_list = list_create(slurm_destroy_char);
 			char *temp = NULL;
@@ -317,15 +317,15 @@ static int _set_cond(int *start, int argc, char **argv,
 			/* check to make sure user gave ints here */
 			itr = list_iterator_create(tmp_list);
 			while ((temp = list_next(itr))) {
-				if (!strncasecmp("Node", temp,
-						MAX(strlen(temp), 1))) {
+				if (!xstrncasecmp("Node", temp,
+						  MAX(strlen(temp), 1))) {
 					if (event_cond->event_type)
 						event_cond->event_type =
 							SLURMDB_EVENT_ALL;
 					else
 						event_cond->event_type =
 							SLURMDB_EVENT_NODE;
-				} else if (!strncasecmp("Cluster", temp,
+				} else if (!xstrncasecmp("Cluster", temp,
 						MAX(strlen(temp), 1))) {
 					if (event_cond->event_type)
 						event_cond->event_type =
@@ -345,7 +345,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 			list_iterator_destroy(itr);
 			FREE_NULL_LIST(tmp_list);
-		} else if (!strncasecmp (argv[i], "Clusters",
+		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 1))) {
 			if (!event_cond->cluster_list)
 				event_cond->cluster_list =
@@ -353,24 +353,24 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(event_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
+		} else if (!xstrncasecmp(argv[i], "End", MAX(command_len, 1))) {
 			event_cond->period_end = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "MinCpus",
+		} else if (!xstrncasecmp(argv[i], "MinCpus",
 					 MAX(command_len, 2))) {
 			if (get_uint(argv[i]+end, &event_cond->cpus_min,
 			    "MinCpus") == SLURM_SUCCESS)
 				set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCpus",
+		} else if (!xstrncasecmp(argv[i], "MaxCpus",
 					 MAX(command_len, 2))) {
 			if (get_uint(argv[i]+end, &event_cond->cpus_max,
 			    "MaxCpus") == SLURM_SUCCESS)
 				set = 1;
-		} else if (!strncasecmp (argv[i], "Nodes",
+		} else if (!xstrncasecmp(argv[i], "Nodes",
 					 MAX(command_len, 1))) {
 			if (!event_cond->node_list)
 				event_cond->node_list =
@@ -378,7 +378,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(event_cond->node_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "Reason",
+		} else if (!xstrncasecmp(argv[i], "Reason",
 					 MAX(command_len, 1))) {
 			if (!event_cond->reason_list)
 				event_cond->reason_list =
@@ -386,11 +386,11 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(event_cond->reason_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "Start",
+		} else if (!xstrncasecmp(argv[i], "Start",
 					 MAX(command_len, 4))) {
 			event_cond->period_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "States",
+		} else if (!xstrncasecmp(argv[i], "States",
 					 MAX(command_len, 4))) {
 			if (!event_cond->state_list)
 				event_cond->state_list =
@@ -400,7 +400,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				event_cond->event_type = SLURMDB_EVENT_NODE;
 				set = 1;
 			}
-		} else if (!strncasecmp (argv[i], "User",
+		} else if (!xstrncasecmp(argv[i], "User",
 					 MAX(command_len, 1))) {
 			if (!event_cond->reason_uid_list)
 				event_cond->reason_uid_list =
@@ -492,8 +492,8 @@ extern int sacctmgr_list_event(int argc, char **argv)
 
 	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, event_cond, format_list);
 	}

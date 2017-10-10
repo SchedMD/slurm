@@ -513,11 +513,11 @@ extern void scontrol_print_assoc_mgr_info(int argc, char **argv)
 		if (!val || !val[0]) {
 			fprintf(stderr, "No value given for option %s\n", tag);
 			goto endit;
-		} else if (!strncasecmp(tag, "accounts", MAX(tag_len, 1))) {
+		} else if (!xstrncasecmp(tag, "accounts", MAX(tag_len, 1))) {
 			if (!req.acct_list)
 				req.acct_list = list_create(slurm_destroy_char);
 			slurm_addto_char_list(req.acct_list, val);
-		} else if (!strncasecmp(tag, "flags", MAX(tag_len, 1))) {
+		} else if (!xstrncasecmp(tag, "flags", MAX(tag_len, 1))) {
 			if (xstrcasestr(val, "users"))
 				req.flags |= ASSOC_MGR_INFO_FLAG_USERS;
 			if (xstrcasestr(val, "assoc"))
@@ -532,11 +532,11 @@ extern void scontrol_print_assoc_mgr_info(int argc, char **argv)
 					val);
 				goto endit;
 			}
-		} else if (!strncasecmp(tag, "qos", MAX(tag_len, 1))) {
+		} else if (!xstrncasecmp(tag, "qos", MAX(tag_len, 1))) {
 			if (!req.qos_list)
 				req.qos_list = list_create(slurm_destroy_char);
 			slurm_addto_char_list(req.qos_list, val);
-		} else if (!strncasecmp(tag, "users", MAX(tag_len, 1))) {
+		} else if (!xstrncasecmp(tag, "users", MAX(tag_len, 1))) {
 			if (!req.user_list)
 				req.user_list = list_create(slurm_destroy_char);
 			slurm_addto_char_list(req.user_list, val);

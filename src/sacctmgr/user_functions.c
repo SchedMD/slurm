@@ -90,48 +90,48 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+		if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp(argv[i], "WithAssoc",
+		} else if (!end && !xstrncasecmp(argv[i], "WithAssoc",
 						 MAX(command_len, 5))) {
 			user_cond->with_assocs = 1;
 		} else if (!end &&
-			   !strncasecmp(argv[i], "WithCoordinators",
+			   !xstrncasecmp(argv[i], "WithCoordinators",
 					 MAX(command_len, 5))) {
 			user_cond->with_coords = 1;
 		} else if (!end &&
-			   !strncasecmp(argv[i], "WithDeleted",
+			   !xstrncasecmp(argv[i], "WithDeleted",
 					 MAX(command_len, 5))) {
 			user_cond->with_deleted = 1;
 			assoc_cond->with_deleted = 1;
 		} else if (!end &&
-			   !strncasecmp(argv[i], "WithRawQOSLevel",
+			   !xstrncasecmp(argv[i], "WithRawQOSLevel",
 					 MAX(command_len, 5))) {
 			assoc_cond->with_raw_qos = 1;
-		} else if (!end && !strncasecmp(argv[i], "WOPLimits",
+		} else if (!end && !xstrncasecmp(argv[i], "WOPLimits",
 						 MAX(command_len, 4))) {
 			assoc_cond->without_parent_limits = 1;
-		} else if (!end && !strncasecmp(argv[i], "where",
-					       MAX(command_len, 5))) {
+		} else if (!end && !xstrncasecmp(argv[i], "where",
+						 MAX(command_len, 5))) {
 			continue;
 		} else if (!end
-			  || !strncasecmp(argv[i], "Names",
-					   MAX(command_len, 1))
-			  || !strncasecmp(argv[i], "Users",
-					   MAX(command_len, 1))) {
+			   || !xstrncasecmp(argv[i], "Names",
+					    MAX(command_len, 1))
+			   || !xstrncasecmp(argv[i], "Users",
+					    MAX(command_len, 1))) {
 			if (slurm_addto_char_list(assoc_cond->user_list,
 						 argv[i]+end))
 				u_set = 1;
 			else
 				exit_code=1;
-		} else if (!strncasecmp(argv[i], "AdminLevel",
+		} else if (!xstrncasecmp(argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
 			user_cond->admin_level =
 				str_2_slurmdb_admin_level(argv[i]+end);
 			u_set = 1;
-		} else if (!strncasecmp(argv[i], "Clusters",
-					MAX(command_len, 1))) {
+		} else if (!xstrncasecmp(argv[i], "Clusters",
+					 MAX(command_len, 1))) {
 			if (!assoc_cond->cluster_list)
 				assoc_cond->cluster_list =
 					list_create(slurm_destroy_char);
@@ -143,8 +143,8 @@ static int _set_cond(int *start, int argc, char **argv,
 				   handled there later.
 				*/
 			}
-		} else if (!strncasecmp(argv[i], "DefaultAccount",
-					MAX(command_len, 8))) {
+		} else if (!xstrncasecmp(argv[i], "DefaultAccount",
+					 MAX(command_len, 8))) {
 			if (!user_cond->def_acct_list) {
 				user_cond->def_acct_list =
 					list_create(slurm_destroy_char);
@@ -154,7 +154,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				u_set = 1;
 			else
 				exit_code=1;
-		} else if (!strncasecmp(argv[i], "DefaultWCKey",
+		} else if (!xstrncasecmp(argv[i], "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			if (!user_cond->def_wckey_list) {
 				user_cond->def_wckey_list =
@@ -165,7 +165,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				u_set = 1;
 			else
 				exit_code=1;
-		} else if (!strncasecmp(argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if (format_list) {
 				/* We need this to get the defaults. (Usually
@@ -220,42 +220,42 @@ static int _set_rec(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp(argv[i], "set",
-					       MAX(command_len, 3))) {
+		} else if (!end && !xstrncasecmp(argv[i], "set",
+						 MAX(command_len, 3))) {
 			continue;
 		} else if (!end) {
 			exit_code=1;
 			fprintf(stderr,
 				" Bad format on %s: End your option with "
 				"an '=' sign\n", argv[i]);
-		} else if (!strncasecmp(argv[i], "AdminLevel",
+		} else if (!xstrncasecmp(argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
 			user->admin_level =
 				str_2_slurmdb_admin_level(argv[i]+end);
 			u_set = 1;
-		} else if (!strncasecmp(argv[i], "DefaultAccount",
+		} else if (!xstrncasecmp(argv[i], "DefaultAccount",
 					 MAX(command_len, 8))) {
 			if (user->default_acct)
 				xfree(user->default_acct);
 			user->default_acct = strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
-		} else if (!strncasecmp(argv[i], "DefaultWCKey",
+		} else if (!xstrncasecmp(argv[i], "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			if (user->default_wckey)
 				xfree(user->default_wckey);
 			user->default_wckey =
 				strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
-		} else if (!strncasecmp(argv[i], "NewName",
+		} else if (!xstrncasecmp(argv[i], "NewName",
 					 MAX(command_len, 1))) {
 			if (user->name)
 				xfree(user->name);
 			user->name = strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
-		} else if (!strncasecmp (argv[i], "RawUsage",
+		} else if (!xstrncasecmp(argv[i], "RawUsage",
 					 MAX(command_len, 7))) {
 			uint32_t usage;
 			if (!assoc)
@@ -719,15 +719,15 @@ extern int sacctmgr_add_user(int argc, char **argv)
 		}
 
 		if (!end
-		   || !strncasecmp(argv[i], "Names", MAX(command_len, 1))
-		   || !strncasecmp(argv[i], "Users", MAX(command_len, 1))) {
+		   || !xstrncasecmp(argv[i], "Names", MAX(command_len, 1))
+		   || !xstrncasecmp(argv[i], "Users", MAX(command_len, 1))) {
 			if (!slurm_addto_char_list(assoc_cond->user_list,
 						 argv[i]+end))
 				exit_code=1;
-		} else if (!strncasecmp(argv[i], "AdminLevel",
+		} else if (!xstrncasecmp(argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
 			admin_level = str_2_slurmdb_admin_level(argv[i]+end);
-		} else if (!strncasecmp(argv[i], "DefaultAccount",
+		} else if (!xstrncasecmp(argv[i], "DefaultAccount",
 					 MAX(command_len, 8))) {
 			if (default_acct) {
 				fprintf(stderr,
@@ -739,7 +739,7 @@ extern int sacctmgr_add_user(int argc, char **argv)
 			default_acct = strip_quotes(argv[i]+end, NULL, 1);
 			slurm_addto_char_list(assoc_cond->acct_list,
 					      default_acct);
-		} else if (!strncasecmp(argv[i], "DefaultWCKey",
+		} else if (!xstrncasecmp(argv[i], "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			if (default_wckey) {
 				fprintf(stderr,
@@ -751,7 +751,7 @@ extern int sacctmgr_add_user(int argc, char **argv)
 			default_wckey = strip_quotes(argv[i]+end, NULL, 1);
 			slurm_addto_char_list(wckey_cond->name_list,
 					      default_wckey);
-		} else if (!strncasecmp(argv[i], "WCKeys",
+		} else if (!xstrncasecmp(argv[i], "WCKeys",
 					 MAX(command_len, 1))) {
 			slurm_addto_char_list(wckey_cond->name_list,
 					      argv[i]+end);
@@ -1313,8 +1313,8 @@ extern int sacctmgr_add_coord(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
 		cond_set |= prev_set;
@@ -1398,8 +1398,8 @@ extern int sacctmgr_list_user(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, user_cond, format_list);
 		cond_set |= prev_set;
@@ -1675,11 +1675,11 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
 			prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
 			cond_set |= prev_set;
-		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+		} else if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			prev_set = _set_rec(&i, argc, argv, user, assoc);
 			rec_set |= prev_set;
@@ -1885,8 +1885,8 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
 		cond_set |= prev_set;
@@ -2100,8 +2100,8 @@ extern int sacctmgr_delete_coord(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
 		cond_set |= prev_set;

@@ -57,7 +57,7 @@
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv, strtoll */
-#include <string.h>		/* strcpy, strncasecmp */
+#include <string.h>		/* strcpy */
 #include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -363,20 +363,20 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 				result = SLURM_DIST_BLOCK_CFULL_CFULL;
 			}
 		} else if (plane_dist) {
-			if (strncasecmp(tok, "plane", len) == 0) {
+			if (xstrncasecmp(tok, "plane", len) == 0) {
 				result = SLURM_DIST_PLANE;
 			}
 		} else {
-			if (strncasecmp(tok, "cyclic", len) == 0) {
+			if (xstrncasecmp(tok, "cyclic", len) == 0) {
 				result = SLURM_DIST_CYCLIC;
-			} else if (strncasecmp(tok, "block", len) == 0) {
+			} else if (xstrncasecmp(tok, "block", len) == 0) {
 				result = SLURM_DIST_BLOCK;
-			} else if ((strncasecmp(tok, "arbitrary", len) == 0) ||
-				   (strncasecmp(tok, "hostfile", len) == 0)) {
+			} else if ((xstrncasecmp(tok, "arbitrary", len) == 0) ||
+				   (xstrncasecmp(tok, "hostfile", len) == 0)) {
 				result = SLURM_DIST_ARBITRARY;
-			} else if (strncasecmp(tok, "nopack", len) == 0) {
+			} else if (xstrncasecmp(tok, "nopack", len) == 0) {
 				no_pack_nodes = true;
-			} else if (strncasecmp(tok, "pack", len) == 0) {
+			} else if (xstrncasecmp(tok, "pack", len) == 0) {
 				pack_nodes = true;
 			}
 		}
@@ -463,23 +463,23 @@ static uint16_t _get_conn_type(char *arg, bool bgp)
 		/* no input given */
 		error("no conn-type argument given.");
 		return (uint16_t)NO_VAL;
-	} else if (!strncasecmp(arg, "MESH", len))
+	} else if (!xstrncasecmp(arg, "MESH", len))
 		return SELECT_MESH;
-	else if (!strncasecmp(arg, "TORUS", len))
+	else if (!xstrncasecmp(arg, "TORUS", len))
 		return SELECT_TORUS;
-	else if (!strncasecmp(arg, "NAV", len))
+	else if (!xstrncasecmp(arg, "NAV", len))
 		return SELECT_NAV;
-	else if (!strncasecmp(arg, "SMALL", len))
+	else if (!xstrncasecmp(arg, "SMALL", len))
 		return SELECT_SMALL;
 	else if (bgp) {
-		if (!strncasecmp(arg, "HTC", len) ||
-		    !strncasecmp(arg, "HTC_S", len))
+		if (!xstrncasecmp(arg, "HTC", len) ||
+		    !xstrncasecmp(arg, "HTC_S", len))
 			return SELECT_HTC_S;
-		else if (!strncasecmp(arg, "HTC_D", len))
+		else if (!xstrncasecmp(arg, "HTC_D", len))
 			return SELECT_HTC_D;
-		else if (!strncasecmp(arg, "HTC_V", len))
+		else if (!xstrncasecmp(arg, "HTC_V", len))
 			return SELECT_HTC_V;
-		else if (!strncasecmp(arg, "HTC_L", len))
+		else if (!xstrncasecmp(arg, "HTC_L", len))
 			return SELECT_HTC_L;
 	}
 
@@ -1251,7 +1251,7 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 	if (optarg == NULL)
 		return -1;
 
-	if (!strncasecmp(optarg, "B:", 2)) {
+	if (!xstrncasecmp(optarg, "B:", 2)) {
 		*warn_flags = KILL_JOB_BATCH;
 		optarg += 2;
 	}
@@ -1303,12 +1303,12 @@ int sig_name2num(char *signal_name)
 		ptr = (char *)signal_name;
 		while (isspace((int)*ptr))
 			ptr++;
-		if (strncasecmp(ptr, "SIG", 3) == 0)
+		if (xstrncasecmp(ptr, "SIG", 3) == 0)
 			ptr += 3;
 		for (i = 0; ; i++) {
 			if (sig_name[i] == NULL)
 				return 0;
-			if (strncasecmp(ptr, sig_name[i],
+			if (xstrncasecmp(ptr, sig_name[i],
 					strlen(sig_name[i])) == 0) {
 				/* found the signal name */
 				if (!xstring_is_whitespace(ptr +
@@ -1694,90 +1694,90 @@ parse_resv_flags(const char *flagstr, const char *msg)
 		while (curr[taglen] != ',' && curr[taglen] != '\0')
 			taglen++;
 
-		if (strncasecmp(curr, "Maintenance", MAX(taglen,1)) == 0) {
+		if (xstrncasecmp(curr, "Maintenance", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_MAINT;
 			else
 				outflags |= RESERVE_FLAG_MAINT;
-		} else if ((strncasecmp(curr, "Overlap", MAX(taglen,1))
+		} else if ((xstrncasecmp(curr, "Overlap", MAX(taglen,1))
 			    == 0) && (!flip)) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_OVERLAP;
 			/* "-OVERLAP" is not supported since that's the
 			 * default behavior and the option only applies
 			 * for reservation creation, not updates */
-		} else if (strncasecmp(curr, "Flex", MAX(taglen,1)) == 0) {
+		} else if (xstrncasecmp(curr, "Flex", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_FLEX;
 			else
 				outflags |= RESERVE_FLAG_FLEX;
-		} else if (strncasecmp(curr, "Ignore_Jobs", MAX(taglen,1))
+		} else if (xstrncasecmp(curr, "Ignore_Jobs", MAX(taglen,1))
 			   == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_IGN_JOB;
 			else
 				outflags |= RESERVE_FLAG_IGN_JOBS;
-		} else if (strncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
+		} else if (xstrncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_DAILY;
 			else
 				outflags |= RESERVE_FLAG_DAILY;
-		} else if (strncasecmp(curr, "Weekday", MAX(taglen,1)) == 0) {
+		} else if (xstrncasecmp(curr, "Weekday", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_WEEKDAY;
 			else
 				outflags |= RESERVE_FLAG_WEEKDAY;
-		} else if (strncasecmp(curr, "Weekend", MAX(taglen,1)) == 0) {
+		} else if (xstrncasecmp(curr, "Weekend", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_WEEKEND;
 			else
 				outflags |= RESERVE_FLAG_WEEKEND;
-		} else if (strncasecmp(curr, "Weekly", MAX(taglen,1)) == 0) {
+		} else if (xstrncasecmp(curr, "Weekly", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_WEEKLY;
 			else
 				outflags |= RESERVE_FLAG_WEEKLY;
-		} else if (!strncasecmp(curr, "Any_Nodes", MAX(taglen,1)) ||
-			   !strncasecmp(curr, "License_Only", MAX(taglen,1))) {
+		} else if (!xstrncasecmp(curr, "Any_Nodes", MAX(taglen,1)) ||
+			   !xstrncasecmp(curr, "License_Only", MAX(taglen,1))) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_ANY_NODES;
 			else
 				outflags |= RESERVE_FLAG_ANY_NODES;
-		} else if (strncasecmp(curr, "Static_Alloc", MAX(taglen,1))
+		} else if (xstrncasecmp(curr, "Static_Alloc", MAX(taglen,1))
 			   == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_STATIC;
 			else
 				outflags |= RESERVE_FLAG_STATIC;
-		} else if (strncasecmp(curr, "Part_Nodes", MAX(taglen, 2))
+		} else if (xstrncasecmp(curr, "Part_Nodes", MAX(taglen, 2))
 			   == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_PART_NODES;
 			else
 				outflags |= RESERVE_FLAG_PART_NODES;
-		} else if (strncasecmp(curr, "PURGE_COMP", MAX(taglen, 2))
+		} else if (xstrncasecmp(curr, "PURGE_COMP", MAX(taglen, 2))
 			   == 0) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_PURGE_COMP;
-		} else if (!strncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
+		} else if (!xstrncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
 			   !flip) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_FIRST_CORES;
-		} else if (!strncasecmp(curr, "Time_Float", MAX(taglen,1)) &&
+		} else if (!xstrncasecmp(curr, "Time_Float", MAX(taglen,1)) &&
 			   !flip) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_TIME_FLOAT;
-		} else if (!strncasecmp(curr, "Replace", MAX(taglen,1)) &&
+		} else if (!xstrncasecmp(curr, "Replace", MAX(taglen,1)) &&
 			   !flip) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_REPLACE;

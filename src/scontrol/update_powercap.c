@@ -91,7 +91,7 @@ scontrol_update_powercap (int argc, char **argv)
 			return -1;
 		}
 
-		if (strncasecmp(tag, "PowerCap", MAX(taglen, 8)) == 0) {
+		if (xstrncasecmp(tag, "PowerCap", MAX(taglen, 8)) == 0) {
 			powercap_msg.power_cap = _parse_watts(val);
 			break;
 		}

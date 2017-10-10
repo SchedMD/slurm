@@ -113,7 +113,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 		char *val = strchr(argv[i], '=');
 		taglen = val - argv[i];
 
-		if (!val && strncasecmp(argv[i], "res", 3) == 0) {
+		if (!val && xstrncasecmp(argv[i], "res", 3) == 0) {
 			continue;
 		} else if (!val || taglen == 0) {
 			exit_code = 1;
@@ -126,7 +126,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 		}
 		val++;
 
-		if (!strncasecmp(tag, "Accounts", MAX(taglen, 1))) {
+		if (!xstrncasecmp(tag, "Accounts", MAX(taglen, 1))) {
 			if (plus_minus) {
 				resv_msg_ptr->accounts =
 					_process_plus_minus(plus_minus, val);
@@ -136,7 +136,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				resv_msg_ptr->accounts = val;
 			}
 
-		} else if (!strncasecmp(tag, "Flags", MAX(taglen, 2))) {
+		} else if (!xstrncasecmp(tag, "Flags", MAX(taglen, 2))) {
 			uint32_t f;
 			if (plus_minus) {
 				char *tmp =
@@ -153,7 +153,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				resv_msg_ptr->flags = f;
 			else
 				resv_msg_ptr->flags |= f;
-		} else if (!strncasecmp(tag, "Users", MAX(taglen, 1))) {
+		} else if (!xstrncasecmp(tag, "Users", MAX(taglen, 1))) {
 			if (plus_minus) {
 				resv_msg_ptr->users =
 					_process_plus_minus(plus_minus, val);
@@ -163,15 +163,15 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				resv_msg_ptr->users = val;
 			}
 
-		} else if (!strncasecmp(tag, "ReservationName",
+		} else if (!xstrncasecmp(tag, "ReservationName",
 			   MAX(taglen, 1))) {
 			resv_msg_ptr->name = val;
 
-		} else if (strncasecmp(tag, "BurstBuffer", MAX(taglen, 2))
+		} else if (xstrncasecmp(tag, "BurstBuffer", MAX(taglen, 2))
 			   == 0) {
 			resv_msg_ptr->burst_buffer = val;
 
-		} else if (strncasecmp(tag, "StartTime", MAX(taglen, 1)) == 0){
+		} else if (xstrncasecmp(tag, "StartTime", MAX(taglen, 1)) == 0){
 			time_t  t = parse_time(val, 0);
 			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				exit_code = 1;
@@ -181,7 +181,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 			resv_msg_ptr->start_time = t;
 
-		} else if (strncasecmp(tag, "EndTime", MAX(taglen, 1)) == 0) {
+		} else if (xstrncasecmp(tag, "EndTime", MAX(taglen, 1)) == 0) {
 			time_t  t = parse_time(val, 0);
 			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				exit_code = 1;
@@ -190,7 +190,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 			resv_msg_ptr->end_time = t;
 
-		} else if (strncasecmp(tag, "Duration", MAX(taglen, 1)) == 0) {
+		} else if (xstrncasecmp(tag, "Duration", MAX(taglen, 1)) == 0) {
 			/* -1 == INFINITE, -2 == error, -3 == not set */
 			duration = time_str2mins(val);
 			if (duration < 0 && duration != INFINITE) {
@@ -208,8 +208,8 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 						PLUS_MINUS(plus_minus);
 				plus_minus = '\0';
 			}
-		} else if (strncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
-			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
+		} else if (xstrncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
+			   xstrncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 
 			if (parse_resv_nodecnt(resv_msg_ptr, val,
 					       free_tres_nodecnt, false,
@@ -220,10 +220,10 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				return SLURM_ERROR;
 			}
 
-		} else if (strncasecmp(tag, "CoreCnt",   MAX(taglen,5)) == 0 ||
-			   strncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0 ||
-			   strncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
-			   strncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
+		} else if (xstrncasecmp(tag, "CoreCnt",   MAX(taglen,5)) == 0 ||
+			   xstrncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0 ||
+			   xstrncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
+			   xstrncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
 
 			/* only have this on a cons_res machine */
 			if (state_control_corecnt_supported()
@@ -243,20 +243,20 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				return SLURM_ERROR;
 			}
 
-		} else if (strncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
+		} else if (xstrncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
 			resv_msg_ptr->node_list = val;
 
-		} else if (strncasecmp(tag, "Features", MAX(taglen, 2)) == 0) {
+		} else if (xstrncasecmp(tag, "Features", MAX(taglen, 2)) == 0) {
 			resv_msg_ptr->features = val;
 
-		} else if (strncasecmp(tag, "Licenses", MAX(taglen, 2)) == 0) {
+		} else if (xstrncasecmp(tag, "Licenses", MAX(taglen, 2)) == 0) {
 			resv_msg_ptr->licenses = val;
 
-		} else if (strncasecmp(tag, "PartitionName", MAX(taglen, 1))
+		} else if (xstrncasecmp(tag, "PartitionName", MAX(taglen, 1))
 			   == 0) {
 			resv_msg_ptr->partition = val;
 
-		} else if (strncasecmp(tag, "TRES", MAX(taglen, 1)) == 0) {
+		} else if (xstrncasecmp(tag, "TRES", MAX(taglen, 1)) == 0) {
 			if (state_control_parse_resv_tres(val, resv_msg_ptr,
 							  free_tres_license,
 							  free_tres_bb,
@@ -270,7 +270,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				return SLURM_ERROR;
 			}
 
-		} else if (strncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
+		} else if (xstrncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
 			if (state_control_parse_resv_watts(val, resv_msg_ptr,
 							   &err_msg)
 			    == SLURM_ERROR) {
@@ -279,7 +279,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				exit_code = 1;
 				return SLURM_ERROR;
 			}
-		} else if (strncasecmp(tag, "res", 3) == 0) {
+		} else if (xstrncasecmp(tag, "res", 3) == 0) {
 			continue;
 		} else {
 			exit_code = 1;

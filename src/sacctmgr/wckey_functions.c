@@ -65,17 +65,17 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!end && !strncasecmp(argv[i], "where",
+		if (!end && !xstrncasecmp(argv[i], "where",
 					MAX(command_len, 5))) {
 			continue;
-		} else if (!end && !strncasecmp(argv[i], "withdeleted",
+		} else if (!end && !xstrncasecmp(argv[i], "withdeleted",
 					  MAX(command_len, 5))) {
 			wckey_cond->with_deleted = 1;
 			set = 1;
 		} else if (!end
-			  || !strncasecmp (argv[i], "WCKeys",
+			  || !xstrncasecmp(argv[i], "WCKeys",
 					   MAX(command_len, 3))
-			  || !strncasecmp (argv[i], "Names",
+			  || !xstrncasecmp(argv[i], "Names",
 					   MAX(command_len, 3))) {
 			if (!wckey_cond->name_list)
 				wckey_cond->name_list =
@@ -83,7 +83,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(wckey_cond->name_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "Ids",
+		} else if (!xstrncasecmp(argv[i], "Ids",
 					 MAX(command_len, 1))) {
 			ListIterator itr = NULL;
 			char *temp = NULL;
@@ -107,7 +107,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				}
 			}
 			list_iterator_destroy(itr);
-		} else if (!strncasecmp (argv[i], "Clusters",
+		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 3))) {
 			if (!wckey_cond->cluster_list)
 				wckey_cond->cluster_list =
@@ -115,18 +115,18 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(wckey_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
+		} else if (!xstrncasecmp(argv[i], "End", MAX(command_len, 1))) {
 			wckey_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Start",
+		} else if (!xstrncasecmp(argv[i], "Start",
 					 MAX(command_len, 1))) {
 			wckey_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Users",
+		} else if (!xstrncasecmp(argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if (!wckey_cond->user_list)
 				wckey_cond->user_list =
@@ -172,8 +172,8 @@ extern int sacctmgr_list_wckey(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp (argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, wckey_cond, format_list);
 	}
@@ -205,24 +205,24 @@ extern int sacctmgr_list_wckey(int argc, char **argv)
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if (!strncasecmp("WCKeys", object, MAX(command_len, 1))
-		   || !strncasecmp("Names", object, MAX(command_len, 1))) {
+		if (!xstrncasecmp("WCKeys", object, MAX(command_len, 1))
+		   || !xstrncasecmp("Names", object, MAX(command_len, 1))) {
 			field->type = PRINT_NAME;
 			field->name = xstrdup("WCKey");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Clusters", object,
-				       MAX(command_len, 2))) {
+		} else if (!xstrncasecmp("Clusters", object,
+					 MAX(command_len, 2))) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("IDs", object, MAX(command_len, 1))) {
+		} else if (!xstrncasecmp("IDs", object, MAX(command_len, 1))) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("Users", object, MAX(command_len, 1))) {
+		} else if (!xstrncasecmp("Users", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;

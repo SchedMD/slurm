@@ -49,7 +49,7 @@
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
-#include <string.h>		/* strcpy, strncasecmp */
+#include <string.h>		/* strcpy     */
 #include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -2403,13 +2403,13 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'W':
 			if (!optarg) /* CLANG Fix */
 				break;
-			if (!strncasecmp(optarg, "umask=", 6)) {
+			if (!xstrncasecmp(optarg, "umask=", 6)) {
 				sbopt.umask = strtol(optarg+6, NULL, 0);
 				if ((sbopt.umask < 0) || (sbopt.umask > 0777)) {
 					error("Invalid umask ignored");
 					sbopt.umask = -1;
 				}
-			} else if (!strncasecmp(optarg, "depend=", 7)) {
+			} else if (!xstrncasecmp(optarg, "depend=", 7)) {
 				xfree(opt.dependency);
 				opt.dependency = xstrdup(optarg+7);
 			} else {
@@ -2544,9 +2544,9 @@ static void _parse_pbs_resource_list(char *rl)
 	int pbs_pro_flag = 0;	/* Bits: select:1 ncpus:2 mpiprocs:4 */
 
 	while (rl[i]) {
-		if (!strncasecmp(rl+i, "accelerator=", 12)) {
+		if (!xstrncasecmp(rl+i, "accelerator=", 12)) {
 			i += 12;
-			if (!strncasecmp(rl+i, "true", 4) && (gpus < 1))
+			if (!xstrncasecmp(rl+i, "true", 4) && (gpus < 1))
 				gpus = 1;
 			/* Also see "naccelerators=" below */
 		} else if (!xstrncmp(rl+i, "arch=", 5)) {
@@ -2612,7 +2612,7 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 
 			xfree(temp);
-		} else if (!strncasecmp(rl+i, "mpiprocs=", 9)) {
+		} else if (!xstrncasecmp(rl+i, "mpiprocs=", 9)) {
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
@@ -2664,14 +2664,14 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 			xfree(temp);
 #endif	/* HAVE_ALPS_CRAY || HAVE_NATIVE_CRAY */
-		} else if (!strncasecmp(rl+i, "naccelerators=", 14)) {
+		} else if (!xstrncasecmp(rl+i, "naccelerators=", 14)) {
 			i += 14;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
 				gpus = parse_int("naccelerators", temp, true);
 				xfree(temp);
 			}
-		} else if (!strncasecmp(rl+i, "ncpus=", 6)) {
+		} else if (!xstrncasecmp(rl+i, "ncpus=", 6)) {
 			i += 6;
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
@@ -2742,7 +2742,7 @@ static void _parse_pbs_resource_list(char *rl)
 		} else if (!xstrncmp(rl+i, "pvmem=", 6)) {
 			i+=6;
 			_get_next_pbs_option(rl, &i);
-		} else if (!strncasecmp(rl+i, "select=", 7)) {
+		} else if (!xstrncasecmp(rl+i, "select=", 7)) {
 			i += 7;
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {

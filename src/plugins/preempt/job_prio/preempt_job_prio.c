@@ -708,7 +708,7 @@ extern int init(void)
 	int rc = SLURM_SUCCESS;
 	char *prio_type = slurm_get_priority_type();
 
-	if (strncasecmp(prio_type, "priority/multifactor", 20)) {
+	if (xstrncasecmp(prio_type, "priority/multifactor", 20)) {
 		error("The priority plugin (%s) is currently loaded. "
 		      "This is NOT compatible with the %s plugin. "
 		      "The priority/multifactor plugin must be used",

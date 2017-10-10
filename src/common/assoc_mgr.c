@@ -2209,8 +2209,8 @@ extern int assoc_mgr_fill_in_tres(void *db_conn,
 
 	if (!tres->id) {
 		if (!tres->type ||
-		    ((!strncasecmp(tres->type, "gres:", 5) ||
-		      !strncasecmp(tres->type, "license:", 8))
+		    ((!xstrncasecmp(tres->type, "gres:", 5) ||
+		      !xstrncasecmp(tres->type, "license:", 8))
 		     && !tres->name)) {
 			if (enforce & ACCOUNTING_ENFORCE_TRES) {
 				error("get_assoc_id: "

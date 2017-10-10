@@ -68,9 +68,9 @@ scontrol_update_layout (int argc, char **argv)
 				 tag);
 			goto done;
 		}
-		if (strncasecmp(tag, "layouts", MAX(tag_len, 2)) == 0) {
+		if (xstrncasecmp(tag, "layouts", MAX(tag_len, 2)) == 0) {
 			msg.layout = val;
-		} else if (strncasecmp(tag, "entity", MAX(tag_len, 2)) == 0) {
+		} else if (xstrncasecmp(tag, "entity", MAX(tag_len, 2)) == 0) {
 			msg.arg = xstrdup_printf("Entity=%s", val);
 		} else {
 			xstrcat(opt, tag);

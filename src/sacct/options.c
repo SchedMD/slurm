@@ -1252,7 +1252,7 @@ extern void parse_command_line(int argc, char **argv)
 
 		command_len = strlen(start);
 
-		if (!strncasecmp("ALL", start, command_len)) {
+		if (!xstrncasecmp("ALL", start, command_len)) {
 			for (i = 0; fields[i].name; i++) {
 				if (newlen_set)
 					fields[i].len = newlen;
@@ -1264,7 +1264,7 @@ extern void parse_command_line(int argc, char **argv)
 		}
 
 		for (i = 0; fields[i].name; i++) {
-			if (!strncasecmp(fields[i].name, start, command_len))
+			if (!xstrncasecmp(fields[i].name, start, command_len))
 				goto foundfield;
 		}
 		error("Invalid field requested: \"%s\"", start);

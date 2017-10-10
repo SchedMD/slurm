@@ -1032,15 +1032,15 @@ static uint32_t
 _cpu_freq_check_gov(const char* arg, uint32_t illegal)
 {
 	uint32_t rc = 0;
-	if (strncasecmp(arg, "co", 2) == 0) {
+	if (xstrncasecmp(arg, "co", 2) == 0) {
 		rc = CPU_FREQ_CONSERVATIVE;
-	} else if (strncasecmp(arg, "perf", 4) == 0) {
+	} else if (xstrncasecmp(arg, "perf", 4) == 0) {
 		rc = CPU_FREQ_PERFORMANCE;
-	} else if (strncasecmp(arg, "pow", 3) == 0) {
+	} else if (xstrncasecmp(arg, "pow", 3) == 0) {
 		rc = CPU_FREQ_POWERSAVE;
-	} else if (strncasecmp(arg, "user", 4) == 0) {
+	} else if (xstrncasecmp(arg, "user", 4) == 0) {
 		rc = CPU_FREQ_USERSPACE;
-	} else if (strncasecmp(arg, "onde", 4) == 0) {
+	} else if (xstrncasecmp(arg, "onde", 4) == 0) {
 		rc = CPU_FREQ_ONDEMAND;
 	}
 	rc &= (~illegal);
@@ -1064,14 +1064,14 @@ _cpu_freq_check_freq(const char* arg)
 	char *end;
 	uint32_t frequency;
 
-	if (strncasecmp(arg, "lo", 2) == 0) {
+	if (xstrncasecmp(arg, "lo", 2) == 0) {
 		return CPU_FREQ_LOW;
-	} else if (strncasecmp(arg, "him1", 4) == 0 ||
-		   strncasecmp(arg, "highm1", 6) == 0) {
+	} else if (xstrncasecmp(arg, "him1", 4) == 0 ||
+		   xstrncasecmp(arg, "highm1", 6) == 0) {
 		return CPU_FREQ_HIGHM1;
-	} else if (strncasecmp(arg, "hi", 2) == 0) {
+	} else if (xstrncasecmp(arg, "hi", 2) == 0) {
 		return CPU_FREQ_HIGH;
-	} else if (strncasecmp(arg, "med", 3) == 0) {
+	} else if (xstrncasecmp(arg, "med", 3) == 0) {
 		return CPU_FREQ_MEDIUM;
 	}
 	if ( (frequency = strtoul(arg, &end, 10) )) {

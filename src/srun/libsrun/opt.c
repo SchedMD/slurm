@@ -49,7 +49,7 @@
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
-#include <string.h>		/* strcpy, strncasecmp */
+#include <string.h>		/* strcpy     */
 #include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>

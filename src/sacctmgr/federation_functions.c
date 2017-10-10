@@ -57,22 +57,22 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+		if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp(argv[i], "where",
-					       MAX(command_len, 5))) {
+		} else if (!end && !xstrncasecmp(argv[i], "where",
+						 MAX(command_len, 5))) {
 			continue;
 		} else if (!end &&
-			   !strncasecmp(argv[i], "WithDeleted",
+			   !xstrncasecmp(argv[i], "WithDeleted",
 					 MAX(command_len, 5))) {
 			federation_cond->with_deleted = 1;
-		} else if (!end && !strncasecmp (argv[i], "Tree",
-					  MAX(command_len, 4))) {
+		} else if (!end && !xstrncasecmp(argv[i], "Tree",
+						 MAX(command_len, 4))) {
 			tree_display = 1;
-		} else if (!end || !strncasecmp(argv[i], "Names",
-						MAX(command_len, 1))
-			  || !strncasecmp(argv[i], "Federations",
+		} else if (!end || !xstrncasecmp(argv[i], "Names",
+						 MAX(command_len, 1))
+			  || !xstrncasecmp(argv[i], "Federations",
 					   MAX(command_len, 3))) {
 			if (!federation_cond->federation_list)
 				federation_cond->federation_list =
@@ -81,8 +81,8 @@ static int _set_cond(int *start, int argc, char **argv,
 					federation_cond->federation_list,
 					argv[i]+end))
 				a_set = 1;
-		} else if (!end || !strncasecmp(argv[i], "Clusters",
-						MAX(command_len, 3))) {
+		} else if (!end || !xstrncasecmp(argv[i], "Clusters",
+						 MAX(command_len, 3))) {
 			if (!federation_cond->cluster_list)
 				federation_cond->cluster_list =
 					list_create(slurm_destroy_char);
@@ -90,7 +90,7 @@ static int _set_cond(int *start, int argc, char **argv,
 						  federation_cond->cluster_list,
 						  argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp(argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
@@ -128,20 +128,20 @@ static int _set_rec(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
+		if (!xstrncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp(argv[i], "set",
+		} else if (!end && !xstrncasecmp(argv[i], "set",
 					       MAX(command_len, 3))) {
 			continue;
 		} else if (!end
-			  || !strncasecmp (argv[i], "Name",
+			  || !xstrncasecmp(argv[i], "Name",
 					   MAX(command_len, 1))) {
 			if (name_list)
 				slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!fed) {
 			continue;
-		} else if (!strncasecmp (argv[i], "Clusters",
+		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 2))) {
 			char *name = NULL;
 			ListIterator itr;
@@ -178,7 +178,7 @@ static int _set_rec(int *start, int argc, char **argv,
 			list_iterator_destroy(itr);
 			FREE_NULL_LIST(cluster_names);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Flags",
+		} else if (!xstrncasecmp(argv[i], "Flags",
 					 MAX(command_len, 2))) {
 			fed->flags = str_2_federation_flags(argv[i]+end,
 								   option);
@@ -392,8 +392,8 @@ extern int sacctmgr_add_federation(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		limit_set += _set_rec(&i, argc, argv, name_list, start_fed);
 	}
@@ -529,8 +529,8 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 	federation_cond->federation_list = list_create(slurm_destroy_char);
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, federation_cond, format_list);
 	}
@@ -801,12 +801,12 @@ extern int sacctmgr_modify_federation(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
 			prev_set = _set_cond(&i, argc, argv,
 					     federation_cond, NULL);
 			cond_set |= prev_set;
-		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+		} else if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			prev_set = _set_rec(&i, argc, argv, NULL, federation);
 			rec_set |= prev_set;
@@ -939,8 +939,8 @@ extern int sacctmgr_delete_federation(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, fed_cond, NULL);
 		cond_set |= prev_set;

@@ -1741,14 +1741,14 @@ extern uint32_t str_2_cluster_fed_states(char *state)
 		return SLURM_ERROR;
 	}
 
-	if (!strncasecmp(state, "Active", strlen(state)))
+	if (!xstrncasecmp(state, "Active", strlen(state)))
 		fed_state = CLUSTER_FED_STATE_ACTIVE;
-	else if (!strncasecmp(state, "Inactive", strlen(state)))
+	else if (!xstrncasecmp(state, "Inactive", strlen(state)))
 		fed_state = CLUSTER_FED_STATE_INACTIVE;
-	else if (!strncasecmp(state, "DRAIN", strlen(state))) {
+	else if (!xstrncasecmp(state, "DRAIN", strlen(state))) {
 		fed_state = CLUSTER_FED_STATE_ACTIVE;
 		fed_state |= CLUSTER_FED_STATE_DRAIN;
-	} else if (!strncasecmp(state, "DRAIN+REMOVE", strlen(state))) {
+	} else if (!xstrncasecmp(state, "DRAIN+REMOVE", strlen(state))) {
 		fed_state = CLUSTER_FED_STATE_ACTIVE;
 		fed_state |= (CLUSTER_FED_STATE_DRAIN |
 			      CLUSTER_FED_STATE_REMOVE);
@@ -1917,12 +1917,12 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level)
 {
 	if (!level) {
 		return SLURMDB_ADMIN_NOTSET;
-	} else if (!strncasecmp(level, "None", 1)) {
+	} else if (!xstrncasecmp(level, "None", 1)) {
 		return SLURMDB_ADMIN_NONE;
-	} else if (!strncasecmp(level, "Operator", 1)) {
+	} else if (!xstrncasecmp(level, "Operator", 1)) {
 		return SLURMDB_ADMIN_OPERATOR;
-	} else if (!strncasecmp(level, "SuperUser", 1)
-		   || !strncasecmp(level, "Admin", 1)) {
+	} else if (!xstrncasecmp(level, "SuperUser", 1)
+		   || !xstrncasecmp(level, "Admin", 1)) {
 		return SLURMDB_ADMIN_SUPER_USER;
 	} else {
 		return SLURMDB_ADMIN_NOTSET;
@@ -2611,11 +2611,11 @@ extern uint32_t slurmdb_parse_purge(char *string)
 
 	if (purge != NO_VAL) {
 		int len = strlen(string+i);
-		if (!len || !strncasecmp("months", string+i, MAX(len, 1))) {
+		if (!len || !xstrncasecmp("months", string+i, MAX(len, 1))) {
 			purge |= SLURMDB_PURGE_MONTHS;
-		} else if (!strncasecmp("hours", string+i, MAX(len, 1))) {
+		} else if (!xstrncasecmp("hours", string+i, MAX(len, 1))) {
 			purge |= SLURMDB_PURGE_HOURS;
-		} else if (!strncasecmp("days", string+i, MAX(len, 1))) {
+		} else if (!xstrncasecmp("days", string+i, MAX(len, 1))) {
 			purge |= SLURMDB_PURGE_DAYS;
 		} else {
 			error("Invalid purge unit '%s', valid options "

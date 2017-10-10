@@ -243,13 +243,13 @@ static int _set_layout(char *com)
 	int i;
 
 	for (i = 0; com[i]; i++) {
-		if (!strncasecmp(com+i, "dynamic", 7)) {
+		if (!xstrncasecmp(com+i, "dynamic", 7)) {
 			layout_mode = "DYNAMIC";
 			break;
-		} else if (!strncasecmp(com+i, "static", 6)) {
+		} else if (!xstrncasecmp(com+i, "static", 6)) {
 			layout_mode = "STATIC";
 			break;
-		} else if (!strncasecmp(com+i, "overlap", 7)) {
+		} else if (!xstrncasecmp(com+i, "overlap", 7)) {
 			layout_mode = "OVERLAP";
 			break;
 		}
@@ -340,9 +340,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 	}
 
 	while (i < len) {
-		if (!strncasecmp(com+i, "mesh", 4)
-		    || !strncasecmp(com+i, "small", 5)
-		    || !strncasecmp(com+i, "torus", 5)) {
+		if (!xstrncasecmp(com+i, "mesh", 4)
+		    || !xstrncasecmp(com+i, "small", 5)
+		    || !xstrncasecmp(com+i, "torus", 5)) {
 			char conn_type[200];
 			j = i;
 			while (j < len) {
@@ -356,7 +356,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 			conn_type[(j-i)+1] = '\0';
 			verify_conn_type(conn_type, request->conn_type);
 			i += j;
-		} else if (!strncasecmp(com+i, "deny", 4)) {
+		} else if (!xstrncasecmp(com+i, "deny", 4)) {
 			i += 4;
 			if (strstr(com+i, "A"))
 				request->deny_pass |= PASS_DENY_A;
@@ -368,25 +368,25 @@ static int _create_allocation(char *com, List allocated_blocks)
 				request->deny_pass |= PASS_DENY_Z;
 			if (!xstrcasecmp(com+i, "ALL"))
 				request->deny_pass |= PASS_DENY_ALL;
-		} else if (!strncasecmp(com+i, "nodecard", 8)) {
+		} else if (!xstrncasecmp(com+i, "nodecard", 8)) {
 			small32 = 0;
 			i += 8;
-		} else if (!strncasecmp(com+i, "quarter", 7)) {
+		} else if (!xstrncasecmp(com+i, "quarter", 7)) {
 			small128 = 0;
 			i += 7;
-		} else if (!strncasecmp(com+i, "32CN", 4)) {
+		} else if (!xstrncasecmp(com+i, "32CN", 4)) {
 			small32 = 0;
 			i += 4;
-		} else if (!strncasecmp(com+i, "128CN", 5)) {
+		} else if (!xstrncasecmp(com+i, "128CN", 5)) {
 			small128 = 0;
 			i += 5;
-		} else if (!strncasecmp(com+i, "rotate", 6)) {
+		} else if (!xstrncasecmp(com+i, "rotate", 6)) {
 			request->rotate = true;
 			i += 6;
-		} else if (!strncasecmp(com+i, "elongate", 8)) {
+		} else if (!xstrncasecmp(com+i, "elongate", 8)) {
 			request->elongate = true;
 			i += 8;
-		} else if (!strncasecmp(com+i, "start", 5)) {
+		} else if (!xstrncasecmp(com+i, "start", 5)) {
 			request->start_req = 1;
 			i += 5;
 		} else if (request->start_req && (starti < 0) &&
@@ -400,10 +400,10 @@ static int _create_allocation(char *com, List allocated_blocks)
 		} else if (small128 == 0 && (com[i] >= '0' && com[i] <= '9')) {
 			small128 = i;
 			i++;
-		} else if (!strncasecmp(com+i, "64CN", 4)) {
+		} else if (!xstrncasecmp(com+i, "64CN", 4)) {
 			small64 = 0;
 			i += 4;
-		} else if (!strncasecmp(com+i, "256CN", 5)) {
+		} else if (!xstrncasecmp(com+i, "256CN", 5)) {
 			small256 = 0;
 			i += 5;
 		} else if (small64 == 0 && (com[i] >= '0' && com[i] <= '9')) {
@@ -1367,48 +1367,48 @@ void get_command(void)
 
 		if (!xstrcmp(com, "quit") || !xstrcmp(com, "\\q")) {
 			break;
-		} else if (!strncasecmp(com, "layout", 6)) {
+		} else if (!xstrncasecmp(com, "layout", 6)) {
 			_set_layout(com);
-		} else if (!strncasecmp(com, "midplane", 8) ||
-			   !strncasecmp(com, "basepartition", 13)) {
+		} else if (!xstrncasecmp(com, "midplane", 8) ||
+			   !xstrncasecmp(com, "basepartition", 13)) {
 			_set_midplane_cnode_cnt(com);
-		} else if (!strncasecmp(com, "nodecard", 8)) {
+		} else if (!xstrncasecmp(com, "nodecard", 8)) {
 			_set_nodecard_cnt(com);
-		} else if (!strncasecmp(com, "resolve", 7) ||
-			   !strncasecmp(com, "r ", 2)) {
+		} else if (!xstrncasecmp(com, "resolve", 7) ||
+			   !xstrncasecmp(com, "r ", 2)) {
 			_resolve(com);
-		} else if (!strncasecmp(com, "resume", 6)) {
+		} else if (!xstrncasecmp(com, "resume", 6)) {
 			mvwprintw(text_win,
 				main_ycord,
 				main_xcord, "%s", com);
-		} else if (!strncasecmp(com, "drain", 5)) {
+		} else if (!xstrncasecmp(com, "drain", 5)) {
 			mvwprintw(text_win,
 				main_ycord,
 				main_xcord, "%s", com);
-		} else if (!strncasecmp(com, "alldown", 7)) {
+		} else if (!xstrncasecmp(com, "alldown", 7)) {
 			_change_state_all_bps(com, NODE_STATE_DOWN);
-		} else if (!strncasecmp(com, "down", 4)) {
+		} else if (!xstrncasecmp(com, "down", 4)) {
 			_change_state_bps(com, NODE_STATE_DOWN);
-		} else if (!strncasecmp(com, "allup", 5)) {
+		} else if (!xstrncasecmp(com, "allup", 5)) {
 			_change_state_all_bps(com, NODE_STATE_IDLE);
-		} else if (!strncasecmp(com, "up", 2)) {
+		} else if (!xstrncasecmp(com, "up", 2)) {
 			_change_state_bps(com, NODE_STATE_IDLE);
-		} else if (!strncasecmp(com, "remove", 6)
-			|| !strncasecmp(com, "delete", 6)
-			|| !strncasecmp(com, "drop", 4)) {
+		} else if (!xstrncasecmp(com, "remove", 6)
+			|| !xstrncasecmp(com, "delete", 6)
+			|| !xstrncasecmp(com, "drop", 4)) {
 			_remove_allocation(com, allocated_blocks);
-		} else if (!strncasecmp(com, "create", 6)) {
+		} else if (!xstrncasecmp(com, "create", 6)) {
 			_create_allocation(com, allocated_blocks);
-		} else if (!strncasecmp(com, "copy", 4)
-			|| !strncasecmp(com, "c ", 2)
-			|| !strncasecmp(com, "c\0", 2)) {
+		} else if (!xstrncasecmp(com, "copy", 4)
+			|| !xstrncasecmp(com, "c ", 2)
+			|| !xstrncasecmp(com, "c\0", 2)) {
 			_copy_allocation(com, allocated_blocks);
-		} else if (!strncasecmp(com, "save", 4)) {
+		} else if (!xstrncasecmp(com, "save", 4)) {
 			_save_allocation(com, allocated_blocks);
-		} else if (!strncasecmp(com, "load", 4)) {
+		} else if (!xstrncasecmp(com, "load", 4)) {
 			_load_configuration(com, allocated_blocks);
-		} else if (!strncasecmp(com, "clear all", 9)
-			|| !strncasecmp(com, "clear", 5)) {
+		} else if (!xstrncasecmp(com, "clear all", 9)
+			|| !xstrncasecmp(com, "clear", 5)) {
 			list_flush(allocated_blocks);
 		} else {
 			memset(error_string, 0, 255);

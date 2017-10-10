@@ -160,8 +160,8 @@ static print_field_t *_get_print_field(char *object)
 	}
 	command_len = strlen(object);
 
-	if (!strncasecmp("Account", object, MAX(command_len, 3))
-	    || !strncasecmp("Acct", object, MAX(command_len, 4))) {
+	if (!xstrncasecmp("Account", object, MAX(command_len, 3))
+	    || !xstrncasecmp("Acct", object, MAX(command_len, 4))) {
 		field->type = PRINT_ACCT;
 		field->name = xstrdup("Account");
 		if (tree_display)
@@ -169,564 +169,568 @@ static print_field_t *_get_print_field(char *object)
 		else
 			field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("ActionRaw", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("ActionRaw", object, MAX(command_len, 7))) {
 		field->type = PRINT_ACTIONRAW;
 		field->name = xstrdup("ActionRaw");
 		field->len = 10;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Action", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("Action", object, MAX(command_len, 4))) {
 		field->type = PRINT_ACTION;
 		field->name = xstrdup("Action");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Actor", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("Actor", object, MAX(command_len, 4))) {
 		field->type = PRINT_ACTOR;
 		field->name = xstrdup("Actor");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("AdminLevel", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("AdminLevel", object, MAX(command_len, 2))) {
 		field->type = PRINT_ADMIN;
 		field->name = xstrdup("Admin");
 		field->len = 9;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Allowed", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Allowed", object, MAX(command_len, 2))) {
 		field->type = PRINT_ALLOWED;
 		field->name = xstrdup("% Allowed");
 		field->len = 10;
 		field->print_routine = print_fields_uint16;
-	} else if (!strncasecmp("Associations", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Associations", object, MAX(command_len, 2))) {
 		field->type = PRINT_ASSOC_NAME;
 		field->name = xstrdup("Assocs");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("TRES", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("TRES", object, MAX(command_len, 2))) {
 		field->type = PRINT_TRES;
 		field->name = xstrdup("TRES");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Classification", object,
-				MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("Classification", object,
+				 MAX(command_len, 3))) {
 		field->type = PRINT_CLASS;
 		field->name = xstrdup("Class");
 		field->len = 9;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("ClusterNodes", object, MAX(command_len, 8))) {
+	} else if (!xstrncasecmp("ClusterNodes", object, MAX(command_len, 8))) {
 		field->type = PRINT_CLUSTER_NODES;
 		field->name = xstrdup("Cluster Nodes");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Clusters", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Clusters", object, MAX(command_len, 2))) {
 		field->type = PRINT_CLUSTER;
 		field->name = xstrdup("Cluster");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Coordinators", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Coordinators", object, MAX(command_len, 2))) {
 		field->type = PRINT_COORDS;
 		field->name = xstrdup("Coord Accounts");
 		field->len = 20;
 		field->print_routine = sacctmgr_print_coord_list;
-	} else if (!strncasecmp("ControlHost", object, MAX(command_len, 8))) {
+	} else if (!xstrncasecmp("ControlHost", object, MAX(command_len, 8))) {
 		field->type = PRINT_CHOST;
 		field->name = xstrdup("ControlHost");
 		field->len = 15;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("ControlPort", object, MAX(command_len, 8))) {
+	} else if (!xstrncasecmp("ControlPort", object, MAX(command_len, 8))) {
 		field->type = PRINT_CPORT;
 		field->name = xstrdup("ControlPort");
 		field->len = 12;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Count", object, MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("Count", object, MAX(command_len, 3))) {
 		field->type = PRINT_COUNT;
 		field->name = xstrdup("Count");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("CountAllowed", object, MAX(command_len, 6))) {
+	} else if (!xstrncasecmp("CountAllowed", object, MAX(command_len, 6))) {
 		field->type = PRINT_CALLOWED;
 		field->name = xstrdup("# Allowed");
 		field->len = 10;
 		field->print_routine = print_fields_uint32;
-	} else if (!strncasecmp("CountUsed", object, MAX(command_len, 6))) {
+	} else if (!xstrncasecmp("CountUsed", object, MAX(command_len, 6))) {
 		field->type = PRINT_CALLOWED;
 		field->name = xstrdup("# Used");
 		field->len = 10;
 		field->print_routine = print_fields_uint32;
-	} else if (!strncasecmp("CPUCount", object,
+	} else if (!xstrncasecmp("CPUCount", object,
 				MAX(command_len, 2))) {
 		field->type = PRINT_CPUS;
 		field->name = xstrdup("CPU Cnt");
 		field->len = 7;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("DefaultAccount", object,
-				MAX(command_len, 8))) {
+	} else if (!xstrncasecmp("DefaultAccount", object,
+				 MAX(command_len, 8))) {
 		field->type = PRINT_DACCT;
 		field->name = xstrdup("Def Acct");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("DefaultQOS", object, MAX(command_len, 8))) {
+	} else if (!xstrncasecmp("DefaultQOS", object, MAX(command_len, 8))) {
 		field->type = PRINT_DQOS;
 		field->name = xstrdup("Def QOS");
 		field->len = 9;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("DefaultWCKey", object, MAX(command_len, 8))) {
+	} else if (!xstrncasecmp("DefaultWCKey", object, MAX(command_len, 8))) {
 		field->type = PRINT_DWCKEY;
 		field->name = xstrdup("Def WCKey");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Description", object, MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("Description", object, MAX(command_len, 3))) {
 		field->type = PRINT_DESC;
 		field->name = xstrdup("Descr");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Duration", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Duration", object, MAX(command_len, 2))) {
 		field->type = PRINT_DURATION;
 		field->name = xstrdup("Duration");
 		field->len = 13;
 		field->print_routine = print_fields_time_from_secs;
-	} else if (!strncasecmp("EventRaw", object, MAX(command_len, 6))) {
+	} else if (!xstrncasecmp("EventRaw", object, MAX(command_len, 6))) {
 		field->type = PRINT_EVENTRAW;
 		field->name = xstrdup("EventRaw");
 		field->len = 8;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Event", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Event", object, MAX(command_len, 2))) {
 		field->type = PRINT_EVENT;
 		field->name = xstrdup("Event");
 		field->len = 7;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Features", object, MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("Features", object, MAX(command_len, 3))) {
 		field->type = PRINT_FEATURES;
 		field->name = xstrdup("Features");
 		field->len = 20;
 		field->print_routine = print_fields_char_list;
-	} else if (!strncasecmp("Federation", object, MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("Federation", object, MAX(command_len, 3))) {
 		field->type = PRINT_FEDERATION;
 		field->name = xstrdup("Federation");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("FedState", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("FedState", object, MAX(command_len, 4))) {
 		field->type = PRINT_FEDSTATE;
 		field->name = xstrdup("FedState");
 		field->len = 12;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("FedStateRaw", object, MAX(command_len, 9))) {
+	} else if (!xstrncasecmp("FedStateRaw", object, MAX(command_len, 9))) {
 		field->type = PRINT_FEDSTATERAW;
 		field->name = xstrdup("FedStateRaw");
 		field->len = 11;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Flags", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Flags", object, MAX(command_len, 2))) {
 		field->type = PRINT_FLAGS;
 		field->name = xstrdup("Flags");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("GraceTime", object, MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("GraceTime", object, MAX(command_len, 3))) {
 		field->type = PRINT_GRACE;
 		field->name = xstrdup("GraceTime");
 		field->len = 10;
 		field->print_routine = print_fields_time_from_secs;
-	} else if (!strncasecmp("GrpCPUs", object, MAX(command_len, 6))) {
+	} else if (!xstrncasecmp("GrpCPUs", object, MAX(command_len, 6))) {
 		field->type = PRINT_GRPC;
 		field->name = xstrdup("GrpCPUs");
 		field->len = 8;
 		field->print_routine = print_fields_uint64;
-	} else if (!strncasecmp("GrpCPUMins", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("GrpCPUMins", object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPCM;
 		field->name = xstrdup("GrpCPUMins");
 		field->len = 11;
 		field->print_routine = print_fields_uint64;
-	} else if (!strncasecmp("GrpCPURunMins", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("GrpCPURunMins", object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPCRM;
 		field->name = xstrdup("GrpCPURunMins");
 		field->len = 13;
 		field->print_routine = print_fields_uint64;
-	} else if (!strncasecmp("GrpTRES", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("GrpTRES", object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPT;
 		field->name = xstrdup("GrpTRES");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("GrpTRESMins", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("GrpTRESMins", object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPTM;
 		field->name = xstrdup("GrpTRESMins");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("GrpTRESRunMins",
-				object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("GrpTRESRunMins", object,
+				 MAX(command_len, 7))) {
 		field->type = PRINT_GRPTRM;
 		field->name = xstrdup("GrpTRESRunMins");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("GrpJobs", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("GrpJobs", object, MAX(command_len, 4))) {
 		field->type = PRINT_GRPJ;
 		field->name = xstrdup("GrpJobs");
 		field->len = 7;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("GrpMemory", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("GrpMemory", object, MAX(command_len, 4))) {
 		field->type = PRINT_GRPMEM;
 		field->name = xstrdup("GrpMem");
 		field->len = 7;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("GrpNodes", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("GrpNodes", object, MAX(command_len, 4))) {
 		field->type = PRINT_GRPN;
 		field->name = xstrdup("GrpNodes");
 		field->len = 8;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("GrpSubmitJobs", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("GrpSubmitJobs", object, MAX(command_len, 4))) {
 		field->type = PRINT_GRPS;
 		field->name = xstrdup("GrpSubmit");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("GrpWall", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("GrpWall", object, MAX(command_len, 4))) {
 		field->type = PRINT_GRPW;
 		field->name = xstrdup("GrpWall");
 		field->len = 11;
 		field->print_routine = print_fields_time;
-	} else if (!strncasecmp("ID", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("ID", object, MAX(command_len, 2))) {
 		field->type = PRINT_ID;
 		field->name = xstrdup("ID");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Info", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Info", object, MAX(command_len, 2))) {
 		field->type = PRINT_INFO;
 		field->name = xstrdup("Info");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("LFT", object, MAX(command_len, 1))) {
+	} else if (!xstrncasecmp("LFT", object, MAX(command_len, 1))) {
 		field->type = PRINT_LFT;
 		field->name = xstrdup("LFT");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("servertype", object, MAX(command_len, 10))) {
+	} else if (!xstrncasecmp("servertype", object, MAX(command_len, 10))) {
 		field->type = PRINT_SERVERTYPE;
 		field->name = xstrdup("ServerType");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("MaxCPUMinsPerJob", object,
+	} else if (!xstrncasecmp("MaxCPUMinsPerJob", object,
 				MAX(command_len, 7))) {
 		field->type = PRINT_MAXCM;
 		field->name = xstrdup("MaxCPUMins");
 		field->len = 11;
 		field->print_routine = print_fields_uint64;
-	} else if (!strncasecmp("MaxCPURunMinsPerUser", object,
-				MAX(command_len, 7)) ||
-		   !strncasecmp("MaxCPURunMinsPU", object,
+	} else if (!xstrncasecmp("MaxCPURunMinsPerUser", object,
+				 MAX(command_len, 7)) ||
+		   !xstrncasecmp("MaxCPURunMinsPU", object,
 				MAX(command_len, 7))) {
 		field->type = PRINT_MAXCRM;
 		field->name = xstrdup("MaxCPURunMinsPU");
 		field->len = 15;
 		field->print_routine = print_fields_uint64;
-	} else if (!strncasecmp("MaxCPUsPerJob", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("MaxCPUsPerJob", object,
+				 MAX(command_len, 7))) {
 		field->type = PRINT_MAXC;
 		field->name = xstrdup("MaxCPUs");
 		field->len = 8;
 		field->print_routine = print_fields_uint64;
-	} else if (!strncasecmp("MaxCPUsPerUser", object,
+	} else if (!xstrncasecmp("MaxCPUsPerUser", object,
 				MAX(command_len, 11)) ||
-		   !strncasecmp("MaxCPUsPU", object,
+		   !xstrncasecmp("MaxCPUsPU", object,
 				MAX(command_len, 9))) {
 		field->type = PRINT_MAXCU;
 		field->name = xstrdup("MaxCPUsPU");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxTRES",
-				object, MAX(command_len, 7)) ||
-		   !strncasecmp("MaxTRESPerJob",
-				object, MAX(command_len, 11))) {
+	} else if (!xstrncasecmp("MaxTRES", object,
+				 MAX(command_len, 7)) ||
+		   !xstrncasecmp("MaxTRESPerJob", object,
+				 MAX(command_len, 11))) {
 		field->type = PRINT_MAXT;
 		field->name = xstrdup("MaxTRES");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxTRESPerNode",
-				object, MAX(command_len, 11))) {
+	} else if (!xstrncasecmp("MaxTRESPerNode", object,
+				 MAX(command_len, 11))) {
 		field->type = PRINT_MAXTN;
 		field->name = xstrdup("MaxTRESPerNode");
 		field->len = 14;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxTRESMinsPerJob", object,
-				MAX(command_len, 8))) {
+	} else if (!xstrncasecmp("MaxTRESMinsPerJob", object,
+				 MAX(command_len, 8))) {
 		field->type = PRINT_MAXTM;
 		field->name = xstrdup("MaxTRESMins");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxTRESRunMinsPerAccount", object,
-				MAX(command_len, 18)) ||
-		   !strncasecmp("MaxTRESRunMinsPerAcct", object,
-				MAX(command_len, 18)) ||
-		   !strncasecmp("MaxTRESRunMinsPA", object,
-				MAX(command_len, 15))) {
+	} else if (!xstrncasecmp("MaxTRESRunMinsPerAccount", object,
+				 MAX(command_len, 18)) ||
+		   !xstrncasecmp("MaxTRESRunMinsPerAcct", object,
+				 MAX(command_len, 18)) ||
+		   !xstrncasecmp("MaxTRESRunMinsPA", object,
+				 MAX(command_len, 15))) {
 		field->type = PRINT_MAXTRMA;
 		field->name = xstrdup("MaxTRESRunMinsPA");
 		field->len = 15;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxTRESRunMinsPerUser", object,
-				MAX(command_len, 8)) ||
-		   !strncasecmp("MaxTRESRunMinsPU", object,
-				MAX(command_len, 8))) {
+	} else if (!xstrncasecmp("MaxTRESRunMinsPerUser", object,
+				 MAX(command_len, 8)) ||
+		   !xstrncasecmp("MaxTRESRunMinsPU", object,
+				 MAX(command_len, 8))) {
 		field->type = PRINT_MAXTRM;
 		field->name = xstrdup("MaxTRESRunMinsPU");
 		field->len = 15;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxTRESPerAccount", object,
-				MAX(command_len, 11)) ||
-		   !strncasecmp("MaxTRESPerAcct", object,
-				MAX(command_len, 11)) ||
-		   !strncasecmp("MaxTRESPA", object,
-				MAX(command_len, 9))) {
+	} else if (!xstrncasecmp("MaxTRESPerAccount", object,
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp("MaxTRESPerAcct", object,
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp("MaxTRESPA", object,
+				 MAX(command_len, 9))) {
 		field->type = PRINT_MAXTA;
 		field->name = xstrdup("MaxTRESPA");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxTRESPerUser", object,
-				MAX(command_len, 11)) ||
-		   !strncasecmp("MaxTRESPU", object,
-				MAX(command_len, 9))) {
+	} else if (!xstrncasecmp("MaxTRESPerUser", object,
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp("MaxTRESPU", object,
+				 MAX(command_len, 9))) {
 		field->type = PRINT_MAXTU;
 		field->name = xstrdup("MaxTRESPU");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxJobs", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("MaxJobs", object, MAX(command_len, 4))) {
 		field->type = PRINT_MAXJ;
 		field->name = xstrdup("MaxJobs");
 		field->len = 7;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxJobsPerAccount", object,
-				MAX(command_len, 11)) ||
-		   !strncasecmp("MaxJobsPerAcct", object,
-				MAX(command_len, 11)) ||
-		   !strncasecmp("MaxJobsPA", object,
-				MAX(command_len, 9))) {
+	} else if (!xstrncasecmp("MaxJobsPerAccount", object,
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp("MaxJobsPerAcct", object,
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp("MaxJobsPA", object,
+				 MAX(command_len, 9))) {
 		field->type = PRINT_MAXJA;
 		field->name = xstrdup("MaxJobsPA");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxJobsPerUser", object,
-				MAX(command_len, 11)) ||
-		   !strncasecmp("MaxJobsPU", object,
-				MAX(command_len, 9))) {
+	} else if (!xstrncasecmp("MaxJobsPerUser", object,
+				 MAX(command_len, 11)) ||
+		   !xstrncasecmp("MaxJobsPU", object,
+				 MAX(command_len, 9))) {
 		field->type = PRINT_MAXJ; /* used same as MaxJobs */
 		field->name = xstrdup("MaxJobsPU");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxNodesPerJob", object,
-				MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("MaxNodesPerJob", object,
+				 MAX(command_len, 4))) {
 		field->type = PRINT_MAXN;
 		field->name = xstrdup("MaxNodes");
 		field->len = 8;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxNodesPerUser", object,
-				MAX(command_len, 12)) ||
-		   !strncasecmp("MaxNodesPU", object,
-				MAX(command_len, 10))) {
+	} else if (!xstrncasecmp("MaxNodesPerUser", object, 
+				 MAX(command_len, 12)) ||
+		   !xstrncasecmp("MaxNodesPU", object,
+				 MAX(command_len, 10))) {
 		field->type = PRINT_MAXNU;
 		field->name = xstrdup("MaxNodesPU");
 		field->len = 10;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxSubmitJobs", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("MaxSubmitJobs", object,
+				 MAX(command_len, 4))) {
 		field->type = PRINT_MAXS;
 		field->name = xstrdup("MaxSubmit");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxSubmitJobsPerAccount", object,
-				MAX(command_len, 17)) ||
-		   !strncasecmp("MaxSubmitJobsPerAcct", object,
-				MAX(command_len, 17)) ||
-		   !strncasecmp("MaxSubmitJobsPA", object,
-				MAX(command_len, 15))) {
+	} else if (!xstrncasecmp("MaxSubmitJobsPerAccount", object,
+				 MAX(command_len, 17)) ||
+		   !xstrncasecmp("MaxSubmitJobsPerAcct", object,
+				 MAX(command_len, 17)) ||
+		   !xstrncasecmp("MaxSubmitJobsPA", object,
+				 MAX(command_len, 15))) {
 		field->type = PRINT_MAXSA;
 		field->name = xstrdup("MaxSubmitPA");
 		field->len = 11;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxSubmitJobsPerUser", object,
-				MAX(command_len, 10)) ||
-		   !strncasecmp("MaxSubmitJobsPU", object,
-				MAX(command_len, 10))) {
+	} else if (!xstrncasecmp("MaxSubmitJobsPerUser", object,
+				 MAX(command_len, 10)) ||
+		   !xstrncasecmp("MaxSubmitJobsPU", object,
+				 MAX(command_len, 10))) {
 		field->type = PRINT_MAXS; /* used same as MaxSubmitJobs */
 		field->name = xstrdup("MaxSubmitPU");
 		field->len = 11;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxWallDurationPerJob", object,
-				MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("MaxWallDurationPerJob", object,
+				 MAX(command_len, 4))) {
 		field->type = PRINT_MAXW;
 		field->name = xstrdup("MaxWall");
 		field->len = 11;
 		field->print_routine = print_fields_time;
-	} else if (!strncasecmp("MinCPUsPerJob", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("MinCPUsPerJob", object,
+				 MAX(command_len, 7))) {
 		field->type = PRINT_MINC;
 		field->name = xstrdup("MinCPUs");
 		field->len = 8;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MinTRESPerJob", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("MinTRESPerJob", object,
+				 MAX(command_len, 7))) {
 		field->type = PRINT_MINT;
 		field->name = xstrdup("MinTRES");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("Name", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Name", object, MAX(command_len, 2))) {
 		field->type = PRINT_NAME;
 		field->name = xstrdup("Name");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("NodeCount", object, MAX(command_len, 5))) {
+	} else if (!xstrncasecmp("NodeCount", object, MAX(command_len, 5))) {
 		field->type = PRINT_NODECNT;
 		field->name = xstrdup("NodeCount");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("NodeNames", object, MAX(command_len, 5))) {
+	} else if (!xstrncasecmp("NodeNames", object, MAX(command_len, 5))) {
 		field->type = PRINT_NODENAME;
 		field->name = xstrdup("NodeName");
 		field->len = -15;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Organization", object, MAX(command_len, 1))) {
+	} else if (!xstrncasecmp("Organization", object, MAX(command_len, 1))) {
 		field->type = PRINT_ORG;
 		field->name = xstrdup("Org");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("ParentID", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("ParentID", object, MAX(command_len, 7))) {
 		field->type = PRINT_PID;
 		field->name = xstrdup("Par ID");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("ParentName", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("ParentName", object, MAX(command_len, 7))) {
 		field->type = PRINT_PNAME;
 		field->name = xstrdup("Par Name");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Partition", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("Partition", object, MAX(command_len, 4))) {
 		field->type = PRINT_PART;
 		field->name = xstrdup("Partition");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("PluginIDSelect", object,
-				MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("PluginIDSelect", object,
+				 MAX(command_len, 2))) {
 		field->type = PRINT_SELECT;
 		field->name = xstrdup("PluginIDSelect");
 		field->len = 14;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("PreemptMode", object, MAX(command_len, 8))) {
+	} else if (!xstrncasecmp("PreemptMode", object, MAX(command_len, 8))) {
 		field->type = PRINT_PREEM;
 		field->name = xstrdup("PreemptMode");
 		field->len = 11;
 		field->print_routine = print_fields_str;
 		/* Preempt needs to follow PreemptMode */
-	} else if (!strncasecmp("Preempt", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("Preempt", object, MAX(command_len, 7))) {
 		field->type = PRINT_PREE;
 		field->name = xstrdup("Preempt");
 		field->len = 10;
 		field->print_routine = sacctmgr_print_qos_bitstr;
-	} else if (!strncasecmp("Priority", object, MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("Priority", object, MAX(command_len, 3))) {
 		field->type = PRINT_PRIO;
 		field->name = xstrdup("Priority");
 		field->len = 10;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Problem", object, MAX(command_len, 1))) {
+	} else if (!xstrncasecmp("Problem", object, MAX(command_len, 1))) {
 		field->type = PRINT_PROBLEM;
 		field->name = xstrdup("Problem");
 		field->len = 40;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("QOSLevel", object, MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("QOSLevel", object, MAX(command_len, 3))) {
 		field->type = PRINT_QOS;
 		field->name = xstrdup("QOS");
 		field->len = 20;
 		field->print_routine = sacctmgr_print_qos_list;
-	} else if (!strncasecmp("QOSRAWLevel", object, MAX(command_len, 4))) {
+	} else if (!xstrncasecmp("QOSRAWLevel", object, MAX(command_len, 4))) {
 		field->type = PRINT_QOS_RAW;
 		field->name = xstrdup("QOS_RAW");
 		field->len = 10;
 		field->print_routine = print_fields_char_list;
-	} else if (!strncasecmp("Reason", object,
-				MAX(command_len, 1))) {
+	} else if (!xstrncasecmp("Reason", object,
+				 MAX(command_len, 1))) {
 		field->type = PRINT_REASON;
 		field->name = xstrdup("Reason");
 		field->len = 30;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("RGT", object, MAX(command_len, 1))) {
+	} else if (!xstrncasecmp("RGT", object, MAX(command_len, 1))) {
 		field->type = PRINT_RGT;
 		field->name = xstrdup("RGT");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("RPC", object, MAX(command_len, 1))) {
+	} else if (!xstrncasecmp("RPC", object, MAX(command_len, 1))) {
 		field->type = PRINT_RPC_VERSION;
 		field->name = xstrdup("RPC");
 		field->len = 5;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Server", object, MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("Server", object, MAX(command_len, 3))) {
 		field->type = PRINT_SERVER;
 		field->name = xstrdup("Server");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Share", object, MAX(command_len, 1))
-		   || !strncasecmp("FairShare", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Share", object, MAX(command_len, 1))
+		   || !xstrncasecmp("FairShare", object, MAX(command_len, 2))) {
 		field->type = PRINT_FAIRSHARE;
 		field->name = xstrdup("Share");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("StateRaw", object,
+	} else if (!xstrncasecmp("StateRaw", object,
 				MAX(command_len, 6))) {
 		field->type = PRINT_STATERAW;
 		field->name = xstrdup("StateRaw");
 		field->len = 8;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("State", object, MAX(command_len, 1))) {
+	} else if (!xstrncasecmp("State", object, MAX(command_len, 1))) {
 		field->type = PRINT_STATE;
 		field->name = xstrdup("State");
 		field->len = 6;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("TimeStamp", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("TimeStamp", object, MAX(command_len, 2))) {
 		field->type = PRINT_TS;
 		field->name = xstrdup("Time");
 		field->len = 19;
 		field->print_routine = print_fields_date;
-	} else if (!strncasecmp("TimeStart", object, MAX(command_len, 7)) ||
-		   !strncasecmp("Start", object, MAX(command_len, 3))) {
+	} else if (!xstrncasecmp("TimeStart", object, MAX(command_len, 7)) ||
+		   !xstrncasecmp("Start", object, MAX(command_len, 3))) {
 		field->type = PRINT_TIMESTART;
 		field->name = xstrdup("TimeStart");
 		field->len = 19;
 		field->print_routine = print_fields_date;
-	} else if (!strncasecmp("TimeEnd", object, MAX(command_len, 5)) ||
-		   !strncasecmp("End", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("TimeEnd", object, MAX(command_len, 5)) ||
+		   !xstrncasecmp("End", object, MAX(command_len, 2))) {
 		field->type = PRINT_TIMEEND;
 		field->name = xstrdup("TimeEnd");
 		field->len = 19;
 		field->print_routine = print_fields_date;
-	} else if (!strncasecmp("TRES", object,
-				MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("TRES", object,
+				 MAX(command_len, 2))) {
 		field->type = PRINT_TRES;
 		field->name = xstrdup("TRES");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Type", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Type", object, MAX(command_len, 2))) {
 		field->type = PRINT_TYPE;
 		field->name = xstrdup("Type");
 		field->len = 8;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("UnusedWall", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("UnusedWall", object, MAX(command_len, 2))) {
 		field->type = PRINT_UNUSED;
 		field->name = xstrdup("UnusedWall");
 		field->len = 10;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("UsageFactor", object, MAX(command_len, 6))) {
+	} else if (!xstrncasecmp("UsageFactor", object, MAX(command_len, 6))) {
 		field->type = PRINT_UF;
 		field->name = xstrdup("UsageFactor");
 		field->len = 11;
 		field->print_routine = print_fields_double;
-	} else if (!strncasecmp("UsageThreshold",
-				object, MAX(command_len, 6))) {
+	} else if (!xstrncasecmp("UsageThreshold", object,
+				 MAX(command_len, 6))) {
 		field->type = PRINT_UT;
 		field->name = xstrdup("UsageThres");
 		field->len = 10;
 		field->print_routine = print_fields_double;
-	} else if (!strncasecmp("Allocated", object, MAX(command_len, 7))) {
+	} else if (!xstrncasecmp("Allocated", object, MAX(command_len, 7))) {
 		field->type = PRINT_ALLOCATED;
 		field->name = xstrdup("% Allocated");
 		field->len = 11;
 		field->print_routine = print_fields_uint16;
-	} else if (!strncasecmp("User", object, MAX(command_len, 1))) {
+	} else if (!xstrncasecmp("User", object, MAX(command_len, 1))) {
 		field->type = PRINT_USER;
 		field->name = xstrdup("User");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("WCKeys", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("WCKeys", object, MAX(command_len, 2))) {
 		field->type = PRINT_WCKEYS;
 		field->name = xstrdup("WCKeys");
 		field->len = 20;
 		field->print_routine = print_fields_char_list;
-	} else if (!strncasecmp("Where", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Where", object, MAX(command_len, 2))) {
 		field->type = PRINT_WHERE;
 		field->name = xstrdup("Where");
 		field->len = 20;

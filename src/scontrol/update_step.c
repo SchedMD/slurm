@@ -192,7 +192,7 @@ extern int scontrol_update_step (int argc, char **argv)
 			return -1;
 		}
 
-		if (strncasecmp(tag, "StepId", MAX(taglen, 4)) == 0) {
+		if (xstrncasecmp(tag, "StepId", MAX(taglen, 4)) == 0) {
 			char *end_ptr;
 			step_msg.job_id = (uint32_t) strtol(val, &end_ptr, 10);
 			if (end_ptr[0] == '.') {
@@ -205,7 +205,7 @@ extern int scontrol_update_step (int argc, char **argv)
 				fprintf (stderr, "Request aborted\n");
 				return 0;
 			} /* else apply to all steps of this job_id */
-		} else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 2)) == 0) {
+		} else if (xstrncasecmp(tag, "TimeLimit", MAX(taglen, 2)) == 0) {
 			bool incr, decr;
 			uint32_t step_current_time, time_limit;
 
@@ -242,7 +242,7 @@ extern int scontrol_update_step (int argc, char **argv)
 			}
 			step_msg.time_limit = time_limit;
 			update_cnt++;
-		} else if (strncasecmp(tag, "CompFile", MAX(taglen, 2)) == 0) {
+		} else if (xstrncasecmp(tag, "CompFile", MAX(taglen, 2)) == 0) {
 			if (_parse_comp_file(val, &step_msg)) {
 				exit_code = 1;
 				fprintf(stderr,

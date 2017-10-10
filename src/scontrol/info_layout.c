@@ -64,13 +64,13 @@ scontrol_print_layout (int argc, char **argv)
 		} else {
 			val = NULL;
 		}
-		if (strncasecmp(tag, "layouts", MAX(tag_len, 3)) == 0) {
+		if (xstrncasecmp(tag, "layouts", MAX(tag_len, 3)) == 0) {
 			layout_type = val;
-		} else if (strncasecmp (tag, "entity", MAX(tag_len, 3)) == 0) {
+		} else if (xstrncasecmp(tag, "entity", MAX(tag_len, 3)) == 0) {
 			entities = val;
-		} else if (strncasecmp (tag, "type", MAX(tag_len, 3)) == 0) {
+		} else if (xstrncasecmp(tag, "type", MAX(tag_len, 3)) == 0) {
 			type = val;
-		} else if (strncasecmp (tag, "nolayout", MAX(tag_len, 4)) == 0){
+		} else if (xstrncasecmp(tag, "nolayout", MAX(tag_len, 4)) ==0) {
 			flags |= LAYOUTS_DUMP_NOLAYOUT;
 		} else {
 			exit_code = 1;

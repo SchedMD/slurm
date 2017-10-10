@@ -269,7 +269,7 @@ extern void parse_command_line(int argc, char **argv)
 		case (int) OPT_LONG_FLAGS:
 			if (!optarg) /* CLANG Fix */
 				break;
-			if (!strncasecmp(optarg, "perm", 4))
+			if (!xstrncasecmp(optarg, "perm", 4))
 				params.flags = TRIGGER_FLAG_PERM;
 			else {
 				error("Invalid flags %s", optarg);

@@ -72,27 +72,28 @@ scontrol_update_node (int argc, char **argv)
 			return -1;
 		}
 
-		if (strncasecmp(tag, "NodeAddr", MAX(tag_len, 5)) == 0) {
+		if (xstrncasecmp(tag, "NodeAddr", MAX(tag_len, 5)) == 0) {
 			node_msg.node_addr = val;
 			update_cnt++;
-		} else if (strncasecmp(tag, "NodeHostName", MAX(tag_len, 5))
+		} else if (xstrncasecmp(tag, "NodeHostName", MAX(tag_len, 5))
 			   == 0) {
 			node_msg.node_hostname = val;
 			update_cnt++;
-		} else if (strncasecmp(tag, "NodeName", MAX(tag_len, 1)) == 0) {
+		} else if (xstrncasecmp(tag, "NodeName", MAX(tag_len, 1)) == 0) {
 			node_msg.node_names = val;
-		} else if (!strncasecmp(tag, "ActiveFeatures", MAX(tag_len,3))){
+		} else if (!xstrncasecmp(tag, "ActiveFeatures",
+					 MAX(tag_len,3))) {
 			node_msg.features_act = val;
 			update_cnt++;
-		} else if (!strncasecmp(tag, "Features", MAX(tag_len, 1)) ||
-			   !strncasecmp(tag, "AvailableFeatures",
-					MAX(tag_len,3))) {
+		} else if (!xstrncasecmp(tag, "Features", MAX(tag_len, 1)) ||
+			   !xstrncasecmp(tag, "AvailableFeatures",
+					 MAX(tag_len,3))) {
 			node_msg.features = val;
 			update_cnt++;
-		} else if (strncasecmp(tag, "Gres", MAX(tag_len, 1)) == 0) {
+		} else if (xstrncasecmp(tag, "Gres", MAX(tag_len, 1)) == 0) {
 			node_msg.gres = val;
 			update_cnt++;
-		} else if (strncasecmp(tag, "Weight", MAX(tag_len,1)) == 0) {
+		} else if (xstrncasecmp(tag, "Weight", MAX(tag_len,1)) == 0) {
 			/* Logic borrowed from function _handle_uint32 */
 			char *endptr;
 			unsigned long num;
@@ -127,7 +128,7 @@ scontrol_update_node (int argc, char **argv)
 			}
 			node_msg.weight = num;
 			update_cnt++;
-		} else if (strncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
+		} else if (xstrncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
 			int len = strlen(val);
 			reason_str = xmalloc(len+1);
 			if (*val == '"')
@@ -147,7 +148,7 @@ scontrol_update_node (int argc, char **argv)
 			}
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
+		else if (xstrncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
 			if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
 				fprintf (stderr, "%s can not be changed through"
 					 " SLURM. Use native Cray tools such as"
@@ -156,42 +157,42 @@ scontrol_update_node (int argc, char **argv)
 				exit_code = 1;
 				goto done;
 			}
-			if (strncasecmp(val, "NoResp",
+			if (xstrncasecmp(val, "NoResp",
 				        MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_NO_RESPOND;
 				update_cnt++;
-			} else if (strncasecmp(val, "DRAIN",
+			} else if (xstrncasecmp(val, "DRAIN",
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_DRAIN;
 				update_cnt++;
-			} else if (strncasecmp(val, "FAIL",
+			} else if (xstrncasecmp(val, "FAIL",
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_FAIL;
 				update_cnt++;
-			} else if (strncasecmp(val, "FUTURE",
+			} else if (xstrncasecmp(val, "FUTURE",
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_FUTURE;
 				update_cnt++;
-			} else if (strncasecmp(val, "RESUME",
+			} else if (xstrncasecmp(val, "RESUME",
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_RESUME;
 				update_cnt++;
-			} else if (strncasecmp(val, "POWER_DOWN",
+			} else if (xstrncasecmp(val, "POWER_DOWN",
 				   MAX(val_len, 7)) == 0) {
 				node_msg.node_state = NODE_STATE_POWER_SAVE;
 				update_cnt++;
-			} else if (strncasecmp(val, "POWER_UP",
+			} else if (xstrncasecmp(val, "POWER_UP",
 				   MAX(val_len, 7)) == 0) {
 				node_msg.node_state = NODE_STATE_POWER_UP;
 				update_cnt++;
-			} else if (strncasecmp(val, "UNDRAIN",
+			} else if (xstrncasecmp(val, "UNDRAIN",
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_UNDRAIN;
 				update_cnt++;
 			} else {
 				state_val = (uint16_t) NO_VAL;
 				for (j = 0; j < NODE_STATE_END; j++) {
-					if (strncasecmp (node_state_string(j),
+					if (xstrncasecmp(node_state_string(j),
 							 val,
 							 MAX(val_len, 3)) == 0){
 						state_val = (uint16_t) j;
@@ -281,9 +282,9 @@ scontrol_update_front_end (int argc, char **argv)
 			error("Invalid input: %s  Request aborted", argv[i]);
 			return -1;
 		}
-		if (strncasecmp(tag, "FrontendName", MAX(tag_len, 1)) == 0)
+		if (xstrncasecmp(tag, "FrontendName", MAX(tag_len, 1)) == 0)
 			front_end_msg.name = val;
-		else if (strncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
+		else if (xstrncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
 			int len = strlen(val);
 			reason_str = xmalloc(len+1);
 			if (*val == '"')
@@ -303,17 +304,16 @@ scontrol_update_front_end (int argc, char **argv)
 			}
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
-			if (strncasecmp(val, "DRAIN",
-				   MAX(val_len, 3)) == 0) {
+		else if (xstrncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
+			if (xstrncasecmp(val, "DRAIN", MAX(val_len, 3)) == 0) {
 				front_end_msg.node_state = NODE_STATE_DRAIN;
 				update_cnt++;
-			} else if (strncasecmp(val, "DOWN",
-				   MAX(val_len, 3)) == 0) {
+			} else if (xstrncasecmp(val, "DOWN",
+						MAX(val_len, 3)) == 0) {
 				front_end_msg.node_state = NODE_STATE_DOWN;
 				update_cnt++;
-			} else if (strncasecmp(val, "RESUME",
-				   MAX(val_len, 3)) == 0) {
+			} else if (xstrncasecmp(val, "RESUME",
+						MAX(val_len, 3)) == 0) {
 				front_end_msg.node_state = NODE_RESUME;
 				update_cnt++;
 			} else {

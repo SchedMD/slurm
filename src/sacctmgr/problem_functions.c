@@ -58,15 +58,15 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 		}
 
-		if (!end && !strncasecmp (argv[i], "Tree",
+		if (!end && !xstrncasecmp(argv[i], "Tree",
 					  MAX(command_len, 4))) {
 			tree_display = 1;
-		} else if (!end && !strncasecmp(argv[i], "where",
-					       MAX(command_len, 5))) {
+		} else if (!end && !xstrncasecmp(argv[i], "where",
+						 MAX(command_len, 5))) {
 			continue;
-		} else if (!end || !strncasecmp (argv[i], "Ids",
-						MAX(command_len, 1))
-			  || !strncasecmp (argv[i], "Problems",
+		} else if (!end || !xstrncasecmp(argv[i], "Ids",
+						 MAX(command_len, 1))
+			  || !xstrncasecmp(argv[i], "Problems",
 					   MAX(command_len, 2))) {
 			if (!assoc_cond->id_list)
 				assoc_cond->id_list =
@@ -74,9 +74,9 @@ static int _set_cond(int *start, int argc, char **argv,
 			slurm_addto_char_list(assoc_cond->id_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Accounts",
+		} else if (!xstrncasecmp(argv[i], "Accounts",
 					 MAX(command_len, 2))
-			   || !strncasecmp (argv[i], "Acct",
+			   || !xstrncasecmp(argv[i], "Acct",
 					    MAX(command_len, 4))) {
 			if (!assoc_cond->acct_list)
 				assoc_cond->acct_list =
@@ -84,7 +84,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			slurm_addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Clusters",
+		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 1))) {
 			if (!assoc_cond->cluster_list)
 				assoc_cond->cluster_list =
@@ -92,12 +92,12 @@ static int _set_cond(int *start, int argc, char **argv,
 			slurm_addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format",
+		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if (format_list)
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Partitions",
+		} else if (!xstrncasecmp(argv[i], "Partitions",
 					 MAX(command_len, 4))) {
 			if (!assoc_cond->partition_list)
 				assoc_cond->partition_list =
@@ -105,7 +105,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			slurm_addto_char_list(assoc_cond->partition_list,
 					argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Users",
+		} else if (!xstrncasecmp(argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if (!assoc_cond->user_list)
 				assoc_cond->user_list =
@@ -145,8 +145,8 @@ extern int sacctmgr_list_problem(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, assoc_cond, format_list);
 	}

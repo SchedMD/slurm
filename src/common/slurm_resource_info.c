@@ -366,8 +366,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		} else if (xstrcasecmp(tok, "rank") == 0) {
 			_clear_then_set((int *)flags, bind_bits, CPU_BIND_RANK);
 			xfree(*cpu_bind);
-		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
-		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
+		} else if ((xstrncasecmp(tok, "map_cpu", 7) == 0) ||
+		           (xstrncasecmp(tok, "mapcpu", 6) == 0)) {
 			char *list;
 			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
@@ -380,8 +380,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 				      "map_cpu:<list>\"");
 				rc = SLURM_ERROR;
 			}
-		} else if ((strncasecmp(tok, "mask_cpu", 8) == 0) ||
-		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
+		} else if ((xstrncasecmp(tok, "mask_cpu", 8) == 0) ||
+		           (xstrncasecmp(tok, "maskcpu", 7) == 0)) {
 			char *list;
 			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
@@ -398,8 +398,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			_clear_then_set((int *)flags, bind_bits,
 					CPU_BIND_LDRANK);
 			xfree(*cpu_bind);
-		} else if ((strncasecmp(tok, "map_ldom", 8) == 0) ||
-		           (strncasecmp(tok, "mapldom", 7) == 0)) {
+		} else if ((xstrncasecmp(tok, "map_ldom", 8) == 0) ||
+		           (xstrncasecmp(tok, "mapldom", 7) == 0)) {
 			char *list;
 			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
@@ -413,8 +413,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 				      "map_ldom:<list>\"");
 				rc = SLURM_ERROR;
 			}
-		} else if ((strncasecmp(tok, "mask_ldom", 9) == 0) ||
-		           (strncasecmp(tok, "maskldom", 8) == 0)) {
+		} else if ((xstrncasecmp(tok, "mask_ldom", 9) == 0) ||
+		           (xstrncasecmp(tok, "maskldom", 8) == 0)) {
 			char *list;
 			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
@@ -596,8 +596,8 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 		} else if (xstrcasecmp(tok, "local") == 0) {
 			_clear_then_set((int *)flags, bind_bits,MEM_BIND_LOCAL);
 			xfree(*mem_bind);
-		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
-		           (strncasecmp(tok, "mapmem", 6) == 0)) {
+		} else if ((xstrncasecmp(tok, "map_mem", 7) == 0) ||
+		           (xstrncasecmp(tok, "mapmem", 6) == 0)) {
 			char *list;
 			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
@@ -609,8 +609,8 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 				error("missing list for \"--mem_bind=map_mem:<list>\"");
 				rc = SLURM_ERROR;
 			}
-		} else if ((strncasecmp(tok, "mask_mem", 8) == 0) ||
-		           (strncasecmp(tok, "maskmem", 7) == 0)) {
+		} else if ((xstrncasecmp(tok, "mask_mem", 8) == 0) ||
+		           (xstrncasecmp(tok, "maskmem", 7) == 0)) {
 			char *list;
 			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */

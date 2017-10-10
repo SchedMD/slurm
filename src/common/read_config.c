@@ -1322,13 +1322,13 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			p->qos_char = NULL;
 
 		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
-			if (strncasecmp(tmp, "CR_Core_Memory", 14) == 0)
+			if (xstrncasecmp(tmp, "CR_Core_Memory", 14) == 0)
 				p->cr_type = CR_CORE | CR_MEMORY;
-			else if (strncasecmp(tmp, "CR_Core", 7) == 0)
+			else if (xstrncasecmp(tmp, "CR_Core", 7) == 0)
 				p->cr_type = CR_CORE;
-			else if (strncasecmp(tmp, "CR_Socket_Memory", 16) == 0)
+			else if (xstrncasecmp(tmp, "CR_Socket_Memory", 16) == 0)
 				p->cr_type = CR_SOCKET | CR_MEMORY;
-			else if (strncasecmp(tmp, "CR_Socket", 9) == 0)
+			else if (xstrncasecmp(tmp, "CR_Socket", 9) == 0)
 				p->cr_type = CR_SOCKET;
 			else {
 				error("Bad value for SelectTypeParameters: %s",
@@ -1350,7 +1350,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				p->max_share = 1;
 			else if (xstrcasecmp(tmp, "EXCLUSIVE") == 0)
 				p->max_share = 0;
-			else if (strncasecmp(tmp, "YES:", 4) == 0) {
+			else if (xstrncasecmp(tmp, "YES:", 4) == 0) {
 				int i = strtol(&tmp[4], (char **) NULL, 10);
 				if (i <= 1) {
 					error("Ignoring bad OverSubscribe value: %s",
@@ -1360,7 +1360,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 					p->max_share = i;
 			} else if (xstrcasecmp(tmp, "YES") == 0)
 				p->max_share = 4;
-			else if (strncasecmp(tmp, "FORCE:", 6) == 0) {
+			else if (xstrncasecmp(tmp, "FORCE:", 6) == 0) {
 				int i = strtol(&tmp[6], (char **) NULL, 10);
 				if (i < 1) {
 					error("Ignoring bad OverSubscribe value: %s",
@@ -1383,13 +1383,13 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		if (s_p_get_string(&tmp, "State", tbl) ||
 		    s_p_get_string(&tmp, "State", dflt)) {
-			if (strncasecmp(tmp, "DOWN", 4) == 0)
+			if (xstrncasecmp(tmp, "DOWN", 4) == 0)
 				p->state_up = PARTITION_DOWN;
-			else if (strncasecmp(tmp, "UP", 2) == 0)
+			else if (xstrncasecmp(tmp, "UP", 2) == 0)
 				p->state_up = PARTITION_UP;
-			else if (strncasecmp(tmp, "DRAIN", 5) == 0)
+			else if (xstrncasecmp(tmp, "DRAIN", 5) == 0)
 				p->state_up = PARTITION_DRAIN;
-			else if (strncasecmp(tmp, "INACTIVE", 8) == 0)
+			else if (xstrncasecmp(tmp, "INACTIVE", 8) == 0)
 				 p->state_up = PARTITION_INACTIVE;
 			else {
 				error("Bad value \"%s\" for State", tmp);
@@ -4293,7 +4293,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				 * this is the default */
 			} else if (xstrcasecmp(tok, "verbose") == 0) {
 				conf->task_plugin_param |= CPU_BIND_VERBOSE;
-			} else if (strncasecmp(tok, "autobind=",
+			} else if (xstrncasecmp(tok, "autobind=",
 						strlen("autobind=")) == 0) {
 				char *val_ptr = tok + strlen("autobind=");
 
@@ -4399,7 +4399,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 * slurmd.
 	 */
 	if (s_p_get_string(&temp_str, "MemLimitEnforce", hashtbl)) {
-		if (strncasecmp(temp_str, "no", 2) == 0)
+		if (xstrncasecmp(temp_str, "no", 2) == 0)
 			conf->mem_limit_enforce = false;
 		xfree(temp_str);
 	}

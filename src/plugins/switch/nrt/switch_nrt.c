@@ -501,7 +501,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	}
 	while (token) {
 		/* bulk_xfer options */
-		if (!strncasecmp(token, "bulk_xfer=", 10)) {
+		if (!xstrncasecmp(token, "bulk_xfer=", 10)) {
 			long int resources;
 			char *end_ptr = NULL;
 			bulk_xfer = true;
@@ -522,7 +522,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			bulk_xfer = true;
 
 		/* device name options */
-		} else if (!strncasecmp(token, "devname=", 8)) {
+		} else if (!xstrncasecmp(token, "devname=", 8)) {
 			char *name_ptr = token + 8;
 			if (nrt_adapter_name_check(name_ptr, list)) {
 				debug("switch/nrt: Found adapter %s in "
@@ -540,7 +540,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			}
 
 		/* device type options */
-		} else if (!strncasecmp(token, "devtype=", 8)) {
+		} else if (!xstrncasecmp(token, "devtype=", 8)) {
 			char *type_ptr = token + 8;
 			if (!xstrcasecmp(type_ptr, "ib")) {
 				dev_type = NRT_IB;
@@ -566,7 +566,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			}
 
 		/* instances options */
-		} else if (!strncasecmp(token, "instances=", 10)) {
+		} else if (!xstrncasecmp(token, "instances=", 10)) {
 			long int count;
 			char *end_ptr = NULL;
 			count = strtol(token+10, &end_ptr, 10);
@@ -596,13 +596,13 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		 *        If you add to this list please add to the list in
 		 *        src/plugins/launch/poe/launch_poe.c
 		 */
-		} else if ((!strncasecmp(token, "lapi",  4)) ||
-			   (!strncasecmp(token, "mpi",   3)) ||
-			   (!strncasecmp(token, "pami",  4)) ||
-			   (!strncasecmp(token, "pgas", 4)) ||
-			   (!strncasecmp(token, "shmem", 5)) ||
-			   (!strncasecmp(token, "test", 4)) ||
-			   (!strncasecmp(token, "upc",   3))) {
+		} else if ((!xstrncasecmp(token, "lapi",  4)) ||
+			   (!xstrncasecmp(token, "mpi",   3)) ||
+			   (!xstrncasecmp(token, "pami",  4)) ||
+			   (!xstrncasecmp(token, "pgas", 4)) ||
+			   (!xstrncasecmp(token, "shmem", 5)) ||
+			   (!xstrncasecmp(token, "test", 4)) ||
+			   (!xstrncasecmp(token, "upc",   3))) {
 			if (protocol)
 				xstrcat(protocol, ",");
 			xstrcat(protocol, token);
@@ -613,7 +613,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			sn_all = false;
 
 		/* Collective Acceleration Units (CAU) */
-		} else if (!strncasecmp(token, "cau=", 4)) {
+		} else if (!xstrncasecmp(token, "cau=", 4)) {
 			long int count;
 			char *end_ptr = NULL;
 			count = strtol(token+4, &end_ptr, 10);
@@ -627,7 +627,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			}
 
 		/* Immediate Send Slots Per Window */
-		} else if (!strncasecmp(token, "immed=", 6)) {
+		} else if (!xstrncasecmp(token, "immed=", 6)) {
 			long int count;
 			char *end_ptr = NULL;
 			count = strtol(token+6, &end_ptr, 10);
