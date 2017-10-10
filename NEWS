@@ -108,6 +108,7 @@ documents those changes that are of interest to users and administrators.
     "SchedulerParameters=disable_user_top" will be silently ignored.
  -- Add -TALL to sreport.
  -- Removed unused SlurmdPlugstack option and associated framework.
+ -- Correct logic for line continuation in srun --multi-prog file.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

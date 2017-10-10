@@ -56,8 +56,8 @@ if {[test_front_end] != 0} {
 exec $bin_rm -f $file_in
 set file [open $file_in "w"]
 puts $file "# multi-program configuration file
-1-2   /bin/echo task:%t:offset:%o
-0,3   echo task:%t:offset:%o
+1-2   $bin_echo task:%t:offset:%o
+0,3   $bin_echo task:%t:offset:%o
 "
 close $file
 exec $bin_chmod 700 $file_in
@@ -119,8 +119,8 @@ set timeout [expr $max_job_delay + 60 + 60 + 60]
 exec $bin_rm -f $file_in
 set file [open $file_in "w"]
 puts $file "# multi-program configuration file
-1-2   /bin/hostname
-0,3   /bin/date
+1-2   $bin_hostname
+0,3   $bin_date
 "
 close $file
 exec $bin_chmod 700 $file_in
@@ -193,6 +193,47 @@ expect {
 }
 if {$matches != 1} {
 	send_user "\nFAILURE: did not note lack of a executable for task 5.\n"
+	set exit_code 1
+}
+
+
+exec $bin_rm -f $file_in
+set file [open $file_in "w"]
+puts $file "# multi-program configuration file
+1-2   $bin_hostname
+0,3   $bin_echo aaaa \
+task:%t:\\
+offset:%o \\
+bbbb
+"
+close $file
+exec $bin_chmod 700 $file_in
+
+set matches   0
+set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog ./$file_in]
+expect {
+	-re "($number): aaaa task:($number):offset:($number) bbbb" {
+		if {$expect_out(1,string) == 0 && $expect_out(2,string) == 0 && $expect_out(3,string) == 0} {
+			incr matches
+		} elseif {$expect_out(1,string) == 3 && $expect_out(2,string) == 3 && $expect_out(3,string) == 1} {
+			incr matches	
+		} else {
+			send_user "\nFAILURE: processing MPMD line continuation\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 2} {
+	send_user "\nFAILURE: processing MPMD line continuation ($matches != 2)\n"
 	set exit_code 1
 }
 

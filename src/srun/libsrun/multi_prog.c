@@ -214,8 +214,9 @@ mpir_set_multi_name(int ntasks, const char *config_fname)
 			fclose(config_fd);
 			return -1;
 		}
-		if (line[line_len - 1] == '\\' ||
-		    (line_len > 1 && line[line_len - 2] == '\\'))
+		if ((line_len > 0 && line[line_len - 1] == '\\') ||  /* EOF */
+		    (line_len > 1 && line[line_len - 2] == '\\' &&
+				     line[line_len - 1] == '\n'))
 			line_break = true;
 		else
 			line_break = false;
@@ -462,8 +463,9 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
 			rc = -1;
 			goto fini;
 		}
-		if (line[line_len - 1] == '\\' ||
-		    (line_len > 1 && line[line_len - 2] == '\\'))
+		if ((line_len > 0 && line[line_len - 1] == '\\') ||  /* EOF */
+		    (line_len > 1 && line[line_len - 2] == '\\' &&
+				     line[line_len - 1] == '\n'))
 			line_break = true;
 		else
 			line_break = false;
