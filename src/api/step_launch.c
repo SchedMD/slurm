@@ -104,24 +104,6 @@ static uid_t  slurm_uid;
 static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
 
-#ifdef HAVE_NATIVE_CRAY
-/* On a Cray we need to validate the gid
- * before the launch of the tasks.  Since a native
- * Cray really isn't a cluster but a distributed system this should
- * be ok.
- * This could be hacked by a user, but the only damage they
- * could really do is set SLURM_USER_NAME to be something
- * other than the actual name.  Running any getpwXXX commands
- * on a cray compute node is not scalable and could
- * potentially cause all sorts of issues and timeouts when
- * talking with LDAP or NIS when done on the compute node.  We
- * have not seen this issue on a regular cluster, so we do
- * the validating there instead when not on a Cray.
- */
-static bool   validate_gid = true;
-#else
-static bool   validate_gid = false;
-#endif
 static void _exec_prog(slurm_msg_t *msg);
 static int  _msg_thr_create(struct step_launch_state *sls, int num_nodes);
 static void _handle_msg(void *arg, slurm_msg_t *msg);
@@ -278,10 +260,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.job_id = ctx->step_req->job_id;
 	launch.uid = ctx->step_req->user_id;
 	launch.gid = params->gid;
-	if (!slurm_valid_uid_gid((uid_t)launch.uid, &launch.gid,
-				 &launch.user_name, 0, validate_gid)) {
-		return SLURM_ERROR;
-	}
 	launch.argc = params->argc;
 	launch.argv = params->argv;
 	launch.spank_job_env = params->spank_job_env;
@@ -486,9 +464,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.job_id = ctx->step_req->job_id;
 	launch.uid = ctx->step_req->user_id;
 	launch.gid = params->gid;
-	if (!slurm_valid_uid_gid((uid_t)launch.uid, &launch.gid,
-				 &launch.user_name, 0, validate_gid))
-		return SLURM_ERROR;
 	launch.argc = params->argc;
 	launch.argv = params->argv;
 	launch.spank_job_env = params->spank_job_env;
