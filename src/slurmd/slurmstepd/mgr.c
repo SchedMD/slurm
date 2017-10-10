@@ -2424,15 +2424,6 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 		strlcpy(ps->saved_cwd, "/tmp", sizeof(ps->saved_cwd));
 	}
 
-#ifdef HAVE_NATIVE_CRAY
-	/* LDAP on Native Cray is not sufficiently scalable to support the
-	 * getgroups() call */
-	ps->ngids = 1;
-	if (get_list) {
-		ps->gid_list = (gid_t *) xmalloc(sizeof(gid_t));
-		ps->gid_list[0] = job->gid;
-	}
-#else
 	ps->ngids = getgroups(0, NULL);
 	if (ps->ngids == -1) {
 		error("%s: getgroups(): %m", __func__);
@@ -2448,7 +2439,6 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 			return -1;
 		}
 	}
-#endif
 
 	/*
 	 * No need to drop privileges if we're not running as root
