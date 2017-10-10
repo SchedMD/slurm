@@ -2629,6 +2629,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.group_id = job_start_msg->gid;
 	job.job_id = job_start_msg->job_id;
 	job.job_state = job_start_msg->job_state;
+	job.mcs_label = _replace_double_quotes(job_start_msg->mcs_label);
 	job.name = _replace_double_quotes(job_start_msg->name);
 	job.nodes = job_start_msg->nodes;
 	job.network = job_start_msg->node_inx;
