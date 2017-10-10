@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault when unpacking a 16.05 slurm_cred in a 17.02 daemon.
  -- Fix setting TRES limits with case insensitive TRES names.
  -- Add alias for xstrncmp() -- slurm_xstrncmp().
+ -- Fix sorting of case insensitive strings when using xstrcasecmp().
 
 * Changes in Slurm 17.02.7
 ==========================
