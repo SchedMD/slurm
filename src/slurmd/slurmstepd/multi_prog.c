@@ -163,7 +163,7 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 		}
 		line_num++;
 		line_len = strlen(line);
-		if (line[line_len - 1] == '\\')
+		if ((line_len > 0) && (line[line_len - 1] == '\\'))
 			line_break = true;
 		else
 			line_break = false;
@@ -336,7 +336,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	uint32_t *node_id2nid = NULL;	/* Map Slurm node ID to Cray NID name */
 	bool last_line_break = false, line_break = false;
 	char *last_rank_spec = NULL;
-	int args_len;
+	int args_len, line_len;
 	hostlist_t hl;
 
 	tmp_args = xmalloc(sizeof(char *) * job->ntasks);
@@ -352,7 +352,8 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		if (!line)
 			break;
 		line_num++;
-		if (line[strlen(line) - 1] == '\\')
+		line_len = strlen(line);
+		if ((line_len > 0) && (line[line_len - 1] == '\\'))
 			line_break = true;
 		else
 			line_break = false;
@@ -375,11 +376,14 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 				free(one_rank);
 				args_len = strlen(tmp_args[rank_id]);
 				if (!tmp_args[rank_id] ||
-				    tmp_args[rank_id][args_len - 1] != '\\')
+				    tmp_args[rank_id][args_len - 1] != '\\') {
+					hostlist_destroy(hl);
 					goto fail;
+				}
 				tmp_args[rank_id][args_len -1] = '\0';
 				xstrcat(tmp_args[rank_id], line);
 			}
+			hostlist_destroy(hl);
 			last_line_break = line_break;
 			continue;
 		}
