@@ -415,19 +415,14 @@ int main(int argc, char **argv)
 	if (slurmctld_conf.backup_controller &&
 	    ((xstrcmp(node_name_short,slurmctld_conf.backup_controller) == 0) ||
 	     (xstrcmp(node_name_long, slurmctld_conf.backup_controller) == 0))) {
-#ifndef HAVE_ALPS_CRAY
-		char *sched_params = NULL;
-#endif
 		slurmctld_primary = 0;
 
 #ifdef HAVE_ALPS_CRAY
 		slurmctld_config.scheduling_disabled = true;
 #else
-		sched_params = slurm_get_sched_params();
-		if (sched_params &&
-		    strstr(sched_params, "no_backup_scheduling"))
+		if (xstrcasestr(slurmctld_conf.sched_params,
+				"no_backup_scheduling"))
 			slurmctld_config.scheduling_disabled = true;
-		xfree(sched_params);
 #endif
 	}
 
