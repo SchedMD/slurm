@@ -21994,8 +21994,8 @@ fi
   _x_ac_ssh2_libs="lib64 lib"
   x_ac_x11=yes
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Slurm internal X11 support is disabled" >&5
-$as_echo_n "checking whether Slurm internal X11 support is disabled... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Slurm internal X11 support is enabled" >&5
+$as_echo_n "checking whether Slurm internal X11 support is enabled... " >&6; }
   # Check whether --enable-x11 was given.
 if test "${enable_x11+set}" = set; then :
   enableval=$enable_x11;  case "$enableval" in
@@ -22003,14 +22003,14 @@ if test "${enable_x11+set}" = set; then :
          no) x_ac_x11=no ;;
           *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
 $as_echo "doh!" >&6; }
-             as_fn_error $? "bad value \"$enableval\" for --disable-x11" "$LINENO" 5
+             as_fn_error $? "bad value \"$enableval\" for --enable-x11" "$LINENO" 5
       esac
 
 
 fi
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_x11=no}" >&5
-$as_echo "${x_ac_x11=no}" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_x11" >&5
+$as_echo "$x_ac_x11" >&6; }
 
   if test "$x_ac_x11" = no; then
       with_libssh2=no
