@@ -216,7 +216,7 @@ static int  _waiter_complete (uint32_t jobid);
 static void _send_back_fd(int socket, int fd);
 static bool _steps_completed_now(uint32_t jobid);
 static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
-			       uint16_t block_no, uint32_t *job_id,
+			       uint32_t *job_id,
 			       uint16_t protocol_version);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
 static uid_t _get_job_uid(uint32_t jobid);
@@ -3729,7 +3729,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
  * Munge without generating a credential replay error
  * RET SLURM_SUCCESS or an error code */
 static int
-_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
+_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
 		   uint32_t *job_id, uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
@@ -3737,7 +3737,7 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 	hostset_t hset = NULL;
 
 	*job_id = NO_VAL;
-	rc = extract_sbcast_cred(conf->vctx, req->cred, block_no,
+	rc = extract_sbcast_cred(conf->vctx, req->cred, req->block_no,
 				 job_id, &nodes, protocol_version);
 	if (rc != 0) {
 		error("Security violation: Invalid sbcast_cred from uid %d",
@@ -3894,7 +3894,7 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	key.gid = g_slurm_auth_get_gid(msg->auth_cred, conf->auth_info);
 	key.fname = req->fname;
 
-	rc = _valid_sbcast_cred(req, key.uid, req->block_no, &key.job_id,
+	rc = _valid_sbcast_cred(req, key.uid, &key.job_id,
 				msg->protocol_version);
 	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(key.uid))
 		return rc;
