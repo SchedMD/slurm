@@ -7993,6 +7993,66 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 	return false;
 }
 
+/*
+ * Increment time limit of one job record for node configuraiton.
+ */
+static void _job_time_limit_incr(struct job_record *job_ptr,
+				 uint32_t boot_job_id)
+{
+	time_t delta_t, now = time(NULL);
+
+	delta_t = difftime(now, job_ptr->start_time);
+	if ((job_ptr->job_id != boot_job_id) && !IS_JOB_CONFIGURING(job_ptr))
+		job_ptr->tot_sus_time = delta_t;
+
+	if ((job_ptr->time_limit != INFINITE) &&
+	    ((job_ptr->job_id == boot_job_id) || (delta_t != 0))) {
+		if (delta_t && !IS_JOB_CONFIGURING(job_ptr)) {
+			verbose("Extending job %u time limit by %u secs for configuration",
+				job_ptr->job_id, (uint32_t) delta_t);
+		}
+		job_ptr->end_time = now + (job_ptr->time_limit * 60);
+		job_ptr->end_time_exp = job_ptr->end_time;
+	}
+}
+
+/*
+ * Increment time limit for all components of a pack job for node configuraiton.
+ * job_ptr IN - pointer to job record for which configuration is complete
+ * boot_job_id - job ID of record with newly powered up node or 0
+ */
+static void _pack_time_limit_incr(struct job_record *job_ptr,
+				  uint32_t boot_job_id)
+{
+	struct job_record *pack_leader, *pack_job;
+	ListIterator iter;
+
+	if (!job_ptr->pack_job_id) {
+		_job_time_limit_incr(job_ptr, boot_job_id);
+		return;
+	}
+
+	pack_leader = find_job_record(job_ptr->pack_job_id);
+	if (!pack_leader) {
+		error("%s: Job pack leader %u not found",
+		      __func__, job_ptr->pack_job_id);
+		_job_time_limit_incr(job_ptr, boot_job_id);
+		return;
+	}
+	if (!pack_leader->pack_job_list) {
+		error("%s: Job pack leader %u job list is NULL",
+		      __func__, job_ptr->pack_job_id);
+		_job_time_limit_incr(job_ptr, boot_job_id);
+		return;
+	}
+
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		_job_time_limit_incr(pack_job, boot_job_id);
+	}
+	list_iterator_destroy(iter);
+}
+
 /* Clear job's CONFIGURING flag and advance end time as needed */
 extern void job_config_fini(struct job_record *job_ptr)
 {
@@ -8005,32 +8065,24 @@ extern void job_config_fini(struct job_record *job_ptr)
 		     job_ptr->job_id);
 		job_ptr->job_state &= ~JOB_POWER_UP_NODE;
 		job_ptr->start_time = now;
-		if (job_ptr->time_limit != INFINITE) {
-			job_ptr->end_time_exp = job_ptr->end_time =
-				now + (job_ptr->time_limit * 60);
-		}
+		_pack_time_limit_incr(job_ptr, job_ptr->job_id);
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	} else {
-		job_ptr->tot_sus_time = difftime(now, job_ptr->start_time);
-		if ((job_ptr->time_limit != INFINITE) &&
-		    (job_ptr->tot_sus_time != 0)) {
-			verbose("Extending job %u time limit by %u secs for configuration",
-				job_ptr->job_id,
-				(uint32_t) job_ptr->tot_sus_time);
-			job_ptr->end_time_exp = job_ptr->end_time =
-				now + (job_ptr->time_limit * 60);
-		}
+		_pack_time_limit_incr(job_ptr, 0);
 	}
 
-	/* Request asynchronous launch of a prolog for a
-	 * non-batch job. PROLOG_FLAG_CONTAIN also turns on
-	 * PROLOG_FLAG_ALLOC. */
+	/*
+	 * Request asynchronous launch of a prolog for a non-batch job.
+	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC.
+	 */
 	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
 		launch_prolog(job_ptr);
 }
 
-/* Determine of the nodes are ready to run a job
- * RET true if ready */
+/*
+ * Determine of the nodes are ready to run a job
+ * RET true if ready
+ */
 extern bool test_job_nodes_ready(struct job_record *job_ptr)
 {
 	if (IS_JOB_PENDING(job_ptr))
@@ -8084,6 +8136,45 @@ extern void job_validate_mem(struct job_record *job_ptr)
 }
 
 /*
+ * For non-pack job, return true if this job is configuring.
+ * For pack job, return true if any component of the job is configuring.
+ */
+static bool _pack_configuring_test(struct job_record *job_ptr)
+{
+	struct job_record *pack_leader, *pack_job;
+	ListIterator iter;
+	bool result = false;
+
+	if (IS_JOB_CONFIGURING(job_ptr))
+		return true;
+	if (!job_ptr->pack_job_id)
+		return false;
+
+	pack_leader = find_job_record(job_ptr->pack_job_id);
+	if (!pack_leader) {
+		error("%s: Job pack leader %u not found",
+		      __func__, job_ptr->pack_job_id);
+		return false;
+	}
+	if (!pack_leader->pack_job_list) {
+		error("%s: Job pack leader %u job list is NULL",
+		      __func__, job_ptr->pack_job_id);
+		return false;
+	}
+
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		if (IS_JOB_CONFIGURING(pack_job)) {
+			result = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return result;
+}
+
+/*
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
@@ -8106,8 +8197,10 @@ void job_time_limit(void)
 	else
 		resv_over_run *= 60;
 
-	/* locks same as in _slurmctld_background() (The only current place this
-	 * is called). */
+	/*
+	 * locks same as in _slurmctld_background() (The only current place this
+	 * is called).
+	 */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	DEF_TIMERS;
@@ -8123,7 +8216,8 @@ void job_time_limit(void)
 		job_test_count++;
 
 #ifndef HAVE_BG
-		/* If the CONFIGURING flag is removed elsewhere like
+		/*
+		 * If the CONFIGURING flag is removed elsewhere like
 		 * on a Bluegene system this check is not needed and
 		 * should be avoided.  In the case of BG blocks that
 		 * are booting aren't associated with
@@ -8148,17 +8242,19 @@ void job_time_limit(void)
 			}
 		}
 #endif
-		if (IS_JOB_CONFIGURING(job_ptr))
+
+		if (_pack_configuring_test(job_ptr))
 			continue;
 
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
 
-		/* everything above here is considered "quick", and skips the
+		/*
+		 * everything above here is considered "quick", and skips the
 		 * timeout at the bottom of the loop by using a continue.
 		 * everything below is considered "slow", and needs to jump to
-		 * time_check before the next job is tested */
-
+		 * time_check before the next job is tested
+		 */
 		if (job_ptr->preempt_time &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 			if ((job_ptr->warn_time) &&
@@ -8207,8 +8303,8 @@ void job_time_limit(void)
 			    (!(job_ptr->warn_flags & WARN_SENT)) &&
 			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
 			     job_ptr->end_time)) {
-
-				/* If --signal B option was not specified,
+				/*
+				 * If --signal B option was not specified,
 				 * signal only the steps but not the batch step.
 				 */
 				if (job_ptr->warn_flags == 0)
@@ -8285,8 +8381,10 @@ void job_time_limit(void)
 			goto time_check;
 		}
 
-		/* check if any individual job steps have exceeded
-		 * their time limit */
+		/*
+		 * check if any individual job steps have exceeded
+		 * their time limit
+		 */
 		if (job_ptr->step_list &&
 		    (list_count(job_ptr->step_list) > 0))
 			check_job_step_time_limit(job_ptr, now);
@@ -8304,7 +8402,8 @@ void job_time_limit(void)
 		if (job_ptr->end_time <= (now + PERIODIC_TIMEOUT * 2))
 			srun_timeout (job_ptr);
 
-		/* _job_timed_out() and other calls can take a long time on
+		/*
+		 * _job_timed_out() and other calls can take a long time on
 		 * some platforms. This loop is holding the job_write lock;
 		 * if a lot of jobs need to be timed out within the same cycle
 		 * this stalls other threads from running and causes
@@ -8315,7 +8414,8 @@ void job_time_limit(void)
 		 * lock is released. However, list_next itself is thread safe,
 		 * and can be used again once the locks are reacquired.
 		 * list_peek_next is used in the unlikely event the timer has
-		 * expired just as the end of the job_list is reached. */
+		 * expired just as the end of the job_list is reached.
+		 */
 time_check:
 		/* Use a hard-coded 3 second timeout, with a 1 second sleep. */
 		if (slurm_delta_tv(&tv1) >= 3000000 && list_peek_next(job_iterator) ) {
