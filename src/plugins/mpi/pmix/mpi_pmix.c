@@ -87,13 +87,13 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 void *libpmix_plug = NULL;
 
-void libpmix_close(void *lib_plug)
+static void _libpmix_close(void *lib_plug)
 {
 	xassert(lib_plug);
 	dlclose(lib_plug);
 }
 
-void *libpmix_open(void)
+static void *_libpmix_open(void)
 {
 	void *lib_plug = NULL;
 	char *full_path = NULL;
@@ -110,7 +110,7 @@ void *libpmix_open(void)
 	if (lib_plug && (HAVE_PMIX_VER != pmixp_lib_get_version())) {
 		PMIXP_ERROR("pmi/pmix: incorrect PMIx library version loaded %d was loaded, required %d version",
 			    pmixp_lib_get_version(), (int)HAVE_PMIX_VER);
-		libpmix_close(lib_plug);
+		_libpmix_close(lib_plug);
 		lib_plug = NULL;
 	}
 
@@ -123,16 +123,25 @@ void *libpmix_open(void)
  */
 extern int init(void)
 {
-	libpmix_plug = libpmix_open();
-	if ( libpmix_plug == NULL ) {
+	libpmix_plug = _libpmix_open();
+	if (!libpmix_plug) {
 		PMIXP_ERROR("pmi/pmix: can not load PMIx library");
 		return SLURM_FAILURE;
 	}
 	return SLURM_SUCCESS;
 }
 
+extern int fini(void)
+{
+	PMIXP_DEBUG("%s: call fini()", pmixp_info_hostname());
+	pmixp_agent_stop();
+	pmixp_stepd_finalize();
+	_libpmix_close(libpmix_plug);
+	return SLURM_SUCCESS;
+}
 
-int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
+extern int p_mpi_hook_slurmstepd_prefork(
+	const stepd_step_rec_t *job, char ***env)
 {
 	int ret;
 	pmixp_debug_hang(0);
@@ -157,7 +166,8 @@ err_ext:
 	return ret;
 }
 
-int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
+extern int p_mpi_hook_slurmstepd_task(
+	const mpi_plugin_task_info_t *job, char ***env)
 {
 	char **tmp_env = NULL;
 	pmixp_debug_hang(0);
@@ -184,8 +194,8 @@ int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 	return SLURM_SUCCESS;
 }
 
-mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
-		const mpi_plugin_client_info_t *job, char ***env)
+extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
+	const mpi_plugin_client_info_t *job, char ***env)
 {
 	static pthread_mutex_t setup_mutex = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_cond_t setup_cond  = PTHREAD_COND_INITIALIZER;
@@ -222,16 +232,7 @@ mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 	return (void *)0xdeadbeef;
 }
 
-int p_mpi_hook_client_fini(void)
+extern int p_mpi_hook_client_fini(void)
 {
-	return SLURM_SUCCESS;
-}
-
-int fini(void)
-{
-	PMIXP_DEBUG("%s: call fini()", pmixp_info_hostname());
-	pmixp_agent_stop();
-	pmixp_stepd_finalize();
-	libpmix_close(libpmix_plug);
 	return SLURM_SUCCESS;
 }

@@ -407,7 +407,7 @@ static void _set_localinfo(List lresp)
 	list_append(lresp, kvp);
 }
 
-int pmixp_libpmix_init(void)
+extern int pmixp_libpmix_init(void)
 {
 	int rc;
 	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR) |
@@ -443,7 +443,7 @@ int pmixp_libpmix_init(void)
 	return 0;
 }
 
-int pmixp_libpmix_finalize(void)
+extern int pmixp_libpmix_finalize(void)
 {
 	int rc = SLURM_SUCCESS, rc1;
 
@@ -466,7 +466,7 @@ int pmixp_libpmix_finalize(void)
 	return rc;
 }
 
-void pmixp_lib_modex_invoke(void *mdx_fn, int status,
+extern void pmixp_lib_modex_invoke(void *mdx_fn, int status,
 			  const char *data, size_t ndata, void *cbdata,
 			  void *rel_fn, void *rel_data)
 {
@@ -493,14 +493,15 @@ void pmixp_lib_modex_invoke(void *mdx_fn, int status,
 	cbfunc(rc, data, ndata, cbdata, release_fn, rel_data);
 }
 
-void pmixp_lib_release_invoke(void *rel_fn, void *rel_data)
+extern void pmixp_lib_release_invoke(void *rel_fn, void *rel_data)
 {
 	pmix_release_cbfunc_t cbfunc = (pmix_release_cbfunc_t)rel_fn;
 
 	cbfunc(rel_data);
 }
 
-int pmixp_lib_dmodex_request(pmixp_proc_t *proc, void *dmdx_fn, void *caddy)
+extern int pmixp_lib_dmodex_request(
+	pmixp_proc_t *proc, void *dmdx_fn, void *caddy)
 {
 	pmix_status_t rc;
 	pmix_proc_t proc_v1;
@@ -516,7 +517,7 @@ int pmixp_lib_dmodex_request(pmixp_proc_t *proc, void *dmdx_fn, void *caddy)
 	return SLURM_SUCCESS;
 }
 
-int pmixp_lib_setup_fork(uint32_t rank, const char *nspace, char ***env)
+extern int pmixp_lib_setup_fork(uint32_t rank, const char *nspace, char ***env)
 {
 	pmix_proc_t proc;
 	pmix_status_t rc;
@@ -530,24 +531,24 @@ int pmixp_lib_setup_fork(uint32_t rank, const char *nspace, char ***env)
 	return SLURM_SUCCESS;
 }
 
-int pmixp_lib_is_wildcard(uint32_t rank)
+extern int pmixp_lib_is_wildcard(uint32_t rank)
 {
 	int _rank = (int)rank;
 	return (PMIX_RANK_WILDCARD == _rank);
 }
 
-int pmixp_lib_is_undef(uint32_t rank)
+extern int pmixp_lib_is_undef(uint32_t rank)
 {
 	int _rank = (int)rank;
 	return (PMIX_RANK_UNDEF == _rank);
 }
 
-uint32_t pmixp_lib_get_wildcard(void)
+extern uint32_t pmixp_lib_get_wildcard(void)
 {
 	return (uint32_t)(PMIX_RANK_WILDCARD);
 }
 
-uint32_t pmixp_lib_get_version(void)
+extern uint32_t pmixp_lib_get_version(void)
 {
 	return (uint32_t)PMIX_VERSION_MAJOR;
 }
