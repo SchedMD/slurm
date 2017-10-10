@@ -57,6 +57,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/env.h"
 #include "src/common/gres.h"
+#include "src/common/group_cache.h"
 #include "src/common/layouts_mgr.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -2269,8 +2270,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 						     uint16_t protocol_version)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
-	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
 
 	/* Initialization of data structures */
 	launch_msg_ptr = (batch_job_launch_msg_t *)
@@ -2280,6 +2279,16 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 	launch_msg_ptr->uid = job_ptr->user_id;
+	launch_msg_ptr->gid = job_ptr->group_id;
+	launch_msg_ptr->user_name = uid_to_string(job_ptr->job_id);
+
+	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS)) {
+		/* lookup and send extended gids list */
+		launch_msg_ptr->ngids = group_cache_lookup(launch_msg_ptr->uid,
+							   launch_msg_ptr->gid,
+							   launch_msg_ptr->user_name,
+							   &launch_msg_ptr->gids);
+	}
 
 	if ((launch_msg_ptr->script = get_job_script(job_ptr)) == NULL) {
 		error("Can not find batch script, Aborting batch job %u",
@@ -2293,28 +2302,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 		return NULL;
 	}
 
-	if (slurm_getpwuid_r(launch_msg_ptr->uid,
-			     &pwd,
-			     buffer,
-			     PW_BUF_SIZE,
-			     &result)
-	    || !result) {
-#ifdef HAVE_NATIVE_CRAY
-		/* On a Cray this needs to happen before the launch of
-		 * the tasks.  So fail if it doesn't work.  On a
-		 * normal system this isn't a big deal just go on your way.
-		 */
-		error("uid %ld not found on system, aborting job %u",
-		      (long)launch_msg_ptr->uid, job_ptr->job_id);
-		slurm_free_job_launch_msg(launch_msg_ptr);
-		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
-			     false, true, 0);
-		return NULL;
-#endif
-	} else
-		launch_msg_ptr->user_name = xstrdup(result->pw_name);
 
-	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
 	launch_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
@@ -2729,7 +2717,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.jobid     = launch_msg_ptr->job_id;
 	cred_arg.stepid    = launch_msg_ptr->step_id;
 	cred_arg.uid       = launch_msg_ptr->uid;
-
+	cred_arg.gid       = launch_msg_ptr->gid;
+	cred_arg.user_name = launch_msg_ptr->user_name;
 	cred_arg.job_constraints     = job_ptr->details->features;
 	cred_arg.job_hostlist        = job_resrcs_ptr->nodes;
 	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;

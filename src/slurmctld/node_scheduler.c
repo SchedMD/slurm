@@ -2809,19 +2809,24 @@ extern void launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);
 
-	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS)) {
-		/* lookup and send extended gids list */
-		prolog_msg_ptr->ngids = group_cache_lookup(prolog_msg_ptr->uid,
-							   prolog_msg_ptr->gid,
-							   prolog_msg_ptr->user_name,
-							   &prolog_msg_ptr->gids);
-	}
 	xassert(job_ptr->job_resrcs);
 	job_resrcs_ptr = job_ptr->job_resrcs;
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
 	cred_arg.jobid               = job_ptr->job_id;
 	cred_arg.stepid              = SLURM_EXTERN_CONT;
 	cred_arg.uid                 = job_ptr->user_id;
+	cred_arg.gid                 = job_ptr->group_id;
+	cred_arg.user_name           = prolog_msg_ptr->user_name;
+	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS)) {
+		/* lookup and send extended gids list */
+		cred_arg.ngids = group_cache_lookup(cred_arg.uid,
+						    cred_arg.gid,
+						    cred_arg.user_name,
+						    &cred_arg.gids);
+	} else {
+		cred_arg.ngids = 0;
+		cred_arg.gids = NULL;
+	}
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
 	cred_arg.job_gres_list       = job_ptr->gres_list;
 	cred_arg.job_nhosts          = job_ptr->job_resrcs->nhosts;
@@ -2845,6 +2850,13 @@ extern void launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg,
 						 SLURM_PROTOCOL_VERSION);
+	/*
+	 * most cred_arg pointers are to other struct elements to avoid
+	 * duplicating them, but gids is allocated just for this and
+	 * must be xfree'd.
+	 */
+	xfree(cred_arg.gids);
+
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->retry = 0;
 #ifdef HAVE_FRONT_END

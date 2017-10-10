@@ -58,6 +58,7 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
+#include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
@@ -76,6 +77,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/acct_policy.h"
@@ -1014,6 +1016,18 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.jobid    = job_ptr->job_id;
 	cred_arg.stepid   = step_ptr->step_id;
 	cred_arg.uid      = job_ptr->user_id;
+	cred_arg.gid      = job_ptr->group_id;
+	cred_arg.user_name = uid_to_string(job_ptr->user_id);
+	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS)) {
+		/* lookup and send extended gids list */
+		cred_arg.ngids = group_cache_lookup(cred_arg.uid,
+						    cred_arg.gid,
+						    cred_arg.user_name,
+						    &cred_arg.gids);
+	} else {
+		cred_arg.ngids = 0;
+		cred_arg.gids = NULL;
+	}
 
 	cred_arg.job_constraints = job_ptr->details->features;
 	cred_arg.job_core_bitmap = job_resrcs_ptr->core_bitmap;
@@ -1040,6 +1054,15 @@ static int _make_step_cred(struct step_record *step_ptr,
 
 	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg,
 					protocol_version);
+
+	/*
+	 * most cred_arg pointers are to other struct elements to avoid
+	 * duplicating them, but user_name and gids are allocated just for
+	 * this and must be xfree'd.
+	 */
+	xfree(cred_arg.user_name);
+	xfree(cred_arg.gids);
+
 	if (*slurm_cred == NULL) {
 		error("slurm_cred_create error");
 		return ESLURM_INVALID_JOB_CREDENTIAL;
