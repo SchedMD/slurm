@@ -1170,6 +1170,8 @@ extern int update_active_features_node(GtkDialog *dialog, const char *nodelist,
 	}
 	label = gtk_dialog_add_button(dialog,
 				      GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_type_hint(GTK_WINDOW(dialog),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_default(GTK_WINDOW(dialog), label);
 	gtk_dialog_add_button(dialog,
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
@@ -1260,6 +1262,8 @@ extern int update_avail_features_node(GtkDialog *dialog, const char *nodelist,
 	}
 	label = gtk_dialog_add_button(dialog,
 				      GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_type_hint(GTK_WINDOW(dialog),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_default(GTK_WINDOW(dialog), label);
 	gtk_dialog_add_button(dialog,
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
@@ -1348,6 +1352,8 @@ extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
 		no_dialog = 1;
 	}
 	label = gtk_dialog_add_button(dialog, GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_type_hint(GTK_WINDOW(dialog),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_default(GTK_WINDOW(dialog), label);
 	gtk_dialog_add_button(dialog, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
@@ -1425,6 +1431,8 @@ extern int update_state_node(GtkDialog *dialog,
 		no_dialog = 1;
 	}
 	label = gtk_dialog_add_button(dialog, GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_type_hint(GTK_WINDOW(dialog),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_default(GTK_WINDOW(dialog), label);
 	gtk_dialog_add_button(dialog, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
@@ -2143,6 +2151,8 @@ extern void admin_node_name(char *name, char *old_value, char *type)
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		NULL);
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
 	if (!xstrcasecmp("Update Available Features", type)

@@ -383,6 +383,8 @@ extern void create_config_popup(GtkAction *action, gpointer user_data)
 		_local_create_treestore_2cols(popup, 600, 400);
 	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	g_signal_connect(G_OBJECT(popup), "delete_event",
 			 G_CALLBACK(_delete_popup), NULL);
 	g_signal_connect(G_OBJECT(popup), "response",
@@ -409,6 +411,8 @@ extern void create_dbconfig_popup(GtkAction *action, gpointer user_data)
 	GtkTreeStore *treestore =
 		_local_create_treestore_2cols(popup, 600, 400);
 
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	g_signal_connect(G_OBJECT(popup), "delete_event",
 			 G_CALLBACK(_delete_popup), NULL);
 	g_signal_connect(G_OBJECT(popup), "response",
@@ -432,7 +436,6 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 		GTK_STOCK_CLOSE,
 		GTK_RESPONSE_OK,
 		NULL);
-
 	int update = 0;
 	slurm_ctl_conf_info_msg_t *conf;
 	char me[MAX_SLURM_NAME], *b, *c, *n;
@@ -440,6 +443,8 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 	GtkTreeStore *treestore =
 		_local_create_treestore_2cols(popup, 300, 100);
 	GtkTreeIter iter;
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	g_signal_connect(G_OBJECT(popup), "delete_event",
 			 G_CALLBACK(_delete_popup), NULL);
 	g_signal_connect(G_OBJECT(popup), "response",
@@ -511,6 +516,8 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_default(GTK_WINDOW(popup), label);
 	gtk_dialog_add_button(GTK_DIALOG(popup),
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
@@ -664,6 +671,8 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_default(GTK_WINDOW(popup), label);
 	gtk_dialog_add_button(GTK_DIALOG(popup),
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
@@ -880,6 +889,8 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_default(GTK_WINDOW(popup), label);
 	gtk_dialog_add_button(GTK_DIALOG(popup),
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
@@ -941,6 +952,8 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_default(GTK_WINDOW(popup), label);
 	gtk_dialog_add_button(GTK_DIALOG(popup),
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
@@ -1066,6 +1079,9 @@ extern void about_popup(GtkAction *action, gpointer user_data)
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_OK, GTK_RESPONSE_OK);
 
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
+
 	gtk_window_set_default(GTK_WINDOW(popup), label);
 
 	gtk_window_set_default_size(GTK_WINDOW(popup), 200, 50);
@@ -1117,6 +1133,9 @@ extern void usage_popup(GtkAction *action, gpointer user_data)
 
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 
 	gtk_window_set_default(GTK_WINDOW(popup), label);
 

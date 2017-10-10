@@ -1589,6 +1589,8 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 		NULL);
 	close_btn = gtk_dialog_add_button(GTK_DIALOG(popup_win->popup),
 					  GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE);
+	gtk_window_set_type_hint(GTK_WINDOW(popup_win->popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_focus(GTK_WINDOW(popup_win->popup), close_btn);
 	gtk_dialog_add_button(GTK_DIALOG(popup_win->popup),
 			      "Close All Popups", GTK_RESPONSE_CANCEL);
@@ -1976,6 +1978,9 @@ extern char *get_reason(void)
 	char *user_name = NULL;
 	char time_buf[64], time_str[32];
 	time_t now = time(NULL);
+
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 

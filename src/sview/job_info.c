@@ -4682,6 +4682,8 @@ static void _edit_each_job (GtkTreeModel *model, GtkTreeIter *iter,
 				GTK_DIALOG_MODAL |
 				GTK_DIALOG_DESTROY_WITH_PARENT,
 				NULL);
+		gtk_window_set_type_hint(GTK_WINDOW(popup),
+					 GDK_WINDOW_TYPE_HINT_NORMAL);
 		gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_OK, GTK_RESPONSE_OK);
@@ -4792,6 +4794,9 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 			GTK_WINDOW(main_window),
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			NULL);
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
+
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &tmp_jobid, -1);
