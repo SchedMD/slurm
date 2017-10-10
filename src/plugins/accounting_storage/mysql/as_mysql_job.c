@@ -307,7 +307,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	char *nodes = NULL, *jname = NULL, *node_inx = NULL;
 	int track_steps = 0;
 	char *block_id = NULL, *partition = NULL;
-	char *gres_req = NULL, *gres_alloc = NULL;
+	char *gres_req = NULL, *gres_alloc = NULL, *mcs_label = NULL;
 	char temp_bit[BUF_SIZE];
 	char *query = NULL;
 	int reinit = 0;
@@ -518,6 +518,8 @@ no_rollup_change:
 
 	if (job_ptr->gres_alloc)
 		gres_alloc = slurm_add_slash_to_quotes(job_ptr->gres_alloc);
+	if (job_ptr->mcs_label)
+		mcs_label = slurm_add_slash_to_quotes(job_ptr->mcs_label);
 
 	if (!job_ptr->db_index) {
 		if (start_time && (job_state >= JOB_COMPLETE) &&
@@ -551,6 +553,8 @@ no_rollup_change:
 
 		if (wckeyid)
 			xstrcat(query, ", id_wckey");
+		if (job_ptr->mcs_label)
+			xstrcat(query, ", mcs_label");
 		if (job_ptr->account)
 			xstrcat(query, ", account");
 		if (partition)
@@ -597,6 +601,8 @@ no_rollup_change:
 
 		if (wckeyid)
 			xstrfmtcat(query, ", %u", wckeyid);
+		if (mcs_label)
+			xstrfmtcat(query, ", '%s'", mcs_label);
 		if (job_ptr->account)
 			xstrfmtcat(query, ", '%s'", job_ptr->account);
 		if (partition)
@@ -653,6 +659,8 @@ no_rollup_change:
 
 		if (wckeyid)
 			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
+		if (job_ptr->mcs_label)
+			xstrfmtcat(query, ", mcs_label='%s'", mcs_label);
 		if (job_ptr->account)
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
 		if (partition)
@@ -711,6 +719,8 @@ no_rollup_change:
 
 		if (wckeyid)
 			xstrfmtcat(query, "id_wckey=%u, ", wckeyid);
+		if (job_ptr->mcs_label)
+			xstrfmtcat(query, "mcs_label='%s', ", mcs_label);
 		if (job_ptr->account)
 			xstrfmtcat(query, "account='%s', ", job_ptr->account);
 		if (partition)
@@ -784,6 +794,7 @@ end_it:
 	xfree(gres_alloc);
 	xfree(jname);
 	xfree(query);
+	xfree(mcs_label);
 
 	return rc;
 }

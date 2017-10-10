@@ -99,6 +99,7 @@ char *job_req_inx[] = {
 	"t1.tres_alloc",
 	"t1.tres_req",
 	"t1.work_dir",
+	"t1.mcs_label",
 	"t2.acct",
 	"t2.lft",
 	"t2.user"
@@ -150,6 +151,7 @@ enum {
 	JOB_REQ_TRESA,
 	JOB_REQ_TRESR,
 	JOB_REQ_WORK_DIR,
+	JOB_REQ_MCS_LABEL,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
 	JOB_REQ_USER_NAME,
@@ -579,7 +581,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		else
 			job->wckey = xstrdup("");
 		job->wckeyid = slurm_atoul(row[JOB_REQ_WCKEYID]);
-
+		if (row[JOB_REQ_MCS_LABEL])
+			job->mcs_label = xstrdup(row[JOB_REQ_MCS_LABEL]);
+		else
+			job->mcs_label = xstrdup("");
 		if (row[JOB_REQ_USER_NAME])
 			job->user = xstrdup(row[JOB_REQ_USER_NAME]);
 		else

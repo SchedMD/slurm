@@ -740,6 +740,7 @@ typedef struct {
 	uint32_t jobid;
 	char	*jobname;
 	uint32_t lft;
+	char 	*mcs_label;
 	char	*nodes;
 	char	*partition;
 	uint32_t pack_job_id;

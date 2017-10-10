@@ -265,6 +265,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t gid;	        /* group ID */
 	uint32_t job_id;	/* job ID */
 	uint32_t job_state;	/* job state */
+	char *   mcs_label;	/* job mcs_label */
 	char *   name;		/* job name */
 	char *   nodes;		/* hosts allocated to the job */
 	char *   node_inx;      /* ranged bitmap string of hosts

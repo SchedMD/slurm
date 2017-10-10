@@ -844,6 +844,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->cluster);
 		xfree(job->derived_es);
 		xfree(job->jobname);
+		xfree(job->mcs_label);
 		xfree(job->partition);
 		xfree(job->nodes);
 		xfree(job->req_gres);

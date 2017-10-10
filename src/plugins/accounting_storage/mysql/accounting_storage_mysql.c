@@ -1247,6 +1247,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "pack_job_id", "int unsigned not null" },
 		{ "pack_job_offset", "int unsigned not null" },
 		{ "kill_requid", "int default -1 not null" },
+		{ "mcs_label", "tinytext default ''" },
 		{ "mem_req", "bigint unsigned default 0 not null" },
 		{ "nodelist", "text" },
 		{ "nodes_alloc", "int unsigned not null" },

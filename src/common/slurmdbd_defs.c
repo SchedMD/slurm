@@ -2671,6 +2671,7 @@ extern void slurmdbd_free_job_start_msg(void *in)
 		xfree(msg->gres_alloc);
 		xfree(msg->gres_req);
 		xfree(msg->gres_used);
+		xfree(msg->mcs_label);
 		xfree(msg->name);
 		xfree(msg->nodes);
 		xfree(msg->node_inx);
@@ -3341,6 +3342,7 @@ slurmdbd_pack_job_start_msg(void *in,
 		packstr(msg->gres_used, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
+		packstr(msg->mcs_label, buffer);
 		packstr(msg->name, buffer);
 		packstr(msg->nodes, buffer);
 		packstr(msg->node_inx, buffer);
@@ -3464,6 +3466,7 @@ slurmdbd_unpack_job_start_msg(void **msg,
 				       buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->job_state, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->mcs_label, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);

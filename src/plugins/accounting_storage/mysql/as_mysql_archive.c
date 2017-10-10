@@ -94,6 +94,7 @@ typedef struct {
 	char *job_db_inx;
 	char *jobid;
 	char *kill_requid;
+	char *mcs_label;
 	char *name;
 	char *nodelist;
 	char *node_inx;
@@ -261,6 +262,7 @@ static char *job_req_inx[] = {
 	"job_db_inx",
 	"id_job",
 	"kill_requid",
+	"mcs_label",
 	"job_name",
 	"nodelist",
 	"node_inx",
@@ -302,6 +304,7 @@ enum {
 	JOB_REQ_DB_INX,
 	JOB_REQ_JOBID,
 	JOB_REQ_KILL_REQUID,
+	JOB_REQ_MCS_LABEL,
 	JOB_REQ_NAME,
 	JOB_REQ_NODELIST,
 	JOB_REQ_NODE_INX,
@@ -623,6 +626,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->job_db_inx, buffer);
 	packstr(object->jobid, buffer);
 	packstr(object->kill_requid, buffer);
+	packstr(object->mcs_label, buffer);
 	packstr(object->name, buffer);
 	packstr(object->nodelist, buffer);
 	packstr(object->node_inx, buffer);
@@ -694,6 +698,7 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->job_db_inx, &tmp32, buffer);
 		unpackstr_ptr(&object->jobid, &tmp32, buffer);
 		unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
+		unpackstr_ptr(&object->mcs_label, &tmp32, buffer);
 		unpackstr_ptr(&object->name, &tmp32, buffer);
 		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
 		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
@@ -2070,6 +2075,7 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.job_db_inx = row[JOB_REQ_DB_INX];
 		job.jobid = row[JOB_REQ_JOBID];
 		job.kill_requid = row[JOB_REQ_KILL_REQUID];
+		job.mcs_label = row[JOB_REQ_MCS_LABEL];
 		job.name = row[JOB_REQ_NAME];
 		job.nodelist = row[JOB_REQ_NODELIST];
 		job.node_inx = row[JOB_REQ_NODE_INX];
@@ -2144,6 +2150,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.job_db_inx,
 			   object.jobid,
 			   object.kill_requid,
+			   object.mcs_label,
 			   object.name,
 			   object.nodelist,
 			   object.node_inx,
