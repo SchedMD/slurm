@@ -41,6 +41,9 @@
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
 
+#define PLUS_MINUS(sign) (((sign == '+')) ? RESERVE_FLAG_DUR_PLUS : \
+			  ((sign == '-') ? RESERVE_FLAG_DUR_MINUS : 0))
+
 /*
  *  _process_plus_minus is used to convert a string like
  *       Users+=a,b,c
@@ -146,10 +149,10 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 			if (f == 0xffffffff) {
 				return SLURM_ERROR;
-			} else {
+			} else if (resv_msg_ptr->flags == NO_VAL)
 				resv_msg_ptr->flags = f;
-			}
-
+			else
+				resv_msg_ptr->flags |= f;
 		} else if (!strncasecmp(tag, "Users", MAX(taglen, 1))) {
 			if (plus_minus) {
 				resv_msg_ptr->users =
@@ -196,7 +199,15 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				return SLURM_ERROR;
 			}
 			resv_msg_ptr->duration = (uint32_t)duration;
-
+			if (plus_minus) {
+				if (resv_msg_ptr->flags == NO_VAL)
+					resv_msg_ptr->flags =
+						PLUS_MINUS(plus_minus);
+				else
+					resv_msg_ptr->flags |=
+						PLUS_MINUS(plus_minus);
+				plus_minus = '\0';
+			}
 		} else if (strncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
 			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 
