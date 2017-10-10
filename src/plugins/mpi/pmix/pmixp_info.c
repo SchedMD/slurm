@@ -44,6 +44,7 @@
 static char *_srv_usock_path = NULL;
 static int _srv_usock_fd = -1;
 static bool _srv_use_direct_conn = true;
+static bool _srv_use_direct_conn_early = false;
 static bool _srv_same_arch = true;
 #ifdef HAVE_UCX
 static bool _srv_use_direct_conn_ucx = true;
@@ -84,6 +85,10 @@ bool pmixp_info_same_arch(void){
 
 bool pmixp_info_srv_direct_conn(void){
 	return _srv_use_direct_conn;
+}
+
+bool pmixp_info_srv_direct_conn_early(void){
+	return _srv_use_direct_conn_early;
 }
 
 bool pmixp_info_srv_direct_conn_ucx(void){
@@ -427,6 +432,16 @@ static int _env_set(char ***env)
 		} else if (!xstrcmp("0",p) || !xstrcasecmp("false", p) ||
 			   !xstrcasecmp("no", p)) {
 			_srv_use_direct_conn = false;
+		}
+	}
+	p = getenvp(*env, PMIXP_DIRECT_CONN_EARLY);
+	if (p) {
+		if (!xstrcmp("1", p) || !xstrcasecmp("true", p) ||
+		    !xstrcasecmp("yes", p)) {
+			_srv_use_direct_conn_early = true;
+		} else if (!xstrcmp("0", p) || !xstrcasecmp("false", p) ||
+			   !xstrcasecmp("no", p)) {
+			_srv_use_direct_conn_early = false;
 		}
 	}
 

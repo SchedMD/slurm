@@ -325,6 +325,13 @@ static void *_pmix_timer_thread(void *unused)
 	return NULL;
 }
 
+void _direct_init_sent_buf_cb(int rc, pmixp_p2p_ctx_t ctx, void *data)
+{
+    Buf buf = (Buf)data;
+    FREE_NULL_BUFFER(buf);
+    return;
+}
+
 int pmixp_agent_start(void)
 {
 	_setup_timeout_fds();
@@ -356,6 +363,39 @@ int pmixp_agent_start(void)
 
 	PMIXP_DEBUG("agent thread started: tid = %lu",
 		    (unsigned long) _agent_tid);
+
+	if (pmixp_info_srv_direct_conn_early()) {
+		pmixp_coll_t *coll = NULL;
+		int rc;
+		pmixp_proc_t proc;
+
+		pmixp_debug_hang(0);
+
+		proc.rank = pmixp_lib_get_wildcard();
+		strncpy(proc.nspace, _pmixp_job_info.nspace, PMIXP_MAX_NSLEN);
+
+		coll = pmixp_state_coll_get(PMIXP_COLL_TYPE_FENCE, &proc, 1);
+
+		if (coll->prnt_host) {
+			pmixp_ep_t ep = {0};
+			Buf buf = pmixp_server_buf_new();
+
+			pmixp_debug_hang(0);
+
+			ep.type = PMIXP_EP_NOIDEID;
+			ep.ep.nodeid = coll->prnt_peerid;
+
+			rc = pmixp_server_send_nb(
+				&ep, PMIXP_MSG_INIT_DIRECT, coll->seq,
+				buf, _direct_init_sent_buf_cb, NULL);
+
+			if (SLURM_SUCCESS != rc) {
+				PMIXP_ERROR_STD("send init msg error");
+				return SLURM_ERROR;
+			}
+		}
+	}
+
 
 	slurm_thread_create_detached(&_timer_tid, _pmix_timer_thread, NULL);
 	_timer_spawned = 1;

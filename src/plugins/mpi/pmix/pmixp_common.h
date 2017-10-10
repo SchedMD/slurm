@@ -100,6 +100,7 @@
 /* This variable will be propagated to server-side
  * part of libPMIx */
 #define PMIXP_DEBUG_LIB "SLURM_PMIX_SRV_DEBUG"
+#define PMIXP_DIRECT_CONN_EARLY "SLURM_PMIX_DIRECT_CONN_EARLY"
 
 /* ----------------------------------------------------------
  * This is libPMIx variable that we need to control it
