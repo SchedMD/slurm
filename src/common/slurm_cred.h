@@ -337,18 +337,26 @@ void slurm_cred_print(slurm_cred_t *cred);
  * Functions to create, delete, pack, and unpack an sbcast credential
  * Caller of extract_sbcast_cred() must xfree returned node string
  */
+
+typedef struct {
+	uint32_t job_id;
+
+	time_t expiration;
+	char *nodes;
+} sbcast_cred_arg_t;
+
 sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
-				  uint32_t job_id, char *nodes,
-				  time_t expiration,
+				  sbcast_cred_arg_t *arg,
 				  uint16_t protocol_version);
 void delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
-int extract_sbcast_cred(slurm_cred_ctx_t ctx,
-			sbcast_cred_t *sbcast_cred, uint16_t block_no,
-			uint32_t *job_id, char **nodes,
-			uint16_t protocol_version);
+sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
+				       sbcast_cred_t *sbcast_cred,
+				       uint16_t block_no,
+				       uint16_t protocol_version);
 void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
 		      uint16_t protocol_Version);
 sbcast_cred_t *unpack_sbcast_cred(Buf buffer, uint16_t protocol_version);
 void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
+void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
 
 #endif  /* _HAVE_SLURM_CREDS_H */

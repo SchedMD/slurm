@@ -3324,6 +3324,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	step_alloc_info_msg_t *job_info_msg =
 		(step_alloc_info_msg_t *) msg->data;
 	job_sbcast_cred_msg_t job_info_resp_msg;
+	sbcast_cred_arg_t sbcast_arg;
 	sbcast_cred_t *sbcast_cred;
 	/* Locks: Read config, job, read node */
 	slurmctld_lock_t job_read_lock = {
@@ -3439,10 +3440,23 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		       job_info_msg->job_id, uid,
 		       slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
-	} else if ((sbcast_cred =
+		xfree(local_node_list);
+		xfree(node_addr);
+		return ;
+	}
+
+	/*
+	 * Note - using pointers to other xmalloc'd elements owned by other
+	 * structures to avoid copy overhead. Do not free them!
+	 */
+	memset(&sbcast_arg, 0, sizeof(sbcast_cred_arg_t));
+	sbcast_arg.job_id = job_ptr->job_id;
+	sbcast_arg.nodes = node_list; /* avoid extra copy */
+	sbcast_arg.expiration = job_ptr->end_time;
+
+	if ((sbcast_cred =
 		    create_sbcast_cred(slurmctld_config.cred_ctx,
-				       job_ptr->job_id, node_list,
-				       job_ptr->end_time,
+				       &sbcast_arg,
 				       msg->protocol_version)) == NULL) {
 		unlock_slurmctld(job_read_lock);
 		error("_slurm_rpc_job_sbcast_cred JobId=%u cred create error",

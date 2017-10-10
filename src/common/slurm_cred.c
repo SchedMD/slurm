@@ -2420,24 +2420,22 @@ static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
  *	including digital signature.
  * RET the sbcast credential or NULL on error */
 sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
-				  uint32_t job_id, char *nodes,
-				  time_t expiration,
+				  sbcast_cred_arg_t *arg,
 				  uint16_t protocol_version)
 {
 	Buf buffer;
 	int rc;
 	sbcast_cred_t *sbcast_cred;
-	time_t now = time(NULL);
 
 	xassert(ctx);
 	if (_slurm_crypto_init() < 0)
 		return NULL;
 
 	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
-	sbcast_cred->ctime      = now;
-	sbcast_cred->expiration = expiration;
-	sbcast_cred->jobid      = job_id;
-	sbcast_cred->nodes      = xstrdup(nodes);
+	sbcast_cred->ctime = time(NULL);
+	sbcast_cred->expiration = arg->expiration;
+	sbcast_cred->jobid = arg->job_id;
+	sbcast_cred->nodes = xstrdup(arg->nodes);
 
 	buffer = init_buf(4096);
 	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
@@ -2498,26 +2496,25 @@ static void _sbcast_cache_del(void *x)
  *	recent signature on file (in our cache) or the slurmd must have
  *	recently been restarted.
  * RET 0 on success, -1 on error */
-int extract_sbcast_cred(slurm_cred_ctx_t ctx,
-			sbcast_cred_t *sbcast_cred, uint16_t block_no,
-			uint32_t *job_id, char **nodes,
-			uint16_t protocol_version)
+sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
+				       sbcast_cred_t *sbcast_cred,
+				       uint16_t block_no,
+				       uint16_t protocol_version)
 {
+	sbcast_cred_arg_t *arg;
 	struct sbcast_cache *next_cache_rec;
 	uint32_t sig_num = 0;
 	int i, rc;
 	time_t now = time(NULL);
 	Buf buffer;
 
-	*job_id = 0xffffffff;
-	*nodes = NULL;
 	xassert(ctx);
 
 	if (_slurm_crypto_init() < 0)
-		return -1;
+		return NULL;
 
 	if (now > sbcast_cred->expiration)
-		return -1;
+		return NULL;
 
 	if (block_no == 1) {
 		buffer = init_buf(4096);
@@ -2532,7 +2529,7 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 		if (rc) {
 			error("sbcast_cred verify: %s",
 			      (*(ops.crypto_str_error))(rc));
-			return -1;
+			return NULL;
 		}
 		_sbast_cache_add(sbcast_cred);
 
@@ -2561,7 +2558,7 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 		if (!cache_match_found) {
 			error("sbcast_cred verify: signature not in cache");
 			if (SLURM_DIFFTIME(now, crypto_restart_time) > 60)
-				return -1;	/* restarted >60 secs ago */
+				return NULL;	/* restarted >60 secs ago */
 			buffer = init_buf(4096);
 			_pack_sbcast_cred(sbcast_cred, buffer,
 					  protocol_version);
@@ -2574,16 +2571,17 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				err_str = (char *)(*(ops.crypto_str_error))(rc);
 			if (err_str && xstrcmp(err_str, "Credential replayed")){
 				error("sbcast_cred verify: %s", err_str);
-				return -1;
+				return NULL;
 			}
 			info("sbcast_cred verify: signature revalidated");
 			_sbast_cache_add(sbcast_cred);
 		}
 	}
 
-	*job_id = sbcast_cred->jobid;
-	*nodes  = xstrdup(sbcast_cred->nodes);
-	return 0;
+	arg = xmalloc(sizeof(sbcast_cred_arg_t));
+	arg->job_id = sbcast_cred->jobid;
+	arg->nodes = xstrdup(sbcast_cred->nodes);
+	return arg;
 }
 
 /* Pack an sbcast credential into a buffer including the digital signature */
@@ -2657,4 +2655,13 @@ void  print_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	info("Sbcast_cred: Nodes   %s", sbcast_cred->nodes         );
 	info("Sbcast_cred: ctime   %s", slurm_ctime2(&sbcast_cred->ctime) );
 	info("Sbcast_cred: Expire  %s", slurm_ctime2(&sbcast_cred->expiration));
+}
+
+void sbcast_cred_arg_free(sbcast_cred_arg_t *arg)
+{
+	if (!arg)
+		return;
+
+	xfree(arg->nodes);
+	xfree(arg);
 }

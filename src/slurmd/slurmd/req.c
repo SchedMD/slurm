@@ -3733,29 +3733,31 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
 		   uint32_t *job_id, uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
-	char *nodes = NULL;
+	sbcast_cred_arg_t *arg;
 	hostset_t hset = NULL;
 
 	*job_id = NO_VAL;
-	rc = extract_sbcast_cred(conf->vctx, req->cred, req->block_no,
-				 job_id, &nodes, protocol_version);
-	if (rc != 0) {
+	arg = extract_sbcast_cred(conf->vctx, req->cred, req->block_no,
+				  protocol_version);
+	if (!arg) {
 		error("Security violation: Invalid sbcast_cred from uid %d",
 		      req_uid);
 		return ESLURMD_INVALID_JOB_CREDENTIAL;
 	}
 
-	if (!(hset = hostset_create(nodes))) {
-		error("Unable to parse sbcast_cred hostlist %s", nodes);
+	if (!(hset = hostset_create(arg->nodes))) {
+		error("Unable to parse sbcast_cred hostlist %s", arg->nodes);
 		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
 	} else if (!hostset_within(hset, conf->node_name)) {
 		error("Security violation: sbcast_cred from %d has "
-		      "bad hostset %s", req_uid, nodes);
+		      "bad hostset %s", req_uid, arg->nodes);
 		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
 	}
 	if (hset)
 		hostset_destroy(hset);
-	xfree(nodes);
+
+	*job_id = arg->job_id;
+	sbcast_cred_arg_free(arg);
 
 	/* print_sbcast_cred(req->cred); */
 
