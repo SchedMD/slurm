@@ -902,14 +902,14 @@ _forkexec_slurmstepd(uint16_t type, void *req,
  * a hostset_t of the nodes. Validate the incoming RPC, updating
  * job_mem needed.
  */
-static int
-_check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
-		      int node_id, hostset_t *step_hset,
-		      uint16_t protocol_version)
+static int _check_job_credential(launch_tasks_request_msg_t *req,
+				 uid_t auth_uid, gid_t auth_gid,
+				 int node_id, hostset_t *step_hset,
+				 uint16_t protocol_version)
 {
 	slurm_cred_arg_t arg;
 	hostset_t	s_hset = NULL;
-	bool		user_ok = _slurm_authorized_user(uid);
+	bool		user_ok = _slurm_authorized_user(auth_uid);
 	int		host_index = -1;
 	slurm_cred_t    *cred = req->cred;
 	uint32_t	jobid = req->job_id;
@@ -921,7 +921,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		/* If we didn't allocate then the cred isn't valid, just skip
 		 * checking.  This is only cool for root or SlurmUser */
 		debug("%s: FYI, user %d is an authorized user running outside of an allocation.",
-		      __func__, uid);
+		      __func__, auth_uid);
 		return SLURM_SUCCESS;
 	}
 
@@ -937,10 +937,42 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		goto fail;
 	}
 
-	if (arg.uid != uid) {
-		error("job credential created for uid %ld, expected %ld",
-		      (long) arg.uid, (long) uid);
+	if (arg.uid != req->uid) {
+		error("job %u credential created for uid %u, expected %u",
+		      arg.jobid, arg.uid, req->uid);
 		goto fail;
+	}
+
+	if (arg.gid != NO_VAL && arg.gid != req->gid) {
+		error("job %u credential created for gid %u, expected %u",
+		      arg.jobid, arg.gid, req->gid);
+		goto fail;
+	} else if (arg.gid == NO_VAL) {
+		/*
+		 * The pre-17.11 RPC format did not have gid, so populate
+		 * it off of the auth header instead.
+		 */
+		req->gid = auth_gid;
+	}
+
+	xfree(req->user_name);
+	if (arg.user_name)
+		req->user_name = xstrdup(arg.user_name);
+	else
+		req->user_name = uid_to_string(req->uid);
+
+	xfree(req->gids);
+	if (arg.ngids) {
+		req->ngids = arg.ngids;
+		req->gids = xmalloc(req->ngids * sizeof(gid_t));
+		memcpy(req->gids, arg.gids, req->ngids * sizeof(gid_t));
+	} else {
+		/*
+		 * The gids were not sent in the cred, or dealing with an older
+		 * RPC format, so retrieve from cache instead.
+		 */
+		req->ngids = group_cache_lookup(req->uid, req->gid,
+						req->user_name, &req->gids);
 	}
 
 	/*
@@ -1291,6 +1323,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
+	gid_t    req_gid;
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     super_user = false;
 	bool     mem_sort = false;
@@ -1309,6 +1342,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
 #endif
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, conf->auth_info);
+	req_gid = g_slurm_auth_get_gid(msg->auth_cred, conf->auth_info);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 
 	super_user = _slurm_authorized_user(req_uid);
@@ -1339,7 +1373,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 #endif
-	if (_check_job_credential(req, req_uid, nodeid, &step_hset,
+	if (_check_job_credential(req, req_uid, req_gid, nodeid, &step_hset,
 				  msg->protocol_version) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m",
