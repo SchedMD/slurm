@@ -403,12 +403,13 @@ int main(int argc, char **argv)
 	}
 
 	/*
-	 * Avoid constant strstr calls as part of step launch.
+	 * Avoid constant xstrcasestr calls as part of step launch.
 	 * This could live elsewhere if someone finds a better home for it.
 	 */
-	slurmctld_config.send_groups_in_cred
-			= (slurmctld_conf.launch_params &&
-			   strstr(slurmctld_conf.launch_params, "send_gids"));
+	if (xstrcasestr(slurmctld_conf.launch_params, "send_gids"))
+		slurmctld_config.send_groups_in_cred = true;
+	else
+		slurmctld_config.send_groups_in_cred = false;
 
 	/* Must set before plugins are loaded. */
 	if (slurmctld_conf.backup_controller &&
@@ -831,12 +832,13 @@ static void _reconfigure_slurm(void)
 		set_slurmctld_state_loc();
 	}
 	/*
-	 * Avoid constant strstr calls as part of step launch.
+	 * Avoid constant xstrcasestr calls as part of step launch.
 	 * This could live elsewhere if someone finds a better home for it.
 	 */
-	slurmctld_config.send_groups_in_cred
-			= (slurmctld_conf.launch_params &&
-			   strstr(slurmctld_conf.launch_params, "send_gids"));
+	if (xstrcasestr(slurmctld_conf.launch_params, "send_gids"))
+		slurmctld_config.send_groups_in_cred = true;
+	else
+		slurmctld_config.send_groups_in_cred = false;
 
 	gs_reconfig();
 	unlock_slurmctld(config_write_lock);
