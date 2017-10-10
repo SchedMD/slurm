@@ -3408,7 +3408,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 {
 #ifdef HAVE_FRONT_END
 	ListIterator job_iterator;
-	struct job_record  *job_ptr;
+	struct job_record  *job_ptr, *pack_leader;
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	int i, kill_job_cnt = 0;
@@ -3423,13 +3423,19 @@ extern int kill_job_by_front_end_name(char *node_name)
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr) &&
 		    !IS_JOB_COMPLETING(job_ptr))
 			continue;
-		if ((job_ptr->batch_host == NULL) ||
-		    xstrcmp(job_ptr->batch_host, node_name))
+		pack_leader = NULL;
+		if (job_ptr->pack_job_id)
+			pack_leader = find_job_record(job_ptr->pack_job_id);
+		if (!pack_leader)
+			pack_leader = job_ptr;
+		if ((pack_leader->batch_host == NULL) ||
+		    xstrcmp(pack_leader->batch_host, node_name))
 			continue;	/* no match on node name */
 
 		if (IS_JOB_SUSPENDED(job_ptr)) {
 			uint32_t suspend_job_state = job_ptr->job_state;
-			/* we can't have it as suspended when we call the
+			/*
+			 * we can't have it as suspended when we call the
 			 * accounting stuff.
 			 */
 			job_ptr->job_state = JOB_CANCELLED;
@@ -3468,7 +3474,6 @@ extern int kill_job_by_front_end_name(char *node_name)
 				char requeue_msg[128];
 
 				srun_node_fail(job_ptr->job_id, node_name);
-
 				info("requeue job %u due to failure of node %s",
 				     job_ptr->job_id, node_name);
 				set_job_prio(job_ptr);
@@ -3487,10 +3492,12 @@ extern int kill_job_by_front_end_name(char *node_name)
 				} else
 					job_ptr->end_time = now;
 
-				/* We want this job to look like it
+				/*
+				 * We want this job to look like it
 				 * was terminated in the accounting logs.
 				 * Set a new submit time so the restarted
-				 * job looks like a new job. */
+				 * job looks like a new job.
+				 */
 				job_ptr->job_state  = JOB_NODE_FAIL;
 				build_cg_bitmap(job_ptr);
 				job_completion_logger(job_ptr, true);
@@ -3644,6 +3651,56 @@ static void _clear_job_gres_details(struct job_record *job_ptr)
 	job_ptr->gres_detail_cnt = 0;
 }
 
+
+static bool _job_node_test(struct job_record *job_ptr, int node_inx)
+{
+	if (job_ptr->node_bitmap &&
+	    bit_test(job_ptr->node_bitmap, node_inx))
+		return true;
+	return false;
+}
+
+static bool _pack_job_on_node(struct job_record *job_ptr, int node_inx)
+{
+	struct job_record *pack_leader, *pack_job;
+	ListIterator iter;
+	static bool result = false;
+
+	if (!job_ptr->pack_job_id)
+		return _job_node_test(job_ptr, node_inx);
+
+	pack_leader = find_job_record(job_ptr->pack_job_id);
+	if (!pack_leader) {
+		error("%s: Job pack leader %u not found",
+		      __func__, job_ptr->pack_job_id);
+		return _job_node_test(job_ptr, node_inx);
+	}
+	if (!pack_leader->pack_job_list) {
+		error("%s: Job pack leader %u job list is NULL",
+		      __func__, job_ptr->pack_job_id);
+		return _job_node_test(job_ptr, node_inx);
+	}
+
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		if ((result = _job_node_test(pack_job, node_inx)))
+			break;
+		/*
+		 * After a DOWN node is removed from another job component,
+		 * we have no way to identify other pack job components with
+		 * the same node, so assume if one component is in NODE_FAILED
+		 * state, they all should be.
+		 */
+		if (IS_JOB_NODE_FAILED(pack_job)) {
+			result = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return result;
+}
+
 /*
  * kill_running_job_by_node_name - Given a node name, deallocate RUNNING
  *	or COMPLETING jobs from the node or kill them
@@ -3655,26 +3712,26 @@ extern int kill_running_job_by_node_name(char *node_name)
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	struct node_record *node_ptr;
-	int bit_position;
+	int node_inx;
 	int kill_job_cnt = 0;
 	time_t now = time(NULL);
 
 	node_ptr = find_node_record(node_name);
 	if (node_ptr == NULL)	/* No such node */
 		return 0;
-	bit_position = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr - node_record_table_ptr;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool suspended = false;
-		if ((job_ptr->node_bitmap == NULL) ||
-		    (!bit_test(job_ptr->node_bitmap, bit_position)))
+		if (!_pack_job_on_node(job_ptr, node_inx))
 			continue;	/* job not on this node */
 		if (nonstop_ops.node_fail)
 			(nonstop_ops.node_fail)(job_ptr, node_ptr);
 		if (IS_JOB_SUSPENDED(job_ptr)) {
 			uint32_t suspend_job_state = job_ptr->job_state;
-			/* we can't have it as suspended when we call the
+			/*
+			 * we can't have it as suspended when we call the
 			 * accounting stuff.
 			 */
 			job_ptr->job_state = JOB_CANCELLED;
@@ -3684,11 +3741,11 @@ extern int kill_running_job_by_node_name(char *node_name)
 		}
 
 		if (IS_JOB_COMPLETING(job_ptr)) {
-			if (!bit_test(job_ptr->node_bitmap_cg, bit_position))
+			if (!bit_test(job_ptr->node_bitmap_cg, node_inx))
 				continue;
 			kill_job_cnt++;
-			bit_clear(job_ptr->node_bitmap_cg, bit_position);
-			job_update_tres_cnt(job_ptr, bit_position);
+			bit_clear(job_ptr->node_bitmap_cg, node_inx);
+			job_update_tres_cnt(job_ptr, node_inx);
 			if (job_ptr->node_cnt)
 				(job_ptr->node_cnt)--;
 			else {
@@ -3725,7 +3782,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 				char requeue_msg[128];
 
 				srun_node_fail(job_ptr->job_id, node_name);
-
 				info("requeue job %u due to failure of node %s",
 				     job_ptr->job_id, node_name);
 				snprintf(requeue_msg, sizeof(requeue_msg),
@@ -3743,11 +3799,13 @@ extern int kill_running_job_by_node_name(char *node_name)
 				} else
 					job_ptr->end_time = now;
 
-				/* We want this job to look like it
+				/*
+				 * We want this job to look like it
 				 * was terminated in the accounting logs.
 				 * Set a new submit time so the restarted
-				 * job looks like a new job. */
-				job_ptr->job_state  = JOB_NODE_FAIL;
+				 * job looks like a new job.
+				 */
+				job_ptr->job_state = JOB_NODE_FAIL;
 				build_cg_bitmap(job_ptr);
 				job_completion_logger(job_ptr, true);
 				deallocate_nodes(job_ptr, false, suspended,
@@ -3779,9 +3837,11 @@ extern int kill_running_job_by_node_name(char *node_name)
 				/* clear signal sent flag on requeue */
 				job_ptr->warn_flags &= ~WARN_SENT;
 
-				/* Since the job completion logger
+				/*
+				 * Since the job completion logger
 				 * removes the submit we need to add it
-				 * again. */
+				 * again.
+				 */
 				acct_policy_add_job_submit(job_ptr);
 
 				if (!job_ptr->node_bitmap_cg ||
