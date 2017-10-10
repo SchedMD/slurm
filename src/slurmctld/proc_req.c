@@ -3442,7 +3442,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	} else if ((sbcast_cred =
 		    create_sbcast_cred(slurmctld_config.cred_ctx,
 				       job_ptr->job_id, node_list,
-				       job_ptr->end_time)) == NULL) {
+				       job_ptr->end_time,
+				       msg->protocol_version)) == NULL) {
 		unlock_slurmctld(job_read_lock);
 		error("_slurm_rpc_job_sbcast_cred JobId=%u cred create error",
 		      job_info_msg->job_id);

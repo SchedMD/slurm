@@ -3909,7 +3909,7 @@ _pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t * msg, Buf buffer,
 	if (msg->node_cnt > 0)
 		_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer,
 				       protocol_version);
-	pack_sbcast_cred(msg->sbcast_cred, buffer);
+	pack_sbcast_cred(msg->sbcast_cred, buffer, protocol_version);
 }
 
 static int
@@ -3939,7 +3939,7 @@ _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t ** msg, Buf buffer,
 	} else
 		tmp_ptr->node_addr = NULL;
 
-	tmp_ptr->sbcast_cred = unpack_sbcast_cred(buffer);
+	tmp_ptr->sbcast_cred = unpack_sbcast_cred(buffer, protocol_version);
 	if (tmp_ptr->sbcast_cred == NULL)
 		goto unpack_error;
 
@@ -14063,7 +14063,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer,
 		pack64(msg->block_offset, buffer);
 		pack64(msg->file_size, buffer);
 		packmem (msg->block, msg->block_len, buffer);
-		pack_sbcast_cred(msg->cred, buffer);
+		pack_sbcast_cred(msg->cred, buffer, protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16 ( (uint16_t)msg->block_no, buffer );
 		pack16 ( msg->compress, buffer );
@@ -14084,7 +14084,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer,
 		pack32((uint32_t)msg->block_offset, buffer);
 		pack64(msg->file_size, buffer);
 		packmem ( msg->block, msg->block_len, buffer );
-		pack_sbcast_cred( msg->cred, buffer );
+		pack_sbcast_cred(msg->cred, buffer, protocol_version);
 	}
 }
 
@@ -14123,7 +14123,7 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer,
 		if ( uint32_tmp != msg->block_len )
 			goto unpack_error;
 
-		msg->cred = unpack_sbcast_cred( buffer );
+		msg->cred = unpack_sbcast_cred(buffer, protocol_version);
 		if (msg->cred == NULL)
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -14151,7 +14151,7 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer,
 		if ( uint32_tmp != msg->block_len )
 			goto unpack_error;
 
-		msg->cred = unpack_sbcast_cred( buffer );
+		msg->cred = unpack_sbcast_cred(buffer, protocol_version);
 		if (msg->cred == NULL)
 			goto unpack_error;
 	}

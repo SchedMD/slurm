@@ -2400,7 +2400,8 @@ unpack_error:
 \*****************************************************************************/
 
 /* Pack sbcast credential without the digital signature */
-static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer)
+static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
+			      uint16_t protocol_version)
 {
 	pack_time(sbcast_cred->ctime, buffer);
 	pack_time(sbcast_cred->expiration, buffer);
@@ -2413,7 +2414,8 @@ static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer)
  * RET the sbcast credential or NULL on error */
 sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 				  uint32_t job_id, char *nodes,
-				  time_t expiration)
+				  time_t expiration,
+				  uint16_t protocol_version)
 {
 	Buf buffer;
 	int rc;
@@ -2431,7 +2433,7 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 	sbcast_cred->nodes      = xstrdup(nodes);
 
 	buffer = init_buf(4096);
-	_pack_sbcast_cred(sbcast_cred, buffer);
+	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
 	rc = (*(ops.crypto_sign))(
 		ctx->key, get_buf_data(buffer), get_buf_offset(buffer),
 		&sbcast_cred->signature, &sbcast_cred->siglen);
@@ -2491,7 +2493,8 @@ static void _sbcast_cache_del(void *x)
  * RET 0 on success, -1 on error */
 int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 			sbcast_cred_t *sbcast_cred, uint16_t block_no,
-			uint32_t *job_id, char **nodes)
+			uint32_t *job_id, char **nodes,
+			uint16_t protocol_version)
 {
 	struct sbcast_cache *next_cache_rec;
 	uint32_t sig_num = 0;
@@ -2511,7 +2514,7 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 
 	if (block_no == 1) {
 		buffer = init_buf(4096);
-		_pack_sbcast_cred(sbcast_cred, buffer);
+		_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
 		/* NOTE: the verification checks that the credential was
 		 * created by SlurmUser or root */
 		rc = (*(ops.crypto_verify_sign)) (
@@ -2553,7 +2556,8 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 			if (SLURM_DIFFTIME(now, crypto_restart_time) > 60)
 				return -1;	/* restarted >60 secs ago */
 			buffer = init_buf(4096);
-			_pack_sbcast_cred(sbcast_cred, buffer);
+			_pack_sbcast_cred(sbcast_cred, buffer,
+					  protocol_version);
 			rc = (*(ops.crypto_verify_sign)) (
 				ctx->key, get_buf_data(buffer),
 				get_buf_offset(buffer),
@@ -2576,13 +2580,14 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 }
 
 /* Pack an sbcast credential into a buffer including the digital signature */
-void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer)
+void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
+		      uint16_t protocol_version)
 {
 	static int bad_cred_test = -1;
 	xassert(sbcast_cred);
 	xassert(sbcast_cred->siglen > 0);
 
-	_pack_sbcast_cred(sbcast_cred, buffer);
+	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
 	if (bad_cred_test == -1) {
 		char *sbcast_env = getenv("SLURM_SBCAST_AUTH_FAIL_TEST");
 		if (sbcast_env)
@@ -2602,7 +2607,7 @@ void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer)
 }
 
 /* Pack an sbcast credential into a buffer including the digital signature */
-sbcast_cred_t *unpack_sbcast_cred(Buf buffer)
+sbcast_cred_t *unpack_sbcast_cred(Buf buffer, uint16_t protocol_version)
 {
 	uint32_t len;
 	sbcast_cred_t *sbcast_cred;
