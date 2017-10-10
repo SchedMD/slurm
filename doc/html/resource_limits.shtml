@@ -124,6 +124,17 @@ flag set, which will cause the job to be denied at submission.  When
 Grp limits are considered with respects to this flag the Grp limit
 is treated as a Max limit.</p>
 
+<p><b>NOTE:</b> When modifying a TRES field with <i>sacctmgr</i>, one must
+specify which TRES's to modify (see <a href="tres.html">TRES</a> for complete
+list) as in the following examples: </p>
+  <pre>
+  SET:
+  sacctmgr modify user bob set GrpTRES=cpu=1500,mem=200,gres/gpu=50
+  UNSET:
+  sacctmgr modify user bob set GrpTRES=cpu=-1,mem=-1,gres/gpu=-1
+  </pre>
+</p>
+
 <ul>
 <li><b>GrpTRESMins=</b> The total number of TRES minutes that can
   possibly be used by past, present and future jobs
