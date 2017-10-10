@@ -471,15 +471,11 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		      slurm_addr_t *cli, slurm_addr_t *self,
 		      hostset_t step_hset, uint16_t protocol_version)
 {
-	int len = 0, ngids, i;
+	int len = 0;
 	Buf buffer = NULL;
 	slurm_msg_t msg;
-	uid_t uid = (uid_t)-1;
-	gid_t gid = (gid_t)-1;
-	gid_t *gids;
-	uint32_t jobid = 0;
 
-	int rank, proto;
+	int rank;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	slurm_addr_t parent_addr = {0};
@@ -606,20 +602,9 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	/* send req over to slurmstepd */
 	switch (type) {
 	case LAUNCH_BATCH_JOB:
-		jobid = ((batch_job_launch_msg_t *)req)->job_id;
-		gid = (uid_t)((batch_job_launch_msg_t *)req)->gid;
-		uid = (uid_t)((batch_job_launch_msg_t *)req)->uid;
 		msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
 	case LAUNCH_TASKS:
-		/*
-		 * The validity of req->uid was verified against the
-		 * auth credential in _rpc_launch_tasks().  req->gid
-		 * has NOT yet been checked!
-		 */
-		jobid = ((launch_tasks_request_msg_t *)req)->job_id;
-		gid = (uid_t)((launch_tasks_request_msg_t *)req)->gid;
-		uid = (uid_t)((launch_tasks_request_msg_t *)req)->uid;
 		msg.msg_type = REQUEST_LAUNCH_TASKS;
 		break;
 	default:
@@ -629,29 +614,18 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	buffer = init_buf(0);
 	msg.data = req;
 
-	if (protocol_version == NO_VAL16)
-		proto = SLURM_PROTOCOL_VERSION;
-	else
-		proto = protocol_version;
-
-	msg.protocol_version = (uint16_t)proto;
+	/* always force the RPC format to the latest */
+	msg.protocol_version = SLURM_PROTOCOL_VERSION;
 	pack_msg(&msg, buffer);
 	len = get_buf_offset(buffer);
 
-	safe_write(fd, &proto, sizeof(int));
+	/* this is the protocol version for the client srun only */
+	safe_write(fd, &protocol_version, sizeof(int));
 
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
 	buffer = NULL;
-
-	ngids = group_cache_lookup_job(jobid, uid, gid, &gids);
-	safe_write(fd, &ngids, sizeof(int));
-	for (i = 0; i < ngids; i++) {
-		/* we assume sizeof(gid_t) == sizeof(uint32_t) */
-		safe_write(fd, &gids[i], sizeof(uint32_t));
-	}
-	xfree(gids);
 
 	return 0;
 

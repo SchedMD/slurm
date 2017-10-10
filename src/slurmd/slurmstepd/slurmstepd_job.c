@@ -66,12 +66,6 @@
 #include "src/slurmd/slurmstepd/multi_prog.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#ifdef HAVE_NATIVE_CRAY
-static bool already_validated_uid = true;
-#else
-static bool already_validated_uid = false;
-#endif
-
 static char **_array_copy(int n, char **src);
 static void _array_free(char ***array);
 static void _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
@@ -254,10 +248,6 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	xassert(msg->complete_nodelist != NULL);
 	debug3("entering stepd_step_rec_create");
 
-	if (!slurm_valid_uid_gid((uid_t)msg->uid, &(msg->gid),
-				 &(msg->user_name), already_validated_uid, 1))
-		return NULL;
-
 	if (acct_gather_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq))
 		return NULL;
 
@@ -289,8 +279,12 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->stepid	= msg->job_step_id;
 
 	job->uid	= (uid_t) msg->uid;
-	job->user_name  = xstrdup(msg->user_name);
 	job->gid	= (gid_t) msg->gid;
+	job->user_name	= xstrdup(msg->user_name);
+	job->ngids = (int) msg->ngids;
+	job->gids = xmalloc(job->ngids * sizeof(gid_t));
+	memcpy(job->gids, msg->gids, job->ngids * sizeof(gid_t));
+
 	job->cwd	= xstrdup(msg->cwd);
 	job->task_dist	= msg->task_dist;
 
@@ -469,10 +463,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	debug3("entering batch_stepd_step_rec_create");
 
-	if (!slurm_valid_uid_gid((uid_t)msg->uid, &(msg->gid),
-				 &(msg->user_name), already_validated_uid, 1))
-		return NULL;
-
 	if (acct_gather_check_acct_freq_task(msg->job_mem, msg->acctg_freq))
 		return NULL;
 
@@ -497,9 +487,13 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	job->batch   = true;
 	job->node_name  = xstrdup(conf->node_name);
-	job->user_name  = xstrdup(msg->user_name);
-	job->uid        = (uid_t) msg->uid;
-	job->gid        = (gid_t) msg->gid;
+
+	job->uid	= (uid_t) msg->uid;
+	job->gid	= (gid_t) msg->gid;
+	job->user_name	= xstrdup(msg->user_name);
+	job->ngids = (int) msg->ngids;
+	job->gids = xmalloc(job->ngids * sizeof(gid_t));
+	memcpy(job->gids, msg->gids, job->ngids * sizeof(gid_t));
 
 	job->profile    = msg->profile;
 

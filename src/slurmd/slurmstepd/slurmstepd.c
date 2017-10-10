@@ -72,8 +72,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
-			     slurm_addr_t **_self, slurm_msg_t **_msg,
-			     int *_ngids, gid_t **_gids);
+			     slurm_addr_t **_self, slurm_msg_t **_msg);
 
 static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
@@ -101,8 +100,6 @@ main (int argc, char **argv)
 	slurm_addr_t *self;
 	slurm_msg_t *msg;
 	stepd_step_rec_t *job;
-	int ngids;
-	gid_t *gids;
 	int rc = 0;
 	char *launch_params;
 
@@ -120,8 +117,7 @@ main (int argc, char **argv)
 		fatal( "failed to initialize authentication plugin" );
 
 	/* Receive job parameters from the slurmd */
-	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,
-			  &ngids, &gids);
+	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
 
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
@@ -130,8 +126,6 @@ main (int argc, char **argv)
 		rc = SLURM_FAILURE;
 		goto ending;
 	}
-	job->ngids = ngids;
-	job->gids = gids;
 
 	/* fork handlers cause mutexes on some global data structures
 	 * to be re-initialized after the fork. */
@@ -438,8 +432,7 @@ rwfail:
  */
 static int
 _init_from_slurmd(int sock, char **argv,
-		  slurm_addr_t **_cli, slurm_addr_t **_self, slurm_msg_t **_msg,
-		  int *_ngids, gid_t **_gids)
+		  slurm_addr_t **_cli, slurm_addr_t **_self, slurm_msg_t **_msg)
 {
 	char *incoming_buffer = NULL;
 	Buf buffer;
@@ -448,8 +441,6 @@ _init_from_slurmd(int sock, char **argv,
 	slurm_addr_t *cli = NULL;
 	slurm_addr_t *self = NULL;
 	slurm_msg_t *msg = NULL;
-	int ngids = 0;
-	gid_t *gids = NULL;
 	uint16_t port;
 	char buf[16];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
@@ -533,7 +524,8 @@ _init_from_slurmd(int sock, char **argv,
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
-	msg->protocol_version = (uint16_t)proto;
+	/* Always unpack as the current version. */
+	msg->protocol_version = SLURM_PROTOCOL_VERSION;
 
 	switch (step_type) {
 	case LAUNCH_BATCH_JOB:
@@ -550,25 +542,17 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("slurmstepd: we didn't unpack the request correctly");
 	free_buf(buffer);
 
-	/* receive cached group ids array for the relevant uid */
-	safe_read(sock, &ngids, sizeof(int));
-	if (ngids > 0) {
-		int i;
-		uint32_t tmp32;
-
-		gids = (gid_t *)xmalloc(sizeof(gid_t) * ngids);
-		for (i = 0; i < ngids; i++) {
-			safe_read(sock, &tmp32, sizeof(uint32_t));
-			gids[i] = (gid_t)tmp32;
-			debug2("got gid %d", gids[i]);
-		}
-	}
+	/*
+	 * Swap the field to the srun client version, which will eventually
+	 * end up stored as protocol_version in srun_info_t. It's a hack to
+	 * pass it in-band, while still using the correct version to unpack
+	 * the launch request message above.
+	 */
+	msg->protocol_version = proto;
 
 	*_cli = cli;
 	*_self = self;
 	*_msg = msg;
-	*_ngids = ngids;
-	*_gids = gids;
 
 	return 1;
 
