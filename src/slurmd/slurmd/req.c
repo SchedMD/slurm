@@ -2097,6 +2097,11 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		goto done;
 	}
 
+	/* lookup gids if they weren't sent by slurmctld */
+	if (!req->ngids)
+		req->ngids = group_cache_lookup(req->uid, req->gid,
+						req->user_name, &req->gids);
+
 	task_g_slurmd_batch_request(req->job_id, req);	/* determine task affinity */
 
 	slurm_mutex_lock(&prolog_mutex);
