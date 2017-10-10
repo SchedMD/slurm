@@ -96,18 +96,16 @@ void libpmix_close(void *lib_plug)
 void *libpmix_open(void)
 {
 	void *lib_plug = NULL;
-#ifdef PMIXP_V1_LIBPATH
 	char *full_path = NULL;
-	xstrfmtcat(full_path, "%s/libpmix.so", PMIXP_V1_LIBPATH);
-	lib_plug = dlopen("libpmix.so", RTLD_LAZY | RTLD_GLOBAL);
-	xfree(full_path);
-#elif PMIXP_V2_LIBPATH
-	xstrfmtcat(full_path, "%s/libpmix.so", PMIXP_V2_LIBPATH);
-	lib_plug = dlopen("libpmix.so", RTLD_LAZY | RTLD_GLOBAL);
-	xfree(full_path);
-#else
-	lib_plug = dlopen("libpmix.so", RTLD_LAZY | RTLD_GLOBAL);
+
+#ifdef PMIXP_V1_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_V1_LIBPATH);
+#elif defined PMIXP_V2_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_V2_LIBPATH);
 #endif
+	xstrfmtcat(full_path, "libpmix.so");
+	lib_plug = dlopen(full_path, RTLD_LAZY | RTLD_GLOBAL);
+	xfree(full_path);
 
 	if (lib_plug && (HAVE_PMIX_VER != pmixp_lib_get_version())) {
 		PMIXP_ERROR("pmi/pmix: incorrect PMIx library version loaded %d was loaded, required %d version",
