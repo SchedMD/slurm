@@ -206,7 +206,7 @@ if {$job_id == 0} {
 set user_name [get_my_user_name]
 
 set found 0
-spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
+spawn $squeue --jobs=$job_id --noheader -X -O "mcslabel"
 expect {
 	-re "(null)" {
 		send_user "\nNO MCS-label for this job : this is not expected\n"
@@ -279,6 +279,29 @@ expect {
 if {$found == 0} {
 	 send_user "\nFAILURE: job was submitted with a bad mcs-label\n"
 	 set exit_code 1
+}
+set found 0
+#test sacct if accounting
+if { [test_account_storage] != 0 } {
+	spawn $sacct -j $job_id --noheader -o "mcslabel"
+	expect {
+		-re "$user_name" {
+			send_user "\nMCS-label in sacct OK for this job\n"
+			set found 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$found == 0} {
+		send_user "\nFAILURE: sacct get a bad mcs-label\n"
+		set exit_code 1
+	}
 }
 
 set found 0
