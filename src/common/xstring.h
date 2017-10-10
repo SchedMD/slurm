@@ -204,6 +204,11 @@ int xstrncmp(const char *s1, const char *s2, size_t n);
  */
 int xstrcasecmp(const char *s1, const char *s2);
 
+/*
+ * safe strncasecmp (handles NULL values)
+ */
+int xstrncasecmp(const char *s1, const char *s2, size_t n);
+
 /* safe case insensitive version of strstr(). */
 char *xstrcasestr(char *haystack, char *needle);
 

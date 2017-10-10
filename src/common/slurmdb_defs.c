@@ -3967,9 +3967,9 @@ extern int slurmdb_find_tres_in_list_by_type(void *x, void *key)
 		end++;
 	}
 
-	if (!xstrncmp(tres_rec->type, type, end)) {
+	if (!xstrncasecmp(tres_rec->type, type, end)) {
 		if ((!found && !tres_rec->name) ||
-		    (found && !xstrcmp(tres_rec->name, type + end + 1))) {
+		    (found && !xstrcasecmp(tres_rec->name, type + end + 1))) {
 			return 1;
 		}
 	}
