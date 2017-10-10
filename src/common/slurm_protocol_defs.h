@@ -959,10 +959,8 @@ typedef struct prolog_launch_msg {
 	char *alias_list;		/* node name/address/hostnamne aliases */
 	slurm_cred_t *cred;
 	uint32_t gid;
-	uint32_t *gids;			/* extended gid list. (optional) */
 	uint32_t job_id;		/* slurm job_id */
 	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
-	uint32_t ngids;			/* number of gids */
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
 	char *partition;		/* partition the job is running in */

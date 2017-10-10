@@ -11488,7 +11488,6 @@ _pack_prolog_launch_msg(
 		pack32(msg->job_id, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
-		pack32_array(msg->gids, msg->ngids, buffer);
 
 		packstr(msg->alias_list, buffer);
 		packstr(msg->nodes, buffer);
@@ -11557,8 +11556,6 @@ _unpack_prolog_launch_msg(
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
-		safe_unpack32_array(&launch_msg_ptr->gids,
-				    &launch_msg_ptr->ngids, buffer);
 
 		safe_unpackstr_xmalloc(&launch_msg_ptr->alias_list, &uint32_tmp,
 				       buffer);
@@ -11595,8 +11592,6 @@ _unpack_prolog_launch_msg(
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
-		launch_msg_ptr->ngids = 0;
-		launch_msg_ptr->gids = NULL;
 
 		safe_unpackstr_xmalloc(&launch_msg_ptr->alias_list, &uint32_tmp,
 				       buffer);
@@ -11632,8 +11627,6 @@ _unpack_prolog_launch_msg(
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
-		launch_msg_ptr->ngids = 0;
-		launch_msg_ptr->gids = NULL;
 
 		safe_unpackstr_xmalloc(&launch_msg_ptr->alias_list, &uint32_tmp,
 				       buffer);

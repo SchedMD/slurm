@@ -890,7 +890,6 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 
 	if (msg) {
 		xfree(msg->alias_list);
-		xfree(msg->gids);
 		xfree(msg->nodes);
 		xfree(msg->partition);
 		xfree(msg->std_err);

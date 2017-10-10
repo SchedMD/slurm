@@ -2016,11 +2016,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
-		if (req->ngids && req->gids)
-			group_cache_push(req->job_id, req->uid, req->gid,
-					 req->user_name,
-					 req->ngids, &req->gids);
-
 		memset(&job_env, 0, sizeof(job_env_t));
 
 		job_env.jobid = req->job_id;
@@ -5847,8 +5842,6 @@ _run_epilog(job_env_t *job_env)
 
 	xfree(my_epilog);
 	_destroy_env(my_env);
-
-	group_cache_remove_jobid(job_env->jobid);
 
 	diff_time = difftime(time(NULL), start_time);
 	if (diff_time >= (msg_timeout / 2)) {
