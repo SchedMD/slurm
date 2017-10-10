@@ -2622,7 +2622,8 @@ sbcast_cred_t *unpack_sbcast_cred(Buf buffer, uint16_t protocol_version)
 	/* "sigp" must be last */
 	safe_unpackmem_xmalloc(&sbcast_cred->signature, &len, buffer);
 	sbcast_cred->siglen = len;
-	xassert(len > 0);
+	if (!len)
+		goto unpack_error;
 
 	return sbcast_cred;
 
