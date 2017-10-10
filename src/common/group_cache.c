@@ -37,18 +37,7 @@
 
 /*
  * Theory of operation:
- * - Cache the extended groups for a (username, gid) or (jobid, username, gid).
- *   This allows a single cache to serve double-duty within slurmd, and
- *   provide a mechanism for SendGIDs to push records into the slurmd, while
- *   being flexible enough to be used within slurmctld.
- * - Allow the slurmd to prime the cache for a specific jobid.
- * -- These records must be manually removed once the job is expired.
- * -- Job-specific records may be reused if a job-specific record is unavailable
- *    for a given job, but only if the entry was loaded within the group_time
- *    limit.
- * - If a record does not exist for the jobid, look it up in the normal cache
- *   (jobid = 0 in the cache record). If found, but too old, the gids will be
- *   updated and the timestamp reset.
+ * - Cache the extended groups for a (uid/username, gid).
  * - Cache expiration - the daemon needs to call group_cache_expire
  *   periodically to accomplish this, otherwise the cache will continue to
  *   grow.
@@ -74,8 +63,6 @@ typedef struct gids_cache {
 	uid_t uid;
 	gid_t gid;
 	char *username;
-	uint32_t jobid;		/* zero if not inserted through SendGIDs */
-				/* positive match on this ignores other fields */
 	int ngids;
 	gid_t *gids;
 	time_t expiration;
@@ -85,7 +72,6 @@ typedef struct gids_cache_needle {
 	uid_t uid;		/* required */
 	gid_t gid;		/* required */
 	char *username;		/* optional, will be looked up if needed */
-	uint32_t jobid;		/* optional - send 0 in otherwise */
 	time_t now;		/* automatically filled in */
 } gids_cache_needle_t;
 
@@ -114,22 +100,10 @@ static int _find_entry(void *x, void *key)
 	gids_cache_t *entry = (gids_cache_t *) x;
 	gids_cache_needle_t *needle = (gids_cache_needle_t *) key;
 
-	if (needle->jobid && (needle->jobid == entry->jobid))
-		return 1;	/* immediate match, go no further */
-
 	if (needle->uid != entry->uid)
 		return 0;
 
 	if (needle->gid != entry->gid)
-		return 0;
-
-	/*
-	 * If this is some other job's job-specific cache record
-	 * that we're trying to piggyback on, only return it if
-	 * inside usable window. Otherwise we'd inadvertently
-	 * overwrite the job-specific cached value.
-	 */
-	if (entry->jobid && (entry->expiration < needle->now))
 		return 0;
 
 	/* success! all checks passed, we've found it */
@@ -154,7 +128,7 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 	needle->now = time(NULL);
 	entry = list_find_first(gids_cache_list, _find_entry, needle);
 
-	if (entry && (entry->jobid || entry->expiration > needle->now)) {
+	if (entry && (entry->expiration > needle->now)) {
 		debug2("%s: found valid entry for %s",
 		       __func__, entry->username);
 		goto out;
@@ -179,7 +153,6 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 		entry->username = xstrdup(needle->username);
 		entry->uid = needle->uid;
 		entry->gid = needle->gid;
-		entry->jobid = 0;	/* not a job-specific entry */
 		entry->ngids = NGROUPS_START;
 		entry->gids = xmalloc(sizeof(gid_t) * entry->ngids);
 		list_prepend(gids_cache_list, entry);
@@ -206,65 +179,6 @@ out:
 	return ngids;
 }
 
-static int _find_others_to_delete(void *x, void *key)
-{
-	gids_cache_t *cached = (gids_cache_t *) x;
-	gids_cache_needle_t *needle = (gids_cache_needle_t *) key;
-
-	if (cached->jobid)	/* always skip per-job records */
-		return 0;
-
-	if (needle->uid != cached->uid)
-		return 0;
-
-	if (needle->gid != cached->gid)
-		return 0;
-
-	return 1;
-}
-
-/*
- * Insert a job-specific record into the cache.
- * Warning - will take over the gids argument.
- *
- * IN: jobid
- * IN: uid
- * IN: gid
- * IN: username, will be copied
- * IN: ngids
- * IN/OUT: gids - array stored into cache, will set to NULL
- */
-extern void group_cache_push(uint32_t jobid, uid_t uid, gid_t gid,
-			     char *username, int ngids, gid_t **gids)
-{
-	gids_cache_t *new = xmalloc(sizeof(gids_cache_t));
-
-	debug2("%s: pushing entry for %s job %u", __func__, username, jobid);
-
-	slurm_mutex_lock(&gids_mutex);
-	if (!gids_cache_list)
-		gids_cache_list = list_create(_group_cache_list_delete);
-	else {
-		/* flush any other non-jobid references to this user */
-		gids_cache_needle_t needle = {0};
-		needle.uid = uid;
-		needle.gid = gid;
-		list_delete_all(gids_cache_list, _find_others_to_delete,
-				&needle);
-	}
-
-	new->uid = uid;
-	new->gid = gid;
-	new->username = xstrdup(username);
-	new->jobid = jobid;
-	new->ngids = ngids;
-	new->gids = *gids;
-	*gids = NULL;
-	new->expiration = time(NULL) + slurmctld_conf.group_time;
-	list_prepend(gids_cache_list, new);
-	slurm_mutex_unlock(&gids_mutex);
-}
-
 /*
  * OUT: ngids as return value
  * IN: uid
@@ -283,32 +197,10 @@ extern int group_cache_lookup(uid_t uid, gid_t gid, char *username, gid_t **gids
 	return _group_cache_lookup_internal(&needle, gids);
 }
 
-/*
- * OUT: ngids as return value
- * IN: jobid
- * IN: uid
- * IN: gid - primary group id (will always exist first in gids list)
- * IN/OUT: gids - xmalloc'd gid_t * structure with ngids elements
- */
-extern int group_cache_lookup_job(uint32_t jobid, uid_t uid, gid_t gid,
-				  gid_t **gids)
-{
-	gids_cache_needle_t needle = {0};
-
-	needle.jobid = jobid;
-	needle.uid = uid;
-	needle.gid = gid;
-
-	return _group_cache_lookup_internal(&needle, gids);
-}
-
 static int _cleanup_search(void *x, void *key)
 {
 	gids_cache_t *cached = (gids_cache_t *) x;
 	time_t *now = (time_t *) key;
-
-	if (cached->jobid)
-		return 0;
 
 	if (cached->expiration < *now)
 		return 1;
@@ -326,30 +218,5 @@ extern void group_cache_cleanup(void)
 	slurm_mutex_lock(&gids_mutex);
 	if (gids_cache_list)
 		list_delete_all(gids_cache_list, _cleanup_search, &now);
-	slurm_mutex_unlock(&gids_mutex);
-}
-
-static int _remove_jobid(void *x, void *key)
-{
-	gids_cache_t *cached = (gids_cache_t *) x;
-	uint32_t *jobid = (uint32_t *) key;
-
-	if (cached->jobid == *jobid)
-		return 1;
-
-	return 0;
-}
-
-/*
- * Call to remove a job-specific record.
- */
-extern void group_cache_remove_jobid(uint32_t jobid)
-{
-	if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_SEND_GIDS))
-		return;
-
-	slurm_mutex_lock(&gids_mutex);
-	if (gids_cache_list)
-		list_delete_all(gids_cache_list, _remove_jobid, &jobid);
 	slurm_mutex_unlock(&gids_mutex);
 }

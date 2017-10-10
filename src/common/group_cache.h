@@ -41,19 +41,6 @@
 #include <sys/types.h>
 
 /*
- * Insert a job-specific record into the cache.
- * Warning - will take over the gids argument.
- *
- * IN: jobid
- * IN: uid
- * IN: gid
- * IN: username, will be copied
- * IN: ngids
- * IN/OUT: gids - array stored into cache, will set to NULL
- */
-void group_cache_push(uint32_t jobid, uid_t uid, gid_t gid, char *username, int ngids, gid_t **gids);
-
-/*
  * OUT: ngids as return value
  * IN: uid
  * IN: gid - primary group id (will always exist first in gids list)
@@ -61,20 +48,6 @@ void group_cache_push(uint32_t jobid, uid_t uid, gid_t gid, char *username, int 
  * IN/OUT: gids - xmalloc'd gid_t * structure with ngids elements
  */
 extern int group_cache_lookup(uid_t uid, gid_t gid, char *username, gid_t **gids);
-
-/*
- * OUT: ngids as return value
- * IN: jobid
- * IN: uid
- * IN: gid - primary group id (will always exist first in gids list)
- * IN/OUT: gids - xmalloc'd gid_t * structure with ngids elements
- */
-extern int group_cache_lookup_job(uint32_t jobid, uid_t uid, gid_t gid, gid_t **gids);
-
-/*
- * Call to remove a job-specific record.
- */
-extern void group_cache_remove_jobid(uint32_t jobid);
 
 /* call on daemon shutdown to cleanup properly */
 void group_cache_purge(void);

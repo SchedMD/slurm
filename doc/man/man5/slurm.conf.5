@@ -2119,14 +2119,6 @@ steps reach the slurmd and before any execution has happened in the step.
 This is a much faster way to work and if using srun to launch your tasks you
 should use this flag.
 .TP
-\fBSendGIDs\fR
-Lookup the extended gids list for a user at launch time and send to the compute
-nodes as part of the prolog launch request. This value will be cached for the
-duration of the job, and avoid making separate lookup calls on the nodes
-simultaneously. This ensures the gids list will match across all compute nodes,
-and can help avoid scalability issues with the directory service in use.
-Setting the SendGIDs flag implicitly sets the Alloc flag.
-.TP
 \fBSerial\fR
 By default, the Prolog and Epilog scripts run concurrently on each node.
 This flag forces those scripts to run serially within each node, but with
