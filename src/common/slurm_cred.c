@@ -2403,10 +2403,17 @@ unpack_error:
 static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
 			      uint16_t protocol_version)
 {
-	pack_time(sbcast_cred->ctime, buffer);
-	pack_time(sbcast_cred->expiration, buffer);
-	pack32(sbcast_cred->jobid, buffer);
-	packstr(sbcast_cred->nodes, buffer);
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		pack_time(sbcast_cred->ctime, buffer);
+		pack_time(sbcast_cred->expiration, buffer);
+		pack32(sbcast_cred->jobid, buffer);
+		packstr(sbcast_cred->nodes, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_time(sbcast_cred->ctime, buffer);
+		pack_time(sbcast_cred->expiration, buffer);
+		pack32(sbcast_cred->jobid, buffer);
+		packstr(sbcast_cred->nodes, buffer);
+	}
 }
 
 /* Create an sbcast credential for the specified job and nodes
@@ -2606,24 +2613,36 @@ void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
 	}
 }
 
-/* Pack an sbcast credential into a buffer including the digital signature */
+/* Unpack an sbcast credential into a buffer including the digital signature */
 sbcast_cred_t *unpack_sbcast_cred(Buf buffer, uint16_t protocol_version)
 {
-	uint32_t len;
 	sbcast_cred_t *sbcast_cred;
 	uint32_t uint32_tmp;
 
 	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
-	safe_unpack_time(&sbcast_cred->ctime, buffer);
-	safe_unpack_time(&sbcast_cred->expiration, buffer);
-	safe_unpack32(&sbcast_cred->jobid, buffer);
-	safe_unpackstr_xmalloc(&sbcast_cred->nodes, &uint32_tmp, buffer);
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack_time(&sbcast_cred->ctime, buffer);
+		safe_unpack_time(&sbcast_cred->expiration, buffer);
+		safe_unpack32(&sbcast_cred->jobid, buffer);
+		safe_unpackstr_xmalloc(&sbcast_cred->nodes, &uint32_tmp, buffer);
 
-	/* "sigp" must be last */
-	safe_unpackmem_xmalloc(&sbcast_cred->signature, &len, buffer);
-	sbcast_cred->siglen = len;
-	if (!len)
-		goto unpack_error;
+		/* "sigp" must be last */
+		safe_unpackmem_xmalloc(&sbcast_cred->signature,
+				       &sbcast_cred->siglen, buffer);
+		if (!sbcast_cred->siglen)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack_time(&sbcast_cred->ctime, buffer);
+		safe_unpack_time(&sbcast_cred->expiration, buffer);
+		safe_unpack32(&sbcast_cred->jobid, buffer);
+		safe_unpackstr_xmalloc(&sbcast_cred->nodes, &uint32_tmp, buffer);
+
+		/* "sigp" must be last */
+		safe_unpackmem_xmalloc(&sbcast_cred->signature,
+				       &sbcast_cred->siglen, buffer);
+		if (!sbcast_cred->siglen)
+			goto unpack_error;
+	}
 
 	return sbcast_cred;
 
