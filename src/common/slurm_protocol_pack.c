@@ -12859,10 +12859,13 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
+
 		pack32(msg->uid, buffer);
-		packstr(msg->partition, buffer);
-		packstr(msg->user_name, buffer);
 		pack32(msg->gid, buffer);
+		packstr(msg->user_name, buffer);
+		pack32_array(msg->gids, msg->ngids, buffer);
+
+		packstr(msg->partition, buffer);
 		pack32(msg->ntasks, buffer);
 		pack64(msg->pn_min_memory, buffer);
 
@@ -13064,11 +13067,14 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->step_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
-		safe_unpackstr_xmalloc(&launch_msg_ptr->partition,
-				       &uint32_tmp, buffer);
+		safe_unpack32(&launch_msg_ptr->gid, buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->user_name,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&launch_msg_ptr->gid, buffer);
+		safe_unpack32_array(&launch_msg_ptr->gids,
+				    &launch_msg_ptr->ngids, buffer);
+
+		safe_unpackstr_xmalloc(&launch_msg_ptr->partition,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&launch_msg_ptr->ntasks, buffer);
 		safe_unpack64(&launch_msg_ptr->pn_min_memory, buffer);
 
