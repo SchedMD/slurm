@@ -88,6 +88,7 @@ strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
 strong_alias(xstrtolower,       slurm_xstrtolower);
 strong_alias(xstrchr,           slurm_xstrchr);
 strong_alias(xstrcmp,           slurm_xstrcmp);
+strong_alias(xstrncmp,          slurm_xstrncmp);
 strong_alias(xstrcasecmp,       slurm_xstrcasecmp);
 strong_alias(xstrncasecmp,      slurm_xstrncasecmp);
 strong_alias(xstrcasestr,       slurm_xstrcasestr);

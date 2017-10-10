@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix job reasons for jobs that are violating assoc MaxTRESPerNode limits.
  -- Fix segfault when unpacking a 16.05 slurm_cred in a 17.02 daemon.
  -- Fix setting TRES limits with case insensitive TRES names.
+ -- Add alias for xstrncmp() -- slurm_xstrncmp().
 
 * Changes in Slurm 17.02.7
 ==========================

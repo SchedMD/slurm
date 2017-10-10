@@ -323,6 +323,7 @@
 #define	xstrtolower		slurm_xstrtolower
 #define xstrchr			slurm_xstrchr
 #define xstrcmp			slurm_xstrcmp
+#define xstrncmp		slurm_xstrncmp
 #define xstrcasecmp		slurm_xstrcasecmp
 #define xstrncasecmp		slurm_xstrncasecmp
 #define xstrcasestr		slurm_xstrcasestr
