@@ -15294,7 +15294,8 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 	if (state & JOB_RECONFIG_FAIL)
 		node_features_g_get_node(job_ptr->nodes);
 
-	/* If the partition was removed don't allow the job to be
+	/*
+	 * If the partition was removed don't allow the job to be
 	 * requeued.  If it doesn't have details then something is very
 	 * wrong and if the job doesn't want to be requeued don't.
 	 */
@@ -15312,17 +15313,21 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 		return ESLURM_BATCH_ONLY;
 	}
 
-	/* If the job is already pending, just return an error.
+	/*
+	 * If the job is already pending, just return an error.
 	 * A federated origin job can be pending and revoked with a sibling job
-	 * on another cluster. */
+	 * on another cluster.
+	 */
 	if (IS_JOB_PENDING(job_ptr) &&
 	    (!job_ptr->fed_details || !job_ptr->fed_details->cluster_lock))
 		return ESLURM_JOB_PENDING;
 
 	if ((state & JOB_RECONFIG_FAIL) && IS_JOB_CANCELLED(job_ptr)) {
-		/* Job was cancelled (likely be the user) while node
+		/*
+		 * Job was cancelled (likely be the user) while node
 		 * reconfiguration was in progress, so don't requeue it
-		 * if the node reconfiguration failed. */
+		 * if the node reconfiguration failed.
+		 */
 		return ESLURM_DISABLED;
 	}
 
@@ -15338,7 +15343,8 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 
 	last_job_update = now;
 
-	/* In the job is in the process of completing
+	/*
+	 * In the job is in the process of completing
 	 * return SLURM_SUCCESS and set the status
 	 * to JOB_PENDING since we support requeue
 	 * of done/exit/exiting jobs.
@@ -15350,7 +15356,8 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		uint32_t suspend_job_state = job_ptr->job_state;
-		/* we can't have it as suspended when we call the
+		/*
+		 * we can't have it as suspended when we call the
 		 * accounting stuff.
 		 */
 		job_ptr->job_state = JOB_REQUEUE;
@@ -15365,7 +15372,8 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 	else if (!is_completing)
 		job_ptr->end_time = now;
 
-	/* Save the state of the job so that
+	/*
+	 * Save the state of the job so that
 	 * we deallocate the nodes if is in
 	 * running state.
 	 */
@@ -15377,9 +15385,11 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 	/* Only change state to requeue for local jobs */
 	if (fed_mgr_is_origin_job(job_ptr) &&
 	    !fed_mgr_is_tracker_only_job(job_ptr)) {
-		/* We want this job to have the requeued/preempted state in the
+		/*
+		 * We want this job to have the requeued/preempted state in the
 		 * accounting logs. Set a new submit time so the restarted
-		 * job looks like a new job. */
+		 * job looks like a new job.
+		 */
 		if (preempt) {
 			job_ptr->job_state = JOB_PREEMPTED;
 			build_cg_bitmap(job_ptr);
@@ -15392,9 +15402,11 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 		}
 	}
 
-	/* Increment restart counter before completing reply so that completing
+	/*
+	 * Increment restart counter before completing reply so that completing
 	 * jobs get counted and so that fed jobs get counted before submitting
-	 * new sibs in batch_requeue_fini */
+	 * new siblings in batch_requeue_fini()
+	 */
 	job_ptr->restart_cnt++;
 
 	if (is_completing) {
@@ -15402,8 +15414,10 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 		goto reply;
 	}
 
-	/* Deallocate resources only if the job has some.
-	 * JOB_COMPLETING is needed to properly clean up steps. */
+	/*
+	 * Deallocate resources only if the job has some.
+	 * JOB_COMPLETING is needed to properly clean up steps.
+	 */
 	if (is_running) {
 		job_ptr->job_state |= JOB_COMPLETING;
 		deallocate_nodes(job_ptr, false, is_suspended, preempt);
@@ -15418,20 +15432,24 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 	if (job_ptr->node_cnt)
 		job_ptr->job_state |= JOB_COMPLETING;
 
-	/* Mark the origin job as requeueing. Will finish requeueing fed job
+	/*
+	 * Mark the origin job as requeueing. Will finish requeueing fed job
 	 * after job has completed.
 	 * If it's completed, batch_requeue_fini is called below and will call
 	 * fed_mgr_job_requeue() to submit new siblings.
 	 * If it's not completed, batch_requeue_fini will either be called when
 	 * the running origin job finishes or the running remote sibling job
-	 * reports that the job is finished. */
+	 * reports that the job is finished.
+	 */
 	if (job_ptr->fed_details && !is_completed) {
 		job_ptr->job_state |= JOB_COMPLETING;
 		job_ptr->job_state |= JOB_REQUEUE_FED;
 	}
 
-	/* If we set the time limit it means the user didn't so reset
-	   it here or we could bust some limit when we try again */
+	/*
+	 * If we set the time limit it means the user didn't so reset
+	 * it here or we could bust some limit when we try again
+	 */
 	if (job_ptr->limit_set.time == 1) {
 		job_ptr->time_limit = NO_VAL;
 		job_ptr->limit_set.time = 0;
@@ -15445,8 +15463,10 @@ reply:
 	/* clear signal sent flag on requeue */
 	job_ptr->warn_flags &= ~WARN_SENT;
 
-	/* Since the job completion logger removes the submit we need
-	 * to add it again. */
+	/*
+	 * Since the job completion logger removes the submit we need
+	 * to add it again.
+	 */
 	acct_policy_add_job_submit(job_ptr);
 
 	acct_policy_update_pending_job(job_ptr);
@@ -15471,7 +15491,8 @@ reply:
 		job_ptr->priority = 0;
 	}
 
-	/* When jobs are requeued while running/completing batch_requeue_fini is
+	/*
+	 * When jobs are requeued while running/completing batch_requeue_fini is
 	 * called after the job is completely finished.  If the job is already
 	 * finished it needs to be called to clear out states (especially the
 	 * db_index or we will just write over the last job in the database).
