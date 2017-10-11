@@ -1018,7 +1018,9 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.uid      = job_ptr->user_id;
 	cred_arg.gid      = job_ptr->group_id;
 	if (slurmctld_config.send_groups_in_cred) {
-		cred_arg.user_name = uid_to_string_or_null(job_ptr->user_id);
+		if (!job_ptr->user_name)
+			job_ptr->user_name = uid_to_string_or_null(job_ptr->user_id);
+		cred_arg.user_name = job_ptr->user_name; /* avoid extra copy */
 		/* lookup and send extended gids list */
 		cred_arg.ngids = group_cache_lookup(cred_arg.uid,
 						    cred_arg.gid,
@@ -1057,10 +1059,9 @@ static int _make_step_cred(struct step_record *step_ptr,
 
 	/*
 	 * most cred_arg pointers are to other struct elements to avoid
-	 * duplicating them, but user_name and gids are allocated just for
+	 * duplicating them, but gids are allocated just for
 	 * this and must be xfree'd.
 	 */
-	xfree(cred_arg.user_name);
 	xfree(cred_arg.gids);
 
 	if (*slurm_cred == NULL) {
@@ -3454,7 +3455,9 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	sbcast_arg.uid = job_ptr->user_id;
 	sbcast_arg.gid = job_ptr->group_id;
 	if (slurmctld_config.send_groups_in_cred) {
-		sbcast_arg.user_name = uid_to_string_or_null(job_ptr->user_id);
+		if (!job_ptr->user_name)
+			job_ptr->user_name = uid_to_string_or_null(job_ptr->user_id);
+		sbcast_arg.user_name = job_ptr->user_name; /* avoid extra copy */
 		/* lookup and send extended gids list */
 		sbcast_arg.ngids = group_cache_lookup(sbcast_arg.uid,
 						      sbcast_arg.gid,
@@ -3505,7 +3508,6 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		xfree(job_info_resp_msg.node_list);
 		delete_sbcast_cred(sbcast_cred);
 	}
-	xfree(sbcast_arg.user_name);
 	xfree(sbcast_arg.gids);
 	xfree(local_node_list);
 	xfree(node_addr);
