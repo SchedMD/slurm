@@ -3451,6 +3451,19 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	 */
 	memset(&sbcast_arg, 0, sizeof(sbcast_cred_arg_t));
 	sbcast_arg.job_id = job_ptr->job_id;
+	sbcast_arg.uid = job_ptr->user_id;
+	sbcast_arg.gid = job_ptr->group_id;
+	sbcast_arg.user_name = uid_to_string(job_ptr->user_id);
+	if (slurmctld_config.send_groups_in_cred) {
+		/* lookup and send extended gids list */
+		sbcast_arg.ngids = group_cache_lookup(sbcast_arg.uid,
+						      sbcast_arg.gid,
+						      sbcast_arg.user_name,
+						      &sbcast_arg.gids);
+	} else {
+		sbcast_arg.ngids = 0;
+		sbcast_arg.gids = NULL;
+	}
 	sbcast_arg.nodes = node_list; /* avoid extra copy */
 	sbcast_arg.expiration = job_ptr->end_time;
 
@@ -3492,6 +3505,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		xfree(job_info_resp_msg.node_list);
 		delete_sbcast_cred(sbcast_cred);
 	}
+	xfree(sbcast_arg.user_name);
+	xfree(sbcast_arg.gids);
 	xfree(local_node_list);
 	xfree(node_addr);
 #endif
