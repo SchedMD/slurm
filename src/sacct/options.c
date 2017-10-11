@@ -241,8 +241,7 @@ static int _addto_state_char_list(List char_list, char *names)
 					memcpy(name, names+start, (i-start));
 					c = job_state_num(name);
 					if (c == NO_VAL)
-						fatal("unrecognized job "
-						      "state value");
+						fatal("unrecognized job state value %s", name);
 					xfree(name);
 					name = xstrdup_printf("%d", c);
 
@@ -274,8 +273,9 @@ static int _addto_state_char_list(List char_list, char *names)
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 			c = job_state_num(name);
-			if (c == -1)
-				fatal("unrecognized job state value");
+			if (c == NO_VAL)
+				fatal("unrecognized job state value '%s'",
+				      name);
 			xfree(name);
 			name = xstrdup_printf("%d", c);
 
