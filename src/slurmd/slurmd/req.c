@@ -2022,6 +2022,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		return;
 	}
 
+	if (!req->user_name)
+		req->user_name = uid_to_string(req->uid);
+
 	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error starting prolog: %m");
 	}

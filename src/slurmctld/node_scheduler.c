@@ -2790,7 +2790,7 @@ extern void launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->job_id = job_ptr->job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;
 	prolog_msg_ptr->gid = job_ptr->group_id;
-	prolog_msg_ptr->user_name = uid_to_string(job_ptr->user_id);
+	prolog_msg_ptr->user_name = uid_to_string_or_null(job_ptr->user_id);
 	prolog_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	prolog_msg_ptr->nodes = xstrdup(job_ptr->nodes);
 	prolog_msg_ptr->partition = xstrdup(job_ptr->partition);
@@ -2814,8 +2814,8 @@ extern void launch_prolog(struct job_record *job_ptr)
 	cred_arg.stepid              = SLURM_EXTERN_CONT;
 	cred_arg.uid                 = job_ptr->user_id;
 	cred_arg.gid                 = job_ptr->group_id;
-	cred_arg.user_name           = prolog_msg_ptr->user_name;
 	if (slurmctld_config.send_groups_in_cred) {
+		cred_arg.user_name = prolog_msg_ptr->user_name;
 		/* lookup and send extended gids list */
 		cred_arg.ngids = group_cache_lookup(cred_arg.uid,
 						    cred_arg.gid,
