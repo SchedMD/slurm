@@ -49,6 +49,7 @@
 #include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/gres.h"
+#include "src/common/group_cache.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -282,8 +283,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->gid	= (gid_t) msg->gid;
 	job->user_name	= xstrdup(msg->user_name);
 	job->ngids = (int) msg->ngids;
-	job->gids = xmalloc(job->ngids * sizeof(gid_t));
-	memcpy(job->gids, msg->gids, job->ngids * sizeof(gid_t));
+	job->gids = copy_gids(msg->ngids, msg->gids);
 
 	job->cwd	= xstrdup(msg->cwd);
 	job->task_dist	= msg->task_dist;
@@ -492,8 +492,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->gid	= (gid_t) msg->gid;
 	job->user_name	= xstrdup(msg->user_name);
 	job->ngids = (int) msg->ngids;
-	job->gids = xmalloc(job->ngids * sizeof(gid_t));
-	memcpy(job->gids, msg->gids, job->ngids * sizeof(gid_t));
+	job->gids = copy_gids(msg->ngids, msg->gids);
 
 	job->profile    = msg->profile;
 

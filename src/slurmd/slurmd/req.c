@@ -965,8 +965,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	xfree(req->gids);
 	if (arg.ngids) {
 		req->ngids = arg.ngids;
-		req->gids = xmalloc(req->ngids * sizeof(gid_t));
-		memcpy(req->gids, arg.gids, req->ngids * sizeof(gid_t));
+		req->gids = copy_gids(arg.ngids, arg.gids);
 	} else {
 		/*
 		 * The gids were not sent in the cred, or dealing with an older

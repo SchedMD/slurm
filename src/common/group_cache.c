@@ -171,8 +171,7 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 
 out:
 	ngids = entry->ngids;
-	*gids = xmalloc(ngids * sizeof(gid_t));
-	memcpy(*gids, entry->gids, ngids * sizeof(gid_t));
+	*gids = copy_gids(entry->ngids, entry->gids);
 
 	slurm_mutex_unlock(&gids_mutex);
 
