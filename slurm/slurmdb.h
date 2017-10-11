@@ -698,8 +698,8 @@ typedef struct {
 } slurmdb_event_rec_t;
 
 typedef struct {
-	List federation_list; 	/* list of char * */
 	List cluster_list; 	/* list of char * */
+	List federation_list; 	/* list of char * */
 	List format_list; 	/* list of char * */
 	uint16_t with_deleted;
 } slurmdb_federation_cond_t;
