@@ -15082,7 +15082,53 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 	msg = xmalloc ( sizeof (stats_info_response_msg_t) );
 	*msg_ptr = msg ;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->parts_packed,	buffer);
+		if (msg->parts_packed) {
+			safe_unpack_time(&msg->req_time,	buffer);
+			safe_unpack_time(&msg->req_time_start,	buffer);
+			safe_unpack32(&msg->server_thread_count,buffer);
+			safe_unpack32(&msg->agent_queue_size,	buffer);
+			safe_unpack32(&msg->jobs_submitted,	buffer);
+			safe_unpack32(&msg->jobs_started,	buffer);
+			safe_unpack32(&msg->jobs_completed,	buffer);
+			safe_unpack32(&msg->jobs_canceled,	buffer);
+			safe_unpack32(&msg->jobs_failed,	buffer);
+
+			safe_unpack32(&msg->schedule_cycle_max,	buffer);
+			safe_unpack32(&msg->schedule_cycle_last,buffer);
+			safe_unpack32(&msg->schedule_cycle_sum,	buffer);
+			safe_unpack32(&msg->schedule_cycle_counter, buffer);
+			safe_unpack32(&msg->schedule_cycle_depth, buffer);
+			safe_unpack32(&msg->schedule_queue_len,	buffer);
+
+			safe_unpack32(&msg->bf_backfilled_jobs,	buffer);
+			safe_unpack32(&msg->bf_last_backfilled_jobs, buffer);
+			safe_unpack32(&msg->bf_cycle_counter,	buffer);
+			safe_unpack64(&msg->bf_cycle_sum,	buffer);
+			safe_unpack32(&msg->bf_cycle_last,	buffer);
+			safe_unpack32(&msg->bf_last_depth,	buffer);
+			safe_unpack32(&msg->bf_last_depth_try,	buffer);
+
+			safe_unpack32(&msg->bf_queue_len,	buffer);
+			safe_unpack32(&msg->bf_cycle_max,	buffer);
+			safe_unpack_time(&msg->bf_when_last_cycle, buffer);
+			safe_unpack32(&msg->bf_depth_sum,	buffer);
+			safe_unpack32(&msg->bf_depth_try_sum,	buffer);
+			safe_unpack32(&msg->bf_queue_len_sum,	buffer);
+			safe_unpack32(&msg->bf_active,		buffer);
+		}
+
+		safe_unpack32(&msg->rpc_type_size,		buffer);
+		safe_unpack16_array(&msg->rpc_type_id,   &uint32_tmp, buffer);
+		safe_unpack32_array(&msg->rpc_type_cnt,  &uint32_tmp, buffer);
+		safe_unpack64_array(&msg->rpc_type_time, &uint32_tmp, buffer);
+
+		safe_unpack32(&msg->rpc_user_size,		buffer);
+		safe_unpack32_array(&msg->rpc_user_id,   &uint32_tmp, buffer);
+		safe_unpack32_array(&msg->rpc_user_cnt,  &uint32_tmp, buffer);
+		safe_unpack64_array(&msg->rpc_user_time, &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->parts_packed,	buffer);
 		if (msg->parts_packed) {
 			safe_unpack_time(&msg->req_time,	buffer);
