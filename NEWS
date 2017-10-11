@@ -113,6 +113,7 @@ documents those changes that are of interest to users and administrators.
  -- Correct logic for line continuation in srun --multi-prog file.
  -- Add DBD Agent queue size to sdiag output.
  -- Add running job count to sdiag output.
+ -- Print unix timestamps next to ASCII timestamps in sdiag output.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
