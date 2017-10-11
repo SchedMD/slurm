@@ -340,6 +340,11 @@ void slurm_cred_print(slurm_cred_t *cred);
 
 typedef struct {
 	uint32_t job_id;
+	uid_t uid;
+	gid_t gid;
+	char *user_name;
+	int ngids;
+	gid_t *gids;
 
 	time_t expiration;
 	char *nodes;

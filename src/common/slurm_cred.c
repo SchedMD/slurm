@@ -123,6 +123,13 @@ struct sbcast_cred {
 	time_t       ctime;	/* Time that the cred was created	*/
 	time_t       expiration; /* Time at which cred is no longer good*/
 	uint32_t     jobid;	/* SLURM job id for this credential	*/
+	uint32_t uid;		/* user for which this cred is valid	*/
+	uint32_t gid;		/* user's primary group id 		*/
+	char *user_name;	/* user_name as a string		*/
+	uint32_t ngids;		/* number of extended group ids sent in
+				 * credential. if 0, these will need to
+				 * be fetched locally instead. */
+	uint32_t *gids;		/* extended group ids for user		*/
 	char *       nodes;	/* nodes for which credential is valid	*/
 	char        *signature;	/* credential signature			*/
 	unsigned int siglen;	/* signature length in bytes		*/
@@ -2407,6 +2414,10 @@ static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
 		pack_time(sbcast_cred->ctime, buffer);
 		pack_time(sbcast_cred->expiration, buffer);
 		pack32(sbcast_cred->jobid, buffer);
+		pack32(sbcast_cred->uid, buffer);
+		pack32(sbcast_cred->gid, buffer);
+		packstr(sbcast_cred->user_name, buffer);
+		pack32_array(sbcast_cred->gids, sbcast_cred->ngids, buffer);
 		packstr(sbcast_cred->nodes, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(sbcast_cred->ctime, buffer);
@@ -2435,6 +2446,16 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 	sbcast_cred->ctime = time(NULL);
 	sbcast_cred->expiration = arg->expiration;
 	sbcast_cred->jobid = arg->job_id;
+	sbcast_cred->uid = arg->uid;
+	sbcast_cred->gid = arg->gid;
+	sbcast_cred->user_name = xstrdup(arg->user_name);
+	sbcast_cred->ngids = arg->ngids;
+	if (sbcast_cred->ngids) {
+		int array_size = sbcast_cred->ngids * sizeof(gid_t);
+		sbcast_cred->gids = xmalloc(array_size);
+		memcpy(sbcast_cred->gids, arg->gids, array_size);
+	} else
+		sbcast_cred->gids = NULL;
 	sbcast_cred->nodes = xstrdup(arg->nodes);
 
 	buffer = init_buf(4096);
@@ -2461,6 +2482,8 @@ void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	if (!sbcast_cred)
 		return;
 
+	xfree(sbcast_cred->gids);
+	xfree(sbcast_cred->user_name);
 	xfree(sbcast_cred->nodes);
 	xfree(sbcast_cred->signature);
 	xfree(sbcast_cred);
@@ -2581,6 +2604,16 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 
 	arg = xmalloc(sizeof(sbcast_cred_arg_t));
 	arg->job_id = sbcast_cred->jobid;
+	arg->uid = sbcast_cred->uid;
+	arg->gid = sbcast_cred->gid;
+	arg->user_name = xstrdup(sbcast_cred->user_name);
+	arg->ngids = sbcast_cred->ngids;
+	if (arg->ngids) {
+		int size = arg->ngids * sizeof(gid_t);
+		arg->gids = xmalloc(size);
+		memcpy(arg->gids, sbcast_cred->gids, size);
+	} else
+		arg->gids = NULL;
 	arg->nodes = xstrdup(sbcast_cred->nodes);
 	return arg;
 }
@@ -2623,6 +2656,12 @@ sbcast_cred_t *unpack_sbcast_cred(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
 		safe_unpack_time(&sbcast_cred->expiration, buffer);
 		safe_unpack32(&sbcast_cred->jobid, buffer);
+		safe_unpack32(&sbcast_cred->uid, buffer);
+		safe_unpack32(&sbcast_cred->gid, buffer);
+		safe_unpackstr_xmalloc(&sbcast_cred->user_name, &uint32_tmp,
+				       buffer);
+		safe_unpack32_array(&sbcast_cred->gids, &sbcast_cred->ngids,
+				    buffer);
 		safe_unpackstr_xmalloc(&sbcast_cred->nodes, &uint32_tmp, buffer);
 
 		/* "sigp" must be last */
@@ -2663,6 +2702,8 @@ void sbcast_cred_arg_free(sbcast_cred_arg_t *arg)
 	if (!arg)
 		return;
 
+	xfree(arg->gids);
 	xfree(arg->nodes);
+	xfree(arg->user_name);
 	xfree(arg);
 }
