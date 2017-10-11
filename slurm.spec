@@ -1,3 +1,19 @@
+Name:		slurm
+Version:	17.11.0
+Release:	1%{?dist}
+Summary:	Slurm Workload Manager
+
+Group:		System Environment/Base
+License:	GPLv2+
+URL:		https://slurm.schedmd.com/
+Source:		%{name}-%{version}.tar.bz2
+
+%description
+Slurm is an open source, fault-tolerant, and highly scalable
+cluster management and job scheduling system for Linux clusters.
+Components include machine status, partition management,
+job management, scheduling and accounting modules
+
 # Note that this package is not relocatable
 
 #
@@ -77,18 +93,6 @@
 %slurm_with_opt sgijob
 %endif
 
-Name:    see META file
-Version: see META file
-Release: see META file
-
-Summary: Slurm Workload Manager
-
-License: GPL
-Group: System Environment/Base
-Source: %{name}-%{version}-%{release}.tgz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
-URL: https://slurm.schedmd.com/
-
 Requires: slurm-plugins
 
 %ifos linux
@@ -152,12 +156,6 @@ BuildRequires: pkgconfig
 %endif
 
 BuildRequires: perl(ExtUtils::MakeMaker)
-
-%description
-Slurm is an open source, fault-tolerant, and highly
-scalable cluster management and job scheduling system for Linux clusters.
-Components include machine status, partition management, job management,
-scheduling and accounting modules
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
 #  Note 'global' instead of 'define' needed here to work around apparent
@@ -360,7 +358,7 @@ according to the Slurm
 #############################################################################
 
 %prep
-%setup -n %{name}-%{version}-%{release}
+%setup -n %{name}-%{version}
 
 %build
 %configure \
@@ -400,27 +398,18 @@ chmod +x find-requires.sh
 %global _use_internal_dependency_generator 0
 %global __find_requires %{_builddir}/%{buildsubdir}/find-requires.sh
 
+rm -rf {%buildroot}
+make install DESTDIR=%{buildroot}
+make install-contrib DESTDIR=%{buildroot}
 
-rm -rf "$RPM_BUILD_ROOT"
-DESTDIR="$RPM_BUILD_ROOT" %__make install
-DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
-
-if [ -d /usr/lib/systemd/system ]; then
-   install -D -m644 etc/slurmctld.service $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service
-   install -D -m644 etc/slurmd.service    $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service
-   install -D -m644 etc/slurmdbd.service  $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service
-elif [ -d /etc/init.d ]; then
-   install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
-   install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
-   mkdir -p "$RPM_BUILD_ROOT/usr/sbin"
-   ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
-   ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
-fi
+install -D -m644 etc/slurmctld.service %{buildroot}/usr/lib/systemd/system/slurmctld.service
+install -D -m644 etc/slurmd.service    %{buildroot}/usr/lib/systemd/system/slurmd.service
+install -D -m644 etc/slurmdbd.service  %{buildroot}/usr/lib/systemd/system/slurmdbd.service
 
 # Do not package Slurm's version of libpmi on Cray systems.
 # Cray's version of libpmi should be used.
 %if %{slurm_with cray} || %{slurm_with cray_alps}
-   rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi*
+   rm -f %{buildroot}/%{_libdir}/libpmi*
    %if %{slurm_with cray}
       install -D -m644 contribs/cray/plugstack.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/plugstack.conf.template
       install -D -m644 contribs/cray/slurm.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.template
