@@ -4939,9 +4939,11 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
-	/* If is origin job then cancel siblings -- if they exist.
+	/*
+	 * If is origin job then cancel siblings -- if they exist.
 	 * origin job = because it knows where the siblings are
-	 * If the job is running locally then just do the normal signaling */
+	 * If the job is running locally then just do the normal signaling
+	 */
 	if (!(flags & KILL_NO_SIBS) && !IS_JOB_RUNNING(job_ptr) &&
 	    job_ptr->fed_details && fed_mgr_fed_rec) {
 		uint32_t origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
@@ -4952,10 +4954,12 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		    job_ptr->fed_details->cluster_lock &&
 		    (job_ptr->fed_details->cluster_lock !=
 		     fed_mgr_cluster_rec->fed.id)) {
-			/* If the job is running on a remote cluster then wait
+			/*
+			 * If the job is running on a remote cluster then wait
 			 * for the job to report back that it's completed,
 			 * otherwise just signal the pending siblings and itself
-			 * (by not returning). */
+			 * (by not returning).
+			 */
 			return fed_mgr_job_cancel(job_ptr, signal, flags, uid,
 						  false);
 		} else if (origin && (origin == fed_mgr_cluster_rec)) {
@@ -4965,8 +4969,10 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 			   !origin->fed.send ||
 			   (((slurm_persist_conn_t *)origin->fed.send)->fd
 			    == -1)) {
-			/* The origin is down just signal all of the viable
-			 * sibling jobs */
+			/*
+			 * The origin is down just signal all of the viable
+			 * sibling jobs
+			 */
 			fed_mgr_job_cancel(job_ptr, signal, flags, uid, true);
 		}
 	}
@@ -5021,11 +5027,13 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		if (flags & KILL_FED_REQUEUE) {
 			job_ptr->job_state &= (~JOB_REQUEUE);
 		}
-		/* Send back a response to the origin cluster, in other cases
+		/*
+		 * Send back a response to the origin cluster, in other cases
 		 * where the job is running the job will send back a response
 		 * after the job is is completed. This can happen when the
 		 * pending origin job is put into a hold state and the siblings
-		 * are removed or when the job is canceled from the origin. */
+		 * are removed or when the job is canceled from the origin.
+		 */
 		fed_mgr_job_complete(job_ptr, 0, now);
 		verbose("%s: of pending %s successful",
 			__func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
