@@ -3390,7 +3390,6 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		pack32(object->flags, buffer);
 
@@ -4636,7 +4635,6 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
@@ -6432,7 +6430,6 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		count = _list_count_null(object->format_list);
 		pack32(count, buffer);
@@ -7697,7 +7694,6 @@ extern void slurmdb_pack_txn_cond(void *in, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		count = _list_count_null(object->format_list);
 		pack32(count, buffer);
@@ -8175,7 +8171,6 @@ extern void slurmdb_pack_wckey_cond(void *in, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		count = _list_count_null(object->format_list);
 		pack32(count, buffer);
