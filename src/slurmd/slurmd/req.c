@@ -3900,7 +3900,7 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 
 	rc = _valid_sbcast_cred(req, key.uid, &key.job_id,
 				msg->protocol_version);
-	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(key.uid))
+	if (rc != SLURM_SUCCESS)
 		return rc;
 
 #if 0
