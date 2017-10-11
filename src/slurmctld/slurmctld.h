@@ -648,6 +648,10 @@ struct job_record {
 	job_fed_details_t *fed_details;	/* details for federated jobs. */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */
+	gid_t *gids;			/* extended group ids, count is ngids
+					 * do not pack. this is here to cache
+					 * the record, and may not be set
+					 * depending on configuration */
 	char *gres;			/* generic resources requested by job */
 	List gres_list;			/* generic resource allocation detail */
 	char *gres_alloc;		/* Allocated GRES added over all nodes
@@ -683,6 +687,10 @@ struct job_record {
 	char *name;			/* name of the job */
 	char *network;			/* network/switch requirement spec */
 	uint32_t next_step_id;		/* next step id to be used */
+	int ngids;			/* number of extended group ids in gids
+					 * do not pack. this is here to cache
+					 * the record, and may not be set
+					 * depending on configuration */
 	char *nodes;			/* list of nodes allocated to job */
 	slurm_addr_t *node_addr;	/* addresses of the nodes allocated to
 					 * job */

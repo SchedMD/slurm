@@ -220,3 +220,18 @@ extern void group_cache_cleanup(void)
 		list_delete_all(gids_cache_list, _cleanup_search, &now);
 	slurm_mutex_unlock(&gids_mutex);
 }
+
+extern gid_t *copy_gids(int ngids, gid_t *gids)
+{
+	int size;
+	gid_t *result;
+
+	if (!ngids || !gids)
+		return NULL;
+
+	size = ngids * sizeof(gid_t);
+	result = xmalloc(size);
+	memcpy(result, gids, size);
+
+	return result;
+}

@@ -55,4 +55,7 @@ void group_cache_purge(void);
 /* call periodically to remove stale records */
 void group_cache_cleanup(void);
 
+/* return an xmalloc'd array of gids, or NULL */
+extern gid_t *copy_gids(int ngids, gid_t *gids);
+
 #endif
