@@ -6652,7 +6652,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32((uint32_t)NO_VAL, buffer);
-			pack16(0, buffer);
+			pack32(0, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -6675,7 +6675,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 			list_iterator_destroy(itr);
 		}
 
-		pack16(object->flags, buffer);
+		pack32(object->flags, buffer);
 
 		count = _list_count_null(object->format_list);
 		pack32(count, buffer);
@@ -6744,7 +6744,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 		}
 		count = NO_VAL;
 
-		pack16(object->flags, buffer);
+		pack16((uint16_t)object->flags, buffer);
 
 		if (object->id_list)
 			count = list_count(object->id_list);
@@ -6804,7 +6804,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 			}
 		}
 
-		safe_unpack16(&object_ptr->flags, buffer);
+		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL32)
@@ -6848,6 +6848,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		safe_unpack_time(&object_ptr->time_start, buffer);
 		safe_unpack16(&object_ptr->with_usage, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp16;
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL32)
 			goto unpack_error;
@@ -6861,7 +6862,8 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 			}
 		}
 
-		safe_unpack16(&object_ptr->flags, buffer);
+		safe_unpack16(&tmp16, buffer);
+		object_ptr->flags = tmp16;
 
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL32)

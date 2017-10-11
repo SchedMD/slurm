@@ -943,7 +943,7 @@ typedef struct {
 typedef struct {
 	List cluster_list; /* cluster reservations are on list of
 			    * char * */
-	uint16_t flags; /* flags for reservation. */
+	uint32_t flags; /* flags for reservation. */
 	List format_list;/* list of char * */
 	List id_list;   /* ids of reservations. list of char * */
 	List name_list; /* name of reservations. list of char * */
