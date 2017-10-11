@@ -3813,7 +3813,7 @@ extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
+			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
 			return;
@@ -3863,7 +3863,7 @@ extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
+			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
 			return;
 		}
