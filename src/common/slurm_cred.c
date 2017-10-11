@@ -120,18 +120,18 @@ enum ctx_type {
  *
  */
 struct sbcast_cred {
-	time_t       ctime;	/* Time that the cred was created	*/
-	time_t       expiration; /* Time at which cred is no longer good*/
-	uint32_t     jobid;	/* SLURM job id for this credential	*/
+	time_t ctime;		/* Time that the cred was created	*/
+	time_t expiration;	/* Time at which cred is no longer good	*/
+	uint32_t jobid;		/* SLURM job id for this credential	*/
 	uint32_t uid;		/* user for which this cred is valid	*/
 	uint32_t gid;		/* user's primary group id 		*/
 	char *user_name;	/* user_name as a string		*/
 	uint32_t ngids;		/* number of extended group ids sent in
 				 * credential. if 0, these will need to
-				 * be fetched locally instead. */
+				 * be fetched locally instead.		*/
 	uint32_t *gids;		/* extended group ids for user		*/
-	char *       nodes;	/* nodes for which credential is valid	*/
-	char        *signature;	/* credential signature			*/
+	char *nodes;		/* nodes for which credential is valid	*/
+	char *signature;	/* credential signature			*/
 	unsigned int siglen;	/* signature length in bytes		*/
 };
 
@@ -144,15 +144,15 @@ struct slurm_cred_context {
 	int magic;
 #endif
 	pthread_mutex_t mutex;
-	enum ctx_type  type;       /* type of context (creator or verifier) */
-	void          *key;        /* private or public key                 */
-	List           job_list;   /* List of used jobids (for verifier)    */
-	List           state_list; /* List of cred states (for verifier)    */
+	enum ctx_type type;	/* context type (creator or verifier)	*/
+	void *key;		/* private or public key		*/
+	List job_list;		/* List of used jobids (for verifier)	*/
+	List state_list;	/* List of cred states (for verifier)	*/
 
-	int          expiry_window;/* expiration window for cached creds    */
+	int expiry_window;	/* expiration window for cached creds	*/
 
-	void          *exkey;      /* Old public key if key is updated      */
-	time_t         exkey_exp;  /* Old key expiration time               */
+	void *exkey;		/* Old public key if key is updated	*/
+	time_t exkey_exp;	/* Old key expiration time		*/
 };
 
 
