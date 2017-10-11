@@ -2479,9 +2479,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		goto cleanup;
 	}
 
-	/* This job may be getting requeued, clear vestigial state information
+	/*
+	 * This job may be getting requeued, clear vestigial state information
 	 * before over-writing and leaking memory or referencing old GRES or
-	 * step data. */
+	 * step data.
+	 */
 	job_ptr->bit_flags &= ~JOB_KILL_HURRY;
 	job_ptr->job_state &= ~JOB_POWER_UP_NODE;
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
@@ -2495,7 +2497,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	job_ptr->node_bitmap = select_bitmap;
 	select_bitmap = NULL;	/* nothing left to free */
 
-	/* we need to have these times set to know when the endtime
+	/*
+	 * we need to have these times set to know when the endtime
 	 * is for the job when we place it
 	 */
 	job_ptr->start_time = job_ptr->time_last_active = now;

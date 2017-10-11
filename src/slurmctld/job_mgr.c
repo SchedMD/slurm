@@ -17079,9 +17079,11 @@ _set_job_requeue_exit_value(struct job_record *job_ptr)
 	}
 }
 
-/* Reset a job's end_time based upon it's start_time and time_limit.
- * NOTE: Do not reset the end_time if already being preempted */
-extern void job_end_time_reset(struct job_record  *job_ptr)
+/*
+ * Reset a job's end_time based upon it's start_time and time_limit.
+ * NOTE: Do not reset the end_time if already being preempted
+ */
+extern void job_end_time_reset(struct job_record *job_ptr)
 {
 	if (job_ptr->preempt_time)
 		return; /* Preemption in progress */

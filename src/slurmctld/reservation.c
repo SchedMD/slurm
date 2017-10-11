@@ -4437,8 +4437,10 @@ extern void job_claim_resv(struct job_record *job_ptr)
 	_resv_node_replace(resv_ptr);
 }
 
-/* Adjust a job's time_limit and end_time as needed to avoid using
- *	reserved resources. Don't go below job's time_min value. */
+/*
+ * Adjust a job's time_limit and end_time as needed to avoid using
+ * reserved resources. Don't go below job's time_min value.
+ */
 extern void job_time_adj_resv(struct job_record *job_ptr)
 {
 	ListIterator iter;
@@ -4470,8 +4472,10 @@ extern void job_time_adj_resv(struct job_record *job_ptr)
 	job_end_time_reset(job_ptr);
 }
 
-/* For a given license_list, return the total count of licenses of the
- *	specified name */
+/*
+ * For a given license_list, return the total count of licenses of the
+ * specified name
+ */
 static int _license_cnt(List license_list, char *lic_name)
 {
 	int lic_cnt = 0;
