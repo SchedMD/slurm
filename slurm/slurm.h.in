@@ -3045,6 +3045,9 @@ typedef struct stats_info_response_msg {
 	uint32_t jobs_canceled;
 	uint32_t jobs_failed;
 
+	uint32_t jobs_running;
+	time_t   jobs_running_ts;
+
 	uint32_t bf_backfilled_jobs;
 	uint32_t bf_last_backfilled_jobs;
 	uint32_t bf_cycle_counter;

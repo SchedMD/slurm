@@ -122,7 +122,12 @@ static int _print_stats(void)
 	printf("Jobs started:   %d\n", buf->jobs_started);
 	printf("Jobs completed: %d\n", buf->jobs_completed);
 	printf("Jobs canceled:  %d\n", buf->jobs_canceled);
-	printf("Jobs failed:    %d\n", buf->jobs_failed);
+	printf("Jobs failed:    %d\n\n", buf->jobs_failed);
+
+	printf("Jobs running:    %d\n", buf->jobs_running);
+	printf("Jobs running ts: %s (%ld)\n",
+	       slurm_ctime2(&buf->jobs_running_ts), buf->jobs_running_ts);
+
 	printf("\nMain schedule statistics (microseconds):\n");
 	printf("\tLast cycle:   %u\n", buf->schedule_cycle_last);
 	printf("\tMax cycle:    %u\n", buf->schedule_cycle_max);

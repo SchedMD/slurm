@@ -214,6 +214,8 @@ extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;
 extern int   slurmctld_tres_cnt;
 extern slurmdb_cluster_rec_t *response_cluster_rec;
+extern int    slurmctld_running_job_count;
+extern time_t slurmctld_running_job_count_ts;
 
 /* Buffer size use to print the jobid2str()
  * jobid, taskid and state.

@@ -67,6 +67,14 @@ Number of jobs canceled since last reset.
 \fBJobs failed\fR
 Number of jobs failed due to slurmd or other internal issues since last reset.
 
+.TP
+\fBJobs running:\fR
+Number of jobs running at the given time of the time stamp below.
+
+.TP
+\fBJobs running ts:\fR
+Time stamp of when the running job count was taken.
+
 .LP
 The second block of information is related to main scheduling algorithm based
 on jobs priorities. A scheduling cycle implies to get the job_write_lock lock,
