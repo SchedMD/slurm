@@ -6061,6 +6061,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 				     &job->gres_detail_cnt, buffer);
 
 		safe_unpackstr_xmalloc(&job->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->user_name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->wckey, &uint32_tmp, buffer);
 		safe_unpack32(&job->req_switch, buffer);
 		safe_unpack32(&job->wait4switch, buffer);

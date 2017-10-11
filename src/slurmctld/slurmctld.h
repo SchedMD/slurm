@@ -788,6 +788,7 @@ struct job_record {
 	char *tres_alloc_str;           /* simple tres string for job */
 	char *tres_fmt_alloc_str;       /* formatted tres string for job */
 	uint32_t user_id;		/* user the job runs as */
+	char *user_name;		/* string version of user */
 	uint16_t wait_all_nodes;	/* if set, wait for all nodes to boot
 					 * before starting the job */
 	uint16_t warn_flags;		/* flags for signal to send */

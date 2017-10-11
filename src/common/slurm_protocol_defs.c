@@ -1021,6 +1021,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->std_out);
 		xfree(job->tres_alloc_str);
 		xfree(job->tres_req_str);
+		xfree(job->user_name);
 		xfree(job->wckey);
 		xfree(job->work_dir);
 	}

@@ -1726,6 +1726,9 @@ typedef struct job_info {
 	char *tres_req_str;	/* tres reqeusted in the job */
 	char *tres_alloc_str;   /* tres used in the job */
 	uint32_t user_id;	/* user the job runs as */
+	char *user_name;	/* user_name or null. not always set, but
+				 * accurate if set (and can avoid a local
+				 * lookup call) */
 	uint32_t wait4switch;   /* Maximum time to wait for minimum switches */
 	char *wckey;            /* wckey for job */
 	char *work_dir;		/* pathname of working directory */

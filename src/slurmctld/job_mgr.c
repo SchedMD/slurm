@@ -1270,6 +1270,7 @@ static int _dump_job_state(void *x, void *arg)
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
+	packstr(dump_job_ptr->user_name, buffer);
 	packstr(dump_job_ptr->wckey, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
@@ -1367,7 +1368,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
 	char *burst_buffer = NULL, *burst_buffer_state = NULL;
 	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
-	char *clusters = NULL, *pack_job_id_set = NULL;
+	char *clusters = NULL, *pack_job_id_set = NULL, *user_name = NULL;
 	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
@@ -1519,6 +1520,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&user_name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&wckey, &name_len, buffer);
 		safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
@@ -2109,6 +2111,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->name);		/* in case duplicate record */
 	job_ptr->name         = name;
 	name                  = NULL;	/* reused, nothing left to free */
+	xfree(job_ptr->user_name);
+	job_ptr->user_name    = user_name;
+	job_ptr->user_name    = NULL;   /* reused, nothing left to free */
 	xfree(job_ptr->wckey);		/* in case duplicate record */
 	job_ptr->wckey        = wckey;
 	xstrtolower(job_ptr->wckey);
@@ -2359,6 +2364,7 @@ unpack_error:
 	xfree(tres_fmt_alloc_str);
 	xfree(tres_fmt_req_str);
 	xfree(tres_req_str);
+	xfree(user_name);
 	xfree(wckey);
 	select_g_select_jobinfo_free(select_jobinfo);
 	checkpoint_free_jobinfo(check_job);
@@ -4267,6 +4273,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->tres_alloc_str = NULL;
 	job_ptr_pend->tres_fmt_alloc_str = NULL;
 
+	job_ptr_pend->user_name = xstrdup(job_ptr->user_name);
 	job_ptr_pend->wckey = xstrdup(job_ptr->wckey);
 	job_ptr_pend->deadline = job_ptr->deadline;
 
@@ -8906,6 +8913,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->tres_fmt_req_str);
 	step_list_purge(job_ptr);
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
+	xfree(job_ptr->user_name);
 	xfree(job_ptr->wckey);
 	if (job_array_size > job_count) {
 		error("job_count underflow");
@@ -9513,6 +9521,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		}
 
 		packstr(dump_job_ptr->name, buffer);
+		packstr(dump_job_ptr->user_name, buffer);
 		packstr(dump_job_ptr->wckey, buffer);
 		pack32(dump_job_ptr->req_switch, buffer);
 		pack32(dump_job_ptr->wait4switch, buffer);
