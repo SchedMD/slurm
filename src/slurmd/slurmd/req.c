@@ -191,6 +191,7 @@ static void _rpc_pid2jid(slurm_msg_t *msg);
 static int  _rpc_file_bcast(slurm_msg_t *msg);
 static void _file_bcast_cleanup(void);
 static int  _file_bcast_register_file(slurm_msg_t *msg,
+				      sbcast_cred_arg_t *cred_arg,
 				      file_bcast_info_t *key);
 static int  _rpc_ping(slurm_msg_t *);
 static int  _rpc_health_check(slurm_msg_t *);
@@ -215,9 +216,10 @@ static int  _waiter_complete (uint32_t jobid);
 
 static void _send_back_fd(int socket, int fd);
 static bool _steps_completed_now(uint32_t jobid);
-static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
-			       uint32_t *job_id,
-			       uint16_t protocol_version);
+static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
+					     uid_t req_uid,
+					     gid_t req_gid,
+					     uint16_t protocol_version);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
 static uid_t _get_job_uid(uint32_t jobid);
 
@@ -1551,14 +1553,12 @@ static int _open_as_other(char *path_name, int flags, int mode,
 	child = fork();
 	if (child == -1) {
 		error("%s: fork failure", __func__);
-		xfree(gids);
 		close(pipe[0]);
 		close(pipe[1]);
 		return -1;
 	} else if (child > 0) {
 		close(pipe[0]);
 		(void) waitpid(child, &rc, 0);
-		xfree(gids);
 		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0))
 			fd = _receive_fd(pipe[1]);
 		close(pipe[1]);
@@ -1597,7 +1597,6 @@ static int _open_as_other(char *path_name, int flags, int mode,
 		error("%s: uid: %u setgroups failed: %m", __func__, uid);
 		exit(errno);
 	}
-	xfree(gids);
 
 	if (setgid(gid) < 0) {
 		error("%s: uid:%u setgid(%u): %m", __func__, uid, gid);
@@ -3729,41 +3728,59 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 /* Validate sbcast credential.
  * NOTE: We can only perform the full credential validation once with
  * Munge without generating a credential replay error
- * RET SLURM_SUCCESS or an error code */
-static int
-_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
-		   uint32_t *job_id, uint16_t protocol_version)
+ * RET an sbcast credential or NULL on error.
+ * free with sbcast_cred_arg_free()
+ */
+static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
+					     uid_t req_uid,
+					     gid_t req_gid,
+					     uint16_t protocol_version)
 {
-	int rc = SLURM_SUCCESS;
 	sbcast_cred_arg_t *arg;
 	hostset_t hset = NULL;
 
-	*job_id = NO_VAL;
 	arg = extract_sbcast_cred(conf->vctx, req->cred, req->block_no,
 				  protocol_version);
 	if (!arg) {
-		error("Security violation: Invalid sbcast_cred from uid %d",
+		error("Security violation: Invalid sbcast_cred from uid %u",
 		      req_uid);
-		return ESLURMD_INVALID_JOB_CREDENTIAL;
+		return NULL;
 	}
 
 	if (!(hset = hostset_create(arg->nodes))) {
 		error("Unable to parse sbcast_cred hostlist %s", arg->nodes);
-		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
+		sbcast_cred_arg_free(arg);
+		return NULL;
 	} else if (!hostset_within(hset, conf->node_name)) {
-		error("Security violation: sbcast_cred from %d has "
+		error("Security violation: sbcast_cred from %u has "
 		      "bad hostset %s", req_uid, arg->nodes);
-		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
-	}
-	if (hset)
+		sbcast_cred_arg_free(arg);
 		hostset_destroy(hset);
+		return NULL;
+	}
+	hostset_destroy(hset);
 
-	*job_id = arg->job_id;
-	sbcast_cred_arg_free(arg);
+	/* fill in the credential with any missing data */
+	if (arg->uid == NO_VAL)
+		arg->uid = req_uid;
+	if (arg->gid == NO_VAL)
+		arg->gid = req_gid;
+	if ((arg->uid != req_uid) || (arg->gid != req_gid)) {
+		error("Security violation: sbcast cred from %u/%u but rpc from %u/%u",
+		      arg->uid, arg->gid, req_uid, req_gid);
+		sbcast_cred_arg_free(arg);
+		return NULL;
+	}
 
+	/*
+	 * NOTE: user_name, ngids, gids may still be NULL, 0, NULL at this point.
+	 *       we skip filling them in here to avoid excessive lookup calls
+	 *       as this must run once per block (and there may be thousands of
+	 *       blocks), and is only currently needed by the first block.
+	 */
 	/* print_sbcast_cred(req->cred); */
 
-	return rc;
+	return arg;
 }
 
 static void _fb_rdlock(void)
@@ -3890,6 +3907,7 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 {
 	int rc;
 	int64_t offset, inx;
+	sbcast_cred_arg_t *cred_arg;
 	file_bcast_info_t *file_info;
 	file_bcast_msg_t *req = msg->data;
 	file_bcast_info_t key;
@@ -3898,10 +3916,12 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	key.gid = g_slurm_auth_get_gid(msg->auth_cred, conf->auth_info);
 	key.fname = req->fname;
 
-	rc = _valid_sbcast_cred(req, key.uid, &key.job_id,
-				msg->protocol_version);
-	if (rc != SLURM_SUCCESS)
-		return rc;
+	cred_arg = _valid_sbcast_cred(req, key.uid, key.gid,
+				      msg->protocol_version);
+	if (!cred_arg)
+		return ESLURMD_INVALID_JOB_CREDENTIAL;
+
+	key.job_id = cred_arg->job_id;
 
 #if 0
 	info("last_block=%u force=%u modes=%o",
@@ -3926,9 +3946,10 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 
 	/* first block must register the file and open fd/mmap */
 	if (req->block_no == 1) {
-		if ((rc = _file_bcast_register_file(msg, &key)))
+		if ((rc = _file_bcast_register_file(msg, cred_arg, &key)))
 			return rc;
 	}
+	sbcast_cred_arg_free(cred_arg);
 
 	_fb_rdlock();
 	if (!(file_info = _bcast_lookup_file(&key))) {
@@ -4037,15 +4058,18 @@ static int _receive_fd(int socket)
 }
 
 static int _file_bcast_register_file(slurm_msg_t *msg,
+				     sbcast_cred_arg_t *cred_arg,
 				     file_bcast_info_t *key)
 {
 	file_bcast_msg_t *req = msg->data;
-	int fd, flags, ngids;
+	int fd, flags;
 	file_bcast_info_t *file_info;
-	gid_t *gids;
 
-	/* the NULL username argument will be looked up if required */
-	ngids = group_cache_lookup(key->uid, key->gid, NULL, &gids);
+	/* may still be unset in credential */
+	if (!cred_arg->ngids || !cred_arg->gids)
+		cred_arg->ngids = group_cache_lookup(key->uid, key->gid,
+						     cred_arg->user_name,
+						     &cred_arg->gids);
 
 	flags = O_WRONLY | O_CREAT;
 	if (req->force)
@@ -4055,7 +4079,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 
 	if ((fd = _open_as_other(req->fname, flags, 0700,
 				 key->job_id, key->uid, key->gid,
-				 ngids, gids)) == -1) {
+				 cred_arg->ngids, cred_arg->gids)) == -1) {
 		error("Unable to open %s: Permission denied", req->fname);
 		return SLURM_ERROR;
 	}
