@@ -2321,10 +2321,18 @@ extern uint32_t job_state_num(const char *state_name)
 		return JOB_CONFIGURING;
 	if (_job_name_test(JOB_RESIZING, state_name))
 		return JOB_RESIZING;
-	if (_job_name_test(JOB_REVOKED, state_name))
-		return JOB_REVOKED;
+	if (_job_name_test(JOB_REQUEUE, state_name))
+		return JOB_REQUEUE;
+	if (_job_name_test(JOB_REQUEUE_FED, state_name))
+		return JOB_REQUEUE_FED;
+	if (_job_name_test(JOB_REQUEUE_HOLD, state_name))
+		return JOB_REQUEUE_HOLD;
 	if (_job_name_test(JOB_SPECIAL_EXIT, state_name))
 		return JOB_SPECIAL_EXIT;
+	if (_job_name_test(JOB_STOPPED, state_name))
+		return JOB_STOPPED;
+	if (_job_name_test(JOB_REVOKED, state_name))
+		return JOB_REVOKED;
 
 	return NO_VAL;
 }
