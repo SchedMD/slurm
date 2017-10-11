@@ -50,6 +50,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/gres.h"
 #include "src/common/io_hdr.h"
+#include "src/common/group_cache.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -560,12 +561,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->gid    = arg->gid;
 	cred->user_name = xstrdup(arg->user_name);
 	cred->ngids = arg->ngids;
-	if (cred->ngids) {
-		int size = cred->ngids * sizeof(gid_t);
-		cred->gids = xmalloc(size);
-		memcpy(cred->gids, arg->gids, size);
-	} else
-		cred->gids = NULL;
+	cred->gids = copy_gids(arg->ngids, arg->gids);
 	cred->job_core_spec   = arg->job_core_spec;
 	cred->job_gres_list   = gres_plugin_job_state_dup(arg->job_gres_list);
 	cred->step_gres_list  = gres_plugin_step_state_dup(arg->step_gres_list);
@@ -648,12 +644,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->gid    = cred->gid;
 	rcred->user_name = xstrdup(cred->user_name);
 	rcred->ngids = cred->ngids;
-	if (rcred->ngids) {
-		int array_size = rcred->ngids * sizeof(gid_t);
-		rcred->gids = xmalloc(array_size);
-		memcpy(rcred->gids, cred->gids, array_size);
-	} else
-		rcred->gids = NULL;
+	rcred->gids = copy_gids(cred->ngids, cred->gids);
 	rcred->job_core_spec  = cred->job_core_spec;
 	rcred->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	rcred->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
@@ -709,12 +700,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->gid      = arg->gid;
 	cred->user_name = xstrdup(arg->user_name);
 	cred->ngids = arg->ngids;
-	if (cred->ngids) {
-		int array_size = cred->ngids * sizeof(gid_t);
-		cred->gids = xmalloc(array_size);
-		memcpy(cred->gids, arg->gids, array_size);
-	} else
-		cred->gids = NULL;
+	cred->gids = copy_gids(arg->ngids, arg->gids);
 	cred->job_core_spec  = arg->job_core_spec;
 	cred->job_mem_limit  = arg->job_mem_limit;
 	cred->step_mem_limit = arg->step_mem_limit;
@@ -802,12 +788,7 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->gid      = cred->gid;
 	arg->user_name = xstrdup(cred->user_name);
 	arg->ngids = cred->ngids;
-	if (arg->ngids) {
-		int array_size = arg->ngids * sizeof(gid_t);
-		arg->gids = xmalloc(array_size);
-		memcpy(arg->gids, cred->gids, array_size);
-	} else
-		arg->gids = NULL;
+	arg->gids = copy_gids(cred->ngids, cred->gids);
 	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	arg->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
 	arg->job_core_spec  = cred->job_core_spec;
@@ -902,12 +883,7 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	arg->gid      = cred->gid;
 	arg->user_name = xstrdup(cred->user_name);
 	arg->ngids = cred->ngids;
-	if (arg->ngids) {
-		int array_size = arg->ngids * sizeof(gid_t);
-		arg->gids = xmalloc(array_size);
-		memcpy(arg->gids, cred->gids, array_size);
-	} else
-		arg->gids = NULL;
+	arg->gids = copy_gids(cred->ngids, cred->gids);
 	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	arg->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
 	arg->job_core_spec  = cred->job_core_spec;
@@ -2455,12 +2431,7 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 	sbcast_cred->gid = arg->gid;
 	sbcast_cred->user_name = xstrdup(arg->user_name);
 	sbcast_cred->ngids = arg->ngids;
-	if (sbcast_cred->ngids) {
-		int array_size = sbcast_cred->ngids * sizeof(gid_t);
-		sbcast_cred->gids = xmalloc(array_size);
-		memcpy(sbcast_cred->gids, arg->gids, array_size);
-	} else
-		sbcast_cred->gids = NULL;
+	sbcast_cred->gids = copy_gids(arg->ngids, arg->gids);
 	sbcast_cred->nodes = xstrdup(arg->nodes);
 
 	buffer = init_buf(4096);
@@ -2613,12 +2584,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 	arg->gid = sbcast_cred->gid;
 	arg->user_name = xstrdup(sbcast_cred->user_name);
 	arg->ngids = sbcast_cred->ngids;
-	if (arg->ngids) {
-		int size = arg->ngids * sizeof(gid_t);
-		arg->gids = xmalloc(size);
-		memcpy(arg->gids, sbcast_cred->gids, size);
-	} else
-		arg->gids = NULL;
+	arg->gids = copy_gids(sbcast_cred->ngids, sbcast_cred->gids);
 	arg->nodes = xstrdup(sbcast_cred->nodes);
 	return arg;
 }
