@@ -4866,27 +4866,21 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 /*
  * job_fail - terminate a job due to initiation failure
- * IN job_id - id of the job to be killed
+ * IN job_ptr - Pointer to job to be killed
  * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_fail(uint32_t job_id, uint32_t job_state)
+static int _job_fail(struct job_record *job_ptr, uint32_t job_state)
 {
-	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	bool suspended = false;
-
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		error("job_fail: invalid job id %u", job_id);
-		return ESLURM_INVALID_JOB_ID;
-	}
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		uint32_t suspend_job_state = job_ptr->job_state;
-		/* we can't have it as suspended when we call the
+		/*
+		 * we can't have it as suspended when we call the
 		 * accounting stuff.
 		 */
 		job_ptr->job_state = JOB_CANCELLED;
@@ -4919,14 +4913,65 @@ extern int job_fail(uint32_t job_id, uint32_t job_state)
 	}
 	/* All other states */
 	verbose("job_fail: job %u can't be killed from state=%s",
-		job_id, job_state_string(job_ptr->job_state));
+		job_ptr->job_id, job_state_string(job_ptr->job_state));
 
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 
 }
 
-/* Signal a job based upon job pointer.
- * Authentication and authorization checks must be performed before calling. */
+/*
+ * job_fail - terminate a job due to initiation failure
+ * IN job_id - ID of the job to be killed
+ * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_fail(uint32_t job_id, uint32_t job_state)
+{
+	struct job_record *job_ptr, *pack_job, *pack_leader;
+	ListIterator iter;
+	int rc = SLURM_SUCCESS, rc1;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		error("job_fail: invalid job id %u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if (job_ptr->pack_job_id == 0)
+		return _job_fail(job_ptr, job_state);
+
+	pack_leader = find_job_record(job_ptr->pack_job_id);
+	if (!pack_leader) {
+		error("%s: Job pack leader %u not found",
+		      __func__, job_ptr->pack_job_id);
+		return _job_fail(job_ptr, job_state);
+	}
+	if (!pack_leader->pack_job_list) {
+		error("%s: Job pack leader %u job list is NULL",
+		      __func__, job_ptr->pack_job_id);
+		return _job_fail(job_ptr, job_state);
+	}
+
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, pack_leader->pack_job_id);
+			continue;
+		}
+		rc1 = _job_fail(pack_job, job_state);
+		if (rc1 != SLURM_SUCCESS)
+			rc = rc1;
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
+ * Signal a job based upon job pointer.
+ * Authentication and authorization checks must be performed before calling.
+ */
 static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		       uint16_t flags, uid_t uid, bool preempt)
 {
@@ -5155,7 +5200,8 @@ static int _pack_job_signal(struct job_record *pack_leader, uint16_t signal,
 			continue;
 		}
 		rc1 = _job_signal(pack_job, signal, flags, uid, preempt);
-		rc = MAX(rc, rc1);
+		if (rc1 != SLURM_SUCCESS)
+			rc = rc1;
 	}
 	list_iterator_destroy(iter);
 
@@ -15310,14 +15356,14 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 	if (!job_ptr->part_ptr || !job_ptr->details
 	    || !job_ptr->details->requeue) {
 		if (state & JOB_RECONFIG_FAIL)
-			(void) job_fail(job_ptr->job_id, JOB_BOOT_FAIL);
+			(void) _job_fail(job_ptr, JOB_BOOT_FAIL);
 		return ESLURM_DISABLED;
 	}
 
 	if (job_ptr->batch_flag == 0) {
 		debug("Job-requeue can only be done for batch jobs");
 		if (state & JOB_RECONFIG_FAIL)
-			(void) job_fail(job_ptr->job_id, JOB_BOOT_FAIL);
+			(void) _job_fail(job_ptr, JOB_BOOT_FAIL);
 		return ESLURM_BATCH_ONLY;
 	}
 
