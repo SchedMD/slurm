@@ -236,6 +236,7 @@ typedef struct {
 
 	List def_qos_id_list;   /* list of char * */
 
+	List format_list; 	/* list of char * */
 	List id_list;		/* list of char */
 
 	uint16_t only_defs;  /* only send back defaults */
@@ -270,6 +271,7 @@ typedef struct {
 	uint32_t cpus_min;      /* number of cpus low range */
 	uint16_t duplicates;    /* report duplicate job entries */
 	int32_t exitcode;       /* exit code of job */
+	List format_list; 	/* list of char * */
 	List groupid_list;	/* list of char * */
 	List jobname_list;	/* list of char * */
 	uint32_t nodes_max;     /* number of nodes high range */
@@ -398,6 +400,7 @@ typedef struct {
 typedef struct {
 	uint64_t count;  /* Count of tres on a given cluster, 0 if
 			    listed generically. */
+	List format_list;/* list of char * */
 	List id_list;    /* Database ID */
 	List name_list;  /* Name of tres if type is generic like GRES
 			    or License. */
@@ -587,6 +590,7 @@ typedef struct {
 	List cluster_list; /* list of char * */
 	List federation_list; /* list of char */
 	uint32_t flags;
+	List format_list; 	/* list of char * */
 	List plugin_id_select_list; /* list of char * */
 	List rpc_version_list; /* list of char * */
 	time_t usage_end;
@@ -668,6 +672,7 @@ typedef struct {
 	uint32_t cpus_min;      /* number of cpus low range */
 	uint16_t event_type;    /* type of events (slurmdb_event_type_t),
 				 * default is all */
+	List format_list; 	/* list of char * */
 	List node_list;	        /* list of char * */
 	time_t period_end;      /* period end of events */
 	time_t period_start;    /* period start of events */
@@ -695,6 +700,7 @@ typedef struct {
 typedef struct {
 	List federation_list; 	/* list of char * */
 	List cluster_list; 	/* list of char * */
+	List format_list; 	/* list of char * */
 	uint16_t with_deleted;
 } slurmdb_federation_cond_t;
 
@@ -928,6 +934,7 @@ typedef struct {
 typedef struct {
 	List description_list; /* list of char * */
 	List id_list; /* list of char * */
+	List format_list;/* list of char * */
 	List name_list; /* list of char * */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t with_deleted;
@@ -937,6 +944,7 @@ typedef struct {
 	List cluster_list; /* cluster reservations are on list of
 			    * char * */
 	uint16_t flags; /* flags for reservation. */
+	List format_list;/* list of char * */
 	List id_list;   /* ids of reservations. list of char * */
 	List name_list; /* name of reservations. list of char * */
 	char *nodes; /* list of nodes in reservation */
@@ -1008,6 +1016,7 @@ typedef struct {
 	List cluster_list; /* list of char * */
 	List description_list; /* list of char * */
 	uint32_t flags;
+	List format_list;/* list of char * */
 	List id_list; /* list of char * */
 	List manager_list; /* list of char * */
 	List name_list; /* list of char * */
@@ -1038,6 +1047,7 @@ typedef struct {
 	List action_list; /* list of char * */
 	List actor_list; /* list of char * */
 	List cluster_list; /* list of char * */
+	List format_list;/* list of char * */
 	List id_list; /* list of char * */
 	List info_list; /* list of char * */
 	List name_list; /* list of char * */
@@ -1114,6 +1124,7 @@ typedef struct {
 
 typedef struct {
 	List cluster_list;	/* list of char * */
+	List format_list;	/* list of char * */
 	List id_list;		/* list of char * */
 
 	List name_list;         /* list of char * */
