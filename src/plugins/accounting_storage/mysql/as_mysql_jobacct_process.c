@@ -264,14 +264,22 @@ enum {
 static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 			       uint32_t start, uint32_t end)
 {
-	int base_state = state & JOB_STATE_BASE;
+	int base_state = state;
 
 	if (!start && !end) {
 		xstrfmtcat(*extra, "t1.state='%u'", state);
 		return;
 	}
 
- 	switch(base_state) {
+	switch(state) {
+	case JOB_RESIZING:
+	case JOB_REQUEUE:
+		break;
+	default:
+		base_state = state & JOB_STATE_BASE;
+	}
+
+	switch(base_state) {
 	case JOB_PENDING:
 		if (start) {
 			if (!end) {
@@ -342,7 +350,8 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 	case JOB_PREEMPTED:
 	case JOB_DEADLINE:
 	default:
-		xstrfmtcat(*extra, "(t1.state='%u' && (t1.time_end && ", state);
+		xstrfmtcat(*extra, "(t1.state='%u' && (t1.time_end && ",
+			   base_state);
 		if (start) {
 			if (!end) {
 				xstrfmtcat(*extra, "(t1.time_end >= %d)))",
