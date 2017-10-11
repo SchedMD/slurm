@@ -2817,17 +2817,19 @@ extern void launch_prolog(struct job_record *job_ptr)
 	cred_arg.uid                 = job_ptr->user_id;
 	cred_arg.gid                 = job_ptr->group_id;
 	if (slurmctld_config.send_groups_in_cred) {
+		/* fill in the job_record field if not yet filled in */
 		if (!job_ptr->user_name)
 			job_ptr->user_name = uid_to_string_or_null(job_ptr->user_id);
+		/* this may still be null, in which case the client will handle */
 		cred_arg.user_name = job_ptr->user_name; /* avoid extra copy */
 		/* lookup and send extended gids list */
-		cred_arg.ngids = group_cache_lookup(cred_arg.uid,
-						    cred_arg.gid,
-						    cred_arg.user_name,
-						    &cred_arg.gids);
-	} else {
-		cred_arg.ngids = 0;
-		cred_arg.gids = NULL;
+		if (!job_ptr->ngids || !job_ptr->gids)
+			job_ptr->ngids = group_cache_lookup(job_ptr->user_id,
+							    job_ptr->group_id,
+							    job_ptr->user_name,
+							    &job_ptr->gids);
+		cred_arg.ngids = job_ptr->ngids;
+		cred_arg.gids = job_ptr->gids; /* avoid extra copy */
 	}
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
 	cred_arg.job_gres_list       = job_ptr->gres_list;
@@ -2852,12 +2854,6 @@ extern void launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg,
 						 SLURM_PROTOCOL_VERSION);
-	/*
-	 * most cred_arg pointers are to other struct elements to avoid
-	 * duplicating them, but gids is allocated just for this and
-	 * must be xfree'd.
-	 */
-	xfree(cred_arg.gids);
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->retry = 0;

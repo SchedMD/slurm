@@ -2284,14 +2284,17 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 	if (slurmctld_config.send_groups_in_cred) {
 		/* fill in the job_record field if not yet filled in */
 		if (!job_ptr->user_name)
-			job_ptr->user_name = uid_to_string_or_null(job_ptr->job_id);
+			job_ptr->user_name = uid_to_string_or_null(job_ptr->user_id);
 		/* this may still be null, in which case the client will handle */
 		launch_msg_ptr->user_name = xstrdup(job_ptr->user_name);
 		/* lookup and send extended gids list */
-		launch_msg_ptr->ngids = group_cache_lookup(launch_msg_ptr->uid,
-							   launch_msg_ptr->gid,
-							   launch_msg_ptr->user_name,
-							   &launch_msg_ptr->gids);
+		if (!job_ptr->ngids || !job_ptr->gids)
+			job_ptr->ngids = group_cache_lookup(job_ptr->user_id,
+							    job_ptr->group_id,
+							    job_ptr->user_name,
+							    &job_ptr->gids);
+		launch_msg_ptr->ngids = job_ptr->ngids;
+		launch_msg_ptr->gids = copy_gids(job_ptr->ngids, job_ptr->gids);
 	}
 
 	if ((launch_msg_ptr->script = get_job_script(job_ptr)) == NULL) {
