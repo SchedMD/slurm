@@ -44,6 +44,15 @@
 #include "list.h"
 #include "pack.h"
 
+static uint32_t _list_count_null(List l)
+{
+	uint32_t count = NO_VAL;
+
+	if (l)
+		count = list_count(l);
+	return count;
+}
+
 static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				uint16_t protocol_version, Buf buffer)
 {
@@ -6961,15 +6970,6 @@ unpack_error:
 	slurmdb_destroy_step_rec(step_ptr);
 	*step = NULL;
 	return SLURM_ERROR;
-}
-
-static uint32_t _list_count_null(List l)
-{
-	uint32_t count = NO_VAL;
-
-	if (l)
-		count = list_count(l);
-	return count;
 }
 
 extern void slurmdb_pack_res_cond(void *in, uint16_t protocol_version,
