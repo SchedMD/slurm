@@ -2113,7 +2113,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	name                  = NULL;	/* reused, nothing left to free */
 	xfree(job_ptr->user_name);
 	job_ptr->user_name    = user_name;
-	job_ptr->user_name    = NULL;   /* reused, nothing left to free */
+	user_name             = NULL;   /* reused, nothing left to free */
 	xfree(job_ptr->wckey);		/* in case duplicate record */
 	job_ptr->wckey        = wckey;
 	xstrtolower(job_ptr->wckey);
