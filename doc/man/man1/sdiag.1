@@ -37,6 +37,17 @@ between the slurm daemons and the controller for a best effort. If this values
 is close to MAX_AGENT_CNT there could be some delays affecting jobs management.
 
 .TP
+\fBDBD Agent queue size\fR
+Slurm queues up the messages intended for the SlurmDBD and processes them in a
+separate thread. If the SlurmDBD, or database, is down then this number will
+increase. The max queue size is calculated as:
+
+MAX(10000, ((max_job_cnt * 2) + (node_record_count * 4)))
+
+If this number begins to grow more than half of the max queue size, the slurmdbd
+and the database should be investigated immediately.
+
+.TP
 \fBJobs submitted\fR
 Number of jobs submitted since last reset
 

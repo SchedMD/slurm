@@ -15089,6 +15089,7 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack_time(&msg->req_time_start,	buffer);
 			safe_unpack32(&msg->server_thread_count,buffer);
 			safe_unpack32(&msg->agent_queue_size,	buffer);
+			safe_unpack32(&msg->dbd_agent_queue_size, buffer);
 			safe_unpack32(&msg->jobs_submitted,	buffer);
 			safe_unpack32(&msg->jobs_started,	buffer);
 			safe_unpack32(&msg->jobs_completed,	buffer);

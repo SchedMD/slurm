@@ -114,8 +114,10 @@ static int _print_stats(void)
 	printf("Data since      %s", slurm_ctime(&buf->req_time_start));
 	printf("*******************************************************\n");
 
-	printf("Server thread count: %d\n", buf->server_thread_count);
-	printf("Agent queue size:    %d\n\n", buf->agent_queue_size);
+	printf("Server thread count:  %d\n", buf->server_thread_count);
+	printf("Agent queue size:     %d\n", buf->agent_queue_size);
+	printf("DBD Agent queue size: %d\n\n", buf->dbd_agent_queue_size);
+
 	printf("Jobs submitted: %d\n", buf->jobs_submitted);
 	printf("Jobs started:   %d\n", buf->jobs_started);
 	printf("Jobs completed: %d\n", buf->jobs_completed);

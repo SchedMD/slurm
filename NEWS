@@ -111,6 +111,7 @@ documents those changes that are of interest to users and administrators.
  -- Add -TALL to sreport.
  -- Removed unused SlurmdPlugstack option and associated framework.
  -- Correct logic for line continuation in srun --multi-prog file.
+ -- Add DBD Agent queue size to sdiag output.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

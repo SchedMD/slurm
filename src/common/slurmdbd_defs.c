@@ -4524,3 +4524,10 @@ unpack_error:
 	return SLURM_ERROR;
 
 }
+
+extern int slurmdbd_agent_queue_count()
+{
+	if (!agent_list)
+		return 0;
+	return list_count(agent_list);
+}

@@ -43,6 +43,7 @@
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/xstring.h"
+#include "src/common/slurmdbd_defs.h"
 
 extern int retry_list_size(void);
 
@@ -75,6 +76,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 
 			agent_queue_size = retry_list_size();
 			pack32(agent_queue_size, buffer);
+			pack32(slurmdbd_agent_queue_count(), buffer);
 
 			pack32(slurmctld_diag_stats.jobs_submitted, buffer);
 			pack32(slurmctld_diag_stats.jobs_started, buffer);

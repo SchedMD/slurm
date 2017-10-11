@@ -599,4 +599,6 @@ extern int slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
 extern int slurmdbd_unpack_buffer(void **in,
 				  uint16_t rpc_version,
 				  Buf buffer);
+
+extern int slurmdbd_agent_queue_count();
 #endif	/* !_SLURMDBD_DEFS_H */
