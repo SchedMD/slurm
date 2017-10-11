@@ -2458,11 +2458,12 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
  *	unpack_sbcast_cred() */
 void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 {
-	if (sbcast_cred) {
-		xfree(sbcast_cred->nodes);
-		xfree(sbcast_cred->signature);
-		xfree(sbcast_cred);
-	}
+	if (!sbcast_cred)
+		return;
+
+	xfree(sbcast_cred->nodes);
+	xfree(sbcast_cred->signature);
+	xfree(sbcast_cred);
 }
 
 static void _sbast_cache_add(sbcast_cred_t *sbcast_cred)
