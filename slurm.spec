@@ -27,7 +27,6 @@ job management, scheduling and accounting modules
 # --prefix           %_prefix             path  install path for commands, libraries, etc.
 # --with auth_none   %_with_auth_none     1     build auth-none RPM
 # --with blcr        %_with_blcr          1     require blcr support
-# --with bluegene    %_with_bluegene      1     build bluegene RPM
 # --with cray        %_with_cray          1     build for a Cray system without ALPS
 # --with cray_alps   %_with_cray_alps     1     build for a Cray system with ALPS
 # --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
@@ -55,7 +54,6 @@ job management, scheduling and accounting modules
 
 #  Options that are off by default (enable with --with <opt>)
 %slurm_without_opt auth_none
-%slurm_without_opt bluegene
 %slurm_without_opt cray
 %slurm_without_opt cray_alps
 %slurm_without_opt cray_network
@@ -246,15 +244,6 @@ Slurm authentication and crypto implementation using Munge. Used to
 authenticate user originating an RPC, digitally sign and/or encrypt messages
 %endif
 
-%if %{slurm_with bluegene}
-%package bluegene
-Summary: Slurm interfaces to IBM Blue Gene system
-Group: System Environment/Base
-Requires: slurm
-%description bluegene
-Slurm plugin interfaces to IBM Blue Gene system
-%endif
-
 %package slurmdbd
 Summary: Slurm database daemon
 Group: System Environment/Base
@@ -364,7 +353,6 @@ according to the Slurm
 %configure \
 	%{!?slurm_with_debug:--disable-debug} \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
-	%{?with_db2_dir:--with-db2-dir=%{?with_db2_dir}} \
 	%{?with_pam_dir:--with-pam_dir=%{?with_pam_dir}} \
 	%{?with_proctrack:--with-proctrack=%{?with_proctrack}}\
 	%{?with_cpusetdir:--with-cpusetdir=%{?with_cpusetdir}} \
@@ -384,7 +372,7 @@ according to the Slurm
         %{?slurm_without_shared_libslurm:--without-shared-libslurm}\
         %{?with_cflags} \
 
-%__make %{?_smp_mflags}
+make %{?_smp_mflags}
 
 %install
 
@@ -449,6 +437,7 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.la
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_defaults.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_logging.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_partition.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.la
 %if %{?with_pam_dir}0
@@ -472,7 +461,6 @@ rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm_adopt.la
 %if ! %{slurm_with auth_none}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %endif
-%if ! %{slurm_with bluegene}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so
@@ -480,7 +468,6 @@ rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/sfree
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_epilog
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_prolog
-%endif
 %if ! %{slurm_with munge}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_munge.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_munge.so
@@ -565,22 +552,6 @@ Name: %{name}
 Version: %{version}
 EOF
 
-%if %{slurm_with bluegene}
-install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
-
-LIST=./bluegene.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so &&
-   echo %{_libdir}/slurm/libsched_if.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so &&
-   echo %{_libdir}/slurm/libsched_if64.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so &&
-   echo %{_libdir}/slurm/runjob_plugin.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_runjob.so &&
-   echo %{_libdir}/slurm/launch_runjob.so >> $LIST
-
-%endif
-
 LIST=./percs.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_poe.so	&&
@@ -649,8 +620,6 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/node_features_knl_generic.so &&
    echo %{_libdir}/slurm/node_features_knl_generic.so   >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/power_cray.so               &&
    echo %{_libdir}/slurm/power_cray.so               >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
-   echo %{_libdir}/slurm/select_bluegene.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
@@ -772,17 +741,6 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 #############################################################################
 
-%if %{slurm_with bluegene}
-%files -f bluegene.files bluegene
-%defattr(-,root,root)
-%{_mandir}/man5/bluegene.*
-%{_sbindir}/slurm_epilog
-%{_sbindir}/slurm_prolog
-%{_sbindir}/sfree
-%config %{_sysconfdir}/bluegene.conf.example
-%endif
-#############################################################################
-
 %files perlapi
 %defattr(-,root,root)
 %{_perldir}/Slurm.pm
@@ -848,10 +806,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/mcs_group.so
 %{_libdir}/slurm/mcs_none.so
 %{_libdir}/slurm/mcs_user.so
-%if ! %{slurm_with bluegene}
 %{_libdir}/slurm/mpi_openmpi.so
 %{_libdir}/slurm/mpi_pmi2.so
-%endif
 %{_libdir}/slurm/mpi_none.so
 %{_libdir}/slurm/power_none.so
 %{_libdir}/slurm/preempt_job_prio.so
@@ -966,13 +922,6 @@ if [ -x /sbin/ldconfig ]; then
         fi
     fi
 fi
-
-%if %{slurm_with bluegene}
-%post bluegene
-if [ -x /sbin/ldconfig ]; then
-    /sbin/ldconfig %{_libdir}/slurm
-fi
-%endif
 
 %preun
 if [ "$1" -eq 0 ]; then
