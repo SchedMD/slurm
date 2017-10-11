@@ -110,7 +110,7 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	file = fopen(cgroup_allowed_devices_file, "r" );
 	if (!file) {
-		error("task/cgroup: %s doesn't exist, this is needed for proper functionality when Constraining Devices", cgroup_allowed_devices_file);
+		fatal("task/cgroup: %s doesn't exist, this is needed for proper functionality when Constraining Devices.", cgroup_allowed_devices_file);
 		goto error;
 	} else
 		fclose(file);
