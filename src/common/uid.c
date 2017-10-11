@@ -136,11 +136,15 @@ uid_from_string (char *name, uid_t *uidp)
 	return 0;
 }
 
-char *
-uid_to_string (uid_t uid)
+/*
+ * Return an xmalloc'd string, or null on error.
+ * Caller must free eventually.
+ */
+char *uid_to_string_or_null(uid_t uid)
 {
 	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE], *ustring;
+	char buffer[PW_BUF_SIZE];
+	char *ustring = NULL;
 	int rc;
 
 	/* Suse Linux does not handle multiple users with UID=0 well */
@@ -150,11 +154,23 @@ uid_to_string (uid_t uid)
 	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
 	if (result && (rc == 0))
 		ustring = xstrdup(result->pw_name);
-	else
-		ustring = xstrdup("nobody");
+
 	return ustring;
 }
 
+/*
+ * Convert a uid to an xmalloc'd string.
+ * Always returns a string - "nobody" is sent back on error.
+ */
+char *uid_to_string(uid_t uid)
+{
+	char *result = uid_to_string_or_null(uid);
+
+	if (!result)
+		result = xstrdup("nobody");
+
+	return result;
+}
 
 static int _uid_compare(const void *a, const void *b)
 {

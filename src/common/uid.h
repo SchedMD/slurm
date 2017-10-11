@@ -79,6 +79,13 @@ gid_t gid_from_uid (uid_t uid);
 int gid_from_string (char *name, gid_t *gidp);
 
 /*
+ * Translate uid to user name.
+ * Will return NULL on error.
+ * NOTE: xfree the return value.
+ */
+char *uid_to_string_or_null(uid_t uid);
+
+/*
  * Translate uid to user name,
  * NOTE: xfree the return value
  */
