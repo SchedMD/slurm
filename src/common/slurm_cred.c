@@ -559,8 +559,13 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->uid    = arg->uid;
 	cred->gid    = arg->gid;
 	cred->user_name = xstrdup(arg->user_name);
-	cred->ngids = 0;
-	cred->gids = NULL;
+	cred->ngids = arg->ngids;
+	if (cred->ngids) {
+		int size = cred->ngids * sizeof(gid_t);
+		cred->gids = xmalloc(size);
+		memcpy(cred->gids, arg->gids, size);
+	} else
+		cred->gids = NULL;
 	cred->job_core_spec   = arg->job_core_spec;
 	cred->job_gres_list   = gres_plugin_job_state_dup(arg->job_gres_list);
 	cred->step_gres_list  = gres_plugin_step_state_dup(arg->step_gres_list);
