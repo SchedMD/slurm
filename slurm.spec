@@ -73,7 +73,6 @@ job management, scheduling and accounting modules
 %slurm_with_opt pam
 %endif
 
-%slurm_without_opt lua
 %slurm_without_opt partial-attach
 
 Requires: slurm-plugins
@@ -221,17 +220,6 @@ Group: Development/System
 Requires: slurm-perlapi
 %description openlava
 OpenLava wrapper scripts used for helping migrate from OpenLava/LSF to Slurm
-
-%if %{slurm_with lua}
-%package lua
-Summary: Slurm lua bindings
-Group: System Environment/Base
-Requires: slurm lua
-BuildRequires: lua-devel
-%description lua
-Slurm lua bindings
-Includes the Slurm proctrack/lua and job_submit/lua plugin
-%endif
 
 %package contribs
 Summary: Perl tool to print Slurm job state information
@@ -395,11 +383,6 @@ rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/srun_cr*
 rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun_cr
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/checkpoint_blcr.so
 rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
-%endif
-
-%if ! %{slurm_with lua}
-rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/job_submit_lua.so
-rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_lua.so
 %endif
 
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_sgi_job.so
@@ -666,6 +649,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/job_submit_all_partitions.so
 %{_libdir}/slurm/job_submit_cray.so
+%{_libdir}/slurm/job_submit_lua.so
 %{_libdir}/slurm/job_submit_require_timelimit.so
 %{_libdir}/slurm/job_submit_throttle.so
 %{_libdir}/slurm/jobacct_gather_cgroup.so
@@ -693,6 +677,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/priority_multifactor.so
 %{_libdir}/slurm/proctrack_cgroup.so
 %{_libdir}/slurm/proctrack_linuxproc.so
+%{_libdir}/slurm/proctrack_lua.so
 %{_libdir}/slurm/proctrack_pgid.so
 %{_libdir}/slurm/route_default.so
 %{_libdir}/slurm/route_topology.so
@@ -737,15 +722,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/bsub
 %{_bindir}/lsid
 
-#############################################################################
-
-%if %{slurm_with lua}
-%files lua
-%defattr(-,root,root)
-%doc contribs/lua/proctrack.lua
-%{_libdir}/slurm/job_submit_lua.so
-%{_libdir}/slurm/proctrack_lua.so
-%endif
 #############################################################################
 
 %files contribs
