@@ -231,16 +231,10 @@ authenticate user originating an RPC, digitally sign and/or encrypt messages
 %package slurmdbd
 Summary: Slurm database daemon
 Group: System Environment/Base
-Requires: slurm-plugins slurm-sql
+Requires: slurm-plugins
 %description slurmdbd
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
-
-%package sql
-Summary: Slurm SQL support
-Group: System Environment/Base
-%description sql
-Slurm SQL support. Contains interfaces to MySQL.
 
 %package plugins
 Summary: Slurm plugins (loadable shared objects)
@@ -542,13 +536,8 @@ test -f $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd			&&
   echo /usr/sbin/rcslurmdbd				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service	&&
   echo /usr/lib/systemd/system/slurmdbd.service		>> $LIST
-
-LIST=./sql.files
-touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_mysql.so &&
    echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
-   echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
 
 LIST=./plugins.files
 touch $LIST
@@ -594,6 +583,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
    echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
+   echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_cncu.so       &&
    echo %{_libdir}/slurm/job_container_cncu.so       >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_none.so       &&
@@ -732,11 +723,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/slurmdbd.*
 %{_mandir}/man8/slurmdbd.*
 %config %{_sysconfdir}/slurmdbd.conf.example
-#############################################################################
-
-%files -f sql.files sql
-%defattr(-,root,root)
-%dir %{_libdir}/slurm
 #############################################################################
 
 %files -f plugins.files plugins
