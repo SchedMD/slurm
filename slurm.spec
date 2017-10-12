@@ -237,7 +237,6 @@ according to the Slurm
 %configure \
 	%{!?_with_debug:--disable-debug} \
 	%{?_with_pam_dir} \
-	%{?_with_proctrack} \
 	%{?_with_cpusetdir} \
 	%{?_with_mysql_config} \
 	%{?_with_ssl} \
