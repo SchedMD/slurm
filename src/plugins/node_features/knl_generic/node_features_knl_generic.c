@@ -1215,6 +1215,13 @@ extern char *node_features_p_job_xlate(char *job_features)
 	}
 	xfree(tmp);
 
+	/*
+	 * No MCDRAM or NUMA features specified. This might be a non-KNL node.
+	 * In that case, do not set the default any MCDRAM or NUMA features.
+	 */
+	if (!has_mcdram && !has_numa)
+		return xstrdup(job_features);
+
 	/* Add default options */
 	if (!has_mcdram) {
 		tmp = _knl_mcdram_str(default_mcdram);

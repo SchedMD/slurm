@@ -114,6 +114,8 @@ documents those changes that are of interest to users and administrators.
  -- Add DBD Agent queue size to sdiag output.
  -- Add running job count to sdiag output.
  -- Print unix timestamps next to ASCII timestamps in sdiag output.
+ -- In a job allocation spanning KNL and non-KNL nodes and requiring a reboot,
+    do not attempt to set default NUMA or MCDRAM modes on non-KNL nodes.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
