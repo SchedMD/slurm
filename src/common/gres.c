@@ -56,6 +56,14 @@ typedef cpuset_t cpu_set_t;
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#ifdef MAJOR_IN_MKDEV
+#  include <sys/mkdev.h>
+#endif
+#ifdef MAJOR_IN_SYSMACROS
+#  include <sys/sysmacros.h>
+#endif
+
 #include <math.h>
 
 #ifdef __NetBSD__
