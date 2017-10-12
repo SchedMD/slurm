@@ -124,6 +124,9 @@ HIGHLIGHTS
     configuration parameter "SchedulerParameters=enable_user_top" to enable
     that functionality. The configuration parameter
     "SchedulerParameters=disable_user_top" will be silently ignored.
+ -- Change default to let pending jobs run outside of reservation after
+    reservation is gone to put jobs in held state. Added NO_HOLD_JOBS_AFTER_END
+    reservation flag to use old default.
 
 RPMBUILD CHANGES
 ================

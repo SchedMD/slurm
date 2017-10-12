@@ -261,6 +261,13 @@ jobs running in it.</p>
 <pre>
 $ scontrol delete ReservationName=alan_6
 </pre>
+<p>
+
+<b>NOTE:</b> By default, when a reservation ends the reservation request will be
+removed from any pending jobs submitted to the reservation and will be put into
+a held state.  Use the NO_HOLD_JOBS_AFTER_END reservation flag to let jobs run
+outside of the reservation after the reservation is gone.
+</p>
 
 <h2>Overlapping Reservations</h2>
 

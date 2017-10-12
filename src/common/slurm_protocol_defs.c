@@ -2564,7 +2564,7 @@ extern char *reservation_flags_string(uint32_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "PURGE_COMP");
 	}
-	if (flags & RESERVE_NO_HOLD_JOBS) {
+	if (flags & RESERVE_FLAG_NO_HOLD_JOBS) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_HOLD_JOBS_AFTER_END");

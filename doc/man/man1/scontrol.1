@@ -1553,6 +1553,12 @@ Maintenance mode, receives special accounting treatment.
 This partition is permitted to use resources that are already in another
 reservation.
 .TP
+\fINO_HOLD_JOBS_AFTER\fR
+By default, when a reservation ends the reservation request will be removed from
+any pending jobs submitted to the reservation and will be put into a held state.
+Use this flag to let jobs run outside of the reservation after the reservation
+is gone.
+.TP
 \fIOVERLAP\fR
 This reservation can be allocated resources that are already in another
 reservation.

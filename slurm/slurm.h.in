@@ -2544,7 +2544,7 @@ void slurm_init_update_block_msg(update_block_msg_t *update_block_msg);
 							 * only used on
 							 * modifying a
 							 * reservation */
-#define RESERVE_NO_HOLD_JOBS		0x20000000	/* No hold jobs after
+#define RESERVE_FLAG_NO_HOLD_JOBS	0x20000000	/* No hold jobs after
 							 * end of reservation */
 
 typedef struct resv_core_spec {

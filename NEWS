@@ -116,6 +116,9 @@ documents those changes that are of interest to users and administrators.
  -- Print unix timestamps next to ASCII timestamps in sdiag output.
  -- In a job allocation spanning KNL and non-KNL nodes and requiring a reboot,
     do not attempt to set default NUMA or MCDRAM modes on non-KNL nodes.
+ -- Change default to let pending jobs run outside of reservation after
+    reservation is gone to put jobs in held state. Added NO_HOLD_JOBS_AFTER_END
+    reservation flag to use old default.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
