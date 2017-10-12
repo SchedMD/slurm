@@ -35,7 +35,6 @@ job management, scheduling and accounting modules
 # --without netloc   %_without_netloc     path  require netloc support
 # --with openssl     %_with_openssl       1     require openssl RPM to be installed
 # --without pam      %_without_pam        1     don't require pam-devel RPM to be installed
-# --with percs       %_with_percs         1     build percs RPM
 # --without readline %_without_readline   1     don't require readline-devel RPM to be installed
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacros
@@ -248,16 +247,6 @@ Requires: slurm-perlapi
 %description openlava
 OpenLava wrapper scripts used for helping migrate from OpenLava/LSF to Slurm
 
-%if %{slurm_with percs}
-%package percs
-Summary: Slurm plugins to run on an IBM PERCS system
-Group: System Environment/Base
-Requires: slurm nrt
-BuildRequires: nrt
-%description percs
-Slurm plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
-%endif
-
 %if %{slurm_with lua}
 %package lua
 Summary: Slurm lua bindings
@@ -445,11 +434,9 @@ rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_lua.so
 
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_sgi_job.so
 
-%if ! %{slurm_with percs}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_poe.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libpermapi.so
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/switch_nrt.so
-%endif
 
 # Build man pages that are generated directly by the tools
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
@@ -502,18 +489,6 @@ Description: Slurm API
 Name: %{name}
 Version: %{version}
 EOF
-
-LIST=./percs.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_poe.so	&&
-   echo %{_libdir}/slurm/checkpoint_poe.so		 >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_nrt.so  	&&
-  echo %{_libdir}/slurm/switch_nrt.so			>> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libpermapi.so  	&&
-  echo %{_libdir}/slurm/libpermapi.so			>> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_poe.so          &&
-   echo %{_libdir}/slurm/launch_poe.so                  >> $LIST
-
 
 LIST=./slurmdbd.files
 touch $LIST
@@ -798,12 +773,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/bsub
 %{_bindir}/lsid
 
-#############################################################################
-
-%if %{slurm_with percs}
-%files -f percs.files percs
-%defattr(-,root,root)
-%endif
 #############################################################################
 
 %if %{slurm_with lua}
