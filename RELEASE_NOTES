@@ -33,6 +33,19 @@ of Slurm will result in loss of state information.
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
+NOTE: The slurm.spec file used to build RPM packages has been aggressively
+      refactored, and some package names may now be different. Notably,
+      the three daemons (slurmctld, slurmd/slurmstepd, slurmdbd) each
+      have their own separate package with the binary and the appropriate
+      systemd service file, which will be installed automatically (but
+      not enabled).
+      The slurm-plugins, slurm-munge, and slurm-lua package has been removed,
+      and the contents moved in to the main slurm package.
+      The slurm-sql package has been removed, and merged in with the slurm
+      (job_comp_mysql.so) and slurm-slurmdbd (accounting_storage_mysql)
+      packages.
+      The example configuration files have been moved to slurm-example-configs.
+
 NOTE: The slurmctld is now set to fatal if there are any problems with
       any state files.  To avoid this use the new '-i' flag.
 
