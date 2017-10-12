@@ -47,8 +47,6 @@ Source:		%{name}-%{version}.tar.bz2
 # Build with PAM by default on linux
 %bcond_without pam
 
-%bcond_with partial-attach
-
 Requires: munge
 BuildRequires: munge-devel munge-libs
 BuildRequires: python
@@ -235,7 +233,6 @@ according to the Slurm
 %build
 %configure \
 	%{!?_with_debug:--disable-debug} \
-	%{?_with_partial_attach:--enable-partial-attach} \
 	%{?_with_pam_dir} \
 	%{?_with_proctrack} \
 	%{?_with_cpusetdir} \
