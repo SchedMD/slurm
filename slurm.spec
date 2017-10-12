@@ -240,7 +240,6 @@ according to the Slurm
 	%{?_with_cpusetdir} \
 	%{?_with_mysql_config} \
 	%{?_with_ssl} \
-	%{?_with_netloc} \
 	%{?_with_blcr} \
 	%{?_with_cray:--enable-native-cray}\
 	%{?_with_cray_network:--enable-cray-network}\
