@@ -12172,9 +12172,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				}
 			}
 		} else if ((job_ptr->priority != 0) &&
-			   (job_specs->priority == INFINITE) &&
-			   ((job_ptr->state_reason != WAIT_RESV_DELETED) ||
-			    (job_ptr->state_reason != WAIT_HELD_USER))) {
+			   (job_specs->priority == INFINITE)) {
 			/* If the job was already released, ignore another
 			 * release request. */
 			debug("%s: job %d already release ignoring request",
