@@ -11070,6 +11070,7 @@ static bool _top_priority(struct job_record *job_ptr)
 	if ((!top) && detail_ptr) {	/* not top prio */
 		if (job_ptr->priority == 0) {		/* user/admin hold */
 			if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
+			    && (job_ptr->state_reason != WAIT_RESV_DELETED)
 			    && (job_ptr->state_reason != FAIL_BURST_BUFFER_OP)
 			    && (job_ptr->state_reason != WAIT_HELD)
 			    && (job_ptr->state_reason != WAIT_HELD_USER)
@@ -12107,6 +12108,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if ((job_ptr->priority == 0) &&
 			   (job_specs->priority == INFINITE) &&
 			   (operator ||
+			    (job_ptr->state_reason == WAIT_RESV_DELETED) ||
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
 			job_ptr->direct_set_prio = 0;
 			set_job_prio(job_ptr);
@@ -12171,7 +12173,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			}
 		} else if ((job_ptr->priority != 0) &&
 			   (job_specs->priority == INFINITE) &&
-			   (job_ptr->state_reason != WAIT_HELD_USER)) {
+			   ((job_ptr->state_reason != WAIT_RESV_DELETED) ||
+			   (job_ptr->state_reason != WAIT_HELD_USER))) {
 			/* If the job was already released, ignore another
 			 * release request. */
 			debug("%s: job %d already release ignoring request",
@@ -12740,6 +12743,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 		if (error_code != SLURM_SUCCESS) {
 			if ((job_ptr->state_reason != WAIT_HELD) &&
+			   (job_ptr->state_reason != WAIT_RESV_DELETED) &&
 			    (job_ptr->state_reason != WAIT_HELD_USER)) {
 				job_ptr->state_reason = fail_reason;
 				xfree(job_ptr->state_desc);
@@ -12748,6 +12752,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 	} else if ((job_ptr->state_reason != WAIT_HELD)
 		   && (job_ptr->state_reason != WAIT_HELD_USER)
+		   && (job_ptr->state_reason != WAIT_RESV_DELETED)
 		   && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
@@ -14508,9 +14513,10 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	time_t now = time(NULL);
 	int depend_rc;
 
-	if ((job_ptr->state_reason == WAIT_HELD)
-	    || (job_ptr->state_reason == WAIT_HELD_USER)
+	if (job_ptr->state_reason == WAIT_HELD
+	    || job_ptr->state_reason == WAIT_HELD_USER
 	    || job_ptr->state_reason == WAIT_MAX_REQUEUE
+	    || job_ptr->state_reason == WAIT_RESV_DELETED
 	    || job_ptr->state_reason == WAIT_DEP_INVALID)
 		return false;
 

@@ -1939,6 +1939,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "MaxBillingPerAccount";
 	case WAIT_QOS_MIN_BILLING:
 		return "QOSMinBilling";
+	case WAIT_RESV_DELETED:
+		return "ReservationDeleted";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
@@ -2211,6 +2213,8 @@ extern char *job_state_string(uint32_t inx)
 		return "STOPPED";
 	if (inx & JOB_REVOKED)
 		return "REVOKED";
+	if (inx & JOB_RESV_DEL_HOLD)
+		return "RESV_DEL_HOLD";
 
 
 	/* Process JOB_STATE_BASE */
@@ -2265,6 +2269,8 @@ extern char *job_state_string_compact(uint32_t inx)
 		return "ST";
 	if (inx & JOB_REVOKED)
 		return "RV";
+	if (inx & JOB_RESV_DEL_HOLD)
+		return "RD";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
@@ -2557,6 +2563,11 @@ extern char *reservation_flags_string(uint32_t flags)
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "PURGE_COMP");
+	}
+	if (flags & RESERVE_NO_HOLD_JOBS) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_HOLD_JOBS_AFTER_END");
 	}
 	return flag_str;
 }

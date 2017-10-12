@@ -237,6 +237,7 @@ enum job_states {
 				      * waiting for reboot */
 #define JOB_REVOKED       0x00080000 /* Sibling job revoked */
 #define JOB_REQUEUE_FED   0x00100000 /* Job is being requeued by federation */
+#define JOB_RESV_DEL_HOLD 0x00200000 /* Job is hold */
 
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
@@ -521,6 +522,8 @@ enum job_state_reason {
 	WAIT_QOS_MAX_BILLING_MINS_PER_JOB,  /* MaxTRESMinsPerJob */
 	WAIT_QOS_MAX_BILLING_PER_ACCT,      /* MaxTRESPerAcct    */
 	WAIT_QOS_MIN_BILLING,               /* MinTRESPerJob     */
+
+	WAIT_RESV_DELETED	      /* Reservation was deleted */
 };
 
 enum job_acct_types {
@@ -2541,6 +2544,8 @@ void slurm_init_update_block_msg(update_block_msg_t *update_block_msg);
 							 * only used on
 							 * modifying a
 							 * reservation */
+#define RESERVE_NO_HOLD_JOBS		0x20000000	/* No hold jobs after
+							 * end of reservation */
 
 typedef struct resv_core_spec {
 	char *node_name;	/* Name of reserved node */

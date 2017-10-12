@@ -1781,6 +1781,10 @@ parse_resv_flags(const char *flagstr, const char *msg)
 			   !flip) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_REPLACE;
+		} else if (!strncasecmp(curr, "NO_HOLD_JOBS_AFTER_END",
+				        MAX(taglen,10)) && !flip) {
+			curr += taglen;
+			outflags |= RESERVE_NO_HOLD_JOBS;
 		} else {
 			error("Error parsing flags %s.  %s", flagstr, msg);
 			return 0xffffffff;

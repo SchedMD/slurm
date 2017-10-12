@@ -2078,6 +2078,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_FIRST_CORES |
 					RESERVE_FLAG_TIME_FLOAT  |
 					RESERVE_FLAG_PURGE_COMP  |
+					RESERVE_NO_HOLD_JOBS	 |
 					RESERVE_FLAG_REPLACE;
 	}
 	if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) {
@@ -2588,6 +2589,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PURGE_COMP)
 			resv_ptr->flags |= RESERVE_FLAG_PURGE_COMP;
+		if (resv_desc_ptr->flags & RESERVE_NO_HOLD_JOBS)
+			resv_ptr->flags |= RESERVE_NO_HOLD_JOBS;
 	}
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
 		/* Clear the partition */
@@ -2911,6 +2914,17 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 		job_ptr->resv_id = 0;
 		job_ptr->resv_ptr = NULL;
 		xfree(job_ptr->resv_name);
+		if (!(resv_ptr->flags & RESERVE_NO_HOLD_JOBS) &&
+		    IS_JOB_PENDING(job_ptr) &&
+		    (job_ptr->state_reason != WAIT_HELD)) {
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason = WAIT_RESV_DELETED;
+			job_ptr->job_state |= JOB_RESV_DEL_HOLD;
+			xstrfmtcat(job_ptr->state_desc,
+				   "Reservation %s was deleted",
+				    resv_ptr->name);
+			job_ptr->priority = 0;	/* Hold job */
+		}
 	}
 	list_iterator_destroy(job_iterator);
 }
