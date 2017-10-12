@@ -8,12 +8,6 @@ License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 Source:		%{name}-%{version}.tar.bz2
 
-%description
-Slurm is an open source, fault-tolerant, and highly scalable
-cluster management and job scheduling system for Linux clusters.
-Components include machine status, partition management,
-job management, scheduling and accounting modules
-
 # Note that this package is not relocatable
 
 #
@@ -157,6 +151,12 @@ BuildRequires: perl(ExtUtils::MakeMaker)
 %define _perldir %{_prefix}%{_perlarch}
 %define _perlman3dir %{_prefix}%{_perlman3}
 %define _perlarchlibdir %{_prefix}%{_perlarchlib}
+
+%description
+Slurm is an open source, fault-tolerant, and highly scalable
+cluster management and job scheduling system for Linux clusters.
+Components include machine status, partition management,
+job management, scheduling and accounting modules
 
 %package perlapi
 Summary: Perl API to Slurm
