@@ -4165,7 +4165,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	struct job_record *job_ptr;
 	bitstr_t *orig_bitmap, *save_bitmap = NULL;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
-	int total_node_cnt;
+	int total_node_cnt, requested_node_cnt;
 
 	total_node_cnt = bit_set_count(avail_bitmap);
 	if (total_node_cnt < node_cnt) {
@@ -4192,17 +4192,35 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 
 		if (!resv_desc_ptr->core_cnt) {
 			bit_and_not(avail_bitmap, job_ptr->node_bitmap);
-		} else {
+		} else if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
+			/*
+			 * _check_job_compatibility will remove nodes and cores
+			 * from the available bitmaps if those resources are
+			 * being used by jobs. Don't do this if the IGNORE_JOBS
+			 * flag is set.
+			 */
 			_check_job_compatibility(job_ptr, avail_bitmap,
 						 core_bitmap);
 		}
 	}
 	list_iterator_destroy(job_iterator);
 
+	/*
+	 * Save the number of requested nodes. If node_cnt wasn't specified and
+	 * a node_list was passed instead, node_cnt will be 0, and
+	 * total_node_cnt will hold the number of requested nodes. If node_cnt
+	 * was specified, then that is the number of requested nodes.
+	 * We want to know if the number of available nodes (total_node_cnt
+	 * after total_node_cnt = bit_set_count(avail_bitmap)) is at least as
+	 * many as the number of requested nodes.
+	 */
+	requested_node_cnt = node_cnt ? node_cnt : total_node_cnt;
 	total_node_cnt = bit_set_count(avail_bitmap);
-	if (total_node_cnt >= node_cnt) {
-		/* NOTE: select_g_resv_test() does NOT preserve avail_bitmap,
-		 * so we do that here and other calls to that function */
+	if (total_node_cnt >= requested_node_cnt) {
+		/*
+		 * NOTE: select_g_resv_test() does NOT preserve avail_bitmap,
+		 * so we do that here and other calls to that function.
+		 */
 		save_bitmap = bit_copy(avail_bitmap);
 		ret_bitmap = select_g_resv_test(resv_desc_ptr, node_cnt,
 						avail_bitmap, core_bitmap);
