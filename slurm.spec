@@ -330,12 +330,6 @@ install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm
 install -D -m755 contribs/sjstat ${RPM_BUILD_ROOT}%{_bindir}/sjstat
 
 # Delete unpackaged files:
-test -s $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs         ||
-rm   -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs
-
-test -s $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs     ||
-rm   -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs
-
 rm -f $RPM_BUILD_ROOT/%{_libdir}/*.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.a
@@ -343,7 +337,6 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.la
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_defaults.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_logging.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_partition.so
-rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.la
 %if %{?with_pam_dir}0
@@ -365,9 +358,14 @@ rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm_adopt.la
 rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm_adopt.a
 rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm_adopt.la
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_poe.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libpermapi.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_sgi_job.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_nrt.so
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/sfree
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_epilog
@@ -375,9 +373,11 @@ rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_prolog
 rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/init.d/slurm
 rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/init.d/slurmdbd
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/.packlist
+rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs
 rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
 rm -f $RPM_BUILD_ROOT/%{_perldir}/perllocal.pod
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/.packlist
+rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs
 
 %if ! %{slurm_with blcr}
 # remove these if they exist
@@ -386,12 +386,6 @@ rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun_cr
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/checkpoint_blcr.so
 rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
 %endif
-
-rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_sgi_job.so
-
-rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_poe.so
-rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libpermapi.so
-rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/switch_nrt.so
 
 # Build man pages that are generated directly by the tools
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
