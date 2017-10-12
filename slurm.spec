@@ -28,7 +28,6 @@ job management, scheduling and accounting modules
 # --with auth_none   %_with_auth_none     1     build auth-none RPM
 # --with blcr        %_with_blcr          1     require blcr support
 # --with cray        %_with_cray          1     build for a Cray system without ALPS
-# --with cray_alps   %_with_cray_alps     1     build for a Cray system with ALPS
 # --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
 # --without debug    %_without_debug      1     don't compile with debugging symbols
 # --with lua         %_with_lua           1     build Slurm lua bindings (proctrack only for now)
@@ -39,7 +38,6 @@ job management, scheduling and accounting modules
 # --without pam      %_without_pam        1     don't require pam-devel RPM to be installed
 # --with percs       %_with_percs         1     build percs RPM
 # --without readline %_without_readline   1     don't require readline-devel RPM to be installed
-# --with sgijob      %_with_sgijob        1     build proctrack-sgi-job RPM
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacros
 #    slurm_with    builds option by default unless --without is specified
@@ -55,7 +53,6 @@ job management, scheduling and accounting modules
 #  Options that are off by default (enable with --with <opt>)
 %slurm_without_opt auth_none
 %slurm_without_opt cray
-%slurm_without_opt cray_alps
 %slurm_without_opt cray_network
 %slurm_without_opt salloc_background
 %slurm_without_opt multiple_slurmd
@@ -83,13 +80,8 @@ job management, scheduling and accounting modules
 %slurm_with_opt pam
 %endif
 
-%slurm_without_opt sgijob
 %slurm_without_opt lua
 %slurm_without_opt partial-attach
-
-%if %{slurm_with cray_alps}
-%slurm_with_opt sgijob
-%endif
 
 Requires: slurm-plugins
 
@@ -117,14 +109,6 @@ BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 BuildRequires: mysql-devel >= 5.0.0
 %else
 BuildRequires: mariadb-devel >= 5.0.0
-%endif
-%endif
-
-%if %{slurm_with cray_alps}
-%if %{use_mysql_devel}
-BuildRequires: mysql-devel
-%else
-BuildRequires: mariadb-devel
 %endif
 %endif
 
@@ -291,17 +275,6 @@ BuildRequires: nrt
 Slurm plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
 %endif
 
-%if %{slurm_with sgijob}
-%package proctrack-sgi-job
-Summary: Slurm process tracking plugin for SGI job containers
-Group: System Environment/Base
-Requires: slurm
-BuildRequires: job
-%description proctrack-sgi-job
-Slurm process tracking plugin for SGI job containers
-(See http://oss.sgi.com/projects/pagg)
-%endif
-
 %if %{slurm_with lua}
 %package lua
 Summary: Slurm lua bindings
@@ -356,7 +329,6 @@ according to the Slurm
 	%{?with_pam_dir:--with-pam_dir=%{?with_pam_dir}} \
 	%{?with_proctrack:--with-proctrack=%{?with_proctrack}}\
 	%{?with_cpusetdir:--with-cpusetdir=%{?with_cpusetdir}} \
-	%{?with_apbasildir:--with-apbasildir=%{?with_apbasildir}} \
 	%{?with_mysql_config:--with-mysql_config=%{?with_mysql_config}} \
 	%{?with_ssl:--with-ssl=%{?with_ssl}} \
 	%{?with_munge:--with-munge=%{?with_munge}}\
@@ -396,7 +368,7 @@ install -D -m644 etc/slurmdbd.service  %{buildroot}/usr/lib/systemd/system/slurm
 
 # Do not package Slurm's version of libpmi on Cray systems.
 # Cray's version of libpmi should be used.
-%if %{slurm_with cray} || %{slurm_with cray_alps}
+%if %{slurm_with cray}
    rm -f %{buildroot}/%{_libdir}/libpmi*
    %if %{slurm_with cray}
       install -D -m644 contribs/cray/plugstack.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/plugstack.conf.template
@@ -490,9 +462,7 @@ rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/job_submit_lua.so
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_lua.so
 %endif
 
-%if ! %{slurm_with sgijob}
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_sgi_job.so
-%endif
 
 %if ! %{slurm_with percs}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_poe.so
@@ -696,7 +666,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/slurm/src
 %dir /etc/ld.so.conf.d
 /etc/ld.so.conf.d/slurm.conf
-%if %{slurm_with cray} || %{slurm_with cray_alps}
+%if %{slurm_with cray}
 %dir /opt/modulefiles/slurm
 %endif
 %if %{slurm_with cray}
@@ -867,13 +837,6 @@ rm -rf $RPM_BUILD_ROOT
 %if %{slurm_with percs}
 %files -f percs.files percs
 %defattr(-,root,root)
-%endif
-#############################################################################
-
-%if %{slurm_with sgijob}
-%files proctrack-sgi-job
-%defattr(-,root,root)
-%{_libdir}/slurm/proctrack_sgi_job.so
 %endif
 #############################################################################
 
