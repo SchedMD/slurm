@@ -150,11 +150,8 @@ BuildRequires: perl(ExtUtils::MakeMaker)
 
 #
 # Should unpackaged files in a build root terminate a build?
-#
-# Note: The default value should be 0 for legacy compatibility.
-# This was added due to a bug in Suse Linux. For a good reference, see
-# http://slforums.typo3-factory.net/index.php?showtopic=11378
-%define _unpackaged_files_terminate_build      0
+# Uncomment if needed again.
+#%define _unpackaged_files_terminate_build      0
 
 # First we remove $prefix/local and then just prefix to make
 # sure we get the correct installdir
