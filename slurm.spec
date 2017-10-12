@@ -1,12 +1,12 @@
 Name:		slurm
 Version:	17.11.0
-Release:	1%{?dist}
+Release:	0pre2%{?dist}
 Summary:	Slurm Workload Manager
 
 Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
-Source:		%{name}-%{version}.tar.bz2
+Source:		%{name}-%{version}-pre2.tar.bz2
 
 # build options		.rpmmacros options	change to default action
 # ====================  ====================	========================
