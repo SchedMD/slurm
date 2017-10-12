@@ -34,7 +34,6 @@ job management, scheduling and accounting modules
 # --without netloc   %_without_netloc     path  require netloc support
 # --with openssl     %_with_openssl       1     require openssl RPM to be installed
 # --without pam      %_without_pam        1     don't require pam-devel RPM to be installed
-# --without readline %_without_readline   1     don't require readline-devel RPM to be installed
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacros
 #    slurm_with    builds option by default unless --without is specified
@@ -62,9 +61,6 @@ job management, scheduling and accounting modules
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
 %slurm_with_opt openssl
 
-# Use readline by default on all systems
-%slurm_with_opt readline
-
 # Use debug by default on all systems
 %slurm_with_opt debug
 
@@ -79,10 +75,7 @@ Requires: slurm-plugins
 Requires: munge
 BuildRequires: munge-devel munge-libs
 BuildRequires: python
-
-%if %{slurm_with readline}
 BuildRequires: readline-devel
-%endif
 
 %if %{slurm_with openssl}
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
@@ -262,7 +255,6 @@ according to the Slurm
 	%{?slurm_with_cray:--enable-native-cray}\
 	%{?slurm_with_cray_network:--enable-cray-network}\
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
-	%{!?slurm_with_readline:--without-readline} \
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?slurm_with_pmix:--with-pmix=%{?slurm_with_pmix}} \
 	%{?with_freeipmi:--with-freeipmi=%{?with_freeipmi}}\
