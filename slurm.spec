@@ -32,6 +32,7 @@ Source:		%{name}-%{version}.tar.bz2
 %bcond_with mysql
 %bcond_with blcr
 %bcond_with hdf5
+%bcond_with lua
 %bcond_with openssl
 
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
@@ -92,6 +93,14 @@ BuildRequires: pkgconfig
 %endif
 
 BuildRequires: perl(ExtUtils::MakeMaker)
+
+%if %{with lua}
+%if %{defined suse_version}
+BuildRequires: lua51-devel
+%else
+BuildRequires: lua-devel
+%endif
+%endif
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
 #  Note 'global' instead of 'define' needed here to work around apparent
@@ -249,6 +258,7 @@ according to the Slurm
 	%{?_with_pmix} \
 	%{?_with_freeipmi} \
 	%{?_with_hdf5} \
+	%{?_with_lua} \
 	%{?_with_shared_libslurm} \
 	%{?_with_cflags}
 
