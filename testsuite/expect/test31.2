@@ -84,22 +84,6 @@ proc clean_up { } {
 	}
 }
 
-proc cancel_job { job } {
-
-	global scancel exit_code
-
-	spawn $scancel $job
-	expect {
-		timeout {
-			send_user "\nFAILURE: scancel is not responing\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
-
 make_bash_script $good_prolog "
 exit 0
 "
@@ -168,7 +152,9 @@ expect {
 		wait
 	}
 }
-
+if {$job_id == 0} {
+	set exit_code 1
+}
 if {$exit_code} {
 	send_user "\nFAILURE: sbatch did not submit job\n"
 	clean_up
@@ -213,6 +199,7 @@ exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
 exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_dir/slurm.conf
 update_conf
 
+set job_id 0
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
 expect {
 	-re "Submitted batch job ($number)" {
@@ -227,7 +214,9 @@ expect {
 		wait
 	}
 }
-
+if {$job_id == 0} {
+	set exit_code 1
+}
 if {$exit_code} {
 	send_user "\nFAILURE: sbatch did not submit job\n"
 	clean_up
