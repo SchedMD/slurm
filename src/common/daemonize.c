@@ -108,8 +108,11 @@ read_pidfile(const char *pidfile, int *pidfd)
 	if ((fd = open(pidfile, O_RDONLY)) < 0)
 		return ((pid_t) 0);
 
-	if (!(fp = fdopen(fd, "r")) && (errno != ENOENT))
+	if (!(fp = fdopen(fd, "r"))) {
 		error ("Unable to access old pidfile at `%s': %m", pidfile);
+		(void) close(fd);
+		return ((pid_t) 0);
+	}
 
 	if (fscanf(fp, "%lu", &pid) < 1) {
 		error ("Possible corrupt pidfile `%s'", pidfile);
