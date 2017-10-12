@@ -330,12 +330,11 @@ static int _set_cond(int *start, int argc, char **argv,
 				job_cond->step_list =
 					list_create(slurm_destroy_char);
 
-			while ((end_char = strstr(start_char, ","))
-			       && start_char) {
+			while ((end_char = strstr(start_char, ","))) {
 				*end_char = 0;
-				while (isspace(*start_char))
+				while (isspace(start_char[0]))
 					start_char++;  /* discard whitespace */
-				if (!(int)*start_char)
+				if (start_char[0] == '\0')
 					continue;
 				selected_step = xmalloc(
 					sizeof(slurmdb_selected_step_t));
