@@ -26,10 +26,10 @@ job management, scheduling and accounting modules
 #                                               to execute as a background process.
 # --prefix           %_prefix             path  install path for commands, libraries, etc.
 # --with blcr        %_with_blcr          1     require blcr support
-# --with cray        %_with_cray          1     build for a Cray system without ALPS
+# --with cray        %_with_cray          1     build for a Native-Slurm Cray system
 # --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
 # --without debug    %_without_debug      1     don't compile with debugging symbols
-# --with lua         %_with_lua           1     build Slurm lua bindings (proctrack only for now)
+# --with lua         %_with_lua           1     build Slurm lua bindings
 # --with mysql       %_with_mysql         1     require mysql/mariadb support
 # --without netloc   %_without_netloc     path  require netloc support
 # --with openssl     %_with_openssl       1     require openssl RPM to be installed
