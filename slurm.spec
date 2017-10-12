@@ -16,8 +16,6 @@ Source:		%{name}-%{version}.tar.bz2
 # --enable-multiple-slurmd %_with_multiple_slurmd 1  build with the multiple slurmd
 #                                               option.  Typically used to simulate a
 #                                               larger system than one has access to.
-# --enable-salloc-background %_with_salloc_background 1  on a cray system alloc salloc
-#                                               to execute as a background process.
 # --prefix           %_prefix             path  install path for commands, libraries, etc.
 # --with blcr        %_with_blcr          path  require blcr support
 # --with cray        %_with_cray          1     build for a Native-Slurm Cray system
@@ -32,7 +30,6 @@ Source:		%{name}-%{version}.tar.bz2
 #  Options that are off by default (enable with --with <opt>)
 %bcond_with cray
 %bcond_with cray_network
-%bcond_with salloc_background
 %bcond_with multiple_slurmd
 
 # These options are only here to force there to be these on the build.
@@ -248,7 +245,6 @@ according to the Slurm
 	%{?_with_blcr} \
 	%{?_with_cray:--enable-native-cray}\
 	%{?_with_cray_network:--enable-cray-network}\
-	%{?_with_salloc_background:--enable-salloc-background} \
 	%{?_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?_with_pmix} \
 	%{?_with_freeipmi} \
