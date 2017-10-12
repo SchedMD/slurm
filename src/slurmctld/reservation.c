@@ -2323,7 +2323,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 				if (!resv_desc_ptr->core_cnt[nodeinx]) {
 					info("Core count for reservation node "
 					     "list is not consistent!");
-					rc = ESLURM_INVALID_NODE_NAME;
+					rc = ESLURM_INVALID_CORE_CNT;
 					goto bad_parse;
 				}
 #if _DEBUG

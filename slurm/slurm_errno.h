@@ -199,6 +199,7 @@ enum {
 	ESLURM_NOT_PACK_WHOLE,
 	ESLURM_CORE_RESERVATION_UPDATE,
 	ESLURM_DUPLICATE_STEP_ID =			2110,
+	ESLURM_INVALID_CORE_CNT,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

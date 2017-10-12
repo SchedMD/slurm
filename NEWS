@@ -119,6 +119,8 @@ documents those changes that are of interest to users and administrators.
  -- Change default to let pending jobs run outside of reservation after
     reservation is gone to put jobs in held state. Added NO_HOLD_JOBS_AFTER_END
     reservation flag to use old default.
+ -- When creating a reservations, validate the CoreCnt specification matches
+    the number of nodes listed.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

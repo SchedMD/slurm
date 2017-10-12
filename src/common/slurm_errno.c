@@ -151,6 +151,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid job id specified"				},
 	{ ESLURM_INVALID_NODE_NAME,
 	  "Invalid node name specified"				},
+	{ ESLURM_INVALID_CORE_CNT,
+	  "Core count for reservation node list is not consistent!" },
 	{ ESLURM_WRITING_TO_FILE,
 	  "I/O error writing script/environment to file"	},
 	{ ESLURM_TRANSITION_STATE_NO_UPDATE,
