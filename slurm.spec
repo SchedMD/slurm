@@ -467,21 +467,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmstepd
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
-%{_mandir}/man1/*
-%{_mandir}/man5/acct_gather.*
-%{_mandir}/man5/burst_buffer.*
-%{_mandir}/man5/cgroup.*
-%{_mandir}/man5/cray.*
-%{_mandir}/man5/ext_sensors.*
-%{_mandir}/man5/gres.*
-%{_mandir}/man5/knl.*
-%{_mandir}/man5/nonstop.*
-%{_mandir}/man5/slurm.*
-%{_mandir}/man5/topology.*
-%{_mandir}/man8/slurmctld.*
-%{_mandir}/man8/slurmd.*
-%{_mandir}/man8/slurmstepd*
-%{_mandir}/man8/spank*
+%{_mandir}
+%exclude %{_mandir}/man1/sjobexit*
+%exclude %{_mandir}/man1/sjstat*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
 %dir /etc/ld.so.conf.d
@@ -501,8 +489,6 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/layouts.d/unit.conf.example
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean
-%exclude %{_mandir}/man1/sjobexit*
-%exclude %{_mandir}/man1/sjstat*
 #############################################################################
 
 %files devel
@@ -510,10 +496,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir %attr(0755,root,root)
 %dir %{_prefix}/include/slurm
 %{_prefix}/include/slurm/*
-%{_mandir}/man3/slurm_*
 %dir %{_libdir}/pkgconfig
 %{_libdir}/pkgconfig/slurm.pc
-#%{_mandir}/man3/slurmdb_*
 #############################################################################
 
 %files perlapi
@@ -535,8 +519,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_sbindir}/slurmdbd
 %{_libdir}/slurm/accounting_storage_mysql.so
-%{_mandir}/man5/slurmdbd.*
-%{_mandir}/man8/slurmdbd.*
 %config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
