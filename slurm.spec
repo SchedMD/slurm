@@ -372,6 +372,8 @@ rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/sfree
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_epilog
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_prolog
+rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/init.d/slurm
+rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/init.d/slurmdbd
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/.packlist
 rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
 rm -f $RPM_BUILD_ROOT/%{_perldir}/perllocal.pod
@@ -400,8 +402,6 @@ ${RPM_BUILD_ROOT}%{_bindir}/sjstat --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjst
 # Build conditional file list for main package
 LIST=./slurm.files
 touch $LIST
-test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
-  echo /etc/init.d/slurm				>> $LIST
 test -f $RPM_BUILD_ROOT/%{_libexecdir}/slurm/cr_checkpoint.sh   &&
   echo %{_libexecdir}/slurm/cr_checkpoint.sh	        >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libexecdir}/slurm/cr_restart.sh      &&
@@ -410,8 +410,6 @@ test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_suspend		&&
   echo %{_sbindir}/capmc_suspend			>> $LIST
 test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_resume		&&
   echo %{_sbindir}/capmc_resume				>> $LIST
-test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm			&&
-  echo /usr/sbin/rcslurm				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service	&&
   echo /usr/lib/systemd/system/slurmctld.service		>> $LIST
 test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service	&&
@@ -445,10 +443,6 @@ EOF
 
 LIST=./slurmdbd.files
 touch $LIST
-test -f $RPM_BUILD_ROOT/etc/init.d/slurmdbd			&&
-  echo /etc/init.d/slurmdbd				>> $LIST
-test -f $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd			&&
-  echo /usr/sbin/rcslurmdbd				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service	&&
   echo /usr/lib/systemd/system/slurmdbd.service		>> $LIST
 
@@ -615,71 +609,13 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %pre
-#if [ -x /etc/init.d/slurm ]; then
-#    if /etc/init.d/slurm status | grep -q running; then
-#        /etc/init.d/slurm stop
-#    fi
-#fi
-#if [ -x /etc/init.d/slurmdbd ]; then
-#    if /etc/init.d/slurmdbd status | grep -q running; then
-#        /etc/init.d/slurmdbd stop
-#    fi
-#fi
 
 %post
-if [ -x /sbin/ldconfig ]; then
-    /sbin/ldconfig %{_libdir}
-    if [ $1 = 1 ]; then
-	if [ -x /etc/init.d/slurm ]; then
-	    [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
-        fi
-    fi
-fi
 
 %preun
-if [ "$1" -eq 0 ]; then
-    if [ -x /etc/init.d/slurm ]; then
-	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-	if /etc/init.d/slurm status | grep -q running; then
-	    /etc/init.d/slurm stop
-	fi
-    fi
-fi
 
 %preun slurmdbd
-if [ "$1" -eq 0 ]; then
-    if [ -x /etc/init.d/slurmdbd ]; then
-	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurmdbd
-	if /etc/init.d/slurmdbd status | grep -q running; then
-	    /etc/init.d/slurmdbd stop
-	fi
-    fi
-fi
 
 %postun
-if [ "$1" -gt 1 ]; then
-    if [ -x /etc/init.d/slurmdbd ]; then
-        /etc/init.d/slurm condrestart
-    fi
-elif [ "$1" -eq 0 ]; then
-    if [ -x /sbin/ldconfig ]; then
-	/sbin/ldconfig %{_libdir}
-    fi
-fi
-%if %{?insserv_cleanup:1}0
-%insserv_cleanup
-%endif
 
 %postun slurmdbd
-if [ "$1" -gt 1 ]; then
-    if [ -x /etc/init.d/slurmdbd ]; then
-        /etc/init.d/slurm condrestart
-    fi
-fi
-
-#############################################################################
-
-
-%changelog
-* Wed Jun 26 2013 Morris Jette <jette@schedmd.com> 14.03.0-0pre1
-Various cosmetic fixes for rpmlint errors
