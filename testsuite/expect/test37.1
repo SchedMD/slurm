@@ -676,6 +676,27 @@ if {$exit_code || $matches != 1} {
 	end_it 1
 }
 
+set matches 0
+set my_pid [spawn $sacctmgr -i modify federation set clusters=$tc1 where cluster=$tc1]
+expect {
+	-re "Can't assign clusters to multiple federations." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 1} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
 #####################################
 # TEST: modify clusters with fed options
 #####################################

@@ -222,6 +222,9 @@ static int _verify_federations(List name_list, bool report_existing)
 	ListIterator itr_c     = NULL;
 	slurmdb_federation_cond_t fed_cond;
 
+	if (!name_list || !list_count(name_list))
+		return SLURM_SUCCESS;
+
 	slurmdb_init_federation_cond(&fed_cond, 0);
 	fed_cond.federation_list = name_list;
 
