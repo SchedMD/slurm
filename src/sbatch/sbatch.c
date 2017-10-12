@@ -404,8 +404,8 @@ static int _job_wait(uint32_t job_id)
 
 static char *_find_quote_token(char *tmp, char *sep, char **last)
 {
-	char *start, *quote_single = 0, *quote_double = 0;
-	int i;
+	char *start;
+	int i, quote_single = 0, quote_double = 0;
 
 	xassert(last);
 	if (*last)
