@@ -174,6 +174,22 @@ Requires: slurm
 Development package for Slurm.  This package includes the header files
 and static libraries for the Slurm API
 
+%package slurmctld
+Summary: Slurm compute node daemon
+Group: System Environment/Base
+Requires: slurm
+%description slurmctld
+Slurm controller daemon. Used to manage the job queue, schedule jobs,
+and dispatch RPC messages to the slurmd processon the compute nodes
+to launch jobs.
+
+%package slurmd
+Summary: Slurm compute node daemon
+Group: System Environment/Base
+Requires: slurm
+%description slurmd
+Slurm compute node daemon. Used to launch jobs on compute nodes
+
 %package slurmdbd
 Summary: Slurm database daemon
 Group: System Environment/Base
@@ -348,10 +364,6 @@ test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_suspend		&&
   echo %{_sbindir}/capmc_suspend			>> $LIST
 test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_resume		&&
   echo %{_sbindir}/capmc_resume				>> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service	&&
-  echo /usr/lib/systemd/system/slurmctld.service		>> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service	&&
-  echo /usr/lib/systemd/system/slurmd.service		>> $LIST
 test -f $RPM_BUILD_ROOT/%{_bindir}/netloc_to_topology		&&
   echo %{_bindir}/netloc_to_topology			>> $LIST
 
@@ -378,11 +390,6 @@ Description: Slurm API
 Name: %{name}
 Version: %{version}
 EOF
-
-LIST=./slurmdbd.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service	&&
-  echo /usr/lib/systemd/system/slurmdbd.service		>> $LIST
 
 LIST=./pam.files
 touch $LIST
@@ -419,9 +426,6 @@ rm -rf $RPM_BUILD_ROOT
 %exclude %{_bindir}/sjobexitmod
 %exclude %{_bindir}/sjstat
 %exclude %{_bindir}/smail
-%{_sbindir}/slurmctld
-%{_sbindir}/slurmd
-%{_sbindir}/slurmstepd
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_libdir}/slurm/*.so
@@ -476,10 +480,24 @@ rm -rf $RPM_BUILD_ROOT
 
 #############################################################################
 
-%files -f slurmdbd.files slurmdbd
+%files slurmctld
+%defattr(-,root,root)
+%{_sbindir}/slurmctld
+/usr/lib/systemd/system/slurmctld.service
+#############################################################################
+
+%files slurmd
+%defattr(-,root,root)
+%{_sbindir}/slurmd
+%{_sbindir}/slurmstepd
+/usr/lib/systemd/system/slurmd.service
+#############################################################################
+
+%files slurmdbd
 %defattr(-,root,root)
 %{_sbindir}/slurmdbd
 %{_libdir}/slurm/accounting_storage_mysql.so
+/usr/lib/systemd/system/slurmdbd.service
 %config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
