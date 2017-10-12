@@ -153,6 +153,12 @@ Requires: slurm
 Development package for Slurm.  This package includes the header files
 and static libraries for the Slurm API
 
+%package example-configs
+Summary: Example config files for Slurm
+Group: Development/System
+%description example-configs
+Example configuration files for Slurm.
+
 %package slurmctld
 Summary: Slurm compute node daemon
 Group: System Environment/Base
@@ -409,16 +415,18 @@ rm -rf %{buildroot}
 %{_mandir}
 %exclude %{_mandir}/man1/sjobexit*
 %exclude %{_mandir}/man1/sjstat*
-%dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
 %dir /etc/ld.so.conf.d
 /etc/ld.so.conf.d/slurm.conf
-%if %{with cray}
-%dir /opt/modulefiles/slurm
-%endif
+#############################################################################
+
+%files example-configs
+%defattr(-,root,root,0755)
+%dir %{_sysconfdir}
 %if %{with cray}
 %config %{_sysconfdir}/plugstack.conf.template
 %config %{_sysconfdir}/slurm.conf.template
+%dir /opt/modulefiles/slurm
 %{_sbindir}/slurmconfgen.py
 %endif
 %config %{_sysconfdir}/cgroup.conf.example
@@ -428,6 +436,7 @@ rm -rf %{buildroot}
 %config %{_sysconfdir}/layouts.d/unit.conf.example
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean
+%config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
 %files devel
@@ -472,7 +481,6 @@ rm -rf %{buildroot}
 %{_sbindir}/slurmdbd
 %{_libdir}/slurm/accounting_storage_mysql.so
 %{_unitdir}/slurmdbd.service
-%config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
 %files torque
