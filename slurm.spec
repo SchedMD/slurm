@@ -15,6 +15,7 @@ Source:		%{name}-%{version}.tar.bz2
 # --with cray		%_with_cray 1		build for a Native-Slurm Cray system
 # --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
 # --without debug	%_without_debug 1	don't compile with debugging symbols
+# --with hdf5		%_with_hdf5 path	require hdf5 support
 # --with lua		%_with_lua path		build Slurm lua bindings
 # --with mysql		%_with_mysql 1		require mysql/mariadb support
 # --with openssl	%_with_openssl 1	require openssl RPM to be installed
@@ -30,6 +31,7 @@ Source:		%{name}-%{version}.tar.bz2
 # If they are not set they will still be compiled if the packages exist.
 %bcond_with mysql
 %bcond_with blcr
+%bcond_with hdf5
 %bcond_with openssl
 
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
@@ -246,6 +248,7 @@ according to the Slurm
 	%{?_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?_with_pmix} \
 	%{?_with_freeipmi} \
+	%{?_with_hdf5} \
 	%{?_with_shared_libslurm} \
 	%{?_with_cflags}
 
