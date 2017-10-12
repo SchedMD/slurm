@@ -19,7 +19,7 @@ Source:		%{name}-%{version}.tar.bz2
 # --enable-salloc-background %_with_salloc_background 1  on a cray system alloc salloc
 #                                               to execute as a background process.
 # --prefix           %_prefix             path  install path for commands, libraries, etc.
-# --with blcr        %_with_blcr          1     require blcr support
+# --with blcr        %_with_blcr          path  require blcr support
 # --with cray        %_with_cray          1     build for a Native-Slurm Cray system
 # --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
 # --without debug    %_without_debug      1     don't compile with debugging symbols
@@ -28,42 +28,29 @@ Source:		%{name}-%{version}.tar.bz2
 # --without netloc   %_without_netloc     path  require netloc support
 # --with openssl     %_with_openssl       1     require openssl RPM to be installed
 # --without pam      %_without_pam        1     don't require pam-devel RPM to be installed
-#
-#  Allow defining --with and --without build options or %_with and %without in .rpmmacros
-#    slurm_with    builds option by default unless --without is specified
-#    slurm_without builds option iff --with specified
-#
-%define slurm_with_opt() %{expand:%%{!?_without_%{1}:%%global slurm_with_%{1} 1}}
-%define slurm_without_opt() %{expand:%%{?_with_%{1}:%%global slurm_with_%{1} 1}}
-#
-#  with helper macro to test for slurm_with_*
-#
-%define slurm_with() %{expand:%%{?slurm_with_%{1}:1}%%{!?slurm_with_%{1}:0}}
 
 #  Options that are off by default (enable with --with <opt>)
-%slurm_without_opt cray
-%slurm_without_opt cray_network
-%slurm_without_opt salloc_background
-%slurm_without_opt multiple_slurmd
+%bcond_with cray
+%bcond_with cray_network
+%bcond_with salloc_background
+%bcond_with multiple_slurmd
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
-%slurm_without_opt mysql
-%slurm_without_opt blcr
-%slurm_without_opt openssl
+%bcond_with mysql
+%bcond_with blcr
+%bcond_with openssl
 
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
-%slurm_with_opt openssl
+%bcond_without openssl
 
 # Use debug by default on all systems
-%slurm_with_opt debug
+%bcond_without debug
 
 # Build with PAM by default on linux
-%ifos linux
-%slurm_with_opt pam
-%endif
+%bcond_without pam
 
-%slurm_without_opt partial-attach
+%bcond_with partial-attach
 
 Requires: munge
 BuildRequires: munge-devel munge-libs
@@ -71,13 +58,13 @@ BuildRequires: python
 BuildRequires: readline-devel
 Obsoletes: slurm-plugins
 
-%if %{slurm_with openssl}
+%if %{with openssl}
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
 
 %define use_mysql_devel %(perl -e '`rpm -q mariadb-devel`; print $?;')
 
-%if %{slurm_with mysql}
+%if %{with mysql}
 %if %{use_mysql_devel}
 BuildRequires: mysql-devel >= 5.0.0
 %else
@@ -85,7 +72,7 @@ BuildRequires: mariadb-devel >= 5.0.0
 %endif
 %endif
 
-%if %{slurm_with cray}
+%if %{with cray}
 BuildRequires: cray-libalpscomm_cn-devel
 BuildRequires: cray-libalpscomm_sn-devel
 BuildRequires: libnuma-devel
@@ -96,7 +83,7 @@ BuildRequires: glib2-devel
 BuildRequires: pkg-config
 %endif
 
-%if %{slurm_with cray_network}
+%if %{with cray_network}
 %if %{use_mysql_devel}
 BuildRequires: mysql-devel
 %else
@@ -229,7 +216,7 @@ about jobs that are currently active on the machine. This output is built
 using the Slurm utilities, sinfo, squeue and scontrol, the man pages for these
 utilities will provide more information and greater depth of understanding.
 
-%if %{slurm_with pam}
+%if %{with pam}
 %package pam_slurm
 Summary: PAM module for restricting access to compute nodes via Slurm
 Group: System Environment/Base
@@ -250,23 +237,23 @@ according to the Slurm
 
 %build
 %configure \
-	%{!?slurm_with_debug:--disable-debug} \
-	%{?slurm_with_partial_attach:--enable-partial-attach} \
-	%{?with_pam_dir:--with-pam_dir=%{?with_pam_dir}} \
-	%{?with_proctrack:--with-proctrack=%{?with_proctrack}}\
-	%{?with_cpusetdir:--with-cpusetdir=%{?with_cpusetdir}} \
-	%{?with_mysql_config:--with-mysql_config=%{?with_mysql_config}} \
-	%{?with_ssl:--with-ssl=%{?with_ssl}} \
-	%{?with_netloc:--with-netloc=%{?with_netloc}}\
-	%{?with_blcr:--with-blcr=%{?with_blcr}}\
-	%{?slurm_with_cray:--enable-native-cray}\
-	%{?slurm_with_cray_network:--enable-cray-network}\
-	%{?slurm_with_salloc_background:--enable-salloc-background} \
-	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
-	%{?slurm_with_pmix:--with-pmix=%{?slurm_with_pmix}} \
-	%{?with_freeipmi:--with-freeipmi=%{?with_freeipmi}}\
-        %{?slurm_without_shared_libslurm:--without-shared-libslurm}\
-        %{?with_cflags} \
+	%{!?_with_debug:--disable-debug} \
+	%{?_with_partial_attach:--enable-partial-attach} \
+	%{?_with_pam_dir} \
+	%{?_with_proctrack} \
+	%{?_with_cpusetdir} \
+	%{?_with_mysql_config} \
+	%{?_with_ssl} \
+	%{?_with_netloc} \
+	%{?_with_blcr} \
+	%{?_with_cray:--enable-native-cray}\
+	%{?_with_cray_network:--enable-cray-network}\
+	%{?_with_salloc_background:--enable-salloc-background} \
+	%{?_with_multiple_slurmd:--enable-multiple-slurmd} \
+	%{?_with_pmix} \
+	%{?_with_freeipmi} \
+	%{?_with_shared_libslurm} \
+	%{?_with_cflags}
 
 make %{?_smp_mflags}
 
@@ -292,9 +279,9 @@ install -D -m644 etc/slurmdbd.service  %{buildroot}/usr/lib/systemd/system/slurm
 
 # Do not package Slurm's version of libpmi on Cray systems.
 # Cray's version of libpmi should be used.
-%if %{slurm_with cray}
+%if %{with cray}
    rm -f %{buildroot}/%{_libdir}/libpmi*
-   %if %{slurm_with cray}
+   %if %{with cray}
       install -D -m644 contribs/cray/plugstack.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/plugstack.conf.template
       install -D -m644 contribs/cray/slurm.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.template
    %endif
@@ -439,10 +426,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/slurm/src
 %dir /etc/ld.so.conf.d
 /etc/ld.so.conf.d/slurm.conf
-%if %{slurm_with cray}
+%if %{with cray}
 %dir /opt/modulefiles/slurm
 %endif
-%if %{slurm_with cray}
+%if %{with cray}
 %config %{_sysconfdir}/plugstack.conf.template
 %config %{_sysconfdir}/slurm.conf.template
 %{_sbindir}/slurmconfgen.py
@@ -535,7 +522,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/sjstat*
 #############################################################################
 
-%if %{slurm_with pam}
+%if %{with pam}
 %files -f pam.files pam_slurm
 %defattr(-,root,root)
 %endif
