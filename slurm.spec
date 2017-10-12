@@ -25,7 +25,6 @@ job management, scheduling and accounting modules
 # --enable-salloc-background %_with_salloc_background 1  on a cray system alloc salloc
 #                                               to execute as a background process.
 # --prefix           %_prefix             path  install path for commands, libraries, etc.
-# --with auth_none   %_with_auth_none     1     build auth-none RPM
 # --with blcr        %_with_blcr          1     require blcr support
 # --with cray        %_with_cray          1     build for a Cray system without ALPS
 # --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
@@ -51,7 +50,6 @@ job management, scheduling and accounting modules
 %define slurm_with() %{expand:%%{?slurm_with_%{1}:1}%%{!?slurm_with_%{1}:0}}
 
 #  Options that are off by default (enable with --with <opt>)
-%slurm_without_opt auth_none
 %slurm_without_opt cray
 %slurm_without_opt cray_network
 %slurm_without_opt salloc_background
@@ -204,15 +202,6 @@ Requires: slurm
 %description devel
 Development package for Slurm.  This package includes the header files
 and static libraries for the Slurm API
-
-%if %{slurm_with auth_none}
-%package auth-none
-Summary: Slurm auth NULL implementation (no authentication)
-Group: System Environment/Base
-Requires: slurm
-%description auth-none
-Slurm NULL authentication module
-%endif
 
 # This is named munge instead of auth-munge since there are 2 plugins in the
 # package.  auth-munge and crypto-munge
@@ -424,9 +413,7 @@ rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm_adopt.a
 rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm_adopt.la
 rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm_adopt.a
 rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm_adopt.la
-%if ! %{slurm_with auth_none}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
-%endif
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so
@@ -685,13 +672,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/pkgconfig
 %{_libdir}/pkgconfig/slurm.pc
 #%{_mandir}/man3/slurmdb_*
-#############################################################################
-
-%if %{slurm_with auth_none}
-%files auth-none
-%defattr(-,root,root)
-%{_libdir}/slurm/auth_none.so
-%endif
 #############################################################################
 
 %if %{slurm_with munge}
