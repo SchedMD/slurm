@@ -164,7 +164,6 @@ BuildRequires: perl(ExtUtils::MakeMaker)
 %define _perldir %{_prefix}%{_perlarch}
 %define _perlman3dir %{_prefix}%{_perlman3}
 %define _perlarchlibdir %{_prefix}%{_perlarchlib}
-%define _php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php5)
 
 %package perlapi
 Summary: Perl API to Slurm
