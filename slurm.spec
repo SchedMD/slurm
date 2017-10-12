@@ -71,11 +71,11 @@ job management, scheduling and accounting modules
 
 %slurm_without_opt partial-attach
 
-Requires: slurm-plugins
 Requires: munge
 BuildRequires: munge-devel munge-libs
 BuildRequires: python
 BuildRequires: readline-devel
+Obsoletes: slurm-plugins
 
 %if %{slurm_with openssl}
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
@@ -177,19 +177,10 @@ and static libraries for the Slurm API
 %package slurmdbd
 Summary: Slurm database daemon
 Group: System Environment/Base
-Requires: slurm-plugins
+Requires: slurm
 %description slurmdbd
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
-
-%package plugins
-Summary: Slurm plugins (loadable shared objects)
-Group: System Environment/Base
-%description plugins
-Slurm plugins (loadable shared objects) supporting a wide variety of
-architectures and behaviors. These basically provide the building blocks
-with which Slurm can be configured. Note that some system specific plugins
-are in other packages
 
 %package torque
 Summary: Torque/PBS wrappers for transitition from Torque/PBS to Slurm
@@ -433,6 +424,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmstepd
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
+%{_libdir}/slurm/*.so
+%exclude %{_libdir}/slurm/accounting_storage_mysql.so
+%exclude %{_libdir}/slurm/job_submit_pbs.so
+%exclude %{_libdir}/slurm/spank_pbs.so
 %{_mandir}
 %exclude %{_mandir}/man1/sjobexit*
 %exclude %{_mandir}/man1/sjstat*
@@ -486,15 +481,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmdbd
 %{_libdir}/slurm/accounting_storage_mysql.so
 %config %{_sysconfdir}/slurmdbd.conf.example
-#############################################################################
-
-%files plugins
-%defattr(-,root,root)
-%dir %{_libdir}/slurm
-%{_libdir}/slurm/*.so
-%exclude %{_libdir}/slurm/accounting_storage_mysql.so
-%exclude %{_libdir}/slurm/job_submit_pbs.so
-%exclude %{_libdir}/slurm/spank_pbs.so
 #############################################################################
 
 %files torque
