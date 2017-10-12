@@ -48,6 +48,9 @@ Source:		%{name}-%{version}.tar.bz2
 %bcond_without pam
 
 Requires: munge
+
+%{?systemd_requires}
+BuildRequires: systemd
 BuildRequires: munge-devel munge-libs
 BuildRequires: python
 BuildRequires: readline-devel
@@ -252,7 +255,6 @@ make %{?_smp_mflags}
 
 %install
 
-
 # Strip out some dependencies
 
 cat > find-requires.sh <<'EOF'
@@ -266,9 +268,9 @@ rm -rf {%buildroot}
 make install DESTDIR=%{buildroot}
 make install-contrib DESTDIR=%{buildroot}
 
-install -D -m644 etc/slurmctld.service %{buildroot}/usr/lib/systemd/system/slurmctld.service
-install -D -m644 etc/slurmd.service    %{buildroot}/usr/lib/systemd/system/slurmd.service
-install -D -m644 etc/slurmdbd.service  %{buildroot}/usr/lib/systemd/system/slurmdbd.service
+install -D -m644 etc/slurmctld.service %{buildroot}/%{_unitdir}/slurmctld.service
+install -D -m644 etc/slurmd.service    %{buildroot}/%{_unitdir}/slurmd.service
+install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
 
 # Do not package Slurm's version of libpmi on Cray systems.
 # Cray's version of libpmi should be used.
@@ -463,21 +465,21 @@ rm -rf %{buildroot}
 %files slurmctld
 %defattr(-,root,root)
 %{_sbindir}/slurmctld
-/usr/lib/systemd/system/slurmctld.service
+%{_unitdir}/slurmctld.service
 #############################################################################
 
 %files slurmd
 %defattr(-,root,root)
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
-/usr/lib/systemd/system/slurmd.service
+%{_unitdir}/slurmd.service
 #############################################################################
 
 %files slurmdbd
 %defattr(-,root,root)
 %{_sbindir}/slurmdbd
 %{_libdir}/slurm/accounting_storage_mysql.so
-/usr/lib/systemd/system/slurmdbd.service
+%{_unitdir}/slurmdbd.service
 %config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
@@ -528,9 +530,26 @@ rm -rf %{buildroot}
 
 %preun
 
-%preun slurmdbd
-
 %postun
 /sbin/ldconfig
 
+%post slurmctld
+%systemd_post slurmctld.service
+%preun slurmctld
+%systemd_preun slurmctld.service
+%postun slurmctld
+%systemd_preun_with_restart slurmctld.service
+
+%post slurmd
+%systemd_post slurmd.service
+%preun slurmd
+%systemd_preun slurmd.service
+%postun slurmd
+%systemd_preun_with_restart slurmd.service
+
+%post slurmdbd
+%systemd_post slurmdbd.service
+%preun slurmdbd
+%systemd_preun slurmdbd.service
 %postun slurmdbd
+%systemd_preun_with_restart slurmdbd.service
