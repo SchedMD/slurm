@@ -51,7 +51,7 @@ BuildRequires: systemd
 BuildRequires: munge-devel munge-libs
 BuildRequires: python
 BuildRequires: readline-devel
-Obsoletes: slurm-plugins
+Obsoletes: slurm-lua slurm-munge slurm-plugins
 
 %if %{with openssl}
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
@@ -190,6 +190,7 @@ Slurm compute node daemon. Used to launch jobs on compute nodes
 Summary: Slurm database daemon
 Group: System Environment/Base
 Requires: slurm
+Obsoletes: slurm-sql
 %description slurmdbd
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
