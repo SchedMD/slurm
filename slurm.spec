@@ -80,11 +80,6 @@ Requires: munge
 BuildRequires: munge-devel munge-libs
 BuildRequires: python
 
-# not sure if this is always an actual rpm or not so leaving the requirement out
-#%if %{slurm_with blcr}
-#BuildRequires: blcr
-#%endif
-
 %if %{slurm_with readline}
 BuildRequires: readline-devel
 %endif
@@ -378,14 +373,6 @@ rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
 rm -f $RPM_BUILD_ROOT/%{_perldir}/perllocal.pod
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/.packlist
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs
-
-%if ! %{slurm_with blcr}
-# remove these if they exist
-rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/srun_cr*
-rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun_cr
-rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/checkpoint_blcr.so
-rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
-%endif
 
 # Build man pages that are generated directly by the tools
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
