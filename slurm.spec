@@ -524,11 +524,13 @@ rm -rf %{buildroot}
 %pre
 
 %post
+/sbin/ldconfig
 
 %preun
 
 %preun slurmdbd
 
 %postun
+/sbin/ldconfig
 
 %postun slurmdbd
