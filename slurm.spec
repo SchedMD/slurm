@@ -8,24 +8,18 @@ License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 Source:		%{name}-%{version}.tar.bz2
 
-# Note that this package is not relocatable
-
-#
-# build options      .rpmmacros options      change to default action
-# ===============    ====================    ========================
-# --enable-multiple-slurmd %_with_multiple_slurmd 1  build with the multiple slurmd
-#                                               option.  Typically used to simulate a
-#                                               larger system than one has access to.
-# --prefix           %_prefix             path  install path for commands, libraries, etc.
-# --with blcr        %_with_blcr          path  require blcr support
-# --with cray        %_with_cray          1     build for a Native-Slurm Cray system
-# --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
-# --without debug    %_without_debug      1     don't compile with debugging symbols
-# --with lua         %_with_lua           1     build Slurm lua bindings
-# --with mysql       %_with_mysql         1     require mysql/mariadb support
-# --without netloc   %_without_netloc     path  require netloc support
-# --with openssl     %_with_openssl       1     require openssl RPM to be installed
-# --without pam      %_without_pam        1     don't require pam-devel RPM to be installed
+# build options		.rpmmacros options	change to default action
+# ====================  ====================	========================
+# --prefix		%_prefix path		install path for commands, libraries, etc.
+# --with blcr		%_with_blcr path	require blcr support
+# --with cray		%_with_cray 1		build for a Native-Slurm Cray system
+# --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
+# --without debug	%_without_debug 1	don't compile with debugging symbols
+# --with lua		%_with_lua path		build Slurm lua bindings
+# --with mysql		%_with_mysql 1		require mysql/mariadb support
+# --with openssl	%_with_openssl 1	require openssl RPM to be installed
+#						ensures auth/openssl and crypto/openssl are built
+# --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
 
 #  Options that are off by default (enable with --with <opt>)
 %bcond_with cray
