@@ -845,10 +845,9 @@ extern int sacctmgr_modify_federation(int argc, char **argv)
 		slurmdb_cluster_rec_t *tmp_c = NULL;
 		List cluster_list = federation->cluster_list;
 
-		if (federation_cond->federation_list &&
-		    (list_count(federation_cond->federation_list) > 1)) {
-			fprintf(stderr, " Can't assign clusters to "
-					"multiple federations.\n");
+		if (!federation_cond->federation_list ||
+		    (list_count(federation_cond->federation_list) != 1)) {
+			fprintf(stderr, " Can't assign clusters to multiple federations.\n");
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
