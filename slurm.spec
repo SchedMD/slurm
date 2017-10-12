@@ -451,67 +451,6 @@ test -f $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd			&&
   echo /usr/sbin/rcslurmdbd				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service	&&
   echo /usr/lib/systemd/system/slurmdbd.service		>> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_mysql.so &&
-   echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
-
-LIST=./plugins.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_cray.so  &&
-   echo %{_libdir}/slurm/acct_gather_energy_cray.so  >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ibmaem.so &&
-   echo %{_libdir}/slurm/acct_gather_energy_ibmaem.so  >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ipmi.so  &&
-   echo %{_libdir}/slurm/acct_gather_energy_ipmi.so  >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_rapl.so  &&
-   echo %{_libdir}/slurm/acct_gather_energy_rapl.so  >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_interconnect_ofed.so &&
-   echo %{_libdir}/slurm/acct_gather_interconnect_ofed.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
-   echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/burst_buffer_cray.so        &&
-   echo %{_libdir}/slurm/burst_buffer_cray.so        >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so          &&
-   echo %{_libdir}/slurm/checkpoint_blcr.so          >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
-   echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rrd.so          &&
-   echo %{_libdir}/slurm/ext_sensors_rrd.so          >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_elasticsearch.so    &&
-   echo %{_libdir}/slurm/jobcomp_elasticsearch.so    >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_slurm.so             &&
-   echo %{_libdir}/slurm/launch_slurm.so             >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_aprun.so             &&
-   echo %{_libdir}/slurm/launch_aprun.so             >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_pmix.so                 &&
-   echo %{_libdir}/slurm/mpi_pmix.so                 >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_pmix_v1.so              &&
-   echo %{_libdir}/slurm/mpi_pmix_v1.so              >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_pmix_v2.so              &&
-   echo %{_libdir}/slurm/mpi_pmix_v2.so              >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/node_features_knl_cray.so   &&
-   echo %{_libdir}/slurm/node_features_knl_cray.so   >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/node_features_knl_generic.so &&
-   echo %{_libdir}/slurm/node_features_knl_generic.so   >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/power_cray.so               &&
-   echo %{_libdir}/slurm/power_cray.so               >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
-   echo %{_libdir}/slurm/task_affinity.so            >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
-   echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
-   echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_cncu.so       &&
-   echo %{_libdir}/slurm/job_container_cncu.so       >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_none.so       &&
-   echo %{_libdir}/slurm/job_container_none.so       >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cray.so                &&
-   echo %{_libdir}/slurm/task_cray.so                >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/slurmctld_nonstop.so        &&
-   echo %{_libdir}/slurm/slurmctld_nonstop.so        >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_cray.so              &&
-   echo %{_libdir}/slurm/switch_cray.so              >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_cray.so           &&
-   echo %{_libdir}/slurm/proctrack_cray.so           >> $LIST
 
 LIST=./pam.files
 touch $LIST
@@ -620,83 +559,19 @@ rm -rf $RPM_BUILD_ROOT
 %files -f slurmdbd.files slurmdbd
 %defattr(-,root,root)
 %{_sbindir}/slurmdbd
+%{_libdir}/slurm/accounting_storage_mysql.so
 %{_mandir}/man5/slurmdbd.*
 %{_mandir}/man8/slurmdbd.*
 %config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
-%files -f plugins.files plugins
+%files plugins
 %defattr(-,root,root)
 %dir %{_libdir}/slurm
-%{_libdir}/slurm/accounting_storage_filetxt.so
-%{_libdir}/slurm/accounting_storage_none.so
-%{_libdir}/slurm/accounting_storage_slurmdbd.so
-%{_libdir}/slurm/acct_gather_filesystem_lustre.so
-%{_libdir}/slurm/acct_gather_filesystem_none.so
-%{_libdir}/slurm/acct_gather_interconnect_none.so
-%{_libdir}/slurm/acct_gather_energy_none.so
-%{_libdir}/slurm/acct_gather_profile_none.so
-%{_libdir}/slurm/auth_munge.so
-%{_libdir}/slurm/burst_buffer_generic.so
-%{_libdir}/slurm/checkpoint_none.so
-%{_libdir}/slurm/checkpoint_ompi.so
-%{_libdir}/slurm/core_spec_cray.so
-%{_libdir}/slurm/core_spec_none.so
-%{_libdir}/slurm/crypto_munge.so
-%{_libdir}/slurm/ext_sensors_none.so
-%{_libdir}/slurm/gres_gpu.so
-%{_libdir}/slurm/gres_mic.so
-%{_libdir}/slurm/gres_nic.so
-%{_libdir}/slurm/job_submit_all_partitions.so
-%{_libdir}/slurm/job_submit_cray.so
-%{_libdir}/slurm/job_submit_lua.so
-%{_libdir}/slurm/job_submit_require_timelimit.so
-%{_libdir}/slurm/job_submit_throttle.so
-%{_libdir}/slurm/jobacct_gather_cgroup.so
-%{_libdir}/slurm/jobacct_gather_linux.so
-%{_libdir}/slurm/jobacct_gather_none.so
-%{_libdir}/slurm/jobcomp_filetxt.so
-%{_libdir}/slurm/jobcomp_none.so
-%{_libdir}/slurm/jobcomp_script.so
-%{_libdir}/slurm/layouts_power_cpufreq.so
-%{_libdir}/slurm/layouts_power_default.so
-%{_libdir}/slurm/layouts_unit_default.so
-%{_libdir}/slurm/mcs_account.so
-%{_libdir}/slurm/mcs_group.so
-%{_libdir}/slurm/mcs_none.so
-%{_libdir}/slurm/mcs_user.so
-%{_libdir}/slurm/mpi_openmpi.so
-%{_libdir}/slurm/mpi_pmi2.so
-%{_libdir}/slurm/mpi_none.so
-%{_libdir}/slurm/power_none.so
-%{_libdir}/slurm/preempt_job_prio.so
-%{_libdir}/slurm/preempt_none.so
-%{_libdir}/slurm/preempt_partition_prio.so
-%{_libdir}/slurm/preempt_qos.so
-%{_libdir}/slurm/priority_basic.so
-%{_libdir}/slurm/priority_multifactor.so
-%{_libdir}/slurm/proctrack_cgroup.so
-%{_libdir}/slurm/proctrack_linuxproc.so
-%{_libdir}/slurm/proctrack_lua.so
-%{_libdir}/slurm/proctrack_pgid.so
-%{_libdir}/slurm/route_default.so
-%{_libdir}/slurm/route_topology.so
-%{_libdir}/slurm/sched_backfill.so
-%{_libdir}/slurm/sched_builtin.so
-%{_libdir}/slurm/sched_hold.so
-%{_libdir}/slurm/select_alps.so
-%{_libdir}/slurm/select_cray.so
-%{_libdir}/slurm/select_cons_res.so
-%{_libdir}/slurm/select_linear.so
-%{_libdir}/slurm/select_serial.so
-%{_libdir}/slurm/switch_generic.so
-%{_libdir}/slurm/switch_none.so
-%{_libdir}/slurm/task_none.so
-%{_libdir}/slurm/topology_3d_torus.so
-%{_libdir}/slurm/topology_hypercube.so
-%{_libdir}/slurm/topology_node_rank.so
-%{_libdir}/slurm/topology_none.so
-%{_libdir}/slurm/topology_tree.so
+%{_libdir}/slurm/*.so
+%exclude %{_libdir}/slurm/accounting_storage_mysql.so
+%exclude %{_libdir}/slurm/job_submit_pbs.so
+%exclude %{_libdir}/slurm/spank_pbs.so
 #############################################################################
 
 %files torque
