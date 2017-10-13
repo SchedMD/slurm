@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix setting TRES limits with case insensitive TRES names.
  -- Add alias for xstrncmp() -- slurm_xstrncmp().
  -- Fix sorting of case insensitive strings when using xstrcasecmp().
+ -- Gracefully handle race condition when reading /proc as process exits.
 
 * Changes in Slurm 17.02.7
 ==========================

@@ -225,7 +225,7 @@ static bool _test_core_dumping(char* stat_fname)
 	proc_stat = xmalloc_nz(proc_stat_size + 1);
 	while (1) {
 		num = read(proc_fd, proc_stat, proc_stat_size);
-		if (num < 0) {
+		if (num <= 0) {
 			proc_stat[0] = '\0';
 			break;
 		}
@@ -238,6 +238,13 @@ static bool _test_core_dumping(char* stat_fname)
 			break;
 	}
 	close(proc_fd);
+
+	/* race condition at process termination */
+	if (proc_stat[0] == '\0') {
+		debug("%s: %s is empty", __func__, stat_fname);
+		xfree(proc_stat);
+		return false;
+	}
 
 	/* split into "PID (cmd" and "<rest>" */
 	str_ptr = (char *)strrchr(proc_stat, ')');
