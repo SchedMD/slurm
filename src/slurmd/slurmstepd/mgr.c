@@ -1832,7 +1832,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 //	jobacct_gather_set_proctrack_container_id(job->cont_id);
 	if (container_g_add_cont(job->jobid, job->cont_id) != SLURM_SUCCESS)
 		error("container_g_add_cont(%u): %m", job->jobid);
-	if (!job->batch && core_spec_g_set(job->cont_id, job->job_core_spec))
+	if (!job->batch && core_spec_g_set(job->cont_id, job->job_core_spec) &&
+	    (job->stepid == 0))
 		error("core_spec_g_set: %m");
 
 	/*

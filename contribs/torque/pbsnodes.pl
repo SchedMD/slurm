@@ -125,6 +125,8 @@ Main:
     my $update = $resp->{last_update};
     foreach my $node (@{$resp->{node_array}}) {
             #print STDERR join(",",keys($node))."\n";
+	    next unless (defined $node);
+	    next unless (keys %{$node});
 	    my $nodeId    = $node->{'name'};
 	    my $rCProc    = $node->{'cpus'};
 	    my $rBoards   = $node->{'boards'};
