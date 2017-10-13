@@ -155,7 +155,7 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 		}
 	}
 	if (rc != 0) {
-		error("job_set_corespec(%"PRIu64", %"PRIu16") failed: %m",
+		debug("job_set_corespec(%"PRIu64", %"PRIu16") failed: %m",
 		      cont_id, core_count);
 		return SLURM_ERROR;
 	}

@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
  -- Add alias for xstrncmp() -- slurm_xstrncmp().
  -- Fix sorting of case insensitive strings when using xstrcasecmp().
  -- Gracefully handle race condition when reading /proc as process exits.
+ -- Avoid error on Cray duplicate setup of core specialization.
 
 * Changes in Slurm 17.02.7
 ==========================
