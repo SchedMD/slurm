@@ -1,12 +1,19 @@
 Name:		slurm
-Version:	17.11.0
-Release:	0pre2%{?dist}
+Version:	17.11.0pre2
+%define patch 1
+Release:	%{patch}%{?dist}
 Summary:	Slurm Workload Manager
 
 Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
-Source:		%{name}-%{version}-pre2.tar.bz2
+
+# when the patch number is one, the tarball filename does not include it
+%if %patch == 1
+Source:		%{name}-%{version}.tar.bz2
+%else
+Source:		%{name}-%{version}-%{patch}.tar.bz2
+%endif
 
 # build options		.rpmmacros options	change to default action
 # ====================  ====================	========================
@@ -246,7 +253,12 @@ according to the Slurm
 #############################################################################
 
 %prep
+# when the patch number is one, the tarball filename does not include it
+%if %patch == 1
 %setup -n %{name}-%{version}
+%else
+%setup -n %{name}-%{version}-%{patch}
+%endif
 
 %build
 %configure \
