@@ -2502,9 +2502,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * is for the job when we place it
 	 */
 	job_ptr->start_time = job_ptr->time_last_active = now;
-	if ((job_ptr->time_limit == NO_VAL) ||
-	    ((job_ptr->time_limit > part_ptr->max_time) &&
-	     !(qos_flags & QOS_FLAG_PART_TIME_LIMIT))) {
+	if ((job_ptr->limit_set.time != ADMIN_SET_LIMIT) &&
+	    ((job_ptr->time_limit == NO_VAL) ||
+	     ((job_ptr->time_limit > part_ptr->max_time) &&
+	      !(qos_flags & QOS_FLAG_PART_TIME_LIMIT)))) {
 		if (part_ptr->default_time != NO_VAL)
 			job_ptr->time_limit = part_ptr->default_time;
 		else

@@ -6371,7 +6371,8 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		       job_ptr->job_id, part_ptr->name, slurm_strerror(rc));
 		switch (rc) {
 		case ESLURM_INVALID_TIME_LIMIT:
-			fail_reason = WAIT_PART_TIME_LIMIT;
+			if (job_ptr->limit_set.time != ADMIN_SET_LIMIT)
+				fail_reason = WAIT_PART_TIME_LIMIT;
 			break;
 		case ESLURM_INVALID_NODE_COUNT:
 			fail_reason = WAIT_PART_NODE_LIMIT;
