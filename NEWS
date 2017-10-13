@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sorting of case insensitive strings when using xstrcasecmp().
  -- Gracefully handle race condition when reading /proc as process exits.
  -- Avoid error on Cray duplicate setup of core specialization.
+ -- Skip over undefined (hidden in Slurm) nodes in pbsnodes.
 
 * Changes in Slurm 17.02.7
 ==========================
