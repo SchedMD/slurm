@@ -23010,7 +23010,11 @@ fi
         test -f "$_test_dir/lib64/libjob.so" || continue
 
         CRAY_JOB_CPPFLAGS="$CRAY_JOB_CPPFLAGS -I$_test_dir/include"
-        CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -L$_test_dir/lib64 -ljob"
+        if test "$ac_with_rpath" = "yes"; then
+          CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -Wl,-rpath -Wl,$_test_dir/lib64 -L$_test_dir/lib64 -ljob"
+        else
+          CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -L$_test_dir/lib64 -ljob"
+        fi
       fi
 
       _test_dir="$d/$_x_ac_cray_alpscomm_dir"
@@ -23024,8 +23028,13 @@ fi
 
       CRAY_ALPSC_CN_CPPFLAGS="$CRAY_ALPSC_CN_CPPFLAGS -I$_test_dir/include"
       CRAY_ALPSC_SN_CPPFLAGS="$CRAY_ALPSC_SN_CPPFLAGS -I$_test_dir/include"
-      CRAY_ALPSC_CN_LDFLAGS="$CRAY_ALPSC_CN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_cn"
-      CRAY_ALPSC_SN_LDFLAGS="$CRAY_ALPSC_SN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_sn"
+      if test "$ac_with_rpath" = "yes"; then
+        CRAY_ALPSC_CN_LDFLAGS="$CRAY_ALPSC_CN_LDFLAGS -Wl,-rpath -Wl,$_test_dir/lib64 -L$_test_dir/lib64 -lalpscomm_cn"
+        CRAY_ALPSC_SN_LDFLAGS="$CRAY_ALPSC_SN_LDFLAGS -Wl,-rpath -Wl,$_test_dir/lib64 -L$_test_dir/lib64 -lalpscomm_sn"
+      else
+        CRAY_ALPSC_CN_LDFLAGS="$CRAY_ALPSC_CN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_cn"
+        CRAY_ALPSC_SN_LDFLAGS="$CRAY_ALPSC_SN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_sn"
+      fi
 
       CRAY_SWITCH_CPPFLAGS="$CRAY_SWITCH_CPPFLAGS $CRAY_JOB_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
       CRAY_SWITCH_LDFLAGS="$CRAY_SWITCH_LDFLAGS $CRAY_JOB_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
