@@ -139,14 +139,17 @@ node_info_msg_to_hv(node_info_msg_t *node_info_msg, HV *hv)
 
 	STORE_FIELD(hv, node_info_msg, last_update, time_t);
 	STORE_FIELD(hv, node_info_msg, node_scaling, uint16_t);
-	/* record_count implied in node_array */
+	/*
+	 * node_info_msg->node_array will have node_records with NULL names for
+	 * nodes that are hidden. They are put in the array to preserve the
+	 * node_index which will match up with a partiton's node_inx[]. Add
+	 * empty hashes for nodes that have NULL names -- hidden nodes.
+	 */
 	av = newAV();
 	for(i = 0; i < node_info_msg->record_count; i ++) {
-		if (!node_info_msg->node_array[i].name)
-			continue;
-
 		hv_info =newHV();
-		if (node_info_to_hv(node_info_msg->node_array + i,
+		if (node_info_msg->node_array[i].name &&
+		    node_info_to_hv(node_info_msg->node_array + i,
 				    node_info_msg->node_scaling, hv_info) < 0) {
 			SvREFCNT_dec((SV*)hv_info);
 			SvREFCNT_dec((SV*)av);

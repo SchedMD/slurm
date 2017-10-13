@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- Gracefully handle race condition when reading /proc as process exits.
  -- Avoid error on Cray duplicate setup of core specialization.
  -- Skip over undefined (hidden in Slurm) nodes in pbsnodes.
+ -- Add empty hashes in perl api's slurm_load_node() for hidden nodes.
 
 * Changes in Slurm 17.02.7
 ==========================
