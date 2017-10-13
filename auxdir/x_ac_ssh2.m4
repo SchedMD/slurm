@@ -83,6 +83,7 @@ AC_DEFUN([X_AC_SSH2],
         SSH2_LDFLAGS="-L$x_ac_cv_ssh2_dir/$bit"
       fi
       SSH2_LIBS="-lssh2"
+      x_ac_have_x11=yes
       AC_DEFINE(HAVE_SSH2, 1, [Define to 1 if libssh2 found])
       AC_DEFINE(WITH_SLURM_X11, 1, [Using internal Slurm X11 support])
     fi
@@ -91,4 +92,6 @@ AC_DEFUN([X_AC_SSH2],
     AC_SUBST(SSH2_LDFLAGS)
     AC_SUBST(SSH2_LIBS)
   fi
+
+  AM_CONDITIONAL(WITH_SLURM_X11, test "x$x_ac_have_x11" = "xyes")
 ])

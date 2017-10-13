@@ -729,6 +729,8 @@ HAVE_SOME_CURSES
 HAVE_SOME_CURSES_FALSE
 HAVE_SOME_CURSES_TRUE
 NCURSES
+WITH_SLURM_X11_FALSE
+WITH_SLURM_X11_TRUE
 SSH2_LIBS
 SSH2_LDFLAGS
 SSH2_CPPFLAGS
@@ -22094,6 +22096,7 @@ $as_echo "$as_me: WARNING: Slurm internal X11 support disabled" >&2;}
         SSH2_LDFLAGS="-L$x_ac_cv_ssh2_dir/$bit"
       fi
       SSH2_LIBS="-lssh2"
+      x_ac_have_x11=yes
 
 $as_echo "#define HAVE_SSH2 1" >>confdefs.h
 
@@ -22106,6 +22109,15 @@ $as_echo "#define WITH_SLURM_X11 1" >>confdefs.h
 
 
   fi
+
+   if test "x$x_ac_have_x11" = "xyes"; then
+  WITH_SLURM_X11_TRUE=
+  WITH_SLURM_X11_FALSE='#'
+else
+  WITH_SLURM_X11_TRUE='#'
+  WITH_SLURM_X11_FALSE=
+fi
+
 
 
 
@@ -25778,6 +25790,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_UCX_TRUE}" && test -z "${HAVE_UCX_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_UCX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_SLURM_X11_TRUE}" && test -z "${WITH_SLURM_X11_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_SLURM_X11\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_SOME_CURSES_TRUE}" && test -z "${HAVE_SOME_CURSES_FALSE}"; then
