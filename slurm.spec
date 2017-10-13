@@ -53,6 +53,9 @@ BuildRequires: python
 BuildRequires: readline-devel
 Obsoletes: slurm-lua slurm-munge slurm-plugins
 
+# fake systemd support when building rpms on other platforms
+%{!?_unitdir: %global _unitdir /lib/systemd/systemd}
+
 %if %{with openssl}
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
