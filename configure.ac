@@ -124,7 +124,13 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
+
+# Workaround for transition of autoconf/glibc issues in deprecation of the
+# definitions major, minor, makedev by sys/types.h vs sys/sysmacros.h
+old_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS -Werror"
 AC_HEADER_MAJOR
+CFLAGS=$old_CFLAGS
 
 dnl Checks for structures.
 dnl
