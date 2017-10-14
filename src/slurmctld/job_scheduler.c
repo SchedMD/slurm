@@ -1224,7 +1224,7 @@ static int _schedule(uint32_t job_limit)
 	char job_id_buf[32];
 	char *unavail_node_str = NULL;
 	bool fail_by_part;
-	uint32_t deadline_time_limit, save_time_limit;
+	uint32_t deadline_time_limit, save_time_limit = 0;
 #if HAVE_SYS_PRCTL_H
 	char get_name[16];
 #endif
