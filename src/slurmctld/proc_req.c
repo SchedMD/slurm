@@ -1218,7 +1218,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	uint32_t job_uid = NO_VAL;
-	struct job_record *job_ptr, *first_job_ptr;
+	struct job_record *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
 	ListIterator iter;
 	bool priv_user;
@@ -1360,6 +1360,11 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	}
 	list_iterator_destroy(iter);
 
+	if ((error_code == 0) && (!first_job_ptr)) {
+		error("%s: No error, but no pack_job_id", __func__);
+		error_code = SLURM_ERROR;
+	}
+
 	/* Validate limits on pack-job as a whole */
 	if ((error_code == SLURM_SUCCESS) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
@@ -1369,11 +1374,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		error_code = ESLURM_ACCOUNTING_POLICY;
         }
 
-
-	if ((error_code == 0) && (pack_job_id == 0)) {
-		error("%s: No error, but no pack_job_id", __func__);
-		error_code = SLURM_ERROR;
-	}
 	if (error_code) {
 		/* Cancel remaining job records */
 		(void) list_for_each(submit_job_list, _pack_job_cancel, NULL);
