@@ -1462,7 +1462,7 @@ cpu_freq_verify_def(const char *arg, uint32_t *freq)
 extern int
 cpu_freq_verify_govlist(const char *arg, uint32_t *govs)
 {
-	char *list, *gov, *savestr;
+	char *list, *gov, *savestr = NULL;
 	uint32_t agov;
 
 	*govs = 0;
