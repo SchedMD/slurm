@@ -3257,7 +3257,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr, *job_pack_ptr;
 	uint32_t *pack_job_ids = NULL;
-	int cnt, i, rc;
+	int cnt = 0, i, rc;
 	int error_code = SLURM_SUCCESS;
 	ListIterator iter;
 
