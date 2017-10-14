@@ -616,8 +616,6 @@ int _layouts_entity_get_kv(layout_t* l, entity_t* e, char* key, void* value,
 	}
 
 	switch(real_type) {
-	case L_T_ERROR:
-		return SLURM_ERROR;
 	case L_T_STRING:
 		pstr = (char**) value;
 		*pstr = xstrdup(data);
@@ -648,6 +646,9 @@ int _layouts_entity_get_kv(layout_t* l, entity_t* e, char* key, void* value,
 	case L_T_LONG_DOUBLE:
 		size = sizeof(long double);
 		break;
+	case L_T_ERROR:
+	default:
+		return SLURM_ERROR;
 	}
 	memcpy(value, data, size);
 	return SLURM_SUCCESS;
