@@ -18747,6 +18747,11 @@ $as_echo "#define STDC_HEADERS 1" >>confdefs.h
 
 fi
 
+
+# Workaround for transition of autoconf/glibc issues in deprecation of the
+# definitions major, minor, makedev by sys/types.h vs sys/sysmacros.h
+old_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS -Werror"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether sys/types.h defines makedev" >&5
 $as_echo_n "checking whether sys/types.h defines makedev... " >&6; }
 if ${ac_cv_header_sys_types_h_makedev+:} false; then :
@@ -18797,6 +18802,7 @@ fi
   fi
 fi
 
+CFLAGS=$old_CFLAGS
 
 
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
