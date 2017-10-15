@@ -898,6 +898,36 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 	}
 }
 
+static void _setup_x11_display(uint32_t job_id, uint32_t step_id,
+			       char ***env, uint32_t *envc)
+{
+	int display = 0, fd;
+	uint16_t protocol_version;
+
+	fd = stepd_connect(conf->spooldir, conf->node_name,
+			   job_id, SLURM_EXTERN_CONT,
+			   &protocol_version);
+
+	if (fd == -1) {
+		error("could not get x11 forwarding display for job %u step %u,"
+		      " x11 forwarding disabled", job_id, step_id);
+		return;
+	}
+
+	display = stepd_get_x11_display(fd, protocol_version);
+	close(fd);
+
+	if (!display) {
+		error("could not get x11 forwarding display for job %u step %u,"
+		      " x11 forwarding disabled", job_id, step_id);
+		return;
+	}
+
+	debug2("%s: setting DISPLAY=localhost:%d:0 for job %u step %u",
+	       __func__, display, job_id, step_id);
+	env_array_overwrite_fmt(env, "DISPLAY", "localhost:%d.0", display);
+	*envc = envcount(*env);
+}
 
 /*
  * The job(step) credential is the only place to get a definitive
@@ -997,6 +1027,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	if ((arg.job_nhosts > 0) && (tasks_to_launch > 0)) {
 		uint32_t hi, i, i_first_bit=0, i_last_bit=0, j;
 		bool cpu_log = slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND;
+		bool setup_x11;
 
 #ifdef HAVE_FRONT_END
 		host_index = 0;	/* It is always 0 for front end systems */
@@ -1018,6 +1049,28 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 			goto fail;
 		}
 #endif
+
+		/*
+		 * handle the x11 flag bit here since we have access to the
+		 * host_index already.
+		 *
+		 */
+		if (!arg.x11)
+			setup_x11 = false;
+		else if (req->x11 & X11_FORWARD_ALL)
+			setup_x11 = true;
+		/* assumes that the first node is the batch host */
+		else if (((req->x11 & X11_FORWARD_FIRST) ||
+			  (req->x11 & X11_FORWARD_BATCH))
+			 && (host_index == 0))
+			setup_x11 = true;
+		else if ((req->x11 & X11_FORWARD_LAST)
+			 && (host_index == (req->nnodes - 1)))
+			setup_x11 = true;
+
+		if (setup_x11)
+			_setup_x11_display(req->job_id, req->job_step_id,
+					   &req->env, &req->envc);
 
 		if (cpu_log) {
 			char *per_job = "", *per_step = "";
@@ -1761,6 +1814,14 @@ _set_batch_job_limits(slurm_msg_t *msg)
 	} else
 		req->job_mem = arg.job_mem_limit;
 
+	/*
+	 * handle x11 settings here since this is the only access to the cred
+	 * on the batch step.
+	 */
+	if ((arg.x11 & X11_FORWARD_ALL) || (arg.x11 & X11_FORWARD_BATCH))
+		_setup_x11_display(req->job_id, SLURM_BATCH_SCRIPT,
+				   &req->environment, &req->envc);
+
 	slurm_cred_free_args(&arg);
 }
 
@@ -1963,10 +2024,45 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->uid			= req->uid;
 	launch_req->user_name		= req->user_name;
 
-	launch_req->x11			= req->x11;
-	launch_req->x11_magic_cookie	= req->x11_magic_cookie;
-	launch_req->x11_target_host	= req->x11_target_host;
-	launch_req->x11_target_port	= req->x11_target_port;
+	/*
+	 * determine which node this is in the allocation and if
+	 * it should setup the x11 forwarding or not
+	 */
+	if (req->x11) {
+		bool setup_x11 = false;
+		int host_index = -1;
+#ifdef HAVE_FRONT_END
+		host_index = 0;	/* It is always 0 for front end systems */
+#else
+		hostset_t j_hset;
+		/* Determine the CPU count based upon this node's index into
+		 * the _job's_ allocation (job's hostlist and core_bitmap) */
+		if (!(j_hset = hostset_create(req->nodes))) {
+			error("Unable to parse hostlist: `%s'", req->nodes);
+		} else {
+			host_index = hostset_find(j_hset, conf->node_name);
+			hostset_destroy(j_hset);
+		}
+#endif
+
+		if (req->x11 & X11_FORWARD_ALL)
+			setup_x11 = true;
+		/* assumes that the first node is the batch host */
+		else if (((req->x11 & X11_FORWARD_FIRST) ||
+			  (req->x11 & X11_FORWARD_BATCH))
+			 && (host_index == 0))
+			setup_x11 = true;
+		else if ((req->x11 & X11_FORWARD_LAST)
+			 && (host_index == (req->nnodes - 1)))
+			setup_x11 = true;
+
+		if (setup_x11) {
+			launch_req->x11 = req->x11;
+			launch_req->x11_magic_cookie = req->x11_magic_cookie;
+			launch_req->x11_target_host = req->x11_target_host;
+			launch_req->x11_target_port = req->x11_target_port;
+		}
+	}
 
 	for (i = 0; i < req->nnodes; i++) {
 		uint32_t *tmp32 = xmalloc(sizeof(uint32_t));
