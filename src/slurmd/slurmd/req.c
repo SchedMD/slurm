@@ -1959,6 +1959,7 @@ static void _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->tasks_to_launch	= xmalloc(sizeof(uint16_t)
 						  * req->nnodes);
 	launch_req->uid			= req->uid;
+	launch_req->user_name		= req->user_name;
 
 	launch_req->x11			= req->x11;
 	launch_req->x11_magic_cookie	= req->x11_magic_cookie;
