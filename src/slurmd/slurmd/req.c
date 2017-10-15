@@ -2088,6 +2088,10 @@ static void _rpc_prolog(slurm_msg_t *msg)
 			rc = ESLURMD_PROLOG_FAILED;
 		}
 
+		if ((rc == SLURM_SUCCESS) &&
+		    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
+			rc = _spawn_prolog_stepd(msg);
+
 		_remove_job_running_prolog(req->job_id);
 	} else
 		slurm_mutex_unlock(&prolog_mutex);
@@ -2095,10 +2099,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
 		_notify_slurmctld_prolog_fini(req->job_id, rc);
 
-	if (rc == SLURM_SUCCESS) {
-		if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
-			_spawn_prolog_stepd(msg);
-	} else {
+	if (rc != SLURM_SUCCESS) {
 		_launch_job_fail(req->job_id, rc);
 		send_registration_msg(rc, false);
 	}
