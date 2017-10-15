@@ -2242,12 +2242,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	}
 
 	slurm_mutex_lock(&launch_mutex);
-	if (req->step_id == SLURM_BATCH_SCRIPT)
-		info("Launching batch job %u for UID %d",
-		     req->job_id, req->uid);
-	else
-		info("Launching batch job %u.%u for UID %d",
-		     req->job_id, req->step_id, req->uid);
+	info("Launching batch job %u for UID %u", req->job_id, req->uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
