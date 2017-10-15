@@ -2031,16 +2031,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error starting prolog: %m");
 	}
-	if (rc) {
-		int term_sig = 0, exit_status = 0;
-		if (WIFSIGNALED(rc))
-			term_sig    = WTERMSIG(rc);
-		else if (WIFEXITED(rc))
-			exit_status = WEXITSTATUS(rc);
-		error("[job %u] prolog start failed status=%d:%d",
-		      req->job_id, exit_status, term_sig);
-		rc = ESLURMD_PROLOG_FAILED;
-	}
 
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
