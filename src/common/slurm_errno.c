@@ -347,6 +347,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Core-based reservation can not be updated"		},
 	{ ESLURM_DUPLICATE_STEP_ID,
 	  "Duplicate job step id"				},
+	{ ESLURM_X11_NOT_AVAIL,
+	  "X11 forwarding not available"			},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
