@@ -13,7 +13,7 @@ depend_libs = 				   \
 
 slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) \
 	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
-	$(DL_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
+	$(DL_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
 
 slurmstepd_SOURCES = 	        	\
 	slurmstepd.c slurmstepd.h	\
@@ -27,6 +27,12 @@ slurmstepd_SOURCES = 	        	\
 	req.c req.h			\
 	multi_prog.c multi_prog.h	\
 	step_terminate_monitor.c step_terminate_monitor.h
+
+if WITH_SLURM_X11
+slurmstepd_SOURCES += x11_forwarding.c x11_forwarding.h
+else
+EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
+endif
 
 slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
