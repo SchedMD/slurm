@@ -1928,12 +1928,13 @@ static void _make_prolog_mem_container(slurm_msg_t *msg)
 	}
 }
 
-static void _spawn_prolog_stepd(slurm_msg_t *msg)
+static int _spawn_prolog_stepd(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	launch_tasks_request_msg_t *launch_req;
 	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
+	int rc = SLURM_SUCCESS;
 	int i;
 
 	launch_req = xmalloc(sizeof(launch_tasks_request_msg_t));
@@ -1982,17 +1983,25 @@ static void _spawn_prolog_stepd(slurm_msg_t *msg)
 	 */
 	if (slurm_get_stream_addr(msg->conn_fd, &self)) {
 		error("%s: slurm_get_stream_addr(): %m", __func__);
+		rc = SLURM_ERROR;
 	} else if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job %u already killed, do not launch extern step",
 		     req->job_id);
+		/*
+		 * Don't set the rc to SLURM_ERROR at this point.
+		 * The job's already been killed, and returning a prolog
+		 * failure will just add more confusion. Better to just
+		 * silently terminate.
+		 */
 	} else {
 		hostset_t step_hset = hostset_create(req->nodes);
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
-		(void) _forkexec_slurmstepd(
-			LAUNCH_TASKS, (void *)launch_req, cli,
-			&self, step_hset, msg->protocol_version);
-		debug3("%s: return from _forkexec_slurmstepd", __func__);
+		rc =  _forkexec_slurmstepd(LAUNCH_TASKS, (void *)launch_req,
+					   cli, &self, step_hset,
+					   msg->protocol_version);
+		debug3("%s: return from _forkexec_slurmstepd %d",
+		       __func__, rc);
 		if (step_hset)
 			hostset_destroy(step_hset);
 	}
@@ -2002,6 +2011,8 @@ static void _spawn_prolog_stepd(slurm_msg_t *msg)
 	xfree(launch_req->global_task_ids);
 	xfree(launch_req->tasks_to_launch);
 	xfree(launch_req);
+
+	return rc;
 }
 
 static void _rpc_prolog(slurm_msg_t *msg)
