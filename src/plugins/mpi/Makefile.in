@@ -93,7 +93,8 @@ target_triplet = @target@
 @HAVE_PMIX_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_1 = pmix
 subdir = src/plugins/mpi
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
+	$(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \

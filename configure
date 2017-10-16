@@ -23787,8 +23787,46 @@ fi
   if test "$x_ac_debug" = yes; then
     # you will most likely get a -O2 in you compile line, but the last option
     # is the only one that is looked at.
-    test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O0 -fno-strict-aliasing"
-    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O0 -fno-strict-aliasing"
+    # We used to force this to -O0, but this precludes the use of FSTACK_PROTECT
+    # which is injected into RHEL7/SuSE12 RPM builds rather aggressively.
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -ggdb3" >&5
+$as_echo_n "checking whether C compiler accepts -ggdb3... " >&6; }
+if ${ax_cv_check_cflags___ggdb3+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS  -ggdb3"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ax_cv_check_cflags___ggdb3=yes
+else
+  ax_cv_check_cflags___ggdb3=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___ggdb3" >&5
+$as_echo "$ax_cv_check_cflags___ggdb3" >&6; }
+if test "x$ax_cv_check_cflags___ggdb3" = xyes; then :
+  CFLAGS="$CFLAGS -ggdb3"
+else
+  :
+fi
+
+
+    test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O1 -fno-strict-aliasing"
+    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O1 -fno-strict-aliasing"
   fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_debug=no}" >&5
 $as_echo "${x_ac_debug=no}" >&6; }
