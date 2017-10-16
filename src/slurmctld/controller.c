@@ -1427,6 +1427,11 @@ static int _init_tres(void)
 		      "we have no TRES from it.  This should only happen if "
 		      "the database is down and you don't have "
 		      "any state files.");
+	else if ((g_tres_count < TRES_ARRAY_TOTAL_CNT) ||
+		 (xstrcmp(assoc_mgr_tres_array[TRES_ARRAY_BILLING]->type,
+			  "billing")))
+		fatal("You are running with a database but for some reason we have less TRES than should be here (%d < %d) and/or the \"billing\" TRES is missing. This should only happen if the database is down after an upgrade.",
+		      g_tres_count, TRES_ARRAY_TOTAL_CNT);
 
 	while ((temp_char = list_pop(char_list))) {
 		tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
