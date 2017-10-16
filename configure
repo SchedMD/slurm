@@ -1024,6 +1024,7 @@ enable_cray_network
 enable_really_no_cray
 with_cray_dir
 with_datawarp
+enable_optimizations
 enable_developer
 enable_debug
 enable_memory_leak_debug
@@ -1729,6 +1730,7 @@ Optional Features:
   --disable-native-cray   Use ALPS instead of run Slurm natively on a Cray
   --enable-cray-network   Run SLURM on a non-Cray system with a Cray network
   --enable-really-no-cray Disable cray support for eslogin machines
+  --disable-optimizations disable optimizations (sets -O0)
   --enable-developer      enable developer options (asserts, -Werror - also
                           sets --enable-debug as well)
   --disable-debug         disable debugging symbols and compile with
@@ -23739,6 +23741,27 @@ fi
 
 
 
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether optimizations are enabled" >&5
+$as_echo_n "checking whether optimizations are enabled... " >&6; }
+  # Check whether --enable-optimizations was given.
+if test "${enable_optimizations+set}" = set; then :
+  enableval=$enable_optimizations;  case "$enableval" in
+        yes) x_ac_optimizations=yes ;;
+         no) x_ac_optimizations=no ;;
+          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+$as_echo "doh!" >&6; }
+             as_fn_error $? "bad value \"$enableval\" for --enable-optimizations" "$LINENO" 5 ;;
+      esac
+
+else
+  x_ac_optimizations=yes
+
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_optimizations}" >&5
+$as_echo "${x_ac_optimizations}" >&6; }
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether or not developer options are enabled" >&5
 $as_echo_n "checking whether or not developer options are enabled... " >&6; }
   # Check whether --enable-developer was given.
@@ -23954,6 +23977,10 @@ $as_echo "yes" >&6; }
 $as_echo "no" >&6; }
   fi
 
+
+  if test "$x_ac_optimizations" = no; then
+    test "$GCC" = yes && CFLAGS="$CFLAGS -O0"
+  fi
 
  if test "x$ac_debug" = "xtrue"; then
   DEBUG_MODULES_TRUE=

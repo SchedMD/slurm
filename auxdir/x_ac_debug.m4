@@ -19,6 +19,22 @@
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_DEBUG], [
+
+  AC_MSG_CHECKING([whether optimizations are enabled])
+  AC_ARG_ENABLE(
+    [optimizations],
+    AS_HELP_STRING(--disable-optimizations, disable optimizations (sets -O0)),
+    [ case "$enableval" in
+        yes) x_ac_optimizations=yes ;;
+         no) x_ac_optimizations=no ;;
+          *) AC_MSG_RESULT([doh!])
+             AC_MSG_ERROR([bad value "$enableval" for --enable-optimizations]) ;;
+      esac
+    ],
+    [x_ac_optimizations=yes]
+  )
+  AC_MSG_RESULT([${x_ac_optimizations}])
+
   AC_MSG_CHECKING([whether or not developer options are enabled])
   AC_ARG_ENABLE(
     [developer],
@@ -159,4 +175,8 @@ AC_DEFUN([X_AC_DEBUG], [
     AC_MSG_RESULT([no])
   fi
   ]
+
+  if test "$x_ac_optimizations" = no; then
+    test "$GCC" = yes && CFLAGS="$CFLAGS -O0"
+  fi
 )

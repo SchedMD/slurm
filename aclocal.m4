@@ -1860,6 +1860,7 @@ AC_SUBST([am__tar])
 AC_SUBST([am__untar])
 ]) # _AM_PROG_TAR
 
+m4_include([auxdir/ax_check_compile_flag.m4])
 m4_include([auxdir/ax_check_zlib.m4])
 m4_include([auxdir/ax_gcc_builtin.m4])
 m4_include([auxdir/ax_lib_hdf5.m4])
