@@ -161,7 +161,7 @@ extern char *x11_get_xauth(void)
 	return cookie;
 }
 
-extern int x11_set_xauth(char *cookie, uint16_t port)
+extern int x11_set_xauth(char *cookie, uint16_t display)
 {
 	int status;
 	char *result;
@@ -171,8 +171,7 @@ extern int x11_set_xauth(char *cookie, uint16_t port)
 	xauth_argv[0] = xstrdup("xauth");
 	xauth_argv[1] = xstrdup("-q");
 	xauth_argv[2] = xstrdup("add");
-	xauth_argv[3] = xstrdup_printf("localhost:%u",
-				       (port - X11_TCP_PORT_OFFSET));
+	xauth_argv[3] = xstrdup_printf("localhost:%u", display);
 	xauth_argv[4] = xstrdup("MIT-MAGIC-COOKIE-1");
 	xauth_argv[5] = xstrdup(cookie);
 	xauth_argv[6] = NULL;
