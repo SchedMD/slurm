@@ -1665,7 +1665,8 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 
 	user_cond->assoc_cond = xmalloc(sizeof(slurmdb_assoc_cond_t));
 	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	/* We need this to make sure we only change users, not
+	/*
+	 * We need this to make sure we only change users, not
 	 * accounts if this list didn't exist it would change
 	 * accounts. Having it blank is fine, it just needs to
 	 * exist.  This also happens in _set_cond, but that doesn't
@@ -1673,7 +1674,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 	 */
 	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
@@ -1744,9 +1745,8 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 			goto assoc_start;
 		}
 
-		if (user_cond->assoc_cond
-		   && user_cond->assoc_cond->acct_list
-		   && list_count(user_cond->assoc_cond->acct_list)) {
+		if (user_cond->assoc_cond->acct_list
+		    && list_count(user_cond->assoc_cond->acct_list)) {
 			notice_thread_fini();
 			if (commit_check(
 				   " You specified Accounts in your "
