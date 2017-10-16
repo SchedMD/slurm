@@ -85,7 +85,7 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	FILE *file = NULL;
 
 	/* initialize cpuinfo internal data */
-	if ( xcpuinfo_init() != XCPUINFO_SUCCESS )
+	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
 		return SLURM_ERROR;
 
 	/* initialize user/job/jobstep cgroup relative paths */
@@ -95,11 +95,16 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	/* initialize allowed_devices_filename */
 	cgroup_allowed_devices_file[0] = '\0';
 
-	if ( get_procs(&cpunum) != 0 ) {
+	if (get_procs(&cpunum) != 0) {
 		error("task/cgroup: unable to get a number of CPU");
 		goto error;
 	}
 
+	if ((strlen(slurm_cgroup_conf->allowed_devices_file) + 1) >= PATH_MAX) {
+		error("task/cgroup: device file path length exceeds limit: %s",
+		      slurm_cgroup_conf->allowed_devices_file);
+		goto error;
+	}
 	strcpy(cgroup_allowed_devices_file,
 	       slurm_cgroup_conf->allowed_devices_file);
 	if (xcgroup_ns_create(slurm_cgroup_conf, &devices_ns, "", "devices")
@@ -108,9 +113,10 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		goto error;
 	}
 
-	file = fopen(cgroup_allowed_devices_file, "r" );
+	file = fopen(cgroup_allowed_devices_file, "r");
 	if (!file) {
-		fatal("task/cgroup: %s doesn't exist, this is needed for proper functionality when Constraining Devices.", cgroup_allowed_devices_file);
+		fatal("task/cgroup: %s doesn't exist, this is needed for proper functionality when Constraining Devices.",
+		      cgroup_allowed_devices_file);
 		goto error;
 	} else
 		fclose(file);
