@@ -247,9 +247,18 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	 * We do need to switch euid in case the user's ssh keys are
 	 * on a root_squash filesystem and inaccessible to root.
 	 */
-	setegid(job->gid);
-	setgroups(1, &job->gid);
-	seteuid(job->uid);
+	if (setegid(job->gid)) {
+		error("%s: setegid failed: %m", __func__);
+		goto shutdown;
+	}
+	if (setgroups(1, &job->gid)) {
+		error("%s: setgroups failed: %m", __func__);
+		goto shutdown;
+	}
+	if (seteuid(job->uid)) {
+		error("%s: seteuid failed: %m", __func__);
+		goto shutdown;
+	}
 
 	/*
 	 * If hostbased failed or was unavailable, try publickey instead.
