@@ -2043,8 +2043,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query,
 				   "update %s set "
 				   "mod_time=%ld, deleted=1, "
-				   "flags=DEFAULT, "
-				   "priority=DEFAULT "
+				   "flags=DEFAULT "
 				   "where deleted=0 && (%s);",
 				   federation_table, now,
 				   name_char);
