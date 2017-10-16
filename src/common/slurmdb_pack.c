@@ -7425,6 +7425,19 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL32)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
+			object_ptr->format_list =
+				list_create(slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->format_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count && (count != NO_VAL)) {
 			object_ptr->id_list =
 				list_create(slurm_destroy_char);
 			for (i = 0; i < count; i++) {
