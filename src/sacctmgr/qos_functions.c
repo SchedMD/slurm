@@ -126,12 +126,12 @@ static int _set_cond(int *start, int argc, char **argv,
 		return -1;
 	}
 
-	for (i=(*start); i<argc; i++) {
+	for (i = (*start); i < argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!end)
-			command_len=strlen(argv[i]);
+			command_len = strlen(argv[i]);
 		else {
-			command_len=end-1;
+			command_len = end - 1;
 			if (argv[i][end] == '=') {
 				end++;
 			}
@@ -160,9 +160,10 @@ static int _set_cond(int *start, int argc, char **argv,
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 1))) {
-			/* This is only used to remove usage, overload
-			   the description.
-			*/
+			/*
+			 * This is only used to remove usage, overload
+			 * the description.
+			 */
 			if (!qos_cond->description_list) {
 				qos_cond->description_list =
 					list_create(slurm_destroy_char);
@@ -211,8 +212,8 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (!qos_cond)
 				continue;
 			qos_cond->preempt_mode |=
-				_parse_preempt_modes(argv[i]+end);
-			if (qos_cond->preempt_mode == (uint16_t)NO_VAL) {
+				_parse_preempt_modes(argv[i] + end);
+			if (qos_cond->preempt_mode == NO_VAL16) {
 				fprintf(stderr,
 					" Bad Preempt Mode given: %s\n",
 					argv[i]);
@@ -220,7 +221,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			} else
 				set = 1;
 		} else {
-			exit_code=1;
+			exit_code = 1;
 			fprintf(stderr, " Unknown condition: %s\n"
 				" Use keyword 'set' to modify "
 				"SLURM_PRINT_VALUE\n", argv[i]);
