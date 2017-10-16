@@ -317,9 +317,10 @@ static void *_pmix_timer_thread(void *unused)
 			break;
 		}
 		/* activate main thread's timer event */
-		write(timer_data.work_out, &c, 1);
+		safe_write(timer_data.work_out, &c, 1);
 	}
 
+rwfail:
 	_run_flag_set(&_timer_is_running, false);
 
 	return NULL;
@@ -427,7 +428,7 @@ int pmixp_agent_stop(void)
 
 	if (timer_data.initialized) {
 		/* cancel timer */
-		write(timer_data.stop_out, &c, 1);
+		safe_write(timer_data.stop_out, &c, 1);
 		while (_run_flag_get(&_timer_is_running) ) {
 			sched_yield();
 		}
@@ -439,4 +440,11 @@ int pmixp_agent_stop(void)
 		pthread_cancel(_timer_tid);
 	}
 	return SLURM_SUCCESS;
+
+rwfail:
+	if (_timer_spawned)
+		pthread_cancel(_timer_tid);
+
+	error("%s: failed", __func__);
+	return SLURM_ERROR;
 }
