@@ -87,15 +87,17 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 							     clus_res->cluster))
 						    break;
 					list_iterator_reset(clus_itr);
-				} else /* This means we didn't specify
-					  any clusters (All clusters
-					  are overwritten with the
-					  requested percentage) so
-					  just put something there to
-					  get the correct percent_allowed.
-				       */
+				} else {
+					/*
+					 * This means we didn't specify any
+					 * clusters (All clusters are
+					 * overwritten with the requested
+					 * percentage) so just put something
+					 * there to get the correct
+					 * percent_allowed.
+					 */
 					cluster = "nothing";
-
+				}
 				percent_allowed = cluster ? res->percent_used :
 					clus_res->percent_allowed;
 				total += percent_allowed;
