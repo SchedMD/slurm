@@ -426,7 +426,7 @@ exit:
 
 void pmixp_dmdx_process(Buf buf, int nodeid, uint32_t seq)
 {
-	dmdx_type_t type;
+	dmdx_type_t type = 0;
 	_read_type(buf, &type);
 
 	switch (type) {
