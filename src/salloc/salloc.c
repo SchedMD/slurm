@@ -1157,8 +1157,7 @@ static void _user_msg_handler(srun_user_msg_t *msg)
 
 static void _ping_handler(srun_ping_msg_t *msg)
 {
-	/* the api will respond so there really isn't anything to do
-	   here */
+	/* the api will respond so there really is nothing to do here */
 }
 
 static void _node_fail_handler(srun_node_fail_msg_t *msg)
@@ -1169,16 +1168,20 @@ static void _node_fail_handler(srun_node_fail_msg_t *msg)
 static void _set_rlimits(char **env)
 {
 	slurm_rlimits_info_t *rli;
-	char env_name[25] = "SLURM_RLIMIT_";
+	char env_name[32] = "SLURM_RLIMIT_";
 	char *env_value, *p;
 	struct rlimit r;
-	//unsigned long env_num;
 	rlim_t env_num;
+	int header_len = sizeof("SLURM_RLIMIT_");
 
 	for (rli = get_slurm_rlimits_info(); rli->name; rli++) {
 		if (rli->propagate_flag != PROPAGATE_RLIMITS)
 			continue;
-		strcpy(&env_name[sizeof("SLURM_RLIMIT_")-1], rli->name);
+		if ((header_len + strlen(rli->name)) >= sizeof(env_name)) {
+			error("%s: env_name(%s) too long", __func__, env_name);
+			continue;
+		}
+		strcpy(&env_name[header_len - 1], rli->name);
 		env_value = getenvp(env, env_name);
 		if (env_value == NULL)
 			continue;
