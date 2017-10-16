@@ -93,13 +93,16 @@ static void _get_config(void)
 {
 	char *opt;
 	char *params = slurm_get_sched_params();
-	/*                    01234567890123456789012 */
-	opt = strstr(params, "jobs_per_user_per_hour=");
-	if (opt)
-		jobs_per_user_per_hour = atoi(opt + 23);
-	info("job_submit/throttle: jobs_per_user_per_hour=%d",
-	     jobs_per_user_per_hour);
-	xfree(params);
+
+	if (params) {
+		/*                    01234567890123456789012 */
+		opt = strstr(params, "jobs_per_user_per_hour=");
+		if (opt)
+			jobs_per_user_per_hour = atoi(opt + 23);
+		info("job_submit/throttle: jobs_per_user_per_hour=%d",
+		     jobs_per_user_per_hour);
+		xfree(params);
+	}
 }
 
 static void _reset_counters(void)
