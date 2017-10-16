@@ -209,8 +209,6 @@ static int _set_cond(int *start, int argc, char **argv,
 			list_iterator_destroy(itr);
 		} else if (!xstrncasecmp(argv[i], "PreemptMode",
 					 MAX(command_len, 8))) {
-			if (!qos_cond)
-				continue;
 			qos_cond->preempt_mode |=
 				_parse_preempt_modes(argv[i] + end);
 			if (qos_cond->preempt_mode == NO_VAL16) {
