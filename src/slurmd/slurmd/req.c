@@ -1465,7 +1465,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.uid = req->uid;
 		job_env.user_name = req->user_name;
 		rc =  _run_prolog(&job_env, req->cred);
-		_remove_job_running_prolog(req->job_id);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
 			if (WIFSIGNALED(rc))
@@ -2187,8 +2186,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if ((rc == SLURM_SUCCESS) &&
 		    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
 			rc = _spawn_prolog_stepd(msg);
-
-		_remove_job_running_prolog(req->job_id);
 	} else
 		slurm_mutex_unlock(&prolog_mutex);
 
@@ -5822,6 +5819,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 
 	rc = _run_job_script("prolog", my_prolog, job_env->jobid,
 			     -1, my_env, job_env->uid);
+	_remove_job_running_prolog(job_env->jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
 
@@ -5964,6 +5962,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 		     job_env->jobid, diff_time);
 	}
 
+	_remove_job_running_prolog(job_env->jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
 
