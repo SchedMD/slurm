@@ -48,7 +48,7 @@
 
 #ifndef   __list_datatypes_defined
 #  define __list_datatypes_defined
-typedef struct list * List;
+typedef struct xlist * List;
 
 /* FreeBSD does not define __compar_fn_t
  * and rightfully so!
