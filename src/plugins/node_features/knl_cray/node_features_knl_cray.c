@@ -2708,11 +2708,18 @@ extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
 #ifdef HAVE_NUMA
 	if (mem_sort && (numa_available() != -1)) {
 		struct stat sb;
-		int buf_len, fd, i, len;
+		int buf_len, fd, i, len, rc;
 		char buf[8];
 
-		if (stat(ZONE_SORT_PATH, &sb) == -1)
-			(void) system(MODPROBE_PATH " zonesort_module");
+		if (stat(ZONE_SORT_PATH, &sb) == -1) {
+			rc = system(MODPROBE_PATH " zonesort_module");
+			if (rc != -1)
+				rc = WEXITSTATUS(rc);
+			if (rc) {
+				verbose("%s: zonesort execution failure. Return code: %d",
+					__func__, rc);
+			}
+		}
 		if ((fd = open(ZONE_SORT_PATH, O_WRONLY | O_SYNC)) == -1) {
 			error("%s: Could not open file %s: %m",
 			      __func__, ZONE_SORT_PATH);
