@@ -186,3 +186,26 @@ extern int x11_set_xauth(char *cookie, uint16_t port)
 
 	return status;
 }
+
+extern int x11_delete_xauth(uint16_t display)
+{
+	int status;
+	char *result;
+	char **xauth_argv;
+
+	xauth_argv = xmalloc(sizeof(char *) * 10);
+	xauth_argv[0] = xstrdup("xauth");
+	xauth_argv[1] = xstrdup("-q");
+	xauth_argv[2] = xstrdup("remove");
+	xauth_argv[3] = xstrdup_printf("localhost:%u", display);
+	xauth_argv[4] = NULL;
+
+	result = run_command("xauth", XAUTH_PATH, xauth_argv, 10000, &status);
+
+	free_command_argv(xauth_argv);
+
+	debug3("%s: result from xauth: %s", __func__, result);
+	xfree(result);
+
+	return status;
+}

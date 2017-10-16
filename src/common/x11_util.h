@@ -64,4 +64,6 @@ extern char *x11_get_xauth(void);
 
 extern int x11_set_xauth(char *cookie, uint16_t port);
 
+extern int x11_delete_xauth(uint16_t display);
+
 #endif /* _X11_UTIL_H_ */
