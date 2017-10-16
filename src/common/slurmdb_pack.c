@@ -4613,9 +4613,9 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
-			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack_time(0, buffer);
 			pack_time(0, buffer);
 			pack32(NO_VAL, buffer);
@@ -4710,7 +4710,7 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
-			packnull(buffer);
+			pack32(NO_VAL, buffer);
 			pack_time(0, buffer);
 			pack_time(0, buffer);
 			pack32(NO_VAL, buffer);
@@ -4820,6 +4820,19 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		safe_unpack32(&object_ptr->cpus_max, buffer);
 		safe_unpack32(&object_ptr->cpus_min, buffer);
 		safe_unpack16(&object_ptr->event_type, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count && (count != NO_VAL)) {
+			object_ptr->format_list =
+				list_create(slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->format_list, tmp_info);
+			}
+		}
 
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL32)
