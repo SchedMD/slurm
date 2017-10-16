@@ -92,6 +92,7 @@ int slurmstepd_blocked_signals[] = {
 /* global variable */
 slurmd_conf_t * conf;
 extern char  ** environ;
+pthread_mutex_t x11_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int
 main (int argc, char **argv)
@@ -138,6 +139,9 @@ main (int argc, char **argv)
 		rc = SLURM_FAILURE;
 		goto ending;
 	}
+
+	if (job->x11)
+		slurm_mutex_lock(&x11_lock);
 
 	_send_ok_to_slurmd(STDOUT_FILENO);
 	_got_ack_from_slurmd(STDIN_FILENO);
