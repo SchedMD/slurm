@@ -99,7 +99,11 @@ Using DRMAA, grid applications builders, portal developers and ISVs can use
 the same high-level API to link their software with different cluster/resource
 management systems.<br><br>
 There is a variant of PSNC DRMAA providing support for Slurm's --cluster option
-avaiable <a href="https://github.com/natefoo/slurm-drmaa">here</a>.</li><br>
+avaiable from
+<a href="https://github.com/natefoo/slurm-drmaa">https://github.com/natefoo/slurm-drmaa</a>.<br><br>
+Perl 6 DRMAA bindings are available from
+<a href="https://github.com/scovit/Scheduler-DRMAA">https://github.com/scovit/Scheduler-DRMAA</a>.
+</li><br>
 
 <li><b>Hostlist</b><br>
 A Python program used for manipulation of Slurm hostlists including
@@ -409,6 +413,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 14 September 2017</p>
+<p style="text-align:center;">Last modified 16 October 2017</p>
 
 <!--#include virtual="footer.txt"-->
