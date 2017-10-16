@@ -1057,14 +1057,14 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		 */
 		if (!arg.x11)
 			setup_x11 = false;
-		else if (req->x11 & X11_FORWARD_ALL)
+		else if (arg.x11 & X11_FORWARD_ALL)
 			setup_x11 = true;
 		/* assumes that the first node is the batch host */
-		else if (((req->x11 & X11_FORWARD_FIRST) ||
-			  (req->x11 & X11_FORWARD_BATCH))
+		else if (((arg.x11 & X11_FORWARD_FIRST) ||
+			  (arg.x11 & X11_FORWARD_BATCH))
 			 && (host_index == 0))
 			setup_x11 = true;
-		else if ((req->x11 & X11_FORWARD_LAST)
+		else if ((arg.x11 & X11_FORWARD_LAST)
 			 && (host_index == (req->nnodes - 1)))
 			setup_x11 = true;
 
