@@ -1043,7 +1043,11 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 			}
 
 			/* send back x11 display number to parent stepd */
-			write(x11_pipe[1], &display, sizeof(int));
+			if (write(x11_pipe[1], &display, sizeof(int))
+			    != sizeof(int)) {
+				error("%s: failed sending display number back: %m",
+				      __func__);
+			}
 			close(x11_pipe[1]);
 
 			/*
@@ -1104,7 +1108,12 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	 */
 	if (job->x11) {
 		close(x11_pipe[1]);
-		read(x11_pipe[0], &job->x11_display, sizeof(int));
+		if (read(x11_pipe[0], &job->x11_display, sizeof(int))
+		    != sizeof(int)) {
+			error("%s: failed retrieving x11 display value: %m",
+			      __func__);
+			job->x11_display = 0;
+		}
 		close(x11_pipe[0]);
 
 		debug("x11 forwarding local display is %d", job->x11_display);
