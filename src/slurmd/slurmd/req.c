@@ -2022,7 +2022,11 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 	if (!req->user_name)
 		req->user_name = uid_to_string(req->uid);
-
+	/*
+	 * Send message back to the slurmctld so it knows we got the rpc.  A
+	 * prolog could easily run way longer than a MessageTimeout or we would
+	 * just wait.
+	 */
 	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error starting prolog: %m");
 	}
