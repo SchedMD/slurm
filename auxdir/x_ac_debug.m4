@@ -59,8 +59,12 @@ AC_DEFUN([X_AC_DEBUG], [
   if test "$x_ac_debug" = yes; then
     # you will most likely get a -O2 in you compile line, but the last option
     # is the only one that is looked at.
-    test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O0 -fno-strict-aliasing"
-    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O0 -fno-strict-aliasing"
+    # We used to force this to -O0, but this precludes the use of FSTACK_PROTECT
+    # which is injected into RHEL7/SuSE12 RPM builds rather aggressively.
+    AX_CHECK_COMPILE_FLAG([-ggdb3], [CFLAGS="$CFLAGS -ggdb3"])
+
+    test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O1 -fno-strict-aliasing"
+    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O1 -fno-strict-aliasing"
   fi
   AC_MSG_RESULT([${x_ac_debug=no}])
 
