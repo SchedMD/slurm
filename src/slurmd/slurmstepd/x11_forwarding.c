@@ -71,8 +71,8 @@
  */
 static char *hostkey_priv = "/etc/ssh/ssh_host_rsa_key";
 static char *hostkey_pub = "/etc/ssh/ssh_host_rsa_key.pub";
-static char *priv_format = "%s/ssh/id_rsa";
-static char *pub_format = "%s/ssh/id_rsa.pub";
+static char *priv_format = "%s/.ssh/id_rsa";
+static char *pub_format = "%s/.ssh/id_rsa.pub";
 
 void *_handle_channel(void *x);
 void *_keepalive_engine(void *x);
