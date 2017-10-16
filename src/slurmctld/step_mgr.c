@@ -3858,16 +3858,16 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	struct step_record *step_ptr = NULL;
 	bitstr_t *exit_node_bitmap = NULL, *core_bitmap_job = NULL;
 	uint8_t no_kill;
-	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
+	uint16_t cyclic_alloc, port, batch_step;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt, state;
-	uint32_t core_size = 0, cpu_count, exit_code, name_len, srun_pid = 0;
+	uint32_t cpu_count, exit_code, name_len, srun_pid = 0;
 	uint32_t step_id, time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
 	uint64_t pn_min_memory;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
-	char *bit_fmt = NULL, *gres = NULL;
+	char *gres = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 	dynamic_plugin_data_t *switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
@@ -4018,12 +4018,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 
 	step_ptr->start_protocol_ver = start_protocol_ver;
 
-	/* Prior to 16.05, the step_layout->start_protocol_version isn't set on
-	 * creation of the layout. After 16.05 is EOL'ed then the step_layout's
-	 * start_protocol_version doesn't need to be set here anymore. */
-	if (step_ptr->step_layout)
-		step_ptr->step_layout->start_protocol_ver = start_protocol_ver;
-
 	if (!step_ptr->ext_sensors)
 		step_ptr->ext_sensors = ext_sensors_alloc();
 
@@ -4032,29 +4026,11 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	if (exit_node_bitmap) {
 		step_ptr->exit_node_bitmap = exit_node_bitmap;
 		exit_node_bitmap = NULL;
-	} else if (bit_fmt) {
-		/* pre-17.02 compatibility */
-		/* NOTE: This is only recovered if a job step completion
-		 * is actively in progress at step save time. Otherwise
-		 * the bitmap is NULL. */
-		step_ptr->exit_node_bitmap = bit_alloc(bit_cnt);
-		if (bit_unfmt(step_ptr->exit_node_bitmap, bit_fmt)) {
-			error("error recovering exit_node_bitmap from %s",
-				bit_fmt);
-		}
-		xfree(bit_fmt);
 	}
+
 	if (core_bitmap_job) {
 		step_ptr->core_bitmap_job = core_bitmap_job;
 		core_bitmap_job = NULL;
-	} else if (core_size) {
-		/* pre-17.02 compatibility */
-		step_ptr->core_bitmap_job = bit_alloc(core_size);
-		if (bit_unfmt(step_ptr->core_bitmap_job, core_job)) {
-			error("error recovering core_bitmap_job from %s",
-			      core_job);
-		}
-		xfree(core_job);
 	}
 
 	if (step_ptr->step_layout && switch_tmp)

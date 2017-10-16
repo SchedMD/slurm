@@ -3951,51 +3951,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-#define OLD_MEM_PER_CPU  0x80000000
-/* Translate 64-bit mem value with flag to old 32-bit value.
- * Remove when version 16.05 support is no longer required. */
-extern uint32_t xlate_mem_new2old(uint64_t new_mem)
-{
-	uint32_t old_mem;
-
-	if (new_mem == NO_VAL64)
-		return NO_VAL;
-	if (new_mem == INFINITE64)
-		return INFINITE;
-
-	// clear all but lower 31 bits
-	old_mem = (new_mem & 0x000000007fffffff);
-
-	// reset MEM_PER_CPU flag to old location
-	if (new_mem & MEM_PER_CPU)
-		old_mem |= OLD_MEM_PER_CPU;
-
-	return old_mem;
-}
-
-extern uint64_t xlate_mem_old2new(uint32_t old_mem)
-{
-	uint64_t new_mem;
-
-	if (old_mem == NO_VAL)
-		return NO_VAL64;
-	if (old_mem == INFINITE)
-		return INFINITE64;
-
-	// clear old flag at bit 32
-	new_mem = (uint64_t) (old_mem & ~OLD_MEM_PER_CPU);
-
-	// reset flag at new bit 64 location
-	if (old_mem & OLD_MEM_PER_CPU)
-		new_mem |= MEM_PER_CPU;
-
-	return new_mem;
-}
-
 #define OLD_GROUP_FORCE 0x8000
 #define OLD_GROUP_TIME_MASK 0x0fff
 
-extern uint16_t xlate_group_info_new2old(uint16_t group_time,
+static uint16_t _xlate_group_info_new2old(uint16_t group_time,
 					 uint16_t group_force)
 {
 	uint16_t group_info;
@@ -4007,9 +3966,9 @@ extern uint16_t xlate_group_info_new2old(uint16_t group_time,
 	return group_info;
 }
 
-extern void xlate_group_info_old2new(uint16_t group_info,
-				     uint16_t *group_time_ptr,
-				     uint16_t *group_force_ptr)
+static void _xlate_group_info_old2new(uint16_t group_info,
+				      uint16_t *group_time_ptr,
+				      uint16_t *group_force_ptr)
 {
 	*group_time_ptr = group_info & OLD_GROUP_TIME_MASK;
 	if (group_info & OLD_GROUP_FORCE)
@@ -6153,9 +6112,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->get_env_timeout, buffer);
 		packstr(build_ptr->gres_plugins, buffer);
-		pack16(xlate_group_info_new2old(build_ptr->group_time,
-						build_ptr->group_force),
-						buffer);
+		pack16(_xlate_group_info_new2old(build_ptr->group_time,
+						 build_ptr->group_force),
+		       buffer);
 
 		pack32(build_ptr->hash_val, buffer);
 
@@ -6896,8 +6855,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->gres_plugins,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
-		xlate_group_info_old2new(uint16_tmp, &build_ptr->group_time,
-					 &build_ptr->group_time);
+		_xlate_group_info_old2new(uint16_tmp, &build_ptr->group_time,
+					  &build_ptr->group_time);
 
 		safe_unpack32(&build_ptr->hash_val, buffer);
 
