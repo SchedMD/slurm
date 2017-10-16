@@ -782,8 +782,8 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 	if (mode == SELECT_PRINT_GEOMETRY)
 		print_x = 0;
 
-	if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+	if (jobinfo->geometry[0] == NO_VAL16) {
+		for (i = 0; i < SYSTEM_DIMENSIONS; i++) {
 			if (geo && print_x)
 				xstrcat(geo, "x0");
 			else
