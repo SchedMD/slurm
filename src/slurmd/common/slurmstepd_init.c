@@ -89,18 +89,10 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	char *ver_str = NULL;
 
 	safe_unpackstr_xmalloc(&ver_str, &uint32_tmp, buffer);
-	if (ver_str && !xstrcmp(ver_str, PROTOCOL_VERSION)) {
-		safe_unpack16(&protocol_version, buffer);
-		xfree(ver_str);
-	} else {
-		/* Kludge to add protocol version in existing data structure:
-		 * use "hostname" as a version marker. Eliminate this in
-		 * the future. */
-		conf->hostname = ver_str;
-		protocol_version = SLURM_16_05_PROTOCOL_VERSION;
-	}
+	safe_unpack16(&protocol_version, buffer);
+	xfree(ver_str);
 
-	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&conf->hostname, &uint32_tmp, buffer);
 		safe_unpack16(&conf->cpus, buffer);
 		safe_unpack16(&conf->boards, buffer);
@@ -108,45 +100,6 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 		safe_unpack16(&conf->cores, buffer);
 		safe_unpack16(&conf->threads, buffer);
 		safe_unpack64(&conf->real_memory_size, buffer);
-		safe_unpack16(&conf->block_map_size, buffer);
-		safe_unpack16_array(&conf->block_map, &uint32_tmp, buffer);
-		safe_unpack16_array(&conf->block_map_inv,  &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->spooldir,    &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->node_name,   &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->logfile,     &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->task_prolog, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->task_epilog, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->job_acct_gather_freq, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&conf->job_acct_gather_type, &uint32_tmp,
-				       buffer);
-		safe_unpack16(&conf->propagate_prio, buffer);
-		safe_unpack64(&conf->debug_flags, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		conf->debug_level = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		conf->daemonize = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		conf->slurm_user_id = (uid_t)uint32_tmp;
-		safe_unpack16(&conf->use_pam, buffer);
-		safe_unpack32(&conf->task_plugin_param, buffer);
-		safe_unpackstr_xmalloc(&conf->node_topo_addr, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->node_topo_pattern, &uint32_tmp, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		conf->port = uint32_tmp;
-		safe_unpack16(&conf->log_fmt, buffer);
-		safe_unpack16(&conf->mem_limit_enforce, buffer);
-		safe_unpack64(&conf->msg_aggr_window_msgs, buffer);
-	} else {
-		uint32_t real_memory_size = 0;
-		// safe_unpackstr_xmalloc(&conf->hostname, &uint32_tmp, buffer);
-		safe_unpack16(&conf->cpus, buffer);
-		safe_unpack16(&conf->boards, buffer);
-		safe_unpack16(&conf->sockets, buffer);
-		safe_unpack16(&conf->cores, buffer);
-		safe_unpack16(&conf->threads, buffer);
-		safe_unpack32(&real_memory_size, buffer);
-		conf->real_memory_size = real_memory_size;
 		safe_unpack16(&conf->block_map_size, buffer);
 		safe_unpack16_array(&conf->block_map, &uint32_tmp, buffer);
 		safe_unpack16_array(&conf->block_map_inv,  &uint32_tmp, buffer);

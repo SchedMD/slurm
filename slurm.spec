@@ -1,5 +1,5 @@
 Name:		slurm
-Version:	17.11.0pre2
+Version:	18.08.0pre0
 %define patch 1
 Release:	%{patch}%{?dist}
 Summary:	Slurm Workload Manager

@@ -1,5 +1,5 @@
-RELEASE NOTES FOR SLURM VERSION 17.11
-28 July 2017
+RELEASE NOTES FOR SLURM VERSION 18.08
+16 Oct 2017
 
 IMPORTANT NOTES:
 THE MAXJOBID IS NOW 67,108,863. ANY PRE-EXISTING JOBS WILL CONTINUE TO RUN BUT
@@ -11,7 +11,7 @@ If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 NOTE: If using a backup DBD you must start the primary first to do any
 database conversion, the backup will not start until this has happened.
 
-The 17.11 slurmdbd will work with Slurm daemons of version 16.05 and above.
+The 18.08 slurmdbd will work with Slurm daemons of version 17.02 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.  No real harm will come from updating
@@ -26,7 +26,7 @@ under the [mysqld] reference in the my.cnf file and restarting the mysqld. The
 buffer pool size must be smaller than the size of the MySQL tmpdir. This is
 needed when converting large tables over to the new database schema.
 
-Slurm can be upgraded from version 16.05 or 17.02 to version 17.11 without loss
+Slurm can be upgraded from version 17.02 or 17.11 to version 18.08 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
@@ -62,7 +62,7 @@ NOTE: If you are not using Munge, but are using the "service" scripts to
 NOTE: If you are upgrading with any jobs from 14.03 or earlier
       (i.e. quick upgrade from 14.03 -> 15.08 -> 17.02) you will need
       to wait until after those jobs are gone before you upgrade to 17.02
-      or 17.11.
+      or 17.11 or 18.08.
 
 NOTE: If you interact with any memory values in a job_submit plugin, you will
       need to test against NO_VAL64 instead of NO_VAL, and change your printf
@@ -93,105 +93,18 @@ NOTE: IBM BlueGene/Q and Cray/ALPS modes are deprecated and will be removed
 
 HIGHLIGHTS
 ==========
- -- X11 support is not fully integrated with the main Slurm code. Remove any
-    X11 plugin configured in your plugstack.conf file to avoid errors being
-    logged about conflicting options.
- -- Added new advanced reservation flag of "flex", which permits jobs requesting
-    the reservation to begin prior to the reservation's start time and use
-    resources inside or outside of the reservation. A typical use case is to
-    prevent jobs not explicitly requesting the reservation from using those
-    reserved resources rather than forcing jobs requesting the reservation to
-    use those resources in the time frame reserved.
- -- The sprio command has been modified to report a job's priority information
-    for every partition the job has been submitted to.
- -- Add the configure option --with-shared-libslurm which will link to
-    libslurm.so instead of libslurm.o thus reducing the footprint of all the
-    binaries.
- -- In switch plugin, added plugin_id symbol to plugins and wrapped
-    switch_jobinfo_t with dynamic_plugin_data_t in interface calls in
-    order to pass switch information between clusters with different switch
-    types.
- -- Changed default ProctrackType to cgroup.
- -- Changed default sched_min_interval from 0 to 2 microseconds.
- -- CRAY: --enable-native-cray is no longer an option and is on by default.
-    If you want to run with ALPS please configure with --disable-native-cray.
- -- Added new 'scontrol write batch_script <jobid>' command to fetch a job's
-    batch script. Removed the ability to see the script as part of the
-    'scontrol -vv show job' command.
- -- Add new "billing" TRES which allows jobs to be limited based on the job's
-    billable TRES calculated by the job's partition's TRESBillingWeights.
- -- Regular user use of "scontrol top" command is now diabled. Use the
-    configuration parameter "SchedulerParameters=enable_user_top" to enable
-    that functionality. The configuration parameter
-    "SchedulerParameters=disable_user_top" will be silently ignored.
- -- Change default to let pending jobs run outside of reservation after
-    reservation is gone to put jobs in held state. Added NO_HOLD_JOBS_AFTER_END
-    reservation flag to use old default.
 
 RPMBUILD CHANGES
 ================
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- Add FederationParameters=fed_display slurm.conf option to configure status
-    commands to display a federated view by default if the cluster is a member
-    of a federation.
- -- Add PrivateData=events configuration option.
- -- Change name of acct_gather_infiniband to acct_gather_interconnect.
- -- Add NoDecay flag to QOS.
- -- Add SchedulerParameters option of bf_max_job_user_part to specifiy the
-    maximum number of jobs per user for any single partition. This differs from
-    bf_max_job_user in that a separate counter is applied to each partition
-    rather than having a single counter per user applied to all partitions.
- -- Changed default ProctrackType to cgroup.
- -- Add bf_max_time to SchedulerParameters.
- -- Add bf_max_job_assoc to SchedulerParameters.
- -- Add new SchedulerParameters option bf_window_linear to control the rate at
-    which the backfill test window expands. This can be used on a system with
-    a modest number of running jobs (hundreds of jobs) to help prevent expected
-    start times of pending jobs to get pushed forward in time. On systems with
-    large numbers of running jobs, performance of the backfill scheduler will
-    suffer and fewer jobs will be evaluated.
- -- Add slurm.conf configuration parameters SlurmctldSyslogDebug and
-    SlurmdSyslogDebug to control which messages from the slurmctld and slurmd
-    daemons get written to syslog.
- -- Add slurmdbd.conf configuration parameter DebugLevelSyslog to control which
-    messages from the slurmdbd daemon get written to syslog.
- -- Add slurmdbd.conf configuration parameter MaxQueryTimeRange to prevent
-    overly broad accounting database lookups from overwhelming SlurmDBD.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- The '-q' option to srun has changed from being the short form of
-    '--quit-on-interrupt' to '--qos'.
- -- Modify all daemons to re-open log files on receipt of SIGUSR2 signal. This
-    is much than using SIGHUP to re-read the configuration file and rebuild
-    various tables.
- -- Add scancel "--hurry" option to avoid staging out any burst buffer data.
- -- Add new advanced reservation flags of "weekday" (repeat on each weekday;
-    Monday through Friday) and "weekend" (repeat on each weekend day; Saturday
-    and Sunday).
- -- Node "OS" field expanded from "sysname" to "sysname release version" (e.g.
-    change from "Linux" to
-    "Linux 4.8.0-28-generic #28-Ubuntu SMP Sat Feb 8 09:15:00 UTC 2017").
- -- scontrol modified to report core IDs for reservation containing individual
-    cores.
- -- Add ability to define features on clusters for directing federated jobs to
-    different clusters.
- -- Modify slurm_load_jobs() function to load job information from all clusters
-    in a federation.
- -- Add squeue --local and --sibling options to modify filtering of jobs on
-    federated clusters.
- -- Add sprio -p/--partition option to filter jobs by partition name.
- -- Add sprio --local and --sibling options for use in federation of clusters.
- -- Add sprio "%c" format to print cluster name in federation mode.
- -- Extend the output of the seff utility to also include the job's wall-clock
-    time.
 
 OTHER CHANGES
 =============
- -- KNL features: Always keep active and available features in the same order:
-    first site-specific features, next MCDRAM modes, last NUMA modes.
 
 API CHANGES
 ===========
@@ -201,49 +114,21 @@ Changed members of the following structs
 
 Added members to the following struct definitions
 =================================================
-In slurmbdb_cluster_fed_t: Added feature_list to hold cluster features.
-In job_desc_msg_t: Added cluster_features for passing cluster features to
-	controller.
-		   Renamed fed_siblings to fed_siblings_active.
-		   Added fed_siblings_viable.
-In job_info_t: Added cluster_features for passing back a job's cluster features
-	from the controller.
-               Renamed fed_siblings[_str] fed_siblings_active[_str]
-	       Added fed_siblings_viable[_str].
-In struct job_details: Added cluster_features to hold requestsed cluster
-	features.
-In job_fed_details_t: Rename siblings to siblings_active.
-		      Added siblings_viable.
-In job_info_request_msg: Added job_ids to be able to request job info for
-		       specific jobs.
-In job_step_kill_msg_t: Added sibling string to remove active sibling job.
-In slurm_ctl_conf_t: Added group_force and group_time. (Were both in group_info
-		     previously.)
 
 Added the following struct definitions
 ======================================
-In job_alloc_info_msg_t: add req_cluster to indicate where the request is coming
-	from.
-Added reroute_msg_t to route a message to a different cluster.
 
 Removed members from the following struct definitions
 =====================================================
-In slurm_ctl_conf_t: Removed group_info and slurmd_plugstack.
 
 Changed the following enums and #defines
 ========================================
 
 Added the following API's
 =========================
-Added slurm_kill_job_msg: to send prepared job_step_kill_msg_t.
-Added slurm_job_batch_script: to retrieve the batch script for a given jobid
-	into a local file.
 
 Changed the following API's
 ============================
 
 Removed the following API's
 ===========================
-Removed unused slurm_allocation_lookup() and rename slurm_allocation_lookup_lite() to
-	slurm_allocation_lookup().
-Removed unused slurm_get_slurmd_plugstack() function.
