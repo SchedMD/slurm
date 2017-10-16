@@ -1027,7 +1027,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	if ((arg.job_nhosts > 0) && (tasks_to_launch > 0)) {
 		uint32_t hi, i, i_first_bit=0, i_last_bit=0, j;
 		bool cpu_log = slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND;
-		bool setup_x11;
+		bool setup_x11 = false;
 
 #ifdef HAVE_FRONT_END
 		host_index = 0;	/* It is always 0 for front end systems */
