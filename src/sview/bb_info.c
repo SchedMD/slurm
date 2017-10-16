@@ -790,7 +790,7 @@ extern void specific_info_bb(popup_info_t *popup_win)
 	List bb_list = NULL;
 	List send_bb_list = NULL;
 	sview_bb_info_t *sview_bb_info_ptr = NULL;
-	int i=-1;
+	int i = -1;
 	ListIterator itr = NULL;
 
 	if (!spec_info->display_widget) {
@@ -828,11 +828,10 @@ extern void specific_info_bb(popup_info_t *popup_win)
 display_it:
 
 	bb_list = _create_bb_info_list(bb_info_ptr);
-
 	if (!bb_list)
 		return;
 
-	if (spec_info->view == ERROR_VIEW && spec_info->display_widget) {
+	if ((spec_info->view == ERROR_VIEW) && spec_info->display_widget) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 	}
@@ -847,9 +846,11 @@ display_it:
 		gtk_table_attach_defaults(popup_win->table,
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
-		/* since this function sets the model of the tree_view
+		/*
+		 * since this function sets the model of the tree_view
 		 * to the treestore we don't really care about
-		 * the return value */
+		 * the return value
+		 */
 		create_treestore(tree_view, popup_win->display_data,
 				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
@@ -862,26 +863,34 @@ display_it:
 		goto end_it;
 	}
 
-	/* just linking to another list, don't free the inside, just the list */
+	/*
+	 * just linking to another list, don't free the inside, just the list
+	 */
 	send_bb_list = list_create(NULL);
 	itr = list_iterator_create(bb_list);
 	i = -1;
-	/* Set up additional menu options(ie the right click menu stuff) */
+	/*
+	 * Set up additional menu options(ie the right click menu stuff)
+	 */
 	while ((sview_bb_info_ptr = list_next(itr))) {
 		i++;
-		/* Since we will not use any of these pages we will */
-		/* leave them blank */
 		switch (spec_info->type) {
-		case PART_PAGE:
+		case BB_PAGE:
+			list_push(send_bb_list, sview_bb_info_ptr);
+			break;
 		case BLOCK_PAGE:
-		case NODE_PAGE:
 		case JOB_PAGE:
+		case NODE_PAGE:
+		case PART_PAGE:
 		case RESV_PAGE:
 		default:
+			/*
+			 * Since we will not use any of these pages we will
+			 * leave them blank
+			 */
 			g_print("Unknown type %d\n", spec_info->type);
-			continue;
+			break;
 		}
-		list_push(send_bb_list, sview_bb_info_ptr);
 	}
 	list_iterator_destroy(itr);
 	post_setup_popup_grid_list(popup_win);
