@@ -2613,7 +2613,7 @@ static void _dump_fed_job_list(Buf buffer, uint16_t protocol_version)
 	uint32_t count = NO_VAL;
 	fed_job_info_t *fed_job_info;
 
-	if (protocol_version <= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		if (fed_job_list)
 			count = list_count(fed_job_list);
 		else
@@ -2641,7 +2641,7 @@ static List _load_fed_job_list(Buf buffer, uint16_t protocol_version)
 	fed_job_info_t *tmp_job_info = NULL;
 	List tmp_list = NULL;
 
-	if (protocol_version <= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL32)
 			goto unpack_error;
