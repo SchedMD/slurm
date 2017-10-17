@@ -127,7 +127,7 @@ set matches 0
 set id_set  0
 set id_regex "\[0-9,-\]+"
 
-set format "jobid:.5,packjoboffset:.25,packjobid:.25,packjobidset:.25"
+set format "jobid:.16,packjoboffset:.16,packjobid:.16,packjobidset:.25"
 set regex "$job_id\\s+0\\s+$job_id\\s+($id_regex)"
 set header "JOBID\\s+PACK_JOB_OFFSET\\s+PACK_JOB_ID\\s+PACK_JOB_ID_SET"
 
