@@ -1281,46 +1281,61 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 }
 
 /* Convert a signal name to it's numeric equivalent.
- * Return -1 on failure */
+ * Return 0 on failure */
 int sig_name2num(char *signal_name)
 {
-	char *sig_name[] = {"HUP", "INT", "QUIT", "KILL", "TERM",
-			    "USR1", "USR2", "CONT", NULL};
-	int sig_num[] = {SIGHUP, SIGINT, SIGQUIT, SIGKILL, SIGTERM,
-			       SIGUSR1, SIGUSR2, SIGCONT};
+	struct signal_name_value {
+		char *name;
+		uint16_t val;
+	} signals[] = {
+		{ "HUP",	SIGHUP	},
+		{ "INT",	SIGINT	},
+		{ "QUIT",	SIGQUIT	},
+		{ "ABRT",	SIGABRT	},
+		{ "KILL",	SIGKILL	},
+		{ "ALRM",	SIGALRM	},
+		{ "TERM",	SIGTERM	},
+		{ "USR1",	SIGUSR1	},
+		{ "USR2",	SIGUSR2	},
+		{ "URG",	SIGURG	},
+		{ "CONT",	SIGCONT	},
+		{ "STOP",	SIGSTOP	},
+		{ "TSTP",	SIGTSTP	},
+		{ "TTIN",	SIGTTIN	},
+		{ "TTOU",	SIGTTOU	},
+		{ NULL,		0	}	/* terminate array */
+	};
 	char *ptr;
 	long tmp;
-	int sig;
 	int i;
 
 	tmp = strtol(signal_name, &ptr, 10);
 	if (ptr != signal_name) { /* found a number */
 		if (xstring_is_whitespace(ptr))
-			sig = (int)tmp;
+			return (int)tmp;
 		else
 			return 0;
-	} else {
-		ptr = (char *)signal_name;
-		while (isspace((int)*ptr))
-			ptr++;
-		if (xstrncasecmp(ptr, "SIG", 3) == 0)
-			ptr += 3;
-		for (i = 0; ; i++) {
-			if (sig_name[i] == NULL)
-				return 0;
-			if (xstrncasecmp(ptr, sig_name[i],
-					strlen(sig_name[i])) == 0) {
-				/* found the signal name */
-				if (!xstring_is_whitespace(ptr +
-							   strlen(sig_name[i])))
-					return 0;
-				sig = sig_num[i];
-				break;
-			}
+	}
+
+	/* search the array */
+	ptr = signal_name;
+	while (isspace((int)*ptr))
+		ptr++;
+	if (xstrncasecmp(ptr, "SIG", 3) == 0)
+		ptr += 3;
+	for (i = 0; ; i++) {
+		int siglen;
+		if (signals[i].name == NULL)
+			return 0;
+		siglen = strlen(signals[i].name);
+		if ((!xstrncasecmp(ptr, signals[i].name, siglen)
+		    && xstring_is_whitespace(ptr + siglen))) {
+			/* found the signal name */
+			return signals[i].val;
 		}
 	}
 
-	return sig;
+	return 0;	/* not found */
 }
 
 /*
