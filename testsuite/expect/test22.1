@@ -333,7 +333,8 @@ if {!$user1wckey1 || !$user1wckey1} {
 }
 
 proc end_it {} {
-	global exit_code sql_rem_clus1 sql_rem_clus2 users accounts cluster cluster2
+	global exit_code sql_rem_clus1 sql_rem_clus2 users accounts
+	global cluster1 cluster2
 
 	incr exit_code [archive_load $sql_rem_clus1]
 	incr exit_code [archive_load $sql_rem_clus2]
@@ -459,11 +460,7 @@ proc create_sql {cluster sql_in sql_rem} {
 	}
 
 	if { $exit_code } {
-		#incr exit_code [archive_load $sql_rem]
-		remove_user "" "" $users
-		remove_acct "" $accounts
-		remove_cluster "$cluster"
-		exit $exit_code
+		end_it
 	}
 
 	#
@@ -505,11 +502,7 @@ proc create_sql {cluster sql_in sql_rem} {
 	}
 
 	if { $exit_code } {
-		#incr exit_code [archive_load $sql_rem]
-		remove_user "" "" $users
-		remove_acct "" $accounts
-		remove_cluster "$cluster"
-		exit $exit_code
+		end_it
 	}
 
 	#
@@ -546,11 +539,7 @@ proc create_sql {cluster sql_in sql_rem} {
 	}
 
 	if { $exit_code } {
-		incr exit_code [archive_load $sql_rem]
-		remove_user "" "" $users
-		remove_acct "" $accounts
-		remove_cluster "$cluster"
-		exit $exit_code
+		end_it
 	}
 }
 
@@ -597,11 +586,10 @@ set exit_code [inc22_1_fed]
 delete_federations $fedname
 exec $bin_rm -rf $new_conf
 
+set env(SLURM_CONF) $config_dir/slurm.conf
 if {$exit_code ne 0} {
 	end_it
 }
-
-set env(SLURM_CONF) $config_dir/slurm.conf
 #########################################################################################
 
 #
