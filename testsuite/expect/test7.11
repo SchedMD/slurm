@@ -57,6 +57,25 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
+proc end_it { exit_code } {
+	global test_id orig_spank_conf spank_conf_file new_spank_conf spank_out
+	global file_out spank_out bin_cp bin_rm file_in file_prog
+	#
+	# Restore the original plugstack
+	#
+	if {[file exists $orig_spank_conf]} {
+		exec $bin_cp -f $orig_spank_conf $spank_conf_file
+	} else {
+		exec $bin_rm -f $spank_conf_file
+	}
+
+       if {$exit_code == 0} {
+		exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
 #
 # Build the plugin
 #
@@ -167,7 +186,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -175,7 +194,7 @@ expect {
 }
 if {$matches != 2} {
 	send_user "\nFAILURE: spank help message not in srun help message\n"
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -198,7 +217,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		slow_kill $srun_pid
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -206,7 +225,7 @@ expect {
 }
 if {$matches != 1} {
 	send_user "\nFAILURE: spank help message not in salloc help message ($matches != 1)\n"
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -229,7 +248,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -237,7 +256,7 @@ expect {
 }
 if {$matches != 1} {
 	send_user "\nFAILURE: spank help message not in sbatch help message ($matches != 1)\n"
-	set exit_code 1
+	end_it 1
 }
 exec $bin_rm -f $file_in
 
@@ -253,18 +272,19 @@ make_bash_script $file_in "
   $bin_rm -f $spank_conf_file
   $bin_cp -f $new_spank_conf $spank_conf_file
   $bin_sleep 8
-  $srun --test_suite=5 $bin_uname
+  $srun --test_suite_srun=5 $bin_uname
   if test -f $orig_spank_conf
   then
     $bin_rm -f $spank_conf_file
     $bin_cp -f $orig_spank_conf $spank_conf_file
   fi
 "
+
 set job_id 0
 set matches 0
-spawn $sbatch --test_suite_reg=4 -N1 -t1 -o $file_out $file_in
+spawn $sbatch --test_suite_sbatch=4 -N1 -t1 -o $file_out $file_in
 expect {
-	-re "_test_opt_process: test_suite: opt_arg=4" {
+	-re "_test_opt_process_sbatch: opt_arg_sbatch=4" {
 		incr matches
 		exp_continue
 	}
@@ -272,13 +292,13 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "slurm_spank_exit: opt_arg=4" {
+	-re "slurm_spank_exit: opt_arg_sbatch=4 opt_arg_srun=0" {
 		incr matches
 		exp_continue
 	}
 	-re timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
-		set exit_code 1
+		end_it 1
 	}
 	eof {
 		wait
@@ -286,11 +306,11 @@ expect {
 }
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
-	set exit_code 1
+	end_it 1
 }
 if {$matches != 2} {
 	send_user "\nFAILURE: spank options not processed by sbatch ($matches != 2)\n"
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -299,47 +319,56 @@ if {$matches != 2} {
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
 	[cancel_job $job_id]
-	set exit_code 1
+	end_it 1
 }
 
 # NOTE: spank logs from sbatch and srun would be intermingled here
 if {[wait_for_file $file_out] == 0} {
 	send_user "\n\n"
-	set match1 0
-	set match2 0
-	set match3 0
+	set matches 0
+	set matches_sbatch 0
+	set matches_srun 0
 	spawn $bin_cat $file_out
 	expect {
 		-re "error" {
 			send_user "\nFAILURE: some error happened\n"
-			set exit_code 1
-			exp_continue
+			end_it 1
 		}
-		-re "_test_opt_process: test_suite: opt_arg=5" {
-			set match1 1
-			exp_continue
+		-re "_test_opt_process_(.*?=$number)" {
+			set substr $expect_out(1,string)
+			if {[string equal "sbatch: opt_arg_sbatch=4" $substr]} {
+				incr matches_sbatch
+			} elseif {[string equal "srun: opt_arg_srun=5" $substr]} {
+				incr matches_srun
+			}
+			exp_continue;
 		}
 		-re "slurm_spank_local_user_init" {
-			set match2 1
+			incr matches
 			exp_continue
 		}
-		-re "slurm_spank_exit: opt_arg=5" {
-			set match3 1
+		-re "slurm_spank_exit: opt_arg_sbatch=4 opt_arg_srun=5" {
+			incr matches
 			exp_continue
 		}
 		eof {
 			wait
 		}
 	}
-	set match [expr $match1 + $match2 + $match3]
-	if {$match != 3} {
-		send_user "\nFAILURE: local (srun) spank plugin failure ($match != 3)\n"
-		set exit_code 1
+	if {$matches_sbatch != 1} {
+		send_user "\nFAILURE: local (srun) sbatch spank plugin failure ($matches_sbatch != 1)\n"
+		end_it 1
+	} elseif {$matches_srun != 1} {
+		send_user "\nFAILURE: local (srun) srun spank plugin failure ($matches_srun != 1)\n"
+		end_it 1
+	} elseif {$matches != 2} {
+		send_user "\nFAILURE: local (srun) spank plugin failure ($matches != 2)\n"
+		end_it 1
 	} else {
 		send_user "\nlocal (srun) spank plugin success\n"
 	}
 } else {
-	set exit_code 1
+	end_it 1
 }
 
 #
@@ -350,22 +379,24 @@ if {[wait_for_file $spank_out] == 0} {
 	set matches        0
 	set matches_sbatch 0
 	set matches_srun   0
+	set matches_spank_exit 0
+	set matches_spank_init 0
 	spawn $bin_sort $spank_out
 	expect {
-		-re "slurm_spank_exit: opt_arg=($number)" {
-			if {$expect_out(1,string) == 4} {
+		-re "slurm_spank_(\\S+): opt_arg_sbatch=($number) opt_arg_srun=($number)" {
+			set spank_type $expect_out(1,string)
+			set sbatch_arg $expect_out(2,string)
+			set srun_arg   $expect_out(3,string)
+
+			if {$spank_type eq "exit"} {
+				incr matches_spank_exit
+			} elseif {$spank_type eq "task_init"} {
+				incr matches_spank_init
+			}
+
+			if {($sbatch_arg eq "4") && ($srun_arg eq "0")} {
 				incr matches_sbatch
-			}
-			if {$expect_out(1,string) == 5} {
-				incr matches_srun
-			}
-			exp_continue
-		}
-		-re "slurm_spank_task_init: opt_arg=($number)" {
-			if {$expect_out(1,string) == 4} {
-				incr matches_sbatch
-			}
-			if {$expect_out(1,string) == 5} {
+			} elseif {($sbatch_arg eq "4") && ($srun_arg eq "5")} {
 				incr matches_srun
 			}
 			exp_continue
@@ -382,15 +413,21 @@ if {[wait_for_file $spank_out] == 0} {
 			wait
 		}
 	}
-	if {$matches_sbatch != 2} {
+	if {$matches_spank_exit != 2} {
+		send_user "\nFAILURE: remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != 2)\n"
+		end_it 1
+	} elseif {$matches_spank_init != 2} {
+		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != 2)\n"
+		end_it 1
+	} elseif {$matches_sbatch != 2} {
 		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != 2)\n"
-		set exit_code 1
+		end_it 1
 	} elseif {$matches_srun != 2} {
 		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != 2)\n"
-		set exit_code 1
+		end_it 1
 	} elseif {$matches != 4} {
 		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != 4)\n"
-		set exit_code 1
+		end_it 1
 	} else {
 		send_user "\n remote (slurmd) spank plugin success\n"
 	}
@@ -398,20 +435,7 @@ if {[wait_for_file $spank_out] == 0} {
 	send_user "\nWARNING: This can be caused by the plugstack.conf file not\n"
 	send_user "      being propagated to the compute node or not being in a\n"
 	send_user "      shared file system.\n"
-	set exit_code 1
+	end_it 1
 }
 
-#
-# Restore the original plugstack
-#
-if {[file exists $orig_spank_conf]} {
-	exec $bin_cp -f $orig_spank_conf $spank_conf_file
-} else {
-	exec $bin_rm -f $spank_conf_file
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
-	send_user "\nSUCCESS\n"
-}
-exit $exit_code
+end_it $exit_code
