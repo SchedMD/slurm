@@ -42,9 +42,10 @@ proc inc22_1_fed {} {
 	global cluster1 my_pid accounts users cluster_cpus
 	global job1_end job1_cpus job2_elig job2_cpus account1 user1
 	global sql_rem_clus1 wckey1 wc_key_track exit_code cluster2
+	global fedname
 
 	#since there are 2 test clusters we will just use one
-	set cluster "FED:f2"
+	set cluster "FED:$fedname"
 	set sql_rm $sql_rem_clus1
 
 	# Tue Jan 1 00:00:00 2008

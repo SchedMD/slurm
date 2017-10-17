@@ -75,6 +75,7 @@ set access_err  0
 set uid [get_my_uid]
 set gid [get_my_gid]
 set timeout 120
+set fedname     "test22_1"
 
 # Cluster
 array set clus_req {}
@@ -577,10 +578,10 @@ expect {
 	}
 }
 
-delete_federations f2
+delete_federations $fedname
 
-send_user "[exec $sacctmgr -i add federation f2]\n"
-send_user "[exec $sacctmgr -i mod fed f2 set clusters=$cluster1,$cluster2]\n"
+send_user "[exec $sacctmgr -i add federation $fedname]\n"
+send_user "[exec $sacctmgr -i mod fed $fedname set clusters=$cluster1,$cluster2]\n"
 
 send_user "This is the config dir: $config_dir; new config: $new_conf \n"
 
@@ -593,7 +594,7 @@ set env(SLURM_CONF) $new_conf
 send_user "ENV VARIABLE: [exec printenv SLURM_CONF]  \n"
 
 set exit_code [inc22_1_fed]
-delete_federations f2
+delete_federations $fedname
 exec $bin_rm -rf $new_conf
 
 if {$exit_code ne 0} {
