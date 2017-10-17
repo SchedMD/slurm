@@ -2034,9 +2034,13 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		host_index = 0;	/* It is always 0 for front end systems */
 #else
 		hostset_t j_hset;
-		/* Determine the CPU count based upon this node's index into
-		 * the _job's_ allocation (job's hostlist and core_bitmap) */
-		if (!(j_hset = hostset_create(req->nodes))) {
+		/*
+		 * Determine need to setup X11 based upon this node's index into
+		 * the _job's_ allocation
+		 */
+		if (req->x11 & X11_FORWARD_ALL) {
+			;	/* Don't need host_index */
+		} else if (!(j_hset = hostset_create(req->nodes))) {
 			error("Unable to parse hostlist: `%s'", req->nodes);
 		} else {
 			host_index = hostset_find(j_hset, conf->node_name);
