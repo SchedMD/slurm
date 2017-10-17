@@ -587,7 +587,7 @@ send_user "This is the config dir: $config_dir; new config: $new_conf \n"
 
 set old_conf "$config_dir/slurm.conf"
 
-send_user [exec sed "s/ClusterName=.*/ClusterName=$cluster1/g" $old_conf > $new_conf]
+send_user [exec sed "s/ClusterName\\s*=.*/ClusterName=$cluster1/Ig" $old_conf > $new_conf]
 
 set env(SLURM_CONF) $new_conf
 
