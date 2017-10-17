@@ -2788,7 +2788,7 @@ static void _remove_job_hash(struct job_record *job_entry)
 	struct job_record *job_ptr, **job_pptr;
 
 	job_pptr = &job_hash[JOB_HASH_INX(job_entry->job_id)];
-	while ((job_pptr != NULL) &&
+	while ((job_pptr != NULL) && (*job_pptr != NULL) &&
 	       ((job_ptr = *job_pptr) != job_entry)) {
 		xassert(job_ptr->magic == JOB_MAGIC);
 		job_pptr = &job_ptr->job_next;
