@@ -262,22 +262,17 @@ exec $bin_rm -f $file_in
 
 #
 # Test of locally logged messages().
-# We update the plugstatck.conf in this script since NFS delays may
-# prevent it from having the same state as the submit host.
+# Add sleep for NFS delays in propagating $spank_conf_file
 #
-
+# NOTE: This test will fail if plugstack.conf is not in a shared location
+#	The login node (where test is started) will modify the file and the
+#	slurmd/slurmstepd on the compute node will not get the updated
+#	configuration.
+#
 send_user "\n\nTest locally logged messages..........\n\n"
-
+$bin_sleep 30
 make_bash_script $file_in "
-  $bin_rm -f $spank_conf_file
-  $bin_cp -f $new_spank_conf $spank_conf_file
-  $bin_sleep 8
   $srun --test_suite_srun=5 $bin_uname
-  if test -f $orig_spank_conf
-  then
-    $bin_rm -f $spank_conf_file
-    $bin_cp -f $orig_spank_conf $spank_conf_file
-  fi
 "
 
 set job_id 0
