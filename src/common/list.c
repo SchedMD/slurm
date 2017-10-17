@@ -119,7 +119,7 @@ struct listNode {
 };
 
 struct listIterator {
-	struct list          *list;         /* the list being iterated           */
+	struct xlist         *list;         /* the list being iterated           */
 	struct listNode      *pos;          /* the next node to be iterated      */
 	struct listNode     **prev;         /* addr of 'next' ptr to prv It node */
 	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
@@ -128,7 +128,7 @@ struct listIterator {
 #endif /* !NDEBUG */
 };
 
-struct list {
+struct xlist {
 	struct listNode      *head;         /* head of the list                  */
 	struct listNode     **tail;         /* addr of last node's 'next' ptr    */
 	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
@@ -861,7 +861,7 @@ list_node_destroy (List l, ListNode *pp)
 static List
 list_alloc (void)
 {
-	return(list_alloc_aux(sizeof(struct list), &list_free_lists));
+	return(list_alloc_aux(sizeof(struct xlist), &list_free_lists));
 }
 
 /* list_free()

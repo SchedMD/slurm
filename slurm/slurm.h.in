@@ -1215,7 +1215,7 @@ extern void slurm_hostlist_uniq(hostlist_t hl);
 
 #ifndef   __list_datatypes_defined
 #  define __list_datatypes_defined
-typedef struct list * List;
+typedef struct xlist * List;
 /*
  *  List opaque data type.
  */
