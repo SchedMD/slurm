@@ -85,6 +85,11 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
+	-re "error: PROFILE: Impossible to create the table" {
+		send_user "\nWARNING: This error is cause by a bug in HDF5 1.10.0, and is fixed in 1.10.1.  Please upgrade to run this test.\n"
+		exec rm -f $file_prog
+		exit 0;
+	}
 	-re "error:" {
 		send_user "\nFAILURE: something happened on start of job\n"
 		exit 1
