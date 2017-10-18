@@ -1449,7 +1449,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 					_add_time_tres(c_usage->loc_tres,
 						       TIME_RESV, TRES_CPU,
-						       loc_seconds * row_rcpu,
+						       loc_seconds *
+						       (uint64_t) row_rcpu,
 						       0);
 				}
 			}
