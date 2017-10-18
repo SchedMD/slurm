@@ -2149,9 +2149,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
 			_make_prolog_mem_container(msg);
 
-		if (container_g_create(req->job_id))
-			error("container_g_create(%u): %m", req->job_id);
-
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);
@@ -2174,8 +2171,11 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.resv_id = select_g_select_jobinfo_xstrdup(
 			req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
-		rc = _run_prolog(&job_env, req->cred);
-
+		if ((rc = container_g_create(req->job_id)))
+			error("container_g_create(%u): %m", req->job_id);
+		else
+			rc = _run_prolog(&job_env, req->cred);
+		xfree(job_env.resv_id);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
 			if (WIFSIGNALED(rc))
@@ -2297,9 +2297,10 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		job_env.resv_id = select_g_select_jobinfo_xstrdup(
 			req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
-		if (container_g_create(req->job_id))
+		if ((rc = container_g_create(req->job_id)))
 			error("container_g_create(%u): %m", req->job_id);
-		rc = _run_prolog(&job_env, req->cred);
+		else
+			rc = _run_prolog(&job_env, req->cred);
 		xfree(job_env.resv_id);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
