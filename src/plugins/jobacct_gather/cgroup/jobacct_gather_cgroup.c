@@ -126,17 +126,21 @@ static void _prec_extra(jag_prec_t *prec)
 		debug2("%s: failed to collect memory.stat  pid %d ppid %d",
 		       __func__, prec->pid, prec->ppid);
 	} else {
-		/* This number represents the amount of "dirty" private memory
-		   used by the cgroup.  From our experience this is slightly
-		   different than what proc presents, but is probably more
-		   accurate on what the user is actually using.
-		*/
-		ptr = strstr(memory_stat, "total_rss");
-		sscanf(ptr, "total_rss %lu", &total_rss);
-		prec->rss = total_rss / 1024; /* convert from bytes to KB */
+		/*
+		 * This number represents the amount of "dirty" private memory
+		 * used by the cgroup.  From our experience this is slightly
+		 * different than what proc presents, but is probably more
+		 * accurate on what the user is actually using.
+		 */
+		if ((ptr = strstr(memory_stat, "total_rss"))) {
+			sscanf(ptr, "total_rss %lu", &total_rss);
+			prec->rss = total_rss / 1024; /* bytes to KB */
+		}
 
-		/* total_pgmajfault is what is reported in proc, so we use
-		 * the same thing here. */
+		/*
+		 * total_pgmajfault is what is reported in proc, so we use
+		 * the same thing here.
+		 */
 		if ((ptr = strstr(memory_stat, "total_pgmajfault"))) {
 			sscanf(ptr, "total_pgmajfault %lu", &total_pgpgin);
 			prec->pages = total_pgpgin;
