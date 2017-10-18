@@ -1281,9 +1281,9 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			/* do the cluster allocated calculation */
 		calc_cluster:
 
-			/* We need to have this clean for each job
-			 * since we add the time to the cluster
-			 * individually.
+			/*
+			 * We need to have this clean for each job
+			 * since we add the time to the cluster individually.
 			 */
 			loc_tres = list_create(_destroy_local_tres_usage);
 
@@ -1296,9 +1296,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 						      TIME_ALLOC, seconds,
 						      suspend_seconds, 0);
 
-			/* Now figure out there was a disconnected
-			   slurmctld durning this job.
-			*/
+			/*
+			 * Now figure out there was a disconnected
+			 * slurmctld durning this job.
+			 */
 			list_iterator_reset(c_itr);
 			while ((loc_c_usage = list_next(c_itr))) {
 				int temp_end = row_end;
@@ -1328,30 +1329,29 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					_transfer_loc_tres(&loc_tres, a_usage);
 					continue;
 				}
-				/* Since we have already added the
-				   entire reservation as used time on
-				   the cluster we only need to
-				   calculate the used time for the
-				   reservation and then divy up the
-				   unused time over the associations
-				   able to run in the reservation.
-				   Since the job was to run, or ran a
-				   reservation we don't care about
-				   eligible time since that could
-				   totally skew the clusters reserved time
-				   since the job may be able to run
-				   outside of the reservation. */
+				/*
+				 * Since we have already added the entire
+				 * reservation as used time on the cluster we
+				 * only need to calculate the used time for the
+				 * reservation and then divy up the unused time
+				 * over the associations able to run in the
+				 * reservation. Since the job was to run, or ran
+				 * a reservation we don't care about eligible
+				 * time since that could totally skew the
+				 * clusters reserved time since the job may be
+				 * able to run outside of the reservation.
+				 */
 				list_iterator_reset(r_itr);
 				while ((r_usage = list_next(r_itr))) {
 					int temp_end, temp_start;
-					/* since the reservation could
-					   have changed in some way,
-					   thus making a new
-					   reservation record in the
-					   database, we have to make
-					   sure all the reservations
-					   are checked to see if such
-					   a thing has happened */
+					/*
+					 * since the reservation could have
+					 * changed in some way, thus making a
+					 * new reservation record in the
+					 * database, we have to make sure all
+					 * of the reservations are checked to
+					 * see if such a thing has happened
+					 */
 					if (r_usage->id != resv_id)
 						continue;
 					temp_end = row_end;
@@ -1383,10 +1383,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				continue;
 			}
 
-			/* only record time for the clusters that have
-			   registered.  This continue should rarely if
-			   ever happen.
-			*/
+			/*
+			 * only record time for the clusters that have
+			 * registered.  This continue should rarely if
+			 * ever happen.
+			 */
 			if (!c_usage) {
 				_transfer_loc_tres(&loc_tres, a_usage);
 				continue;
@@ -1409,9 +1410,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					loc_tres);
 			}
 
-			/* The loc_tres isn't needed after this so
-			 * transfer to the association and go on our
-			 * merry way. */
+			/*
+			 * The loc_tres isn't needed after this so transfer to
+			 * the association and go on our merry way.
+			 */
 			_transfer_loc_tres(&loc_tres, a_usage);
 
 			/* now reserved time */
@@ -1424,12 +1426,12 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					temp_end = c_usage->end;
 				loc_seconds = (temp_end - temp_start);
 				if (loc_seconds > 0) {
-					/* If we have pending jobs in
-					   an array they haven't been
-					   inserted into the database
-					   yet as proper job records,
-					   so handle them here.
-					*/
+					/*
+					 * If we have pending jobs in an array
+					 * they haven't been inserted into the
+					 * database yet as proper job records,
+					 * so handle them here.
+					 */
 					if (array_pending)
 						loc_seconds *= array_pending;
 
@@ -1447,7 +1449,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 					_add_time_tres(c_usage->loc_tres,
 						       TIME_RESV, TRES_CPU,
-						       loc_seconds * row_rcpu,
+						       loc_seconds *
+						       (uint64_t) row_rcpu,
 						       0);
 				}
 			}
