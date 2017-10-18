@@ -2577,7 +2577,6 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		char *query = NULL;
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
-		bool get_qos_count = 0;
 		ListIterator itr = NULL, itr2 = NULL, itr3 = NULL;
 		char *rem_cluster = NULL, *cluster_name = NULL;
 		slurmdb_update_object_t *object = NULL;
@@ -2610,7 +2609,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			if (!object->objects || !list_count(object->objects))
 				continue;
 			/* We only care about clusters removed here. */
-			switch(object->type) {
+			switch (object->type) {
 			case SLURMDB_REMOVE_CLUSTER:
 				itr3 = list_iterator_create(object->objects);
 				while ((rem_cluster = list_next(itr3))) {
@@ -2633,9 +2632,6 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		list_iterator_destroy(itr);
 		list_iterator_destroy(itr2);
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-
-		if (get_qos_count)
-			_set_qos_cnt(mysql_conn);
 	}
 	xfree(mysql_conn->pre_commit_query);
 	list_flush(mysql_conn->update_list);
