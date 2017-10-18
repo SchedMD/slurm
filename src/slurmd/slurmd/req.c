@@ -2140,7 +2140,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	 * just wait.
 	 */
 	if (slurm_send_rc_msg(msg, rc) < 0) {
-		error("Error starting prolog: %m");
+		error("%s: Error talking to slurmctld: %m", __func__);
 	}
 
 	slurm_mutex_lock(&prolog_mutex);
