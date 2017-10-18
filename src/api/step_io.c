@@ -654,16 +654,16 @@ create_file_read_eio_obj(int fd, uint32_t taskid, uint32_t nodeid,
 
 static bool _file_readable(eio_obj_t *obj)
 {
-	struct file_read_info *info = (struct file_read_info *) obj->arg;
+	struct file_read_info *read_info = (struct file_read_info *) obj->arg;
 
 	debug2("Called _file_readable");
 
-	if (info->cio->ioservers_ready < info->cio->num_nodes) {
+	if (read_info->cio->ioservers_ready < read_info->cio->num_nodes) {
 		debug3("  false, all ioservers not yet initialized");
 		return false;
 	}
 
-	if (info->eof) {
+	if (read_info->eof) {
 		debug3("  false, eof");
 		return false;
 	}
@@ -671,15 +671,15 @@ static bool _file_readable(eio_obj_t *obj)
 		debug3("  false, shutdown");
 		close(obj->fd);
 		obj->fd = -1;
-		info->eof = true;
+		read_info->eof = true;
 		return false;
 	}
-	slurm_mutex_lock(&info->cio->ioservers_lock);
-	if (_incoming_buf_free(info->cio)) {
-		slurm_mutex_unlock(&info->cio->ioservers_lock);
+	slurm_mutex_lock(&read_info->cio->ioservers_lock);
+	if (_incoming_buf_free(read_info->cio)) {
+		slurm_mutex_unlock(&read_info->cio->ioservers_lock);
 		return true;
 	}
-	slurm_mutex_unlock(&info->cio->ioservers_lock);
+	slurm_mutex_unlock(&read_info->cio->ioservers_lock);
 
 	debug3("  false");
 	return false;
@@ -860,7 +860,8 @@ _read_io_init_msg(int fd, client_io_t *cio, char *host)
 	slurm_mutex_lock(&cio->ioservers_lock);
 	bit_set(cio->ioservers_ready_bits, msg.nodeid);
 	cio->ioservers_ready = bit_set_count(cio->ioservers_ready_bits);
-	/* Normally using eio_new_initial_obj while the eio mainloop
+	/*
+	 * Normally using eio_new_initial_obj while the eio mainloop
 	 * is running is not safe, but since this code is running
 	 * inside of the eio mainloop there should be no problem.
 	 */
