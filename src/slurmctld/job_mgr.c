@@ -117,6 +117,12 @@
 
 #define JOB_CKPT_VERSION      "PROTOCOL_VERSION"
 
+typedef enum {
+	JOB_HASH_JOB,
+	JOB_HASH_ARRAY_JOB,
+	JOB_HASH_ARRAY_TASK,
+} job_hash_type_t;
+
 typedef struct {
 	int resp_array_cnt;
 	int resp_array_size;
@@ -217,7 +223,8 @@ static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 static int   _read_data_from_file(int fd, char *file_name, char **data);
 static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
-static void _remove_job_hash(struct job_record *job_ptr);
+static void _remove_job_hash(struct job_record *job_ptr,
+			     job_hash_type_t type);
 static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static void _resp_array_add(resp_array_struct_t **resp,
@@ -2530,21 +2537,67 @@ static void _add_job_hash(struct job_record *job_ptr)
 /* _remove_job_hash - remove a job hash entry for given job record, job_id must
  *	already be set
  * IN job_ptr - pointer to job record
+ * IN type - which hash to work with
  * Globals: hash table updated
  */
-static void _remove_job_hash(struct job_record *job_entry)
+static void _remove_job_hash(struct job_record *job_entry,
+			     job_hash_type_t type)
 {
 	struct job_record *job_ptr, **job_pptr;
 
-	job_pptr = &job_hash[JOB_HASH_INX(job_entry->job_id)];
-	while ((job_pptr != NULL) &&
+	xassert(job_entry);
+
+	switch (type) {
+	case JOB_HASH_JOB:
+		job_pptr = &job_hash[JOB_HASH_INX(job_entry->job_id)];
+		break;
+	case JOB_HASH_ARRAY_JOB:
+		job_pptr = &job_array_hash_j[
+			JOB_HASH_INX(job_entry->array_job_id)];
+		break;
+	case JOB_HASH_ARRAY_TASK:
+		job_pptr = &job_array_hash_t[
+			JOB_ARRAY_HASH_INX(job_entry->array_job_id,
+					   job_entry->array_task_id)];
+		break;
+	default:
+		fatal("%s: unknown job_hash_type_t %d", __func__, type);
+		return;
+	}
+
+	while ((job_pptr != NULL) && (*job_pptr != NULL) &&
 	       ((job_ptr = *job_pptr) != job_entry)) {
 		xassert(job_ptr->magic == JOB_MAGIC);
-		job_pptr = &job_ptr->job_next;
+		switch (type) {
+		case JOB_HASH_JOB:
+			job_pptr = &job_ptr->job_next;
+			break;
+		case JOB_HASH_ARRAY_JOB:
+			job_pptr = &job_ptr->job_array_next_j;
+			break;
+		case JOB_HASH_ARRAY_TASK:
+			job_pptr = &job_ptr->job_array_next_t;
+			break;
+		}
 	}
+
 	if (job_pptr == NULL) {
-		error("%s: Could not find hash entry for job %u",
-		      __func__, job_entry->job_id);
+		switch (type) {
+		case JOB_HASH_JOB:
+			error("%s: Could not find hash entry for job %u",
+			      __func__, job_entry->job_id);
+			break;
+		case JOB_HASH_ARRAY_JOB:
+			error("%s: job array hash error %u", __func__,
+			      job_entry->array_job_id);
+			break;
+		case JOB_HASH_ARRAY_TASK:
+			error("%s: job array, task ID hash error %u_%u",
+			      __func__,
+			      job_entry->array_job_id,
+			      job_entry->array_task_id);
+			break;
+		}
 		return;
 	}
 	*job_pptr = job_entry->job_next;
@@ -3950,7 +4003,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	if (!job_ptr_pend)
 		return NULL;
 
-	_remove_job_hash(job_ptr);
+	_remove_job_hash(job_ptr, JOB_HASH_JOB);
 	job_ptr_pend->job_id = job_ptr->job_id;
 	if (_set_job_id(job_ptr) != SLURM_SUCCESS)
 		fatal("%s: _set_job_id error", __func__);
@@ -8671,7 +8724,6 @@ _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 static void _list_delete_job(void *job_entry)
 {
 	struct job_record *job_ptr = (struct job_record *) job_entry;
-	struct job_record **job_pptr, *tmp_ptr;
 	int job_array_size, i;
 
 	xassert(job_entry);
@@ -8682,7 +8734,7 @@ static void _list_delete_job(void *job_entry)
 	fed_mgr_remove_fed_job_info(job_ptr->job_id);
 
 	/* Remove the record from job hash table */
-	_remove_job_hash(job_ptr);
+	_remove_job_hash(job_ptr, JOB_HASH_JOB);
 
 	if (job_ptr->array_recs) {
 		job_array_size = MAX(1, job_ptr->array_recs->task_cnt);
@@ -8692,32 +8744,8 @@ static void _list_delete_job(void *job_entry)
 
 	/* Remove the record from job array hash tables, if applicable */
 	if (job_ptr->array_task_id != NO_VAL) {
-		job_pptr = &job_array_hash_j[
-			JOB_HASH_INX(job_ptr->array_job_id)];
-		while ((job_pptr != NULL) && (*job_pptr != NULL) &&
-		       ((tmp_ptr = *job_pptr) !=
-			(struct job_record *) job_entry)) {
-			xassert(tmp_ptr->magic == JOB_MAGIC);
-			job_pptr = &tmp_ptr->job_array_next_j;
-		}
-		if (job_pptr == NULL)
-			error("job array hash error");
-		else
-			*job_pptr = job_ptr->job_array_next_j;
-
-		job_pptr = &job_array_hash_t[
-			JOB_ARRAY_HASH_INX(job_ptr->array_job_id,
-					   job_ptr->array_task_id)];
-		while ((job_pptr != NULL) && (*job_pptr != NULL) &&
-		       ((tmp_ptr = *job_pptr) !=
-			(struct job_record *) job_entry)) {
-			xassert(tmp_ptr->magic == JOB_MAGIC);
-			job_pptr = &tmp_ptr->job_array_next_t;
-		}
-		if (job_pptr == NULL)
-			error("job array, task ID hash error");
-		else
-			*job_pptr = job_ptr->job_array_next_t;
+		_remove_job_hash(job_ptr, JOB_HASH_ARRAY_JOB);
+		_remove_job_hash(job_ptr, JOB_HASH_ARRAY_TASK);
 	}
 
 	_delete_job_details(job_ptr);

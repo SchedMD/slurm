@@ -384,6 +384,7 @@ documents those changes that are of interest to users and administrators.
  -- Add empty hashes in perl api's slurm_load_node() for hidden nodes.
  -- CRAY - Add rpath logic to work for the alpscomm libs.
  -- Fixes for administrator extended TimeLimit (job reason & time limit reset).
+ -- Fix gres selection on systems running select/linear.
 
 * Changes in Slurm 17.02.7
 ==========================

@@ -603,7 +603,8 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 		cpus_per_core  = cpu_cnt / (core_end_bit - core_start_bit + 1);
 		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
 						  gres_list, use_total_gres,
-						  NULL, 0, 0, job_ptr->job_id,
+						  NULL, core_start_bit,
+						  core_end_bit, job_ptr->job_id,
 						  node_ptr->name);
 		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL) {

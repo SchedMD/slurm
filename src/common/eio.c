@@ -198,12 +198,14 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
 
-	/* Should not call slurm_get_addr() because the IP may not be
-	 * in /etc/hosts. */
+	/*
+	 * Should not call slurm_get_addr() because the IP may not be
+	 * in /etc/hosts.
+	 */
 	uc = (unsigned char *)&addr.sin_addr.s_addr;
 	port = addr.sin_port;
-	debug2("got message connection from %u.%u.%u.%u:%hu %d",
-	       uc[0], uc[1], uc[2], uc[3], ntohs(port), fd);
+	debug2("%s: got message connection from %u.%u.%u.%u:%hu %d",
+	       __func__, uc[0], uc[1], uc[2], uc[3], ntohs(port), fd);
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
@@ -212,16 +214,16 @@ again:
 	if (slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
 		if (errno == EINTR)
 			goto again;
-		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
-		      uc[0], uc[1], uc[2], uc[3]);
+		error("%s: slurm_receive_msg[%u.%u.%u.%u]: %m",
+		      __func__, uc[0], uc[1], uc[2], uc[3]);
 		goto cleanup;
 	}
 
 	(*obj->ops->handle_msg)(obj->arg, msg);
 
 cleanup:
-	if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
-		error ("close(%d): %m", msg->conn_fd);
+	if ((msg->conn_fd >= STDERR_FILENO) && (close(msg->conn_fd) < 0))
+		error("%s: close(%d): %m", __func__, msg->conn_fd);
 	slurm_free_msg(msg);
 
 	return SLURM_SUCCESS;
