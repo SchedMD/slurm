@@ -1855,10 +1855,10 @@ static void _note_batch_job_finished(uint32_t job_id)
 /* Send notification to slurmctld we are finished running the prolog.
  * This is needed on system that don't use srun to launch their tasks.
  */
-static void _notify_slurmctld_prolog_fini(
+static int _notify_slurmctld_prolog_fini(
 	uint32_t job_id, uint32_t prolog_return_code)
 {
-	int rc;
+	int rc, ret_c;
 	slurm_msg_t req_msg;
 	complete_prolog_msg_t req;
 
@@ -1869,10 +1869,16 @@ static void _notify_slurmctld_prolog_fini(
 	req_msg.msg_type= REQUEST_COMPLETE_PROLOG;
 	req_msg.data	= &req;
 
-	if ((slurm_send_recv_controller_rc_msg(&req_msg, &rc,
-					       working_cluster_rec) < 0) ||
-	    (rc != SLURM_SUCCESS))
+	/*
+	 * Here we only care about the return code of
+	 * slurm_send_recv_controller_rc_msg since it means there was a
+	 * communication failure and we may need to try again.
+	 */
+	if ((ret_c = slurm_send_recv_controller_rc_msg(
+		     &req_msg, &rc, working_cluster_rec)))
 		error("Error sending prolog completion notification: %m");
+
+	return ret_c;
 }
 
 /* Convert memory limits from per-CPU to per-node */
@@ -2116,7 +2122,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 
 static void _rpc_prolog(slurm_msg_t *msg)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, alt_rc = SLURM_ERROR;
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	job_env_t job_env;
 	bool     first_job_run;
@@ -2193,12 +2199,20 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	} else
 		slurm_mutex_unlock(&prolog_mutex);
 
-	if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
-		_notify_slurmctld_prolog_fini(req->job_id, rc);
+	/*
+	 * We need the slurmctld to know we are done or we can get into a
+	 * situation where nothing from the job will ever launch because the
+	 * prolog will never appear to stop running.
+	 */
+	while (alt_rc != SLURM_SUCCESS) {
+		if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
+			alt_rc = _notify_slurmctld_prolog_fini(
+				req->job_id, rc);
 
-	if (rc != SLURM_SUCCESS) {
-		_launch_job_fail(req->job_id, rc);
-		send_registration_msg(rc, false);
+		if (rc != SLURM_SUCCESS) {
+			alt_rc = _launch_job_fail(req->job_id, rc);
+			send_registration_msg(rc, false);
+		}
 	}
 }
 
