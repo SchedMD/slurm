@@ -68,6 +68,9 @@ proc end_it { exit_code } {
        if {$exit_code == 0} {
 		exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
 		print_success $test_id
+	} else {
+		send_user "\nFAILURE: This may be due to NFS sychronization problems: "
+		send_user "Multiple processes on differrent nodes writing to the same file\n"
 	}
 	exit $exit_code
 }
