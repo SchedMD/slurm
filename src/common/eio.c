@@ -222,8 +222,8 @@ again:
 	(*obj->ops->handle_msg)(obj->arg, msg);
 
 cleanup:
-	if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
-		error ("close(%d): %m", msg->conn_fd);
+	if ((msg->conn_fd >= STDERR_FILENO) && (close(msg->conn_fd) < 0))
+		error("%s: close(%d): %m", __func__, msg->conn_fd);
 	slurm_free_msg(msg);
 
 	return SLURM_SUCCESS;

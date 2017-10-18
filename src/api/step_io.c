@@ -183,7 +183,8 @@ _listening_socket_readable(eio_obj_t *obj)
 	debug3("Called _listening_socket_readable");
 	if (obj->shutdown == true) {
 		if (obj->fd != -1) {
-			close(obj->fd);
+			if (obj->fd > STDERR_FILENO)
+				close(obj->fd);
 			obj->fd = -1;
 		}
 		debug2("  false, shutdown");
@@ -266,7 +267,8 @@ _server_readable(eio_obj_t *obj)
 
 	if (obj->shutdown) {
 		if (obj->fd != -1) {
-			close(obj->fd);
+			if (obj->fd > STDERR_FILENO)
+				close(obj->fd);
 			obj->fd = -1;
 			s->in_eof = true;
 			s->out_eof = true;
@@ -313,7 +315,8 @@ _server_read(eio_obj_t *obj, List objs)
 					}
 				}
 			}
-			close(obj->fd);
+			if (obj->fd > STDERR_FILENO)
+				close(obj->fd);
 			obj->fd = -1;
 			s->in_eof = true;
 			s->out_eof = true;
@@ -388,7 +391,8 @@ _server_read(eio_obj_t *obj, List objs)
 			if (s->cio->sls)
 				step_launch_notify_io_failure(
 					s->cio->sls, s->node_id);
-			close(obj->fd);
+			if (obj->fd > STDERR_FILENO)
+				close(obj->fd);
 			obj->fd = -1;
 			s->in_eof = true;
 			s->out_eof = true;
@@ -669,7 +673,8 @@ static bool _file_readable(eio_obj_t *obj)
 	}
 	if (obj->shutdown == true) {
 		debug3("  false, shutdown");
-		close(obj->fd);
+		if (obj->fd > STDERR_FILENO)
+			close(obj->fd);
 		obj->fd = -1;
 		read_info->eof = true;
 		return false;
@@ -874,7 +879,8 @@ _read_io_init_msg(int fd, client_io_t *cio, char *host)
 	return SLURM_SUCCESS;
 
     fail:
-	close(fd);
+	if (fd > STDERR_FILENO)
+		close(fd);
 	return SLURM_ERROR;
 }
 
