@@ -1750,7 +1750,7 @@ static int _process_old_sql_line(const char *data_in,
 		}
 
 		/* get values */
-		while ((i < ending_start) && i < ending_start) {
+		while (i < ending_start) {
 			/* get to the start of the values */
 			while ((i < ending_start) && data_in[i-1] != '(')
 				i++;
