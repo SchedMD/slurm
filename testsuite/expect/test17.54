@@ -1,7 +1,10 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of --deadline option too short
+#          Test --deadline to be used as the timelimit.
+#
+#          At the moment this test only really works if the DefaultTime is
+#          longer than 1 hour to verify the timelimit is set accordingly.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
