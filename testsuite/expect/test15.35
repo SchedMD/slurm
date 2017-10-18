@@ -40,7 +40,7 @@ print_header $test_id
 # Spawn a batch job with a deadline and no time
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 --deadline now+1hour --time-min 20 -t120 $bin_sleep 1]
+set salloc_pid [spawn $salloc -N1 --deadline now+1hour --begin=now+1 --time-min 20 -t120 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid" {
 		set exit_code 1

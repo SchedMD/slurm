@@ -54,8 +54,7 @@ if {[test_serial]} {
 # spawn an allocation to run on 2
 # hosts with 4 tasks.
 #
-spawn $salloc --gres=craynetwork:0 -N 2 -n 4 -t 1
-set salloc_id $spawn_id
+set salloc_id [spawn $salloc --gres=craynetwork:0 -N 2 -n 4 -t 1 $bin_bash]
 expect {
 	-re "Node count specification invalid|More processors requested|not available" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -131,7 +130,6 @@ send_user "Got exec hosts $host1 $host2\n"
 # reset the spawn process to be initial allocation
 # then srun a first task.
 set hostname ""
-set spawn_id $salloc_id
 send "$srun -l -n 1 -N 1 $bin_printenv $node_name_env\r"
 expect {
 	-re "($number): *($alpha_numeric_under)" {
