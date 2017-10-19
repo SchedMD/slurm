@@ -4,6 +4,89 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from Slurm User Group Meeting, September 2017</h2>
+<ul>
+
+<!-- Monday -->
+
+<li>Keynote: <a href="SLUG17/Keynote-SLUG17.pdf">Supernova Cosmology &amp; Supercomputing</a>,
+Alex Kim, Lawrence Berkeley National Laboratory</li>
+
+<li>Tutorial: <a href="SLUG17/SlurmOverview.pdf">Introduction to Slurm</a>,
+Tim Wickberg, SchedMD</li>
+
+<li>Technical: <a href="SLUG17/slurmfs-slug2017.pdf">SLURMFS &mdash; Resource Manager File System for Slurm</a>,
+Steven Senator, Los Alamos National Laboratory</li>
+
+<li>Technical: <a href="SLUG17/FederatedScheduling.pdf">Federated Cluster Support</a>,
+Brian Christiansen and Danny Auble, SchedMD</li>
+
+<li>Technical: <a href="SLUG17/Quan_Lalli_SLUG17.pdf">Utilizing Slurm and Passive Nagios Plugins for Scalable KNL Compute Node Monitoring</a>,
+Tony Quan and Basil Lalli, NERSC/LBNL</li>
+
+<li>Technical: <a href="SLUG17/FieldNotes.pdf">Field Notes From the Frontlines of Slurm Support</a>,
+Tim Wickberg, SchedMD</li>
+
+<!-- Missing:
+<li>Technical: <a href="SLUG17/">Building a Slurm Banking System</a>,
+</li>
+-->
+
+<li>Technical: <a href="SLUG17/Julich-SLUG17.pdf">Towards Modular Supercomputing with Slurm</a>
+Dorian Krause et al., JSC</li>
+
+<li>Technical: <a href="SLUG17/HeterogeneousJobs.pdf">Heterogeneous Job Support</a>,
+Morris Jette, SchedMD</li>
+
+<li>Technical: <a href="SLUG17/cli_filter-slug2017/cli_filter.html">cli_filter &mdash; command line filtration, manipulation, and introspection of job submissions</a>
+<a href="SLUG17/cli_filter.pdf">(PDF version)</a>,
+Douglas Jacobsen, NERSC</li>
+
+<li>Technical: <a href="SLUG17/cnh_talk.pdf">Slurm &mdash; Some Slightly Unconventional Use Cases</a>,
+Chris Hill (MIT, Rajul Kumar (Northeastern), Evan Weinberg and Naved Ansari (BU), Tim Donahue</li>
+
+<li>Technical: <a href="SLUG17/Cardo-SLUG2017.pdf">Managing Diversity in Complex Workloads in a Complex Environment</a>,
+Nicholas Cardo, CSCS</li>
+
+<!-- Tuesday -->
+
+<li>Technical: <a href="SLUG17/SLUG_Bull_SELinux.pdf">SELinux policy for Slurm</a>,
+Gilles Wiber and Mathieu Blanc (CEA), M'hamed Bouaziz and Liana Bozga (Atos)</li>
+
+<li>Site Report: <a href="SLUG17/slug17-lanl-peltz-fullop.pdf">From Moab to Slurm: 12 HPC Systems in 2 Months</a>,
+Peltz, Fullop, Jennings, Senator, Grunau (Los Alamost National Laboratory)</li>
+
+<!-- Missing:
+<li>Site Report: <a href="SLUG17/">NERSC Site Report</a>,
+James Botts and Douglas Jacobsen</li>
+-->
+
+<li>Technical: <a href="SLUG17/Roadmap.pdf">Slurm Roadmap - 17.11, 18.08, and Beyond</a>,
+Danny Auble, Morris Jette, Tim Wickberg (SchedMD)</li>
+
+<li>Technical: <a href="SLUG17/SLUG_Bull_TRES.pdf">New Statistics Using TRES</a>,
+Bill Brophy, Martin Perry, Thomas Cadeau (Atos)</li>
+
+<li>Technical: <a href="SLUG17/EnablingInteractiveNotebooksOnHPC.pdf">Enabling web-based interactive notebooks on geographically distributed HPC resources</a>,
+Alexandre Beche, EPFL</li>
+
+<li>Technical: <a href="SLUG17/SLUG_Bull_Singularity.pdf">Slurm Singularity Spank Plugin</a>,
+Martin Perry, Steve Mehlberg, Thomas Cadeau (Atos)</li>
+
+<li>Site Report: <a href="SLUG17/HarvardSiteReport-SUG17-pedmon.pdf">A Slurm Odyssey: Slurm at Harvard FAS Research Computing</a>,
+Paul Edmond</li>
+
+<li>Site Report: <a href="SLUG17/SUG2017_LLSC_Slurm_Migration_v1.pdf">LLSC Adoption of Slurm for Managing Diverse Resources and Workloads</a>,
+Chansup Byun et al., MIT Lincoln Laboratory</li>
+
+<li>Site Report: <a href="SLUG17/Cyfronet-SLUG17.pdf">Cyfronet Site Report &mdash; Improving Slurm Usability and Monitoring</a>,
+M Pawlik, J. Budzowski, L. Flis, P Lasoń, M. Magryś</li>
+
+<li>Technical: <a href="SLUG17/ciemat-cr.pdf">When you have a hammer, everything looks like a nail &mdash; Checkpoint/restart in Slurm</a>
+Manuel Rodr&iacute;guez-Pascual, J.A. Mor&iacute;&ntilde;igo, and Rafael Mayo-Garc&iacute;a, CIEMAT</li>
+
+</ul>
+
 <!-- SC16 Slurm Booth + BOF-->
 <h2>Presentations from Slurm Booth and Birds of a Feather, SC16, November 2016</h2>
 <ul>
