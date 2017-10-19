@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
     systems.
  -- squeue: interpret negative length format specifiers as a request to
     delimit values with spaces.
+ -- Fix the torque pbsnodes wrapper script to parse a gres field with a type
+    set correctly.
 
 * Changes in Slurm 17.02.7
 ==========================
