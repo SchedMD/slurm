@@ -74,6 +74,11 @@ static char *hostkey_pub = "/etc/ssh/ssh_host_rsa_key.pub";
 static char *priv_format = "%s/.ssh/id_rsa";
 static char *pub_format = "%s/.ssh/id_rsa.pub";
 
+static const char *xauthority_format = "%s/.Xauthority";
+static char *xauthority = NULL;
+
+static int x11_display = 0;
+
 void *_handle_channel(void *x);
 void *_keepalive_engine(void *x);
 void *_accept_engine(void *x);
@@ -154,6 +159,11 @@ static void _shutdown_x11(int signal)
 
 	libssh2_exit();
 
+	if (xauthority) {
+		x11_delete_xauth(xauthority, x11_display);
+		xfree(xauthority);
+	}
+
 	info("x11 forwarding shutdown complete");
 
 	exit(0);
@@ -194,6 +204,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 
 	keypub = xstrdup_printf(pub_format, home);
 	keypriv = xstrdup_printf(priv_format, home);
+	xauthority = xstrdup_printf(xauthority_format, home);
 	xfree(home);
 
 	if (libssh2_init(0)) {
@@ -279,14 +290,14 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 		goto shutdown;
 	}
 
-	*display = port - X11_TCP_PORT_OFFSET;
-	if (x11_set_xauth(job->x11_magic_cookie, *display)) {
+	x11_display = port - X11_TCP_PORT_OFFSET;
+	if (x11_set_xauth(xauthority, job->x11_magic_cookie, x11_display)) {
 		error("%s: failed to run xauth", __func__);
 		goto shutdown;
 	}
 
 	info("X11 forwarding established on DISPLAY=localhost:%d.0",
-	     *display);
+	     x11_display);
 
 	slurm_thread_create_detached(NULL, _keepalive_engine, NULL);
 	slurm_thread_create_detached(NULL, _accept_engine, NULL);
@@ -296,6 +307,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	 * that the forwarding code setup has completed successfully, and let
 	 * steps needing X11 forwarding service launch.
 	 */
+	*display = x11_display;
 	return SLURM_SUCCESS;
 
 shutdown:

@@ -88,7 +88,6 @@
 #include "src/common/strlcpy.h"
 #include "src/common/switch.h"
 #include "src/common/util-net.h"
-#include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -1131,18 +1130,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	while ((wait4(pid, &status, 0, &rusage) < 0) && (errno == EINTR)) {
 		;	       /* Wait until above process exits from signal */
 	}
-
-#ifdef WITH_SLURM_X11
-	if (job->x11 && job->x11_display) {
-		struct priv_state sprivs;
-		if (_drop_privileges(job, true, &sprivs, true) < 0)
-			error("cannot drop priviledges, skipping xauth delete");
-		else {
-			x11_delete_xauth(job->x11_display);
-			_reclaim_privileges(&sprivs);
-		}
-	}
-#endif
 
 	jobacct = jobacct_gather_remove_task(pid);
 	if (jobacct) {
