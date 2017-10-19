@@ -3431,8 +3431,10 @@ extern int as_mysql_jobacct_process_archive_load(
 		return SLURM_ERROR;
 	}
 
-	/* this is the old version of an archive file where the file
-	   was straight sql. */
+	/*
+	 * this is the old version of an archive file where the file
+	 * was straight sql.
+	 */
 	if ((strlen(data) >= 12)
 	    && (!xstrncmp("insert into ", data, 12)
 		|| !xstrncmp("delete from ", data, 12)
@@ -3449,11 +3451,11 @@ extern int as_mysql_jobacct_process_archive_load(
 	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 		DB_DEBUG(mysql_conn->conn,
 			 "Version in archive header is %u", ver);
-	/* Don't verify the lower limit as we should be keeping all
-	   older versions around here just to support super old
-	   archive files since they don't get regenerated all the
-	   time.
-	*/
+	/*
+	 * Don't verify the lower limit as we should be keeping all
+	 * older versions around here just to support super old
+	 * archive files since they don't get regenerated all the time.
+	 */
 	if (ver > SLURM_PROTOCOL_VERSION) {
 		error("***********************************************");
 		error("Can not recover archive file, incompatible version, "
