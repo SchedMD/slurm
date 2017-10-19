@@ -780,6 +780,8 @@ extern int update_state_block(GtkDialog *dialog,
 	slurm_init_update_block_msg(&block_msg);
 	block_msg.bg_block_id = (char *)blockid;
 
+	gtk_window_set_type_hint(GTK_WINDOW(dialog),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	label = gtk_dialog_add_button(dialog,
 				      GTK_STOCK_YES, GTK_RESPONSE_OK);
 	gtk_window_set_default(GTK_WINDOW(dialog), label);
@@ -1504,6 +1506,8 @@ static void _admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		NULL);
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
 	gtk_tree_model_get(model, iter, SORTID_BLOCK, &blockid, -1);

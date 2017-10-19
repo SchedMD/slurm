@@ -382,6 +382,10 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Add rpath logic to work for the alpscomm libs.
  -- Fixes for administrator extended TimeLimit (job reason & time limit reset).
  -- Fix gres selection on systems running select/linear.
+ -- sview: Added window decorator for maximize,minimize,close buttons for all
+    systems.
+ -- squeue: interpret negative length format specifiers as a request to
+    delimit values with spaces.
 
 * Changes in Slurm 17.02.7
 ==========================

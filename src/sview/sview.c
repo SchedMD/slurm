@@ -1534,6 +1534,8 @@ int main(int argc, char **argv)
 	/* fill in all static info for pages */
 	/* Make a window */
 	main_window = gtk_dialog_new();
+	gtk_window_set_type_hint(GTK_WINDOW(main_window),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 	g_signal_connect(G_OBJECT(main_window), "delete_event",
 			 G_CALLBACK(_delete), NULL);
 
