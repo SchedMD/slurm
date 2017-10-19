@@ -317,7 +317,7 @@ void *_keepalive_engine(void *x)
 void *_accept_engine(void *x)
 {
 	if (listen(listen_socket, 2) == -1) {
-		error("stuff broke2");
+		error("listening socket returned an error: %m");
 		goto shutdown;
 	}
 
@@ -338,16 +338,19 @@ void *_accept_engine(void *x)
 		if (!(ci->channel = libssh2_channel_direct_tcpip(session,
 								 "localhost",
 								 x11_target_port))) {
+			char *ssh_error = NULL;
+			libssh2_session_last_error(session, &ssh_error, NULL, 0);
 			libssh2_session_set_blocking(session, 0);
 			slurm_mutex_unlock(&ssh_lock);
-			error("broken channel call %m");
+			error("broken channel call: %s", ssh_error);
 			close(ci->socket);
 			xfree(ci);
-		}
-		libssh2_session_set_blocking(session, 0);
-		slurm_mutex_unlock(&ssh_lock);
+		} else {
+			libssh2_session_set_blocking(session, 0);
+			slurm_mutex_unlock(&ssh_lock);
 
-		slurm_thread_create_detached(NULL, _handle_channel, ci);
+			slurm_thread_create_detached(NULL, _handle_channel, ci);
+		}
 	}
 
 shutdown:
@@ -397,10 +400,11 @@ void *_handle_channel(void *x) {
 		if (rc && (fds[1].revents & POLLIN)) {
 			len = recv(ci->socket, buf, sizeof(buf), 0);
 			if (len < 0) {
-				error("read");
+				error("%s: failed to read on inbound socket",
+				      __func__);
 				goto shutdown;
 			} else if (0 == len) {
-				error("client disconnected");
+				error("%s: client disconnected", __func__);
 				goto shutdown;
 			}
 			wr = 0;
@@ -413,7 +417,8 @@ void *_handle_channel(void *x) {
 					continue;
 				}
 				if (i < 0) {
-					error("libssh2_channel_write: %d\n", i);
+					error("%s: libssh2_channel_write: %d\n",
+					      __func__, i);
 					goto shutdown;
 				}
 				wr += i;
@@ -426,14 +431,15 @@ void *_handle_channel(void *x) {
 			if (len == LIBSSH2_ERROR_EAGAIN)
 				break;
 			else if (len < 0) {
-				error("libssh2_channel_read: %d", (int)len);
+				error("%s: libssh2_channel_read: %d",
+				      __func__, (int)len);
 				goto shutdown;
 			}
 			wr = 0;
 			while (wr < len) {
 				i = send(ci->socket, buf + wr, len - wr, 0);
 				if (i <= 0) {
-					error("write");
+					error("%s: write failed", __func__);
 					goto shutdown;
 				}
 				wr += i;
