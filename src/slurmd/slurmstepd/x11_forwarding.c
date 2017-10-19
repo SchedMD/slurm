@@ -56,6 +56,7 @@
 #include "src/common/uid.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd.h"
@@ -105,6 +106,8 @@ static uint16_t x11_target_port;
 
 static int ssh_socket = -1, listen_socket = -1;
 
+static LIBSSH2_SESSION *session = NULL;
+
 typedef struct channel_info {
 	LIBSSH2_CHANNEL *channel;
 	int socket;
@@ -130,6 +133,32 @@ static char *_get_home(uid_t uid)
 	return xstrdup(pwd.pw_dir);
 }
 
+static void _shutdown_x11(int signal)
+{
+	if (signal != SIGTERM)
+		return;
+
+	debug("x11 forwarding shutdown in progress");
+
+	if (listen_socket)
+		close(listen_socket);
+
+	if (session) {
+		libssh2_session_disconnect(session,
+					   "Disconnecting due to shutdown.");
+		libssh2_session_free(session);
+	}
+
+	if (ssh_socket)
+		close(ssh_socket);
+
+	libssh2_exit();
+
+	info("x11 forwarding shutdown complete");
+
+	exit(0);
+}
+
 /*
  * Bind to a local port and forward to the x11_target_port on
  * x11_target_host. Relies on the user having working password-less SSH
@@ -152,8 +181,11 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	 * as 'ssh -X' will start at 10 and work up from there.
 	 */
 	uint16_t ports[2] = {6020, 6099};
-	LIBSSH2_SESSION *session;
+	int sig_array[2] = {SIGTERM, 0};
 	x11_target_port = job->x11_target_port;
+
+	xsignal(SIGTERM, _shutdown_x11);
+	xsignal_unblock(sig_array);
 
 	if (!(home = _get_home(job->uid))) {
 		error("could not find HOME in environment");
@@ -244,8 +276,8 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	info("X11 forwarding established on DISPLAY=localhost:%d.0",
 	     *display);
 
-	slurm_thread_create_detached(NULL, _keepalive_engine, session);
-	slurm_thread_create_detached(NULL, _accept_engine, session);
+	slurm_thread_create_detached(NULL, _keepalive_engine, NULL);
+	slurm_thread_create_detached(NULL, _accept_engine, NULL);
 
 	/*
 	 * Connection handling threads are still running. Return now to signal
@@ -269,7 +301,6 @@ shutdown:
 void *_keepalive_engine(void *x)
 {
 	int delay;
-	LIBSSH2_SESSION *session = (LIBSSH2_SESSION *) x;
 
 	while (running) {
 		debug("x11 forwarding - sending keepalive message");
@@ -285,8 +316,6 @@ void *_keepalive_engine(void *x)
 
 void *_accept_engine(void *x)
 {
-	LIBSSH2_SESSION *session = (LIBSSH2_SESSION *) x;
-
 	if (listen(listen_socket, 2) == -1) {
 		error("stuff broke2");
 		goto shutdown;
