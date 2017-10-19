@@ -384,7 +384,7 @@ void *_handle_channel(void *x) {
 	 * loop once then go back to blocking on the poll() call.
 	 */
 	fds[0].fd = ssh_socket;
-	fds[0].events = POLLIN;
+	fds[0].events = POLLIN | POLLOUT;
 	fds[1].fd = ci->socket;
 	fds[1].events = POLLIN;
 
