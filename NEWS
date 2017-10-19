@@ -327,6 +327,9 @@ documents those changes that are of interest to users and administrators.
     '--quit-on-interrupt' to '--qos'.
  -- Change sched_min_interval default from 0 to 2 microseconds.
 
+* Changes in Slurm 17.02.9
+==========================
+
 * Changes in Slurm 17.02.8
 ==========================
  -- Add 'slurmdbd:' to the accounting plugin to notify message is from dbd
@@ -386,6 +389,8 @@ documents those changes that are of interest to users and administrators.
     systems.
  -- squeue: interpret negative length format specifiers as a request to
     delimit values with spaces.
+ -- Fix the torque pbsnodes wrapper script to parse a gres field with a type
+    set correctly.
 
 * Changes in Slurm 17.02.7
 ==========================

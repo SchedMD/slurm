@@ -155,10 +155,10 @@ Main:
                   foreach my $grestype ( @gres ) {
                           my @elt = split(/:/,$grestype);
 			  if ( $#elt>0 && $elt[0] eq "gpu" ) {
-			          $gpus = int($elt[1]);
+			          $gpus = int($elt[-1]);
 			  }
 			  if ( $#elt>0 && $elt[0] eq "mic" ) {
-			          $mics = int($elt[1]);
+			          $mics = int($elt[-1]);
 			  }
 		  }
 	    }

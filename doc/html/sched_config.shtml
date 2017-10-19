@@ -115,7 +115,14 @@ Larger values are appropriate if job time limits are imprecise and/or
 small delays in starting pending jobs in order to achieve higher system
 utilization is desired.</LI>
 <LI><B>bf_window=#</B> - How long, in minutes, into the future to look when
-determining when and where jobs can start. Default value is one day.</LI>
+determining when and where jobs can start.
+Higher values result in more overhead and less responsiveness.
+A value at least as long as the highest allowed time limit is generally
+advisable to prevent job starvation.
+In order to limit the amount of data managed by the backfill scheduler,
+if the value of bf_window is increased, then it is generally advisable
+to also increase <B>bf_resolution</B>.
+The default value is 1440 minutes (one day).</LI>
 <LI><B>bf_yield_interval=#</B> - 
 The backfill scheduler will periodically relinquish locks in order for other
 pending operations to take place. This specifies the times when the locks are
