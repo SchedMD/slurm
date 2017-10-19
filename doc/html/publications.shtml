@@ -56,10 +56,8 @@ Gilles Wiber and Mathieu Blanc (CEA), M'hamed Bouaziz and Liana Bozga (Atos)</li
 <li>Site Report: <a href="SLUG17/slug17-lanl-peltz-fullop.pdf">From Moab to Slurm: 12 HPC Systems in 2 Months</a>,
 Peltz, Fullop, Jennings, Senator, Grunau (Los Alamost National Laboratory)</li>
 
-<!-- Missing:
-<li>Site Report: <a href="SLUG17/">NERSC Site Report</a>,
+<li>Site Report: <a href="SLUG17/nersc_slug17.pdf">NERSC Site Report</a>,
 James Botts and Douglas Jacobsen</li>
--->
 
 <li>Technical: <a href="SLUG17/Roadmap.pdf">Slurm Roadmap - 17.11, 18.08, and Beyond</a>,
 Danny Auble, Morris Jette, Tim Wickberg (SchedMD)</li>
