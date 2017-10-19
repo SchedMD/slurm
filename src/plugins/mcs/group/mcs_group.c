@@ -253,8 +253,13 @@ static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 		for (j = 0; j < ngroups; j++) {
 			tmp_group = (uint32_t) groups[j];
 			if (array_mcs_parameter[i] == tmp_group) {
-				gr = getgrgid(groups[j]);
-				*result = gr->gr_name;
+				if ((gr = getgrgid(groups[j]))) {
+					*result = gr->gr_name;
+				} else {
+					error("%s: getgrgid(%u): %m",
+					      __func__, (uint32_t) groups[j]);
+					rc = SLURM_ERROR;
+				}
 				return rc;
 			}
 		}
