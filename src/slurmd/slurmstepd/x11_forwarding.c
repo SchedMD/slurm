@@ -266,7 +266,10 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	if (hostauth_failed
 	    && libssh2_userauth_publickey_fromfile(session, job->user_name,
 						   keypub, keypriv, NULL)) {
-		error("ssh public key authentication failure");
+		char *err;
+		libssh2_session_last_error(session, &err, NULL, 0);
+		error("ssh public key authentication failure: %s", err);
+
 		goto shutdown;
 	}
 	debug("public key auth successful");
