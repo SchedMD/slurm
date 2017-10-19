@@ -416,7 +416,7 @@ void *_handle_channel(void *x) {
 
 	while (true) {
 		if ((rc = poll(fds, 2, 10000)) == -1) {
-			error("%s: poll returned %s", __func__, strerror(rc));
+			error("%s: poll returned %d, %m", __func__, rc);
 			goto shutdown;
 		}
 		/*
