@@ -1237,6 +1237,8 @@ static int _attempt_backfill(void)
 
 		if (!_job_runnable_now(job_ptr))
 			continue;
+		if (!part_ptr)
+			continue;
 
 		job_ptr->last_sched_eval = now;
 		job_ptr->part_ptr = part_ptr;
@@ -1250,8 +1252,7 @@ static int _attempt_backfill(void)
 			slurmdb_assoc_rec_t assoc_rec;
 			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 			assoc_rec.acct      = job_ptr->account;
-			if (job_ptr->part_ptr)
-				assoc_rec.partition = job_ptr->part_ptr->name;
+			assoc_rec.partition = job_ptr->part_ptr->name;
 			assoc_rec.uid       = job_ptr->user_id;
 
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
@@ -1308,7 +1309,7 @@ static int _attempt_backfill(void)
 			qos_blocked_until = 0;
 		}
 
-		if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr)
+		if (job_ptr->part_ptr->qos_ptr)
 			qos_part_blocked_until =
 				job_ptr->part_ptr->qos_ptr->blocked_until;
 		else
