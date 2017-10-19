@@ -299,17 +299,22 @@ static int _print_str(char *str, int width, bool right, bool cut_output)
 	char format[64];
 	int printed = 0;
 
-	if (right == true && width != 0)
+	if (right == true && width > 0)
 		snprintf(format, 64, "%%%ds", width);
-	else if (width != 0)
+	else if (width > 0)
 		snprintf(format, 64, "%%.%ds", width);
-	else {
+	else if (width < 0) {
+		format[0] = '%';
+		format[1] = 's';
+		format[2] = ' ';
+		format[3] = '\0';
+	} else if (width == 0) {
 		format[0] = '%';
 		format[1] = 's';
 		format[2] = '\0';
 	}
 
-	if ((width == 0) || (cut_output == false)) {
+	if ((width <= 0) || (cut_output == false) ) {
 		if ((printed = printf(format, str)) < 0)
 			return printed;
 	} else {

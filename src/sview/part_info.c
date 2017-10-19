@@ -484,6 +484,9 @@ static uint16_t _set_part_over_subscribe_popup(void)
 	int response = 0;
 	uint16_t count = 4;
 
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
+
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_OK, GTK_RESPONSE_OK);
 	gtk_window_set_default(GTK_WINDOW(popup), label);
@@ -3165,6 +3168,9 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
+
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &partid, -1);
 	gtk_tree_model_get(model, iter, SORTID_NODELIST, &nodelist, -1);
