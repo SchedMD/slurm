@@ -846,8 +846,8 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	if (_slurm_crypto_init() < 0)
 		return SLURM_ERROR;
 
-	slurm_mutex_lock(&ctx->mutex);
 	slurm_mutex_lock(&cred->mutex);
+	slurm_mutex_lock(&ctx->mutex);
 
 	xassert(ctx->magic  == CRED_CTX_MAGIC);
 	xassert(ctx->type   == SLURM_CRED_VERIFIER);
