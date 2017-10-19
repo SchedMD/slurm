@@ -163,6 +163,7 @@ static int	ncpus;			/* number of CPUs on this node */
  */
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
+static sig_atomic_t _update_log = 0;
 static pthread_t msg_pthread = (pthread_t) 0;
 static time_t sent_reg_time = (time_t) 0;
 
@@ -430,7 +431,8 @@ _msg_engine(void)
 			_wait_for_all_threads(5); /* Wait for RPCs to finish */
 			_reconfigure();
 		}
-
+		if (_update_log)
+			_update_logging();
 		cli = xmalloc (sizeof (slurm_addr_t));
 		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
 			_handle_connection(sock, cli);
@@ -1754,7 +1756,7 @@ static void
 _usr_handler(int signum)
 {
 	if (signum == SIGUSR2) {
-		_update_logging();
+		_update_log = 1;
 	}
 }
 
@@ -1840,6 +1842,7 @@ static void _update_logging(void)
 	log_options_t *o = &conf->log_opts;
 	slurm_ctl_conf_t *cf;
 
+	_update_log = 0;
 	/* Preserve execute line verbose arguments (if any) */
 	cf = slurm_conf_lock();
 	if (!conf->debug_level_set && (cf->slurmd_debug != (uint16_t) NO_VAL))
@@ -1873,7 +1876,8 @@ static void _update_logging(void)
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 	log_set_timefmt(conf->log_fmt);
 
-	/* If logging to syslog and running in
+	/*
+	 * If logging to syslog and running in
 	 * MULTIPLE_SLURMD mode add my node_name
 	 * in the name tag for syslog.
 	 */
