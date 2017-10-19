@@ -197,6 +197,7 @@ struct slurm_job_credential {
 	bitstr_t *step_core_bitmap;
 	time_t    ctime;	/* time of credential creation		*/
 	char     *step_hostlist;/* hostnames for which the cred is ok	*/
+	uint16_t  x11;		/* x11 flags set on job allocation	*/
 
 	char     *signature; 	/* credential signature			*/
 	unsigned int siglen;	/* signature length in bytes		*/
@@ -568,6 +569,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->job_mem_limit   = arg->job_mem_limit;
 	cred->step_mem_limit  = arg->step_mem_limit;
 	cred->step_hostlist   = xstrdup(arg->step_hostlist);
+	cred->x11             = arg->x11;
 #ifndef HAVE_BG
 	{
 		int i = 0, sock_recs = 0;
@@ -651,6 +653,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->job_mem_limit  = cred->job_mem_limit;
 	rcred->step_mem_limit = cred->step_mem_limit;
 	rcred->step_hostlist  = xstrdup(cred->step_hostlist);
+	rcred->x11            = cred->x11;
 #ifndef HAVE_BG
 	rcred->job_core_bitmap  = bit_copy(cred->job_core_bitmap);
 	rcred->step_core_bitmap = bit_copy(cred->step_core_bitmap);
@@ -705,6 +708,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->job_mem_limit  = arg->job_mem_limit;
 	cred->step_mem_limit = arg->step_mem_limit;
 	cred->step_hostlist  = xstrdup(arg->step_hostlist);
+	cred->x11            = arg->x11;
 #ifndef HAVE_BG
 	{
 		int sock_recs = 0;
@@ -795,6 +799,7 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->job_mem_limit  = cred->job_mem_limit;
 	arg->step_mem_limit = cred->step_mem_limit;
 	arg->step_hostlist  = xstrdup(cred->step_hostlist);
+	arg->x11            = cred->x11;
 #ifdef HAVE_BG
 	arg->job_core_bitmap = NULL;
 	arg->step_core_bitmap = NULL;
@@ -890,6 +895,7 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	arg->job_mem_limit  = cred->job_mem_limit;
 	arg->step_mem_limit = cred->step_mem_limit;
 	arg->step_hostlist  = xstrdup(cred->step_hostlist);
+	arg->x11            = cred->x11;
 
 #ifdef HAVE_BG
 	arg->job_core_bitmap  = NULL;
@@ -1364,6 +1370,7 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpack64(&cred->step_mem_limit, buffer);
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
+		safe_unpack16(&cred->x11, buffer);
 		safe_unpack_time(&cred->ctime, buffer);
 
 		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
@@ -1779,6 +1786,7 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 		pack64(cred->step_mem_limit, buffer);
 		packstr(cred->job_constraints, buffer);
 		packstr(cred->step_hostlist, buffer);
+		pack16(cred->x11, buffer);
 		pack_time(cred->ctime, buffer);
 #ifndef HAVE_BG
 		{

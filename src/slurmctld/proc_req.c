@@ -1033,6 +1033,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 		cred_arg.gids = job_ptr->gids; /* avoid extra copy */
 	}
 
+	cred_arg.x11             = job_ptr->details->x11;
 	cred_arg.job_constraints = job_ptr->details->features;
 	cred_arg.job_core_bitmap = job_resrcs_ptr->core_bitmap;
 	cred_arg.job_core_spec   = job_ptr->details->core_spec;

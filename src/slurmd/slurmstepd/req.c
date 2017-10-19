@@ -1360,8 +1360,14 @@ rwfail:
 
 static int _handle_x11_display(int fd, stepd_step_rec_t *job)
 {
+	/*
+	 * dodge a race condition in the x11 forwarding setup.
+	 * the lock is held until display setup completes
+	 */
+	slurm_mutex_lock(&x11_lock);
 	/* Send the display number. zero indicates no display setup */
 	safe_write(fd, &job->x11_display, sizeof(int));
+	slurm_mutex_unlock(&x11_lock);
 
 	debug("Leaving _handle_get_x11_display");
 	return SLURM_SUCCESS;

@@ -4490,6 +4490,12 @@ extern char * prolog_flags2str(uint16_t prolog_flags)
 		xstrcat(rc, "Serial");
 	}
 
+	if (prolog_flags & PROLOG_FLAG_X11) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "X11");
+	}
+
 	return rc;
 }
 
@@ -4517,7 +4523,16 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 			rc |= PROLOG_FLAG_NOHOLD;
 		else if (xstrcasecmp(tok, "Serial") == 0)
 			rc |= PROLOG_FLAG_SERIAL;
-		else {
+		else if (xstrcasecmp(tok, "X11") == 0) {
+#ifdef WITH_SLURM_X11
+			rc |= (PROLOG_FLAG_ALLOC | PROLOG_FLAG_CONTAIN
+			       | PROLOG_FLAG_X11);
+#else
+			error("X11 forwarding not built in, cannot enable.");
+			rc = NO_VAL16;
+			break;
+#endif
+		} else {
 			error("Invalid PrologFlag: %s", tok);
 			rc = (uint16_t)NO_VAL;
 			break;

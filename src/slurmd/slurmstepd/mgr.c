@@ -116,6 +116,7 @@
 #include "src/slurmd/slurmstepd/pam_ses.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
+#include "src/slurmd/slurmstepd/x11_forwarding.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
@@ -156,7 +157,6 @@ typedef struct kill_thread {
 	pthread_t thread_id;
 	int       secs;
 } kill_thread_t;
-
 
 /*
  * Prototypes
@@ -1000,6 +1000,15 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	pid_t pid;
 	int rc = SLURM_SUCCESS;
 
+#ifdef WITH_SLURM_X11
+	int x11_pipe[2];
+
+	if (job->x11 && (pipe(x11_pipe) < 0)) {
+		error("x11 pipe: %m");
+		return SLURM_ERROR;
+	}
+#endif
+
 	debug2("%s: Before call to spank_init()", __func__);
 	if (spank_init(job) < 0) {
 		error("%s: Plugin stack initialization failed.", __func__);
@@ -1019,12 +1028,49 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		setpgid(0, 0);
 		setsid();
 		acct_gather_profile_g_child_forked();
-		/* Need to exec() something for proctrack/linuxproc to work,
-		 * it will not keep a process named "slurmstepd" */
-		execl(SLEEP_CMD, "sleep", "1000000", NULL);
-		error("execl: %m");
-		sleep(1);
-		exit(0);
+#ifdef WITH_SLURM_X11
+		if (job->x11) {
+			int display;
+
+			close(x11_pipe[0]);
+
+			/* will create several detached threads to process */
+			if (setup_x11_forward(job, &display)) {
+				/* ssh forwarding setup failed */
+				error("x11 port forwarding setup failed");
+				exit(127);
+			}
+
+			/* send back x11 display number to parent stepd */
+			if (write(x11_pipe[1], &display, sizeof(int))
+			    != sizeof(int)) {
+				error("%s: failed sending display number back: %m",
+				      __func__);
+			}
+			close(x11_pipe[1]);
+
+			/*
+			 * Have this thread sleep indefinitely to prevent the
+			 * process from ending, since all other threads left
+			 * are detached.
+			 */
+			while (true) /* in case of interrupted sleep */
+				sleep(100000);
+
+			exit(1);
+		} else
+#endif	/* WITH_SLURM_X11 */
+		{
+			/*
+			 * Need to exec() something for proctrack/linuxproc to
+			 * work, it will not keep a process named "slurmstepd"
+			 */
+
+			execl(SLEEP_CMD, "sleep", "1000000", NULL);
+			error("execl: %m");
+			sleep(1);
+			exit(0);
+		}
 	} else if (pid < 0) {
 		error("fork: %m");
 		_set_job_state(job, SLURMSTEPD_STEP_ENDING);
@@ -1048,6 +1094,31 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	jobacct_gather_set_proctrack_container_id(job->cont_id);
 	jobacct_gather_add_task(pid, &jobacct_id, 1);
 	container_g_add_cont(job->jobid, job->cont_id);
+
+#ifdef WITH_SLURM_X11
+	/*
+	 * For the X11 forwarding, we need to know what local port number the
+	 * forwarding code has started listening on so that the slurmd can
+	 * set the correct DISPLAY variable for this node.
+	 * This also serves to signal that the forwarding code has started
+	 * and is ready to accept connections.
+	 * If the port is zero then the forwarding code failed, and the prolog
+	 * needs to be marked as having failed as well.
+	 */
+	if (job->x11) {
+		close(x11_pipe[1]);
+		if (read(x11_pipe[0], &job->x11_display, sizeof(int))
+		    != sizeof(int)) {
+			error("%s: failed retrieving x11 display value: %m",
+			      __func__);
+			job->x11_display = 0;
+		}
+		close(x11_pipe[0]);
+
+		debug("x11 forwarding local display is %d", job->x11_display);
+		slurm_mutex_unlock(&x11_lock);
+	}
+#endif
 
 	_set_job_state(job, SLURMSTEPD_STEP_RUNNING);
 	if (!conf->job_acct_gather_freq)

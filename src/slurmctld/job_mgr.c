@@ -6934,6 +6934,9 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	if (!_valid_array_inx(job_desc))
 		return ESLURM_INVALID_ARRAY;
 
+	if (job_desc->x11 && !(slurmctld_conf.prolog_flags & PROLOG_FLAG_X11))
+		return ESLURM_X11_NOT_AVAIL;
+
 	/* Make sure anything that may be put in the database will be
 	 * lower case */
 	xstrtolower(job_desc->account);

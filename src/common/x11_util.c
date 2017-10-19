@@ -124,7 +124,7 @@ extern char *x11_get_xauth(void)
 	regex_t reg;
 	regmatch_t regmatch[2];
 	char *result, *cookie;
-	static char *cookie_pattern = "^[[:alnum:]]+/unix:[[:digit:]]+"
+	static char *cookie_pattern = "^[[:alnum:]-]+/unix:[[:digit:]]+"
 				      "[[:space:]]+MIT-MAGIC-COOKIE-1"
 				      "[[:space:]]+([[:xdigit:]]+)\n$";
 
@@ -161,27 +161,55 @@ extern char *x11_get_xauth(void)
 	return cookie;
 }
 
-extern int x11_set_xauth(char *cookie, uint16_t port)
+extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display)
 {
-	int status;
+	int i=0, status;
 	char *result;
 	char **xauth_argv;
 
 	xauth_argv = xmalloc(sizeof(char *) * 10);
-	xauth_argv[0] = xstrdup("xauth");
-	xauth_argv[1] = xstrdup("-q");
-	xauth_argv[2] = xstrdup("add");
-	xauth_argv[3] = xstrdup_printf("localhost:%u",
-				       (port - X11_TCP_PORT_OFFSET));
-	xauth_argv[4] = xstrdup("MIT-MAGIC-COOKIE-1");
-	xauth_argv[5] = xstrdup(cookie);
-	xauth_argv[6] = NULL;
+	xauth_argv[i++] = xstrdup("xauth");
+	xauth_argv[i++] = xstrdup("-v");
+	xauth_argv[i++] = xstrdup("-f");
+	xauth_argv[i++] = xstrdup(xauthority);
+	xauth_argv[i++] = xstrdup("add");
+	xauth_argv[i++] = xstrdup_printf("localhost:%u", display);
+	xauth_argv[i++] = xstrdup("MIT-MAGIC-COOKIE-1");
+	xauth_argv[i++] = xstrdup(cookie);
+	xauth_argv[i++] = NULL;
+	xassert(i < 10);
 
 	result = run_command("xauth", XAUTH_PATH, xauth_argv, 10000, &status);
 
 	free_command_argv(xauth_argv);
 
-	debug3("%s: result from xauth: %s", __func__, result);
+	debug2("%s: result from xauth: %s", __func__, result);
+	xfree(result);
+
+	return status;
+}
+
+extern int x11_delete_xauth(char *xauthority, uint16_t display)
+{
+	int i=0, status;
+	char *result;
+	char **xauth_argv;
+
+	xauth_argv = xmalloc(sizeof(char *) * 10);
+	xauth_argv[i++] = xstrdup("xauth");
+	xauth_argv[i++] = xstrdup("-v");
+	xauth_argv[i++] = xstrdup("-f");
+	xauth_argv[i++] = xstrdup(xauthority);
+	xauth_argv[i++] = xstrdup("remove");
+	xauth_argv[i++] = xstrdup_printf("localhost:%u", display);
+	xauth_argv[i++] = NULL;
+	xassert(i < 10);
+
+	result = run_command("xauth", XAUTH_PATH, xauth_argv, 10000, &status);
+
+	free_command_argv(xauth_argv);
+
+	debug2("%s: result from xauth: %s", __func__, result);
 	xfree(result);
 
 	return status;

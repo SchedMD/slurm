@@ -2835,6 +2835,7 @@ extern void launch_prolog(struct job_record *job_ptr)
 		cred_arg.ngids = job_ptr->ngids;
 		cred_arg.gids = job_ptr->gids; /* avoid extra copy */
 	}
+	cred_arg.x11                 = job_ptr->details->x11;
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
 	cred_arg.job_gres_list       = job_ptr->gres_list;
 	cred_arg.job_nhosts          = job_ptr->job_resrcs->nhosts;
@@ -2855,6 +2856,7 @@ extern void launch_prolog(struct job_record *job_ptr)
 	cred_arg.job_hostlist    = job_ptr->job_resrcs->nodes;
 	cred_arg.step_hostlist   = job_ptr->job_resrcs->nodes;
 #endif
+
 	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg,
 						 SLURM_PROTOCOL_VERSION);

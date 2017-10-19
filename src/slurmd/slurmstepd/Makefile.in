@@ -93,6 +93,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 sbin_PROGRAMS = slurmstepd$(EXEEXT)
+@WITH_SLURM_X11_TRUE@am__append_1 = x11_forwarding.c x11_forwarding.h
 subdir = src/slurmd/slurmstepd
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -152,11 +153,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
+am__slurmstepd_SOURCES_DIST = slurmstepd.c slurmstepd.h mgr.c mgr.h \
+	task.c task.h slurmstepd_job.c slurmstepd_job.h io.c io.h \
+	ulimits.c ulimits.h pdebug.c pdebug.h pam_ses.c pam_ses.h \
+	req.c req.h multi_prog.c multi_prog.h step_terminate_monitor.c \
+	step_terminate_monitor.h x11_forwarding.c x11_forwarding.h
+@WITH_SLURM_X11_TRUE@am__objects_1 = x11_forwarding.$(OBJEXT)
 am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
 	task.$(OBJEXT) slurmstepd_job.$(OBJEXT) io.$(OBJEXT) \
 	ulimits.$(OBJEXT) pdebug.$(OBJEXT) pam_ses.$(OBJEXT) \
 	req.$(OBJEXT) multi_prog.$(OBJEXT) \
-	step_terminate_monitor.$(OBJEXT)
+	step_terminate_monitor.$(OBJEXT) $(am__objects_1)
+am__EXTRA_slurmstepd_SOURCES_DIST = x11_forwarding.c x11_forwarding.h
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -200,8 +208,9 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(slurmstepd_SOURCES)
-DIST_SOURCES = $(slurmstepd_SOURCES)
+SOURCES = $(slurmstepd_SOURCES) $(EXTRA_slurmstepd_SOURCES)
+DIST_SOURCES = $(am__slurmstepd_SOURCES_DIST) \
+	$(am__EXTRA_slurmstepd_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -496,21 +505,14 @@ depend_libs = \
 
 slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) \
 	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
-	$(DL_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
+	$(DL_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
 
-slurmstepd_SOURCES = \
-	slurmstepd.c slurmstepd.h	\
-	mgr.c mgr.h			\
-	task.c task.h			\
-	slurmstepd_job.c slurmstepd_job.h \
-	io.c io.h			\
-	ulimits.c ulimits.h     	\
-	pdebug.c pdebug.h		\
-	pam_ses.c pam_ses.h		\
-	req.c req.h			\
-	multi_prog.c multi_prog.h	\
-	step_terminate_monitor.c step_terminate_monitor.h
-
+slurmstepd_SOURCES = slurmstepd.c slurmstepd.h mgr.c mgr.h task.c \
+	task.h slurmstepd_job.c slurmstepd_job.h io.c io.h ulimits.c \
+	ulimits.h pdebug.c pdebug.h pam_ses.c pam_ses.h req.c req.h \
+	multi_prog.c multi_prog.h step_terminate_monitor.c \
+	step_terminate_monitor.h $(am__append_1)
+@WITH_SLURM_X11_FALSE@EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
 slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 all: all-am
@@ -617,6 +619,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_terminate_monitor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ulimits.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_forwarding.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

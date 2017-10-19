@@ -160,6 +160,7 @@ typedef struct {
 					 * default=0 (no limit) */
 	uint32_t  job_nhosts;		/* count of nodes allocated to JOB */
 	List job_gres_list;		/* Generic resources allocated to JOB */
+	uint16_t  x11;			/* x11 flag set on job */
 
 	/* STEP specific info */
 	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */

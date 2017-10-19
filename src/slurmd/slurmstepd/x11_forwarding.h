@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  x11_util.h - x11 forwarding support functions
- *		 also see src/slurmd/slurmstepd/x11_forwarding.[ch]
+ *  x11_forwarding.h - setup ssh port forwarding
  *****************************************************************************
  *  Copyright (C) 2017 SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
@@ -35,35 +34,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _X11_UTIL_H_
-#define _X11_UTIL_H_
+#ifndef _X11_FORWARDING_H_
+#define _X11_FORWARDING_H_
 
-/*
- * X11 displays use a TCP port that is 6000 + $display_number.
- * E.g., DISPLAY=localhost:10.0 is TCP port 6010.
- */
-#define X11_TCP_PORT_OFFSET 6000
+extern int setup_x11_forward(stepd_step_rec_t *job, int *display);
 
-/* convert a --x11 argument into flags */
-uint16_t x11_str2flags(const char *str);
-
-/*
- * Get local TCP port for X11 from DISPLAY environment variable.
- *
- * Warning - will call exit(-1) if not able to retrieve.
- */
-extern int x11_get_display_port(void);
-
-/*
- * Retrieve the X11 magic cookie for the local DISPLAY
- * so we can use it on the remote end point.
- *
- * Warning - will call exit(-1) if not able to retrieve.
- */
-extern char *x11_get_xauth(void);
-
-extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display);
-
-extern int x11_delete_xauth(char *xauthority, uint16_t display);
-
-#endif /* _X11_UTIL_H_ */
+#endif /* _X11_FORWARDING_H_ */

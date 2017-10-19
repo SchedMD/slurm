@@ -2704,6 +2704,7 @@ typedef struct reservation_name_msg {
 #define PROLOG_FLAG_CONTAIN 	0x0004 /* Use proctrack plugin to create a
 					* container upon allocation */
 #define PROLOG_FLAG_SERIAL 	0x0008 /* serially execute prolog/epilog */
+#define PROLOG_FLAG_X11		0x0010 /* enable slurm x11 forwarding support */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
