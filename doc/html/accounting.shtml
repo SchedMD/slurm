@@ -24,8 +24,9 @@ step information is recorded. You can store this information in a
 text file or into SlurmDBD.</li>
 <li><b>JobAcctGatherType</b> is operating system dependent and
 controls what mechanism is used to collect accounting information.
-Supported values are <i>jobacct_gather/linux</i>
-and <i>jobacct_gather/none</i> (no information collected).</li>
+Supported values are <i>jobacct_gather/linux</i> (recommended),
+<i>jobacct_gather/cgroup<i> and <i>jobacct_gather/none</i>
+(no information collected).</li>
 <li><b>JobCompType</b> controls how job completion information is
 recorded. This can be used to record basic job information such
 as job name, user name, allocated nodes, start time, completion
