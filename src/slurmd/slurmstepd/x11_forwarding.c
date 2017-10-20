@@ -283,6 +283,8 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 
 		goto shutdown;
 	}
+	xfree(keypub);
+	xfree(keypriv);
 	debug("public key auth successful");
 
 	if (net_stream_listen_ports(&listen_socket, &port, ports, true) == -1) {
@@ -414,7 +416,7 @@ void *_handle_channel(void *x) {
 
 	while (true) {
 		if ((rc = poll(fds, 2, 10000)) == -1) {
-			error("%s: poll returned %s", __func__, strerror(rc));
+			error("%s: poll returned %d, %m", __func__, rc);
 			goto shutdown;
 		}
 		/*
