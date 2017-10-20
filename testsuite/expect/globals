@@ -218,6 +218,9 @@ cset max_stress_tasks 4
 #
 cset sleep_error_message "(invalid time interval)|(bad character in argument)|(usage: sleep seconds)"
 
+# Force LANG, as the expect tests aren't localized
+set ::env(LANG)          "en_US.UTF-8"
+
 # Other common variables
 set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"
