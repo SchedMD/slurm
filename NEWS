@@ -123,6 +123,7 @@ documents those changes that are of interest to users and administrators.
     the number of nodes listed.
  -- When creating a reservation, correct logic to ignoring job allocations on
     request.
+ -- Deprecate BLCR plugin, and do not build by default.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
