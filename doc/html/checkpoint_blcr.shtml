@@ -2,6 +2,13 @@
 
 <h1><a name="top">Slurm Checkpoint/Restart with BLCR</a></h1>
 
+<p><b>Support for the BLCR plugin is deprecated as of the 17.11 release.</b>
+Please consider other checkpoint systems that do not require direct
+Slurm support such as
+<a href="http://dmtcp.sourceforge.net/">DMTCP</a>, or
+<a href="https://computation.llnl.gov/projects/scalable-checkpoint-restart-for-mpi">SCR</a>.
+</p>
+
 <h2>Overview</h2>
 <p>Slurm is integrated with
 <a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
