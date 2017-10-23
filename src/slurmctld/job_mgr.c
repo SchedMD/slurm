@@ -15372,7 +15372,7 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 	bool is_running = false, is_suspended = false, is_completed = false;
 	bool is_completing = false;
 	time_t now = time(NULL);
-	uint32_t completing_flags;
+	uint32_t completing_flags = 0;
 
 	/* validate the request */
 	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
