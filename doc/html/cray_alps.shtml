@@ -2,6 +2,10 @@
 
 <h1>Slurm User and Administrator Guide for Cray Systems using Alps</h1>
 
+<p><b>Support for Cray using ALPS is deprecated as of 17.11, and will
+be removed in a future release. Sites are encouraged to switch to
+the <a href="cray.html">Native Cray</a> support as soon as possible.</b></p>
+
 <ul>
 <li><a href="#user_guide">User Guide</a></li>
 <li><a href="#admin_guide">Administrator Guide</a></li>

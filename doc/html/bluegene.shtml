@@ -2,6 +2,9 @@
 
 <h1>BlueGene/Q User and Administrator Guide</h1>
 
+<p><b>Support for BlueGene/Q systems is deprecated as of 17.11, and will be
+removed in a future release.</b></p>
+
 <p><b>Beginning with the 17.02 release only BlueGene/Q systems are supported
 by Slurm. Support for the BlueGene/L and BlueGene/P systems has been removed.
 </b></p>
