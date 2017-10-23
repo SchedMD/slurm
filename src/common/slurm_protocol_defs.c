@@ -4129,6 +4129,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_node_registration_status_msg(data);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
+	case DEFUNCT_REQUEST_JOB_ALLOCATION_INFO_LITE:
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_PACK_ALLOC_INFO:
 		slurm_free_job_alloc_info_msg(data);
@@ -4754,6 +4755,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_ALLOCATION_INFO";
 	case RESPONSE_JOB_ALLOCATION_INFO:
 		return "RESPONSE_JOB_ALLOCATION_INFO";
+	case DEFUNCT_REQUEST_JOB_ALLOCATION_INFO_LITE:
+		return "REQUEST_JOB_ALLOCATION_INFO_LITE";
+	case DEFUNCT_RESPONSE_JOB_ALLOCATION_INFO_LITE:
+		return "RESPONSE_JOB_ALLOCATION_INFO_LITE";
 	case REQUEST_JOB_PACK_ALLOCATION:
 		return "REQUEST_JOB_PACK_ALLOCATION";
 	case RESPONSE_JOB_PACK_ALLOCATION:
