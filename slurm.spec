@@ -18,7 +18,6 @@ Source:		%{name}-%{version}-%{patch}.tar.bz2
 # build options		.rpmmacros options	change to default action
 # ====================  ====================	========================
 # --prefix		%_prefix path		install path for commands, libraries, etc.
-# --with blcr		%_with_blcr path	require blcr support
 # --with cray		%_with_cray 1		build for a Native-Slurm Cray system
 # --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
 # --without debug	%_without_debug 1	don't compile with debugging symbols
@@ -37,7 +36,6 @@ Source:		%{name}-%{version}-%{patch}.tar.bz2
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
 %bcond_with mysql
-%bcond_with blcr
 %bcond_with hdf5
 %bcond_with lua
 %bcond_with openssl
@@ -267,7 +265,6 @@ according to the Slurm
 	%{?_with_cpusetdir} \
 	%{?_with_mysql_config} \
 	%{?_with_ssl} \
-	%{?_with_blcr} \
 	%{?_with_cray:--enable-native-cray}\
 	%{?_with_cray_network:--enable-cray-network}\
 	%{?_with_multiple_slurmd:--enable-multiple-slurmd} \
