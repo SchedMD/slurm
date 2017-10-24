@@ -62,7 +62,8 @@ int input_words;	/* number of words of input permitted */
 bool local_flag;	/* --local option */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 char *tres_str = NULL;	/* --tres= value */
-List tres_list;		/* TRES to report, built from --tres= value */
+List g_tres_list = NULL;/* TRES list from database -- unlatered */
+List tres_list = NULL;  /* TRES list based of tres_str (--tres=str) */
 int all_clusters_flag = 0;
 char *cluster_flag = NULL;
 slurmdb_report_time_format_t time_format = SLURMDB_REPORT_TIME_MINS;
@@ -70,9 +71,10 @@ char *time_format_string = "Minutes";
 void *db_conn = NULL;
 uint32_t my_uid = 0;
 slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
+char *tres_usage_str = "CPU";
 
 static char *	_build_cluster_string(void);
-static List	_build_tres_list(char *tres_str);
+static void	_build_tres_list(void);
 static void	_cluster_rep (int argc, char **argv);
 static int	_get_command (int *argc, char **argv);
 static void	_job_rep (int argc, char **argv);
@@ -248,7 +250,8 @@ main (int argc, char **argv)
 		fatal("Problem connecting to the database: %m");
 		exit(1);
 	}
-	tres_list = _build_tres_list(tres_str);
+
+	_build_tres_list();
 
 	if (input_field_count)
 		exit_flag = 1;
@@ -312,48 +315,61 @@ static char *_build_cluster_string(void)
 	return cluster_str;
 }
 
-static List _build_tres_list(char *tres_str)
+static void _build_tres_list(void)
 {
-	List tres_list = NULL;
 	ListIterator iter;
 	slurmdb_tres_rec_t *tres;
-	slurmdb_tres_cond_t cond;
 	char *tres_tmp = NULL, *tres_tmp2 = NULL, *save_ptr = NULL, *tok;
 
-	memset(&cond, 0, sizeof(slurmdb_tres_cond_t));
-	tres_list = acct_storage_g_get_tres(db_conn, my_uid, &cond);
-	if (!tres_list) {
-		fatal("Problem getting TRES data: %m");
-		exit(1);
-	}
-	/* To get all the TRES just say "ALL" */
-	if (!xstrcmp(tres_str, "ALL"))
-		return tres_list;
-
-	iter = list_iterator_create(tres_list);
-	while ((tres = list_next(iter))) {
-		if (tres_str) {
-			tres_tmp = xstrdup(tres_str);
-			xstrfmtcat(tres_tmp2, "%s%s%s",
-				   tres->type,
-				   tres->name ? "/" : "",
-				   tres->name ? tres->name : "");
-			tok = strtok_r(tres_tmp, ",", &save_ptr);
-			while (tok) {
-				if (!xstrcasecmp(tres_tmp2, tok))
-					break;
-				tok = strtok_r(NULL, ",", &save_ptr);
-			}
-			if (!tok) /* Not found */
-				tres->id = NO_VAL;	/* Skip this TRES */
-			xfree(tres_tmp2);
-			xfree(tres_tmp);
-		} else if (tres->id != TRES_CPU) {
-			tres->id = NO_VAL;		/* Skip this TRES */
+	if (!g_tres_list) {
+		slurmdb_tres_cond_t cond = {0};
+		g_tres_list = acct_storage_g_get_tres(db_conn, my_uid, &cond);
+		if (!g_tres_list) {
+			fatal("Problem getting TRES data: %m");
+			exit(1);
 		}
 	}
+	FREE_NULL_LIST(tres_list);
+
+	tres_list = list_create(slurmdb_destroy_tres_rec);
+	if (!tres_str) {
+		int tres_cpu_id = TRES_CPU;
+		slurmdb_tres_rec_t *tres2;
+		if (!(tres = list_find_first(g_tres_list,
+					     slurmdb_find_tres_in_list,
+					     &tres_cpu_id)))
+			fatal("Failed to find CPU TRES!");
+		tres2 = slurmdb_copy_tres_rec(tres);
+		list_append(tres_list, tres2);
+
+		return;
+	}
+
+	tres_usage_str = "TRES";
+	iter = list_iterator_create(g_tres_list);
+	while ((tres = list_next(iter))) {
+		tres_tmp = xstrdup(tres_str);
+		xstrfmtcat(tres_tmp2, "%s%s%s",
+			   tres->type,
+			   tres->name ? "/" : "",
+			   tres->name ? tres->name : "");
+		tok = strtok_r(tres_tmp, ",", &save_ptr);
+		while (tok) {
+			if (!xstrcasecmp(tres_tmp2, tok))
+				break;
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		if (tok) {
+			slurmdb_tres_rec_t *tres2 =
+				slurmdb_copy_tres_rec(tres);
+			list_append(tres_list, tres2);
+		}
+		xfree(tres_tmp2);
+		xfree(tres_tmp);
+	}
+	if (!list_count(tres_list))
+		fatal("No valid TRES given");
 	list_iterator_destroy(iter);
-	return tres_list;
 }
 
 #if !HAVE_READLINE

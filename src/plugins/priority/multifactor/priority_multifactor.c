@@ -651,7 +651,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		     pre_factors.priority_qos, weight_qos,
 		     job_ptr->prio_factors->priority_qos);
 
-		if (pre_tres_factors && post_tres_factors) {
+		if (weight_tres && pre_tres_factors && post_tres_factors) {
 			assoc_mgr_lock(&locks);
 			for(i = 0; i < slurmctld_tres_cnt; i++) {
 				if (!post_tres_factors[i])

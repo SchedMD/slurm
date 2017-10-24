@@ -90,12 +90,14 @@ extern char *fed_name;	/* Set if operating in federation mode */
 extern int input_words;	/* number of words of input permitted */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern char *tres_str;	/* --tres= value */
-List tres_list;		/* TRES to report, built from --tres= value */
+extern List g_tres_list;/* tres list from database - unaltered */
+extern List tres_list;	/* TRES list based of tres_str (--tres=str) */
 extern void *db_conn;
 extern uint32_t my_uid;
 extern int all_clusters_flag;
 extern slurmdb_report_sort_t sort_flag;
 extern char *cluster_flag;
+extern char *tres_usage_str;
 
 extern void slurmdb_report_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time, int last);

@@ -502,10 +502,11 @@ extern int user_top(int argc, char **argv)
 
 		switch (time_format) {
 		case SLURMDB_REPORT_TIME_PERCENT:
-			printf("Use reported in %s\n", time_format_string);
+			printf("Usage reported in %s\n", time_format_string);
 			break;
 		default:
-			printf("Use reported in TRES %s\n", time_format_string);
+			printf("Usage reported in %s %s\n",
+			       tres_usage_str, time_format_string);
 			break;
 		}
 		printf("----------------------------------------"

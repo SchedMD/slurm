@@ -4,7 +4,10 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 18.08.0pre1
 ==============================
 
-* Changes in Slurm 17.11.0pre3
+* Changes in Slurm 17.11.0rc2
+==============================
+
+* Changes in Slurm 17.11.0rc1
 ==============================
  -- Added the following jobcomp/script environment variables: CLUSTER,
     DEPENDENCY, DERIVED_EC, EXITCODE, GROUPNAME, QOS, RESERVATION, USERNAME.
@@ -127,6 +130,7 @@ documents those changes that are of interest to users and administrators.
  -- When creating a reservation, correct logic to ignoring job allocations on
     request.
  -- Deprecate BLCR plugin, and do not build by default.
+ -- Change sreport report titles from "Use" to "Usage"
 
 * Changes in Slurm 17.11.0pre2
 ==============================
@@ -335,6 +339,13 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- When resuming powered down nodes, mark DOWN nodes right after ResumeTimeout
     has been reached (previous logic would wait about one minute longer).
+ -- Fix sreport not showing full column name for TRES Count.
+ -- Fix slurmdb_reservations_get() giving wrong usage data when job's spanned
+    reservation that was modified.
+ -- Fix sreport reservation utilization report showing bad data.
+ -- Show all TRES' on a reservation in sreport reservation utilization report by
+    default.
+ -- Fix sacctmgr show reservation handling "end" parameter.
 
 * Changes in Slurm 17.02.8
 ==========================

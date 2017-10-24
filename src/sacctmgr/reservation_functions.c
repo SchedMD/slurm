@@ -117,7 +117,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			else
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "End",
-					 MAX(command_len, 5))) {
+					 MAX(command_len, 1))) {
 			reservation_cond->time_end =
 				parse_time(argv[i]+end, 1);
 			if (errno == ESLURM_INVALID_TIME_VALUE)

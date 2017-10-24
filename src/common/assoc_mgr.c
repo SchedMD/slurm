@@ -363,8 +363,10 @@ static void _normalize_assoc_shares_traditional(
 			       assoc->id, assoc->acct, assoc->user,
 			       assoc->shares_raw,
 			       assoc->usage->level_shares,
+			       assoc->usage->level_shares ?
 			       (double)assoc->shares_raw /
-			       (double)assoc->usage->level_shares);
+			       (double)assoc->usage->level_shares :
+			       0);
 		}
 
 		assoc = assoc->usage->parent_assoc_ptr;

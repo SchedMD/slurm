@@ -110,14 +110,10 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 		} else if (clus_itr) {
 			while ((cluster = list_next(clus_itr))) {
 				total += res->percent_used;
-				if (clus_res) {
-					fprintf(stderr,
-						"   Cluster - %s\t %u%%\n",
-						clus_res->cluster,
-						res->percent_used);
-				} else {
-					error("%s: clus_res is NULL", __func__);
-				}
+				fprintf(stderr,
+					"   Cluster - %s\t %u%%\n",
+					cluster,
+					res->percent_used);
 			}
 		}
 		if (clus_itr)
