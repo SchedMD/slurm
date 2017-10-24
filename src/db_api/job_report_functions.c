@@ -403,10 +403,11 @@ no_objects:
 					char *mywckey = NULL;
 					if (!both)
 						break;
-					if (acct_group->acct)
+					if (acct_group->acct) {
 						mywckey = strstr(
 							acct_group->acct, ":");
-					mywckey++;
+						mywckey++;
+					}
 					if (!job->wckey && !mywckey)
 						break;
 					else if (!mywckey || !job->wckey)
