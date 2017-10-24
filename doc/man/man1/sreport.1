@@ -55,7 +55,9 @@ section below.
 .TP
 \fB\-T,  \-\-tres <tres_names>\fR
 Trackable resource (TRES) to report values for.
-By default CPU resource use is reported.
+By default CPU resource use is reported (except for reservation reports. All
+TRES types reserved by a reservation will be shown by default unless overridden
+with this option).
 Multiple TRES names may be separated using a comma separated list for all
 reports except the job reports, which can only support a single TRES name, or
 "ALL" for all TRES.

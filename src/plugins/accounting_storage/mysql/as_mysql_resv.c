@@ -673,10 +673,10 @@ empty:
 		itr = list_iterator_create(job_list);
 		itr2 = list_iterator_create(resv_list);
 		while ((job = list_next(itr))) {
-			int start = job->start;
-			int end = job->end;
 			int set = 0;
 			while ((resv = list_next(itr2))) {
+				int start   = job->start;
+				int end     = job->end;
 				int elapsed = 0;
 				/* since a reservation could have
 				   changed while a job was running we
