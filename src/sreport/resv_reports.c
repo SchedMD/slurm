@@ -507,7 +507,7 @@ extern int resv_utilization(int argc, char **argv)
 	slurmdb_reservation_rec_t *tot_resv = NULL;
 	List resv_list = NULL;
 	List tot_resv_list = NULL;
-	List req_tres_list = tres_list, db_tres_list = NULL;
+	List req_tres_list = tres_list;
 
 	List format_list = list_create(slurm_destroy_char);
 
@@ -582,18 +582,10 @@ extern int resv_utilization(int argc, char **argv)
 	if (!tres_str) {
 		/*
 		 * If the user didn't request specific TRES types then display
-		 * the all TRES types that are on the reservation. Have to get
-		 * the list again because _build_tres_list() will set all TRES
-		 * id's to NO_VAL except for CPU if specific TRES weren't
-		 * requested.
+		 * the all TRES types that are on the reservation. Use the
+		 * g_tres_list as it is the unaltered list from the database.
 		 */
-		slurmdb_tres_cond_t cond = {0};
-		db_tres_list = acct_storage_g_get_tres(db_conn, my_uid, &cond);
-		if (!db_tres_list) {
-			fatal("Problem getting TRES data for reservation report: %m");
-			exit(1);
-		}
-		req_tres_list = db_tres_list;
+		req_tres_list = g_tres_list;
 	}
 
 	list_sort(tot_resv_list, (ListCmpF)sort_reservations_dec);
@@ -635,7 +627,6 @@ extern int resv_utilization(int argc, char **argv)
 		list_iterator_destroy(tres_itr);
 		FREE_NULL_LIST(resv_tres_list);
 	}
-	FREE_NULL_LIST(db_tres_list);
 	list_iterator_destroy(tot_itr);
 
 end_it:
