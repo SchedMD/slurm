@@ -296,7 +296,7 @@ static int _setup_print_fields_list(List format_list)
 			   !strncasecmp("count", object, MAX(command_len, 2))) {
 			field->type = PRINT_RESV_TRES_CNT;
 			field->name = xstrdup("TRES count");
-			field->len = 9;
+			field->len = 10;
 			field->print_routine = print_fields_uint;
 		} else if (!strncasecmp("TresName", object,
 					MAX(command_len, 5))) {
