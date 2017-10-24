@@ -3381,7 +3381,6 @@ extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres)
 	memcpy(tres_out, tres, sizeof(slurmdb_tres_rec_t));
 	tres_out->name = xstrdup(tres->name);
 	tres_out->type = xstrdup(tres->type);
-	tres_out->count = tres->count;
 
 	return tres_out;
 }
