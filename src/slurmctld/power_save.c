@@ -403,6 +403,23 @@ static void _do_power_work(time_t now)
 			bit_set(suspend_node_bitmap, i);
 			last_suspend = now;
 		}
+
+		/*
+		 * Down nodes as if not resumed by ResumeTimeout
+		 */
+		if (bit_test(booting_node_bitmap, i) &&
+		    bit_test(resume_node_bitmap, i)  &&
+		    (now > node_ptr->last_response)  &&
+		    IS_NODE_NO_RESPOND(node_ptr)) {
+			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
+			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
+			bit_set(power_node_bitmap, i);
+			bit_set(avail_node_bitmap, i);
+			bit_clear(booting_node_bitmap, i);
+			bit_clear(resume_node_bitmap, i);
+			node_ptr->last_idle = 0;
+		}
 	}
 	FREE_NULL_BITMAP(avoid_node_bitmap);
 	if (((now - last_log) > 600) && (susp_total > 0)) {
@@ -898,10 +915,12 @@ static void *_init_power_save(void *arg)
 		if (boot_time == 0)
 			boot_time = now;
 
-		/* Only run every 60 seconds or after a node state change,
-		 *  whichever happens first */
+		/*
+		 * Only run every 10 seconds or after a node state change,
+		 * whichever happens first
+		 */
 		if ((last_node_update >= last_power_scan) ||
-		    (now >= (last_power_scan + 60))) {
+		    (now >= (last_power_scan + 10))) {
 			lock_slurmctld(node_write_lock);
 			_do_power_work(now);
 			unlock_slurmctld(node_write_lock);

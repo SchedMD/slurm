@@ -259,7 +259,7 @@ extern uint16_t slurm_get_numa_node(uint16_t cpuid)
 
 	collective = numa_allocate_cpumask();
 	if (maxcpus > collective->size) {
-		error("%s: Size mismatch!!!! %d %"PRIu64,
+		error("%s: Size mismatch!!!! %d %lu",
 		      __func__, maxcpus, collective->size);
 		numa_free_cpumask(collective);
 		return 0;

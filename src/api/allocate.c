@@ -818,7 +818,7 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
                        job_step_create_response_msg_t **resp)
 {
 	slurm_msg_t req_msg, resp_msg;
-	int delay, rc, retry = 0;
+	int delay = 0, rc, retry = 0;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);

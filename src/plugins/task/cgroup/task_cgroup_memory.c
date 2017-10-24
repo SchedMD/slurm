@@ -83,6 +83,7 @@ static uint64_t percent_in_bytes (uint64_t mb, float percent)
 extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	xcgroup_t memory_cg;
+	bool set_swappiness;
 
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
@@ -108,7 +109,8 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	}
 	xcgroup_set_param(&memory_cg, "memory.use_hierarchy","1");
 
-	if (slurm_cgroup_conf->memory_swappiness != NO_VAL64)
+	set_swappiness = (slurm_cgroup_conf->memory_swappiness == NO_VAL64);
+	if (set_swappiness)
 		xcgroup_set_uint64_param(&memory_cg, "memory.swappiness",
 					 slurm_cgroup_conf->memory_swappiness);
 
@@ -144,30 +146,31 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	max_kmem_percent = slurm_cgroup_conf->max_kmem_percent;
 	min_kmem_space = slurm_cgroup_conf->min_kmem_space * 1024 * 1024;
 
-	debug ("task/cgroup/memory: total:%luM allowed:%.4g%%(%s), "
-	       "swap:%.4g%%(%s), max:%.4g%%(%luM) "
-	       "max+swap:%.4g%%(%luM) min:%luM "
-	       "kmem:%.4g%%(%luM %s) min:%luM "
-	       "swappiness:%lu(0x%lx)",
-	       (unsigned long) totalram,
-	       allowed_ram_space,
-	       constrain_ram_space?"enforced":"permissive",
+	debug("task/cgroup/memory: total:%"PRIu64"M allowed:%.4g%%(%s), "
+	      "swap:%.4g%%(%s), max:%.4g%%(%"PRIu64"M) "
+	      "max+swap:%.4g%%(%"PRIu64"M) min:%"PRIu64"M "
+	      "kmem:%.4g%%(%"PRIu64"M %s) min:%"PRIu64"M "
+	      "swappiness:%"PRIu64"(%s)",
 
-	       allowed_swap_space,
-	       constrain_swap_space?"enforced":"permissive",
-	       slurm_cgroup_conf->max_ram_percent,
-	       (unsigned long) (max_ram/(1024*1024)),
+	      totalram, allowed_ram_space,
+	      constrain_ram_space ? "enforced" : "permissive",
 
-	       slurm_cgroup_conf->max_swap_percent,
-	       (unsigned long) (max_swap/(1024*1024)),
-	       (unsigned long) slurm_cgroup_conf->min_ram_space,
+	      allowed_swap_space,
+	      constrain_swap_space ? "enforced" : "permissive",
+	      slurm_cgroup_conf->max_ram_percent,
+	      (uint64_t) (max_ram / (1024 * 1024)),
 
-	       slurm_cgroup_conf->max_kmem_percent,
-	       (unsigned long) (max_kmem/(1024*1024)),
-	       constrain_kmem_space?"enforced":"permissive",
-	       (unsigned long) slurm_cgroup_conf->min_kmem_space,
-	       slurm_cgroup_conf->memory_swappiness,
-	       slurm_cgroup_conf->memory_swappiness);
+	      slurm_cgroup_conf->max_swap_percent,
+	      (uint64_t) (max_swap / (1024 * 1024)),
+	      slurm_cgroup_conf->min_ram_space,
+
+	      slurm_cgroup_conf->max_kmem_percent,
+	      (uint64_t) (max_kmem / (1024 * 1024)),
+	      constrain_kmem_space ? "enforced" : "permissive",
+	      slurm_cgroup_conf->min_kmem_space,
+
+	      set_swappiness ? slurm_cgroup_conf->memory_swappiness : 0,
+	      set_swappiness ? "set" : "unset");
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd

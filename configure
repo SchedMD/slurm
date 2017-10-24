@@ -25100,7 +25100,7 @@ fi
 LIBS="$savedLIBS"
 
 
-
+  ac_have_blcr="no"
   _x_ac_blcr_dirs="/usr /usr/local /opt/freeware /opt/blcr"
   _x_ac_blcr_libs="lib64 lib"
 
@@ -25110,13 +25110,12 @@ if test "${with_blcr+set}" = set; then :
   withval=$with_blcr; if test "x$with_blcr" != xno; then :
   _x_ac_blcr_dirs="$with_blcr $_x_ac_blcr_dirs"
 fi
+else
+  with_blcr=no
 fi
 
 
-  if test "x$with_blcr" = xno; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for blcr disabled" >&5
-$as_echo "$as_me: WARNING: support for blcr disabled" >&2;}
-  else
+  if test "x$with_blcr" != xno; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for blcr installation" >&5
 $as_echo_n "checking for blcr installation... " >&6; }
 if ${x_ac_cv_blcr_dir+:} false; then :
@@ -25168,6 +25167,7 @@ $as_echo "$x_ac_cv_blcr_dir" >&6; }
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate blcr installation" >&5
 $as_echo "$as_me: WARNING: unable to locate blcr installation" >&2;}
     else
+      ac_have_blcr="yes"
       BLCR_HOME="$x_ac_cv_blcr_dir"
       BLCR_LIBS="-lcr"
       BLCR_CPPFLAGS="-I$x_ac_cv_blcr_dir/include"
@@ -25629,6 +25629,8 @@ $as_echo "${x_ac_deprecated=no}" >&6; }
         as_fn_error $? "BlueGene support is deprecated and will be removed in a future release. SchedMD customers are encouraged to contact support to discuss further. Use --enable-deprecated to build." "$LINENO" 5
      elif test "$ac_have_alps_cray" = yes; then
         as_fn_error $? "Cray/ALPS support is deprecated and will be removed in a future release. Please consider using Native Cray mode. SchedMD customers are encouraged to contact support to discuss further. Use --enable-deprecated to build." "$LINENO" 5
+     elif test "$ac_have_blcr" = yes; then
+        as_fn_error $? "BLCR support is deprecated and will be removed in a future release. SchedMD customers are encouraged to contact support to discuss further. Use --enable-deprecated to build." "$LINENO" 5
      fi
    fi
 

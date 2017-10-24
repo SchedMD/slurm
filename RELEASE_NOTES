@@ -91,6 +91,10 @@ NOTE: IBM BlueGene/Q and Cray/ALPS modes are deprecated and will be removed
       in an upcoming release. You must add the --enable-deprecated option to
       configure to build these targets.
 
+NOTE: Built-in BLCR support is deprecated, no longer built automatically, and
+      will be removed in an upcoming release. You must add --with-blcr and
+      --enable-deprecated options to configure to build this plugin.
+
 HIGHLIGHTS
 ==========
 

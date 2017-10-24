@@ -410,6 +410,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_node_registration(msg, 0);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
+	case DEFUNCT_REQUEST_JOB_ALLOCATION_INFO_LITE:
 		_slurm_rpc_job_alloc_info(msg);
 		break;
 	case REQUEST_JOB_PACK_ALLOC_INFO:
@@ -3145,7 +3146,11 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		unlock_slurmctld(job_read_lock);
 
 		slurm_msg_t_init(&response_msg);
-		response_msg.msg_type = RESPONSE_JOB_ALLOCATION_INFO;
+		if (msg->msg_type == DEFUNCT_REQUEST_JOB_ALLOCATION_INFO_LITE)
+			response_msg.msg_type =
+				DEFUNCT_RESPONSE_JOB_ALLOCATION_INFO_LITE;
+		else
+			response_msg.msg_type = RESPONSE_JOB_ALLOCATION_INFO;
 		response_msg.data     = job_info_resp_msg;
 		response_msg.flags    = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;

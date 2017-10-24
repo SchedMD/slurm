@@ -907,7 +907,7 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	char *avail_states = NULL, *cur_state = NULL;
 	char *resp_msg, *argv[10], *avail_sep = "", *cur_sep = "", *tok;
 	int status = 0;
-	int len;
+	int len = 0;
 
 	if (!syscfg_path || !avail_modes || !current_mode)
 		return;

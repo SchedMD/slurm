@@ -908,7 +908,6 @@ static void *_slurmctld_signal_hand(void *no_data)
 			error("Invalid signal (%d) received", sig);
 		}
 	}
-
 }
 
 static void _default_sigaction(int sig)

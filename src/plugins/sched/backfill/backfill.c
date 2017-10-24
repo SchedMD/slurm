@@ -1026,7 +1026,7 @@ static int _attempt_backfill(void)
 	uint32_t test_array_count = 0;
 	uint32_t job_no_reserve;
 	bool resv_overlap = false;
-	uint8_t save_share_res, save_whole_node;
+	uint8_t save_share_res = 0, save_whole_node = 0;
 	int test_fini;
 	int user_part_inx1 = -1, user_part_inx2 = -1;
 	int part_inx = -1, user_inx = -1;

@@ -14,18 +14,17 @@
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_BLCR], [
-
+  ac_have_blcr="no"
   _x_ac_blcr_dirs="/usr /usr/local /opt/freeware /opt/blcr"
   _x_ac_blcr_libs="lib64 lib"
 
   AC_ARG_WITH(
     [blcr],
     AS_HELP_STRING(--with-blcr=PATH,Specify path to BLCR installation),
-    [AS_IF([test "x$with_blcr" != xno],[_x_ac_blcr_dirs="$with_blcr $_x_ac_blcr_dirs"])])
+    [AS_IF([test "x$with_blcr" != xno],[_x_ac_blcr_dirs="$with_blcr $_x_ac_blcr_dirs"])],
+    [with_blcr=no])
 
-  if [test "x$with_blcr" = xno]; then
-    AC_MSG_WARN([support for blcr disabled])
-  else
+  if [test "x$with_blcr" != xno]; then
     AC_CACHE_CHECK(
       [for blcr installation],
       [x_ac_cv_blcr_dir],
@@ -51,6 +50,7 @@ AC_DEFUN([X_AC_BLCR], [
     if test -z "$x_ac_cv_blcr_dir"; then
       AC_MSG_WARN([unable to locate blcr installation])
     else
+      ac_have_blcr="yes"
       BLCR_HOME="$x_ac_cv_blcr_dir"
       BLCR_LIBS="-lcr"
       BLCR_CPPFLAGS="-I$x_ac_cv_blcr_dir/include"
