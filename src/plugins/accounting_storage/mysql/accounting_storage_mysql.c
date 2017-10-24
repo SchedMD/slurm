@@ -2539,6 +2539,12 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_CLUSTER_DELETED))
 		return rc;
+	/*
+	 * We should never get here since check_connection will return
+	 * ESLURM_DB_CONNECTION when !mysql_conn, but Coverity doesn't
+	 * understand that. CID 44841.
+	 */
+	xassert(mysql_conn);
 
 	debug4("got %d commits", list_count(mysql_conn->update_list));
 
