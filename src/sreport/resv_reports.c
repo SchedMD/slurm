@@ -367,10 +367,11 @@ static List _get_resv_list(int argc, char **argv,
 		       report_name, start_char, end_char);
 		switch (time_format) {
 		case SLURMDB_REPORT_TIME_PERCENT:
-			printf("Use reported in %s\n", time_format_string);
+			printf("Usage reported in %s\n", time_format_string);
 			break;
 		default:
-			printf("Use reported in TRES %s\n", time_format_string);
+			printf("Usage reported in TRES %s\n",
+			       time_format_string);
 			break;
 		}
 		printf("----------------------------------------"

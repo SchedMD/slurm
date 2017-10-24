@@ -124,6 +124,7 @@ documents those changes that are of interest to users and administrators.
  -- When creating a reservation, correct logic to ignoring job allocations on
     request.
  -- Deprecate BLCR plugin, and do not build by default.
+ -- Change sreport report titles from "Use" to "Usage"
 
 * Changes in Slurm 17.11.0pre2
 ==============================

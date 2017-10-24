@@ -71,6 +71,7 @@ char *time_format_string = "Minutes";
 void *db_conn = NULL;
 uint32_t my_uid = 0;
 slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
+char *tres_usage_str = "CPU";
 
 static char *	_build_cluster_string(void);
 static void	_build_tres_list(void);
@@ -344,6 +345,7 @@ static void _build_tres_list(void)
 		return;
 	}
 
+	tres_usage_str = "TRES";
 	iter = list_iterator_create(g_tres_list);
 	while ((tres = list_next(iter))) {
 		tres_tmp = xstrdup(tres_str);

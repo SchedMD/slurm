@@ -651,10 +651,11 @@ static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 		       report_name, start_char, end_char);
 		switch(time_format) {
 		case SLURMDB_REPORT_TIME_PERCENT:
-			printf("Use reported in %s\n", time_format_string);
+			printf("Usage reported in %s\n", time_format_string);
 			break;
 		default:
-			printf("Use reported in TRES %s\n", time_format_string);
+			printf("Usage reported in %s %s\n",
+			       tres_usage_str, time_format_string);
 			break;
 		}
 		printf("----------------------------------------"
@@ -894,11 +895,11 @@ extern int cluster_account_by_user(int argc, char **argv)
 
 		switch (time_format) {
 		case SLURMDB_REPORT_TIME_PERCENT:
-			printf("Use reported in %s\n", time_format_string);
+			printf("Usage reported in %s\n", time_format_string);
 			break;
 		default:
-			printf("Use reported in TRES %s\n",
-			       time_format_string);
+			printf("Usage reported in %s %s\n",
+			       tres_usage_str, time_format_string);
 			break;
 		}
 		printf("----------------------------------------"
@@ -1103,11 +1104,11 @@ extern int cluster_user_by_account(int argc, char **argv)
 
 		switch (time_format) {
 		case SLURMDB_REPORT_TIME_PERCENT:
-			printf("Use reported in %s\n", time_format_string);
+			printf("Usage reported in %s\n", time_format_string);
 			break;
 		default:
-			printf("Use reported in TRES %s\n",
-			       time_format_string);
+			printf("Usage reported in %s %s\n",
+			       tres_usage_str, time_format_string);
 			break;
 		}
 		printf("----------------------------------------"
@@ -1298,11 +1299,11 @@ extern int cluster_user_by_wckey(int argc, char **argv)
 
 		switch (time_format) {
 		case SLURMDB_REPORT_TIME_PERCENT:
-			printf("Use reported in %s\n", time_format_string);
+			printf("Usage reported in %s\n", time_format_string);
 			break;
 		default:
-			printf("Use reported in TRES %s\n",
-			       time_format_string);
+			printf("Usage reported in %s %s\n",
+			       tres_usage_str, time_format_string);
 			break;
 		}
 		printf("----------------------------------------"
@@ -1760,11 +1761,11 @@ extern int cluster_wckey_by_user(int argc, char **argv)
 
 		switch (time_format) {
 		case SLURMDB_REPORT_TIME_PERCENT:
-			printf("Use reported in %s\n", time_format_string);
+			printf("Usage reported in %s\n", time_format_string);
 			break;
 		default:
-			printf("Use reported in TRES %s\n",
-			       time_format_string);
+			printf("Usage reported in %s %s\n",
+			       tres_usage_str, time_format_string);
 			break;
 		}
 		printf("----------------------------------------"
