@@ -1,18 +1,19 @@
 Name:		slurm
-Version:	17.11.0pre2
-%define patch 1
-Release:	%{patch}%{?dist}
+Version:	17.11.0
+%define rel	0pre2
+Release:	%{rel}%{?dist}
 Summary:	Slurm Workload Manager
 
 Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 
-# when the patch number is one, the tarball filename does not include it
-%if %patch == 1
+%dump
+# when the rel number is one, the tarball filename does not include it
+%if "%{rel}" == "1"
 Source:		%{name}-%{version}.tar.bz2
 %else
-Source:		%{name}-%{version}-%{patch}.tar.bz2
+Source:		%{name}-%{version}-%{rel}.tar.bz2
 %endif
 
 # build options		.rpmmacros options	change to default action
@@ -251,11 +252,11 @@ according to the Slurm
 #############################################################################
 
 %prep
-# when the patch number is one, the tarball filename does not include it
-%if %patch == 1
+# when the rel number is one, the tarball filename does not include it
+%if "%{rel}" == "1"
 %setup -n %{name}-%{version}
 %else
-%setup -n %{name}-%{version}-%{patch}
+%setup -n %{name}-%{version}-%{rel}
 %endif
 
 %build
@@ -304,8 +305,8 @@ install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
       install -D -m644 contribs/cray/plugstack.conf.template %{buildroot}/%{_sysconfdir}/plugstack.conf.template
       install -D -m644 contribs/cray/slurm.conf.template %{buildroot}/%{_sysconfdir}/slurm.conf.template
    %endif
-   install -D -m644 contribs/cray/opt_modulefiles_slurm %{buildroot}/opt/modulefiles/slurm/%{version}-%{release}
-   echo -e '#%Module\nset ModulesVersion "%{version}-%{release}"' > %{buildroot}/opt/modulefiles/slurm/.version
+   install -D -m644 contribs/cray/opt_modulefiles_slurm %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel}
+   echo -e '#%Module\nset ModulesVersion "%{version}-%{rel}"' > %{buildroot}/opt/modulefiles/slurm/.version
 %else
    rm -f contribs/cray/opt_modulefiles_slurm
    rm -f %{buildroot}/%{_sysconfdir}/plugstack.conf.template
@@ -373,8 +374,8 @@ test -f %{buildroot}/%{_sbindir}/capmc_resume		&&
 test -f %{buildroot}/%{_bindir}/netloc_to_topology		&&
   echo %{_bindir}/netloc_to_topology			>> $LIST
 
-test -f %{buildroot}/opt/modulefiles/slurm/%{version}-%{release} &&
-  echo /opt/modulefiles/slurm/%{version}-%{release} >> $LIST
+test -f %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel} &&
+  echo /opt/modulefiles/slurm/%{version}-%{rel} >> $LIST
 test -f %{buildroot}/opt/modulefiles/slurm/.version &&
   echo /opt/modulefiles/slurm/.version >> $LIST
 

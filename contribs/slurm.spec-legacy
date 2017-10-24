@@ -2,20 +2,20 @@
 # DEPRECATED, NOT MAINTAINED, WILL BE REMOVED IN A FUTURE RELEASE.
 
 Name:		slurm
-Version:	17.11.0pre2
-%define patch 1
-Release:	%{patch}%{?dist}
+Version:	17.11.0
+%define rel	0pre2
+Release:	%{rel}%{?dist}
 Summary:	Slurm Workload Manager
 
 Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 
-# when the patch number is one, the tarball filename does not include it
-%if %patch == 1
+# when the rel number is one, the tarball filename does not include it
+%if "%{rel}" == 1
 Source:		%{name}-%{version}.tar.bz2
 %else
-Source:		%{name}-%{version}-%{patch}.tar.bz2
+Source:		%{name}-%{version}-%{rel}.tar.bz2
 %endif
 
 # Note that this package is not relocatable
@@ -368,11 +368,11 @@ according to the Slurm
 #############################################################################
 
 %prep
-# when the patch number is one, the tarball filename does not include it
-%if %patch == 1
+# when the rel number is one, the tarball filename does not include it
+%if "%{rel}" == "1"
 %setup -n %{name}-%{version}
 %else
-%setup -n %{name}-%{version}-%{patch}
+%setup -n %{name}-%{version}-%{rel}
 %endif
 
 %build
@@ -438,8 +438,8 @@ fi
       install -D -m644 contribs/cray/plugstack.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/plugstack.conf.template
       install -D -m644 contribs/cray/slurm.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.template
    %endif
-   install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release}
-   echo -e '#%Module\nset ModulesVersion "%{version}-%{release}"' > $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version
+   install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{rel}
+   echo -e '#%Module\nset ModulesVersion "%{version}-%{rel}"' > $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version
 %else
    rm -f contribs/cray/opt_modulefiles_slurm
    rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/plugstack.conf.template
@@ -565,8 +565,8 @@ test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service	&&
 test -f $RPM_BUILD_ROOT/%{_bindir}/netloc_to_topology		&&
   echo %{_bindir}/netloc_to_topology			>> $LIST
 
-test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release} &&
-  echo /opt/modulefiles/slurm/%{version}-%{release} >> $LIST
+test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{rel} &&
+  echo /opt/modulefiles/slurm/%{version}-%{rel} >> $LIST
 test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version &&
   echo /opt/modulefiles/slurm/.version >> $LIST
 
