@@ -572,6 +572,8 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 	}
 
+	with_usage = resv_cond->with_usage;
+
 	memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
 	if (resv_cond->nodes) {
 		job_cond.usage_start = resv_cond->time_start;
@@ -586,8 +588,6 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	(void) _setup_resv_cond_limits(resv_cond, &extra);
-
-	with_usage = resv_cond->with_usage;
 
 	if (resv_cond->cluster_list && list_count(resv_cond->cluster_list))
 		use_cluster_list = resv_cond->cluster_list;
