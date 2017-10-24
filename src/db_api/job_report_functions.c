@@ -400,10 +400,12 @@ no_objects:
 				 */
 				if (job->lft > acct_group->lft
 				    && job->lft < acct_group->rgt) {
-					char *mywckey;
+					char *mywckey = NULL;
 					if (!both)
 						break;
-					mywckey = strstr(acct_group->acct, ":");
+					if (acct_group->acct)
+						mywckey = strstr(
+							acct_group->acct, ":");
 					mywckey++;
 					if (!job->wckey && !mywckey)
 						break;
