@@ -100,11 +100,6 @@ HIGHLIGHTS
 
 RPMBUILD CHANGES
 ================
- -- Components rearranged into obvious packages.
-    - slurm - libraries and all commands.
-    - slurmctld - daemon binary and service file for head node.
-    - slurmd - daemon binary and service file for compute nodes.
-    - slurmdbd - daemon binary and service file for database.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
