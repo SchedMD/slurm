@@ -1954,10 +1954,14 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			}
 
 			//info("got a project %s of %s", file_opts->name, parent);
-			if (!(acct = sacctmgr_find_account_from_list(
-				      curr_acct_list, file_opts->name))
-			    && !sacctmgr_find_account_from_list(
-				    acct_list, file_opts->name)) {
+
+			acct = sacctmgr_find_account_from_list(
+				curr_acct_list, file_opts->name);
+			if (!acct)
+				acct = sacctmgr_find_account_from_list(
+					acct_list, file_opts->name);
+
+			if (!acct) {
 				acct = _set_acct_up(file_opts, parent);
 				list_append(acct_list, acct);
 				/* don't add anything to the
