@@ -97,7 +97,7 @@ NOTE: Built-in BLCR support is deprecated, no longer built automatically, and
 
 HIGHLIGHTS
 ==========
- -- Support for federated clusters to manage a single workflow across a set of
+ -- Support for federated clusters to manage a single work-flow across a set of
     clusters.
  -- Support for heterogeneous job allocations (various processor types, memory
     sizes, etc. by job component). Support for heterogeneous job steps within a
@@ -128,10 +128,10 @@ HIGHLIGHTS
     If you want to run with ALPS please configure with --disable-native-cray.
  -- Added new 'scontrol write batch_script <jobid>' command to fetch a job's
     batch script. Removed the ability to see the script as part of the
-    'scontrol -vv show job' command.
+    'scontrol -dd show job' command.
  -- Add new "billing" TRES which allows jobs to be limited based on the job's
     billable TRES calculated by the job's partition's TRESBillingWeights.
- -- Regular user use of "scontrol top" command is now diabled. Use the
+ -- Regular user use of "scontrol top" command is now disabled. Use the
     configuration parameter "SchedulerParameters=enable_user_top" to enable
     that functionality. The configuration parameter
     "SchedulerParameters=disable_user_top" will be silently ignored.
