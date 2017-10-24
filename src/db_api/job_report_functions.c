@@ -128,11 +128,7 @@ static void _check_create_grouping(
 				sizeof(slurmdb_report_job_grouping_t));
 			job_group->jobs = list_create(NULL);
 			job_group->min_size = last_size;
-			if (individual)
-				job_group->max_size =
-					job_group->min_size;
-			else
-				job_group->max_size = INFINITE;
+			job_group->max_size = INFINITE;
 			list_append(acct_group->groups, job_group);
 		}
 		list_iterator_reset(group_itr);
