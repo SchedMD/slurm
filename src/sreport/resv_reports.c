@@ -379,11 +379,11 @@ static List _get_resv_list(int argc, char **argv,
 	return resv_list;
 }
 
-static void _resv_tres_report(slurmdb_tres_rec_t *tres,
-			      slurmdb_reservation_rec_t *tot_resv)
+static void _resv_tres_report(slurmdb_reservation_rec_t *tot_resv,
+			      slurmdb_tres_rec_t *resv_tres)
 {
 	uint64_t idle_secs = 0, total_reported = 0;
-	uint64_t tres_alloc = 0, tres_alloc_secs = 0;
+	uint64_t tres_alloc_cnt = 0, tres_alloc_secs = 0;
 	int curr_inx = 1;
 	char *temp_char = NULL, *tres_tmp = NULL;
 	slurmdb_tres_rec_t *tres_rec;
@@ -396,21 +396,24 @@ static void _resv_tres_report(slurmdb_tres_rec_t *tres,
 	if (total_time <= 0)
 		return;
 
-	if (!tot_resv->tres_list ||
-	    !(tres_rec = list_find_first(tot_resv->tres_list,
-					 slurmdb_find_tres_in_list,
-					 &tres->id))) {
-		debug2("error, no %s%s%s(%d) TRES in reservation %s",
-		       tres->type,
-		       tres->name ? "/" : "",
-		       tres->name ? tres->name : "",
-		       tres->id, tot_resv->name);
-	} else {
-		tres_alloc = tres_rec->count;
+	/*
+	 * Need to get allocated from reservation which is in
+	 * tres_str/resv_tres. tot_resv->tres_list contains the accumulated
+	 * tres seconds that were used by jobs that ran in the reservation. The
+	 * tres_list will have more tres types than exist in the reservations
+	 * tres because only cpu, licenses and bb are supported tres types than
+	 * can be reserved.
+	 */
+	if (tot_resv->tres_list &&
+	    (tres_rec = list_find_first(tot_resv->tres_list,
+					slurmdb_find_tres_in_list,
+					&resv_tres->id))) {
 		tres_alloc_secs = tres_rec->alloc_secs;
-		total_reported = (uint64_t)(total_time * tres_rec->alloc_secs);
-		idle_secs = total_reported - tres_rec->alloc_secs;
 	}
+
+	tres_alloc_cnt  = resv_tres->count;
+	total_reported  = (uint64_t)(total_time * tres_alloc_cnt);
+	idle_secs       = total_reported - tres_alloc_secs;
 
 	field_count = list_count(print_fields_list);
 	iter = list_iterator_create(print_fields_list);
@@ -425,7 +428,7 @@ static void _resv_tres_report(slurmdb_tres_rec_t *tres,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TRES_CNT:
-			field->print_routine(field, tres_alloc,
+			field->print_routine(field, tres_alloc_cnt,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_ID:
@@ -468,9 +471,9 @@ static void _resv_tres_report(slurmdb_tres_rec_t *tres,
 			break;
 		case PRINT_RESV_TRES_NAME:
 			xstrfmtcat(tres_tmp, "%s%s%s",
-				   tres->type,
-				   tres->name ? "/" : "",
-				   tres->name ? tres->name : "");
+				   resv_tres->type,
+				   resv_tres->name ? "/" : "",
+				   resv_tres->name ? resv_tres->name : "");
 
 			field->print_routine(field, tres_tmp,
 					     (curr_inx == field_count));
@@ -497,7 +500,6 @@ extern int resv_utilization(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	ListIterator itr = NULL;
 	ListIterator tot_itr = NULL;
-	ListIterator itr2 = NULL;
 	slurmdb_reservation_rec_t *resv = NULL;
 	slurmdb_reservation_rec_t *tot_resv = NULL;
 	List resv_list = NULL;
@@ -581,14 +583,41 @@ extern int resv_utilization(int argc, char **argv)
 	list_sort(tot_resv_list, (ListCmpF)sort_reservations_dec);
 	tot_itr = list_iterator_create(tot_resv_list);
 	while ((tot_resv = list_next(tot_itr))) {
-		slurmdb_tres_rec_t *tres;
-		itr2 = list_iterator_create(tres_list);
-		while ((tres = list_next(itr2))) {
-			if (tres->id == NO_VAL)
+		List resv_tres_list = NULL;
+		ListIterator tres_itr;
+		slurmdb_tres_rec_t *resv_tres, *req_tres;
+
+		slurmdb_tres_list_from_string(&resv_tres_list,
+					      tot_resv->tres_str,
+					      TRES_STR_FLAG_NONE);
+		if (!resv_tres_list)
+			continue;
+
+		tres_itr = list_iterator_create(resv_tres_list);
+		while ((resv_tres = list_next(tres_itr))) {
+			/* see if it is in the the requested tres list */
+			if (!(req_tres = list_find_first(
+						tres_list,
+						slurmdb_find_tres_in_list,
+						&resv_tres->id))) {
+				debug2("TRES id %d is not in the requested TRES list",
+				       resv_tres->id);
 				continue;
-			_resv_tres_report(tres, tot_resv);
+			}
+
+			/*
+			 * The resveration's tres doesn't have the name or type
+			 * on it. The req_tres tres came from the database.
+			 */
+			xfree(resv_tres->type);
+			xfree(resv_tres->name);
+			resv_tres->type = xstrdup(req_tres->type);
+			resv_tres->name = xstrdup(req_tres->name);
+
+			_resv_tres_report(tot_resv, resv_tres);
 		}
-		list_iterator_destroy(itr2);
+		list_iterator_destroy(tres_itr);
+		FREE_NULL_LIST(resv_tres_list);
 	}
 	list_iterator_destroy(tot_itr);
 

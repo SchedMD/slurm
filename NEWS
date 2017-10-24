@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sreport not showing full column name for TRES Count.
  -- Fix slurmdb_reservations_get() giving wrong usage data when job's spanned
     reservation that was modified.
+ -- Fix sreport reservation utilization report showing bad data.
 
 * Changes in Slurm 17.02.8
 ==========================
