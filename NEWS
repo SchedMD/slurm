@@ -1,7 +1,7 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 17.11.0pre3
+* Changes in Slurm 17.11.0rc1
 ==============================
  -- Added the following jobcomp/script environment variables: CLUSTER,
     DEPENDENCY, DERIVED_EC, EXITCODE, GROUPNAME, QOS, RESERVATION, USERNAME.
