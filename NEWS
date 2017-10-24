@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmdb_reservations_get() giving wrong usage data when job's spanned
     reservation that was modified.
  -- Fix sreport reservation utilization report showing bad data.
+ -- Show all TRES' on a reservation in sreport reservation utilization report by
+    default.
 
 * Changes in Slurm 17.02.8
 ==========================
