@@ -1248,7 +1248,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 				list_append(keep_list, exp_rec);
 				continue;
 			}
-			if ((rec_type == JOB_START) && job_cond->partition_list
+			if (job_cond->partition_list
 			    && list_count(job_cond->partition_list)) {
 				itr = list_iterator_create(
 					job_cond->partition_list);
