@@ -404,9 +404,10 @@ no_objects:
 					if (!both)
 						break;
 					if (acct_group->acct) {
-						mywckey = strstr(
-							acct_group->acct, ":");
-						mywckey++;
+						if ((mywckey = strstr(
+							     acct_group->acct,
+							     ":")))
+							mywckey++;
 					}
 					if (!job->wckey && !mywckey)
 						break;
