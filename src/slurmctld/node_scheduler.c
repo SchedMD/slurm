@@ -574,7 +574,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	     i < node_record_count; i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap_cg, i))
 			continue;
-		if (IS_NODE_DOWN(node_ptr)) {
+		if (IS_NODE_DOWN(node_ptr) ||
+		    IS_NODE_POWER_UP(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
 			if (job_ptr->node_bitmap_cg == NULL) {
@@ -584,11 +585,13 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			}
 			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_tres_cnt(job_ptr, i);
-			/* node_cnt indicates how many nodes we are waiting
+			/*
+			 * node_cnt indicates how many nodes we are waiting
 			 * to get epilog complete messages from, so do not
 			 * count down nodes. NOTE: The job's node_cnt will not
 			 * match the number of entries in the node string
-			 * during its completion. */
+			 * during its completion.
+			 */
 			job_ptr->node_cnt--;
 		}
 		make_node_comp(node_ptr, job_ptr, suspended);

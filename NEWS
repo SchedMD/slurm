@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.9
 ==========================
+ -- When resuming powered down nodes, mark DOWN nodes right after ResumeTimeout
+    has been reached (previous logic would wait about one minute longer).
 
 * Changes in Slurm 17.02.8
 ==========================
