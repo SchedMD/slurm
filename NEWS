@@ -343,6 +343,7 @@ documents those changes that are of interest to users and administrators.
  -- Show all TRES' on a reservation in sreport reservation utilization report by
     default.
  -- Fix sacctmgr show reservation handling "end" parameter.
+ -- Work around issue with sysmacros.h and gcc7 / glibc 2.25.
 
 * Changes in Slurm 17.02.8
 ==========================
