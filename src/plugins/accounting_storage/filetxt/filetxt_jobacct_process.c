@@ -1258,10 +1258,11 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 						break;
 
 				list_iterator_destroy(itr);
-				if (!object)
+				if (!object) {
+					_destroy_exp(exp_rec);
 					continue;	/* no match */
+				}
 			}
-
 			list_append(exp_list, exp_rec);
 			debug2("Selected: %8d %d",
 			       exp_rec->job,
