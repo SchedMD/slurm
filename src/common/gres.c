@@ -6781,7 +6781,7 @@ extern void gres_set_node_tres_cnt(List gres_list,
 
 extern char *gres_device_major(char *dev_path)
 {
-	int major, minor;
+	int loc_major, loc_minor;
 	char *ret_major = NULL;
 	struct stat fs;
 
@@ -6789,19 +6789,19 @@ extern char *gres_device_major(char *dev_path)
 		error("%s: stat(%s): %m", __func__, dev_path);
 		return NULL;
 	}
-	major = (int)major(fs.st_rdev);
-	minor = (int)minor(fs.st_rdev);
+	loc_major = (int)major(fs.st_rdev);
+	loc_minor = (int)minor(fs.st_rdev);
 	debug3("%s : %s major %d, minor %d",
-	       __func__, dev_path, major, minor);
+	       __func__, dev_path, loc_major, loc_minor);
 	if (S_ISBLK(fs.st_mode)) {
-		xstrfmtcat(ret_major, "b %d:", major);
+		xstrfmtcat(ret_major, "b %d:", loc_major);
 		//info("device is block ");
 	}
 	if (S_ISCHR(fs.st_mode)) {
-		xstrfmtcat(ret_major, "c %d:", major);
+		xstrfmtcat(ret_major, "c %d:", loc_major);
 		//info("device is character ");
 	}
-	xstrfmtcat(ret_major, "%d rwm", minor);
+	xstrfmtcat(ret_major, "%d rwm", loc_minor);
 
 	return ret_major;
 }
