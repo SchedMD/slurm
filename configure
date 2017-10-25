@@ -24612,6 +24612,11 @@ fi
 
 
 
+# Workaround with gcc 7.2 printing a warning about printing NULL's
+# This should be fixed in a future version so we properly protect against
+# *printf handling NULLs
+old_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS -Wno-format-truncation"
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for support of printf(\"%s\", NULL)" >&5
 $as_echo_n "checking for support of printf(\"%s\", NULL)... " >&6; }
@@ -24648,6 +24653,7 @@ fi
 $as_echo "yes" >&6; }
   fi
 
+CFLAGS=$old_CFLAGS
 
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for whether to include readline suport" >&5
