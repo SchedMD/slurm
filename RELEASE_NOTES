@@ -102,7 +102,7 @@ HIGHLIGHTS
  -- Support for heterogeneous job allocations (various processor types, memory
     sizes, etc. by job component). Support for heterogeneous job steps within a
     single MPI_COMM_WORLD is not yet supported for most configurations.
- -- X11 support is not fully integrated with the main Slurm code. Remove any
+ -- X11 support is now fully integrated with the main Slurm code. Remove any
     X11 plugin configured in your plugstack.conf file to avoid errors being
     logged about conflicting options.
  -- Added new advanced reservation flag of "flex", which permits jobs requesting
