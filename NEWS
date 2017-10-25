@@ -3,6 +3,12 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
+ -- Add new burst buffer state of "teardown-fail" to indicate the burst buffer
+    teardown operation is failing on specific buffers. This changes the numeric
+    value of the BB_STATE_COMPLETE type. Any Slurm version 17.02 or 17.11 tool
+    used to report burst buffer state information will report a state of "66"
+    rather than "complete" for burst buffers which have been deleted, but still
+    exist in the slurmctld daemon's tables (a very short-lived situation).
 
 * Changes in Slurm 17.11.0rc2
 ==============================

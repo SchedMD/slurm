@@ -2638,6 +2638,8 @@ extern char *bb_state_string(uint16_t state)
 		return "staged-out";
 	if (state == BB_STATE_TEARDOWN)
 		return "teardown";
+	if (state == BB_STATE_TEARDOWN_FAIL)
+		return "teardown-fail";
 	if (state == BB_STATE_COMPLETE)
 		return "complete";
 	snprintf(buf, sizeof(buf), "%u", state);
@@ -2667,6 +2669,8 @@ extern uint16_t bb_state_num(char *tok)
 		return BB_STATE_STAGED_OUT;
 	if (!xstrcasecmp(tok, "teardown"))
 		return BB_STATE_TEARDOWN;
+	if (!xstrcasecmp(tok, "teardown-fail"))
+		return BB_STATE_TEARDOWN_FAIL;
 	if (!xstrcasecmp(tok, "complete"))
 		return BB_STATE_COMPLETE;
 	return 0;

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  burst_buffer_cray.c - Plugin for managing a Cray burst_buffer
  *****************************************************************************
- *  Copyright (C) 2014-2016 SchedMD LLC.
+ *  Copyright (C) 2014-2017 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -1954,6 +1954,7 @@ static void *_start_teardown(void *x)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
+	bool hurry;
 
 	teardown_args = (stage_args_t *) x;
 	teardown_argv = teardown_args->args1;
@@ -1974,6 +1975,7 @@ static void *_start_teardown(void *x)
 	info("%s: teardown for job %u ran for %s",
 	     __func__, teardown_args->job_id, TIME_STR);
 	_log_script_argv(teardown_argv, resp_msg);
+
 	/*
 	 * "Teardown" is run at every termination of every job that _might_
 	 * have a burst buffer, so an error of "token not found" should be
@@ -1983,13 +1985,24 @@ static void *_start_teardown(void *x)
 	    (!resp_msg ||
 	     (!strstr(resp_msg, "No matching session") &&
 	      !strstr(resp_msg, "token not found")))) {
-		bool hurry = false;
+		lock_slurmctld(job_write_lock);
+		slurm_mutex_lock(&bb_state.bb_mutex);
+		job_ptr = find_job_record(teardown_args->job_id);
+		if (job_ptr &&
+		    (bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))) {
+			bb_alloc->state = BB_STATE_TEARDOWN_FAIL;
+		}
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		unlock_slurmctld(job_write_lock);
+
 		trigger_burst_buffer();
 		error("%s: %s: teardown for job %u status:%u response:%s",
 		      plugin_name, __func__, teardown_args->job_id, status,
 		      resp_msg);
 		if (!xstrcmp(teardown_argv[7], "--hurry"))
 			hurry = true;
+		else
+			hurry = false;
 		_queue_teardown(teardown_args->job_id, teardown_args->user_id,
 				hurry);
 	} else {
@@ -2007,15 +2020,19 @@ static void *_start_teardown(void *x)
 				bb_job->state = BB_STATE_COMPLETE;
 			if (!IS_JOB_PENDING(job_ptr) &&	/* No email if requeue */
 			    (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
-				/* NOTE: If a job uses multiple burst buffer
+				/*
+				 * NOTE: If a job uses multiple burst buffer
 				 * plugins, the message will be sent after the
-				 * teardown completes in the first plugin */
+				 * teardown completes in the first plugin
+				 */
 				mail_job_info(job_ptr, MAIL_JOB_STAGE_OUT);
 				job_ptr->mail_type &= (~MAIL_JOB_STAGE_OUT);
 			}
 		} else {
-			/* This will happen when slurmctld restarts and needs
-			 * to clear vestigial buffers */
+			/*
+			 * This will happen when slurmctld restarts and needs
+			 * to clear vestigial buffers
+			 */
 			char buf_name[32];
 			snprintf(buf_name, sizeof(buf_name), "%u",
 				 teardown_args->job_id);
@@ -2356,8 +2373,10 @@ static void _timeout_bb_rec(void)
 			if (((bb_alloc->seen_time + TIME_SLOP) <
 			     bb_state.last_load_time) &&
 			    (bb_alloc->state == BB_STATE_TEARDOWN)) {
-				/* Teardown complete, but bb_alloc state not yet
-				 * updated; go to next allocation */
+				/*
+				 * Teardown likely complete, but bb_alloc state
+				 * not yet updated; skip the record
+				 */
 			} else if ((bb_alloc->seen_time + TIME_SLOP) <
 				   bb_state.last_load_time) {
 				if (bb_alloc->job_id == 0) {
@@ -4278,7 +4297,8 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 		if ((old_state == BB_STATE_PENDING)    ||
 		    (old_state == BB_STATE_ALLOCATING) ||
 		    (old_state == BB_STATE_DELETING)   ||
-		    (old_state == BB_STATE_TEARDOWN))
+		    (old_state == BB_STATE_TEARDOWN)   ||
+		    (old_state == BB_STATE_TEARDOWN_FAIL))				//
 			active_buf = true;
 		break;
 	}

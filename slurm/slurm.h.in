@@ -5033,7 +5033,8 @@ void slurm_init_trigger_msg(trigger_info_t *trigger_info_msg);
 #define BB_STATE_STAGING_OUT	0x0031		/* Cray: bbs_data_out started */
 #define BB_STATE_STAGED_OUT	0x0032		/* Cray: bbs_data_out complete */
 #define BB_STATE_TEARDOWN	0x0041		/* Cray: bbs_teardown started */
-#define BB_STATE_COMPLETE	0x0042		/* Cray: bbs_teardown complete */
+#define BB_STATE_TEARDOWN_FAIL	0x0043		/* Cray: bbs_teardown failed, retrying */
+#define BB_STATE_COMPLETE	0x0045		/* Cray: bbs_teardown complete */
 
 /* Information about alternate pools or other burst buffer resources */
 typedef struct {
