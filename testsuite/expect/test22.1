@@ -345,6 +345,57 @@ proc end_it {} {
 	exit $exit_code
 }
 
+proc test_fed {} {
+	global scontrol alpha sacctmgr env bin_rm cluster1 cluster2 fedname
+
+	set config_dir ""
+	set new_conf /tmp/slurm.conf.test22.1
+
+	spawn $scontrol show config
+	expect {
+		-re "SLURM_CONF *= (/.*)/($alpha).*SLURM_VERSION" {
+			set config_dir $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	delete_federations $fedname
+
+	set cmd1 "$sacctmgr -i add federation $fedname"
+	send_user "$cmd1\n"
+	send_user "[eval exec $cmd1]\n"
+
+	set cmd2 "$sacctmgr -i mod fed $fedname set clusters=$cluster1,$cluster2"
+	send_user "$cmd2\n"
+	send_user "[eval exec $cmd2]\n"
+
+	send_user "This is the config dir: $config_dir; new config: $new_conf \n"
+
+	set old_conf "$config_dir/slurm.conf"
+
+	send_user [exec sed "s/ClusterName\\s*=.*/ClusterName=$cluster1/Ig" $old_conf > $new_conf]
+
+	set env(SLURM_CONF) $new_conf
+
+	send_user "ENV VARIABLE: [exec printenv SLURM_CONF]  \n"
+
+	set exit_code [inc22_1_fed]
+	delete_federations $fedname
+	exec $bin_rm -rf $new_conf
+
+	set env(SLURM_CONF) $config_dir/slurm.conf
+	if {$exit_code ne 0} {
+		end_it
+	}
+}
+
 proc create_sql {cluster sql_in sql_rem} {
 
 	global bin_rm cluster_cpus period_start period_end node_list exit_code
@@ -546,55 +597,13 @@ proc create_sql {cluster sql_in sql_rem} {
 create_sql $cluster1 $sql_in_clus1 $sql_rem_clus1
 create_sql $cluster2 $sql_in_clus2 $sql_rem_clus2
 
-######################################################################################
-#Fed testing
-
-set config_dir ""
-set new_conf /tmp/slurm.conf.test22.1
-
-spawn $scontrol show config
-expect {
-	-re "SLURM_CONF *= (/.*)/($alpha).*SLURM_VERSION" {
-		set config_dir $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-delete_federations $fedname
-
-send_user "[exec $sacctmgr -i add federation $fedname]\n"
-send_user "[exec $sacctmgr -i mod fed $fedname set clusters=$cluster1,$cluster2]\n"
-
-send_user "This is the config dir: $config_dir; new config: $new_conf \n"
-
-set old_conf "$config_dir/slurm.conf"
-
-send_user [exec sed "s/ClusterName\\s*=.*/ClusterName=$cluster1/Ig" $old_conf > $new_conf]
-
-set env(SLURM_CONF) $new_conf
-
-send_user "ENV VARIABLE: [exec printenv SLURM_CONF]  \n"
-
-set exit_code [inc22_1_fed]
-delete_federations $fedname
-exec $bin_rm -rf $new_conf
-
-set env(SLURM_CONF) $config_dir/slurm.conf
-if {$exit_code ne 0} {
-	end_it
-}
-#########################################################################################
 
 #
 # Execute sub-test
 #
+
+# Fed Testing
+test_fed
 
 set exit_code [inc22_1_1]
 if {$exit_code ne 0} {
