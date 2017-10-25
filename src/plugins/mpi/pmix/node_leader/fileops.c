@@ -170,7 +170,7 @@ void pmix_remove_leader_symlink(char *path)
     }
 
     char lockname[FILENAME_MAX];
-    sprintf(lockname,"%s.lock", path);
+    snprintf(lockname, FILENAME_MAX, "%s.lock", path);
     int fd = pmix_create_locked_wait(lockname);
 
     /* Check prior to go further */
@@ -223,8 +223,8 @@ int main(int argc, char **argv)
         exit(0);
     }
 
-    sprintf(basefile, FPREFIX ".%s", argv[1]);
-    sprintf(lockfile,"%s.lock",basefile);
+    snprintf(basefile, FILENAME_MAX, FPREFIX ".%s", argv[1]);
+    snprintf(lockfile, FILENAME_MAX, "%s.lock", basefile);
     if (0 > _create_locked(lockfile)) {
         fprintf(stderr, "Cannot create personal lock file %s\n", basefile);
         exit(0);

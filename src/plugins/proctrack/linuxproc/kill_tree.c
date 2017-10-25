@@ -123,7 +123,7 @@ static int _get_myname(char *s)
 	ssize_t buf_used;
 	int fd;
 
-	sprintf(path, "/proc/%ld/stat", (long)getpid());
+	snprintf(path, PATH_MAX, "/proc/%ld/stat", (long)getpid());
 	if ((fd = open(path, O_RDONLY)) < 0) {
 		error("Cannot open /proc/getpid()/stat");
 		return -1;
@@ -182,7 +182,7 @@ static xppid_t **_build_hashtbl(void)
 		}
 		if (endptr == NULL || *endptr != 0)
 			continue;
-		sprintf(path, "/proc/%s/stat", num);
+		snprintf(path, PATH_MAX, "/proc/%s/stat", num);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}
@@ -336,7 +336,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			break;
 		}
 
-		sprintf(path, "/proc/%ld/stat", ppid);
+		snprintf(path, PATH_MAX, "/proc/%ld/stat", ppid);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			pid = 0;
 			break;
@@ -357,7 +357,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			break;
 		}
 
-		sprintf(path, "/proc/%ld/cmdline", pid);
+		snprintf(path, PATH_MAX, "/proc/%ld/cmdline", pid);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}

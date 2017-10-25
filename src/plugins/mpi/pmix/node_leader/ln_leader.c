@@ -47,9 +47,9 @@ int main(int argc, char **argv)
     }
     my_jobid = atoi(argv[1]);
     my_stepid = atoi(argv[2]);
-    sprintf(linkname, "%s.%d", FILENAME_PREFIX, my_jobid);
-    sprintf(usockname,"%s.%d", linkname, my_stepid);
-    sprintf(lockname, "%s.lock",usockname);
+    snprintf(linkname, FILENAME_MAX, "%s.%d", FILENAME_PREFIX, my_jobid);
+    snprintf(usockname, FILENAME_MAX, "%s.%d", linkname, my_stepid);
+    snprintf(lockname, FILENAME_MAX, "%s.lock",usockname);
 
     if (0 > (lockfd = pmix_create_locked(lockname))) {
         fprintf(stderr,"Can't create lock file %s\n", lockname);

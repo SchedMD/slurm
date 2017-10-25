@@ -134,7 +134,8 @@ static int _check_lustre_fs(void)
 		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
 					  &profile);
 		if ((profile & ACCT_GATHER_PROFILE_LUSTRE)) {
-			sprintf(lustre_directory, "%s/llite", proc_base_path);
+			snprintf(lustre_directory, BUFSIZ,
+				 "%s/llite", proc_base_path);
 			proc_dir = opendir(proc_base_path);
 			if (!proc_dir) {
 				error("%s: not able to read %s %m",
@@ -172,7 +173,7 @@ static int _read_lustre_counters(void)
 	char buffer[BUFSIZ];
 
 
-	sprintf(lustre_dir, "%s/llite", proc_base_path);
+	snprintf(lustre_dir, PATH_MAX, "%s/llite", proc_base_path);
 
 	proc_dir = opendir(lustre_dir);
 	if (proc_dir == NULL) {
