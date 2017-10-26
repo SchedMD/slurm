@@ -6143,7 +6143,7 @@ inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
 		return;
 	}
 
-	send_all_to_accounting(event_time);
+	send_all_to_accounting(event_time, ACCOUNTING_FIRST_REG);
 
 	END_TIMER2("_slurm_rpc_accounting_first_reg");
 }

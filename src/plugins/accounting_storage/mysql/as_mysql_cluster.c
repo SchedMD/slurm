@@ -1611,6 +1611,7 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 	int response = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	bool handle_disconnect = true;
 
 	xassert(tres_str_in);
 
@@ -1695,15 +1696,7 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 			DB_DEBUG(mysql_conn->conn,
 				 "We have the same TRES and node names as before for %s, no need to update the database.",
 				 mysql_conn->cluster_name);
-
-		query = xstrdup_printf(
-			"update \"%s_%s\" set time_end=%ld where time_end=0 "
-			"and state=%u and node_name='';",
-			mysql_conn->cluster_name, event_table, event_time,
-			NODE_STATE_DOWN);
-		(void) mysql_db_query(mysql_conn, query);
-		xfree(query);
-		goto end_it;
+		goto remove_disconnect;
 	}
 
 	query = xstrdup_printf(
@@ -1712,6 +1705,7 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
+	handle_disconnect = false;
 
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
@@ -1725,6 +1719,25 @@ add_it:
 
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
+
+	if (rc != SLURM_SUCCESS)
+		goto end_it;
+
+remove_disconnect:
+	/*
+	 * The above update clears all with time_end=0, so no
+	 * need to do this again.
+	 */
+	if (handle_disconnect) {
+		query = xstrdup_printf(
+			"update \"%s_%s\" set time_end=%ld where time_end=0 and state=%u and node_name='';",
+			mysql_conn->cluster_name,
+			event_table, event_time,
+			NODE_STATE_DOWN);
+		(void) mysql_db_query(mysql_conn, query);
+		xfree(query);
+	}
+
 end_it:
 	mysql_free_result(result);
 	if (response && rc == SLURM_SUCCESS)
