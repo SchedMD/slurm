@@ -1695,6 +1695,14 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 			DB_DEBUG(mysql_conn->conn,
 				 "We have the same TRES and node names as before for %s, no need to update the database.",
 				 mysql_conn->cluster_name);
+
+		query = xstrdup_printf(
+			"update \"%s_%s\" set time_end=%ld where time_end=0 "
+			"and state=%u and node_name='';",
+			mysql_conn->cluster_name, event_table, event_time,
+			NODE_STATE_DOWN);
+		(void) mysql_db_query(mysql_conn, query);
+		xfree(query);
 		goto end_it;
 	}
 
@@ -1714,13 +1722,7 @@ add_it:
 		"values ('%s', '%s', %ld, 'Cluster Registered TRES');",
 		mysql_conn->cluster_name, event_table,
 		cluster_nodes, *tres_str_in, event_time);
-	(void) mysql_db_query(mysql_conn, query);
-	xfree(query);
-	query = xstrdup_printf(
-		"update \"%s_%s\" set time_end=%ld where time_end=0 "
-		"and state=%u and node_name='';",
-		mysql_conn->cluster_name, event_table, event_time,
-		NODE_STATE_DOWN);
+
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 end_it:
