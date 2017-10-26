@@ -257,7 +257,9 @@ static int _process_service_connection(
 					arg, &msg, &buffer, &uid);
 				_persist_free_msg_members(persist_conn, &msg);
 				if (rc != SLURM_SUCCESS &&
-				    rc != ACCOUNTING_FIRST_REG) {
+				    rc != ACCOUNTING_FIRST_REG &&
+				    rc != ACCOUNTING_TRES_CHANGE_DB &&
+				    rc != ACCOUNTING_NODES_CHANGE_DB) {
 					error("Processing last message from "
 					      "connection %d(%s) uid(%d)",
 					      persist_conn->fd,

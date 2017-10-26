@@ -221,8 +221,10 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 	} else {	/* resp.msg_type == PERSIST_RC */
 		persist_rc_msg_t *msg = resp.data;
 		*resp_code = msg->rc;
-		if (msg->rc != SLURM_SUCCESS
-		    && msg->rc != ACCOUNTING_FIRST_REG) {
+		if (msg->rc != SLURM_SUCCESS &&
+		    msg->rc != ACCOUNTING_FIRST_REG &&
+		    msg->rc != ACCOUNTING_TRES_CHANGE_DB &&
+		    msg->rc != ACCOUNTING_NODES_CHANGE_DB) {
 			char *comment = msg->comment;
 			if (!comment)
 				comment = slurm_strerror(msg->rc);
