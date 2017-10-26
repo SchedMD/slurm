@@ -188,6 +188,25 @@ int sacctmgr_list_reservation(int argc, char **argv)
 		_set_cond(&i, argc, argv, reservation_cond, format_list);
 	}
 
+	if (reservation_cond->nodes && !reservation_cond->cluster_list) {
+		char *cluster_name = slurm_get_cluster_name();
+		char *warning = xstrdup_printf(
+			"If requesting nodes you must also request the cluster.\nWould you like to use the local cluster of '%s'?",
+			cluster_name);
+
+		if (!commit_check(warning)) {
+			exit_code = 1;
+		} else {
+			reservation_cond->cluster_list =
+				list_create(slurm_destroy_char);
+			list_append(reservation_cond->cluster_list,
+				    cluster_name);
+			cluster_name = NULL;
+		}
+		xfree(warning);
+		xfree(cluster_name);
+	}
+
 	if (exit_code) {
 		slurmdb_destroy_reservation_cond(reservation_cond);
 		FREE_NULL_LIST(format_list);
