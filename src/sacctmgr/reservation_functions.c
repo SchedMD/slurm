@@ -269,6 +269,12 @@ int sacctmgr_list_reservation(int argc, char **argv)
 					reservation->nodes,
 					field_count);
 				break;
+			case PRINT_NODEINX:
+				field->print_routine(
+					field,
+					reservation->node_inx,
+					field_count);
+				break;
 			case PRINT_TIMEEND:
 				field->print_routine(
 					field,
