@@ -579,6 +579,16 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
 		job_cond.used_nodes = resv_cond->nodes;
+		if (!resv_cond->cluster_list)
+			resv_cond->cluster_list =
+				list_create(slurm_destroy_char);
+		/*
+		 * If they didn't specify a cluster, give them the one they are
+		 * calling from.
+		 */
+		if (!list_count(resv_cond->cluster_list))
+			list_append(resv_cond->cluster_list,
+				    xstrdup(mysql_conn->cluster_name));
 		job_cond.cluster_list = resv_cond->cluster_list;
 		local_cluster_list = setup_cluster_list_with_inx(
 			mysql_conn, &job_cond, (void **)&curr_cluster);
