@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacctmgr show reservation handling "end" parameter.
  -- Work around issue with sysmacros.h and gcc7 / glibc 2.25.
  -- Fix layouts code to only allow setting a boolean.
+ -- Fix sbatch --wait to keep waiting even if a message timeout occurs.
 
 * Changes in Slurm 17.02.8
 ==========================
