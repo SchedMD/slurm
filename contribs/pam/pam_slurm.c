@@ -266,9 +266,9 @@ static int
 _gethostname_short (char *name, size_t len)
 {
 	int error_code, name_len;
-	char *dot_ptr, path_name[1024];
+	char *dot_ptr, path_name[1024] = {0};
 
-	error_code = gethostname(path_name, sizeof(path_name));
+	error_code = gethostname(path_name, sizeof(path_name) - 1);
 	if (error_code)
 		return error_code;
 
@@ -296,11 +296,11 @@ static int
 _slurm_match_allocation(uid_t uid)
 {
 	int authorized = 0, i;
-	char hostname[MAXHOSTNAMELEN];
+	char hostname[MAXHOSTNAMELEN] = {0};
 	char *nodename = NULL;
 	job_info_msg_t * msg;
 
-	if (_gethostname_short(hostname, sizeof(hostname)) < 0) {
+	if (_gethostname_short(hostname, sizeof(hostname) - 1) < 0) {
 		_log_msg(LOG_ERR, "gethostname: %m");
 		return 0;
 	}
@@ -423,7 +423,7 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
  */
 extern void libpam_slurm_init (void)
 {
-	char libslurmname[64];
+	char libslurmname[64] = {0};
 
 	if (slurm_h)
 		return;
@@ -431,10 +431,10 @@ extern void libpam_slurm_init (void)
 	/* First try to use the same libslurm version ("libslurm.so.24.0.0"),
 	 * Second try to match the major version number ("libslurm.so.24"),
 	 * Otherwise use "libslurm.so" */
-	if (snprintf(libslurmname, sizeof(libslurmname),
+	if (snprintf(libslurmname, sizeof(libslurmname) - 1,
 			"libslurm.so.%d.%d.%d", SLURM_API_CURRENT,
 			SLURM_API_REVISION, SLURM_API_AGE) >=
-			sizeof(libslurmname) ) {
+			sizeof(libslurmname) - 1) {
 		_log_msg (LOG_ERR, "Unable to write libslurmname\n");
 	} else if ((slurm_h = dlopen(libslurmname, RTLD_NOW|RTLD_GLOBAL))) {
 		return;
@@ -443,8 +443,10 @@ extern void libpam_slurm_init (void)
 			libslurmname, dlerror ());
 	}
 
-	if (snprintf(libslurmname, sizeof(libslurmname), "libslurm.so.%d",
-			SLURM_API_CURRENT) >= sizeof(libslurmname) ) {
+	memset(libslurmname, 0, sizeof(libslurmname));
+
+	if (snprintf(libslurmname, sizeof(libslurmname) - 1, "libslurm.so.%d",
+			SLURM_API_CURRENT) >= sizeof(libslurmname) - 1) {
 		_log_msg (LOG_ERR, "Unable to write libslurmname\n");
 	} else if ((slurm_h = dlopen(libslurmname, RTLD_NOW|RTLD_GLOBAL))) {
 		return;
