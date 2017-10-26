@@ -5517,7 +5517,7 @@ extern void job_resv_check(void)
 /* send all reservations to accounting.  Only needed at
  * first registration
  */
-extern int send_resvs_to_accounting(void)
+extern int send_resvs_to_accounting(int db_rc)
 {
 	ListIterator itr = NULL;
 	slurmctld_resv_t *resv_ptr;
@@ -5530,8 +5530,21 @@ extern int send_resvs_to_accounting(void)
 	lock_slurmctld(node_write_lock);
 
 	itr = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(itr)))
-		_post_resv_create(resv_ptr);
+	while ((resv_ptr = list_next(itr))) {
+		if (db_rc == ACCOUNTING_FIRST_REG)
+			_post_resv_create(resv_ptr);
+		else if (db_rc == ACCOUNTING_NODES_CHANGE_DB) {
+			/*
+			 * This makes it so we always get the correct node
+			 * indexes in the database.
+			 */
+			slurmctld_resv_t tmp_resv = {0};
+			_post_resv_update(resv_ptr, &tmp_resv);
+		} else {
+			error("%s: unknown db_rc %d", __func__, db_rc);
+			break;
+		}
+	}
 	list_iterator_destroy(itr);
 
 	unlock_slurmctld(node_write_lock);

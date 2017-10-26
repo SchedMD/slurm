@@ -1222,16 +1222,26 @@ static int _accounting_cluster_ready(void)
 
 	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
 						cluster_nodes,
-						cluster_tres_str, event_time);
+						cluster_tres_str, event_time,
+						SLURM_PROTOCOL_VERSION);
 
 	xfree(cluster_nodes);
 	xfree(cluster_tres_str);
 
-	if (rc == ACCOUNTING_FIRST_REG) {
+	/*
+	 * FIXME: We should do things differently here depending on the return
+	 *        value.  If NODES_CHANGE or FIRST_REQ we probably want to send
+	 *        most everything to accounting, but if just the TRES changed it
+	 *        means the nodes didn't change and we might not need to send
+	 *        anything.
+	 */
+	if ((rc == ACCOUNTING_FIRST_REG) ||
+	    (rc == ACCOUNTING_NODES_CHANGE_DB) ||
+	    (rc == ACCOUNTING_TRES_CHANGE_DB)) {
 		/* see if we are running directly to a database
 		 * instead of a slurmdbd.
 		 */
-		send_all_to_accounting(event_time);
+		send_all_to_accounting(event_time, rc);
 		rc = SLURM_SUCCESS;
 	}
 
@@ -2120,16 +2130,26 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 }
 
 /* send all info for the controller to accounting */
-extern void send_all_to_accounting(time_t event_time)
+extern void send_all_to_accounting(time_t event_time, int db_rc)
 {
 	/* ignore the rcs here because if there was an error we will
 	   push the requests on the queue and process them when the
 	   database server comes back up.
 	*/
-	debug2("send_all_to_accounting: called");
-	send_jobs_to_accounting();
-	send_nodes_to_accounting(event_time);
-	send_resvs_to_accounting();
+	debug2("send_all_to_accounting: called %s", rpc_num2string(db_rc));
+	switch (db_rc) {
+	case ACCOUNTING_FIRST_REG:
+	case ACCOUNTING_NODES_CHANGE_DB:
+		send_jobs_to_accounting();
+		send_resvs_to_accounting(db_rc);
+		/* fall through */
+	case ACCOUNTING_TRES_CHANGE_DB:
+		/* No need to do jobs or resvs when only the TRES change. */
+		send_nodes_to_accounting(event_time);
+		break;
+	default:
+		error("unknown rc of %d given", db_rc);
+	}
 }
 
 static int _add_node_gres_tres(void *x, void *arg)

@@ -571,6 +571,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("NodeCount");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
+	} else if (!xstrncasecmp("NodeInx", object, MAX(command_len, 5))) {
+		field->type = PRINT_NODEINX;
+		field->name = xstrdup("NodeInx");
+		field->len = 9;
+		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("NodeNames", object, MAX(command_len, 5))) {
 		field->type = PRINT_NODENAME;
 		field->name = xstrdup("NodeName");

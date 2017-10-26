@@ -154,6 +154,7 @@ static void _connection_fini_callback(void *arg)
 			cluster_rec.name = conn->conn->cluster_name;
 			cluster_rec.control_host = conn->conn->rem_host;
 			cluster_rec.control_port = conn->conn->rem_port;
+			cluster_rec.rpc_version = conn->conn->version;
 			cluster_rec.tres_str = conn->tres_str;
 			debug("cluster %s has disconnected",
 			      conn->conn->cluster_name);

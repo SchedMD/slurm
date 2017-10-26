@@ -1567,7 +1567,8 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 		free_it = true;
 		as_mysql_cluster_tres(
 			mysql_conn, cluster_rec->control_host,
-			&cluster_rec->tres_str, now);
+			&cluster_rec->tres_str, now,
+			cluster_rec->rpc_version);
 	}
 
 	/* Since as_mysql_cluster_tres could change the
@@ -1603,13 +1604,14 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 
 extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 				 char *cluster_nodes, char **tres_str_in,
-				 time_t event_time)
+				 time_t event_time, uint16_t rpc_version)
 {
 	char* query;
 	int rc = SLURM_SUCCESS;
-	int first = 0;
+	int response = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	bool handle_disconnect = true;
 
 	xassert(tres_str_in);
 
@@ -1655,7 +1657,7 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 			goto end_it;
 		}
 
-		first = 1;
+		response = ACCOUNTING_FIRST_REG;
 		goto add_it;
 	}
 
@@ -1667,50 +1669,44 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 		debug("%s has changed tres from %s to %s",
 		      mysql_conn->cluster_name,
 		      row[0], *tres_str_in);
+
+		/*
+		 * Reset all the entries for this cluster since the tres changed
+		 * some of the downed nodes may have gone away.
+		 * Request them again with ACCOUNTING_NODES_CHANGE_DB
+		 */
+
+		/* 2 version after 17.02 this first if can go away */
+		if (rpc_version <= SLURM_17_02_PROTOCOL_VERSION)
+			response = ACCOUNTING_FIRST_REG;
+		else if (xstrcmp(cluster_nodes, row[1])) {
+			if (debug_flags & DEBUG_FLAG_DB_EVENT)
+				DB_DEBUG(mysql_conn->conn,
+					 "Nodes on the cluster have changed.");
+			response = ACCOUNTING_NODES_CHANGE_DB;
+		} else
+			response = ACCOUNTING_TRES_CHANGE_DB;
+	} else if (xstrcmp(cluster_nodes, row[1])) {
+		if (debug_flags & DEBUG_FLAG_DB_EVENT)
+			DB_DEBUG(mysql_conn->conn,
+				 "Node names on the cluster have changed.");
+		response = ACCOUNTING_NODES_CHANGE_DB;
 	} else {
 		if (debug_flags & DEBUG_FLAG_DB_EVENT)
 			DB_DEBUG(mysql_conn->conn,
-				 "We have the same tres as before for %s, "
-				 "no need to update the database.",
+				 "We have the same TRES and node names as before for %s, no need to update the database.",
 				 mysql_conn->cluster_name);
-
-		if (cluster_nodes) {
-			if (!row[1][0]) {
-				debug("Adding cluster nodes '%s' to "
-				      "last instance of cluster '%s'.",
-				      cluster_nodes, mysql_conn->cluster_name);
-				query = xstrdup_printf(
-					"update \"%s_%s\" set "
-					"cluster_nodes='%s' "
-					"where time_end=0 and node_name=''",
-					mysql_conn->cluster_name,
-					event_table, cluster_nodes);
-				(void) mysql_db_query(mysql_conn, query);
-				xfree(query);
-				goto update_it;
-			} else if (!xstrcmp(cluster_nodes, row[1])) {
-				if (debug_flags & DEBUG_FLAG_DB_EVENT)
-					DB_DEBUG(mysql_conn->conn,
-						 "we have the same nodes "
-						 "in the cluster "
-						 "as before no need to "
-						 "update the database.");
-				goto update_it;
-			}
-		}
-
-		goto end_it;
+		goto remove_disconnect;
 	}
 
-	/* reset all the entries for this cluster since the tres
-	   changed some of the downed nodes may have gone away.
-	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%ld where time_end=0",
 		mysql_conn->cluster_name, event_table, event_time);
+
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
-	first = 1;
+	handle_disconnect = false;
+
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
 add_it:
@@ -1720,20 +1716,32 @@ add_it:
 		"values ('%s', '%s', %ld, 'Cluster Registered TRES');",
 		mysql_conn->cluster_name, event_table,
 		cluster_nodes, *tres_str_in, event_time);
-	(void) mysql_db_query(mysql_conn, query);
-	xfree(query);
-update_it:
-	query = xstrdup_printf(
-		"update \"%s_%s\" set time_end=%ld where time_end=0 "
-		"and state=%u and node_name='';",
-		mysql_conn->cluster_name, event_table, event_time,
-		NODE_STATE_DOWN);
+
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
+
+	if (rc != SLURM_SUCCESS)
+		goto end_it;
+
+remove_disconnect:
+	/*
+	 * The above update clears all with time_end=0, so no
+	 * need to do this again.
+	 */
+	if (handle_disconnect) {
+		query = xstrdup_printf(
+			"update \"%s_%s\" set time_end=%ld where time_end=0 and state=%u and node_name='';",
+			mysql_conn->cluster_name,
+			event_table, event_time,
+			NODE_STATE_DOWN);
+		(void) mysql_db_query(mysql_conn, query);
+		xfree(query);
+	}
+
 end_it:
 	mysql_free_result(result);
-	if (first && rc == SLURM_SUCCESS)
-		rc = ACCOUNTING_FIRST_REG;
+	if (response && rc == SLURM_SUCCESS)
+		rc = response;
 
 	return rc;
 }

@@ -2475,7 +2475,8 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 extern int clusteracct_storage_p_cluster_tres(void *db_conn,
 					      char *cluster_nodes,
 					      char *tres_str_in,
-					      time_t event_time)
+					      time_t event_time,
+					      uint16_t rpc_version)
 {
 	slurmdbd_msg_t msg;
 	dbd_cluster_tres_msg_t req;

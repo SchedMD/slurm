@@ -3088,10 +3088,12 @@ extern int clusteracct_storage_p_fini_ctld(mysql_conn_t *mysql_conn,
 extern int clusteracct_storage_p_cluster_tres(mysql_conn_t *mysql_conn,
 					      char *cluster_nodes,
 					      char *tres_str_in,
-					      time_t event_time)
+					      time_t event_time,
+					      uint16_t rpc_version)
 {
 	return as_mysql_cluster_tres(mysql_conn,
-				     cluster_nodes, &tres_str_in, event_time);
+				     cluster_nodes, &tres_str_in,
+				     event_time, rpc_version);
 }
 
 /*

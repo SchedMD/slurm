@@ -2108,7 +2108,7 @@ extern void save_all_state(void);
 extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks);
 
 /* send all info for the controller to accounting */
-extern void send_all_to_accounting(time_t event_time);
+extern void send_all_to_accounting(time_t event_time, int db_rc);
 
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */

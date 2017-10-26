@@ -80,14 +80,13 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(reservation_cond->cluster_list,
 						  argv[i]+end))
 				set = 1;
-		} else if (!xstrncasecmp(argv[i], "Names",
-					 MAX(command_len, 2))) {
-			if (!reservation_cond->name_list) {
-				reservation_cond->name_list =
-					list_create(slurm_destroy_char);
-			}
-			if (slurm_addto_char_list(reservation_cond->name_list,
-						  argv[i]+end))
+		} else if (!xstrncasecmp(argv[i], "End",
+					 MAX(command_len, 1))) {
+			reservation_cond->time_end =
+				parse_time(argv[i]+end, 1);
+			if (errno == ESLURM_INVALID_TIME_VALUE)
+				exit_code = 1;
+			else
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 1))) {
@@ -102,6 +101,15 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(reservation_cond->id_list,
 						 argv[i]+end))
 				set = 1;
+		} else if (!xstrncasecmp(argv[i], "Names",
+					 MAX(command_len, 2))) {
+			if (!reservation_cond->name_list) {
+				reservation_cond->name_list =
+					list_create(slurm_destroy_char);
+			}
+			if (slurm_addto_char_list(reservation_cond->name_list,
+						  argv[i]+end))
+				set = 1;
 		} else if (!xstrncasecmp(argv[i], "Nodes",
 					 MAX(command_len, 2))) {
 			xfree(reservation_cond->nodes);
@@ -111,14 +119,6 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Start",
 					 MAX(command_len, 5))) {
 			reservation_cond->time_start =
-				parse_time(argv[i]+end, 1);
-			if (errno == ESLURM_INVALID_TIME_VALUE)
-				exit_code = 1;
-			else
-				set = 1;
-		} else if (!xstrncasecmp(argv[i], "End",
-					 MAX(command_len, 1))) {
-			reservation_cond->time_end =
 				parse_time(argv[i]+end, 1);
 			if (errno == ESLURM_INVALID_TIME_VALUE)
 				exit_code = 1;
@@ -186,6 +186,25 @@ int sacctmgr_list_reservation(int argc, char **argv)
 		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, reservation_cond, format_list);
+	}
+
+	if (reservation_cond->nodes && !reservation_cond->cluster_list) {
+		char *cluster_name = slurm_get_cluster_name();
+		char *warning = xstrdup_printf(
+			"If requesting nodes you must also request the cluster.\nWould you like to use the local cluster of '%s'?",
+			cluster_name);
+
+		if (!commit_check(warning)) {
+			exit_code = 1;
+		} else {
+			reservation_cond->cluster_list =
+				list_create(slurm_destroy_char);
+			list_append(reservation_cond->cluster_list,
+				    cluster_name);
+			cluster_name = NULL;
+		}
+		xfree(warning);
+		xfree(cluster_name);
 	}
 
 	if (exit_code) {
@@ -267,6 +286,12 @@ int sacctmgr_list_reservation(int argc, char **argv)
 				field->print_routine(
 					field,
 					reservation->nodes,
+					field_count);
+				break;
+			case PRINT_NODEINX:
+				field->print_routine(
+					field,
+					reservation->node_inx,
 					field_count);
 				break;
 			case PRINT_TIMEEND:

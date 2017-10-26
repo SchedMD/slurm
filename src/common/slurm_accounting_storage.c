@@ -182,7 +182,8 @@ typedef struct slurm_acct_storage_ops {
 				    struct node_record *node_ptr,
 				    time_t event_time);
 	int  (*cluster_tres)       (void *db_conn, char *cluster_nodes,
-				    char *tres_str_in, time_t event_time);
+				    char *tres_str_in, time_t event_time,
+				    uint16_t rpc_version);
 	int  (*register_ctld)      (void *db_conn, uint16_t port);
 	int  (*register_disconn_ctld)(void *db_conn, char *control_host);
 	int  (*fini_ctld)          (void *db_conn,
@@ -876,12 +877,13 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 extern int clusteracct_storage_g_cluster_tres(void *db_conn,
 					      char *cluster_nodes,
 					      char *tres_str_in,
-					      time_t event_time)
+					      time_t event_time,
+					      uint16_t rpc_version)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(ops.cluster_tres))(db_conn, cluster_nodes,
-				     tres_str_in, event_time);
+				     tres_str_in, event_time, rpc_version);
 }
 
 

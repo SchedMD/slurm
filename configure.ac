@@ -329,9 +329,15 @@ X_AC_MAN2HTML
 AM_CONDITIONAL(HAVE_MAN2HTML, test "x$ac_have_man2html" = "xyes")
 AC_SUBST(HAVE_MAN2HTML)
 
+# Workaround with gcc 7.2 printing a warning about printing NULL's
+# This should be fixed in a future version so we properly protect against
+# *printf handling NULLs
+old_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS -Wno-format-truncation"
 dnl check if we can use standard printf functions
 dnl
 X_AC_PRINTF_NULL
+CFLAGS=$old_CFLAGS
 
 dnl Check for whether to include readline support
 dnl

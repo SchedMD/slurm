@@ -1084,7 +1084,12 @@ static void _layouts_load_automerge(layout_plugin_t* plugin, entity_t* e,
 		} else if (_layouts_merge_check(S_P_UINT32, L_T_UINT32)) {
 			_layouts_load_merge(uint32_t, s_p_get_uint32);
 		} else if (_layouts_merge_check(S_P_BOOLEAN, L_T_BOOLEAN)) {
-			_layouts_load_merge(bool, s_p_get_boolean);
+			bool newvalue;
+			if (s_p_get_boolean(&newvalue, option_key, etbl)) {
+				bool *newalloc = xmalloc(sizeof(bool));
+				*newalloc = newvalue;
+				_entity_add_data(e, key_keydef, newalloc);
+			}
 		} else if (_layouts_merge_check(S_P_LONG, L_T_LONG)) {
 			_layouts_load_merge(long, s_p_get_long);
 		} else if (_layouts_merge_check(S_P_FLOAT, L_T_FLOAT)) {

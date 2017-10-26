@@ -394,8 +394,8 @@ static int _job_wait(uint32_t job_id)
 			error("Job %u no longer found and exit code not found",
 			      job_id);
 		} else {
-			error("Currently unable to load job state "
-			      "information, retrying: %m");
+			complete = false;
+			error("Currently unable to load job state information, retrying: %m");
 		}
 	}
 

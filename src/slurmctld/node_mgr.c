@@ -2152,7 +2152,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	}
 	if (reg_msg->features_active) {
 		char *tmp_feature;
-		tmp_feature = node_features_g_node_xlate(			// DO HERE
+		tmp_feature = node_features_g_node_xlate(
 						reg_msg->features_active,
 						node_ptr->features_act,
 						node_ptr->features);
