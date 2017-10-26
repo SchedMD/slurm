@@ -1222,7 +1222,8 @@ static int _accounting_cluster_ready(void)
 
 	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
 						cluster_nodes,
-						cluster_tres_str, event_time);
+						cluster_tres_str, event_time,
+						SLURM_PROTOCOL_VERSION);
 
 	xfree(cluster_nodes);
 	xfree(cluster_tres_str);

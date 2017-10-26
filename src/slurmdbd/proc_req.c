@@ -1157,7 +1157,8 @@ static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn,
 		slurmdbd_conn->db_conn,
 		cluster_tres_msg->cluster_nodes,
 		cluster_tres_msg->tres_str,
-		cluster_tres_msg->event_time);
+		cluster_tres_msg->event_time,
+		slurmdbd_conn->conn->version);
 	if (rc == ESLURM_ACCESS_DENIED) {
 		comment = "This cluster hasn't been added to accounting yet";
 		rc = SLURM_ERROR;

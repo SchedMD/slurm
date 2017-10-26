@@ -1567,7 +1567,8 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 		free_it = true;
 		as_mysql_cluster_tres(
 			mysql_conn, cluster_rec->control_host,
-			&cluster_rec->tres_str, now);
+			&cluster_rec->tres_str, now,
+			cluster_rec->rpc_version);
 	}
 
 	/* Since as_mysql_cluster_tres could change the
@@ -1603,7 +1604,7 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 
 extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 				 char *cluster_nodes, char **tres_str_in,
-				 time_t event_time)
+				 time_t event_time, uint16_t rpc_version)
 {
 	char* query;
 	int rc = SLURM_SUCCESS;
