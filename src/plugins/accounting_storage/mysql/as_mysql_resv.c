@@ -427,7 +427,7 @@ try_again:
 				       "where deleted=0 && id_resv=%u "
 				       "and time_start=%ld;",
 				       resv->cluster, resv_table,
-				       resv->time_start-1,
+				       resv->time_start,
 				       resv->id, start);
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (id_resv%s) "
