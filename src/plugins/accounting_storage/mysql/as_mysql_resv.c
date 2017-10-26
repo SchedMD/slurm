@@ -632,15 +632,15 @@ empty:
 	resv_list = list_create(slurmdb_destroy_reservation_rec);
 
 	while ((row = mysql_fetch_row(result))) {
-		slurmdb_reservation_rec_t *resv =
-			xmalloc(sizeof(slurmdb_reservation_rec_t));
+		slurmdb_reservation_rec_t *resv;
 		int start = slurm_atoul(row[RESV_REQ_START]);
-		list_append(resv_list, resv);
 
 		if (!good_nodes_from_inx(local_cluster_list, &curr_cluster,
 					 row[RESV_REQ_NODE_INX], start))
 			continue;
 
+		resv = xmalloc(sizeof(slurmdb_reservation_rec_t));
+		list_append(resv_list, resv);
 		resv->id = slurm_atoul(row[RESV_REQ_ID]);
 		if (with_usage) {
 			if (!job_cond.resvid_list)
