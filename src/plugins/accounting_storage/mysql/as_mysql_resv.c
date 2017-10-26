@@ -616,7 +616,7 @@ empty:
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if (query)
-		xstrcat(query, " order by cluster, resv_name;");
+		xstrcat(query, " order by cluster, time_start, resv_name;");
 
 	xfree(tmp);
 	xfree(extra);
