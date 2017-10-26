@@ -46,7 +46,7 @@
 
 		<div class="site-masthead">
 			<h1 class="site-masthead__title site-masthead__title--slurm">
-				<a href="/slurm" rel="home">
+				<a href="/" rel="home">
 					<span class="slurm-logo">Slurm Workload Manager</span>
 				</a>
 			</h1>
@@ -64,7 +64,7 @@
 			<h2 class="site-nav__title">Navigation</h2>
 
 			<div class="slurm-title">
-				<div class="slurm-logo"><a href="/slurm">Slurm Workload Manager</a></div>
+				<div class="slurm-logo"><a href="/">Slurm Workload Manager</a></div>
 				<div class="slurm-title__version">Version @SLURM_VERSION@</div>
 			</div>
 
