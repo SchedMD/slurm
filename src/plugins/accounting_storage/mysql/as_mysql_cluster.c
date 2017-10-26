@@ -1693,8 +1693,7 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 	} else {
 		if (debug_flags & DEBUG_FLAG_DB_EVENT)
 			DB_DEBUG(mysql_conn->conn,
-				 "We have the same tres as before for %s, "
-				 "no need to update the database.",
+				 "We have the same TRES and node names as before for %s, no need to update the database.",
 				 mysql_conn->cluster_name);
 		goto end_it;
 	}
