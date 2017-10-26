@@ -2141,7 +2141,7 @@ extern void send_all_to_accounting(time_t event_time, int db_rc)
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_NODES_CHANGE_DB:
 		send_jobs_to_accounting();
-		send_resvs_to_accounting();
+		send_resvs_to_accounting(db_rc);
 		/* fall through */
 	case ACCOUNTING_TRES_CHANGE_DB:
 		/* No need to do jobs or resvs when only the TRES change. */

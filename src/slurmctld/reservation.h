@@ -71,7 +71,7 @@ extern void resv_fini(void);
 /* send all reservations to accounting.  Only needed at
  * first registration
  */
-extern int send_resvs_to_accounting(void);
+extern int send_resvs_to_accounting(int db_rc);
 
 /* Set or clear NODE_STATE_MAINT for node_state as needed
  * IN reset_all - re-initialize all node information for all reservations
