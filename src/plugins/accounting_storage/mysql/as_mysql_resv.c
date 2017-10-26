@@ -648,6 +648,7 @@ empty:
 			list_append(job_cond.resvid_list, row[RESV_REQ_ID]);
 		}
 		resv->name = xstrdup(row[RESV_REQ_NAME]);
+		resv->node_inx = xstrdup(row[RESV_REQ_NODE_INX]);
 		resv->cluster = xstrdup(row[RESV_REQ_COUNT]);
 		resv->assocs = xstrdup(row[RESV_REQ_ASSOCS]);
 		resv->nodes = xstrdup(row[RESV_REQ_NODES]);
