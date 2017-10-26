@@ -1180,14 +1180,14 @@ extern int good_nodes_from_inx(List local_cluster_list,
 		if (!node_inx || !node_inx[0])
 			return 0;
 		if ((start < (*curr_cluster)->start)
-		    || (start > (*curr_cluster)->end)) {
+		    || (start >= (*curr_cluster)->end)) {
 			local_cluster_t *local_cluster = NULL;
 
 			ListIterator itr =
 				list_iterator_create(local_cluster_list);
 			while ((local_cluster = list_next(itr))) {
 				if ((start >= local_cluster->start)
-				    && (start <= local_cluster->end)) {
+				    && (start < local_cluster->end)) {
 					*curr_cluster = local_cluster;
 					break;
 				}
