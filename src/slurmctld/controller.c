@@ -1228,7 +1228,16 @@ static int _accounting_cluster_ready(void)
 	xfree(cluster_nodes);
 	xfree(cluster_tres_str);
 
-	if (rc == ACCOUNTING_FIRST_REG) {
+	/*
+	 * FIXME: We should do things differently here depending on the return
+	 *        value.  If NODES_CHANGE or FIRST_REQ we probably want to send
+	 *        most everything to accounting, but if just the TRES changed it
+	 *        means the nodes didn't change and we might not need to send
+	 *        anything.
+	 */
+	if ((rc == ACCOUNTING_FIRST_REG) ||
+	    (rc == ACCOUNTING_NODES_CHANGE_DB) ||
+	    (rc == ACCOUNTING_TRES_CHANGE_DB)) {
 		/* see if we are running directly to a database
 		 * instead of a slurmdbd.
 		 */

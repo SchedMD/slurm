@@ -1608,7 +1608,7 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 {
 	char* query;
 	int rc = SLURM_SUCCESS;
-	int first = 0;
+	int response = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
@@ -1656,7 +1656,7 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 			goto end_it;
 		}
 
-		first = 1;
+		response = ACCOUNTING_FIRST_REG;
 		goto add_it;
 	}
 
@@ -1668,6 +1668,28 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 		debug("%s has changed tres from %s to %s",
 		      mysql_conn->cluster_name,
 		      row[0], *tres_str_in);
+
+		/*
+		 * Reset all the entries for this cluster since the tres changed
+		 * some of the downed nodes may have gone away.
+		 * Request them again with ACCOUNTING_NODES_CHANGE_DB
+		 */
+
+		/* 2 version after 17.02 this first if can go away */
+		if (rpc_version <= SLURM_17_02_PROTOCOL_VERSION)
+			response = ACCOUNTING_FIRST_REG;
+		else if (xstrcmp(cluster_nodes, row[1])) {
+			if (debug_flags & DEBUG_FLAG_DB_EVENT)
+				DB_DEBUG(mysql_conn->conn,
+					 "Nodes on the cluster have changed.");
+			response = ACCOUNTING_NODES_CHANGE_DB;
+		} else
+			response = ACCOUNTING_TRES_CHANGE_DB;
+	} else if (xstrcmp(cluster_nodes, row[1])) {
+		if (debug_flags & DEBUG_FLAG_DB_EVENT)
+			DB_DEBUG(mysql_conn->conn,
+				 "Node names on the cluster have changed.");
+		response = ACCOUNTING_NODES_CHANGE_DB;
 	} else {
 		if (debug_flags & DEBUG_FLAG_DB_EVENT)
 			DB_DEBUG(mysql_conn->conn,
@@ -1699,19 +1721,16 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 				goto update_it;
 			}
 		}
-
 		goto end_it;
 	}
 
-	/* reset all the entries for this cluster since the tres
-	   changed some of the downed nodes may have gone away.
-	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%ld where time_end=0",
 		mysql_conn->cluster_name, event_table, event_time);
+
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
-	first = 1;
+
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
 add_it:
@@ -1733,8 +1752,8 @@ update_it:
 	xfree(query);
 end_it:
 	mysql_free_result(result);
-	if (first && rc == SLURM_SUCCESS)
-		rc = ACCOUNTING_FIRST_REG;
+	if (response && rc == SLURM_SUCCESS)
+		rc = response;
 
 	return rc;
 }
