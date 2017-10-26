@@ -1696,31 +1696,6 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 				 "We have the same tres as before for %s, "
 				 "no need to update the database.",
 				 mysql_conn->cluster_name);
-
-		if (cluster_nodes) {
-			if (!row[1][0]) {
-				debug("Adding cluster nodes '%s' to "
-				      "last instance of cluster '%s'.",
-				      cluster_nodes, mysql_conn->cluster_name);
-				query = xstrdup_printf(
-					"update \"%s_%s\" set "
-					"cluster_nodes='%s' "
-					"where time_end=0 and node_name=''",
-					mysql_conn->cluster_name,
-					event_table, cluster_nodes);
-				(void) mysql_db_query(mysql_conn, query);
-				xfree(query);
-				goto update_it;
-			} else if (!xstrcmp(cluster_nodes, row[1])) {
-				if (debug_flags & DEBUG_FLAG_DB_EVENT)
-					DB_DEBUG(mysql_conn->conn,
-						 "we have the same nodes "
-						 "in the cluster "
-						 "as before no need to "
-						 "update the database.");
-				goto update_it;
-			}
-		}
 		goto end_it;
 	}
 
@@ -1742,7 +1717,6 @@ add_it:
 		cluster_nodes, *tres_str_in, event_time);
 	(void) mysql_db_query(mysql_conn, query);
 	xfree(query);
-update_it:
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%ld where time_end=0 "
 		"and state=%u and node_name='';",
