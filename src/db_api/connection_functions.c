@@ -46,7 +46,7 @@
  * get a new connection to the slurmdb
  * RET: pointer used to access db
  */
-extern void *slurmdb_connection_get()
+extern void *slurmdb_connection_get(void)
 {
 	char *cluster_name = slurm_get_cluster_name();
 	void *db_conn = acct_storage_g_get_connection(NULL, 0,
