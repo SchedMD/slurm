@@ -1466,9 +1466,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			ListIterator t_itr;
 			local_tres_usage_t *loc_tres;
 
-			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%u where id_resv=%u;",
+			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%u where id_resv=%u and time_start=%ld;",
 				   cluster_name, resv_table,
-				   r_usage->unused_wall, r_usage->id);
+				   r_usage->unused_wall, r_usage->id,
+				   r_usage->start);
 
 			if (!r_usage->loc_tres ||
 			    !list_count(r_usage->loc_tres))
