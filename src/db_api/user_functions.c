@@ -50,7 +50,10 @@
  */
 extern int slurmdb_users_add(void *db_conn, List user_list)
 {
-	return acct_storage_g_add_users(db_conn, getuid(), user_list);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_add_users(db_conn, db_api_uid, user_list);
 }
 
 /*
@@ -62,7 +65,10 @@ extern int slurmdb_users_add(void *db_conn, List user_list)
  */
 extern List slurmdb_users_get(void *db_conn, slurmdb_user_cond_t *user_cond)
 {
-	return acct_storage_g_get_users(db_conn, getuid(), user_cond);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_get_users(db_conn, db_api_uid, user_cond);
 }
 
 /*
@@ -76,7 +82,10 @@ extern List slurmdb_users_modify(void *db_conn,
 				 slurmdb_user_cond_t *user_cond,
 				 slurmdb_user_rec_t *user)
 {
-	return acct_storage_g_modify_users(db_conn, getuid(),
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_modify_users(db_conn, db_api_uid,
 					   user_cond, user);
 }
 
@@ -89,7 +98,10 @@ extern List slurmdb_users_modify(void *db_conn,
 extern List slurmdb_users_remove(void *db_conn,
 				 slurmdb_user_cond_t *user_cond)
 {
-	return acct_storage_g_remove_users(db_conn, getuid(), user_cond);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_remove_users(db_conn, db_api_uid, user_cond);
 }
 
 

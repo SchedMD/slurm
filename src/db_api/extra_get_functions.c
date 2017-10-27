@@ -71,7 +71,10 @@ extern List slurmdb_config_get(void *db_conn)
 extern List slurmdb_events_get(void *db_conn,
 			       slurmdb_event_cond_t *event_cond)
 {
-	return acct_storage_g_get_events(db_conn, getuid(), event_cond);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_get_events(db_conn, db_api_uid, event_cond);
 }
 
 /*
@@ -83,7 +86,10 @@ extern List slurmdb_events_get(void *db_conn,
 extern List slurmdb_problems_get(void *db_conn,
 				 slurmdb_assoc_cond_t *assoc_cond)
 {
-	return acct_storage_g_get_problems(db_conn, getuid(), assoc_cond);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_get_problems(db_conn, db_api_uid, assoc_cond);
 }
 
 /*
@@ -95,7 +101,10 @@ extern List slurmdb_problems_get(void *db_conn,
 extern List slurmdb_reservations_get(void *db_conn,
 				     slurmdb_reservation_cond_t *resv_cond)
 {
-	return acct_storage_g_get_reservations(db_conn, getuid(), resv_cond);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_get_reservations(db_conn, db_api_uid, resv_cond);
 }
 
 /*
@@ -106,7 +115,10 @@ extern List slurmdb_reservations_get(void *db_conn,
  */
 extern List slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond)
 {
-	return acct_storage_g_get_txn(db_conn, getuid(), txn_cond);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_get_txn(db_conn, db_api_uid, txn_cond);
 }
 
 /*
