@@ -48,7 +48,7 @@
  * IN:  qos_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_qos_add(void *db_conn, uint32_t uid, List qos_list)
+extern int slurmdb_qos_add(void *db_conn, List qos_list)
 {
 	return acct_storage_g_add_qos(db_conn, getuid(), qos_list);
 }

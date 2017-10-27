@@ -1778,7 +1778,7 @@ extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list);
  * IN:  res_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_res_add(void *db_conn, uint32_t uid, List res_list);
+extern int slurmdb_res_add(void *db_conn, List res_list);
 
 /*
  * get info from the storage
@@ -1814,7 +1814,7 @@ extern List slurmdb_res_remove(void *db_conn, slurmdb_res_cond_t *res_cond);
  * IN:  qos_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_qos_add(void *db_conn, uint32_t uid, List qos_list);
+extern int slurmdb_qos_add(void *db_conn, List qos_list);
 
 /*
  * get info from the storage
@@ -1850,7 +1850,7 @@ extern List slurmdb_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond);
  * IN:  tres_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_tres_add(void *db_conn, uint32_t uid, List tres_list);
+extern int slurmdb_tres_add(void *db_conn, List tres_list);
 
 /*
  * get info from the storage

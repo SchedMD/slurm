@@ -47,7 +47,7 @@
  * IN:  res_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_res_add(void *db_conn, uint32_t uid, List res_list)
+extern int slurmdb_res_add(void *db_conn, List res_list)
 {
 	return acct_storage_g_add_res(db_conn, getuid(), res_list);
 }
