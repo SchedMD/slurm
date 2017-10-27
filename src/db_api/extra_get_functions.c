@@ -76,16 +76,6 @@ extern List slurmdb_events_get(void *db_conn,
 
 /*
  * get info from the storage
- * returns List of slurmdb_job_rec_t *
- * note List needs to be freed when called
- */
-extern List slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond)
-{
-	return jobacct_storage_g_get_jobs_cond(db_conn, getuid(), job_cond);
-}
-
-/*
- * get info from the storage
  * IN:  slurmdb_assoc_cond_t *
  * RET: List of slurmdb_assoc_rec_t *
  * note List needs to be freed when called
