@@ -540,13 +540,13 @@ extern int sacctmgr_archive_dump(int argc, char **argv)
 		}
 	}
 
-	rc = jobacct_storage_g_archive(db_conn, arch_cond);
+	rc = slurmdb_archive(db_conn, arch_cond);
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else {
 		exit_code = 1;
@@ -621,13 +621,13 @@ extern int sacctmgr_archive_load(int argc, char **argv)
 		}
 	}
 
-	rc = jobacct_storage_g_archive_load(db_conn, arch_rec);
+	rc = slurmdb_archive_load(db_conn, arch_rec);
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else {
 		exit_code = 1;

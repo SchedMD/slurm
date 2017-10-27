@@ -61,7 +61,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 		res_cond->cluster_list = NULL;
 	}
 
-	res_list = acct_storage_g_get_res(db_conn, my_uid, res_cond);
+	res_list = slurmdb_res_get(db_conn, res_cond);
 	if (!res_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem getting system resources "
@@ -550,7 +550,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 		   have clusters attached to them.
 		*/
 		res_cond.with_clusters = 2;
-		g_res_list = acct_storage_g_get_res(db_conn, my_uid, &res_cond);
+		g_res_list = slurmdb_res_get(db_conn, &res_cond);
 		if (!g_res_list) {
 			exit_code=1;
 			fprintf(stderr, " Problem getting system resources "
@@ -745,16 +745,16 @@ extern int sacctmgr_add_res(int argc, char **argv)
 
 	if (list_count(res_list)) {
 		notice_thread_init();
-		rc = acct_storage_g_add_res(db_conn, my_uid, res_list);
+		rc = slurmdb_res_add(db_conn, res_list);
 		notice_thread_fini();
 	} else
 		goto end_it;
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else {
 		exit_code = 1;
@@ -814,7 +814,7 @@ extern int sacctmgr_list_res(int argc, char **argv)
 		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
-	res_list = acct_storage_g_get_res(db_conn, my_uid, res_cond);
+	res_list = slurmdb_res_get(db_conn, res_cond);
 	slurmdb_destroy_res_cond(res_cond);
 
 	if (!res_list) {
@@ -915,7 +915,7 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 	}
 
 	notice_thread_init();
-	ret_list = acct_storage_g_modify_res(db_conn, my_uid, res_cond, res);
+	ret_list = slurmdb_res_modify(db_conn, res_cond, res);
 	notice_thread_fini();
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
@@ -945,10 +945,10 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 
 	if (set) {
 		if (commit_check("Would you like to commit changes?")){
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	}
 
@@ -993,7 +993,7 @@ extern int sacctmgr_delete_res(int argc, char **argv)
 	}
 
 	notice_thread_init();
-	ret_list = acct_storage_g_remove_res(db_conn, my_uid, res_cond);
+	ret_list = slurmdb_res_remove(db_conn, res_cond);
 	notice_thread_fini();
 	slurmdb_destroy_res_cond(res_cond);
 
@@ -1006,10 +1006,10 @@ extern int sacctmgr_delete_res(int argc, char **argv)
 		}
 		list_iterator_destroy(itr);
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");

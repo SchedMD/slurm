@@ -223,8 +223,8 @@ int sacctmgr_list_reservation(int argc, char **argv)
 				      "TimeStart,TimeEnd,Unused");
 	}
 
-	reservation_list = acct_storage_g_get_reservations(
-		db_conn, my_uid, reservation_cond);
+	reservation_list = slurmdb_reservations_get(
+		db_conn, reservation_cond);
 	slurmdb_destroy_reservation_cond(reservation_cond);
 
 	if (!reservation_list) {

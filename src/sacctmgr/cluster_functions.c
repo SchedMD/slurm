@@ -332,8 +332,7 @@ extern int sacctmgr_add_cluster(int argc, char **argv)
 		cluster_cond.cluster_list = name_list;
 		cluster_cond.classification = start_cluster->classification;
 
-		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
-							&cluster_cond);
+		temp_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 		if (!temp_list) {
 			exit_code=1;
 			fprintf(stderr,
@@ -436,21 +435,21 @@ extern int sacctmgr_add_cluster(int argc, char **argv)
 	*/
 	if (commit_check("Would you like to commit changes?")) {
 		notice_thread_init();
-		rc = acct_storage_g_add_clusters(db_conn, my_uid, cluster_list);
+		rc = slurmdb_clusters_add(db_conn, cluster_list);
 		notice_thread_fini();
 		if (rc == SLURM_SUCCESS) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Problem adding clusters: %s\n",
 				slurm_strerror(rc));
 			/* this isn't really needed, but just to be safe */
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else {
 		printf(" Changes Discarded\n");
 		/* this isn't really needed, but just to be safe */
-		acct_storage_g_commit(db_conn, 0);
+		slurmdb_connection_commit(db_conn, 0);
 	}
 
 end_it:
@@ -519,8 +518,7 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	cluster_list = acct_storage_g_get_clusters(db_conn, my_uid,
-						   cluster_cond);
+	cluster_list = slurmdb_clusters_get(db_conn, cluster_cond);
 	slurmdb_destroy_cluster_cond(cluster_cond);
 
 	if (!cluster_list) {
@@ -810,8 +808,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 	if (cond_set & 1) {
 		List temp_list = NULL;
 
-		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
-							&cluster_cond);
+		temp_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 		if (!temp_list) {
 			exit_code=1;
 			fprintf(stderr,
@@ -842,8 +839,8 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 
 	if (rec_set & CLUS_REC_SET) {
 		notice_thread_init();
-		ret_list = acct_storage_g_modify_clusters(
-			db_conn, my_uid, &cluster_cond, cluster);
+		ret_list = slurmdb_clusters_modify(
+			db_conn, &cluster_cond, cluster);
 
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
@@ -871,8 +868,8 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 	if (rec_set & CLUS_ASSOC_SET) {
 		list_append(assoc_cond->acct_list, "root");
 		notice_thread_init();
-		ret_list = acct_storage_g_modify_assocs(db_conn, my_uid,
-							assoc_cond, assoc);
+		ret_list = slurmdb_associations_modify(db_conn,
+						       assoc_cond, assoc);
 
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
@@ -900,10 +897,10 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 
 	if (set) {
 		if (commit_check("Would you like to commit changes?"))
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	}
 end_it:
@@ -958,8 +955,7 @@ extern int sacctmgr_delete_cluster(int argc, char **argv)
 		return SLURM_SUCCESS;
 	}
 	notice_thread_init();
-	ret_list = acct_storage_g_remove_clusters(
-		db_conn, my_uid, cluster_cond);
+	ret_list = slurmdb_clusters_remove(db_conn, cluster_cond);
 	rc = errno;
 	notice_thread_fini();
 
@@ -978,7 +974,7 @@ extern int sacctmgr_delete_cluster(int argc, char **argv)
 				fprintf(stderr,"  %s\n", object);
 			}
 			FREE_NULL_LIST(ret_list);
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 			return rc;
 		}
 		printf(" Deleting clusters...\n");
@@ -987,10 +983,10 @@ extern int sacctmgr_delete_cluster(int argc, char **argv)
 		}
 		list_iterator_destroy(itr);
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");
@@ -1077,8 +1073,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 		cluster_cond.cluster_list = list_create(NULL);
 		list_push(cluster_cond.cluster_list, cluster_name);
 
-		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
-							&cluster_cond);
+		temp_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 		FREE_NULL_LIST(cluster_cond.cluster_list);
 		if (!temp_list) {
 			exit_code = 1;
@@ -1122,7 +1117,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	/* this is needed for getting the correct wckeys */
 	user_cond.assoc_cond = &assoc_cond;
 
-	user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+	user_list = slurmdb_users_get(db_conn, &user_cond);
 	/* If not running with the DBD assoc_cond.user_list can be set,
 	 * which will mess other things up.
 	 */
@@ -1159,8 +1154,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	xfree(user_name);
 
 	/* assoc_cond is set up above */
-	assoc_list = acct_storage_g_get_assocs(db_conn, my_uid,
-						     &assoc_cond);
+	assoc_list = slurmdb_associations_get(db_conn, &assoc_cond);
 	FREE_NULL_LIST(assoc_cond.cluster_list);
 	if (!assoc_list) {
 		exit_code = 1;
@@ -1181,7 +1175,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	slurmdb_hierarchical_rec_list = slurmdb_get_acct_hierarchical_rec_list(
 		assoc_list);
 
-	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
+	acct_list = slurmdb_accounts_get(db_conn, NULL);
 
 	if ((fd = fopen(file_name,"w")) == NULL) {
 		fprintf(stderr, "Can't open file %s, %s\n", file_name,

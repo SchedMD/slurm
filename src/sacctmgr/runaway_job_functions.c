@@ -230,8 +230,8 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 				      */
 	slurmdb_init_cluster_cond(&cluster_cond, 0);
 	cluster_cond.cluster_list = job_cond->cluster_list;
-	cluster_list = acct_storage_g_get_clusters(db_conn, my_uid,
-						   &cluster_cond);
+	cluster_list = slurmdb_clusters_get(db_conn,
+					    &cluster_cond);
 	if (!cluster_list) {
 		error("No cluster list returned.");
 		return NULL;
@@ -240,7 +240,7 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 		      (char *)list_peek(job_cond->cluster_list));
 		return NULL;
 	} else if (list_count(cluster_list) != 1) {
-		error("acct_storage_g_get_clusters didn't return exactly one cluster (%d)!  This should never happen.",
+		error("slurmdb_clusters_get didn't return exactly one cluster (%d)!  This should never happen.",
 		      list_count(cluster_list));
 		FREE_NULL_LIST(cluster_list);
 		return NULL;
@@ -286,7 +286,6 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 {
 	List runaway_jobs = NULL;
 	int rc = SLURM_SUCCESS;
-	uint32_t my_uid = getuid();
 	int i=0;
 	List format_list = list_create(slurm_destroy_char);
 	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
@@ -320,13 +319,13 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 
 	_print_runaway_jobs(format_list, runaway_jobs);
 
-	rc = acct_storage_g_fix_runaway_jobs(db_conn, my_uid, runaway_jobs);
+	rc = slurmdb_jobs_fix_runaway(db_conn, runaway_jobs);
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check(ask_msg))
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		else {
 			printf("Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else
 		error("Failed to fix runaway job: %s\n",

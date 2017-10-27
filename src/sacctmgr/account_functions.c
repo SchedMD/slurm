@@ -274,7 +274,7 @@ static int _isdefault_old(List acct_list)
 	memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
 	user_cond.def_acct_list = acct_list;
 
-	ret_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+	ret_list = slurmdb_users_get(db_conn, &user_cond);
 	if (ret_list && list_count(ret_list)) {
 		ListIterator itr = list_iterator_create(ret_list);
 		slurmdb_user_rec_t *user = NULL;
@@ -407,8 +407,8 @@ extern int sacctmgr_add_account(int argc, char **argv)
 		assoc_cond.acct_list = name_list;
 		account_cond.assoc_cond = &assoc_cond;
 
-		local_account_list = acct_storage_g_get_accounts(
-			db_conn, my_uid, &account_cond);
+		local_account_list = slurmdb_accounts_get(
+			db_conn, &account_cond);
 	}
 
 	if (!local_account_list) {
@@ -428,7 +428,7 @@ extern int sacctmgr_add_account(int argc, char **argv)
 	if (!cluster_list || !list_count(cluster_list)) {
 		slurmdb_cluster_rec_t *cluster_rec = NULL;
 		List tmp_list =
-			acct_storage_g_get_clusters(db_conn, my_uid, NULL);
+			slurmdb_clusters_get(db_conn, NULL);
 		if (!tmp_list) {
 			exit_code=1;
 			fprintf(stderr,
@@ -489,8 +489,8 @@ extern int sacctmgr_add_account(int argc, char **argv)
 	list_append(assoc_cond.acct_list, start_assoc->parent_acct);
 
 	assoc_cond.cluster_list = cluster_list;
-	local_assoc_list = acct_storage_g_get_assocs(
-		db_conn, my_uid, &assoc_cond);
+	local_assoc_list = slurmdb_associations_get(
+		db_conn, &assoc_cond);
 	FREE_NULL_LIST(assoc_cond.acct_list);
 	if (!local_assoc_list) {
 		exit_code=1;
@@ -629,13 +629,12 @@ extern int sacctmgr_add_account(int argc, char **argv)
 
 	notice_thread_init();
 	if (list_count(acct_list))
-		rc = acct_storage_g_add_accounts(db_conn, my_uid, acct_list);
+		rc = slurmdb_accounts_add(db_conn, acct_list);
 
 
 	if (rc == SLURM_SUCCESS) {
 		if (list_count(assoc_list))
-			rc = acct_storage_g_add_assocs(db_conn, my_uid,
-							     assoc_list);
+			rc = slurmdb_associations_add(db_conn, assoc_list);
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Problem adding accounts: %s\n",
@@ -648,10 +647,10 @@ extern int sacctmgr_add_account(int argc, char **argv)
 
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else {
 		exit_code=1;
@@ -740,7 +739,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, acct_cond);
+	acct_list = slurmdb_accounts_get(db_conn, acct_cond);
 	slurmdb_destroy_account_cond(acct_cond);
 
 	if (!acct_list) {
@@ -939,8 +938,8 @@ extern int sacctmgr_modify_account(int argc, char **argv)
 			rc = SLURM_ERROR;
 			goto assoc_start;
 		}
-		ret_list = acct_storage_g_modify_accounts(
-			db_conn, my_uid, acct_cond, acct);
+		ret_list = slurmdb_accounts_modify(
+			db_conn, acct_cond, acct);
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
 			ListIterator itr = list_iterator_create(ret_list);
@@ -988,8 +987,8 @@ assoc_start:
 			}
 		}
 
-		ret_list = acct_storage_g_modify_assocs(
-			db_conn, my_uid, acct_cond->assoc_cond, assoc);
+		ret_list = slurmdb_associations_modify(
+			db_conn, acct_cond->assoc_cond, assoc);
 
 		if (ret_list && list_count(ret_list)) {
 			set = 1;
@@ -1031,10 +1030,10 @@ assoc_end:
 	notice_thread_fini();
 	if (set) {
 		if (commit_check("Would you like to commit changes?"))
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	}
 	slurmdb_destroy_account_cond(acct_cond);
@@ -1106,17 +1105,17 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 	}
 
 	acct_cond->assoc_cond->only_defs = 1;
-	local_assoc_list = acct_storage_g_get_assocs(
-		db_conn, my_uid, acct_cond->assoc_cond);
+	local_assoc_list = slurmdb_associations_get(
+		db_conn, acct_cond->assoc_cond);
 	acct_cond->assoc_cond->only_defs = 0;
 
 	notice_thread_init();
 	if (cond_set == 1) {
-		ret_list = acct_storage_g_remove_accounts(
-			db_conn, my_uid, acct_cond);
+		ret_list = slurmdb_accounts_remove(
+			db_conn, acct_cond);
 	} else if (cond_set & 2) {
-		ret_list = acct_storage_g_remove_assocs(
-			db_conn, my_uid, acct_cond->assoc_cond);
+		ret_list = slurmdb_associations_remove(
+			db_conn, acct_cond->assoc_cond);
 	}
 	rc = errno;
 	notice_thread_fini();
@@ -1128,7 +1127,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 
 		/* Check to see if person is trying to remove a default
 		 * account of a user.  _isdefault only works with the
-		 * output from acct_storage_g_remove_accounts, and
+		 * output from slurmdb_accounts_remove, and
 		 * with a previously got assoc_list.
 		 */
 		if (_isdefault(cond_set, ret_list, local_assoc_list)) {
@@ -1139,7 +1138,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 				" or change these users default account to "
 				"remove the account(s).\n"
 				" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 			goto end_it;
 		}
 		itr = list_iterator_create(ret_list);
@@ -1152,7 +1151,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 			while((object = list_next(itr))) {
 				fprintf(stderr,"  %s\n", object);
 			}
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 			goto end_it;
 		}
 
@@ -1166,10 +1165,10 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 		}
 		list_iterator_destroy(itr);
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");

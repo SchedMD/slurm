@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Add job functions to the db_api.
  -- Fix sacct to always use the db_api instead of sometimes calling functions
     directly.
+ -- Fix sacctmgr to always use the db_api instead of sometimes calling functions
+    directly.
 
 * Changes in Slurm 17.11.0rc1
 ==============================

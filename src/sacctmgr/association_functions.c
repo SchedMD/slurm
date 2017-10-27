@@ -144,15 +144,15 @@ extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 	if (qos_id == NO_VAL)
 		return true;
 
-	assoc_list = acct_storage_g_get_assocs(
-		db_conn, my_uid, assoc_cond);
+	assoc_list = slurmdb_associations_get(
+		db_conn, assoc_cond);
 	if (!assoc_list) {
 		fprintf(stderr, "Couldn't get a list back for checking qos.\n");
 		return false;
 	}
 
 	if (!g_qos_list)
-		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+		g_qos_list = slurmdb_qos_get(db_conn, NULL);
 
 	itr = list_iterator_create(assoc_list);
 	while ((assoc = list_next(itr))) {
@@ -278,8 +278,8 @@ extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 				list_create(slurm_destroy_char);
 
 		if (!g_qos_list)
-			g_qos_list = acct_storage_g_get_qos(
-				db_conn, my_uid, NULL);
+			g_qos_list = slurmdb_qos_get(
+				db_conn, NULL);
 
 		if (slurmdb_addto_qos_char_list(assoc_cond->def_qos_id_list,
 						g_qos_list, value, 0))
@@ -303,8 +303,8 @@ extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 			assoc_cond->qos_list = list_create(slurm_destroy_char);
 
 		if (!g_qos_list)
-			g_qos_list = acct_storage_g_get_qos(
-				db_conn, my_uid, NULL);
+			g_qos_list = slurmdb_qos_get(
+				db_conn, NULL);
 
 		if (slurmdb_addto_qos_char_list(assoc_cond->qos_list,
 						g_qos_list, value, option))
@@ -334,8 +334,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 
 	if (!xstrncasecmp(type, "DefaultQOS", MAX(command_len, 8))) {
 		if (!g_qos_list)
-			g_qos_list = acct_storage_g_get_qos(
-				db_conn, my_uid, NULL);
+			g_qos_list = slurmdb_qos_get(
+				db_conn, NULL);
 
 		if (atoi(value) == -1)
 			assoc->def_qos_id = -1;
@@ -586,8 +586,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			assoc->qos_list = list_create(slurm_destroy_char);
 
 		if (!g_qos_list)
-			g_qos_list = acct_storage_g_get_qos(
-				db_conn, my_uid, NULL);
+			g_qos_list = slurmdb_qos_get(
+				db_conn, NULL);
 
 		if (slurmdb_addto_qos_char_list(assoc->qos_list,
 						g_qos_list, value,
@@ -639,8 +639,8 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		break;
 	case PRINT_DQOS:
 		if (!g_qos_list)
-			g_qos_list = acct_storage_g_get_qos(
-				db_conn, my_uid, NULL);
+			g_qos_list = slurmdb_qos_get(
+				db_conn, NULL);
 		tmp_char = slurmdb_qos_str(g_qos_list, assoc->def_qos_id);
 		field->print_routine(field, tmp_char, last);
 		break;
@@ -763,8 +763,8 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		break;
 	case PRINT_QOS:
 		if (!g_qos_list)
-			g_qos_list = acct_storage_g_get_qos(
-				db_conn, my_uid, NULL);
+			g_qos_list = slurmdb_qos_get(
+				db_conn, NULL);
 
 		field->print_routine(field, g_qos_list, assoc->qos_list, last);
 		break;
@@ -834,7 +834,7 @@ extern int sacctmgr_list_assoc(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	assoc_list = acct_storage_g_get_assocs(db_conn, my_uid, assoc_cond);
+	assoc_list = slurmdb_associations_get(db_conn, assoc_cond);
 	slurmdb_destroy_assoc_cond(assoc_cond);
 
 	if (!assoc_list) {
