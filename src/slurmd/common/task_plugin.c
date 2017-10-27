@@ -37,7 +37,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
 #include <pthread.h>
+#include <sched.h>
+#include <ctype.h>
 
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -94,6 +97,29 @@ static plugin_context_t	**g_task_context = NULL;
 static int			g_task_context_num = -1;
 static pthread_mutex_t		g_task_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+
+static inline int _val_to_char(int v)
+{
+	if (v >= 0 && v < 10)
+		return '0' + v;
+	else if (v >= 10 && v < 16)
+		return ('a' - 10) + v;
+	else
+		return -1;
+}
+
+static inline int _char_to_val(int c)
+{
+	int cl;
+
+	cl = tolower(c);
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	else if (cl >= 'a' && cl <= 'f')
+		return cl + (10 - 'a');
+	else
+		return -1;
+}
 
 /*
  * Initialize the task plugin.
@@ -510,4 +536,124 @@ extern int task_g_add_pid(pid_t pid)
 	slurm_mutex_unlock( &g_task_context_lock );
 
 	return (rc);
+}
+
+extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
+				   int statval)
+{
+	char *bind_type, *action, *status, *units;
+	char mstr[1 + CPU_SETSIZE / 4];
+	int task_gid = job->envtp->procid;
+	int task_lid = job->envtp->localid;
+	pid_t mypid = job->envtp->task_pid;
+
+	if (!(job->cpu_bind_type & CPU_BIND_VERBOSE))
+		return;
+
+	if (statval)
+		status = " FAILED";
+	else
+		status = "";
+
+	if (job->cpu_bind_type & CPU_BIND_NONE) {
+		action = "";
+		units  = "";
+		bind_type = "NONE";
+	} else {
+		action = " set";
+		if (job->cpu_bind_type & CPU_BIND_TO_THREADS)
+			units = "-threads";
+		else if (job->cpu_bind_type & CPU_BIND_TO_CORES)
+			units = "-cores";
+		else if (job->cpu_bind_type & CPU_BIND_TO_SOCKETS)
+			units = "-sockets";
+		else if (job->cpu_bind_type & CPU_BIND_TO_LDOMS)
+			units = "-ldoms";
+		else
+			units = "";
+		if (job->cpu_bind_type & CPU_BIND_RANK) {
+			bind_type = "RANK";
+		} else if (job->cpu_bind_type & CPU_BIND_MAP) {
+			bind_type = "MAP ";
+		} else if (job->cpu_bind_type & CPU_BIND_MASK) {
+			bind_type = "MASK";
+		} else if (job->cpu_bind_type & CPU_BIND_LDRANK) {
+			bind_type = "LDRANK";
+		} else if (job->cpu_bind_type & CPU_BIND_LDMAP) {
+			bind_type = "LDMAP ";
+		} else if (job->cpu_bind_type & CPU_BIND_LDMASK) {
+			bind_type = "LDMASK";
+		} else if (job->cpu_bind_type & (~CPU_BIND_VERBOSE)) {
+			bind_type = "UNK ";
+		} else {
+			action = "";
+			bind_type = "NULL";
+		}
+	}
+
+	fprintf(stderr, "cpu-bind%s=%s - "
+			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
+			units, bind_type,
+			job->node_name,
+			task_gid,
+			task_lid,
+			mypid,
+			task_cpuset_to_str(mask, mstr),
+			action,
+			status);
+}
+
+extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
+{
+	int base;
+	char *ptr = str;
+	char *ret = NULL;
+
+	for (base = CPU_SETSIZE - 4; base >= 0; base -= 4) {
+		char val = 0;
+		if (CPU_ISSET(base, mask))
+			val |= 1;
+		if (CPU_ISSET(base + 1, mask))
+			val |= 2;
+		if (CPU_ISSET(base + 2, mask))
+			val |= 4;
+		if (CPU_ISSET(base + 3, mask))
+			val |= 8;
+		if (!ret && val)
+			ret = ptr;
+		*ptr++ = _val_to_char(val);
+	}
+	*ptr = '\0';
+	return ret ? ret : ptr - 1;
+}
+
+extern int task_str_to_cpuset(cpu_set_t *mask, const char* str)
+{
+	int len = strlen(str);
+	const char *ptr = str + len - 1;
+	int base = 0;
+
+	/* skip 0x, it's all hex anyway */
+	if (len > 1 && !memcmp(str, "0x", 2L))
+		str += 2;
+
+	CPU_ZERO(mask);
+	while (ptr >= str) {
+		char val = _char_to_val(*ptr);
+		if (val == (char) -1)
+			return -1;
+		if (val & 1)
+			CPU_SET(base, mask);
+		if (val & 2)
+			CPU_SET(base + 1, mask);
+		if (val & 4)
+			CPU_SET(base + 2, mask);
+		if (val & 8)
+			CPU_SET(base + 3, mask);
+		len--;
+		ptr--;
+		base += 4;
+	}
+
+	return 0;
 }
