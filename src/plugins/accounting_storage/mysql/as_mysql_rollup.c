@@ -1079,15 +1079,20 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			uint32_t row_flags = slurm_atoul(row[RESV_REQ_FLAGS]);
 			int unused;
 			int resv_seconds;
-			if (row_start <= curr_start) {
-				row_start = curr_start;
+
+			if (row_start >= curr_start) {
 				/*
-				 * We want the total unused here so if we are
-				 * reerolling set it back to 0
+				 * This is the first time we are seeing this
+				 * reservation, so set our unused to be 0.
+				 * This is mostly helpful when
+				 * rerolling set it back to 0.
 				 */
 				unused = 0;
 			} else
 				unused = slurm_atoul(row[RESV_REQ_UNUSED]);
+
+			if (row_start <= curr_start)
+				row_start = curr_start;
 
 			if (!row_end || row_end > curr_end)
 				row_end = curr_end;
