@@ -1028,19 +1028,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					       cluster_down_list);
 
 		// now get the reservations during this time
-		/* If a reservation has the IGNORE_JOBS flag we don't
-		 * have an easy way to distinguish the cpus a job not
-		 * running in the reservation, but on it's cpus.
-		 * So we will just ignore these reservations for
-		 * accounting purposes.
-		 */
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "(time_start < %ld && time_end >= %ld) "
-				       "&& !(flags & %u)"
 				       "order by time_start",
 				       resv_str, cluster_name, resv_table,
-				       curr_end, curr_start,
-				       RESERVE_FLAG_IGN_JOBS);
+				       curr_end, curr_start);
 
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -1129,11 +1121,16 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			*/
 
 
-			/* only record time for the clusters that have
-			   registered.  This continue should rarely if
-			   ever happen.
-			*/
-			if (!c_usage)
+			/*
+			 * Only record time for the clusters that have
+			 * registered, or if a reservation has the IGNORE_JOBS
+			 * flag we don't have an easy way to distinguish the
+			 * cpus a job not running in the reservation, but on
+			 * it's cpus.
+			 * We still need them for figuring out unused wall time,
+			 * but for cluster utilization we will just ignore them.
+			 */
+			if (!c_usage || (row_flags & RESERVE_FLAG_IGN_JOBS))
 				continue;
 
 			_add_time_tres_list(c_usage->loc_tres,
