@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.0rc2
 ==============================
+ -- Prevent slurmctld abort with NodeFeatures=knl_cray and non-KNL nodes lacking
+    any configured features.
 
 * Changes in Slurm 17.11.0rc1
 ==============================
