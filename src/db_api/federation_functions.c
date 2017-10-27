@@ -71,7 +71,7 @@ extern List slurmdb_federations_modify(void *db_conn,
  * IN:  slurmdb_federation_cond_t *fed_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern List slurmdb_remove_federations(void *db_conn,
+extern List slurmdb_federations_remove(void *db_conn,
 				       slurmdb_federation_cond_t *fed_cond)
 {
 	return acct_storage_g_remove_federations(db_conn, getuid(),fed_cond);
@@ -83,7 +83,7 @@ extern List slurmdb_remove_federations(void *db_conn,
  * RET: List of slurmdb_federation_rec_t *
  * note List needs to be freed when called
  */
-extern List slurmdb_get_federations(void *db_conn,
+extern List slurmdb_federations_get(void *db_conn,
 				    slurmdb_federation_cond_t *fed_cond)
 {
 	return acct_storage_g_get_federations(db_conn, getuid(), fed_cond);

@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     and --mem-bind for consistency with the rest of Slurm's options. Both
     old and new syntaxes are supported for now.
  -- Add slurmdb_connection_commit to the slurmdb api to commit when needed.
+ -- Add the federation api's to the slurmdb.h file.
 
 * Changes in Slurm 17.11.0rc1
 ==============================

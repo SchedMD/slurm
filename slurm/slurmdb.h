@@ -1489,6 +1489,42 @@ extern int slurmdb_coord_add(void *db_conn,
 extern List slurmdb_coord_remove(void *db_conn, List acct_list,
 				 slurmdb_user_cond_t *user_cond);
 
+/*************** Federation functions **************/
+
+/*
+ * add federations to accounting system
+ * IN:  list List of slurmdb_federation_rec_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_federations_add(void *db_conn, List federation_list);
+
+/*
+ * modify existing federations in the accounting system
+ * IN:  slurmdb_federation_cond_t *fed_cond
+ * IN:  slurmdb_federation_rec_t  *fed
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List slurmdb_federations_modify(void *db_conn,
+				       slurmdb_federation_cond_t *fed_cond,
+				       slurmdb_federation_rec_t *fed);
+
+/*
+ * remove federations from accounting system
+ * IN:  slurmdb_federation_cond_t *fed_cond
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List slurmdb_federations_remove(void *db_conn,
+				       slurmdb_federation_cond_t *fed_cond);
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_federation_cond_t *
+ * RET: List of slurmdb_federation_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_federations_get(void *db_conn,
+				    slurmdb_federation_cond_t *fed_cond);
+
 /************** extra get functions **************/
 
 /*
