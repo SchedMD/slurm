@@ -246,7 +246,7 @@ void slurm_print_cpu_bind_help(void)
 	} else {
 		printf(
 "CPU bind options:\n"
-"    --cpu_bind=         Bind tasks to CPUs\n"
+"    --cpu-bind=         Bind tasks to CPUs\n"
 "        q[uiet]         quietly bind before task runs (default)\n"
 "        v[erbose]       verbosely report binding before task runs\n"
 "        no[ne]          don't bind tasks to CPUs (default)\n"
@@ -274,13 +274,13 @@ void slurm_print_cpu_bind_help(void)
  *
  * we support different launch policy names
  * we also allow a verbose setting to be specified
- *     --cpu_bind=threads
- *     --cpu_bind=cores
- *     --cpu_bind=sockets
- *     --cpu_bind=v
- *     --cpu_bind=rank,v
- *     --cpu_bind=rank
- *     --cpu_bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
+ *     --cpu-bind=threads
+ *     --cpu-bind=cores
+ *     --cpu-bind=sockets
+ *     --cpu-bind=v
+ *     --cpu-bind=rank,v
+ *     --cpu-bind=rank
+ *     --cpu-bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
  *
  *
  * returns -1 on error, 0 otherwise
@@ -376,7 +376,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (list && *list) {
 				*cpu_bind = _expand_mult(list, "map_cpu", &rc);
 			} else {
-				error("missing list for \"--cpu_bind="
+				error("missing list for \"--cpu-bind="
 				      "map_cpu:<list>\"");
 				rc = SLURM_ERROR;
 			}
@@ -390,7 +390,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (list && *list) {
 				*cpu_bind = _expand_mult(list, "mask_cpu", &rc);
 			} else {
-				error("missing list for \"--cpu_bind="
+				error("missing list for \"--cpu-bind="
 				      "mask_cpu:<list>\"");
 				rc = SLURM_ERROR;
 			}
@@ -409,7 +409,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (list && *list) {
 				*cpu_bind = _expand_mult(list, "map_ldom", &rc);
 			} else {
-				error("missing list for \"--cpu_bind="
+				error("missing list for \"--cpu-bind="
 				      "map_ldom:<list>\"");
 				rc = SLURM_ERROR;
 			}
@@ -424,7 +424,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (list && *list) {
 				*cpu_bind = _expand_mult(list, "mask_ldom",&rc);
 			} else {
-				error("missing list for \"--cpu_bind="
+				error("missing list for \"--cpu-bind="
 				      "mask_ldom:<list>\"");
 				rc = SLURM_ERROR;
 			}
@@ -434,7 +434,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_CORES |
 			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
 			     CPU_BIND_TO_BOARDS)) {
-				debug("--cpu_bind=sockets incompatible with "
+				debug("--cpu-bind=sockets incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
 			}
@@ -446,7 +446,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
 			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
 			     CPU_BIND_TO_BOARDS)) {
-				debug("--cpu_bind=cores incompatible with "
+				debug("--cpu-bind=cores incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
 			}
@@ -458,7 +458,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
 			     CPU_BIND_TO_CORES | CPU_BIND_TO_LDOMS |
 			     CPU_BIND_TO_BOARDS)) {
-				debug("--cpu_bind=threads incompatible with "
+				debug("--cpu-bind=threads incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
 			}
@@ -470,7 +470,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
 			     CPU_BIND_TO_CORES | CPU_BIND_TO_THREADS |
 			     CPU_BIND_TO_BOARDS)) {
-				debug("--cpu_bind=threads incompatible with "
+				debug("--cpu-bind=ldoms incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
 			}
@@ -482,14 +482,14 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
 			     CPU_BIND_TO_CORES | CPU_BIND_TO_THREADS |
 			     CPU_BIND_TO_LDOMS)) {
-				debug("--cpu_bind=threads incompatible with "
+				debug("--cpu-bind=boards incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
 			}
 			_clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_BOARDS);
 		} else {
-			error("unrecognized --cpu_bind argument \"%s\"", tok);
+			error("unrecognized --cpu-bind argument \"%s\"", tok);
 			rc = SLURM_ERROR;
 		}
 	}
@@ -518,7 +518,7 @@ void slurm_print_mem_bind_help(void)
 {
 			printf(
 "Memory bind options:\n"
-"    --mem_bind=         Bind memory to locality domains (ldom)\n"
+"    --mem-bind=         Bind memory to locality domains (ldom)\n"
 "        nosort          avoid sorting pages at startup\n"
 "        sort            sort pages at startup\n"
 "        q[uiet]         quietly bind before task runs (default)\n"
@@ -538,10 +538,10 @@ void slurm_print_mem_bind_help(void)
  *
  * we support different memory binding names
  * we also allow a verbose setting to be specified
- *     --mem_bind=v
- *     --mem_bind=rank,v
- *     --mem_bind=rank
- *     --mem_bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
+ *     --mem-bind=v
+ *     --mem-bind=rank,v
+ *     --mem-bind=rank
+ *     --mem-bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
  *
  * returns -1 on error, 0 otherwise
  */
@@ -606,7 +606,7 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 			if (list && *list) {
 				*mem_bind = _expand_mult(list, "map_mem", &rc);
 			} else {
-				error("missing list for \"--mem_bind=map_mem:<list>\"");
+				error("missing list for \"--mem-bind=map_mem:<list>\"");
 				rc = SLURM_ERROR;
 			}
 		} else if ((xstrncasecmp(tok, "mask_mem", 8) == 0) ||
@@ -619,11 +619,11 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 			if (list && *list) {
 				*mem_bind = _expand_mult(list, "mask_mem", &rc);
 			} else {
-				error("missing list for \"--mem_bind=mask_mem:<list>\"");
+				error("missing list for \"--mem-bind=mask_mem:<list>\"");
 				rc = SLURM_ERROR;
 			}
 		} else {
-			error("unrecognized --mem_bind argument \"%s\"", tok);
+			error("unrecognized --mem-bind argument \"%s\"", tok);
 			rc = SLURM_ERROR;
 		}
 	}

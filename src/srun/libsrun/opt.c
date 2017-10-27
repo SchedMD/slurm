@@ -286,6 +286,7 @@ struct option long_options[] = {
 	{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
+	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 	{"deadline",         required_argument, 0, LONG_OPT_DEADLINE},
@@ -311,6 +312,7 @@ struct option long_options[] = {
 	{"mcs-label",        required_argument, 0, LONG_OPT_MCS_LABEL},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
+	{"mem-bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mincores",         required_argument, 0, LONG_OPT_MINCORES},
 	{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
@@ -3079,9 +3081,9 @@ static void _opt_list(void)
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
-	info("cpu_bind       : %s (%u)",
+	info("cpu-bind       : %s (%u)",
 	     sropt.cpu_bind == NULL ? "default" : sropt.cpu_bind, sropt.cpu_bind_type);
-	info("mem_bind       : %s (%u)",
+	info("mem-bind       : %s (%u)",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind, opt.mem_bind_type);
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", sropt.slurmd_debug);
@@ -3255,7 +3257,7 @@ static void _usage(void)
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
 "            [--launch-cmd] [--launcher-opts=options]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
-"            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
+"            [--cpu-bind=...] [--mem-bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
 "            [--profile=...]\n"
@@ -3433,16 +3435,16 @@ static void _help(void)
 	    && ((strstr(conf->task_plugin, "affinity"))
 		|| (strstr(conf->task_plugin, "cgroup")))) {
 		printf(
-"      --cpu_bind=             Bind tasks to CPUs\n"
-"                              (see \"--cpu_bind=help\" for options)\n"
+"      --cpu-bind=             Bind tasks to CPUs\n"
+"                              (see \"--cpu-bind=help\" for options)\n"
 "      --hint=                 Bind tasks according to application hints\n"
 "                              (see \"--hint=help\" for options)\n");
 	}
 	if (conf->task_plugin != NULL
 	    && (strstr(conf->task_plugin, "affinity"))) {
 		printf(
-"      --mem_bind=             Bind memory to locality domains (ldom)\n"
-"                              (see \"--mem_bind=help\" for options)\n");
+"      --mem-bind=             Bind memory to locality domains (ldom)\n"
+"                              (see \"--mem-bind=help\" for options)\n");
 	}
 	slurm_conf_unlock();
 

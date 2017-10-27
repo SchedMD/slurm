@@ -1292,7 +1292,7 @@ otherwise resources on the node can be oversubscribed.
 .TP 24
 \fBmem_sort\fR
 Sort NUMA memory at step start. User can override this default with
-SLURM_MEM_BIND environment variable or \-\-mem_bind=nosort command line option.
+SLURM_MEM_BIND environment variable or \-\-mem\-bind=nosort command line option.
 .TP 24
 \fBslurmstepd_memlock\fR
 Lock the slurmstepd process's current memory in RAM.
@@ -2464,7 +2464,7 @@ For example, on Cray systems add "\-\-gres=craynetwork:0" as shown below:
     SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-gres=craynetwork:0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
 .fi
 
-For systems with TaskPlugin set, adding an option of "\-\-cpu_bind=no" is
+For systems with TaskPlugin set, adding an option of "\-\-cpu\-bind=no" is
 recommended if the default shell should have access to all of the CPUs
 allocated to the job on that node, otherwise the shell may be limited to a
 single cpu or core.
@@ -3651,19 +3651,19 @@ list. The prefix of "task/" is optional. Acceptable values include:
 .TP 15
 \fBtask/affinity\fR
 enables resource containment using CPUSETs.
-This enables the \-\-cpu_bind and/or \-\-mem_bind srun options.
+This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 If you use "task/affinity" and encounter problems, it may be due to
 the variety of system calls used to implement task affinity on
 different operating systems.
 .TP
 \fBtask/cgroup\fR
 enables resource containment using Linux control cgroups.
-This enables the \-\-cpu_bind and/or \-\-mem_bind srun options.
+This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 NOTE: see "man cgroup.conf" for configuration details.
 .TP
 \fBtask/none\fR
 for systems requiring no special handling of user tasks.
-Lacks support for the \-\-cpu_bind and/or \-\-mem_bind srun options.
+Lacks support for the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 The default value is "task/none".
 .RE
 
@@ -3687,7 +3687,7 @@ Optional parameters for the task plugin.
 Multiple options should be comma separated.
 If \fBNone\fR, \fBBoards\fR, \fBSockets\fR, \fBCores\fR, \fBThreads\fR,
 and/or \fBVerbose\fR are specified, they will override
-the \fB\-\-cpu_bind\fR option specified by the user
+the \fB\-\-cpu\-bind\fR option specified by the user
 in the \fBsrun\fR command.
 \fBNone\fR, \fBBoards\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR are mutually
 exclusive and since they decrease scheduling flexibility are not generally

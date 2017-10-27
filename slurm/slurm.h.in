@@ -799,7 +799,7 @@ typedef enum task_dist_states {
 #define OPEN_MODE_APPEND	1
 #define OPEN_MODE_TRUNCATE	2
 
-typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
+typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 	/* verbose can be set with any other flag */
 	CPU_BIND_VERBOSE    = 0x0001, /* =v, */
 	/* the following auto-binding flags are mutually exclusive */
@@ -857,7 +857,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 #define CPU_FREQ_ONDEMAND_OLD		0x80000008
 #define CPU_FREQ_CONSERVATIVE_OLD	0x80000009
 
-typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */
+typedef enum mem_bind_type {    /* memory binding type from --mem-bind=... */
 	/* verbose can be set with any other flag */
 	MEM_BIND_VERBOSE= 0x01,	/* =v, */
 	/* the following five manual binding flags are mutually exclusive */

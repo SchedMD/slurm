@@ -594,7 +594,7 @@ task launch<BR>
 <input type="radio" name="task_plugin" value="none" checked> <B>None</B>: No task launch actions<BR>
 <input type="radio" name="task_plugin" value="affinity"> <B>Affinity</B>:
 CPU affinity support
-(see srun man pages for the --cpu_bind, --mem_bind, and -E options)<BR>
+(see srun man pages for the --cpu-bind, --mem-bind, and -E options)<BR>
 <input type="radio" name="task_plugin" value="cgroup"> <B>Cgroup</B>:
 Allocated resources constraints enforcement using Linux Control Groups
 (see cgroup.conf man page)
@@ -785,5 +785,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 15 September 2017</P>
+Last modified 27 October 2017</P>
 </BODY>

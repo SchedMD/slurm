@@ -43,13 +43,13 @@ typedef struct env_options {
 	task_dist_states_t distribution; /* --distribution=, -m dist	*/
 	uint16_t plane_size;         /* plane_size for SLURM_DIST_PLANE */
 	cpu_bind_type_t
-		cpu_bind_type;	/* --cpu_bind=			*/
+		cpu_bind_type;	/* --cpu-bind=			*/
 	char *cpu_bind;		/* binding map for map/mask_cpu	*/
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	mem_bind_type_t
-		mem_bind_type;	/* --mem_bind=			*/
+		mem_bind_type;	/* --mem-bind=			*/
 	char *mem_bind;		/* binding map for tasks to memory	*/
 	bool overcommit;	/* --overcommit,   -O		*/
 	int  slurmd_debug;	/* --slurmd-debug, -D           */

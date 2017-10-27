@@ -806,7 +806,7 @@ Also see \fB\-\-mem\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
 
 .TP
-\fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
+\fB\-\-mem\-bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to memory. Used only when the task/affinity plugin is enabled
 and the NUMA memory functions are available.
 \fBNote that the resolution of CPU and memory binding
@@ -819,7 +819,7 @@ any memory. This option is typically used to ensure that each task is bound to
 the memory closest to it's assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 If you want greater control, try running a simple test code with the
-options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine
+options "\-\-cpu\-bind=verbose,none \-\-mem\-bind=verbose,none" to determine
 the specific configuration.
 
 NOTE: To have Slurm always report on the selected memory binding for
@@ -827,7 +827,7 @@ all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
 
 The following informational environment variables are set when
-\fB\-\-mem_bind\fR is in use:
+\fB\-\-mem\-bind\fR is in use:
 
 .nf
 	SLURM_MEM_BIND_LIST
@@ -1557,7 +1557,7 @@ Same as \fB\-\-jobid\fR
 Same as \fB\-K\fR, \fB\-\-kill\-command\fR
 .TP
 \fBSALLOC_MEM_BIND\fR
-Same as \fB\-\-mem_bind\fR
+Same as \fB\-\-mem\-bind\fR
 .TP
 \fBSALLOC_NETWORK\fR
 Same as \fB\-\-network\fR
@@ -1693,23 +1693,23 @@ Quality Of Service (QOS) of the job allocation.
 Advanced reservation containing the job allocation, if any.
 .TP
 \fBSLURM_MEM_BIND\fR
-Set to value of the \-\-mem_bind\fR option.
+Set to value of the \-\-mem\-bind\fR option.
 .TP
 \fBSLURM_MEM_BIND_LIST\fR
 Set to bit mask used for memory binding.
 .TP
 \fBSLURM_MEM_BIND_PREFER\fR
-Set to "prefer" if the \-\-mem_bind\fR option includes the prefer option.
+Set to "prefer" if the \-\-mem\-bind\fR option includes the prefer option.
 .TP
 \fBSLURM_MEM_BIND_SORT\fR
 Sort free cache pages (run zonesort on Intel KNL nodes)
 .TP
 \fBSLURM_MEM_BIND_TYPE\fR
-Set to the memory binding type specified with the \-\-mem_bind\fR option.
+Set to the memory binding type specified with the \-\-mem\-bind\fR option.
 Possible values are "none", "rank", "map_map", "mask_mem" and "local".
 .TP
 \fBSLURM_MEM_BIND_VERBOSE\fR
-Set to "verbose" if the \-\-mem_bind\fR option includes the verbose option.
+Set to "verbose" if the \-\-mem\-bind\fR option includes the verbose option.
 Set to "quiet" otherwise.
 .TP
 \fBSLURM_MEM_PER_CPU\fR

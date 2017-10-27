@@ -842,6 +842,7 @@ static struct option long_options[] = {
 	{"mcs-label",     required_argument, 0, LONG_OPT_MCS_LABEL},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
+	{"mem-bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mincores",      required_argument, 0, LONG_OPT_MINCORES},
 	{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
@@ -3432,7 +3433,7 @@ static void _opt_list(void)
 	info("ntasks-per-node   : %d", opt.ntasks_per_node);
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
-	info("mem_bind          : %s",
+	info("mem-bind          : %s",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	info("plane_size        : %u", opt.plane_size);
 	info("propagate         : %s",
@@ -3478,7 +3479,7 @@ static void _usage(void)
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
-"              [--mem_bind=...] [--reservation=name] [--mcs-label=mcs]\n"
+"              [--mem-bind=...] [--reservation=name] [--mcs-label=mcs]\n"
 "              [--cpu-freq=min[-max[:gov]] [--power=flags] [--gres-flags=opts]\n"
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--bbf=burst_buffer_file]\n"
@@ -3612,8 +3613,8 @@ static void _help(void)
 		printf(
 "      --hint=                 Bind tasks according to application hints\n"
 "                              (see \"--hint=help\" for options)\n"
-"      --mem_bind=             Bind memory to locality domains (ldom)\n"
-"                              (see \"--mem_bind=help\" for options)\n");
+"      --mem-bind=             Bind memory to locality domains (ldom)\n"
+"                              (see \"--mem-bind=help\" for options)\n");
 	}
 	slurm_conf_unlock();
 

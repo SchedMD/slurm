@@ -138,7 +138,7 @@ void slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job)
 		}
 	}
 
-	fprintf(stderr, "mem_bind%s%s - "
+	fprintf(stderr, "mem-bind%s%s - "
 			"%s, task %2u %2u [%u]: mask 0x%s%s\n",
 			mode, bind_type,
 			conf->hostname,

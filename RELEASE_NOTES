@@ -203,6 +203,9 @@ COMMAND CHANGES (see man pages for details)
  -- Add sprio "%c" format to print cluster name in federation mode.
  -- Extend the output of the seff utility to also include the job's wall-clock
     time.
+ -- The --cpu_bind and --mem_bind options have been renamed to --cpu-bind and
+    --mem-bind for consistency with the rest of the command line options.
+    (Both old and new syntax are supported for now.)
 
 OTHER CHANGES
 =============

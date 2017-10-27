@@ -129,8 +129,8 @@ typedef struct srun_opt {
 	uint16_t compress;		/* --compress (for --bcast option) */
 	bool core_spec_set;		/* core_spec explicitly set	*/
 	char *cpu_bind;			/* binding map for map/mask_cpu	*/
-	cpu_bind_type_t cpu_bind_type;	/* --cpu_bind			*/
-	bool cpu_bind_type_set;		/* --cpu_bind explicitly set	*/
+	cpu_bind_type_t cpu_bind_type;	/* --cpu-bind			*/
+	bool cpu_bind_type_set;		/* --cpu-bind explicitly set	*/
 	bool cwd_set;			/* --cwd explicitly set		*/
 	bool debugger_test;		/* --debugger-test		*/
 	bool disable_status;		/* --disable-status		*/
@@ -213,7 +213,7 @@ typedef struct slurm_options {
 	bool ntasks_per_core_set;	/* ntasks-per-core explicitly set */
 	char *hint_env;			/* SLURM_HINT env var setting	*/
 	bool hint_set;			/* --hint set explicitly set	*/
-	mem_bind_type_t mem_bind_type;	/* --mem_bind=		*/
+	mem_bind_type_t mem_bind_type;	/* --mem-bind=		*/
 	char *mem_bind;			/* binding map for map/mask_mem	*/
 	bool extra_set;			/* extra node info explicitly set */
 	int time_limit;			/* --time, in minutes		*/
