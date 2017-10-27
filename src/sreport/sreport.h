@@ -93,7 +93,6 @@ extern char *tres_str;	/* --tres= value */
 extern List g_tres_list;/* tres list from database - unaltered */
 extern List tres_list;	/* TRES list based of tres_str (--tres=str) */
 extern void *db_conn;
-extern uint32_t my_uid;
 extern int all_clusters_flag;
 extern slurmdb_report_sort_t sort_flag;
 extern char *cluster_flag;

@@ -69,7 +69,6 @@ char *cluster_flag = NULL;
 slurmdb_report_time_format_t time_format = SLURMDB_REPORT_TIME_MINS;
 char *time_format_string = "Minutes";
 void *db_conn = NULL;
-uint32_t my_uid = 0;
 slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 char *tres_usage_str = "CPU";
 
@@ -244,7 +243,6 @@ main (int argc, char **argv)
 	    !local_flag)
 		cluster_flag = _build_cluster_string();
 
-	my_uid = getuid();
 	db_conn = slurmdb_connection_get();
 	if (errno) {
 		fatal("Problem connecting to the database: %m");
@@ -301,8 +299,8 @@ static char *_build_cluster_string(void)
 	fed_cond.cluster_list = cluster_list;
 
 	if ((fed_list =
-	     acct_storage_g_get_federations(db_conn, my_uid, &fed_cond)) &&
-	     list_count(fed_list) == 1) {
+	     slurmdb_federations_get(db_conn, &fed_cond)) &&
+	    list_count(fed_list) == 1) {
 		fed = list_pop(fed_list);
 		fed_name = xstrdup(fed->name);
 		list_for_each(fed->cluster_list, _foreach_cluster_list_to_str,
@@ -323,7 +321,7 @@ static void _build_tres_list(void)
 
 	if (!g_tres_list) {
 		slurmdb_tres_cond_t cond = {0};
-		g_tres_list = acct_storage_g_get_tres(db_conn, my_uid, &cond);
+		g_tres_list = slurmdb_tres_get(db_conn, &cond);
 		if (!g_tres_list) {
 			fatal("Problem getting TRES data: %m");
 			exit(1);
