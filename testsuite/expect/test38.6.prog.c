@@ -144,15 +144,19 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 	uid_t my_uid;
 	int argc, i;
 	char **argv;
+	char hostname[64] = "";
 
+	gethostname(hostname, sizeof(hostname));
 	if (opt_out_file) {
 		FILE *fp = NULL;
 		for (i = 0; (i < 10) && !fp; i++)
 			fp = fopen(opt_out_file, "a");
 		if (!fp)
 			return -1;
-		fprintf(fp, "%s: opt_arg_sbatch=%d opt_arg_srun=%d\n",
-			__func__, opt_arg_sbatch, opt_arg_srun);
+		if (opt_arg_sbatch || opt_arg_srun)
+			usleep(getpid() % 500000);   /* Reduce NFS collisions */
+		fprintf(fp, "%s: opt_arg_sbatch=%d opt_arg_srun=%d hostname=%s\n",
+			__func__, opt_arg_sbatch, opt_arg_srun, hostname);
 		if (spank_get_item(sp, S_JOB_UID, &my_uid) == ESPANK_SUCCESS)
 			fprintf(fp, "spank_get_item: my_uid=%d\n", my_uid);
                 if (spank_get_item(sp, S_JOB_ARGV, &argc, &argv) ==
@@ -164,6 +168,11 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 		}
 		fclose(fp);
 	}
+
+	slurm_info("%s: opt_arg_sbatch=%d opt_arg_srun=%d hostname=%s out_file=%s",
+		   __func__, opt_arg_sbatch, opt_arg_srun, hostname,
+		   opt_out_file);
+
 	return 0;
 }
 
@@ -176,19 +185,26 @@ int slurm_spank_task_exit(spank_t sp, int ac, char **av) */
 /* Called from both srun and slurmd */
 int slurm_spank_exit(spank_t sp, int ac, char **av)
 {
+	char hostname[64] = "";
 	int i;
 
+	gethostname(hostname, sizeof(hostname));
 	if (opt_out_file) {
 		FILE *fp = NULL;
 		for (i = 0; (i < 10) && !fp; i++)
 			fp = fopen(opt_out_file, "a");
 		if (!fp)
 			return -1;
-		fprintf(fp, "%s: opt_arg_sbatch=%d opt_arg_srun=%d\n",
-			__func__, opt_arg_sbatch, opt_arg_srun);
+		if (opt_arg_sbatch || opt_arg_srun)
+			usleep(getpid() % 500000);   /* Reduce NFS collisions */
+		fprintf(fp, "%s: opt_arg_sbatch=%d opt_arg_srun=%d hostname=%s\n",
+			__func__, opt_arg_sbatch, opt_arg_srun, hostname);
 		fclose(fp);
-	} else
-		slurm_info("%s: opt_arg_sbatch=%d opt_arg_srun=%d",
-			   __func__, opt_arg_sbatch, opt_arg_srun);
+	}
+
+	slurm_info("%s: opt_arg_sbatch=%d opt_arg_srun=%d hostname=%s out_file=%s",
+		   __func__, opt_arg_sbatch, opt_arg_srun, hostname,
+		   opt_out_file);
+
 	return 0;
 }

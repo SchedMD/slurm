@@ -71,6 +71,7 @@ proc end_it { exit_code } {
 	} else {
 		send_user "\nFAILURE: This may be due to NFS sychronization problems: "
 		send_user "Multiple processes on differrent nodes writing to the same file\n"
+		send_user "The SlurmdLogFile on each node should include SPANK logs for each step\n"
 	}
 	exit $exit_code
 }
@@ -176,10 +177,10 @@ expect {
 #	slurmd/slurmstepd on the compute node will not get the updated
 #	configuration.
 #
-$bin_sleep 30
+exec $bin_sleep 20
 send_user "\n\nTest locally logged messages..........\n\n"
 make_bash_script $file_in "
-  $srun --mpi=none --test_suite_srun=5 --pack-group=0,1 $bin_uname
+  $srun --mpi=none --test_suite_srun=5 --pack-group=0,1 $bin_hostname
 "
 
 set job_id 0
@@ -290,7 +291,8 @@ if {[wait_for_file $spank_out] == 0} {
 			set sbatch_arg $expect_out(2,string)
 			set srun_arg   $expect_out(3,string)
 
-			if {$spank_type eq "exit"} {
+			if {($spank_type eq "exit") && ($sbatch_arg eq "4")} {
+#				Skip (possible) external job containers
 				incr matches_spank_exit
 			} elseif {$spank_type eq "task_init"} {
 				incr matches_spank_init
@@ -315,6 +317,7 @@ if {[wait_for_file $spank_out] == 0} {
 			wait
 		}
 	}
+
 	if {$matches_spank_exit != 3} {
 		send_user "\nFAILURE: remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != 3)\n"
 		end_it 1
@@ -331,11 +334,11 @@ if {[wait_for_file $spank_out] == 0} {
 		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != 6)\n"
 		end_it 1
 	} else {
-		send_user "\n remote (slurmd) spank plugin success\n"
+		send_user "\nRemote (slurmd) spank plugin success\n"
 	}
 } else {
 	send_user "\nWARNING: This can be caused by the plugstack.conf file not\n"
-	send_user "      being propagated to the compute node or not being in a\n"
+	send_user "      being propagated to the compute nodes or not being in a\n"
 	send_user "      shared file system.\n"
 	end_it 1
 }

@@ -1302,7 +1302,7 @@ _salloc()
 		       --kill-command=[signal] --no-kill --licenses=<licenses>\
 		       --distribution=<dist> --mail-type=<type>\
 		       --mail-user=<email> --mem=<MB> --mem-per-cpu=<MB>\
-		       --mem_bind=<type> --mincpus=<number>\
+		       --mem-bind=<type> --mincpus=<number>\
 		       --nodes=<minnodes[-maxnodes]> --ntasks=<number>\
 		       --network=<type> --nice=<[adjustment]>\
 		       --ntasks-per-core=<number> --ntasks-per-socket=<ntasks>\
@@ -1387,7 +1387,7 @@ _sbatch()
 		       --licenses<license> --clusters<string>\
 		       --distribution<dist>\
 		       --mail-type<type> --mail-user<user> --mem<MB>\
-		       --mem-per-cpu<MB> --mem_bind<type> --mincpus<n>\
+		       --mem-per-cpu<MB> --mem-bind<type> --mincpus<n>\
 		       --nodes<minnodes[-maxnodes]> --ntasks<number>\
 		       --network<type> --nice[adjustment] --no-requeue\
 		       --ntasks-per-core<ntasks>  --ntasks-per-socket<ntasks>\
@@ -1466,7 +1466,7 @@ _srun()
 			--bb<spec> --begin<time> --checkpoint<time>\
 			--checkpoint-dir<directory> --comment<string>\
 			--constraint<list> --contiguous\
-			--cores-per-socket<cores> --cpu_bind=<type>\
+			--cores-per-socket<cores> --cpu-bind=<type>\
 			--cpu-freq<freq> --cpus-per-task<ncpus>\
 			--dependency=<dependency_list> --chdir=<path>\
 			--error<mode> --preserve-env --epilog<executable>\
@@ -1478,7 +1478,7 @@ _srun()
 			--launcher-opts<options> --label --licenses<license>\
 			--distribution<type> --mail-type<type>\
 			--mail-user<user> --mem<MB> --mem-per-cpu<MB>\
-			--mem_bind<type> --mincpus<n> --msg-timeout<seconds>\
+			--mem-bind<type> --mincpus<n> --msg-timeout<seconds>\
 			--mpi<mpi_type> --multi-prog\
 			--nodes<minnodes[-maxnodes]> --ntasks<number>\
 			--network<type> --nice<adjustment>\

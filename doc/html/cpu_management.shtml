@@ -1193,7 +1193,7 @@ Step 4 is performed by slurmd and the task plugin.
 		<tr>
 			<td height="18" width="20%">
 				<p align="LEFT"><font face="Courier New, monospace"><font style="font-size: 8pt" size="1">
-				<a href="srun.html#OPT_cpu_bind">--cpu_bind</a></font></font></p>
+				<a href="srun.html#OPT_cpu-bind">--cpu-bind</a></font></font></p>
 			</td>
 			<td width="20%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
@@ -1315,7 +1315,7 @@ SLURMD_NODENAME<br>
 			<td width="30%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
 srun/salloc/sbatch option:
-<font face="Courier New, monospace">--cpu_bind=verbose</font></font></p>
+<font face="Courier New, monospace">--cpu-bind=verbose</font></font></p>
 			</td>
 			<td width="70%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
@@ -1349,7 +1349,7 @@ Linux command:<br>
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
 Given a task's pid (or "self" if the command is executed by the task itself), this command
 produces a list of the CPU ids bound to the task. This is the same information that is
-provided by <font face="Courier New, monospace">--cpu_bind=verbose</font>, but in a more readable format.
+provided by <font face="Courier New, monospace">--cpu-bind=verbose</font>, but in a more readable format.
 </font></p>
 			</td>
 		</tr>
@@ -2301,7 +2301,7 @@ TaskPlugin=task/affinity
 TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
-<pre>srun --nodes=1-1 --ntasks=6 --cpu_bind=cores ...
+<pre>srun --nodes=1-1 --ntasks=6 --cpu-bind=cores ...
 </pre>
 <p>Comments:</p>
 <p>Using the default allocation method within nodes (cyclic), Slurm allocates
@@ -2443,7 +2443,7 @@ TaskPlugin=task/affinity
 TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
-<pre>srun --nodes=1-1 --ntasks=6 --cpu_bind=sockets ...
+<pre>srun --nodes=1-1 --ntasks=6 --cpu-bind=sockets ...
 </pre>
 <p>Comments:</p>
 <p>Using the default allocation method within nodes (cyclic), Slurm allocates 3
@@ -2576,7 +2576,7 @@ TaskPlugin=task/affinity
 TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
-<pre>srun --nodes=1-1 --ntasks=2 --cpus-per-task=3 --cpu_bind=sockets <BR/>
+<pre>srun --nodes=1-1 --ntasks=2 --cpus-per-task=3 --cpu-bind=sockets <BR/>
 --distribution=block:block ...
 </pre>
 <p>Comments:</p>
@@ -2708,7 +2708,7 @@ TaskPlugin=task/affinity
 TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
-<pre>srun --nodes=1-1 --ntasks=2 --cpus-per-task=3 --cpu_bind=sockets <BR/>
+<pre>srun --nodes=1-1 --ntasks=2 --cpus-per-task=3 --cpu-bind=sockets <BR/>
 --distribution=block:cyclic ...
 </pre>
 <p>Comments:</p>
@@ -2842,7 +2842,7 @@ TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
 <pre>srun --nodes=3-3 --ntasks=18 --ntasks-per-node=6 <BR/>
---distribution=cyclic:block --cpu_bind=cores ...
+--distribution=cyclic:block --cpu-bind=cores ...
 </pre>
 <p>Comments:</p>
 <p>This example shows the use of task affinity with customized allocation of CPUs and
@@ -3158,7 +3158,7 @@ TaskPlugin=task/affinity
 TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
-<pre>srun --ntasks=3 --cpus-per-task=3 --ntasks-per-node=1 --cpu_bind=cores ...
+<pre>srun --ntasks=3 --cpus-per-task=3 --ntasks-per-node=1 --cpu-bind=cores ...
 </pre>
 <p>Comments:</p>
 <p>To optimize the performance of this job, the user wishes to allocate 3 CPUs from each of
@@ -3170,7 +3170,7 @@ a consumable resource type of cores and block allocation within nodes. The
 configuration options enable task affinity. The srun options specify the following
 conditions for the job: 3 tasks, with 3 unique CPUs per task, with 1 task per node. To satisfy
 these conditions, Slurm allocates 3 CPUs from one socket in each of the 3 nodes in the default partition. The
-<font face="Courier New, monospace">--cpu_bind=cores</font> option causes Slurm to bind
+<font face="Courier New, monospace">--cpu-bind=cores</font> option causes Slurm to bind
 each task to the 3 allocated CPUs on the node to which it is distributed. The
 following table shows a possible pattern of allocation, distribution and binding
 for this job. For example, task id 2 is bound to CPU ids 0, 1 and 2 on socket id 0 of node n2.
@@ -3406,7 +3406,7 @@ TaskPlugin=task/cgroup
 TaskAffinity=yes
 </pre>
 <p>Command line:</p>
-<pre>srun --nodes=1-1 --ntasks=6 --cpu_bind=cores ...
+<pre>srun --nodes=1-1 --ntasks=6 --cpu-bind=cores ...
 </pre>
 <p>Comments:</p>
 <p>The task/cgroup plugin currently supports only the block method for
@@ -3536,6 +3536,6 @@ and binding for this job. For example, task id 2 is bound to CPU id 2.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 27 October 2017</p>
 
 <!--#include virtual="footer.txt"-->

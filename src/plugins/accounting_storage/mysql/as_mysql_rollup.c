@@ -1028,19 +1028,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					       cluster_down_list);
 
 		// now get the reservations during this time
-		/* If a reservation has the IGNORE_JOBS flag we don't
-		 * have an easy way to distinguish the cpus a job not
-		 * running in the reservation, but on it's cpus.
-		 * So we will just ignore these reservations for
-		 * accounting purposes.
-		 */
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "(time_start < %ld && time_end >= %ld) "
-				       "&& !(flags & %u)"
 				       "order by time_start",
 				       resv_str, cluster_name, resv_table,
-				       curr_end, curr_start,
-				       RESERVE_FLAG_IGN_JOBS);
+				       curr_end, curr_start);
 
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -1079,15 +1071,20 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			uint32_t row_flags = slurm_atoul(row[RESV_REQ_FLAGS]);
 			int unused;
 			int resv_seconds;
-			if (row_start <= curr_start) {
-				row_start = curr_start;
+
+			if (row_start >= curr_start) {
 				/*
-				 * We want the total unused here so if we are
-				 * reerolling set it back to 0
+				 * This is the first time we are seeing this
+				 * reservation, so set our unused to be 0.
+				 * This is mostly helpful when
+				 * rerolling set it back to 0.
 				 */
 				unused = 0;
 			} else
 				unused = slurm_atoul(row[RESV_REQ_UNUSED]);
+
+			if (row_start <= curr_start)
+				row_start = curr_start;
 
 			if (!row_end || row_end > curr_end)
 				row_end = curr_end;
@@ -1124,11 +1121,16 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			*/
 
 
-			/* only record time for the clusters that have
-			   registered.  This continue should rarely if
-			   ever happen.
-			*/
-			if (!c_usage)
+			/*
+			 * Only record time for the clusters that have
+			 * registered, or if a reservation has the IGNORE_JOBS
+			 * flag we don't have an easy way to distinguish the
+			 * cpus a job not running in the reservation, but on
+			 * it's cpus.
+			 * We still need them for figuring out unused wall time,
+			 * but for cluster utilization we will just ignore them.
+			 */
+			if (!c_usage || (row_flags & RESERVE_FLAG_IGN_JOBS))
 				continue;
 
 			_add_time_tres_list(c_usage->loc_tres,
@@ -1466,9 +1468,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			ListIterator t_itr;
 			local_tres_usage_t *loc_tres;
 
-			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%u where id_resv=%u;",
+			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%u where id_resv=%u and time_start=%ld;",
 				   cluster_name, resv_table,
-				   r_usage->unused_wall, r_usage->id);
+				   r_usage->unused_wall, r_usage->id,
+				   r_usage->start);
 
 			if (!r_usage->loc_tres ||
 			    !list_count(r_usage->loc_tres))

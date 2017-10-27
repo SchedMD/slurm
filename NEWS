@@ -12,6 +12,11 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.0rc2
 ==============================
+ -- Prevent slurmctld abort with NodeFeatures=knl_cray and non-KNL nodes lacking
+    any configured features.
+ -- The --cpu_bind and --mem_bind options have been renamed to --cpu-bind
+    and --mem-bind for consistency with the rest of Slurm's options. Both
+    old and new syntaxes are supported for now.
 
 * Changes in Slurm 17.11.0rc1
 ==============================

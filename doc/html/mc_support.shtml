@@ -62,7 +62,7 @@ by their application.  Table 1 summarizes these options.
 <b><a href="#srun_lowlevelmc">Low-level (explicit binding)</a></b>
 </td></tr>
 <tr>
-    <td> --cpu_bind=... </td>
+    <td> --cpu-bind=... </td>
     <td>Explicit process affinity binding and control options
 </td></tr>
 <tr><td colspan=2>
@@ -163,13 +163,13 @@ See the "Task Launch" section if generating slurm.conf via
 <a href="configurator.html">configurator.html</a>.</p>
 
 <a name="srun_lowlevelmc">
-<h3>Low-level --cpu_bind=... - Explicit binding interface</h3></a>
+<h3>Low-level --cpu-bind=... - Explicit binding interface</h3></a>
 
 <p>The following srun flag provides a low-level core binding interface:</p>
 
 
 <PRE>
---cpu_bind=        Bind tasks to CPUs
+--cpu-bind=        Bind tasks to CPUs
     q[uiet]         quietly bind before task runs (default)
     v[erbose]       verbosely report binding before task runs
     no[ne]          don't bind tasks to CPUs (default)
@@ -210,12 +210,12 @@ within a specific socket or core.
 
 <UL>
 <UL>
-<LI> srun -n 8 -N 4 --cpu_bind=mask_cpu:0x1,0x4 a.out
-<LI> srun -n 8 -N 4 --cpu_bind=mask_cpu:0x3,0xD a.out
+<LI> srun -n 8 -N 4 --cpu-bind=mask_cpu:0x1,0x4 a.out
+<LI> srun -n 8 -N 4 --cpu-bind=mask_cpu:0x3,0xD a.out
 </UL>
 </UL>
 
-<p>See also 'srun --cpu_bind=help' and 'man srun'</p>
+<p>See also 'srun --cpu-bind=help' and 'man srun'</p>
 
 <a name="srun_highlevelmc">
 <h3>High-level -B <i>S[:C[:T]]</i> - Automatic mask generation interface</h3></a>
@@ -242,7 +242,7 @@ of nodes, sockets,&nbsp; cores, and threads:</p>
 <LI> srun -n 8 -N 4 -B 2:1 a.out
 <LI> srun -n 8 -N 4 -B 2   a.out
 <BR>
-note: compare the above with the previous corresponding --cpu_bind=... examples
+note: compare the above with the previous corresponding --cpu-bind=... examples
 
 <LI> srun -n 16 -N 4 a.out
 <LI> srun -n 16 -N 4 -B 2:2:1 a.out
@@ -257,9 +257,9 @@ note: compare the above with the previous corresponding --cpu_bind=... examples
 
 <p>Notes:</p>
 <ul>
- <li> Adding --cpu_bind=no to the command line will cause the processes
+ <li> Adding --cpu-bind=no to the command line will cause the processes
       to not be bound the logical processors.
- <li> Adding --cpu_bind=verbose to the command line (or setting the
+ <li> Adding --cpu-bind=verbose to the command line (or setting the
       CPU_BIND environment variable to "verbose") will cause each task
       to report the affinity mask in use
  <li> Binding is on by default when -B is used. The default binding on
@@ -300,20 +300,20 @@ across sockets.</p>
 
 <p>The binding is enabled automatically when high level flags are used as long
 as the task/affinity plug-in is enabled. To disable binding at the job level
-use --cpu_bind=no.</p>
+use --cpu-bind=no.</p>
 
 <p>The distribution flags can be combined with the other switches:
 
 <UL>
 <UL>
-<LI>srun -n 16 -N 4 -B '2:*:1' -m block:cyclic --cpu_bind=socket a.out
-<LI>srun -n 16 -N 4 -B '2:*:1' -m plane=2 --cpu_bind=core a.out
+<LI>srun -n 16 -N 4 -B '2:*:1' -m block:cyclic --cpu-bind=socket a.out
+<LI>srun -n 16 -N 4 -B '2:*:1' -m plane=2 --cpu-bind=core a.out
 <LI>srun -n 16 -N 4 -B '2:*:1' -m plane=2 a.out
 </UL>
 </UL>
 
 <p>The default distribution on multi-core/multi-threaded systems is equivalent
-to -m block:cyclic with --cpu_bind=thread.</p>
+to -m block:cyclic with --cpu-bind=thread.</p>
 
 <p>See also 'srun --help'</p>
 
@@ -439,20 +439,20 @@ types of application hints to the Slurm multi-core support:</p>
 
 <p>For example, given a cluster with nodes containing two sockets,
 each containing two cores, the following commands illustrate the
-behavior of these flags.  In the verbose --cpu_bind output, tasks
+behavior of these flags.  In the verbose --cpu-bind output, tasks
 are described as 'hostname, task Global_ID Local_ID [PID]':</p>
 <pre>
-% srun -n 4 --hint=compute_bound --cpu_bind=verbose sleep 1
-cpu_bind=MASK - hydra12, task  0  0 [15425]: mask 0x1 set
-cpu_bind=MASK - hydra12, task  1  1 [15426]: mask 0x4 set
-cpu_bind=MASK - hydra12, task  2  2 [15427]: mask 0x2 set
-cpu_bind=MASK - hydra12, task  3  3 [15428]: mask 0x8 set
+% srun -n 4 --hint=compute_bound --cpu-bind=verbose sleep 1
+cpu-bind=MASK - hydra12, task  0  0 [15425]: mask 0x1 set
+cpu-bind=MASK - hydra12, task  1  1 [15426]: mask 0x4 set
+cpu-bind=MASK - hydra12, task  2  2 [15427]: mask 0x2 set
+cpu-bind=MASK - hydra12, task  3  3 [15428]: mask 0x8 set
 
-% srun -n 4 --hint=memory_bound --cpu_bind=verbose sleep 1
-cpu_bind=MASK - hydra12, task  0  0 [15550]: mask 0x1 set
-cpu_bind=MASK - hydra12, task  1  1 [15551]: mask 0x4 set
-cpu_bind=MASK - <u><b>hydra13</b></u>, task  2  <u><b>0</b></u> [14974]: mask 0x1 set
-cpu_bind=MASK - <u><b>hydra13</b></u>, task  3  <u><b>1</b></u> [14975]: mask 0x4 set
+% srun -n 4 --hint=memory_bound --cpu-bind=verbose sleep 1
+cpu-bind=MASK - hydra12, task  0  0 [15550]: mask 0x1 set
+cpu-bind=MASK - hydra12, task  1  1 [15551]: mask 0x4 set
+cpu-bind=MASK - <u><b>hydra13</b></u>, task  2  <u><b>0</b></u> [14974]: mask 0x1 set
+cpu-bind=MASK - <u><b>hydra13</b></u>, task  3  <u><b>1</b></u> [14975]: mask 0x4 set
 </pre>
 
 <p>See also 'srun --hint=help' and 'man srun'</p>
@@ -461,12 +461,12 @@ cpu_bind=MASK - <u><b>hydra13</b></u>, task  3  <u><b>1</b></u> [14975]: mask 0x
 <h2>Motivation behind high-level srun flags</h2></a>
 
 <p >The motivation behind allowing users to use higher level <i>srun</i>
-flags instead of --cpu_bind is that the later can be difficult to use. The
-proposed high-level flags are easier to use than --cpu_bind because:</p>
+flags instead of --cpu-bind is that the later can be difficult to use. The
+proposed high-level flags are easier to use than --cpu-bind because:</p>
 
 <ul>
 <li>Affinity mask generation happens automatically when using the high-level flags. </li>
-<li>The length and complexity of the --cpu_bind flag vs. the length
+<li>The length and complexity of the --cpu-bind flag vs. the length
 of the combination of -B and --distribution flags make the high-level
 flags much easier to use.</li>
 </ul>
@@ -528,12 +528,12 @@ to the user. Users don't have to worry about the core numbering (Section
 Pinning processes to cores) or any setting any CPU affinities. By default CPU affinity
 will be set when using multi-core supporting flags. </p>
 
-<h3>Low-level flag --cpu_bind</h3>
+<h3>Low-level flag --cpu-bind</h3>
 
-<p>Using Slurm's --cpu_bind flag, users must compute the CPU IDs or
+<p>Using Slurm's --cpu-bind flag, users must compute the CPU IDs or
 masks as well as make sure they understand the core numbering on their
 system. Another problem arises when core numbering is not the same on all
-nodes. The --cpu_bind option only allows users to specify a single
+nodes. The --cpu-bind option only allows users to specify a single
 mask for all the nodes. Using Slurm high-level flags remove this limitation
 since Slurm will correctly generate the appropriate masks for each requested nodes.</p>
 
@@ -627,9 +627,9 @@ following mpirun command:</p>
 
 <DL>
 <DL>
-<DT><p>% mpirun -srun -n 32 -N 4 --cpu_bind=mask_cpu:1,4,10,40,2,8,20,80 a.out</p>
+<DT><p>% mpirun -srun -n 32 -N 4 --cpu-bind=mask_cpu:1,4,10,40,2,8,20,80 a.out</p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or
-<DT><p>% mpirun -srun -n 32 -N 4 --cpu_bind=map_cpu:0,2,4,6,1,3,5,7 a.out</p>
+<DT><p>% mpirun -srun -n 32 -N 4 --cpu-bind=map_cpu:0,2,4,6,1,3,5,7 a.out</p>
 </DL>
 </DL>
 
@@ -642,7 +642,7 @@ numbering.)</p>
 
 <DL>
 <DL>
-<DT><p>% mpirun -srun -n 32 -N 4 --cpu_bind=map_cpu:0,1,2,3,4,5,6,7 a.out</p>
+<DT><p>% mpirun -srun -n 32 -N 4 --cpu-bind=map_cpu:0,1,2,3,4,5,6,7 a.out</p>
 </DL>
 </DL>
 
@@ -655,7 +655,7 @@ layout.. For example, if they decide to re-use their mpirun command from above:<
 
 <DL>
 <DL>
-<DT><p>% mpirun -srun -n 32 -N 4 --cpu_bind=map_cpu:0,2,4,6,1,3,5,7 a.out</p>
+<DT><p>% mpirun -srun -n 32 -N 4 --cpu-bind=map_cpu:0,2,4,6,1,3,5,7 a.out</p>
 </DL>
 </DL>
 
@@ -709,7 +709,7 @@ layout.. For example, if they decide to re-use their mpirun command from above:<
 </tr>
 </table>
 
-<p>The important conclusion is that using the --cpu_bind flag is not
+<p>The important conclusion is that using the --cpu-bind flag is not
 trivial and that it assumes that users are experts.</p>
 
 <!-------------------------------------------------------------------------->
@@ -922,7 +922,6 @@ NodeName=dualcore[01-16] CPUs=4 CoresPerSocket=2 ThreadsPerCore=1
 <p>For a more complete description of the various node configuration options
 see the slurm.conf man page.</p>
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 27 October 2017</p>
 
 <!--#include virtual="footer.txt"-->
-

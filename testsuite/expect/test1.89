@@ -179,7 +179,7 @@ if {$task_cnt > 32} {
 #
 set expected_mask [ expr ((1 << $task_cnt) - 1) ]
 set task_mask 0
-send "$srun -c1 --cpu_bind=rank ./$file_prog\r"
+send "$srun -c1 --cpu-bind=rank ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -225,7 +225,7 @@ if { $launch_poe != 0 } {
 # Run a job step with verbosity and all tasks on CPU 0
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=verbose,map_cpu:0 ./$file_prog\r"
+send "$srun -c1 --cpu-bind=verbose,map_cpu:0 ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -250,9 +250,9 @@ if {$task_mask != $task_cnt} {
 	set exit_code 1
 }
 set verbose_cnt 0
-send "$srun -c1 --cpu_bind=verbose,map_cpu:0 ./$file_prog\r"
+send "$srun -c1 --cpu-bind=verbose,map_cpu:0 ./$file_prog\r"
 expect {
-	-re "cpu_bind=MAP|cpu_bind_cores=MAP|cpu_bind_sockets=MAP|cpu_bind_threads=MAP" {
+	-re "cpu-bind=MAP|cpu-bind-cores=MAP|cpu-bind-sockets=MAP|cpu-bind-threads=MAP" {
 		incr verbose_cnt
 		exp_continue
 	}
@@ -284,7 +284,7 @@ set cpu_cnt 0
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	send "$srun -c1 --cpu_bind=map_cpu:$cpu_cnt ./$file_prog\r"
+	send "$srun -c1 --cpu-bind=map_cpu:$cpu_cnt ./$file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr mask_sum $expect_out(2,string)
@@ -319,7 +319,7 @@ while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
 	set mstr [ uint2hex $mask ]
-	send "$srun -c1 --cpu_bind=mask_cpu:$mstr ./$file_prog\r"
+	send "$srun -c1 --cpu-bind=mask_cpu:$mstr ./$file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr mask_sum $expect_out(2,string)
@@ -396,7 +396,7 @@ send_user "alt_mask: $alt_mask\n"
 # Run all tasks bound to a different CPU by specifying a forward map
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=map_cpu:$fwd_map ./$file_prog\r"
+send "$srun -c1 --cpu-bind=map_cpu:$fwd_map ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -425,7 +425,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying a reverse map
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=map_cpu:$rev_map ./$file_prog\r"
+send "$srun -c1 --cpu-bind=map_cpu:$rev_map ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -454,7 +454,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying an alternating map
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=map_cpu:$alt_map ./$file_prog\r"
+send "$srun -c1 --cpu-bind=map_cpu:$alt_map ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -483,7 +483,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying a forward mask
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=mask_cpu:$fwd_mask ./$file_prog\r"
+send "$srun -c1 --cpu-bind=mask_cpu:$fwd_mask ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -512,7 +512,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying a reverse mask
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=mask_cpu:$rev_mask ./$file_prog\r"
+send "$srun -c1 --cpu-bind=mask_cpu:$rev_mask ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -541,7 +541,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU by specifying an alternating mask
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=mask_cpu:$alt_mask ./$file_prog\r"
+send "$srun -c1 --cpu-bind=mask_cpu:$alt_mask ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)

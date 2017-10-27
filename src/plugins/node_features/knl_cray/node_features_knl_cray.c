@@ -1290,14 +1290,18 @@ next_tok:	tok1 = strtok_r(NULL, ",", &save_ptr1);
 	xfree(tmp_str1);
 }
 
-/* Remove all KNL MCDRAM and NUMA type GRES from this node (it isn't KNL),
- * returns count of KNL features found. */
+/*
+ * Remove all KNL MCDRAM and NUMA type GRES from this node (it isn't KNL),
+ * returns count of KNL features found.
+ */
 static int _strip_knl_features(char **node_feature)
 {
 	char *tmp_str1, *tok1, *save_ptr1 = NULL;
 	char *tmp_str2 = NULL, *sep = "";
 	int cnt = 0;
 
+	if (*node_feature == NULL)
+		return cnt;
 	tmp_str1 = xstrdup(*node_feature);
 	tok1 = strtok_r(tmp_str1, ",", &save_ptr1);
 	while (tok1) {

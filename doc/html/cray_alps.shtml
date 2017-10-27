@@ -208,7 +208,7 @@ will not be propagated to <i>aprun</i>.</p>
 <div id="row"><div id="slurmtd">-Q, --quiet</div><div id="slurmtd">-q</div></div>
 <div id="row"><div id="slurmtd">--ntasks-per-socket</div><div id="slurmtd">-S</div></div>
 <div id="row"><div id="slurmtd">--sockets-per-node</div><div id="slurmtd">-sn</div></div>
-<div id="row"><div id="slurmtd">--mem_bind=local</div><div id="slurmtd">-ss</div></div>
+<div id="row"><div id="slurmtd">--mem-bind=local</div><div id="slurmtd">-ss</div></div>
 <div id="row"><div id="slurmtd">-t, --time</div><div id="slurmtd">-t</div></div>
 </div>
 <p>The following aprun options have no equivalent in srun and must be
@@ -712,6 +712,6 @@ Stop the <i>slurmctld</i> daemon, delete the files, and restart the daemon.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 27 October 2017</p>
 
 <!--#include virtual="footer.txt"-->

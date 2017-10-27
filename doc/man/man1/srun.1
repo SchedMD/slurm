@@ -122,7 +122,7 @@ desired:
     \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 .fi
 If task/affinity plugin is enabled, then specifying an allocation in this
-manner also sets a default \fB\-\-cpu_bind\fR option of \fIthreads\fR
+manner also sets a default \fB\-\-cpu\-bind\fR option of \fIthreads\fR
 if the \fB\-B\fR option specifies a thread count, otherwise an option of
 \fIcores\fR if a core count is specified, otherwise an option of \fIsockets\fR.
 If SelectType is configured to select/cons_res, it must have a parameter of
@@ -308,14 +308,14 @@ above when task/affinity plugin is enabled. This option applies to job
 allocations.
 
 .TP
-\fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
+\fB\-\-cpu\-bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to CPUs.
 Used only when the task/affinity or task/cgroup plugin is enabled.
 NOTE: To have Slurm always report on the selected CPU binding for all
 commands executed in a shell, you can enable verbose mode by setting
 the SLURM_CPU_BIND environment variable value to "verbose".
 
-The following informational environment variables are set when \fB\-\-cpu_bind\fR
+The following informational environment variables are set when \fB\-\-cpu\-bind\fR
 is in use:
 .nf
 	SLURM_CPU_BIND_VERBOSE
@@ -359,7 +359,7 @@ allocation with a number of
 sockets, cores, or threads equal to the number of tasks times cpus\-per\-task,
 then the tasks will by default be bound to the appropriate resources (auto
 binding). Disable this mode of operation by explicitly setting
-"-\-cpu_bind=none". Use TaskPluginParam=autobind=[threads|cores|sockets] to set
+"-\-cpu\-bind=none". Use TaskPluginParam=autobind=[threads|cores|sockets] to set
 a default cpu binding in case "auto binding" doesn't find a match.
 .RE
 .RS
@@ -455,7 +455,7 @@ this can result in sub\-optimal binding. This option is supported by the
 task/cgroup plugin only.
 .TP
 .B help
-Show help message for cpu_bind
+Show help message for cpu\-bind
 .RE
 .TP
 This option applies to job and step allocations.
@@ -1176,7 +1176,7 @@ Also see \fB\-\-mem\fR.
 applies to job and step allocations.
 
 .TP
-\fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
+\fB\-\-mem\-bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to memory. Used only when the task/affinity plugin is enabled
 and the NUMA memory functions are available.
 \fBNote that the resolution of CPU and memory binding
@@ -1189,7 +1189,7 @@ any memory. This option is typically used to ensure that each task is bound to
 the memory closest to it's assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 If you want greater control, try running a simple test code with the
-options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine
+options "\-\-cpu\-bind=verbose,none \-\-mem\-bind=verbose,none" to determine
 the specific configuration.
 
 NOTE: To have Slurm always report on the selected memory binding for
@@ -1197,7 +1197,7 @@ all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
 
 The following informational environment variables are set when
-\fB\-\-mem_bind\fR is in use:
+\fB\-\-mem\-bind\fR is in use:
 
 .nf
 	SLURM_MEM_BIND_LIST
@@ -1541,7 +1541,7 @@ This option applies to the job allocation, but not to step allocations.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.  Masks will automatically be generated
-to bind the tasks to specific core unless \fB\-\-cpu_bind=none\fR
+to bind the tasks to specific core unless \fB\-\-cpu\-bind=none\fR
 is specified.
 NOTE: This option is not supported unless \fISelectType=cons_res\fR is
 configured (either directly or indirectly on Cray systems)
@@ -1573,7 +1573,7 @@ This option applies to the job allocation, but not to step allocations.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
 instead of the node level.  Masks will automatically be generated
-to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
+to bind the tasks to specific sockets unless \fB\-\-cpu\-bind=none\fR
 is specified.
 NOTE: This option is not supported unless \fISelectType=cons_res\fR is
 configured (either directly or indirectly on Cray systems)
@@ -2429,7 +2429,7 @@ Same as \fB\-C\fR, \fB\-\-constraint\fR
 Same as \fB\-\-core\-spec\fR
 .TP
 \fBSLURM_CPU_BIND\fR
-Same as \fB\-\-cpu_bind\fR
+Same as \fB\-\-cpu\-bind\fR
 .TP
 \fBSLURM_CPU_FREQ_REQ\fR
 Same as \fB\-\-cpu\-freq\fR.
@@ -2517,7 +2517,7 @@ Same as \fB\-l, \-\-label\fR
 Same as \fB\-\-linux\-image\fR
 .TP
 \fBSLURM_MEM_BIND\fR
-Same as \fB\-\-mem_bind\fR
+Same as \fB\-\-mem\-bind\fR
 .TP
 \fBSLURM_MEM_PER_CPU\fR
 Same as \fB\-\-mem\-per\-cpu\fR
@@ -2684,13 +2684,13 @@ if specified on the execute line.
 Name of the cluster on which the job is executing.
 .TP
 \fBSLURM_CPU_BIND_VERBOSE\fR
-\-\-cpu_bind verbosity (quiet,verbose).
+\-\-cpu\-bind verbosity (quiet,verbose).
 .TP
 \fBSLURM_CPU_BIND_TYPE\fR
-\-\-cpu_bind type (none,rank,map_cpu:,mask_cpu:).
+\-\-cpu\-bind type (none,rank,map_cpu:,mask_cpu:).
 .TP
 \fBSLURM_CPU_BIND_LIST\fR
-\-\-cpu_bind map or mask list (list of Slurm CPU IDs or masks for this node,
+\-\-cpu\-bind map or mask list (list of Slurm CPU IDs or masks for this node,
 CPU_ID = Board_ID x threads_per_board +
 Socket_ID x threads_per_socket +
 Core_ID x threads_per_core + Thread_ID).
@@ -2761,19 +2761,19 @@ Node local task ID for the process within a job.
 
 .TP
 \fBSLURM_MEM_BIND_LIST\fR
-\-\-mem_bind map or mask list (<list of IDs or masks for this node>).
+\-\-mem\-bind map or mask list (<list of IDs or masks for this node>).
 .TP
 \fBSLURM_MEM_BIND_PREFER\fR
-\-\-mem_bind prefer (prefer).
+\-\-mem\-bind prefer (prefer).
 .TP
 \fBSLURM_MEM_BIND_SORT\fR
 Sort free cache pages (run zonesort on Intel KNL nodes).
 .TP
 \fBSLURM_MEM_BIND_TYPE\fR
-\-\-mem_bind type (none,rank,map_mem:,mask_mem:).
+\-\-mem\-bind type (none,rank,map_mem:,mask_mem:).
 .TP
 \fBSLURM_MEM_BIND_VERBOSE\fR
-\-\-mem_bind verbosity (quiet,verbose).
+\-\-mem\-bind verbosity (quiet,verbose).
 
 .TP
 \fBSLURM_NNODES\fR

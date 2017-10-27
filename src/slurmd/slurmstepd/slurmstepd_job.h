@@ -155,9 +155,9 @@ typedef struct {
 	task_dist_states_t task_dist;/* -m distribution                     */
 	char          *node_name; /* node name of node running job
 				   * needed for front-end systems           */
-	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=                       */
+	cpu_bind_type_t cpu_bind_type; /* --cpu-bind=                       */
 	char          *cpu_bind;       /* binding map for map/mask_cpu      */
-	mem_bind_type_t mem_bind_type; /* --mem_bind=                       */
+	mem_bind_type_t mem_bind_type; /* --mem-bind=                       */
 	char          *mem_bind;       /* binding map for tasks to memory   */
 	uint16_t accel_bind_type;  /* --accel_bind= */
 	uint32_t cpu_freq_min; /* Minimum cpu frequency  */

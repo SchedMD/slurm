@@ -315,15 +315,15 @@ _slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job, int statval)
 	} else {
 		action = " set";
 		if (job->cpu_bind_type & CPU_BIND_TO_THREADS)
-			units = "_threads";
+			units = "-threads";
 		else if (job->cpu_bind_type & CPU_BIND_TO_CORES)
-			units = "_cores";
+			units = "-cores";
 		else if (job->cpu_bind_type & CPU_BIND_TO_SOCKETS)
-			units = "_sockets";
+			units = "-sockets";
 		else if (job->cpu_bind_type & CPU_BIND_TO_LDOMS)
-			units = "_ldoms";
+			units = "-ldoms";
 		else if (job->cpu_bind_type & CPU_BIND_TO_BOARDS)
-			units = "_boards";
+			units = "-boards";
 		else
 			units = "";
 		if (job->cpu_bind_type & CPU_BIND_RANK) {
@@ -346,7 +346,7 @@ _slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job, int statval)
 		}
 	}
 
-	fprintf(stderr, "cpu_bind%s=%s - "
+	fprintf(stderr, "cpu-bind%s=%s - "
 			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
 			units, bind_type,
 			conf->hostname,
