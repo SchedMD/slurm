@@ -699,6 +699,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix seg fault if loading attempting to load non-existent burstbuffer plugin.
  -- Fix to backfill scheduling with respect to QOS and association limits. Jobs
     submitted to multiple partitions are most likley to be effected.
+ -- Avoid erroneous errno set by the mariadb 10.2 api.
 
 * Changes in Slurm 16.05.10-2
 =============================
