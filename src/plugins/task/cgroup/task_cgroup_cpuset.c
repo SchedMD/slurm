@@ -518,9 +518,26 @@ static int _get_cpuinfo(uint32_t *nsockets, uint32_t *ncores,
 	}
 	/* parse full system info */
 	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
+
 	/* ignores cache, misc */
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_CACHE);
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_MISC);
+#if HWLOC_API_VERSION < 0x00020000
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_CACHE);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_MISC);
+#else
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L1CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L2CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L3CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L4CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L5CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_MISC,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+#endif
+
 	/* load topology */
 	if (hwloc_topology_load(topology)) {
 		error("%s: hwloc_topology_load() failed", __func__);
