@@ -294,16 +294,27 @@ static void _set_topology(List lresp)
 		goto err_exit;
 	}
 
+#if HWLOC_API_VERSION < 0x00020000
 	flags = (HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM |
 		 HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
 	hwloc_topology_set_flags(topology, flags);
+#else
+	flags = HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM;
+	hwloc_topology_set_flags(topology, flags);
+	hwloc_topology_set_io_types_filter(topology,
+					   HWLOC_TYPE_FILTER_KEEP_ALL);
+#endif
 
 	if (hwloc_topology_load(topology)) {
 		error("%s: hwloc_topology_load() failed", __func__);
 		goto err_release_topo;
 	}
 
+#if HWLOC_API_VERSION < 0x00020000
 	if (0 != hwloc_topology_export_xmlbuffer(topology, &p, &len)) {
+#else
+	if (0 != hwloc_topology_export_xmlbuffer(topology, &p, &len, 0)) {
+#endif
 		error("%s: hwloc_topology_load() failed", __func__);
 		goto err_release_topo;
 	}
