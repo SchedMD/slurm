@@ -169,6 +169,13 @@ static int _mysql_query_internal(MYSQL *db_conn, char *query)
 		rc = SLURM_ERROR;
 	}
 end_it:
+	/*
+	 * Starting in MariaDB 10.2 many of the api commands started
+	 * setting errno erroneously.
+	 */
+	if (!rc)
+		errno = 0;
+
 	return rc;
 }
 
@@ -810,6 +817,12 @@ extern int mysql_db_ping(mysql_conn_t *mysql_conn)
 	slurm_mutex_lock(&mysql_conn->lock);
 	_clear_results(mysql_conn->db_conn);
 	rc = mysql_ping(mysql_conn->db_conn);
+	/*
+	 * Starting in MariaDB 10.2 many of the api commands started
+	 * setting errno erroneously.
+	 */
+	if (!rc)
+		errno = 0;
 	slurm_mutex_unlock(&mysql_conn->lock);
 	return rc;
 }
@@ -851,6 +864,12 @@ extern int mysql_db_rollback(mysql_conn_t *mysql_conn)
 		      mysql_error(mysql_conn->db_conn));
 		errno = mysql_errno(mysql_conn->db_conn);
 		rc = SLURM_ERROR;
+	} else {
+		/*
+		 * Starting in MariaDB 10.2 many of the api commands started
+		 * setting errno erroneously.
+		 */
+		errno = 0;
 	}
 	slurm_mutex_unlock(&mysql_conn->lock);
 	return rc;
@@ -870,6 +889,11 @@ extern MYSQL_RES *mysql_db_query_ret(mysql_conn_t *mysql_conn,
 			result = _get_last_result(mysql_conn->db_conn);
 		else
 			result = _get_first_result(mysql_conn->db_conn);
+		/*
+		 * Starting in MariaDB 10.2 many of the api commands started
+		 * setting errno erroneously.
+		 */
+		errno = 0;
 		if (!result && mysql_field_count(mysql_conn->db_conn)) {
 			/* should have returned data */
 			error("We should have gotten a result: '%m' '%s'",
