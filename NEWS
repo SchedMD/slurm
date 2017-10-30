@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - If configured with NodeFeatures=knl_cray and there are non-KNL
     nodes which include no features the slurmctld will abort without
     this patch when attemping strtok_r(NULL).
+ -- Fix regression in 17.02.7 which would run the spank_task_privileged as
+    part of the slurmstepd instead of it's child process.
 
 * Changes in Slurm 17.02.8
 ==========================
