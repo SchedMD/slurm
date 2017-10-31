@@ -1245,7 +1245,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 {
 	int error_code = 0, node_cnt, node_inx;
 	struct node_record *node_ptr = NULL;
-	char *this_node_name = NULL, *tmp_feature;
+	char *this_node_name = NULL, *tmp_feature, *orig_features_act = NULL;
 	hostlist_t host_list, hostaddr_list = NULL, hostname_list = NULL;
 	uint32_t base_state = 0, node_flags, state_val;
 	time_t now = time(NULL);
@@ -1330,34 +1330,69 @@ int update_node ( update_node_msg_t * update_node_msg )
 					  node_ptr->node_hostname);
 		}
 
+		if (update_node_msg->features || update_node_msg->features_act) {
+			char *features_act = NULL, *features_avail = NULL;
+			if (!node_features_g_node_update_valid(node_ptr,
+							 update_node_msg)) {
+				error_code = ESLURM_INVALID_FEATURE;
+				xfree(update_node_msg->features);
+				xfree(update_node_msg->features_act);
+			}
+			if (update_node_msg->features_act)
+				features_act = update_node_msg->features_act;
+			else
+				features_act = node_ptr->features_act;
+
+			if (update_node_msg->features)
+				features_avail = update_node_msg->features;
+			else
+				features_avail = node_ptr->features;
+			if (!_valid_features_act(features_act, features_avail)){
+				info("%s: Invalid ActiveFeatures (\'%s\' not subset of \'%s\' on node %s)",
+				     __func__, features_act, features_avail,
+				     node_ptr->name);
+				error_code = ESLURM_INVALID_FEATURE;
+				xfree(update_node_msg->features);
+				xfree(update_node_msg->features_act);
+			}
+		}
+
+		if (update_node_msg->features_act) {
+			if (node_ptr->features_act)
+				orig_features_act =
+					xstrdup(node_ptr->features_act);
+			else
+				orig_features_act = xstrdup(node_ptr->features);
+		}
 		if (update_node_msg->features) {
-			xfree(node_ptr->features);
+			if (update_node_msg->features_act &&
+			    !node_ptr->features_act) {
+				node_ptr->features_act = node_ptr->features;
+				node_ptr->features = NULL;
+			} else {
+				xfree(node_ptr->features);
+			}
 			if (update_node_msg->features[0]) {
 				node_ptr->features =
 					node_features_g_node_xlate2(
 						update_node_msg->features);
 			}
-			/* _update_node_avail_features() logs and updates
-			 * avail_feature_list */
+			/*
+			 * _update_node_avail_features() logs and updates
+			 * avail_feature_list below
+			 */
 		}
 
-		if (update_node_msg->features_act &&
-		    !_valid_features_act(update_node_msg->features_act,
-					 node_ptr->features)) {
-			info("Invalid node ActiveFeatures (%s not subset of %s)",
-			     update_node_msg->features_act,
-			     node_ptr->features);
-			error_code = ESLURM_INVALID_FEATURE;
-		} else if (update_node_msg->features_act) {
+		if (update_node_msg->features_act) {
 			tmp_feature = node_features_g_node_xlate(
 					update_node_msg->features_act,
-					node_ptr->features_act,
-					node_ptr->features);
+					orig_features_act, node_ptr->features);
 			xfree(node_ptr->features_act);
 			node_ptr->features_act = tmp_feature;
 			error_code = _update_node_active_features(
 						node_ptr->name,
 						node_ptr->features_act);
+			xfree(orig_features_act);
 		}
 
 		if (update_node_msg->gres) {
@@ -2223,7 +2258,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	int error_code, i, node_inx;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
-	char *reason_down = NULL;
+	char *reason_down = NULL, *orig_features_act = NULL;;
 	uint32_t node_flags;
 	time_t now = time(NULL);
 	bool gang_flag = false;
@@ -2264,8 +2299,19 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
 
+	if (reg_msg->features_active) {
+		if (node_ptr->features_act)
+			orig_features_act = xstrdup(node_ptr->features_act);
+		else
+			orig_features_act = xstrdup(node_ptr->features);
+	}
 	if (reg_msg->features_avail) {
-		xfree(node_ptr->features);
+		if (reg_msg->features_active && !node_ptr->features_act) {
+			node_ptr->features_act = node_ptr->features;
+			node_ptr->features = NULL;
+		} else {
+			xfree(node_ptr->features);
+		}
 		node_ptr->features = node_features_g_node_xlate2(
 					reg_msg->features_avail);
 		(void) _update_node_avail_features(node_ptr->name,
@@ -2275,12 +2321,13 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		char *tmp_feature;
 		tmp_feature = node_features_g_node_xlate(
 						reg_msg->features_active,
-						node_ptr->features_act,
+						orig_features_act,
 						node_ptr->features);
 		xfree(node_ptr->features_act);
 		node_ptr->features_act = tmp_feature;
 		(void) _update_node_active_features(node_ptr->name,
 						    node_ptr->features_act);
+		xfree(orig_features_act);
 	}
 
 	if (gres_plugin_node_config_unpack(reg_msg->gres_info,

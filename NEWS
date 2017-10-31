@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
     directly.
  -- Make global uid to the db_api to minimize calls to getuid().
  -- Add support for HWLOC version 2.0.
+ -- Added more validation logic for updates to node features.
+ -- Added node_features_p_node_update_valid() function to node_features plugin.
 
 * Changes in Slurm 17.11.0rc1
 ==============================

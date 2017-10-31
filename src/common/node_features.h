@@ -86,13 +86,25 @@ extern void node_features_g_node_state(char **avail_modes, char **current_mode);
 extern int node_features_g_node_update(char *active_features,
 				       bitstr_t *node_bitmap);
 
-/* Translate a node's feature specification by replacing any features associated
+/*
+ * Return TRUE if the specified node update request is valid with respect
+ * to features changes (i.e. don't permit a non-KNL node to set KNL features).
+ *
+ * node_ptr IN - Pointer to struct node_record record
+ * update_node_msg IN - Pointer to update request
+ */
+extern bool node_features_g_node_update_valid(void *node_ptr,
+					update_node_msg_t *update_node_msg);
+
+/*
+ * Translate a node's feature specification by replacing any features associated
  *	with this plugin in the original value with the new values, preserving
- *	andy features that are not associated with this plugin
+ *	any features that are not associated with this plugin
  * IN new_features - newly active features
  * IN orig_features - original active features
  * IN avail_features - original available features
- * RET node's new merged features, must be xfreed */
+ * RET node's new merged features, must be xfreed
+ */
 extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 					char *avail_features);
 
