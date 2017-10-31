@@ -1300,6 +1300,7 @@ static int _strip_knl_features(char **node_feature)
 	char *tmp_str2 = NULL, *sep = "";
 	int cnt = 0;
 
+	xassert(node_feature);
 	if (*node_feature == NULL)
 		return cnt;
 	tmp_str1 = xstrdup(*node_feature);

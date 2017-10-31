@@ -167,7 +167,7 @@ extern int sacctmgr_list_problem(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	assoc_list = acct_storage_g_get_problems(db_conn, my_uid, assoc_cond);
+	assoc_list = slurmdb_problems_get(db_conn, assoc_cond);
 	slurmdb_destroy_assoc_cond(assoc_cond);
 
 	if (!assoc_list) {

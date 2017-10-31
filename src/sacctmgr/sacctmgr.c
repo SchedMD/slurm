@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 		putchar('\n');
 	if (local_exit_code)
 		exit_code = local_exit_code;
-	acct_storage_g_close_connection(&db_conn);
+	slurmdb_connection_close(&db_conn);
 	slurm_acct_storage_fini();
 	FREE_NULL_LIST(g_qos_list);
 	FREE_NULL_LIST(g_res_list);
@@ -498,14 +498,14 @@ static int _process_command (int argc, char **argv)
 			my_end = parse_time(argv[2], 1);
 		if (argc > 3)
 			archive_data = atoi(argv[3]);
-		if (acct_storage_g_roll_usage(db_conn, my_start,
-					      my_end, archive_data, NULL)
+		if (slurmdb_usage_roll(db_conn, my_start,
+				       my_end, archive_data, NULL)
 		   == SLURM_SUCCESS) {
 			if (commit_check("Would you like to commit rollup?")) {
-				acct_storage_g_commit(db_conn, 1);
+				slurmdb_connection_commit(db_conn, 1);
 			} else {
 				printf(" Rollup Discarded\n");
-				acct_storage_g_commit(db_conn, 0);
+				slurmdb_connection_commit(db_conn, 0);
 			}
 		}
 	} else if (xstrncasecmp(argv[0], "shutdown",
@@ -560,7 +560,7 @@ static void _add_it(int argc, char **argv)
 
 	command_len = strlen(argv[0]);
 	/* reset the connection to get the most recent stuff */
-	acct_storage_g_commit(db_conn, 0);
+	slurmdb_connection_commit(db_conn, 0);
 
 	/* First identify the entity to add */
 	if (!xstrncasecmp(argv[0], "Account", MAX(command_len, 1))
@@ -614,7 +614,7 @@ static void _archive_it(int argc, char **argv)
 
 	command_len = strlen(argv[0]);
 	/* reset the connection to get the most recent stuff */
-	acct_storage_g_commit(db_conn, 0);
+	slurmdb_connection_commit(db_conn, 0);
 
 	/* First identify the entity to add */
 	if (xstrncasecmp(argv[0], "dump", MAX(command_len, 1)) == 0) {
@@ -683,7 +683,7 @@ static void _show_it(int argc, char **argv)
 	command_len = strlen(argv[0]);
 
 	/* reset the connection to get the most recent stuff */
-	acct_storage_g_commit(db_conn, 0);
+	slurmdb_connection_commit(db_conn, 0);
 
 	/* First identify the entity to list */
 	if (xstrncasecmp(argv[0], "Accounts", MAX(command_len, 2)) == 0
@@ -768,7 +768,7 @@ static void _modify_it(int argc, char **argv)
 
 	command_len = strlen(argv[0]);
 	/* reset the connection to get the most recent stuff */
-	acct_storage_g_commit(db_conn, 0);
+	slurmdb_connection_commit(db_conn, 0);
 
 	/* First identify the entity to modify */
 	if (xstrncasecmp(argv[0], "Accounts", MAX(command_len, 1)) == 0
@@ -823,7 +823,7 @@ static void _delete_it(int argc, char **argv)
 
 	command_len = strlen(argv[0]);
 	/* reset the connection to get the most recent stuff */
-	acct_storage_g_commit(db_conn, 0);
+	slurmdb_connection_commit(db_conn, 0);
 
 	/* First identify the entity to delete */
 	if (xstrncasecmp(argv[0], "Accounts", MAX(command_len, 1)) == 0

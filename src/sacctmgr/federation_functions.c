@@ -228,7 +228,7 @@ static int _verify_federations(List name_list, bool report_existing)
 	slurmdb_init_federation_cond(&fed_cond, 0);
 	fed_cond.federation_list = name_list;
 
-	temp_list = acct_storage_g_get_federations(db_conn, my_uid, &fed_cond);
+	temp_list = slurmdb_federations_get(db_conn, &fed_cond);
 	if (!temp_list) {
 		fprintf(stderr,
 			" Problem getting federations from database.  "
@@ -310,8 +310,7 @@ extern int verify_fed_clusters(List cluster_list, const char *fed_name,
 			tmp_name++;
 		list_append(cluster_cond.cluster_list, xstrdup(tmp_name));
 	}
-	temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
-						&cluster_cond);
+	temp_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 	FREE_NULL_LIST(cluster_cond.cluster_list);
 	if (!temp_list) {
 		fprintf(stderr,
@@ -485,16 +484,15 @@ extern int sacctmgr_add_federation(int argc, char **argv)
 	}
 
 	notice_thread_init();
-	rc = acct_storage_g_add_federations(db_conn, my_uid,
-					    federation_list);
+	rc = slurmdb_federations_add(db_conn, federation_list);
 	notice_thread_fini();
 
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else {
 		exit_code = 1;
@@ -559,8 +557,7 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	federation_list = acct_storage_g_get_federations(db_conn, my_uid,
-							 federation_cond);
+	federation_list = slurmdb_federations_get(db_conn, federation_cond);
 	slurmdb_destroy_federation_cond(federation_cond);
 
 	if (!federation_list) {
@@ -723,7 +720,7 @@ static int _add_clusters_to_remove(List cluster_list, const char *federation)
 	db_cond.federation_list = list_create(slurm_destroy_char);
 	list_append(db_cond.federation_list, xstrdup(federation));
 
-	db_list = acct_storage_g_get_federations(db_conn, my_uid, &db_cond);
+	db_list = slurmdb_federations_get(db_conn, &db_cond);
 	if (!db_list || !list_count(db_list)) {
 		fprintf(stderr, " Problem getting federations "
 			"from database. Contact your admin.\n");
@@ -885,9 +882,9 @@ extern int sacctmgr_modify_federation(int argc, char **argv)
 	sacctmgr_print_federation(federation);
 
 	notice_thread_init();
-	ret_list = acct_storage_g_modify_federations(db_conn, my_uid,
-						     federation_cond,
-						     federation);
+	ret_list = slurmdb_federations_modify(db_conn,
+					      federation_cond,
+					      federation);
 
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
@@ -914,10 +911,10 @@ extern int sacctmgr_modify_federation(int argc, char **argv)
 
 	if (set) {
 		if (commit_check("Would you like to commit changes?"))
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	}
 end_it:
@@ -968,7 +965,7 @@ extern int sacctmgr_delete_federation(int argc, char **argv)
 		return SLURM_SUCCESS;
 	}
 	notice_thread_init();
-	ret_list = acct_storage_g_remove_federations(db_conn, my_uid, fed_cond);
+	ret_list = slurmdb_federations_remove(db_conn, fed_cond);
 	rc = errno;
 	notice_thread_fini();
 
@@ -984,10 +981,10 @@ extern int sacctmgr_delete_federation(int argc, char **argv)
 		}
 		list_iterator_destroy(itr);
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");

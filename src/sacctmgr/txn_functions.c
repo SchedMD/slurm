@@ -205,7 +205,7 @@ extern int sacctmgr_list_txn(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	txn_list = acct_storage_g_get_txn(db_conn, my_uid, txn_cond);
+	txn_list = slurmdb_txn_get(db_conn, txn_cond);
 	slurmdb_destroy_txn_cond(txn_cond);
 
 	if (!txn_list) {

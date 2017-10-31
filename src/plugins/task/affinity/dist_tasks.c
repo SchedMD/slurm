@@ -331,7 +331,7 @@ static void _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
 					CPU_SET(i, &task_cpus);
 			}
 		}
-		cpuset_to_str(&task_cpus, mask_str);
+		task_cpuset_to_str(&task_cpus, mask_str);
 		if (new_mask)
 			xstrcat(new_mask, ",");
 		xstrcat(new_mask, mask_str);

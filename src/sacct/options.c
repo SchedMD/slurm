@@ -556,7 +556,7 @@ extern int get_data(void)
 	slurmdb_job_cond_t *job_cond = params.job_cond;
 
 	if (params.opt_completion) {
-		jobs = g_slurm_jobcomp_get_jobs(job_cond);
+		jobs = slurmdb_jobcomp_jobs_get(job_cond);
 		return SLURM_SUCCESS;
 	} else {
 		jobs = slurmdb_jobs_get(acct_db_conn, job_cond);
@@ -1007,7 +1007,7 @@ extern void parse_command_line(int argc, char **argv)
 	      params.opt_allocs);
 
 	if (params.opt_completion) {
-		g_slurm_jobcomp_init(params.opt_filein);
+		slurmdb_jobcomp_init(params.opt_filein);
 
 		acct_type = slurm_get_jobcomp_type();
 		if ((xstrcmp(acct_type, "jobcomp/none") == 0)
@@ -1053,10 +1053,9 @@ extern void parse_command_line(int argc, char **argv)
 		slurmdb_init_federation_cond(&fed_cond, 0);
 		fed_cond.cluster_list = cluster_list;
 
-		if ((fed_list =
-		     acct_storage_g_get_federations(acct_db_conn, getuid(),
-						    &fed_cond)) &&
-		     list_count(fed_list) == 1) {
+		if ((fed_list = slurmdb_federations_get(
+			     acct_db_conn, &fed_cond)) &&
+		    list_count(fed_list) == 1) {
 			fed = list_peek(fed_list);
 			job_cond->cluster_list = _build_cluster_list(fed);
 			/* Leave cluster_name to identify remote only jobs */
@@ -1408,7 +1407,7 @@ extern void sacct_fini(void)
 	FREE_NULL_LIST(g_tres_list);
 
 	if (params.opt_completion)
-		g_slurm_jobcomp_fini();
+		slurmdb_jobcomp_fini();
 	else {
 		slurmdb_connection_close(&acct_db_conn);
 		slurm_acct_storage_fini();

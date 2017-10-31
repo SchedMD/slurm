@@ -157,7 +157,7 @@ int sacctmgr_list_tres(int argc, char **argv)
 		slurm_addto_char_list(format_list, "Type,Name%15,ID");
 	}
 
-	tres_list = acct_storage_g_get_tres(db_conn, my_uid, tres_cond);
+	tres_list = slurmdb_tres_get(db_conn, tres_cond);
 	slurmdb_destroy_tres_cond(tres_cond);
 
 	if (!tres_list) {

@@ -50,7 +50,10 @@
  */
 extern int slurmdb_wckeys_add(void *db_conn, List wckey_list)
 {
-	return acct_storage_g_add_wckeys(db_conn, getuid(), wckey_list);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_add_wckeys(db_conn, db_api_uid, wckey_list);
 }
 
 /*
@@ -62,7 +65,10 @@ extern int slurmdb_wckeys_add(void *db_conn, List wckey_list)
 extern List slurmdb_wckeys_get(void *db_conn,
 			       slurmdb_wckey_cond_t *wckey_cond)
 {
-	return acct_storage_g_get_wckeys(db_conn, getuid(), wckey_cond);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_get_wckeys(db_conn, db_api_uid, wckey_cond);
 }
 
 /*
@@ -76,7 +82,10 @@ extern List slurmdb_wckeys_modify(void *db_conn,
 				  slurmdb_wckey_cond_t *wckey_cond,
 				  slurmdb_wckey_rec_t *wckey)
 {
-	return acct_storage_g_modify_wckeys(db_conn, getuid(),
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_modify_wckeys(db_conn, db_api_uid,
 					    wckey_cond, wckey);
 }
 
@@ -89,6 +98,9 @@ extern List slurmdb_wckeys_modify(void *db_conn,
 extern List slurmdb_wckeys_remove(void *db_conn,
 				  slurmdb_wckey_cond_t *wckey_cond)
 {
-	return acct_storage_g_remove_wckeys(db_conn, getuid(), wckey_cond);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_remove_wckeys(db_conn, db_api_uid, wckey_cond);
 }
 

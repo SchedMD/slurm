@@ -208,7 +208,7 @@ extern int sacctmgr_modify_job(int argc, char **argv)
 
 	notice_thread_init();
 
-	ret_list = acct_storage_g_modify_job(db_conn, my_uid, job_cond, job);
+	ret_list = slurmdb_job_modify(db_conn, job_cond, job);
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
@@ -234,10 +234,10 @@ extern int sacctmgr_modify_job(int argc, char **argv)
 
 	if (set) {
 		if (commit_check("Would you like to commit changes?"))
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	}
 

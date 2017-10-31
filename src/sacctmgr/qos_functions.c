@@ -651,8 +651,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					list_create(slurm_destroy_char);
 
 			if (!g_qos_list)
-				g_qos_list = acct_storage_g_get_qos(
-					db_conn, my_uid, NULL);
+				g_qos_list = slurmdb_qos_get(
+					db_conn, NULL);
 
 			if (slurmdb_addto_qos_char_list(qos->preempt_list,
 						       g_qos_list, argv[i]+end,
@@ -727,8 +727,8 @@ static bool _isdefault(List qos_list)
 	}
 	list_iterator_destroy(itr);
 
-	ret_list = acct_storage_g_get_assocs(
-		db_conn, my_uid, &assoc_cond);
+	ret_list = slurmdb_associations_get(
+		db_conn, &assoc_cond);
 	FREE_NULL_LIST(assoc_cond.def_qos_id_list);
 
 	if (!ret_list || !list_count(ret_list))
@@ -804,7 +804,7 @@ extern int sacctmgr_add_qos(int argc, char **argv)
 	}
 
 	if (!g_qos_list) {
-		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+		g_qos_list = slurmdb_qos_get(db_conn, NULL);
 
 		if (!g_qos_list) {
 			exit_code = 1;
@@ -864,7 +864,7 @@ extern int sacctmgr_add_qos(int argc, char **argv)
 
 	notice_thread_init();
 	if (list_count(qos_list))
-		rc = acct_storage_g_add_qos(db_conn, my_uid, qos_list);
+		rc = slurmdb_qos_add(db_conn, qos_list);
 	else
 		goto end_it;
 
@@ -872,10 +872,10 @@ extern int sacctmgr_add_qos(int argc, char **argv)
 
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else {
 		exit_code = 1;
@@ -941,7 +941,7 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
-	qos_list = acct_storage_g_get_qos(db_conn, my_uid, qos_cond);
+	qos_list = slurmdb_qos_get(db_conn, qos_cond);
 	slurmdb_destroy_qos_cond(qos_cond);
 
 	if (!qos_list) {
@@ -1182,8 +1182,8 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 				break;
 			case PRINT_PREE:
 				if (!g_qos_list)
-					g_qos_list = acct_storage_g_get_qos(
-						db_conn, my_uid, NULL);
+					g_qos_list = slurmdb_qos_get(
+						db_conn, NULL);
 
 				field->print_routine(
 					field, g_qos_list, qos->preempt_bitstr,
@@ -1296,7 +1296,7 @@ extern int sacctmgr_modify_qos(int argc, char **argv)
 
 	notice_thread_init();
 
-	ret_list = acct_storage_g_modify_qos(db_conn, my_uid, qos_cond, qos);
+	ret_list = slurmdb_qos_modify(db_conn, qos_cond, qos);
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
@@ -1322,10 +1322,10 @@ extern int sacctmgr_modify_qos(int argc, char **argv)
 
 	if (set) {
 		if (commit_check("Would you like to commit changes?"))
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	}
 
@@ -1364,11 +1364,11 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 	}
 
 	if (!g_qos_list)
-		g_qos_list = acct_storage_g_get_qos(
-			db_conn, my_uid, NULL);
+		g_qos_list = slurmdb_qos_get(
+			db_conn, NULL);
 
 	notice_thread_init();
-	ret_list = acct_storage_g_remove_qos(db_conn, my_uid, qos_cond);
+	ret_list = slurmdb_qos_remove(db_conn, qos_cond);
 	notice_thread_fini();
 	slurmdb_destroy_qos_cond(qos_cond);
 
@@ -1378,7 +1378,7 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 
 		/* Check to see if person is trying to remove a default
 		 * qos of an association.  _isdefault only works with the
-		 * output from acct_storage_g_remove_qos, and
+		 * output from slurmdb_qos_remove, and
 		 * with a previously got g_qos_list.
 		 */
 		if (_isdefault(ret_list)) {
@@ -1388,7 +1388,7 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 				" or change the default qos to "
 				"remove the qos.\n"
 				" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 			goto end_it;
 		}
 
@@ -1400,10 +1400,10 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 		}
 		list_iterator_destroy(itr);
 		if (commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+			slurmdb_connection_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");

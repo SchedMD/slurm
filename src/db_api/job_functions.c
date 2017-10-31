@@ -1,11 +1,8 @@
 /*****************************************************************************\
- *  connection_functions.c - Interface to functions dealing with connections
- *                           to the database.
+ *  job_functions.c - Interface to functions dealing with jobs in the database.
  ******************************************************************************
- *  Copyright (C) 2010 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble da@llnl.gov, et. al.
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2017 SchedMD LLC
+ *  Written by Danny Auble da@schedmd.com, et. al.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -42,37 +39,67 @@
 #include "slurm/slurmdb.h"
 
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_jobcomp.h"
+
 /*
- * get a new connection to the slurmdb
- * RET: pointer used to access db
+ * modify existing job in the accounting system
+ * IN:  slurmdb_job_modify_cond_t *job_cond
+ * IN:  slurmdb_job_rec_t *job
+ * RET: List containing (char *'s) else NULL on error
  */
-extern void *slurmdb_connection_get(void)
+extern List slurmdb_job_modify(void *db_conn,
+			       slurmdb_job_modify_cond_t *job_cond,
+			       slurmdb_job_rec_t *job)
 {
-	char *cluster_name = slurm_get_cluster_name();
-	void *db_conn = acct_storage_g_get_connection(NULL, 0,
-						      1, cluster_name);
-	xfree(cluster_name);
-	return db_conn;
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_modify_job(db_conn, db_api_uid, job_cond, job);
 }
 
 /*
- * release connection to the storage unit
- * IN/OUT: void ** pointer returned from
- *         slurmdb_connection_get() which will be freed.
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ * get info from the storage
+ * returns List of slurmdb_job_rec_t *
+ * note List needs to be freed when called
  */
-extern int slurmdb_connection_close(void **db_conn)
+extern List slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond)
 {
-	return acct_storage_g_close_connection(db_conn);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return jobacct_storage_g_get_jobs_cond(db_conn, db_api_uid, job_cond);
 }
 
 /*
- * commit or rollback changes made without closing connection
- * IN: void * pointer returned from slurmdb_connection_get()
- * IN: bool - true will commit changes false will rollback
+ * Fix runaway jobs
+ * IN: jobs, a list of all the runaway jobs
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_connection_commit(void *db_conn, bool commit)
+extern int slurmdb_jobs_fix_runaway(void *db_conn, List jobs)
 {
-	return acct_storage_g_commit(db_conn, commit);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_fix_runaway_jobs(db_conn, db_api_uid, jobs);
+}
+
+/* initialization of job completion logging */
+extern int slurmdb_jobcomp_init(char *jobcomp_loc)
+{
+	return g_slurm_jobcomp_init(jobcomp_loc);
+}
+
+/* terminate pthreads and free, general clean-up for termination */
+extern int slurmdb_jobcomp_fini(void)
+{
+	return g_slurm_jobcomp_fini();
+}
+/*
+ * get info from the storage
+ * returns List of jobcomp_job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_jobcomp_jobs_get(slurmdb_job_cond_t *job_cond)
+{
+	return g_slurm_jobcomp_get_jobs(job_cond);
 }

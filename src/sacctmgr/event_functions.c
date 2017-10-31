@@ -523,7 +523,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	event_list = acct_storage_g_get_events(db_conn, my_uid, event_cond);
+	event_list = slurmdb_events_get(db_conn, event_cond);
 	slurmdb_destroy_event_cond(event_cond);
 
 	if (!event_list) {

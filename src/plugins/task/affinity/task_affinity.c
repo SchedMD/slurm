@@ -50,6 +50,9 @@
 #include "affinity.h"
 #include "dist_tasks.h"
 
+#include "src/slurmd/common/task_plugin.h"
+
+
 /* Enable purging of cpuset directories
  * after each task and the step are done.
  */
@@ -93,7 +96,7 @@ extern int init (void)
 	char mstr[1 + CPU_SETSIZE / 4];
 
 	slurm_getaffinity(0, sizeof(cur_mask), &cur_mask);
-	cpuset_to_str(&cur_mask, mstr);
+	task_cpuset_to_str(&cur_mask, mstr);
 	verbose("%s loaded with CPU mask %s", plugin_name, mstr);
 
 	return SLURM_SUCCESS;
@@ -438,8 +441,8 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 						  &cur_mask);
 			}
 		}
-		slurm_chkaffinity(rc ? &cur_mask : &new_mask,
-				  job, rc);
+		task_slurm_chkaffinity(rc ? &cur_mask : &new_mask,
+				       job, rc);
 	} else if (job->mem_bind_type &&
 		   (conf->task_plugin_param & CPU_BIND_CPUSETS)) {
 		cpu_set_t cur_mask;

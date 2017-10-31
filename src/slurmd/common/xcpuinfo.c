@@ -196,8 +196,23 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
 
 	/* ignores cache, misc */
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_CACHE);
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_MISC);
+#if HWLOC_API_VERSION < 0x00020000
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_CACHE);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_MISC);
+#else
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L1CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L2CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L3CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L4CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L5CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_MISC,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+#endif
 
 	/* load topology */
 	debug2("hwloc_topology_load");
@@ -210,7 +225,8 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 #if _DEBUG
 	_hwloc_children(topology, hwloc_get_root_obj(topology), 0);
 #endif
-	/* Some processors (e.g. AMD Opteron 6000 series) contain multiple
+	/*
+	 * Some processors (e.g. AMD Opteron 6000 series) contain multiple
 	 * NUMA nodes per socket. This is a configuration which does not map
 	 * into the hardware entities that Slurm optimizes resource allocation
 	 * for (PU/thread, core, socket, baseboard, node and network switch).
@@ -243,8 +259,10 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 				    1);
 	}
 
-	/* Count sockets/NUMA containing any cores.
-	 * KNL NUMA with no cores are NOT counted. */
+	/*
+	 * Count sockets/NUMA containing any cores.
+	 * KNL NUMA with no cores are NOT counted.
+	 */
 	nobj[SOCKET] = 0;
 	depth = hwloc_get_type_depth(topology, objtype[SOCKET]);
 	used_socket = bit_alloc(_MAX_SOCKET_INX);
@@ -268,8 +286,10 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 
 	nobj[CORE] = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
 
-	/* Workaround for hwloc bug, in some cases the topology "children" array
-	 * does not get populated, so _core_child_count() always returns 0 */
+	/*
+	 * Workaround for hwloc bug, in some cases the topology "children" array
+	 * does not get populated, so _core_child_count() always returns 0
+	 */
 	if (nobj[SOCKET] == 0) {
 		nobj[SOCKET] = hwloc_get_nbobjs_by_type(topology,
 							objtype[SOCKET]);
@@ -318,7 +338,8 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	      actual_cpus, actual_boards, nobj[SOCKET], nobj[CORE], nobj[PU]);
 
 	/* allocate block_map */
-	*p_block_map_size = (uint16_t)actual_cpus;
+	if (p_block_map_size)
+		*p_block_map_size = (uint16_t)actual_cpus;
 	if (p_block_map && p_block_map_inv) {
 		*p_block_map     = xmalloc(actual_cpus * sizeof(uint16_t));
 		*p_block_map_inv = xmalloc(actual_cpus * sizeof(uint16_t));
@@ -391,7 +412,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		debug("------");
 	}
 #endif
-	return 0;
+	return SLURM_SUCCESS;
 
 }
 #else

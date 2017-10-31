@@ -248,7 +248,7 @@ extern int sacctmgr_list_wckey(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	wckey_list = acct_storage_g_get_wckeys(db_conn, my_uid, wckey_cond);
+	wckey_list = slurmdb_wckeys_get(db_conn, wckey_cond);
 	slurmdb_destroy_wckey_cond(wckey_cond);
 
 	if (!wckey_list) {

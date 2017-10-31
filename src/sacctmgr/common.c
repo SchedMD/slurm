@@ -846,13 +846,11 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 		return rc;
 	}
 
-	local_assoc_list = acct_storage_g_get_assocs(
-		db_conn, my_uid, assoc_cond);
+	local_assoc_list = slurmdb_associations_get(db_conn, assoc_cond);
 
 	slurmdb_init_cluster_cond(&cluster_cond, 0);
 	cluster_cond.cluster_list = assoc_cond->cluster_list;
-	local_cluster_list = acct_storage_g_get_clusters(
-		db_conn, my_uid, &cluster_cond);
+	local_cluster_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 
 	itr = list_iterator_create(assoc_cond->cluster_list);
 	itr2 = list_iterator_create(assoc_cond->acct_list);
@@ -980,12 +978,11 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 		return rc;
 	}
 
-	local_qos_list = acct_storage_g_get_qos(db_conn, my_uid, qos_cond);
+	local_qos_list = slurmdb_qos_get(db_conn, qos_cond);
 
 	slurmdb_init_cluster_cond(&cluster_cond, 0);
 	cluster_cond.cluster_list = cluster_list;
-	local_cluster_list = acct_storage_g_get_clusters(
-		db_conn, my_uid, &cluster_cond);
+	local_cluster_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 
 	itr = list_iterator_create(cluster_list);
 	itr2 = list_iterator_create(qos_cond->name_list);
@@ -1062,8 +1059,7 @@ extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc(
 	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, "");
 
-	assoc_list = acct_storage_g_get_assocs(db_conn, my_uid,
-						     &assoc_cond);
+	assoc_list = slurmdb_associations_get(db_conn, &assoc_cond);
 
 	FREE_NULL_LIST(assoc_cond.acct_list);
 	FREE_NULL_LIST(assoc_cond.cluster_list);
@@ -1098,8 +1094,7 @@ extern slurmdb_user_rec_t *sacctmgr_find_user(char *name)
 	list_append(assoc_cond.user_list, name);
 	user_cond.assoc_cond = &assoc_cond;
 
-	user_list = acct_storage_g_get_users(db_conn, my_uid,
-					     &user_cond);
+	user_list = slurmdb_users_get(db_conn, &user_cond);
 
 	FREE_NULL_LIST(assoc_cond.user_list);
 
@@ -1127,8 +1122,7 @@ extern slurmdb_account_rec_t *sacctmgr_find_account(char *name)
 	list_append(assoc_cond.acct_list, name);
 	account_cond.assoc_cond = &assoc_cond;
 
-	account_list = acct_storage_g_get_accounts(db_conn, my_uid,
-						   &account_cond);
+	account_list = slurmdb_accounts_get(db_conn, &account_cond);
 
 	FREE_NULL_LIST(assoc_cond.acct_list);
 
@@ -1153,8 +1147,7 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name)
 	cluster_cond.cluster_list = list_create(NULL);
 	list_append(cluster_cond.cluster_list, name);
 
-	cluster_list = acct_storage_g_get_clusters(db_conn, my_uid,
-						   &cluster_cond);
+	cluster_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 
 	FREE_NULL_LIST(cluster_cond.cluster_list);
 
@@ -1807,7 +1800,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	if (assoc->qos_list) {
 		if (!g_qos_list)
 			g_qos_list =
-				acct_storage_g_get_qos(db_conn, my_uid, NULL);
+				slurmdb_qos_get(db_conn, NULL);
 		char *temp_char = get_qos_complete_str(g_qos_list,
 						       assoc->qos_list);
 		if (temp_char) {
@@ -1819,7 +1812,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	if (assoc->def_qos_id != NO_VAL) {
 		if (!g_qos_list)
 			g_qos_list =
-				acct_storage_g_get_qos(db_conn, my_uid, NULL);
+				slurmdb_qos_get(db_conn, NULL);
 		printf("  DefQOS        = %s\n",
 		       slurmdb_qos_str(g_qos_list, assoc->def_qos_id));
 	}
@@ -1910,7 +1903,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		return;
 
 	if (qos->preempt_list && !g_qos_list)
-		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+		g_qos_list = slurmdb_qos_get(db_conn, NULL);
 
 	if (qos->flags && (qos->flags != QOS_FLAG_NOTSET)) {
 		char *tmp_char = slurmdb_qos_flags_str(qos->flags);
@@ -2124,11 +2117,9 @@ extern int sacctmgr_validate_cluster_list(List cluster_list)
 		slurmdb_init_cluster_cond(&cluster_cond, 0);
 		cluster_cond.cluster_list = cluster_list;
 
-		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
-							&cluster_cond);
+		temp_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 	} else
-		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
-							NULL);
+		temp_list = slurmdb_clusters_get(db_conn, NULL);
 
 
 	itr_c = list_iterator_create(cluster_list);

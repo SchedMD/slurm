@@ -54,7 +54,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 int with_slurmdbd = 0;
-
+uid_t db_api_uid = -1;
 /*
  * Local data
  */

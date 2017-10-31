@@ -48,9 +48,12 @@
  * IN:  tres_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_tres_add(void *db_conn, uint32_t uid, List tres_list)
+extern int slurmdb_tres_add(void *db_conn, List tres_list)
 {
-	return acct_storage_g_add_tres(db_conn, getuid(), tres_list);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_add_tres(db_conn, db_api_uid, tres_list);
 }
 
 /*
@@ -61,5 +64,8 @@ extern int slurmdb_tres_add(void *db_conn, uint32_t uid, List tres_list)
  */
 extern List slurmdb_tres_get(void *db_conn, slurmdb_tres_cond_t *tres_cond)
 {
-	return acct_storage_g_get_tres(db_conn, getuid(), tres_cond);
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_get_tres(db_conn, db_api_uid, tres_cond);
 }
