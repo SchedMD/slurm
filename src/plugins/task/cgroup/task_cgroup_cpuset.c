@@ -507,57 +507,6 @@ static void _add_hwloc_cpuset(
 	}
 }
 
-static int _get_cpuinfo(uint32_t *nsockets, uint32_t *ncores,
-			uint32_t *nthreads, uint32_t *npus)
-{
-	hwloc_topology_t topology;
-
-	if (hwloc_topology_init(&topology)) {
-		/* error in initialize hwloc library */
-		error("%s: hwloc_topology_init() failed", __func__);
-		return -1;
-	}
-	/* parse full system info */
-	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
-
-	/* ignores cache, misc */
-#if HWLOC_API_VERSION < 0x00020000
-	hwloc_topology_ignore_type(topology, HWLOC_OBJ_CACHE);
-	hwloc_topology_ignore_type(topology, HWLOC_OBJ_MISC);
-#else
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L1CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L2CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L3CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L4CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L5CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_MISC,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-#endif
-
-	/* load topology */
-	if (hwloc_topology_load(topology)) {
-		error("%s: hwloc_topology_load() failed", __func__);
-		hwloc_topology_destroy(topology);
-		return -1;
-	}
-
-	*nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-							HWLOC_OBJ_SOCKET);
-	*ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						      HWLOC_OBJ_CORE);
-	*nthreads = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-							HWLOC_OBJ_PU);
-	*npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						    HWLOC_OBJ_PU);
-	hwloc_topology_destroy(topology);
-	return 0;
-}
-
 static int _task_cgroup_cpuset_dist_cyclic(
 	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
 	hwloc_obj_type_t req_hwtype, stepd_step_rec_t *job, int bind_verbose,
@@ -568,30 +517,31 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	uint32_t *c_ixc;	/* core index by socket (current taskid) */
 	uint32_t *c_ixn;	/* core index by socket (next taskid) */
 	uint32_t *t_ix;		/* thread index by core by socket */
-	uint32_t npus = 0, nthreads = 0, ncores = 0, nsockets = 0;
+	uint16_t npus = 0, nboards = 0, nthreads = 0, ncores = 0, nsockets = 0;
 	uint32_t taskid = job->envtp->localid;
 	int spec_thread_cnt = 0;
 	bitstr_t *spec_threads = NULL;
-	uint32_t obj_idxs[3], cps, tpc, i, j, sock_loop, ntskip, npdist;;
+	uint32_t obj_idxs[3], cps, tpc, i, j, sock_loop, ntskip, npdist;
 	bool core_cyclic, core_fcyclic, sock_fcyclic;
 	bool hwloc_success = true;
 
-	if (_get_cpuinfo(&nsockets, &ncores, &nthreads, &npus)) {
-		/* Fall back to use allocated resources, but this may result
+	if (get_cpuinfo(&npus, &nboards, &nsockets, &ncores, &nthreads,
+			NULL, NULL, NULL) != SLURM_SUCCESS) {
 		/*
 		 * Fall back to use allocated resources, but this may result
 		 * in incorrect layout due to a uneven task distribution
 		 * (e.g. 4 cores on socket 0 and 3 cores on socket 1)
 		 */
-		nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+		nsockets = (uint16_t) hwloc_get_nbobjs_by_type(topology,
 							HWLOC_OBJ_SOCKET);
-		ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+		ncores = (uint16_t) hwloc_get_nbobjs_by_type(topology,
 							HWLOC_OBJ_CORE);
-		nthreads = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+		nthreads = (uint16_t) hwloc_get_nbobjs_by_type(topology,
 							HWLOC_OBJ_PU);
-		npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+		npus = (uint16_t) hwloc_get_nbobjs_by_type(topology,
 							   HWLOC_OBJ_PU);
 	}
+
 	if ((nsockets == 0) || (ncores == 0))
 		return XCGROUP_ERROR;
 	cps = (ncores + nsockets - 1) / nsockets;

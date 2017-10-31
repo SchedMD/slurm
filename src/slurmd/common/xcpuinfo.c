@@ -338,7 +338,8 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	      actual_cpus, actual_boards, nobj[SOCKET], nobj[CORE], nobj[PU]);
 
 	/* allocate block_map */
-	*p_block_map_size = (uint16_t)actual_cpus;
+	if (p_block_map_size)
+		*p_block_map_size = (uint16_t)actual_cpus;
 	if (p_block_map && p_block_map_inv) {
 		*p_block_map     = xmalloc(actual_cpus * sizeof(uint16_t));
 		*p_block_map_inv = xmalloc(actual_cpus * sizeof(uint16_t));
