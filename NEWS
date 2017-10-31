@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Add support for HWLOC version 2.0.
  -- Added more validation logic for updates to node features.
  -- Added node_features_p_node_update_valid() function to node_features plugin.
+ -- If a job is held due to bad constraints and a node's features change then
+    test the job again to see if can run with the new features.
 
 * Changes in Slurm 17.11.0rc1
 ==============================

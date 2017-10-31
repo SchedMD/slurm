@@ -97,7 +97,8 @@
 /* Global variables */
 List active_feature_list;	/* list of currently active features_records */
 List avail_feature_list;	/* list of available features_records */
-bool slurmctld_init_db = 1;
+bool node_features_updated = false;
+bool slurmctld_init_db = true;
 
 static void _acct_restore_active_jobs(void);
 static void _add_config_feature(List feature_list, char *feature,
@@ -1503,6 +1504,7 @@ extern void update_feature_list(List feature_list, char *new_features,
 		}
 		xfree(tmp_str);
 	}
+	node_features_updated = true;
 }
 
 static void _gres_reconfig(bool reconfig)

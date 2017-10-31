@@ -208,6 +208,7 @@ extern int   accounting_enforce;
 extern int   association_based_accounting;
 extern uint32_t   cluster_cpus;
 extern int   batch_sched_delay;
+extern bool node_features_updated;
 extern pthread_cond_t purge_thread_cond;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
