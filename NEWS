@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sreport to always use the db_api instead of sometimes calling functions
     directly.
  -- Make global uid to the db_api to minimize calls to getuid().
+ -- Add support for HWLOC version 2.0.
 
 * Changes in Slurm 17.11.0rc1
 ==============================
