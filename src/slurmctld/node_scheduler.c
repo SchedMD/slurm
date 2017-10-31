@@ -642,7 +642,7 @@ static int _match_feature(char *seek, struct node_set *node_set_ptr,
 
 	if (seek == NULL)
 		return 1;	/* nothing to look for */
-	if (can_reboot) {
+	if (can_reboot && node_features_g_changible_feature(seek)) {
 		feat_ptr = list_find_first(avail_feature_list,
 					   list_find_feature, (void *) seek);
 	} else {
@@ -766,6 +766,9 @@ extern void build_active_feature_bitmap(struct job_record *job_ptr,
 
 	feat_iter = list_iterator_create(details_ptr->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+		if (!node_features_g_changible_feature(job_feat_ptr->name))
+			continue;
+
 		node_feat_ptr = list_find_first(active_feature_list,
 						list_find_feature,
 						(void *)job_feat_ptr->name);
@@ -3026,7 +3029,7 @@ static bool _valid_feature_counts(struct job_record *job_ptr,
 	node_feature_t *node_feat_ptr;
 	int have_count = false, last_op = FEATURE_OP_AND;
 	bitstr_t *feature_bitmap, *tmp_bitmap;
-	bool rc = true;
+	bool rc = true, user_update;
 
 	xassert(detail_ptr);
 	xassert(node_bitmap);
@@ -3036,14 +3039,16 @@ static bool _valid_feature_counts(struct job_record *job_ptr,
 	if (detail_ptr->feature_list == NULL)	/* no constraints */
 		return rc;
 
-	if (node_features_g_user_update(job_ptr->user_id))
-		feature_list = avail_feature_list;
-	else
-		feature_list = active_feature_list;
-
+	user_update = node_features_g_user_update(job_ptr->user_id);
 	feature_bitmap = bit_copy(node_bitmap);
 	job_feat_iter = list_iterator_create(detail_ptr->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(job_feat_iter))) {
+		if (user_update &&
+		    node_features_g_changible_feature(job_feat_ptr->name)) {
+			feature_list = avail_feature_list;
+		} else {
+			feature_list = active_feature_list;
+		}
 		node_feat_ptr = list_find_first(feature_list,
 					list_find_feature,
 					(void *) job_feat_ptr->name);
@@ -3790,17 +3795,19 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 		return result_bits;
 	}
 
-	if (can_reboot)
-		feature_list = avail_feature_list;
-	else
-		feature_list = active_feature_list;
-
 	feat_iter = list_iterator_create(details_ptr->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 		if ((job_feat_ptr->op_code == FEATURE_OP_XAND) ||
 		    (job_feat_ptr->op_code == FEATURE_OP_XOR)  ||
 		    (last_op == FEATURE_OP_XAND) ||
 		    (last_op == FEATURE_OP_XOR)) {
+			if (can_reboot &&
+			    node_features_g_changible_feature(
+						job_feat_ptr->name)) {
+				feature_list = avail_feature_list;
+			} else {
+				feature_list = active_feature_list;
+			}
 			node_feat_ptr = list_find_first(feature_list,
 						   list_find_feature,
 						   (void *)job_feat_ptr->name);

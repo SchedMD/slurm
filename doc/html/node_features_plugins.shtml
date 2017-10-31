@@ -62,6 +62,17 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
+<p class="commandline"> bool node_features_p_changible_feature(char *feature)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Determine if this (one) specified node feature is under the control of this plugin.
+  The feature must be in a node's available features in order for the node to be
+  reconfigured and the feature become active.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> feature:</span> One node feature.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">true</span> this feature can be set by this plugin<br>
+  <span class="commandline">false</span> this feature can not be et this plugin.</p>
+
 <p class="commandline"> int node_features_p_reconfig(void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Note that the configuration has changed, read configuration parameters again.
@@ -141,6 +152,17 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   are currently in effect. Value is allocated or appended to as appropriate
   with xmalloc functions.</p>
 
+<p class="commandline"> bool node_features_g_node_update_valid(void *node_ptr, update_node_msg_t *update_node_msg)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Determine if this node update request is valid. For example, validate that a
+   non-KNL node does not include any MCDRAM or NUMA modes that are KNL specific.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> node_ptr:</span> Pointer to struct node_record record
+  being updated.<br>
+  <span class="commandline"> update_node_msg:</span> Node update request.</br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  True if the update request is valid, otherwise false.</p>
+
 <p class="commandline"> char *node_features_p_node_xlate(char *new_features, char *orig_features, char *avail_features)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Translate a node's new active feature specification as needed to preserve any
@@ -196,6 +218,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 4 May 2017</p>
+<p style="text-align:center;">Last modified 31 October 2017</p>
 
 <!--#include virtual="footer.txt"-->

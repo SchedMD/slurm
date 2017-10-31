@@ -8170,6 +8170,18 @@ void job_time_limit(void)
 		}
 #endif
 
+		/*
+		 * Features have been changed on some node, make job eligiable
+		 * to run and test to see if it can run now
+		 */
+		if (node_features_updated &&
+		    (job_ptr->state_reason == FAIL_BAD_CONSTRAINTS) &&
+		    IS_JOB_PENDING(job_ptr) && (job_ptr->priority == 0)) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			set_job_prio(job_ptr);
+			last_job_update = now;
+		}
+
 		if (_pack_configuring_test(job_ptr))
 			continue;
 
@@ -8358,6 +8370,7 @@ time_check:
 		}
 	}
 	list_iterator_destroy(job_iterator);
+	node_features_updated = false;
 }
 
 /* job write lock must be locked before calling this */

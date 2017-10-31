@@ -28,6 +28,15 @@ documents those changes that are of interest to users and administrators.
     directly.
  -- Make global uid to the db_api to minimize calls to getuid().
  -- Add support for HWLOC version 2.0.
+ -- Added more validation logic for updates to node features.
+ -- Added node_features_p_node_update_valid() function to node_features plugin.
+ -- If a job is held due to bad constraints and a node's features change then
+    test the job again to see if can run with the new features.
+ -- Added node_features_p_changible_feature() function to node_features plugin.
+ -- Avoid rebooting a node if a job's requested feature is not under the control
+    of the node_features plugin and is not currently active.
+ -- node_features/knl_generic plugin: Do not clear a node's non-KNL features
+    specified in slurm.conf.
 
 * Changes in Slurm 17.11.0rc1
 ==============================

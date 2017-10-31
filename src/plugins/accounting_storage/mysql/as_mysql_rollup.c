@@ -85,6 +85,7 @@ typedef struct {
 	List local_assocs; /* list of assocs to spread unused time
 			      over of type local_id_usage_t */
 	List loc_tres;
+	time_t orig_start;
 	time_t start;
 	int unused_wall;
 } local_resv_usage_t;
@@ -1071,6 +1072,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			uint32_t row_flags = slurm_atoul(row[RESV_REQ_FLAGS]);
 			int unused;
 			int resv_seconds;
+			time_t orig_start = row_start;
 
 			if (row_start >= curr_start) {
 				/*
@@ -1107,6 +1109,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			_add_tres_2_list(r_usage->loc_tres,
 					 row[RESV_REQ_TRES], resv_seconds);
 
+			/*
+			 * Original start is needed when updating the
+			 * reservation's unused_wall later on.
+			 */
+			r_usage->orig_start = orig_start;
 			r_usage->start = row_start;
 			r_usage->end = row_end;
 			r_usage->unused_wall = unused + resv_seconds;
@@ -1471,7 +1478,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%u where id_resv=%u and time_start=%ld;",
 				   cluster_name, resv_table,
 				   r_usage->unused_wall, r_usage->id,
-				   r_usage->start);
+				   r_usage->orig_start);
 
 			if (!r_usage->loc_tres ||
 			    !list_count(r_usage->loc_tres))

@@ -57,6 +57,7 @@
  */
 typedef struct node_features_ops {
 	uint32_t(*boot_time)	(void);
+	bool    (*changible_feature) (char *feature);
 	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
@@ -64,6 +65,8 @@ typedef struct node_features_ops {
 	int	(*node_set)	(char *active_features);
 	void	(*node_state)	(char **avail_modes, char **current_mode);
 	int	(*node_update)	(char *active_features, bitstr_t *node_bitmap);
+	bool	(*node_update_valid) (void *node_ptr,
+				      update_node_msg_t *update_node_msg);
 	char *	(*node_xlate)	(char *new_features, char *orig_features,
 				 char *avail_features);
 	char *	(*node_xlate2)	(char *new_features);
@@ -78,6 +81,7 @@ typedef struct node_features_ops {
  */
 static const char *syms[] = {
 	"node_features_p_boot_time",
+	"node_features_p_changible_feature",
 	"node_features_p_get_node",
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
@@ -85,6 +89,7 @@ static const char *syms[] = {
 	"node_features_p_node_set",
 	"node_features_p_node_state",
 	"node_features_p_node_update",
+	"node_features_p_node_update_valid",
 	"node_features_p_node_xlate",
 	"node_features_p_node_xlate2",
 	"node_features_p_step_config",
@@ -227,6 +232,24 @@ extern int node_features_g_reconfig(void)
 	END_TIMER2("node_features_g_reconfig");
 
 	return rc;
+}
+
+/* Return TRUE if this (one) feature name is under this plugin's control */
+extern bool node_features_g_changible_feature(char *feature)
+{
+	DEF_TIMERS;
+	int i;
+	bool changible = false;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && !changible); i++)
+		changible = (*(ops[i].changible_feature))(feature);
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_reconfig");
+
+	return changible;
 }
 
 /* Update active and available features on specified nodes, sets features on
@@ -375,13 +398,45 @@ extern int node_features_g_node_update(char *active_features,
 	return rc;
 }
 
-/* Translate a node's feature specification by replacing any features associated
+
+/*
+ * Return TRUE if the specified node update request is valid with respect
+ * to features changes (i.e. don't permit a non-KNL node to set KNL features).
+ *
+ * node_ptr IN - Pointer to struct node_record record
+ * update_node_msg IN - Pointer to update request
+ */
+extern bool node_features_g_node_update_valid(void *node_ptr,
+					update_node_msg_t *update_node_msg)
+{
+	DEF_TIMERS;
+	bool update_valid = true;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		update_valid = (*(ops[i].node_update_valid))(node_ptr,
+							     update_node_msg);
+		if (!update_valid)
+			break;
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_node_update_valid");
+
+	return update_valid;
+}
+
+/*
+ * Translate a node's feature specification by replacing any features associated
  *	with this plugin in the original value with the new values, preserving
- *	andy features that are not associated with this plugin
+ *	any features that are not associated with this plugin
  * IN new_features - newly active features
  * IN orig_features - original active features
  * IN avail_features - original available features
- * RET node's new merged features, must be xfreed */
+ * RET node's new merged features, must be xfreed
+ */
 extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 					char *avail_features)
 {

@@ -97,7 +97,8 @@
 /* Global variables */
 List active_feature_list;	/* list of currently active features_records */
 List avail_feature_list;	/* list of available features_records */
-bool slurmctld_init_db = 1;
+bool node_features_updated = false;
+bool slurmctld_init_db = true;
 
 static void _acct_restore_active_jobs(void);
 static void _add_config_feature(List feature_list, char *feature,
@@ -1471,10 +1472,12 @@ extern void build_feature_list_ne(void)
 	}
 }
 
-/* Update active_feature_list or avail_feature_list
+/*
+ * Update active_feature_list or avail_feature_list
  * feature_list IN - List to update: active_feature_list or avail_feature_list
  * new_features IN - New active_features
- * node_bitmap IN - Nodes with the new active_features value */
+ * node_bitmap IN - Nodes with the new active_features value
+ */
 extern void update_feature_list(List feature_list, char *new_features,
 				bitstr_t *node_bitmap)
 {
@@ -1482,8 +1485,10 @@ extern void update_feature_list(List feature_list, char *new_features,
 	ListIterator feature_iter;
 	char *tmp_str, *token, *last = NULL;
 
-	/* Clear these nodes from the feature_list record,
-	 * then restore as needed */
+	/*
+	 * Clear these nodes from the feature_list record,
+	 * then restore as needed
+	 */
 	feature_iter = list_iterator_create(feature_list);
 	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
 		bit_and_not(feature_ptr->node_bitmap, node_bitmap);
@@ -1499,6 +1504,7 @@ extern void update_feature_list(List feature_list, char *new_features,
 		}
 		xfree(tmp_str);
 	}
+	node_features_updated = true;
 }
 
 static void _gres_reconfig(bool reconfig)
