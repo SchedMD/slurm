@@ -28,6 +28,10 @@ documents those changes that are of interest to users and administrators.
     of the node_features plugin and is not currently active.
  -- node_features/knl_generic plugin: Do not clear a node's non-KNL features
     specified in slurm.conf.
+ -- Added SchedulerParameters configuration option "disable_hetero_steps" to
+    disable job steps that span multiple components of a heterogeneous job.
+    Disabled by default except with mpi/none plugin. This limitation to be
+    removed in Slurm version 18.08.
 
 * Changes in Slurm 17.11.0rc1
 ==============================
