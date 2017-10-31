@@ -766,6 +766,9 @@ extern void build_active_feature_bitmap(struct job_record *job_ptr,
 
 	feat_iter = list_iterator_create(details_ptr->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+		if (!node_features_g_changible_feature(job_feat_ptr->name))
+			continue;
+
 		node_feat_ptr = list_find_first(active_feature_list,
 						list_find_feature,
 						(void *)job_feat_ptr->name);

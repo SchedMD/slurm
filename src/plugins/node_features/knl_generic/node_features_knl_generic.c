@@ -1649,6 +1649,14 @@ extern bool node_features_p_node_update_valid(void *arg,
 	return true;
 }
 
+/* Return TRUE if this (one) feature name is under this plugin's control */
+extern bool node_features_p_changible_feature(char *feature)
+{
+	if (_knl_mcdram_token(feature) || _knl_numa_token(feature))
+		return true;
+	return false;
+}
+
 /*
  * Translate a node's feature specification by replacing any features associated
  *	with this plugin in the original value with the new values, preserving

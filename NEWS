@@ -23,6 +23,9 @@ documents those changes that are of interest to users and administrators.
  -- Added node_features_p_node_update_valid() function to node_features plugin.
  -- If a job is held due to bad constraints and a node's features change then
     test the job again to see if can run with the new features.
+ -- Added node_features_p_changible_feature() function to node_features plugin.
+ -- Avoid rebooting a node if a job's requested feature is not under the control
+    of the node_features plugin and is not currently active.
 
 * Changes in Slurm 17.11.0rc1
 ==============================

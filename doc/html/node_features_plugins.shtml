@@ -62,6 +62,17 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
+<p class="commandline"> bool node_features_p_changible_feature(char *feature)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Determine if this (one) specified node feature is under the control of this plugin.
+  The feature must be in a node's available features in order for the node to be
+  reconfigured and the feature become active.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> feature:</span> One node feature.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">true</span> this feature can be set by this plugin<br>
+  <span class="commandline">false</span> this feature can not be et this plugin.</p>
+
 <p class="commandline"> int node_features_p_reconfig(void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Note that the configuration has changed, read configuration parameters again.
@@ -207,6 +218,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 30 October 2017</p>
+<p style="text-align:center;">Last modified 31 October 2017</p>
 
 <!--#include virtual="footer.txt"-->

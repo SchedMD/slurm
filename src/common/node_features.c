@@ -57,6 +57,7 @@
  */
 typedef struct node_features_ops {
 	uint32_t(*boot_time)	(void);
+	bool    (*changible_feature) (char *feature);
 	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
@@ -80,6 +81,7 @@ typedef struct node_features_ops {
  */
 static const char *syms[] = {
 	"node_features_p_boot_time",
+	"node_features_p_changible_feature",
 	"node_features_p_get_node",
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
@@ -230,6 +232,24 @@ extern int node_features_g_reconfig(void)
 	END_TIMER2("node_features_g_reconfig");
 
 	return rc;
+}
+
+/* Return TRUE if this (one) feature name is under this plugin's control */
+extern bool node_features_g_changible_feature(char *feature)
+{
+	DEF_TIMERS;
+	int i;
+	bool changible = false;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && !changible); i++)
+		changible = (*(ops[i].changible_feature))(feature);
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_reconfig");
+
+	return changible;
 }
 
 /* Update active and available features on specified nodes, sets features on
