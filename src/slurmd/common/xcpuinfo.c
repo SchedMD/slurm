@@ -225,7 +225,8 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 #if _DEBUG
 	_hwloc_children(topology, hwloc_get_root_obj(topology), 0);
 #endif
-	/* Some processors (e.g. AMD Opteron 6000 series) contain multiple
+	/*
+	 * Some processors (e.g. AMD Opteron 6000 series) contain multiple
 	 * NUMA nodes per socket. This is a configuration which does not map
 	 * into the hardware entities that Slurm optimizes resource allocation
 	 * for (PU/thread, core, socket, baseboard, node and network switch).
@@ -258,8 +259,10 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 				    1);
 	}
 
-	/* Count sockets/NUMA containing any cores.
-	 * KNL NUMA with no cores are NOT counted. */
+	/*
+	 * Count sockets/NUMA containing any cores.
+	 * KNL NUMA with no cores are NOT counted.
+	 */
 	nobj[SOCKET] = 0;
 	depth = hwloc_get_type_depth(topology, objtype[SOCKET]);
 	used_socket = bit_alloc(_MAX_SOCKET_INX);
@@ -283,8 +286,10 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 
 	nobj[CORE] = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
 
-	/* Workaround for hwloc bug, in some cases the topology "children" array
-	 * does not get populated, so _core_child_count() always returns 0 */
+	/*
+	 * Workaround for hwloc bug, in some cases the topology "children" array
+	 * does not get populated, so _core_child_count() always returns 0
+	 */
 	if (nobj[SOCKET] == 0) {
 		nobj[SOCKET] = hwloc_get_nbobjs_by_type(topology,
 							objtype[SOCKET]);
@@ -406,7 +411,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		debug("------");
 	}
 #endif
-	return 0;
+	return SLURM_SUCCESS;
 
 }
 #else

@@ -71,7 +71,8 @@
 #endif
 
 # if HWLOC_API_VERSION <= 0x00010000
-/* After this version the cpuset structure and all it's functions
+/*
+ * After this version the cpuset structure and all it's functions
  * changed to bitmaps.  So to work with old hwloc's we just to the
  * opposite to avoid having to put a bunch of ifdef's in the code we
  * just do it here.
@@ -577,8 +578,11 @@ static int _task_cgroup_cpuset_dist_cyclic(
 
 	if (_get_cpuinfo(&nsockets, &ncores, &nthreads, &npus)) {
 		/* Fall back to use allocated resources, but this may result
+		/*
+		 * Fall back to use allocated resources, but this may result
 		 * in incorrect layout due to a uneven task distribution
-		 * (e.g. 4 cores on socket 0 and 3 cores on socket 1) */
+		 * (e.g. 4 cores on socket 0 and 3 cores on socket 1)
+		 */
 		nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 							HWLOC_OBJ_SOCKET);
 		ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
@@ -605,8 +609,6 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		     "(task_dist=0x%x)", taskid,
 		     format_task_dist_states(job->task_dist), job->task_dist);
 	}
-
-
 
 	t_ix = xmalloc(ncores * sizeof(uint32_t));
 	c_ixc = xmalloc(nsockets * sizeof(uint32_t));
@@ -1507,7 +1509,8 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 				taskid, hwloc_obj_type_string(hwtype),
 				nobj, jnpus);
 	} else if (bind_type & bind_mode) {
-		/* Explicit binding mode specified by the user
+		/*
+		 * Explicit binding mode specified by the user
 		 * Bind the taskid in accordance with the specified mode
 		 */
 		obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MACHINE, 0);
@@ -1531,9 +1534,11 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		}
 		task_slurm_chkaffinity(&ts, job, rc);
 	} else {
-		/* Bind the detected object to the taskid, respecting the
+		/*
+		 * Bind the detected object to the taskid, respecting the
 		 * granularity, using the designated or default distribution
-		 * method (block or cyclic). */
+		 * method (block or cyclic).
+		 */
 		char *str;
 
 		if (bind_verbose) {
@@ -1542,7 +1547,8 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 			     job->task_dist);
 		}
 
-		/* See srun man page for detailed information on --distribution
+		/*
+		 * See srun man page for detailed information on --distribution
 		 * option.
 		 *
 		 * You can see the equivalent code for the
@@ -1569,9 +1575,10 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 					nobj, job, bind_verbose, cpuset);
 				break;
 			}
-			/* We want to fall through here if we aren't doing a
-			   default dist block.
-			*/
+			/*
+			 * We want to fall through here if we aren't doing a
+			 * default dist block.
+			 */
 		default:
 			_task_cgroup_cpuset_dist_cyclic(topology,
 				hwtype, req_hwtype,
