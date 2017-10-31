@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Added node_features_p_changible_feature() function to node_features plugin.
  -- Avoid rebooting a node if a job's requested feature is not under the control
     of the node_features plugin and is not currently active.
+ -- node_features/knl_generic plugin: Do not clear a node's non-KNL features
+    specified in slurm.conf.
 
 * Changes in Slurm 17.11.0rc1
 ==============================

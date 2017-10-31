@@ -2258,7 +2258,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	int error_code, i, node_inx;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
-	char *reason_down = NULL, *orig_features_act = NULL;;
+	char *reason_down = NULL;
+	char *orig_features = NULL, *orig_features_act = NULL;
 	uint32_t node_flags;
 	time_t now = time(NULL);
 	bool gang_flag = false;
@@ -2299,7 +2300,15 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
 
-	if (reg_msg->features_active) {
+	if (reg_msg->features_avail || reg_msg->features_active) {
+		char *sep = "";
+		orig_features = xstrdup(node_ptr->features);
+		if (orig_features && orig_features[0])
+			sep = ",";
+		if (reg_msg->features_avail) {
+			xstrfmtcat(orig_features, "%s%s", sep,
+				   reg_msg->features_avail);
+		}
 		if (node_ptr->features_act)
 			orig_features_act = xstrdup(node_ptr->features_act);
 		else
@@ -2312,8 +2321,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		} else {
 			xfree(node_ptr->features);
 		}
-		node_ptr->features = node_features_g_node_xlate2(
-					reg_msg->features_avail);
+		node_ptr->features = node_features_g_node_xlate(
+					reg_msg->features_avail,
+					orig_features, orig_features);
 		(void) _update_node_avail_features(node_ptr->name,
 						   node_ptr->features);
 	}
@@ -2322,13 +2332,14 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		tmp_feature = node_features_g_node_xlate(
 						reg_msg->features_active,
 						orig_features_act,
-						node_ptr->features);
+						orig_features);
 		xfree(node_ptr->features_act);
 		node_ptr->features_act = tmp_feature;
 		(void) _update_node_active_features(node_ptr->name,
 						    node_ptr->features_act);
-		xfree(orig_features_act);
 	}
+	xfree(orig_features);
+	xfree(orig_features_act);
 
 	if (gres_plugin_node_config_unpack(reg_msg->gres_info,
 					   node_ptr->name) != SLURM_SUCCESS) {
