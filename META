@@ -7,9 +7,9 @@
   Name:		slurm
   Major:	16
   Minor:	05
-  Micro:	10
-  Version:	16.05.10
-  Release:	2
+  Micro:	11
+  Version:	16.05.11
+  Release:	1
 # Include leading zero for all pre-releases
 
 ##
