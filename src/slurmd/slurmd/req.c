@@ -5670,10 +5670,14 @@ _build_env(job_env_t *job_env)
 		job_env->spank_job_env_size = 0;
 		job_env->spank_job_env = (char **) NULL;
 	}
-	if (job_env->spank_job_env_size) {
-		env_array_merge_spank(&env,
-				      (const char **) job_env->spank_job_env);
-	}
+	/*
+	 * User-controlled environment variables, such as those set through
+	 * SPANK, must be prepended with SPANK_ or some other safe prefix.
+	 * Otherwise, a malicious user could cause arbitrary code to execute
+	 * during the prolog/epilog as root.
+	 */
+	if (job_env->spank_job_env_size)
+		env_array_merge(&env, (const char **) job_env->spank_job_env);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);

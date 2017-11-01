@@ -213,6 +213,10 @@ Functions are also available from within the \fBSPANK\fR plugins to
 establish environment variables to be exported to the Slurm
 \fBPrologSlurmctld\fR, \fBProlog\fR, \fBEpilog\fR and \fBEpilogSlurmctld\fR
 programs (the so-called \fBjob control\fR environment).
+The name of environment variables established by these calls will be prepended
+with the string \fISPANK_\fR in order to avoid any security implications
+of arbitrary environment variable control. (After all, the job control
+scripts do run as root or the Slurm user.).
 .LP
 These functions are available from \fBlocal\fR context only.
 .nf

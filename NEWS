@@ -10,6 +10,9 @@ documents those changes that are of interest to users and administrators.
     rather than "complete" for burst buffers which have been deleted, but still
     exist in the slurmctld daemon's tables (a very short-lived situation).
 
+* Changes in Slurm 17.11.0rc3
+==============================
+
 * Changes in Slurm 17.11.0rc2
 ==============================
  -- Prevent slurmctld abort with NodeFeatures=knl_cray and non-KNL nodes lacking
@@ -370,6 +373,9 @@ documents those changes that are of interest to users and administrators.
     '--quit-on-interrupt' to '--qos'.
  -- Change sched_min_interval default from 0 to 2 microseconds.
 
+* Changes in Slurm 17.02.10
+==========================
+
 * Changes in Slurm 17.02.9
 ==========================
  -- When resuming powered down nodes, mark DOWN nodes right after ResumeTimeout
@@ -387,6 +393,10 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - If configured with NodeFeatures=knl_cray and there are non-KNL
     nodes which include no features the slurmctld will abort without
     this patch when attemping strtok_r(NULL).
+ -- Fix regression in 17.02.7 which would run the spank_task_privileged as
+    part of the slurmstepd instead of it's child process.
+ -- Fix security issue in Prolog and Epilog by always prepending SPANK_ to
+    all user-set environment variables. CVE-2017-15566.
 
 * Changes in Slurm 17.02.8
 ==========================
@@ -1048,6 +1058,9 @@ documents those changes that are of interest to users and administrators.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
 
+* Changes in Slurm 16.05.12
+===========================
+
 * Changes in Slurm 16.05.11
 ===========================
  -- burst_buffer/cray - Add support for line continuation.
@@ -1066,6 +1079,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix seg fault if loading attempting to load non-existent burstbuffer plugin.
  -- Fix to backfill scheduling with respect to QOS and association limits. Jobs
     submitted to multiple partitions are most likley to be effected.
+ -- Avoid erroneous errno set by the mariadb 10.2 api.
+ -- Fix security issue in Prolog and Epilog by always prepending SPANK_ to
+    all user-set environment variables. CVE-2017-15566.
 
 * Changes in Slurm 16.05.10-2
 =============================

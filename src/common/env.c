@@ -1828,32 +1828,6 @@ void env_array_merge_slurm(char ***dest_array, const char **src_array)
 }
 
 /*
- * Merge all of the environment variables in src_array into the array
- * dest_array and strip any header names of "SPANK_".  Any variables already
- * found in dest_array will be overwritten with the value from src_array.
- */
-void env_array_merge_spank(char ***dest_array, const char **src_array)
-{
-	char **ptr;
-	char name[256], *value;
-
-	if (src_array == NULL)
-		return;
-
-	value = xmalloc(ENV_BUFSIZE);
-	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
-		if (_env_array_entry_splitter(*ptr, name, sizeof(name),
-					      value, ENV_BUFSIZE)) {
-			if (xstrncmp(name, "SPANK_" ,6))
-				env_array_overwrite(dest_array, name, value);
-			else
-				env_array_overwrite(dest_array, name+6, value);
-		}
-	}
-	xfree(value);
-}
-
-/*
  * Strip out trailing carriage returns and newlines
  */
 static void _strip_cr_nl(char *line)
