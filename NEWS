@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix to backfill scheduling with respect to QOS and association limits. Jobs
     submitted to multiple partitions are most likley to be effected.
  -- Avoid erroneous errno set by the mariadb 10.2 api.
+ -- Fix security issue in Prolog and Epilog by always prepending SPANK_ to
+    all user-set environment variables. CVE-2017-15566.
 
 * Changes in Slurm 16.05.10-2
 =============================
