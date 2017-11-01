@@ -1474,6 +1474,19 @@ fail1:
 	return(rc);
 }
 
+static int _pre_task_child_privileged(
+	stepd_step_rec_t *job, int taskid, struct priv_state *sp)
+{
+	if (_reclaim_privileges(sp) < 0)
+		return SLURM_ERROR;
+
+	if (spank_task_privileged(job, taskid) < 0)
+		return error("spank_task_init_privileged failed");
+
+	/* sp->gid_list should already be initialized */
+	return (_drop_privileges(job, true, sp, false));
+}
+
 struct exec_wait_info {
 	int id;
 	pid_t pid;
@@ -1778,6 +1791,17 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			if (conf->propagate_prio)
 				_set_prio_process(job);
 
+			/*
+			 * Reclaim privileges for the child and call any plugin
+			 * hooks that may require elevated privs
+			 * sprivs.gid_list is already set from the
+			 * _drop_privileges call above, no not reinitialize.
+			 * NOTE: Only put things in here that are self contained
+			 * and belong in the child.
+			 */
+			if (_pre_task_child_privileged(job, i, &sprivs) < 0)
+				exit(1);
+
  			if (_become_user(job, &sprivs) < 0) {
  				error("_become_user failed: %m");
 				/* child process, should not return */
@@ -1861,12 +1885,6 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		    (setpgid (job->task[i]->pid, job->pgid) < 0)) {
 			error("Unable to put task %d (pid %d) into pgrp %d: %m",
 			      i, job->task[i]->pid, job->pgid);
-		}
-
-		if (spank_task_privileged(job, i) < 0) {
-			error("spank_task_privileged: %m");
-			rc = SLURM_ERROR;
-			goto fail2;
 		}
 
 		if (task_g_pre_launch_priv(job, job->task[i]->pid) < 0) {
