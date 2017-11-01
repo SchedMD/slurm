@@ -273,7 +273,7 @@ static void _validate_map(launch_tasks_request_msg_t *req, char *avail_mask)
 	bool superset = true;
 
 	CPU_ZERO(&avail_cpus);
-	(void) str_to_cpuset(&avail_cpus, avail_mask);
+	(void) task_str_to_cpuset(&avail_cpus, avail_mask);
 	tmp_map = xstrdup(req->cpu_bind);
 	tok = strtok_r(tmp_map, ",", &save_ptr);
 	while (tok) {
@@ -306,13 +306,13 @@ static void _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
 	bool superset = true;
 
 	CPU_ZERO(&avail_cpus);
-	(void) str_to_cpuset(&avail_cpus, avail_mask);
+	(void) task_str_to_cpuset(&avail_cpus, avail_mask);
 	tok = strtok_r(req->cpu_bind, ",", &save_ptr);
 	while (tok) {
 		int i, overlaps = 0;
 		char mask_str[1 + CPU_SETSIZE / 4];
 		CPU_ZERO(&task_cpus);
-		(void) str_to_cpuset(&task_cpus, tok);
+		(void) task_str_to_cpuset(&task_cpus, tok);
 		for (i = 0; i < CPU_SETSIZE; i++) {
 			if (!CPU_ISSET(i, &task_cpus))
 				continue;

@@ -319,7 +319,7 @@ int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask)
 		return SLURM_ERROR;
 	}
 	mstr[rc] = '\0';
-	str_to_cpuset(mask, mstr);
+	(void) task_str_to_cpuset(mask, mstr);
 
 	snprintf(file_path, sizeof(file_path), "%s/tasks", path);
 	fd = open(file_path, O_CREAT | O_RDONLY, 0700);
