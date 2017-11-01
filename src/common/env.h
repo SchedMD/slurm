@@ -217,13 +217,6 @@ void env_array_merge(char ***dest_array, const char **src_array);
 void env_array_merge_slurm(char ***dest_array, const char **src_array);
 
 /*
- * Merge all of the environment variables in src_array into the array
- * dest_array and strip any header names of "SPANK_".  Any variables already
- * found in dest_array will be overwritten with the value from src_array.
- */
-void env_array_merge_spank(char ***dest_array, const char **src_array);
-
-/*
  * Copy env_array must be freed by env_array_free
  */
 char **env_array_copy(const char **array);
