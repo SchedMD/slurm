@@ -64,29 +64,6 @@
  * Copyright (C) 2004 Robert Love
  */
 
-inline int val_to_char(int v)
-{
-	if (v >= 0 && v < 10)
-		return '0' + v;
-	else if (v >= 10 && v < 16)
-		return ('a' - 10) + v;
-	else
-		return -1;
-}
-
-inline int char_to_val(int c)
-{
-	int cl;
-
-	cl = tolower(c);
-	if (c >= '0' && c <= '9')
-		return c - '0';
-	else if (cl >= 'a' && cl <= 'f')
-		return cl + (10 - 'a');
-	else
-		return -1;
-}
-
 int str_to_cnt(const char* str)
 {
 	int len = strlen(str);
@@ -98,7 +75,7 @@ int str_to_cnt(const char* str)
 		str += 2;
 
 	while (ptr >= str) {
-		char val = char_to_val(*ptr);
+		char val = slurm_char_to_hex(*ptr);
 		if (val == (char) -1)
 			return -1;
 		if (val & 1)

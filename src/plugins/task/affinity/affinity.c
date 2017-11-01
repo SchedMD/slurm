@@ -192,7 +192,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job)
 		if (len > 1 && !memcmp(mstr, "0x", 2L))
 			curstr += 2;
 		while (ptr >= curstr) {
-			char val = char_to_val(*ptr);
+			char val = slurm_char_to_hex(*ptr);
 			if (val == (char) -1)
 				return false;
 			if (val & 1)

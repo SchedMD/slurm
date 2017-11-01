@@ -98,29 +98,6 @@ static int			g_task_context_num = -1;
 static pthread_mutex_t		g_task_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
-static inline int _val_to_char(int v)
-{
-	if (v >= 0 && v < 10)
-		return '0' + v;
-	else if (v >= 10 && v < 16)
-		return ('a' - 10) + v;
-	else
-		return -1;
-}
-
-static inline int _char_to_val(int c)
-{
-	int cl;
-
-	cl = tolower(c);
-	if (c >= '0' && c <= '9')
-		return c - '0';
-	else if (cl >= 'a' && cl <= 'f')
-		return cl + (10 - 'a');
-	else
-		return -1;
-}
-
 /*
  * Initialize the task plugin.
  *
@@ -621,7 +598,7 @@ extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
 			val |= 8;
 		if (!ret && val)
 			ret = ptr;
-		*ptr++ = _val_to_char(val);
+		*ptr++ = slurm_hex_to_char(val);
 	}
 	*ptr = '\0';
 	return ret ? ret : ptr - 1;
@@ -639,7 +616,7 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char* str)
 
 	CPU_ZERO(mask);
 	while (ptr >= str) {
-		char val = _char_to_val(*ptr);
+		char val = slurm_char_to_hex(*ptr);
 		if (val == (char) -1)
 			return -1;
 		if (val & 1)

@@ -1369,4 +1369,18 @@ extern int slurm_forward_data(
  */
 extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port);
 
+/*
+ * slurm_val_to_char - convert an int value (0-16) to a hex value (0-F) char.
+ * IN v - value of number (0-16)
+ * RET ascii value of int given, -1 on error.
+ */
+extern int slurm_hex_to_char(int v);
+
+/*
+ * slurm_val_to_char - convert a hex value (0-F) char to an int value (0-16).
+ * IN c - char value (0-F)
+ * RET value as an int, -1 on error.
+ */
+extern int slurm_char_to_hex(int c);
+
 #endif

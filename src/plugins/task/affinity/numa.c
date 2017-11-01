@@ -64,7 +64,7 @@ static char * _memset_to_str(nodemask_t *mask, char *str)
 		begin = 1;
 		if (!ret && val)
 			ret = ptr;
-		*ptr++ = val_to_char(val);
+		*ptr++ = slurm_hex_to_char(val);
 	}
 	*ptr = 0;
 	return ret ? ret : ptr - 1;
@@ -82,7 +82,7 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 
 	nodemask_zero(mask);
 	while (ptr >= str) {
-		char val = char_to_val(*ptr);
+		char val = slurm_char_to_hex(*ptr);
 		if (val == (char) -1)
 			return -1;
 		if (val & 1)

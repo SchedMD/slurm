@@ -5135,3 +5135,26 @@ uint16_t slurm_get_prolog_timeout(void)
 
 	return timeout;
 }
+
+extern int slurm_hex_to_char(int v)
+{
+	if (v >= 0 && v < 10)
+		return '0' + v;
+	else if (v >= 10 && v < 16)
+		return ('a' - 10) + v;
+	else
+		return -1;
+}
+
+extern int slurm_char_to_hex(int c)
+{
+	int cl;
+
+	cl = tolower(c);
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	else if (cl >= 'a' && cl <= 'f')
+		return cl + (10 - 'a');
+	else
+		return -1;
+}

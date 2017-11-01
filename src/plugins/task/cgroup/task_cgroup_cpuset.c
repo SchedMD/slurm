@@ -137,29 +137,6 @@ static xcgroup_t step_cpuset_cg;
 
 static int _xcgroup_cpuset_init(xcgroup_t* cg);
 
-static inline int _val_to_char(int v)
-{
-	if (v >= 0 && v < 10)
-		return '0' + v;
-	else if (v >= 10 && v < 16)
-		return ('a' - 10) + v;
-	else
-		return -1;
-}
-
-static inline int _char_to_val(int c)
-{
-	int cl;
-
-	cl = tolower(c);
-	if (c >= '0' && c <= '9')
-		return c - '0';
-	else if (cl >= 'a' && cl <= 'f')
-		return cl + (10 - 'a');
-	else
-		return -1;
-}
-
 /* when cgroups are configured with cpuset, at least
  * cpuset.cpus and cpuset.mems must be set or the cgroup
  * will not be available at all.
@@ -433,7 +410,7 @@ static int _get_sched_cpuset(hwloc_topology_t topology,
 		if (len > 1 && !memcmp(mstr, "0x", 2L))
 			curstr += 2;
 		while (ptr >= curstr) {
-			char val = _char_to_val(*ptr);
+			char val = slurm_char_to_hex(*ptr);
 			if (val == (char) -1)
 				return false;
 			if (val & 1)

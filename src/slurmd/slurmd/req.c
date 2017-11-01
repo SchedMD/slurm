@@ -1202,19 +1202,6 @@ fail:
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
-static inline int _char_to_val(int c)
-{
-	int cl;
-
-	cl = tolower(c);
-	if (c >= '0' && c <= '9')
-		return c - '0';
-	else if (cl >= 'a' && cl <= 'f')
-		return cl + (10 - 'a');
-	else
-		return -1;
-}
-
 static int _str_to_memset(bitstr_t *mask, char *str)
 {
 	int len = strlen(str);
@@ -1222,7 +1209,7 @@ static int _str_to_memset(bitstr_t *mask, char *str)
 	int base = 0;
 
 	while (ptr >= str) {
-		char val = _char_to_val(*ptr);
+		char val = slurm_char_to_hex(*ptr);
 		if (val == (char) -1)
 			return -1;
 		if ((val & 1) && (base < MAX_NUMA_CNT))
