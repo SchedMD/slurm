@@ -159,7 +159,9 @@ static bool _enable_pack_steps(void)
 	bool enabled = false;
 	char *sched_params = slurm_get_sched_params();
 
-	if (sched_params && strstr(sched_params, "enable_hetero_steps"))
+	if (sched_params && strstr(sched_params, "disable_hetero_steps"))
+		enabled = false;
+	else if (sched_params && strstr(sched_params, "enable_hetero_steps"))
 		enabled = true;
 	else if (mpi_type && strstr(mpi_type, "none"))
 		enabled = true;
