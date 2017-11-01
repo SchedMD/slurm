@@ -5670,6 +5670,12 @@ _build_env(job_env_t *job_env)
 		job_env->spank_job_env_size = 0;
 		job_env->spank_job_env = (char **) NULL;
 	}
+	/*
+	 * User-controlled environment variables, such as those set through
+	 * SPANK, must be prepended with SPANK_ or some other safe prefix.
+	 * Otherwise, a malicious user could cause arbitrary code to execute
+	 * during the prolog/epilog as root.
+	 */
 	if (job_env->spank_job_env_size)
 		env_array_merge(&env, (const char **) job_env->spank_job_env);
 
