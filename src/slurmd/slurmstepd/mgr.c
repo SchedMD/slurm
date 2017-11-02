@@ -1005,6 +1005,8 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 
 	if (job->x11 && (pipe(x11_pipe) < 0)) {
 		error("x11 pipe: %m");
+		/* let the slurmd know we actually are done with the setup */
+		close_slurmd_conn();
 		return SLURM_ERROR;
 	}
 #endif
@@ -1012,6 +1014,8 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	debug2("%s: Before call to spank_init()", __func__);
 	if (spank_init(job) < 0) {
 		error("%s: Plugin stack initialization failed.", __func__);
+		/* let the slurmd know we actually are done with the setup */
+		close_slurmd_conn();
 		return SLURM_PLUGIN_NAME_INVALID;
 	}
 	debug2("%s: After call to spank_init()", __func__);
@@ -1075,6 +1079,8 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		error("fork: %m");
 		_set_job_state(job, SLURMSTEPD_STEP_ENDING);
 		rc = SLURM_ERROR;
+		/* let the slurmd know we actually are done with the setup */
+		close_slurmd_conn();
 		goto fail1;
 	}
 
@@ -1085,6 +1091,8 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		      __func__, job->jobid, job->stepid, pid);
 		killpg(pid, SIGKILL);
 		kill(pid, SIGKILL);
+		/* let the slurmd know we actually are done with the setup */
+		close_slurmd_conn();
 		goto fail1;
 	}
 
@@ -1126,6 +1134,9 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 
 	if (spank_task_post_fork(job, -1) < 0)
 		error("spank extern task post-fork failed");
+
+	/* let the slurmd know we actually are done with the setup */
+	close_slurmd_conn();
 
 	while ((wait4(pid, &status, 0, &rusage) < 0) && (errno == EINTR)) {
 		;	       /* Wait until above process exits from signal */
