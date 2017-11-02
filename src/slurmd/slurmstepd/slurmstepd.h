@@ -70,6 +70,8 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 			 slurm_addr_t *cli, slurm_addr_t *self,
 			 int rc, bool only_mem);
 
+extern void close_slurmd_conn(void);
+
 extern pthread_mutex_t x11_lock;
 
 #endif /* !_SLURMSTEPD_H */

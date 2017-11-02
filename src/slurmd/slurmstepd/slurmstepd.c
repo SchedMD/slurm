@@ -143,18 +143,8 @@ main (int argc, char **argv)
 	if (job->x11)
 		slurm_mutex_lock(&x11_lock);
 
-	_send_ok_to_slurmd(STDOUT_FILENO);
-	_got_ack_from_slurmd(STDIN_FILENO);
-
-	/* Fancy way of closing stdin that keeps STDIN_FILENO from being
-	 * allocated to any random file.  The slurmd already opened /dev/null
-	 * on STDERR_FILENO for us. */
-	dup2(STDERR_FILENO, STDIN_FILENO);
-
-	/* Fancy way of closing stdout that keeps STDOUT_FILENO from being
-	 * allocated to any random file.  The slurmd already opened /dev/null
-	 * on STDERR_FILENO for us. */
-	dup2(STDERR_FILENO, STDOUT_FILENO);
+	if (job->stepid != SLURM_EXTERN_CONT)
+		close_slurmd_conn();
 
 	/* slurmstepd is the only daemon that should survive upgrade. If it
 	 * had been swapped out before upgrade happened it could easily lead
@@ -226,6 +216,21 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	return rc;
 }
 
+extern void close_slurmd_conn(void)
+{
+	_send_ok_to_slurmd(STDOUT_FILENO);
+	_got_ack_from_slurmd(STDIN_FILENO);
+
+	/* Fancy way of closing stdin that keeps STDIN_FILENO from being
+	 * allocated to any random file.  The slurmd already opened /dev/null
+	 * on STDERR_FILENO for us. */
+	dup2(STDERR_FILENO, STDIN_FILENO);
+
+	/* Fancy way of closing stdout that keeps STDOUT_FILENO from being
+	 * allocated to any random file.  The slurmd already opened /dev/null
+	 * on STDERR_FILENO for us. */
+	dup2(STDERR_FILENO, STDOUT_FILENO);
+}
 
 static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 {
