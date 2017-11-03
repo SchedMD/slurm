@@ -41,6 +41,10 @@ if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
 }
+if {[test_pack_step] == 0} {
+	send_user "\nWARNING: heterogeneous steps not currently supported\n"
+	exit $exit_code
+}
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
