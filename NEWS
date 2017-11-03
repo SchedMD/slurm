@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.10
 ==========================
+ -- Fix updating of requested TRES memory.
 
 * Changes in Slurm 17.02.9
 ==========================

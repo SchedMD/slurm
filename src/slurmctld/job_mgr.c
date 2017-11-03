@@ -7685,22 +7685,17 @@ extern bool test_job_nodes_ready(struct job_record *job_ptr)
  */
 extern void job_validate_mem(struct job_record *job_ptr)
 {
-	uint64_t tres_count;
-
 	if ((job_ptr->bit_flags & NODE_MEM_CALC) &&
 	    (slurmctld_conf.fast_schedule == 0)) {
 		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 					   READ_LOCK, NO_LOCK, NO_LOCK };
 
 		select_g_job_mem_confirm(job_ptr);
-		tres_count = job_ptr->details->pn_min_memory;
-		if (tres_count & MEM_PER_CPU) {
-			tres_count &= (~MEM_PER_CPU);
-			tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU];
-		} else {
-			tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE];
-		}
-		job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] = tres_count;
+		job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] =
+				job_get_tres_mem(
+				  job_ptr->details->pn_min_memory,
+				  job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU],
+				  job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE]);
 
 		assoc_mgr_lock(&locks);
 		job_ptr->tres_alloc_str =
@@ -8003,7 +7998,9 @@ extern void job_set_req_tres(
 
 	job_ptr->tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)node_cnt;
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)cpu_cnt;
-	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = mem_cnt;
+	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(mem_cnt,
+								 cpu_cnt,
+								 node_cnt);
 
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_req_cnt,
@@ -8033,7 +8030,6 @@ extern void job_set_req_tres(
 extern void job_set_alloc_tres(struct job_record *job_ptr,
 			       bool assoc_mgr_locked)
 {
-	uint64_t tres_count;
 	uint32_t alloc_nodes = 0;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
@@ -8062,15 +8058,11 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 	alloc_nodes = job_ptr->node_cnt;
 #endif
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE] = (uint64_t)alloc_nodes;
-
-	tres_count = job_ptr->details->pn_min_memory;
-	if (tres_count & MEM_PER_CPU) {
-		tres_count &= (~MEM_PER_CPU);
-		tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU];
-	} else {
-		tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE];
-	}
-	job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] = tres_count;
+	job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] =
+			job_get_tres_mem(
+			  job_ptr->details->pn_min_memory,
+			  job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU],
+			  job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE]);
 
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_alloc_cnt,
@@ -11498,7 +11490,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->limit_set.tres[TRES_ARRAY_MEM] =
 				acct_policy_limit_set.tres[TRES_ARRAY_MEM];
 			job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
-				detail_ptr->pn_min_memory;
+				job_specs->tres_req_cnt[TRES_ARRAY_MEM];
 			xfree(job_ptr->tres_req_str);
 			assoc_mgr_lock(&locks);
 			job_ptr->tres_req_str =
