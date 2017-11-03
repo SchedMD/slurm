@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "March 2017" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "November 2017" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1083,8 +1083,8 @@ Identify the state to be assigned to the node. Possible node states are "NoResp"
 "ALLOC", "ALLOCATED", "COMPLETING", "DOWN", "DRAIN", "ERROR, "FAIL", "FAILING",
 "FUTURE" "IDLE", "MAINT", "MIXED", "PERFCTRS/NPC", "RESERVED", "POWER_DOWN",
 "POWER_UP", "RESUME" or "UNDRAIN". Not all of those states can be set using
-the scontrol command only the following can: "NoResp", "DRAIN", "FAIL",
-"FUTURE", "RESUME", "POWER_DOWN", "POWER_UP" and "UNDRAIN".
+the scontrol command only the following can: "DOWN", "DRAIN", "FAIL",
+"FUTURE", "RESUME", "NoResp", "POWER_DOWN", "POWER_UP" and "UNDRAIN".
 If a node is in a "MIXED" state it usually means the node is in
 multiple states.  For instance if only part of the node is "ALLOCATED"
 and the rest of the node is "IDLE" the state will be "MIXED".
@@ -1999,7 +1999,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010-2016 SchedMD LLC.
+Copyright (C) 2010-2017 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.
