@@ -1,35 +1,25 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Mailing Lists</h1>
-<p>We maintain two Slurm mailing lists:</p>
+<p>SchedMD maintains two Slurm mailing lists:</p>
 <ul>
 <li><b>slurm-announce@schedmd.com</b> is designated for communications about
-Slurm releases. The ability to post to this list is restricted to a few Slurm
-developers [low traffic].</li>
-<li><b>slurm-dev@schedmd.com</b> is designated for communications to Slurm
-developers and is typically used by Slurm users or system administrators.
-Any person subscribed to this mailing list may post to it.
-[high traffic at times].</li>
+Slurm releases. Only SchedMD may post to this list. Low traffic.</li>
+<li><b>slurm-users@schedmd.com</b> (formerly slurm-dev@schedmd.com) is for
+discussion by the Slurm community, and is typically used by Slurm system
+administrators for discussion and community-provided support. (Please see the
+<a href="https://www.schedmd.com/support.php">SchedMD support page</a>
+page for commercial support options.)
+Any person subscribed to this mailing list may post to it. High traffic.</li>
 </ul>
 
-<p>The <i>slurm-dev@schedmd.com</i> mailing list is a good mechanism for the
-user community to share information.</p>
+<p>You can subscribe to either list, change your subscription options, or
+unsubscribe through the
+<a href="https://lists.schedmd.com/cgi-bin/mailman/">Mailman interface here</a>.</p>
 
-<p>You can join either list
-  by <a href="https://lists.schedmd.com/cgi-bin/dada/mail.cgi/list">subscribing
-  here</a>.
+<p>An archive of the <b>slurm-users</b> list is online:<br>
+<a href="http://groups.google.com/group/slurm-users">http://groups.google.com/group/slurm-users</a></p>
 
-<p>
-You can unsubscribe by logging
-into <a href="https://lists.schedmd.com/cgi-bin/dada/mail.cgi/profile_login/">your
-    mailing list profile</a>, or email <a href="mailto:unsubscribe@schedmd.com?Subject=Unsubscribe">unsubscribe@schedmd.com</a>.
-</p>
-
-<p>The archive of the <b>slurm-dev</b> list is online:<br>
-<a href="http://dir.gmane.org/gmane.comp.distributed.slurm.devel">http://dir.gmane.org/gmane.comp.distributed.slurm.devel</a><br>
-and<br>
-<a href="http://groups.google.com/group/slurm-devel">http://groups.google.com/group/slurm-devel</a></p>
-
-<p style="text-align:center;">Last modified 29 April 2015</p>
+<p style="text-align:center;">Last modified 5 November 2017</p>
 
 <!--#include virtual="footer.txt"-->
