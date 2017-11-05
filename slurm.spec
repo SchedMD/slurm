@@ -8,7 +8,6 @@ Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 
-%dump
 # when the rel number is one, the tarball filename does not include it
 %if "%{rel}" == "1"
 Source:		%{name}-%{version}.tar.bz2
