@@ -52,9 +52,7 @@ daemon by executing "<i>ps -el | grep slurmctld</i>".</li>
 <li>If slurmctld is not running, restart it (typically as user root
 using the command "<i>/etc/init.d/slurm start</i>").
 You should check the log file (<i>SlurmctldLog</i> in the
-<i>slurm.conf</i> file) for an indication of why it failed.
-If it keeps failing, you should contact the slurm team for help at
-<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.</li>
+<i>slurm.conf</i> file) for an indication of why it failed.</li>
 
 <li>If slurmctld is running but not responding (a very rare situation),
 then kill and restart it (typically as user root using the commands
@@ -63,9 +61,7 @@ then kill and restart it (typically as user root using the commands
 <li>If it hangs again, increase the verbosity of debug messages
 (increase <i>SlurmctldDebug</i> in the <i>slurm.conf</i> file)
 and restart.
-Again check the log file for an indication of why it failed.
-At this point, you should contact the slurm team for help at
-<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.</li>
+Again check the log file for an indication of why it failed.</li>
 
 <li>If it continues to fail without an indication as to the failure
 mode, restart without preserving state (typically as user root
@@ -161,9 +157,7 @@ You can get the status of the running slurmd daemon by
 executing the command "<i>scontrol show slurmd</i>" on
 the node of interest.
 Check the value of "Last slurmctld msg time" to determine
-if the slurmctld is able to communicate with the slurmd.
-If it keeps failing, you should contact the slurm team for help at
-<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.</li>
+if the slurmctld is able to communicate with the slurmd.</li>
 
 <li>If slurmd is running but not responding (a very rare situation),
 then kill and restart it (typically as user root using the commands
@@ -175,9 +169,7 @@ then kill and restart it (typically as user root using the commands
 <li>If still not responding, increase the verbosity of debug messages
 (increase <i>SlurmdDebug</i> in the <i>slurm.conf</i> file)
 and restart.
-Again check the log file for an indication of why it failed.
-At this point, you should contact the slurm team for help at
-<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.</li>
+Again check the log file for an indication of why it failed.</li>
 
 <li>If still not responding without an indication as to the failure
 mode, restart without preserving state (typically as user root
