@@ -125,12 +125,12 @@ Comma separated list of resources you wish to track on the cluster.
 These are the resources requested by the sbatch/srun job when it
 is submitted.  Currently this consists of any GRES, BB (burst buffer) or
 license along with CPU, Memory, Node, and Energy.
-By default CPU, Energy, Memory, and Node are tracked.
+By default Billing, CPU, Energy, Memory, and Node are tracked.
 AccountingStorageTRES=gres/craynetwork,license/iop1
-will track cpu, energy, memory, nodes along with a gres called craynetwork
-as well as a license called iop1.  Whenever these resources are used on the
-cluster they are recorded. The TRES are automatically set up in the database
-on the start of the slurmctld.
+will track billing, cpu, energy, memory, nodes along with a gres called
+craynetwork as well as a license called iop1.  Whenever these resources are used
+on the cluster they are recorded. The TRES are automatically set up in the
+database on the start of the slurmctld.
 
 .TP
 \fBAccountingStorageType\fR

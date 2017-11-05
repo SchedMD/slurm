@@ -8,7 +8,6 @@ Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 
-%dump
 # when the rel number is one, the tarball filename does not include it
 %if "%{rel}" == "1"
 Source:		%{name}-%{version}.tar.bz2
@@ -289,7 +288,7 @@ chmod +x find-requires.sh
 %global _use_internal_dependency_generator 0
 %global __find_requires %{_builddir}/%{buildsubdir}/find-requires.sh
 
-rm -rf {%buildroot}
+rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 make install-contrib DESTDIR=%{buildroot}
 

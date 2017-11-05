@@ -4173,6 +4173,10 @@ proc test_pack_step { } {
 	} elseif {$version_major == 17 && $version_minor == 11} {
 		spawn $scontrol show config
 		expect {
+			-re "disable_hetero_steps" {
+				set pack_step 0
+				exp_continue
+			}
 			-re "enable_hetero_steps" {
 				set pack_step 1
 				exp_continue

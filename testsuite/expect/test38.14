@@ -37,6 +37,11 @@ set pack_job_id	0
 
 print_header $test_id
 
+if {[test_pack_step] == 0} {
+	send_user "\nWARNING: heterogeneous steps not currently supported\n"
+	exit $exit_code
+}
+
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 2} {
@@ -83,5 +88,6 @@ if {[wait_for_file $file_out] == 0} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_out
+	send_user "\nSUCCESS\n"
 }
 exit $exit_code

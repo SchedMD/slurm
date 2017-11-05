@@ -335,6 +335,10 @@ if {[test_pack_step] == 0} {
 	send_user "\nWARNING: heterogeneous steps not currently supported\n"
 	exit $exit_code
 }
+if {[test_pack_step] == 0} {
+	send_user "\nWARNING: heterogeneous steps not currently supported\n"
+	exit $exit_code
+}
 
 send_user "\n\nTEST OF PACK GROUP 0,1\n\n"
 

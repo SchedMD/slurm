@@ -47,7 +47,7 @@
 <li><a href="#mem_limit">Why are jobs not getting the appropriate
   memory limit?</a></li>
 <li><a href="#mailing_list">Is an archive available of messages posted to
-  the <i>slurm-dev</i> mailing list?</a></li>
+  the <i>slurm-users</i> mailing list?</a></li>
 <li><a href="#job_size">Can I change my job's size after it has started
   running?</a></li>
 <li><a href="#mpi_symbols">Why is my MPICH2 or MVAPICH2 job not running with
@@ -707,9 +707,9 @@ Use the same solution for the AS (Address Space), RSS (Resident Set Size),
 or other limits as needed.</p>
 
 <p><a name="mailing_list"><b>23. Is an archive available of messages posted to
-the <i>slurm-dev</i> mailing list?</b></a><br>
-Yes, it is at <a href="http://groups.google.com/group/slurm-devel">
-http://groups.google.com/group/slurm-devel</a></p>
+the <i>slurm-users</i> mailing list?</b></a><br>
+Yes, it is at <a href="http://groups.google.com/group/slurm-users">
+http://groups.google.com/group/slurm-users</a></p>
 
 <p><a name="job_size"><b>24. Can I change my job's size after it has started
 running?</b></a><br>
