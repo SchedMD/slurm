@@ -1,5 +1,5 @@
 #%Module1.0#####################################################################
-# slurm/munge support module
+# slurm support module
 # Put into /opt/modulefiles/slurm or some other part of $MODULEPATH
 ################################################################################
 
@@ -12,7 +12,6 @@ proc ModulesHelp { } {
 # CONFIGURATION
 conflict	xt-pbs pbs torque
 set slurmdir	"@prefix@"
-set mungedir	"@MUNGE_DIR@"
 set perldir	[exec perl -e "use Config; \$T=\$Config{installsitearch}; \$P=\$Config{installprefix}; \$P1=\"\$P/local\"; \$T =~ s/\$P1//; \$T =~ s/\$P//; print \$T;"]
 
 set version "UNKNOWN"
@@ -25,10 +24,8 @@ set helptext	"Support for the Slurm Workload Manager $version"
 module-whatis	$helptext
 
 prepend-path	PATH		"$slurmdir/bin"
-prepend-path	PATH		"$mungedir/bin"
 
 prepend-path	MANPATH		"$slurmdir/share/man"
-prepend-path	MANPATH		"$mungedir/share/man"
 
 prepend-path    PKG_CONFIG_PATH "@libdir@/pkgconfig"
 
@@ -46,6 +43,5 @@ set-alias sc_log	{tail -f "/ufs/slurm/var/log/slurmctld.log"}
 
 if {[exec id -u] == 0} {
 	prepend-path	PATH	"$slurmdir/sbin"
-	prepend-path	PATH	"$mungedir/sbin"
 	set-alias	sdown	{scontrol shutdown}
 }
