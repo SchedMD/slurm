@@ -2212,8 +2212,10 @@ static void _set_node_billing_tres(struct node_record *node_ptr,
 	node_ptr->tres_cnt[TRES_ARRAY_BILLING] = max_billing;
 }
 
-/* A slurmctld lock needs to at least have a node read lock set before
- * this is called */
+/*
+ * A slurmctld lock needs to at least have a node and partition write lock set
+ * before this is called
+ */
 extern void set_cluster_tres(bool assoc_mgr_locked)
 {
 	struct node_record *node_ptr;
