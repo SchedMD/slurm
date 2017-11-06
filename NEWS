@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.0rc3
 ==============================
  -- Fix extern step to wait until launched before allowing job to start.
+ -- Add missing locks around figuring out TRES when clean starting the
+    slurmctld.
 
 * Changes in Slurm 17.11.0rc2
 ==============================

@@ -256,6 +256,10 @@ int main(int argc, char **argv)
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	/* Locks: Write node and partition */
+	slurmctld_lock_t node_part_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+
 	slurm_trigger_callbacks_t callbacks;
 	bool create_clustername_file;
 	/*
@@ -501,7 +505,9 @@ int main(int argc, char **argv)
 				   going down and this happens before it is
 				   normally set up so do it now.
 				*/
+				lock_slurmctld(node_part_write_lock);
 				set_cluster_tres(false);
+				unlock_slurmctld(node_part_write_lock);
 				_accounting_mark_all_nodes_down("cold-start");
 			}
 		} else {
