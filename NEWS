@@ -373,6 +373,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix updating of requested TRES memory.
  -- Cray modulefile: avoid removing /usr/bin from path on module unload.
+ -- Fix issue when resetting the partition pointers on nodes.
 
 * Changes in Slurm 17.02.9
 ==========================
