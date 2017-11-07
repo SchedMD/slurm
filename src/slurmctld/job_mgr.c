@@ -11171,6 +11171,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	acct_policy_limit_set_t acct_policy_limit_set;
 	uint16_t tres[slurmctld_tres_cnt];
 	bool acct_limit_already_set;
+	bool tres_changed = false;
 	int tres_pos;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	List gres_list = NULL;
@@ -11265,10 +11266,187 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		mc_ptr = detail_ptr->mc_ptr;
 	last_job_update = now;
 
+	/*
+	 * Check partition here just in case the min_nodes is changed based on
+	 * the partition
+	 */
+	if (job_specs->partition &&
+	    !xstrcmp(job_specs->partition, job_ptr->partition)) {
+		debug("sched: update_job: new partition identical to "
+		      "old partition %u", job_ptr->job_id);
+	} else if (job_specs->partition) {
+		List part_ptr_list = NULL;
+		bool resv_reset = false;
+		char *resv_orig = NULL;
+
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+			goto fini;
+		}
+
+		if (job_specs->min_nodes == NO_VAL) {
+#ifdef HAVE_BG
+			select_g_select_jobinfo_get(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_NODE_CNT,
+				&job_specs->min_nodes);
+#else
+			job_specs->min_nodes = detail_ptr->min_nodes;
+#endif
+		}
+		if ((job_specs->max_nodes == NO_VAL) &&
+		    (detail_ptr->max_nodes != 0)) {
+#ifdef HAVE_BG
+			select_g_select_jobinfo_get(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_NODE_CNT,
+				&job_specs->max_nodes);
+#else
+			job_specs->max_nodes = detail_ptr->max_nodes;
+#endif
+		}
+
+		if ((job_specs->time_min == NO_VAL) &&
+		    (job_ptr->time_min != 0))
+			job_specs->time_min = job_ptr->time_min;
+		if (job_specs->time_limit == NO_VAL)
+			job_specs->time_limit = job_ptr->time_limit;
+		if (!job_specs->reservation
+		    || job_specs->reservation[0] == '\0') {
+			resv_reset = true;
+			resv_orig = job_specs->reservation;
+			job_specs->reservation = job_ptr->resv_name;
+		}
+
+		error_code = _get_job_parts(job_specs,
+					    &tmp_part_ptr,
+					    &part_ptr_list, NULL);
+
+		if (error_code != SLURM_SUCCESS)
+			;
+		else if ((tmp_part_ptr->state_up & PARTITION_SUBMIT) == 0)
+			error_code = ESLURM_PARTITION_NOT_AVAIL;
+		else {
+			slurmdb_assoc_rec_t assoc_rec;
+			memset(&assoc_rec, 0,
+			       sizeof(slurmdb_assoc_rec_t));
+			assoc_rec.acct      = job_ptr->account;
+			assoc_rec.partition = tmp_part_ptr->name;
+			assoc_rec.uid       = job_ptr->user_id;
+			if (assoc_mgr_fill_in_assoc(
+				    acct_db_conn, &assoc_rec,
+				    accounting_enforce,
+				    &job_ptr->assoc_ptr, false)) {
+				info("job_update: invalid account %s "
+				     "for job %u",
+				     job_specs->account, job_ptr->job_id);
+				error_code = ESLURM_INVALID_ACCOUNT;
+				/* Let update proceed. Note there is an invalid
+				 * association ID for accounting purposes */
+			} else
+				job_ptr->assoc_id = assoc_rec.id;
+
+			error_code = _valid_job_part(
+				job_specs, uid,
+				job_ptr->details->req_node_bitmap,
+				&tmp_part_ptr, part_ptr_list,
+				job_ptr->assoc_ptr, job_ptr->qos_ptr);
+			if (!error_code) {
+				acct_policy_remove_job_submit(job_ptr);
+				xfree(job_ptr->partition);
+				job_ptr->partition =
+					xstrdup(job_specs->partition);
+				job_ptr->part_ptr = tmp_part_ptr;
+				xfree(job_ptr->priority_array);	/* Rebuilt in
+								   plugin */
+				FREE_NULL_LIST(job_ptr->part_ptr_list);
+				job_ptr->part_ptr_list = part_ptr_list;
+				part_ptr_list = NULL;	/* nothing to free */
+				info("update_job: setting partition to %s for "
+				     "job_id %u", job_specs->partition,
+				     job_ptr->job_id);
+				update_accounting = true;
+				acct_policy_add_job_submit(job_ptr);
+			}
+		}
+		FREE_NULL_LIST(part_ptr_list);	/* error clean-up */
+
+		if (resv_reset)
+			job_specs->reservation = resv_orig;
+
+		if (error_code != SLURM_SUCCESS)
+			goto fini;
+	}
+
 	memset(tres_req_cnt, 0, sizeof(tres_req_cnt));
 	job_specs->tres_req_cnt = tres_req_cnt;
+
+	if ((job_specs->min_nodes != NO_VAL) &&
+	    (job_specs->min_nodes != INFINITE)) {
+		uint32_t min_cpus = (job_specs->pn_min_cpus != NO_VAL16 ?
+			job_specs->pn_min_cpus : detail_ptr->pn_min_cpus) *
+			job_specs->min_nodes;
+		uint32_t num_cpus = job_specs->min_cpus != NO_VAL ?
+			job_specs->min_cpus :
+			job_ptr->tres_req_cnt[TRES_ARRAY_CPU];
+		uint32_t num_tasks = job_specs->num_tasks != NO_VAL ?
+			job_specs->num_tasks : detail_ptr->num_tasks;
+
+		if (!num_tasks) {
+			num_tasks = detail_ptr->min_nodes;
+
+		} else if (num_tasks < job_specs->min_nodes) {
+			info("%s: adjusting num_tasks (prev: %u) to be at least min_nodes: %u",
+			     __func__, num_tasks, job_specs->min_nodes);
+			num_tasks = job_specs->min_nodes;
+			if (IS_JOB_PENDING(job_ptr))
+				job_specs->num_tasks = num_tasks;
+		}
+
+		num_tasks *= job_specs->cpus_per_task != NO_VAL16 ?
+			job_specs->cpus_per_task : detail_ptr->cpus_per_task;
+		num_tasks = MAX(num_tasks, min_cpus);
+		if (num_tasks > num_cpus) {
+			info("%s: adjusting min_cpus (prev: %u) to be at least : %u",
+			     __func__, num_cpus, num_tasks);
+			job_specs->min_cpus = num_tasks;
+
+			job_specs->pn_min_memory =
+				job_specs->pn_min_memory != NO_VAL64 ?
+				job_specs->pn_min_memory :
+				detail_ptr->pn_min_memory;
+		}
+
+		assoc_mgr_lock(&locks);
+		if (!job_specs->gres) {
+			gres_set_job_tres_cnt(job_ptr->gres_list,
+					      job_specs->min_nodes,
+					      job_specs->tres_req_cnt,
+					      true);
+		}
+
+		if (!job_specs->licenses) {
+			license_set_job_tres_cnt(job_ptr->license_list,
+						 job_specs->tres_req_cnt,
+						 true);
+		}
+		assoc_mgr_unlock(&locks);
+
+
+		job_specs->tres_req_cnt[TRES_ARRAY_NODE] = job_specs->min_nodes;
+	}
+
 	if (job_specs->min_cpus != NO_VAL)
 		job_specs->tres_req_cnt[TRES_ARRAY_CPU] = job_specs->min_cpus;
+	else if ((job_specs->pn_min_cpus != NO_VAL16) &&
+		 (job_specs->pn_min_cpus != 0)) {
+		job_specs->tres_req_cnt[TRES_ARRAY_CPU] =
+			job_specs->pn_min_cpus *
+			(job_specs->min_nodes != NO_VAL ?
+			 job_specs->min_nodes :
+			 detail_ptr ? detail_ptr->min_nodes : 1);
+		job_specs->min_cpus = job_specs->tres_req_cnt[TRES_ARRAY_CPU];
+	}
 
 	job_specs->tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
 		job_specs->pn_min_memory,
@@ -11550,113 +11728,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->partition
-	    && !xstrcmp(job_specs->partition, job_ptr->partition)) {
-		debug("sched: update_job: new partition identical to "
-		      "old partition %u", job_ptr->job_id);
-	} else if (job_specs->partition) {
-		List part_ptr_list = NULL;
-		bool resv_reset = false;
-		char *resv_orig = NULL;
 
-		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-			goto fini;
-		}
 
-		if (job_specs->min_nodes == NO_VAL) {
-#ifdef HAVE_BG
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_NODE_CNT,
-				&job_specs->min_nodes);
-#else
-			job_specs->min_nodes = detail_ptr->min_nodes;
-#endif
-		}
-		if ((job_specs->max_nodes == NO_VAL) &&
-		    (detail_ptr->max_nodes != 0)) {
-#ifdef HAVE_BG
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_NODE_CNT,
-				&job_specs->max_nodes);
-#else
-			job_specs->max_nodes = detail_ptr->max_nodes;
-#endif
-		}
 
-		if ((job_specs->time_min == NO_VAL) &&
-		    (job_ptr->time_min != 0))
-			job_specs->time_min = job_ptr->time_min;
-		if (job_specs->time_limit == NO_VAL)
-			job_specs->time_limit = job_ptr->time_limit;
-		if (!job_specs->reservation
-		    || job_specs->reservation[0] == '\0') {
-			resv_reset = true;
-			resv_orig = job_specs->reservation;
-			job_specs->reservation = job_ptr->resv_name;
-		}
 
-		error_code = _get_job_parts(job_specs,
-					    &tmp_part_ptr,
-					    &part_ptr_list, NULL);
 
-		if (error_code != SLURM_SUCCESS)
-			;
-		else if ((tmp_part_ptr->state_up & PARTITION_SUBMIT) == 0)
-			error_code = ESLURM_PARTITION_NOT_AVAIL;
-		else {
-			slurmdb_assoc_rec_t assoc_rec;
-			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_assoc_rec_t));
-			assoc_rec.acct      = job_ptr->account;
-			assoc_rec.partition = tmp_part_ptr->name;
-			assoc_rec.uid       = job_ptr->user_id;
-			if (assoc_mgr_fill_in_assoc(
-				    acct_db_conn, &assoc_rec,
-				    accounting_enforce,
-				    &job_ptr->assoc_ptr, false)) {
-				info("job_update: invalid account %s "
-				     "for job %u",
-				     job_specs->account, job_ptr->job_id);
-				error_code = ESLURM_INVALID_ACCOUNT;
-				/* Let update proceed. Note there is an invalid
-				 * association ID for accounting purposes */
-			} else
-				job_ptr->assoc_id = assoc_rec.id;
 
-			error_code = _valid_job_part(
-				job_specs, uid,
-				job_ptr->details->req_node_bitmap,
-				&tmp_part_ptr, part_ptr_list,
-				job_ptr->assoc_ptr, job_ptr->qos_ptr);
-			if (!error_code) {
-				acct_policy_remove_job_submit(job_ptr);
-				xfree(job_ptr->partition);
-				job_ptr->partition =
-					xstrdup(job_specs->partition);
-				job_ptr->part_ptr = tmp_part_ptr;
-				xfree(job_ptr->priority_array);	/* Rebuilt in
-								   plugin */
-				FREE_NULL_LIST(job_ptr->part_ptr_list);
-				job_ptr->part_ptr_list = part_ptr_list;
-				part_ptr_list = NULL;	/* nothing to free */
-				info("update_job: setting partition to %s for "
-				     "job_id %u", job_specs->partition,
-				     job_ptr->job_id);
-				update_accounting = true;
-				acct_policy_add_job_submit(job_ptr);
-			}
-		}
-		FREE_NULL_LIST(part_ptr_list);	/* error clean-up */
 
-		if (resv_reset)
-			job_specs->reservation = resv_orig;
-
-		if (error_code != SLURM_SUCCESS)
-			goto fini;
-	}
 
 	/* Always do this last just in case the assoc_ptr changed */
 	if (job_specs->admin_comment) {
@@ -11746,9 +11824,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else {
 			save_min_cpus = detail_ptr->min_cpus;
 			detail_ptr->min_cpus = job_specs->min_cpus;
-			job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
-				(uint64_t)detail_ptr->min_cpus;
-			set_job_tres_req_str(job_ptr, false);
 		}
 	}
 	if (job_specs->max_cpus != NO_VAL) {
@@ -11765,10 +11840,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if (save_min_cpus) {
 			detail_ptr->min_cpus = save_min_cpus;
 			save_min_cpus = 0;
-			/* revert it */
-			job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
-				(uint64_t)detail_ptr->min_cpus;
-			set_job_tres_req_str(job_ptr, false);
 		}
 		if (save_max_cpus) {
 			detail_ptr->max_cpus = save_max_cpus;
@@ -11892,9 +11963,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     save_min_nodes, detail_ptr->min_nodes, job_ptr->job_id);
 		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
-		job_ptr->tres_req_cnt[TRES_ARRAY_NODE] =
-			(uint64_t)detail_ptr->min_nodes;
-		set_job_tres_req_str(job_ptr, false);
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
@@ -12296,9 +12364,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set.tres[TRES_ARRAY_MEM] =
 				acct_policy_limit_set.tres[TRES_ARRAY_MEM];
-			job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
-				job_specs->tres_req_cnt[TRES_ARRAY_MEM];
-			set_job_tres_req_str(job_ptr, false);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -12471,15 +12536,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		FREE_NULL_LIST(job_ptr->gres_list);
 		job_ptr->gres_list = gres_list;
 		gres_list = NULL;
-
-		assoc_mgr_lock(&locks);
-		gres_set_job_tres_cnt(job_ptr->gres_list,
-				      job_ptr->details ?
-				      job_ptr->details->min_nodes : 0,
-				      job_ptr->tres_req_cnt,
-				      true);
-		set_job_tres_req_str(job_ptr, true);
-		assoc_mgr_unlock(&locks);
 	}
 
 	if (job_specs->name) {
@@ -12729,12 +12785,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
-			assoc_mgr_lock(&locks);
-			license_set_job_tres_cnt(job_ptr->license_list,
-						 job_ptr->tres_req_cnt,
-						 true);
-			set_job_tres_req_str(job_ptr, true);
-			assoc_mgr_unlock(&locks);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (operator || (license_list == NULL))) {
 			/* NOTE: This can result in oversubscription of
@@ -13029,6 +13079,17 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 fini:
+	for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
+		if (!tres_req_cnt[tres_pos] ||
+		    (tres_req_cnt[tres_pos] == job_ptr->tres_req_cnt[tres_pos]))
+			continue;
+
+		job_ptr->tres_req_cnt[tres_pos] = tres_req_cnt[tres_pos];
+		tres_changed = true;
+	}
+	if (tres_changed)
+		set_job_tres_req_str(job_ptr, false);
+
 	/* This was a local variable, so set it back to NULL */
 	job_specs->tres_req_cnt = NULL;
 

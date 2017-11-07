@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     slurmctld.
  -- Cray modulefile: avoid removing /usr/bin from path on module unload.
  -- Make reoccurring reservations show up in the database.
+ -- Adjust related resources (cpus, tasks, gres, mem, etc.) when updating
+    NumNodes with scontrol.
 
 * Changes in Slurm 17.11.0rc2
 ==============================
