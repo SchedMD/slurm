@@ -163,6 +163,7 @@ extern int build_part_bitmap(struct part_record *part_ptr)
 	bitstr_t *old_bitmap;
 	struct node_record *node_ptr;	/* pointer to node_record */
 	hostlist_t host_list;
+	int i;
 
 	part_ptr->total_cpus = 0;
 	part_ptr->total_nodes = 0;
@@ -221,10 +222,16 @@ extern int build_part_bitmap(struct part_record *part_ptr)
 			part_ptr->max_core_cnt = MAX(part_ptr->max_core_cnt,
 					node_ptr->cores);
 		}
-		node_ptr->part_cnt++;
-		xrealloc(node_ptr->part_pptr, (node_ptr->part_cnt *
-			sizeof(struct part_record *)));
-		node_ptr->part_pptr[node_ptr->part_cnt-1] = part_ptr;
+		for (i = 0; i < node_ptr->part_cnt; i++) {
+			if (node_ptr->part_pptr[i] == part_ptr)
+				break;
+		}
+		if (i == node_ptr->part_cnt) { /* Node in new partition */
+			node_ptr->part_cnt++;
+			xrealloc(node_ptr->part_pptr, (node_ptr->part_cnt *
+				 sizeof(struct part_record *)));
+			node_ptr->part_pptr[node_ptr->part_cnt-1] = part_ptr;
+		}
 		if (old_bitmap)
 			bit_clear(old_bitmap,
 				  (int) (node_ptr -
