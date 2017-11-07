@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Make reoccurring reservations show up in the database.
  -- Adjust related resources (cpus, tasks, gres, mem, etc.) when updating
     NumNodes with scontrol.
+ -- Don't initialize MPI plugins for batch or extern steps.`
 
 * Changes in Slurm 17.11.0rc2
 ==============================
