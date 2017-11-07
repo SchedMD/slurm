@@ -135,12 +135,19 @@ if ($ARGV[0]) {
 	$interactive = 1;
 	foreach (<STDIN>) {
 		chomp($_);
+                if ($_ =~ /^\#BSUB/) {
+                  my @bsubopts = split(" ", $_);
+                  switch ($bsubopts[1]) {
+                    case "-J" { $job_name = $bsubopts[2] }
+                    case "-m" { $node_list .= $bsubopts[2] }
+                  }
+                }
 		$script .= "$_\n";
 	}
 }
 #print "script = $script";
 
-my $command = $sbatch;
+my @command = ($sbatch);
 
 if (!$script) {
 	if ($interactive) {
@@ -151,31 +158,31 @@ if (!$script) {
 	}
 }
 
-$command .= " -e $err_path" if $err_path;
-$command .= " -o $out_path" if $out_path;
+push @command, "-e", $err_path if $err_path;
+push @command, "-o", $out_path if $out_path;
 
-$command .= " -D $workdir" if $workdir;
+push @command, "-D", $workdir if $workdir;
 
 #print " command = $command\n";
 
 
-#$command .= " -n$node_opts{task_cnt}" if $ntask_cnt;
+#push @command, " -n$node_opts{task_cnt}" if $ntask_cnt;
 
 if ($node_list) {
 	my $node_list_tmp = _parse_node_list($node_list);
-	$command .= " -w $node_list_tmp";
+	push @command, "-w", $node_list_tmp;
 }
 
-$command .= " --mem=$mem_limit"   if $mem_limit;
-$command .= " -J $job_name" if $job_name;
+push @command, "--mem=$mem_limit"   if $mem_limit;
+push @command, "-J", $job_name if $job_name;
 
 if ($min_proc) {
 	my $min_proc_tmp = _parse_procs($min_proc);
-	$command .= " -n $min_proc_tmp";
+	push @command, "-n", $min_proc_tmp;
 }
-$command .= " -t $time" if $time;
-$command .= " -p $partition" if $partition;
-$command .= " --exclusive" if $exclusive;
+push @command, "-t", $time if $time;
+push @command, "-p", $partition if $partition;
+push @command, "--exclusive" if $exclusive;
 
 # Here we are checking to see if the file is a known bsub script.
 # If it isn't wrap it.  We have seen with certain scripts they need $0
@@ -183,9 +190,9 @@ $command .= " --exclusive" if $exclusive;
 # batch script when it gets ran on a compute node it breaks the $0
 # functionality.  If we wrap it the problem is solved.
 if ($interactive || !_check_bsub_script($ARGV[0])) {
-	$command .=" --wrap=\"$script\"";
+	push @command, "--wrap=$script";
 } else {
-	$command .= " $script";
+	push @command, "$script";
 }
 #print " command = $command\n";
 #exit;
@@ -195,9 +202,17 @@ if ($interactive || !_check_bsub_script($ARGV[0])) {
 # error are _not_ captured.
 
 # Execute the command and capture the combined stdout and stderr.
-my @command_output = `$command 2>&1`;
+#my @command_output = `$command 2>&1`;
+open(my $KID_TO_READ, "-|", @command)
+    || die "can't run @command: $!";
+my @command_output;
+foreach (<$KID_TO_READ>) {
+    push @command_output, $_;
+}
+
 
 #Save the command exit status.
+close ($KID_TO_READ);
 my $command_exit_status = $?;
 
 # If available, extract the job ID from the command output and print
@@ -210,7 +225,7 @@ if ($command_exit_status == 0) {
 } else {
 	print("There was an error running the Slurm sbatch command.\n" .
 	      "The command was:\n" .
-	      "'$command'\n" .
+	      "'@command'\n" .
 	      "and the output was:\n" .
 	      "'@command_output'\n");
 }
