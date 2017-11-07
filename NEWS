@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix extern step to wait until launched before allowing job to start.
  -- Add missing locks around figuring out TRES when clean starting the
     slurmctld.
+ -- Cray modulefile: avoid removing /usr/bin from path on module unload.
 
 * Changes in Slurm 17.11.0rc2
 ==============================
@@ -370,6 +371,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.02.10
 ==========================
  -- Fix updating of requested TRES memory.
+ -- Cray modulefile: avoid removing /usr/bin from path on module unload.
 
 * Changes in Slurm 17.02.9
 ==========================
