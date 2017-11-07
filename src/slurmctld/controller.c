@@ -256,6 +256,10 @@ int main(int argc, char **argv)
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	/* Locks: Write node and partition */
+	slurmctld_lock_t node_part_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+
 	slurm_trigger_callbacks_t callbacks;
 	bool create_clustername_file;
 	/*
@@ -501,7 +505,9 @@ int main(int argc, char **argv)
 				   going down and this happens before it is
 				   normally set up so do it now.
 				*/
+				lock_slurmctld(node_part_write_lock);
 				set_cluster_tres(false);
+				unlock_slurmctld(node_part_write_lock);
 				_accounting_mark_all_nodes_down("cold-start");
 			}
 		} else {
@@ -2206,8 +2212,10 @@ static void _set_node_billing_tres(struct node_record *node_ptr,
 	node_ptr->tres_cnt[TRES_ARRAY_BILLING] = max_billing;
 }
 
-/* A slurmctld lock needs to at least have a node read lock set before
- * this is called */
+/*
+ * A slurmctld lock needs to at least have a node and partition write lock set
+ * before this is called
+ */
 extern void set_cluster_tres(bool assoc_mgr_locked)
 {
 	struct node_record *node_ptr;
