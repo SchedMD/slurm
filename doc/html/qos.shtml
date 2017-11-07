@@ -75,11 +75,10 @@ will take precedence over the association's limits.
 <!-------------------------------------------------------------------------->
 <a name=partition>
 <h2>Partition QOS</h2></a>
-<P> Beginning in 15.08 you can attach a QOS to a partition.  This
-means a partition will have all the same limits as a QOS.  This also
-gives the ability of a true 'floating' partition, meaning if you
-assign all the nodes to a partition and then in the Partition's QOS
-limit the number of GrpCPUs or GrpNodes the partition will have
+<P> A QOS can be attached to a partition.  This means a partition will have all
+the same limits as a QOS.  This also gives the ability of a true 'floating'
+partition, meaning if you assign all the nodes to a partition and then in the
+Partition's QOS limit the number of GrpCPUs or GrpNodes the partition will have
 access to all the nodes, but only be able to run on the number of
 resources in it.<p>
 <p>The Partition QOS will override the job's QOS.  If the opposite is
@@ -277,6 +276,6 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 15 March 2016</p>
+<p style="text-align: center;">Last modified 7 November 2017</p>
 
 </ul></body></html>

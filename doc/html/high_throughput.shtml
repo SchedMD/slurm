@@ -86,13 +86,10 @@ options that you may want to consider for higher throughput.</p>
 
 <ul>
 <li><b>AccountingStorageType</b>:
-Disabling accounting will improve job throughput. Disable storing of
-accounting by using the <i>accounting_storage/none</i> plugin.
-Starting in Slurm 14.11 there was work done to improve the speedup
-of the database which makes turning accounting off a minimal
-improvement in performance.  If using the SlurmDBD even greater
-speedup can be achieved by setting the CommitDelay option in the
-<a href=slurmdbd.conf.html>slurmdbd.conf</a></li>
+Disabling storing of accounting by using the <i>accounting_storage/none</i>
+plugin. Turning accounting off provides minimal improvement in performance.
+If using the SlurmDBD increased speedup can be achieved by setting the
+CommitDelay option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a></li>
 <li><b>JobAcctGatherType</b>:
 Disabling the collection of job accounting information will improve job
 throughput. Disable collection of accounting by using the
@@ -198,11 +195,9 @@ appropriate for your environment.</li>
 
 <h2>SlurmDBD Configuration</h2>
 
-<p>Starting in Slurm 14.11 there was work done to improve the speedup
-of the database which makes turning accounting off a minimal
-improvement in performance.  If using the SlurmDBD even greater
-speedup can be achieved by setting the CommitDelay option in the
-<a href=slurmdbd.conf.html>slurmdbd.conf</a></p>
+<p>Turning accounting off provides a minimal improvement in performance.
+  If using SlurmDBD increased speedup can be achieved by setting the CommitDelay
+  option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a></p>
 
 <p>You might also consider setting the '<i>Purge*</i>' options in your
   slurmdbd.conf to clear out old Data.  A Typical configuration would
@@ -218,6 +213,6 @@ speedup can be achieved by setting the CommitDelay option in the
 
 </ul>
 
-<p style="text-align:center;">Last modified 5 September 2017</p>
+<p style="text-align:center;">Last modified 7 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1947,14 +1947,12 @@ See the SPANK man page for configuration details.</p>
 <p><a name="sssd"><b>51. I am having trouble using SSSD with Slurm.</b></a></br>
 SSSD or System Security Services Deamon does not allow enumeration of
 group members by default. Note that enabling enumeration in large
-environments might not be feasible. However, as of version 16.05 slurm
-does not need enumeration, except for some specific quirky
-configurations (multiple groups with the same GID), so probably it's
-perfectly safe to leave enumeration disabled.  SSSD is also case
-sensitive by default for some configurations, which could possibly
-raise other issues.  Add the following lines
-to <i>/etc/sssd/sssd.conf</i> on your head node to address these
-issues:</p>
+environments might not be feasible. However, Slurm does not need enumeration
+except for some specific quirky configurations (multiple groups with the same
+GID), so probably it's perfectly safe to leave enumeration disabled.
+SSSD is also case sensitive by default for some configurations, which could
+possibly raise other issues. Add the following lines
+to <i>/etc/sssd/sssd.conf</i> on your head node to address these issues:</p>
 <pre>
 enumerate = True
 case_sensitive = False
@@ -2235,6 +2233,6 @@ slurmctld for those changes to be recognized.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 June 2017</p>
+<p style="text-align:center;">Last modified 7 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

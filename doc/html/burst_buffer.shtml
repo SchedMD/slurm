@@ -14,7 +14,7 @@
 
 <h2><a name="overview">Overview</a></h2>
 
-<p>Slurm version 15.08 includes support for
+<p>Slurm includes support for
 <a href="http://www.mcs.anl.gov/papers/P2070-0312.pdf">burst buffers</a>,
 a shared high-speed storage resource.
 Slurm provides support for allocating these resources, staging files in,
@@ -260,17 +260,17 @@ $ scontrol show burst
 Name=generic DefaultPool=ssd Granularity=100G TotalSpace=50T UsedSpace=42T
   StageInTimeout=30 StageOutTimeout=30 Flags=EnablePersistent,PrivateData
   AllowUsers=alan:brenda
-  CreateBuffer=/usr/local/slurm/15.08/sbin/CB
-  DestroyBuffer=/usr/local/slurm/15.08/sbin/DB
-  GetSysState=/usr/local/slurm/15.08/sbin/GSS
-  StartStageIn=/usr/local/slurm/15.08/sbin/SSI
-  StartStageIn=/usr/local/slurm/15.08/sbin/SSO
-  StopStageIn=/usr/local/slurm/15.08/sbin/PSI
-  StopStageIn=/usr/local/slurm/15.08/sbin/PSO
+  CreateBuffer=/usr/local/slurm/17.11/sbin/CB
+  DestroyBuffer=/usr/local/slurm/17.11/sbin/DB
+  GetSysState=/usr/local/slurm/17.11/sbin/GSS
+  StartStageIn=/usr/local/slurm/17.11/sbin/SSI
+  StartStageIn=/usr/local/slurm/17.11/sbin/SSO
+  StopStageIn=/usr/local/slurm/17.11/sbin/PSI
+  StopStageIn=/usr/local/slurm/17.11/sbin/PSO
   Allocated Buffers:
-    JobID=18 CreateTime=2015-08-19T16:46:05 Pool=dwcache Size=10T State=allocated UserID=alan(1000)
-    JobID=20 CreateTime=2015-08-19T16:46:45 Pool=dwcache Size=10T State=allocated UserID=alan(1000)
-    Name=DB1 CreateTime=2015-08-19T16:46:45 Pool=dwcache Size=22T State=allocated UserID=brenda(1001)
+    JobID=18 CreateTime=2017-08-19T16:46:05 Pool=dwcache Size=10T State=allocated UserID=alan(1000)
+    JobID=20 CreateTime=2017-08-19T16:46:45 Pool=dwcache Size=10T State=allocated UserID=alan(1000)
+    Name=DB1 CreateTime=2017-08-19T16:46:45 Pool=dwcache Size=22T State=allocated UserID=brenda(1001)
   Per User Buffer Use:
     UserID=alan(1000) Used=20T
     UserID=brenda(1001) Used=22T
@@ -312,6 +312,6 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
   BurstBuffer=cray:pool_test:4G
 </pre>
 
-<p style="text-align:center;">Last modified 10 November 2016</p>
+<p style="text-align:center;">Last modified 7 November 2017</p>
 
 <!--#include virtual="footer.txt"-->
