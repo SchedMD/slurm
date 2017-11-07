@@ -5111,6 +5111,15 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 				_find_resv_name, job_ptr->resv_name);
 		job_ptr->resv_ptr = resv_ptr;
+		/*
+		 * Just in case the reservation was altered since last looking
+		 * we want to make sure things are good in the database.
+		 */
+		if (job_ptr->resv_id != resv_ptr->resv_id) {
+			job_ptr->resv_id = resv_ptr->resv_id;
+			/* Update the database */
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		}
 		rc2 = _valid_job_access_resv(job_ptr, resv_ptr);
 		if (rc2 != SLURM_SUCCESS)
 			return rc2;
@@ -5383,6 +5392,53 @@ static int _job_resv_check(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _set_job_resvid(void *object, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *)object;
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *)arg;
+
+	if ((job_ptr->resv_ptr != resv_ptr) || !IS_JOB_PENDING(job_ptr))
+		return SLURM_SUCCESS;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION)
+		info("updating job %u to correct resv_id (%u->%u) of reoccurring reservation '%s'",
+		     job_ptr->job_id, job_ptr->resv_id,
+		     resv_ptr->resv_id, resv_ptr->name);
+	job_ptr->resv_id = resv_ptr->resv_id;
+	/* Update the database */
+	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
+	return SLURM_SUCCESS;
+}
+
+static void *_update_resv_jobs(void *arg)
+{
+	slurmctld_resv_t *resv_ptr;
+	uint32_t resv_id = *(uint32_t *)arg;
+	/* get the job write lock and node and config read lock */
+	slurmctld_lock_t job_write_lock = {
+		READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld(job_write_lock);
+	if (!resv_list) {
+		unlock_slurmctld(job_write_lock);
+		return SLURM_SUCCESS;
+	}
+
+	resv_ptr = list_find_first(resv_list, _find_resv_id, &resv_id);
+
+	if (!resv_ptr) {
+		unlock_slurmctld(job_write_lock);
+		return SLURM_SUCCESS;
+	}
+
+	list_for_each(job_list, _set_job_resvid, resv_ptr);
+	unlock_slurmctld(job_write_lock);
+
+	return NULL;
+}
+
+
 /* Advance a expired reservation's time stamps one day or one week
  * as appropriate. */
 static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
@@ -5390,6 +5446,9 @@ static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 	time_t now;
 	struct tm tm;
 	int day_cnt = 0;
+
+	/* Make sure we have node write locks. */
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		return;		/* Not applicable */
@@ -5419,6 +5478,24 @@ static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 	}
 
 	if (day_cnt) {
+		/*
+		 * Repeated reservations need a new reservation id. Try to get a
+		 * new one and update the ID if successful.
+		 */
+		if (_generate_resv_id()) {
+			error("%s, Recurring reservation %s is being "
+			      "rescheduled but has the same ID.",
+			      __func__, resv_ptr->name);
+		} else {
+			resv_ptr->resv_id = top_suffix;
+			/*
+			 * Update pending jobs for this reservation with the new
+			 * reservation ID out of band.
+			 */
+			slurm_thread_create_detached(
+				NULL, _update_resv_jobs, &resv_ptr->resv_id);
+		}
+
 		verbose("Advance reservation %s by %d day(s)", resv_ptr->name,
 			day_cnt);
 		resv_ptr->start_time = resv_ptr->start_time_first;

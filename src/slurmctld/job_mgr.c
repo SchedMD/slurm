@@ -14347,6 +14347,14 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 		job_ptr->details->submit_time = now;
 	}
 
+	/*
+	 * If a reservation ended and was a repeated (e.g., daily, weekly)
+	 * reservation, its ID will be different; make sure
+	 * job->resv_id matches the reservation id.
+	 */
+	if (job_ptr->resv_ptr)
+		job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
+
 	/* Reset this after the batch step has finished or the batch step
 	 * information will be attributed to the next run of the job. */
 	job_ptr->db_index = 0;

@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Add missing locks around figuring out TRES when clean starting the
     slurmctld.
  -- Cray modulefile: avoid removing /usr/bin from path on module unload.
+ -- Make reoccurring reservations show up in the database.
 
 * Changes in Slurm 17.11.0rc2
 ==============================
