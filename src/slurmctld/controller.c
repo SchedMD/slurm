@@ -623,7 +623,7 @@ int main(int argc, char **argv)
 			 * thread since we are shutting down, no reason
 			 * to wait for current info from the database */
 			slurm_mutex_lock(&assoc_cache_mutex);
-			running_cache = (uint16_t)NO_VAL;
+			running_cache = NO_VAL16;
 			slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			pthread_join(assoc_cache_thread, NULL);
@@ -2601,7 +2601,7 @@ void update_logging(void)
 			(LOG_LEVEL_INFO + debug_level),
 			(LOG_LEVEL_END - 1));
 	}
-	if (slurmctld_conf.slurmctld_debug != (uint16_t) NO_VAL) {
+	if (slurmctld_conf.slurmctld_debug != NO_VAL16) {
 		log_opts.stderr_level  = slurmctld_conf.slurmctld_debug;
 		log_opts.logfile_level = slurmctld_conf.slurmctld_debug;
 		log_opts.syslog_level  = slurmctld_conf.slurmctld_debug;
@@ -2634,7 +2634,7 @@ void update_logging(void)
 	/*
 	 * SchedLogLevel restore
 	 */
-	if (slurmctld_conf.sched_log_level != (uint16_t) NO_VAL)
+	if (slurmctld_conf.sched_log_level != NO_VAL16)
 		sched_log_opts.logfile_level = slurmctld_conf.sched_log_level;
 
 	sched_log_alter(sched_log_opts, LOG_DAEMON,
@@ -2823,7 +2823,7 @@ static void *_assoc_cache_mgr(void *no_data)
 		/* This is here to see if we are exiting.  If we get
 		   NO_VAL then just return since we are closing down.
 		*/
-		if (running_cache == (uint16_t)NO_VAL) {
+		if (running_cache == NO_VAL16) {
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			return NULL;
 		}

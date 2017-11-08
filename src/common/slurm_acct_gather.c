@@ -217,7 +217,7 @@ extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
 		   really high so we don't check this again.
 		*/
 		if (i == -1)
-			acct_freq_task = (uint16_t)NO_VAL;
+			acct_freq_task = NO_VAL16;
 		else
 			acct_freq_task = i;
 	}

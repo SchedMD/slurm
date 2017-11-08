@@ -951,7 +951,7 @@ _read_config(void)
 	_free_and_set(conf->job_acct_gather_freq,
 		      xstrdup(cf->job_acct_gather_freq));
 
-	conf->acct_freq_task = (uint16_t)NO_VAL;
+	conf->acct_freq_task = NO_VAL16;
 	cc = acct_gather_parse_freq(PROFILE_TASK,
 				    conf->job_acct_gather_freq);
 	if (cc != -1)
@@ -1845,7 +1845,7 @@ static void _update_logging(void)
 	_update_log = 0;
 	/* Preserve execute line verbose arguments (if any) */
 	cf = slurm_conf_lock();
-	if (!conf->debug_level_set && (cf->slurmd_debug != (uint16_t) NO_VAL))
+	if (!conf->debug_level_set && (cf->slurmd_debug != NO_VAL16))
 		conf->debug_level = cf->slurmd_debug;
 	conf->syslog_debug = cf->slurmd_syslog_debug;
 	conf->log_fmt = cf->log_fmt;

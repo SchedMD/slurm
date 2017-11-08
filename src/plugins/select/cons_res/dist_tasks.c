@@ -372,7 +372,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 		}
@@ -736,7 +736,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	core_map = job_res->core_bitmap;
 	if (job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 		}
@@ -1013,7 +1013,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 {
 	int error_code, cr_cpu = 1;
 
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->core_spec != NO_VAL16) {
 		/* The job has been allocated all non-specialized cores,
 		 * so we don't need to select specific CPUs. */
 		return SLURM_SUCCESS;

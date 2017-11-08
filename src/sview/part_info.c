@@ -668,7 +668,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 	case SORTID_OVER_TIME_LIMIT:
 		if (!xstrcasecmp(new_text, "INFINITE") ||
 		    !xstrcasecmp(new_text, "UNLIMITED")) {
-			part_msg->over_time_limit = (uint16_t) INFINITE;
+			part_msg->over_time_limit = INFINITE16;
 		} else if (new_text[0] >= '0' && new_text[0] <= '9')
 			part_msg->over_time_limit = atoi(new_text);
 		else
@@ -1121,7 +1121,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_PREEMPT_MODE:
 			temp_uint16 = part_ptr->preempt_mode;
-			if (temp_uint16 == (uint16_t) NO_VAL)
+			if (temp_uint16 == NO_VAL16)
 				temp_uint16 =  slurm_get_preempt_mode();
 			temp_char = preempt_mode_string(temp_uint16);
 			break;
@@ -1168,7 +1168,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 				temp_char = "no";
 			break;
 		case SORTID_OVER_TIME_LIMIT:
-			if (part_ptr->over_time_limit == (uint16_t) INFINITE) {
+			if (part_ptr->over_time_limit == INFINITE16) {
 				temp_char = "UNLIMITED";
 			} else if (part_ptr->over_time_limit == NO_VAL16) {
 				temp_char = "N/A";
@@ -1303,7 +1303,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else
 		tmp_hidden = "no";
 
-	if (part_ptr->grace_time == (uint32_t) NO_VAL)
+	if (part_ptr->grace_time == NO_VAL)
 		snprintf(tmp_grace, sizeof(tmp_grace), "none");
 	else {
 		secs2time_str(part_ptr->grace_time,
@@ -1361,7 +1361,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 				 part_ptr->max_nodes, true);
 
 	tmp_preempt = part_ptr->preempt_mode;
-	if (tmp_preempt == (uint16_t) NO_VAL)
+	if (tmp_preempt == NO_VAL16)
 		tmp_preempt = slurm_get_preempt_mode();	/* use cluster param */
 
 	convert_num_unit((float)part_ptr->priority_job_factor,
@@ -1386,7 +1386,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	} else
 		tmp_over_subscribe = "no";
 
-	if (part_ptr->over_time_limit == (uint16_t) INFINITE) {
+	if (part_ptr->over_time_limit == INFINITE16) {
 		tmp_over_time_limit = "UNLIMITED";
 	} else if (part_ptr->over_time_limit == NO_VAL16) {
 		tmp_over_time_limit = "N/A";

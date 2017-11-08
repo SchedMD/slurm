@@ -373,7 +373,7 @@ extern int restore_nonstop_state(void)
 	uint32_t data_allocated, data_size = 0;
 	uint32_t job_cnt = 0;
 	char *data;
-	uint16_t protocol_version = (uint16_t) NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	Buf buffer;
 	int error_code = SLURM_SUCCESS, i, state_fd, data_read;
 	time_t buf_time;
@@ -418,7 +418,7 @@ extern int restore_nonstop_state(void)
 	safe_unpack16(&protocol_version, buffer);
 	debug3("Version in slurmctld/nonstop header is %u", protocol_version);
 
-	if (protocol_version == (uint16_t) NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can not recover slurmctld/nonstop state, incompatible version, start with '-i' to ignore this");
 		error("*************************************************************");

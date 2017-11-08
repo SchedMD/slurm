@@ -303,7 +303,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (!p[i].allow_qos && p[i].deny_qos)
 			fprintf(fp, "DenyQos=%s", p[i].deny_qos);
 
-		if (p[i].default_time != (uint32_t) NO_VAL) {
+		if (p[i].default_time != NO_VAL) {
 			if (p[i].default_time == INFINITE)
 				fprintf(fp, "DefaultTime=UNLIMITED");
 			else {
@@ -378,7 +378,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (p[i].nodes != NULL)
 			fprintf(fp, " Nodes=%s", p[i].nodes);
 
-		if (p[i].preempt_mode != (uint16_t) NO_VAL)
+		if (p[i].preempt_mode != NO_VAL16)
 			fprintf(fp, " PreemptMode=%s",
 				preempt_mode_string(p[i].preempt_mode));
 
@@ -926,7 +926,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_submit_plugins);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->keep_alive_time == (uint16_t) NO_VAL)
+	if (slurm_ctl_conf_ptr->keep_alive_time == NO_VAL16)
 		snprintf(tmp_str, sizeof(tmp_str), "SYSTEM_DEFAULT");
 	else {
 		snprintf(tmp_str, sizeof(tmp_str), "%u sec",
@@ -1125,7 +1125,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->node_features_plugins);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->over_time_limit == (uint16_t) INFINITE)
+	if (slurm_ctl_conf_ptr->over_time_limit == INFINITE16)
 		snprintf(tmp_str, sizeof(tmp_str), "UNLIMITED");
 	else
 		snprintf(tmp_str, sizeof(tmp_str), "%u min",
@@ -1363,7 +1363,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->resv_epilog);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->resv_over_run == (uint16_t) INFINITE)
+	if (slurm_ctl_conf_ptr->resv_over_run == INFINITE16)
 		snprintf(tmp_str, sizeof(tmp_str), "UNLIMITED");
 	else
 		snprintf(tmp_str, sizeof(tmp_str), "%u min",

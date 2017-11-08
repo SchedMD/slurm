@@ -128,7 +128,7 @@ extern bool has_default_opt(void)
 	    && opt.partition == NULL
 	    && opt.qos == NULL
 	    && opt.reservation == NULL
-	    && opt.signal == (uint16_t) NO_VAL
+	    && opt.signal == NO_VAL16
 	    && opt.state == JOB_END
 	    && opt.user_id == 0
 	    && opt.user_name == NULL
@@ -203,7 +203,7 @@ static void _opt_default(void)
 	opt.qos		= NULL;
 	opt.reservation	= NULL;
 	opt.sibling     = NULL;
-	opt.signal	= (uint16_t) NO_VAL;
+	opt.signal	= NO_VAL16;
 	opt.state	= JOB_END;
 	opt.user_id	= 0;
 	opt.user_name	= NULL;
@@ -617,7 +617,7 @@ static void _opt_list(void)
 	info("qos            : %s", opt.qos);
 	info("reservation    : %s", opt.reservation);
 	info("sibling        : %s", opt.sibling);
-	if (opt.signal != (uint16_t) NO_VAL)
+	if (opt.signal != NO_VAL16)
 		info("signal         : %u", opt.signal);
 	info("state          : %s", job_state_string(opt.state));
 	info("user_id        : %u", opt.user_id);

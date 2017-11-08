@@ -507,20 +507,20 @@ static int _check_cluster_specific_settings(job_desc_msg_t *req)
 		/*
 		 * Fix options and inform user, but do not abort submission.
 		 */
-		if (req->shared && (req->shared != (uint16_t)NO_VAL)) {
+		if (req->shared && (req->shared != NO_VAL16)) {
 			info("--share is not supported on Cray/ALPS systems.");
-			req->shared = (uint16_t)NO_VAL;
+			req->shared = NO_VAL16;
 		}
-		if (req->overcommit && (req->overcommit != (uint8_t)NO_VAL)) {
+		if (req->overcommit && (req->overcommit != NO_VAL8)) {
 			info("--overcommit is not supported on Cray/ALPS "
 			     "systems.");
 			req->overcommit = false;
 		}
 		if (req->wait_all_nodes &&
-		    (req->wait_all_nodes != (uint16_t)NO_VAL)) {
+		    (req->wait_all_nodes != NO_VAL16)) {
 			info("--wait-all-nodes is handled automatically on "
 			     "Cray/ALPS systems.");
-			req->wait_all_nodes = (uint16_t)NO_VAL;
+			req->wait_all_nodes = NO_VAL16;
 		}
 	}
 	return rc;
@@ -608,7 +608,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.hold)
 		desc->priority     = 0;
 
-	if (opt.geometry[0] != (uint16_t) NO_VAL) {
+	if (opt.geometry[0] != NO_VAL16) {
 		int dims = slurmdb_setup_cluster_dims();
 
 		for (i = 0; i < dims; i++)

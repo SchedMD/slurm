@@ -4064,7 +4064,7 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 {
 	char *ver_str = NULL;
 	uint32_t ver_str_len;
-	uint16_t protocol_version = (uint16_t) NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	uint32_t node_count;
 	int i;
 
@@ -4074,7 +4074,7 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	if (ver_str && !xstrcmp(ver_str, NRT_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
-	if (protocol_version == (uint16_t) NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		error("******************************************************");
 		error("Can not recover switch/nrt state, incompatible version");
 		error("******************************************************");

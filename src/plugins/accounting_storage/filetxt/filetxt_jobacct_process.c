@@ -405,16 +405,16 @@ static filetxt_step_rec_t *_create_filetxt_step_rec(filetxt_header_t header)
 	memcpy(&step->header, &header, sizeof(filetxt_header_t));
 	memset(&step->rusage, 0, sizeof(struct rusage));
 	memset(&step->stats, 0, sizeof(slurmdb_stats_t));
-	step->stepnum = (uint32_t)NO_VAL;
+	step->stepnum = NO_VAL;
 	step->nodes = NULL;
 	step->stepname = NULL;
 	step->status = NO_VAL;
 	step->exitcode = NO_VAL;
-	step->ntasks = (uint32_t)NO_VAL;
-	step->ncpus = (uint32_t)NO_VAL;
-	step->elapsed = (uint32_t)NO_VAL;
-	step->tot_cpu_sec = (uint32_t)NO_VAL;
-	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->ntasks = NO_VAL;
+	step->ncpus = NO_VAL;
+	step->elapsed = NO_VAL;
+	step->tot_cpu_sec = NO_VAL;
+	step->tot_cpu_usec = NO_VAL;
 	step->account = NULL;
 	step->requid = -1;
 
@@ -644,16 +644,16 @@ static int _parse_line(char *f[], void **data, int len)
 			(*step)->stepname = xstrdup(f[F_STEPNAME]);
 			(*step)->nodes = xstrdup(f[F_STEPNODES]);
 		} else {
-			(*step)->stats.vsize_max_taskid = (uint16_t)NO_VAL;
+			(*step)->stats.vsize_max_taskid = NO_VAL16;
 			(*step)->stats.vsize_ave = (float)NO_VAL;
 			(*step)->stats.rss_max = NO_VAL;
-			(*step)->stats.rss_max_taskid = (uint16_t)NO_VAL;
+			(*step)->stats.rss_max_taskid = NO_VAL16;
 			(*step)->stats.rss_ave = (float)NO_VAL;
 			(*step)->stats.pages_max = NO_VAL;
-			(*step)->stats.pages_max_taskid = (uint16_t)NO_VAL;
+			(*step)->stats.pages_max_taskid = NO_VAL16;
 			(*step)->stats.pages_ave = (float)NO_VAL;
 			(*step)->stats.cpu_min = NO_VAL;
-			(*step)->stats.cpu_min_taskid = (uint16_t)NO_VAL;
+			(*step)->stats.cpu_min_taskid = NO_VAL16;
 			(*step)->stats.cpu_ave =  (float)NO_VAL;
 			(*step)->stepname = NULL;
 			(*step)->nodes = NULL;

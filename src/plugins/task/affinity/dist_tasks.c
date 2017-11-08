@@ -444,7 +444,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		      "nodes:%d sockets:%d:%d cores:%d:%d threads:%d",
 		      max_tasks, whole_nodes, whole_sockets ,part_sockets,
 		      whole_cores, part_cores, whole_threads);
-		if ((req->job_core_spec != (uint16_t) NO_VAL) &&
+		if ((req->job_core_spec != NO_VAL16) &&
 		    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
 		    (req->job_core_spec != CORE_SPEC_THREAD)) {
 			spec_thread_cnt = req->job_core_spec &
@@ -675,7 +675,7 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 		(*whole_node_cnt)++;
 	FREE_NULL_BITMAP(alloc_bitmap);
 
-	if ((req->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((req->job_core_spec != NO_VAL16) &&
 	    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (req->job_core_spec != CORE_SPEC_THREAD)) {
 		int spec_thread_cnt;
@@ -788,7 +788,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		}
 	}
 
-	if ((req->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((req->job_core_spec != NO_VAL16) &&
 	    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (req->job_core_spec != CORE_SPEC_THREAD)) {
 		spec_thread_cnt = req->job_core_spec & (~CORE_SPEC_THREAD);

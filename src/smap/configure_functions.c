@@ -203,7 +203,7 @@ static int _full_request(select_ba_request_t *request,
 		if ((allocated_block = _make_request(request)) != NULL)
 			list_append(allocated_blocks, allocated_block);
 		else {
-			if (request->geometry[0] != (uint16_t)NO_VAL)
+			if (request->geometry[0] != NO_VAL16)
 				tmp_char = bg_configure_give_geo(
 					request->geometry,
 					params.cluster_dims, 1);
@@ -335,7 +335,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->deny_pass = 0;
 	request->avail_mp_bitmap = NULL;
 	for (j = 0; j < params.cluster_dims; j++) {
-		request->geometry[j]  = (uint16_t) NO_VAL;
+		request->geometry[j]  = NO_VAL16;
 		request->conn_type[j] = SELECT_TORUS;
 	}
 
@@ -894,7 +894,7 @@ static int _save_allocation(char *com, List allocated_blocks)
 			xstrfmtcat(save_string, "MPs=%s", request->save_name);
 
 			for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-				if (request->conn_type[i] == (uint16_t)NO_VAL)
+				if (request->conn_type[i] == NO_VAL16)
 					break;
 				if (i)
 					xstrcat(save_string, ",");

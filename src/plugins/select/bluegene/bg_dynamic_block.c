@@ -300,7 +300,7 @@ try_small_again:
 
 	//debug("going to create %d", request->size);
 	if (!new_ba_request(request)) {
-		if (request->geometry[0] != (uint16_t)NO_VAL) {
+		if (request->geometry[0] != NO_VAL16) {
 			char *geo = give_geo(request->geometry,
 					     SYSTEM_DIMENSIONS, 1);
 			error("Problems with request for size %d geo %s",

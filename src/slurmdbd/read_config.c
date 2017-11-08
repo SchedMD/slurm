@@ -252,7 +252,7 @@ extern int read_slurmdbd_conf(void)
 
 		if (s_p_get_string(&temp_str, "DebugLevel", tbl)) {
 			slurmdbd_conf->debug_level = log_string2num(temp_str);
-			if (slurmdbd_conf->debug_level == (uint16_t) NO_VAL)
+			if (slurmdbd_conf->debug_level == NO_VAL16)
 				fatal("Invalid DebugLevel %s", temp_str);
 			xfree(temp_str);
 		}

@@ -1399,7 +1399,7 @@ extern int select_p_state_restore(char *dir_name)
 	char *data = NULL;
 	int data_size = 0;
 	int data_allocated, data_read = 0;
-	uint16_t protocol_version = (uint16_t)NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	uint32_t record_count;
 
 	if (scheduling_disabled)
@@ -1448,7 +1448,7 @@ extern int select_p_state_restore(char *dir_name)
 	safe_unpack16(&protocol_version, buffer);
 	debug3("Version in blade_state header is %u", protocol_version);
 
-	if (protocol_version == (uint16_t)NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can not recover blade state, data version incompatible, start with '-i' to ignore this");
 		error("***********************************************");

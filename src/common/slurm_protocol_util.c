@@ -121,7 +121,7 @@ void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 	/* Since the slurmdbd could talk to a host of different
 	   versions of slurm this needs to be kept current when the
 	   protocol version changes. */
-	if (msg->protocol_version != (uint16_t)NO_VAL)
+	if (msg->protocol_version != NO_VAL16)
 		header->version = msg->protocol_version;
 	else if (working_cluster_rec)
 		msg->protocol_version = header->version =

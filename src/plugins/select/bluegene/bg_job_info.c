@@ -44,7 +44,7 @@
 
 static char *_yes_no_string(uint16_t inx)
 {
-	if (inx == (uint16_t) NO_VAL)
+	if (inx == NO_VAL16)
 		return "n/a";
 	else if (inx)
 		return "yes";
@@ -63,11 +63,11 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	jobinfo->dim_cnt = 0; /* This will be setup later */
 	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
-		jobinfo->geometry[i] = (uint16_t) NO_VAL;
-		jobinfo->conn_type[i] = (uint16_t) NO_VAL;
+		jobinfo->geometry[i] = NO_VAL16;
+		jobinfo->conn_type[i] = NO_VAL16;
 	}
-	jobinfo->reboot = (uint16_t) NO_VAL;
-	jobinfo->rotate = (uint16_t) NO_VAL;
+	jobinfo->reboot = NO_VAL16;
+	jobinfo->rotate = NO_VAL16;
 	jobinfo->magic = JOBINFO_MAGIC;
 	jobinfo->block_cnode_cnt = 0;
 	jobinfo->cnode_cnt = 0;
@@ -147,7 +147,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 			/* If geo[i] is NO_VAL then we know this
 			   doesn't need to be reset.
 			*/
-			if (jobinfo->geometry[i] != (uint16_t) NO_VAL) {
+			if (jobinfo->geometry[i] != NO_VAL16) {
 				/* Make sure the conn type is correct with the
 				 * new count (if Geometry is requested it
 				 * can't be small) */
@@ -646,7 +646,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 	if (mode == SELECT_PRINT_GEOMETRY)
 		print_x = 0;
 
-	if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
+	if (jobinfo->geometry[0] == NO_VAL16) {
 		for (i=0; i<jobinfo->dim_cnt; i++) {
 			if (geo && print_x)
 				xstrcat(geo, "x0");

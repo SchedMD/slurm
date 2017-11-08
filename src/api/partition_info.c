@@ -312,7 +312,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	/****** Line ******/
 	if (part_ptr->over_time_limit == NO_VAL16)
 		xstrfmtcat(out, "OverTimeLimit=NONE");
-	else if (part_ptr->over_time_limit == (uint16_t) INFINITE)
+	else if (part_ptr->over_time_limit == INFINITE16)
 		xstrfmtcat(out, "OverTimeLimit=UNLIMITED");
 	else
 		xstrfmtcat(out, "OverTimeLimit=%u", part_ptr->over_time_limit);

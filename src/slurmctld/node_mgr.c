@@ -299,7 +299,7 @@ extern int load_all_node_state ( bool state_only )
 	hostset_t hs = NULL;
 	hostlist_t down_nodes = NULL;
 	bool power_save_mode = false;
-	uint16_t protocol_version = (uint16_t)NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 
 	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
@@ -346,7 +346,7 @@ extern int load_all_node_state ( bool state_only )
 	if (ver_str && !xstrcmp(ver_str, NODE_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
-	if (!protocol_version || (protocol_version == (uint16_t)NO_VAL)) {
+	if (!protocol_version || (protocol_version == NO_VAL16)) {
 		if (!ignore_state_errors)
 			fatal("Can not recover node state, data version incompatible, start with '-i' to ignore this");
 		error("*****************************************************");
@@ -362,7 +362,7 @@ extern int load_all_node_state ( bool state_only )
 
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state;
-		uint16_t obj_protocol_version = (uint16_t)NO_VAL;
+		uint16_t obj_protocol_version = NO_VAL16;
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
@@ -623,7 +623,7 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->last_response = (time_t) 0;
 
 			if (obj_protocol_version &&
-			    (obj_protocol_version != (uint16_t)NO_VAL))
+			    (obj_protocol_version != NO_VAL16))
 				node_ptr->protocol_version =
 					obj_protocol_version;
 			else
@@ -1299,7 +1299,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				this_node_name, node_ptr->reason);
 		}
 
-		if (state_val != (uint32_t) NO_VAL) {
+		if (state_val != NO_VAL) {
 			base_state = node_ptr->node_state;
 			if (!_valid_node_state_change(base_state, state_val)) {
 				info("Invalid node state transition requested "
@@ -1307,13 +1307,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 				     this_node_name,
 				     node_state_string(base_state),
 				     node_state_string(state_val));
-				state_val = (uint32_t) NO_VAL;
+				state_val = NO_VAL;
 				error_code = ESLURM_INVALID_NODE_STATE;
 			}
 			base_state &= NODE_STATE_BASE;
 		}
 
-		if (state_val != (uint32_t) NO_VAL) {
+		if (state_val != NO_VAL) {
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (state_val == NODE_RESUME) {
 				if (IS_NODE_IDLE(node_ptr) &&

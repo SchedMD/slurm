@@ -43,8 +43,8 @@
 /* Location of ALPS apbasil executable (supported on XT/XE CNL) */
 #define DEFAULT_APBASIL           "/usr/bin/apbasil"
 /* Default amount of time to wait for the apbasil command to finish.
- * (uint16_t) NO_VAL signifies no time out. */
-#define DEFAULT_APBASIL_TIMEOUT   (uint16_t) NO_VAL
+ * NO_VAL16 signifies no time out. */
+#define DEFAULT_APBASIL_TIMEOUT   NO_VAL16
 /* Location of ALPS apkill executable (supported on XT/XE CNL) */
 #define DEFAULT_APKILL            "/usr/bin/apkill"
 /* database name to use  */

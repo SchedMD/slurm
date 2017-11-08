@@ -1152,7 +1152,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_MAIL_TYPE:
 			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == (uint16_t)INFINITE) {
+			if (opt.mail_type == INFINITE16) {
 				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
@@ -1663,7 +1663,7 @@ static bool _opt_verify(void)
 		error("--no-shell mode is not supported on Cray (due to srun)");
 		return false;
 	}
-	if (opt.shared && opt.shared != (uint16_t)NO_VAL) {
+	if (opt.shared && opt.shared != NO_VAL16) {
 		info("Oversubscribing resources is not supported on Cray/ALPS systems");
 		opt.shared = false;
 	}
@@ -1877,7 +1877,7 @@ static bool _opt_verify(void)
 	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
 			opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
 
-	if (saopt.wait_all_nodes == (uint16_t) NO_VAL) {
+	if (saopt.wait_all_nodes == NO_VAL16) {
 		char *sched_params;
 		sched_params = slurm_get_sched_params();
 		if (sched_params && strstr(sched_params, "salloc_wait_nodes"))
@@ -2118,7 +2118,7 @@ static void _opt_list(void)
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	if (opt.conn_type[0] != (uint16_t) NO_VAL) {
+	if (opt.conn_type[0] != NO_VAL16) {
 		str = conn_type_string_full(opt.conn_type);
 		info("conn_type      : %s", str);
 		xfree(str);
@@ -2163,7 +2163,7 @@ static void _opt_list(void)
 	info("cpu_freq_gov   : %u", opt.cpu_freq_gov);
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
-	if (opt.core_spec == (uint16_t) NO_VAL)
+	if (opt.core_spec == NO_VAL16)
 		info("core-spec         : NA");
 	else if (opt.core_spec & CORE_SPEC_THREAD) {
 		info("thread-spec       : %d",

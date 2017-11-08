@@ -462,7 +462,7 @@ static uint16_t _get_conn_type(char *arg, bool bgp)
 	if (!len) {
 		/* no input given */
 		error("no conn-type argument given.");
-		return (uint16_t)NO_VAL;
+		return NO_VAL16;
 	} else if (!xstrncasecmp(arg, "MESH", len))
 		return SELECT_MESH;
 	else if (!xstrncasecmp(arg, "TORUS", len))
@@ -484,7 +484,7 @@ static uint16_t _get_conn_type(char *arg, bool bgp)
 	}
 
 	error("invalid conn-type argument '%s' ignored.", arg);
-	return (uint16_t)NO_VAL;
+	return NO_VAL16;
 }
 
 /*
@@ -522,7 +522,7 @@ extern void verify_conn_type(const char *arg, uint16_t *conn_type)
 	 * instead of highest_dims since that is the size of the
 	 * array. */
 	for ( ; inx < HIGHEST_DIMENSIONS; inx++) {
-		conn_type[inx] = (uint16_t)NO_VAL;
+		conn_type[inx] = NO_VAL16;
 	}
 
 	xfree(arg_tmp);
@@ -548,7 +548,7 @@ int verify_geometry(const char *arg, uint16_t *geometry)
 			break;
 		}
 		geometry[i] = (uint16_t)atoi(token);
-		if (geometry[i] == 0 || geometry[i] == (uint16_t)NO_VAL) {
+		if (geometry[i] == 0 || geometry[i] == NO_VAL16) {
 			error("invalid --geometry argument");
 			rc = -1;
 			break;
@@ -1001,7 +1001,7 @@ uint16_t parse_mail_type(const char *arg)
 	bool none_set = false;
 
 	if (!arg)
-		return (uint16_t)INFINITE;
+		return INFINITE16;
 
 	buf = xstrdup(arg);
 	tok = strtok_r(buf, ",", &save_ptr);
@@ -1038,7 +1038,7 @@ uint16_t parse_mail_type(const char *arg)
 	}
 	xfree(buf);
 	if (!rc && !none_set)
-		rc = (uint16_t)INFINITE;
+		rc = INFINITE16;
 
 	return rc;
 }
@@ -1225,7 +1225,7 @@ char *print_geometry(const uint16_t *geometry)
 	int dims = slurmdb_setup_cluster_dims();
 
 	if ((dims == 0) || !geometry[0]
-	    ||  (geometry[0] == (uint16_t)NO_VAL))
+	    ||  (geometry[0] == NO_VAL16))
 		return NULL;
 
 	for (i=0; i<dims; i++) {
@@ -1349,11 +1349,11 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 	/*
 	 * First,  convert the ascii value it to a
 	 * long long int. If the result is greater then
-	 * or equal to 0 and less than (uint16_t) NO_VAL
+	 * or equal to 0 and less than NO_VAL16
 	 * set the value and return. Otherwise
 	 * return an error.
 	 */
-	uint16_t max16uint = (uint16_t) NO_VAL;
+	uint16_t max16uint = NO_VAL16;
 	long long tval;
 	char *p;
 
@@ -1385,7 +1385,7 @@ extern int parse_uint32(char *aval, uint32_t *ival)
 	 * set the value and return. Otherwise return
 	 * an error.
 	 */
-	uint32_t max32uint = (uint32_t) NO_VAL;
+	uint32_t max32uint = NO_VAL;
 	long long tval;
 	char *p;
 

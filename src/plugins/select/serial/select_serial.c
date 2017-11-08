@@ -1513,7 +1513,7 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 			job_ptr->details->whole_node = 0;
 		}
 		if ((details_ptr->cpus_per_task > 1) &&
-		    (details_ptr->cpus_per_task != (uint16_t) NO_VAL))
+		    (details_ptr->cpus_per_task != NO_VAL16))
 			return false;
 		if ((details_ptr->min_cpus > 1) &&
 		    (details_ptr->min_cpus != NO_VAL))
@@ -1523,7 +1523,7 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 			return false;
 		details_ptr->max_nodes = 1;
 		if ((details_ptr->ntasks_per_node > 1) &&
-		    (details_ptr->ntasks_per_node != (uint16_t) NO_VAL))
+		    (details_ptr->ntasks_per_node != NO_VAL16))
 			return false;
 		if ((details_ptr->num_tasks > 1) &&
 		    (details_ptr->num_tasks != NO_VAL))
@@ -1538,19 +1538,19 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 
 	if (mc_ptr) {
 		/* If data structure exists then heck once and destroy it */
-		if ((mc_ptr->cores_per_socket != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->cores_per_socket != NO_VAL16) &&
 		    (mc_ptr->cores_per_socket > 1))
 			return false;
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core > 1))
 			return false;
-		if ((mc_ptr->ntasks_per_socket != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_socket != INFINITE16) &&
 		    (mc_ptr->ntasks_per_socket > 1))
 			return false;
-		if ((mc_ptr->sockets_per_node != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->sockets_per_node != NO_VAL16) &&
 		    (mc_ptr->sockets_per_node > 1))
 			return false;
-		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->threads_per_core != NO_VAL16) &&
 		    (mc_ptr->threads_per_core > 1))
 			return false;
 		xfree(job_ptr->details->mc_ptr);
@@ -1615,10 +1615,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		return SLURM_ERROR;
 	}
 
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->core_spec != NO_VAL16) {
 		verbose("select/serial: job %u core_spec(%u) not supported",
 			job_ptr->job_id, job_ptr->details->core_spec);
-		job_ptr->details->core_spec = (uint16_t) NO_VAL;
+		job_ptr->details->core_spec = NO_VAL16;
 	}
 
 	job_node_share = _get_job_node_share(job_ptr);

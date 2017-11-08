@@ -157,7 +157,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 		if (passwd_ptr)
 			user->uid = passwd_ptr->pw_uid;
 		else
-			user->uid = (uint32_t)NO_VAL;
+			user->uid = NO_VAL;
 
 		itr2 = list_iterator_create(user->assoc_list);
 		while((assoc = list_next(itr2))) {

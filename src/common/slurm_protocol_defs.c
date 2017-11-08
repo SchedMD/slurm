@@ -105,8 +105,8 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 	memset(msg, 0, sizeof(slurm_msg_t));
 
 	msg->conn_fd = -1;
-	msg->msg_type = (uint16_t)NO_VAL;
-	msg->protocol_version = (uint16_t)NO_VAL;
+	msg->msg_type = NO_VAL16;
+	msg->protocol_version = NO_VAL16;
 
 #ifndef NDEBUG
 	msg->flags = drop_priv_flag;
@@ -2103,14 +2103,14 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 			preempt_modes++;
 		} else {
 			preempt_modes = 0;
-			mode_num = (uint16_t) NO_VAL;
+			mode_num = NO_VAL16;
 			break;
 		}
 		tok = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp_str);
 	if (preempt_modes > 1) {
-		mode_num = (uint16_t) NO_VAL;
+		mode_num = NO_VAL16;
 	}
 
 	return mode_num;
@@ -2149,7 +2149,7 @@ extern char *log_num2string(uint16_t inx)
 extern uint16_t log_string2num(char *name)
 {
 	if (name == NULL)
-		return (uint16_t) NO_VAL;
+		return NO_VAL16;
 
 	if ((name[0] >= '0') && (name[0] <= '9'))
 		return (uint16_t) atoi(name);
@@ -2175,7 +2175,7 @@ extern uint16_t log_string2num(char *name)
 	if (!xstrcasecmp(name, "debug5"))
 		return (uint16_t) 9;
 
-	return (uint16_t) NO_VAL;
+	return NO_VAL16;
 }
 
 extern char *job_share_string(uint16_t shared)
@@ -4053,7 +4053,7 @@ extern void slurm_free_set_fs_dampening_factor_msg(
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	/* this message was never loaded */
-	if ((uint16_t)type == (uint16_t)NO_VAL)
+	if ((uint16_t)type == NO_VAL16)
 		return SLURM_SUCCESS;
 
 	switch (type) {

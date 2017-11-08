@@ -1119,7 +1119,7 @@ extern void queue_basil_signal(struct job_record *job_ptr, int signal,
 	}
 	if (resv_id == 0)
 		return;
-	if ((delay == 0) || (delay == (uint16_t) NO_VAL)) {
+	if ((delay == 0) || (delay == NO_VAL16)) {
 		/* Send the signal now */
 		int rc = basil_signal_apids(resv_id, signal, NULL);
 

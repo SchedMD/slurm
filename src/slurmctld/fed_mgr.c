@@ -2643,9 +2643,9 @@ static List _load_fed_job_list(Buf buffer, uint16_t protocol_version)
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
-		if (count > NO_VAL32)
+		if (count > NO_VAL)
 			goto unpack_error;
-		if (count != NO_VAL32) {
+		if (count != NO_VAL) {
 			tmp_list = list_create(_destroy_fed_job_info);
 
 			for (i = 0; i < count; i++) {

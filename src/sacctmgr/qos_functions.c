@@ -70,11 +70,11 @@ static uint16_t _parse_preempt_modes(char *names)
 				//info("got %s %d", name, i-start);
 
 				ret_mode = preempt_mode_num(name);
-				if (ret_mode == (uint16_t)NO_VAL) {
+				if (ret_mode == NO_VAL16) {
 					error("Unknown preempt_mode given '%s'",
 					      name);
 					xfree(name);
-					preempt_mode = (uint16_t)NO_VAL;
+					preempt_mode = NO_VAL16;
 					break;
 				}
 				preempt_mode |= ret_mode;
@@ -98,11 +98,11 @@ static uint16_t _parse_preempt_modes(char *names)
 		//info("got %s %d", name, i-start);
 
 		ret_mode = preempt_mode_num(name);
-		if (ret_mode == (uint16_t)NO_VAL) {
+		if (ret_mode == NO_VAL16) {
 			error("Unknown preempt_mode given '%s'",
 			      name);
 			xfree(name);
-			preempt_mode = (uint16_t)NO_VAL;
+			preempt_mode = NO_VAL16;
 			return preempt_mode;
 		}
 		preempt_mode |= ret_mode;
@@ -636,7 +636,7 @@ static int _set_rec(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "PreemptMode",
 					 MAX(command_len, 8))) {
 			qos->preempt_mode = preempt_mode_num(argv[i]+end);
-			if (qos->preempt_mode == (uint16_t)NO_VAL) {
+			if (qos->preempt_mode == NO_VAL16) {
 				fprintf(stderr,
 					" Bad Preempt Mode given: %s\n",
 					argv[i]);

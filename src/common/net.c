@@ -139,14 +139,14 @@ extern int net_set_keep_alive(int sock)
 	socklen_t opt_len;
 	struct linger opt_linger;
 	static bool keep_alive_set  = false;
-	static int  keep_alive_time = (uint16_t) NO_VAL;
+	static int  keep_alive_time = NO_VAL16;
 
 	if (!keep_alive_set) {
 		keep_alive_time = slurm_get_keep_alive_time();
 		keep_alive_set = true;
 	}
 
-	if (keep_alive_time == (uint16_t) NO_VAL)
+	if (keep_alive_time == NO_VAL16)
 		return 0;
 
 	opt_len = sizeof(struct linger);

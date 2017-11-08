@@ -1116,7 +1116,7 @@ extern int scontrol_update_job(int argc, char **argv)
 		}
 		else if (xstrncasecmp(tag, "CoreSpec", MAX(taglen, 4)) == 0) {
 			if (!xstrcmp(val, "-1") || !xstrcmp(val, "*"))
-				job_msg.core_spec = (uint16_t) INFINITE;
+				job_msg.core_spec = INFINITE16;
 			else if (parse_uint16(val, &job_msg.core_spec)) {
 				error ("Invalid CoreSpec value: %s", val);
 				exit_code = 1;
@@ -1126,7 +1126,7 @@ extern int scontrol_update_job(int argc, char **argv)
 		}
 		else if (xstrncasecmp(tag, "ThreadSpec", MAX(taglen, 4)) == 0) {
 			if (!xstrcmp(val, "-1") || !xstrcmp(val, "*"))
-				job_msg.core_spec = (uint16_t) INFINITE;
+				job_msg.core_spec = INFINITE16;
 			else if (parse_uint16(val, &job_msg.core_spec)) {
 				error ("Invalid ThreadSpec value: %s", val);
 				exit_code = 1;
@@ -1225,7 +1225,7 @@ extern int scontrol_update_job(int argc, char **argv)
 		}
 		else if (xstrncasecmp(tag, "Conn-Type", MAX(taglen, 2)) == 0) {
 			verify_conn_type(val, job_msg.conn_type);
-			if (job_msg.conn_type[0] != (uint16_t)NO_VAL)
+			if (job_msg.conn_type[0] != NO_VAL16)
 				update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "Licenses", MAX(taglen, 1)) == 0) {

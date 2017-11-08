@@ -606,7 +606,7 @@ static void _destroy_jobs_foreach(void *object)
 /* translate signal name to number */
 static uint16_t _xlate_signal_name(const char *signal_name)
 {
-	uint16_t sig_num = (uint16_t)NO_VAL;
+	uint16_t sig_num = NO_VAL16;
 	char *end_ptr, *sig_names = NULL;
 	int i;
 
@@ -628,7 +628,7 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 		}
 	}
 	xfree(sig_names);
-	return (uint16_t)NO_VAL;
+	return NO_VAL16;
 }
 
 static int _cancel_job_id (uint32_t job_id, uint16_t signal)
@@ -1088,7 +1088,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "geometry";
 		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
 		for (j = 0; j < cluster_dims; j++)
-			geo[j] = (uint16_t) NO_VAL;
+			geo[j] = NO_VAL16;
 		for (j = 0; j < cluster_dims; j++) {
 			if (!token) {
 				//error("insufficient dimensions in "
@@ -1530,7 +1530,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_CONTIGUOUS),
 				   tmp_char);
 
-	if ((job_ptr->core_spec == (uint16_t) NO_VAL) ||
+	if ((job_ptr->core_spec == NO_VAL16) ||
 	    (job_ptr->core_spec & CORE_SPEC_THREAD)) {
 		sprintf(tmp_char, "N/A");
 	} else {
@@ -1996,7 +1996,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_SWITCHES),
 				   tmp_char);
 
-	if ((job_ptr->core_spec == (uint16_t) NO_VAL) ||
+	if ((job_ptr->core_spec == NO_VAL16) ||
 	    ((job_ptr->core_spec & CORE_SPEC_THREAD) == 0)) {
 		sprintf(tmp_char, "N/A");
 	} else {
@@ -2258,7 +2258,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	} else {
 		sprintf(tmp_core_spec, "%u", job_ptr->core_spec);
 	}
-	if ((job_ptr->core_spec == (uint16_t) NO_VAL) ||
+	if ((job_ptr->core_spec == NO_VAL16) ||
 	    ((job_ptr->core_spec & CORE_SPEC_THREAD) == 0)) {
 		sprintf(tmp_thread_spec, "N/A");
 	} else {
@@ -4760,7 +4760,7 @@ static void process_foreach_list(jobs_foreach_common_t *jobs_foreach_common)
 		const gchar *entry_txt = gtk_entry_get_text(
 			GTK_ENTRY(jobs_foreach_common->entry));
 		signal = _xlate_signal_name(entry_txt);
-		if (signal == (uint16_t)NO_VAL) {
+		if (signal == NO_VAL16) {
 			tmp_char_ptr = g_strdup_printf(
 				"%s is not a valid signal.",
 				entry_txt);

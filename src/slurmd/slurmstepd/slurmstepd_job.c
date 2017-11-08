@@ -549,7 +549,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	get_cred_gres(msg->cred, conf->node_name,
 		      &job->job_gres_list, &job->step_gres_list);
 
-	srun = srun_info_create(NULL, NULL, NULL, (uint16_t)NO_VAL);
+	srun = srun_info_create(NULL, NULL, NULL, NO_VAL16);
 
 	list_append(job->sruns, (void *) srun);
 
@@ -640,7 +640,7 @@ srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr,
 	srun_key_t       *key  = xmalloc(sizeof(srun_key_t));
 
 	srun->key    = key;
-	if (!protocol_version || (protocol_version == (uint16_t)NO_VAL))
+	if (!protocol_version || (protocol_version == NO_VAL16))
 		protocol_version = SLURM_PROTOCOL_VERSION;
 	srun->protocol_version = protocol_version;
 	/*

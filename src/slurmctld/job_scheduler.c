@@ -2659,7 +2659,7 @@ static void _set_pack_env(struct job_record *pack_leader,
 extern void launch_job(struct job_record *job_ptr)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
-	uint16_t protocol_version = (uint16_t) NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	agent_arg_t *agent_arg_ptr;
 	struct job_record *launch_job_ptr;
 
@@ -4655,7 +4655,7 @@ waitpid_timeout(const char *name, pid_t pid, int *pstatus, int timeout)
 	int rc;
 	int options = WNOHANG;
 
-	if (timeout <= 0 || timeout == (uint16_t)NO_VAL)
+	if (timeout <= 0 || timeout == NO_VAL16)
 		options = 0;
 
 	while ((rc = waitpid (pid, pstatus, options)) <= 0) {

@@ -353,7 +353,7 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		if (job_ptr->details)
 			lua_pushnumber (L, job_ptr->details->nice);
 		else
-			lua_pushnumber (L, (uint16_t)NO_VAL);
+			lua_pushnumber (L, NO_VAL16);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring (L, job_ptr->partition);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
@@ -1382,9 +1382,9 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "NO_VAL64");
 	lua_pushnumber (L, NO_VAL);
 	lua_setfield (L, -2, "NO_VAL");
-	lua_pushnumber (L, (uint16_t) NO_VAL);
+	lua_pushnumber (L, NO_VAL16);
 	lua_setfield (L, -2, "NO_VAL16");
-	lua_pushnumber (L, (uint8_t) NO_VAL);
+	lua_pushnumber (L, NO_VAL8);
 	lua_setfield (L, -2, "NO_VAL8");
 
 	/*

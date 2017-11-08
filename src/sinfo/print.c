@@ -250,7 +250,7 @@ _build_min_max_16_string(char *buffer, int buf_size, uint16_t min, uint16_t max,
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
 	else if (range) {
-		if (max == (uint16_t) INFINITE)
+		if (max == INFINITE16)
 			return snprintf(buffer, buf_size, "%s-infinite",
 					tmp_min);
 		else
@@ -951,7 +951,7 @@ int _print_preempt_mode(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		uint16_t preempt_mode = sinfo_data->part_info->preempt_mode;
-		if (preempt_mode == (uint16_t) NO_VAL)
+		if (preempt_mode == NO_VAL16)
 			preempt_mode =  slurm_get_preempt_mode();
 		_print_str(preempt_mode_string(preempt_mode),
 			   width, right_justify, true);

@@ -158,7 +158,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
 			qos->max_wall_pj = INFINITE;
-		if (qos->preempt_mode == (uint16_t)NO_VAL)
+		if (qos->preempt_mode == NO_VAL16)
 			qos->preempt_mode = 0;
 		if (qos->priority == NO_VAL)
 			qos->priority = 0;
@@ -357,7 +357,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xfree(preempt_val);
 	}
 
-	if ((qos->preempt_mode != (uint16_t)NO_VAL)
+	if ((qos->preempt_mode != NO_VAL16)
 	    && ((int16_t)qos->preempt_mode >= 0)) {
 		qos->preempt_mode &= (~PREEMPT_MODE_GANG);
 		xstrcat(*cols, ", preempt_mode");

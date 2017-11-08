@@ -121,15 +121,15 @@ extern void slurm_init_update_step_msg (step_update_request_msg_t * step_msg)
 void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 {
 	memset(update_part_msg, 0, sizeof(update_part_msg_t));
-	update_part_msg->default_time   = NO_VAL32;
+	update_part_msg->default_time   = NO_VAL;
 	update_part_msg->def_mem_per_cpu = NO_VAL64;
-	update_part_msg->grace_time     = NO_VAL32;
+	update_part_msg->grace_time     = NO_VAL;
 	update_part_msg->max_cpus_per_node = NO_VAL;
 	update_part_msg->max_mem_per_cpu = NO_VAL64;
 	update_part_msg->max_nodes 	= NO_VAL;
 	update_part_msg->max_share 	= NO_VAL16;
 	update_part_msg->min_nodes 	= NO_VAL;
-	update_part_msg->max_time 	= NO_VAL32;
+	update_part_msg->max_time 	= NO_VAL;
 	update_part_msg->over_time_limit = NO_VAL16;
 	update_part_msg->preempt_mode 	= NO_VAL16;
 	update_part_msg->priority_job_factor = NO_VAL16;
@@ -159,8 +159,8 @@ void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
 void slurm_init_update_node_msg (update_node_msg_t * update_node_msg)
 {
 	memset(update_node_msg, 0, sizeof(update_node_msg_t));
-	update_node_msg->node_state = NO_VAL32;
-	update_node_msg->weight = NO_VAL32;
+	update_node_msg->node_state = NO_VAL;
+	update_node_msg->weight = NO_VAL;
 }
 
 /*
@@ -171,7 +171,7 @@ void slurm_init_update_front_end_msg (update_front_end_msg_t *
 				      update_front_end_msg)
 {
 	memset(update_front_end_msg, 0, sizeof(update_front_end_msg_t));
-	update_front_end_msg->node_state = NO_VAL32;
+	update_front_end_msg->node_state = NO_VAL;
 }
 
 /*

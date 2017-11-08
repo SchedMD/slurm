@@ -164,8 +164,8 @@ static void _pack_jobacct_id(jobacct_id_t *jobacct_id,
 		pack32((uint32_t) jobacct_id->nodeid, buffer);
 		pack16((uint16_t) jobacct_id->taskid, buffer);
 	} else {
-		pack32((uint32_t) NO_VAL, buffer);
-		pack16((uint16_t) NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
+		pack16(NO_VAL16, buffer);
 	}
 }
 
@@ -626,8 +626,8 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct = xmalloc(sizeof(struct jobacctinfo));
 
 	if (!jobacct_id) {
-		temp_id.taskid = (uint16_t)NO_VAL;
-		temp_id.nodeid = (uint32_t)NO_VAL;
+		temp_id.taskid = NO_VAL16;
+		temp_id.nodeid = NO_VAL;
 		jobacct_id = &temp_id;
 	}
 	memset(jobacct, 0, sizeof(struct jobacctinfo));
@@ -646,7 +646,7 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct->max_pages = 0;
 	memcpy(&jobacct->max_pages_id, jobacct_id, sizeof(jobacct_id_t));
 	jobacct->tot_pages = 0;
-	jobacct->min_cpu = (uint32_t)NO_VAL;
+	jobacct->min_cpu = NO_VAL;
 	memcpy(&jobacct->min_cpu_id, jobacct_id, sizeof(jobacct_id_t));
 	jobacct->tot_cpu = 0;
 	jobacct->act_cpufreq = 0;
@@ -1025,7 +1025,7 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 
 	xassert(dest);
 
-	if (!from || (from->min_cpu == (uint32_t)NO_VAL))
+	if (!from || (from->min_cpu == NO_VAL))
 		return;
 
 	if (dest->max_vsize < from->max_vsize) {
@@ -1047,24 +1047,24 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 	dest->tot_pages += from->tot_pages;
 
 	if ((dest->min_cpu > from->min_cpu)
-	    || (dest->min_cpu == (uint32_t)NO_VAL)) {
-		if (from->min_cpu == (uint32_t)NO_VAL)
+	    || (dest->min_cpu == NO_VAL)) {
+		if (from->min_cpu == NO_VAL)
 			from->min_cpu = 0;
 		dest->min_cpu = from->min_cpu;
 		dest->min_cpu_id = from->min_cpu_id;
 	}
 	dest->tot_cpu += from->tot_cpu;
 
-	if (dest->max_vsize_id.taskid == (uint16_t)NO_VAL)
+	if (dest->max_vsize_id.taskid == NO_VAL16)
 		dest->max_vsize_id = from->max_vsize_id;
 
-	if (dest->max_rss_id.taskid == (uint16_t)NO_VAL)
+	if (dest->max_rss_id.taskid == NO_VAL16)
 		dest->max_rss_id = from->max_rss_id;
 
-	if (dest->max_pages_id.taskid == (uint16_t)NO_VAL)
+	if (dest->max_pages_id.taskid == NO_VAL16)
 		dest->max_pages_id = from->max_pages_id;
 
-	if (dest->min_cpu_id.taskid == (uint16_t)NO_VAL)
+	if (dest->min_cpu_id.taskid == NO_VAL16)
 		dest->min_cpu_id = from->min_cpu_id;
 
 	dest->user_cpu_sec	+= from->user_cpu_sec;

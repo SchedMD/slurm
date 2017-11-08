@@ -1403,7 +1403,7 @@ extern int get_uint16(char *in_value, uint16_t *out_value, char *type)
 	xfree(meat);
 
 	if (num < 0)
-		*out_value = (uint16_t) INFINITE; /* flag to clear */
+		*out_value = INFINITE16; /* flag to clear */
 	else
 		*out_value = (uint16_t) num;
 	return SLURM_SUCCESS;
@@ -2059,7 +2059,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		}
 	}
 
-	if (qos->preempt_mode && (qos->preempt_mode != (uint16_t)NO_VAL)) {
+	if (qos->preempt_mode && (qos->preempt_mode != NO_VAL16)) {
 		printf("  PreemptMode              = %s\n",
 		       preempt_mode_string(qos->preempt_mode));
 	}

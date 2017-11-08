@@ -3579,7 +3579,7 @@ _rpc_network_callerid(slurm_msg_t *msg)
 
 	uid_t req_uid = -1;
 	uid_t job_uid = -1;
-	uint32_t job_id = (uint32_t)NO_VAL;
+	uint32_t job_id = NO_VAL;
 	callerid_conn_t conn;
 	int rc = ESLURM_INVALID_JOB_ID;
 	char ip_src_str[INET6_ADDRSTRLEN];
@@ -4220,7 +4220,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	int               fd;
 	uid_t             req_uid;
 	slurm_addr_t *cli = &msg->orig_addr;
-	uint32_t nodeid = (uint32_t)NO_VAL;
+	uint32_t nodeid = NO_VAL;
 	uid_t uid = -1;
 	uint16_t protocol_version;
 
@@ -6013,7 +6013,7 @@ _run_epilog(job_env_t *job_env)
 		script_lock = true;
 	}
 
-	if (timeout == (uint16_t)NO_VAL)
+	if (timeout == NO_VAL16)
 		error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
 					     -1, my_env, job_env->uid);
 	else

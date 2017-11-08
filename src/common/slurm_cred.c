@@ -1523,7 +1523,7 @@ slurm_cred_print(slurm_cred_t *cred)
 
 	xassert(cred->magic == CRED_MAGIC);
 
-	if (cred->job_core_spec == (uint16_t) NO_VAL) {
+	if (cred->job_core_spec == NO_VAL16) {
 		spec_type  = "Cores";
 		spec_count = 0;
 	} else if (cred->job_core_spec & CORE_SPEC_THREAD) {
@@ -2212,7 +2212,7 @@ _cred_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 	cred_state_t *s   = NULL;
 
 	safe_unpack32(&n, buffer);
-	if (n > NO_VAL32)
+	if (n > NO_VAL)
 		goto unpack_error;
 	for (i = 0; i < n; i++) {
 		if (!(s = _cred_state_unpack_one(buffer)))
@@ -2257,7 +2257,7 @@ _job_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 	job_state_t *j   = NULL;
 
 	safe_unpack32(&n, buffer);
-	if (n > NO_VAL32)
+	if (n > NO_VAL)
 		goto unpack_error;
 	for (i = 0; i < n; i++) {
 		if (!(j = _job_state_unpack_one(buffer)))

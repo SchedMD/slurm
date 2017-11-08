@@ -3656,15 +3656,15 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		return EINVAL;
 	}
 
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->core_spec != NO_VAL16) {
 		verbose("select/linear: job %u core_spec(%u) not supported",
 			job_ptr->job_id, job_ptr->details->core_spec);
-		job_ptr->details->core_spec = (uint16_t) NO_VAL;
+		job_ptr->details->core_spec = NO_VAL16;
 	}
 
 	if (job_ptr->details->share_res)
 		max_share = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
-	else	/* ((shared == 0) || (shared == (uint16_t) NO_VAL)) */
+	else	/* ((shared == 0) || (shared == NO_VAL16)) */
 		max_share = 1;
 
 	if (mode == SELECT_MODE_WILL_RUN) {
