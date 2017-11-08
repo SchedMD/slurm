@@ -126,7 +126,7 @@ int s_p_handle_uint32(uint32_t* data, const char* key, const char* value)
 		|| (*endptr != '\0')) {
 		if ((xstrcasecmp(value, "UNLIMITED") == 0) ||
 			(xstrcasecmp(value, "INFINITE")  == 0)) {
-			num = (uint32_t) INFINITE;
+			num = INFINITE;
 		} else {
 			error("%s value (%s) is not a valid number",
 				key, value);

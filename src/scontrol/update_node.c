@@ -107,7 +107,7 @@ scontrol_update_node (int argc, char **argv)
         		            || (*endptr != '\0')) {
 				if ((xstrcasecmp(val, "UNLIMITED") == 0) ||
 				    (xstrcasecmp(val, "INFINITE")  == 0)) {
-					num = (uint32_t) INFINITE;
+					num = INFINITE;
 				} else {
 					error("Weight value (%s) is not a "
 					      "valid number", val);

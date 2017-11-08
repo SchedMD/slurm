@@ -102,8 +102,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				      MAX(taglen, 4)) == 0) {
 			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
 			    (xstrcasecmp(val,"INFINITE") == 0)) {
-				part_msg_ptr->max_cpus_per_node =
-					(uint32_t) INFINITE;
+				part_msg_ptr->max_cpus_per_node = INFINITE;
 			} else if (parse_uint32(val, &part_msg_ptr->
 						      max_cpus_per_node)) {
 				error("Invalid MaxCPUsPerNode value: %s", val);
@@ -114,7 +113,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 		else if (xstrncasecmp(tag, "MaxNodes", MAX(taglen, 4)) == 0) {
 			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
 			    (xstrcasecmp(val,"INFINITE") == 0))
-				part_msg_ptr->max_nodes = (uint32_t) INFINITE;
+				part_msg_ptr->max_nodes = INFINITE;
 			else {
 				min = 1;
 				get_resource_arg_range(val,

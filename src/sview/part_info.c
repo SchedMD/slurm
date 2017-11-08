@@ -363,7 +363,7 @@ static int _build_min_max_32_string(char *buffer, int buf_size,
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
 	else if (range) {
-		if (max == (uint32_t) INFINITE)
+		if (max == INFINITE)
 			return snprintf(buffer, buf_size, "%s-infinite",
 					tmp_min);
 		else
@@ -1206,7 +1206,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 				temp_char = "no";
 			yes_no = -1;
 		} else if (limit_set != NO_VAL) {
-			if (limit_set == (uint32_t) INFINITE)
+			if (limit_set == INFINITE)
 				temp_char = "infinite";
 			else {
 				convert_num_unit(
@@ -1310,7 +1310,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			      tmp_grace, sizeof(tmp_grace));
 	}
 
-	if (part_ptr->max_nodes == (uint32_t) INFINITE)
+	if (part_ptr->max_nodes == INFINITE)
 		snprintf(tmp_max_nodes, sizeof(tmp_max_nodes), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->max_nodes, tmp_max_nodes,
@@ -1318,7 +1318,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 				 working_sview_config.convert_flags);
 	}
 
-	if (part_ptr->min_nodes == (uint32_t) INFINITE)
+	if (part_ptr->min_nodes == INFINITE)
 		snprintf(tmp_min_nodes, sizeof(tmp_min_nodes), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->min_nodes, tmp_min_nodes,
