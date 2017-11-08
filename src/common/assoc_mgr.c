@@ -3386,7 +3386,7 @@ extern int assoc_mgr_info_unpack_msg(
 			     buffer);
 
 	safe_unpack32(&count, buffer);
-	if (count > NO_VAL32)
+	if (count > NO_VAL)
 		goto unpack_error;
 	if (count) {
 		object_ptr->assoc_list =
@@ -3402,7 +3402,7 @@ extern int assoc_mgr_info_unpack_msg(
 	}
 
 	safe_unpack32(&count, buffer);
-	if (count > NO_VAL32)
+	if (count > NO_VAL)
 		goto unpack_error;
 	if (count) {
 		object_ptr->qos_list =
@@ -3417,7 +3417,7 @@ extern int assoc_mgr_info_unpack_msg(
 	}
 
 	safe_unpack32(&count, buffer);
-	if (count > NO_VAL32)
+	if (count > NO_VAL)
 		goto unpack_error;
 	if (count) {
 		object_ptr->user_list =

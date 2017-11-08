@@ -158,7 +158,6 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define NO_VAL8    (0xfe)
 #define NO_VAL16   (0xfffe)
 #define NO_VAL     (0xfffffffe)
-#define NO_VAL32   (0xfffffffe)
 #define NO_VAL64   (0xfffffffffffffffe)
 #define MAX_TASKS_PER_NODE 512
 #define MAX_JOB_ID (0x03FFFFFF) /* bits 0-25 */

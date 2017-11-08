@@ -4048,7 +4048,7 @@ int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
 
 	*slurm_address = NULL;
 	safe_unpack32(&nl, buffer);
-	if (nl > NO_VAL32)
+	if (nl > NO_VAL)
 		goto unpack_error;
 	*size_val = ntohl(nl);
 	*slurm_address = xmalloc((*size_val) * sizeof(slurm_addr_t));
