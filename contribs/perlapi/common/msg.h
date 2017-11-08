@@ -177,7 +177,7 @@ inline static int hv_store_uint8_t(HV* hv, const char *key, uint8_t val)
 	/* Perl has a hard time figuring out the an unsigned int is
 	   equal to INFINITE or NO_VAL since they are treated as
 	   signed ints so we will handle this here. */
-	if(val == (uint8_t)INFINITE)
+	if(val == INFINITE8)
 		sv = newSViv(INFINITE);
 	else if(val == NO_VAL8)
 		sv = newSViv(NO_VAL);
