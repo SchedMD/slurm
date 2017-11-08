@@ -1183,7 +1183,7 @@ extern void print_fields(type_t type, void *object)
 				default:
 					break;
 				}
-				if (tmp_uint64 != (uint64_t)NO_VAL64)
+				if (tmp_uint64 != NO_VAL64)
 					convert_num_unit(
 						(double)tmp_uint64,
 						outbuf, sizeof(outbuf),
@@ -1261,7 +1261,7 @@ extern void print_fields(type_t type, void *object)
 				default:
 					break;
 				}
-				if (tmp_uint64 != (uint64_t)NO_VAL64)
+				if (tmp_uint64 != NO_VAL64)
 					convert_num_unit(
 						(double)tmp_uint64,
 						outbuf, sizeof(outbuf),
@@ -1337,11 +1337,11 @@ extern void print_fields(type_t type, void *object)
 					break;
 				case JOBCOMP:
 				default:
-					tmp_uint64 = (uint64_t)NO_VAL64;
+					tmp_uint64 = NO_VAL64;
 					break;
 				}
 
-				if (tmp_uint64 != (uint64_t)NO_VAL64)
+				if (tmp_uint64 != NO_VAL64)
 					convert_num_unit(
 						(double)tmp_uint64,
 						outbuf, sizeof(outbuf),
@@ -1765,7 +1765,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			if (tmp_uint64 != (uint64_t)NO_VAL64) {
+			if (tmp_uint64 != NO_VAL64) {
 				bool per_cpu = false;
 				if (tmp_uint64 & MEM_PER_CPU) {
 					tmp_uint64 &= (~MEM_PER_CPU);
