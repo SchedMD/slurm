@@ -48,7 +48,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 	slurmdb_clus_res_rec_t *clus_res = NULL;
 	char *cluster;
 
-	if (res->percent_used == (uint16_t)NO_VAL)
+	if (res->percent_used == NO_VAL16)
 		return;
 
 	/* Don't use the global g_res_list since we are going to
@@ -907,7 +907,7 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 		fprintf(stderr, "Can't change \"count\" on a cluster-based "
 			"resource. Remove cluster selection.\n");
 		return SLURM_ERROR;
-	} else if (res->percent_used != (uint16_t)NO_VAL &&
+	} else if (res->percent_used != NO_VAL16 &&
 			!res_cond->cluster_list) {
 		fprintf(stderr, "Can't change \"percentallowed\" without "
 			"specifying a cluster.\n");

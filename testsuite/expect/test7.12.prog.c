@@ -48,8 +48,7 @@ int main(int argc, char **argv)
 	step_id = atoi(argv[2]);
 	printf("job_id:%u step_id:%u\n", job_id, step_id);
 
-	rc = slurm_job_step_stat(job_id, step_id, NULL, (uint16_t)NO_VAL,
-				 &resp);
+	rc = slurm_job_step_stat(job_id, step_id, NULL, NO_VAL16, &resp);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("slurm_job_step_stat");
 		exit(1);

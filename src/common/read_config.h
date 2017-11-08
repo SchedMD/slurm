@@ -109,7 +109,7 @@ extern uint16_t drop_priv_flag;
 #  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
 #  define DEFAULT_JOB_CONTAINER_PLUGIN "job_container/none"
 #endif
-#define DEFAULT_KEEP_ALIVE_TIME     ((uint16_t) NO_VAL)
+#define DEFAULT_KEEP_ALIVE_TIME     (NO_VAL16)
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30

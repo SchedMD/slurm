@@ -2059,7 +2059,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		}
 	}
 
-	if (qos->preempt_mode && (qos->preempt_mode != (uint16_t)NO_VAL)) {
+	if (qos->preempt_mode && (qos->preempt_mode != NO_VAL16)) {
 		printf("  PreemptMode              = %s\n",
 		       preempt_mode_string(qos->preempt_mode));
 	}

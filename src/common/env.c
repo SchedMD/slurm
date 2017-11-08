@@ -1073,7 +1073,7 @@ extern int env_array_for_job(char ***dest,
 				* alloc->cpus_per_node[i];
 		}
 		if ((int)desc->cpus_per_task > 1
-		   && desc->cpus_per_task != (uint16_t)NO_VAL)
+		   && desc->cpus_per_task != NO_VAL16)
 			step_layout_req.num_tasks /= desc->cpus_per_task;
 		//num_tasks = desc->min_cpus;
 	}

@@ -6026,7 +6026,7 @@ _run_epilog(job_env_t *job_env)
 		script_lock = true;
 	}
 
-	if (timeout == (uint16_t)NO_VAL)
+	if (timeout == NO_VAL16)
 		error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
 					     -1, my_env, job_env->uid);
 	else

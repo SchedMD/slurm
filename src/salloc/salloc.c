@@ -1319,7 +1319,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 
 	if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD"))
 		saopt.wait_all_nodes = 1;	/* Wait for boot & addresses */
-	if (saopt.wait_all_nodes == (uint16_t) NO_VAL)
+	if (saopt.wait_all_nodes == NO_VAL16)
 		saopt.wait_all_nodes = 0;
 
 	for (i = 0; (cur_delay < max_delay); i++) {

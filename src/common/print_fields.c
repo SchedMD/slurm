@@ -161,7 +161,7 @@ extern void print_fields_uint16(print_field_t *field, uint32_t value, int last)
 {
 	int abs_len = abs(field->len);
 	/* (value == unset)  || (value == cleared) */
-	if (((uint16_t)value == (uint16_t)NO_VAL)
+	if (((uint16_t)value == NO_VAL16)
 	    || ((uint16_t)value == (uint16_t)INFINITE)) {
 		if (print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING

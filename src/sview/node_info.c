@@ -1416,7 +1416,7 @@ end_it:
 extern int update_state_node(GtkDialog *dialog,
 			     const char *nodelist, const char *type)
 {
-	uint16_t state = (uint16_t) NO_VAL;
+	uint16_t state = NO_VAL16;
 	char *upper = NULL, *lower = NULL;
 	int i = 0;
 	int rc = SLURM_SUCCESS;

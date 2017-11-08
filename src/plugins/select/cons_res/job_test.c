@@ -235,17 +235,17 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	memset(used_cpu_array, 0, sockets * sizeof(uint32_t));
 
 	if (entire_sockets_only && job_ptr->details->whole_node &&
-	    (job_ptr->details->core_spec != (uint16_t) NO_VAL)) {
+	    (job_ptr->details->core_spec != NO_VAL16)) {
 		/* Ignore specialized cores when allocating "entire" socket */
 		entire_sockets_only = false;
 	}
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		uint32_t threads_per_socket;
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-		if (mc_ptr->cores_per_socket != (uint16_t) NO_VAL) {
+		if (mc_ptr->cores_per_socket != NO_VAL16) {
 			min_cores = mc_ptr->cores_per_socket;
 		}
-		if (mc_ptr->sockets_per_node != (uint16_t) NO_VAL) {
+		if (mc_ptr->sockets_per_node != NO_VAL16) {
 			min_sockets = mc_ptr->sockets_per_node;
 		}
 		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
@@ -254,20 +254,20 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			ncpus_per_core = MIN(threads_per_core,
 					     (ntasks_per_core * cpus_per_task));
 		}
-		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->threads_per_core != NO_VAL16) &&
 		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
 			ncpus_per_core = mc_ptr->threads_per_core;
 		}
 		*cpu_alloc_size = MIN(*cpu_alloc_size, ncpus_per_core);
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 
-		if ((ncpus_per_core != (uint16_t) NO_VAL) &&
+		if ((ncpus_per_core != NO_VAL16) &&
 		    (ncpus_per_core != (uint16_t) INFINITE) &&
 		    (ncpus_per_core > threads_per_core)) {
 			goto fini;
 		}
 		threads_per_socket = threads_per_core * cores_per_socket;
-		if ((ntasks_per_socket != (uint16_t) NO_VAL) &&
+		if ((ntasks_per_socket != NO_VAL16) &&
 		    (ntasks_per_socket != (uint16_t) INFINITE) &&
 		    (ntasks_per_socket > threads_per_socket)) {
 			goto fini;
@@ -527,7 +527,7 @@ fini:
 		cpu_count = 0;
 	}
 
-	if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
+	if ((job_ptr->details->core_spec != NO_VAL16) &&
 	    (job_ptr->details->core_spec & CORE_SPEC_THREAD)   &&
 	    ((select_node_record[node_i].threads == 1) ||
 	     (select_node_record[node_i].threads ==
@@ -949,9 +949,9 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 	size = cr_get_coremap_offset(nodes);
 	bitstr_t *core_map = bit_alloc(size);
 
-	if ((core_spec != (uint16_t) NO_VAL) &&
+	if ((core_spec != NO_VAL16) &&
 	    (core_spec & CORE_SPEC_THREAD))	/* Reserving threads */
-		core_spec = (uint16_t) NO_VAL;	/* Don't remove cores */
+		core_spec = NO_VAL16;	/* Don't remove cores */
 
 	n_first = bit_ffs(node_map);
 	if (n_first == -1)
@@ -963,7 +963,7 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 			continue;
 		c    = cr_get_coremap_offset(n);
 		coff = cr_get_coremap_offset(n+1);
-		if ((core_spec != (uint16_t) NO_VAL) &&
+		if ((core_spec != NO_VAL16) &&
 		    (core_spec >= (coff - c))) {
 			bit_clear(node_map, n);
 			continue;
@@ -993,7 +993,7 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 		/* if enough cores specialized or not necessary to
 		 * specialize some of them for the job, continue */
 		if (!use_spec_cores || (spec_cores == 0) ||
-		    (core_spec == (uint16_t) NO_VAL))
+		    (core_spec == NO_VAL16))
 			continue;
 
 		/* if more cores need to be specialized, look for
@@ -1148,7 +1148,7 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 		return (uint32_t) 1;
 
 	mc_ptr = job_ptr->details->mc_ptr;
-	if ((mc_ptr->ntasks_per_socket != (uint16_t) NO_VAL) &&
+	if ((mc_ptr->ntasks_per_socket != NO_VAL16) &&
 	    (mc_ptr->ntasks_per_socket != (uint16_t) INFINITE)) {
 		tasks_per_node = job_ptr->details->num_tasks / min_nodes;
 		s_p_n = (tasks_per_node + mc_ptr->ntasks_per_socket - 1) /
@@ -3165,13 +3165,13 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	if (details_ptr->min_cpus == details_ptr->min_nodes) {
 		struct multi_core_data *mc_ptr = details_ptr->mc_ptr;
 
-		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->threads_per_core != NO_VAL16) &&
 		    (mc_ptr->threads_per_core > 1))
 			details_ptr->min_cpus *= mc_ptr->threads_per_core;
-		if ((mc_ptr->cores_per_socket != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->cores_per_socket != NO_VAL16) &&
 		    (mc_ptr->cores_per_socket > 1))
 			details_ptr->min_cpus *= mc_ptr->cores_per_socket;
-		if ((mc_ptr->sockets_per_node != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->sockets_per_node != NO_VAL16) &&
 		    (mc_ptr->sockets_per_node > 1))
 			details_ptr->min_cpus *= mc_ptr->sockets_per_node;
 	}

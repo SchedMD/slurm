@@ -165,7 +165,7 @@ static void _pack_jobacct_id(jobacct_id_t *jobacct_id,
 		pack16((uint16_t) jobacct_id->taskid, buffer);
 	} else {
 		pack32((uint32_t) NO_VAL, buffer);
-		pack16((uint16_t) NO_VAL, buffer);
+		pack16(NO_VAL16, buffer);
 	}
 }
 
@@ -626,7 +626,7 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct = xmalloc(sizeof(struct jobacctinfo));
 
 	if (!jobacct_id) {
-		temp_id.taskid = (uint16_t)NO_VAL;
+		temp_id.taskid = NO_VAL16;
 		temp_id.nodeid = (uint32_t)NO_VAL;
 		jobacct_id = &temp_id;
 	}
@@ -1055,16 +1055,16 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 	}
 	dest->tot_cpu += from->tot_cpu;
 
-	if (dest->max_vsize_id.taskid == (uint16_t)NO_VAL)
+	if (dest->max_vsize_id.taskid == NO_VAL16)
 		dest->max_vsize_id = from->max_vsize_id;
 
-	if (dest->max_rss_id.taskid == (uint16_t)NO_VAL)
+	if (dest->max_rss_id.taskid == NO_VAL16)
 		dest->max_rss_id = from->max_rss_id;
 
-	if (dest->max_pages_id.taskid == (uint16_t)NO_VAL)
+	if (dest->max_pages_id.taskid == NO_VAL16)
 		dest->max_pages_id = from->max_pages_id;
 
-	if (dest->min_cpu_id.taskid == (uint16_t)NO_VAL)
+	if (dest->min_cpu_id.taskid == NO_VAL16)
 		dest->min_cpu_id = from->min_cpu_id;
 
 	dest->user_cpu_sec	+= from->user_cpu_sec;

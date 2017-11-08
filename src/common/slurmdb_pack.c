@@ -1807,7 +1807,7 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 			pack_time(0, buffer);
 			packnull(buffer);
 			pack32(NO_VAL, buffer);
-			pack16((uint16_t)NO_VAL, buffer);
+			pack16(NO_VAL16, buffer);
 			packnull(buffer);
 			return;
 		}

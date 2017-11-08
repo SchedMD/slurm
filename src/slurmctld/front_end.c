@@ -783,7 +783,7 @@ extern int load_all_front_end_state(bool state_only)
 	time_t time_stamp;
 	Buf buffer;
 	char *ver_str = NULL;
-	uint16_t protocol_version = (uint16_t) NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
 	lock_state_files ();
@@ -824,7 +824,7 @@ extern int load_all_front_end_state(bool state_only)
 	if (ver_str && !xstrcmp(ver_str, FRONT_END_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
-	if (protocol_version == (uint16_t) NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can not recover front_end state, version incompatible, start with '-i' to ignore this");
 		error("*****************************************************");
@@ -840,7 +840,7 @@ extern int load_all_front_end_state(bool state_only)
 
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state = (uint32_t)NO_VAL;
-		uint16_t obj_protocol_version = (uint16_t)NO_VAL;;
+		uint16_t obj_protocol_version = NO_VAL16;
 
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
@@ -897,7 +897,7 @@ extern int load_all_front_end_state(bool state_only)
 
 		if (front_end_ptr) {
 			node_cnt++;
-			if (obj_protocol_version != (uint16_t)NO_VAL)
+			if (obj_protocol_version != NO_VAL16)
 				front_end_ptr->protocol_version =
 					obj_protocol_version;
 			else

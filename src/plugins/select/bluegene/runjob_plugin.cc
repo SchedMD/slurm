@@ -344,7 +344,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		   our uint16_t to the unsigned array
 		*/
 		for (dim=0; dim<Dimension::NodeDims; dim++) {
-			if (tmp_uint16[dim] == (uint16_t)NO_VAL)
+			if (tmp_uint16[dim] == NO_VAL16)
 				break;
 			geo[dim] = tmp_uint16[dim];
 		}
@@ -362,7 +362,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 			goto deny_job;
 		}
 		for (dim=0; dim<Dimension::NodeDims; dim++) {
-			if (tmp_uint16[dim] == (uint16_t)NO_VAL)
+			if (tmp_uint16[dim] == NO_VAL16)
 				break;
 			start_coords[dim] = tmp_uint16[dim];
 		}

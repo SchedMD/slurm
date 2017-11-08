@@ -3667,7 +3667,7 @@ extern int load_all_resv_state(int recover)
 	int data_allocated, data_read = 0, error_code = 0, state_fd;
 	Buf buffer;
 	slurmctld_resv_t *resv_ptr = NULL;
-	uint16_t protocol_version = (uint16_t) NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 
 	last_resv_update = time(NULL);
 	if ((recover == 0) && resv_list) {
@@ -3722,7 +3722,7 @@ extern int load_all_resv_state(int recover)
 	if (ver_str && !xstrcmp(ver_str, RESV_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
-	if (protocol_version == (uint16_t) NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can not recover reservation state, data version incompatible, start with '-i' to ignore this");
 		error("************************************************************");
@@ -4062,8 +4062,8 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 
 #ifdef HAVE_BG
 	hostlist_t hl = NULL;
-	static uint16_t static_blocks = (uint16_t)NO_VAL;
-	if (static_blocks == (uint16_t)NO_VAL) {
+	static uint16_t static_blocks = NO_VAL16;
+	if (static_blocks == NO_VAL16) {
 		/* Since this never changes we can just set it once
 		 * and not look at it again. */
 		select_g_get_info_from_plugin(SELECT_STATIC_PART, NULL,

@@ -299,7 +299,7 @@ extern int load_all_node_state ( bool state_only )
 	hostset_t hs = NULL;
 	hostlist_t down_nodes = NULL;
 	bool power_save_mode = false;
-	uint16_t protocol_version = (uint16_t)NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 
 	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
@@ -346,7 +346,7 @@ extern int load_all_node_state ( bool state_only )
 	if (ver_str && !xstrcmp(ver_str, NODE_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
-	if (!protocol_version || (protocol_version == (uint16_t)NO_VAL)) {
+	if (!protocol_version || (protocol_version == NO_VAL16)) {
 		if (!ignore_state_errors)
 			fatal("Can not recover node state, data version incompatible, start with '-i' to ignore this");
 		error("*****************************************************");
@@ -362,7 +362,7 @@ extern int load_all_node_state ( bool state_only )
 
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state;
-		uint16_t obj_protocol_version = (uint16_t)NO_VAL;
+		uint16_t obj_protocol_version = NO_VAL16;
 		if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
@@ -661,7 +661,7 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->last_response = (time_t) 0;
 
 			if (obj_protocol_version &&
-			    (obj_protocol_version != (uint16_t)NO_VAL))
+			    (obj_protocol_version != NO_VAL16))
 				node_ptr->protocol_version =
 					obj_protocol_version;
 			else

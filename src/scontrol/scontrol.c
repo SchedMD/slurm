@@ -1871,7 +1871,7 @@ static int _update_bluegene_block(int argc, char **argv)
 	if (!block_msg.bg_block_id) {
 		error("You didn't supply a block name.");
 		return 0;
-	} else if (block_msg.state == (uint16_t)NO_VAL) {
+	} else if (block_msg.state == NO_VAL16) {
 		error("You didn't give me a state to set %s to "
 		      "(i.e. FREE, ERROR).", block_msg.mp_str);
 		return 0;
@@ -1949,7 +1949,7 @@ static int _update_bluegene_submp(int argc, char **argv)
 	if (!block_msg.mp_str) {
 		error("You didn't supply an ionode list.");
 		return 0;
-	} else if (block_msg.state == (uint16_t)NO_VAL) {
+	} else if (block_msg.state == NO_VAL16) {
 		error("You didn't give me a state to set %s to "
 		      "(i.e. FREE, ERROR).", block_msg.mp_str);
 		return 0;

@@ -219,7 +219,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 			n->conn_type[0] = SELECT_SMALL;
 		}
 	} else {
-		if (n->conn_type[0] == (uint16_t)NO_VAL) {
+		if (n->conn_type[0] == NO_VAL16) {
 			n->conn_type[0] = bg_conf->default_conn_type[0];
 		} else if (n->conn_type[0] >= SELECT_SMALL) {
 			error("Block def on midplane(s) %s is given "
@@ -234,7 +234,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		int i;
 
 		for (i=1; i<SYSTEM_DIMENSIONS; i++) {
-			if (n->conn_type[i] == (uint16_t)NO_VAL)
+			if (n->conn_type[i] == NO_VAL16)
 				n->conn_type[i] = bg_conf->default_conn_type[i];
 			else if (n->conn_type[i] >= SELECT_SMALL) {
 				error("Block def on midplane(s) %s dim %d "
@@ -636,7 +636,7 @@ extern int read_bg_conf(void)
 #endif
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		bg_conf->default_conn_type[i] = (uint16_t)NO_VAL;
+		bg_conf->default_conn_type[i] = NO_VAL16;
 	s_p_get_string(&tmp_char, "DefaultConnType", tbl);
 	if (tmp_char) {
 		verify_conn_type(tmp_char, bg_conf->default_conn_type);
@@ -652,7 +652,7 @@ extern int read_bg_conf(void)
 #ifndef HAVE_BG_L_P
 	int first_conn_type = bg_conf->default_conn_type[0];
 	for (i=1; i<SYSTEM_DIMENSIONS; i++) {
-		if (bg_conf->default_conn_type[i] == (uint16_t)NO_VAL)
+		if (bg_conf->default_conn_type[i] == NO_VAL16)
 			bg_conf->default_conn_type[i] = first_conn_type;
 		else if (bg_conf->default_conn_type[i] >= SELECT_SMALL)
 			fatal("Can't have a DefaultConnType of %s "

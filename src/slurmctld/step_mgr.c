@@ -1197,7 +1197,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				gres_cnt /= cpus_per_task;
 			total_tasks = MIN((uint64_t)total_tasks, gres_cnt);
 			if (step_spec->plane_size &&
-			    step_spec->plane_size != (uint16_t) NO_VAL) {
+			    step_spec->plane_size != NO_VAL16) {
 				if (avail_tasks < step_spec->plane_size)
 					avail_tasks = 0;
 				else {
@@ -1496,7 +1496,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	/* In case we are in relative mode, do not look for idle nodes
 	 * as we will not try to get idle nodes first but try to get
 	 * the relative node first */
-	if (step_spec->relative != (uint16_t)NO_VAL) {
+	if (step_spec->relative != NO_VAL16) {
 		/* Remove first (step_spec->relative) nodes from
 		 * available list */
 		bitstr_t *relative_nodes = NULL;
@@ -2254,7 +2254,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t resv_id = 0;
 #endif
 #if defined HAVE_BG
-	static uint16_t cpus_per_mp = (uint16_t)NO_VAL;
+	static uint16_t cpus_per_mp = NO_VAL16;
 #elif (!defined HAVE_ALPS_CRAY)
 	uint32_t max_tasks;
 #endif
@@ -2621,7 +2621,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 				return ESLURM_INVALID_TASK_MEMORY;
 			return SLURM_ERROR;
 		}
-		if (step_specs->resv_port_cnt == (uint16_t) NO_VAL
+		if (step_specs->resv_port_cnt == NO_VAL16
 		    && (mpi_params = slurm_get_mpi_params())) {
 
 			step_specs->resv_port_cnt = 0;
@@ -2635,7 +2635,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_specs->resv_port_cnt++;
 			xfree(mpi_params);
 		}
-		if (step_specs->resv_port_cnt != (uint16_t) NO_VAL
+		if (step_specs->resv_port_cnt != NO_VAL16
 		    && step_specs->resv_port_cnt != 0) {
 			step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
 			i = resv_port_alloc(step_ptr);
@@ -2791,8 +2791,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			    && (slurmctld_conf.select_type_param
 				& (CR_CORE | CR_SOCKET))
 			    && (job_ptr->details &&
-				(job_ptr->details->cpu_bind_type !=
-				 (uint16_t)NO_VAL)
+				(job_ptr->details->cpu_bind_type != NO_VAL16)
 				&& (job_ptr->details->cpu_bind_type
 				    & CPU_BIND_ONE_THREAD_PER_CORE))) {
 				uint16_t threads;
@@ -4249,7 +4248,7 @@ extern void step_checkpoint(void)
 			ckpt_req.image_dir = NULL;
 			(void) job_checkpoint(&ckpt_req,
 					      slurmctld_conf.slurm_user_id,
-					      -1, (uint16_t)NO_VAL);
+					      -1, NO_VAL16);
 			job_ptr->ckpt_time = now;
 			last_job_update = now;
 			continue; /* ignore periodic step ckpt */

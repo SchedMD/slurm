@@ -237,7 +237,7 @@ int basil_request(struct basil_parse_data *bp)
 	}
 
 	if ((cray_conf->apbasil_timeout == 0) ||
-	    (cray_conf->apbasil_timeout == (uint16_t) NO_VAL)) {
+	    (cray_conf->apbasil_timeout == NO_VAL16)) {
 		debug2("No ApbasilTimeout configured (%u)",
 		       cray_conf->apbasil_timeout);
 		time_it_out = 0;

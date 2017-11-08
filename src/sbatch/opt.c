@@ -3390,7 +3390,7 @@ static void _opt_list(void)
 	str = print_constraints();
 	info("constraints       : %s", str);
 	xfree(str);
-	if (opt.conn_type[0] != (uint16_t) NO_VAL) {
+	if (opt.conn_type[0] != NO_VAL16) {
 		str = conn_type_string_full(opt.conn_type);
 		info("conn_type      : %s", str);
 		xfree(str);
@@ -3441,7 +3441,7 @@ static void _opt_list(void)
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	str = print_commandline(sbopt.script_argc, sbopt.script_argv);
-	if (opt.core_spec == (uint16_t) NO_VAL)
+	if (opt.core_spec == NO_VAL16)
 		info("core-spec         : NA");
 	else if (opt.core_spec & CORE_SPEC_THREAD) {
 		info("thread-spec       : %d",

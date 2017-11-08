@@ -1121,7 +1121,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_PREEMPT_MODE:
 			temp_uint16 = part_ptr->preempt_mode;
-			if (temp_uint16 == (uint16_t) NO_VAL)
+			if (temp_uint16 == NO_VAL16)
 				temp_uint16 =  slurm_get_preempt_mode();
 			temp_char = preempt_mode_string(temp_uint16);
 			break;
@@ -1361,7 +1361,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 				 part_ptr->max_nodes, true);
 
 	tmp_preempt = part_ptr->preempt_mode;
-	if (tmp_preempt == (uint16_t) NO_VAL)
+	if (tmp_preempt == NO_VAL16)
 		tmp_preempt = slurm_get_preempt_mode();	/* use cluster param */
 
 	convert_num_unit((float)part_ptr->priority_job_factor,

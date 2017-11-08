@@ -1414,7 +1414,7 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	memset(assoc, 0, sizeof(slurmdb_assoc_rec_t));
 
 	assoc->def_qos_id = NO_VAL;
-	assoc->is_def = (uint16_t)NO_VAL;
+	assoc->is_def = NO_VAL16;
 
 	/* assoc->grp_tres_mins = NULL; */
 	/* assoc->grp_tres_run_mins = NULL; */
@@ -1451,7 +1451,7 @@ extern void slurmdb_init_clus_res_rec(slurmdb_clus_res_rec_t *clus_res,
 	if (free_it)
 		_free_clus_res_rec_members(clus_res);
 	memset(clus_res, 0, sizeof(slurmdb_clus_res_rec_t));
-	clus_res->percent_allowed = (uint16_t)NO_VAL;
+	clus_res->percent_allowed = NO_VAL16;
 }
 
 extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
@@ -1533,7 +1533,7 @@ extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
 	res->count = NO_VAL;
 	res->flags = SLURMDB_RES_FLAG_NOTSET;
 	res->id = NO_VAL;
-	res->percent_used = (uint16_t)NO_VAL;
+	res->percent_used = NO_VAL16;
 	res->type = SLURMDB_RESOURCE_NOTSET;
 }
 
@@ -1545,7 +1545,7 @@ extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
 	if (free_it)
 		_free_wckey_rec_members(wckey);
 	memset(wckey, 0, sizeof(slurmdb_wckey_rec_t));
-	wckey->is_def = (uint16_t)NO_VAL;
+	wckey->is_def = NO_VAL16;
 }
 
 extern void slurmdb_init_tres_cond(slurmdb_tres_cond_t *tres,

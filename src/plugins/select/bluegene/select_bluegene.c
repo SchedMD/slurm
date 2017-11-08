@@ -612,7 +612,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	struct part_record *part_ptr = NULL;
 	bitstr_t *usable_mp_bitmap = NULL;
 	ListIterator itr = NULL;
-	uint16_t protocol_version = (uint16_t)NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	uint32_t record_count;
 
 	xassert(curr_block_list);
@@ -655,7 +655,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	if (ver_str && !xstrcmp(ver_str, BLOCK_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
-	if (protocol_version == (uint16_t)NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can not recover block state, data version incompatible, start with '-i' to ignore this");
 		error("***********************************************");
@@ -969,7 +969,7 @@ static int _validate_config_blocks(List curr_block_list,
 					   parse_blockreq() function.
 					*/
 					if (bg_record->conn_type[dim] ==
-					    (uint16_t)NO_VAL) {
+					    NO_VAL16) {
 						dim = SYSTEM_DIMENSIONS;
 						break;
 					}
@@ -2007,7 +2007,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			char rel_str[step_jobinfo->dim_cnt+1];
 			for (dim = 0; dim < step_jobinfo->dim_cnt; dim++) {
 				if (step_jobinfo->conn_type[dim]
-				    == (uint16_t)NO_VAL)
+				    == NO_VAL16)
 					rel_str[dim] = alpha_num[0];
 				else
 					rel_str[dim] = alpha_num[
@@ -3102,7 +3102,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			 && (job_desc->min_cpus != NO_VAL)) {
 			job_desc->min_nodes = job_desc->min_cpus;
 			if (job_desc->ntasks_per_node
-			    && job_desc->ntasks_per_node != (uint16_t)NO_VAL)
+			    && job_desc->ntasks_per_node != NO_VAL16)
 				job_desc->min_nodes /=
 					job_desc->ntasks_per_node;
 		}
@@ -3112,7 +3112,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
 
 		if (req_geometry[0] != 0
-		    && req_geometry[0] != (uint16_t)NO_VAL) {
+		    && req_geometry[0] != NO_VAL16) {
 			job_desc->min_nodes = 1;
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				job_desc->min_nodes *=
@@ -3144,7 +3144,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					 * validated beforehand. */
 					if (job_desc->ntasks_per_node
 					    && (job_desc->ntasks_per_node
-						!= (uint16_t)NO_VAL))
+						!= NO_VAL16))
 						divisor = (float)job_desc->
 							ntasks_per_node
 							/ bg_conf->cpu_ratio;
@@ -3403,7 +3403,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	}
 
 	job_rec.details->max_cpus = job_rec.details->min_cpus;
-	job_rec.details->core_spec = (uint16_t)NO_VAL;
+	job_rec.details->core_spec = NO_VAL16;
 
 	preemptee_candidates = list_create(NULL);
 

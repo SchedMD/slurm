@@ -1225,7 +1225,7 @@ extern int scontrol_update_job(int argc, char **argv)
 		}
 		else if (xstrncasecmp(tag, "Conn-Type", MAX(taglen, 2)) == 0) {
 			verify_conn_type(val, job_msg.conn_type);
-			if (job_msg.conn_type[0] != (uint16_t)NO_VAL)
+			if (job_msg.conn_type[0] != NO_VAL16)
 				update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "Licenses", MAX(taglen, 1)) == 0) {

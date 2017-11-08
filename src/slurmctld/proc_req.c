@@ -1144,9 +1144,9 @@ static void _build_alloc_msg(struct job_record *job_ptr,
 		}
 	} else {
 		alloc_msg->pn_min_memory = 0;
-		alloc_msg->ntasks_per_board  = (uint16_t)NO_VAL;
-		alloc_msg->ntasks_per_core   = (uint16_t)NO_VAL;
-		alloc_msg->ntasks_per_socket = (uint16_t)NO_VAL;
+		alloc_msg->ntasks_per_board  = NO_VAL16;
+		alloc_msg->ntasks_per_core   = NO_VAL16;
+		alloc_msg->ntasks_per_socket = NO_VAL16;
 	}
 	if (job_ptr->account)
 		alloc_msg->account = xstrdup(job_ptr->account);

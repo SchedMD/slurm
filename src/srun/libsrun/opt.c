@@ -3121,12 +3121,12 @@ static void _opt_list(void)
 	else
 		info("bcast          : %s", tf_(sropt.bcast_flag));
 	info("qos            : %s", opt.qos);
-	if (opt.shared != (uint16_t) NO_VAL)
+	if (opt.shared != NO_VAL16)
 		info("oversubscribe  : %u", opt.shared);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	if (opt.conn_type[0] != (uint16_t) NO_VAL) {
+	if (opt.conn_type[0] != NO_VAL16) {
 		str = conn_type_string_full(opt.conn_type);
 		info("conn_type      : %s", str);
 		xfree(str);

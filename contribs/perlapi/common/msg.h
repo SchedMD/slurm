@@ -24,7 +24,7 @@ inline static int av_store_uint16_t(AV* av, int index, uint16_t val)
 	   signed ints so we will handle this here. */
 	if(val == (uint16_t)INFINITE)
 		sv = newSViv(INFINITE);
-	else if(val == (uint16_t)NO_VAL)
+	else if(val == NO_VAL16)
 		sv = newSViv(NO_VAL);
 	else
 		sv = newSViv(val);
@@ -156,7 +156,7 @@ inline static int hv_store_uint16_t(HV* hv, const char *key, uint16_t val)
 	   signed ints so we will handle this here. */
 	if(val == (uint16_t)INFINITE)
 		sv = newSViv(INFINITE);
-	else if(val == (uint16_t)NO_VAL)
+	else if(val == NO_VAL16)
 		sv = newSViv(NO_VAL);
 	else
 		sv = newSVuv(val);

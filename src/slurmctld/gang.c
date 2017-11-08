@@ -575,7 +575,7 @@ static int _suspend_job(uint32_t job_id)
 	msg.job_id = job_id;
 	msg.job_id_str = NULL;
 	msg.op = SUSPEND_JOB;
-	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
+	rc = job_suspend(&msg, 0, -1, false, NO_VAL16);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
 	if (rc == SLURM_SUCCESS) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
@@ -597,7 +597,7 @@ static void _resume_job(uint32_t job_id)
 	msg.job_id = job_id;
 	msg.job_id_str = NULL;
 	msg.op = RESUME_JOB;
-	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
+	rc = job_suspend(&msg, 0, -1, false, NO_VAL16);
 	if (rc == SLURM_SUCCESS) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 			info("gang: resuming JobID=%u", job_id);
@@ -654,14 +654,12 @@ static void _preempt_job_dequeue(void)
 			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
 			ckpt_msg.op	   = CHECK_REQUEUE;
 			ckpt_msg.job_id    = job_ptr->job_id;
-			rc = job_checkpoint(&ckpt_msg, 0, -1,
-					    (uint16_t)NO_VAL);
+			rc = job_checkpoint(&ckpt_msg, 0, -1, NO_VAL16);
 			if (rc == ESLURM_NOT_SUPPORTED) {
 				memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
 				ckpt_msg.op	   = CHECK_VACATE;
 				ckpt_msg.job_id    = job_ptr->job_id;
-				rc = job_checkpoint(&ckpt_msg, 0, -1,
-						    (uint16_t)NO_VAL);
+				rc = job_checkpoint(&ckpt_msg, 0, -1, NO_VAL16);
 			}
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been checkpointed",

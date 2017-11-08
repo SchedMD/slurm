@@ -1642,7 +1642,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (total_nodes > max_nodes) {	/* exceeds node limit */
 			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
-		if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
+		if ((job_ptr->details->core_spec != NO_VAL16) &&
 		    ((job_ptr->details->core_spec & CORE_SPEC_THREAD) == 0)) {
 			i = bit_ffs(job_ptr->details->req_node_bitmap);
 			if (i >= 0) {
@@ -2081,13 +2081,13 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			ckpt_msg.op	   = CHECK_REQUEUE;
 			ckpt_msg.job_id    = job_ptr->job_id;
 			rc = job_checkpoint(&ckpt_msg, 0, -1,
-					    (uint16_t) NO_VAL);
+					    NO_VAL16);
 			if (rc == ESLURM_NOT_SUPPORTED) {
 				memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
 				ckpt_msg.op	   = CHECK_VACATE;
 				ckpt_msg.job_id    = job_ptr->job_id;
 				rc = job_checkpoint(&ckpt_msg, 0, -1,
-						    (uint16_t) NO_VAL);
+						    NO_VAL16);
 			}
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been checkpointed to"
@@ -3155,11 +3155,11 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 			}
 			if (mc_ptr &&
 			    (((mc_ptr->sockets_per_node > config_ptr->sockets) &&
-			      (mc_ptr->sockets_per_node != (uint16_t) NO_VAL)) ||
+			      (mc_ptr->sockets_per_node != NO_VAL16)) ||
 			     ((mc_ptr->cores_per_socket > config_ptr->cores)   &&
-			      (mc_ptr->cores_per_socket != (uint16_t) NO_VAL)) ||
+			      (mc_ptr->cores_per_socket != NO_VAL16)) ||
 			     ((mc_ptr->threads_per_core > config_ptr->threads) &&
-			      (mc_ptr->threads_per_core != (uint16_t) NO_VAL)))) {
+			      (mc_ptr->threads_per_core != NO_VAL16)))) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
@@ -3178,11 +3178,11 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 			}
 			if (mc_ptr &&
 			    (((mc_ptr->sockets_per_node > node_ptr->sockets)   &&
-			      (mc_ptr->sockets_per_node != (uint16_t) NO_VAL)) ||
+			      (mc_ptr->sockets_per_node != NO_VAL16)) ||
 			     ((mc_ptr->cores_per_socket > node_ptr->cores)     &&
-			      (mc_ptr->cores_per_socket != (uint16_t) NO_VAL)) ||
+			      (mc_ptr->cores_per_socket != NO_VAL16)) ||
 			     ((mc_ptr->threads_per_core > node_ptr->threads)   &&
-			      (mc_ptr->threads_per_core != (uint16_t) NO_VAL)))) {
+			      (mc_ptr->threads_per_core != NO_VAL16)))) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
@@ -3339,11 +3339,11 @@ static int _build_node_list(struct job_record *job_ptr,
 			job_mc_ok = true;
 		if (mc_ptr &&
 		    (((mc_ptr->sockets_per_node <= config_ptr->sockets) ||
-		      (mc_ptr->sockets_per_node == (uint16_t) NO_VAL))  &&
+		      (mc_ptr->sockets_per_node == NO_VAL16))  &&
 		     ((mc_ptr->cores_per_socket <= config_ptr->cores)   ||
-		      (mc_ptr->cores_per_socket == (uint16_t) NO_VAL))  &&
+		      (mc_ptr->cores_per_socket == NO_VAL16))  &&
 		     ((mc_ptr->threads_per_core <= config_ptr->threads) ||
-		      (mc_ptr->threads_per_core == (uint16_t) NO_VAL))))
+		      (mc_ptr->threads_per_core == NO_VAL16))))
 			job_mc_ok = true;
 		config_filter = !(cpus_ok && mem_ok && disk_ok && job_mc_ok);
 
@@ -3616,11 +3616,11 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				job_mc_ok = true;
 			if (mc_ptr &&
 			    (((mc_ptr->sockets_per_node <= node_con->sockets)  ||
-			      (mc_ptr->sockets_per_node == (uint16_t) NO_VAL)) &&
+			      (mc_ptr->sockets_per_node == NO_VAL16)) &&
 			     ((mc_ptr->cores_per_socket <= node_con->cores)    ||
-			      (mc_ptr->cores_per_socket == (uint16_t) NO_VAL)) &&
+			      (mc_ptr->cores_per_socket == NO_VAL16)) &&
 			     ((mc_ptr->threads_per_core <= node_con->threads)  ||
-			      (mc_ptr->threads_per_core == (uint16_t) NO_VAL))))
+			      (mc_ptr->threads_per_core == NO_VAL16))))
 				job_mc_ok = true;
 			if (cpus_ok && mem_ok && disk_ok && job_mc_ok)
 				continue;
@@ -3650,11 +3650,11 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				job_ok = 1;
 			if (mc_ptr &&
 			    (((mc_ptr->sockets_per_node <= node_ptr->sockets)  ||
-			      (mc_ptr->sockets_per_node == (uint16_t) NO_VAL)) &&
+			      (mc_ptr->sockets_per_node == NO_VAL16)) &&
 			     ((mc_ptr->cores_per_socket <= node_ptr->cores)    ||
-			      (mc_ptr->cores_per_socket == (uint16_t) NO_VAL)) &&
+			      (mc_ptr->cores_per_socket == NO_VAL16)) &&
 			     ((mc_ptr->threads_per_core <= node_ptr->threads)  ||
-			      (mc_ptr->threads_per_core == (uint16_t) NO_VAL))))
+			      (mc_ptr->threads_per_core == NO_VAL16))))
 				job_mc_ptr_ok = 1;
 			if (job_ok && (!mc_ptr || job_mc_ptr_ok))
 				continue;

@@ -3742,7 +3742,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				rec->def_qos_id = 0;
 			}
 
-			if (object->is_def != (uint16_t)NO_VAL) {
+			if (object->is_def != NO_VAL16) {
 				rec->is_def = object->is_def;
 				/* parents_changed will set this later
 				   so try to avoid doing it twice.
@@ -4036,7 +4036,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 				break;
 			}
 
-			if (object->is_def != (uint16_t)NO_VAL) {
+			if (object->is_def != NO_VAL16) {
 				rec->is_def = object->is_def;
 				if (rec->is_def)
 					_set_user_default_wckey(rec);
@@ -4481,7 +4481,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 /* 				xfree(tmp); */
 			}
 
-			if (object->preempt_mode != (uint16_t)NO_VAL)
+			if (object->preempt_mode != NO_VAL16)
 				rec->preempt_mode = object->preempt_mode;
 
 			if (object->priority != NO_VAL) {
@@ -4738,8 +4738,7 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 			if (object->type != SLURMDB_RESOURCE_NOTSET)
 				rec->type = object->type;
 
-			if (object->clus_res_rec->percent_allowed !=
-			    (uint16_t)NO_VAL)
+			if (object->clus_res_rec->percent_allowed != NO_VAL16)
 				rec->clus_res_rec->percent_allowed =
 					object->clus_res_rec->percent_allowed;
 

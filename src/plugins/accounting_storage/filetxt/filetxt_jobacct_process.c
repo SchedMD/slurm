@@ -644,16 +644,16 @@ static int _parse_line(char *f[], void **data, int len)
 			(*step)->stepname = xstrdup(f[F_STEPNAME]);
 			(*step)->nodes = xstrdup(f[F_STEPNODES]);
 		} else {
-			(*step)->stats.vsize_max_taskid = (uint16_t)NO_VAL;
+			(*step)->stats.vsize_max_taskid = NO_VAL16;
 			(*step)->stats.vsize_ave = (float)NO_VAL;
 			(*step)->stats.rss_max = NO_VAL;
-			(*step)->stats.rss_max_taskid = (uint16_t)NO_VAL;
+			(*step)->stats.rss_max_taskid = NO_VAL16;
 			(*step)->stats.rss_ave = (float)NO_VAL;
 			(*step)->stats.pages_max = NO_VAL;
-			(*step)->stats.pages_max_taskid = (uint16_t)NO_VAL;
+			(*step)->stats.pages_max_taskid = NO_VAL16;
 			(*step)->stats.pages_ave = (float)NO_VAL;
 			(*step)->stats.cpu_min = NO_VAL;
-			(*step)->stats.cpu_min_taskid = (uint16_t)NO_VAL;
+			(*step)->stats.cpu_min_taskid = NO_VAL16;
 			(*step)->stats.cpu_ave =  (float)NO_VAL;
 			(*step)->stepname = NULL;
 			(*step)->nodes = NULL;

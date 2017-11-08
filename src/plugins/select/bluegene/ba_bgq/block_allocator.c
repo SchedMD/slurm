@@ -362,7 +362,7 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 
 	xfree(ba_request->save_name);
 
-	if (ba_request->geometry[0] != (uint16_t)NO_VAL) {
+	if (ba_request->geometry[0] != NO_VAL16) {
 		for (i=0; i<cluster_dims; i++){
 			if ((ba_request->geometry[i] < 1)
 			    || (ba_request->geometry[i] > DIM_SIZE[i])) {
@@ -382,7 +382,7 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 
 	if (!(cluster_flags & CLUSTER_FLAG_BGQ)) {
 		if (ba_request->size
-		    && (ba_request->geometry[0] == (uint16_t)NO_VAL)) {
+		    && (ba_request->geometry[0] == NO_VAL16)) {
 			ba_request->geometry[0] = ba_request->size;
 		} else {
 			error("new_ba_request: "
@@ -392,7 +392,7 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 		return 1;
 	}
 
-	if (ba_request->deny_pass == (uint16_t)NO_VAL)
+	if (ba_request->deny_pass == NO_VAL16)
 		ba_request->deny_pass = ba_deny_pass;
 
 	deny_pass = &ba_request->deny_pass;
@@ -730,7 +730,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 	xassert(ba_initialized);
 
 	if (!ba_request->size) {
-		if (ba_request->geometry[0] == (uint16_t)NO_VAL) {
+		if (ba_request->geometry[0] == NO_VAL16) {
 			error("set_bg_block: No size or geometry given.");
 			return NULL;
 		}
@@ -760,7 +760,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 		int scan_offset = 0, cnt = 0, i=0;
 		uint16_t start_loc[ba_main_geo_system->dim_count];
 
-		if (ba_request->geometry[0] != (uint16_t)NO_VAL) {
+		if (ba_request->geometry[0] != NO_VAL16) {
 			/* if we are requesting a specific geo, go directly to
 			   that geo_table. */
 			if (memcmp(ba_request->geometry, ba_geo_table->geometry,
@@ -784,7 +784,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 				    ba_main_geo_system, deny_pass,
 				    start_loc, &scan_offset, false)
 		    != SLURM_SUCCESS) {
-			if (ba_request->geometry[0] != (uint16_t)NO_VAL) {
+			if (ba_request->geometry[0] != NO_VAL16) {
 				ba_geo_table = NULL;
 				break;
 			}

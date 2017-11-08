@@ -1594,7 +1594,7 @@ slurm_cred_print(slurm_cred_t *cred)
 
 	xassert(cred->magic == CRED_MAGIC);
 
-	if (cred->job_core_spec == (uint16_t) NO_VAL) {
+	if (cred->job_core_spec == NO_VAL16) {
 		spec_type  = "Cores";
 		spec_count = 0;
 	} else if (cred->job_core_spec & CORE_SPEC_THREAD) {

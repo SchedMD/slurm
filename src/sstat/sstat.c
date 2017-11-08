@@ -230,7 +230,7 @@ int main(int argc, char **argv)
 	while ((selected_step = list_next(itr))) {
 		char *nodelist = NULL;
 		bool free_nodelist = false;
-		uint16_t use_protocol_ver = (uint16_t)NO_VAL;
+		uint16_t use_protocol_ver = NO_VAL16;
 		if (selected_step->stepid == SSTAT_BATCH_STEP) {
 			/* get the batch step info */
 			job_info_msg_t *job_ptr = NULL;

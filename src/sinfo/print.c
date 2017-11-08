@@ -951,7 +951,7 @@ int _print_preempt_mode(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		uint16_t preempt_mode = sinfo_data->part_info->preempt_mode;
-		if (preempt_mode == (uint16_t) NO_VAL)
+		if (preempt_mode == NO_VAL16)
 			preempt_mode =  slurm_get_preempt_mode();
 		_print_str(preempt_mode_string(preempt_mode),
 			   width, right_justify, true);

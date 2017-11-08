@@ -573,7 +573,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		ntskip = taskid;
 		npdist = 1;
 	}
-	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((job->job_core_spec != NO_VAL16) &&
 	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (job->job_core_spec != CORE_SPEC_THREAD)) {
 		/* Skip specialized threads as needed */
@@ -818,7 +818,7 @@ static int _task_cgroup_cpuset_dist_block(
 	}
 
 	hwdepth = hwloc_get_type_depth(topology, hwtype);
-	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((job->job_core_spec != NO_VAL16) &&
 	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (job->job_core_spec != CORE_SPEC_THREAD)  &&
 	    (nsockets != 0)) {
@@ -1396,7 +1396,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 
 	hwtype = HWLOC_OBJ_MACHINE;
 	nobj = 1;
-	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((job->job_core_spec != NO_VAL16) &&
 	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (job->job_core_spec != CORE_SPEC_THREAD)) {
 		spec_threads = job->job_core_spec & (~CORE_SPEC_THREAD);

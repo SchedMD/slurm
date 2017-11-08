@@ -651,7 +651,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
-		if ((request->geometry[0] != (uint16_t)NO_VAL)
+		if ((request->geometry[0] != NO_VAL16)
 		    && (!_check_rotate_geo(bg_record->geo, request->geometry,
 					   request->rotate)))
 			continue;
@@ -1257,7 +1257,7 @@ static int _find_best_block_match(List block_list,
 			   SELECT_JOBDATA_CONN_TYPE, &request.conn_type);
 
 	if (req_procs <= bg_conf->cpus_per_mp)
-		req_geometry[0] = (uint16_t)NO_VAL;
+		req_geometry[0] = NO_VAL16;
 	else
 		get_select_jobinfo(job_ptr->select_jobinfo->data,
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
@@ -1268,7 +1268,7 @@ static int _find_best_block_match(List block_list,
 	if ((rc = _check_images(job_ptr, &request)) == SLURM_ERROR)
 		goto end_it;
 
-	if (req_geometry[0] != 0 && req_geometry[0] != (uint16_t)NO_VAL) {
+	if (req_geometry[0] != 0 && req_geometry[0] != NO_VAL16) {
 		char tmp_geo[SYSTEM_DIMENSIONS+1];
 
 		target_size = 1;
@@ -1289,7 +1289,7 @@ static int _find_best_block_match(List block_list,
 			/* min_nodes = target_size; */
 		}
 	} else {
-		req_geometry[0] = (uint16_t)NO_VAL;
+		req_geometry[0] = NO_VAL16;
 		target_size = min_nodes;
 	}
 
@@ -1298,7 +1298,7 @@ static int _find_best_block_match(List block_list,
 
 	memcpy(request.geometry, req_geometry, sizeof(req_geometry));
 
-	request.deny_pass = (uint16_t)NO_VAL;
+	request.deny_pass = NO_VAL16;
 	request.save_name = NULL;
 	request.size = target_size;
 	request.procs = req_procs;
@@ -1822,10 +1822,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	if (!job_ptr->details)
 		return EINVAL;
 
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->core_spec != NO_VAL16) {
 		verbose("select/bluegene: job %u core_spec(%u) not supported",
 			job_ptr->job_id, job_ptr->details->core_spec);
-		job_ptr->details->core_spec = (uint16_t) NO_VAL;
+		job_ptr->details->core_spec = NO_VAL16;
 	}
 
 	if (preemptee_candidates && preemptee_job_list

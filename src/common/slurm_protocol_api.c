@@ -2309,7 +2309,7 @@ int slurm_set_jobcomp_port(uint32_t port)
  */
 uint16_t slurm_get_keep_alive_time(void)
 {
-	uint16_t keep_alive_time = (uint16_t) NO_VAL;
+	uint16_t keep_alive_time = NO_VAL16;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
@@ -4583,7 +4583,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 {
 	static pthread_mutex_t conn_lock = PTHREAD_MUTEX_INITIALIZER;
-	static uint16_t conn_timeout = (uint16_t) NO_VAL;
+	static uint16_t conn_timeout = NO_VAL16;
 	List ret_list = NULL;
 	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
@@ -4591,7 +4591,7 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	int i;
 
 	slurm_mutex_lock(&conn_lock);
-	if (conn_timeout == (uint16_t) NO_VAL)
+	if (conn_timeout == NO_VAL16)
 		conn_timeout = MIN(slurm_get_msg_timeout(), 10);
 	slurm_mutex_unlock(&conn_lock);
 

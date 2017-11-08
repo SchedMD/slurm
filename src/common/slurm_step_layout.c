@@ -379,7 +379,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 	}
 
 	if (((int)step_layout_req->cpus_per_task[0] < 1) ||
-	    (step_layout_req->cpus_per_task[0] == (uint16_t)NO_VAL)) {
+	    (step_layout_req->cpus_per_task[0] == NO_VAL16)) {
 		step_layout_req->cpus_per_task[0] = 1;
 		step_layout_req->cpus_task_reps[0] = step_layout_req->num_hosts;
 	}
@@ -427,7 +427,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 		}
 
 		if (step_layout->plane_size &&
-		    (step_layout->plane_size != (uint16_t)NO_VAL) &&
+		    (step_layout->plane_size != NO_VAL16) &&
 		    ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
 		     != SLURM_DIST_PLANE)) {
 			/* plane_size when dist != plane is used to
@@ -576,11 +576,11 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 
 static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 {
-	static uint16_t select_params = (uint16_t) NO_VAL;
+	static uint16_t select_params = NO_VAL16;
 	int i, j, task_id = 0;
 	bool pack_nodes;
 
-	if (select_params == (uint16_t) NO_VAL)
+	if (select_params == NO_VAL16)
 		select_params = slurm_get_select_type_param();
 	if (step_layout->task_dist & SLURM_DIST_PACK_NODES)
 		pack_nodes = true;

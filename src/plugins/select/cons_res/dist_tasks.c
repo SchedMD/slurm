@@ -1013,7 +1013,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 {
 	int error_code, cr_cpu = 1;
 
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->core_spec != NO_VAL16) {
 		/* The job has been allocated all non-specialized cores,
 		 * so we don't need to select specific CPUs. */
 		return SLURM_SUCCESS;

@@ -921,7 +921,7 @@ extern void trigger_state_restore(void)
 {
 	int data_allocated, data_read = 0;
 	uint32_t data_size = 0;
-	uint16_t protocol_version = (uint16_t) NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	int state_fd, trigger_cnt = 0;
 	char *data = NULL, *state_file;
 	Buf buffer;
@@ -967,7 +967,7 @@ extern void trigger_state_restore(void)
 	if (ver_str && !xstrcmp(ver_str, TRIGGER_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
-	if (protocol_version == (uint16_t) NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can't recover trigger state, data version incompatible, start with '-i' to ignore this");
 		error("Can't recover trigger state, data version "

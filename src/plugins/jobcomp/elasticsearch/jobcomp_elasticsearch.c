@@ -765,14 +765,14 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->ntasks_per_node != (uint16_t) NO_VAL)) {
+	    && (job_ptr->details->ntasks_per_node != NO_VAL16)) {
 		ntasks_per_node = job_ptr->details->ntasks_per_node;
 		xstrfmtcat(json_str, ",\"ntasks_per_node\":%hu",
 			   ntasks_per_node);
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->cpus_per_task != (uint16_t) NO_VAL)) {
+	    && (job_ptr->details->cpus_per_task != NO_VAL16)) {
 		xstrfmtcat(json_str, ",\"cpus_per_task\":%hu",
 			   job_ptr->details->cpus_per_task);
 	}

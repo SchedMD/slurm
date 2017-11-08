@@ -378,7 +378,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (p[i].nodes != NULL)
 			fprintf(fp, " Nodes=%s", p[i].nodes);
 
-		if (p[i].preempt_mode != (uint16_t) NO_VAL)
+		if (p[i].preempt_mode != NO_VAL16)
 			fprintf(fp, " PreemptMode=%s",
 				preempt_mode_string(p[i].preempt_mode));
 
@@ -926,7 +926,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_submit_plugins);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->keep_alive_time == (uint16_t) NO_VAL)
+	if (slurm_ctl_conf_ptr->keep_alive_time == NO_VAL16)
 		snprintf(tmp_str, sizeof(tmp_str), "SYSTEM_DEFAULT");
 	else {
 		snprintf(tmp_str, sizeof(tmp_str), "%u sec",

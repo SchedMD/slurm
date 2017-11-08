@@ -5089,7 +5089,7 @@ _pack_composite_msg(composite_msg_t *msg, Buf buffer, uint16_t protocol_version)
 	if (count && count != NO_VAL) {
 		itr = list_iterator_create(msg->msg_list);
 		while ((tmp_info = list_next(itr))) {
-			if (tmp_info->protocol_version == (uint16_t)NO_VAL)
+			if (tmp_info->protocol_version == NO_VAL16)
 				tmp_info->protocol_version = protocol_version;
 			pack16(tmp_info->protocol_version, buffer);
 			pack16(tmp_info->msg_type, buffer);
@@ -5988,7 +5988,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 	uint32_t uint32_tmp = 0;
 	multi_core_data_t *mc_ptr;
 
-	job->ntasks_per_node = (uint16_t)NO_VAL;
+	job->ntasks_per_node = NO_VAL16;
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
@@ -8847,23 +8847,23 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		} else {
 			dynamic_plugin_data_t *select_jobinfo;
 			select_jobinfo = select_g_select_jobinfo_alloc();
-			if (job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
+			if (job_desc_ptr->geometry[0] != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_GEOMETRY,
 					job_desc_ptr->geometry);
 
-			if (job_desc_ptr->conn_type[0] != (uint16_t) NO_VAL)
+			if (job_desc_ptr->conn_type[0] != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
 					&(job_desc_ptr->conn_type));
-			if (job_desc_ptr->reboot != (uint16_t) NO_VAL)
+			if (job_desc_ptr->reboot != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_REBOOT,
 					&(job_desc_ptr->reboot));
-			if (job_desc_ptr->rotate != (uint16_t) NO_VAL)
+			if (job_desc_ptr->rotate != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_ROTATE,
@@ -9016,23 +9016,23 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		} else {
 			dynamic_plugin_data_t *select_jobinfo;
 			select_jobinfo = select_g_select_jobinfo_alloc();
-			if (job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
+			if (job_desc_ptr->geometry[0] != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_GEOMETRY,
 					job_desc_ptr->geometry);
 
-			if (job_desc_ptr->conn_type[0] != (uint16_t) NO_VAL)
+			if (job_desc_ptr->conn_type[0] != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
 					&(job_desc_ptr->conn_type));
-			if (job_desc_ptr->reboot != (uint16_t) NO_VAL)
+			if (job_desc_ptr->reboot != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_REBOOT,
 					&(job_desc_ptr->reboot));
-			if (job_desc_ptr->rotate != (uint16_t) NO_VAL)
+			if (job_desc_ptr->rotate != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_ROTATE,
@@ -9181,23 +9181,23 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		} else {
 			dynamic_plugin_data_t *select_jobinfo;
 			select_jobinfo = select_g_select_jobinfo_alloc();
-			if (job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
+			if (job_desc_ptr->geometry[0] != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_GEOMETRY,
 					job_desc_ptr->geometry);
 
-			if (job_desc_ptr->conn_type[0] != (uint16_t) NO_VAL)
+			if (job_desc_ptr->conn_type[0] != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
 					&(job_desc_ptr->conn_type));
-			if (job_desc_ptr->reboot != (uint16_t) NO_VAL)
+			if (job_desc_ptr->reboot != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_REBOOT,
 					&(job_desc_ptr->reboot));
-			if (job_desc_ptr->rotate != (uint16_t) NO_VAL)
+			if (job_desc_ptr->rotate != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_ROTATE,
@@ -9408,9 +9408,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		/* These are set so we don't confuse them later for what is
 		 * set in the select_jobinfo structure.
 		 */
-		job_desc_ptr->geometry[0] = (uint16_t)NO_VAL;
-		job_desc_ptr->conn_type[0] = (uint16_t)NO_VAL;
-		job_desc_ptr->rotate = (uint16_t)NO_VAL;
+		job_desc_ptr->geometry[0] = NO_VAL16;
+		job_desc_ptr->conn_type[0] = NO_VAL16;
+		job_desc_ptr->rotate = NO_VAL16;
 		job_desc_ptr->blrtsimage = NULL;
 		job_desc_ptr->linuximage = NULL;
 		job_desc_ptr->mloaderimage = NULL;
@@ -9580,9 +9580,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		/* These are set so we don't confuse them later for what is
 		 * set in the select_jobinfo structure.
 		 */
-		job_desc_ptr->geometry[0] = (uint16_t)NO_VAL;
-		job_desc_ptr->conn_type[0] = (uint16_t)NO_VAL;
-		job_desc_ptr->rotate = (uint16_t)NO_VAL;
+		job_desc_ptr->geometry[0] = NO_VAL16;
+		job_desc_ptr->conn_type[0] = NO_VAL16;
+		job_desc_ptr->rotate = NO_VAL16;
 		job_desc_ptr->blrtsimage = NULL;
 		job_desc_ptr->linuximage = NULL;
 		job_desc_ptr->mloaderimage = NULL;
@@ -9752,9 +9752,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		/* These are set so we don't confuse them later for what is
 		 * set in the select_jobinfo structure.
 		 */
-		job_desc_ptr->geometry[0] = (uint16_t)NO_VAL;
-		job_desc_ptr->conn_type[0] = (uint16_t)NO_VAL;
-		job_desc_ptr->rotate = (uint16_t)NO_VAL;
+		job_desc_ptr->geometry[0] = NO_VAL16;
+		job_desc_ptr->conn_type[0] = NO_VAL16;
+		job_desc_ptr->rotate = NO_VAL16;
 		job_desc_ptr->blrtsimage = NULL;
 		job_desc_ptr->linuximage = NULL;
 		job_desc_ptr->mloaderimage = NULL;
@@ -12030,7 +12030,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 			packnull(buffer);
 
 			pack32(1, buffer);
-			pack16((uint16_t)NO_VAL, buffer);
+			pack16(NO_VAL16, buffer);
 
 			packnull(buffer);
 			packnull(buffer);
@@ -12043,10 +12043,10 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 			packnull(buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
-			pack16((uint16_t)NO_VAL, buffer);
+			pack16(NO_VAL16, buffer);
 			packnull(buffer);
 			packnull(buffer);
-			pack16((uint16_t)NO_VAL, buffer);
+			pack16(NO_VAL16, buffer);
 			packnull(buffer);
 			return;
 		}

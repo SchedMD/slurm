@@ -541,7 +541,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		} else {
 			n->node_state = state_str2int(node_state,
 						      (char *) value);
-			if (n->node_state == (uint16_t) NO_VAL)
+			if (n->node_state == NO_VAL16)
 				n->node_state = NODE_STATE_UNKNOWN;
 			xfree(node_state);
 		}
@@ -1189,7 +1189,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_boolean((bool *)&p->disable_root_jobs,
 				     "DisableRootJobs", tbl))
-			p->disable_root_jobs = (uint16_t)NO_VAL;
+			p->disable_root_jobs = NO_VAL16;
 
 		if (!s_p_get_boolean((bool *)&p->exclusive_user,
 				     "ExclusiveUser", tbl))
@@ -1292,14 +1292,14 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (s_p_get_string(&tmp, "PreemptMode", tbl) ||
 		    s_p_get_string(&tmp, "PreemptMode", dflt)) {
 			p->preempt_mode = preempt_mode_num(tmp);
-			if (p->preempt_mode == (uint16_t) NO_VAL) {
+			if (p->preempt_mode == NO_VAL16) {
 				error("Bad value \"%s\" for PreemptMode", tmp);
 				xfree(tmp);
 				return -1;
 			}
 			xfree(tmp);
 		} else
-			p->preempt_mode = (uint16_t) NO_VAL;
+			p->preempt_mode = NO_VAL16;
 
 		if (!s_p_get_uint16(&p->priority_job_factor,
 				    "PriorityJobFactor", tbl) &&
@@ -2459,7 +2459,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->chos_loc);
 	xfree (ctl_conf_ptr->cluster_name);
-	ctl_conf_ptr->complete_wait		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->complete_wait		= NO_VAL16;
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->core_spec_plugin);
@@ -2477,7 +2477,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= (uint32_t) NO_VAL;
-	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->fast_schedule		= NO_VAL16;
 	xfree(ctl_conf_ptr->fed_params);
 	ctl_conf_ptr->first_job_id		= NO_VAL;
 	ctl_conf_ptr->get_env_timeout		= 0;
@@ -2487,7 +2487,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->hash_val			= (uint32_t) NO_VAL;
 	ctl_conf_ptr->health_check_interval	= 0;
 	xfree(ctl_conf_ptr->health_check_program);
-	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->inactive_limit		= NO_VAL16;
 	xfree (ctl_conf_ptr->job_acct_gather_freq);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_params);
@@ -2500,12 +2500,12 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_container_plugin);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
-	ctl_conf_ptr->job_file_append		= (uint16_t) NO_VAL;
-	ctl_conf_ptr->job_requeue		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->job_file_append		= NO_VAL16;
+	ctl_conf_ptr->job_requeue		= NO_VAL16;
 	xfree(ctl_conf_ptr->job_submit_plugins);
-	ctl_conf_ptr->keep_alive_time		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->keep_alive_time		= NO_VAL16;
 	ctl_conf_ptr->kill_on_bad_exit		= 0;
-	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
+	ctl_conf_ptr->kill_wait			= NO_VAL16;
 	xfree (ctl_conf_ptr->launch_params);
 	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->layouts);
@@ -2523,7 +2523,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
 	xfree (ctl_conf_ptr->msg_aggr_params);
-	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->msg_timeout		= NO_VAL16;
 	ctl_conf_ptr->next_job_id		= (uint32_t) NO_VAL;
 	xfree(ctl_conf_ptr->node_features_plugins);
 	xfree (ctl_conf_ptr->node_prefix);
@@ -2541,7 +2541,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->prolog_flags				= 0;
-	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
+	ctl_conf_ptr->propagate_prio_process	= NO_VAL16;
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->reboot_program);
@@ -2550,66 +2550,66 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree(ctl_conf_ptr->requeue_exit_hold);
 	ctl_conf_ptr->resume_timeout		= 0;
 	xfree (ctl_conf_ptr->resume_program);
-	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->resume_rate		= NO_VAL16;
 	xfree (ctl_conf_ptr->resv_epilog);
 	ctl_conf_ptr->resv_over_run		= 0;
 	xfree (ctl_conf_ptr->resv_prolog);
-	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->ret2service		= NO_VAL16;
 	xfree (ctl_conf_ptr->route_plugin);
 	xfree( ctl_conf_ptr->salloc_default_command);
 	xfree( ctl_conf_ptr->sbcast_parameters);
 	xfree( ctl_conf_ptr->sched_params );
-	ctl_conf_ptr->sched_time_slice		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->sched_time_slice		= NO_VAL16;
 	xfree( ctl_conf_ptr->schedtype );
 	xfree( ctl_conf_ptr->select_type );
-	ctl_conf_ptr->select_type_param         = (uint16_t) NO_VAL;
-	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->select_type_param         = NO_VAL16;
+	ctl_conf_ptr->slurm_user_id		= NO_VAL16;
 	xfree (ctl_conf_ptr->slurm_user_name);
-	ctl_conf_ptr->slurmd_user_id		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->slurmd_user_id		= NO_VAL16;
 	xfree (ctl_conf_ptr->slurmd_user_name);
-	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->slurmctld_debug		= NO_VAL16;
 	xfree (ctl_conf_ptr->slurmctld_logfile);
 	ctl_conf_ptr->slurmctld_syslog_debug    = NO_VAL16;
 	xfree (ctl_conf_ptr->sched_logfile);
-	ctl_conf_ptr->sched_log_level		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->sched_log_level		= NO_VAL16;
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	xfree (ctl_conf_ptr->slurmctld_plugstack);
 	ctl_conf_ptr->slurmctld_port		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->slurmctld_port_count	= 1;
-	ctl_conf_ptr->slurmctld_timeout		= (uint16_t) NO_VAL;
-	ctl_conf_ptr->slurmd_debug		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->slurmctld_timeout		= NO_VAL16;
+	ctl_conf_ptr->slurmd_debug		= NO_VAL16;
 	xfree (ctl_conf_ptr->slurmd_logfile);
 	ctl_conf_ptr->slurmd_syslog_debug       = NO_VAL16;
 	xfree (ctl_conf_ptr->slurmd_pidfile);
  	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmd_spooldir);
-	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->slurmd_timeout		= NO_VAL16;
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
 	xfree (ctl_conf_ptr->suspend_exc_parts);
 	xfree (ctl_conf_ptr->suspend_program);
-	ctl_conf_ptr->suspend_rate		= (uint16_t) NO_VAL;
-	ctl_conf_ptr->suspend_time		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->suspend_rate		= NO_VAL16;
+	ctl_conf_ptr->suspend_time		= NO_VAL16;
 	ctl_conf_ptr->suspend_timeout		= 0;
 	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->task_epilog);
 	xfree (ctl_conf_ptr->task_plugin);
 	ctl_conf_ptr->task_plugin_param		= 0;
 	xfree (ctl_conf_ptr->task_prolog);
-	ctl_conf_ptr->tcp_timeout		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->tcp_timeout		= NO_VAL16;
 	xfree (ctl_conf_ptr->tmp_fs);
 	xfree (ctl_conf_ptr->topology_param);
 	xfree (ctl_conf_ptr->topology_plugin);
-	ctl_conf_ptr->tree_width       		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->tree_width       		= NO_VAL16;
 	xfree (ctl_conf_ptr->unkillable_program);
-	ctl_conf_ptr->unkillable_timeout        = (uint16_t) NO_VAL;
+	ctl_conf_ptr->unkillable_timeout        = NO_VAL16;
 	ctl_conf_ptr->use_pam			= 0;
 	ctl_conf_ptr->use_spec_resources	= 0;
 	ctl_conf_ptr->vsize_factor              = 0;
-	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
-	ctl_conf_ptr->prolog_epilog_timeout = (uint16_t)NO_VAL;
+	ctl_conf_ptr->wait_time			= NO_VAL16;
+	ctl_conf_ptr->prolog_epilog_timeout = NO_VAL16;
 
 	_free_name_hashtbl();
 	_init_name_hashtbl();
@@ -3667,7 +3667,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (s_p_get_string(&temp_str, "PreemptMode", hashtbl)) {
 		conf->preempt_mode = preempt_mode_num(temp_str);
-		if (conf->preempt_mode == (uint16_t) NO_VAL) {
+		if (conf->preempt_mode == NO_VAL16) {
 			error("PreemptMode=%s invalid", temp_str);
 			return SLURM_ERROR;
 		}
@@ -3900,7 +3900,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (s_p_get_string(&temp_str, "PrologFlags", hashtbl)) {
 		conf->prolog_flags = prolog_str2flags(temp_str);
-		if (conf->prolog_flags == (uint16_t) NO_VAL) {
+		if (conf->prolog_flags == NO_VAL16) {
 			fatal("PrologFlags invalid: %s", temp_str);
 		}
 		if (conf->prolog_flags & PROLOG_FLAG_NOHOLD) {
@@ -4070,7 +4070,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (s_p_get_string(&temp_str, "SlurmctldDebug", hashtbl)) {
 		conf->slurmctld_debug = log_string2num(temp_str);
-		if (conf->slurmctld_debug == (uint16_t) NO_VAL) {
+		if (conf->slurmctld_debug == NO_VAL16) {
 			error("Invalid SlurmctldDebug %s", temp_str);
 			return SLURM_ERROR;
 		}
@@ -4139,7 +4139,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (s_p_get_string(&temp_str, "SlurmdDebug", hashtbl)) {
 		conf->slurmd_debug = log_string2num(temp_str);
-		if (conf->slurmd_debug == (uint16_t) NO_VAL) {
+		if (conf->slurmd_debug == NO_VAL16) {
 			error("Invalid SlurmdDebug %s", temp_str);
 			return SLURM_ERROR;
 		}
@@ -4423,7 +4423,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    hashtbl)) {
 		/* The default value is wait forever
 		 */
-		conf->prolog_epilog_timeout = (uint16_t)NO_VAL;
+		conf->prolog_epilog_timeout = NO_VAL16;
 	}
 
 	xfree(default_storage_type);
@@ -4534,7 +4534,7 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 #endif
 		} else {
 			error("Invalid PrologFlag: %s", tok);
-			rc = (uint16_t)NO_VAL;
+			rc = NO_VAL16;
 			break;
 		}
 		tok = strtok_r(NULL, ",", &last);
@@ -4984,7 +4984,7 @@ extern uint16_t reconfig_str2flags(char *reconfig_flags)
 			rc |= RECONFIG_KEEP_PART_STAT;
 		else {
 			error("Invalid ReconfigFlag: %s", tok);
-			rc = (uint16_t) NO_VAL;
+			rc = NO_VAL16;
 			break;
 		}
 		tok = strtok_r(NULL, ",", &last);

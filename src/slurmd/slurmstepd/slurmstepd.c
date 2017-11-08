@@ -279,7 +279,7 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	} else
 		confl->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 
-	confl->acct_freq_task = (uint16_t)NO_VAL;
+	confl->acct_freq_task = NO_VAL16;
 	tmp_int = acct_gather_parse_freq(PROFILE_TASK,
 				       confl->job_acct_gather_freq);
 	if (tmp_int != -1)

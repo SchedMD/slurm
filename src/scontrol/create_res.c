@@ -449,7 +449,7 @@ scontrol_create_res(int argc, char **argv)
 			error("CoreCnt, Nodes, NodeCnt, BurstBuffer, Licenses or Watts must be specified.  No reservation created.");
 			goto SCONTROL_CREATE_RES_CLEANUP;
 		}
-		if (resv_msg.flags == (uint16_t) NO_VAL)
+		if (resv_msg.flags == NO_VAL16)
 			resv_msg.flags = RESERVE_FLAG_PART_NODES;
 		else
 			resv_msg.flags |= RESERVE_FLAG_PART_NODES;

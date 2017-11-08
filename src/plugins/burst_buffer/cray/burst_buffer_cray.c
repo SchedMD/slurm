@@ -879,7 +879,7 @@ static void _recover_bb_state(void)
 {
 	char *state_file = NULL, *data = NULL;
 	int data_allocated, data_read = 0;
-	uint16_t protocol_version = (uint16_t)NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	uint32_t data_size = 0, rec_count = 0, name_len = 0;
 	uint32_t id = 0, user_id = 0;
 	uint64_t size = 0;
@@ -920,7 +920,7 @@ static void _recover_bb_state(void)
 
 	buffer = create_buf(data, data_size);
 	safe_unpack16(&protocol_version, buffer);
-	if (protocol_version == (uint16_t)NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can not recover burst_buffer/cray state, data version incompatible, start with '-i' to ignore this");
 		error("******************************************************************");

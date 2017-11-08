@@ -580,7 +580,7 @@ int _print_job_core_spec(job_info_t * job, int width, bool right, char* suffix)
 
 	if (job == NULL) {	/* Print the Header instead */
 		_print_str("CORE_SPEC", width, right, true);
-	} else if (job->core_spec == (uint16_t) NO_VAL) {
+	} else if (job->core_spec == NO_VAL16) {
 		_print_str("N/A", width, right, true);
 	} else if (job->core_spec & CORE_SPEC_THREAD) {
 		snprintf(spec, FORMAT_STRING_SIZE, "%d Threads",
@@ -1192,19 +1192,19 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 	char threads[10];
 	char *sct = NULL;
 	if (job) {
-		if (job->sockets_per_node == (uint16_t) NO_VAL)
+		if (job->sockets_per_node == NO_VAL16)
 			strcpy(sockets, "*");
 		else
 			convert_num_unit((float)job->sockets_per_node, sockets,
 					sizeof(sockets), UNIT_NONE, NO_VAL,
 					params.convert_flags);
-		if (job->cores_per_socket == (uint16_t) NO_VAL)
+		if (job->cores_per_socket == NO_VAL16)
 			strcpy(cores, "*");
 		else
 			convert_num_unit((float)job->cores_per_socket, cores,
 					sizeof(cores), UNIT_NONE, NO_VAL,
 					params.convert_flags);
-		if (job->threads_per_core == (uint16_t) NO_VAL)
+		if (job->threads_per_core == NO_VAL16)
 			strcpy(threads, "*");
 		else
 			convert_num_unit((float)job->threads_per_core, threads,
@@ -1290,7 +1290,7 @@ int _print_sockets(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("SOCKETS_PER_NODE", width, right_justify, true);
 	else {
-		if (job->sockets_per_node == (uint16_t) NO_VAL)
+		if (job->sockets_per_node == NO_VAL16)
 			strcpy(tmp_char, "*");
 		else
 			convert_num_unit((float)job->sockets_per_node, tmp_char,
@@ -1311,7 +1311,7 @@ int _print_cores(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CORES_PER_SOCKET", width, right_justify, true);
 	else {
-		if (job->cores_per_socket == (uint16_t) NO_VAL)
+		if (job->cores_per_socket == NO_VAL16)
 			strcpy(tmp_char, "*");
 		else
 			convert_num_unit((float)job->cores_per_socket, tmp_char,
@@ -1332,7 +1332,7 @@ int _print_threads(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("THREADS_PER_CORE", width, right_justify, true);
 	else {
-		if (job->threads_per_core == (uint16_t) NO_VAL)
+		if (job->threads_per_core == NO_VAL16)
 			strcpy(tmp_char, "*");
 		else
 			convert_num_unit((float)job->threads_per_core, tmp_char,
@@ -1668,7 +1668,7 @@ int _print_job_boards_per_node(job_info_t * job, int width, bool right_justify,
 {
 	if (job == NULL)
 		_print_str("BOARDS_PER_NODE", width, right_justify, true);
-	else if (job->boards_per_node == (uint16_t) NO_VAL)
+	else if (job->boards_per_node == NO_VAL16)
 		_print_str("N/A", width, right_justify, true);
 	else
 		_print_int(job->boards_per_node, width, right_justify, true);
@@ -1906,7 +1906,7 @@ int _print_job_ntasks_per_core(job_info_t * job, int width, bool right_justify,
 {
 	if (job == NULL)
 		_print_str("NTASKS_PER_CORE", width, right_justify, true);
-	else if ((job->ntasks_per_core == (uint16_t) NO_VAL) ||
+	else if ((job->ntasks_per_core == NO_VAL16) ||
 		 (job->ntasks_per_core == (uint16_t) INFINITE))
 		_print_str("N/A", width, right_justify, true);
 	else
@@ -1922,7 +1922,7 @@ int _print_job_ntasks_per_node(job_info_t * job, int width, bool right_justify,
 {
 	if (job == NULL)
 		_print_str("NTASKS_PER_NODE", width, right_justify, true);
-	else if ((job->ntasks_per_node == (uint16_t) NO_VAL) ||
+	else if ((job->ntasks_per_node == NO_VAL16) ||
 		 (job->ntasks_per_node == (uint16_t) INFINITE))
 		_print_str("N/A", width, right_justify, true);
 	else
@@ -1938,7 +1938,7 @@ int _print_job_ntasks_per_socket(job_info_t * job, int width,
 {
 	if (job == NULL)
 		_print_str("NTASKS_PER_SOCKET", width, right_justify, true);
-	else if ((job->ntasks_per_socket == (uint16_t) NO_VAL) ||
+	else if ((job->ntasks_per_socket == NO_VAL16) ||
 		 (job->ntasks_per_socket == (uint16_t) INFINITE))
 		_print_str("N/A", width, right_justify, true);
 	else
@@ -1954,7 +1954,7 @@ int _print_job_ntasks_per_board(job_info_t * job, int width,
 {
 	if (job == NULL)
 		_print_str("NTASKS_PER_BOARD", width, right_justify, true);
-	else if ((job->ntasks_per_board == (uint16_t) NO_VAL) ||
+	else if ((job->ntasks_per_board == NO_VAL16) ||
 		 (job->ntasks_per_board == (uint16_t) INFINITE))
 		_print_str("N/A", width, right_justify, true);
 	else

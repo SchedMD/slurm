@@ -1038,7 +1038,7 @@ extern void select_admin_front_end(GtkTreeModel *model, GtkTreeIter *iter,
 static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 			     char *node_list)
 {
-	uint16_t state = (uint16_t) NO_VAL;
+	uint16_t state = NO_VAL16;
 	update_front_end_msg_t front_end_update_msg;
 	char *new_type = NULL, *reason = NULL;
 	char tmp_char[100];

@@ -1450,9 +1450,9 @@ static struct multi_core_data * _create_default_mc(void)
 {
 	struct multi_core_data *mc_ptr;
 	mc_ptr = xmalloc(sizeof(struct multi_core_data));
-	mc_ptr->sockets_per_node = (uint16_t) NO_VAL;
-	mc_ptr->cores_per_socket = (uint16_t) NO_VAL;
-	mc_ptr->threads_per_core = (uint16_t) NO_VAL;
+	mc_ptr->sockets_per_node = NO_VAL16;
+	mc_ptr->cores_per_socket = NO_VAL16;
+	mc_ptr->threads_per_core = NO_VAL16;
 /*	mc_ptr is initialized to zero by xmalloc*/
 /*	mc_ptr->ntasks_per_socket = 0; */
 /*	mc_ptr->ntasks_per_core   = 0; */
@@ -1558,7 +1558,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	struct node_use_record *future_usage;
 	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;
-	uint16_t mode = (uint16_t) NO_VAL;
+	uint16_t mode = NO_VAL16;
 	uint16_t tmp_cr_type = cr_type;
 	bool preempt_mode = false;
 
@@ -2286,8 +2286,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		return EINVAL;
 
 	if (slurm_get_use_spec_resources() == 0)
-		job_ptr->details->core_spec = (uint16_t) NO_VAL;
-	if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
+		job_ptr->details->core_spec = NO_VAL16;
+	if ((job_ptr->details->core_spec != NO_VAL16) &&
 	    (job_ptr->details->whole_node != 1)) {
 		info("Setting Exclusive mode for job %u with CoreSpec=%u",
 		      job_ptr->job_id, job_ptr->details->core_spec);
@@ -3273,7 +3273,7 @@ static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **core_bitmap)
 {
 	bitstr_t *spec_core_map;
 
-	spec_core_map = make_core_bitmap(node_bitmap, (uint16_t) NO_VAL);
+	spec_core_map = make_core_bitmap(node_bitmap, NO_VAL16);
 	bit_not(spec_core_map);
 
 	xassert(core_bitmap);
@@ -3673,7 +3673,7 @@ extern int cr_cpus_per_core(struct job_details *details, int node_inx)
 					     (mc_ptr->ntasks_per_core *
 					      details->cpus_per_task));
 		}
-		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->threads_per_core != NO_VAL16) &&
 		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
 			ncpus_per_core = mc_ptr->threads_per_core;
 		}

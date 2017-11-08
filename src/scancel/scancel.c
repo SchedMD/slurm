@@ -692,7 +692,7 @@ _cancel_job_id (void *ci)
 	char *job_type = "";
 	DEF_TIMERS;
 
-	if (cancel_info->sig == (uint16_t) NO_VAL) {
+	if (cancel_info->sig == NO_VAL16) {
 		cancel_info->sig = SIGKILL;
 		sig_set = false;
 	}
@@ -801,7 +801,7 @@ _cancel_step_id (void *ci)
 	bool sig_set = true;
 	DEF_TIMERS;
 
-	if (cancel_info->sig == (uint16_t) NO_VAL) {
+	if (cancel_info->sig == NO_VAL16) {
 		cancel_info->sig = SIGKILL;
 		sig_set = false;
 	}
