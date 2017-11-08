@@ -6354,7 +6354,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
 
 		safe_unpack32(&count, buffer);
-		if (count > NO_VAL32)
+		if (count > NO_VAL)
 			goto unpack_error;
 		if (count != NO_VAL) {
 			List tmp_list = list_create(destroy_config_key_pair);
@@ -8020,7 +8020,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack32(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
 		rc = unpackstr_array(&pelog_env, &uint32_tmp, buffer);
-		if (uint32_tmp < NO_VAL32) {
+		if (uint32_tmp < NO_VAL) {
 			for (i = 0; i < uint32_tmp; i++)
 				xfree(pelog_env[i]);
 		}
@@ -9109,7 +9109,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		}
 
 		rc = unpackstr_array(&pelog_env, &uint32_tmp, buffer);
-		if (uint32_tmp < NO_VAL32) {
+		if (uint32_tmp < NO_VAL) {
 			for (i = 0; i < uint32_tmp; i++)
 				xfree(pelog_env[i]);
 		}
