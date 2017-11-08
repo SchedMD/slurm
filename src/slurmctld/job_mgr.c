@@ -4124,7 +4124,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	num_tasks = (job_specs->num_tasks != NO_VAL) ?
 		(long) job_specs->num_tasks : -1L;
-	overcommit = (job_specs->overcommit != (uint8_t) NO_VAL) ?
+	overcommit = (job_specs->overcommit != NO_VAL8) ?
 		(long) job_specs->overcommit : -1L;
 	nice = (job_specs->nice != NO_VAL) ?
 		((int64_t)job_specs->nice - NICE_OFFSET) : 0;
@@ -7906,13 +7906,13 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->share_res  = 1;
 		detail_ptr->whole_node = 0;
 	} else if (job_desc->shared == JOB_SHARED_USER) {
-		detail_ptr->share_res  = (uint8_t) NO_VAL;
+		detail_ptr->share_res  = NO_VAL8;
 		detail_ptr->whole_node = WHOLE_NODE_USER;
 	} else if (job_desc->shared == JOB_SHARED_MCS) {
-		detail_ptr->share_res  = (uint8_t) NO_VAL;
+		detail_ptr->share_res  = NO_VAL8;
 		detail_ptr->whole_node = WHOLE_NODE_MCS;
 	} else {
-		detail_ptr->share_res  = (uint8_t) NO_VAL;
+		detail_ptr->share_res  = NO_VAL8;
 		detail_ptr->whole_node = 0;
 	}
 	if (job_desc->contiguous != (uint16_t) NO_VAL)
@@ -7931,7 +7931,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->cpus_per_task = 1;
 	if (job_desc->pn_min_cpus != (uint16_t) NO_VAL)
 		detail_ptr->pn_min_cpus = job_desc->pn_min_cpus;
-	if (job_desc->overcommit != (uint8_t) NO_VAL)
+	if (job_desc->overcommit != NO_VAL8)
 		detail_ptr->overcommit = job_desc->overcommit;
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL) {
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;

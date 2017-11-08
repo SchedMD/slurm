@@ -179,7 +179,7 @@ inline static int hv_store_uint8_t(HV* hv, const char *key, uint8_t val)
 	   signed ints so we will handle this here. */
 	if(val == (uint8_t)INFINITE)
 		sv = newSViv(INFINITE);
-	else if(val == (uint8_t)NO_VAL)
+	else if(val == NO_VAL8)
 		sv = newSViv(NO_VAL);
 	else
 		sv = newSVuv(val);

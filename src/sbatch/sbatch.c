@@ -511,7 +511,7 @@ static int _check_cluster_specific_settings(job_desc_msg_t *req)
 			info("--share is not supported on Cray/ALPS systems.");
 			req->shared = (uint16_t)NO_VAL;
 		}
-		if (req->overcommit && (req->overcommit != (uint8_t)NO_VAL)) {
+		if (req->overcommit && (req->overcommit != NO_VAL8)) {
 			info("--overcommit is not supported on Cray/ALPS "
 			     "systems.");
 			req->overcommit = false;

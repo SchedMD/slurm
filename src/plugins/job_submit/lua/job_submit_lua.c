@@ -1384,7 +1384,7 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "NO_VAL");
 	lua_pushnumber (L, (uint16_t) NO_VAL);
 	lua_setfield (L, -2, "NO_VAL16");
-	lua_pushnumber (L, (uint8_t) NO_VAL);
+	lua_pushnumber (L, NO_VAL8);
 	lua_setfield (L, -2, "NO_VAL8");
 
 	/*
