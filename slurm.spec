@@ -378,12 +378,6 @@ test -f %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel} &&
 test -f %{buildroot}/opt/modulefiles/slurm/.version &&
   echo /opt/modulefiles/slurm/.version >> $LIST
 
-# Make ld.so.conf.d file
-mkdir -p %{buildroot}/etc/ld.so.conf.d
-echo '%{_libdir}
-%{_libdir}/slurm' > %{buildroot}/etc/ld.so.conf.d/slurm.conf
-chmod 644 %{buildroot}/etc/ld.so.conf.d/slurm.conf
-
 # Make pkg-config file
 mkdir -p %{buildroot}/%{_libdir}/pkgconfig
 cat >%{buildroot}/%{_libdir}/pkgconfig/slurm.pc <<EOF
@@ -443,8 +437,6 @@ rm -rf %{buildroot}
 %exclude %{_mandir}/man1/sjstat*
 %dir %{_libdir}/slurm/src
 %dir %{_sysconfdir}
-%dir /etc/ld.so.conf.d
-/etc/ld.so.conf.d/slurm.conf
 #############################################################################
 
 %files example-configs
