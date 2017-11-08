@@ -1541,10 +1541,10 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 		if ((mc_ptr->cores_per_socket != NO_VAL16) &&
 		    (mc_ptr->cores_per_socket > 1))
 			return false;
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core > 1))
 			return false;
-		if ((mc_ptr->ntasks_per_socket != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_socket != INFINITE16) &&
 		    (mc_ptr->ntasks_per_socket > 1))
 			return false;
 		if ((mc_ptr->sockets_per_node != NO_VAL16) &&

@@ -275,7 +275,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
 			    (xstrcasecmp(val,"INFINITE") == 0)) {
 				part_msg_ptr->over_time_limit =
-					(uint16_t) INFINITE;
+					INFINITE16;
 			} else if (parse_uint16(val, &part_msg_ptr->
 						      over_time_limit)) {
 				error("Invalid OverTimeLimit value: %s", val);

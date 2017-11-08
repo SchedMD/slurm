@@ -1125,7 +1125,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->node_features_plugins);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->over_time_limit == (uint16_t) INFINITE)
+	if (slurm_ctl_conf_ptr->over_time_limit == INFINITE16)
 		snprintf(tmp_str, sizeof(tmp_str), "UNLIMITED");
 	else
 		snprintf(tmp_str, sizeof(tmp_str), "%u min",
@@ -1363,7 +1363,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->resv_epilog);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->resv_over_run == (uint16_t) INFINITE)
+	if (slurm_ctl_conf_ptr->resv_over_run == INFINITE16)
 		snprintf(tmp_str, sizeof(tmp_str), "UNLIMITED");
 	else
 		snprintf(tmp_str, sizeof(tmp_str), "%u min",

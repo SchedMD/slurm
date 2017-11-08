@@ -688,13 +688,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrfmtcat(out, "%u:", job_ptr->ntasks_per_board);
 
 	if ((job_ptr->ntasks_per_socket == NO_VAL16) ||
-	    (job_ptr->ntasks_per_socket == (uint16_t) INFINITE))
+	    (job_ptr->ntasks_per_socket == INFINITE16))
 		xstrcat(out, "*:");
 	else
 		xstrfmtcat(out, "%u:", job_ptr->ntasks_per_socket);
 
 	if ((job_ptr->ntasks_per_core == NO_VAL16) ||
-	    (job_ptr->ntasks_per_core == (uint16_t) INFINITE))
+	    (job_ptr->ntasks_per_core == INFINITE16))
 		xstrcat(out, "* ");
 	else
 		xstrfmtcat(out, "%u ", job_ptr->ntasks_per_core);

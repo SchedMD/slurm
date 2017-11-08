@@ -89,7 +89,7 @@ int s_p_handle_uint16(uint16_t* data, const char* key, const char *value)
 		|| (*endptr != '\0')) {
 		if (xstrcasecmp(value, "UNLIMITED") == 0
 			|| xstrcasecmp(value, "INFINITE") == 0) {
-			num = (uint16_t) INFINITE;
+			num = INFINITE16;
 		} else {
 			error("%s value \"%s\" is not a valid number",
 				key, value);

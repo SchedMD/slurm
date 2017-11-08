@@ -1001,7 +1001,7 @@ uint16_t parse_mail_type(const char *arg)
 	bool none_set = false;
 
 	if (!arg)
-		return (uint16_t)INFINITE;
+		return INFINITE16;
 
 	buf = xstrdup(arg);
 	tok = strtok_r(buf, ",", &save_ptr);
@@ -1038,7 +1038,7 @@ uint16_t parse_mail_type(const char *arg)
 	}
 	xfree(buf);
 	if (!rc && !none_set)
-		rc = (uint16_t)INFINITE;
+		rc = INFINITE16;
 
 	return rc;
 }

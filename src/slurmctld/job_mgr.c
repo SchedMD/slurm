@@ -7673,13 +7673,13 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 	if (job_desc->ntasks_per_socket != NO_VAL16)
 		mc_ptr->ntasks_per_socket  = job_desc->ntasks_per_socket;
 	else
-		mc_ptr->ntasks_per_socket  = (uint16_t) INFINITE;
+		mc_ptr->ntasks_per_socket  = INFINITE16;
 	if (job_desc->ntasks_per_core != NO_VAL16)
 		mc_ptr->ntasks_per_core    = job_desc->ntasks_per_core;
 	else if (slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE)
 		mc_ptr->ntasks_per_core    = 1;
 	else
-		mc_ptr->ntasks_per_core    = (uint16_t) INFINITE;
+		mc_ptr->ntasks_per_core    = INFINITE16;
 	if (job_desc->plane_size != NO_VAL16)
 		mc_ptr->plane_size         = job_desc->plane_size;
 	else
@@ -8365,7 +8365,7 @@ void job_time_limit(void)
 	int job_test_count = 0;
 	uint32_t resv_over_run = slurmctld_conf.resv_over_run;
 
-	if (resv_over_run == (uint16_t) INFINITE)
+	if (resv_over_run == INFINITE16)
 		resv_over_run = YEAR_SECONDS;
 	else
 		resv_over_run *= 60;
@@ -8539,7 +8539,7 @@ void job_time_limit(void)
 				over_time_limit =
 					slurmctld_conf.over_time_limit;
 			}
-			if (over_time_limit == (uint16_t) INFINITE)
+			if (over_time_limit == INFINITE16)
 				over_run = now - YEAR_SECONDS;
 			else
 				over_run = now - (over_time_limit  * 60);
@@ -10219,7 +10219,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			} else if (detail_ptr->mc_ptr &&
 				   detail_ptr->mc_ptr->ntasks_per_core &&
 				   (detail_ptr->mc_ptr->ntasks_per_core
-				    != (uint16_t)INFINITE)) {
+				    != INFINITE16)) {
 				/* min_nodes based upon task count and ntasks
 				 * per core */
 				uint32_t min_cores, min_nodes;
@@ -10366,7 +10366,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			} else if (detail_ptr->mc_ptr &&
 				   detail_ptr->mc_ptr->ntasks_per_core &&
 				   (detail_ptr->mc_ptr->ntasks_per_core
-				    != (uint16_t)INFINITE)) {
+				    != INFINITE16)) {
 				/* min_nodes based upon task count and ntasks
 				 * per core */
 				uint32_t min_cores, min_nodes;
@@ -12464,7 +12464,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (operator && slurm_get_use_spec_resources()) {
-			if (job_specs->core_spec == (uint16_t) INFINITE)
+			if (job_specs->core_spec == INFINITE16)
 				detail_ptr->core_spec = NO_VAL16;
 			else
 				detail_ptr->core_spec = job_specs->core_spec;

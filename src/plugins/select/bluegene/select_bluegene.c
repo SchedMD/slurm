@@ -3040,7 +3040,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		}
 		break;
 	case SELECT_GET_NODE_CPU_CNT:
-		if ((*cpus) != (uint16_t)INFINITE)
+		if ((*cpus) != INFINITE16)
 			(*cpus) = bg_conf->cpu_ratio;
 		break;
 	case SELECT_GET_MP_CPU_CNT:

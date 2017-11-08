@@ -1770,7 +1770,7 @@ static void _set_options(int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == (uint16_t)INFINITE) {
+			if (opt.mail_type == INFINITE16) {
 				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
@@ -2340,7 +2340,7 @@ static void _set_pbs_options(int argc, char **argv)
 			if (!optarg) /* CLANG Fix */
 				break;
 			opt.mail_type |= _parse_pbs_mail_type(optarg);
-			if (opt.mail_type == (uint16_t)INFINITE) {
+			if (opt.mail_type == INFINITE16) {
 				error("-m=%s invalid", optarg);
 				exit(error_exit);
 			}
@@ -3169,7 +3169,7 @@ static uint16_t _parse_pbs_mail_type(const char *arg)
 	if (strchr(arg, 'n') || strchr(arg, 'N'))
 		rc = 0;
 	else if (!rc)
-		rc = (uint16_t)INFINITE;
+		rc = INFINITE16;
 
 	return rc;
 }

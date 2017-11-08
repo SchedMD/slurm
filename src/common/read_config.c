@@ -1275,14 +1275,14 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    s_p_get_string(&tmp, "OverTimeLimit", dflt)) {
 			if (!strcasecmp(tmp, "INFINITE") ||
 			    !strcasecmp(tmp, "UNLIMITED")) {
-				p->over_time_limit = (uint16_t) INFINITE;
+				p->over_time_limit = INFINITE16;
 			} else {
 				int i = strtol(tmp, (char **) NULL, 10);
 				if (i < 0)
 					error("Ignoring bad OverTimeLimit value: %s",
 					      tmp);
 				else if (i > 0xfffe)
-					p->over_time_limit = (uint16_t)INFINITE;
+					p->over_time_limit = INFINITE16;
 				else
 					p->over_time_limit = i;
 			}

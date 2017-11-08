@@ -1750,7 +1750,7 @@ static time_t _guess_job_end(struct job_record * job_ptr, time_t now)
 	}
 	if (over_time_limit == 0) {
 		end_time = job_ptr->end_time + slurmctld_conf.kill_wait;
-	} else if (over_time_limit == (uint16_t) INFINITE) {
+	} else if (over_time_limit == INFINITE16) {
 		end_time = now + (365 * 24 * 60 * 60);	/* one year */
 	} else {
 		end_time = job_ptr->end_time + slurmctld_conf.kill_wait +
@@ -3667,7 +3667,7 @@ extern int cr_cpus_per_core(struct job_details *details, int node_inx)
 
 	if (details && details->mc_ptr) {
 		multi_core_data_t *mc_ptr = details->mc_ptr;
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
 			ncpus_per_core = MIN(threads_per_core,
 					     (mc_ptr->ntasks_per_core *

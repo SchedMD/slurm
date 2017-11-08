@@ -1403,7 +1403,7 @@ extern int get_uint16(char *in_value, uint16_t *out_value, char *type)
 	xfree(meat);
 
 	if (num < 0)
-		*out_value = (uint16_t) INFINITE; /* flag to clear */
+		*out_value = INFINITE16; /* flag to clear */
 	else
 		*out_value = (uint16_t) num;
 	return SLURM_SUCCESS;

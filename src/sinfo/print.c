@@ -250,7 +250,7 @@ _build_min_max_16_string(char *buffer, int buf_size, uint16_t min, uint16_t max,
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
 	else if (range) {
-		if (max == (uint16_t) INFINITE)
+		if (max == INFINITE16)
 			return snprintf(buffer, buf_size, "%s-infinite",
 					tmp_min);
 		else

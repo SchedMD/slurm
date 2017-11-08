@@ -1907,7 +1907,7 @@ int _print_job_ntasks_per_core(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)
 		_print_str("NTASKS_PER_CORE", width, right_justify, true);
 	else if ((job->ntasks_per_core == NO_VAL16) ||
-		 (job->ntasks_per_core == (uint16_t) INFINITE))
+		 (job->ntasks_per_core == INFINITE16))
 		_print_str("N/A", width, right_justify, true);
 	else
 		_print_int(job->ntasks_per_core, width, right_justify, true);
@@ -1923,7 +1923,7 @@ int _print_job_ntasks_per_node(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)
 		_print_str("NTASKS_PER_NODE", width, right_justify, true);
 	else if ((job->ntasks_per_node == NO_VAL16) ||
-		 (job->ntasks_per_node == (uint16_t) INFINITE))
+		 (job->ntasks_per_node == INFINITE16))
 		_print_str("N/A", width, right_justify, true);
 	else
 		_print_int(job->ntasks_per_node, width, right_justify, true);
@@ -1939,7 +1939,7 @@ int _print_job_ntasks_per_socket(job_info_t * job, int width,
 	if (job == NULL)
 		_print_str("NTASKS_PER_SOCKET", width, right_justify, true);
 	else if ((job->ntasks_per_socket == NO_VAL16) ||
-		 (job->ntasks_per_socket == (uint16_t) INFINITE))
+		 (job->ntasks_per_socket == INFINITE16))
 		_print_str("N/A", width, right_justify, true);
 	else
 		_print_int(job->ntasks_per_socket, width, right_justify, true);
@@ -1955,7 +1955,7 @@ int _print_job_ntasks_per_board(job_info_t * job, int width,
 	if (job == NULL)
 		_print_str("NTASKS_PER_BOARD", width, right_justify, true);
 	else if ((job->ntasks_per_board == NO_VAL16) ||
-		 (job->ntasks_per_board == (uint16_t) INFINITE))
+		 (job->ntasks_per_board == INFINITE16))
 		_print_str("N/A", width, right_justify, true);
 	else
 		_print_int(job->ntasks_per_board, width, right_justify, true);

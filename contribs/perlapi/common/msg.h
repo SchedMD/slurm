@@ -22,7 +22,7 @@ inline static int av_store_uint16_t(AV* av, int index, uint16_t val)
 	/* Perl has a hard time figuring out the an unsigned int is
 	   equal to INFINITE or NO_VAL since they are treated as
 	   signed ints so we will handle this here. */
-	if(val == (uint16_t)INFINITE)
+	if(val == INFINITE16)
 		sv = newSViv(INFINITE);
 	else if(val == NO_VAL16)
 		sv = newSViv(NO_VAL);
@@ -154,7 +154,7 @@ inline static int hv_store_uint16_t(HV* hv, const char *key, uint16_t val)
 	/* Perl has a hard time figuring out the an unsigned int is
 	   equal to INFINITE or NO_VAL since they are treated as
 	   signed ints so we will handle this here. */
-	if(val == (uint16_t)INFINITE)
+	if(val == INFINITE16)
 		sv = newSViv(INFINITE);
 	else if(val == NO_VAL16)
 		sv = newSViv(NO_VAL);

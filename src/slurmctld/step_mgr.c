@@ -2751,7 +2751,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 		if (mc_ptr->ntasks_per_core &&
-		    (mc_ptr->ntasks_per_core != (uint16_t) INFINITE)) {
+		    (mc_ptr->ntasks_per_core != INFINITE16)) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 		}
 

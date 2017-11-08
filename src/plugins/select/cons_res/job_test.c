@@ -248,7 +248,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		if (mc_ptr->sockets_per_node != NO_VAL16) {
 			min_sockets = mc_ptr->sockets_per_node;
 		}
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 			ncpus_per_core = MIN(threads_per_core,
@@ -262,13 +262,13 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 
 		if ((ncpus_per_core != NO_VAL16) &&
-		    (ncpus_per_core != (uint16_t) INFINITE) &&
+		    (ncpus_per_core != INFINITE16) &&
 		    (ncpus_per_core > threads_per_core)) {
 			goto fini;
 		}
 		threads_per_socket = threads_per_core * cores_per_socket;
 		if ((ntasks_per_socket != NO_VAL16) &&
-		    (ntasks_per_socket != (uint16_t) INFINITE) &&
+		    (ntasks_per_socket != INFINITE16) &&
 		    (ntasks_per_socket > threads_per_socket)) {
 			goto fini;
 		}
@@ -1149,7 +1149,7 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 
 	mc_ptr = job_ptr->details->mc_ptr;
 	if ((mc_ptr->ntasks_per_socket != NO_VAL16) &&
-	    (mc_ptr->ntasks_per_socket != (uint16_t) INFINITE)) {
+	    (mc_ptr->ntasks_per_socket != INFINITE16)) {
 		tasks_per_node = job_ptr->details->num_tasks / min_nodes;
 		s_p_n = (tasks_per_node + mc_ptr->ntasks_per_socket - 1) /
 			mc_ptr->ntasks_per_socket;

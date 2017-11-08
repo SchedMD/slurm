@@ -668,7 +668,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 	case SORTID_OVER_TIME_LIMIT:
 		if (!xstrcasecmp(new_text, "INFINITE") ||
 		    !xstrcasecmp(new_text, "UNLIMITED")) {
-			part_msg->over_time_limit = (uint16_t) INFINITE;
+			part_msg->over_time_limit = INFINITE16;
 		} else if (new_text[0] >= '0' && new_text[0] <= '9')
 			part_msg->over_time_limit = atoi(new_text);
 		else
@@ -1168,7 +1168,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 				temp_char = "no";
 			break;
 		case SORTID_OVER_TIME_LIMIT:
-			if (part_ptr->over_time_limit == (uint16_t) INFINITE) {
+			if (part_ptr->over_time_limit == INFINITE16) {
 				temp_char = "UNLIMITED";
 			} else if (part_ptr->over_time_limit == NO_VAL16) {
 				temp_char = "N/A";
@@ -1386,7 +1386,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	} else
 		tmp_over_subscribe = "no";
 
-	if (part_ptr->over_time_limit == (uint16_t) INFINITE) {
+	if (part_ptr->over_time_limit == INFINITE16) {
 		tmp_over_time_limit = "UNLIMITED";
 	} else if (part_ptr->over_time_limit == NO_VAL16) {
 		tmp_over_time_limit = "N/A";
