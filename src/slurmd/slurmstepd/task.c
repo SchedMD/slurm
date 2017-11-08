@@ -407,7 +407,7 @@ extern void exec_task(stepd_step_rec_t *job, int i)
 		task->argv[0] = _build_path(task->argv[0], job->env, NULL);
 	}
 
-	if (!job->batch) {
+	if (!job->batch && (job->stepid != SLURM_EXTERN_CONT)) {
 		if (switch_g_job_attach(job->switch_job, &job->env,
 					job->nodeid, (uint32_t) i, job->nnodes,
 					job->ntasks, task->gtid) < 0) {

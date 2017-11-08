@@ -1227,7 +1227,8 @@ job_manager(stepd_step_rec_t *job)
 		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
-	if (mpi_hook_slurmstepd_init(&job->env) != SLURM_SUCCESS) {
+	if (!job->batch && (job->stepid != SLURM_EXTERN_CONT) &&
+	    (mpi_hook_slurmstepd_init(&job->env) != SLURM_SUCCESS)) {
 		rc = SLURM_MPI_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
@@ -1315,7 +1316,8 @@ job_manager(stepd_step_rec_t *job)
 	}
 
 	/* fork necessary threads for MPI */
-	if (mpi_hook_slurmstepd_prefork(job, &job->env) != SLURM_SUCCESS) {
+	if (!job->batch && (job->stepid != SLURM_EXTERN_CONT) &&
+	    (mpi_hook_slurmstepd_prefork(job, &job->env) != SLURM_SUCCESS)) {
 		error("Failed mpi_hook_slurmstepd_prefork");
 		rc = SLURM_FAILURE;
 		xstrfmtcat(err_msg,

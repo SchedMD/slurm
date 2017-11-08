@@ -154,6 +154,7 @@ int mpi_hook_slurmstepd_init (char ***env)
 	if (_mpi_init(mpi_type) == SLURM_ERROR)
 		return SLURM_ERROR;
 
+	/* Unset env var so that "none" doesn't exist in salloc'ed env */
 	unsetenvp (*env, "SLURM_MPI_TYPE");
 
 	return SLURM_SUCCESS;
