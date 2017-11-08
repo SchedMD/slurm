@@ -389,8 +389,8 @@ no_objects:
 			}
 
 			if (!flat_view
-			   && (acct_group->lft != (uint32_t)NO_VAL)
-			   && (job->lft != (uint32_t)NO_VAL)) {
+			   && (acct_group->lft != NO_VAL)
+			   && (job->lft != NO_VAL)) {
 				/* keep separate since we don't want
 				 * to so a xstrcmp if we don't have to
 				 */

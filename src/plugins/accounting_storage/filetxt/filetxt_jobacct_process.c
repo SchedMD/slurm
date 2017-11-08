@@ -405,16 +405,16 @@ static filetxt_step_rec_t *_create_filetxt_step_rec(filetxt_header_t header)
 	memcpy(&step->header, &header, sizeof(filetxt_header_t));
 	memset(&step->rusage, 0, sizeof(struct rusage));
 	memset(&step->stats, 0, sizeof(slurmdb_stats_t));
-	step->stepnum = (uint32_t)NO_VAL;
+	step->stepnum = NO_VAL;
 	step->nodes = NULL;
 	step->stepname = NULL;
 	step->status = NO_VAL;
 	step->exitcode = NO_VAL;
-	step->ntasks = (uint32_t)NO_VAL;
-	step->ncpus = (uint32_t)NO_VAL;
-	step->elapsed = (uint32_t)NO_VAL;
-	step->tot_cpu_sec = (uint32_t)NO_VAL;
-	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->ntasks = NO_VAL;
+	step->ncpus = NO_VAL;
+	step->elapsed = NO_VAL;
+	step->tot_cpu_sec = NO_VAL;
+	step->tot_cpu_usec = NO_VAL;
 	step->account = NULL;
 	step->requid = -1;
 

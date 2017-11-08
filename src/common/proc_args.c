@@ -1385,7 +1385,7 @@ extern int parse_uint32(char *aval, uint32_t *ival)
 	 * set the value and return. Otherwise return
 	 * an error.
 	 */
-	uint32_t max32uint = (uint32_t) NO_VAL;
+	uint32_t max32uint = NO_VAL;
 	long long tval;
 	char *p;
 

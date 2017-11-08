@@ -937,7 +937,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		ave_cpu /= cpus;
 	}
 
-	if (jobacct->min_cpu != (uint32_t)NO_VAL) {
+	if (jobacct->min_cpu != NO_VAL) {
 		ave_cpu2 = jobacct->min_cpu;
 	}
 

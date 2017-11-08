@@ -1303,7 +1303,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else
 		tmp_hidden = "no";
 
-	if (part_ptr->grace_time == (uint32_t) NO_VAL)
+	if (part_ptr->grace_time == NO_VAL)
 		snprintf(tmp_grace, sizeof(tmp_grace), "none");
 	else {
 		secs2time_str(part_ptr->grace_time,

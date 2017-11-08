@@ -9667,7 +9667,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 					   protocol_version);
 			_pack_job_gres(dump_job_ptr, buffer, protocol_version);
 		} else {
-			pack32((uint32_t) NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack32((uint32_t) 0, buffer);
 		}
 
@@ -9854,7 +9854,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 					   protocol_version);
 			_pack_job_gres(dump_job_ptr, buffer, protocol_version);
 		} else {
-			pack32((uint32_t) NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack32((uint32_t) 0, buffer);
 		}
 

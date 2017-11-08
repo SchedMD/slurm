@@ -47,7 +47,7 @@ inline static int av_store_uint32_t(AV* av, int index, uint32_t val)
 	   signed ints so we will handle this here. */
 	if(val == (uint32_t)INFINITE)
 		sv = newSViv(INFINITE);
-	else if(val == (uint32_t)NO_VAL)
+	else if(val == NO_VAL)
 		sv = newSViv(NO_VAL);
 	else
 		sv = newSViv(val);
@@ -133,7 +133,7 @@ inline static int hv_store_uint32_t(HV* hv, const char *key, uint32_t val)
 	   signed ints so we will handle this here. */
 	if(val == (uint32_t)INFINITE)
 		sv = newSViv(INFINITE);
-	else if(val == (uint32_t)NO_VAL)
+	else if(val == NO_VAL)
 		sv = newSViv(NO_VAL);
 	else
 		sv = newSVuv(val);

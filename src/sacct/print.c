@@ -1087,7 +1087,7 @@ extern void print_fields(type_t type, void *object)
 					break;
 				}
 			}
-			if (tmp_uint32 == (uint32_t)NO_VAL)
+			if (tmp_uint32 == NO_VAL)
 				tmp_uint32 = NO_VAL;
 			field->print_routine(field,
 					     tmp_uint32,
@@ -1161,7 +1161,7 @@ extern void print_fields(type_t type, void *object)
 					tmp_uint32 = NO_VAL;
 					break;
 				}
-				if (tmp_uint32 == (uint32_t)NO_VAL)
+				if (tmp_uint32 == NO_VAL)
 					tmp_uint32 = NO_VAL;
 			}
 			field->print_routine(field,
@@ -1239,7 +1239,7 @@ extern void print_fields(type_t type, void *object)
 					tmp_uint32 = NO_VAL;
 					break;
 				}
-				if (tmp_uint32 == (uint32_t)NO_VAL)
+				if (tmp_uint32 == NO_VAL)
 					tmp_uint32 = NO_VAL;
 			}
 
@@ -1398,7 +1398,7 @@ extern void print_fields(type_t type, void *object)
 					tmp_uint32 = NO_VAL;
 					break;
 				}
-				if (tmp_uint32 == (uint32_t)NO_VAL)
+				if (tmp_uint32 == NO_VAL)
 					tmp_uint32 = NO_VAL;
 			}
 
@@ -1491,7 +1491,7 @@ extern void print_fields(type_t type, void *object)
 					tmp_uint32 = NO_VAL;
 					break;
 				}
-				if (tmp_uint32 == (uint32_t)NO_VAL)
+				if (tmp_uint32 == NO_VAL)
 					tmp_uint32 = NO_VAL;
 			}
 
@@ -1858,7 +1858,7 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint32 = NO_VAL;
 				break;
 			}
-			if (tmp_uint32 == (uint32_t)NO_VAL)
+			if (tmp_uint32 == NO_VAL)
 				tmp_uint32 = NO_VAL;
 			field->print_routine(field,
 					     tmp_uint32,

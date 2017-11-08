@@ -632,7 +632,7 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 		/* handle old style env variable for backwards compatibility */
 		ptr->job_id = (uint32_t)atol(jobid_str);
 	} else {
-		ptr->job_id = (uint32_t)NO_VAL;
+		ptr->job_id = NO_VAL;
 	}
 }
 

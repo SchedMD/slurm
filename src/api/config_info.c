@@ -303,7 +303,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (!p[i].allow_qos && p[i].deny_qos)
 			fprintf(fp, "DenyQos=%s", p[i].deny_qos);
 
-		if (p[i].default_time != (uint32_t) NO_VAL) {
+		if (p[i].default_time != NO_VAL) {
 			if (p[i].default_time == INFINITE)
 				fprintf(fp, "DefaultTime=UNLIMITED");
 			else {

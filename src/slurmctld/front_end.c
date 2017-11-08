@@ -311,7 +311,7 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 			xassert(front_end_ptr->magic == FRONT_END_MAGIC);
 			if (xstrcmp(this_node_name, front_end_ptr->name))
 				continue;
-			if (msg_ptr->node_state == (uint32_t)NO_VAL) {
+			if (msg_ptr->node_state == NO_VAL) {
 				;	/* No change in node state */
 			} else if (msg_ptr->node_state == NODE_RESUME) {
 				front_end_ptr->node_state = NODE_STATE_IDLE;
@@ -332,7 +332,7 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 				set_front_end_down(front_end_ptr,
 						   msg_ptr->reason);
 			}
-			if (msg_ptr->node_state != (uint32_t) NO_VAL) {
+			if (msg_ptr->node_state != NO_VAL) {
 				info("update_front_end: set state of %s to %s",
 				     this_node_name,
 				     node_state_string(front_end_ptr->
@@ -839,7 +839,7 @@ extern int load_all_front_end_state(bool state_only)
 	safe_unpack_time(&time_stamp, buffer);
 
 	while (remaining_buf (buffer) > 0) {
-		uint32_t base_state = (uint32_t)NO_VAL;
+		uint32_t base_state = NO_VAL;
 		uint16_t obj_protocol_version = NO_VAL16;
 
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {

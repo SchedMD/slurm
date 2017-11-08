@@ -3089,7 +3089,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		set_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_ALTERED, &tmp);
 
-		if (job_desc->min_nodes == (uint32_t) NO_VAL)
+		if (job_desc->min_nodes == NO_VAL)
 			return SLURM_SUCCESS;
 
 #ifdef HAVE_BG_L_P
@@ -3173,7 +3173,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		/* initialize min_cpus to the min_nodes */
 		job_desc->min_cpus = job_desc->min_nodes * bg_conf->cpu_ratio;
 
-		if ((job_desc->max_nodes == (uint32_t) NO_VAL)
+		if ((job_desc->max_nodes == NO_VAL)
 		    || (job_desc->max_nodes < job_desc->min_nodes))
 			job_desc->max_nodes = job_desc->min_nodes;
 

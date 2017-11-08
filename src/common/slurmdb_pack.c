@@ -2299,8 +2299,8 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 		if (!object) {
 			packnull(buffer);
 			packnull(buffer);
-			pack32((uint32_t)NO_VAL, buffer);
-			pack32((uint32_t)NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
@@ -2308,7 +2308,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 			pack_time(0, buffer);
 			pack_time(0, buffer);
 			packnull(buffer);
-			pack32((uint32_t)NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack32(0, buffer);
 			return;
 		}
@@ -2345,8 +2345,8 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 		if (!object) {
 			packnull(buffer);
 			packnull(buffer);
-			pack32((uint32_t)NO_VAL, buffer);
-			pack32((uint32_t)NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
@@ -2354,7 +2354,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 			pack_time(0, buffer);
 			pack_time(0, buffer);
 			packnull(buffer);
-			pack32((uint32_t)NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			return;
 		}
 
@@ -6661,7 +6661,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		if (!object) {
-			pack32((uint32_t)NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack32(0, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -6730,7 +6730,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 		pack16(object->with_usage, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
-			pack32((uint32_t)NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);

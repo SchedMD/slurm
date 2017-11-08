@@ -336,7 +336,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	case SORTID_FLAGS:
 		f = parse_resv_flags(new_text, __func__);
 		type = "flags";
-		if (f == (uint32_t)NO_VAL)
+		if (f == NO_VAL)
 			goto return_error;
 		resv_msg->flags = f;
 		break;

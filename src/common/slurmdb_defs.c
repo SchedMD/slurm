@@ -578,8 +578,8 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 	job->state = JOB_PENDING;
 	job->steps = list_create(slurmdb_destroy_step_rec);
 	job->requid = -1;
-	job->lft = (uint32_t)NO_VAL;
-	job->resvid = (uint32_t)NO_VAL;
+	job->lft = NO_VAL;
+	job->resvid = NO_VAL;
 
       	return job;
 }
@@ -588,12 +588,12 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec()
 {
 	slurmdb_step_rec_t *step = xmalloc(sizeof(slurmdb_step_rec_t));
 	memset(&step->stats, 0, sizeof(slurmdb_stats_t));
-	step->stepid = (uint32_t)NO_VAL;
+	step->stepid = NO_VAL;
 	step->state = NO_VAL;
 	step->exitcode = NO_VAL;
-	step->elapsed = (uint32_t)NO_VAL;
-	step->tot_cpu_sec = (uint32_t)NO_VAL;
-	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->elapsed = NO_VAL;
+	step->tot_cpu_sec = NO_VAL;
+	step->tot_cpu_usec = NO_VAL;
 	step->requid = -1;
 
 	return step;

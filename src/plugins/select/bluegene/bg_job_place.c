@@ -1317,7 +1317,7 @@ static int _find_best_block_match(List block_list,
 	/* since we only look at procs after this and not nodes we
 	 *  need to set a max_cpus if given
 	 */
-	if (max_cpus == (uint32_t)NO_VAL)
+	if (max_cpus == NO_VAL)
 		max_cpus = max_nodes * bg_conf->cpus_per_mp;
 
 	while (1) {
