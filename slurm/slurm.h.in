@@ -153,7 +153,6 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define	INFINITE8  (0xff)
 #define	INFINITE16 (0xffff)
 #define	INFINITE   (0xffffffff)
-#define	INFINITE32 (0xffffffff)
 #define	INFINITE64 (0xffffffffffffffff)
 #define NO_VAL8    (0xfe)
 #define NO_VAL16   (0xfffe)
