@@ -62,7 +62,7 @@ Individual job steps can enable or disable sorting using the "--mem-bind=sort"
 or "--mem-bind=nosort" command line options for srun.
 Sorting will be performed only for the NUMA nodes allocated to the job step.</p>
 
-<p><a name="note"><b>NOTE</b></a>: Slurm version 17.11 provides limited support
+<p><a name="note"><b>NOTE</b></a>: Slurm provides limited support
 for restricting use of HBM. At some point in the future, the amount of HBM
 requested by the job will be compared with the total amount of HBM and number of
 memory-containing NUMA nodes available on the KNL processor. The job will then
@@ -70,7 +70,7 @@ be bound to specific NUMA nodes in order to limit the total amount of HBM
 available to the job, and thus reserve the remaining HBM for other jobs running
 on that KNL processor.</p>
 
-<p><a name="note"><b>NOTE</b></a>: Slurm version 17.11 and earlier can only
+<p><a name="note"><b>NOTE</b></a>: Slurm can only
 support homogeneous nodes (e.g. the same number of cores per NUMA node).
 KNL processors with <u>68 cores</u> (a subset of KNL models) will not have
 homogeneous NUMA nodes in snc4 mode, but each each NUMA node will have
@@ -185,7 +185,7 @@ plugin.</p>
 <p>NOTE: For Dell KNL systems you must also include the<i>SystemType=Dell</i>
 option for successful operation.</p>
 
-<p>Slurm version 17.11 does not support the concept of multiple NUMA nodes
+<p>Slurm does not support the concept of multiple NUMA nodes
 within a single socket. If a KNL node is booted with multiple NUMA, then each
 NUMA node will appear in Slurm as a separate socket.
 In the slurm.conf configuration file, set "FastSchedule=1" and node socket and
