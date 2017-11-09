@@ -115,7 +115,7 @@ extern void acct_gather_profile_endpoll(void);
 
 /* Called from slurmstepd between fork() and exec() of application.
  * Close open files */
-extern void acct_gather_profile_g_child_forked(void);
+extern int acct_gather_profile_g_child_forked(void);
 
 /*
  * Define plugin local conf for acct_gather.conf
@@ -125,7 +125,7 @@ extern void acct_gather_profile_g_child_forked(void);
  *			definitions
  *	full_options_cnt -- count of plugin local definitions
  */
-extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
+extern int acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 					       int *full_options_cnt);
 /*
  * set plugin local conf from acct_gather.conf into its structure
@@ -133,13 +133,13 @@ extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
  * Parameters
  * 	tbl - hash table of acct_gather.conf key-values.
  */
-extern void acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl);
+extern int acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl);
 
 /*
  * get info from the profile plugin
  *
  */
-extern void acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
+extern int acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 				      void *data);
 
 /*

@@ -537,40 +537,42 @@ extern void acct_gather_profile_endpoll(void)
 	}
 }
 
-extern void acct_gather_profile_g_child_forked(void)
+extern int acct_gather_profile_g_child_forked(void)
 {
 	if (acct_gather_profile_init() < 0)
-		return;
+		return SLURM_ERROR;
+
 	(*(ops.child_forked))();
-	return;
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
+extern int acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 					       int *full_options_cnt)
 {
 	if (acct_gather_profile_init() < 0)
-		return;
+		return SLURM_ERROR;
+
 	(*(ops.conf_options))(full_options, full_options_cnt);
-	return;
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
+extern int acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
 {
 	if (acct_gather_profile_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	(*(ops.conf_set))(tbl);
-	return;
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
+extern int acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 				      void *data)
 {
 	if (acct_gather_profile_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	(*(ops.get))(info_type, data);
-	return;
+	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_profile_g_node_step_start(stepd_step_rec_t* job)

@@ -73,21 +73,21 @@ extern int acct_gather_interconnect_g_node_update(void);
  *                      definitions
  *      full_options_cnt -- count of plugin local definitions
  */
-extern void acct_gather_interconnect_g_conf_options(s_p_options_t **full_options,
-						  int *full_options_cnt);
+extern int acct_gather_interconnect_g_conf_options(s_p_options_t **full_options,
+						   int *full_options_cnt);
 /*
  * set plugin local conf from acct_gather.conf into its structure
  *
  * Parameters
  *      tbl - hash table of acct_gather.conf key-values.
  */
-extern void acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl);
+extern int acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl);
 
 /* Get the values from the plugin that are setup in the .conf
  * file. This function should most likely only be called from
  * src/common/slurm_acct_gather.c (acct_gather_get_values())
  */
-extern void acct_gather_interconnect_g_conf_values(void *data);
+extern int acct_gather_interconnect_g_conf_values(void *data);
 
 #endif /*__SLURM_ACCT_GATHER_INTERCONNECT_H__*/
 

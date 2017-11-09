@@ -239,13 +239,13 @@ extern int acct_gather_interconnect_startpoll(uint32_t frequency)
 }
 
 
-extern void acct_gather_interconnect_g_conf_options(
+extern int acct_gather_interconnect_g_conf_options(
 	s_p_options_t **full_options, int *full_options_cnt)
 {
 	int i;
 
 	if (acct_gather_interconnect_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
@@ -254,14 +254,15 @@ extern void acct_gather_interconnect_g_conf_options(
 		(*(ops[i].conf_options))(full_options, full_options_cnt);
 	}
 	slurm_mutex_unlock(&g_context_lock);
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl)
+extern int acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl)
 {
 	int i;
 
 	if (acct_gather_interconnect_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
@@ -270,14 +271,15 @@ extern void acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl)
 		(*(ops[i].conf_set))(tbl);
 	}
 	slurm_mutex_unlock(&g_context_lock);
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_interconnect_g_conf_values(void *data)
+extern int acct_gather_interconnect_g_conf_values(void *data)
 {
 	int i;
 
 	if (acct_gather_interconnect_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
@@ -286,4 +288,5 @@ extern void acct_gather_interconnect_g_conf_values(void *data)
 		(*(ops[i].conf_values))(data);
 	}
 	slurm_mutex_unlock(&g_context_lock);
+	return SLURM_SUCCESS;
 }

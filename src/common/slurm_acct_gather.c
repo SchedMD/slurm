@@ -69,6 +69,7 @@ extern int acct_gather_conf_init(void)
 	s_p_options_t *full_options = NULL;
 	int full_options_cnt = 0, i;
 	struct stat buf;
+	int rc = SLURM_SUCCESS;
 
 	if (inited)
 		return SLURM_SUCCESS;
@@ -76,10 +77,14 @@ extern int acct_gather_conf_init(void)
 
 	/* get options from plugins using acct_gather.conf */
 
-	acct_gather_energy_g_conf_options(&full_options, &full_options_cnt);
-	acct_gather_profile_g_conf_options(&full_options, &full_options_cnt);
-	acct_gather_interconnect_g_conf_options(&full_options, &full_options_cnt);
-	acct_gather_filesystem_g_conf_options(&full_options, &full_options_cnt);
+	rc += acct_gather_energy_g_conf_options(&full_options,
+						&full_options_cnt);
+	rc += acct_gather_profile_g_conf_options(&full_options,
+						 &full_options_cnt);
+	rc += acct_gather_interconnect_g_conf_options(&full_options,
+						      &full_options_cnt);
+	rc += acct_gather_filesystem_g_conf_options(&full_options,
+						    &full_options_cnt);
 	/* ADD MORE HERE */
 
 	/* for the NULL at the end */
@@ -114,17 +119,17 @@ extern int acct_gather_conf_init(void)
 	xfree(conf_path);
 
 	/* handle acct_gather.conf in each plugin */
-	acct_gather_energy_g_conf_set(tbl);
-	acct_gather_profile_g_conf_set(tbl);
-	acct_gather_interconnect_g_conf_set(tbl);
-	acct_gather_filesystem_g_conf_set(tbl);
+	rc += acct_gather_energy_g_conf_set(tbl);
+	rc += acct_gather_profile_g_conf_set(tbl);
+	rc += acct_gather_interconnect_g_conf_set(tbl);
+	rc += acct_gather_filesystem_g_conf_set(tbl);
 	/*********************************************************************/
 	/* ADD MORE HERE AND FREE MEMORY IN acct_gather_conf_destroy() BELOW */
 	/*********************************************************************/
 
 	s_p_hashtbl_destroy(tbl);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int acct_gather_conf_destroy(void)

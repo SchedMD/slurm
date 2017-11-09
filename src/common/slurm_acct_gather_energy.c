@@ -319,27 +319,30 @@ extern int acct_gather_energy_startpoll(uint32_t frequency)
 	return retval;
 }
 
-extern void acct_gather_energy_g_conf_options(s_p_options_t **full_options,
+extern int acct_gather_energy_g_conf_options(s_p_options_t **full_options,
 					      int *full_options_cnt)
 {
 	if (slurm_acct_gather_energy_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	(*(ops.conf_options))(full_options, full_options_cnt);
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl)
+extern int acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl)
 {
 	if (slurm_acct_gather_energy_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	(*(ops.conf_set))(tbl);
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_energy_g_conf_values(void *data)
+extern int acct_gather_energy_g_conf_values(void *data)
 {
 	if (slurm_acct_gather_energy_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	(*(ops.conf_values))(data);
+	return SLURM_SUCCESS;
 }
