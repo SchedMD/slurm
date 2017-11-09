@@ -301,6 +301,15 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	info("X11 forwarding established on DISPLAY=localhost:%d.0",
 	     x11_display);
 
+	/*
+	 * Send keepalives every 60 seconds, and have the server
+	 * send a reply as well. Since we're running async, a separate
+	 * thread will need to handle sending these periodically per
+	 * the libssh2 documentation, as the library itself won't manage
+	 * this for us.
+	 */
+	libssh2_keepalive_config(session, 1, 60);
+
 	slurm_thread_create_detached(NULL, _keepalive_engine, NULL);
 	slurm_thread_create_detached(NULL, _accept_engine, NULL);
 
@@ -333,7 +342,7 @@ void *_keepalive_engine(void *x)
 		slurm_mutex_lock(&ssh_lock);
 		libssh2_keepalive_send(session, &delay);
 		slurm_mutex_unlock(&ssh_lock);
-		sleep(60);
+		sleep(delay);
 	}
 
 	debug2("exiting %s", __func__);
