@@ -784,7 +784,8 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	}
 
 	/* Then shutdown the message handler thread */
-	eio_signal_shutdown(sls->msg_handle);
+	if (sls->msg_handle)
+		eio_signal_shutdown(sls->msg_handle);
 
 	slurm_mutex_unlock(&sls->lock);
 	if (sls->msg_thread)
