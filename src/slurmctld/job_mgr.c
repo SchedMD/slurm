@@ -13092,6 +13092,7 @@ fini:
 		}
 		if (tres_changed) {
 			set_job_tres_req_str(job_ptr, false);
+			update_accounting = true;
 		}
 	}
 
