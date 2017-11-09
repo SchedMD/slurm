@@ -13079,16 +13079,21 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 fini:
-	for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
-		if (!tres_req_cnt[tres_pos] ||
-		    (tres_req_cnt[tres_pos] == job_ptr->tres_req_cnt[tres_pos]))
-			continue;
+	if (error_code == SLURM_SUCCESS) {
+		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
+			if (!tres_req_cnt[tres_pos] ||
+			    (tres_req_cnt[tres_pos] ==
+			     job_ptr->tres_req_cnt[tres_pos]))
+				continue;
 
-		job_ptr->tres_req_cnt[tres_pos] = tres_req_cnt[tres_pos];
-		tres_changed = true;
+			job_ptr->tres_req_cnt[tres_pos] =
+				tres_req_cnt[tres_pos];
+			tres_changed = true;
+		}
+		if (tres_changed) {
+			set_job_tres_req_str(job_ptr, false);
+		}
 	}
-	if (tres_changed)
-		set_job_tres_req_str(job_ptr, false);
 
 	/* This was a local variable, so set it back to NULL */
 	job_specs->tres_req_cnt = NULL;
