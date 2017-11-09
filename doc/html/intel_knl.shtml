@@ -194,7 +194,7 @@ node. When the node boots and the slurmd daemon on the node starts, it will
 report to the slurmctld daemon the node's actual socket (NUMA) and core counts,
 which will update Slurm data structures for the node to the values which are
 currently configured.
-Note that Slurm (version 16.05) current does not support the concept of
+Note that Slurm currently does not support the concept of
 differing numbers of cores in each socket (or NUMA node). We are currently
 working to address these issues.</p>
 
