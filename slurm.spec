@@ -179,7 +179,7 @@ Group: Development/System
 Example configuration files for Slurm.
 
 %package slurmctld
-Summary: Slurm compute node daemon
+Summary: Slurm controller daemon
 Group: System Environment/Base
 Requires: slurm
 %description slurmctld
@@ -260,7 +260,7 @@ according to the Slurm
 
 %build
 %configure \
-	%{!?_with_debug:--disable-debug} \
+	%{?_without_debug:--disable-debug} \
 	%{?_with_pam_dir} \
 	%{?_with_cpusetdir} \
 	%{?_with_mysql_config} \
@@ -271,7 +271,6 @@ according to the Slurm
 	%{?_with_pmix} \
 	%{?_with_freeipmi} \
 	%{?_with_hdf5} \
-	%{?_with_lua} \
 	%{?_with_shared_libslurm} \
 	%{?_with_cflags}
 
@@ -296,14 +295,14 @@ install -D -m644 etc/slurmctld.service %{buildroot}/%{_unitdir}/slurmctld.servic
 install -D -m644 etc/slurmd.service    %{buildroot}/%{_unitdir}/slurmd.service
 install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
 
-# Do not package Slurm's version of libpmi on Cray systems.
-# Cray's version of libpmi should be used.
+# Do not package Slurm's version of libpmi on Cray systems in the usual location.
+# Cray's version of libpmi should be used. Move it elsewhere if the site still
+# wants to use it with other MPI stacks.
 %if %{with cray}
-   rm -f %{buildroot}/%{_libdir}/libpmi*
-   %if %{with cray}
-      install -D -m644 contribs/cray/plugstack.conf.template %{buildroot}/%{_sysconfdir}/plugstack.conf.template
-      install -D -m644 contribs/cray/slurm.conf.template %{buildroot}/%{_sysconfdir}/slurm.conf.template
-   %endif
+   mkdir %{buildroot}/%{_libdir}/slurmpmi
+   mv %{buildroot}/%{_libdir}/libpmi* %{buildroot}/%{_libdir}/slurmpmi
+   install -D -m644 contribs/cray/plugstack.conf.template %{buildroot}/%{_sysconfdir}/plugstack.conf.template
+   install -D -m644 contribs/cray/slurm.conf.template %{buildroot}/%{_sysconfdir}/slurm.conf.template
    install -D -m644 contribs/cray/opt_modulefiles_slurm %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel}
    echo -e '#%Module\nset ModulesVersion "%{version}-%{rel}"' > %{buildroot}/opt/modulefiles/slurm/.version
 %else
@@ -429,6 +428,9 @@ rm -rf %{buildroot}
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_libdir}/slurm/*.so
+%if %{with cray}
+%{_libdir}/slurmpmi/*
+%endif
 %exclude %{_libdir}/slurm/accounting_storage_mysql.so
 %exclude %{_libdir}/slurm/job_submit_pbs.so
 %exclude %{_libdir}/slurm/spank_pbs.so
@@ -436,11 +438,11 @@ rm -rf %{buildroot}
 %exclude %{_mandir}/man1/sjobexit*
 %exclude %{_mandir}/man1/sjstat*
 %dir %{_libdir}/slurm/src
-%dir %{_sysconfdir}
 #############################################################################
 
 %files example-configs
 %defattr(-,root,root,0755)
+%dir %{_sysconfdir}
 %if %{with cray}
 %config %{_sysconfdir}/plugstack.conf.template
 %config %{_sysconfdir}/slurm.conf.template

@@ -46,6 +46,10 @@ NOTE: The slurm.spec file used to build RPM packages has been aggressively
       packages.
       The example configuration files have been moved to slurm-example-configs.
 
+NOTE: The refactored slurm.spec file now requires systemd to build. When
+      building on older distributions, you must use the older variant which
+      has been preserved as contribs/slurm.spec-legacy.
+
 NOTE: The slurmctld is now set to fatal if there are any problems with
       any state files.  To avoid this use the new '-i' flag.
 

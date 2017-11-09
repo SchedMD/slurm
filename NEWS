@@ -21,6 +21,10 @@ documents those changes that are of interest to users and administrators.
     NumNodes with scontrol.
  -- Don't initialize MPI plugins for batch or extern steps.`
  -- slurm.spec - do not install a slurm.conf file under /etc/ld.so.conf.d.
+ -- X11 forwarding - fix keepalive message generation code.
+ -- If heterogeneous job step is unable to acquire MPI reserved ports then
+    avoid referencing NULL pointer.
+ -- If any acct_gather_*_init fails fatal instead of error and keep going.
 
 * Changes in Slurm 17.11.0rc2
 ==============================
