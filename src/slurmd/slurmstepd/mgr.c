@@ -1207,14 +1207,14 @@ job_manager(stepd_step_rec_t *job)
 		debug ("Unable to set dumpable to 1");
 #endif /* PR_SET_DUMPABLE */
 
-	/* run now so we don't drop permissions on any of the gather plugins */
-	acct_gather_conf_init();
-
 	/*
-	 * Preload all plugins at start time to avoid plugin changes
+	 * Run acct_gather_conf_init() now so we don't drop permissions on any
+	 * of the gather plugins.
+	 * Preload all plugins afterwards to avoid plugin changes
 	 * (i.e. due to a Slurm upgrade) after the process starts.
 	 */
-	if ((core_spec_g_init() != SLURM_SUCCESS)		||
+	if ((acct_gather_conf_init() != SLURM_SUCCESS)          ||
+	    (core_spec_g_init() != SLURM_SUCCESS)		||
 	    (switch_init(1) != SLURM_SUCCESS)			||
 	    (slurmd_task_init() != SLURM_SUCCESS)		||
 	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
