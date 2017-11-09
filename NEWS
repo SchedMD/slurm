@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- X11 forwarding - fix keepalive message generation code.
  -- If heterogeneous job step is unable to acquire MPI reserved ports then
     avoid referencing NULL pointer.
+ -- If any acct_gather_*_init fails fatal instead of error and keep going.
 
 * Changes in Slurm 17.11.0rc2
 ==============================
