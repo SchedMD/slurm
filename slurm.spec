@@ -179,7 +179,7 @@ Group: Development/System
 Example configuration files for Slurm.
 
 %package slurmctld
-Summary: Slurm compute node daemon
+Summary: Slurm controller daemon
 Group: System Environment/Base
 Requires: slurm
 %description slurmctld
