@@ -260,7 +260,7 @@ according to the Slurm
 
 %build
 %configure \
-	%{!?_with_debug:--disable-debug} \
+	%{?_without_debug:--disable-debug} \
 	%{?_with_pam_dir} \
 	%{?_with_cpusetdir} \
 	%{?_with_mysql_config} \
