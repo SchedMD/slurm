@@ -144,8 +144,7 @@ more information.
 </p>
 
 <h2>sreport</h2>
-<p>Before 15.08, sreport would only report on CPU usage.  It will now
-  work on different TRES.  Simply using the comma separated input
+<p>sreport reports on different TRES. Simply using the comma separated input
   option <i>--tres=</i> will have sreport generate reports available
   for the requested TRES types.  More information about these reports
   can be found on the <a href="sreport.html">sreport manpage</a>.
@@ -158,6 +157,6 @@ more information.
   If TRESBillingWeights is not defined on any partition for a node then the
   Billing TRES will be equal to the number of CPUs on the node.
 </p>
-<p style="text-align:center;">Last modified 19 October 2015</p>
+<p style="text-align:center;">Last modified 7 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

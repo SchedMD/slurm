@@ -1,4 +1,4 @@
-.TH "burst_buffer.conf" "5" "December 2015" "burst_buffer.conf 15.08" "Slurm configuration file"
+.TH "burst_buffer.conf" "5" "November 2017" "burst_buffer.conf 17.11" "Slurm configuration file"
 .SH "NAME"
 burst_buffer.conf \- Slurm configuration file for burst buffer management.
 
@@ -180,8 +180,6 @@ The value of \fBValidateTimeout\fR must be less than the value of
 \fBMessageTimeout\fR configured in the slurm.conf file or job submission
 requests may fail with a response timeout error.
 By default there is a 5 second timeout for the validation operations.
-(NOTE: This option was added after the release of Slurm version 15.08 and will
-its not be visible to users with Slurm tools until the version 16.05 release.)
 
 .SH "EXAMPLE"
 .LP
@@ -210,22 +208,22 @@ StageOutTimeout=30   # Seconds
 .br
 #
 .br
-CreateBuffer=/usr/local/slurm/15.08/sbin/CB
+CreateBuffer=/usr/local/slurm/17.11/sbin/CB
 .br
-DestroyBuffer=/usr/local/slurm/15.08/sbin/DB
+DestroyBuffer=/usr/local/slurm/17.11/sbin/DB
 .br
-GetSysState=/usr/local/slurm/15.08/sbin/GSS
+GetSysState=/usr/local/slurm/17.11/sbin/GSS
 .br
-StartStageIn=/usr/local/slurm/15.08/sbin/SSI
+StartStageIn=/usr/local/slurm/17.11/sbin/SSI
 .br
-StartStageOut=/usr/local/slurm/15.08/sbin/SSO
+StartStageOut=/usr/local/slurm/17.11/sbin/SSO
 .br
-StopStageIn=/usr/local/slurm/15.08/sbin/PSI
+StopStageIn=/usr/local/slurm/17.11/sbin/PSI
 .br
-StopStageOut=/usr/local/slurm/15.08/sbin/PSO
+StopStageOut=/usr/local/slurm/17.11/sbin/PSO
 
 .SH "COPYING"
-Copyright (C) 2014-2015 SchedMD LLC.
+Copyright (C) 2014-2017 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

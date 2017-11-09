@@ -315,9 +315,7 @@ the job is not part of a job array.</p>
 job array size: <b>MaxArraySize</b>. The smallest index that can be specified
 by a user is zero and the maximum index is MaxArraySize minus one.
 The default value of MaxArraySize is 1001.
-The maximum MaxArraySize supported in Slurm version 14.03 and earlier is 65,533.
-Slurm version 14.11 has a new job array data structure, which can support
-job arrays with millions of tasks.
+The maximum MaxArraySize supported in Slurm is 4000001.
  Be mindful about the value of MaxArraySize as job arrays offer an easy way
 for users to submit large numbers of jobs very quickly.</p>
 
@@ -333,6 +331,6 @@ manage large job counts.
 Each task of the job array will have a unique Slurm "job_id", but
 all will have the same "array_job_id" value.</p>
 
-<p style="text-align:center;">Last modified 20 July 2016</p>
+<p style="text-align:center;">Last modified 7 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

@@ -107,7 +107,7 @@ file.</LI>
 be used to identify a specific model of GPU, which users can then specify
 in their job request.
 If <B>Type</B> is specified, then <B>Count</B> is limited in size (currently 1024).
-NOTE: This is a new capability added in Slurm version 14.11.</LI>
+</LI>
 </UL>
 
 <P>Sample gres.conf file:</P>
@@ -212,6 +212,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 4 December 2014</p>
+<p style="text-align: center;">Last modified 7 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

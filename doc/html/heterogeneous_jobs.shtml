@@ -578,6 +578,16 @@ components of a heterogeneous job.</p>
 <p>The srun --multi-prog option can not be used to span more than one
 heterogeneous job component.</p>
 
+<p>Ancient versions of OpenMPI and their derivatives (i.e. Cray MPI) are
+dependent upon communication ports being assigned to them by Slurm. Such MPI
+jobs will experience step launch failure if <u>any</u> component of a
+heterogeneous job step is unable to acquire the allocated ports.
+Non-heterogeneous job steps will retry step launch using a new set of
+communication ports (no change in Slurm behavior).</p>
+<!-- NOTE: Correcting this would necessitate assigning the same set of ports
+to all components of the heterogeneous job (not possible today) plus changes to
+srun in order to better synchronize the step startup and error handling. -->
+
 <h2><a name="sys_admin">System Administrator Information</a></h2>
 
 <p>The job submit plugin is invoked independently for each component of a
@@ -654,6 +664,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 September 2017</p>
+<p style="text-align:center;">Last modified 9 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

@@ -422,7 +422,7 @@ plugin provides an interface to ALPS plus issues calls to the
 <i>select/linear</i>, which selects resources for jobs using a best-fit
 algorithm to allocate whole nodes to jobs (rather than individual sockets,
 cores or threads).
-<b>In versions of Slurm before 14.03 use <i>select/cray</i>.  In 14.03
+<b>Legacy versions of Slurm before 14.03 use <i>select/cray</i>.  After 14.03
 the plugin name was changed to <i>select/alps</i> to allow
 for <a href='cray.shtml'>Native Slurm</a> on a Cray.</b></p>
 

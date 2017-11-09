@@ -747,10 +747,9 @@ and <i>slurmctld</i> due to blocks that previously existed being deleted.</p>
 
 <p>Slurm's advance reservation mechanism can accept a node count specification
 as input rather than identification of specific nodes/midplanes.
-Beginning In Slurm version 14.11 cnodes can be reserved instead of
-full midplanes, so asking for 32 nodes will result in a reservation
-consisting of 32 cnodes.  Also beginning in 14.11 you can request
-specific cnodes in your reservation as well (e.g. <i>scontrol create reservation
+Cnodes can be reserved instead of full midplanes, so asking for 32 nodes will
+result in a reservation consisting of 32 cnodes. Also you can request specific
+cnodes in your reservation as well (e.g. <i>scontrol create reservation
 nodes=bgq0000[00000x11111]</i> will result in the first nodecard of
 midplane bgq0000 being reserved).  Multiple block sizes can also be
 specified and a reservation will be made that includes those block sizes
@@ -792,6 +791,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 September 2016</p>
+<p style="text-align:center;">Last modified 7 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

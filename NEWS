@@ -23,8 +23,11 @@ documents those changes that are of interest to users and administrators.
  -- slurm.spec - do not install a slurm.conf file under /etc/ld.so.conf.d.
  -- X11 forwarding - fix keepalive message generation code.
  -- If heterogeneous job step is unable to acquire MPI reserved ports then
-    avoid referencing NULL pointer.
+    avoid referencing NULL pointer. Retry assigning ports ONLY for
+    non-heterogeneous job steps.
  -- If any acct_gather_*_init fails fatal instead of error and keep going.
+ -- launch/slurm plugin - Avoid using global variable for heterogeneous job
+    steps, which could corrupt memory.
 
 * Changes in Slurm 17.11.0rc2
 ==============================

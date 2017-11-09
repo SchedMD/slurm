@@ -90,7 +90,6 @@ const char plugin_name[]        = "launch SLURM plugin";
 const char plugin_type[]        = "launch/slurm";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-static srun_job_t *local_srun_job = NULL;
 static List local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
 static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -672,6 +671,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				slurm_step_launch_callbacks_t *step_callbacks,
 				slurm_opt_t *opt_local)
 {
+	srun_job_t *local_srun_job;
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
@@ -855,13 +855,15 @@ cleanup:
 	return rc;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, slurm_opt_t *opt_local)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc,
+			      slurm_opt_t *opt_local)
 {
 	int rc = 0;
 
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
-	    (retry_step_cnt < MAX_STEP_RETRIES)) {
+	    (retry_step_cnt < MAX_STEP_RETRIES) &&
+	     (job->pack_jobid == NO_VAL)) {	/* Not pack step */
 		retry_step_begin = false;
 		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) 

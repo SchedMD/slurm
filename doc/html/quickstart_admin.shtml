@@ -646,18 +646,18 @@ adev0: scontrol shutdown
 <p>Background: The Slurm version numbers contain three digits which represent
 the major and micro release numbers. The combination of the first and second
 digits in the version designate the major release. The third digit in the
-version designates the micro release (e.g. 16.05.3 is major=16.05, micro=3).
+version designates the micro release (e.g. 17.02.9 is major=17.02, micro=9).
 The major release number indicates the last two digits in the year of release
 followed by the month of release.
-Thus version 16.05.x was initially released in May 2016.
+Thus version 17.02.x was initially released in Feb 2017.
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes, which typically happens
 about once every nine months or so.
-A list of recent major Slurm releases is shown below.</p>
+A list of most recent major Slurm releases is shown below.</p>
 <ul>
-<li>15.08.x  (Released August 2015)</li>
 <li>16.05.x  (Released May 2016)</li>
 <li>17.02.x  (Released February 2017)</li>
+<li>17.11.x  (Released November 2017)</li>
 </ul>
 
 <p>Slurm's MPI libraries may also change if the major release number change,
@@ -665,8 +665,8 @@ requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 17.02.x SlurmDBD will support slurmctld daemons and
-commands with a version of 17.02.x, 16.05.x or 15.08.x).
+releases (e.g. a version 17.11.x SlurmDBD will support slurmctld daemons and
+commands with a version of 17.11.x, 17.02.x or 16.05.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the micro release number generally represent only bug fixes,
@@ -692,7 +692,7 @@ Also see the note above about reverse compatibility.</p>
 <p>Almost every new major release of Slurm (e.g. 16.05.x to 17.02.x)
 involves changes to the state files with new data structures, new options, etc.
 Slurm permits upgrades between any two versions whose major release numbers
-differ by two or less (e.g. 15.08.x or 16.05.x to 17.02.x) without loss of
+differ by two or less (e.g. 16.05.x or 17.02.x to 17.11.x) without loss of
 jobs or other state information.
 State information from older versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
@@ -708,7 +708,7 @@ recover the jobs.
 Jobs submitted under the new version will not be in those state files,
 but it can let you recover most jobs.
 An exception to this is that jobs may be lost when installing new pre-release
-versions (e.g. 16.05.0-pre1 to 16.05.0-pre2).
+versions (e.g. 17.11.0-pre1 to 17.11.0-pre2).
 Developers will try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
