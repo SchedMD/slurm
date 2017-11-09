@@ -254,7 +254,7 @@ static int _pick_exc_nodes(void *x, void *arg)
 /* Perform any power change work to nodes */
 static void _do_power_work(time_t now)
 {
-	int i, wake_cnt = 0, sleep_cnt = 0, susp_total = 0;
+	int i, wake_cnt = 0, susp_total = 0;
 	time_t delta_t;
 	uint32_t susp_state;
 	bitstr_t *avoid_node_bitmap = NULL;
@@ -389,7 +389,6 @@ static void _do_power_work(time_t now)
 				sleep_node_bitmap =
 					bit_alloc(node_record_count);
 			}
-			sleep_cnt++;
 			suspend_cnt++;
 			suspend_cnt_f++;
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
