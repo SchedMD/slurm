@@ -167,7 +167,7 @@ done:
 	if (retval == SLURM_SUCCESS)
 		retval = acct_gather_conf_init();
 	if (retval != SLURM_SUCCESS)
-		fatal("can not open the %s plugin", type);
+		fatal("can not open the %s plugin", plugin_type);
 	xfree(type);
 
 
