@@ -855,13 +855,15 @@ cleanup:
 	return rc;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, slurm_opt_t *opt_local)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc,
+			      slurm_opt_t *opt_local)
 {
 	int rc = 0;
 
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
-	    (retry_step_cnt < MAX_STEP_RETRIES)) {
+	    (retry_step_cnt < MAX_STEP_RETRIES) &&
+	     (job->pack_jobid == NO_VAL)) {	/* Not pack step */
 		retry_step_begin = false;
 		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) 
