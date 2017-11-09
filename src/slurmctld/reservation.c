@@ -5111,6 +5111,9 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 				_find_resv_name, job_ptr->resv_name);
 		job_ptr->resv_ptr = resv_ptr;
+		rc2 = _valid_job_access_resv(job_ptr, resv_ptr);
+		if (rc2 != SLURM_SUCCESS)
+			return rc2;
 		/*
 		 * Just in case the reservation was altered since last looking
 		 * we want to make sure things are good in the database.
@@ -5120,9 +5123,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			/* Update the database */
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 		}
-		rc2 = _valid_job_access_resv(job_ptr, resv_ptr);
-		if (rc2 != SLURM_SUCCESS)
-			return rc2;
 		if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
 			/* Job not bound to reservation nodes or time */
 			*node_bitmap = bit_alloc(node_record_count);
