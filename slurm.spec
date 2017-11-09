@@ -271,7 +271,6 @@ according to the Slurm
 	%{?_with_pmix} \
 	%{?_with_freeipmi} \
 	%{?_with_hdf5} \
-	%{?_with_lua} \
 	%{?_with_shared_libslurm} \
 	%{?_with_cflags}
 
