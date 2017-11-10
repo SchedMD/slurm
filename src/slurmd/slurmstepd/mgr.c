@@ -1124,7 +1124,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		close(x11_pipe[0]);
 
 		debug("x11 forwarding local display is %d", job->x11_display);
-		slurm_mutex_unlock(&x11_lock);
 	}
 #endif
 
