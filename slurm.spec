@@ -1,6 +1,6 @@
 Name:		slurm
 Version:	17.11.0
-%define rel	0rc2
+%define rel	0rc3
 Release:	%{rel}%{?dist}
 Summary:	Slurm Workload Manager
 
