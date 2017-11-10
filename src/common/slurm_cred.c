@@ -2161,7 +2161,7 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 		debug3("state for jobid %u: ctime:%"PRIu64" revoked:%"PRIu64" "
 		       "expires:%"PRIu64"",
 		       j->jobid, (uint64_t)j->ctime, (uint64_t)j->revoked,
-		       (uint64_t)j->revoked);
+		       (uint64_t)j->expiration);
 #endif
 		if (j->revoked && (now > j->expiration)) {
 			list_delete_item(i);
