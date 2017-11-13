@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.0rc4
 ==============================
+ -- Fix documentation for MaxQueryTimeRange option in slurmdbd.conf.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
