@@ -93,9 +93,9 @@ my $resp = Slurm->load_ctl_conf();
 if ($resp) {
 	printf("Slurm %s, %s\n", $resp->{version},
 	       _convert_version_date($resp->{version}));
-	printf("Copyright SchedMD LLC, 2010-2015.\n\n");
+	printf("Copyright SchedMD LLC, 2010-2017.\n\n");
 	printf("My cluster name is %s\n", $resp->{cluster_name});
-	printf("My master name is %s\n", $resp->{control_machine});
+	printf("My master name is %s\n", $resp->{control_machine}[0]);
 } else {
 	$rc = 1;
 }

@@ -436,9 +436,10 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 		GTK_STOCK_CLOSE,
 		GTK_RESPONSE_OK,
 		NULL);
-	int update = 0;
+	int i, update = 0;
 	slurm_ctl_conf_info_msg_t *conf;
 	char me[MAX_SLURM_NAME], *b, *c, *n;
+	char *token, *save_ptr = NULL;
 	int actld = 0, ctld = 0, d = 0;
 	GtkTreeStore *treestore =
 		_local_create_treestore_2cols(popup, 300, 100);
@@ -454,16 +455,26 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 	conf = slurm_conf_lock();
 
 	gethostname_short(me, MAX_SLURM_NAME);
-	if ((b = conf->backup_controller)) {
-		if ((xstrcmp(b, me) == 0) ||
-		    (xstrcasecmp(b, "localhost") == 0))
-			ctld = 1;
+	for (i = 1; i < conf->control_cnt; i++) {
+		if ((b = conf->control_machine[i])) {
+			if (!xstrcmp(b, me) ||
+			    !xstrcasecmp(b, "localhost"))
+				ctld = 1;
+		}
 	}
-	if ((c = conf->control_machine)) {
+	if (conf->control_machine[0]) {
 		actld = 1;
-		if ((xstrcmp(c, me) == 0) ||
-		    (xstrcasecmp(c, "localhost") == 0))
-			ctld = 1;
+		c = xstrdup(conf->control_machine[0]);
+		token = strtok_r(c, ",", &save_ptr);
+		while (token) {
+			if ((xstrcmp(token, me) == 0) ||
+			    (xstrcasecmp(token, "localhost") == 0)) {
+				ctld = 1;
+				break;
+			}
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(c);
 	}
 	slurm_conf_unlock();
 

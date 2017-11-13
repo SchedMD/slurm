@@ -1025,21 +1025,25 @@ int read_slurm_conf(int recover, bool reconfig)
 	xfree(slurmctld_config.auth_info);
 	slurmctld_config.auth_info = slurm_get_auth_info();
 	if (reconfig) {
-		/* in order to re-use job state information,
-		 * update nodes_completing string (based on node bitmaps) */
+		/*
+		 * In order to re-use job state information,
+		 * update nodes_completing string (based on node bitmaps)
+		 */
 		update_job_nodes_completing();
 
 		/* save node and partition states for reconfig RPC */
 		old_node_record_count = node_record_count;
 		old_node_table_ptr    = node_record_table_ptr;
-		for (i=0, node_ptr=old_node_table_ptr; i<node_record_count;
-		     i++, node_ptr++) {
+		for (i = 0, node_ptr = old_node_table_ptr;
+		     i < node_record_count; i++, node_ptr++) {
 			xfree(node_ptr->features);
 			node_ptr->features = xstrdup(
 				node_ptr->config_ptr->feature);
-			/* Store the original configured CPU count somewhere
+			/*
+			 * Store the original configured CPU count somewhere
 			 * (port is reused here for that purpose) so we can
-			 * report changes in its configuration. */
+			 * report changes in its configuration.
+			 */
 			node_ptr->port   = node_ptr->config_ptr->cpus;
 			node_ptr->weight = node_ptr->config_ptr->weight;
 		}
@@ -2157,7 +2161,8 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 		xfree(old_switch_type);
 	}
 
-	if (ctl_conf_ptr->backup_controller == NULL)
+	if ((ctl_conf_ptr->control_cnt < 2) ||
+	    (ctl_conf_ptr->control_machine[1] == NULL))
 		info("%s: backup_controller not specified", __func__);
 
 	return rc;

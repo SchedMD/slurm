@@ -111,6 +111,13 @@ static void *_heartbeat_thread(void *no_data)
 			(void) unlink(new_file);
 			goto delay;
 		}
+		if (write(fd, &backup_inx, sizeof(int)) != sizeof(int)) {
+			error("%s: heartbeat write failed to %s.",
+			      __func__, new_file);
+			close(fd);
+			(void) unlink(new_file);
+			goto delay;
+		}
 
 		if (fsync_and_close(fd, "heartbeat")) {
 			(void) unlink(new_file);
@@ -136,7 +143,7 @@ delay:
 
 void heartbeat_start(void)
 {
-	if (!slurmctld_conf.backup_addr) {
+	if (!slurmctld_conf.control_addr[1]) {
 		debug("No BackupController, not launching heartbeat.");
 		return;
 	}
@@ -159,10 +166,10 @@ void heartbeat_stop(void)
 
 #define OPEN_RETRIES 3
 
-time_t get_last_heartbeat(void)
+time_t get_last_heartbeat(int *server_inx)
 {
 	char *file;
-	int fd = -1, i;
+	int fd = -1, i, inx = 0;
 	uint64_t value;
 
 	file = xstrdup_printf("%s/heartbeat",
@@ -193,6 +200,13 @@ time_t get_last_heartbeat(void)
 		error("%s: heartbeat read failed from %s.",
 		      __func__, file);
 		value = 0;
+	}
+	if (read(fd, &inx, sizeof(int)) != sizeof(int)) {
+		/* Information not available before Slurm version 18.08 */
+		debug("%s: heartbeat read failed from %s.",
+		      __func__, file);
+	} else if (server_inx) {
+		*server_inx = inx;
 	}
 
 	close(fd);

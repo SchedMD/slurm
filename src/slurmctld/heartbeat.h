@@ -46,9 +46,11 @@ extern void heartbeat_start(void);
 extern void heartbeat_stop(void);
 
 /*
- * Returns the last timestamp from the heartbeat file,
- * or zero on error.
+ * Read heartbeat file contents
+ * server_inx OUT - Slurmctld server index (0=ControlMachine,
+ *		    1=BackupController, 2=BackupController2, etc.)
+ * Returns the last timestamp from the heartbeat file, or zero on error.
  */
-extern time_t get_last_heartbeat();
+extern time_t get_last_heartbeat(int *server_inx);
 
 #endif

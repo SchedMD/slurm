@@ -125,8 +125,7 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 	slurm_addr_t *next_dest = NULL;
 
 	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
-		info("_send_to_backup_collector: primary %s, "
-		     "getting backup",
+		info("%s: primary %s, getting backup", __func__,
 		     rc ? "can't be reached" : "is null");
 	}
 
@@ -134,8 +133,7 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
 			char addrbuf[100];
 			slurm_print_slurm_addr(next_dest, addrbuf, 32);
-			info("_send_to_backup_collector: *next_dest is "
-			     "%s", addrbuf);
+			info("%s: *next_dest is %s", __func__, addrbuf);
 		}
 		memcpy(&msg->address, next_dest, sizeof(slurm_addr_t));
 		rc = slurm_send_only_node_msg(msg);
@@ -143,9 +141,8 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 
 	if (!next_dest ||  (rc != SLURM_SUCCESS)) {
 		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-			info("_send_to_backup_collector: backup %s, "
-			     "sending msg to controller",
-			     rc ? "can't be reached" : "is null");
+			info("%s: backup %s, sending msg to controller",
+			     __func__, rc ? "can't be reached" : "is null");
 		rc = slurm_send_only_controller_msg(msg, working_cluster_rec);
 	}
 

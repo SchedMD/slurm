@@ -185,7 +185,25 @@ s_p_options_t slurm_conf_options[] = {
 	{"AuthInfo", S_P_STRING},
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
+	{"BackupAddr1", S_P_STRING},
+	{"BackupAddr2", S_P_STRING},
+	{"BackupAddr3", S_P_STRING},
+	{"BackupAddr4", S_P_STRING},
+	{"BackupAddr5", S_P_STRING},
+	{"BackupAddr6", S_P_STRING},
+	{"BackupAddr7", S_P_STRING},
+	{"BackupAddr8", S_P_STRING},
+	{"BackupAddr9", S_P_STRING},
 	{"BackupController", S_P_STRING},
+	{"BackupController1", S_P_STRING},
+	{"BackupController2", S_P_STRING},
+	{"BackupController3", S_P_STRING},
+	{"BackupController4", S_P_STRING},
+	{"BackupController5", S_P_STRING},
+	{"BackupController6", S_P_STRING},
+	{"BackupController7", S_P_STRING},
+	{"BackupController8", S_P_STRING},
+	{"BackupController9", S_P_STRING},
 	{"BatchStartTimeout", S_P_UINT16},
 	{"BurstBufferParameters", S_P_STRING},
 	{"BurstBufferType", S_P_STRING},
@@ -2317,6 +2335,8 @@ gethostname_short (char *name, size_t len)
 extern void
 free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 {
+	int i;
+
 	xfree (ctl_conf_ptr->accounting_storage_backup_host);
 	xfree (ctl_conf_ptr->accounting_storage_host);
 	xfree (ctl_conf_ptr->accounting_storage_loc);
@@ -2331,12 +2351,14 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->acct_gather_filesystem_type);
 	xfree (ctl_conf_ptr->authinfo);
 	xfree (ctl_conf_ptr->authtype);
-	xfree (ctl_conf_ptr->backup_addr);
-	xfree (ctl_conf_ptr->backup_controller);
 	xfree (ctl_conf_ptr->bb_type);
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->chos_loc);
 	xfree (ctl_conf_ptr->cluster_name);
+	for (i = 0; i < ctl_conf_ptr->control_cnt; i++) {
+		xfree(ctl_conf_ptr->control_addr[i]);
+		xfree(ctl_conf_ptr->control_machine[i]);
+	}
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->core_spec_plugin);
@@ -2440,6 +2462,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 void
 init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
+	int i;
+
 	ctl_conf_ptr->last_update		= time(NULL);
 	xfree (ctl_conf_ptr->accounting_storage_backup_host);
 	ctl_conf_ptr->accounting_storage_enforce          = 0;
@@ -2452,14 +2476,17 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->accounting_storage_user);
 	xfree (ctl_conf_ptr->authinfo);
 	xfree (ctl_conf_ptr->authtype);
-	xfree (ctl_conf_ptr->backup_addr);
-	xfree (ctl_conf_ptr->backup_controller);
 	ctl_conf_ptr->batch_start_timeout	= 0;
 	xfree (ctl_conf_ptr->bb_type);
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->chos_loc);
 	xfree (ctl_conf_ptr->cluster_name);
 	ctl_conf_ptr->complete_wait		= NO_VAL16;
+	for (i = 0; i < ctl_conf_ptr->control_cnt; i++) {
+		xfree(ctl_conf_ptr->control_addr[i]);
+		xfree(ctl_conf_ptr->control_machine[i]);
+	}
+	ctl_conf_ptr->control_cnt = 0;
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->core_spec_plugin);
@@ -2870,16 +2897,20 @@ slurm_conf_destroy(void)
 extern slurm_ctl_conf_t *
 slurm_conf_lock(void)
 {
-	slurm_mutex_lock(&conf_lock);
+	int i;
 
+	slurm_mutex_lock(&conf_lock);
 	if (!conf_initialized) {
 		if (_init_slurm_conf(NULL) != SLURM_SUCCESS) {
-			/* Clearing backup_addr and control_addr results in
+			/*
+			 * Clearing control_addr array entries results in
 			 * error for most APIs without generating a fatal
 			 * error and exiting. Slurm commands and daemons
 			 * should call slurm_conf_init() to get a fatal
-			 * error instead. */
-			xfree(conf_ptr->backup_addr);
+			 * error instead.
+			 */
+			for (i = 0; i < MAX_CONTROLLERS; i++)
+				xfree(conf_ptr->control_addr[i]);
 			xfree(conf_ptr->control_addr);
 		}
 		conf_initialized = true;
@@ -2948,7 +2979,6 @@ static uint16_t _health_node_state(char *state_str)
  *
  * NOTE: a backup_controller or control_machine of "localhost" are over-written
  *	with this machine's name.
- * NOTE: if backup_addr is NULL, it is over-written by backup_controller
  * NOTE: if control_addr is NULL, it is over-written by control_machine
  */
 static int
@@ -2963,26 +2993,53 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	uint32_t default_storage_port = 0;
 	uint16_t uint16_tmp;
 	uint64_t tot_prio_weight;
+	int i;
 
-	if (s_p_get_string(&conf->backup_controller, "BackupController",
-			   hashtbl)
-	    && xstrcasecmp("localhost", conf->backup_controller) == 0) {
-		xfree(conf->backup_controller);
-		conf->backup_controller = xmalloc (MAX_SLURM_NAME);
-		if (gethostname_short(conf->backup_controller, MAX_SLURM_NAME)){
-			error("getnodename: %m");
-			return SLURM_ERROR;
+	conf->control_machine = xmalloc(sizeof(char *) * MAX_CONTROLLERS);
+	conf->control_addr    = xmalloc(sizeof(char *) * MAX_CONTROLLERS);
+	for (i = 0; i < MAX_CONTROLLERS; i++) {
+		char name[32], addr[32];
+		int offset;
+		if (i == 0) {
+			snprintf(name, sizeof(name), "BackupController");
+			snprintf(addr, sizeof(addr), "BackupAddr");
+			offset = 1;
+		} else {
+			snprintf(name, sizeof(name), "BackupController%d", i);
+			snprintf(addr, sizeof(addr), "BackupAddr%d", i);
+			offset = i;
 		}
-	}
-	if (s_p_get_string(&conf->backup_addr, "BackupAddr", hashtbl)) {
-		if (conf->backup_controller == NULL) {
-			error("BackupAddr specified without BackupController");
-			xfree(conf->backup_addr);
+		if (s_p_get_string(&conf->control_machine[offset], name,
+				   hashtbl) &&
+		    !xstrcasecmp("localhost", conf->control_machine[offset])) {
+			xfree(conf->control_machine[offset]);
+			conf->control_machine[offset] = xmalloc(MAX_SLURM_NAME);
+			if (gethostname_short(conf->control_machine[offset],
+					      MAX_SLURM_NAME)) {
+				error("getnodename: %m");
+				return SLURM_ERROR;
+			}
 		}
-	} else {
-		if (conf->backup_controller != NULL)
-			conf->backup_addr = xstrdup(conf->backup_controller);
+		if (s_p_get_string(&conf->control_addr[offset], addr,
+				   hashtbl)) {
+			if (conf->control_machine[offset] == NULL) {
+				error("%s specified without %s", addr, name);
+				xfree(conf->control_addr[offset]);
+			}
+		} else if (conf->control_machine[offset]) {
+			conf->control_addr[offset] =
+				xstrdup(conf->control_machine[offset]);
+		}
+		if ((i == 0) && conf->control_machine[offset])
+			i++;
+		else if ((i != 0) && !conf->control_machine[offset])
+			break;
 	}
+	for (i = 1; i < MAX_CONTROLLERS; i++) {
+		if (!conf->control_machine[i])
+			break;
+	}
+	conf->control_cnt = i;
 
 	if (!s_p_get_uint16(&conf->batch_start_timeout, "BatchStartTimeout",
 			    hashtbl))
@@ -3003,34 +3060,35 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->complete_wait, "CompleteWait", hashtbl))
 		conf->complete_wait = DEFAULT_COMPLETE_WAIT;
 
-	if (!s_p_get_string(&conf->control_machine, "ControlMachine", hashtbl)){
+	if (!s_p_get_string(&conf->control_machine[0], "ControlMachine", hashtbl)){
 		error("ControlMachine not specified.");
 		return SLURM_ERROR;
 	}
-	else if (xstrcasecmp("localhost", conf->control_machine) == 0) {
-		xfree (conf->control_machine);
-		conf->control_machine = xmalloc(MAX_SLURM_NAME);
-		if (gethostname_short(conf->control_machine, MAX_SLURM_NAME)) {
+	else if (xstrcasecmp("localhost", conf->control_machine[0]) == 0) {
+		xfree(conf->control_machine[0]);
+		conf->control_machine[0] = xmalloc(MAX_SLURM_NAME);
+		if (gethostname_short(conf->control_machine[0], MAX_SLURM_NAME)) {
 			error("getnodename: %m");
 			return SLURM_ERROR;
 		}
 	}
 
-	if (!s_p_get_string(&conf->control_addr, "ControlAddr", hashtbl) &&
-	    (conf->control_machine != NULL)) {
-		if (strchr(conf->control_machine, ',')) {
+	if (!s_p_get_string(&conf->control_addr[0], "ControlAddr", hashtbl) &&
+	    (conf->control_machine[0] != NULL)) {
+		if (strchr(conf->control_machine[0], ',')) {
 			error("ControlMachine has multiple host names so "
 			      "ControlAddr must be specified");
 			return SLURM_ERROR;
 		}
-		conf->control_addr = xstrdup (conf->control_machine);
+		conf->control_addr[0] = xstrdup(conf->control_machine[0]);
 	}
 
-	if ((conf->backup_controller != NULL) &&
-	    (xstrcmp(conf->backup_controller, conf->control_machine) == 0)) {
+	if ((conf->control_machine[1] != NULL) &&
+	    (xstrcmp(conf->control_machine[1], conf->control_machine[0]) == 0)){
 		error("ControlMachine and BackupController identical");
-		xfree(conf->backup_addr);
-		xfree(conf->backup_controller);
+		xfree(conf->control_addr[1]);
+		xfree(conf->control_machine[1]);
+		conf->control_cnt = 1;
 	}
 
 	if (!s_p_get_string(&conf->acct_gather_energy_type,

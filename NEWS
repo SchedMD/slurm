@@ -9,6 +9,15 @@ documents those changes that are of interest to users and administrators.
     used to report burst buffer state information will report a state of "66"
     rather than "complete" for burst buffers which have been deleted, but still
     exist in the slurmctld daemon's tables (a very short-lived situation).
+ -- Multiple backup slurmctld daemons can be configured:
+    * Specify "BackupController#=<hostname> and "BackupAddr#=<address>" to
+      identify up to 9 backup servers.
+    * Output format of "scontrol ping" and the daemon status at the end of
+      "scontrol status" is modified to report up status of the primary and all
+      backup servers.
+    * "scontrol takeover [#]" command can now identify the BackupController
+      index number. Default value is "1" (the configured "BackupController" or
+      "BackupController1" node).
 
 * Changes in Slurm 17.11.0rc3
 ==============================

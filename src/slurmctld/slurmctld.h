@@ -202,10 +202,12 @@ enum {
 extern time_t	last_proc_req_start;
 extern diag_stats_t slurmctld_diag_stats;
 extern slurmctld_config_t slurmctld_config;
-extern int   bg_recover;		/* state recovery mode */
 extern void *acct_db_conn;
 extern int   accounting_enforce;
 extern int   association_based_accounting;
+extern int   backup_inx;		/* BackupController# index */
+extern int   bg_recover;		/* state recovery mode */
+extern time_t control_time;		/* Time when became primary controller */
 extern uint32_t   cluster_cpus;
 extern int   batch_sched_delay;
 extern bool node_features_updated;

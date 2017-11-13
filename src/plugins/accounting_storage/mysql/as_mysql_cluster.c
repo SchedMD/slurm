@@ -1473,7 +1473,7 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	char hostname[255];
 	time_t now = time(NULL);
 	uint32_t flags = slurmdb_setup_cluster_flags();
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
 
 	if (slurmdbd_conf)
 		fatal("clusteracct_storage_g_register_ctld "
@@ -1494,12 +1494,17 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	     cluster, port);
 	gethostname(hostname, sizeof(hostname));
 
-	/* check if we are running on the backup controller */
-	if (slurmctld_conf.backup_controller
-	    && !xstrcmp(slurmctld_conf.backup_controller, hostname)) {
-		address = slurmctld_conf.backup_addr;
-	} else
-		address = slurmctld_conf.control_addr;
+	/* check if we are running on a backup controller */
+	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
+		if (!slurmctld_conf.control_machine[i])
+			break;
+		if (!xstrcmp(slurmctld_conf.control_machine[i], hostname)) {
+			address = slurmctld_conf.control_addr[i];
+			break;
+		}
+	}
+	if (!address)
+		address = slurmctld_conf.control_addr[0];
 
 	query = xstrdup_printf(
 		"update %s set deleted=0, mod_time=%ld, "

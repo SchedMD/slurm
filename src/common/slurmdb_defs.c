@@ -2891,10 +2891,11 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 	for (i = 0; i < 4; i++) {
 		/* Retry if the slurmctld can connect, but is not responding */
 		rc = slurm_send_recv_node_msg(&req, &resp, 0);
-		if ((rc == 0) || (errno != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
+		if ((rc == SLURM_SUCCESS) ||
+		    (errno != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
 			break;
 	}
-	if ((rc != 0) || ! resp.auth_cred) {
+	if ((rc != SLURM_SUCCESS) || !resp.auth_cred) {
 		error("update cluster: %m to %s at %s(%hu)",
 		      cluster, host, port);
 		rc = SLURM_ERROR;

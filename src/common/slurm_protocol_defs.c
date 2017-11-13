@@ -4050,6 +4050,11 @@ extern void slurm_free_set_fs_dampening_factor_msg(
 	xfree(msg);
 }
 
+extern void slurm_free_control_status_msg(control_status_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	/* this message was never loaded */
@@ -4292,6 +4297,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_PING:
 	case REQUEST_RECONFIGURE:
 	case REQUEST_CONTROL:
+	case REQUEST_CONTROL_STATUS:
 	case REQUEST_TAKEOVER:
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case RESPONSE_FORWARD_FAILED:
@@ -4430,6 +4436,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
 		slurm_free_set_fs_dampening_factor_msg(data);
+		break;
+	case RESPONSE_CONTROL_STATUS:
+		slurm_free_control_status_msg(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);
@@ -4703,6 +4712,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_BATCH_SCRIPT";
 	case RESPONSE_BATCH_SCRIPT:
 		return "RESPONSE_BATCH_SCRIPT";
+	case REQUEST_CONTROL_STATUS:
+		return "REQUEST_CONTROL_STATUS";
+	case RESPONSE_CONTROL_STATUS:
+		return "RESPONSE_CONTROL_STATUS";
 
 	case REQUEST_UPDATE_JOB:				/* 3001 */
 		return "REQUEST_UPDATE_JOB";

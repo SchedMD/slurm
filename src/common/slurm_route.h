@@ -145,10 +145,11 @@ extern int route_split_hostlist_treewidth(hostlist_t hl,
 extern slurm_addr_t* route_next_collector ( bool *is_collector );
 
 /*
- * route_next_collector_backup -- return address of backup collector
+ * route_next_collector_backup - get collector backup address based on offset
  *
+ * backup_inx IN - Backup server index (between 1 and MAX_CONTROLLERS-1)
  * RET: slurm_addr_t* - address of backup node to send messages to be aggregated
  */
-extern slurm_addr_t* route_next_collector_backup ( void );
+extern slurm_addr_t* route_next_collector_backup(int backup_inx);
 
 #endif /*___SLURM_ROUTE_PLUGIN_API_H__*/

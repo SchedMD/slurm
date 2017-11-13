@@ -317,23 +317,29 @@ the value of \fBAuthType\fR and later restarted (Slurm jobs can be
 preserved).
 
 .TP
-\fBBackupAddr\fR
+\fBBackupAddr[#]\fR
 The name that \fBBackupController\fR should be referred to in
 establishing a communications path. This name will
 be used as an argument to the gethostbyname() function for
 identification. For example, "elx0000" might be used to designate
-the Ethernet address for node "lx0000".
-By default the \fBBackupAddr\fR will be identical in value to
-\fBBackupController\fR.
+the Ethernet address for node "lx0000". Multiple backup controllers may be
+configured by specifying a numeric suffix identifying the order in which they
+should be used. The suffix value should start at "1" (the default value) and
+monotonically increase to a maximum value of "9".
+By default the \fBBackupAddr[#]\fR will be identical in value to
+\fBBackupController[#]\fR.
 
 .TP
-\fBBackupController\fR
+\fBBackupController[#]\fR
 The short, or long, name of the machine where Slurm control functions are to be
 executed in the event that \fBControlMachine\fR fails (i.e. the name returned by
 the command "hostname \-s"). This node may also be used as a compute server if
 so desired. It will come into service as a controller only upon the failure of
 ControlMachine and will revert to a "standby" mode when the ControlMachine
-becomes available once again.
+becomes available once again. Multiple backup controllers may be configured
+by specifying a numeric suffix identifying the order in which they should be
+used. The suffix value should start at "1" (the default value) and monotonically
+increase to a maximum value of "9".
 
 The backup controller recovers state information from the
 \fBStateSaveLocation\fR directory, which must be readable and writable from both

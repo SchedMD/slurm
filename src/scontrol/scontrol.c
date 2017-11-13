@@ -82,8 +82,7 @@ static void	_create_it(int argc, char **argv);
 static void	_delete_it(int argc, char **argv);
 static void     _show_it(int argc, char **argv);
 static int	_get_command(int *argc, char **argv);
-static void     _ping_slurmctld(char *control_machine,
-				char *backup_controller);
+static void     _ping_slurmctld(uint32_t control_cnt, char **control_machine);
 static void	_print_config(char *config_param);
 static void     _print_daemons(void);
 static void     _print_aliases(char* node_hostname);
@@ -497,9 +496,10 @@ _print_config (char *config_param)
 		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
 		fprintf(stdout, "\n");
 	}
-	if (slurm_ctl_conf_ptr)
-		_ping_slurmctld (slurm_ctl_conf_ptr->control_machine,
-				 slurm_ctl_conf_ptr->backup_controller);
+	if (slurm_ctl_conf_ptr) {
+		_ping_slurmctld(slurm_ctl_conf_ptr->control_cnt,
+				slurm_ctl_conf_ptr->control_machine);
+	}
 }
 
 /* Print slurmd status on localhost.
@@ -523,51 +523,49 @@ static void
 _print_ping (void)
 {
 	slurm_ctl_conf_info_msg_t *conf;
-	char *primary, *secondary;
+	uint32_t control_cnt, i;
+	char **control_machine;
 
 	slurm_conf_init(NULL);
 
 	conf = slurm_conf_lock();
-	primary = xstrdup(conf->control_machine);
-	secondary = xstrdup(conf->backup_controller);
+	control_cnt = conf->control_cnt;
+	control_machine = xmalloc(sizeof(char *) * control_cnt);
+	for (i = 0; i < control_cnt; i++)
+		control_machine[i] = xstrdup(conf->control_machine[i]);
 	slurm_conf_unlock();
 
-	_ping_slurmctld (primary, secondary);
+	_ping_slurmctld(control_cnt, control_machine);
 
-	xfree(primary);
-	xfree(secondary);
+	for (i = 0; i < control_cnt; i++)
+		xfree(control_machine[i]);
+	xfree(control_machine);
 }
 
 /* Report if slurmctld daemons are responding */
 static void
-_ping_slurmctld(char *control_machine, char *backup_controller)
+_ping_slurmctld(uint32_t control_cnt, char **control_machine)
 {
-	static char *state[2] = { "UP", "DOWN" };
-	int primary = 1, secondary = 1;
-	int down_msg = 0;
+	static char *state[2] = { "DOWN", "UP" };
+	char mode[64];
+	bool down_msg = false;
+	int i;
 
-	if (slurm_ping(1) == SLURM_SUCCESS)
-		primary = 0;
-	if (slurm_ping(2) == SLURM_SUCCESS)
-		secondary = 0;
-	fprintf(stdout, "Slurmctld(primary/backup) ");
-	if (control_machine || backup_controller) {
-		fprintf(stdout, "at ");
-		if (control_machine) {
-			fprintf(stdout, "%s/", control_machine);
-			if (primary)
-				down_msg = 1;
-		} else
-			fprintf(stdout, "(NULL)/");
-		if (backup_controller) {
-			fprintf(stdout, "%s ", backup_controller);
-			if (secondary)
-				down_msg = 1;
-		} else
-			fprintf(stdout, "(NULL) ");
+	for (i = 0; i < control_cnt; i++) {
+		int status = 0;
+		if (slurm_ping(i) == SLURM_SUCCESS)
+			status = 1;
+		else
+			down_msg = true;
+		if (i == 0)
+			snprintf(mode, sizeof(mode), "primary");
+		else if ((i == 1) && (control_cnt == 2))
+			snprintf(mode, sizeof(mode), "backup");
+		else
+			snprintf(mode, sizeof(mode), "backup%d", i);
+		fprintf(stdout, "Slurmctld(%s) at %s is %s\n",
+			mode, control_machine[i], state[status]);
 	}
-	fprintf(stdout, "are %s/%s\n",
-		state[primary], state[secondary]);
 
 	if (down_msg && (getuid() == 0)) {
 		fprintf(stdout, "*****************************************\n");
@@ -585,8 +583,8 @@ _print_daemons (void)
 	slurm_ctl_conf_info_msg_t *conf;
 	char node_name_short[MAX_SLURM_NAME];
 	char node_name_long[MAX_SLURM_NAME];
-	char *b, *c, *n, *token, *save_ptr = NULL;
-	int actld = 0, ctld = 0, d = 0;
+	char *c, *n, *token, *save_ptr = NULL;
+	int actld = 0, ctld = 0, d = 0, i;
 	char daemon_list[] = "slurmctld slurmd";
 
 	slurm_conf_init(NULL);
@@ -594,26 +592,24 @@ _print_daemons (void)
 
 	gethostname_short(node_name_short, MAX_SLURM_NAME);
 	gethostname(node_name_long, MAX_SLURM_NAME);
-	if ((b = conf->backup_controller)) {
-		if ((xstrcmp(b, node_name_short) == 0) ||
-		    (xstrcmp(b, node_name_long)  == 0) ||
-		    (xstrcasecmp(b, "localhost") == 0))
-			ctld = 1;
-	}
-	if (conf->control_machine) {
+	for (i = 0; i < conf->control_cnt; i++) {
+		if (!conf->control_machine[i])
+			break;
 		actld = 1;
-		c = xstrdup(conf->control_machine);
+		c = xstrdup(conf->control_machine[i]);
 		token = strtok_r(c, ",", &save_ptr);
 		while (token) {
-			if ((xstrcmp(token, node_name_short) == 0) ||
-			    (xstrcmp(token, node_name_long)  == 0) ||
-			    (xstrcasecmp(token, "localhost") == 0)) {
+			if (!xstrcmp(token, node_name_short) ||
+			    !xstrcmp(token, node_name_long)  ||
+			    !xstrcasecmp(token, "localhost")) {
 				ctld = 1;
 				break;
 			}
 			token = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(c);
+		if (ctld)
+			break;
 	}
 	slurm_conf_unlock();
 
@@ -1319,25 +1315,41 @@ static int _process_command (int argc, char **argv)
 		}
 	}
 	else if (xstrncasecmp(tag, "takeover", MAX(tag_len, 8)) == 0) {
-		char *secondary = NULL;
+		int backup_inx = 1, control_cnt;
 		slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
 		slurm_ctl_conf_ptr = slurm_conf_lock();
-		secondary = xstrdup(slurm_ctl_conf_ptr->backup_controller);
+		control_cnt = slurm_ctl_conf_ptr->control_cnt;
 		slurm_conf_unlock();
+		if (argc > 2) {
+			exit_code = 1;
+			fprintf(stderr, "%s: too many arguments\n",
+				tag);
+			backup_inx = -1;
+		} else if (argc == 2) {
+			backup_inx = atoi(argv[1]);
+			if ((backup_inx < 1) || (backup_inx >= control_cnt)) {
+				exit_code = 1;
+				fprintf(stderr,
+					"%s: invalid backup controller index (%d)\n",
+					tag, backup_inx);
+				backup_inx = -1;
+			}
+		} else if (control_cnt < 1) {
+			exit_code = 1;
+			fprintf(stderr, "%s: no backup controller defined\n",
+				tag);
+			backup_inx = -1;
+		}
 
-		if ( secondary && secondary[0] != '\0' ) {
-			error_code = slurm_takeover();
+		if (backup_inx != -1) {
+			error_code = slurm_takeover(backup_inx);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
 					slurm_perror("slurm_takeover error");
 			}
-		} else {
-			fprintf(stderr, "slurm_takeover error: no backup "
-				"controller defined\n");
 		}
-		xfree(secondary);
 	}
 	else if (xstrncasecmp(tag, "shutdown", MAX(tag_len, 8)) == 0) {
 		/* require full command name */

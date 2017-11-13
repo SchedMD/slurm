@@ -2713,6 +2713,8 @@ typedef struct reservation_name_msg {
 #define LOG_FMT_SHORT           5
 #define LOG_FMT_THREAD_ID       6
 
+#define MAX_CONTROLLERS 10
+
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	char *accounting_storage_tres; /* list of tres */
@@ -2737,8 +2739,6 @@ typedef struct slurm_ctl_conf {
 	uint16_t acct_gather_node_freq; /* secs between node acct request */
 	char *authinfo;		/* authentication info */
 	char *authtype;		/* authentication type */
-	char *backup_addr;	/* comm path of slurmctld secondary server */
-	char *backup_controller;/* name of slurmctld secondary server */
 	uint16_t batch_start_timeout;	/* max secs for batch job to start */
 	char *bb_type;		/* burst buffer plugin type */
 	time_t boot_time;	/* time slurmctld last booted */
@@ -2748,8 +2748,11 @@ typedef struct slurm_ctl_conf {
 	char *cluster_name;     /* general name of the entire cluster */
 	uint16_t complete_wait;	/* seconds to wait for job completion before
 				 * scheduling another job */
-	char *control_addr;	/* comm path of slurmctld primary server */
-	char *control_machine;	/* name of slurmctld primary server */
+	char **control_addr;	/* comm path of slurmctld
+				 * primary server and backups */
+	uint32_t control_cnt;	/* Length of control_addr & control_machine */
+	char **control_machine;	/* name of slurmctld primary
+				 * server and backups */
 	uint32_t cpu_freq_def;	/* default cpu frequency / governor */
 	uint32_t cpu_freq_govs;	/* cpu freq governors allowed */
 	char *crypto_type;	/* cryptographic signature plugin */
@@ -4668,10 +4671,10 @@ extern void slurm_free_reservation_info_msg(reserve_info_msg_t *resv_info_ptr);
 
 /*
  * slurm_ping - issue RPC to have Slurm controller (slurmctld)
- * IN controller - 1==primary controller, 2==secondary controller
+ * IN dest - controller to contact (0=primary, 1=backup, 2=backup2, etc.)
  * RET 0 or a slurm error code
  */
-extern int slurm_ping(int primary);
+extern int slurm_ping(int dest);
 
 /*
  * slurm_reconfigure - issue RPC to have Slurm controller (slurmctld)
@@ -4682,7 +4685,7 @@ extern int slurm_reconfigure(void);
 
 /*
  * slurm_shutdown - issue RPC to have Slurm controller (slurmctld)
- *	cease operations, both the primary and backup controller
+ *	cease operations, both the primary and all backup controllers
  *	are shutdown.
  * IN options - 0: all slurm daemons are shutdown
  *              1: slurmctld generates a core file
@@ -4692,12 +4695,13 @@ extern int slurm_reconfigure(void);
 extern int slurm_shutdown(uint16_t options);
 
 /*
- * slurm_takeover - issue RPC to have Slurm backup controller (slurmctld)
- *	take over the primary controller.
- *
+ * slurm_takeover - issue RPC to have a Slurm backup controller take over the
+ *                  primary controller. REQUEST_CONTROL is sent by the backup
+ *                  to the primary controller to take control
+ * backup_inx IN - Index of BackupController to assume controller (typically 1)
  * RET 0 or a slurm error code
  */
-extern int slurm_takeover(void);
+extern int slurm_takeover(int backup_inx);
 
 /*
  * slurm_set_debugflags - issue RPC to set slurm controller debug flags

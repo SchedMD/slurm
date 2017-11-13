@@ -487,6 +487,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	config_key_pair_t *key_pair;
 	char tmp_str[128];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	int i;
 
 	if ( slurm_ctl_conf_ptr == NULL )
 		return NULL;
@@ -590,15 +591,27 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->authtype);
 	list_append(ret_list, key_pair);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("BackupAddr");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->backup_addr);
-	list_append(ret_list, key_pair);
+	for (i = 1; i < slurm_ctl_conf_ptr->control_cnt; i++) {
+		if (!slurm_ctl_conf_ptr->control_machine[i])
+			break;
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("BackupController");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->backup_controller);
-	list_append(ret_list, key_pair);
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		if ((i == 1) && !slurm_ctl_conf_ptr->control_machine[2])
+			key_pair->name = xstrdup("BackupController");
+		else
+			xstrfmtcat(key_pair->name, "BackupController%d", i);
+		if (slurm_ctl_conf_ptr->control_addr[i] &&
+		    xstrcmp(slurm_ctl_conf_ptr->control_machine[i],
+			    slurm_ctl_conf_ptr->control_addr[i])) {
+			xstrfmtcat(key_pair->value, "%s @ %s",
+				   slurm_ctl_conf_ptr->control_machine[i],
+				   slurm_ctl_conf_ptr->control_addr[i]);
+		} else {
+			key_pair->value =
+				xstrdup(slurm_ctl_conf_ptr->control_machine[i]);
+		}
+		list_append(ret_list, key_pair);
+	}
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
 		 slurm_ctl_conf_ptr->batch_start_timeout);
@@ -642,13 +655,17 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ControlAddr");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->control_addr);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ControlMachine");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->control_machine);
+	if (slurm_ctl_conf_ptr->control_addr[0] &&
+	    xstrcmp(slurm_ctl_conf_ptr->control_machine[0],
+		    slurm_ctl_conf_ptr->control_addr[0])) {
+		xstrfmtcat(key_pair->value, "%s @ %s",
+			   slurm_ctl_conf_ptr->control_machine[0],
+			   slurm_ctl_conf_ptr->control_addr[0]);
+	} else {
+		key_pair->value =
+			xstrdup(slurm_ctl_conf_ptr->control_machine[0]);
+	}
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

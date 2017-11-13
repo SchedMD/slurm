@@ -49,8 +49,7 @@
 #include "src/common/forward.h"
 #include "src/common/xmalloc.h"
 
-static int _send_message_controller (	enum controller_id dest,
-					slurm_msg_t *request_msg );
+static int _send_message_controller(int dest, slurm_msg_t *req);
 
 /*
  * slurm_reconfigure - issue RPC to have Slurm controller (slurmctld)
@@ -79,44 +78,35 @@ slurm_reconfigure (void)
 
 /*
  * slurm_ping - issue RPC to have Slurm controller (slurmctld)
- * IN controller - 1==primary controller, 2==secondary controller
+ * IN dest - controller to contact (0=primary, 1=backup, 2=backup2, etc.)
  * RET 0 or a slurm error code
  */
-int
-slurm_ping (int primary)
+extern int slurm_ping(int dest)
 {
 	int rc ;
 	slurm_msg_t request_msg ;
 
 	slurm_msg_t_init(&request_msg);
 	request_msg.msg_type = REQUEST_PING ;
-
-	if (primary == 1)
-		rc = _send_message_controller ( PRIMARY_CONTROLLER,
-						&request_msg );
-	else if (primary == 2)
-		rc = _send_message_controller ( SECONDARY_CONTROLLER,
-						&request_msg );
-	else
-		rc = SLURM_ERROR;
+	rc = _send_message_controller(dest, &request_msg);
 
 	return rc;
 }
 
 /*
  * slurm_shutdown - issue RPC to have Slurm controller (slurmctld)
- *	cease operations, both the primary and backup controller
+ *	cease operations, both the primary and all backup controllers
  *	are shutdown.
  * IN options - 0: all slurm daemons are shutdown
  *              1: slurmctld generates a core file
  *              2: only the slurmctld is shutdown (no core file)
  * RET 0 or a slurm error code
  */
-int
-slurm_shutdown (uint16_t options)
+extern int slurm_shutdown(uint16_t options)
 {
 	slurm_msg_t req_msg;
 	shutdown_msg_t shutdown_msg;
+	int i;
 
 	slurm_msg_t_init(&req_msg);
 	shutdown_msg.options = options;
@@ -124,41 +114,47 @@ slurm_shutdown (uint16_t options)
 	req_msg.data         = &shutdown_msg;
 
 	/*
-	 * Explicity send the message to both primary
-	 *   and backup controllers
+	 * Explicity send the message to both primary and backup controllers
 	 */
-	if (!working_cluster_rec)
-		(void) _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
-	return _send_message_controller(PRIMARY_CONTROLLER,   &req_msg);
+	if (!working_cluster_rec) {
+		for (i = 1; i < MAX_CONTROLLERS; i++)
+			(void) _send_message_controller(i, &req_msg);
+	}
+	return _send_message_controller(0, &req_msg);
 }
 
 /*
- * slurm_takeover - issue RPC to have Slurm backup controller take over the
+ * slurm_takeover - issue RPC to have a Slurm backup controller take over the
  *                  primary controller. REQUEST_CONTROL is sent by the backup
  *                  to the primary controller to take control
+ * backup_inx IN - Index of BackupController to assume controller (typically 1)
  * RET 0 or a slurm error code
  */
-int
-slurm_takeover ( void )
+extern int slurm_takeover(int backup_inx)
 {
 	slurm_msg_t req_msg;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type     = REQUEST_TAKEOVER;
-
-	return _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
+	if (backup_inx < 1)
+		return SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR;
+	return _send_message_controller(backup_inx, &req_msg);
 }
 
-int
-_send_message_controller (enum controller_id dest, slurm_msg_t *req)
+static int _send_message_controller(int dest, slurm_msg_t *req)
 {
 	int rc = SLURM_PROTOCOL_SUCCESS;
 	int fd = -1;
 	slurm_msg_t resp_msg;
 
-	/* always going to one node (primary or backup per value of "dest") */
-	if ((fd = slurm_open_controller_conn_spec(dest,working_cluster_rec)) <0)
+	/*
+	 * always communicate with a single node (primary or some backup per
+	 * value of "dest")
+	 */
+	if ((fd = slurm_open_controller_conn_spec(dest,
+						  working_cluster_rec)) < 0) {
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
+	}
 
 	if (slurm_send_node_msg(fd, req) < 0) {
 		slurm_shutdown_msg_conn(fd);

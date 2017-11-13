@@ -60,11 +60,6 @@
 #define CONVERT_NUM_UNIT_EXACT 0x00000001
 #define CONVERT_NUM_UNIT_NO    0x00000002
 
-enum controller_id {
-	PRIMARY_CONTROLLER = 1,
-	SECONDARY_CONTROLLER = 2
-};
-
 /* unit types */
 enum {
 	UNIT_NONE,
@@ -1054,7 +1049,8 @@ int slurm_send_node_msg(int open_fd, slurm_msg_t *msg);
  * msg connection establishment functions used by msg clients
 \**********************************************************************/
 
-/* calls connect to make a connection-less datagram connection to the
+/*
+ * Calls connect to make a connection-less datagram connection to the
  *	primary or secondary slurmctld message engine
  * IN/OUT addr       - address of controller contacted
  * IN/OUT use_backup - IN: whether to try the backup first or not
@@ -1065,13 +1061,14 @@ int slurm_send_node_msg(int open_fd, slurm_msg_t *msg);
 extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 				      slurmdb_cluster_rec_t *comm_cluster_rec);
 
-/* calls connect to make a connection-less datagram connection to the
- *	primary or secondary slurmctld message engine
- * IN dest      - controller to contact, primary or secondary
+/*
+ * Calls connect to make a connection-less datagram connection to a specific
+ *	primary or backup slurmctld message engine
+ * IN dest      - controller to contact (0=primary, 1=backup, 2=backup2, etc.)
  * IN comm_cluster_rec	- Communication record (host/port/version)/
  * RET int      - file descriptor of the connection created
  */
-extern int slurm_open_controller_conn_spec(enum controller_id dest,
+extern int slurm_open_controller_conn_spec(int dest,
 				      slurmdb_cluster_rec_t *comm_cluster_rec);
 
 /* In the bsd socket implementation it creates a SOCK_STREAM socket
@@ -1197,7 +1194,8 @@ int slurm_send_rc_msg(slurm_msg_t * request_msg, int rc);
  */
 int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg);
 
-/* slurm_send_recv_controller_msg
+/*
+ * slurm_send_recv_controller_msg
  * opens a connection to the controller, sends the controller a message,
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request

@@ -7,6 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
+# Portions Copyright (C) 2017 SchedMD LLC.
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
@@ -40,29 +41,16 @@ print_header $test_id
 
 #
 # Report the slurm daemon status
-#
+#		if {![string compare $status "DOWN"] || ![string compare $status "UP"]} {
 
 spawn $scontrol ping
 expect {
-	-re "Slurmctld.primary/backup" {
-		incr matches
-		exp_continue
-	}
-	-re "UP/UP" {
-		incr matches
-		exp_continue
-	}
-	-re "UP/DOWN" {
-		incr matches
-		exp_continue
-	}
-	-re "DOWN/UP" {
-		incr matches
-		exp_continue
-	}
-	-re "DOWN/DOWN" {
-		incr matches
-		exp_continue
+	-re "Slurmctld.primary. at $controlmachine_regex is ($alpha_cap)" {
+		set status $expect_out(1,string)
+		if {![string compare $status "DOWN"] || ![string compare $status "UP"]} {
+			incr matches
+			exp_continue
+		}
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
@@ -73,8 +61,8 @@ expect {
 	}
 }
 
-if {$matches != 2} {
-	send_user "\nFAILURE: scontrol ping output error $matches\n"
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol ping output error ($matches != 1)\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
