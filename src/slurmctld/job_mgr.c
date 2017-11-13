@@ -5340,7 +5340,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return job_signal(job_id, signal, flags, uid, preempt);
 		}
 
-		/* This will kill the meta record that holds all
+		/*
+		 * This will kill the meta record that holds all
 		 * pending jobs.  We want to kill this first so we
 		 * don't start jobs just to kill them as we are
 		 * killing other elements of the array.
@@ -5464,15 +5465,18 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 				job_ptr->requid		= uid;
 				srun_allocate_abort(job_ptr);
 				job_completion_logger(job_ptr, false);
-				/* Master job record, even wihtout tasks,
-				 * counts as one job record */
+				/*
+				 * Master job record, even wihtout tasks,
+				 * counts as one job record
+				 */
 				job_count -= (orig_task_cnt - 1);
 			} else {
 				_job_array_comp(job_ptr, false);
 				job_count -= (orig_task_cnt - new_task_count);
 			}
 
-			/* Set the task_cnt here since
+			/*
+			 * Set the task_cnt here since
 			 * job_completion_logger needs the total
 			 * pending count to handle the acct_policy
 			 * limit for submitted jobs correctly.
