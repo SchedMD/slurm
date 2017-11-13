@@ -2209,7 +2209,7 @@ slurm_shutdown(slurm_t self, uint16_t options=0)
 		options
 
 int
-slurm_takeover(slurm_t self)
+slurm_takeover(slurm_t self, int backup_inx=1)
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -2217,6 +2217,7 @@ slurm_takeover(slurm_t self)
 			      only Slurm::
 			    */
 	C_ARGS:
+		backup_inx
 
 int
 slurm_set_debug_level(slurm_t self, uint32_t debug_level)
