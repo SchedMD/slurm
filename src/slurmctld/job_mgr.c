@@ -13944,6 +13944,33 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 }
 
 /*
+ * Return true if this job is complete (including all elements of a pack job
+ */
+static bool _job_all_finished(struct job_record *job_ptr)
+{
+	struct job_record *pack_job;
+	ListIterator iter;
+	bool finished = true;
+
+	if (!IS_JOB_FINISHED(job_ptr))
+		return false;
+
+	if (!job_ptr->pack_job_list)
+		return true;
+
+	iter = list_iterator_create(job_ptr->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		if (!IS_JOB_FINISHED(pack_job)) {
+			finished = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return finished;
+}
+
+/*
  * job_alloc_info_ptr - get details about an existing job allocation
  * IN uid - job issuing the code
  * IN job_ptr - pointer to job record
@@ -13963,7 +13990,7 @@ extern int job_alloc_info_ptr(uint32_t uid, struct job_record *job_ptr)
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;
-	if (IS_JOB_FINISHED(job_ptr))
+	if (_job_all_finished(job_ptr))
 		return ESLURM_ALREADY_DONE;
 	if (job_ptr->details)
 		prolog = job_ptr->details->prolog_running;
