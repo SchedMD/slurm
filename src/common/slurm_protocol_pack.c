@@ -1564,6 +1564,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_CONTROL_STATUS:
 		_pack_control_status_msg((control_status_msg_t *)(msg->data),
 			buffer, msg->protocol_version);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
