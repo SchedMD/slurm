@@ -3187,8 +3187,10 @@ static void _pack_alloc_list_del(void *x)
 	xfree(job_info_resp_msg);
 }
 
-/* _slurm_rpc_job_pack_alloc_info - process RPC to get details on existing pack
- * job */
+/*
+ * _slurm_rpc_job_pack_alloc_info - process RPC to get details on existing pack
+ * job
+ */
 static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
@@ -6445,11 +6447,13 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 	uid = g_slurm_auth_get_uid(msg->auth_cred,
 				   slurmctld_config.auth_info);
 
-	/* If the cluster is part of a federation and it isn't the origin of the
+	/*
+	 * If the cluster is part of a federation and it isn't the origin of the
 	 * job then if it doesn't know about the federated job, then route the
 	 * request to the origin cluster via the client. If the cluster does
 	 * know about the job and it owns the job, the this cluster will cancel
-	 * the job and it will report the cancel back to the origin. */
+	 * the job and it will report the cancel back to the origin.
+	 */
 	lock_slurmctld(fed_job_read_lock);
 	if (fed_mgr_fed_rec) {
 		uint32_t job_id, origin_id;
@@ -6460,8 +6464,10 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 		origin_id = fed_mgr_get_cluster_id(job_id);
 		origin    = fed_mgr_get_cluster_by_id(origin_id);
 
-		/* only reroute to the origin if the connection is up. If it
-		 * isn't then _signal_job will signal the sibling jobs */
+		/*
+		 * only reroute to the origin if the connection is up. If it
+		 * isn't then _signal_job will signal the sibling jobs
+		 */
 		if (origin && origin->fed.send &&
 		    (((slurm_persist_conn_t *)origin->fed.send)->fd != -1) &&
 		    (origin != fed_mgr_cluster_rec) &&

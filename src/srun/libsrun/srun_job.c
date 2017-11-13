@@ -859,7 +859,8 @@ static char *_compress_pack_nodelist(List used_resp_list)
 		}
 		pack_resp->cpu_cnt = xmalloc(sizeof(uint16_t) * resp->node_cnt);
 		pack_resp->host_list = hostlist_create(resp->node_list);
-		for (i = 0, k = 0; i < resp->num_cpu_groups; i++) {
+		for (i = 0, k = 0;
+		     (i < resp->num_cpu_groups) && (k < resp->node_cnt); i++) {
 			for (j = 0; j < resp->cpu_count_reps[i]; j++) {
 				pack_resp->cpu_cnt[k++] =
 					resp->cpus_per_node[i];
