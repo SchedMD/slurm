@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.0rc4
 ==============================
  -- Fix documentation for MaxQueryTimeRange option in slurmdbd.conf.
+ -- Avoid srun abort trying to run on heterogeneous job component that has
+    ended.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
