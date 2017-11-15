@@ -11,6 +11,10 @@ documents those changes that are of interest to users and administrators.
  -- Treat ":" in #SBATCH arguments as fatal error. The "#SBATCH packjob" syntax
     must be used instead.
  -- job_submit/lua plugin: expose pack_job fields to get.
+ -- Prevent scheduling deadlock with multiple components of heterogeneous job
+    in different partitions (i.e. one heterogeneous job component is higher
+    priority in one partition and another component is lower priority in a
+    different partition).
 
 * Changes in Slurm 17.11.0rc3
 ==============================
