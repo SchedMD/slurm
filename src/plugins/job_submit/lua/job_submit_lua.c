@@ -586,6 +586,9 @@ static int _set_job_env_field(lua_State *L)
 	job_desc = lua_touserdata(L, -1);
 	if (job_desc == NULL) {
 		error("%s: job_desc is NULL", __func__);
+	} else if (job_desc->environment == NULL) {
+		error("%s: job_desc->environment is NULL", __func__);
+		lua_pushnil(L);
 	} else {
 		value_str = luaL_checkstring(L, 3);
 		for (i = 0; job_desc->environment[i]; i++) {
@@ -605,6 +608,7 @@ static int _set_job_env_field(lua_State *L)
 			}
 			job_desc->environment[0] = xstrdup(name_eq);
 			xstrcat(job_desc->environment[0], value_str);
+			job_desc->env_size++;
 		}
 	}
 	xfree(name_eq);
