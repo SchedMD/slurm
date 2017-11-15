@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     ended.
  -- Add SLURM_PACK_JOB_ID,SLURM_PACK_JOB_OFFSET to PrologSlurmctld and
     EpilogSlurmctld environment.
+ -- Treat ":" in #SBATCH arguments as fatal error. The "#SBATCH packjob" syntax
+    must be used instead.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
