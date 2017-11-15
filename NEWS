@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
     in different partitions (i.e. one heterogeneous job component is higher
     priority in one partition and another component is lower priority in a
     different partition).
+ -- Fix some slurmctld memory leaks.
 
 * Changes in Slurm 17.11.0rc3
 ==============================

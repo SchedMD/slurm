@@ -160,6 +160,7 @@ extern int acct_gather_interconnect_init(void)
 		g_context_num++;
 		plugin_entry = NULL; /* for next iteration */
 	}
+	xfree(full_plugin_type);
 	init_run = true;
 
 done:

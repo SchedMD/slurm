@@ -4198,6 +4198,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			xfree(job_desc_msg->mail_user);
 		}
 		if (!job_desc_msg->burst_buffer) {
+			xfree(job_desc_msg->script);
 			job_desc_msg->script =
 				bb_g_build_pack_script(script, pack_job_offset);
 		}
