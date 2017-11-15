@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     EpilogSlurmctld environment.
  -- Treat ":" in #SBATCH arguments as fatal error. The "#SBATCH packjob" syntax
     must be used instead.
+ -- job_submit/lua plugin: expose pack_job fields to get.
 
 * Changes in Slurm 17.11.0rc3
 ==============================

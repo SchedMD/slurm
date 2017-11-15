@@ -354,6 +354,12 @@ static int _job_rec_field(const struct job_record *job_ptr,
 			lua_pushnumber (L, job_ptr->details->nice);
 		else
 			lua_pushnumber (L, NO_VAL16);
+	} else if (!xstrcmp(name, "pack_job_id")) {
+		lua_pushnumber (L, job_ptr->pack_job_id);
+	} else if (!xstrcmp(name, "pack_job_id_set")) {
+		lua_pushstring (L, job_ptr->pack_job_id_set);
+	} else if (!xstrcmp(name, "pack_job_offset")) {
+		lua_pushnumber (L, job_ptr->pack_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring (L, job_ptr->partition);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
@@ -778,6 +784,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->ntasks_per_socket);
 	} else if (!xstrcmp(name, "num_tasks")) {
 		lua_pushnumber (L, job_desc->num_tasks);
+	} else if (!xstrcmp(name, "pack_job_offset")) {
+		lua_pushnumber (L, job_desc->pack_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring (L, job_desc->partition);
 	} else if (!xstrcmp(name, "power_flags")) {
