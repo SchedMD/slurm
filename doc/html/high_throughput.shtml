@@ -137,8 +137,8 @@ how frequently the scheduling logic runs. It can still be triggered on each
 job submit, job terminiation, or other state change which could permit a new
 job to be started. However that triggering does not cause the scheduling logic
 to be started immediately, but only within the configured <b>sched_interval</b>.
-For example, if sched_min_interval=2 (seconds) and 100 jobs are submitted within
-a 2 second time window, then the scheduling logic will be executed one time
+For example, if sched_min_interval=2000000 (microseconds) and 100 jobs are submitted
+within a 2 second time window, then the scheduling logic will be executed one time
 rather than 100 times if sched_min_interval was set to 0 (no delay).</li>
 <li>Besides controlling how frequently the scheduling logic is executed, the
 <b>default_queue_depth</b> configuration parameter controls how many jobs are
@@ -213,6 +213,6 @@ appropriate for your environment.</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 7 November 2017</p>
+<p style="text-align:center;">Last modified 15 November 2017</p>
 
 <!--#include virtual="footer.txt"-->
