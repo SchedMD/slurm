@@ -1631,7 +1631,7 @@ next_part:			part_ptr = (struct part_record *)
 			continue;	/* scheduled in another partition */
 
 		if (job_ptr->pack_job_id) {
-			fail_by_part = false;
+			fail_by_part = true;
 			goto fail_this_part;
 		}
 
