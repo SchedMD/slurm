@@ -3857,6 +3857,12 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 			slurmctld_conf.cluster_name);
 	}
 
+	if (job_ptr->pack_job_id) {
+		setenvf(&my_env, "SLURM_PACK_JOB_ID", "%u",
+			job_ptr->pack_job_id);
+		setenvf(&my_env, "SLURM_PACK_JOB_OFFSET", "%u",
+			job_ptr->pack_job_offset);
+	}
 	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);
 	name = gid_to_string((gid_t) job_ptr->group_id);
 	setenvf(&my_env, "SLURM_JOB_GROUP", "%s", name);
