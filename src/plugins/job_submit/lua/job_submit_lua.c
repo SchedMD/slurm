@@ -354,6 +354,12 @@ static int _job_rec_field(const struct job_record *job_ptr,
 			lua_pushnumber (L, job_ptr->details->nice);
 		else
 			lua_pushnumber (L, NO_VAL16);
+	} else if (!xstrcmp(name, "pack_job_id")) {
+		lua_pushnumber (L, job_ptr->pack_job_id);
+	} else if (!xstrcmp(name, "pack_job_id_set")) {
+		lua_pushstring (L, job_ptr->pack_job_id_set);
+	} else if (!xstrcmp(name, "pack_job_offset")) {
+		lua_pushnumber (L, job_ptr->pack_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring (L, job_ptr->partition);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
@@ -580,6 +586,9 @@ static int _set_job_env_field(lua_State *L)
 	job_desc = lua_touserdata(L, -1);
 	if (job_desc == NULL) {
 		error("%s: job_desc is NULL", __func__);
+	} else if (job_desc->environment == NULL) {
+		error("%s: job_desc->environment is NULL", __func__);
+		lua_pushnil(L);
 	} else {
 		value_str = luaL_checkstring(L, 3);
 		for (i = 0; job_desc->environment[i]; i++) {
@@ -599,6 +608,7 @@ static int _set_job_env_field(lua_State *L)
 			}
 			job_desc->environment[0] = xstrdup(name_eq);
 			xstrcat(job_desc->environment[0], value_str);
+			job_desc->env_size++;
 		}
 	}
 	xfree(name_eq);
@@ -778,6 +788,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->ntasks_per_socket);
 	} else if (!xstrcmp(name, "num_tasks")) {
 		lua_pushnumber (L, job_desc->num_tasks);
+	} else if (!xstrcmp(name, "pack_job_offset")) {
+		lua_pushnumber (L, job_desc->pack_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring (L, job_desc->partition);
 	} else if (!xstrcmp(name, "power_flags")) {

@@ -669,7 +669,8 @@ set_idbuf(char *idbuf)
 		(void *)pthread_self());
 }
 
-/* return a heap allocated string formed from fmt and ap arglist
+/*
+ * return a heap allocated string formed from fmt and ap arglist
  * returned string is allocated with xmalloc, so must free with xfree.
  *
  * args are like printf, with the addition of the following format chars:
@@ -679,10 +680,7 @@ set_idbuf(char *idbuf)
  * - %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  *
  * simple format specifiers are handled explicitly to avoid calls to
- * vsnprintf and allow dynamic sizing of the message buffer. If a call
- * is made to vsnprintf, however, the message will be limited to 1024 bytes.
- * (inc. newline)
- *
+ * vsnprintf and allow dynamic sizing of the message buffer.
  */
 static char *vxstrfmt(const char *fmt, va_list ap)
 {

@@ -1314,6 +1314,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 
 		/* Locks are for job_submit plugin use */
+		job_desc_msg->pack_job_offset = pack_job_offset;
 		error_code = validate_job_create_req(job_desc_msg,uid,
 						     &job_submit_user_msg[inx++]);
 		if (error_code)
@@ -1514,6 +1515,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
+		job_desc_msg->pack_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
@@ -2939,6 +2941,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
+		job_desc_msg->pack_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
@@ -3963,6 +3966,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
+		job_desc_msg->pack_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
@@ -4055,7 +4059,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	static int select_serial = -1;
 	static int active_rpc_cnt = 0;
 	ListIterator iter;
-	int error_code = SLURM_SUCCESS, alloc_only = 0, inx = 0;
+	int error_code = SLURM_SUCCESS, alloc_only = 0;
 	DEF_TIMERS;
 	uint32_t pack_job_id = 0, pack_job_offset = 0;
 	struct job_record *job_ptr = NULL, *first_job_ptr = NULL;
@@ -4139,6 +4143,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		}
 		dump_job_desc(job_desc_msg);
 
+		job_desc_msg->pack_job_offset = pack_job_offset;
 		error_code = validate_job_create_req(job_desc_msg, uid,
 						     &err_msg);
 		if (error_code != SLURM_SUCCESS) {
@@ -4154,12 +4159,12 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 				if (job_submit_user_msg)
 					sep = "\n";
 				xstrfmtcat(job_submit_user_msg, "%s%d: %s",
-					   sep, inx, tok);
+					   sep, pack_job_offset, tok);
 				tok = strtok_r(NULL, "\n", &save_ptr);
 			}
 			xfree(err_msg);
 		}
-		inx++;
+		pack_job_offset++;
 
 		job_desc_msg->begin_time = MAX(job_desc_msg->begin_time,
 					       min_begin);
@@ -4182,6 +4187,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 
 	/* Create new job allocations */
 	submit_job_list = list_create(NULL);
+	pack_job_offset = 0;
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	START_TIMER;	/* Restart after we have locks */
@@ -4190,7 +4196,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		if (!script)
 			script = xstrdup(job_desc_msg->script);
 		if (pack_job_offset && job_desc_msg->script) {
-			info("%s: Pack job %u offset %u has script, being ignord",
+			info("%s: Pack job %u offset %u has script, being ignored",
 			     __func__, pack_job_id, pack_job_offset);
 			xfree(job_desc_msg->script);
 
@@ -4201,6 +4207,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			xfree(job_desc_msg->mail_user);
 		}
 		if (!job_desc_msg->burst_buffer) {
+			xfree(job_desc_msg->script);
 			job_desc_msg->script =
 				bb_g_build_pack_script(script, pack_job_offset);
 		}

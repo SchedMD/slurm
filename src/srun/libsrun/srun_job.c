@@ -888,8 +888,8 @@ static char *_compress_pack_nodelist(List used_resp_list)
 		while ((pack_resp = (pack_resp_struct_t *)
 				    list_next(resp_iter))) {
 			j = hostlist_find(pack_resp->host_list, node_name);
-			if (j == -1)	/* node not in this pack job */
-				continue;
+			if ((j == -1) || !pack_resp->cpu_cnt)
+				continue;	/* node not in this pack job */
 			if (have_aliases) {
 				if (aliases)
 					xstrcat(aliases, ",");

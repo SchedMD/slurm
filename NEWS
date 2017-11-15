@@ -22,6 +22,19 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.0rc4
 ==============================
  -- Fix documentation for MaxQueryTimeRange option in slurmdbd.conf.
+ -- Avoid srun abort trying to run on heterogeneous job component that has
+    ended.
+ -- Add SLURM_PACK_JOB_ID,SLURM_PACK_JOB_OFFSET to PrologSlurmctld and
+    EpilogSlurmctld environment.
+ -- Treat ":" in #SBATCH arguments as fatal error. The "#SBATCH packjob" syntax
+    must be used instead.
+ -- job_submit/lua plugin: expose pack_job fields to get.
+ -- Prevent scheduling deadlock with multiple components of heterogeneous job
+    in different partitions (i.e. one heterogeneous job component is higher
+    priority in one partition and another component is lower priority in a
+    different partition).
+ -- Fix for heterogeneous job starvation bug.
+ -- Fix some slurmctld memory leaks.
 
 * Changes in Slurm 17.11.0rc3
 ==============================

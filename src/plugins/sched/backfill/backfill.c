@@ -139,7 +139,17 @@ typedef struct user_part_rec {
 	int user_cnt;
 } user_part_rec_t;
 
-/* Diag statistics */
+typedef struct deadlock_job_struct {
+	uint32_t pack_job_id;
+	time_t start_time;
+} deadlock_job_struct_t;
+
+typedef struct deadlock_part_struct {
+	List deadlock_job_list;
+	struct part_record *part_ptr;
+} deadlock_part_struct_t;
+
+/* Diagnostic  statistics */
 extern diag_stats_t slurmctld_diag_stats;
 uint32_t bf_sleep_usec = 0;
 
@@ -159,6 +169,7 @@ static int bf_job_part_count_reserve = 0;
 static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
 static uint32_t bf_min_prio_reserve = 0;
+static List deadlock_global_list;
 static int max_backfill_job_cnt = 100;
 static int max_backfill_job_per_assoc = 0;
 static int max_backfill_job_per_part = 0;
@@ -183,6 +194,8 @@ static int  _clear_qos_blocked_times(void *x, void *arg);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2);
 static uint32_t _get_job_max_tl(struct job_record *job_ptr, time_t now,
 				node_space_map_t *node_space);
+static void _job_pack_deadlock_fini(void);
+static bool _job_pack_deadlock_test(struct job_record *job_ptr);
 static bool _job_part_valid(struct job_record *job_ptr,
 			    struct part_record *part_ptr);
 static void _load_config(void);
@@ -1886,6 +1899,10 @@ next_task:
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			_set_job_time_limit(job_ptr, orig_time_limit);
+			if (later_start) {
+				job_ptr->start_time = 0;
+				goto TRY_LATER;
+			}
 			if (orig_start_time != 0)  /* Can start in other part */
 				job_ptr->start_time = orig_start_time;
 			else
@@ -2184,6 +2201,9 @@ skip_start:
 			goto TRY_LATER;
 		}
 
+		if (_job_pack_deadlock_test(job_ptr))
+			continue;
+
 		/*
 		 * Add reservation to scheduling table if appropriate
 		 */
@@ -2280,6 +2300,7 @@ skip_start:
 		}
 	}
 
+	_job_pack_deadlock_fini();
 	_pack_start_test(node_space);
 
 	xfree(bf_part_jobs);
@@ -3172,4 +3193,186 @@ static void _pack_start_test(node_space_map_t *node_space)
 		}
 	}
 	list_iterator_destroy(iter);
+}
+
+
+
+
+static void _deadlock_global_list_del(void *x)
+{
+	deadlock_part_struct_t *dl_part_ptr = (deadlock_part_struct_t *) x;
+	FREE_NULL_LIST(dl_part_ptr->deadlock_job_list);
+	xfree(dl_part_ptr);
+}
+
+static void _deadlock_part_list_del(void *x)
+{
+	deadlock_job_struct_t *dl_job_ptr = (deadlock_job_struct_t *) x;
+	xfree(dl_job_ptr);
+}
+
+static int _deadlock_part_list_srch(void *x, void *key)
+{
+	deadlock_job_struct_t *dl_job = (deadlock_job_struct_t *) x;
+	struct job_record *job_ptr = (struct job_record *) key;
+	if (dl_job->pack_job_id == job_ptr->pack_job_id)
+		return 1;
+	return 0;
+}
+
+static int _deadlock_part_list_srch2(void *x, void *key)
+{
+	deadlock_job_struct_t *dl_job = (deadlock_job_struct_t *) x;
+	deadlock_job_struct_t *dl_job2 = (deadlock_job_struct_t *) key;
+	if (dl_job->pack_job_id == dl_job2->pack_job_id)
+		return 1;
+	return 0;
+}
+
+static int _deadlock_global_list_srch(void *x, void *key)
+{
+	deadlock_part_struct_t *dl_part = (deadlock_part_struct_t *) x;
+	if (dl_part->part_ptr == (struct part_record *) key)
+		return 1;
+	return 0;
+}
+
+static int _deadlock_job_list_sort(void *x, void *y)
+{
+	deadlock_job_struct_t *dl_job_ptr1 = *(deadlock_job_struct_t **) x;
+	deadlock_job_struct_t *dl_job_ptr2 = *(deadlock_job_struct_t **) y;
+	if (dl_job_ptr1->start_time > dl_job_ptr2->start_time)
+		return -1;
+	else if (dl_job_ptr1->start_time < dl_job_ptr2->start_time)
+		return 1;
+	return 0;
+}
+
+/*
+ * Call at end of backup execution to release memory allocated by
+ * _job_pack_deadlock_test()
+ */
+static void _job_pack_deadlock_fini(void)
+{
+	FREE_NULL_LIST(deadlock_global_list);
+}
+
+/*
+ * Determine if job can run at it's "start_time" or later.
+ * job_ptr IN - job to test, set reason to "PACK_DEADLOCK" if it will deadlock
+ * RET true if the job can not run due to possible deadlock with other pack job
+ *
+ * NOTE: If there are a large number of pack jobs this will be painfully slow
+ *       as the algorithm must be order n^2
+ */
+static bool _job_pack_deadlock_test(struct job_record *job_ptr)
+{
+	deadlock_job_struct_t  *dl_job_ptr  = NULL, *dl_job_ptr2 = NULL;
+	deadlock_job_struct_t  *dl_job_ptr3 = NULL;
+	deadlock_part_struct_t *dl_part_ptr = NULL, *dl_part_ptr2 = NULL;
+	ListIterator job_iter, part_iter;
+	bool have_deadlock = false;
+
+	if (!job_ptr->pack_job_id || !job_ptr->part_ptr)
+		return false;
+
+	/*
+	 * Find the list representing the ordering of jobs in this specific
+	 * partition and add this job in the list, sorted by job start time
+	 */
+	if (!deadlock_global_list) {
+		deadlock_global_list = list_create(_deadlock_global_list_del);
+	} else {
+		dl_part_ptr = list_find_first(deadlock_global_list,
+					      _deadlock_global_list_srch,
+					      job_ptr->part_ptr);
+	}
+	if (!dl_part_ptr) {
+		dl_part_ptr = xmalloc(sizeof(deadlock_part_struct_t));
+		dl_part_ptr->deadlock_job_list =
+			list_create(_deadlock_part_list_del);
+		dl_part_ptr->part_ptr = job_ptr->part_ptr;
+		list_append(deadlock_global_list, dl_part_ptr);
+	} else {
+		dl_job_ptr = list_find_first(dl_part_ptr->deadlock_job_list,
+					     _deadlock_part_list_srch,
+					     job_ptr);
+	}
+	if (!dl_job_ptr) {
+		dl_job_ptr = xmalloc(sizeof(deadlock_job_struct_t));
+		dl_job_ptr->pack_job_id = job_ptr->pack_job_id;
+		dl_job_ptr->start_time = job_ptr->start_time;
+		list_append(dl_part_ptr->deadlock_job_list, dl_job_ptr);
+	} else if (dl_job_ptr->start_time < job_ptr->start_time) {
+		dl_job_ptr->start_time = job_ptr->start_time;
+	}
+	list_sort(dl_part_ptr->deadlock_job_list, _deadlock_job_list_sort);
+
+	/*
+	 * Log current table of pack job start times by parition
+	 */
+	if (debug_flags & DEBUG_FLAG_BACKFILL) {
+		part_iter = list_iterator_create(deadlock_global_list);
+		while ((dl_part_ptr2 = (deadlock_part_struct_t *)
+				       list_next(part_iter))){
+			info("Partition %s PackJobs:",
+			     dl_part_ptr2->part_ptr->name);
+			job_iter = list_iterator_create(dl_part_ptr2->
+							deadlock_job_list);
+			while ((dl_job_ptr2 = (deadlock_job_struct_t *)
+					      list_next(job_iter))) {
+				info("   PackJob %u to start at %"PRIu64,
+				     dl_job_ptr2->pack_job_id,
+				     (uint64_t) dl_job_ptr2->start_time);
+			}
+			list_iterator_destroy(job_iter);
+		}
+		list_iterator_destroy(part_iter);
+	}
+
+	/*
+	 * Determine if any pack jobs scheduled to start earlier than this job
+	 * in this partition are scheduled to start after it in some other
+	 * partition
+	 */
+	part_iter = list_iterator_create(deadlock_global_list);
+	while ((dl_part_ptr2 = (deadlock_part_struct_t *)list_next(part_iter))){
+		if (dl_part_ptr2 == dl_part_ptr)  /* Current partion, skip it */
+			continue;
+		dl_job_ptr2 = list_find_first(dl_part_ptr2->deadlock_job_list,
+					      _deadlock_part_list_srch,
+					      job_ptr);
+		if (!dl_job_ptr2)   /* Pack job not in this partion, no check */
+			continue;
+		job_iter = list_iterator_create(dl_part_ptr->deadlock_job_list);
+		while ((dl_job_ptr2 = (deadlock_job_struct_t *)
+				      list_next(job_iter))) {
+			if (dl_job_ptr2->pack_job_id == dl_job_ptr->pack_job_id)
+				break;	/* Self */
+			dl_job_ptr3 = list_find_first(
+						dl_part_ptr2->deadlock_job_list,
+						_deadlock_part_list_srch2,
+						dl_job_ptr2);
+			if (dl_job_ptr3 &&
+			    (dl_job_ptr3->start_time < dl_job_ptr->start_time)){
+				have_deadlock = true;
+				break;
+			}
+		}
+		list_iterator_destroy(job_iter);
+
+		if (have_deadlock && (debug_flags & DEBUG_FLAG_BACKFILL)) {
+			info("Pack job %u in partition %s would deadlock "
+			     "with pack job %u in partition %s, skipping it",
+			     dl_job_ptr->pack_job_id,
+			     dl_part_ptr->part_ptr->name,
+			     dl_job_ptr3->pack_job_id,
+			     dl_part_ptr2->part_ptr->name);
+		}
+		if (have_deadlock)
+			break;
+	}
+	list_iterator_destroy(part_iter);
+
+	return have_deadlock;
 }

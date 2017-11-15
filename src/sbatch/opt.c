@@ -1124,6 +1124,11 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 		ptr++;
 	}
 
+	if (*ptr == ':') {
+		fatal("%s: line %d: Unexpected `:` in [%s]",
+		      file, lineno, line);
+	}
+
 	if (*ptr == '\0')
 		return NULL;
 

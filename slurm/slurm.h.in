@@ -1496,6 +1496,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *origin_cluster;	/* cluster name that initiated the job. */
 	uint16_t other_port;	/* port to send various notification msg to */
 	uint8_t overcommit;	/* over subscribe resources, for batch only */
+	uint32_t pack_job_offset; /* pack job index */
 	char *partition;	/* name of requested partition,
 				 * default in SLURM config */
 	uint16_t plane_size;	/* plane size when task_dist =
