@@ -933,8 +933,7 @@ static void _validate_pack_jobs(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->pack_job_id == 0) ||
-		    (job_ptr->pack_job_offset != 0) ||
-		    IS_JOB_FINISHED(job_ptr))
+		    (job_ptr->pack_job_offset != 0))
 			continue;
 		/* active pack job leader found */
 		FREE_NULL_LIST(job_ptr->pack_job_list);
@@ -959,9 +958,8 @@ static void _validate_pack_jobs(void)
 				error("Could not find job %u, part of pack job %u",
 				      job_id, job_ptr->job_id);
 				pack_job_valid = false;
-			} else if (IS_JOB_FINISHED(pack_job_ptr) ||
-				   (pack_job_ptr->pack_job_id !=
-				    job_ptr->job_id)) {
+			} else if (pack_job_ptr->pack_job_id !=
+				   job_ptr->job_id) {
 				error("Invalid state of job %u, part of pack job %u",
 				      job_id, job_ptr->job_id);
 				pack_job_valid = false;
