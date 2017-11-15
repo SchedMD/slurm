@@ -4187,7 +4187,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		if (!script)
 			script = xstrdup(job_desc_msg->script);
 		if (pack_job_offset && job_desc_msg->script) {
-			info("%s: Pack job %u offset %u has script, being ignord",
+			info("%s: Pack job %u offset %u has script, being ignored",
 			     __func__, pack_job_id, pack_job_offset);
 			xfree(job_desc_msg->script);
 
