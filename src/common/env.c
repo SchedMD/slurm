@@ -221,7 +221,7 @@ int
 envcount (char **env)
 {
 	int envc = 0;
-	while (env[envc] != NULL)
+	while (env && env[envc])
 		envc++;
 	return (envc);
 }
@@ -273,6 +273,9 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 	vsnprintf(value, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
 
+	if (!name)
+		return EINVAL;
+
 	size = strlen(name) + strlen(value) + 2;
 	if (size >= MAX_ENV_STRLEN) {
 		error("environment variable %s is too long", name);
@@ -322,12 +325,13 @@ void unsetenvp(char **env, const char *name)
 
 char *getenvp(char **env, const char *name)
 {
-	size_t len = strlen(name);
+	size_t len;
 	char **ep;
 
-	if ((env == NULL) || (env[0] == NULL))
+	if (!name || !env || !env[0])
 		return (NULL);
 
+	len = strlen(name);
 	ep = _find_name_in_env (env, name);
 
 	if (*ep != NULL)
@@ -927,6 +931,9 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
 	char *sep = ","; /* seperator */
 	char *str = xstrdup("");
 
+	if (!array || !array_reps)
+		return str;
+
 	for (i = 0; i < array_len; i++) {
 		if (i == array_len-1) /* last time through loop */
 			sep = "";
@@ -982,6 +989,9 @@ extern int env_array_for_job(char ***dest,
 	slurm_step_layout_req_t step_layout_req;
 	uint16_t cpus_per_task_array[1];
 	uint32_t cpus_task_reps[1];
+
+	if (!alloc || !desc)
+		return SLURM_ERROR;
 
 	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
 	step_layout_req.num_tasks = desc->num_tasks;
@@ -1205,6 +1215,9 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	uint16_t cpus_per_task_array[1];
 	uint32_t cpus_task_reps[1];
 
+	if (!batch)
+		return SLURM_ERROR;
+
 	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
 	step_layout_req.num_tasks = batch->ntasks;
 
@@ -1383,9 +1396,13 @@ env_array_for_step(char ***dest,
 		   bool preserve_env)
 {
 	char *tmp, *tpn;
-	uint32_t node_cnt = step->step_layout->node_cnt, task_cnt;
+	uint32_t node_cnt, task_cnt;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
+	if (!step || !launch)
+		return;
+
+	node_cnt = step->step_layout->node_cnt;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
 
 	if (launch->pack_node_list) {
@@ -1882,6 +1899,9 @@ char **env_array_from_file(const char *fname)
 	int file_size = 0, tmp_size;
 	int separator = '\0';
 	int fd;
+
+	if (!fname)
+		return NULL;
 
 	/*
 	 * If file name is a numeric value, then it is assumed to be a
