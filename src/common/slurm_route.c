@@ -278,6 +278,9 @@ clean:
 		hostlist_destroy(hll[i]);
 	}
 	xfree(hll);
+	for (i = 0; i < MAX_CONTROLLERS; i++)
+		xfree(control_addr[i]);
+	xfree(control_addr);
 }
 
 extern int route_init(char *node_name)
