@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
     different partition).
  -- Fix for heterogeneous job starvation bug.
  -- Fix some slurmctld memory leaks.
+ -- Add SLURM_PACK_JOB_NODELIST to PrologSlurmctld and EpilogSlurmctld
+    environment.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
