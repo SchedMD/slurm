@@ -268,13 +268,13 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 	va_list ap;
 	int size, rc;
 
+	if (!name)
+		return EINVAL;
+
 	value = xmalloc(ENV_BUFSIZE);
 	va_start(ap, fmt);
 	vsnprintf(value, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
-
-	if (!name)
-		return EINVAL;
 
 	size = strlen(name) + strlen(value) + 2;
 	if (size >= MAX_ENV_STRLEN) {
