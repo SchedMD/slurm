@@ -4306,7 +4306,8 @@ static void *_run_prolog(void *arg)
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
 		lock_slurmctld(job_write_lock);
 		if ((rc = job_requeue(0, job_id, NULL, false, 0))) {
-			info("unable to requeue job %u: %m", job_id);
+			info("unable to requeue job %u: %s", job_id,
+			     slurm_strerror(rc));
 			kill_job = true;
 		}
 		if (kill_job) {
