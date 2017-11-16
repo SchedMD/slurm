@@ -4989,7 +4989,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 }
 
 /* Signal all components of a pack job */
-static int _pack_job_signal(struct job_record *pack_leader, uint16_t signal,
+extern int pack_job_signal(struct job_record *pack_leader, uint16_t signal,
 			    uint16_t flags, uid_t uid, bool preempt)
 {
 	ListIterator iter;
@@ -5080,7 +5080,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return ESLURM_ACCESS_DENIED;
 		}
 		if (job_ptr && job_ptr->pack_job_list) {   /* Pack leader */
-			return _pack_job_signal(job_ptr, signal, flags, uid,
+			return pack_job_signal(job_ptr, signal, flags, uid,
 						preempt);
 		}
 		if (job_ptr && job_ptr->pack_job_id && IS_JOB_PENDING(job_ptr))

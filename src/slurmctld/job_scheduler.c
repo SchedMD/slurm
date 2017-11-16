@@ -3862,6 +3862,38 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 			job_ptr->pack_job_id);
 		setenvf(&my_env, "SLURM_PACK_JOB_OFFSET", "%u",
 			job_ptr->pack_job_offset);
+		if ((job_ptr->pack_job_offset == 0) && job_ptr->pack_job_list) {
+			struct job_record *pack_job = NULL;
+			ListIterator iter;
+			hostset_t hs = NULL;
+			int hs_len = 0;
+			iter = list_iterator_create(job_ptr->pack_job_list);
+			while ((pack_job = (struct job_record *)
+					   list_next(iter))) {
+				if (job_ptr->pack_job_id !=
+				    pack_job->pack_job_id) {
+					error("%s: Bad pack_job_list for job %u",
+					      __func__, job_ptr->pack_job_id);
+					continue;
+				}
+				if (hs) {
+					(void) hostset_insert(hs,
+							      pack_job->nodes);
+				} else {
+					hs = hostset_create(pack_job->nodes);
+				}
+				hs_len += strlen(pack_job->nodes) + 2;
+			}
+			list_iterator_destroy(iter);
+			if (hs) {
+				char *buf = xmalloc(hs_len);
+				(void) hostset_ranged_string(hs, hs_len, buf);
+				setenvf(&my_env, "SLURM_PACK_JOB_NODELIST",
+					"%s", buf);
+				xfree(buf);
+				hostset_destroy(hs);
+			}
+		}
 	}
 	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);
 	name = gid_to_string((gid_t) job_ptr->group_id);
@@ -4274,13 +4306,19 @@ static void *_run_prolog(void *arg)
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
 		lock_slurmctld(job_write_lock);
 		if ((rc = job_requeue(0, job_id, NULL, false, 0))) {
-			info("unable to requeue job %u: %m", job_id);
+			info("unable to requeue job %u: %s", job_id,
+			     slurm_strerror(rc));
 			kill_job = true;
 		}
 		if (kill_job) {
 			srun_user_message(job_ptr,
 					  "PrologSlurmctld failed, job killed");
-			(void) job_signal(job_id, SIGKILL, 0, 0, false);
+			if (job_ptr->pack_job_list) {
+				(void) pack_job_signal(job_ptr, SIGKILL, 0, 0,
+						       false);
+			} else {
+				(void) job_signal(job_id, SIGKILL, 0, 0, false);
+			}
 		}
 
 		unlock_slurmctld(job_write_lock);
