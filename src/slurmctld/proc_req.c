@@ -1380,7 +1380,10 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	if (error_code) {
 		/* Cancel remaining job records */
 		(void) list_for_each(submit_job_list, _pack_job_cancel, NULL);
-		FREE_NULL_LIST(submit_job_list);
+		if (first_job_ptr)
+			first_job_ptr->pack_job_list = submit_job_list;
+		else
+			FREE_NULL_LIST(submit_job_list);
 	} else {
 		resource_allocation_response_msg_t *alloc_msg;
 		ListIterator iter;
@@ -4295,7 +4298,10 @@ send_msg:
 		if (submit_job_list) {
 			(void) list_for_each(submit_job_list, _pack_job_cancel,
 					     NULL);
-			FREE_NULL_LIST(submit_job_list);
+			if (first_job_ptr)
+				first_job_ptr->pack_job_list = submit_job_list;
+			else
+				FREE_NULL_LIST(submit_job_list);
 		}
 	} else {
 		info("%s: JobId=%u %s", __func__, pack_job_id, TIME_STR);
