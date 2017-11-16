@@ -4312,7 +4312,12 @@ static void *_run_prolog(void *arg)
 		if (kill_job) {
 			srun_user_message(job_ptr,
 					  "PrologSlurmctld failed, job killed");
-			(void) job_signal(job_id, SIGKILL, 0, 0, false);
+			if (job_ptr->pack_job_list) {
+				(void) pack_job_signal(job_ptr, SIGKILL, 0, 0,
+						       false);
+			} else {
+				(void) job_signal(job_id, SIGKILL, 0, 0, false);
+			}
 		}
 
 		unlock_slurmctld(job_write_lock);
