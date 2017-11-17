@@ -377,7 +377,7 @@ static int  _get_task_count(void);
 static int  _get_int(const char *arg, const char *what, bool positive);
 
 static bitstr_t *_get_pack_group(const int argc, char **argv,
-				 int default_pack_offset);
+				 int default_pack_offset, bool *opt_found);
 
 static void  _help(void);
 
@@ -557,8 +557,10 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	static bool pending_append = false;
 	bitstr_t *pack_grp_bits;
 	int i, i_first, i_last;
+	bool opt_found = false;
 
-	pack_grp_bits = _get_pack_group(argc, argv, default_pack_offset++);
+	pack_grp_bits = _get_pack_group(argc, argv, default_pack_offset++,
+					&opt_found);
 	i_first = bit_ffs(pack_grp_bits);
 	i_last  = bit_fls(pack_grp_bits);
 	for (i = i_first; i <= i_last; i++) {
@@ -574,6 +576,11 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 		/* initialize option defaults */
 		_opt_default();
+		if (opt_found || (i > 0)) {
+			xstrfmtcat(sropt.pack_group, "%d", i);
+			sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
+			bit_set(sropt.pack_grp_bits, i);
+		}
 
 		/* initialize options with env vars */
 		_opt_env(i);
@@ -620,6 +627,8 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		memcpy(opt_dup, &opt, sizeof(slurm_opt_t));
 		opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
 		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
+		opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
+
 		list_append(opt_list, opt_dup);
 		pending_append = false;
 	}
@@ -1289,9 +1298,16 @@ _get_int(const char *arg, const char *what, bool positive)
 	return parse_int(what, arg, positive);
 }
 
-/* If --pack-group option found, return a bitmap representing their IDs */
+/*
+ * If --pack-group option found, return a bitmap representing their IDs
+ * argc IN - Argument count
+ * argv IN - Arguments
+ * default_pack_offset IN - Default offset
+ * opt_found OUT - Set to true if --pack-group option found
+ * RET bitmap if pack groups to run
+ */
 static bitstr_t *_get_pack_group(const int argc, char **argv,
-				 int default_pack_offset)
+				 int default_pack_offset, bool *opt_found)
 {
 	int i, opt_char, option_index = 0;
 	char *tmp = NULL;
@@ -1305,6 +1321,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		exit(error_exit);
 	}
 
+	*opt_found = false;
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
@@ -1312,6 +1329,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		case LONG_OPT_PACK_GROUP:
 			xfree(sropt.pack_group);
 			sropt.pack_group = xstrdup(optarg);
+			*opt_found = true;
 		}
 	}
 	spank_option_table_destroy(optz);
@@ -1336,7 +1354,8 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		char *end_ptr = NULL;
 		i = strtol(tmp, &end_ptr, 10);
 		if ((i < 0) || (i >= MAX_PACK_COUNT) || (end_ptr[0] != '\0')) {
-			error("Invalid --pack-group value: %s", sropt.pack_group);
+			error("Invalid --pack-group value: %s",
+			       sropt.pack_group);
 			exit(error_exit);
 		}
 		bit_set(pack_grp_bits, i);

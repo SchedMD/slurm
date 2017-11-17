@@ -575,10 +575,29 @@ static void _match_job_name(List opt_list)
 	list_iterator_destroy(iter);
 }
 
+static int _sort_by_offset(void *x, void *y)
+{
+	slurm_opt_t *opt_local1 = *(slurm_opt_t **) x;
+	slurm_opt_t *opt_local2 = *(slurm_opt_t **) y;
+	int offset1 = -1, offset2 = -1;
+
+	if (opt_local1->srun_opt->pack_grp_bits)
+		offset1 = bit_ffs(opt_local1->srun_opt->pack_grp_bits);
+	if (opt_local2->srun_opt->pack_grp_bits)
+		offset2 = bit_ffs(opt_local2->srun_opt->pack_grp_bits);
+	if (offset1 < offset2)
+		return -1;
+	if (offset1 > offset2)
+		return 1;
+	return 0;
+}
+
 static void _post_opts(List opt_list)
 {
 	_pack_grp_test(opt_list);
 	_match_job_name(opt_list);
+	if (opt_list)
+		list_sort(opt_list, _sort_by_offset);
 }
 
 extern void init_srun(int argc, char **argv,

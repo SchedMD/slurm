@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
     environment.
  -- If PrologSlurmctld fails for pack job leader then requeue or kill all
     components of the job.
+ -- Fix for mulitple --pack-group srun arguments given out of order.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
