@@ -835,3 +835,4 @@ test38.13  Test that job arrays of pack jobs are rejected
 test38.14  Test pack job step output file labling and different commands/args
 test38.15  Test for proper handling of different rank end times
 test38.16  Test environment variables needed by MPI
+test38.17  Test for multiple, out of order srun --pack-group options
