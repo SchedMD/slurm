@@ -124,7 +124,7 @@ extern char *x11_get_xauth(void)
 	regex_t reg;
 	regmatch_t regmatch[2];
 	char *result, *cookie;
-	static char *cookie_pattern = "^[[:alnum:]-]+/unix:[[:digit:]]+"
+	static char *cookie_pattern = "^[[:alnum:].-]+/unix:[[:digit:]]+"
 				      "[[:space:]]+MIT-MAGIC-COOKIE-1"
 				      "[[:space:]]+([[:xdigit:]]+)\n$";
 
