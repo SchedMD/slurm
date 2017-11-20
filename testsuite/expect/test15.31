@@ -54,7 +54,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

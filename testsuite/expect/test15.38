@@ -63,7 +63,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -95,7 +94,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -117,7 +115,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: sacct not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

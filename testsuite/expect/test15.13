@@ -75,7 +75,6 @@ expect {
 		}
 		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
