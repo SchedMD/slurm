@@ -81,6 +81,7 @@ static List gids_cache_list = NULL;
 static void _group_cache_list_delete(void *x)
 {
 	gids_cache_t *entry = (gids_cache_t *) x;
+	xfree(entry->gids);
 	xfree(entry->username);
 	xfree(entry);
 }
