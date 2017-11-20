@@ -83,7 +83,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

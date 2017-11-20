@@ -345,6 +345,29 @@ $ sbcast --jobid=123.1 app1 /tmp/app1
 <p>The srun commands --bcast option will transfer files to the nodes associated
 with the application to be launched as specified by the --pack-group option.</p>
 
+<p>Slurm has a configuration option to control behavior of some commands with
+respect to heterogeneous jobs.
+By default a request to cancel, hold or release a job ID that is not the
+pack_job_id, but that of a job component will only operate that one component
+of the heterogeneous job.
+If SchedulerParameters configuration parameter includes the option "whole_pack"
+then the operation would apply to all components of the job if any job component
+is specified to be operated upon. In the below example, the scancel command will
+either cancel all components of job 93 if SchedulingParameters=whole_pack is
+configured, otherwise only job 93+1 will be cancelled.
+If a specific heterogeneous job component is specified (e.g. "scancel 93+1"),
+then only that one component will be effected.</p>
+<pre>
+$ squeue --job=93
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
+ 93+0     debug  bash  adam  R 19:18      1 nid00001
+ 93+1     debug  bash  adam  R 19:18      1 nid00011
+ 93+2     debug  bash  adam  R 19:18      1 nid00021
+$ scancel 94 (where job ID 94 is equivalent to 93+1)
+# Cancel 93+0, 93+1 and 93+2 if SchedulerParameters includes "whole_pack"
+# Cancel only 93+1 if SchedulerParameters does not include "whole_pack"
+</pre>
+
 <h3>Accounting</h3>
 
 <p>Slurm's accounting database records the pack_job_id and pack_job_offset
@@ -664,6 +687,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 November 2017</p>
+<p style="text-align:center;">Last modified 20 November 2017</p>
 
 <!--#include virtual="footer.txt"-->
