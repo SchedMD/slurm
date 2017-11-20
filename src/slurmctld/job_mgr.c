@@ -595,6 +595,7 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 	int i;
 
 	if (sched_update != slurmctld_conf.last_update) {
+		sched_update = slurmctld_conf.last_update;
 		sched_params = slurm_get_sched_params();
 		if (sched_params &&
 		    (tmp_ptr = strstr(sched_params, "max_switch_wait="))) {
@@ -5274,6 +5275,9 @@ extern int pack_job_signal(struct job_record *pack_leader, uint16_t signal,
 extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			  uid_t uid, bool preempt)
 {
+	static time_t sched_update = 0;
+	static bool whole_pack = false;
+	char *sched_params;
 	struct job_record *job_ptr;
 	uint32_t job_id;
 	time_t now = time(NULL);
@@ -5283,6 +5287,18 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	int rc = SLURM_SUCCESS, rc2, len;
+
+	if (sched_update != slurmctld_conf.last_update) {
+		sched_update = slurmctld_conf.last_update;
+		sched_params = slurm_get_sched_params();
+		if (sched_params) {
+			if (strstr(sched_params, "whole_pack"))
+				whole_pack = true;
+			else
+				whole_pack = false;
+			xfree(sched_params);
+		}
+	}
 
 	if (max_array_size == NO_VAL) {
 		max_array_size = slurmctld_conf.max_array_sz;
@@ -5331,6 +5347,16 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		if (job_ptr && job_ptr->pack_job_list) {   /* Pack leader */
 			return pack_job_signal(job_ptr, signal, flags, uid,
 						preempt);
+		}
+		if (job_ptr && job_ptr->pack_job_id && whole_pack) {
+			struct job_record *pack_leader;
+			pack_leader = find_job_record(job_ptr->pack_job_id);
+			if (pack_leader && pack_leader->pack_job_list) {
+				return pack_job_signal(pack_leader, signal,
+						       flags, uid, preempt);
+			}
+			error("%s: Job pack leader %u not found",
+			      __func__, job_ptr->pack_job_id);
 		}
 		if (job_ptr && job_ptr->pack_job_id && IS_JOB_PENDING(job_ptr))
 			return ESLURM_NOT_PACK_WHOLE;	/* Pack job child */
@@ -11158,6 +11184,97 @@ static void _merge_job_licenses(struct job_record *shrink_job_ptr,
 	return;
 }
 
+static void _hold_job_rec(struct job_record *job_ptr, uid_t uid)
+{
+	int i, j;
+
+	job_ptr->direct_set_prio = 1;
+	job_ptr->priority = 0;
+	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
+		j = list_count(job_ptr->part_ptr_list);
+		for (i = 0; i < j; i++) {
+			job_ptr->priority_array[i] = 0;
+		}
+	}
+	info("sched: %s: hold on job_id %u by uid %u", __func__,
+	     job_ptr->job_id, uid);
+}
+static void _hold_job(struct job_record *job_ptr, uid_t uid)
+{
+	static time_t sched_update = 0;
+	static bool whole_pack = false;
+	char *sched_params;
+	struct job_record *pack_leader = NULL, *pack_job;
+	ListIterator iter;
+
+	if (sched_update != slurmctld_conf.last_update) {
+		sched_update = slurmctld_conf.last_update;
+		sched_params = slurm_get_sched_params();
+		if (sched_params) {
+			if (strstr(sched_params, "whole_pack"))
+				whole_pack = true;
+			else
+				whole_pack = false;
+			xfree(sched_params);
+		}
+	}
+
+	if (job_ptr->pack_job_id && whole_pack)
+		pack_leader = find_job_record(job_ptr->pack_job_id);
+	if (pack_leader && pack_leader->pack_job_list) {
+		iter = list_iterator_create(pack_leader->pack_job_list);
+		while ((pack_job = (struct job_record *) list_next(iter)))
+			_hold_job_rec(pack_job, uid);
+		list_iterator_destroy(iter);
+		return;
+	}
+	_hold_job_rec(job_ptr, uid);
+}
+static void _release_job_rec(struct job_record *job_ptr, uid_t uid)
+{
+	job_ptr->direct_set_prio = 0;
+	set_job_prio(job_ptr);
+	job_ptr->state_reason = WAIT_NO_REASON;
+	job_ptr->state_reason_prev = WAIT_NO_REASON;
+	job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
+	xfree(job_ptr->state_desc);
+	job_ptr->exit_code = 0;
+	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
+	info("sched: %s: release hold on job_id %u by uid %u", __func__,
+	     job_ptr->job_id, uid);
+}
+static void _release_job(struct job_record *job_ptr, uid_t uid)
+{
+	static time_t sched_update = 0;
+	static bool whole_pack = false;
+	char *sched_params;
+	struct job_record *pack_leader = NULL, *pack_job;
+	ListIterator iter;
+
+	if (sched_update != slurmctld_conf.last_update) {
+		sched_update = slurmctld_conf.last_update;
+		sched_params = slurm_get_sched_params();
+		if (sched_params) {
+			if (strstr(sched_params, "whole_pack"))
+				whole_pack = true;
+			else
+				whole_pack = false;
+			xfree(sched_params);
+		}
+	}
+
+	if (job_ptr->pack_job_id && whole_pack)
+		pack_leader = find_job_record(job_ptr->pack_job_id);
+	if (pack_leader && pack_leader->pack_job_list) {
+		iter = list_iterator_create(pack_leader->pack_job_list);
+		while ((pack_job = (struct job_record *) list_next(iter)))
+			_release_job_rec(pack_job, uid);
+		list_iterator_destroy(iter);
+		return;
+	}
+	_release_job_rec(job_ptr, uid);
+}
+
 static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		       uid_t uid)
 {
@@ -12205,10 +12322,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if (IS_JOB_FINISHED(job_ptr) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->priority == job_specs->priority) {
-			debug("update_job: setting priority to current value");
+			debug("%s: setting priority to current value",__func__);
 			if ((job_ptr->priority == 0) && operator) {
-				/* Authorized user can change from user hold
-				 * to admin hold or admin hold to user hold */
+				/*
+				 * Authorized user can change from user hold
+				 * to admin hold or admin hold to user hold
+				 */
 				if (job_specs->alloc_sid == ALLOC_SID_USER_HOLD)
 					job_ptr->state_reason = WAIT_HELD_USER;
 				else
@@ -12219,17 +12338,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			   (operator ||
 			    (job_ptr->state_reason == WAIT_RESV_DELETED) ||
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
-			job_ptr->direct_set_prio = 0;
-			set_job_prio(job_ptr);
-			info("sched: update_job: releasing hold for job_id %u by uid %u",
-			     job_ptr->job_id, uid);
-			job_ptr->state_reason = WAIT_NO_REASON;
-			job_ptr->state_reason_prev = WAIT_NO_REASON;
-			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
-			xfree(job_ptr->state_desc);
-			job_ptr->exit_code = 0;
-
-			fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
+			_release_job(job_ptr, uid);
 		} else if ((job_ptr->priority == 0) &&
 			   (job_specs->priority != INFINITE)) {
 			info("ignore priority reset request on held job %u",
@@ -12242,11 +12351,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			if (job_specs->priority == INFINITE) {
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
+			} else if (job_specs->priority == 0) {
+				_hold_job(job_ptr, uid);
 			} else {
-				if (operator || (job_specs->priority == 0)) {
-					/* Only administrator can make
+				if (operator) {
+					/*
+					 * Only administrator can make
 					 * persistent change to a job's
-					 * priority, except holding a job */
+					 * priority, except holding a job
+					 */
 					job_ptr->direct_set_prio = 1;
 				} else
 					error_code = ESLURM_PRIO_RESET_FAIL;
@@ -12261,9 +12374,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					}
 				}
 			}
-			info("sched: update_job: setting priority to %u for "
-			     "job_id %u", job_ptr->priority,
-			     job_ptr->job_id);
+			info("sched: %s: set priority to %u for job_id %u",
+			      __func__, job_ptr->priority, job_ptr->job_id);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
 				if (!operator ||
@@ -12282,8 +12394,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			}
 		} else if ((job_ptr->priority != 0) &&
 			   (job_specs->priority == INFINITE)) {
-			/* If the job was already released, ignore another
-			 * release request. */
+			/*
+			 * If the job was already released, ignore another
+			 * release request.
+			 */
 			debug("%s: job %d already release ignoring request",
 			      __func__, job_ptr->job_id);
 		} else {

@@ -177,7 +177,7 @@ inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg);
-inline static void  _slurm_rpc_kill_job2(slurm_msg_t *msg);
+inline static void  _slurm_rpc_kill_job(slurm_msg_t *msg);
 inline static void  _slurm_rpc_node_registration(slurm_msg_t *msg,
 						 bool running_composite);
 inline static void  _slurm_rpc_ping(slurm_msg_t * msg);
@@ -576,7 +576,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_dump_licenses(msg);
 		break;
 	case REQUEST_KILL_JOB:
-		_slurm_rpc_kill_job2(msg);
+		_slurm_rpc_kill_job(msg);
 		break;
 	case MESSAGE_COMPOSITE:
 		_slurm_rpc_composite_msg(msg);
@@ -6415,10 +6415,11 @@ extern void free_rpc_stats(void)
 	slurm_mutex_unlock(&rpc_mutex);
 }
 
-/* _slurm_rpc_kill_job2()
+/*
+ * _slurm_rpc_kill_job()
  */
 inline static void
-_slurm_rpc_kill_job2(slurm_msg_t *msg)
+_slurm_rpc_kill_job(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	DEF_TIMERS;
@@ -6514,7 +6515,7 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 
 	slurm_send_rc_msg(msg, cc);
 
-	END_TIMER2("_slurm_rpc_kill_job2");
+	END_TIMER2("_slurm_rpc_kill_job");
 }
 
 /* The batch messages when made for the comp_msg need to be freed

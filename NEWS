@@ -23,6 +23,9 @@ documents those changes that are of interest to users and administrators.
     components of the job.
  -- Fix for mulitple --pack-group srun arguments given out of order.
  -- Update slurm.conf(5) man page with updated example logrotate script.
+ -- Add SchedulerParameters=whole_pack configuration parameter. If set, then
+    hold, release and cancel operations on any component of a heterogeneous job
+    will be applied to all components
 
 * Changes in Slurm 17.11.0rc3
 ==============================
