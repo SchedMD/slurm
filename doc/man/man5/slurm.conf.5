@@ -5486,46 +5486,31 @@ Here is a sample logrotate configuration. Make appropriate site modifications
 and save as /etc/logrotate.d/slurm on all nodes.
 See the \fBlogrotate\fR man page for more details.
 .LP
+.nf
 ##
-.br
 # Slurm Logrotate Configuration
-.br
 ##
-.br
-/var/log/slurm/*log {
-.br
-    compress
-.br
-    missingok
-.br
-    nocopytruncate
-.br
-    nocreate
-.br
-    nodelaycompress
-.br
-    nomail
-.br
-    notifempty
-.br
-    noolddir
-.br
-    rotate 5
-.br
-    sharedscripts
-.br
-    size=5M
-.br
-    create 640 slurm root
-.br
-    postrotate
-.br
-	/etc/init.d/slurm reconfig
-.br
-    endscript
-.br
+/var/log/slurm/*.log {
+	compress
+	missingok
+	nocopytruncate
+	nocreate
+	nodelaycompress
+	nomail
+	notifempty
+	noolddir
+	rotate 5
+	sharedscripts
+	size=5M
+	create 640 slurm root
+	postrotate
+		for daemon in $(/usr/bin/scontrol show daemons)
+		do
+			killall -SIGUSR2 $daemon
+		done
+	endscript
 }
-.br
+.fi
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
