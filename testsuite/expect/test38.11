@@ -40,6 +40,13 @@ set node1      ""
 set node2      ""
 set prompt	"PROMPT: "
 
+proc end_it { exit_code } {
+	global pack_job_id scancel
+	if {$pack_job_id > 0} {
+		exec $scancel $pack_job_id
+	}
+	exit $exit_code
+}
 
 print_header $test_id
 

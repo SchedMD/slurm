@@ -87,7 +87,7 @@ typedef struct {
 	List loc_tres;
 	time_t orig_start;
 	time_t start;
-	int unused_wall;
+	double unused_wall;
 } local_resv_usage_t;
 
 static void _destroy_local_tres_usage(void *object)
@@ -1475,7 +1475,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			ListIterator t_itr;
 			local_tres_usage_t *loc_tres;
 
-			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%u where id_resv=%u and time_start=%ld;",
+			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%f where id_resv=%u and time_start=%ld;",
 				   cluster_name, resv_table,
 				   r_usage->unused_wall, r_usage->id,
 				   r_usage->orig_start);

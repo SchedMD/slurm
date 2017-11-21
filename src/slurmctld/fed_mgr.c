@@ -1638,6 +1638,7 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 	}
 
 	/* Create new job allocation */
+	job_desc->pack_job_offset = NO_VAL;
 	error_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
 				  interactive_job, uid, &job_ptr, &err_msg,
 				  sibling->rpc_version);
@@ -3506,8 +3507,11 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	/* ensure that fed_siblings_active is clear since this is a new job */
 	job_desc->fed_siblings_active = 0;
 
-	/* Submit local job first. Then submit to all siblings. If the local job
-	 * fails, then don't worry about sending to the siblings. */
+	/*
+	 * Submit local job first. Then submit to all siblings. If the local job
+	 * fails, then don't worry about sending to the siblings.
+	 */
+	job_desc->pack_job_offset = NO_VAL;
 	*alloc_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
 				   alloc_only, uid, &job_ptr, err_msg,
 				   protocol_version);

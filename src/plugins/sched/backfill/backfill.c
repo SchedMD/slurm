@@ -842,6 +842,10 @@ static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2)
 	slurmctld_diag_stats.bf_active = 0;
 }
 
+static int _list_find_all(void *x, void *key)
+{
+	return 1;
+}
 
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args)
@@ -875,6 +879,7 @@ extern void *backfill_agent(void *args)
 		if (slurmctld_config.scheduling_disabled)
 			continue;
 
+		(void) list_delete_all(pack_job_list, _list_find_all, NULL);
 		slurm_mutex_lock(&config_lock);
 		if (config_flag) {
 			config_flag = false;

@@ -2321,7 +2321,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
 		node_offset++;
-		if (!bit_test(job_ptr->node_bitmap, i))
+		if (!job_ptr->node_bitmap || !bit_test(job_ptr->node_bitmap, i))
 			continue;
 
 		node_ptr = node_record_table_ptr + i;

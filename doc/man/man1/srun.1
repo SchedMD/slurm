@@ -1614,8 +1614,9 @@ option applies to job and step allocations.
 .TP
 \fB\-\-open\-mode\fR=<\fIappend|truncate\fR>
 Open the output and error files using append or truncate mode as specified.
-The default value is specified by the system configuration parameter
-\fIJobFileAppend\fR. This option applies to job allocations.
+For heterogeneous job steps the default value is "append". 
+Otherwise the default value is specified by the system configuration parameter
+\fIJobFileAppend\fR. This option applies to job and step allocations.
 
 .TP
 \fB\-\-pack\-group\fR=<\fIexpr\fR>
