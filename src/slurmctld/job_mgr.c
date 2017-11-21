@@ -4833,7 +4833,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		    job_ptr->fed_details;
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
-		   (!top_prio) || (!independent) || !avail_front_end(job_ptr);
+		   (!top_prio) || (!independent) || !avail_front_end(job_ptr) ||
+		   (job_specs->pack_job_offset != NO_VAL);
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
@@ -17135,6 +17136,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, int conn_fd,
 	 * But this will bypass some partition access permission checks.
 	 * TODO: fix this.
 	 */
+	job_desc->pack_job_offset = NO_VAL;
 	rc = job_allocate(job_desc,
 			  0,		/* immediate */
 			  0,		/* will_run */

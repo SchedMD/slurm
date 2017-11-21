@@ -102,9 +102,6 @@
 
 #include "src/plugins/select/bluegene/bg_enums.h"
 
-/* Delay start of pack job until all components are recorded */
-#define PACK_DELAY 2
-
 static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int rpc_type_size = 0;	/* Size of rpc_type_* arrays */
 static uint16_t *rpc_type_id = NULL;
@@ -1173,20 +1170,6 @@ static void _del_alloc_pack_msg(void *x)
 	xfree(alloc_msg);
 }
 
-static void *_trigger_backfill_thread(void *args)
-{
-	sleep(PACK_DELAY);
-	last_job_update = time(NULL);
-	return (void *) NULL;
-}
-
-/* Set last_job_update after the job's begin_time is reached so the
- * backfill scheduler can run immediately thereafter */
-static void _trigger_backfill(void)
-{
-	slurm_thread_create_detached(NULL, _trigger_backfill_thread, NULL);
-}
-
 static bool _sched_backfill(void)
 {
 	static int backfill = -1;
@@ -1224,7 +1207,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
 	ListIterator iter;
 	bool priv_user;
-	time_t min_begin = time(NULL) + PACK_DELAY;	/* Delay start */
 	List submit_job_list = NULL;
 	uint32_t pack_job_id = 0, pack_job_offset = 0;
 	hostset_t jobid_hostset = NULL;
@@ -1306,7 +1288,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 
 		/* Locks are for job_submit plugin use */
 		job_desc_msg->pack_job_offset = pack_job_offset;
-		error_code = validate_job_create_req(job_desc_msg,uid,
+		error_code = validate_job_create_req(job_desc_msg, uid,
 						     &job_submit_user_msg[inx++]);
 		if (error_code)
 			break;
@@ -1328,8 +1310,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		dump_job_desc(job_desc_msg);
 
 		job_ptr = NULL;
-		job_desc_msg->begin_time = MAX(job_desc_msg->begin_time,
-					       min_begin);
 		if (!job_desc_msg->resp_host)
 			job_desc_msg->resp_host = xstrdup(resp_host);
 		if (pack_job_offset) {
@@ -1337,6 +1317,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			job_desc_msg->mail_type = 0;
 			xfree(job_desc_msg->mail_user);
 		}
+		job_desc_msg->pack_job_offset = pack_job_offset;
 		error_code = job_allocate(job_desc_msg, false, false, NULL,
 					  true, uid, &job_ptr, &err_msg,
 					  msg->protocol_version);
@@ -1418,7 +1399,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 		list_iterator_destroy(iter);
 		xfree(tmp_str);
-		_trigger_backfill();
 	}
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
@@ -1564,6 +1544,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 				error_code = SLURM_ERROR;
 			}
 		} else {
+			job_desc_msg->pack_job_offset = NO_VAL;
 			error_code = job_allocate(job_desc_msg, immediate,
 						  false, NULL, true, uid,
 						  &job_ptr, &err_msg,
@@ -2951,6 +2932,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			lock_slurmctld(job_write_lock);
 			if (job_desc_msg->job_id == NO_VAL) {
+				job_desc_msg->pack_job_offset = NO_VAL;
 				error_code = job_allocate(job_desc_msg, false,
 							  true, &resp, true,
 							  uid, &job_ptr,
@@ -3992,6 +3974,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 			reject_job = true;
 	} else {
 		/* Create new job allocation */
+		job_desc_msg->pack_job_offset = NO_VAL;
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate,
 					  false, NULL, 0, uid, &job_ptr,
@@ -4077,7 +4060,6 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	List submit_job_list = NULL;
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
-	time_t min_begin = time(NULL) + PACK_DELAY;	/* Delay start */
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
@@ -4159,9 +4141,6 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			xfree(err_msg);
 		}
 		pack_job_offset++;
-
-		job_desc_msg->begin_time = MAX(job_desc_msg->begin_time,
-					       min_begin);
 	}
 	list_iterator_destroy(iter);
 	unlock_slurmctld(job_read_lock);
@@ -4205,6 +4184,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			job_desc_msg->script =
 				bb_g_build_pack_script(script, pack_job_offset);
 		}
+		job_desc_msg->pack_job_offset = pack_job_offset;
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate, false,
 					  NULL, alloc_only, uid, &job_ptr,
@@ -4281,7 +4261,6 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		}
 		list_iterator_destroy(iter);
 		xfree(tmp_str);
-		_trigger_backfill();
 	}
 
 	unlock_slurmctld(job_write_lock);
