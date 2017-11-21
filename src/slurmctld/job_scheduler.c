@@ -2097,8 +2097,19 @@ skip_start:
 			fail_by_part = false;
 
 fail_this_part:	if (fail_by_part) {
-		 	/* do not schedule more jobs in this partition or on
-			 * nodes in this partition */
+			/* Search for duplicates */
+			for (i = 0; i < failed_part_cnt; i++) {
+				if (failed_parts[i] == job_ptr->part_ptr) {
+					fail_by_part = false;
+					break;
+				}
+			}
+		}
+		if (fail_by_part) {
+			/*
+			 * Do not schedule more jobs in this partition or on
+			 * nodes in this partition
+			 */
 			failed_parts[failed_part_cnt++] = job_ptr->part_ptr;
 			bit_and_not(avail_node_bitmap,
 				job_ptr->part_ptr->node_bitmap);

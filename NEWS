@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameters=whole_pack configuration parameter. If set, then
     hold, release and cancel operations on any component of a heterogeneous job
     will be applied to all components
+ -- Handle FQDNs in xauth cookies for x11 display forwarding properly.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
