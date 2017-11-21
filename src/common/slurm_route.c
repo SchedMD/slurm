@@ -233,9 +233,6 @@ static void _set_collectors(char *this_node_name)
 		 */
 		ctldparent = false;
 		hostlist_destroy(nodes);
-		for (j = 0 ; j < MAX_CONTROLLERS; j++)
-			xfree(control_addr[j]);
-		xfree(control_addr);
 		nodes = hostlist_copy(hll[i]);
 		for (j = 0; j < hl_count; j++) {
 			hostlist_destroy(hll[j]);
