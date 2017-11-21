@@ -1334,7 +1334,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	}
 	spank_option_table_destroy(optz);
 
-	if (!sropt.pack_group) {
+	if (*opt_found == false) {
 		bit_set(pack_grp_bits, default_pack_offset);
 		return pack_grp_bits;
 	}
