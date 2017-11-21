@@ -967,8 +967,7 @@ typedef struct {
 				 * the pervious start time.  Needed
 				 * for accounting */
 	char *tres_str;
-	uint32_t unused_wall; /* amount of seconds this reservation wasn't
-			       * used */
+	double unused_wall; /* amount of seconds this reservation wasn't used */
 	List tres_list; /* list of slurmdb_tres_rec_t, only set when
 			 * job usage is requested.
 			 */

@@ -708,7 +708,7 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_UNUSED;
 		field->name = xstrdup("UnusedWall");
 		field->len = 10;
-		field->print_routine = print_fields_uint;
+		field->print_routine = print_fields_double;
 	} else if (!xstrncasecmp("UsageFactor", object, MAX(command_len, 6))) {
 		field->type = PRINT_UF;
 		field->name = xstrdup("UsageFactor");

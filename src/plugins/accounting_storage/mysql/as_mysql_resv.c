@@ -666,7 +666,7 @@ empty:
 		resv->time_end = slurm_atoul(row[RESV_REQ_END]);
 		resv->flags = slurm_atoul(row[RESV_REQ_FLAGS]);
 		resv->tres_str = xstrdup(row[RESV_REQ_TRES]);
-		resv->unused_wall = slurm_atoul(row[RESV_REQ_UNUSED]);
+		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
 	}
 
 	FREE_NULL_LIST(local_cluster_list);
