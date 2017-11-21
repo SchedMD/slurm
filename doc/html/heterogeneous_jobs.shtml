@@ -601,6 +601,8 @@ components of a heterogeneous job.</p>
 <p>The srun --multi-prog option can not be used to span more than one
 heterogeneous job component.</p>
 
+<p>The srun --open-mode option is by default set to "append".</p>
+
 <p>Ancient versions of OpenMPI and their derivatives (i.e. Cray MPI) are
 dependent upon communication ports being assigned to them by Slurm. Such MPI
 jobs will experience step launch failure if <u>any</u> component of a
@@ -687,6 +689,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 November 2017</p>
+<p style="text-align:center;">Last modified 21 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

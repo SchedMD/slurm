@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
     hold, release and cancel operations on any component of a heterogeneous job
     will be applied to all components
  -- Handle FQDNs in xauth cookies for x11 display forwarding properly.
+ -- For heterogeneous job steps, the srun --open-mode option default value will
+    be set to "append".
 
 * Changes in Slurm 17.11.0rc3
 ==============================
