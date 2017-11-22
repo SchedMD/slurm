@@ -86,7 +86,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number)" {
+	-re "^($number)" {
 		set nodes $expect_out(1,string)
 		if {$nodes != 1} {
 			send_user "\nFAILURE: expected 1 allocated node\n"
