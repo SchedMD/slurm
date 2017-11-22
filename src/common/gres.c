@@ -94,6 +94,21 @@ typedef cpuset_t cpu_set_t;
 #define GRES_MAGIC 0x438a34d4
 #define MAX_GRES_BITMAP 1024
 
+strong_alias(gres_gresid_to_gresname, slurm_gres_gresid_to_gresname);
+strong_alias(gres_get_node_used, slurm_gres_get_node_used);
+strong_alias(gres_get_system_cnt, slurm_gres_get_system_cnt);
+strong_alias(gres_get_value_by_type, slurm_gres_get_value_by_type);
+strong_alias(gres_get_job_info, slurm_gres_get_job_info);
+strong_alias(gres_build_job_details, slurm_gres_build_job_details);
+strong_alias(gres_get_step_info, slurm_gres_get_step_info);
+strong_alias(gres_get_step_state, slurm_gres_get_step_state);
+strong_alias(gres_get_job_state, slurm_gres_get_job_state);
+strong_alias(gres_2_tres_str, slurm_gres_2_tres_str);
+strong_alias(gres_set_job_tres_cnt, slurm_gres_set_job_tres_cnt);
+strong_alias(gres_set_node_tres_cnt, slurm_gres_set_node_tres_cnt);
+strong_alias(gres_device_major, slurm_gres_device_major);
+strong_alias(destroy_gres_device, slurm_destroy_gres_device);
+
 /* Gres symbols provided by the plugin */
 typedef struct slurm_gres_ops {
 	int		(*node_config_load)	( List gres_conf_list );
