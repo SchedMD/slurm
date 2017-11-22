@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix that backward compat for pmix version < 1.1.5.
  -- Fix use-after-free that can lead to slurmstepd segfaulting when setting
     ulimit values.
+ -- Add heterogeneous job start data to sdiag output.
 
 * Changes in Slurm 17.11.0rc3
 ==============================

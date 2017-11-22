@@ -55,6 +55,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 	int parts_packed;
 	int agent_queue_size;
 	time_t now = time(NULL);
+	uint32_t uint32_tmp;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -115,7 +116,12 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack32(slurmctld_diag_stats.bf_depth_sum, buffer);
 			pack32(slurmctld_diag_stats.bf_depth_try_sum, buffer);
 			pack32(slurmctld_diag_stats.bf_queue_len_sum, buffer);
-			pack32(slurmctld_diag_stats.bf_active,	 buffer);
+
+			/* FIXME: Pack as 2 fields in v18.08 */
+			uint32_tmp = slurmctld_diag_stats.backfilled_pack_jobs;
+			if (slurmctld_diag_stats.bf_active)
+				uint32_tmp |= 0x80000000;
+			pack32(uint32_tmp,	 buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		parts_packed = resp;
@@ -197,6 +203,7 @@ extern void reset_stats(int level)
 		slurmctld_diag_stats.backfilled_jobs = 0;
 
 	slurmctld_diag_stats.last_backfilled_jobs = 0;
+	slurmctld_diag_stats.backfilled_pack_jobs = 0;
 	slurmctld_diag_stats.bf_cycle_counter = 0;
 	slurmctld_diag_stats.bf_cycle_sum = 0;
 	slurmctld_diag_stats.bf_cycle_last = 0;
