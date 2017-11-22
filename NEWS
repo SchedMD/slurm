@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- Add heterogeneous job start data to sdiag output.
  -- X11 forwarding - handle systems with X11UseLocalhost=no set in sshd_config.
  -- Fix potential missing issue with missin symbols in gres plugins.
+ -- Ignore querying clusters in federation that are down from status commands.
 
 * Changes in Slurm 17.11.0rc3
 ==============================

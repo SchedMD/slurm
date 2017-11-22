@@ -120,22 +120,22 @@ extern void slurm_print_federation(void *ptr)
 
 	/* Display local Cluster */
 	while ((cluster = list_next(itr))) {
-		if (!xstrcmp(cluster->name, cluster_name)) {
-			char *features =
-				slurm_char_list_to_xstr(
-						cluster->fed.feature_list);
-			char *tmp_str =
-				slurmdb_cluster_fed_states_str(
-						cluster->fed.state);
+		char *features, *tmp_str;
+		if (xstrcmp(cluster->name, cluster_name))
+			continue;
 
-			printf("%-*s %s:%s:%d ID:%d FedState:%s Features:%s\n",
-			       left_col_size, "Self:", cluster->name,
-			       cluster->control_host, cluster->control_port,
-			       cluster->fed.id, (tmp_str ? tmp_str : ""),
-			       features ? features : "");
+		features = slurm_char_list_to_xstr( cluster->fed.feature_list);
+		tmp_str = slurmdb_cluster_fed_states_str( cluster->fed.state);
 
-			xfree(features);
-		}
+		printf("%-*s %s:%s:%d ID:%d FedState:%s Features:%s\n",
+		       left_col_size, "Self:", cluster->name,
+		       cluster->control_host ? cluster->control_host : "",
+		       cluster->control_port,
+		       cluster->fed.id, (tmp_str ? tmp_str : ""),
+		       features ? features : "");
+
+		xfree(features);
+		break;
 	}
 
 	/* Display siblings */
@@ -151,7 +151,8 @@ extern void slurm_print_federation(void *ptr)
 		tmp_str = slurmdb_cluster_fed_states_str(cluster->fed.state);
 		printf("%-*s %s:%s:%d ID:%d FedState:%s Features:%s PersistConnSend/Recv:%s/%s\n",
 		       left_col_size, "Sibling:", cluster->name,
-		       cluster->control_host, cluster->control_port,
+		       cluster->control_host ? cluster->control_host : "",
+		       cluster->control_port,
 		       cluster->fed.id, (tmp_str ? tmp_str : ""),
 		       features ? features : "",
 		       cluster->fed.send ? "Yes" : "No",

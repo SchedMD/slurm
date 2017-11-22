@@ -232,6 +232,8 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 	cluster->fed.recv = NULL;
 	slurm_persist_conn_destroy(cluster->fed.send);
 	cluster->fed.send = NULL;
+	xfree(cluster->control_host);
+	cluster->control_port = 0;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("closed sibling conn to %s", cluster->name);
@@ -852,6 +854,8 @@ static void _persist_callback_fini(void *arg)
 			     cluster->name);
 		slurm_persist_conn_destroy(persist_conn);
 		cluster->fed.send = NULL;
+		xfree(cluster->control_host);
+		cluster->control_port = 0;
 	}
 	cluster->fed.sync_recvd = false;
 	cluster->fed.sync_sent  = false;
