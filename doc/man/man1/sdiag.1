@@ -1,4 +1,4 @@
-.TH sdiag "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH sdiag "1" "Slurm Commands" "November 2017" "Slurm Commands"
 
 .SH "NAME"
 .LP
@@ -135,6 +135,11 @@ Number of jobs started thanks to backfilling since last time stats where reset.
 By default these values are reset at midnight UTC time.
 
 .TP
+\fBTotal backfilled heterogeneous job components\fR
+Number of heterogeneous job components started thanks to backfilling since
+last Slurm start.
+
+.TP
 \fBTotal cycles\fR
 Number of scheduling cycles since last reset
 
@@ -268,7 +273,7 @@ The location of the Slurm configuration file.
 .SH "COPYING"
 Copyright (C) 2010-2011 Barcelona Supercomputing Center.
 .br
-Copyright (C) 2010\-2014 SchedMD LLC.
+Copyright (C) 2010\-2017 SchedMD LLC.
 .LP
 Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free

@@ -157,6 +157,8 @@ static int _print_stats(void)
 	       buf->bf_backfilled_jobs);
 	printf("\tTotal backfilled jobs (since last stats cycle start): %u\n",
 	       buf->bf_last_backfilled_jobs);
+	printf("\tTotal backfilled heterogeneous job components: %u\n",
+	       buf->bf_backfilled_pack_jobs);
 	printf("\tTotal cycles: %u\n", buf->bf_cycle_counter);
 	printf("\tLast cycle when: %s (%ld)\n",
 	       slurm_ctime2(&buf->bf_when_last_cycle), buf->bf_when_last_cycle);

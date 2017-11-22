@@ -15079,7 +15079,7 @@ unpack_error:
 static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 				       Buf buffer, uint16_t protocol_version)
 {
-	uint32_t uint32_tmp;
+	uint32_t uint32_tmp = 0;
 	stats_info_response_msg_t * msg;
 	xassert ( msg_ptr != NULL );
 
@@ -15124,7 +15124,11 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack32(&msg->bf_depth_sum,	buffer);
 			safe_unpack32(&msg->bf_depth_try_sum,	buffer);
 			safe_unpack32(&msg->bf_queue_len_sum,	buffer);
-			safe_unpack32(&msg->bf_active,		buffer);
+
+			/* FIXME: Pack as 2 fields in v18.08 */
+			safe_unpack32(&uint32_tmp,		buffer);
+			msg->bf_backfilled_pack_jobs = uint32_tmp & 0x7fffffff;
+			msg->bf_active = (uint32_tmp & 0x80000000) >> 31;
 		}
 
 		safe_unpack32(&msg->rpc_type_size,		buffer);
