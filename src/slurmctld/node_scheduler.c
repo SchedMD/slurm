@@ -1565,7 +1565,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	int shared = 0, select_mode;
 	List preemptee_cand;
 
-	/* Since you could potentially have multiple features and the
+	/*
+	 * Since you could potentially have multiple features and the
 	 * job might not request memory we need to keep track of a minimum
 	 * from the selected features.  This is to fulfill commit
 	 * 700e7b1d4e9.
@@ -1672,35 +1673,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   avail_node_bitmap)) {
 			return ESLURM_NODE_NOT_AVAIL;
-		}
-
-		if (!preempt_flag) {
-			if (shared) {
-				if (!bit_super_set(job_ptr->details->
-						   req_node_bitmap,
-						   share_node_bitmap)) {
-					return ESLURM_NODES_BUSY;
-				}
-#ifndef HAVE_BG
-				if (bit_overlap(job_ptr->details->
-						req_node_bitmap,
-						cg_node_bitmap)) {
-					return ESLURM_NODES_BUSY;
-				}
-#endif
-			} else {
-				if (!bit_super_set(job_ptr->details->
-						   req_node_bitmap,
-						   idle_node_bitmap)) {
-					return ESLURM_NODES_BUSY;
-				}
-				/* Note: IDLE nodes are not COMPLETING */
-			}
-#ifndef HAVE_BG
-		} else if (bit_overlap(job_ptr->details->req_node_bitmap,
-				       cg_node_bitmap)) {
-			return ESLURM_NODES_BUSY;
-#endif
 		}
 
 		/* still must go through select_g_job_test() to
@@ -2036,6 +2008,30 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	} else if (!runable_avail && !nodes_busy) {
 		error_code = ESLURM_NODE_NOT_AVAIL;
+	} else if (!preempt_flag && job_ptr->details->req_node_bitmap) {
+		/* specific nodes required */
+		if (shared) {
+			if (!bit_super_set(job_ptr->details->req_node_bitmap,
+					   share_node_bitmap)) {
+				error_code = ESLURM_NODES_BUSY;
+			}
+#ifndef HAVE_BG
+			if (bit_overlap(job_ptr->details->req_node_bitmap,
+					cg_node_bitmap)) {
+				error_code = ESLURM_NODES_BUSY;
+			}
+#endif
+		} else if (!bit_super_set(job_ptr->details->req_node_bitmap,
+					  idle_node_bitmap)) {
+			error_code = ESLURM_NODES_BUSY;
+			/* Note: IDLE nodes are not COMPLETING */
+		}
+#ifndef HAVE_BG
+	} else if (job_ptr->details->req_node_bitmap &&
+		   bit_overlap(job_ptr->details->req_node_bitmap,
+			       cg_node_bitmap)) {
+		error_code = ESLURM_NODES_BUSY;
+#endif
 	}
 
 	if (error_code == SLURM_SUCCESS) {
