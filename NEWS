@@ -49,6 +49,9 @@ documents those changes that are of interest to users and administrators.
     be set to "append".
  -- Pack job scheduling list not being cleared between runs of the backfill
     scheduler resulted in various anomalies.
+ -- Fix that backward compat for pmix version < 1.1.5.
+ -- Fix use-after-free that can lead to slurmstepd segfaulting when setting
+    ulimit values.
 
 * Changes in Slurm 17.11.0rc3
 ==============================

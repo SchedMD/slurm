@@ -218,9 +218,10 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 	struct rlimit r;
 	bool u_req_propagate;  /* e.g. true if 'srun --propagate' */
 	char *env_name = NULL, *rlimit_name;
+	int rc = SLURM_SUCCESS;
 
 	xstrfmtcat(env_name, "SLURM_RLIMIT_%s", rli->name);
-	rlimit_name = env_name + 6;
+	rlimit_name = xstrdup(env_name + 6);
 	if (_get_env_val(env, env_name, &env_value, &u_req_propagate)) {
 		debug("Couldn't find %s in environment", env_name);
 		xfree(env_name);
@@ -238,11 +239,12 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 	 * by the slurm conf file settings, or the user requested it.
 	 */
 	if ( ! (rli->propagate_flag == PROPAGATE_RLIMITS || u_req_propagate))
-		return SLURM_SUCCESS;
+		goto cleanup;
 
 	if (getrlimit( rli->resource, &r ) < 0) {
 		error("getrlimit(%s): %m", rlimit_name);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	/*
@@ -252,7 +254,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 		debug2( "_set_limit: %s setrlimit %s no change in value: %lu",
 			u_req_propagate?"user":"conf", rlimit_name,
 			(unsigned long) r.rlim_cur);
-		return SLURM_SUCCESS;
+		goto cleanup;
 	}
 
 	debug2("_set_limit: %-14s: max:%s cur:%s req:%s", rlimit_name,
@@ -279,12 +281,15 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 				r.rlim_cur == RLIM_INFINITY ? "'unlimited'" :
 				rlim_to_string( r.rlim_cur, cur, sizeof(cur)));
 		}
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	debug2( "_set_limit: %s setrlimit %s succeeded",
 			u_req_propagate?"user":"conf", rlimit_name );
 
-	return SLURM_SUCCESS;
+cleanup:
+	xfree(rlimit_name);
+	return rc;
 }
 
 /*

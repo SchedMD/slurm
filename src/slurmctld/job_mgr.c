@@ -5077,6 +5077,13 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		job_ptr = find_job_pack_record(job_id, (uint32_t) long_id);
 		if (!job_ptr)
 			return ESLURM_ALREADY_DONE;
+		if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
+		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						  job_ptr->account)) {
+			error("Security violation, REQUEST_KILL_JOB RPC for "
+			      "jobID %u from uid %d", job_ptr->job_id, uid);
+			return ESLURM_ACCESS_DENIED;
+		}
 		if (IS_JOB_PENDING(job_ptr))
 			return ESLURM_NOT_PACK_WHOLE;
 		return _job_signal(job_ptr, signal, flags, uid,preempt);

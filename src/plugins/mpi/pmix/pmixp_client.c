@@ -59,18 +59,35 @@
 #define PMIX_TDIR_RMCLEAN "pmix.tdir.rmclean"
 #endif
 
+#ifndef PMIX_VERSION_MAJOR
+#define PMIX_VERSION_MAJOR	1L
+#define PMIXP_PMIX_PRIOR_115	1
+#endif
+
+#if (HAVE_PMIX_VER == 1L)
+#if (PMIXP_PMIX_PRIOR_115 == 1)
+#define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
+	{ (kvp)->value.data.array.array = (struct pmix_info_t *)_array; }
+#else
+#define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
+	{ (kvp)->value.data.array.array = (pmix_info_t *)_array; }
+#endif
+#endif
+
+
 /* Check PMIx version */
 #if (HAVE_PMIX_VER != PMIX_VERSION_MAJOR)
 #define VALUE_TO_STRING(x) #x
 #define VALUE(x) VALUE_TO_STRING(x)
 #pragma message "PMIx version mismatch: the major version seen during configuration was " VALUE(HAVE_PMIX_VER) "L but found " VALUE(PMIX_VERSION_MAJOR) " compilation will most likely fail.  Please reconfigure against the new version."
 #endif
+
 #if (HAVE_PMIX_VER == 1)
 #define PMIXP_INFO_ARRAY_CREATE(kvp, _array, _count)		\
 {								\
 	(kvp)->value.type = PMIX_INFO_ARRAY;			\
 	(kvp)->value.data.array.size = _count;			\
-	(kvp)->value.data.array.array = (pmix_info_t *)_array;	\
+	PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array);		\
 }
 #elif (HAVE_PMIX_VER == 2)
 #define PMIXP_INFO_ARRAY_CREATE(kvp, _array, _count)			\
@@ -546,12 +563,6 @@ extern int pmixp_lib_is_wildcard(uint32_t rank)
 {
 	int _rank = (int)rank;
 	return (PMIX_RANK_WILDCARD == _rank);
-}
-
-extern int pmixp_lib_is_undef(uint32_t rank)
-{
-	int _rank = (int)rank;
-	return (PMIX_RANK_UNDEF == _rank);
 }
 
 extern uint32_t pmixp_lib_get_wildcard(void)
