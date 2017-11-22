@@ -124,7 +124,16 @@ extern char *x11_get_xauth(void)
 	regex_t reg;
 	regmatch_t regmatch[2];
 	char *result, *cookie;
-	static char *cookie_pattern = "^[[:alnum:].-]+/unix:[[:digit:]]+"
+	/*
+	 * Two real-world examples:
+	 * "zoidberg/unix:10  MIT-MAGIC-COOKIE-1  abcdef0123456789"
+	 * "zoidberg:10  MIT-MAGIC-COOKIE-1  abcdef0123456789"
+	 *
+	 * The "/unix" bit is optional, and captured in "[[:alnum:].-/]+:".
+	 * '.' and '-' are also allowed in the hostname portion, so match them
+	 * in addition to '/'.
+	 */
+	static char *cookie_pattern = "^[[:alnum:].-/]+:[[:digit:]]+"
 				      "[[:space:]]+MIT-MAGIC-COOKIE-1"
 				      "[[:space:]]+([[:xdigit:]]+)\n$";
 
