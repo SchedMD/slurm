@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- X11 forwarding - handle systems with X11UseLocalhost=no set in sshd_config.
  -- Fix potential missing issue with missin symbols in gres plugins.
  -- Ignore querying clusters in federation that are down from status commands.
+ -- Base federated jobs off of origin job and not the local cluster in API.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
