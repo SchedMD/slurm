@@ -2587,6 +2587,22 @@ uint16_t slurm_get_select_type_param(void)
 	return select_type_param;
 }
 
+/* slurm_set_select_type_param
+ * set select_type_param for slurmctld_conf object
+ * IN uint16_t   - select_type_param
+ */
+void slurm_set_select_type_param(uint16_t select_type_param)
+{
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		conf->select_type_param = select_type_param;
+		slurm_conf_unlock();
+	}
+}
+
 /** Return true if (remote) system runs Cray XT/XE */
 bool is_cray_select_type(void)
 {

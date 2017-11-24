@@ -1245,9 +1245,13 @@ extern int init ( void )
 	/* We must call the api here since we call this from other
 	 * things other than the slurmctld.
 	 */
-	uint16_t select_type_param = slurm_get_select_type_param();
-	if (select_type_param & CR_OTHER_CONS_RES)
+	other_select_type_param = slurm_get_select_type_param();
+
+	if (other_select_type_param & CR_OTHER_CONS_RES)
 		plugin_id = SELECT_PLUGIN_CRAY_CONS_RES;
+	else
+		plugin_id = SELECT_PLUGIN_CRAY_LINEAR;
+
 	debug_flags = slurm_get_debug_flags();
 
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)

@@ -55,6 +55,8 @@
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
 
+uint16_t other_select_type_param = 0;
+
 /*
  * Must be synchronized with slurm_select_ops_t in node_select.h.
  */
@@ -135,7 +137,10 @@ extern int other_select_init(void)
 	if (g_context)
 		goto done;
 
-	if (slurmctld_conf.select_type_param & CR_OTHER_CONS_RES)
+	if (!other_select_type_param)
+		other_select_type_param = slurm_get_select_type_param();
+
+	if (other_select_type_param & CR_OTHER_CONS_RES)
 		type = "select/cons_res";
 	else
 		type = "select/linear";
