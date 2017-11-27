@@ -557,18 +557,18 @@ rm -rf %{buildroot}
 %preun slurmctld
 %systemd_preun slurmctld.service
 %postun slurmctld
-%systemd_preun_with_restart slurmctld.service
+%systemd_postun_with_restart slurmctld.service
 
 %post slurmd
 %systemd_post slurmd.service
 %preun slurmd
 %systemd_preun slurmd.service
 %postun slurmd
-%systemd_preun_with_restart slurmd.service
+%systemd_postun_with_restart slurmd.service
 
 %post slurmdbd
 %systemd_post slurmdbd.service
 %preun slurmdbd
 %systemd_preun slurmdbd.service
 %postun slurmdbd
-%systemd_preun_with_restart slurmdbd.service
+%systemd_postun_with_restart slurmdbd.service
