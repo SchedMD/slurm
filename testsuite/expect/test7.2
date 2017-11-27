@@ -50,7 +50,7 @@ if {[test_cray]} {
 #
 exec $bin_rm -f $file_prog_get
 if {![test_aix]} {
-	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib64 -Wl,--rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib -Wl,--rpath=${slurm_dir}/lib -lpmi
+	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib64 -Wl,-rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib -Wl,-rpath=${slurm_dir}/lib -lpmi
 } else {
 	exec $bin_cc ${file_prog_get}.c -Wl,-brtl -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib -lpmi
 }

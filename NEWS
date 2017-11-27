@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential missing issue with missin symbols in gres plugins.
  -- Ignore querying clusters in federation that are down from status commands.
  -- Base federated jobs off of origin job and not the local cluster in API.
+ -- Remove erroneous double '-' on rpath for libslurmfull.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
