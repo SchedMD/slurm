@@ -158,7 +158,7 @@ job management, scheduling and accounting modules
 %package perlapi
 Summary: Perl API to Slurm
 Group: Development/System
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description perlapi
 Perl API package for Slurm.  This package includes the perl API to provide a
 helpful interface to Slurm through Perl
@@ -166,7 +166,7 @@ helpful interface to Slurm through Perl
 %package devel
 Summary: Development package for Slurm
 Group: Development/System
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description devel
 Development package for Slurm.  This package includes the header files
 and static libraries for the Slurm API
@@ -180,7 +180,7 @@ Example configuration files for Slurm.
 %package slurmctld
 Summary: Slurm controller daemon
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description slurmctld
 Slurm controller daemon. Used to manage the job queue, schedule jobs,
 and dispatch RPC messages to the slurmd processon the compute nodes
@@ -189,14 +189,14 @@ to launch jobs.
 %package slurmd
 Summary: Slurm compute node daemon
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description slurmd
 Slurm compute node daemon. Used to launch jobs on compute nodes
 
 %package slurmdbd
 Summary: Slurm database daemon
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 Obsoletes: slurm-sql
 %description slurmdbd
 Slurm database daemon. Used to accept and process database RPCs and upload
@@ -219,7 +219,7 @@ OpenLava wrapper scripts used for helping migrate from OpenLava/LSF to Slurm
 %package contribs
 Summary: Perl tool to print Slurm job state information
 Group: Development/System
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 Obsoletes: slurm-sjobexit slurm-sjstat slurm-seff
 %description contribs
 seff is a mail program used directly by the Slurm daemons. On completion of a
@@ -237,7 +237,7 @@ utilities will provide more information and greater depth of understanding.
 %package pam_slurm
 Summary: PAM module for restricting access to compute nodes via Slurm
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 BuildRequires: pam-devel
 Obsoletes: pam_slurm
 %description pam_slurm
