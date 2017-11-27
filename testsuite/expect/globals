@@ -1932,6 +1932,37 @@ proc test_launch_type { } {
 
 ################################################################
 #
+# Proc: test_launch_test_exec
+#
+# Purpose: Determine launch type plugin.
+#
+# Returns the launch plugin type
+#
+################################################################
+
+proc test_launch_test_exec { } {
+	global scontrol bin_bash bin_grep alpha_numeric_under
+
+	log_user 0
+	set test_exec 0
+	set type ""
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep LaunchParameters"
+	expect {
+		-re "test_exec" {
+			set test_exec 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $test_exec
+}
+
+################################################################
+#
 # Proc: test_node_features_plugin
 #
 # Purpose: Determine NodeFeaturesPlugin type.
