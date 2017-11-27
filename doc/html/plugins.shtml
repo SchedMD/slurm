@@ -59,20 +59,20 @@ in other Slurm functions used by the plugin.</p>
 
 <h2>API Functions in All Plugins</h2>
 <p class="commandline">int init (void);</p>
-<p style="margin-left:.2in"><b>Description</b>: If present, this function is called
+<p style="margin-left:.2in"><i>Description</i>: If present, this function is called
 just after the plugin is loaded. This allows the plugin to perform any global
 initialization prior to any actual API calls.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: None.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the plugin's initialization
+<p style="margin-left:.2in"><i>Arguments</i>: None.</p>
+<p style="margin-left:.2in"><i>Returns</i>: SLURM_SUCCESS if the plugin's initialization
 was successful. Any other return value indicates to Slurm that the plugin should
 be unloaded and not used.</p>
 <p class="commandline">void fini (void);</p>
-<p style="margin-left:.2in"><b>Description</b>: If present, this function is called
+<p style="margin-left:.2in"><i>Description</i>: If present, this function is called
 just before the plugin is unloaded. This allows the plugin to do any finalization
 after the last plugin-specific API call is made.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: None.</p>
-<p style="margin-left:.2in"><b>Returns</b>: None.</p>
-<p><b>Note</b>: These init and fini functions are not the same as those
+<p style="margin-left:.2in"><i>Arguments</i>: None.</p>
+<p style="margin-left:.2in"><i>Returns</i>: None.</p>
+<p><i>Note</i>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
 The system <span class="commandline">_init()</span> is called before the Slurm
@@ -102,10 +102,212 @@ are available.</p>
 entails delays (e.g. transactions with other systems), it should be written to
 utilize a thread for that functionality. This thread may be created by the
 <span class="commandline">init()</span> function and deleted by the
-<span class="commandline">fini()</span> functions. See <b>plugins/sched/backfill</b>
+<span class="commandline">fini()</span> functions. See <i>plugins/sched/backfill</i>
 for an example of how to do this.</p>
+
+<h2>Data Structure Consistency</h2>
+
+<p>
+  In certain situations Slurm iterates over different data structures elements
+  using counters. For example, with environment variable arrays.
+  In order to avoid buffer overflows and other undesired situations, when a
+  plugin modifies certain elements it must also update these counters accordingly.
+  Other situations may require other types of changes.
+</p>
+<p>
+  The following advice indicates which structures have arrays with associated
+  counters that must be mantained when modifying data, plus other possible
+  important information to take in consideration when manipulating these
+  structures.
+  This list is not fully exhaustive due to constant modifications in code,
+  but it is a first start point and basic guideline for most common situations.
+  Complete structure inforation can be seen in the <i>slurm/slurm.h.in</i>
+  file.
+</p>
+
+<h3>slurm_job_info_t (job_info_t) Data Structure</h3>
+<pre>
+  uint32_t env_size;
+  char **environment;
+
+  uint32_t spank_job_env_size;
+  char **spank_job_env;
+
+  uint32_t gres_detail_cnt;
+  char **gres_detail_str;
+</pre>
+<p>
+  These pairs of array pointers and element counters must kept updated in order
+  to avoid subsequent buffer overflows, so if you update the array you must
+  also update the related counter.
+</p>
+<pre>
+  char *nodes;
+  int32_t *node_inx;
+
+  int32_t *req_node_inx;
+  char *req_nodes;
+</pre>
+<p>
+  <i>node_inx</i> and <i>req_node_inx</i> represents a list of index pairs for
+  ranges of nodes defined in the <i>nodes</i> and <i>req_nodes</i> fields
+  respectively. In each case, both array variables must match the count.
+</p>
+<pre>
+  uint32_t pack_job_id;
+  char *pack_job_id_set;
+</pre>
+<p>
+  The <i>pack_job_id</i> field should be the first element of the
+  <i>pack_job_id_set</i> array.
+</p>
+
+<h3>job_step_info_t Data Structure</h3>
+<pre>
+  char *nodes;
+  int32_t *node_inx;
+</pre>
+<p>
+  <i>node_inx</i> represents a list of index pairs for range of nodes defined in
+  <i>nodes</i>. Both variables must match the node count.
+</p>
+
+<h3>priority_factors_object_t Data Structure</h3>
+<pre>
+  uint32_t tres_cnt;
+  char **tres_names;
+  double *tres_weights;
+</pre>
+<p>
+  This value must match the configured TRES on the system, otherwise
+  iteration over the <i>tres_names</i> or <i>tres_weights</i> arrays can cause
+  buffer overflows.
+</p>
+
+<h3>job_step_pids_t Data Structure</h3>
+<pre>
+  uint32_t pid_cnt;
+  uint32_t *pid;
+</pre>
+<p>
+  Array <i>pid</i> represents the list of Process IDs for the job step, and
+  <i>pid_cnt</i> is the counter that must match the size of the array.
+</p>
+
+<h3>slurm_step_layout_t Data Structure</h3>
+<pre>
+  uint32_t node_cnt;
+  char *node_list;
+</pre>
+<p>
+  The <i>node_list</i> array size must match <i>node_cnt</i>.
+</p>
+<pre>
+  uint16_t *tasks;
+  uint32_t node_cnt;
+  uint32_t task_cnt;
+</pre>
+<p>
+  In the <i>tasks</i> array, each element is the number of tasks assigned
+  to the corresponding node, to its size must match <i>node_cnt</i>. Moreover
+  <i>task_cnt</i> represents the sum of tasks registered in <i>tasks</i>.
+</p>
+<pre>
+  uint32_t **tids;
+</pre>
+<p>
+  <i>tids</i> is an array of length <i>node_cnt</i> of task ID arrays. Each
+  subarray is designated by the corresponding value in the <i>tasks</i> array,
+  so <i>tasks</i>, <i>tids</i> and <i>task_cnt</i> must be set to match this
+  layout.
+</p>
+
+<h3>slurm_step_launch_params_t Data Structure</h3>
+<pre>
+  uint32_t envc;
+  char **env;
+</pre>
+<p>
+  When modifying the environment variables in the <i>env</i> array, you must
+  also modify the <i>envc</i> counter accordingly to prevent buffer overflows
+  in subsequent loops over that array.
+</p>
+<pre>
+  uint32_t pack_nnodes;
+  uint32_t pack_ntasks;
+
+  uint16_t *pack_task_cnts;
+  uint32_t **pack_tids;
+  uint32_t *pack_node_list;
+</pre>
+<p>
+  This <i>pack_*</i> related variables must match the current pack job configuration.
+  <br>
+  For example, if for whatever reason you are reducing the number of tasks for
+  a node in a pack job, you should at least remove that task ID from
+  <i>pack_tids</i>, decrement <i>pack_ntasks</i> and <i>pack_task_cnts</i>, and
+  possibly decrement the number of nodes of the pack job in <i>pack_nnodes</i>
+  and <i>pack_node_list</i>.
+</p>
+<pre>
+  char **spank_job_env;
+  uint32_t spank_job_env_size;
+</pre>
+<p>
+  When modifying the <i>spank_job_env</i> structure, the
+  <i>spank_job_env_size</i> field must be updated to prevent buffer overflows
+  in subsequent loops over that array.
+</p>
+
+<h3>node_info_t Data Structure</h3>
+<pre>
+  char *features;
+  char *features_act;
+</pre>
+<p>
+  In a system containing Intel KNL processors the <i>features_act</i> field is
+  set by the plugin to match the currently running modes on the node. On other
+  systems the <i>features_act</i> is not usually used.
+  If you program such a plugin you must ensure that <i>features_act</i> contains
+  a subset of <i>features</i>.
+</p>
+<pre>
+char *reason;
+time_t reason_time;
+uint32_t reason_uid;
+</pre>
+<p>
+  If <i>reason</i> is modified then <i>reason_time</i> and <i>reason_uid</i>
+  should be updated.
+</p>
+
+<h3>reserve_info_t Data Structure</h3>
+<pre>
+  int32_t *node_inx;
+  uint32_t node_cnt;
+</pre>
+<p>
+  <i>node_inx</i> represents a list of index pairs for range of nodes associated
+  with the reservation and its count must equal <i>node_cnt</i>.
+</p>
+
+<h3>partition_info_t Data Structure</h3>
+<p>
+  No special advice.
+</p>
+
+<h3>slurm_step_layout_req_t Data Structure</h3>
+<p>
+  No special advice.
+</p>
+
+<h3>slurm_step_ctx_params_t</h3>
+<p>
+  No special advice.
+</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 27 November 2017</p>
 
 <!--#include virtual="footer.txt"-->
