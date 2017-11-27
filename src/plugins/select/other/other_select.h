@@ -47,6 +47,8 @@
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
+extern uint16_t other_select_type_param;
+
 /*
  * Initialize context for node selection plugin
  */

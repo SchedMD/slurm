@@ -81,7 +81,6 @@ typedef struct load_job_req_struct {
 } load_job_req_struct_t;
 
 typedef struct load_job_resp_struct {
-	bool local_cluster;
 	job_info_msg_t *new_msg;
 } load_job_resp_struct_t;
 
@@ -1051,19 +1050,6 @@ static inline bool _test_local_job(uint32_t job_id)
 	return false;
 }
 
-/* Sort responses so local cluster response is first */
-static int _local_resp_first(void *x, void *y)
-{
-	load_job_resp_struct_t *resp_x = *(load_job_resp_struct_t **)x;
-	load_job_resp_struct_t *resp_y = *(load_job_resp_struct_t **)y;
-
-	if (resp_x->local_cluster)
-		return -1;
-	if (resp_y->local_cluster)
-		return 1;
-	return 0;
-}
-
 static int
 _load_cluster_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 		   slurmdb_cluster_rec_t *cluster)
@@ -1112,7 +1098,6 @@ static void *_load_job_thread(void *args)
 	} else {
 		load_job_resp_struct_t *job_resp;
 		job_resp = xmalloc(sizeof(load_job_resp_struct_t));
-		job_resp->local_cluster = load_args->local_cluster;
 		job_resp->new_msg = new_msg;
 		list_append(load_args->resp_msg_list, job_resp);
 	}
@@ -1121,13 +1106,25 @@ static void *_load_job_thread(void *args)
 	return (void *) NULL;
 }
 
+
+static int _sort_orig_clusters(const void *a, const void *b)
+{
+	slurm_job_info_t *job1 = (slurm_job_info_t *)a;
+	slurm_job_info_t *job2 = (slurm_job_info_t *)b;
+
+	if (!xstrcmp(job1->cluster, job1->fed_origin_str))
+		return -1;
+	if (!xstrcmp(job2->cluster, job2->fed_origin_str))
+		return 1;
+	return 0;
+}
+
 static int _load_fed_jobs(slurm_msg_t *req_msg,
 			  job_info_msg_t **job_info_msg_pptr,
 			  uint16_t show_flags, char *cluster_name,
 			  slurmdb_federation_rec_t *fed)
 {
 	int i, j;
-	int local_job_cnt = 0;
 	load_job_resp_struct_t *job_resp;
 	job_info_msg_t *orig_msg = NULL, *new_msg = NULL;
 	uint32_t new_rec_cnt;
@@ -1147,19 +1144,17 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 			      list_count(fed->cluster_list));
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
-		bool local_cluster = false;
 		if ((cluster->control_host == NULL) ||
 		    (cluster->control_host[0] == '\0'))
 			continue;	/* Cluster down */
 
-		if (!xstrcmp(cluster->name, cluster_name))
-			local_cluster = true;
-		if ((show_flags & SHOW_LOCAL) && !local_cluster)
+		/* Only show jobs from the local cluster */
+		if ((show_flags & SHOW_LOCAL) &&
+		    xstrcmp(cluster->name, cluster_name))
 			continue;
 
 		load_args = xmalloc(sizeof(load_job_req_struct_t));
 		load_args->cluster = cluster;
-		load_args->local_cluster = local_cluster;
 		load_args->req_msg = req_msg;
 		load_args->resp_msg_list = resp_msg_list;
 		slurm_thread_create(&load_thread[pthread_count],
@@ -1174,17 +1169,12 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 		pthread_join(load_thread[i], NULL);
 	xfree(load_thread);
 
-	/* Move the response from the local cluster (if any) to top of list */
-	list_sort(resp_msg_list, _local_resp_first);
-
 	/* Merge the responses into a single response message */
 	iter = list_iterator_create(resp_msg_list);
 	while ((job_resp = (load_job_resp_struct_t *) list_next(iter))) {
 		new_msg = job_resp->new_msg;
 		if (!orig_msg) {
 			orig_msg = new_msg;
-			if (job_resp->local_cluster)
-				local_job_cnt = orig_msg->record_count;
 			*job_info_msg_pptr = orig_msg;
 		} else {
 			/* Merge job records into a single response message */
@@ -1226,32 +1216,43 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 						 hash_tbl_size[i]);
 		}
 	}
+
+	/* Put the origin jobs at top and remove duplicates. */
+	qsort(orig_msg->job_array, orig_msg->record_count,
+	      sizeof(slurm_job_info_t), _sort_orig_clusters);
 	for (i = 0; orig_msg && i < orig_msg->record_count; i++) {
-		if ((i >= local_job_cnt) &&
-		    _test_local_job(orig_msg->job_array[i].job_id)) {
-			orig_msg->job_array[i].job_id = 0;
+		slurm_job_info_t *job_ptr = &orig_msg->job_array[i];
+
+		/*
+		 * Only show non-federated jobs that are local. Non-federated
+		 * jobs will not have a fed_origin_str.
+		 */
+		if (_test_local_job(job_ptr->job_id) &&
+		    !job_ptr->fed_origin_str &&
+		    xstrcmp(job_ptr->cluster, cluster_name)) {
+			job_ptr->job_id = 0;
 			continue;
 		}
+
 		if (show_flags & SHOW_SIBLING)
 			continue;
-		hash_inx = orig_msg->job_array[i].job_id % JOB_HASH_SIZE;
+		hash_inx = job_ptr->job_id % JOB_HASH_SIZE;
 		for (j = 0;
 		     (j < hash_tbl_size[hash_inx] && hash_job_id[hash_inx][j]);
 		     j++) {
-			if (orig_msg->job_array[i].job_id ==
-			    hash_job_id[hash_inx][j]) {
-				orig_msg->job_array[i].job_id = 0;
+			if (job_ptr->job_id == hash_job_id[hash_inx][j]) {
+				job_ptr->job_id = 0;
 				break;
 			}
 		}
-		if (orig_msg->job_array[i].job_id == 0) {
+		if (job_ptr->job_id == 0) {
 			continue;	/* Duplicate */
 		} else if (j >= hash_tbl_size[hash_inx]) {
 			hash_tbl_size[hash_inx] *= 2;
 			xrealloc(hash_job_id[hash_inx],
 				 sizeof(uint32_t) * hash_tbl_size[hash_inx]);
 		}
-		hash_job_id[hash_inx][j] = orig_msg->job_array[i].job_id;
+		hash_job_id[hash_inx][j] = job_ptr->job_id;
 	}
 	if ((show_flags & SHOW_SIBLING) == 0) {
 		for (i = 0; i < JOB_HASH_SIZE; i++)

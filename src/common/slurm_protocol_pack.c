@@ -3932,8 +3932,10 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpack_time(&node->reason_time, buffer);
 		safe_unpack_time(&node->slurmd_start_time, buffer);
 
-		select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer,
-						protocol_version);
+		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
+						    buffer, protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
 
 		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);

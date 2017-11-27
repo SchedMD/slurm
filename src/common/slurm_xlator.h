@@ -161,6 +161,22 @@
 #define	hostset_shift_range	slurm_hostset_shift_range
 #define	hostset_within		slurm_hostset_within
 
+/* gres.[ch] functions */
+#define gres_gresid_to_gresname	slurm_gres_gresid_to_gresname
+#define gres_get_node_used	slurm_gres_get_node_used
+#define gres_get_system_cnt	slurm_gres_get_system_cnt
+#define gres_get_value_by_type	slurm_gres_get_value_by_type
+#define gres_get_job_info	slurm_gres_get_job_info
+#define gres_build_job_details	slurm_gres_build_job_details
+#define gres_get_step_info	slurm_gres_get_step_info
+#define gres_get_step_state	slurm_gres_get_step_state
+#define gres_get_job_state	slurm_gres_get_job_state
+#define gres_2_tres_str		slurm_gres_2_tres_str
+#define gres_set_job_tres_cnt	slurm_gres_set_job_tres_cnt
+#define gres_set_node_tres_cnt	slurm_gres_set_node_tres_cnt
+#define gres_device_major	slurm_gres_device_major
+#define destroy_gres_device	slurm_destroy_gres_device
+
 /* list.[ch] functions */
 #define	list_create		slurm_list_create
 #define	list_destroy		slurm_list_destroy

@@ -38,7 +38,6 @@ Source:		%{name}-%{version}-%{rel}.tar.bz2
 %bcond_with mysql
 %bcond_with hdf5
 %bcond_with lua
-%bcond_with openssl
 
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
 %bcond_without openssl

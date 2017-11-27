@@ -1675,7 +1675,8 @@ static void _unblock_signals (void)
 	xsignal_set_mask (&set);
 }
 
-/* fork and exec N tasks
+/*
+ * fork and exec N tasks
  */
 static int
 _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
@@ -1687,6 +1688,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	char *oom_value;
 	List exec_wait_list = NULL;
 	char *esc;
+	DEF_TIMERS;
+	START_TIMER;
 
 	xassert(job != NULL);
 
@@ -1696,7 +1699,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		return SLURM_ERROR;
 	}
 
-	/* Temporarily drop effective privileges, except for the euid.
+	/*
+	 * Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
 	 */
 	if (_drop_privileges (job, false, &sprivs, true) < 0)
@@ -1746,8 +1750,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		goto fail2;
 	}
 
-	/* If there is an \ in the path
-	 * remove it.
+	/*
+	 * If there is an \ in the path, remove it.
 	 */
 	esc = is_path_escaped(job->cwd);
 	if (esc) {
@@ -1954,7 +1958,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			goto fail2;
 		}
 	}
-
+	END_TIMER2(__func__);
 	return rc;
 
 fail4:
@@ -1968,6 +1972,7 @@ fail2:
 	io_close_task_fds(job);
 fail1:
 	pam_finish();
+	END_TIMER2(__func__);
 	return rc;
 }
 
