@@ -59,20 +59,20 @@ in other Slurm functions used by the plugin.</p>
 
 <h2>API Functions in All Plugins</h2>
 <p class="commandline">int init (void);</p>
-<p style="margin-left:.2in"><i>Description</i>: If present, this function is called
+<p style="margin-left:.2in"><b>Description</b>: If present, this function is called
 just after the plugin is loaded. This allows the plugin to perform any global
 initialization prior to any actual API calls.</p>
-<p style="margin-left:.2in"><i>Arguments</i>: None.</p>
-<p style="margin-left:.2in"><i>Returns</i>: SLURM_SUCCESS if the plugin's initialization
+<p style="margin-left:.2in"><b>Arguments</b>: None.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the plugin's initialization
 was successful. Any other return value indicates to Slurm that the plugin should
 be unloaded and not used.</p>
 <p class="commandline">void fini (void);</p>
-<p style="margin-left:.2in"><i>Description</i>: If present, this function is called
+<p style="margin-left:.2in"><b>Description</b>: If present, this function is called
 just before the plugin is unloaded. This allows the plugin to do any finalization
 after the last plugin-specific API call is made.</p>
-<p style="margin-left:.2in"><i>Arguments</i>: None.</p>
-<p style="margin-left:.2in"><i>Returns</i>: None.</p>
-<p><i>Note</i>: These init and fini functions are not the same as those
+<p style="margin-left:.2in"><b>Arguments</b>: None.</p>
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+<p><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
 The system <span class="commandline">_init()</span> is called before the Slurm
@@ -102,7 +102,7 @@ are available.</p>
 entails delays (e.g. transactions with other systems), it should be written to
 utilize a thread for that functionality. This thread may be created by the
 <span class="commandline">init()</span> function and deleted by the
-<span class="commandline">fini()</span> functions. See <i>plugins/sched/backfill</i>
+<span class="commandline">fini()</span> functions. See <b>plugins/sched/backfill</b>
 for an example of how to do this.</p>
 
 <h2>Data Structure Consistency</h2>
