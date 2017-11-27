@@ -39,7 +39,40 @@
 #include "as_mysql_convert.h"
 
 /* Any time you have to add to an existing convert update this number. */
-#define CONVERT_VERSION 3
+#define CONVERT_VERSION 4
+
+/*
+ * Defined globally because it's used in 2 functions:
+ * _convert_resv_table and _update_unused_wall
+ */
+enum {
+	JOIN_REQ_RESV_ID,
+	JOIN_REQ_RESV_START,
+	JOIN_REQ_RESV_END,
+	JOIN_REQ_RESV_TRES,
+	JOIN_REQ_JOB_ID,
+	JOIN_REQ_JOB_START,
+	JOIN_REQ_JOB_END,
+	JOIN_REQ_JOB_TRES,
+	JOIN_REQ_COUNT
+};
+
+/* If this changes, the corresponding enum must change */
+const char *join_req_inx[] = {
+	"rt.id_resv",
+	"rt.time_start",
+	"rt.time_end",
+	"rt.tres",
+	"jt.id_job",
+	"jt.time_start",
+	"jt.time_end",
+	"jt.tres_alloc"
+};
+
+typedef struct {
+	uint64_t count;
+	uint32_t id;
+} local_tres_t;
 
 static uint32_t db_curr_ver = NO_VAL;
 
@@ -229,6 +262,252 @@ static int _convert_step_table(mysql_conn_t *mysql_conn, char *cluster_name)
 	return rc;
 }
 
+/*
+ * Job time is a ratio of job tres and resv tres:
+ * job time = (job_end - job_start) * (job_tres / resv_tres)
+ */
+static void _accumulate_job_time(time_t job_start, time_t job_end,
+				 List job_tres, List resv_tres,
+				 double *total_job_time)
+{
+	ListIterator job_itr;
+	ListIterator resv_itr;
+	local_tres_t *loc_tres;
+	uint32_t resv_tres_id = 0;
+	uint32_t job_tres_id = 0;
+	uint64_t resv_tres_count = 0;
+	uint64_t job_tres_count = 0;
+
+	/* Get TRES counts. Make sure the TRES types match. */
+	job_itr = list_iterator_create(job_tres);
+	resv_itr = list_iterator_create(resv_tres);
+	while ((loc_tres = list_next(resv_itr))) {
+		resv_tres_id = loc_tres->id;
+		resv_tres_count = loc_tres->count;
+		while ((loc_tres = list_next(job_itr))) {
+			job_tres_id = loc_tres->id;
+			if (job_tres_id == resv_tres_id) {
+				job_tres_count = loc_tres->count;
+				goto get_out;
+			}
+		}
+	}
+get_out:
+	list_iterator_destroy(job_itr);
+	list_iterator_destroy(resv_itr);
+
+	/* Avoid dividing by zero. */
+	if (resv_tres == 0)
+		return;
+
+	*total_job_time += (double)(job_end - job_start) *
+		job_tres_count / resv_tres_count;
+}
+
+/*
+ * This is almost identical to the function with the same name in
+ * as_mysql_rollup.c, but it was much simpler to not try to make that a common
+ * function. Maybe it should become a common function in the future?
+ */
+static void _add_tres_2_list(List tres_list, char *tres_str)
+{
+	char *tmp_str = tres_str;
+	int id;
+	uint64_t count;
+	local_tres_t *loc_tres;
+
+	xassert(tres_list);
+
+	if (!tres_str || !tres_str[0])
+		return;
+
+	while (tmp_str) {
+		id = atoi(tmp_str);
+		if (id < 1) {
+			error("_add_tres_2_list: no id "
+			      "found at %s instead", tmp_str);
+			break;
+		}
+
+		/*
+		 * We don't run rollup on a node basis because they are shared
+		 * resources on many systems so it will almost always have over
+		 * committed resources.
+		 */
+		if (id != TRES_NODE) {
+			if (!(tmp_str = strchr(tmp_str, '='))) {
+				error("_add_tres_2_list: no value found");
+				xassert(0);
+				break;
+			}
+			count = slurm_atoull(++tmp_str);
+			loc_tres = xmalloc(sizeof(local_tres_t));
+			loc_tres->id = id;
+			loc_tres->count = count;
+			list_append(tres_list, loc_tres);
+		}
+
+		if (!(tmp_str = strchr(tmp_str, ',')))
+			break;
+		tmp_str++;
+	}
+
+	return;
+}
+
+static int _update_unused_wall(mysql_conn_t *mysql_conn,
+			       char *cluster_name,
+			       MYSQL_RES *result)
+{
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	while (row) {
+		int next_resv_id, curr_resv_id;
+		time_t curr_resv_start, next_resv_start, resv_end;
+		time_t total_resv_time = 0;
+		double unused_wall = 0;
+		double total_job_time = 0;
+		List resv_tres_list = list_create(NULL);
+
+		/*
+		 * Reservations are uniquely identified by both id and start
+		 * time. Accumulate usage for each unique reservation.
+		 */
+		curr_resv_id = slurm_atoul(row[JOIN_REQ_RESV_ID]);
+		curr_resv_start = slurm_atoul(row[JOIN_REQ_RESV_START]);
+		resv_end = slurm_atoul(row[JOIN_REQ_RESV_END]);
+		_add_tres_2_list(resv_tres_list, row[JOIN_REQ_RESV_TRES]);
+		do {
+
+			if (row[JOIN_REQ_JOB_ID]) {
+				time_t job_start =
+					slurm_atoul(row[JOIN_REQ_JOB_START]);
+				time_t job_end =
+					slurm_atoul(row[JOIN_REQ_JOB_END]);
+				/*
+				 * Don't count the job if it started after the
+				 * reservation finished (this can happen if a
+				 * reservation was updated).
+				 */
+				if (job_start < resv_end) {
+					List job_tres_list = list_create(NULL);
+					_add_tres_2_list(job_tres_list,
+						row[JOIN_REQ_JOB_TRES]);
+
+					/*
+					 * Don't count job time outside of the
+					 * reservation.
+					 */
+					if (job_end > resv_end)
+						job_end = resv_end;
+					if (job_start < curr_resv_start)
+						job_start = curr_resv_start;
+
+					_accumulate_job_time(job_start, job_end,
+							     job_tres_list,
+							     resv_tres_list,
+							     &total_job_time);
+					list_destroy(job_tres_list);
+				}
+			}
+
+			if (!(row = mysql_fetch_row(result)))
+				break;
+
+			next_resv_id = slurm_atoul(row[JOIN_REQ_RESV_ID]);
+			next_resv_start = slurm_atoul(row[JOIN_REQ_RESV_START]);
+
+		} while (next_resv_id == curr_resv_id &&
+			 next_resv_start == curr_resv_start);
+		list_destroy(resv_tres_list);
+
+		/* Check for potential underflow. */
+		total_resv_time = resv_end - curr_resv_start;
+		if (total_job_time > total_resv_time) {
+			error("%s, total job time %f is greater than "
+			      "total resv time %ld.", __func__,
+			      total_job_time, total_resv_time);
+			return SLURM_ERROR;
+		}
+		unused_wall = total_resv_time - total_job_time;
+
+		/* Update reservation. */
+		query = xstrdup_printf("update \"%s_%s\" set unused_wall = "
+				       "%f where id_resv = %d and "
+				       "time_start = %ld",
+				       cluster_name, resv_table, unused_wall,
+				       curr_resv_id, curr_resv_start);
+
+		if (debug_flags & DEBUG_FLAG_DB_QUERY)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if (rc != SLURM_SUCCESS)
+			return SLURM_ERROR;
+	}
+	return rc;
+}
+
+static int _convert_resv_table(mysql_conn_t *mysql_conn, char *cluster_name)
+{
+
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	int rc = SLURM_SUCCESS;
+
+	/*
+	 * Previous to 17.11, the reservation table did not have unused_wall.
+	 * Populate the unused_wall field of the reservation records:
+	 * unused_wall = (reservation wall time) - (time used by jobs)
+	 */
+	if (db_curr_ver < 4) {
+
+		char *join_str = NULL;
+		int i = 0;
+		xstrfmtcat(join_str, "%s", join_req_inx[i]);
+		for (i = 1; i < JOIN_REQ_COUNT; i++) {
+			xstrfmtcat(join_str, ", %s", join_req_inx[i]);
+		}
+
+		/*
+		 * Ordering is important. First order by the resv id so rows
+		 * with the same resv are consecutive. Then order by job start
+		 * and end times (ascending) to make removing overlapping job
+		 * time easy.
+		 */
+		query = xstrdup_printf("select %s from \"%s_%s\" as rt left join "
+				       "\"%s_%s\" as jt on (rt.id_resv = "
+				       "jt.id_resv) order by rt.id_resv, "
+				       "jt.time_start ASC, jt.time_end ASC;",
+				       join_str, cluster_name, resv_table,
+				       cluster_name, job_table);
+		xfree(join_str);
+
+		if (!query) {
+			error("%s, select query is NULL.", __func__);
+			return SLURM_ERROR;
+		}
+
+		if (debug_flags & DEBUG_FLAG_DB_QUERY)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+		result = mysql_db_query_ret(mysql_conn, query, 0);
+		xfree(query);
+		if (!result) {
+			error("%s, Problem getting result of select query.",
+			      __func__);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+
+		rc = _update_unused_wall(mysql_conn, cluster_name, result);
+		mysql_free_result(result);
+	}
+	return rc;
+}
+
 static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 {
 	char *query;
@@ -344,6 +623,13 @@ extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 		if ((rc = _convert_job_table(mysql_conn, cluster_name)
 		     != SLURM_SUCCESS))
 			break;
+
+		/* Convert the reservation table */
+		info("converting resv table for %s", cluster_name);
+		if ((rc = _convert_resv_table(mysql_conn, cluster_name)
+		     != SLURM_SUCCESS))
+			break;
+
 	}
 	list_iterator_destroy(itr);
 
