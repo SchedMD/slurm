@@ -203,14 +203,14 @@ Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
 
 %package torque
-Summary: Torque/PBS wrappers for transitition from Torque/PBS to Slurm
+Summary: Torque/PBS wrappers for transition from Torque/PBS to Slurm
 Group: Development/System
 Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm
 
 %package openlava
-Summary: openlava/LSF wrappers for transitition from OpenLava/LSF to Slurm
+Summary: openlava/LSF wrappers for transition from OpenLava/LSF to Slurm
 Group: Development/System
 Requires: slurm-perlapi
 %description openlava
