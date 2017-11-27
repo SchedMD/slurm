@@ -111,6 +111,7 @@ proc scontrol { option job_id regex args } {
 
 proc sbatch { } {
 	global number bin_sleep node_count my_sbatch
+	global fedc1 fedc2 fedc3
 
 
 	set script "\"sleep 35\""
@@ -118,7 +119,7 @@ proc sbatch { } {
 	set job_id 0
 	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null \
 		--error=/dev/null -t300 --requeue --wrap $script \
-		-Mfed1,fed2,fed3"
+		-M$fedc1,$fedc2,$fedc3"
 	set regex "Submitted batch job ($number)"
 	set collect 1
 
@@ -151,6 +152,7 @@ proc sbatch { } {
 
 proc squeue { job_id regex args } {
 	global my_squeue
+	global fedc1 fedc2 fedc3
 
 	set matches 0
 	set command "$my_squeue --noheader -a --local -Ostatecompact:.5i\
@@ -159,7 +161,7 @@ proc squeue { job_id regex args } {
 	if {$args ne ""} {
 		append command " -M$args"
 	} else {
-		append command " -Mfed1,fed2,fed3"
+		append command " -M$fedc1,$fedc2,$fedc3"
 	}
 	spawn {*}$command
 	expect {
@@ -180,22 +182,22 @@ proc verify { job_id output } {
 	global squeue fedc1 fedc2 fedc3
 
 	if {[string match $output $fedc1]} {
-		squeue $job_id "CLUSTER: fed1\\s+R\\s+CLUSTER: fed2\\s+slurm_load_jobs error: Invalid job id specified\\s+CLUSTER: fed3\\s+slurm_load_jobs error: Invalid job id specified\\s+"
-		scontrol --local $job_id "JobId.+" -Mfed1
-		scontrol --local $job_id "slurm_load_jobs error: Invalid job id specified" -Mfed2
-		scontrol --local $job_id "slurm_load_jobs error: Invalid job id specified" -Mfed3
+		squeue $job_id "CLUSTER: $fedc1\\s+R\\s+CLUSTER: $fedc2\\s+slurm_load_jobs error: Invalid job id specified\\s+CLUSTER: $fedc3\\s+slurm_load_jobs error: Invalid job id specified\\s+"
+		scontrol --local $job_id "JobId.+" -M$fedc1
+		scontrol --local $job_id "slurm_load_jobs error: Invalid job id specified" -M$fedc2
+		scontrol --local $job_id "slurm_load_jobs error: Invalid job id specified" -M$fedc3
 	}
 	if {[string match $output $fedc2]} {
-		squeue $job_id "CLUSTER: fed1\\s+RV\\s+CLUSTER: fed2\\s+R\\s+CLUSTER: fed3\\s+slurm_load_jobs error: Invalid job id specified\\s+"
-		scontrol --local $job_id "JobId.+" -Mfed1
-		scontrol --local $job_id "slurm_load_jobs error: Invalid job id specified" -Mfed3
-		scontrol --local $job_id "JobId.+" -Mfed2
+		squeue $job_id "CLUSTER: $fedc1\\s+RV\\s+CLUSTER: $fedc2\\s+R\\s+CLUSTER: $fedc3\\s+slurm_load_jobs error: Invalid job id specified\\s+"
+		scontrol --local $job_id "JobId.+" -M$fedc1
+		scontrol --local $job_id "slurm_load_jobs error: Invalid job id specified" -M$fedc3
+		scontrol --local $job_id "JobId.+" -M$fedc2
 	}
 	if {[string match $output $fedc3]} {
-		squeue $job_id "CLUSTER: fed1\\s+RV\\s+CLUSTER: fed2\\s+slurm_load_jobs error: Invalid job id specified\\s+CLUSTER: fed3\\s+R\\s+"
-		scontrol --local $job_id "JobId.+" -Mfed1
-		scontrol --local $job_id "slurm_load_jobs error: Invalid job id specified" -Mfed2
-		scontrol --local $job_id "JobId.+" -Mfed3
+		squeue $job_id "CLUSTER: $fedc1\\s+RV\\s+CLUSTER: $fedc2\\s+slurm_load_jobs error: Invalid job id specified\\s+CLUSTER: $fedc3\\s+R\\s+"
+		scontrol --local $job_id "JobId.+" -M$fedc1
+		scontrol --local $job_id "slurm_load_jobs error: Invalid job id specified" -M$fedc2
+		scontrol --local $job_id "JobId.+" -M$fedc3
 	}
 
 }
@@ -398,7 +400,7 @@ set ji2 [sbatch]
 
 set job_id [sbatch]
 
-squeue $job_id "CLUSTER: fed1\\s+PD\\s+CLUSTER: fed2\\s+PD\\s+CLUSTER: fed3\\s+PD\\s+"
+squeue $job_id "CLUSTER: $fedc1\\s+PD\\s+CLUSTER: $fedc2\\s+PD\\s+CLUSTER: $fedc3\\s+PD\\s+"
 
 scontrol --sibling $job_id "JobId.+JobId.+JobId.+"
 

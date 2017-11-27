@@ -109,10 +109,10 @@ proc sbatch { options regex } {
 }
 
 proc squeue { regex } {
-	global my_squeue
+	global my_squeue fedc1 fedc2 fedc3
 
 	set matches 0
-	set command "$my_squeue --noheader -a -Mfed1,fed2,fed3"
+	set command "$my_squeue --noheader -a -M$fedc1,$fedc2,$fedc3"
 	spawn {*}$command
 	expect {
 		-re "$regex" {
@@ -324,7 +324,7 @@ set jt "$jid(0)_15"
 wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc3
 
 sbatch "--cluster-constraint=fb" "sbatch: error: federated job arrays must run on local cluster${eol}sbatch: error: Batch job submission failed: No eligible clusters for federated job${eol}"
-set jid(2) [sbatch "--cluster-constraint=fb -Mfed2" ""]
+set jid(2) [sbatch "--cluster-constraint=fb -M$fedc2" ""]
 
 set jt "$jid(2)_1"
 
@@ -342,7 +342,7 @@ set regf3 "CLUSTER: $fedc3$eol\\s*"
 
 squeue "$regf1$regf2$regf3"
 
-sbatch "--cluster-constraint=fa -Mfed2" "sbatch: error: Batch.+"
+sbatch "--cluster-constraint=fa -M$fedc2" "sbatch: error: Batch.+"
 
 # All Done
 end_it 0
