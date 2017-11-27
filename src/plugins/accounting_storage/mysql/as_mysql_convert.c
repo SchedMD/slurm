@@ -262,6 +262,16 @@ static int _convert_step_table(mysql_conn_t *mysql_conn, char *cluster_name)
 	return rc;
 }
 
+static int _find_loc_tres(void *x, void *key)
+{
+	local_tres_t *loc_tres = (local_tres_t *)x;
+	uint32_t tres_id = *(uint32_t *)key;
+
+	if (loc_tres->id == tres_id)
+		return 1;
+	return 0;
+}
+
 /*
  * Job time is a ratio of job tres and resv tres:
  * job time = (job_end - job_start) * (job_tres / resv_tres)
@@ -270,38 +280,31 @@ static void _accumulate_job_time(time_t job_start, time_t job_end,
 				 List job_tres, List resv_tres,
 				 double *total_job_time)
 {
-	ListIterator job_itr;
 	ListIterator resv_itr;
 	local_tres_t *loc_tres;
-	uint32_t resv_tres_id = 0;
-	uint32_t job_tres_id = 0;
-	uint64_t resv_tres_count = 0;
-	uint64_t job_tres_count = 0;
+	uint32_t resv_tres_id;
+	uint64_t resv_tres_count;
+	double tres_ratio = 0.0;
 
 	/* Get TRES counts. Make sure the TRES types match. */
-	job_itr = list_iterator_create(job_tres);
 	resv_itr = list_iterator_create(resv_tres);
 	while ((loc_tres = list_next(resv_itr))) {
+		/* Avoid dividing by zero. */
+		if (!loc_tres->count)
+			continue;
 		resv_tres_id = loc_tres->id;
 		resv_tres_count = loc_tres->count;
-		while ((loc_tres = list_next(job_itr))) {
-			job_tres_id = loc_tres->id;
-			if (job_tres_id == resv_tres_id) {
-				job_tres_count = loc_tres->count;
-				goto get_out;
-			}
+		if ((loc_tres = list_find_first(job_tres,
+						_find_loc_tres,
+						&resv_tres_id))) {
+			tres_ratio = (double)loc_tres->count /
+				(double)resv_tres_count;
+			break;
 		}
 	}
-get_out:
-	list_iterator_destroy(job_itr);
 	list_iterator_destroy(resv_itr);
 
-	/* Avoid dividing by zero. */
-	if (resv_tres == 0)
-		return;
-
-	*total_job_time += (double)(job_end - job_start) *
-		job_tres_count / resv_tres_count;
+	*total_job_time += (double)(job_end - job_start) * tres_ratio;
 }
 
 /*
@@ -392,7 +395,8 @@ static int _update_unused_wall(mysql_conn_t *mysql_conn,
 				 */
 				if (job_start < resv_end) {
 					List job_tres_list = list_create(NULL);
-					_add_tres_2_list(job_tres_list,
+					_add_tres_2_list(
+						job_tres_list,
 						row[JOIN_REQ_JOB_TRES]);
 
 					/*
@@ -425,28 +429,24 @@ static int _update_unused_wall(mysql_conn_t *mysql_conn,
 		/* Check for potential underflow. */
 		total_resv_time = resv_end - curr_resv_start;
 		if (total_job_time > total_resv_time) {
-			error("%s, total job time %f is greater than "
-			      "total resv time %ld.", __func__,
-			      total_job_time, total_resv_time);
-			return SLURM_ERROR;
+			error("%s, total job time %f is greater than total resv time %ld.",
+			      __func__, total_job_time, total_resv_time);
+			continue;
 		}
 		unused_wall = total_resv_time - total_job_time;
 
 		/* Update reservation. */
-		query = xstrdup_printf("update \"%s_%s\" set unused_wall = "
-				       "%f where id_resv = %d and "
-				       "time_start = %ld",
-				       cluster_name, resv_table, unused_wall,
-				       curr_resv_id, curr_resv_start);
-
-		if (debug_flags & DEBUG_FLAG_DB_QUERY)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		if (rc != SLURM_SUCCESS)
-			return SLURM_ERROR;
+		xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%f where id_resv = %d && time_start = %ld",
+			   cluster_name, resv_table, unused_wall,
+			   curr_resv_id, curr_resv_start);
 	}
+
+	if (debug_flags & DEBUG_FLAG_DB_QUERY)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+
 	return rc;
 }
 
