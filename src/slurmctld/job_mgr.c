@@ -245,7 +245,7 @@ static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 			 bool indf_susp);
 static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
-static bool _top_priority(struct job_record *job_ptr);
+static bool _top_priority(struct job_record *job_ptr, uint32_t pack_job_offset);
 static int  _valid_job_part(job_desc_msg_t * job_desc,
 			    uid_t submit_uid, bitstr_t *req_bitmap,
 			    struct part_record **part_pptr,
@@ -4794,7 +4794,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		too_fragmented = true;
 
 	if (independent && (!too_fragmented))
-		top_prio = _top_priority(job_ptr);
+		top_prio = _top_priority(job_ptr, job_specs->pack_job_offset);
 	else
 		top_prio = true;	/* don't bother testing,
 					 * it is not runable anyway */
@@ -11045,7 +11045,7 @@ extern void sync_job_priorities(void)
  * IN job_ptr - pointer to selected job
  * RET true if selected job has highest priority
  */
-static bool _top_priority(struct job_record *job_ptr)
+static bool _top_priority(struct job_record *job_ptr, uint32_t pack_job_offset)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	time_t now = time(NULL);
@@ -11082,6 +11082,9 @@ static bool _top_priority(struct job_record *job_ptr)
 		while ((job_ptr2 = (struct job_record *)
 					list_next(job_iterator))) {
 			if (job_ptr2 == job_ptr)
+				continue;
+			if ((pack_job_offset != NO_VAL) && (job_ptr->job_id ==
+			    (job_ptr2->job_id + pack_job_offset)))
 				continue;
 			if (!IS_JOB_PENDING(job_ptr2))
 				continue;
