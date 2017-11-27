@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- Ignore querying clusters in federation that are down from status commands.
  -- Base federated jobs off of origin job and not the local cluster in API.
  -- Remove erroneous double '-' on rpath for libslurmfull.
+ -- Remove version from libslurmfull and move it to $LIBDIR/slurm since the ABI
+    could change from one version to the other.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
