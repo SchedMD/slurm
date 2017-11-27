@@ -1,6 +1,6 @@
 Name:		slurm
 Version:	17.11.0
-%define rel	0rc3
+%global rel	0rc3
 Release:	%{rel}%{?dist}
 Summary:	Slurm Workload Manager
 
@@ -8,12 +8,14 @@ Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 
-# when the rel number is one, the tarball filename does not include it
+# when the rel number is one, the directory name does not include it
 %if "%{rel}" == "1"
-Source:		%{name}-%{version}.tar.bz2
+%global slurm_source_dir %{name}-%{version}
 %else
-Source:		%{name}-%{version}-%{rel}.tar.bz2
+%global slurm_source_dir %{name}-%{version}-%{rel}
 %endif
+
+Source:		%{slurm_source_dir}.tar.bz2
 
 # build options		.rpmmacros options	change to default action
 # ====================  ====================	========================
@@ -251,11 +253,7 @@ according to the Slurm
 
 %prep
 # when the rel number is one, the tarball filename does not include it
-%if "%{rel}" == "1"
-%setup -n %{name}-%{version}
-%else
-%setup -n %{name}-%{version}-%{rel}
-%endif
+%setup -n %{slurm_source_dir}
 
 %build
 %configure \
