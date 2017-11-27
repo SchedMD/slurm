@@ -240,6 +240,64 @@ static void _add_time_tres_list(List tres_list_out, List tres_list_in, int type,
 	list_iterator_destroy(itr);
 }
 
+/*
+ * Job usage is a ratio of its tres to the reservation's tres:
+ * Unused wall = unused wall - job_seconds * job_tres / resv_tres
+ */
+static int _update_unused_wall(local_resv_usage_t *r_usage, List job_tres,
+				int job_seconds)
+{
+	ListIterator job_itr;
+	ListIterator resv_itr;
+	local_tres_usage_t *loc_tres;
+	uint32_t resv_tres_id = 0;
+	uint32_t job_tres_id = 0;
+	uint64_t resv_tres_count = 0;
+	uint64_t job_tres_count = 0;
+
+	/* Get TRES counts. Make sure the TRES types match. */
+	job_itr = list_iterator_create(job_tres);
+	resv_itr = list_iterator_create(r_usage->loc_tres);
+	while ((loc_tres = list_next(resv_itr))) {
+		resv_tres_id = loc_tres->id;
+		resv_tres_count = loc_tres->count;
+		while ((loc_tres = list_next(job_itr))) {
+			job_tres_id = loc_tres->id;
+			if (job_tres_id == resv_tres_id) {
+				job_tres_count = loc_tres->count;
+				goto get_out;
+			}
+		}
+	}
+get_out:
+	list_iterator_destroy(job_itr);
+	list_iterator_destroy(resv_itr);
+
+	if (resv_tres_id == 0 || job_tres_id == 0) {
+		error("No matching job and resv TRES. This shouldn't happen.");
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * This should rarely happen, but if resv tres is zero, just silently
+	 * return so we don't divide by zero.
+	 */
+	if (resv_tres_count == 0) {
+		return SLURM_SUCCESS;
+	}
+	r_usage->unused_wall -= (double)job_seconds *
+			job_tres_count / resv_tres_count;
+
+	if (r_usage->unused_wall < 0) {
+		/* I'm not sure if I should error or silently ignore. */
+		debug3("WARNING: Unused wall is less than zero; this should "
+		       "never happen. Setting it to zero for resv id = %d, "
+		       "start = %ld.", r_usage->id, r_usage->orig_start);
+		r_usage->unused_wall = 0;
+	}
+	return SLURM_SUCCESS;
+}
+
 static void _add_job_alloc_time_to_cluster(List c_tres_list, List j_tres)
 {
 	ListIterator c_itr = list_iterator_create(c_tres_list);
@@ -1378,13 +1436,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 							r_usage->loc_tres,
 							loc_tres, TIME_ALLOC,
 							loc_seconds, 1);
-						if (r_usage->unused_wall >=
-						    loc_seconds)
-							r_usage->unused_wall -=
-								loc_seconds;
-						else
-							r_usage->unused_wall =
-								0;
+						if ((rc =
+						    _update_unused_wall(r_usage,
+							loc_tres, loc_seconds))
+						    == SLURM_ERROR)
+							goto end_it;
 					}
 				}
 

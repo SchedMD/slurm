@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove erroneous double '-' on rpath for libslurmfull.
  -- Remove version from libslurmfull and move it to $LIBDIR/slurm since the ABI
     could change from one version to the other.
+ -- Fix unused wall time for reservations.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
