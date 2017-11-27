@@ -249,45 +249,33 @@ static int _update_unused_wall(local_resv_usage_t *r_usage, List job_tres,
 {
 	ListIterator resv_itr;
 	local_tres_usage_t *loc_tres;
-	uint32_t resv_tres_id = 0;
-	uint32_t job_tres_id = 0;
-	uint64_t resv_tres_count = 0;
-	uint64_t job_tres_count = 0;
+	uint32_t resv_tres_id;
+	uint64_t resv_tres_count;
+	double tres_ratio = 0.0;
 
 	/* Get TRES counts. Make sure the TRES types match. */
 	resv_itr = list_iterator_create(r_usage->loc_tres);
 	while ((loc_tres = list_next(resv_itr))) {
+		/* Avoid dividing by zero. */
+		if (!loc_tres->count)
+			continue;
 		resv_tres_id = loc_tres->id;
 		resv_tres_count = loc_tres->count;
 		if ((loc_tres = list_find_first(job_tres,
 						_find_loc_tres,
 						&resv_tres_id))) {
-			job_tres_id = loc_tres->id;
-			job_tres_count = loc_tres->count;
+			tres_ratio = (double)loc_tres->count /
+				(double)resv_tres_count;
 			break;
 		}
 	}
 	list_iterator_destroy(resv_itr);
 
-	if ((resv_tres_id == 0) || (job_tres_id == 0)) {
-		error("No matching job and resv TRES. This shouldn't happen.");
-		return SLURM_ERROR;
-	}
-
-	/*
-	 * This should rarely happen, but if resv tres is zero, just silently
-	 * return so we don't divide by zero.
-	 */
-	if (resv_tres_count == 0)
-		return SLURM_SUCCESS;
-
 	/*
 	 * Here we are converting TRES seconds to wall seconds.  This is needed
 	 * to determine how much time is actually idle in the reservation.
 	 */
-	r_usage->unused_wall -=
-		(double)job_seconds *
-		((double)job_tres_count / (double)resv_tres_count);
+	r_usage->unused_wall -=	(double)job_seconds * tres_ratio;
 
 	if (r_usage->unused_wall < 0) {
 		/* I'm not sure if I should error or silently ignore. */
