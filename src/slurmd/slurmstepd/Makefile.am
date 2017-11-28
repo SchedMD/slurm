@@ -34,7 +34,8 @@ else
 EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
 endif
 
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(SSH2_LDFLAGS)
+slurmstepd_CFLAGS = $(SSH2_CPPFLAGS)
 
 slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 
