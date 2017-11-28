@@ -24,8 +24,10 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
 # --without debug	%_without_debug 1	don't compile with debugging symbols
 # --with hdf5		%_with_hdf5 path	require hdf5 support
+# --with hwloc		%_with_hwloc 1		require hwloc support
 # --with lua		%_with_lua path		build Slurm lua bindings
 # --with mysql		%_with_mysql 1		require mysql/mariadb support
+# --with numa		%_with_numa 1		require NUMA support
 # --with openssl	%_with_openssl 1	require openssl RPM to be installed
 #						ensures auth/openssl and crypto/openssl are built
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
@@ -37,9 +39,11 @@ Source:		%{slurm_source_dir}.tar.bz2
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
+%bcond_with hwloc
 %bcond_with mysql
 %bcond_with hdf5
 %bcond_with lua
+%bcond_with numa
 
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
 %bcond_without openssl
@@ -108,6 +112,18 @@ BuildRequires: perl(ExtUtils::MakeMaker)
 BuildRequires: lua51-devel
 %else
 BuildRequires: lua-devel
+%endif
+%endif
+
+%if %{with hwloc}
+BuildRequires: hwloc-devel
+%endif
+
+%if %{with numa}
+%if %{defined suse_version}
+BuildRequires: libnuma-devel
+%else
+BuildRequires: numactl-devel
 %endif
 %endif
 
