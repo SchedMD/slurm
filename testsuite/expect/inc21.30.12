@@ -72,7 +72,7 @@ proc inc21_30_12 { } {
 	spawn $salloc -I --account=$acct --qos=$qostest -N2 -t1 $srun -I $bin_sleep 10
 	expect {
 		-re "Job violates accounting/QOS policy" {
-			send_user "\nJob waiting for resources. This is exected. (Within: inc21.30.12)\n"
+			send_user "\nJob waiting for resources. This is expected. (Within: inc21.30.12)\n"
 			set match 1
 		}
 		-re "Granted job allocation ($number)" {
