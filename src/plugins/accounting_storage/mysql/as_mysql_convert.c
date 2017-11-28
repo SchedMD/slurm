@@ -436,7 +436,7 @@ static int _update_unused_wall(mysql_conn_t *mysql_conn,
 		unused_wall = total_resv_time - total_job_time;
 
 		/* Update reservation. */
-		xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%f where id_resv = %d && time_start = %ld",
+		xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%f where id_resv = %d && time_start = %ld;",
 			   cluster_name, resv_table, unused_wall,
 			   curr_resv_id, curr_resv_start);
 	}
