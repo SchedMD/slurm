@@ -41,11 +41,11 @@ proc inc21_30_15 { } {
 		}
 		-re "job ($number) queued and waiting for resources" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nFAILURE: Job $job_id1 show not be waiting for resources, but is (Within: inc21.30.15)\n"
+			send_user "\nFAILURE: Job $job_id1 should not be waiting for resources, but is (Within: inc21.30.15)\n"
 			set exit_code 1
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job allocation shoudl not have failed. (Within: inc21.30.15)\n"
+			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.15)\n"
 			set exit_code 1
 		}
 		timeout {
