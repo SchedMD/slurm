@@ -158,15 +158,12 @@ am__slurmstepd_SOURCES_DIST = slurmstepd.c slurmstepd.h mgr.c mgr.h \
 	ulimits.c ulimits.h pdebug.c pdebug.h pam_ses.c pam_ses.h \
 	req.c req.h multi_prog.c multi_prog.h step_terminate_monitor.c \
 	step_terminate_monitor.h x11_forwarding.c x11_forwarding.h
-@WITH_SLURM_X11_TRUE@am__objects_1 =  \
-@WITH_SLURM_X11_TRUE@	slurmstepd-x11_forwarding.$(OBJEXT)
-am_slurmstepd_OBJECTS = slurmstepd-slurmstepd.$(OBJEXT) \
-	slurmstepd-mgr.$(OBJEXT) slurmstepd-task.$(OBJEXT) \
-	slurmstepd-slurmstepd_job.$(OBJEXT) slurmstepd-io.$(OBJEXT) \
-	slurmstepd-ulimits.$(OBJEXT) slurmstepd-pdebug.$(OBJEXT) \
-	slurmstepd-pam_ses.$(OBJEXT) slurmstepd-req.$(OBJEXT) \
-	slurmstepd-multi_prog.$(OBJEXT) \
-	slurmstepd-step_terminate_monitor.$(OBJEXT) $(am__objects_1)
+@WITH_SLURM_X11_TRUE@am__objects_1 = x11_forwarding.$(OBJEXT)
+am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
+	task.$(OBJEXT) slurmstepd_job.$(OBJEXT) io.$(OBJEXT) \
+	ulimits.$(OBJEXT) pdebug.$(OBJEXT) pam_ses.$(OBJEXT) \
+	req.$(OBJEXT) multi_prog.$(OBJEXT) \
+	step_terminate_monitor.$(OBJEXT) $(am__objects_1)
 am__EXTRA_slurmstepd_SOURCES_DIST = x11_forwarding.c x11_forwarding.h
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -175,8 +172,8 @@ am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 slurmstepd_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(slurmstepd_CFLAGS) \
-	$(CFLAGS) $(slurmstepd_LDFLAGS) $(LDFLAGS) -o $@
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(slurmstepd_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -501,7 +498,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) $(SSH2_CPPFLAGS)
 depend_libs = \
 	$(top_builddir)/src/common/libdaemonize.la \
 	../common/libslurmd_common.o
@@ -517,7 +514,6 @@ slurmstepd_SOURCES = slurmstepd.c slurmstepd.h mgr.c mgr.h task.c \
 	step_terminate_monitor.h $(am__append_1)
 @WITH_SLURM_X11_FALSE@EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
 slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(SSH2_LDFLAGS)
-slurmstepd_CFLAGS = $(SSH2_CPPFLAGS)
 slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 all: all-am
 
@@ -612,18 +608,18 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-io.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-mgr.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-multi_prog.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-pam_ses.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-pdebug.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-req.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-slurmstepd.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-slurmstepd_job.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-step_terminate_monitor.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-task.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-ulimits.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd-x11_forwarding.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mgr.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_ses.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdebug.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/req.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_job.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_terminate_monitor.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ulimits.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_forwarding.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -645,174 +641,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-slurmstepd-slurmstepd.o: slurmstepd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-slurmstepd.o -MD -MP -MF $(DEPDIR)/slurmstepd-slurmstepd.Tpo -c -o slurmstepd-slurmstepd.o `test -f 'slurmstepd.c' || echo '$(srcdir)/'`slurmstepd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-slurmstepd.Tpo $(DEPDIR)/slurmstepd-slurmstepd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurmstepd.c' object='slurmstepd-slurmstepd.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-slurmstepd.o `test -f 'slurmstepd.c' || echo '$(srcdir)/'`slurmstepd.c
-
-slurmstepd-slurmstepd.obj: slurmstepd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-slurmstepd.obj -MD -MP -MF $(DEPDIR)/slurmstepd-slurmstepd.Tpo -c -o slurmstepd-slurmstepd.obj `if test -f 'slurmstepd.c'; then $(CYGPATH_W) 'slurmstepd.c'; else $(CYGPATH_W) '$(srcdir)/slurmstepd.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-slurmstepd.Tpo $(DEPDIR)/slurmstepd-slurmstepd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurmstepd.c' object='slurmstepd-slurmstepd.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-slurmstepd.obj `if test -f 'slurmstepd.c'; then $(CYGPATH_W) 'slurmstepd.c'; else $(CYGPATH_W) '$(srcdir)/slurmstepd.c'; fi`
-
-slurmstepd-mgr.o: mgr.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-mgr.o -MD -MP -MF $(DEPDIR)/slurmstepd-mgr.Tpo -c -o slurmstepd-mgr.o `test -f 'mgr.c' || echo '$(srcdir)/'`mgr.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-mgr.Tpo $(DEPDIR)/slurmstepd-mgr.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mgr.c' object='slurmstepd-mgr.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-mgr.o `test -f 'mgr.c' || echo '$(srcdir)/'`mgr.c
-
-slurmstepd-mgr.obj: mgr.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-mgr.obj -MD -MP -MF $(DEPDIR)/slurmstepd-mgr.Tpo -c -o slurmstepd-mgr.obj `if test -f 'mgr.c'; then $(CYGPATH_W) 'mgr.c'; else $(CYGPATH_W) '$(srcdir)/mgr.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-mgr.Tpo $(DEPDIR)/slurmstepd-mgr.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mgr.c' object='slurmstepd-mgr.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-mgr.obj `if test -f 'mgr.c'; then $(CYGPATH_W) 'mgr.c'; else $(CYGPATH_W) '$(srcdir)/mgr.c'; fi`
-
-slurmstepd-task.o: task.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-task.o -MD -MP -MF $(DEPDIR)/slurmstepd-task.Tpo -c -o slurmstepd-task.o `test -f 'task.c' || echo '$(srcdir)/'`task.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-task.Tpo $(DEPDIR)/slurmstepd-task.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='task.c' object='slurmstepd-task.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-task.o `test -f 'task.c' || echo '$(srcdir)/'`task.c
-
-slurmstepd-task.obj: task.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-task.obj -MD -MP -MF $(DEPDIR)/slurmstepd-task.Tpo -c -o slurmstepd-task.obj `if test -f 'task.c'; then $(CYGPATH_W) 'task.c'; else $(CYGPATH_W) '$(srcdir)/task.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-task.Tpo $(DEPDIR)/slurmstepd-task.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='task.c' object='slurmstepd-task.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-task.obj `if test -f 'task.c'; then $(CYGPATH_W) 'task.c'; else $(CYGPATH_W) '$(srcdir)/task.c'; fi`
-
-slurmstepd-slurmstepd_job.o: slurmstepd_job.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-slurmstepd_job.o -MD -MP -MF $(DEPDIR)/slurmstepd-slurmstepd_job.Tpo -c -o slurmstepd-slurmstepd_job.o `test -f 'slurmstepd_job.c' || echo '$(srcdir)/'`slurmstepd_job.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-slurmstepd_job.Tpo $(DEPDIR)/slurmstepd-slurmstepd_job.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurmstepd_job.c' object='slurmstepd-slurmstepd_job.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-slurmstepd_job.o `test -f 'slurmstepd_job.c' || echo '$(srcdir)/'`slurmstepd_job.c
-
-slurmstepd-slurmstepd_job.obj: slurmstepd_job.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-slurmstepd_job.obj -MD -MP -MF $(DEPDIR)/slurmstepd-slurmstepd_job.Tpo -c -o slurmstepd-slurmstepd_job.obj `if test -f 'slurmstepd_job.c'; then $(CYGPATH_W) 'slurmstepd_job.c'; else $(CYGPATH_W) '$(srcdir)/slurmstepd_job.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-slurmstepd_job.Tpo $(DEPDIR)/slurmstepd-slurmstepd_job.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurmstepd_job.c' object='slurmstepd-slurmstepd_job.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-slurmstepd_job.obj `if test -f 'slurmstepd_job.c'; then $(CYGPATH_W) 'slurmstepd_job.c'; else $(CYGPATH_W) '$(srcdir)/slurmstepd_job.c'; fi`
-
-slurmstepd-io.o: io.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-io.o -MD -MP -MF $(DEPDIR)/slurmstepd-io.Tpo -c -o slurmstepd-io.o `test -f 'io.c' || echo '$(srcdir)/'`io.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-io.Tpo $(DEPDIR)/slurmstepd-io.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='io.c' object='slurmstepd-io.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-io.o `test -f 'io.c' || echo '$(srcdir)/'`io.c
-
-slurmstepd-io.obj: io.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-io.obj -MD -MP -MF $(DEPDIR)/slurmstepd-io.Tpo -c -o slurmstepd-io.obj `if test -f 'io.c'; then $(CYGPATH_W) 'io.c'; else $(CYGPATH_W) '$(srcdir)/io.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-io.Tpo $(DEPDIR)/slurmstepd-io.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='io.c' object='slurmstepd-io.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-io.obj `if test -f 'io.c'; then $(CYGPATH_W) 'io.c'; else $(CYGPATH_W) '$(srcdir)/io.c'; fi`
-
-slurmstepd-ulimits.o: ulimits.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-ulimits.o -MD -MP -MF $(DEPDIR)/slurmstepd-ulimits.Tpo -c -o slurmstepd-ulimits.o `test -f 'ulimits.c' || echo '$(srcdir)/'`ulimits.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-ulimits.Tpo $(DEPDIR)/slurmstepd-ulimits.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ulimits.c' object='slurmstepd-ulimits.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-ulimits.o `test -f 'ulimits.c' || echo '$(srcdir)/'`ulimits.c
-
-slurmstepd-ulimits.obj: ulimits.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-ulimits.obj -MD -MP -MF $(DEPDIR)/slurmstepd-ulimits.Tpo -c -o slurmstepd-ulimits.obj `if test -f 'ulimits.c'; then $(CYGPATH_W) 'ulimits.c'; else $(CYGPATH_W) '$(srcdir)/ulimits.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-ulimits.Tpo $(DEPDIR)/slurmstepd-ulimits.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ulimits.c' object='slurmstepd-ulimits.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-ulimits.obj `if test -f 'ulimits.c'; then $(CYGPATH_W) 'ulimits.c'; else $(CYGPATH_W) '$(srcdir)/ulimits.c'; fi`
-
-slurmstepd-pdebug.o: pdebug.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-pdebug.o -MD -MP -MF $(DEPDIR)/slurmstepd-pdebug.Tpo -c -o slurmstepd-pdebug.o `test -f 'pdebug.c' || echo '$(srcdir)/'`pdebug.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-pdebug.Tpo $(DEPDIR)/slurmstepd-pdebug.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pdebug.c' object='slurmstepd-pdebug.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-pdebug.o `test -f 'pdebug.c' || echo '$(srcdir)/'`pdebug.c
-
-slurmstepd-pdebug.obj: pdebug.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-pdebug.obj -MD -MP -MF $(DEPDIR)/slurmstepd-pdebug.Tpo -c -o slurmstepd-pdebug.obj `if test -f 'pdebug.c'; then $(CYGPATH_W) 'pdebug.c'; else $(CYGPATH_W) '$(srcdir)/pdebug.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-pdebug.Tpo $(DEPDIR)/slurmstepd-pdebug.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pdebug.c' object='slurmstepd-pdebug.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-pdebug.obj `if test -f 'pdebug.c'; then $(CYGPATH_W) 'pdebug.c'; else $(CYGPATH_W) '$(srcdir)/pdebug.c'; fi`
-
-slurmstepd-pam_ses.o: pam_ses.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-pam_ses.o -MD -MP -MF $(DEPDIR)/slurmstepd-pam_ses.Tpo -c -o slurmstepd-pam_ses.o `test -f 'pam_ses.c' || echo '$(srcdir)/'`pam_ses.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-pam_ses.Tpo $(DEPDIR)/slurmstepd-pam_ses.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pam_ses.c' object='slurmstepd-pam_ses.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-pam_ses.o `test -f 'pam_ses.c' || echo '$(srcdir)/'`pam_ses.c
-
-slurmstepd-pam_ses.obj: pam_ses.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-pam_ses.obj -MD -MP -MF $(DEPDIR)/slurmstepd-pam_ses.Tpo -c -o slurmstepd-pam_ses.obj `if test -f 'pam_ses.c'; then $(CYGPATH_W) 'pam_ses.c'; else $(CYGPATH_W) '$(srcdir)/pam_ses.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-pam_ses.Tpo $(DEPDIR)/slurmstepd-pam_ses.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pam_ses.c' object='slurmstepd-pam_ses.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-pam_ses.obj `if test -f 'pam_ses.c'; then $(CYGPATH_W) 'pam_ses.c'; else $(CYGPATH_W) '$(srcdir)/pam_ses.c'; fi`
-
-slurmstepd-req.o: req.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-req.o -MD -MP -MF $(DEPDIR)/slurmstepd-req.Tpo -c -o slurmstepd-req.o `test -f 'req.c' || echo '$(srcdir)/'`req.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-req.Tpo $(DEPDIR)/slurmstepd-req.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='req.c' object='slurmstepd-req.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-req.o `test -f 'req.c' || echo '$(srcdir)/'`req.c
-
-slurmstepd-req.obj: req.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-req.obj -MD -MP -MF $(DEPDIR)/slurmstepd-req.Tpo -c -o slurmstepd-req.obj `if test -f 'req.c'; then $(CYGPATH_W) 'req.c'; else $(CYGPATH_W) '$(srcdir)/req.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-req.Tpo $(DEPDIR)/slurmstepd-req.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='req.c' object='slurmstepd-req.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-req.obj `if test -f 'req.c'; then $(CYGPATH_W) 'req.c'; else $(CYGPATH_W) '$(srcdir)/req.c'; fi`
-
-slurmstepd-multi_prog.o: multi_prog.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-multi_prog.o -MD -MP -MF $(DEPDIR)/slurmstepd-multi_prog.Tpo -c -o slurmstepd-multi_prog.o `test -f 'multi_prog.c' || echo '$(srcdir)/'`multi_prog.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-multi_prog.Tpo $(DEPDIR)/slurmstepd-multi_prog.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='multi_prog.c' object='slurmstepd-multi_prog.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-multi_prog.o `test -f 'multi_prog.c' || echo '$(srcdir)/'`multi_prog.c
-
-slurmstepd-multi_prog.obj: multi_prog.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-multi_prog.obj -MD -MP -MF $(DEPDIR)/slurmstepd-multi_prog.Tpo -c -o slurmstepd-multi_prog.obj `if test -f 'multi_prog.c'; then $(CYGPATH_W) 'multi_prog.c'; else $(CYGPATH_W) '$(srcdir)/multi_prog.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-multi_prog.Tpo $(DEPDIR)/slurmstepd-multi_prog.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='multi_prog.c' object='slurmstepd-multi_prog.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-multi_prog.obj `if test -f 'multi_prog.c'; then $(CYGPATH_W) 'multi_prog.c'; else $(CYGPATH_W) '$(srcdir)/multi_prog.c'; fi`
-
-slurmstepd-step_terminate_monitor.o: step_terminate_monitor.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-step_terminate_monitor.o -MD -MP -MF $(DEPDIR)/slurmstepd-step_terminate_monitor.Tpo -c -o slurmstepd-step_terminate_monitor.o `test -f 'step_terminate_monitor.c' || echo '$(srcdir)/'`step_terminate_monitor.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-step_terminate_monitor.Tpo $(DEPDIR)/slurmstepd-step_terminate_monitor.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='step_terminate_monitor.c' object='slurmstepd-step_terminate_monitor.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-step_terminate_monitor.o `test -f 'step_terminate_monitor.c' || echo '$(srcdir)/'`step_terminate_monitor.c
-
-slurmstepd-step_terminate_monitor.obj: step_terminate_monitor.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-step_terminate_monitor.obj -MD -MP -MF $(DEPDIR)/slurmstepd-step_terminate_monitor.Tpo -c -o slurmstepd-step_terminate_monitor.obj `if test -f 'step_terminate_monitor.c'; then $(CYGPATH_W) 'step_terminate_monitor.c'; else $(CYGPATH_W) '$(srcdir)/step_terminate_monitor.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-step_terminate_monitor.Tpo $(DEPDIR)/slurmstepd-step_terminate_monitor.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='step_terminate_monitor.c' object='slurmstepd-step_terminate_monitor.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-step_terminate_monitor.obj `if test -f 'step_terminate_monitor.c'; then $(CYGPATH_W) 'step_terminate_monitor.c'; else $(CYGPATH_W) '$(srcdir)/step_terminate_monitor.c'; fi`
-
-slurmstepd-x11_forwarding.o: x11_forwarding.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-x11_forwarding.o -MD -MP -MF $(DEPDIR)/slurmstepd-x11_forwarding.Tpo -c -o slurmstepd-x11_forwarding.o `test -f 'x11_forwarding.c' || echo '$(srcdir)/'`x11_forwarding.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-x11_forwarding.Tpo $(DEPDIR)/slurmstepd-x11_forwarding.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='x11_forwarding.c' object='slurmstepd-x11_forwarding.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-x11_forwarding.o `test -f 'x11_forwarding.c' || echo '$(srcdir)/'`x11_forwarding.c
-
-slurmstepd-x11_forwarding.obj: x11_forwarding.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -MT slurmstepd-x11_forwarding.obj -MD -MP -MF $(DEPDIR)/slurmstepd-x11_forwarding.Tpo -c -o slurmstepd-x11_forwarding.obj `if test -f 'x11_forwarding.c'; then $(CYGPATH_W) 'x11_forwarding.c'; else $(CYGPATH_W) '$(srcdir)/x11_forwarding.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurmstepd-x11_forwarding.Tpo $(DEPDIR)/slurmstepd-x11_forwarding.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='x11_forwarding.c' object='slurmstepd-x11_forwarding.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurmstepd_CFLAGS) $(CFLAGS) -c -o slurmstepd-x11_forwarding.obj `if test -f 'x11_forwarding.c'; then $(CYGPATH_W) 'x11_forwarding.c'; else $(CYGPATH_W) '$(srcdir)/x11_forwarding.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
