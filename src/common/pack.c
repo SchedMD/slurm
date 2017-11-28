@@ -55,6 +55,10 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 
+#define MAX_ARRAY_LEN_SMALL	10000
+#define MAX_ARRAY_LEN_MEDIUM	1000000
+#define MAX_ARRAY_LEN_LARGE	10000000
+
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
@@ -402,7 +406,7 @@ int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL)
+	if ((*size_val) > MAX_ARRAY_LEN_MEDIUM)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(uint16_t));
@@ -438,7 +442,7 @@ int unpack32_array(uint32_t ** valp, uint32_t * size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL)
+	if ((*size_val) > MAX_ARRAY_LEN_LARGE)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(uint32_t));
@@ -490,7 +494,7 @@ int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL)
+	if ((*size_val) > MAX_ARRAY_LEN_MEDIUM)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(uint64_t));
@@ -511,7 +515,7 @@ int unpack64_array_from_32(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL)
+	if ((*size_val) > MAX_ARRAY_LEN_MEDIUM)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(uint64_t));
@@ -542,7 +546,7 @@ int unpackdouble_array(double **valp, uint32_t* size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL)
+	if ((*size_val) > MAX_ARRAY_LEN_SMALL)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(double));
@@ -572,7 +576,7 @@ int unpacklongdouble_array(long double **valp, uint32_t* size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL)
+	if ((*size_val) > MAX_ARRAY_LEN_SMALL)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(long double));
@@ -714,9 +718,9 @@ int unpackmem_ptr(char **valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > MAX_PACK_MEM_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_LARGE) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_LARGE);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
@@ -749,9 +753,9 @@ int unpackmem(char *valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > MAX_PACK_MEM_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_LARGE) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_LARGE);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
@@ -784,9 +788,9 @@ int unpackmem_xmalloc(char **valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > MAX_PACK_MEM_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_LARGE) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_LARGE);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
@@ -820,9 +824,9 @@ int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
-	if (*size_valp > MAX_PACK_MEM_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_SMALL) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_SMALL);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
@@ -892,9 +896,9 @@ int unpackstr_array(char ***valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > MAX_PACK_ARRAY_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_MEDIUM) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_ARRAY_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_MEDIUM);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
