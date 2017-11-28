@@ -85,7 +85,7 @@ make_bash_script $file_in2 "
 #
 # Spawn a job via sbatch
 #
-spawn $sbatch -N1 -t2 --gres=craynetwork:0 --output=$file_out ./$file_in
+spawn $sbatch -N1 -t2 --gres=craynetwork:0 --output=$file_out $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -169,14 +169,14 @@ make_bash_script $file_in "
     inx=\$((inx+1))
   done
   $bin_sleep 4
-  $srun -v --exclusive -n1 --mem=0 --immediate ./$file_in2 &
+  $srun -v --exclusive -n1 --mem=0 --immediate $file_in2 &
   wait
 "
 
 #
 # Spawn a job via sbatch
 #
-spawn $sbatch -N1 -t2 --gres=craynetwork:0 --output=$file_out2 ./$file_in
+spawn $sbatch -N1 -t2 --gres=craynetwork:0 --output=$file_out2 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

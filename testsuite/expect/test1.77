@@ -53,7 +53,7 @@ make_bash_script $file_in "
 # Tests -J by using srun
 #
 set found 0
-set srun_pid [spawn $srun -J $name -t1 ./$file_in]
+set srun_pid [spawn $srun -J $name -t1 $file_in]
 expect {
         "SLURM_JOB_NAME=$name" {
             set found 1
