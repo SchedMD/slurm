@@ -220,8 +220,10 @@ void 	packdouble(double val, Buf buffer)
 		uint64_t u;
 	} uval;
 
-	 /* The 0.5 is here to round off.  We have found on systems going out
-	  * more than 15 decimals will mess things up, but this corrects it. */
+	/*
+	 * The 0.5 is here to round off.  We have found on systems going out
+	 * more than 15 decimals will mess things up, but rounding corrects it.
+	 */
 	uval.d =  (val * FLOAT_MULT);
 	nl =  HTON_uint64(uval.u);
 	if (remaining_buf(buffer) < sizeof(nl)) {
@@ -375,7 +377,9 @@ int unpack32(uint32_t * valp, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-/* Given a *uint16_t, it will pack an array of size_val */
+/*
+ * Given a *uint16_t, it will pack an array of size_val
+ */
 void pack16_array(uint16_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
@@ -389,7 +393,8 @@ void pack16_array(uint16_t * valp, uint32_t size_val, Buf buffer)
 	}
 }
 
-/* Given a int ptr, it will unpack an array of size_val
+/*
+ * Given a int ptr, it will unpack an array of size_val
  */
 int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
 {
@@ -408,7 +413,9 @@ int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-/* Given a *uint32_t, it will pack an array of size_val */
+/*
+ * Given a *uint32_t, it will pack an array of size_val
+ */
 void pack32_array(uint32_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
@@ -422,7 +429,8 @@ void pack32_array(uint32_t * valp, uint32_t size_val, Buf buffer)
 	}
 }
 
-/* Given a int ptr, it will unpack an array of size_val
+/*
+ * Given a int ptr, it will unpack an array of size_val
  */
 int unpack32_array(uint32_t ** valp, uint32_t * size_val, Buf buffer)
 {
@@ -441,7 +449,9 @@ int unpack32_array(uint32_t ** valp, uint32_t * size_val, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-/* Given a *uint64_t, it will pack an array of size_val */
+/*
+ * Given a *uint64_t, it will pack an array of size_val
+ */
 void pack64_array(uint64_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
@@ -455,8 +465,10 @@ void pack64_array(uint64_t * valp, uint32_t size_val, Buf buffer)
 	}
 }
 
-/* Pack an array of 64bit values as if they were 32bit
- * Used for backwards compatibility */
+/*
+ * Pack an array of 64b-it values as if they were 32-bit
+ * Used for backwards compatibility
+ */
 void pack64_array_as_32(uint64_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
@@ -489,8 +501,10 @@ int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-/* Unpack an array of 64bit values as if they were 32bit
- * Used for backwards compatibility */
+/*
+ * Unpack an array of 64bit values as if they were 32bit
+ * Used for backwards compatibility
+ */
 int unpack64_array_from_32(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 {
 	uint32_t i = 0, val32;
@@ -889,8 +903,10 @@ int unpackstr_array(char ***valp, uint32_t * size_valp, Buf buffer)
 			if (unpackmem_xmalloc(&(*valp)[i], &uint32_tmp, buffer))
 				return SLURM_ERROR;
 		}
-		(*valp)[i] = NULL;	/* NULL terminated array so that execle */
-		/*    can detect end of array */
+		/*
+		 * NULL terminate array so execle() can detect end of array
+		 */
+		(*valp)[i] = NULL;
 	} else
 		*valp = NULL;
 	return SLURM_SUCCESS;
