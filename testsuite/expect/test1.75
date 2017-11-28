@@ -90,7 +90,7 @@ proc sub_job { freq } {
 	foreach option [array names this_freq] {
 		send_user "\n======= TESTING FREQUENCY/GOVERNOR $option =======\n"
 		set job_id 0
-		set srun_pid [spawn $srun -t1 --cpu-freq=$option -n$threads -w$node $file_id]
+		set srun_pid [spawn $srun -t1 --cpu-freq=$option -n$threads -w$node ./$file_id]
 		expect {
 			-re "not allowed" {
 				if {[string first $option $avail_governors] == -1} {
@@ -151,7 +151,7 @@ make_bash_script $file_id "echo SLURM_JOB_ID=\$SLURM_JOB_ID; $bin_sleep 30"
 make_bash_script $file_in "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
 
 # Identify a node that we can use and available governors
-spawn $sbatch -N1 -t1 -o/dev/null --exclusive -o $file_out $file_in
+spawn $sbatch -N1 -t1 -o/dev/null --exclusive -o $file_out ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
