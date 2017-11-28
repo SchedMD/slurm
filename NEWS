@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix unused wall time for reservations.
  -- Convert old reservation records to insert unused wall into the rows.
  -- slurm.spec: further restructing and improvements.
+ -- Allow nodes state to be updated between FAIL and DRAIN.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
@@ -432,6 +433,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue when resetting the partition pointers on nodes.
  -- Show reason field in 'sinfo -R' when nodes is marked as failed.
  -- Fix potential of slurmstepd segfaulting when the extern step fails to start.
+ -- Allow nodes state to be updated between FAIL and DRAIN.
 
 * Changes in Slurm 17.02.9
 ==========================
