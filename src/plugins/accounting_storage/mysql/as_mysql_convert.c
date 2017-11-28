@@ -441,6 +441,9 @@ static int _update_unused_wall(mysql_conn_t *mysql_conn,
 			   curr_resv_id, curr_resv_start);
 	}
 
+	if (!query)
+		return rc;
+
 	if (debug_flags & DEBUG_FLAG_DB_QUERY)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
