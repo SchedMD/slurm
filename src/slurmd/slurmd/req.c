@@ -2208,6 +2208,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
 			alt_rc = _notify_slurmctld_prolog_fini(
 				req->job_id, rc);
+		else
+			alt_rc = SLURM_SUCCESS;
 
 		if (rc != SLURM_SUCCESS) {
 			alt_rc = _launch_job_fail(req->job_id, rc);
