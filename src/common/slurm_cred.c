@@ -1988,8 +1988,14 @@ _find_cred_state(cred_state_t *c, slurm_cred_t *cred)
 static job_state_t *
 _insert_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 {
-	job_state_t *j = _job_state_create(jobid);
-	list_append(ctx->job_list, j);
+	job_state_t *j = list_find_first(
+		ctx->job_list, _list_find_job_state, &jobid);;
+	if (!j) {
+		j = _job_state_create(jobid);
+		list_append(ctx->job_list, j);
+	} else
+		debug2("%s: we already have a job state for job %u.  No big deal, just an FYI.",
+		       __func__, jobid);
 	return j;
 }
 
