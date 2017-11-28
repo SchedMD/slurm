@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
     could change from one version to the other.
  -- Fix unused wall time for reservations.
  -- Convert old reservation records to insert unused wall into the rows.
+ -- slurm.spec: further restructing and improvements.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
