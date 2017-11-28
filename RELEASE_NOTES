@@ -142,6 +142,7 @@ HIGHLIGHTS
  -- Change default to let pending jobs run outside of reservation after
     reservation is gone to put jobs in held state. Added NO_HOLD_JOBS_AFTER_END
     reservation flag to use old default.
+ -- Support for PMIx v2.0 as well as UCX support.
 
 RPMBUILD CHANGES
 ================
