@@ -73,14 +73,13 @@ if {$matches < $needed_nodes} {
 
 set job_id 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
-#set salloc_pid [spawn $salloc -p $partition -N1-2 -n$ncpus $bin_printenv SLURM_NNODES]
+set salloc_pid [spawn $salloc -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number)" {
+	-re "SLURM_NNODES=($number)" {
 		set nodes $expect_out(1,string)
 		if {$nodes != 1} {
 			send_user "\nFAILURE: expected 1 allocated node\n"
