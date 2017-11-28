@@ -209,6 +209,11 @@ cset max_file_delay 90
 cset max_job_state_delay 360
 
 #
+# Max number of iterations that wait_for_all_jobs can use
+#
+cset wait_for_all_jobs_iterations 600
+
+#
 # Specify the maximum number of tasks to use in the stress tests.
 #
 cset max_stress_tasks 4
@@ -779,7 +784,7 @@ proc wait_for_step { step_id } {
 # Wait up to 900 seconds for all jobs to terminate
 # Return 0 if all jobs done, remainin job count otherwise
 proc wait_for_all_jobs { job_name incr_sleep } {
-	global scancel squeue bin_sleep
+	global scancel squeue bin_sleep wait_for_all_jobs_iterations
 
 	set matches 0
 	set my_delay    0
@@ -792,7 +797,7 @@ proc wait_for_all_jobs { job_name incr_sleep } {
 		set sleep_time  1
 	}
 	send_user "Waiting for all jobs to terminate\n"
-	for {set inx 0} {$inx < 600} {incr inx} {
+	for {set inx 0} {$inx < $wait_for_all_jobs_iterations} {incr inx} {
 		log_user 0
 		set matches 0
 		spawn $squeue -o %j

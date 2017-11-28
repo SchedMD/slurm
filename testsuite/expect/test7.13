@@ -73,8 +73,8 @@ exec $bin_cc -O -o $file_prog2 ${file_prog2}.c
 
 make_bash_script $file_in "
   $bin_echo 'testing successful job return code'
-  $srun $file_prog1
-  $srun $file_prog2
+  $srun ./$file_prog1
+  $srun ./$file_prog2
   exit 0
 "
 
@@ -183,8 +183,8 @@ if { [test_account_storage] == 1 } {
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
   $bin_echo 'testing unsuccessful job return code'
-  $srun $file_prog1
-  $srun $file_prog1
+  $srun ./$file_prog1
+  $srun ./$file_prog1
   exit 33
 "
 
