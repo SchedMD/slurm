@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray modulefile: avoid removing /usr/bin from path on module unload.
  -- Fix issue when resetting the partition pointers on nodes.
  -- Show reason field in 'sinfo -R' when nodes is marked as failed.
+ -- Fix potential of slurmstepd segfaulting when the extern step fails to start.
 
 * Changes in Slurm 17.02.9
 ==========================
