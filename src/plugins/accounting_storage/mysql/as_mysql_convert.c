@@ -472,15 +472,10 @@ static int _convert_resv_table(mysql_conn_t *mysql_conn, char *cluster_name)
 		}
 
 		/*
-		 * Ordering is important. First order by the resv id so rows
-		 * with the same resv are consecutive. Then order by job start
-		 * and end times (ascending) to make removing overlapping job
-		 * time easy.
+		 * Order by the resv id and resv time start so rows with the
+		 * same resv are consecutive.
 		 */
-		query = xstrdup_printf("select %s from \"%s_%s\" as rt left join "
-				       "\"%s_%s\" as jt on (rt.id_resv = "
-				       "jt.id_resv) order by rt.id_resv, "
-				       "jt.time_start ASC, jt.time_end ASC;",
+		query = xstrdup_printf("select %s from \"%s_%s\" as rt left join \"%s_%s\" as jt on (rt.id_resv = jt.id_resv) order by rt.id_resv ASC, rt.time_start ASC;",
 				       join_str, cluster_name, resv_table,
 				       cluster_name, job_table);
 		xfree(join_str);
