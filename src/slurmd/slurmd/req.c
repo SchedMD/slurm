@@ -2087,6 +2087,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		 */
 	} else {
 		hostset_t step_hset = hostset_create(req->nodes);
+		int rc;
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
 		rc =  _forkexec_slurmstepd(LAUNCH_TASKS, (void *)launch_req,
@@ -2094,6 +2095,10 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 					   msg->protocol_version);
 		debug3("%s: return from _forkexec_slurmstepd %d",
 		       __func__, rc);
+
+		if (rc != SLURM_SUCCESS)
+			_launch_job_fail(req->job_id, rc);
+
 		if (step_hset)
 			hostset_destroy(step_hset);
 	}
@@ -2195,6 +2200,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
 			alt_rc = _notify_slurmctld_prolog_fini(
 				req->job_id, rc);
+		else
+			alt_rc = SLURM_SUCCESS;
 
 		if (rc != SLURM_SUCCESS) {
 			alt_rc = _launch_job_fail(req->job_id, rc);

@@ -206,7 +206,7 @@ if {$job_id == 0} {
 set user_name [get_my_user_name]
 
 set found 0
-spawn $squeue --jobs=$job_id --noheader -X -O "mcslabel"
+spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
 expect {
 	-re "(null)" {
 		send_user "\nNO MCS-label for this job : this is not expected\n"

@@ -2378,6 +2378,18 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	int nodeid;
 	char *name = NULL;
 
+	/*
+	 * The extern step can get here if something goes wrong starting the
+	 * step.  If this does happen we don't have to contact the srun since
+	 * there isn't one, just return.
+	 */
+	if ((msg->job_step_id == SLURM_EXTERN_CONT) ||
+	    !msg->resp_port || !msg->num_resp_port) {
+		debug2("%s: The extern step has nothing to send a launch failure to",
+		       __func__);
+		return;
+	}
+
 #ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 	name = xstrdup(conf->node_name);

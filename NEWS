@@ -57,6 +57,14 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential missing issue with missin symbols in gres plugins.
  -- Ignore querying clusters in federation that are down from status commands.
  -- Base federated jobs off of origin job and not the local cluster in API.
+ -- Remove erroneous double '-' on rpath for libslurmfull.
+ -- Remove version from libslurmfull and move it to $LIBDIR/slurm since the ABI
+    could change from one version to the other.
+ -- Fix unused wall time for reservations.
+ -- Convert old reservation records to insert unused wall into the rows.
+ -- slurm.spec: further restructing and improvements.
+ -- Allow nodes state to be updated between FAIL and DRAIN.
+ -- x11 forwarding: handle build with alternate location for libssh2.
 
 * Changes in Slurm 17.11.0rc3
 ==============================
@@ -443,6 +451,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray modulefile: avoid removing /usr/bin from path on module unload.
  -- Fix issue when resetting the partition pointers on nodes.
  -- Show reason field in 'sinfo -R' when nodes is marked as failed.
+ -- Fix potential of slurmstepd segfaulting when the extern step fails to start.
+ -- Allow nodes state to be updated between FAIL and DRAIN.
 
 * Changes in Slurm 17.02.9
 ==========================

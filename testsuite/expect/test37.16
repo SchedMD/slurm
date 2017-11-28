@@ -526,7 +526,7 @@ if {$matches != 3} {
 
 # Cancel running job on fed2 so that j(6) will schedule amongst fed2 and fed3
 # to start the job.
-cancel_job $j(1) "-Mfed2"
+cancel_job $j(1) "-M$fedc2"
 
 set run_cluster [wait_for_fed_job $j(6) RUNNING $fedc2]
 if {[string compare $run_cluster ""] == 0} {
@@ -586,7 +586,7 @@ squeue "$fedc3" "4" $r3
 
 # Cancel running job on fed3 so that j(7) will schedule be scheduled on fed3.
 # j(7) is still considered a federated job but only has one sibling.
-cancel_job $j(2) "-Mfed3"
+cancel_job $j(2) "-M$fedc3"
 
 set run_cluster [wait_for_fed_job $j(7) RUNNING $fedc3]
 if {[string compare $run_cluster ""] == 0} {

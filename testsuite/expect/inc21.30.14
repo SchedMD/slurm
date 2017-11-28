@@ -33,14 +33,13 @@ proc inc21_30_14 { } {
 
 	spawn $salloc --account=$acct -N1 -t$maxwall_num $srun $bin_sleep 10
 	expect {
+		-re "Pending job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
 			send_user "\nJob $job_id has been submitted\n"
-		}
-		-re "Pending job allocation ($number)" {
-			set job_id $expect_out(1,string)
-			send_user "\nFAILURE: job $job_id should not be waiting for resources (Within: inc21.30.14)\n"
-			set exit_code 1
 		}
 		-re "error" {
 			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.14)\n"

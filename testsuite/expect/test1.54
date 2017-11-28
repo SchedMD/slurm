@@ -133,11 +133,11 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "executable:(/bin/)($alpha)" {
-		if {[string compare $expect_out(2,string) "date"] != 0} {
+	-re "executable:(/usr)?(/bin/)($alpha)" {
+		if {[string compare $expect_out(3,string) "date"] != 0} {
 			incr matches
 		}
-		if {[string compare $expect_out(2,string) "hostname"] != 0} {
+		if {[string compare $expect_out(3,string) "hostname"] != 0} {
 			incr matches
 		}
 		if {$matches == 4} {

@@ -376,6 +376,29 @@ if {[wait_for_file $spank_out] == 0} {
 	set matches_srun   0
 	set matches_spank_exit 0
 	set matches_spank_init 0
+
+	set expected_spank_exit 2
+	set expected_spank_init 2
+	set expected_sbatch     2
+	set expected_srun       2
+	set expected_items      4
+
+	# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
+	# launched on each node, so we need to check for additional output
+	spawn $scontrol show config
+	expect {
+		-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
+			incr expected_spank_exit
+		}
+		timeout {
+			log_error "scontrol show config not responding\n"
+				end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
 	spawn $bin_sort $spank_out
 	expect {
 		-re "slurm_spank_(\\S+): opt_arg_sbatch=($number) opt_arg_srun=($number)" {
@@ -408,20 +431,20 @@ if {[wait_for_file $spank_out] == 0} {
 			wait
 		}
 	}
-	if {$matches_spank_exit != 2} {
-		send_user "\nFAILURE: remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != 2)\n"
+	if {$matches_spank_exit != $expected_spank_exit} {
+		send_user "\nFAILURE: remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != $expected_spank_exit)\n"
 		end_it 1
-	} elseif {$matches_spank_init != 2} {
-		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != 2)\n"
+	} elseif {$matches_spank_init != $expected_spank_init} {
+		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != $expected_spank_init)\n"
 		end_it 1
-	} elseif {$matches_sbatch != 2} {
-		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != 2)\n"
+	} elseif {$matches_sbatch != $expected_sbatch} {
+		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != $expected_sbatch)\n"
 		end_it 1
-	} elseif {$matches_srun != 2} {
-		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != 2)\n"
+	} elseif {$matches_srun != $expected_srun} {
+		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != $expected_srun)\n"
 		end_it 1
-	} elseif {$matches != 4} {
-		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != 4)\n"
+	} elseif {$matches != $expected_items} {
+		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != $expected_items)\n"
 		end_it 1
 	} else {
 		send_user "\n remote (slurmd) spank plugin success\n"

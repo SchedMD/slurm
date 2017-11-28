@@ -498,7 +498,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) $(SSH2_CPPFLAGS)
 depend_libs = \
 	$(top_builddir)/src/common/libdaemonize.la \
 	../common/libslurmd_common.o
@@ -513,7 +513,7 @@ slurmstepd_SOURCES = slurmstepd.c slurmstepd.h mgr.c mgr.h task.c \
 	multi_prog.c multi_prog.h step_terminate_monitor.c \
 	step_terminate_monitor.h $(am__append_1)
 @WITH_SLURM_X11_FALSE@EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(SSH2_LDFLAGS)
 slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 all: all-am
 

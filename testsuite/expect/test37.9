@@ -136,15 +136,15 @@ proc verify { job_id output } {
 
 	if {[string match $output $fedc1]} {
 		squeue "-M$output " "CLUSTER: $fedc1\\s+$job_id.+R.+"
-		squeue "-Mfed1 -s " "$job_id\\.0.+$fedc1.+$job_id\\.1.+$fedc1.+"
+		squeue "-M$fedc1 -s " "$job_id\\.0.+$fedc1.+$job_id\\.1.+$fedc1.+"
 	}
 	if {[string match $output $fedc2]} {
 		squeue "-M$output " "CLUSTER: $fedc2\\s+$job_id.+R.+"
-		squeue "-Mfed2 -s " "$job_id\\.0.+$fedc2.+$job_id\\.1.+$fedc2.+"
+		squeue "-M$fedc2 -s " "$job_id\\.0.+$fedc2.+$job_id\\.1.+$fedc2.+"
 	}
 	if {[string match $output $fedc3]} {
 		squeue "-M$output " "CLUSTER: $fedc3\\s+$job_id.+R.+"
-		squeue "-Mfed3 -s " "$job_id\\.0.+$fedc3.+$job_id\\.1.+$fedc3.+"
+		squeue "-M$fedc3 -s " "$job_id\\.0.+$fedc3.+$job_id\\.1.+$fedc3.+"
 	}
 
 }
@@ -473,9 +473,9 @@ set regex "(debug\\*\\s+($fedc1|$fedc2|$fedc3)\\s+up\\s+infinite\\s+10\\s+idle\\
 
 sinfo "" "$regex{3}"
 sinfo "--local " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+($fedc1)_\\\[1-10\\\])"
-sinfo "-Mfed1 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc1.+)"
-sinfo "-Mfed2 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc2.+)"
-sinfo "-Mfed3 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc3.+)"
+sinfo "-M$fedc1 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc1.+)"
+sinfo "-M$fedc2 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc2.+)"
+sinfo "-M$fedc3 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc3.+)"
 
 send_user "\n################################################################\n"
 send_user "verify federated sprio output"
@@ -498,9 +498,9 @@ sprio "" "(\\s+($ji6|$ji5|$ji4|$ji3).+\\n){4}"
 
 sprio "--sibling" "$ji3.+($ji5|$ji6).+$ji3.+($ji5|$ji6)"
 sprio "--local" "(\\s+($ji3|$ji4).+\\n){2}"
-sprio "-Mfed1" "(\\s+($ji3|$ji4).+\\n){2}"
-sprio "-Mfed2" "(\\s+($ji3|$ji5).+\\n){2}"
-sprio "-Mfed3" "(\\s+($ji3|$ji6).+\\n){2}"
+sprio "-M$fedc1" "(\\s+($ji3|$ji4).+\\n){2}"
+sprio "-M$fedc2" "(\\s+($ji3|$ji5).+\\n){2}"
+sprio "-M$fedc3" "(\\s+($ji3|$ji6).+\\n){2}"
 
 send_user "\n################################################################\n"
 send_user "verify federated scontrol show jobs output"
@@ -567,16 +567,16 @@ set regex_s "(StepId=($ji0|$ji1|$ji2)\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 scontrol_show "jobs" $tasks "$regex_j{4}" ""
 scontrol_show "jobs" $tasks "$regex_j{6}" "--sibling"
 scontrol_show "jobs" $tasks "$reg1{2}" "--local"
-scontrol_show "jobs" $tasks "$reg1{2}" "-Mfed1"
-scontrol_show "jobs" $tasks "$reg2{2}" "-Mfed2"
-scontrol_show "jobs" $tasks "$reg3{2}" "-Mfed3"
+scontrol_show "jobs" $tasks "$reg1{2}" "-M$fedc1"
+scontrol_show "jobs" $tasks "$reg2{2}" "-M$fedc2"
+scontrol_show "jobs" $tasks "$reg3{2}" "-M$fedc3"
 
 scontrol_show "steps" $tasks "$regex_s{6}" ""
 scontrol_show "steps" $tasks "$regex_s{6}" "--sibling"
 scontrol_show "steps" $tasks "$reg4{2}" "--local"
-scontrol_show "steps" $tasks "$reg4{2}" "-Mfed1"
-scontrol_show "steps" $tasks "$reg5{2}" "-Mfed2"
-scontrol_show "steps" $tasks "$reg6{2}" "-Mfed3"
+scontrol_show "steps" $tasks "$reg4{2}" "-M$fedc1"
+scontrol_show "steps" $tasks "$reg5{2}" "-M$fedc2"
+scontrol_show "steps" $tasks "$reg6{2}" "-M$fedc3"
 
 # All Done
 end_it 0

@@ -11,12 +11,14 @@ Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 
-# when the rel number is one, the tarball filename does not include it
-%if "%{rel}" == 1
-Source:		%{name}-%{version}.tar.bz2
+# when the rel number is one, the directory name does not include it
+%if "%{rel}" == "1"
+%global slurm_source_dir %{name}-%{version}
 %else
-Source:		%{name}-%{version}-%{rel}.tar.bz2
+%global slurm_source_dir %{name}-%{version}-%{rel}
 %endif
+
+Source:		%{slurm_source_dir}.tar.bz2
 
 # Note that this package is not relocatable
 
@@ -289,14 +291,14 @@ with which Slurm can be configured. Note that some system specific plugins
 are in other packages
 
 %package torque
-Summary: Torque/PBS wrappers for transitition from Torque/PBS to Slurm
+Summary: Torque/PBS wrappers for transition from Torque/PBS to Slurm
 Group: Development/System
 Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm
 
 %package openlava
-Summary: openlava/LSF wrappers for transitition from OpenLava/LSF to Slurm
+Summary: openlava/LSF wrappers for transition from OpenLava/LSF to Slurm
 Group: Development/System
 Requires: slurm-perlapi
 %description openlava
@@ -369,11 +371,7 @@ according to the Slurm
 
 %prep
 # when the rel number is one, the tarball filename does not include it
-%if "%{rel}" == "1"
-%setup -n %{name}-%{version}
-%else
-%setup -n %{name}-%{version}-%{rel}
-%endif
+%setup -n %{slurm_source_dir}
 
 %build
 %configure \

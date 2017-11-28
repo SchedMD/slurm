@@ -178,8 +178,9 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(libdir)"
-LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
+am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkglibdir)"
+LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES) \
+	$(pkglib_LTLIBRARIES)
 libpmi_la_DEPENDENCIES = $(top_builddir)/src/api/libslurm.la
 am_libpmi_la_OBJECTS = pmi.lo
 libpmi_la_OBJECTS = $(am_libpmi_la_OBJECTS)
@@ -615,7 +616,12 @@ rev = $(SLURM_API_REVISION)
 libpmi_current = 0
 libpmi_age = 0
 libpmi_rev = 0
-lib_LTLIBRARIES = libslurm.la libslurmfull.la libpmi.la
+lib_LTLIBRARIES = libslurm.la libpmi.la
+
+# The ABI of libslurmfull can easily change from 1 micro version to another.
+# To avoid issue we will install this lib alongside the plugins to protect
+# from version issues.
+pkglib_LTLIBRARIES = libslurmfull.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.  For instance, this takes care
@@ -700,7 +706,7 @@ libslurmfull_la_SOURCES =
 libslurmfull_la_LIBADD = $(convenience_libs)
 libslurmfull_la_LDFLAGS = \
         $(LIB_LDFLAGS) \
-        -version-info $(current):$(rev):$(age) \
+	-avoid-version \
         $(FULL_OTHER_FLAGS)
 
 #
@@ -809,6 +815,41 @@ clean-noinstLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
+install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
+	@$(NORMAL_INSTALL)
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	list2=; for p in $$list; do \
+	  if test -f $$p; then \
+	    list2="$$list2 $$p"; \
+	  else :; fi; \
+	done; \
+	test -z "$$list2" || { \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(pkglibdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(pkglibdir)" || exit 1; \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(pkglibdir)'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(pkglibdir)"; \
+	}
+
+uninstall-pkglibLTLIBRARIES:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	for p in $$list; do \
+	  $(am__strip_dir) \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(pkglibdir)/$$f'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(pkglibdir)/$$f"; \
+	done
+
+clean-pkglibLTLIBRARIES:
+	-test -z "$(pkglib_LTLIBRARIES)" || rm -f $(pkglib_LTLIBRARIES)
+	@list='$(pkglib_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
+
 libpmi.la: $(libpmi_la_OBJECTS) $(libpmi_la_DEPENDENCIES) $(EXTRA_libpmi_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libpmi_la_LINK) -rpath $(libdir) $(libpmi_la_OBJECTS) $(libpmi_la_LIBADD) $(LIBS)
 
@@ -816,7 +857,7 @@ libslurm.la: $(libslurm_la_OBJECTS) $(libslurm_la_DEPENDENCIES) $(EXTRA_libslurm
 	$(AM_V_CCLD)$(libslurm_la_LINK) -rpath $(libdir) $(libslurm_la_OBJECTS) $(libslurm_la_LIBADD) $(LIBS)
 
 libslurmfull.la: $(libslurmfull_la_OBJECTS) $(libslurmfull_la_DEPENDENCIES) $(EXTRA_libslurmfull_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libslurmfull_la_LINK) -rpath $(libdir) $(libslurmfull_la_OBJECTS) $(libslurmfull_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libslurmfull_la_LINK) -rpath $(pkglibdir) $(libslurmfull_la_OBJECTS) $(libslurmfull_la_LIBADD) $(LIBS)
 
 libslurmhelper.la: $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_DEPENDENCIES) $(EXTRA_libslurmhelper_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libslurmhelper_la_LINK)  $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_LIBADD) $(LIBS)
@@ -986,7 +1027,7 @@ check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkglibdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -1026,7 +1067,8 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	clean-noinstLTLIBRARIES clean-noinstPROGRAMS mostlyclean-am
+	clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
+	clean-pkglibLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -1052,7 +1094,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-libLTLIBRARIES
+install-exec-am: install-libLTLIBRARIES install-pkglibLTLIBRARIES
 
 install-html: install-html-am
 
@@ -1092,24 +1134,26 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-libLTLIBRARIES
+uninstall-am: uninstall-libLTLIBRARIES uninstall-pkglibLTLIBRARIES
 
 .MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
 	clean-libLTLIBRARIES clean-libtool clean-noinstLTLIBRARIES \
-	clean-noinstPROGRAMS cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am \
-	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-libLTLIBRARIES
+	clean-noinstPROGRAMS clean-pkglibLTLIBRARIES cscopelist-am \
+	ctags ctags-am distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-libLTLIBRARIES install-man install-pdf \
+	install-pdf-am install-pkglibLTLIBRARIES install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-libLTLIBRARIES \
+	uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 

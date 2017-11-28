@@ -8,12 +8,14 @@ Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 
-# when the rel number is one, the tarball filename does not include it
+# when the rel number is one, the directory name does not include it
 %if "%{rel}" == "1"
-Source:		%{name}-%{version}.tar.bz2
+%global slurm_source_dir %{name}-%{version}
 %else
-Source:		%{name}-%{version}-%{rel}.tar.bz2
+%global slurm_source_dir %{name}-%{version}-%{rel}
 %endif
+
+Source:		%{slurm_source_dir}.tar.bz2
 
 # build options		.rpmmacros options	change to default action
 # ====================  ====================	========================
@@ -22,8 +24,10 @@ Source:		%{name}-%{version}-%{rel}.tar.bz2
 # --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
 # --without debug	%_without_debug 1	don't compile with debugging symbols
 # --with hdf5		%_with_hdf5 path	require hdf5 support
+# --with hwloc		%_with_hwloc 1		require hwloc support
 # --with lua		%_with_lua path		build Slurm lua bindings
 # --with mysql		%_with_mysql 1		require mysql/mariadb support
+# --with numa		%_with_numa 1		require NUMA support
 # --with openssl	%_with_openssl 1	require openssl RPM to be installed
 #						ensures auth/openssl and crypto/openssl are built
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
@@ -35,9 +39,11 @@ Source:		%{name}-%{version}-%{rel}.tar.bz2
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
+%bcond_with hwloc
 %bcond_with mysql
 %bcond_with hdf5
 %bcond_with lua
+%bcond_with numa
 
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
 %bcond_without openssl
@@ -109,6 +115,18 @@ BuildRequires: lua-devel
 %endif
 %endif
 
+%if %{with hwloc}
+BuildRequires: hwloc-devel
+%endif
+
+%if %{with numa}
+%if %{defined suse_version}
+BuildRequires: libnuma-devel
+%else
+BuildRequires: numactl-devel
+%endif
+%endif
+
 #  Allow override of sysconfdir via _slurm_sysconfdir.
 #  Note 'global' instead of 'define' needed here to work around apparent
 #   bug in rpm macro scoping (or something...)
@@ -158,7 +176,7 @@ job management, scheduling and accounting modules
 %package perlapi
 Summary: Perl API to Slurm
 Group: Development/System
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description perlapi
 Perl API package for Slurm.  This package includes the perl API to provide a
 helpful interface to Slurm through Perl
@@ -166,7 +184,7 @@ helpful interface to Slurm through Perl
 %package devel
 Summary: Development package for Slurm
 Group: Development/System
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description devel
 Development package for Slurm.  This package includes the header files
 and static libraries for the Slurm API
@@ -180,7 +198,7 @@ Example configuration files for Slurm.
 %package slurmctld
 Summary: Slurm controller daemon
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description slurmctld
 Slurm controller daemon. Used to manage the job queue, schedule jobs,
 and dispatch RPC messages to the slurmd processon the compute nodes
@@ -189,28 +207,28 @@ to launch jobs.
 %package slurmd
 Summary: Slurm compute node daemon
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description slurmd
 Slurm compute node daemon. Used to launch jobs on compute nodes
 
 %package slurmdbd
 Summary: Slurm database daemon
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 Obsoletes: slurm-sql
 %description slurmdbd
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
 
 %package torque
-Summary: Torque/PBS wrappers for transitition from Torque/PBS to Slurm
+Summary: Torque/PBS wrappers for transition from Torque/PBS to Slurm
 Group: Development/System
 Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm
 
 %package openlava
-Summary: openlava/LSF wrappers for transitition from OpenLava/LSF to Slurm
+Summary: openlava/LSF wrappers for transition from OpenLava/LSF to Slurm
 Group: Development/System
 Requires: slurm-perlapi
 %description openlava
@@ -219,7 +237,7 @@ OpenLava wrapper scripts used for helping migrate from OpenLava/LSF to Slurm
 %package contribs
 Summary: Perl tool to print Slurm job state information
 Group: Development/System
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 Obsoletes: slurm-sjobexit slurm-sjstat slurm-seff
 %description contribs
 seff is a mail program used directly by the Slurm daemons. On completion of a
@@ -237,7 +255,7 @@ utilities will provide more information and greater depth of understanding.
 %package pam_slurm
 Summary: PAM module for restricting access to compute nodes via Slurm
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 BuildRequires: pam-devel
 Obsoletes: pam_slurm
 %description pam_slurm
@@ -251,11 +269,7 @@ according to the Slurm
 
 %prep
 # when the rel number is one, the tarball filename does not include it
-%if "%{rel}" == "1"
-%setup -n %{name}-%{version}
-%else
-%setup -n %{name}-%{version}-%{rel}
-%endif
+%setup -n %{slurm_source_dir}
 
 %build
 %configure \
@@ -557,18 +571,18 @@ rm -rf %{buildroot}
 %preun slurmctld
 %systemd_preun slurmctld.service
 %postun slurmctld
-%systemd_preun_with_restart slurmctld.service
+%systemd_postun_with_restart slurmctld.service
 
 %post slurmd
 %systemd_post slurmd.service
 %preun slurmd
 %systemd_preun slurmd.service
 %postun slurmd
-%systemd_preun_with_restart slurmd.service
+%systemd_postun_with_restart slurmd.service
 
 %post slurmdbd
 %systemd_post slurmdbd.service
 %preun slurmdbd
 %systemd_preun slurmdbd.service
 %postun slurmdbd
-%systemd_preun_with_restart slurmdbd.service
+%systemd_postun_with_restart slurmdbd.service

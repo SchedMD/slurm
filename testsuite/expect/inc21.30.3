@@ -28,13 +28,14 @@
 # Test GrpJob limits
 proc inc21_30_3 {} {
 
-	global salloc srun acct bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grjobs_num
+	global salloc scontrol srun acct alpha bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grjobs_num
 
 	send_user "\nStarting GrpJob limit test (Within: inc21.30.3)\n\n"
 	set check_num $grjobs_num
 
 	set jobmatch 0
 	for {set inx 0} {$inx <= $check_num} {incr inx} {
+		set test_reason 0
 		spawn $salloc --account=$acct -n1 -t1 $srun $bin_sleep 60
 		expect {
 			-re "Granted job allocation ($number)" {
@@ -53,8 +54,7 @@ proc inc21_30_3 {} {
 					send_user "\nJob $inx $job_id($inx) is waiting for resources. This is expected. (Within: inc21.30.3)\n"
 					incr jobmatch
 				} else {
-					send_user "\nFAILURE: Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num? (Within: inc21.30.3)\n"
-					set exit_code 1
+					set test_reason 1
 				}
 			}
 			-re "error" {
@@ -67,6 +67,29 @@ proc inc21_30_3 {} {
 			}
 			eof {
 				wait
+			}
+		}
+
+#		Job is waiting, check if the reason is the limit we are testing for
+		if {$test_reason != 0 && $job_id($inx) != 0} {
+			spawn $scontrol show job $job_id($inx)
+			expect {
+				-re "Reason=($alpha)" {
+					if {[string compare $expect_out(1,string) "QOSGrpJobsLimit"]} {
+						send_user "\nFAILURE: Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num? (Within: inc21.30.3)\n"
+						set exit_code 1
+					} else {
+						incr jobmatch
+					}
+					exp_continue
+				}
+				timeout {
+					send_user "\nFAILURE: scontrol is not responding. (Within: inc21.30.3)\n"
+					set exit_code 1
+				}
+				eof {
+					wait
+				}
 			}
 		}
 	}

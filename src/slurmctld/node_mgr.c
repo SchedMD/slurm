@@ -1429,6 +1429,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				   (state_val == NODE_STATE_FAIL)) {
 				uint32_t new_state = state_val;
 				bit_clear (avail_node_bitmap, node_inx);
+				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				state_val = node_ptr->node_state |= state_val;
 				if ((node_ptr->run_job_cnt  == 0) &&
 				    (node_ptr->comp_job_cnt == 0)) {

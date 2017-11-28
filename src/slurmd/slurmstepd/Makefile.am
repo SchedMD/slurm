@@ -5,7 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmstepd
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) $(SSH2_CPPFLAGS)
 
 depend_libs = 				   \
 	$(top_builddir)/src/common/libdaemonize.la \
@@ -34,7 +34,7 @@ else
 EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
 endif
 
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(SSH2_LDFLAGS)
 
 slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 
