@@ -9349,7 +9349,6 @@ static void
 _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 			       uint16_t protocol_version)
 {
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int i = 0;
 
 	xassert(msg != NULL);
@@ -9435,17 +9434,9 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack32(msg->cpu_freq_gov, buffer);
 		packstr(msg->ckpt_dir, buffer);
 		packstr(msg->restart_dir, buffer);
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-			/* If on a Blue Gene cluster do not send this to the
-			 * slurmstepd, it will overwrite the environment that
-			 * ia already set up correctly for both the job and the
-			 * step. The slurmstep treats this select_jobinfo as if
-			 * were for the job  instead of for the step.
-			 */
-			select_g_select_jobinfo_pack(msg->select_jobinfo,
-						     buffer,
-						     protocol_version);
-		}
+
+		select_g_select_jobinfo_pack(msg->select_jobinfo,
+					     buffer, protocol_version);
 
 		pack16(msg->x11, buffer);
 		packstr(msg->x11_magic_cookie, buffer);
@@ -9527,17 +9518,10 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack32(msg->cpu_freq_gov, buffer);
 		packstr(msg->ckpt_dir, buffer);
 		packstr(msg->restart_dir, buffer);
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-			/* If on a Blue Gene cluster do not send this to the
-			 * slurmstepd, it will overwrite the environment that
-			 * ia already set up correctly for both the job and the
-			 * step. The slurmstep treats this select_jobinfo as if
-			 * were for the job  instead of for the step.
-			 */
-			select_g_select_jobinfo_pack(msg->select_jobinfo,
-						     buffer,
-						     protocol_version);
-		}
+
+		select_g_select_jobinfo_pack(msg->select_jobinfo,
+					     buffer, protocol_version);
+
 		packstr_array(pelog_env, 0, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -9550,7 +9534,6 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 				 msg_ptr, Buf buffer,
 				 uint16_t protocol_version)
 {
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	uint32_t uint32_tmp = 0;
 	launch_tasks_request_msg_t *msg;
 	int i = 0;
@@ -9677,8 +9660,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
-		if (!(cluster_flags & CLUSTER_FLAG_BG) &&
-		    select_g_select_jobinfo_unpack(&msg->select_jobinfo,
+		if (select_g_select_jobinfo_unpack(&msg->select_jobinfo,
 						   buffer, protocol_version)) {
 			goto unpack_error;
 		}
@@ -9806,8 +9788,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
-		if (!(cluster_flags & CLUSTER_FLAG_BG) &&
-		    select_g_select_jobinfo_unpack(&msg->select_jobinfo,
+		if (select_g_select_jobinfo_unpack(&msg->select_jobinfo,
 						   buffer, protocol_version)) {
 			goto unpack_error;
 		}
