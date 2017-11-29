@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.1
 ==========================
+ -- Fix --with-shared-libslurm option to work correctly.
 
 * Changes in Slurm 17.11.0
 ==========================

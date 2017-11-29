@@ -19329,9 +19329,15 @@ $as_echo_n "checking Link to libslurm.so instead of libslurm.o... " >&6; }
 
 # Check whether --with-shared-libslurm was given.
 if test "${with_shared_libslurm+set}" = set; then :
-  withval=$with_shared_libslurm; x_ac_shared_libslurm=no
-else
-  x_ac_shared_libslurm=yes
+  withval=$with_shared_libslurm;  case "$withval" in
+      yes) x_ac_shared_libslurm=yes ;;
+      no)  x_ac_shared_libslurm=no ;;
+      *)   { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+$as_echo "doh!" >&6; }
+           as_fn_error $? "bad value \"$withval\" for --without-shared-libslurm" "$LINENO" 5 ;;
+        esac
+
+
 fi
 
 
