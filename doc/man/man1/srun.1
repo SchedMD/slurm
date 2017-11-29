@@ -742,18 +742,19 @@ following options should NOT be specified
 See \fBEXAMPLE\fR below.
 
 .TP
-\fB\-\-export\fR=<\fIenvironment variables | NONE\fR>
+\fB\-\-export\fR=<\fIenvironment variables [ALL] | NONE\fR>
 Identify which environment variables are propagated to the launched application.
 Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
 value of those variables (e.g. "\-\-export=EDITOR") or specific values
-for the variables may be exported (e.g.. "\-\-export=EDITOR=/bin/vi")
-in addition to the environment variables that would otherwise be set.
-By default all environment variables are propagated. With "\-\-export=NONE"
-no environment variables will be propagated unless explicitly listed (e.g.,
-"\-\-export=NONE,PATH=/bin,SHELL=/bin/bash"). Regardless of this setting,
-the appropriate "SLURM_*" task environment variables are always exported to the
-environment. This option applies to job allocations.
+for the variables may be exported (e.g. "\-\-export=EDITOR=/bin/emacs").
+By default all environment variables are propagated.
+If the argument includes \fIALL\fR, all the current environment variables from
+submit node are propagated (e.g. "\-\-export=EDITOR,ALL").
+If the argument is \fINONE\fR or specific environment variable names, no
+other environment variables will be propagated unless explicitly listed.
+Regardless of this setting, the appropriate "SLURM_*" task environment variables
+are always exported to the environment.
 
 .TP
 \fB\-\-gid\fR=<\fIgroup\fR>
