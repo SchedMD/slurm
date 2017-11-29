@@ -390,12 +390,7 @@ static int _job_wait(uint32_t job_id)
 				}
 			}
 			slurm_free_job_info_msg(resp);
-		} else if ((rc == ESLURM_INVALID_JOB_ID) ||
-			   (errno == ESLURM_INVALID_JOB_ID)) {
-			/*
-			 * 17.11 returns the error code in rc (and errno). The
-			 * check for errno isn't needed in 17.11.
-			 */
+		} else if (rc == ESLURM_INVALID_JOB_ID) {
 			error("Job %u no longer found and exit code not found",
 			      job_id);
 		} else {
