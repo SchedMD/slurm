@@ -2219,8 +2219,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		      job_ptr->job_id, job_ptr->partition);
 	}
 
-	/* Quick check to see if this QOS is allowed on this
-	 * partition. */
+	/* Quick check to see if this QOS is allowed on this partition. */
 	assoc_mgr_lock(&qos_read_lock);
 	if (job_ptr->qos_ptr)
 		qos_flags = job_ptr->qos_ptr->flags;
@@ -2233,8 +2232,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 
-	/* Quick check to see if this account is allowed on
-	 * this partition. */
+	/* Quick check to see if this account is allowed on this partition. */
 	if ((error_code = part_policy_valid_acct(
 		     job_ptr->part_ptr,
 		     job_ptr->assoc_ptr ? job_ptr->assoc_ptr->acct : NULL))
@@ -3249,9 +3247,11 @@ static int _build_node_list(struct job_record *job_ptr,
 	}
 
 	if (job_ptr->resv_name) {
-		/* Limit node selection to those in selected reservation.
+		/*
+		 * Limit node selection to those in selected reservation.
 		 * Assume node reboot required since we have not selected the
-		 * compute nodes yet. */
+		 * compute nodes yet.
+		 */
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false,
 				   &usable_node_mask, NULL, &resv_overlap,
@@ -3421,8 +3421,10 @@ static int _build_node_list(struct job_record *job_ptr,
 			FREE_NULL_BITMAP(inactive_bitmap);
 			continue;
 		}
-		/* Split the node set record in two:
-		 * one set to reboot, one set available now */
+		/*
+		 * Split the node set record in two:
+		 * one set to reboot, one set available now
+		 */
 		node_set_ptr[node_set_inx].cpus_per_node = config_ptr->cpus;
 		node_set_ptr[node_set_inx].features =
 			xstrdup(config_ptr->feature);
@@ -3470,14 +3472,18 @@ static int _build_node_list(struct job_record *job_ptr,
 		return rc;
 	}
 
-	/* Clear message about any nodes which fail to satisfy specific
-	 * job requirements as there are some nodes which can be used */
+	/*
+	 * Clear message about any nodes which fail to satisfy specific
+	 * job requirements as there are some nodes which can be used
+	 */
 	if (err_msg)
 		xfree(*err_msg);
 
-	/* If any nodes are powered down, put them into a new node_set
+	/*
+	 * If any nodes are powered down, put them into a new node_set
 	 * record with a higher scheduling weight. This means we avoid
-	 * scheduling jobs on powered down nodes where possible. */
+	 * scheduling jobs on powered down nodes where possible.
+	 */
 	for (i = (node_set_inx-1); i >= 0; i--) {
 		power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
 					power_node_bitmap);

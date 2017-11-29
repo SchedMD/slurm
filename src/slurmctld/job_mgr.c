@@ -4499,7 +4499,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 				 &job_ptr, submit_uid, err_msg,
 				 protocol_version);
 	*job_pptr = job_ptr;
-
 	if (error_code) {
 		if (job_ptr && (immediate || will_run)) {
 			/* this should never really happen here */
@@ -6635,6 +6634,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		job_ptr = *job_pptr;
 		goto cleanup_fail;
 	}
+
 	job_ptr = *job_pptr;
 	job_ptr->start_protocol_ver = protocol_version;
 	job_ptr->part_ptr = part_ptr;
