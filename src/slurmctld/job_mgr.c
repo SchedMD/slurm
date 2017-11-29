@@ -4517,7 +4517,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		independent = false;
 	else
 		independent = job_independent(job_ptr, will_run);
-	/* priority needs to be calculated after this since we set a
+	/*
+	 * priority needs to be calculated after this since we set a
 	 * begin time in job_independent and that lets us know if the
 	 * job is eligible.
 	 */
@@ -4532,12 +4533,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if ((submit_uid || (job_specs->req_nodes == NULL)) &&
 	    independent && job_is_completing(NULL))
 		too_fragmented = true;	/* Don't pick nodes for job now */
-	/* FIXME: Ideally we only want to refuse the request if the
+	/*
+	 * FIXME: Ideally we only want to refuse the request if the
 	 * required node list is insufficient to satisfy the job's
 	 * processor or node count requirements, but the overhead is
 	 * rather high to do that right here. We let requests from
 	 * user root proceed if a node list is specified, for
-	 * meta-schedulers (e.g. LCRM). */
+	 * meta-schedulers (e.g. Maui, Moab, etc.).
+	 */
 	else
 		too_fragmented = false;
 
@@ -4578,8 +4581,10 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		return rc;
 	}
 
-	/* fed jobs need to go to the siblings first so don't attempt to
-	 * schedule the job now. */
+	/*
+	 * fed jobs need to go to the siblings first so don't attempt to
+	 * schedule the job now.
+	 */
 	test_only = will_run || job_ptr->deadline || (allocate == 0) ||
 		    job_ptr->fed_details;
 
@@ -4594,7 +4599,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		last_job_update = now;
 	}
 
-       /* Moved this (_create_job_array) here to handle when a job
+       /*
+	* Moved this (_create_job_array) here to handle when a job
 	* array is submitted since we
 	* want to know the array task count when we check the job against
 	* QoS/Assoc limits
@@ -6400,9 +6406,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	assoc_rec.acct      = job_desc->account;
 	assoc_rec.partition = part_ptr->name;
 	assoc_rec.uid       = job_desc->user_id;
-	/* Checks are done later to validate assoc_ptr, so we don't
-	   need to lock outside of fill_in_assoc.
-	*/
+	/*
+	 * Checks are done later to validate assoc_ptr, so we don't
+	 * need to lock outside of fill_in_assoc.
+	 */
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce, &assoc_ptr, false)) {
 		info("%s: invalid account or partition for user %u, "
@@ -6501,7 +6508,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	/* This needs to be done after the association acct policy check since
+	/*
+	 * This needs to be done after the association acct policy check since
 	 * it looks at unaltered nodes for bluegene systems
 	 */
 	debug3("before alteration asking for nodes %u-%u cpus %u-%u",
@@ -6552,7 +6560,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 					    SELECT_JOBDATA_GEOMETRY, &geo);
 	} else if (geo[0] != 0) {
 		uint32_t i, tot = 1;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		for (i = 0; i < SYSTEM_DIMENSIONS; i++)
 			tot *= geo[i];
 		if (job_desc->min_nodes > tot) {
 			info("MinNodes(%d) > GeometryNodes(%d)",
@@ -6586,8 +6594,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		    && ((conn_type[0] == SELECT_TORUS)
 			|| (conn_type[0] == SELECT_MESH))
 		    && (job_desc->min_cpus < cpus_per_mp)))) {
-		/* check to make sure we have a valid conn_type with
-		 * the cpu count */
+		/*
+		 * check to make sure we have a valid conn_type with
+		 * the cpu count
+		 */
 		info("Job's cpu count at %u makes our conn_type "
 		     "of '%s' invalid.",
 		     job_desc->min_cpus, conn_type_string(conn_type[0]));
@@ -6596,7 +6606,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	/* make sure we reset all the NO_VAL's to NAV's */
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+	for (i = 0; i < SYSTEM_DIMENSIONS; i++) {
 		if (conn_type[i] == NO_VAL16)
 			conn_type[i] = SELECT_NAV;
 	}
@@ -6691,9 +6701,11 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		error_code = ESLURM_INVALID_FEATURE;
 		goto cleanup_fail;
 	}
-	/* NOTE: If this job is being used to expand another job, this job's
+	/*
+	 * NOTE: If this job is being used to expand another job, this job's
 	 * gres_list has already been filled in with a copy of gres_list job
-	 * to be expanded by update_job_dependency() */
+	 * to be expanded by update_job_dependency()
+	 */
 	if (!job_ptr->details->expanding_jobid) {
 		job_ptr->gres_list = gres_list;
 		gres_list = NULL;

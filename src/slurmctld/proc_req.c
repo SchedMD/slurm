@@ -3933,7 +3933,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	}
 
 	/* do RPC call */
-	if ( (uid != job_desc_msg->user_id) && (!validate_super_user(uid)) ) {
+	if ((uid != job_desc_msg->user_id) && (!validate_super_user(uid))) {
 		/* NOTE: Super root can submit a batch job for any user */
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, REQUEST_SUBMIT_BATCH_JOB from uid=%d",
