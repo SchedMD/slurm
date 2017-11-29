@@ -188,6 +188,8 @@ script for Slurm?</a></li>
     of the jobs belonging to a speciic user, partition, etc?</a></li>
 <li><a href="#changed_uid">I had to change a user's UID and now they cannot submit
     jobs. How do I get the new UID to take effect?</a></li>
+<li><a href="#mysql_duplicate">Slurmdbd is failing to start with a 'Duplicate entry'
+    error in the database. How do I fix that?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -2218,7 +2220,7 @@ There isn't any filtering by user, partition, etc. available in the scontrol
 command; however the squeue command can be used to perform the filtering and
 build a script which you can then execute. For example:
 <pre>
-> squeue -u adam -h -o "scontrol hold %i" &gt;hold_script
+$ squeue -u adam -h -o "scontrol hold %i" &gt;hold_script
 </pre>
 
 <p><a name="changed_uid"><b>67. I had to change a user's UID and now they cannot submit
@@ -2228,11 +2230,45 @@ take effect. Normally, when adding a new user to the system, the UID is filled i
 automatically and immediately. If the user isn't known on the system yet, there is a
 thread that runs every hour that fills in those UIDs when they become known, but it
 doesn't recognize UID changes of preexisting users. But you can simply restart the
-slurmctld for those changes to be recognized.
-</li>
+slurmctld for those changes to be recognized.</p>
+
+<p><a name="mysql_duplicate"><b>68. Slurmdbd is failing to start with a 'Duplicate entry'
+    error in the database. How do I fix that?</b></a><br>
+This problem has been rarely observed with MySQL, but not MariaDB.
+The root cause of the failure seems to be reaching the upper limit on the auto increment field.
+Upgrading to MariaDB is recommended.
+If that is not possible then: backup the database, remove the duplicate record(s),
+and restart the slurmdbd daemon as shown below.</p>
+<pre>
+$ slurmdbd -Dvv
+...
+slurmdbd: debug:  Table "cray_job_table" has changed.  Updating...
+slurmdbd: error: mysql_query failed: 1062 Duplicate entry '2711-1478734628' for key 'id_job'
+...
+
+$ mysqldump -u&lt;user&gt; -p&lt;user&gt; slurm_acct_db &gt;/tmp/slurm_db_backup.sql
+
+$ mysql
+mysql> use slurm_acct_db;
+mysql> delete from cray_job_table where id_job='2711-1478734628';
+mysql> quit;
+Bye
+</pre>
+
+<p>If necessary, you can edit the database dump and recreate the database as
+shown below.</p>
+<pre>
+$ mysql
+mysql> drop database slurm_acct_db;
+mysql> create database slurm_acct_db;
+mysql> quit;
+Bye
+
+$ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 November 2017</p>
+<p style="text-align:center;">Last modified 29 November 2017</p>
 
 <!--#include virtual="footer.txt"-->
