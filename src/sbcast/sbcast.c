@@ -78,10 +78,6 @@ int main(int argc, char **argv)
 	error("The sbcast command is not supported on Cray systems");
 	return 1;
 #endif
-#ifdef HAVE_BG
-	error("The sbcast command is not supported on IBM BlueGene systems");
-	return 1;
-#endif
 	slurm_conf_init(NULL);
 	route_init(NULL);
 	parse_command_line(argc, argv);

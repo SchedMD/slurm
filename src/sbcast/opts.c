@@ -218,10 +218,6 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (params.verbose)
 		_print_options();
-#ifdef HAVE_BG
-	fprintf(stderr, "sbcast not supported on BlueGene systems\n");
-	exit(1);
-#endif
 }
 
 /* map size in string to number, interpret suffix of "k" or "m" */
