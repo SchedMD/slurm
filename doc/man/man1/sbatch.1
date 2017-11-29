@@ -500,19 +500,21 @@ partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 
 .TP
 \fB\-\-export\fR=<\fIenvironment variables [ALL] | NONE\fR>
-Identify which environment variables are propagated to the batch job.
+Identify which environment variables are propagated to the launched application,
+by default all are propagated.
 Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
-value of those variables (e.g. "\-\-export=EDITOR") or specific values
-for the variables may be exported (e.g. "\-\-export=EDITOR=/bin/emacs").
-By default all environment variables are propagated.
-If the argument includes \fIALL\fR, all the current environment variables from
-submit node are propagated (e.g. "\-\-export=EDITOR,ALL").
-If the argument is \fINONE\fR or specific environment variable names,
-then the \fB\-\-get\-user\-env\fR option will implicitly be set to load other
-environment variables based upon the user's configuration on the cluster which
-executes the job. Regardless of this setting, the appropriate "SLURM_*" task
-environment variables are always exported to the environment.
+value (e.g. "\-\-export=EDITOR") or specific values
+may be exported (e.g. "\-\-export=EDITOR=/bin/emacs").  In these two examples
+the environment propagated will only contain the variable "EDITOR"
+and nothing else.
+If one desires to add to the environment instead of replacing it have the
+argument include \fIALL\fR (e.g. "\-\-export=EDITOR,ALL").  This will propagate
+"EDITOR" along with the current environment.
+If one desires no environment variables be propagated use the argument
+\fINONE\fR.
+Regardless of this setting, the appropriate "SLURM_*" task environment variables
+are always exported to the environment.
 This option particularly important for jobs that are submitted on one cluster
 and execute on a different cluster (e.g. with different paths).
 
