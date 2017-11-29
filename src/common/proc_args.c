@@ -680,8 +680,10 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 	char *ptr, *min_str, *max_str;
 	char *leftover;
 
-	/* Does the string contain a "-" character?  If so, treat as a range.
-	 * otherwise treat as an absolute node count. */
+	/*
+	 * Does the string contain a "-" character?  If so, treat as a range.
+	 * otherwise treat as an absolute node count.
+	 */
 	if ((ptr = xstrchr(arg, '-')) != NULL) {
 		min_str = xstrndup(arg, ptr-arg);
 		*min_nodes = _str_to_nodes(min_str, &leftover);
@@ -725,8 +727,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 	}
 
 	if ((*max_nodes != 0) && (*max_nodes < *min_nodes)) {
-		error("Maximum node count %d is less than"
-		      " minimum node count %d",
+		error("Maximum node count %d is less than minimum node count %d",
 		      *max_nodes, *min_nodes);
 		return false;
 	}

@@ -2595,8 +2595,7 @@ static bool _opt_verify(void)
 			exit(error_exit);
 	}
 
-	/* set up the proc and node counts based on the arbitrary list
-	   of nodes */
+	/* set proc and node counts based on the arbitrary list of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	   && (!opt.nodes_set || !opt.ntasks_set)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
@@ -2613,10 +2612,12 @@ static bool _opt_verify(void)
 		hostlist_destroy(hl);
 	}
 
-	/* now if max is set make sure we have <= max_nodes in the
+	/*
+	 * now if max is set make sure we have <= max_nodes in the
 	 * nodelist but only if it isn't arbitrary since the user has
 	 * laid it out how it should be so don't mess with it print an
-	 * error later if it doesn't work the way they wanted */
+	 * error later if it doesn't work the way they wanted
+	 */
 	if (opt.max_nodes && opt.nodelist &&
 	    ((opt.distribution & SLURM_DIST_STATE_BASE)!=SLURM_DIST_ARBITRARY)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
@@ -2628,7 +2629,7 @@ static bool _opt_verify(void)
 			      "Eliminating nodes from the nodelist.",
 			      count, opt.max_nodes);
 			count -= opt.max_nodes;
-			while(i<count) {
+			while (i<count) {
 				char *name = hostlist_pop(hl);
 				if (name)
 					free(name);

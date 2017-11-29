@@ -5933,7 +5933,8 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		ListIterator iter = list_iterator_create(part_ptr_list);
 
 		while ((part_ptr_tmp = (struct part_record *)list_next(iter))) {
-			/* FIXME: When dealing with multiple partitions we
+			/*
+			 * FIXME: When dealing with multiple partitions we
 			 * currently can't deal with partition based
 			 * associations.
 			 */
@@ -5971,7 +5972,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 				any_check = true;
 			}
 
-			// Set to success since we found a usable partition
+			/* Set to success since we found a usable partition */
 			if (any_check && slurmctld_conf.enforce_part_limits ==
 			    PARTITION_ENFORCE_ANY)
 				fail_rc = SLURM_SUCCESS;
@@ -5998,8 +5999,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			}
 			goto fini;
 		}
-		rc = SLURM_SUCCESS;	/* At least some partition
-					 * usable */
+		rc = SLURM_SUCCESS;	/* At least some partition usable */
 	} else {
 		min_nodes_orig = part_ptr->min_nodes_orig;
 		max_nodes_orig = part_ptr->max_nodes_orig;
@@ -6013,18 +6013,15 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		     (rc == ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP) ||
 		     slurmctld_conf.enforce_part_limits))
 			goto fini;
-		// Enforce Part Limit = no
+		/* Enforce Part Limit = no */
 		rc = SLURM_SUCCESS;
 	}
 
 	/* Validate job limits against partition limits */
 
-	// Check Partition with the highest limits when there are
-	// muliple
+	/* Check Partition with the highest limits when there are muliple */
 	if (job_desc->min_nodes == NO_VAL) {
-		/* Avoid setting the job request to 0 nodes if the
-		   user didn't ask for 0.
-		*/
+		/* Avoid setting the job request to 0 nodes unless requested */
 		if (!min_nodes_orig)
 			job_desc->min_nodes = 1;
 		else
