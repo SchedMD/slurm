@@ -19,9 +19,6 @@ documents those changes that are of interest to users and administrators.
       index number. Default value is "1" (the configured "BackupController" or
       "BackupController1" node).
 
-* Changes in Slurm 17.11.0rc4
-==============================
-
 * Changes in Slurm 17.11.1
 ==========================
 
