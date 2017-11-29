@@ -82,7 +82,7 @@ NOTE: The SLURM_ID_HASH used for Cray systems has changed to fully use the
       This most likely will go unnoticed by most, just a note of the change.
 
 NOTE: Starting in 17.11 the slurm commands and daemons dynamically link to
-      libslurm.so instead of statically linking.  This dramatically reduces
+      libslurmfull.so instead of statically linking.  This dramatically reduces
       the footprint of Slurm.  If for some reason this creates issues with
       your build you can configure slurm with --without-shared-libslurm.
 
@@ -119,9 +119,10 @@ HIGHLIGHTS
     for every partition the job has been submitted to.
  -- Group ID lookup performed at job submit time to avoid lookup on all compute
     nodes. Enable with PrologFlags=SendGIDs configuration parameter.
- -- Add the configure option --with-shared-libslurm which will link to
-    libslurm.so instead of libslurm.o thus reducing the footprint of all the
-    binaries.
+ -- Slurm commands and daemons dynamically link to libslurmfull.so instead of
+    statically linking.  This dramatically reduces the footprint of Slurm.  If
+    for some reason this creates issues with your build you can configure slurm
+    with --without-shared-libslurm.
  -- In switch plugin, added plugin_id symbol to plugins and wrapped
     switch_jobinfo_t with dynamic_plugin_data_t in interface calls in
     order to pass switch information between clusters with different switch
