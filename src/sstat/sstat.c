@@ -210,10 +210,6 @@ int main(int argc, char **argv)
 	error("The sstat command is not supported on Cray systems");
 	return 1;
 #endif
-#ifdef HAVE_BG
-	error("The sstat command is not supported on IBM BlueGene systems");
-	return 1;
-#endif
 
 	slurm_conf_init(NULL);
 	print_fields_list = list_create(NULL);
