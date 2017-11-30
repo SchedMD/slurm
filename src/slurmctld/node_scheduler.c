@@ -2158,6 +2158,56 @@ static bool _first_array_task(struct job_record *job_ptr)
 }
 
 /*
+ * This job has zero node count. It is only designed to create or destroy
+ * persistent burst buffer resources. Terminate it now.
+ */
+static void _end_null_job(struct job_record *job_ptr)
+{
+	time_t now = time(NULL);
+
+	job_ptr->exit_code = 0;
+	gres_plugin_job_clear(job_ptr->gres_list);
+	job_ptr->job_state = JOB_RUNNING;
+	FREE_NULL_BITMAP(job_ptr->node_bitmap);
+	xfree(job_ptr->nodes);
+	xfree(job_ptr->sched_nodes);
+	job_ptr->start_time = now;
+	job_ptr->state_reason = WAIT_NO_REASON;
+	xfree(job_ptr->state_desc);
+	job_ptr->time_last_active = now;
+	if (!job_ptr->step_list)
+		job_ptr->step_list = list_create(NULL);
+
+	job_array_post_sched(job_ptr);
+	(void) bb_g_job_begin(job_ptr);
+	job_array_start(job_ptr);
+	rebuild_job_part_list(job_ptr);
+	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) &&
+	    ((job_ptr->mail_type & MAIL_ARRAY_TASKS) ||
+	     _first_array_task(job_ptr)))
+		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
+	slurmctld_diag_stats.jobs_started++;
+	/* Call job_set_alloc_tres() before acct_policy_job_begin() */
+	job_set_alloc_tres(job_ptr, false);
+	acct_policy_job_begin(job_ptr);
+	/*
+	 * If run with slurmdbd, this is handled out of band in the job if
+	 * happening right away.  If the job has already become eligible and
+	 * registered in the db then the start message.
+	 */
+	jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
+	prolog_slurmctld(job_ptr);
+
+	job_ptr->end_time = now;
+	job_ptr->job_state = JOB_COMPLETE;
+	job_completion_logger(job_ptr, false);
+	acct_policy_job_fini(job_ptr);
+	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
+		error("select_g_job_fini(%u): %m", job_ptr->job_id);
+	epilog_slurmctld(job_ptr);
+}
+
+/*
  * select_nodes - select and allocate nodes to a specific job
  * IN job_ptr - pointer to the job record
  * IN test_only - if set do not allocate nodes, just confirm they
@@ -2265,6 +2315,15 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		else
 			job_ptr->state_reason = WAIT_BURST_BUFFER_RESOURCE;
 		return ESLURM_BURST_BUFFER_WAIT;
+	}
+
+	if ((job_ptr->details->min_nodes == 0) &&
+	    (job_ptr->details->max_nodes == 0)) {
+		if (!job_ptr->burst_buffer)
+			return ESLURM_INVALID_NODE_COUNT;
+		if (!test_only)
+			_end_null_job(job_ptr);
+		return SLURM_SUCCESS;
 	}
 
 	/* build sets of usable nodes based upon their configuration */
@@ -3240,11 +3299,6 @@ static int _build_node_list(struct job_record *job_ptr,
 	bitstr_t *tmp_feature;
 	bool has_xor = false;
 	bool resv_overlap = false;
-
-	if ((job_ptr->details->min_nodes == 0) &&
-	    (job_ptr->details->max_nodes == 0)) {
-		return ESLURM_INVALID_NODE_COUNT;
-	}
 
 	if (job_ptr->resv_name) {
 		/*

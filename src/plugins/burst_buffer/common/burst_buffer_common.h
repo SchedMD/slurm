@@ -164,6 +164,8 @@ typedef struct bb_job {
 	uint64_t   total_size;	/* Total bytes required for job (excludes
 				 * persistent buffers, rounded up from
 				 * req_size) */
+	bool       use_job_buf;	/* True if uses job buffer,
+				 * false if uses persistent buffer only */
 	uint32_t   user_id;	/* user the job runs as */
 } bb_job_t;
 

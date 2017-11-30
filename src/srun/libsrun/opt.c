@@ -2655,7 +2655,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) ||
+	if ((opt.min_nodes < 0) || (opt.max_nodes < 0) ||
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
 		error("invalid number of nodes (-N %d-%d)",
 		      opt.min_nodes, opt.max_nodes);

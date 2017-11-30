@@ -932,7 +932,7 @@ next_part:		part_ptr = (struct part_record *)
 			     job_ptr->part_ptr->name, job_ptr->nodes,
 			     job_ptr->total_cpus);
 
-			if (
+			if ((job_ptr->total_cpus > 0) &&
 #ifdef HAVE_BG
 				/*
 				 * On a bluegene system we need to run the
@@ -2690,14 +2690,20 @@ extern void launch_job(struct job_record *job_ptr)
 	uint16_t protocol_version = NO_VAL16;
 	agent_arg_t *agent_arg_ptr;
 	struct job_record *launch_job_ptr;
-
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
+#else
+	struct node_record *node_ptr;
+#endif
+
+	if (job_ptr->total_cpus == 0)
+		return;
+
+#ifdef HAVE_FRONT_END
 	front_end_ptr = find_front_end_record(job_ptr->batch_host);
 	if (front_end_ptr)
 		protocol_version = front_end_ptr->protocol_version;
 #else
-	struct node_record *node_ptr;
 	node_ptr = find_node_record(job_ptr->batch_host);
 	if (node_ptr)
 		protocol_version = node_ptr->protocol_version;

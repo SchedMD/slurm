@@ -6058,8 +6058,11 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		goto fini;
 	}
 #ifndef HAVE_FRONT_END
-	if ((job_desc->min_nodes == 0) && (job_desc->script == NULL)) {
-		info("%s: min_nodes==0 for non-batch job", __func__);
+	/* Zero node count OK for persistent burst buffer create or destroy */
+	if ((job_desc->min_nodes == 0) &&
+	    (job_desc->array_inx || (job_desc->pack_job_offset != NO_VAL) ||
+	     (!job_desc->burst_buffer && !job_desc->script))) {
+		info("%s: min_nodes is zero", __func__);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
@@ -6385,12 +6388,12 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 #endif
 		}
 	}
-#ifdef HAVE_ALPS_CRAY
-	if ((job_desc->max_nodes == 0) && (job_desc->script == NULL)) {
-#else
-	if (job_desc->max_nodes == 0) {
-#endif
-		info("%s: max_nodes == 0", __func__);
+
+	/* Zero node count OK for persistent burst buffer create or destroy */
+	if ((job_desc->max_nodes == 0) &&
+	    (job_desc->array_inx || (job_desc->pack_job_offset != NO_VAL) ||
+	     (!job_desc->burst_buffer && !job_desc->script))) {
+		info("%s: max_nodes is zero", __func__);
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup_fail;
 	}
@@ -6399,7 +6402,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 				    err_msg);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
-
 
 	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc_rec.acct      = job_desc->account;

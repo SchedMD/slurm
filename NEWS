@@ -18,6 +18,12 @@ documents those changes that are of interest to users and administrators.
     * "scontrol takeover [#]" command can now identify the BackupController
       index number. Default value is "1" (the configured "BackupController" or
       "BackupController1" node).
+ -- Enable jobs with zero node count for creation and/or deletion of persistent
+    burst buffers.
+    * The partition default MinNodes configuration parameter is now 0
+      (previously 1 node).
+    * Zero size jobs disabled for job arrays and heterogeneous jobs, but
+      supported for salloc, sbatch and srun commands.
 
 * Changes in Slurm 17.11.1
 ==========================

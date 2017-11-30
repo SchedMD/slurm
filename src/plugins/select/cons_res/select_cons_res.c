@@ -1187,6 +1187,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		return SLURM_SUCCESS;
 	}
 	if (!job || !job->core_bitmap) {
+		if (job_ptr->details && (job_ptr->details->min_nodes == 0))
+			return SLURM_SUCCESS;
 		error("%s: job %u has no job_resrcs info",
 		      __func__, job_ptr->job_id);
 		return SLURM_ERROR;

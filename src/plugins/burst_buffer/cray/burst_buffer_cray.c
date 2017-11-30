@@ -609,6 +609,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 							   bb_job->job_pool);
 				bb_job->req_size += tmp_cnt;
 				bb_job->total_size += tmp_cnt;
+				bb_job->use_job_buf = true;
 			} else if (!xstrncmp(tok, "persistentdw", 12)) {
 				/* Persistent buffer use */
 				have_bb = true;
@@ -664,6 +665,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 							   bb_job->job_pool);
 				bb_job->req_size += tmp_cnt;
 				bb_job->total_size += tmp_cnt;
+				bb_job->use_job_buf = true;
 			} else {
 				/* Ignore stage-in, stage-out, etc. */
 			}
@@ -3199,8 +3201,11 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	DEF_TIMERS;
 
 	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0'))
+	    (job_ptr->burst_buffer[0] == '\0')) {
+		if (job_ptr->details->min_nodes == 0)
+			rc = ESLURM_INVALID_NODE_COUNT;
 		return rc;
+	}
 
 	/* Initialization */
 	slurm_mutex_lock(&bb_state.bb_mutex);
@@ -3214,7 +3219,13 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	bb_job = _get_bb_job(job_ptr);
 	if (bb_job == NULL) {
 		slurm_mutex_unlock(&bb_state.bb_mutex);
+		if (job_ptr->details->min_nodes == 0)
+			rc = ESLURM_INVALID_NODE_COUNT;
 		return rc;
+	}
+	if ((job_ptr->details->min_nodes == 0) && bb_job->use_job_buf) {
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return ESLURM_INVALID_BURST_BUFFER_REQUEST;
 	}
 
 	if (!_have_dw_cmd_opts(bb_job)) {
@@ -3601,7 +3612,8 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return SLURM_SUCCESS;
 
-	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->nodes) {
+	if (((!job_ptr->job_resrcs || !job_ptr->job_resrcs->nodes)) &&
+	    job_ptr->details && (job_ptr->details->min_nodes != 0)) {
 		error("%s: %s lacks node allocation", __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return SLURM_ERROR;
@@ -3654,7 +3666,8 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		bb_job->state = BB_STATE_RUNNING;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
-	if (_write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes &&
+	    _write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
 			    job_ptr->job_id)) {
 		xfree(client_nodes_file_nid);
 	}

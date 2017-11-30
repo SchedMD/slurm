@@ -1259,13 +1259,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_uint32(&p->min_nodes, "MinNodes", tbl)
 		    && !s_p_get_uint32(&p->min_nodes, "MinNodes", dflt))
-			p->min_nodes = 1;
-#ifndef HAVE_ALPS_CRAY
-		if (!p->min_nodes)
-			fatal("Partition '%s' has invalid MinNodes=0, this is "
-			      "currently valid only on a ALPS Cray system.",
-			      p->name);
-#endif
+			p->min_nodes = 0;
+
 		if (!s_p_get_string(&p->nodes, "Nodes", tbl)
 		    && !s_p_get_string(&p->nodes, "Nodes", dflt))
 			p->nodes = NULL;

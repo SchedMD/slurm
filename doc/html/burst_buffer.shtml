@@ -200,6 +200,14 @@ A sample batch script follows:</p>
 /home/alan/a.out
 </pre>
 
+<p>Persistent burst buffers can be created and deleted by a job requiring no
+compute resources. Submit a job with the desired burst buffer directives and
+specify a node count of zero (e.g. "sbatch -N0 setup_buffers.bash").
+Attempts to submit a zero size job without burst buffer directives or with
+job-specific burst buffer directives will generate an error.
+Note that zero size jobs are not supported for job arrays or heterogeneous
+(pack) jobs.</p>
+
 <p><b>NOTE:</b> The ability to create and destroy persistent burst buffers may be
 limited by the "Flags" option in the burst_buffer.conf file.
 See the burst_buffer.conf man page for more information.
@@ -312,6 +320,6 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
   BurstBuffer=cray:pool_test:4G
 </pre>
 
-<p style="text-align:center;">Last modified 7 November 2017</p>
+<p style="text-align:center;">Last modified 30 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

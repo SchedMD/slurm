@@ -655,7 +655,7 @@ _str_to_nodes(const char *num_str, char **leftover)
 	num = strtol(num_str, &endptr, 10);
 	if (endptr == num_str) { /* no valid digits */
 		*leftover = (char *)num_str;
-		return 0;
+		return -1;
 	}
 	if (*endptr != '\0' && (*endptr == 'k' || *endptr == 'K')) {
 		num *= 1024;
@@ -693,13 +693,8 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			return false;
 		}
 		xfree(min_str);
-#ifdef HAVE_ALPS_CRAY
-		if (*min_nodes < 0) {
-#else
-		if (*min_nodes == 0) {
-#endif
+		if (*min_nodes < 0)
 			*min_nodes = 1;
-		}
 
 		max_str = xstrndup(ptr+1, strlen(arg)-((ptr+1)-arg));
 		*max_nodes = _str_to_nodes(max_str, &leftover);
@@ -715,12 +710,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}
-#ifdef HAVE_ALPS_CRAY
 		if (*min_nodes < 0) {
-#else
-		if (*min_nodes == 0) {
-#endif
-			/* whitespace does not a valid node count make */
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}
@@ -803,7 +793,7 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 		p++;
 	}
 
-	if (((*p != '\0') && (*p != '-')) || (result <= 0L)) {
+	if (((*p != '\0') && (*p != '-')) || (result < 0L)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
 		if (isFatal)
 			exit(1);
