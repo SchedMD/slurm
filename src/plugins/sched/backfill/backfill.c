@@ -1708,9 +1708,11 @@ next_task:
 			test_time_count = 0;
 			START_TIMER;
 
-			/* With bf_continue configured, the original job could
+			/*
+			 * With bf_continue configured, the original job could
 			 * have been scheduled or cancelled and purged.
-			 * Revalidate job the record here. */
+			 * Revalidate job the record here.
+			 */
 			if ((job_ptr->magic  != JOB_MAGIC) ||
 			    (job_ptr->job_id != save_job_id))
 				continue;

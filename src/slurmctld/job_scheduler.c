@@ -727,6 +727,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job, bool locked)
 	bool have_node_bitmaps, pending_jobs = false;
 	time_t now, min_age;
 	int error_code;
+	char job_id_buf[32];
 
 	if (select_serial == -1) {
 		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
@@ -744,8 +745,10 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job, bool locked)
 		lock_slurmctld(job_write_lock);
 	if (!fini_job_ptr->job_resrcs ||
 	    !fini_job_ptr->job_resrcs->node_bitmap) {
-		/* This should never happen, but if it does, avoid using
-		 * a bad pointer below. */
+		/*
+		 * This should never happen, but if it does, avoid using
+		 * a bad pointer below.
+		 */
 		error("job_resrcs empty for job %u", fini_job_ptr->job_id);
 		if (!locked)
 			unlock_slurmctld(job_write_lock);
@@ -884,12 +887,14 @@ next_part:		part_ptr = (struct part_record *)
 		if (assoc_mgr_validate_assoc_id(acct_db_conn,
 						job_ptr->assoc_id,
 						accounting_enforce)) {
-			/* NOTE: This only happens if a user's account is
+			/*
+			 * NOTE: This only happens if a user's account is
 			 * disabled between when the job was submitted and
 			 * the time we consider running it. It should be
-			 * very rare. */
-			info("sched: JobId=%u has invalid account",
-			     job_ptr->job_id);
+			 * very rare.
+			 */
+			info("sched: %s has invalid account",
+			     jobid2fmt(job_ptr, job_id_buf,sizeof(job_id_buf)));
 			last_job_update = now;
 			job_ptr->state_reason = FAIL_ACCOUNT;
 			xfree(job_ptr->state_desc);
@@ -922,13 +927,15 @@ next_part:		part_ptr = (struct part_record *)
 		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
 		if (error_code == SLURM_SUCCESS) {
 			last_job_update = now;
-			info("sched: Allocate JobId=%u Partition=%s NodeList=%s #CPUs=%u",
-			     job_ptr->job_id, job_ptr->part_ptr->name,
-			     job_ptr->nodes, job_ptr->total_cpus);
+			info("sched: Allocate %s Partition=%s NodeList=%s #CPUs=%u",
+			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
+			     job_ptr->part_ptr->name, job_ptr->nodes,
+			     job_ptr->total_cpus);
 
 			if (
 #ifdef HAVE_BG
-				/* On a bluegene system we need to run the
+				/*
+				 * On a bluegene system we need to run the
 				 * prolog while the job is CONFIGURING so this
 				 * can't work off the CONFIGURING flag as done
 				 * elsewhere.
@@ -960,10 +967,11 @@ send_reply:
 
 			resp_msg->msg_index = msg->msg_index;
 			resp_msg->ret_list = NULL;
-			/* The return list here is the list we are sending to
-			   the node, so after we attach this message to it set
-			   it to NULL to remove it.
-			*/
+			/*
+			 * The return list here is the list we are sending to
+			 * the node, so after we attach this message to it set
+			 * it to NULL to remove it.
+			 */
 			resp_msg->flags = msg->flags;
 			resp_msg->protocol_version = msg->protocol_version;
 			resp_msg->address = msg->address;
@@ -1831,8 +1839,10 @@ next_task:
 		    (job_ptr->details->min_nodes != NO_VAL) &&
 		    (job_ptr->details->min_nodes >  i)) ||
 		    (!job_ptr->details && (i == 0))) {
-			/* Too many nodes DRAIN, DOWN, or
-			 * reserved for jobs in higher priority partition */
+			/*
+			 * Too many nodes DRAIN, DOWN, or
+			 * reserved for jobs in higher priority partition
+			 */
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
@@ -1891,10 +1901,12 @@ next_task:
 					  unavail_node_str, NULL);
 
 		if (error_code == SLURM_SUCCESS) {
-			/* If the following fails because of network
+			/*
+			 * If the following fails because of network
 			 * connectivity, the origin cluster should ask
 			 * when it comes back up if the cluster_lock
-			 * cluster actually started the job */
+			 * cluster actually started the job
+			 */
 			fed_mgr_job_start(job_ptr, job_ptr->start_time);
 		} else {
 			fed_mgr_job_unlock(job_ptr);
@@ -1941,10 +1953,12 @@ skip_start:
 				bit_and_not(avail_node_bitmap,
 					job_ptr->resv_ptr->node_bitmap);
 			} else {
-				/* The job has no reservation but requires
+				/*
+				 * The job has no reservation but requires
 				 * nodes that are currently in some reservation
 				 * so just skip over this job and try running
-				 * the next lower priority job */
+				 * the next lower priority job
+				 */
 				debug3("sched: JobId=%u State=%s. "
 				       "Reason=Required nodes are reserved."
 				       "Priority=%u",job_ptr->job_id,
@@ -2002,7 +2016,8 @@ skip_start:
 				srun_allocate(job_ptr->job_id);
 			else if (
 #ifdef HAVE_BG
-				/* On a bluegene system we need to run the
+				/*
+				 * On a bluegene system we need to run the
 				 * prolog while the job is CONFIGURING so this
 				 * can't work off the CONFIGURING flag as done
 				 * elsewhere.
@@ -2053,11 +2068,13 @@ skip_start:
 		}
 
 #ifdef HAVE_BG
-		/* When we use static or overlap partitioning on BlueGene,
+		/*
+		 * When we use static or overlap partitioning on BlueGene,
 		 * each job can possibly be scheduled independently, without
 		 * impacting other jobs of different sizes. Therefore we sort
 		 * and try to schedule every pending job unless the backfill
-		 * scheduler is configured. */
+		 * scheduler is configured.
+		 */
 		if (!backfill_sched)
 			fail_by_part = false;
 #else

@@ -1160,14 +1160,14 @@ static int _job_expand(struct job_record *from_job_ptr,
 	return SLURM_SUCCESS;
 }
 
-/* deallocate resources previously allocated to the given job
+/*
+ * deallocate resources previously allocated to the given job
  * - subtract 'struct job_resources' resources from 'struct part_res_record'
  * - subtract job's memory requirements from 'struct node_res_record'
  *
  * if action = 0 then subtract cores, memory + GRES (running job was terminated)
  * if action = 1 then subtract memory + GRES (suspended job was terminated)
  * if action = 2 then only subtract cores (job is suspended)
- *
  */
 static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct node_use_record *node_usage,
@@ -1180,8 +1180,10 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 	List gres_list;
 
 	if (select_state_initializing) {
-		/* Ignore job removal until select/cons_res data structures
-		 * values are set by select_p_reconfigure() */
+		/*
+		 * Ignore job removal until select/cons_res data structures
+		 * values are set by select_p_reconfigure()
+		 */
 		return SLURM_SUCCESS;
 	}
 	if (!job || !job->core_bitmap) {
@@ -1190,7 +1192,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		return SLURM_ERROR;
 	}
 
-	debug3("cons_res: _rm_job_from_res: job %u action %d", job_ptr->job_id,
+	debug3("cons_res: %s: job %u action %d", __func__, job_ptr->job_id,
 	       action);
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);

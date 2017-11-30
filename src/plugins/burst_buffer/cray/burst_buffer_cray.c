@@ -3690,7 +3690,8 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 #if 1
 		//FIXME: Cray API returning "job_file_valid True" but exit 1 in some cases
 		if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
-		    (!resp_msg || strncmp(resp_msg, "job_file_valid True", 19))) {
+		    (!resp_msg ||
+		     strncmp(resp_msg, "job_file_valid True", 19))) {
 #else
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 #endif
@@ -3731,7 +3732,8 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			job_ptr->job_state |= JOB_CONFIGURING;
 		}
 
-		slurm_thread_create_detached(NULL, _start_pre_run, pre_run_args);
+		slurm_thread_create_detached(NULL, _start_pre_run,
+					     pre_run_args);
 	}
 
 fini:
