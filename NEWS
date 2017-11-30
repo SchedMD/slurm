@@ -441,6 +441,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow nodes state to be updated between FAIL and DRAIN.
  -- Avoid registering a job'd credential multiple times.
  -- Fix sbatch --wait to stop waiting after job is gone from memory.
+ -- Fix memory leak of MailDomain configuration string when slurmctld daemon is
+    reconfigured.
 
 * Changes in Slurm 17.02.9
 ==========================
