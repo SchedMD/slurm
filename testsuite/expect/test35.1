@@ -85,7 +85,7 @@ $scontrol show burst"
 send_user "\n\nClean up vestigial burst buffer\n"
 incr max_job_state_delay 300
 set job_id 0
-spawn $sbatch -N1 --output=/dev/null $script_rm
+spawn $sbatch -t1 -N1 --output=/dev/null $script_rm
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -114,7 +114,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 send_user "\n\nCreate and use a burst buffer\n"
 set job_id_use 0
-spawn $sbatch -N1 --output=$output_use $script_use
+spawn $sbatch -t1 -N1 --output=$output_use $script_use
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id_use $expect_out(1,string)
@@ -130,7 +130,7 @@ expect {
 }
 
 set job_id_mk 0
-spawn $sbatch -N1 --output=$output_mk $script_mk
+spawn $sbatch -t1 -N1 --output=$output_mk $script_mk
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id_mk $expect_out(1,string)
@@ -175,7 +175,7 @@ if {$job_id_use == 0} {
 # Now clean up the burst buffer
 #
 set job_id_rm 0
-spawn $sbatch -N1 --output=$output_rm $script_rm
+spawn $sbatch -t1 -N1 --output=$output_rm $script_rm
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id_rm $expect_out(1,string)

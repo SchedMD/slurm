@@ -113,7 +113,7 @@ exit 0"
 
 incr max_job_state_delay 300
 set job_id 0
-spawn $sbatch -N1 --output=$output_use --array=1-${array_end} $script_use
+spawn $sbatch -t1 -N1 --output=$output_use --array=1-${array_end} $script_use
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
