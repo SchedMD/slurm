@@ -573,8 +573,9 @@ static int _handle_common(s_p_values_t *v,
 			  void* (*convert)(const char* key, const char* value))
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once, latest value used",
-		      v->key);
+		if (run_in_daemon("slurmctld,slurmd,slurmdbd"))
+			error("%s 1 specified more than once, latest value used",
+			      v->key);
 		xfree(v->data);
 		v->data_count = 0;
 	}
@@ -678,8 +679,9 @@ static int _handle_pointer(s_p_values_t *v, const char *value,
 			return rc == 0 ? 0 : -1;
 	} else {
 		if (v->data_count != 0) {
-			error("%s specified more than once, "
-			      "latest value used", v->key);
+			if (run_in_daemon("slurmctld,slurmd,slurmdbd"))
+				error("%s 2 specified more than once, latest value used",
+				      v->key);
 			xfree(v->data);
 			v->data_count = 0;
 		}
