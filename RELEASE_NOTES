@@ -82,7 +82,7 @@ NOTE: The SLURM_ID_HASH used for Cray systems has changed to fully use the
       This most likely will go unnoticed by most, just a note of the change.
 
 NOTE: Starting in 17.11 the slurm commands and daemons dynamically link to
-      libslurm.so instead of statically linking.  This dramatically reduces
+      libslurmfull.so instead of statically linking.  This dramatically reduces
       the footprint of Slurm.  If for some reason this creates issues with
       your build you can configure slurm with --without-shared-libslurm.
 

@@ -119,7 +119,7 @@ if {[wait_for_file $file_out] != 0} {
 set index 0
 spawn $bin_cat $file_out
 expect {
-	-re "($number)\r\n" {
+	-re "^($number)\r\n" {
 		incr index
 		if {$index == 1} {set num_nodes_test1 $expect_out(1,string)}
 		if {$index == 2} {set num_nodes_test2 $expect_out(1,string)}
@@ -129,12 +129,17 @@ expect {
 		if {$index == 6} {set num_procs_test3 $expect_out(1,string)}
 		exp_continue
 	}
+	# If the step creation was delayed this message is listed.
+	# Checking for it here will skip over the warning so we can get the
+	# real value.  I would say this is a bug in expect, but without this
+	# check we don't always get what we need.
+	-re "Step created for job $number\r\n" {
+		exp_continue
+	}
 	eof {
 		wait
 	}
 }
-
-
 
 if {$num_nodes_test1 != $num_nodes_test2} {
 	send_user "\nFAILURE: SLURM_NNODES was not preserved ($num_nodes_test1 != $num_nodes_test2)\n"

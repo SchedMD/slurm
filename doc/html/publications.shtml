@@ -4,6 +4,34 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<!-- SC17 Slurm Booth + BOF-->
+<h2>Presentations from Slurm Booth and Birds of a Feather, SC17, November 2017</h2>
+<ul>
+
+<li>Booth: <a href="SC17/SlurmOverviewSC17.pdf">Slurm Overview</a>,
+Brian Christiansen, Marshall Garey, Isaac Hartung (SchedMD)</li>
+
+<li>Booth: <a href="SC17/HetJobsSC17.pdf">Heterogeneous Job Support</a>,
+Morris Jette, Tim Wickberg (SchedMD)</li>
+
+<li>Booth: <a href="SLUG17/slug17-lanl-peltz-fullop.pdf">From Moab to Slurm: 12 HPC Systems in 2 Months</a>,
+Paul Peltz, Los Alamost National Laboratory</li>
+
+<li>Booth: <a href="SC17/PMIx-SC17.pdf">PMIx Multi-Cluster Operations</a>,
+Ralph H. Castain</li>
+
+<li>Booth: <a href="SC17/FederationSC17.pdf">Federated Cluster Support</a>,
+Brian Christiansen, SchedMD</li>
+
+<li>Booth: <a href="SC17/Mellanox_Slurm_pmix_UCX_backend_v4.pdf">PMIx Plugin with UCX Support</a>,
+Artem Polyakov, Mellanox</li>
+
+<li>BOF: <a href="SC17/BoF-SC17.pdf">Slurm Birds of a Feather</a>,
+Tim Wickberg, SchedMD</li>
+
+</ul>
+
+
 <h2>Presentations from Slurm User Group Meeting, September 2017</h2>
 <ul>
 
@@ -858,6 +886,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 19 October 2017</p>
+<p style="text-align:center;">Last modified 29 November 2017</p>
 
 <!--#include virtual="footer.txt"-->
