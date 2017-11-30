@@ -2013,7 +2013,9 @@ skip_start:
 			 * Only set end_time if start_time is set,
 			 * or else end_time will be small (ie. 1969).
 			 */
-			if (job_ptr->start_time) {
+			if (IS_JOB_FINISHED(job_ptr)) {
+				/* Zero size or killed on startup */
+			} else if (job_ptr->start_time) {
 				if (job_ptr->time_limit == INFINITE)
 					hard_limit = YEAR_SECONDS;
 				else
