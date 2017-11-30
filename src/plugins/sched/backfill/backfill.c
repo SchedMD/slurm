@@ -1972,10 +1972,12 @@ next_task:
 			rc = _start_job(job_ptr, resv_bitmap);
 
 			if (rc == SLURM_SUCCESS) {
-				/* If the following fails because of network
+				/*
+				 * If the following fails because of network
 				 * connectivity, the origin cluster should ask
 				 * when it comes back up if the cluster_lock
-				 * cluster actually started the job */
+				 * cluster actually started the job
+				 */
 				fed_mgr_job_start(job_ptr, job_ptr->start_time);
 			} else {
 				fed_mgr_job_unlock(job_ptr);
@@ -2007,8 +2009,10 @@ skip_start:
 				acct_policy_alter_job(job_ptr, orig_time_limit);
 				_set_job_time_limit(job_ptr, orig_time_limit);
 			}
-			/* Only set end_time if start_time is set,
-			 * or else end_time will be small (ie. 1969). */
+			/*
+			 * Only set end_time if start_time is set,
+			 * or else end_time will be small (ie. 1969).
+			 */
 			if (job_ptr->start_time) {
 				if (job_ptr->time_limit == INFINITE)
 					hard_limit = YEAR_SECONDS;
@@ -2016,8 +2020,10 @@ skip_start:
 					hard_limit = job_ptr->time_limit * 60;
 				job_ptr->end_time = job_ptr->start_time +
 						    hard_limit;
-				/* Only set if start_time. end_time must be set
-				 * beforehand for _reset_job_time_limit. */
+				/*
+				 * Only set if start_time. end_time must be set
+				 * beforehand for _reset_job_time_limit.
+				 */
 				if (reset_time) {
 					_reset_job_time_limit(job_ptr, now,
 							      node_space);
@@ -3091,8 +3097,10 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 			else
 				hard_limit = job_ptr->time_limit * 60;
 			job_ptr->end_time = job_ptr->start_time + hard_limit;
-			/* Only set if start_time. end_time must be set
-			 * beforehand for _reset_job_time_limit. */
+			/*
+			 * Only set if start_time. end_time must be set
+			 * beforehand for _reset_job_time_limit.
+			 */
 			if (reset_time)
 				_reset_job_time_limit(job_ptr, now, node_space);
 		}
@@ -3135,8 +3143,10 @@ static void _pack_kill_now(pack_job_map_t *map)
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, false, false, false);
-		/* Since the job_completion_logger() removes the submit,
-		 * we need to add it again, but don't stage-out burst buffer */
+		/*
+		 * Since the job_completion_logger() removes the submit,
+		 * we need to add it again, but don't stage-out burst buffer
+		 */
 		save_bitflags = job_ptr->bit_flags;
 		job_ptr->bit_flags |= JOB_KILL_HURRY;
 		acct_policy_add_job_submit(job_ptr);
