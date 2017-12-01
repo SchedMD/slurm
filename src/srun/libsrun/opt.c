@@ -2800,7 +2800,7 @@ static bool _opt_verify(void)
 			}
 		}
 
-		if ((opt.ntasks_per_node != NO_VAL) &&
+		if ((opt.ntasks_per_node != NO_VAL) && opt.min_nodes &&
 		    (opt.ntasks_per_node != (opt.ntasks / opt.min_nodes))) {
 			if (opt.ntasks > opt.ntasks_per_node)
 				info("Warning: can't honor --ntasks-per-node "
