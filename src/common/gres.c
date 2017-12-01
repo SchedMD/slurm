@@ -4790,14 +4790,32 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 	gres_device_t *gres_device;
 	List gres_devices;
 	List device_list = NULL;
-	bool already_seen[gres_context_cnt];
-
-	if (!gres_list)
-		return NULL;
 
 	(void) gres_plugin_init();
 
-	memset(already_seen, 0, sizeof(already_seen));
+	/*
+	 * Set up every device we have so we know.  This way we have the full
+	 * deny list and alter the alloc variable later if it were allocated.
+	 */
+	for (j = 0; j < gres_context_cnt; j++) {
+		if (!gres_context[j].ops.get_devices)
+			continue;
+		gres_devices = (*(gres_context[j].ops.get_devices))();
+		if (!gres_devices || !list_count(gres_devices))
+			continue;
+		dev_itr = list_iterator_create(gres_devices);
+		i = 0;
+		while ((gres_device = list_next(dev_itr))) {
+			if (!device_list)
+				device_list = list_create(NULL);
+			gres_device->alloc = 0;
+			list_append(device_list, gres_device);
+		}
+		list_iterator_destroy(dev_itr);
+	}
+
+	if (!gres_list)
+		return device_list;
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_itr = list_iterator_create(gres_list);
@@ -4829,7 +4847,8 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 
 		if ((node_cnt != 1) ||
 		    !local_bit_alloc ||
-		    !local_bit_alloc[0])
+		    !local_bit_alloc[0] ||
+		    !gres_context[j].ops.get_devices)
 			continue;
 
 		gres_devices = (*(gres_context[j].ops.get_devices))();
@@ -4848,22 +4867,12 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 		dev_itr = list_iterator_create(gres_devices);
 		i = 0;
 		while ((gres_device = list_next(dev_itr))) {
-			if (!device_list)
-				device_list = list_create(NULL);
-			if (!already_seen[j]) {
-				if (!bit_test(local_bit_alloc[0], i))
-					gres_device->alloc = 0;
-				else
-					gres_device->alloc = 1;
-				list_append(device_list, gres_device);
-			} else
-				if (bit_test(local_bit_alloc[0], i))
-					gres_device->alloc = 1;
+			if (bit_test(local_bit_alloc[0], i))
+				gres_device->alloc = 1;
 			//info("%d is %d", i, gres_device->alloc);
 			i++;
 		}
 		list_iterator_destroy(dev_itr);
-		already_seen[j] = true;
 	}
 	list_iterator_destroy(gres_itr);
 	slurm_mutex_unlock(&gres_context_lock);
