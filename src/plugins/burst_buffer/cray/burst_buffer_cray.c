@@ -1217,7 +1217,8 @@ static void _load_state(bool init_config)
 	 */
 	instances = _bb_get_instances(&num_instances, &bb_state, timeout);
 	if (instances == NULL) {
-		info("%s: failed to find DataWarp instances", __func__);
+		if (bb_state.bb_config.debug_flag)
+			debug("%s: No DataWarp instances found", __func__);
 		num_instances = 0;	/* Redundant, but fixes CLANG bug */
 	}
 	sessions = _bb_get_sessions(&num_sessions, &bb_state, timeout);
@@ -1289,7 +1290,7 @@ static void _load_state(bool init_config)
 	 */
 	configs = _bb_get_configs(&num_configs, &bb_state, timeout);
 	if (configs == NULL) {
-		info("%s: failed to find DataWarp configurations", __func__);
+		info("%s: No DataWarp configurations found", __func__);
 		num_configs = 0;
 	}
 	_bb_free_configs(configs, num_configs);

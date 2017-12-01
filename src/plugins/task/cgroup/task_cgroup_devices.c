@@ -368,8 +368,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 						  "devices.allow",
 						  gres_device->major);
 			} else {
-				debug("Not allowing access to device %s for job",
-				       gres_device->path);
+				debug("Not allowing access to device %s(%s) for job",
+				       gres_device->major, gres_device->path);
 				xcgroup_set_param(&job_devices_cg,
 						  "devices.deny",
 						  gres_device->major);
@@ -432,7 +432,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 							  "devices.allow",
 							  gres_device->major);
 				} else {
-					debug("Not allowing access to device %s for step",
+					debug("Not allowing access to device %s(%s) for step",
+					      gres_device->major,
 					      gres_device->path);
 					xcgroup_set_param(&step_devices_cg,
 							  "devices.deny",
