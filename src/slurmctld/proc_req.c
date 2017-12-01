@@ -1,8 +1,9 @@
 /*****************************************************************************\
  *  proc_req.c - process incoming messages to slurmctld
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2010-2017 SchedMD LLC.
  *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -134,6 +135,7 @@ inline static void  _slurm_rpc_allocate_pack(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_block_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg);
+inline static void  _slurm_rpc_burst_buffer_status(slurm_msg_t *msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_task_comp(slurm_msg_t * msg);
@@ -595,6 +597,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_CONTROL_STATUS:
 		_slurm_rpc_control_status(msg);
+		break;
+	case REQUEST_BURST_BUFFER_STATUS:
+		_slurm_rpc_burst_buffer_status(msg);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
@@ -6283,6 +6288,25 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
+}
+
+inline static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
+{
+	slurm_msg_t response_msg;
+	bb_status_resp_msg_t status_resp_msg;
+	bb_status_req_msg_t *status_req_msg = (bb_status_req_msg_t *)msg->data;
+
+	slurm_msg_t_init(&response_msg);
+	response_msg.protocol_version = msg->protocol_version;
+	response_msg.address = msg->address;
+	response_msg.conn = msg->conn;
+	response_msg.msg_type = RESPONSE_BURST_BUFFER_STATUS;
+	response_msg.data = &status_resp_msg;
+	status_resp_msg.status_resp = bb_g_get_status(status_req_msg->argc,
+						      status_req_msg->argv);
+	response_msg.data_size = strlen(status_resp_msg.status_resp) + 1;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	xfree(status_resp_msg.status_resp);
 }
 
 inline static void _slurm_rpc_control_status(slurm_msg_t * msg)

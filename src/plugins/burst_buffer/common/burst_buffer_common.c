@@ -214,6 +214,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->deny_users_str);
 	xfree(config_ptr->destroy_buffer);
 	xfree(config_ptr->get_sys_state);
+	xfree(config_ptr->get_sys_status);
 	config_ptr->granularity = 1;
 	if (fini) {
 		for (i = 0; i < config_ptr->pool_cnt; i++)
@@ -391,6 +392,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		{"DestroyBuffer", S_P_STRING},
 		{"Flags", S_P_STRING},
 		{"GetSysState", S_P_STRING},
+		{"GetSysStatus", S_P_STRING},
 		{"Granularity", S_P_STRING},
 		{"OtherTimeout", S_P_UINT32},
 		{"StageInTimeout", S_P_UINT32},
@@ -478,6 +480,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 
 	s_p_get_string(&state_ptr->bb_config.get_sys_state, "GetSysState",
 		       bb_hashtbl);
+	s_p_get_string(&state_ptr->bb_config.get_sys_status, "GetSysStatus",
+		       bb_hashtbl);
 	if (s_p_get_string(&tmp, "Granularity", bb_hashtbl)) {
 		state_ptr->bb_config.granularity = bb_get_size_num(tmp, 1);
 		xfree(tmp);
@@ -548,6 +552,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		     state_ptr->bb_config.destroy_buffer);
 		info("%s: GetSysState:%s",  __func__,
 		     state_ptr->bb_config.get_sys_state);
+		info("%s: GetSysStatus:%s",  __func__,
+		     state_ptr->bb_config.get_sys_status);
 		info("%s: Granularity:%"PRIu64"",  __func__,
 		     state_ptr->bb_config.granularity);
 		for (i = 0; i < state_ptr->bb_config.pool_cnt; i++) {
@@ -634,7 +640,37 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	bb_config_t *config_ptr = &state_ptr->bb_config;
 	int i;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		packstr(config_ptr->allow_users_str, buffer);
+		packstr(config_ptr->create_buffer,   buffer);
+		packstr(config_ptr->default_pool,    buffer);
+		packstr(config_ptr->deny_users_str,  buffer);
+		packstr(config_ptr->destroy_buffer,  buffer);
+		pack32(config_ptr->flags,            buffer);
+		packstr(config_ptr->get_sys_state,   buffer);
+		packstr(config_ptr->get_sys_status,   buffer);
+		pack64(config_ptr->granularity,      buffer);
+		pack32(config_ptr->pool_cnt,         buffer);
+		for (i = 0; i < config_ptr->pool_cnt; i++) {
+			packstr(config_ptr->pool_ptr[i].name, buffer);
+			pack64(config_ptr->pool_ptr[i].total_space, buffer);
+			pack64(config_ptr->pool_ptr[i].granularity, buffer);
+			pack64(config_ptr->pool_ptr[i].unfree_space, buffer);
+			pack64(config_ptr->pool_ptr[i].used_space, buffer);
+		}
+		pack32(config_ptr->other_timeout,    buffer);
+		packstr(config_ptr->start_stage_in,  buffer);
+		packstr(config_ptr->start_stage_out, buffer);
+		packstr(config_ptr->stop_stage_in,   buffer);
+		packstr(config_ptr->stop_stage_out,  buffer);
+		pack32(config_ptr->stage_in_timeout, buffer);
+		pack32(config_ptr->stage_out_timeout,buffer);
+		pack64(state_ptr->total_space,       buffer);
+		pack64(state_ptr->unfree_space,      buffer);
+		pack64(state_ptr->used_space,        buffer);
+		pack32(config_ptr->validate_timeout, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(config_ptr->allow_users_str, buffer);
 		packstr(config_ptr->create_buffer,   buffer);
 		packstr(config_ptr->default_pool,    buffer);

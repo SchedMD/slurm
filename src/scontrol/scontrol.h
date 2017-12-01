@@ -123,6 +123,7 @@ extern int 	scontrol_load_partitions (partition_info_msg_t **
 extern int 	scontrol_load_block (block_info_msg_t **block_info_pptr);
 extern void	scontrol_pid_info(pid_t job_pid);
 extern void	scontrol_print_assoc_mgr_info(int argc, char **argv);
+extern void	scontrol_print_bbstat(int argc, char **argv);
 extern void	scontrol_print_burst_buffer(void);
 extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr,

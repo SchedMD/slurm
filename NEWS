@@ -24,6 +24,9 @@ documents those changes that are of interest to users and administrators.
       (previously 1 node).
     * Zero size jobs disabled for job arrays and heterogeneous jobs, but
       supported for salloc, sbatch and srun commands.
+ -- Add "scontrol show dwstat" command to display Cray burst buffer status.
+ -- Add "GetSysStatus" option to burst_buffer.conf file. For burst_buffer/cray
+    this would indicate the location of the "dwstat" command.
 
 * Changes in Slurm 17.11.1
 ==========================

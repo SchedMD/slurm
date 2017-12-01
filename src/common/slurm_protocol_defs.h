@@ -198,6 +198,7 @@ typedef enum {
 	REQUEST_LICENSE_INFO,
 	RESPONSE_LICENSE_INFO,
 	REQUEST_SET_FS_DAMPENING_FACTOR,
+
 	DBD_MESSAGES_START = 1400, /* We can't replace this with
 				    * REQUEST_PERSIST_INIT since DBD_INIT is
 				    * packed in a way we can't tell the
@@ -208,7 +209,8 @@ typedef enum {
 	PERSIST_RC = 1433, /* To mirror the DBD_RC this is replacing */
 	/* Don't make any messages in this range as this is what the DBD uses
 	 * unless mirroring */
-	DBD_MESSAGES_END   = 2000,
+	DBD_MESSAGES_END	= 2000,
+
 	REQUEST_BUILD_INFO	= 2001,
 	RESPONSE_BUILD_INFO,
 	REQUEST_JOB_INFO,
@@ -263,6 +265,8 @@ typedef enum {
 	RESPONSE_BATCH_SCRIPT,
 	REQUEST_CONTROL_STATUS,
 	RESPONSE_CONTROL_STATUS,
+	REQUEST_BURST_BUFFER_STATUS,
+	RESPONSE_BURST_BUFFER_STATUS,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -1180,6 +1184,15 @@ typedef struct license_info_request_msg {
 	uint16_t show_flags;
 } license_info_request_msg_t;
 
+typedef struct bb_status_req_msg {
+	uint32_t argc;
+	char **argv;
+} bb_status_req_msg_t;
+
+typedef struct bb_status_resp_msg {
+	char *status_resp;
+} bb_status_resp_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1474,6 +1487,9 @@ extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp);
 extern void slurm_free_set_fs_dampening_factor_msg(
 	set_fs_dampening_factor_msg_t *msg);
 extern void slurm_free_control_status_msg(control_status_msg_t *msg);
+
+extern void slurm_free_bb_status_req_msg(bb_status_req_msg_t *msg);
+extern void slurm_free_bb_status_resp_msg(bb_status_resp_msg_t *msg);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);

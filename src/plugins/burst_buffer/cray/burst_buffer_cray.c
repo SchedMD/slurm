@@ -378,6 +378,11 @@ static void _test_config(void)
 		bb_state.bb_config.get_sys_state =
 			xstrdup("/opt/cray/dw_wlm/default/bin/dw_wlm_cli");
 	}
+	if (!bb_state.bb_config.get_sys_status) {
+		debug("%s: GetSysStatus is NULL", __func__);
+		bb_state.bb_config.get_sys_status =
+			xstrdup("/opt/cray/dws/default/bin/dwstat");
+	}
 }
 
 /* Allocate resources to a job and begin setup/stage-in */
@@ -2939,6 +2944,32 @@ extern int bb_p_load_state(bool init_config)
 	_save_bb_state();	/* Has own locks excluding file write */
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Return string containing current burst buffer status
+ * argc IN - count of status command arguments
+ * argv IN - status command arguments
+ * RET status string, release memory using xfree()
+ */
+extern char *bb_p_get_status(uint32_t argc, char **argv)
+{
+	char *status_resp, **script_argv;
+	int i, status = 0;
+
+	script_argv = xmalloc(sizeof(char *) * (argc + 2));
+	script_argv[0] = "dwstat";
+	for (i = 0; i < argc; i++)
+		script_argv[i + 1] = argv[i];
+	status_resp = run_command("dwstat", bb_state.bb_config.get_sys_status,
+				  script_argv, 2000, &status);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		xfree(status_resp);
+		status_resp = xstrdup("Error running dwstat\n");
+	}
+	xfree(script_argv);
+
+	return status_resp;
 }
 
 /*

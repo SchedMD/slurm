@@ -790,6 +790,7 @@ test35.1   Cray persistent burst buffer creation
 test35.2   Cray job-specific burst buffer use
 test35.3   Cray burst buffer use by job arrays
 test35.4   Zero size job with burst buffer creation testing
+test35.5   Cray dwstat command testing
 
 test36.#   Testing of openlava/LSF wrappers and Perl APIs.
 ==========================================================

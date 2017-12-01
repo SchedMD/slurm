@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  info_burst_buffer.c - Burst buffer information functions for scontrol.
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC <https://www.schedmd.com/>.
+ *  Copyright (C) 2014-2017 SchedMD LLC <https://www.schedmd.com/>.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -37,6 +37,25 @@
 #include "scontrol.h"
 
 /*
+ * scontrol_print_bbstat - Print burst buffer status information to stdout
+ */
+extern void scontrol_print_bbstat(int argc, char **argv)
+{
+	char *stat_resp = NULL;
+	int error_code;
+
+	error_code = slurm_load_burst_buffer_stat(argc, argv, &stat_resp);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror("slurm_load_burst_buffer_stat error");
+		return;
+	}
+	fprintf(stdout, "%s", stat_resp);
+	xfree(stat_resp);
+}
+
+/*
  * scontrol_print_burst_buffer - print all burst_buffer information to stdout
  */
 extern void scontrol_print_burst_buffer(void)
@@ -49,7 +68,7 @@ extern void scontrol_print_burst_buffer(void)
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_burst_buffer error");
+			slurm_perror ("slurm_load_burst_buffer_info error");
 		return;
 	}
 

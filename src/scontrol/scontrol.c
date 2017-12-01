@@ -1590,11 +1590,13 @@ static void _show_it(int argc, char **argv)
 		return;
 	}
 
-	if (xstrncasecmp(argv[1], "layouts", MAX(tag_len, 2)) == 0 ||
-	    xstrncasecmp(argv[1], "assoc_mgr", MAX(tag_len, 2)) == 0)
+	if (!xstrncasecmp(argv[1], "assoc_mgr", MAX(tag_len, 2)) ||
+	    !xstrncasecmp(argv[1], "bbstat",    MAX(tag_len, 2)) ||
+	    !xstrncasecmp(argv[1], "dwstat",    MAX(tag_len, 2)) ||
+	    !xstrncasecmp(argv[1], "layouts",   MAX(tag_len, 2)))
 		allow_opt = true;
 
-	if (argc > 3 && !allow_opt) {
+	if ((argc > 3) && !allow_opt) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			fprintf(stderr,
@@ -1620,6 +1622,9 @@ static void _show_it(int argc, char **argv)
 			_print_aliases (val);
 		else
 			_print_aliases (NULL);
+	} else if (!xstrncasecmp(tag, "bbstat", MAX(tag_len, 2)) ||
+		   !xstrncasecmp(tag, "dwstat", MAX(tag_len, 2))) {
+		scontrol_print_bbstat(argc - 2, argv + 2);
 	} else if (xstrncasecmp(tag, "blocks", MAX(tag_len, 2)) == 0) {
 		scontrol_print_block (val);
 	} else if (xstrncasecmp(tag, "burstbuffer", MAX(tag_len, 2)) == 0) {
@@ -2102,8 +2107,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      write config             Write config to slurm.conf.<datetime>        \n\
      !!                       Repeat the last command entered.             \n\
 									   \n\
-  <ENTITY> may be \"aliases\", \"assoc_mgr\" \"burstBuffer\",              \n\
-       \"config\", \"daemons\", \"federation\", \"frontend\",              \n\
+  <ENTITY> may be \"aliases\", \"assoc_mgr\", \"bbstat\", \"burstBuffer\", \n\
+       \"config\", \"daemons\", \"dwstat\", \"federation\", \"frontend\",  \n\
        \"hostlist\", \"hostlistsorted\", \"hostnames\",                    \n\
        \"job\", \"layouts\", \"node\", \"partition\", \"reservation\",     \n\
        \"slurmd\", \"step\", or \"topology\"                               \n\

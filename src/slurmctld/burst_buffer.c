@@ -59,6 +59,7 @@
 typedef struct slurm_bb_ops {
 	uint64_t	(*get_system_size)	(void);
 	int		(*load_state)	(bool init_config);
+	char *		(*get_status)	(uint32_t argc, char **argv);
 	int		(*state_pack)	(uid_t uid, Buf buffer,
 					 uint16_t protocol_version);
 	int		(*reconfig)	(void);
@@ -87,6 +88,7 @@ typedef struct slurm_bb_ops {
 static const char *syms[] = {
 	"bb_p_get_system_size",
 	"bb_p_load_state",
+	"bb_p_get_status",
 	"bb_p_state_pack",
 	"bb_p_reconfig",
 	"bb_p_job_validate",
@@ -230,6 +232,36 @@ extern int bb_g_load_state(bool init_config)
 	END_TIMER2(__func__);
 
 	return rc;
+}
+
+/*
+ * Return string containing current burst buffer status
+ * argc IN - count of status command arguments
+ * argv IN - status command arguments
+ * RET status string, release memory using xfree()
+ */
+extern char *bb_g_get_status(uint32_t argc, char **argv)
+{
+	DEF_TIMERS;
+	int i;
+	char *status = NULL, *tmp;
+
+	START_TIMER;
+	(void) bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		tmp = (*(ops[i].get_status))(argc, argv);
+		if (status) {
+			xstrcat(status, tmp);
+			xfree(tmp);
+		} else {
+			status = tmp;
+		}
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return status;
 }
 
 /*

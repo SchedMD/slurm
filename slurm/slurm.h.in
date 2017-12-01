@@ -5079,6 +5079,7 @@ typedef struct {
 	char *destroy_buffer;
 	uint32_t flags;			/* See BB_FLAG_* above */
 	char *get_sys_state;
+	char *get_sys_status;
 	uint64_t granularity;		/* Granularity of resource allocation */
 	uint32_t pool_cnt;		/* Count of records in pool_ptr */
 	burst_buffer_pool_t *pool_ptr;
@@ -5114,9 +5115,19 @@ typedef struct {
 extern char *slurm_burst_buffer_state_string(uint16_t state);
 
 /*
+ * slurm_load_burst_buffer_stat - issue RPC to get burst buffer status
+ * IN argc - count of status request options
+ * IN argv - status request options
+ * OUT status_resp - status response, memory must be released using xfree()
+ * RET 0 or a slurm error code
+ */
+extern int slurm_load_burst_buffer_stat(int argc, char **argv,
+					char **status_resp);
+
+/*
  * slurm_load_burst_buffer_info - issue RPC to get slurm all burst buffer plugin
  *	information
- * IN burst_buffer_info_msg_pptr - place to store a burst buffer configuration
+ * OUT burst_buffer_info_msg_pptr - place to store a burst buffer configuration
  *	pointer
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_burst_buffer_info_msg

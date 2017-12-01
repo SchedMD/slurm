@@ -73,6 +73,7 @@ typedef struct bb_config {
 	char    *destroy_buffer;
 	uint32_t flags;			/* See BB_FLAG_* in slurm.h */
 	char    *get_sys_state;
+	char    *get_sys_status;
 	uint64_t granularity;		/* space allocation granularity,
 					 * units are GB */
 	uint32_t pool_cnt;		/* Count of records in pool_ptr */

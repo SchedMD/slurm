@@ -284,6 +284,34 @@ Name=generic DefaultPool=ssd Granularity=100G TotalSpace=50T UsedSpace=42T
     UserID=brenda(1001) Used=22T
 </pre>
 
+<p>Access to the Cray burst buffer status tool, <i>dwstat</i>, is available from
+the scontrol command using the "scontrol show bbstat ..." or
+"scontrol show dwstat ..." command. Options following "bbstat" or "dwstat" on
+the scontrol execute line are passed directly to the dwstat command as shown
+below. See
+<a href="http://docs.cray.com/books/S-2558-5204/S-2558-5204.pdf">Cray DataWarp documentation</a>
+for details about dwstat options and output.</p>
+
+<pre>
+/opt/cray/dws/default/bin/dwstat
+$ scontrol show dwstat
+    pool units quantity    free gran'
+wlm_pool bytes  7.28TiB 7.28TiB 1GiB'
+
+$ scontrol show dwstat sessions
+ sess state      token creator owner             created expiration nodes
+  832 CA---  783000000  tester 12345 2015-09-08T16:20:36      never    20
+  833 CA---  784100000  tester 12345 2015-09-08T16:21:36      never     1
+  903 D---- 1875700000  tester 12345 2015-09-08T17:26:05      never     0
+
+$ scontrol show dwstat configurations
+ conf state inst    type access_type activs
+  715 CA---  753 scratch      stripe      1
+  716 CA---  754 scratch      stripe      1
+  759 D--T-  807 scratch      stripe      0
+  760 CA---  808 scratch      stripe      1
+</pre>
+
 <h2><a name="reservation">Advanced Reservations</a></h2>
 
 <p>Burst buffer resources can be placed in an advanced reservation using the
@@ -320,6 +348,6 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
   BurstBuffer=cray:pool_test:4G
 </pre>
 
-<p style="text-align:center;">Last modified 30 November 2017</p>
+<p style="text-align:center;">Last modified 1 December 2017</p>
 
 <!--#include virtual="footer.txt"-->

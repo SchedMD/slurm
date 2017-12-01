@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "November 2017" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "December 2017" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -334,14 +334,19 @@ or
 .TP
 \fBshow\fP \fIENTITY\fP=\fIID\fP
 Display the state of the specified entity with the specified identification.
-\fIENTITY\fP may be \fIaliases\fP, \fIassoc_mgr\fP, \fIburstbuffer\fP,
-\fIconfig\fP, \fIdaemons\fP, \fIfederation\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
+\fIENTITY\fP may be \fIaliases\fP, \fIassoc_mgr\fP, \fIbbstat\fP,
+\fIburstbuffer\fP, \fIconfig\fP, \fIdaemons\fP, \fIdwstat\fP,
+\fIfederation\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
 \fIpartition\fP, \fIpowercap\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
 \fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or \fIhostnames\fP
 (also \fIblock\fP or \fIsubmp\fP on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified
 entity: job ID, node name, partition name, reservation name, or job step ID for
 \fIjob\fP, \fInode\fP, \fIpartition\fP, or \fIstep\fP respectively.
+For an \fIENTITY\fP of \fIbbstat\fP or \fIdwstat\fP (they are equivalent)
+optional arguments are the options of the local status command.
+The status commands will be executed by the slurmctld daemon and its response
+returned to the user.
 For an \fIENTITY\fP of \fItopology\fP, the \fIID\fP may be a node or switch name.
 If one node name is specified, all switches connected to that node (and
 their parent switches) will be shown.
