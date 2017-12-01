@@ -3994,7 +3994,14 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		rc =  1;
 	} else {
-		if (bb_job->state < BB_STATE_POST_RUN) {
+		if (bb_job->state == BB_STATE_PENDING) {
+			/*
+			 * No job BB work not started before job was killed.
+			 * Alternately slurmctld daemon restarted after the
+			 * job's BB work was completed.
+			 */
+			rc =  1;
+		} else if (bb_job->state < BB_STATE_POST_RUN) {
 			rc = -1;
 		} else if (bb_job->state > BB_STATE_STAGING_OUT) {
 			rc =  1;
