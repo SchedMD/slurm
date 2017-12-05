@@ -934,12 +934,13 @@ RESEND:	slurm_msg_t_init(&req);
 		 */
 		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID) &&
 		    (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH) &&
-		    (rc != EAGAIN)) {
+		    (rc != EAGAIN) &&
+		    (rc != ESLURM_TRANSITION_STATE_NO_UPDATE)) {
 			error("Failure sending signal %d to step %u.%u on node %s: %s",
 			      signo, ctx->job_id, ctx->step_resp->job_step_id,
 			      ret_data_info->node_name, slurm_strerror(rc));
 		}
-		if (rc == EAGAIN)
+		if ((rc == EAGAIN) || (rc == ESLURM_TRANSITION_STATE_NO_UPDATE))
 			retry = true;
 	}
 	list_iterator_destroy(itr);
