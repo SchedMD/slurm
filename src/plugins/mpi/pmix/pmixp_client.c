@@ -89,6 +89,11 @@
 	(kvp)->value.data.array.size = _count;			\
 	PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array);		\
 }
+
+#define PMIXP_VAL_SET_RANK(value, rank) {			\
+	PMIX_VAL_SET(value, int, rank);				\
+}
+
 #elif (HAVE_PMIX_VER == 2)
 #define PMIXP_INFO_ARRAY_CREATE(kvp, _array, _count)			\
 {									\
@@ -99,17 +104,29 @@
 	(kvp)->value.data.darray->size = _count;			\
 	(kvp)->value.data.darray->array = (void *)_array;		\
 }
+
+#define PMIXP_VAL_SET_RANK(value, _rank) {			\
+	(value)->type = PMIX_PROC_RANK;				\
+	(value)->data.rank = _rank;				\
+}
+
 #endif
 
+static pthread_mutex_t _reg_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
 typedef struct {
+	pmix_status_t rc;
 	volatile int active;
 } register_caddy_t;
 
 static void _release_cb(pmix_status_t status, void *cbdata)
 {
-	(void)status;
+	slurm_mutex_lock(&_reg_mutex);
 	register_caddy_t *caddy = (register_caddy_t *)cbdata;
+	caddy->rc = status;
 	caddy->active = 0;
+	slurm_mutex_unlock(&_reg_mutex);
 }
 
 /*
@@ -197,7 +214,7 @@ static void _set_procdatas(List lresp)
 		rankinfo = list_create(pmixp_xfree_xmalloced);
 
 		PMIXP_ALLOC_KEY(kvp, PMIX_RANK);
-		PMIX_VAL_SET(&kvp->value, int, i);
+		PMIXP_VAL_SET_RANK(&kvp->value, i);
 		list_append(rankinfo, kvp);
 
 		/* TODO: always use 0 for now. This is not the general case
@@ -582,8 +599,7 @@ extern int pmixp_libpmix_job_set(void)
 	int ninfo;
 	ListIterator it;
 	pmix_info_t *kvp;
-
-	int i, rc;
+	int i, rc, ret = SLURM_SUCCESS;
 	uid_t uid = pmixp_info_jobuid();
 	gid_t gid = pmixp_info_jobgid();
 	register_caddy_t *register_caddy;
@@ -660,18 +676,35 @@ extern int pmixp_libpmix_job_set(void)
 		ts.tv_sec = 0;
 		ts.tv_nsec = 100;
 
+		// Do a preliminary scan
 		for (i=0; i < pmixp_info_tasks_loc() + 1; i++) {
 			if (register_caddy[i].active) {
 				exit_flag = 0;
 			}
 		}
+
 		if (exit_flag) {
-			break;
+			slurm_mutex_lock(&_reg_mutex);
+			// Do a final scan with the structure locked
+			for (i=0; i < pmixp_info_tasks_loc() + 1; i++) {
+				if (register_caddy[i].active) {
+					exit_flag = 0;
+				}
+				// An error may occur during registration
+				if (PMIX_SUCCESS != register_caddy[i].rc) {
+					PMIXP_ERROR("Failed to complete registration #%d, error: %d", i, register_caddy[i].rc);
+					ret = SLURM_ERROR;
+				}
+			}
+			slurm_mutex_unlock(&_reg_mutex);
+			if (exit_flag) {
+				break;
+			}
 		}
 		nanosleep(&ts, NULL);
 	}
 	PMIX_INFO_FREE(info, ninfo);
 	xfree(register_caddy);
 
-	return SLURM_SUCCESS;
+	return ret;
 }
