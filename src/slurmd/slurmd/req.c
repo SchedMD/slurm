@@ -3820,9 +3820,15 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 	slurm_msg_t           resp_msg;
 	job_id_response_msg_t resp;
 	bool         found = false;
+	bool         auth = false;
 	List         steps;
 	ListIterator i;
 	step_loc_t *stepd;
+	uid_t req_uid;
+
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, conf->auth_info);
+	if (_slurm_authorized_user(req_uid))
+		auth = true;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
@@ -3833,7 +3839,13 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 				   &stepd->protocol_version);
 		if (fd == -1)
 			continue;
-
+		if (!auth &&
+		    (stepd_get_uid(fd, stepd->protocol_version) != req_uid)) {
+			close(fd);
+			debug3("%s: REQUEST_JOB_ID from uid=%d but they aren't the owner of job %u",
+			       __func__, req_uid, stepd->jobid);
+			continue;
+		}
 		if (stepd_pid_in_container(
 			    fd, stepd->protocol_version,
 			    req->job_pid)
