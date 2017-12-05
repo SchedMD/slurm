@@ -3195,6 +3195,22 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 {
 	int               rc = SLURM_SUCCESS;
 	signal_tasks_msg_t *req = (signal_tasks_msg_t *) msg->data;
+	uid_t job_uid, req_uid;
+
+	job_uid = _get_job_uid(req->job_id);
+
+	if ((int)job_uid < 0) {
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
+
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, conf->auth_info);
+	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
+		debug("%s: from uid %ld for job %u owned by uid %ld",
+		      __func__, (long)req_uid, req->job_id, (long)job_uid);
+		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
+		goto done;
+	}
 
 	/* security is handled when communicating with the stepd */
 	if (req->flags & KILL_FULL_JOB) {
@@ -3213,7 +3229,7 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 		rc = _signal_jobstep(req->job_id, req->job_step_id,
 				     req->signal, req->flags);
 	}
-
+done:
 	slurm_send_rc_msg(msg, rc);
 }
 

@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     after the job's burst buffer work was already completed.
  -- Make logging prefix for slurmstepd to happen as soon as possible.
  -- mpi/pmix: Fix the job registration for the PMIx v2.1.
+ -- Fix uid check for signaling a step with anything but SIGKILL.
 
 * Changes in Slurm 17.11.0
 ==========================
