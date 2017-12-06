@@ -2163,8 +2163,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
+		/* signal just in case the batch rpc got here before we did */
+		slurm_cond_broadcast(&conf->prolog_running_cond);
 		slurm_mutex_unlock(&prolog_mutex);
-
 		memset(&job_env, 0, sizeof(job_env_t));
 
 		job_env.jobid = req->job_id;
@@ -2287,6 +2288,40 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		rc = SLURM_COMMUNICATIONS_SEND_ERROR;
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
+	}
+
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) {
+		struct timespec ts = {0, 0};
+		struct timeval now;
+		int retry_cnt = 0;
+		/*
+		 * We want to wait until the rpc_prolog is ran before
+		 * continuing. Since we are already locked on prolog_mutex here
+		 * we don't have to unlock to wait on the
+		 * conf->prolog_running_cond.
+		 */
+		while (first_job_run) {
+			retry_cnt++;
+			/*
+			 * This race should only happen for at most a second as
+			 * we are only waiting for the other rpc to get here.
+			 * If we are waiting for more that 50 trys something bad
+			 * happened.
+			 */
+			if (retry_cnt > 50) {
+				rc = ESLURMD_PROLOG_FAILED;
+				goto done;
+			}
+
+			gettimeofday(&now, NULL);
+			ts.tv_sec = now.tv_sec + 1;
+			ts.tv_nsec = now.tv_usec * 1000;
+
+			slurm_cond_timedwait(&conf->prolog_running_cond,
+					     &prolog_mutex, &ts);
+			first_job_run = !slurm_cred_jobid_cached(conf->vctx,
+								 req->job_id);
+		}
 	}
 
 	/*

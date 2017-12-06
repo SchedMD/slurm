@@ -16,6 +16,9 @@ documents those changes that are of interest to users and administrators.
     signal a step that is still running a prolog.
  -- Update Cray slurm_playbook.yaml with latest recommended version.
  -- Only say a prolog is done running after the extern step is launched.
+ -- Wait to start a batch step until the prolog and extern step are
+    fully ran/launched.  Only matters if running with
+    PrologFlags=[contain|alloc].
 
 * Changes in Slurm 17.11.0
 ==========================
