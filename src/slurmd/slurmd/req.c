@@ -203,7 +203,8 @@ static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
 static int  _run_epilog(job_env_t *job_env);
-static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred);
+static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred,
+			bool remove_running);
 static void _rpc_forward_data(slurm_msg_t *msg);
 static int  _rpc_network_callerid(slurm_msg_t *msg);
 
@@ -1464,7 +1465,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
 		job_env.user_name = req->user_name;
-		rc =  _run_prolog(&job_env, req->cred);
+		rc =  _run_prolog(&job_env, req->cred, true);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
 			if (WIFSIGNALED(rc))
@@ -2185,7 +2186,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if ((rc = container_g_create(req->job_id)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
-			rc = _run_prolog(&job_env, req->cred);
+			rc = _run_prolog(&job_env, req->cred, false);
 		xfree(job_env.resv_id);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -2201,6 +2202,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if ((rc == SLURM_SUCCESS) &&
 		    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
 			rc = _spawn_prolog_stepd(msg);
+		_remove_job_running_prolog(req->job_id);
 	} else
 		slurm_mutex_unlock(&prolog_mutex);
 
@@ -2321,7 +2323,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		if ((rc = container_g_create(req->job_id)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
-			rc = _run_prolog(&job_env, req->cred);
+			rc = _run_prolog(&job_env, req->cred, true);
 		xfree(job_env.resv_id);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -5862,7 +5864,7 @@ static int _run_job_script(const char *name, const char *path,
 #ifdef HAVE_BG
 /* a slow prolog is expected on bluegene systems */
 static int
-_run_prolog(job_env_t *job_env, slurm_cred_t *cred)
+_run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 {
 	int rc;
 	char *my_prolog;
@@ -5877,7 +5879,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 
 	rc = _run_job_script("prolog", my_prolog, job_env->jobid,
 			     -1, my_env, job_env->uid);
-	_remove_job_running_prolog(job_env->jobid);
+	if (remove_running)
+		_remove_job_running_prolog(job_env->jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
 
@@ -5946,7 +5949,7 @@ static int _get_node_inx(char *hostlist)
 }
 
 static int
-_run_prolog(job_env_t *job_env, slurm_cred_t *cred)
+_run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 {
 	DEF_TIMERS;
 	int rc, diff_time;
@@ -6020,7 +6023,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 		     job_env->jobid, diff_time);
 	}
 
-	_remove_job_running_prolog(job_env->jobid);
+	if (remove_running)
+		_remove_job_running_prolog(job_env->jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
 

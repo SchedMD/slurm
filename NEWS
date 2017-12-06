@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Return ESLURM_TRANSITION_STATE_NO_UPDATE instead of EAGAIN when trying to
     signal a step that is still running a prolog.
  -- Update Cray slurm_playbook.yaml with latest recommended version.
+ -- Only say a prolog is done running after the extern step is launched.
 
 * Changes in Slurm 17.11.0
 ==========================
