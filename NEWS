@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- Fill in the user_name field for batch jobs if not sent by the slurmctld.
     (Which is the default behavior if PrologFlags=send_gids is not enabled.)
     This prevents job launch problems for sites using UsePAM=1.
+ -- Handle syncing federated jobs that ran on non-origin clusters and were
+    cancelled while the origin cluster was down.
 
 * Changes in Slurm 17.11.0
 ==========================

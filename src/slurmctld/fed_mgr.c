@@ -4673,6 +4673,12 @@ static int _reconcile_fed_job(struct job_record *job_ptr,
 				fed_mgr_job_revoke(job_ptr, true,
 						   remote_job->exit_code,
 						   job_ptr->start_time);
+			} else if (IS_JOB_CANCELLED(remote_job)) {
+				info("%s: job %d on sibling %s is already cancelled, completing the origin job",
+				     __func__, job_ptr->job_id, sibling_name);
+				fed_mgr_job_revoke(job_ptr, true,
+						   remote_job->exit_code,
+						   job_ptr->start_time);
 			} else if (!IS_JOB_RUNNING(remote_job)) {
 				/* The job could be pending if it was requeued
 				 * due to node failure */
