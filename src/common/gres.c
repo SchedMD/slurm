@@ -4804,7 +4804,6 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 		if (!gres_devices || !list_count(gres_devices))
 			continue;
 		dev_itr = list_iterator_create(gres_devices);
-		i = 0;
 		while ((gres_device = list_next(dev_itr))) {
 			if (!device_list)
 				device_list = list_create(NULL);
