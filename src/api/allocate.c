@@ -1033,8 +1033,8 @@ char *slurm_read_hostfile(char *filename, int n)
 	int line_size;
 	int line_num = 0;
 	hostlist_t hostlist = NULL;
-	char *nodelist = NULL;
-	char *asterisk, *tmp_text, *save_ptr = NULL, *host_name;
+	char *nodelist = NULL, *end_part = NULL;
+	char *asterisk, *tmp_text = NULL, *save_ptr = NULL, *host_name;
 	int total_file_len = 0;
 
 	if (filename == NULL || strlen(filename) == 0)
@@ -1053,25 +1053,8 @@ char *slurm_read_hostfile(char *filename, int n)
 	}
 
 	while (fgets(in_line, BUFFER_SIZE, fp) != NULL) {
-		line_num++;
-		if (!isalpha(in_line[0]) && !isdigit(in_line[0])) {
-			error ("Invalid hostfile %s contents on line %d",
-			       filename, line_num);
-			fclose (fp);
-			hostlist_destroy(hostlist);
-			return NULL;
-		}
 
 		line_size = strlen(in_line);
-		total_file_len += line_size;
-		if (line_size == (BUFFER_SIZE - 1)) {
-			error ("Line %d, of hostfile %s too long",
-			       line_num, filename);
-			fclose (fp);
-			hostlist_destroy(hostlist);
-			return NULL;
-		}
-
 		for (i = 0; i < line_size; i++) {
 			if (in_line[i] == '\n') {
 				in_line[i] = '\0';
@@ -1092,12 +1075,66 @@ char *slurm_read_hostfile(char *filename, int n)
 			break;
 		}
 
-		tmp_text = xstrdup(in_line);
+		/*
+		 * Get the string length again just to incase it changed from
+		 * the above loop
+		 */
+		line_size = strlen(in_line);
+		total_file_len += line_size;
+
+		/*
+		 * If there was an end section from before set it up to be on
+		 * the front of this next chunk.
+		 */
+		if (end_part) {
+			tmp_text = end_part;
+			end_part = NULL;
+		}
+
+		if (line_size == (BUFFER_SIZE - 1)) {
+			/*
+			 * If we filled up the buffer get the end past the last
+			 * comma.  We will tack it on the next pass through.
+			 */
+			char *last_comma = strrchr(in_line, ',');
+			if (!last_comma) {
+				error("Line %d, of hostfile %s too long",
+				      line_num, filename);
+				fclose(fp);
+				hostlist_destroy(hostlist);
+				return NULL;
+			}
+			end_part = xstrdup(last_comma + 1);
+			*last_comma = '\0';
+		} else
+			line_num++;
+
+		xstrcat(tmp_text, in_line);
+
+		/* Skip this line */
+		if (tmp_text[0] == '\0')
+			continue;
+
+		if (!isalpha(tmp_text[0]) && !isdigit(tmp_text[0])) {
+			error("Invalid hostfile %s contents on line %d",
+			      filename, line_num);
+			fclose(fp);
+			hostlist_destroy(hostlist);
+			return NULL;
+		}
+
 		host_name = strtok_r(tmp_text, ",", &save_ptr);
 		while (host_name) {
 			if ((asterisk = strchr(host_name, '*')) &&
 			    (i = atoi(asterisk + 1))) {
 				asterisk[0] = '\0';
+
+				/*
+				 * Don't forget the extra space potentially
+				 * needed
+				 */
+				total_file_len += strlen(host_name) * i;
+
 				for (j = 0; j < i; j++)
 					hostlist_push_host(hostlist, host_name);
 			} else {
