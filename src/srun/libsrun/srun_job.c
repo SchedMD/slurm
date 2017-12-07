@@ -661,8 +661,9 @@ extern void init_srun(int argc, char **argv,
 			 */
 			pack_argc -= pack_argc_off;
 			pack_argv += pack_argc_off;
-		} else
+		} else {
 			pack_fini = true;
+		}
 	}
 	_post_opts(opt_list);
 	record_ppid();
@@ -2227,9 +2228,9 @@ static int _validate_relative(resource_allocation_response_msg_t *resp,
 			      opt_local->min_nodes,
 			      resp->node_cnt);
 		}
-		return -1;
+		return SLURM_ERROR;
 	}
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 static void _call_spank_fini(void)

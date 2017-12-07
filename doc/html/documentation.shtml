@@ -26,6 +26,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="nonstop.html">Failure Management Support</a></li>
 <li><a href="checkpoint_blcr.html">Slurm Checkpoint/Restart with BLCR</a></li>
 <li><a href="job_exit_code.html">Job Exit Codes</a></li>
+<li><a href="resource_binding.html">Resource Binding</a></li>
 <li>Specific Systems</li>
 <ul>
 <li><a href="bluegene.html">BlueGene/Q User and Administrator Guide</a></li>

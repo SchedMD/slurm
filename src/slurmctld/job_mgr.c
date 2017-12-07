@@ -17441,7 +17441,7 @@ extern resource_allocation_response_msg_t *
 				job_ptr->details->mc_ptr->ntasks_per_socket;
 		}
 	} else {
-		job_info_resp_msg->pn_min_memory     = 0;
+		/* job_info_resp_msg->pn_min_memory     = 0; */
 		job_info_resp_msg->ntasks_per_board  = NO_VAL16;
 		job_info_resp_msg->ntasks_per_core   = NO_VAL16;
 		job_info_resp_msg->ntasks_per_socket = NO_VAL16;

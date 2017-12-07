@@ -648,6 +648,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		part_ptr->flags |= PART_FLAG_DEFAULT;
 	}
 
+	part_ptr->cpu_bind = part->cpu_bind;
+
 	if (part->preempt_mode != NO_VAL16)
 		part_ptr->preempt_mode = part->preempt_mode;
 

@@ -331,6 +331,7 @@ struct part_record {
 	char *alternate; 	/* name of alternate partition */
 	double *billing_weights;    /* array of TRES billing weights */
 	char   *billing_weights_str;/* per TRES billing weight string */
+	uint32_t cpu_bind;	/* default CPU binding type */
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
@@ -481,10 +482,8 @@ struct job_details {
 					 * currently does not matter to the
 					 * job allocation, setting this does
 					 * not do anything for steps. */
-	uint16_t cpu_bind_type;		/* see cpu_bind_type_t - This
-					 * currently does not matter to the
-					 * job allocation, setting this does
-					 * not do anything for steps. */
+	uint16_t cpu_bind_type;		/* Default CPU bind type for steps,
+					 * see cpu_bind_type_t */
 	uint32_t cpu_freq_min;  	/* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  	/* cpu frequency governor */

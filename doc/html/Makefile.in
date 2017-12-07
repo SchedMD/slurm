@@ -540,6 +540,7 @@ generated_html = \
 	quickstart_admin.html \
 	quickstart.html \
 	reservations.html \
+	resource_binding.html \
 	resource_limits.html \
 	rosetta.html \
 	route_plugin.html \

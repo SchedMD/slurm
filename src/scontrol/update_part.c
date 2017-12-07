@@ -38,7 +38,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/scontrol/scontrol.h"
 
 extern int
@@ -62,7 +64,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 		return -1;
 	}
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		tag = argv[i];
 		val = strchr(argv[i], '=');
 		if (val) {
@@ -86,6 +88,15 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				return -1;
 			}
 			part_msg_ptr->max_time = max_time;
+			(*update_cnt_ptr)++;
+		}
+		else if (xstrncasecmp(tag, "CpuBind", MAX(taglen, 7)) == 0) {
+			if (xlate_cpu_bind_str(val, &part_msg_ptr->cpu_bind) !=
+			    SLURM_SUCCESS) {
+				exit_code = 1;
+				error("Invalid input %s", argv[i]);
+				return -1;
+			}
 			(*update_cnt_ptr)++;
 		}
 		else if (xstrncasecmp(tag, "DefaultTime", MAX(taglen, 8)) == 0){

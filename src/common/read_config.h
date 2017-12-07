@@ -221,6 +221,7 @@ typedef struct slurm_conf_node {
 	char *gres;		/* arbitrary list of node's generic resources */
 	char *feature;		/* arbitrary list of node's features */
 	char *port_str;
+	uint32_t cpu_bind;	/* default CPU bind type */
 	uint16_t cpus;		/* count of cpus running on the node */
 	char *cpu_spec_list;	/* arbitrary list of specialized cpus */
 	uint16_t boards; 	/* number of boards per node */
@@ -248,17 +249,18 @@ typedef struct slurm_conf_partition {
 				 * NULL indicates all */
 	char *allow_qos;        /* comma delimited list of qos,
 			         * NULL indicates all */
+	char *alternate;	/* name of alternate partition */
+	char *billing_weights_str;/* per TRES billing weights */
+	uint32_t cpu_bind;	/* default CPU binding type */
+	uint16_t cr_type;	/* Custom CR values for partition (supported
+				 * by select/cons_res plugin only) */
+	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
+	bool default_flag;	/* Set if default partition */
+	uint32_t default_time;	/* minutes or INFINITE */
 	char *deny_accounts;    /* comma delimited list of denied accounts,
 				 * NULL indicates all */
 	char *deny_qos;		/* comma delimited list of denied qos,
 				 * NULL indicates all */
-	char *alternate;	/* name of alternate partition */
-	uint16_t cr_type;	/* Custom CR values for partition (supported
-				 * by select/cons_res plugin only) */
-	char *billing_weights_str;/* per TRES billing weights */
-	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
-	bool default_flag;	/* Set if default partition */
-	uint32_t default_time;	/* minutes or INFINITE */
 	uint16_t disable_root_jobs; /* if set then user root can't run
 				     * jobs if NO_VAL use global
 				     * default */

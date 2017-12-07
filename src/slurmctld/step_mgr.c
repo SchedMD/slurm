@@ -63,6 +63,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_ext_sensors.h"
@@ -2224,6 +2225,70 @@ static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
 }
 
 /*
+ * Set a job's default cpu_bind_type based upon configuration of allocated nodes,
+ * partition or global TaskPluginParams
+ */
+static void _set_def_cpu_bind(struct job_record *job_ptr)
+{
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+	struct node_record *node_ptr;
+	int i, i_first, i_last;
+	uint32_t bind_bits, bind_to_bits, node_bind = NO_VAL;
+	bool node_fail = false;
+
+	if (!job_ptr->details || !job_resrcs_ptr ||
+	    !job_resrcs_ptr->node_bitmap)
+		return;		/* No data structure */
+
+	bind_to_bits = CPU_BIND_TO_SOCKETS | CPU_BIND_TO_CORES |
+		       CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
+		       CPU_BIND_TO_BOARDS;
+	if ((job_ptr->details->cpu_bind_type != NO_VAL16) &&
+	    (job_ptr->details->cpu_bind_type & bind_to_bits))
+		return;		/* Already set */
+	bind_bits = job_ptr->details->cpu_bind_type & CPU_BIND_VERBOSE;
+
+	/*
+	 * Set job's cpu_bind to the node's cpu_bind if all of the job's
+	 * allocated nodes have the same cpu_bind (or it is not set)
+	 */
+	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
+	if (i_first == -1)
+		i_last = -2;
+	else
+		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
+			continue;
+		node_ptr = node_record_table_ptr + i;
+		if (node_bind == NO_VAL) {
+			if (node_ptr->cpu_bind != 0)
+				node_bind = node_ptr->cpu_bind;
+		} else if ((node_ptr->cpu_bind != 0) &&
+			   (node_bind != node_ptr->cpu_bind)) {
+			node_fail = true;
+			break;
+		}
+	}
+	if (!node_fail && (node_bind != NO_VAL)) {
+		job_ptr->details->cpu_bind_type = bind_bits | node_bind;
+		return;
+	}
+
+	/* Use partition's cpu_bind (if any) */
+	if (job_ptr->part_ptr && job_ptr->part_ptr->cpu_bind) {
+		job_ptr->details->cpu_bind_type = bind_bits |
+						  job_ptr->part_ptr->cpu_bind;
+		return;
+	}
+
+	/* Use global default from TaskPluginParams */
+	job_ptr->details->cpu_bind_type = bind_bits |
+					  slurmctld_conf.task_plugin_param;
+	return;
+}
+
+/*
  * step_create - creates a step_record in step_specs->job_id, sets up the
  *	according to the step_specs.
  * IN step_specs - job step specifications
@@ -2444,6 +2509,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 			_build_pending_step(job_ptr, step_specs);
 		return ret_code;
 	}
+	_set_def_cpu_bind(job_ptr);
+
 #ifdef HAVE_ALPS_CRAY
 	select_g_select_jobinfo_set(select_jobinfo,
 				    SELECT_JOBDATA_RESV_ID, &resv_id);
@@ -2732,19 +2799,19 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 #endif
 
 #ifdef HAVE_BGQ
-	/* Since we have to deal with a conversion between cnodes and
-	   midplanes here the math is really easy, and already has
-	   been figured out for us in the plugin, so just copy the
-	   numbers.
-	*/
+	/*
+	 * Since we have to deal with a conversion between cnodes and
+	 * midplanes here the math is really easy, and already has
+	 * been figured out for us in the plugin, so just copy the
+	 * numbers.
+	 */
 	memcpy(cpus_per_node, job_resrcs_ptr->cpus, sizeof(cpus_per_node));
 	cpus_per_task_array[0] = cpus_per_task;
 	cpu_count_reps[0] = job_resrcs_ptr->ncpus;
 	cpus_task_reps[0] = job_resrcs_ptr->ncpus;
 
 #else
-	/* build the cpus-per-node arrays for the subset of nodes
-	 * used by this job step */
+	/* build  cpus-per-node arrays for the subset of nodes used by step */
 	first_bit = bit_ffs(job_ptr->node_bitmap);
 	last_bit  = bit_fls(job_ptr->node_bitmap);
 
@@ -2783,7 +2850,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 
 			cpus = job_resrcs_ptr->cpus[pos];
 			cpus_used = job_resrcs_ptr->cpus_used[pos];
-			/* Here we are trying to figure out the number
+			/*
+			 * Here we are trying to figure out the number
 			 * of cpus available if we only want to run 1
 			 * thread per core.
 			 */
@@ -2805,7 +2873,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				cpus_per_task_array[0] = cpus_per_task;
 				cpus_task_reps[0] = node_count;
 			} else {
-				/* Here we are trying to figure out how many
+				/*
+				 * Here we are trying to figure out how many
 				 * cpus each task really needs.  This really
 				 * only becomes an issue if the job requested
 				 * ntasks_per_core|socket=1.  We just increase

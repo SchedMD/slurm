@@ -82,7 +82,7 @@ extern int node_features_g_node_set(char *active_features);
 extern void node_features_g_node_state(char **avail_modes, char **current_mode);
 
 /* Note the active features associated with a set of nodes have been updated.
- * Specifically update the node's "hbm" GRES value as needed.
+ * Specifically update the node's "hbm" GRES and "CpuBind" values as needed.
  * IN active_features - New active features
  * IN node_bitmap - bitmap of nodes changed
  * RET error code */

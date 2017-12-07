@@ -4139,6 +4139,14 @@ need to specify this parameter in order to optimize scheduling.
 The default value is 1.
 
 .TP
+\fBCpuBind\fR
+If a job step request does not specify an option to control how tasks are bound
+to allocated CPUs (\-\-cpu-bind) and all nodes allocated to the job have the same
+\fBCpuBind\fR option the node \fBCpuBind\fR option will control how tasks are
+bound to allocated resources. Supported values for\fBCpuBind\fR are "none",
+"board", "socket", "ldom" (NUMA), "core" and "thread".
+
+.TP
 \fBCPUs\fR
 Number of logical processors on the node (e.g. "2").
 CPUs and Boards are mutually exclusive. It can be set to the total
@@ -4624,6 +4632,15 @@ Also refer to DenyQos.
 \fBAlternate\fR
 Partition name of alternate partition to be used if the state of this partition
 is "DRAIN" or "INACTIVE."
+
+.TP
+\fBCpuBind\fR
+If a job step request does not specify an option to control how tasks are bound
+to allocated CPUs (\-\-cpu-bind) and all nodes allocated to the job do not have
+the same \fBCpuBind\fR option the node. Then the partition's \fBCpuBind\fR
+option will control how tasks are bound to allocated resources.
+Supported values for\fBCpuBind\fR are "none", "board", "socket", "ldom" (NUMA),
+"core" and "thread".
 
 .TP
 \fBDefault\fR

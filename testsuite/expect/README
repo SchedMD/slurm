@@ -194,11 +194,11 @@ test1.86   Confirm node selection from within a job step on existing allocation
 test1.87   Confirm node selection from within a job step on existing allocation
 	   (--relative, --nodes and --nprocs options).
 test1.88   Basic MPI functionality tests via srun.
-test1.89   Test of CPU affinity support.
+test1.89   Test of CPU affinity/binding support.
 test1.90   Test of memory affinity support for NUMA systems.
 test1.91   Test of CPU affinity for multi-core systems.
 test1.92   Test of task distribution support on multi-core systems.
-test1.93   DEFUNCT
+test1.93   Test of default CPU binding support.
 test1.94   Test of PMI2 task spawn logic
 test1.95   Basic UPC (Unified Parallel C) test via srun.
 test1.96   Basic SHMEM test via srun.

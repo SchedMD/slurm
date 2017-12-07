@@ -46,9 +46,38 @@ void slurm_print_mem_bind_help(void);
 void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type);
 void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type);
 
-int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
-			  cpu_bind_type_t *flags);
+/*
+ * verify cpu_bind arguments, set default values as needed
+ *
+ * we support different launch policy names
+ * we also allow a verbose setting to be specified
+ *     --cpu-bind=threads
+ *     --cpu-bind=cores
+ *     --cpu-bind=sockets
+ *     --cpu-bind=v
+ *     --cpu-bind=rank,v
+ *     --cpu-bind=rank
+ *     --cpu-bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
+ *
+ * arg IN - user task binding option
+ * cpu_bind OUT - task binding string
+ * flags OUT OUT - task binding flags
+ * default_cpu_bind IN - default task binding (based upon Slurm configuration)
+ * RET SLURM_SUCCESS, SLURM_ERROR (-1) on failure, 1 for return for "help" arg
+ */
+extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
+				 cpu_bind_type_t *flags,
+				 uint32_t default_cpu_bind);
+
 int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 			  mem_bind_type_t *flags);
+
+/*
+ * Translate a CPU bind string to its equivalent numeric value
+ * cpu_bind_str IN - string to translate
+ * flags OUT - equlvalent numeric value
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+extern int xlate_cpu_bind_str(char *cpu_bind_str, uint32_t *flags);
 
 #endif /* !_RES_INFO_H */

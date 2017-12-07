@@ -350,6 +350,13 @@ CPUs that belong to the NUMA locality domain or "NUMA node".
 If NUMA locality domain options are used on systems with no NUMA support, then
 each socket is considered a locality domain.
 
+If the -\-cpu\-bind option is not used, the default binding mode will depend
+upon Slurm's configuration and the step's resource allocation.
+If all allocated nodes have the same configured CpuBind mode, that will be used.
+Otherwise if the job's Partition has a configured CpuBind mode, that will be used.
+Otherwise if Slurm has a configured TaskPluginParam value, that mode will be used.
+Otherwise automatic binding will be performed as described below.
+
 .PD
 .RS
 .TP

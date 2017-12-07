@@ -8,7 +8,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Copyright (C) 2010-2016 SchedMD LLC.
+ *  Copyright (C) 2010-2017 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -239,6 +239,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 				node_rec->node_state = state_val;
 			node_rec->last_response = (time_t) 0;
 			node_rec->comm_name = xstrdup(address);
+			node_rec->cpu_bind  = node_ptr->cpu_bind;
 			node_rec->node_hostname = xstrdup(hostname);
 			node_rec->port      = port;
 			node_rec->weight    = node_ptr->weight;
@@ -540,6 +541,7 @@ extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt)
 
 		config_ptr = create_config_record();
 		config_ptr->nodes = xstrdup(node->nodenames);
+		config_ptr->cpu_bind = node->cpu_bind;
 		config_ptr->cpus = node->cpus;
 		config_ptr->boards = node->boards;
 		config_ptr->sockets = node->sockets;

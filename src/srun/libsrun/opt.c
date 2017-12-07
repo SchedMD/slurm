@@ -628,6 +628,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
 		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
 		opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
+		opt_dup->srun_opt->pack_group = xstrdup(sropt.pack_group);
 
 		list_append(opt_list, opt_dup);
 		pending_append = false;
@@ -1129,7 +1130,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_CPU_BIND:
 		xfree(sropt.cpu_bind);
 		if (slurm_verify_cpu_bind(val, &sropt.cpu_bind,
-					  &sropt.cpu_bind_type))
+					  &sropt.cpu_bind_type, 0))
 			exit(error_exit);
 		break;
 
@@ -1717,7 +1718,7 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(sropt.cpu_bind);
 			if (slurm_verify_cpu_bind(optarg, &sropt.cpu_bind,
-						  &sropt.cpu_bind_type))
+						  &sropt.cpu_bind_type, 0))
 				exit(error_exit);
 			sropt.cpu_bind_type_set = true;
 			break;
@@ -2876,10 +2877,6 @@ static bool _opt_verify(void)
 
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 		opt.gid = opt.egid;
-
-	if (slurm_verify_cpu_bind(NULL, &sropt.cpu_bind,
-				  &sropt.cpu_bind_type))
-		exit(error_exit);
 
 	if (!mpi_type)
 		mpi_type = slurm_get_mpi_default();

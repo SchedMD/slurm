@@ -55,6 +55,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -260,7 +261,13 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	if (node_ptr->arch)
 		xstrfmtcat(out, "Arch=%s ", node_ptr->arch);
 
-	xstrfmtcat(out, "CoresPerSocket=%u", node_ptr->cores);
+	if (node_ptr->cpu_bind) {
+		char tmp_str[128];
+		slurm_sprint_cpu_bind_type(tmp_str, node_ptr->cpu_bind);
+		xstrfmtcat(out, "CpuBind=%s ", tmp_str);
+	}
+
+	xstrfmtcat(out, "CoresPerSocket=%u ", node_ptr->cores);
 
 	xstrcat(out, line_end);
 

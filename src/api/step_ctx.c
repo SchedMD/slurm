@@ -489,6 +489,10 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 		*int_ptr = ctx->launch_state->tasks_requested;
 		*int_array_pptr = ctx->launch_state->io.user->sockets;
 		break;
+	case SLURM_STEP_CTX_DEF_CPU_BIND_TYPE:
+		uint32_ptr = (uint32_t *) va_arg(ap, void *);
+		*uint32_ptr = ctx->step_resp->def_cpu_bind_type;
+		break;
 	default:
 		slurm_seterrno(EINVAL);
 		rc = SLURM_ERROR;

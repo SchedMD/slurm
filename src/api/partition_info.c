@@ -47,6 +47,7 @@
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_selecttype_info.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -180,6 +181,12 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, " Default=YES");
 	else
 		xstrcat(out, " Default=NO");
+
+	if (part_ptr->cpu_bind) {
+		char tmp_str[128];
+		slurm_sprint_cpu_bind_type(tmp_str, part_ptr->cpu_bind);
+		xstrfmtcat(out, " CpuBind=%s ", tmp_str);
+	}
 
 	if (part_ptr->qos_char)
 		xstrfmtcat(out, " QoS=%s", part_ptr->qos_char);

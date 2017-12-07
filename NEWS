@@ -27,6 +27,10 @@ documents those changes that are of interest to users and administrators.
  -- Add "scontrol show dwstat" command to display Cray burst buffer status.
  -- Add "GetSysStatus" option to burst_buffer.conf file. For burst_buffer/cray
     this would indicate the location of the "dwstat" command.
+ -- Add node and partition configuration options of "CpuBind" to control default
+    task binding. Modify the scontrol to report and modify these parameters.
+ -- Add "NumaCpuBind" option to knl.conf file to automatically change a node's
+    CpuBind parameter based upon changes to a node's NUMA mode.
 
 * Changes in Slurm 17.11.1
 ==========================

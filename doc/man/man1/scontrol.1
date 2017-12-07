@@ -1063,6 +1063,12 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 Also see \fIActiveFeatures\fP.
 
 .TP
+\fICpuBind\fP=<node>
+Specify the task binding mode to be used by default for this node.
+Supported options include: "none", "board", "socket", "ldom" (NUMA), "core",
+"thread" and "off" (remove previous binding mode).
+
+.TP
 \fIGres\fP=<gres>
 Identify generic resources to be associated with the specified node.  Any
 previously defined generic resources will be overwritten with the new value.
@@ -1185,6 +1191,12 @@ The default value is "ALL".
 \fIAlternate\fP=<partition name>
 Alternate partition to be used if the state of this partition is "DRAIN" or
 "INACTIVE."  The value "NONE" will clear a previously set alternate partition.
+
+.TP
+\fICpuBind\fP=<node>
+Specify the task binding mode to be used by default for this partition.
+Supported options include: "none", "board", "socket", "ldom" (NUMA), "core",
+"thread" and "off" (remove previous binding mode).
 
 .TP
 \fIDefault\fP=<yes|no>

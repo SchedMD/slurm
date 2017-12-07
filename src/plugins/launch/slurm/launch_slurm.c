@@ -45,6 +45,7 @@
 
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/api/pmi_server.h"
 #include "src/srun/libsrun/allocate.h"
 #include "src/srun/libsrun/fname.h"
@@ -678,6 +679,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	int rc = SLURM_SUCCESS;
 	task_state_t task_state;
 	bool first_launch = false;
+	uint32_t def_cpu_bind_type = 0;
+	char tmp_str[128];
 	xassert(srun_opt);
 
 	slurm_step_launch_params_t_init(&launch_params);
@@ -731,8 +734,19 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.profile = opt_local->profile;
 	launch_params.task_prolog = srun_opt->task_prolog;
 	launch_params.task_epilog = srun_opt->task_epilog;
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_DEF_CPU_BIND_TYPE,
+			   &def_cpu_bind_type);
+	if (slurm_verify_cpu_bind(NULL, &srun_opt->cpu_bind,
+				  &srun_opt->cpu_bind_type,
+				  def_cpu_bind_type)) {
+		return SLURM_ERROR;
+	}
+	slurm_sprint_cpu_bind_type(tmp_str, srun_opt->cpu_bind_type);
+	verbose("CpuBindType=%s", tmp_str);
 	launch_params.cpu_bind = srun_opt->cpu_bind;
 	launch_params.cpu_bind_type = srun_opt->cpu_bind_type;
+
 	launch_params.mem_bind = opt_local->mem_bind;
 	launch_params.mem_bind_type = opt_local->mem_bind_type;
 	launch_params.accel_bind_type = srun_opt->accel_bind_type;

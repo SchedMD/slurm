@@ -65,6 +65,7 @@ struct config_record {
 	uint16_t sockets;	/* number of sockets per node */
 	uint16_t cores;		/* number of cores per CPU */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
+	uint32_t cpu_bind;	/* default CPU binding type */
 	uint16_t threads;	/* number of threads per core */
 	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	uint64_t real_memory;	/* MB real memory on the node */
@@ -94,6 +95,7 @@ struct node_record {
 	time_t boot_req_time;		/* Time of node boot request */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
+	uint32_t cpu_bind;		/* default CPU binding type */
 	time_t slurmd_start_time;	/* Time of slurmd startup */
 	time_t last_response;		/* last response from the node */
 	time_t last_idle;		/* time node last become idle */

@@ -833,7 +833,8 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 
 	/* the following is used only as a flag for expressing
 	 * the contents of TaskPluginParams */
-	SLURMD_OFF_SPEC            = 0x40000
+	SLURMD_OFF_SPEC            = 0x40000,
+	CPU_BIND_OFF               = 0x80000	/* Disable binding */
 } cpu_bind_type_t;
 
 /* Flag to indicate that cpu_freq is a range: low,medium,high,high-1
@@ -950,7 +951,8 @@ enum ctx_keys {
 	SLURM_STEP_CTX_JOBID,
 	SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
 	SLURM_STEP_CTX_NODE_LIST,	/* step's node list, must xfree */
-	SLURM_STEP_CTX_TIDS	/* get array of task IDs for all nodes */
+	SLURM_STEP_CTX_TIDS,	/* get array of task IDs for all nodes */
+	SLURM_STEP_CTX_DEF_CPU_BIND_TYPE
 };
 
 /* CR_CPU, CR_SOCKET and CR_CORE are mututally exclusive
@@ -2121,6 +2123,7 @@ typedef struct node_info {
 	char *cluster_name;	/* Cluster name ONLY set in federation */
 	uint16_t cores;         /* number of cores per socket       */
 	uint16_t core_spec_cnt; /* number of specialized cores on node */
+	uint32_t cpu_bind;	/* Default task binding */
 	uint32_t cpu_load;	/* CPU load * 100 */
 	uint64_t free_mem;	/* free memory in MiB */
 	uint16_t cpus;		/* configured count of cpus running on
@@ -2297,6 +2300,7 @@ typedef struct partition_info {
 	char *billing_weights_str;/* per TRES billing weights string */
 	char *cluster_name;	/* Cluster name ONLY set in federation */
 	uint16_t cr_type;	/* see CR_* values */
+	uint32_t cpu_bind;	/* Default task binding */
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;    /* comma delimited list of denied accounts */
@@ -2993,6 +2997,7 @@ typedef struct submit_response_msg {
 /* NOTE: If setting node_addr and/or node_hostname then comma separate names
  * and include an equal number of node_names */
 typedef struct slurm_update_node_msg {
+	uint32_t cpu_bind;	/* default CPU binding type */
 	char *features;		/* new available feature for node */
 	char *features_act;	/* new active feature for node */
 	char *gres;		/* new generic resources for node */

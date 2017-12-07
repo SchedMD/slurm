@@ -53,25 +53,25 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
-#include "src/common/assoc_mgr.h"
 
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/groups.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
-#include "src/slurmctld/licenses.h"
-#include "src/slurmctld/burst_buffer.h"
-
 
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */
 #define PART_STATE_VERSION        "PROTOCOL_VERSION"
@@ -513,6 +513,7 @@ static int _dump_part_state(void *x, void *arg)
 	else
 		part_ptr->flags &= (~PART_FLAG_DEFAULT);
 
+	pack32(part_ptr->cpu_bind,	 buffer);
 	packstr(part_ptr->name,          buffer);
 	pack32(part_ptr->grace_time,	 buffer);
 	pack32(part_ptr->max_time,       buffer);
@@ -588,7 +589,7 @@ int load_all_part_state(void)
 	char *deny_accounts = NULL, *deny_qos = NULL, *qos_char = NULL;
 	char *state_file = NULL, *data = NULL;
 	uint32_t max_time, default_time, max_nodes, min_nodes;
-	uint32_t max_cpus_per_node = INFINITE, grace_time = 0;
+	uint32_t max_cpus_per_node = INFINITE, cpu_bind = 0, grace_time = 0;
 	time_t time;
 	uint16_t flags, priority_job_factor, priority_tier;
 	uint16_t max_share, over_time_limit = NO_VAL16, preempt_mode;
@@ -658,7 +659,58 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+			safe_unpack32(&cpu_bind, buffer);
+			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpack32(&grace_time, buffer);
+			safe_unpack32(&max_time, buffer);
+			safe_unpack32(&default_time, buffer);
+			safe_unpack32(&max_cpus_per_node, buffer);
+			safe_unpack32(&max_nodes, buffer);
+			safe_unpack32(&min_nodes, buffer);
+
+			safe_unpack16(&flags,        buffer);
+			safe_unpack16(&max_share,    buffer);
+			safe_unpack16(&over_time_limit, buffer);
+			safe_unpack16(&preempt_mode, buffer);
+
+			safe_unpack16(&priority_job_factor, buffer);
+			safe_unpack16(&priority_tier, buffer);
+			if (priority_job_factor > part_max_priority)
+				part_max_priority = priority_job_factor;
+
+			safe_unpack16(&state_up, buffer);
+			safe_unpack16(&cr_type, buffer);
+
+			safe_unpackstr_xmalloc(&allow_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_groups,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&qos_char,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
+			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
+			    (flags & PART_FLAG_EXC_USER_CLR)  ||
+			    (flags & PART_FLAG_HIDDEN_CLR)    ||
+			    (flags & PART_FLAG_NO_ROOT_CLR)   ||
+			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
+			    (flags & PART_FLAG_REQ_RESV_CLR)  ||
+			    (flags & PART_FLAG_LLN_CLR)) {
+				error("Invalid data for partition %s: flags=%u",
+				      part_name, flags);
+				error_code = EINVAL;
+			}
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+			cpu_bind = 0;
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
@@ -740,13 +792,14 @@ int load_all_part_state(void)
 					   part_name);
 		part_cnt++;
 		if (part_ptr == NULL) {
-			info("load_all_part_state: partition %s missing from "
-				"configuration file", part_name);
+			info("%s: partition %s missing from configuration file",
+			     __func__, part_name);
 			part_ptr = create_part_record();
 			xfree(part_ptr->name);
 			part_ptr->name = xstrdup(part_name);
 		}
 
+		part_ptr->cpu_bind       = cpu_bind;
 		part_ptr->flags          = flags;
 		if (part_ptr->flags & PART_FLAG_DEFAULT) {
 			xfree(default_part_name);
@@ -1135,7 +1188,49 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 {
 	uint32_t altered;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		if (default_part_loc == part_ptr)
+			part_ptr->flags |= PART_FLAG_DEFAULT;
+		else
+			part_ptr->flags &= (~PART_FLAG_DEFAULT);
+
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->cpu_bind, buffer);
+		pack32(part_ptr->grace_time, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		altered = part_ptr->total_nodes;
+		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
+		pack32(altered,              buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack64(part_ptr->def_mem_per_cpu, buffer);
+		pack32(part_ptr->max_cpus_per_node, buffer);
+		pack64(part_ptr->max_mem_per_cpu, buffer);
+
+		pack16(part_ptr->flags,      buffer);
+		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->over_time_limit, buffer);
+		pack16(part_ptr->preempt_mode, buffer);
+		pack16(part_ptr->priority_job_factor, buffer);
+		pack16(part_ptr->priority_tier, buffer);
+		pack16(part_ptr->state_up, buffer);
+		pack16(part_ptr->cr_type, buffer);
+
+		packstr(part_ptr->allow_accounts, buffer);
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->allow_qos, buffer);
+		packstr(part_ptr->qos_char, buffer);
+		packstr(part_ptr->alternate, buffer);
+		packstr(part_ptr->deny_accounts, buffer);
+		packstr(part_ptr->deny_qos, buffer);
+		packstr(part_ptr->nodes, buffer);
+		pack_bit_str_hex(part_ptr->node_bitmap, buffer);
+		packstr(part_ptr->billing_weights_str, buffer);
+		packstr(part_ptr->tres_fmt_str, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else
@@ -1225,6 +1320,17 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	last_part_update = time(NULL);
+
+	if (part_desc->cpu_bind) {
+		char tmp_str[128];
+		slurm_sprint_cpu_bind_type(tmp_str, part_desc->cpu_bind);
+		info("update_part: setting CpuBind to %s for partition %s",
+		     tmp_str, part_desc->name);
+		if (part_desc->cpu_bind == CPU_BIND_OFF)
+			part_ptr->cpu_bind = 0;
+		else
+			part_ptr->cpu_bind = part_desc->cpu_bind;
+	}
 
 	if (part_desc->max_cpus_per_node != NO_VAL) {
 		info("update_part: setting MaxCPUsPerNode to %u for partition %s",

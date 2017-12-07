@@ -21,7 +21,7 @@ generated_html = \
 	contributor.html \
 	core_spec.html \
 	core_spec_plugins.html \
-	cpu_management.html \
+	cpu_bind.html \
 	cray.html \
 	cray_alps.html \
 	crypto_plugins.html \
@@ -82,6 +82,7 @@ generated_html = \
 	quickstart_admin.html \
 	quickstart.html \
 	reservations.html \
+	resource_binding.html \
 	resource_limits.html \
 	rosetta.html \
 	route_plugin.html \

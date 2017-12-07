@@ -37,8 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "scontrol.h"
+#include "slurm.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"
+
+#include "src/scontrol/scontrol.h"
 
 /*
  * scontrol_update_node - update the slurm node configuration per the supplied
@@ -59,7 +62,7 @@ scontrol_update_node (int argc, char **argv)
 	int tag_len, val_len;
 
 	slurm_init_update_node_msg(&node_msg);
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		tag = argv[i];
 		val = strchr(argv[i], '=');
 		if (val) {
@@ -85,6 +88,16 @@ scontrol_update_node (int argc, char **argv)
 					 MAX(tag_len,3))) {
 			node_msg.features_act = val;
 			update_cnt++;
+		} else if (xstrncasecmp(tag, "CpuBind", MAX(tag_len, 7)) == 0) {
+			if (xlate_cpu_bind_str(val, &node_msg.cpu_bind) !=
+			    SLURM_SUCCESS) {
+				exit_code = 1;
+				error("Invalid input %s", argv[i]);
+				return -1;
+			}
+			update_cnt++;
+
+
 		} else if (!xstrncasecmp(tag, "Features", MAX(tag_len, 1)) ||
 			   !xstrncasecmp(tag, "AvailableFeatures",
 					 MAX(tag_len,3))) {
