@@ -19,6 +19,9 @@ documents those changes that are of interest to users and administrators.
  -- Wait to start a batch step until the prolog and extern step are
     fully ran/launched.  Only matters if running with
     PrologFlags=[contain|alloc].
+ -- Truncate a range for SlurmctldPort to FD_SETSIZE elements and throw an
+    error, otherwise network traffic may be lost due to poll() not detecting
+    traffic.
 
 * Changes in Slurm 17.11.0
 ==========================
