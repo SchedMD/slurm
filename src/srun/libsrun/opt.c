@@ -628,6 +628,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
 		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
 		opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
+		opt_dup->srun_opt->pack_group = xstrdup(sropt.pack_group);
 
 		list_append(opt_list, opt_dup);
 		pending_append = false;

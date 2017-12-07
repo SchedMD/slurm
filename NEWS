@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Truncate a range for SlurmctldPort to FD_SETSIZE elements and throw an
     error, otherwise network traffic may be lost due to poll() not detecting
     traffic.
+ -- Fix for srun --pack-group option that can reuse/corrupt memory.
 
 * Changes in Slurm 17.11.0
 ==========================
