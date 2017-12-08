@@ -203,7 +203,8 @@ static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
 static int  _run_epilog(job_env_t *job_env);
-static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred);
+static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred,
+			bool remove_running);
 static void _rpc_forward_data(slurm_msg_t *msg);
 static int  _rpc_network_callerid(slurm_msg_t *msg);
 
@@ -1451,7 +1452,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
 		job_env.user_name = req->user_name;
-		rc =  _run_prolog(&job_env, req->cred);
+		rc =  _run_prolog(&job_env, req->cred, true);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
 			if (WIFSIGNALED(rc))
@@ -2149,8 +2150,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
+		/* signal just in case the batch rpc got here before we did */
+		slurm_cond_broadcast(&conf->prolog_running_cond);
 		slurm_mutex_unlock(&prolog_mutex);
-
 		memset(&job_env, 0, sizeof(job_env_t));
 
 		job_env.jobid = req->job_id;
@@ -2172,7 +2174,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if ((rc = container_g_create(req->job_id)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
-			rc = _run_prolog(&job_env, req->cred);
+			rc = _run_prolog(&job_env, req->cred, false);
 		xfree(job_env.resv_id);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -2188,6 +2190,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if ((rc == SLURM_SUCCESS) &&
 		    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
 			rc = _spawn_prolog_stepd(msg);
+		_remove_job_running_prolog(req->job_id);
 	} else
 		slurm_mutex_unlock(&prolog_mutex);
 
@@ -2274,6 +2277,40 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		goto done;
 	}
 
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) {
+		struct timespec ts = {0, 0};
+		struct timeval now;
+		int retry_cnt = 0;
+		/*
+		 * We want to wait until the rpc_prolog is ran before
+		 * continuing. Since we are already locked on prolog_mutex here
+		 * we don't have to unlock to wait on the
+		 * conf->prolog_running_cond.
+		 */
+		while (first_job_run) {
+			retry_cnt++;
+			/*
+			 * This race should only happen for at most a second as
+			 * we are only waiting for the other rpc to get here.
+			 * If we are waiting for more that 50 trys something bad
+			 * happened.
+			 */
+			if (retry_cnt > 50) {
+				rc = ESLURMD_PROLOG_FAILED;
+				goto done;
+			}
+
+			gettimeofday(&now, NULL);
+			ts.tv_sec = now.tv_sec + 1;
+			ts.tv_nsec = now.tv_usec * 1000;
+
+			slurm_cond_timedwait(&conf->prolog_running_cond,
+					     &prolog_mutex, &ts);
+			first_job_run = !slurm_cred_jobid_cached(conf->vctx,
+								 req->job_id);
+		}
+	}
+
 	/*
 	 * Insert jobid into credential context to denote that
 	 * we've now "seen" an instance of the job
@@ -2308,7 +2345,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		if ((rc = container_g_create(req->job_id)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
-			rc = _run_prolog(&job_env, req->cred);
+			rc = _run_prolog(&job_env, req->cred, true);
 		xfree(job_env.resv_id);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -3157,7 +3194,7 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uint16_t signal,
 	if (_prolog_is_running(jobid)) {
 		info("signal %d req for %u.%u while prolog is running."
 		     " Returning failure.", signal, jobid, stepid);
-		return EAGAIN;
+		return ESLURM_TRANSITION_STATE_NO_UPDATE;
 	}
 
 	fd = stepd_connect(conf->spooldir, conf->node_name, jobid, stepid,
@@ -3182,6 +3219,22 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 {
 	int               rc = SLURM_SUCCESS;
 	signal_tasks_msg_t *req = (signal_tasks_msg_t *) msg->data;
+	uid_t job_uid, req_uid;
+
+	job_uid = _get_job_uid(req->job_id);
+
+	if ((int)job_uid < 0) {
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
+
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, conf->auth_info);
+	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
+		debug("%s: from uid %ld for job %u owned by uid %ld",
+		      __func__, (long)req_uid, req->job_id, (long)job_uid);
+		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
+		goto done;
+	}
 
 	/* security is handled when communicating with the stepd */
 	if (req->flags & KILL_FULL_JOB) {
@@ -3200,7 +3253,7 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 		rc = _signal_jobstep(req->job_id, req->job_step_id,
 				     req->signal, req->flags);
 	}
-
+done:
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -3791,9 +3844,15 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 	slurm_msg_t           resp_msg;
 	job_id_response_msg_t resp;
 	bool         found = false;
+	bool         auth = false;
 	List         steps;
 	ListIterator i;
 	step_loc_t *stepd;
+	uid_t req_uid;
+
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, conf->auth_info);
+	if (_slurm_authorized_user(req_uid))
+		auth = true;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
@@ -3804,7 +3863,13 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 				   &stepd->protocol_version);
 		if (fd == -1)
 			continue;
-
+		if (!auth &&
+		    (stepd_get_uid(fd, stepd->protocol_version) != req_uid)) {
+			close(fd);
+			debug3("%s: REQUEST_JOB_ID from uid=%d but they aren't the owner of job %u",
+			       __func__, req_uid, stepd->jobid);
+			continue;
+		}
 		if (stepd_pid_in_container(
 			    fd, stepd->protocol_version,
 			    req->job_pid)
@@ -5821,7 +5886,7 @@ static int _run_job_script(const char *name, const char *path,
 #ifdef HAVE_BG
 /* a slow prolog is expected on bluegene systems */
 static int
-_run_prolog(job_env_t *job_env, slurm_cred_t *cred)
+_run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 {
 	int rc;
 	char *my_prolog;
@@ -5836,7 +5901,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 
 	rc = _run_job_script("prolog", my_prolog, job_env->jobid,
 			     -1, my_env, job_env->uid);
-	_remove_job_running_prolog(job_env->jobid);
+	if (remove_running)
+		_remove_job_running_prolog(job_env->jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
 
@@ -5905,7 +5971,7 @@ static int _get_node_inx(char *hostlist)
 }
 
 static int
-_run_prolog(job_env_t *job_env, slurm_cred_t *cred)
+_run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 {
 	DEF_TIMERS;
 	int rc, diff_time;
@@ -5979,7 +6045,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 		     job_env->jobid, diff_time);
 	}
 
-	_remove_job_running_prolog(job_env->jobid);
+	if (remove_running)
+		_remove_job_running_prolog(job_env->jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
 

@@ -431,6 +431,24 @@ rwfail:
 #endif
 }
 
+static void _set_job_log_prefix(uint32_t jobid, uint32_t stepid)
+{
+	char *buf;
+
+	if (stepid == SLURM_BATCH_SCRIPT)
+		buf = xstrdup_printf("[%u.batch]", jobid);
+	else if (stepid == SLURM_EXTERN_CONT)
+		buf = xstrdup_printf("[%u.extern]", jobid);
+	else
+		buf = xstrdup_printf("[%u.%u]", jobid, stepid);
+
+	setproctitle("%s", buf);
+
+	/* note: will claim ownership of buf, do not free */
+	xstrcat(buf, " ");
+	log_set_fpfx(&buf);
+}
+
 /*
  *  This function handles the initialization information from slurmd
  *  sent by _send_slurmstepd_init() in src/slurmd/slurmd/req.c.
@@ -449,6 +467,7 @@ _init_from_slurmd(int sock, char **argv,
 	uint16_t port;
 	char buf[16];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
+	uint32_t jobid = 0, stepid = 0;
 
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
@@ -472,6 +491,10 @@ _init_from_slurmd(int sock, char **argv,
 	if ((conf = read_slurmd_conf_lite (sock)) == NULL)
 		fatal("Failed to read conf from slurmd");
 
+	/*
+	 * LOGGING BEFORE THIS WILL NOT WORK!  Only afterwards will it show
+	 * up in the log.
+	 */
 	log_alter(conf->log_opts, 0, conf->logfile);
 	log_set_timefmt(conf->log_fmt);
 
@@ -546,6 +569,22 @@ _init_from_slurmd(int sock, char **argv,
 	if (unpack_msg(msg, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: we didn't unpack the request correctly");
 	free_buf(buffer);
+
+	switch (step_type) {
+	case LAUNCH_BATCH_JOB:
+		jobid = ((batch_job_launch_msg_t *)msg->data)->job_id;
+		stepid = ((batch_job_launch_msg_t *)msg->data)->step_id;
+		break;
+	case LAUNCH_TASKS:
+		jobid = ((launch_tasks_request_msg_t *)msg->data)->job_id;
+		stepid = ((launch_tasks_request_msg_t *)msg->data)->job_step_id;
+		break;
+	default:
+		fatal("%s: Unrecognized launch RPC (%d)", __func__, step_type);
+		break;
+	}
+
+	_set_job_log_prefix(jobid, stepid);
 
 	/*
 	 * Swap the field to the srun client version, which will eventually

@@ -101,7 +101,6 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/reverse_tree.h"
-#include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/common/task_plugin.h"
@@ -172,7 +171,6 @@ static int  _drain_node(char *reason);
 static int  _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized);
 static int  _become_user(stepd_step_rec_t *job, struct priv_state *ps);
 static void  _set_prio_process (stepd_step_rec_t *job);
-static void _set_job_log_prefix(stepd_step_rec_t *job);
 static int  _setup_normal_io(stepd_step_rec_t *job);
 static int  _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 			     struct priv_state *state, bool get_list);
@@ -188,8 +186,6 @@ static void _send_step_complete_msgs(stepd_step_rec_t *job);
 static void _set_job_state(stepd_step_rec_t *job, slurmstepd_state_t new_state);
 static void _wait_for_all_tasks(stepd_step_rec_t *job);
 static int  _wait_for_any_task(stepd_step_rec_t *job, bool waitflag);
-
-static void _setargs(stepd_step_rec_t *job);
 
 static void _random_sleep(stepd_step_rec_t *job);
 static int  _run_script_as_user(const char *name, const char *path,
@@ -226,10 +222,6 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 		errno = fail;
 		return NULL;
 	}
-
-	_set_job_log_prefix(job);
-
-	_setargs(job);
 
 	job->envtp->cli = cli;
 	job->envtp->self = self;
@@ -436,10 +428,6 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 		return NULL;
 	}
 
-	_set_job_log_prefix(job);
-
-	_setargs(job);
-
 	if ((job->batchdir = _make_batch_dir(job)) == NULL) {
 		goto cleanup;
 	}
@@ -482,22 +470,6 @@ cleanup:
 	errno = ESLURMD_CREATE_BATCH_DIR_ERROR;
 
 	return NULL;
-}
-
-static void _set_job_log_prefix(stepd_step_rec_t *job)
-{
-	char *buf;
-
-	if (job->stepid == SLURM_BATCH_SCRIPT) {
-		buf = xstrdup_printf("[%u.batch] ", job->jobid);
-	} else if (job->stepid == SLURM_EXTERN_CONT) {
-		buf = xstrdup_printf("[%u.extern] ", job->jobid);
-	} else {
-		buf = xstrdup_printf("[%u.%u] ", job->jobid, job->stepid);
-	}
-
-	/* note: will claim ownership of buf, do not free */
-	log_set_fpfx(&buf);
 }
 
 static int
@@ -2668,17 +2640,6 @@ _slurmd_job_log_init(stepd_step_rec_t *job)
 	}
 	verbose("debug level = %d", conf->log_opts.stderr_level);
 	return SLURM_SUCCESS;
-}
-
-
-static void _setargs(stepd_step_rec_t *job)
-{
-	if (job->stepid == SLURM_BATCH_SCRIPT)
-		setproctitle("[%u.batch]", job->jobid);
-	else if (job->stepid == SLURM_EXTERN_CONT)
-		setproctitle("[%u.extern]", job->jobid);
-	else
-		setproctitle("[%u.%u]", job->jobid, job->stepid);
 }
 
 /*

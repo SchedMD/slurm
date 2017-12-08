@@ -132,8 +132,12 @@ extern char *x11_get_xauth(void)
 	 * The "/unix" bit is optional, and captured in "[[:alnum:].-/]+:".
 	 * '.' and '-' are also allowed in the hostname portion, so match them
 	 * in addition to '/'.
+	 *
+	 * Warning: the '-' must be either first or last in the [] brackets,
+	 * otherwise it will be interpreted as a range instead of the literal
+	 * character.
 	 */
-	static char *cookie_pattern = "^[[:alnum:].-/]+:[[:digit:]]+"
+	static char *cookie_pattern = "^[[:alnum:]./-]+:[[:digit:]]+"
 				      "[[:space:]]+MIT-MAGIC-COOKIE-1"
 				      "[[:space:]]+([[:xdigit:]]+)\n$";
 

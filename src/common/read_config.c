@@ -4202,6 +4202,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			}
 			conf->slurmctld_port_count = port_long + 1 -
 						     conf->slurmctld_port;
+
+			/*
+			 * The port count needs to be at most FD_SETSIZE,
+			 * otherwise we cannot poll() on those high numbered
+			 * ports and may miss traffic.
+			 */
+			if (conf->slurmctld_port_count > FD_SETSIZE) {
+				error("SlurmctldPort=%s exceeds FD_SETSIZE=%d,"
+				      " truncating to %d-%d", temp_str,
+				      FD_SETSIZE, conf->slurmctld_port,
+				      (conf->slurmctld_port + FD_SETSIZE - 1));
+				conf->slurmctld_port_count = FD_SETSIZE;
+			}
 		} else if (end_ptr[0] != '\0') {
 			error("Invalid SlurmctldPort %s", temp_str);
 			return SLURM_ERROR;
