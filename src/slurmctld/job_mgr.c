@@ -7588,10 +7588,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			return error_code;
 	}
 
-	if (job_desc->name)
-		job_ptr->name = xstrdup(job_desc->name);
-	if (job_desc->wckey)
-		job_ptr->wckey = xstrdup(job_desc->wckey);
+	job_ptr->name = xstrdup(job_desc->name);
+	job_ptr->wckey = xstrdup(job_desc->wckey);
 
 	/* Since this is only used in the slurmctld copy it now.
 	 */
@@ -7688,11 +7686,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->exc_node_bitmap = *exc_bitmap;
 		*exc_bitmap = NULL;	/* Reused nothing left to free */
 	}
-	if (job_desc->features)
-		detail_ptr->features = xstrdup(job_desc->features);
-	if (job_desc->cluster_features)
-		detail_ptr->cluster_features =
-			xstrdup(job_desc->cluster_features);
+	detail_ptr->features = xstrdup(job_desc->features);
+	detail_ptr->cluster_features = xstrdup(job_desc->cluster_features);
 	if (job_desc->fed_siblings_viable) {
 		job_ptr->fed_details = xmalloc(sizeof(job_fed_details_t));
 		job_ptr->fed_details->siblings_viable =
@@ -7759,14 +7754,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
 	if (job_desc->num_tasks != NO_VAL)
 		detail_ptr->num_tasks = job_desc->num_tasks;
-	if (job_desc->std_err)
-		detail_ptr->std_err = xstrdup(job_desc->std_err);
-	if (job_desc->std_in)
-		detail_ptr->std_in = xstrdup(job_desc->std_in);
-	if (job_desc->std_out)
-		detail_ptr->std_out = xstrdup(job_desc->std_out);
-	if (job_desc->work_dir)
-		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
+	detail_ptr->std_err = xstrdup(job_desc->std_err);
+	detail_ptr->std_in = xstrdup(job_desc->std_in);
+	detail_ptr->std_out = xstrdup(job_desc->std_out);
+	detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	if (job_desc->begin_time > time(NULL))
 		detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo =
