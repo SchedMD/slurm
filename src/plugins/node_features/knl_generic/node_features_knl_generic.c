@@ -1605,7 +1605,7 @@ extern int node_features_p_node_update(char *active_features,
 {
 	int i, i_first, i_last;
 	int rc = SLURM_SUCCESS, numa_inx = -1;
-	uint16_t mcdram_inx = 0;
+	int mcdram_inx = 0;
 	uint64_t mcdram_size;
 	struct node_record *node_ptr;
 	char *save_ptr = NULL, *tmp, *tok;
