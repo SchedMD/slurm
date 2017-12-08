@@ -795,7 +795,7 @@ extern void slurm_free_part_info_request_msg(part_info_request_msg_t *msg)
 	xfree(msg);
 }
 
-extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
+extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 {
 	int i;
 
@@ -811,6 +811,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->argv);
 		FREE_NULL_BITMAP(msg->array_bitmap);
 		xfree(msg->array_inx);
+		xfree(msg->batch_features);
 		xfree(msg->blrtsimage);
 		xfree(msg->burst_buffer);
 		xfree(msg->ckpt_dir);
@@ -824,13 +825,11 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 			xfree(msg->environment);
 		}
 		xfree(msg->extra);
-		xfree(msg->std_err);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
 		xfree(msg->cluster_features);
 		xfree(msg->job_id_str);
 		xfree(msg->gres);
-		xfree(msg->std_in);
 		xfree(msg->licenses);
 		xfree(msg->linuximage);
 		xfree(msg->mail_user);
@@ -840,9 +839,8 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->origin_cluster);
-		xfree(msg->qos);
-		xfree(msg->std_out);
 		xfree(msg->partition);
+		xfree(msg->qos);
 		xfree(msg->ramdiskimage);
 		xfree(msg->req_nodes);
 		xfree(msg->reservation);
@@ -850,7 +848,9 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->script);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
-
+		xfree(msg->std_err);
+		xfree(msg->std_in);
+		xfree(msg->std_out);
 		if (msg->spank_job_env) {
 			for (i = 0; i < msg->spank_job_env_size; i++)
 				xfree(msg->spank_job_env[i]);
@@ -980,6 +980,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		if (job->array_bitmap)
 			bit_free((bitstr_t *) job->array_bitmap);
 		xfree(job->array_task_str);
+		xfree(job->batch_features);
 		xfree(job->batch_host);
 		xfree(job->burst_buffer);
 		xfree(job->burst_buffer_state);

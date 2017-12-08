@@ -599,10 +599,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, line_end);
 
 	/****** Line 14 (optional) ******/
+	if (job_ptr->batch_features)
+		xstrfmtcat(out, "BatchFeatures=%s", job_ptr->batch_features);
 	if (job_ptr->batch_host) {
-		xstrfmtcat(out, "BatchHost=%s", job_ptr->batch_host);
-		xstrcat(out, line_end);
+		char *sep = "";
+		if (job_ptr->batch_features)
+			sep = " ";
+		xstrfmtcat(out, "%sBatchHost=%s", sep, job_ptr->batch_host);
 	}
+	if (job_ptr->batch_features || job_ptr->batch_host)
+		xstrcat(out, line_end);
 
 	/****** Line 14a (optional) ******/
 	if (job_ptr->fed_siblings_active || job_ptr->fed_siblings_viable) {

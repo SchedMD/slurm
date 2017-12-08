@@ -604,6 +604,7 @@ struct job_record {
 	uint32_t assoc_id;              /* used for accounting plugins */
 	slurmdb_assoc_rec_t *assoc_ptr; /* job's assoc record ptr confirm the
 					 * value before use */
+	char *batch_features;		/* features required for batch script */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
 	char *batch_host;		/* host executing batch script */

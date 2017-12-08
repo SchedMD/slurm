@@ -1432,6 +1432,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char **argv;		/* arguments to the script */
 	char *array_inx;	/* job array index values */
 	void *array_bitmap;	/* NOTE: Set by slurmctld */
+	char *batch_features;	/* features required for batch script's node */
 	time_t begin_time;	/* delay initiation until this time */
 	uint32_t bitflags;      /* bitflags */
 	char *burst_buffer;	/* burst buffer specifications */
@@ -1614,6 +1615,7 @@ typedef struct job_info {
 	uint32_t array_max_tasks; /* Maximum number of running tasks */
 	char *array_task_str;	/* string expression of task IDs in this record */
 	uint32_t assoc_id;	/* association id for job */
+	char *batch_features;	/* features required for batch script's node */
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	char *batch_host;	/* name of host running batch script */
 	uint32_t bitflags;      /* Various job flags */

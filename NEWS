@@ -31,6 +31,9 @@ documents those changes that are of interest to users and administrators.
     task binding. Modify the scontrol to report and modify these parameters.
  -- Add "NumaCpuBind" option to knl.conf file to automatically change a node's
     CpuBind parameter based upon changes to a node's NUMA mode.
+ -- Add sbatch "--batch" option to identify features required on batch node.
+    For example "sbatch --batch=haswell ...".
+ -- Add "BatchFeatures" field to output of "scontrol show job".
 
 * Changes in Slurm 17.11.1
 ==========================

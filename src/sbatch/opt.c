@@ -123,6 +123,7 @@ enum wrappers {
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
+#define LONG_OPT_BATCH       0x101
 #define LONG_OPT_MEM_BIND    0x102
 #define LONG_OPT_POWER       0x103
 #define LONG_OPT_JOBID       0x105
@@ -478,6 +479,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
   {"SBATCH_ARRAY_INX",     OPT_STRING,     &sbopt.array_inx,   NULL          },
   {"SBATCH_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
+  {"SBATCH_BATCH",         OPT_STRING,     &sbopt.batch_features, NULL       },
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &sbopt.ckpt_interval_str, NULL    },
   {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &sbopt.ckpt_dir,    NULL          },
@@ -767,10 +769,6 @@ _process_env_var(env_vars_t *e, const char *val)
 static struct option long_options[] = {
 	{"account",       required_argument, 0, 'A'},
 	{"array",         required_argument, 0, 'a'},
-	{"batch",         no_argument,       0, 'b'}, /* batch option
-							 is only here for
-							 moab translation
-							 doesn't do anything */
 	{"extra-node-info", required_argument, 0, 'B'},
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"cluster-constraint",required_argument,0, LONG_OPT_CLUSTER_CONSTRAINT},
@@ -812,6 +810,7 @@ static struct option long_options[] = {
 	{"wait",          no_argument,       0, 'W'},
 	{"exclude",       required_argument, 0, 'x'},
 	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
+	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"begin",         required_argument, 0, LONG_OPT_BEGIN},
 	{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
@@ -1397,10 +1396,6 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
-		case 'b':
-			/* Only here for Moab transition not suppose
-			   to do anything */
-			break;
 		case 'B':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1927,6 +1922,10 @@ static void _set_options(int argc, char **argv)
 			opt.hint_set = true;
 			opt.ntasks_per_core_set = true;
 			opt.threads_per_core_set = true;
+			break;
+		case LONG_OPT_BATCH:
+			xfree(sbopt.batch_features);
+			sbopt.batch_features = xstrdup(optarg);
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
 			xfree(opt.blrtsimage);
@@ -3387,6 +3386,8 @@ static void _opt_list(void)
 	if (opt.nice)
 		info("nice              : %d", opt.nice);
 	info("account           : %s", opt.account);
+	if (sbopt.batch_features)
+		info("batch             : %s", sbopt.batch_features);
 	info("comment           : %s", opt.comment);
 	info("dependency        : %s", opt.dependency);
 	if (opt.gres)

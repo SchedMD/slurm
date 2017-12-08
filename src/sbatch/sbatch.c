@@ -575,6 +575,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (sbopt.array_inx)
 		desc->array_inx = xstrdup(sbopt.array_inx);
+	if (sbopt.batch_features)
+		desc->batch_features = xstrdup(sbopt.batch_features);
 	if (opt.mem_bind)
 		desc->mem_bind       = xstrdup(opt.mem_bind);
 	if (opt.mem_bind_type)

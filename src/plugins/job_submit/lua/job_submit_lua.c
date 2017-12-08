@@ -2,7 +2,7 @@
  *  job_submit_lua.c - Set defaults in job submit request specifications.
  *****************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2017 SchedMD LLC <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -295,6 +295,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushstring (L, job_ptr->account);
 	} else if (!xstrcmp(name, "admin_comment")) {
 		lua_pushstring (L, job_ptr->admin_comment);
+	} else if (!xstrcmp(name, "batch_features")) {
+		lua_pushstring (L, job_ptr->batch_features);
 	} else if (!xstrcmp(name, "burst_buffer")) {
 		lua_pushstring (L, job_ptr->burst_buffer);
 	} else if (!xstrcmp(name, "comment")) {
@@ -704,6 +706,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->alloc_node);
 	} else if (!xstrcmp(name, "array_inx")) {
 		lua_pushstring (L, job_desc->array_inx);
+	} else if (!xstrcmp(name, "batch_features")) {
+		lua_pushstring (L, job_desc->batch_features);
 	} else if (!xstrcmp(name, "begin_time")) {
 		lua_pushnumber (L, job_desc->begin_time);
 	} else if (!xstrcmp(name, "bitflags")) {
@@ -925,6 +929,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->array_inx);
 		if (strlen(value_str))
 			job_desc->array_inx = xstrdup(value_str);
+	} else if (!xstrcmp(name, "batch_features")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->batch_features);
+		if (strlen(value_str))
+			job_desc->batch_features = xstrdup(value_str);
 	} else if (!xstrcmp(name, "begin_time")) {
 		job_desc->begin_time = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "bitflags")) {

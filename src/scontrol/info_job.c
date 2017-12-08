@@ -643,7 +643,7 @@ _list_pids_all_steps(const char *node_name, uint32_t jobid)
 	}
 
 	itr = list_iterator_create(steps);
-	while((stepd = list_next(itr))) {
+	while ((stepd = list_next(itr))) {
 		if (jobid == stepd->jobid) {
 			_list_pids_one_step(stepd->nodename, stepd->jobid,
 					    stepd->stepid);

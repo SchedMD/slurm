@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "June 2017" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "December 2017" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -144,6 +144,20 @@ This option is not supported on BlueGene systems (select/bluegene plugin
 is configured).
 If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'. This
 option applies to job allocations.
+
+.TP
+\fB\-\-batch\fR=<\fIlist\fR>
+Nodes can have \fBfeatures\fR assigned to them by the Slurm administrator.
+Users can specify which of these \fBfeatures\fR are required by their batch
+script using this options.
+For example a job's allocation may include both Intel Haswell and KNL nodes
+with features "haswell" and "knl" respectively.
+On such a configuration the batch script would normally benefit by executing
+on a faster Haswell node.
+This would be specified using the option "\-\-batch=haswell".
+The \-\-batch argument must be a subset of the job's
+\fB\-\-constraint\fR=<\fIlist\fR> argument (i.e. the job can not request only
+KNL nodes, but require the script to execute on a Haswell node).
 
 .TP
 \fB\-\-bbf\fR=<\fIfile_name\fR>
@@ -1738,6 +1752,9 @@ Same as \fB\-\-acctg\-freq\fR
 .TP
 \fBSBATCH_ARRAY_INX\fR
 Same as \fB\-a, \-\-array\fR
+.TP
+\fBSBATCH_BATCH\fR
+Same as \fB\-\-batch\fR
 .TP
 \fBSBATCH_BLRTS_IMAGE\fR
 Same as \fB\-\-blrts\-image\fR

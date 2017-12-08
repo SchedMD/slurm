@@ -85,6 +85,7 @@ typedef struct sbatch_opt {
 	char *efname;			/* error file name		*/
 
 	char *array_inx;		/* --array			*/
+	char *batch_features;		/* --batch			*/
 	char *burst_buffer_file;	/* --bbf			*/
 	int ckpt_interval;		/* --checkpoint (int minutes)	*/
 	char *ckpt_interval_str;	/* --checkpoint			*/
