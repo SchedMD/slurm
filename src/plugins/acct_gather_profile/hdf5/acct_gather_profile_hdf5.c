@@ -472,7 +472,7 @@ extern int acct_gather_profile_p_task_end(pid_t taskpid)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_create_group(const char* name)
+extern int64_t acct_gather_profile_p_create_group(const char* name)
 {
 	hid_t gid_group = make_group(gid_node, name);
 	if (gid_group < 0) {
@@ -488,7 +488,8 @@ extern int acct_gather_profile_p_create_group(const char* name)
 }
 
 extern int acct_gather_profile_p_create_dataset(
-	const char* name, int parent, acct_gather_profile_dataset_t *dataset)
+	const char* name, int64_t parent,
+	acct_gather_profile_dataset_t *dataset)
 {
 	size_t type_size;
 	size_t offset, field_size;

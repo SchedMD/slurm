@@ -500,6 +500,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak of MailDomain configuration string when slurmctld daemon is
     reconfigured.
  -- Fix to properly remove extern steps from the starting_steps list.
+ -- Fix Slurm to work correctly with HDF5 1.10+.
 
 * Changes in Slurm 17.02.9
 ==========================
