@@ -673,7 +673,7 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		{ NULL, PROFILE_FIELD_NOT_SET }
 	};
 
-	static int profile_gid = -1;
+	static int64_t profile_gid = -1;
 	double et;
 	union {
 		double d;

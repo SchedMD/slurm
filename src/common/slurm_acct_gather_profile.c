@@ -77,8 +77,8 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*node_step_end)    (void);
 	int (*task_start)       (uint32_t);
 	int (*task_end)         (pid_t);
-	int (*create_group)     (const char*);
-	int (*create_dataset)   (const char*, int,
+	int64_t (*create_group)(const char*);
+	int (*create_dataset)   (const char*, int64_t,
 				 acct_gather_profile_dataset_t *);
 	int (*add_sample_data)  (uint32_t, void*, time_t);
 	void (*conf_values)     (List *data);
@@ -622,9 +622,9 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid)
 	return retval;
 }
 
-extern int acct_gather_profile_g_create_group(const char *name)
+extern int64_t acct_gather_profile_g_create_group(const char *name)
 {
-	int retval = SLURM_ERROR;
+	int64_t retval = SLURM_ERROR;
 
 	if (acct_gather_profile_init() < 0)
 		return retval;
@@ -636,7 +636,7 @@ extern int acct_gather_profile_g_create_group(const char *name)
 }
 
 extern int acct_gather_profile_g_create_dataset(
-	const char *name, int parent,
+	const char *name, int64_t parent,
 	acct_gather_profile_dataset_t *dataset)
 {
 	int retval = SLURM_ERROR;

@@ -195,7 +195,7 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid);
  * Returns -- the identifier of the group on success,
  *            a negative value on failure
  */
-extern int acct_gather_profile_g_create_group(const char* name);
+extern int64_t acct_gather_profile_g_create_group(const char* name);
 
 /*
  * Create a new dataset to record profiling data in the group "parent".
@@ -213,7 +213,8 @@ extern int acct_gather_profile_g_create_group(const char* name);
  *            a negative value on failure
  */
 extern int acct_gather_profile_g_create_dataset(
-	const char *name, int parent, acct_gather_profile_dataset_t *dataset);
+	const char *name, int64_t parent,
+	acct_gather_profile_dataset_t *dataset);
 
 /*
  * Put data at the Node Samples level. Typically called from something called
