@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for srun --pack-group option that can reuse/corrupt memory.
  -- Fix handling ultra long hostlists in a hostfile.
  -- X11: fix xauth regex to handle '-' in hostnames again.
+ -- Fix potential node reboot timeout problem for "scontrol reboot" command.
 
 * Changes in Slurm 17.11.0
 ==========================
