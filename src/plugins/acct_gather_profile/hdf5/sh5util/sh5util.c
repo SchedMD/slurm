@@ -107,7 +107,7 @@
 // Data types supported by all HDF5 plugins of this type
 
 #ifndef H5free_memory
-#define H5free_memory2 free
+#define H5free_memory free
 #endif
 
 sh5util_opts_t params;
