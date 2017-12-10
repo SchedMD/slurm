@@ -1281,10 +1281,13 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 
 static pthread_mutex_t _pmixp_pp_lock;
 
+#define PMIXP_PP_PWR2_MIN 0
+#define PMIXP_PP_PWR2_MAX 24
+
 static bool _pmixp_pp_on = false;
 static bool _pmixp_pp_same_thr = false;
-static int _pmixp_pp_low = 0;
-static int _pmixp_pp_up = 24;
+static int _pmixp_pp_low = PMIXP_PP_PWR2_MIN;
+static int _pmixp_pp_up = PMIXP_PP_PWR2_MAX;
 static int _pmixp_pp_bound = 10;
 static int _pmixp_pp_siter = 1000;
 static int _pmixp_pp_liter = 100;
@@ -1373,13 +1376,15 @@ void pmixp_server_init_pp(char ***env)
 
 	if ((env_ptr = getenvp(*env, PMIXP_PP_LOW))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_pp_low = atoi(env_ptr);
+			_pmixp_pp_low = atoi(env_ptr) < PMIXP_PP_PWR2_MAX ?
+				atoi(env_ptr) : PMIXP_PP_PWR2_MAX;
 		}
 	}
 
 	if ((env_ptr = getenvp(*env, PMIXP_PP_UP))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_pp_up = atoi(env_ptr);
+			_pmixp_pp_up = atoi(env_ptr) < PMIXP_PP_PWR2_MAX ?
+				atoi(env_ptr) : PMIXP_PP_PWR2_MAX;
 		}
 	}
 
@@ -1527,9 +1532,12 @@ int pmixp_server_pp_send(int nodeid, int size)
 
 static pthread_mutex_t _pmixp_pp_lock;
 
+#define PMIXP_CPERF_PWR2_MIN 0
+#define PMIXP_CPERF_PWR2_MAX 20
+
 static bool _pmixp_cperf_on = false;
-static int _pmixp_cperf_low = 0;
-static int _pmixp_cperf_up = 24;
+static int _pmixp_cperf_low = PMIXP_CPERF_PWR2_MIN;
+static int _pmixp_cperf_up = PMIXP_CPERF_PWR2_MAX;
 static int _pmixp_cperf_bound = 10;
 static int _pmixp_cperf_siter = 1000;
 static int _pmixp_cperf_liter = 100;
@@ -1562,13 +1570,15 @@ void pmixp_server_init_cperf(char ***env)
 
 	if ((env_ptr = getenvp(*env, PMIXP_CPERF_LOW))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_cperf_low = atoi(env_ptr);
+			_pmixp_cperf_low = atoi(env_ptr) < PMIXP_CPERF_PWR2_MAX ?
+				atoi(env_ptr) : PMIXP_CPERF_PWR2_MAX;
 		}
 	}
 
 	if ((env_ptr = getenvp(*env, PMIXP_CPERF_UP))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_cperf_up = atoi(env_ptr);
+			_pmixp_cperf_up = atoi(env_ptr) < PMIXP_CPERF_PWR2_MAX ?
+				atoi(env_ptr) : PMIXP_CPERF_PWR2_MAX;
 		}
 	}
 
