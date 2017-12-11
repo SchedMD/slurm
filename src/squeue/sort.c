@@ -66,6 +66,7 @@ static int _sort_job_by_state_compact(void *void1, void *void2);
 static int _sort_job_by_time_end(void *void1, void *void2);
 static int _sort_job_by_time_left(void *void1, void *void2);
 static int _sort_job_by_time_limit(void *void1, void *void2);
+static int _sort_job_by_time_submit(void *void1, void *void2);
 static int _sort_job_by_time_start(void *void1, void *void2);
 static int _sort_job_by_time_used(void *void1, void *void2);
 static int _sort_job_by_node_list(void *void1, void *void2);
@@ -190,6 +191,8 @@ void sort_job_list(List job_list)
 			list_sort(job_list, _sort_job_by_user_id);
 		else if (params.sort[i] == 'v')
 			list_sort(job_list, _sort_job_by_reservation);
+		else if (params.sort[i] == 'V')
+			list_sort(job_list, _sort_job_by_time_submit);
 		else if (params.sort[i] == 'z')
 			list_sort(job_list, _sort_job_by_num_sct);
 		else {
@@ -737,6 +740,21 @@ static int _sort_job_by_time_limit(void *void1, void *void2)
 	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = _diff_uint32(job1->time_limit, job2->time_limit);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+static int _sort_job_by_time_submit(void *void1, void *void2)
+{
+	int diff;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
+
+	diff = _diff_time(job1->submit_time, job2->submit_time);
 
 	if (reverse_order)
 		diff = -diff;
