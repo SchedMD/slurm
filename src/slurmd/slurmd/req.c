@@ -4848,12 +4848,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	if ((req->op == SUSPEND_JOB) && (req->indf_susp))
 		switch_g_job_suspend(req->switch_info, 5);
 
-	/* Release or reclaim resources bound to these tasks (task affinity) */
-	if (req->op == SUSPEND_JOB) {
+	if (req->op == SUSPEND_JOB)
 		(void) task_g_slurmd_suspend_job(req->job_id);
-	} else {
-		(void) task_g_slurmd_resume_job(req->job_id);
-	}
 
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
@@ -4964,6 +4960,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
 
+	if (req->op == RESUME_JOB) /* Call task plugin after processes resume */
+		(void) task_g_slurmd_resume_job(req->job_id);
 	if ((req->op == RESUME_JOB) && (req->indf_susp))
 		switch_g_job_resume(req->switch_info, 5);
 
