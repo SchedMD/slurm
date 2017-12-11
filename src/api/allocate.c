@@ -1120,6 +1120,8 @@ char *slurm_read_hostfile(char *filename, int n)
 			      filename, line_num);
 			fclose(fp);
 			hostlist_destroy(hostlist);
+			xfree(end_part);
+			xfree(tmp_text);
 			return NULL;
 		}
 
@@ -1176,6 +1178,8 @@ char *slurm_read_hostfile(char *filename, int n)
 
 cleanup_hostfile:
 	hostlist_destroy(hostlist);
+	xfree(end_part);
+	xfree(tmp_text);
 
 	return nodelist;
 }
