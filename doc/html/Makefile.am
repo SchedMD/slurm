@@ -21,7 +21,7 @@ generated_html = \
 	contributor.html \
 	core_spec.html \
 	core_spec_plugins.html \
-	cpu_bind.html \
+	cpu_management.html \
 	cray.html \
 	cray_alps.html \
 	crypto_plugins.html \
