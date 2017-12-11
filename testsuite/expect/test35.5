@@ -44,8 +44,13 @@ if {[string first "cray" $bb_types] == -1} {
 }
 
 set matches 0
+set fail 0
 spawn $scontrol show dwstat
 expect {
+	-re "Error running dwstat" {
+		set fail 1
+		exp_continue
+	}
 	-re "pool *units *quantity *free *gran" {
 		set matches 1
 		exp_continue
@@ -57,6 +62,10 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$fail == 1} {
+	send_user "\nFAILURE: 'dwstat' is not configured properly\n"
+	exit 1
 }
 if {$matches == 0} {
 	send_user "\nFAILURE: 'dwstat' output does not match expected form\n"
