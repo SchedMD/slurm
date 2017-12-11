@@ -1544,11 +1544,8 @@ extern void print_fields(type_t type, void *object)
 				    != INFINITE64)
 					tmp_int = tmp_uint64;
 			}
-			convert_num_unit((double)tmp_int, outbuf,
-					 sizeof(outbuf), UNIT_NONE,
-					 params.units, params.convert_flags);
 			field->print_routine(field,
-					     outbuf,
+					     tmp_int,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_NTASKS:
