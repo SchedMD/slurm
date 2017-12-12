@@ -506,14 +506,15 @@ extern int acct_gather_profile_p_task_end(pid_t taskpid)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_create_group(const char* name)
+extern int64_t acct_gather_profile_p_create_group(const char* name)
 {
 	debug3("%s %s called", plugin_type, __func__);
 
 	return 0;
 }
 
-extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
+extern int acct_gather_profile_p_create_dataset(const char* name,
+						int64_t parent,
 						acct_gather_profile_dataset_t
 						*dataset)
 {
