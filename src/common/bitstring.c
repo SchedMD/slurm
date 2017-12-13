@@ -481,7 +481,9 @@ bit_ffs(bitstr_t *b)
 			bit += sizeof(bitstr_t)*8;
 			continue;
 		}
-#if HAVE___BUILTIN_CTZLL
+#if HAVE___BUILTIN_CLZLL && (defined SLURM_BIGENDIAN)
+		value = bit + __builtin_clzll(b[word]);
+#elif HAVE___BUILTIN_CTZLL && (!defined SLURM_BIGENDIAN)
 		value = bit + __builtin_ctzll(b[word]);
 #else
 		while (bit < _bitstr_bits(b) && _bit_word(bit) == word) {
@@ -528,7 +530,9 @@ bit_fls(bitstr_t *b)
 			bit -= sizeof(bitstr_t) * 8;
 			continue;
 		}
-#if HAVE___BUILTIN_CLZLL
+#if HAVE___BUILTIN_CTZLL && (defined SLURM_BIGENDIAN)
+		value = bit - __builtin_ctzll(b[word]);
+#elif HAVE___BUILTIN_CLZLL && (!defined SLURM_BIGENDIAN)
 		value = bit - __builtin_clzll(b[word]);
 #else
 		while (bit >= 0) {
