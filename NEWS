@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- Add ability for squeue to sort jobs by submit time.
  -- CRAY - Switch to standard pid files on Cray systems.
  -- Update jobcomp records on duplicate inserts.
+ -- Make slurmd oom-unkillable by default, using oom.h OOM_SCORE_ADJ_MIN macro.
 
 * Changes in Slurm 17.11.0
 ==========================
