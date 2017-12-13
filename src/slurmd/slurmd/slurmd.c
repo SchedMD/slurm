@@ -53,6 +53,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <linux/oom.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdlib.h>
@@ -306,11 +307,10 @@ main (int argc, char **argv)
 	info("slurmd version %s started", SLURM_VERSION_STRING);
 	debug3("finished daemonize");
 
-	if ((oom_value = getenv("SLURMD_OOM_ADJ"))) {
-		i = atoi(oom_value);
-		debug("Setting slurmd oom_adj to %d", i);
-		set_oom_adj(i);
-	}
+	oom_value = getenv("SLURMD_OOM_ADJ");
+	i = oom_value ? atoi(oom_value) : OOM_SCORE_ADJ_MIN;
+	debug("Setting slurmd oom_adj to %d", i);
+	set_oom_adj(i);
 
 	_kill_old_slurmd();
 
