@@ -41,7 +41,6 @@
 #define _GNU_SOURCE
 #include <ctype.h>
 #include <limits.h>
-#include <linux/oom.h>
 #include <sched.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -257,12 +256,12 @@ extern int init_system_memory_cgroup(void)
          *
          *  If an env value is already set for slurmstepd
          *  OOM killer behavior, keep it, otherwise set the
-         *  OOM_SCORE_ADJ_MIN value, wich means do not let OOM killer kill it
+         *  -1000 value, wich means do not let OOM killer kill it
          *
-         *  FYI, setting "export SLURMSTEPD_OOM_ADJ=OOM_SCORE_ADJ_MIN (-1000)"
+         *  FYI, setting "export SLURMSTEPD_OOM_ADJ=-1000"
          *  in /etc/sysconfig/slurm would be the same
          */
-        setenvfs("SLURMSTEPD_OOM_ADJ=%d", OOM_SCORE_ADJ_MIN);
+        setenvfs("SLURMSTEPD_OOM_ADJ=%d", -1000);
 
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = _system_cgroup_create_slurm_cg(&memory_ns);
