@@ -276,7 +276,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		*geometry = NULL, *start = NULL,
 		*blockid = NULL;
 	uint32_t job_state;
-	char *query = NULL;
+	char *query = NULL, *on_dup = NULL;
 	uint32_t time_limit, start_time, end_time;
 
 	if (!jobcomp_mysql_conn || mysql_db_ping(jobcomp_mysql_conn) != 0) {
@@ -376,37 +376,56 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
 		   start_time, end_time, job_ptr->node_cnt);
 
-	if (job_ptr->nodes)
+	xstrfmtcat(on_dup, "uid=%u, user_name='%s', gid=%u, group_name='%s', "
+		   "name='%s', state=%u, proc_cnt=%u, `partition`='%s', "
+		   "timelimit='%s', nodecnt=%u",
+		   job_ptr->user_id, usr_str, job_ptr->group_id, grp_str, jname,
+		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
+		   job_ptr->node_cnt);
+
+	if (job_ptr->nodes) {
 		xstrfmtcat(query, ", '%s'", job_ptr->nodes);
+		xstrfmtcat(on_dup, ", nodelist='%s'", job_ptr->nodes);
+	}
 
 	if (connect_type) {
 		xstrfmtcat(query, ", '%s'", connect_type);
+		xstrfmtcat(on_dup, ", connect_type='%s'", connect_type);
 		xfree(connect_type);
 	}
 	if (reboot) {
 		xstrfmtcat(query, ", '%s'", reboot);
+		xstrfmtcat(on_dup, ", reboot='%s'", reboot);
 		xfree(reboot);
 	}
 	if (rotate) {
 		xstrfmtcat(query, ", '%s'", rotate);
+		xstrfmtcat(on_dup, ", rotate='%s'", rotate);
 		xfree(rotate);
 	}
-	if (job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
+	if (job_ptr->details && (job_ptr->details->max_cpus != NO_VAL)) {
 		xstrfmtcat(query, ", '%u'", job_ptr->details->max_cpus);
+		xstrfmtcat(on_dup, ", maxprocs='%u'",
+			   job_ptr->details->max_cpus);
+	}
 
 	if (geometry) {
 		xstrfmtcat(query, ", '%s'", geometry);
+		xstrfmtcat(on_dup, ", geometry='%s'", geometry);
 		xfree(geometry);
 	}
 	if (start) {
 		xstrfmtcat(query, ", '%s'", start);
+		xstrfmtcat(on_dup, ", start='%s'", start);
 		xfree(start);
 	}
 	if (blockid) {
 		xstrfmtcat(query, ", '%s'", blockid);
+		xstrfmtcat(on_dup, ", blockid='%s'", blockid);
 		xfree(blockid);
 	}
-	xstrcat(query, ")");
+	xstrfmtcat(query, ") ON DUPLICATE KEY UPDATE %s;", on_dup);
+
 	debug3("(%s:%d) query\n%s",
 	       THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(jobcomp_mysql_conn, query);
@@ -414,6 +433,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	xfree(grp_str);
 	xfree(jname);
 	xfree(query);
+	xfree(on_dup);
 
 	return rc;
 }

@@ -522,6 +522,7 @@ generated_html = \
 	news.html \
 	node_features_plugins.html \
 	overview.html \
+	pam_slurm_adopt.html \
 	platforms.html \
 	plugins.html \
 	power_mgmt.html \

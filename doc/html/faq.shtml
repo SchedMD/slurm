@@ -1237,6 +1237,10 @@ Create a resource reservation as described b. Slurm's
 
 <p><a name="pam"><b>9. How can PAM be used to control a user's limits on
 or access to compute nodes?</b></a><br>
+The pam_slurm_adopt PAM module is highly recommended for most installations,
+and is documented in its <a href="pam_slurm_adopt.shtml">own guide</a>. The
+following info applies to the older less-functional pam_slurm plugin instead.
+
 You will need to build and install Slurm including it's PAM module
 (a <i>slurm_pam</i> package is provided, the code is located in the
 <i>contribs/pam</i> directory).
@@ -1266,7 +1270,7 @@ limit from being propagated:<i>PropagateResourceLimitsExcept=MEMLOCK</i>.</p>
 
 <p>We also have a PAM module for Slurm that prevents users from
 logging into nodes that they have not been allocated (except for user
-root, which can always login.
+root, which can always login).
 This pam_slurm module is included with the Slurm distribution.
 The module is built by default, but can be disabled using the
 .rpmmacros option "%_without_pam 1" or by entering the command line
@@ -2269,6 +2273,6 @@ $ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 November 2017</p>
+<p style="text-align:center;">Last modified 12 December 2017</p>
 
 <!--#include virtual="footer.txt"-->
