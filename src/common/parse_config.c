@@ -1020,6 +1020,7 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover)
 			error("Parsing error at unrecognized key: %s", key);
 			xfree(key);
 			xfree(value);
+			slurm_seterrno(EINVAL);
 			return 0;
 		}
 		xfree(key);
@@ -1059,6 +1060,7 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 			xfree(key);
 			xfree(value);
 			*leftover = (char *)line;
+			slurm_seterrno(EINVAL);
 			return 0;
 		}
 		xfree(key);
@@ -1790,10 +1792,12 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 	if ((p = _conf_hashtbl_lookup(hashtbl, key)) == NULL) {
 		error("%s: Parsing error at unrecognized key: %s",
 		      __func__, key);
+		slurm_seterrno(EINVAL);
 		return 0;
 	}
 	if (!value) {
 		error("%s: Value pointer is NULL for key %s", __func__, key);
+		slurm_seterrno(EINVAL);
 		return 0;
 	}
 	p-> operator = opt;
@@ -1805,6 +1809,7 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 		leftover = strchr(v, '"');
 		if (leftover == NULL) {
 			error("Parse error in data for key %s: %s", key, value);
+			slurm_seterrno(EINVAL);
 			return 0;
 		}
 	} else { /* unqouted value */
