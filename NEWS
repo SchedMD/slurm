@@ -64,6 +64,8 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Switch to standard pid files on Cray systems.
  -- Update jobcomp records on duplicate inserts.
  -- Make slurmd oom-unkillable by default, using oom.h OOM_SCORE_ADJ_MIN macro.
+ -- If unrecognized configuration file option found then print an appropriate
+    fatal error message rather than relying upon random errno value.
 
 * Changes in Slurm 17.11.0
 ==========================
