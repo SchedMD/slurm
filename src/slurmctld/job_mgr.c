@@ -6487,7 +6487,8 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		 */
 		job_desc.pn_min_memory = detail_ptr->pn_min_memory;
 		job_desc.cpus_per_task = detail_ptr->cpus_per_task;
-		job_desc.num_tasks = detail_ptr->num_tasks;
+		job_desc.num_tasks = detail_ptr->num_tasks ?
+			detail_ptr->num_tasks : job_desc.min_cpus;
 		//job_desc.min_cpus = detail_ptr->min_cpus; /* init'ed above */
 		job_desc.max_cpus = detail_ptr->max_cpus;
 		job_desc.shared = (uint16_t)detail_ptr->share_res;
@@ -8090,6 +8091,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 		job_desc_msg->pn_min_memory = ((job_mem_limit + mem_ratio - 1) /
 					       mem_ratio) | MEM_PER_CPU;
 		if ((job_desc_msg->num_tasks != NO_VAL) &&
+		    (job_desc_msg->num_tasks != 0) &&
 		    (job_desc_msg->min_cpus  != NO_VAL)) {
 			cpu_ratio = job_desc_msg->min_cpus /
 				    job_desc_msg->num_tasks;

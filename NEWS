@@ -67,6 +67,8 @@ documents those changes that are of interest to users and administrators.
  -- If unrecognized configuration file option found then print an appropriate
     fatal error message rather than relying upon random errno value.
  -- Initialize job_desc_msg_t's instead of just memset'ing them.
+ -- Fix divide by zero when job requests no tasks and more memory than
+    MaxMemPer{CPU|NODE}.
 
 * Changes in Slurm 17.11.0
 ==========================
