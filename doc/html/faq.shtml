@@ -31,7 +31,8 @@
   name for a batch job?</a></li>
 <li><a href="#parallel_make">Can the <i>make</i> command utilize the resources
   allocated to a Slurm job?</a></li>
-<li><a href="#terminal">Can tasks be launched with a remote terminal?</a></li>
+<li><a href="#terminal">Can tasks be launched with a remote (pseudo)
+  terminal?</a></li>
 <li><a href="#force">What does &quot;srun: Force Terminated job&quot;
   indicate?</a></li>
 <li><a href="#early_exit">What does this mean: &quot;srun: First task exited
@@ -466,105 +467,9 @@ overhead of Slurm's task launch. Use with make's <i>-j</i> option within an
 existing Slurm allocation. Outside of a Slurm allocation, make's behavior
 will be unchanged.</p>
 
-<p><a name="terminal"><b>15. Can tasks be launched with a remote
+<p><a name="terminal"><b>15. Can tasks be launched with a remote (pseudo)
 terminal?</b></a><br>
-In Slurm version 1.3 or higher, use srun's <i>--pty</i> option.
-Until then, you can accomplish this by starting an appropriate program
-or script. In the simplest case (X11 over TCP with the DISPLAY
-environment already set), executing <i>srun xterm</i> may suffice.
-In the more general case, the following scripts should work.
-<b>NOTE: The pathname to the additional scripts are included in the
-variables BS and IS of the first script. You must change this in the
-first script.</b>
-Execute the script with the sbatch options desired.
-For example, <i>interactive -N2 -pdebug</i>.
-
-<pre>
-#!/bin/bash
-# -*- coding: utf-8 -*-
-# Author: P&auml;r Andersson (National Supercomputer Centre, Sweden)
-# Version: 0.3 2007-07-30
-#
-# This will submit a batch script that starts screen on a node.
-# Then ssh is used to connect to the node and attach the screen.
-# The result is very similar to an interactive shell in PBS
-# (qsub -I)
-
-# Batch Script that starts SCREEN
-BS=/INSTALL_DIRECTORY/_interactive
-# Interactive screen script
-IS=/INSTALL_DIRECTORY/_interactive_screen
-
-# Submit the job and get the job id
-JOB=`sbatch --output=/dev/null --error=/dev/null $@ $BS 2>&1 \
-    | egrep -o -e "\b[0-9]+$"`
-
-# Make sure the job is always canceled
-trap "{ /usr/bin/scancel -q $JOB; exit; }" SIGINT SIGTERM EXIT
-
-echo "Waiting for JOBID $JOB to start"
-while true;do
-    sleep 5s
-
-    # Check job status
-    STATUS=`squeue -j $JOB -t PD,R -h -o %t`
-
-    if [ "$STATUS" = "R" ];then
-	# Job is running, break the while loop
-	break
-    elif [ "$STATUS" != "PD" ];then
-	echo "Job is not Running or Pending. Aborting"
-	scancel $JOB
-	exit 1
-    fi
-
-    echo -n "."
-
-done
-
-# Determine the first node in the job:
-NODE=`srun --jobid=$JOB -N1 hostname`
-
-# SSH to the node and attach the screen
-sleep 1s
-ssh -X -t $NODE $IS slurm$JOB
-# The trap will now cancel the job before exiting.
-</pre>
-
-<p>NOTE: The above script executes the script below,
-named <i>_interactive</i>.</p>
-<pre>
-#!/bin/sh
-# -*- coding: utf-8 -*-
-# Author: P&auml;r Andersson  (National Supercomputer Centre, Sweden)
-# Version: 0.2 2007-07-30
-#
-# Simple batch script that starts SCREEN.
-
-exec screen -Dm -S slurm$SLURM_JOB_ID
-</pre>
-
-<p>The following script named <i>_interactive_screen</i> is also used.</p>
-<pre>
-#!/bin/sh
-# -*- coding: utf-8 -*-
-# Author: P&auml;r Andersson  (National Supercomputer Centre, Sweden)
-# Version: 0.3 2007-07-30
-#
-
-SCREENSESSION=$1
-
-# If DISPLAY is set then set that in the screen, then create a new
-# window with that environment and kill the old one.
-if [ "$DISPLAY" != "" ];then
-    screen -S $SCREENSESSION -X unsetenv DISPLAY
-    screen -p0 -S $SCREENSESSION -X setenv DISPLAY $DISPLAY
-    screen -p0 -S $SCREENSESSION -X screen
-    screen -p0 -S $SCREENSESSION -X kill
-fi
-
-exec screen -S $SCREENSESSION -rd
-</pre>
+Use srun's <i>--pty</i> option.
 
 <p><a name="force"><b>16. What does &quot;srun: Force Terminated job&quot;
 indicate?</b></a><br>
@@ -1373,9 +1278,7 @@ NodeName=dummy26[1-100] NodeHostName=achille Port=[6001-6100] NodeAddr=127.0.0.1
 PartitionName=mira Default=yes Nodes=dummy26[1-100]
 </pre>
 
-<p>It is strongly recommended that Slurm version 1.2 or higher be used
-for this due to its improved support for multiple slurmd daemons.
-See the
+<p>See the
 <a href="programmer_guide.html#multiple_slurmd_support">Programmers Guide</a>
 for more details about configuring multiple slurmd support.</p>
 
@@ -1434,8 +1337,7 @@ $ squeue
 
 <p><a name="extra_procs"><b>15. Can Slurm emulate nodes with more
 resources than physically exist on the node?</b></a><br>
-Yes in Slurm version 1.2 or higher.
-In the <i>slurm.conf</i> file, set <i>FastSchedule=2</i> and specify
+Yes. In the slurm.conf file, configure <i>FastSchedule=2</i> and specify
 any desired node resource specifications (<i>CPUs</i>, <i>Sockets</i>,
 <i>CoresPerSocket</i>, <i>ThreadsPerCore</i>, and/or <i>TmpDisk</i>).
 Slurm will use the resource specification for each node that is
@@ -1464,11 +1366,8 @@ including
 <li>Very slow Network Information Service (NIS)</li>
 <li>The <i>Prolog</i> script taking a long time to complete</li>
 </ul>
-<p>In Slurm version 1.2, this can be addressed with the
-<i>MessageTimeout</i> configuration parameter by setting a
-value higher than the default 5 seconds.
-In earlier versions of Slurm, the <i>--msg-timeout</i> option
-of <i>srun</i> serves a similar purpose.
+<p>Configure <i>MessageTimeout</i> in slurm.conf to a value higher than the
+default 5 seconds.</p>
 
 <p><a name="large_time"><b>17. What does
 &quot;Warning: Note very large processing time&quot;
@@ -2273,6 +2172,6 @@ $ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 December 2017</p>
+<p style="text-align:center;">Last modified 15 December 2017</p>
 
 <!--#include virtual="footer.txt"-->
