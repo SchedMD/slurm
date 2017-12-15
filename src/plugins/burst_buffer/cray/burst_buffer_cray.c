@@ -3490,6 +3490,49 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 }
 
 /*
+ * Return true if this job is dependent upon another job that uses burst
+ * buffers. We need to wait for that first job's stage-out to complete before
+ * doing a stage-in for this job.
+ */
+static bool _wait_for_dependency(struct job_record *job_ptr)
+{
+	ListIterator iter;
+	struct depend_spec *dep_spec;
+	struct job_record *dep_job_ptr;	/* pointer to dependent job */
+	bool need_to_wait = false;
+	bb_job_t *bb_job;
+
+	if (!job_ptr->details || !job_ptr->details->depend_list)
+		return false;
+
+	iter = list_iterator_create(job_ptr->details->depend_list);
+	while ((dep_spec = (struct depend_spec *) list_next(iter))) {
+		/* Validate the job pointer */
+		if (!dep_spec->job_ptr ||
+		    (dep_spec->job_ptr->job_id != dep_spec->job_id))
+			dep_spec->job_ptr = find_job_record(dep_spec->job_id);
+		if (!dep_spec->job_ptr)
+			continue;
+		dep_job_ptr = dep_spec->job_ptr;
+		if ((dep_job_ptr->burst_buffer == NULL) ||
+		    (dep_job_ptr->burst_buffer[0] == '\0'))
+			continue;	/* No burst buffer use to synchronize */
+		if (!IS_JOB_FINISHED(dep_job_ptr)) {
+			need_to_wait = true;
+			break;
+		}
+		bb_job = bb_job_find(&bb_state, dep_job_ptr->job_id);
+		if (bb_job && (bb_job->state < BB_STATE_STAGED_OUT)) {
+			need_to_wait = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return need_to_wait;
+}
+
+/*
  * Attempt to allocate resources and begin file staging for pending jobs.
  */
 extern int bb_p_job_try_stage_in(List job_queue)
@@ -3523,6 +3566,8 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		    ((job_ptr->array_task_id == NO_VAL) ||
 		     (job_ptr->array_task_id == INFINITE)))
 			continue;	/* Can't operate on job array struct */
+		if (_wait_for_dependency(job_ptr))
+			continue;	/* Wait for dependent job stage-out */
 		bb_job = _get_bb_job(job_ptr);
 		if (bb_job == NULL)
 			continue;
@@ -3586,6 +3631,9 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 	    ((job_ptr->array_task_id == NO_VAL) ||
 	     (job_ptr->array_task_id == INFINITE)))
 		return -1;	/* Can't operate on job array structure */
+
+	if (_wait_for_dependency(job_ptr))
+		return -1;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {

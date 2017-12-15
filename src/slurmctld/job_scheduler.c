@@ -3127,6 +3127,9 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			}
 		} else
 			failure = true;
+		if (clear_dep && djob_ptr &&
+		    (bb_g_job_test_stage_out(djob_ptr) != 1))
+			clear_dep = false; /* Wait for burst buffer stage-out */
 		if (clear_dep) {
 			rebuild_str = true;
 			if (dep_ptr->depend_flags & SLURM_FLAGS_OR) {
