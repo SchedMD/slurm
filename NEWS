@@ -69,6 +69,7 @@ documents those changes that are of interest to users and administrators.
  -- Initialize job_desc_msg_t's instead of just memset'ing them.
  -- Fix divide by zero when job requests no tasks and more memory than
     MaxMemPer{CPU|NODE}.
+ -- Avoid changing Slurm internal errno on syslog() failures.
 
 * Changes in Slurm 17.11.0
 ==========================
