@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix divide by zero when job requests no tasks and more memory than
     MaxMemPer{CPU|NODE}.
  -- Avoid changing Slurm internal errno on syslog() failures.
+ -- BB - Only launch dependent jobs after the burst buffer is staged-out
+    completely instead of right after the parent job finishes.
 
 * Changes in Slurm 17.11.0
 ==========================
