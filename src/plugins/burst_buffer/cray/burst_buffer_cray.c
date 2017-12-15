@@ -2683,7 +2683,7 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 	if (strstr(job_desc->burst_buffer, "create_persistent") ||
 	    strstr(job_desc->burst_buffer, "destroy_persistent")) {
 		/* Create or destroy of persistent burst buffers NOT supported
-		 * via -bb option. Use -bbf or a batch script instead. */
+		 * via --bb option. Use --bbf or a batch script instead. */
 		return ESLURM_INVALID_BURST_BUFFER_REQUEST;
 	}
 
@@ -2697,6 +2697,17 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 		if (sep)
 			sep[0] = '\0';
 		tok_len = strlen(access) + 7;
+		memset(tok, ' ', tok_len);
+	}
+	if ((tok = strstr(bb_copy, "access_mode="))) {
+		access = xstrdup(tok + 12);
+		sep = strchr(access, ',');
+		if (sep)
+			sep[0] = '\0';
+		sep = strchr(access, ' ');
+		if (sep)
+			sep[0] = '\0';
+		tok_len = strlen(access) + 12;
 		memset(tok, ' ', tok_len);
 	}
 

@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
     reconfigured.
  -- Fix to properly remove extern steps from the starting_steps list.
  -- Fix Slurm to work correctly with HDF5 1.10+.
+ -- Add support in salloc/srun --bb option for "access_mode" in addition to
+    "access" for consistency with DW options.
 
 * Changes in Slurm 17.02.9
 ==========================
