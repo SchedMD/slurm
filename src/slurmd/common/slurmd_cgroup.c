@@ -188,7 +188,6 @@ extern int init_system_memory_cgroup(void)
 {
 	int fstatus = SLURM_ERROR;
 	char* slurm_cgpath;
-	const char *oom_score_min = (const char *)OOM_SCORE_ADJ_MIN;
 
 	/* read cgroup configuration */
 	if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
@@ -260,10 +259,10 @@ extern int init_system_memory_cgroup(void)
          *  OOM killer behavior, keep it, otherwise set the
          *  OOM_SCORE_ADJ_MIN value, wich means do not let OOM killer kill it
          *
-         *  FYI, setting "export SLURMSTEPD_OOM_ADJ=-1000"
+         *  FYI, setting "export SLURMSTEPD_OOM_ADJ=OOM_SCORE_ADJ_MIN (-1000)"
          *  in /etc/sysconfig/slurm would be the same
          */
-        setenv("SLURMSTEPD_OOM_ADJ", oom_score_min, 0);
+        setenvfs("SLURMSTEPD_OOM_ADJ=%d", OOM_SCORE_ADJ_MIN);
 
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = _system_cgroup_create_slurm_cg(&memory_ns);
