@@ -1186,10 +1186,13 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 	if (level <=  log->opt.syslog_level) {
 
+		/* Avoid changing errno if syslog fails */
+		int orig_errno = slurm_get_errno();
 		xlogfmtcat(&msgbuf, "%s%s", pfx, buf);
 		openlog(log->argv0, LOG_PID, log->facility);
 		syslog(priority, "%.500s", msgbuf);
 		closelog();
+		slurm_seterrno(orig_errno);
 
 		xfree(msgbuf);
 	}
