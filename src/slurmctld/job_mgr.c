@@ -4817,7 +4817,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if (will_run && resp) {
 		job_desc_msg_t job_desc_msg;
 		int rc;
-		memset(&job_desc_msg, 0, sizeof(job_desc_msg_t));
+		slurm_init_job_desc_msg(&job_desc_msg);
 		job_desc_msg.job_id = job_ptr->job_id;
 		rc = job_start_data(&job_desc_msg, resp);
 		job_ptr->job_state  = JOB_FAILED;
@@ -6431,7 +6431,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	 * anything else is ever checked in that function this will most likely
 	 * have to be updated.
 	 */
-	memset(&job_desc, 0, sizeof(job_desc_msg_t));
+	slurm_init_job_desc_msg(&job_desc);
 	job_desc.reservation = job_ptr->resv_name;
 	job_desc.user_id = job_ptr->user_id;
 	job_desc.alloc_node = job_ptr->alloc_node;
