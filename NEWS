@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
     completely instead of right after the parent job finishes.
  -- node_features/knl_generic - If plugin can not fully load then do not spawn
     a background pthread (which will fail with invalid memory reference).
+ -- Don't set the next jobid to give out to the highest jobid in the system on
+    controller startup. Just use the checkpointed next use jobid.
 
 * Changes in Slurm 17.11.0
 ==========================
