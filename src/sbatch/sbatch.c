@@ -602,6 +602,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->delay_boot = opt.delay_boot;
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
+	if (opt.burst_buffer)
+		desc->burst_buffer = opt.burst_buffer;
 	if (opt.comment)
 		desc->comment = xstrdup(opt.comment);
 	if (opt.qos)

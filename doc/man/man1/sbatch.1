@@ -160,6 +160,14 @@ The \-\-batch argument must be a subset of the job's
 KNL nodes, but require the script to execute on a Haswell node).
 
 .TP
+\fB\-\-bb\fR=<\fIspec\fR>
+Burst buffer specification. The form of the specification is system dependent.
+Note the burst buffer may not be accessible from a login node, but require
+that salloc spawn a shell on one of it's allocated compute nodes. See the
+description of SallocDefaultCommand in the slurm.conf man page for more
+information about how to spawn a remote shell.
+
+.TP
 \fB\-\-bbf\fR=<\fIfile_name\fR>
 Path of file containing burst buffer specification.
 The form of the specification is system dependent.

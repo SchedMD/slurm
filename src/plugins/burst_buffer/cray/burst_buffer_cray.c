@@ -205,6 +205,7 @@ struct bb_total_size {
 	uint64_t capacity;
 };
 
+static void	_add_bb_to_script(char **script_body, char *burst_buffer_file);
 static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
 			      bool job_ready);
 static void	_apply_limits(void);
@@ -2587,7 +2588,17 @@ static int _xlate_batch(struct job_descriptor *job_desc)
 	bool is_cont = false, has_space = false;
 	int len, rc = SLURM_SUCCESS;
 
-	xfree(job_desc->burst_buffer);
+	/*
+	 * Any command line --bb options get added to the script
+	 */
+	if (job_desc->burst_buffer) {
+		rc = _xlate_interactive(job_desc);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+		_add_bb_to_script(&job_desc->script, job_desc->burst_buffer);
+		xfree(job_desc->burst_buffer);
+	}
+
 	script = xstrdup(job_desc->script);
 	tok = strtok_r(script, "\n", &save_ptr);
 	while (tok) {
@@ -2783,6 +2794,52 @@ fini:	xfree(access);
 	xfree(swap);
 	xfree(type);
 	return rc;
+}
+
+/* Insert the contents of "burst_buffer_file" into "script_body" */
+static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
+{
+	char *orig_script = *script_body;
+	char *new_script, *sep, save_char;
+	int i;
+
+	if (!burst_buffer_file || (burst_buffer_file[0] == '\0'))
+		return;	/* No burst buffer file or empty file */
+
+	if (!orig_script) {
+		*script_body = xstrdup(burst_buffer_file);
+		return;
+	}
+
+	i = strlen(burst_buffer_file) - 1;
+	if (burst_buffer_file[i] != '\n')	/* Append new line as needed */
+		xstrcat(burst_buffer_file, "\n");
+
+	if (orig_script[0] != '#') {
+		/* Prepend burst buffer file */
+		new_script = xstrdup(burst_buffer_file);
+		xstrcat(new_script, orig_script);
+		*script_body = new_script;
+		return;
+	}
+
+	sep = strchr(orig_script, '\n');
+	if (sep) {
+		save_char = sep[1];
+		sep[1] = '\0';
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, burst_buffer_file);
+		sep[1] = save_char;
+		xstrcat(new_script, sep + 1);
+		*script_body = new_script;
+		return;
+	} else {
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, "\n");
+		xstrcat(new_script, burst_buffer_file);
+		*script_body = new_script;
+		return;
+	}
 }
 
 /* For interactive jobs, build a script containing the relevant DataWarp

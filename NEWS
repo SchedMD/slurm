@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- Add sbatch "--batch" option to identify features required on batch node.
     For example "sbatch --batch=haswell ...".
  -- Add "BatchFeatures" field to output of "scontrol show job".
+ -- Add support for "--bb" option to sbatch command.
 
 * Changes in Slurm 17.11.1
 ==========================
