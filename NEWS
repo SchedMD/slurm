@@ -1923,6 +1923,8 @@ documents those changes that are of interest to users and administrators.
     isn't loaded normally.
  -- burst_buffer/cray - Plug small memory leak on DataWarp create_persistent
     buffer error.
+ -- burst_buffer/cray - Do not purge a job record if it's stage-out operation
+    fails. The description of the failure will be in the job's "Reason" field.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

@@ -1843,7 +1843,7 @@ static void *_start_stage_out(void *x)
 		}
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = _get_bb_job(job_ptr);
-		if (bb_job)
+		if ((rc == SLURM_SUCCESS) && bb_job)
 			bb_job->state = BB_STATE_TEARDOWN;
 		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 		if (bb_alloc) {
