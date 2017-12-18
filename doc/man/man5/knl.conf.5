@@ -1,4 +1,4 @@
-.TH "knl.conf" "5" "Slurm Configuration File" "May 2016" "Slurm Configuration File"
+.TH "knl.conf" "5" "Slurm Configuration File" "December 2017" "Slurm Configuration File"
 
 .SH "NAME"
 knl.conf \- Slurm configuration file for Intel Knights Landing processor.
@@ -136,6 +136,12 @@ The value can include one of the possible values identified with the
 The default value is "a2a".
 
 .TP
+\fBForce\fR
+If set to a non\-zero value then load the node_features/generic plugin even
+on non\-KNL nodes.
+Used primarily for testing purposes.
+
+.TP
 \fBLogFile\fR
 Fully qualified path to a log file.
 The default value is SlurmctldLogFile from the slurm.conf configuration file.
@@ -205,7 +211,7 @@ LogFile=/var/tmp/slurm_node_feature.log
 SyscfgPath=/usr/sbin/syscfg
 
 .SH "COPYING"
-Copyright (C) 2015-2016 SchedMD LLC.
+Copyright (C) 2015-2017 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.
