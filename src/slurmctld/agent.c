@@ -914,18 +914,16 @@ static void *_thread_per_group_rpc(void *args)
 
 			if (!(ret_list = slurm_send_addr_recv_msgs(
 				     &msg, thread_ptr->nodelist, 0))) {
-				error("_thread_per_group_rpc: "
-				      "no ret_list given");
+				error("%s: no ret_list given", __func__);
+				_job_signal_fini(task_ptr);
 				goto cleanup;
 			}
-
-
 		} else {
 			if (!(ret_list = slurm_send_recv_msgs(
 				     thread_ptr->nodelist,
 				     &msg, 0, true))) {
-				error("_thread_per_group_rpc: "
-				      "no ret_list given");
+				error("%s: no ret_list given", __func__);
+				_job_signal_fini(task_ptr);
 				goto cleanup;
 			}
 		}
@@ -937,10 +935,8 @@ static void *_thread_per_group_rpc(void *args)
 			//info("no address given");
 			if (slurm_conf_get_addr(thread_ptr->nodelist,
 					       &msg.address) == SLURM_ERROR) {
-				error("_thread_per_group_rpc: "
-				      "can't find address for host %s, "
-				      "check slurm.conf",
-				      thread_ptr->nodelist);
+				error("%s: can't find address for host %s, check slurm.conf",
+				      __func__, thread_ptr->nodelist);
 				goto cleanup;
 			}
 		}
