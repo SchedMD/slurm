@@ -1925,6 +1925,8 @@ documents those changes that are of interest to users and administrators.
     buffer error.
  -- burst_buffer/cray - Do not purge a job record if it's stage-out operation
     fails. The description of the failure will be in the job's "Reason" field.
+ -- burst_buffer/cray - Append information about errors to job's AdminComments
+    field.
 
 * Changes in Slurm 16.05.0pre1
 ==============================
