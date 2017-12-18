@@ -1006,7 +1006,7 @@ static void *_thread_per_group_rpc(void *args)
 		    (ret_data_info->type != RESPONSE_FORWARD_FAILED)) {
 			batch_job_launch_msg_t *launch_msg_ptr =
 				task_ptr->msg_args_ptr;
-			uint32_t job_id = launch_msg_ptr->job_id;
+			job_id = launch_msg_ptr->job_id;
 			info("Killing non-startable batch job %u: %s",
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_DONE;
@@ -1052,6 +1052,28 @@ static void *_thread_per_group_rpc(void *args)
 				     false, false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
+		}
+
+		if ((msg_type == REQUEST_SIGNAL_TASKS) &&
+		    (rc == SLURM_SUCCESS)) {
+			struct job_record *job_ptr;
+			signal_tasks_msg_t *msg_ptr =
+				task_ptr->msg_args_ptr;
+
+			if ((msg_ptr->signal == SIGCONT) ||
+			    (msg_ptr->signal == SIGSTOP)) {
+				job_id = msg_ptr->job_id;
+				lock_slurmctld(job_write_lock);
+				job_ptr = find_job_record(job_id);
+				if (job_ptr == NULL)
+					info("%s: invalid JobId=%u", __func__,
+					     job_id);
+				else if (msg_ptr->signal == SIGSTOP)
+					job_ptr->job_state |= JOB_STOPPED;
+				else // SIGCONT
+					job_ptr->job_state &= (~JOB_STOPPED);
+				unlock_slurmctld(job_write_lock);
+			}
 		}
 
 		if (((msg_type == REQUEST_SIGNAL_TASKS) ||

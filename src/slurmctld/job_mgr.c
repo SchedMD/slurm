@@ -5135,11 +5135,6 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	}
 
 	if (IS_JOB_RUNNING(job_ptr)) {
-		if (signal == SIGSTOP)
-			job_ptr->job_state |= JOB_STOPPED;
-		else if (signal == SIGCONT)
-			job_ptr->job_state &= (~JOB_STOPPED);
-
 		if ((signal == SIGKILL)
 		    && !(flags & KILL_STEPS_ONLY)
 		    && !(flags & KILL_JOB_BATCH)) {

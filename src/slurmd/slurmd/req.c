@@ -3222,8 +3222,9 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	uid_t job_uid, req_uid;
 
 	job_uid = _get_job_uid(req->job_id);
-
 	if ((int)job_uid < 0) {
+		debug("%s: failed to get job_uid for job %u",
+		      __func__, req->job_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
