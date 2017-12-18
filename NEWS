@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid changing Slurm internal errno on syslog() failures.
  -- BB - Only launch dependent jobs after the burst buffer is staged-out
     completely instead of right after the parent job finishes.
+ -- node_features/knl_generic - If plugin can not fully load then do not spawn
+    a background pthread (which will fail with invalid memory reference).
 
 * Changes in Slurm 17.11.0
 ==========================

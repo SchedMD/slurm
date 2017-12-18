@@ -181,6 +181,8 @@ static knl_system_type_t knl_system_type = KNL_SYSTEM_TYPE_INTEL;
 static uint32_t ume_check_interval = 0;
 static pthread_mutex_t ume_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t ume_thread = 0;
+static uint32_t force_load = 0;
+static int hw_is_knl = -1;
 
 /* Percentage of MCDRAM used for cache by type, updated from syscfg */
 static int mcdram_pct[KNL_MCDRAM_CNT];
@@ -193,6 +195,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"BootTime", S_P_UINT32},
 	{"DefaultMCDRAM", S_P_STRING},
 	{"DefaultNUMA", S_P_STRING},
+	{"Force", S_P_UINT32},
 	{"LogFile", S_P_STRING},
 	{"McPath", S_P_STRING},
 	{"NumaCpuBind", S_P_STRING},
@@ -804,6 +807,9 @@ extern int init(void)
 	s_p_hashtbl_t *tbl;
 	struct stat stat_buf;
 	int i, rc = SLURM_SUCCESS;
+	char *cpuinfo_path = "/proc/cpuinfo";
+	FILE *cpu_info_file;
+	char buf[1024];
 
 	/* Set default values */
 	allow_mcdram = KNL_MCDRAM_FLAG;
@@ -869,6 +875,7 @@ extern int init(void)
 			}
 			xfree(tmp_str);
 		}
+		(void) s_p_get_uint32(&force_load, "Force", tbl);
 		(void) s_p_get_string(&mc_path, "McPath", tbl);
 		if (s_p_get_string(&numa_cpu_bind, "NumaCpuBind", tbl))
 			_update_cpu_bind();
@@ -899,6 +906,20 @@ extern int init(void)
 	else
 		syscfg_found = 0;
 
+	hw_is_knl = 0;
+	cpu_info_file = fopen(cpuinfo_path, "r");
+	if (cpu_info_file == NULL) {
+		error("Error opening/reading %s: %m", cpuinfo_path);
+	} else {
+		while (fgets(buf, sizeof(buf), cpu_info_file)) {
+			if (strstr(buf, "Xeon Phi")) {
+				hw_is_knl = 1;
+				break;
+			}
+		}
+		fclose(cpu_info_file);
+	}
+
 	if ((resume_program = slurm_get_resume_program())) {
 		error("Use of ResumeProgram with %s not currently supported",
 		      plugin_name);
@@ -918,6 +939,7 @@ extern int init(void)
 		info("BootTIme=%u", boot_time);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
+		info("Force=%u", force_load);
 		info("McPath=%s", mc_path);
 		info("NumaCpuBind=%s", numa_cpu_bind);
 		info("SyscfgPath=%s", syscfg_path);
@@ -932,7 +954,8 @@ extern int init(void)
 	}
 	gres_plugin_add("hbm");
 
-	if (ume_check_interval && run_in_daemon("slurmd")) {
+	if ((rc == SLURM_SUCCESS) &&
+	    ume_check_interval && run_in_daemon("slurmd")) {
 		slurm_mutex_lock(&ume_mutex);
 		slurm_thread_create(&ume_thread, _ume_agent, NULL);
 		slurm_mutex_unlock(&ume_mutex);
@@ -1007,11 +1030,11 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 
 	if (!syscfg_path || !avail_modes || !current_mode)
 		return;
-	if (syscfg_found == 0) {
+	if ((syscfg_found == 0) || (!hw_is_knl && !force_load)) {
 		/* This node on cluster lacks syscfg; should not be KNL */
 		static bool log_event = true;
 		if (log_event) {
-			info("%s: syscfg program not found, can not get KNL modes",
+			info("%s: syscfg program not found or node isn't KNL, can not get KNL modes",
 			     __func__);
 			log_event = false;
 		}
@@ -1385,11 +1408,14 @@ extern int node_features_p_node_set(char *active_features)
 		error("%s: SyscfgPath not configured", __func__);
 		return SLURM_ERROR;
 	}
-	if (syscfg_found == 0) {
-		/* This node on cluster lacks syscfg; should not be KNL.
-		 * This code should never be reached */
-		error("%s: syscfg program not found; can not set KNL modes",
-		      __func__);
+	if ((syscfg_found == 0) || (!hw_is_knl && !force_load)) {
+		/* This node on cluster lacks syscfg; should not be KNL */
+		static bool log_event = true;
+		if (log_event) {
+			error("%s: syscfg program not found or node isn't KNL; can not set KNL modes",
+			      __func__);
+			log_event = false;
+		}
 		return SLURM_ERROR;
 	}
 

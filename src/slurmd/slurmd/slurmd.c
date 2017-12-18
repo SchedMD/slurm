@@ -344,8 +344,8 @@ main (int argc, char **argv)
 		fatal("Unable to initialize core specialization plugin.");
 	if (switch_g_node_init() < 0)
 		fatal("Unable to initialize interconnect.");
-	if (node_features_g_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize node_features plugin");	
+	if (node_features_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize node_features plugin");
 	if (conf->cleanstart && switch_g_clear_node_state())
 		fatal("Unable to clear interconnect state.");
 	switch_g_slurmd_init();
