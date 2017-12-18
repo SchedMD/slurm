@@ -1921,6 +1921,8 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameter no_env_cache, if set no env cache will be use when
     launching a job, instead the job will fail and drain the node if the env
     isn't loaded normally.
+ -- burst_buffer/cray - Plug small memory leak on DataWarp create_persistent
+    buffer error.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

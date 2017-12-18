@@ -4416,7 +4416,6 @@ static void *_create_persistent(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, __func__, resp_msg);
-			resp_msg = NULL;
 		}
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(create_args->user_id, create_args->job_id,
@@ -4557,8 +4556,6 @@ static void *_destroy_persistent(void *x)
 		} else {
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
-			job_ptr->state_desc = resp_msg;
-			resp_msg = NULL;
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, __func__, resp_msg);
 		}
