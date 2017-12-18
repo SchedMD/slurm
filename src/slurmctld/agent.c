@@ -915,7 +915,6 @@ static void *_thread_per_group_rpc(void *args)
 			if (!(ret_list = slurm_send_addr_recv_msgs(
 				     &msg, thread_ptr->nodelist, 0))) {
 				error("%s: no ret_list given", __func__);
-				_job_signal_fini(task_ptr);
 				goto cleanup;
 			}
 		} else {
@@ -923,7 +922,6 @@ static void *_thread_per_group_rpc(void *args)
 				     thread_ptr->nodelist,
 				     &msg, 0, true))) {
 				error("%s: no ret_list given", __func__);
-				_job_signal_fini(task_ptr);
 				goto cleanup;
 			}
 		}
