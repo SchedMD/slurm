@@ -1021,8 +1021,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 
 	if (opt_local->mail_user)
 		j->mail_user = opt_local->mail_user;
-	if (srun_opt->burst_buffer)
-		j->burst_buffer = srun_opt->burst_buffer;
+	if (opt_local->burst_buffer)
+		j->burst_buffer = opt_local->burst_buffer;
 	if (opt_local->begin)
 		j->begin_time = opt_local->begin;
 	if (opt_local->deadline)

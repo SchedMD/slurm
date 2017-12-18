@@ -348,7 +348,7 @@ static void _opt_default(void)
 
 	/* All other options must be specified individually for each component
 	 * of the job */
-	xfree(saopt.burst_buffer);
+	xfree(opt.burst_buffer);
 	xfree(opt.constraints);
 	opt.contiguous			= false;
 	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
@@ -422,7 +422,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
   {"SALLOC_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
-  {"SALLOC_BURST_BUFFER",  OPT_STRING,     &saopt.burst_buffer,  NULL          },
+  {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SALLOC_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
@@ -1403,14 +1403,14 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_BURST_BUFFER_SPEC:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(saopt.burst_buffer);
-			saopt.burst_buffer = xstrdup(optarg);
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(saopt.burst_buffer);
-			saopt.burst_buffer = _read_file(optarg);
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = _read_file(optarg);
 			break;
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = parse_int("thread_spec", optarg, true) |
@@ -2170,7 +2170,7 @@ static void _opt_list(void)
 		     opt.core_spec & (~CORE_SPEC_THREAD));
 	} else
 		info("core-spec         : %d", opt.core_spec);
-	info("burst_buffer      : `%s'", saopt.burst_buffer);
+	info("burst_buffer      : `%s'", opt.burst_buffer);
 	if (opt.mcs_label)
 		info("mcs-label         : %s",opt.mcs_label);
 	xfree(str);

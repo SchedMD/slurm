@@ -836,7 +836,7 @@ static void _opt_default(void)
 	sropt.bcast_flag		= false;
 	sropt.accel_bind_type		= 0;
 	opt.blrtsimage			= NULL;
-	sropt.burst_buffer		= NULL;
+	opt.burst_buffer		= NULL;
 	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]	= NO_VAL16;
 		opt.geometry[i]		= 0;
@@ -955,7 +955,7 @@ env_vars_t env_vars[] = {
 {"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
 {"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL             },
-{"SLURM_BURST_BUFFER",  OPT_STRING,     &sropt.burst_buffer,NULL             },
+{"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
 {"SLURM_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL             },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &sropt.ckpt_dir,    NULL             },
@@ -1937,14 +1937,14 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_BURST_BUFFER_SPEC:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(sropt.burst_buffer);
-			sropt.burst_buffer = xstrdup(optarg);
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(sropt.burst_buffer);
-			sropt.burst_buffer = _read_file(optarg);
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = _read_file(optarg);
 			break;
 		case LONG_OPT_BEGIN:
 			if (!optarg)
@@ -3086,7 +3086,7 @@ static void _opt_list(void)
 	     acct_gather_profile_to_string(opt.profile));
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
-	info("burst_buffer   : `%s'", sropt.burst_buffer);
+	info("burst_buffer   : `%s'", opt.burst_buffer);
 	info("wckey          : `%s'", opt.wckey);
 	info("cpu_freq_min   : %u", opt.cpu_freq_min);
 	info("cpu_freq_max   : %u", opt.cpu_freq_max);

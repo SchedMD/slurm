@@ -64,7 +64,6 @@ typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
  */
 typedef struct salloc_opt {
 	bell_flag_t bell;		/* --bell, --no-bell		*/
-	char *burst_buffer;		/* --bb				*/
 	bool default_job_name;		/* set if no command or job name specified */
 	int kill_command_signal;	/* --kill-command		*/
 	bool kill_command_signal_set;
@@ -122,7 +121,6 @@ typedef struct srun_opt {
 	char *alloc_nodelist;		/* grabbed from the environment	*/
 	char *bcast_file;		/* --bcast, copy executable to compute nodes */
 	bool bcast_flag;		/* --bcast, copy executable to compute nodes */
-	char *burst_buffer;		/* --bb				*/
 	int ckpt_interval;		/* --checkpoint, in minutes	*/
 	char *ckpt_interval_str;	/* --checkpoint			*/
 	char *ckpt_dir;			/* --checkpoint-dir		*/
@@ -189,6 +187,7 @@ typedef struct slurm_options {
 
 	char *progname;			/* argv[0] of this program or	*/
 
+	char *burst_buffer;		/* --bb				*/
 	char *clusters;			/* cluster to run this on. */
 	char *user;			/* local username		*/
 	uid_t uid;			/* local uid			*/
