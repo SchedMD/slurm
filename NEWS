@@ -75,6 +75,9 @@ documents those changes that are of interest to users and administrators.
     completely instead of right after the parent job finishes.
  -- node_features/knl_generic - If plugin can not fully load then do not spawn
     a background pthread (which will fail with invalid memory reference).
+ -- Don't set the next jobid to give out to the highest jobid in the system on
+    controller startup. Just use the checkpointed next use jobid.
+ -- Docs - add Slurm/PMIx and OpenMPI build notes to the mpi_guide page.
 
 * Changes in Slurm 17.11.0
 ==========================
@@ -1953,6 +1956,12 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameter no_env_cache, if set no env cache will be use when
     launching a job, instead the job will fail and drain the node if the env
     isn't loaded normally.
+ -- burst_buffer/cray - Plug small memory leak on DataWarp create_persistent
+    buffer error.
+ -- burst_buffer/cray - Do not purge a job record if it's stage-out operation
+    fails. The description of the failure will be in the job's "Reason" field.
+ -- burst_buffer/cray - Append information about errors to job's AdminComments
+    field.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

@@ -1353,7 +1353,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	uint32_t array_job_id = 0, req_switch = 0, wait4switch = 0;
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
-	uint32_t job_state, local_job_id = 0, delay_boot = 0;
+	uint32_t job_state, delay_boot = 0;
 	time_t start_time, end_time, end_time_exp, suspend_time,
 		pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0, deadline = 0;
@@ -2048,6 +2048,12 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		lowest_prio  = MIN(lowest_prio,  priority);
 	}
 
+#if 0
+	/*
+	 * This is not necessary since the job_id_sequence is checkpointed and
+	 * the jobid will be checked if it's in use in get_next_job_id().
+	 */
+
 	/* Base job_id_sequence off of local job id but only if the job
 	 * originated from this cluster -- so that the local job id of a
 	 * different cluster isn't restored here. */
@@ -2056,6 +2062,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		local_job_id = fed_mgr_get_local_id(job_id);
 	if (job_id_sequence <= local_job_id)
 		job_id_sequence = local_job_id + 1;
+#endif
 
 	xfree(job_ptr->tres_alloc_str);
 	job_ptr->tres_alloc_str = tres_alloc_str;
