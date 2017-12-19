@@ -34,16 +34,232 @@ The <i>srun</i> option <i>--mpi=</i> (or the equivalent environment
 variable <i>SLURM_MPI_TYPE</i> can be used to specify when a
 different MPI implementation is to be supported for an individual job.</p>
 
-<p>Links to instructions for using several varieties of MPI
+<p>Links to instructions for using several varieties of MPI/PMI
 with Slurm are provided below.
 <ul>
 <li><a href="#intel_mpi">Intel-MPI</a></li>
 <li><a href="#mpich2">MPICH2</a></li>
 <li><a href="#mvapich2">MVAPICH2</a></li>
 <li><a href="#open_mpi">Open MPI</a></li>
+<li><a href="#pmix">PMIx</a></li>
 <li><a href="#UPC">UPC</a></li>
 </ul></p>
 <hr size=4 width="100%">
+
+<h2><a name="pmix" href="https://www.open-mpi.org/projects/pmix/"><b>PMIx</b>
+</a></h2>
+
+<h3>Building PMIx</h3>
+
+<p>Before building PMIx, it is advisable to read these
+<a href="https://pmix.github.io/pmix/faq/building">FAQ entries</a>. They provide
+some details on building dependencies and installation steps.</p>
+
+<p>This section is intended to complement the PMIx FAQ with some notes on how to
+prepare Slurm and PMIx to work together. PMIx can be obtained from the official
+<a href="https://github.com/pmix/pmix">PMIx GitHub</a> repository, either by
+cloning the repository or by downloading a packaged release.</p>
+
+<p>There are some relevant notes that should be considered when installing Slurm
+and PMIx in terms of versions compatibility:
+<ul>
+<li>Slurm 17.02+ supports PMIx v1.x <b>(not PMIx v2.x)</b>.</li>
+<li>Slurm 17.11.0+ supports PMIx v1.x and v2.0 <b>(not PMIx v2.1)</b>.</li>
+<li>Slurm 17.11.1+ supports PMIx v1.x, v2.0 and (at least) v2.1 too.</li>
+</ul>
+</p>
+
+<p>Altough it is recommended to build PMIx from the
+<a href="https://github.com/pmix/pmix/releases">packaged releases</a>, here is
+an example on how to build PMIx v2.1 by cloning the git repository:
+</p>
+
+<pre>
+user@testbox:~/git$ mkdir -p pmix/build/2.1 pmix/install/2.1
+user@testbox:~/git$ cd pmix
+user@testbox:~/git/pmix$ git clone https://github.com/pmix/pmix.git source
+user@testbox:~/git/pmix$ cd source/
+user@testbox:~/git/pmix/source$ git branch -a
+user@testbox:~/git/pmix/source$ git checkout v2.1
+user@testbox:~/git/pmix/source$ git pull
+user@testbox:~/git/pmix/source$ ./autogen.sh
+user@testbox:~/git/pmix/source$ cd ../build/2.1/
+user@testbox:~/git/pmix/build/2.1$ ../../source/configure \
+&gt; --prefix=/home/user/git/pmix/install/2.1
+user@testbox:~/git/pmix/build/2.1$ make -j install >/dev/null
+user@testbox:~/git/pmix/build/2.1$ cd ../../install/2.1/
+user@testbox:~/git/pmix/install/2.1$ grep PMIX_VERSION include/pmix_version.h
+#define PMIX_VERSION_MAJOR 2L
+#define PMIX_VERSION_MINOR 1L
+user@testbox:~/git/pmix/install/2.1$
+</pre>
+
+<p>For the purpose of these instructions let's imagine PMIx v2.1 has been
+installed on the following path:</p>
+
+<pre>
+user@testbox:/home/user/git/pmix/install/2.1
+</pre>
+
+<p>Additional PMIx notes can be found in the SchedMD
+<a href="publications.html">Publications and Presentations</a> page.</p>
+
+<h3>Building Slurm with PMIx support</h3>
+
+<p>At configure time, Slurm looks by default for a PMIx installation under:</p>
+
+<pre>
+/usr
+/usr/local
+</pre>
+
+<p>If PMIx isn't installed in any of the previous locations, the Slurm configure
+script can be requested to point to the non default location. Here's an example:
+</p>
+
+<pre>
+user@testbox:~/slurm/17.11/testbox/slurm$ ../../slurm/configure \
+&gt; --prefix=/home/user/slurm/17.11/testbox \
+&gt; <b>--with-pmix=/home/user/git/pmix/install/2.1</b> \
+&gt; --enable-multiple-slurmd
+</pre>
+
+<p>Or the analogous with RPM based building:</p>
+
+<pre>
+[user@testbox Downloads]$ rpmbuild \
+&gt; --define '_prefix /home/user/slurm/17.11/testbox' \
+&gt; --define '_slurm_sysconfdir /home/user/slurm/17.11/testbox/etc' \
+&gt; --with multiple_slurmd \
+&gt; <b>--define '_with_pmix --with-pmix=/home/user/git/pmix/install/2.1'</b> \
+&gt; -ta slurm-17.11.1.tar.bz2
+</pre>
+
+<p>NOTE: It is also possible to build against multiple PMIx versions with a ':'
+separator. For instance to build against 1.2 and 2.1:</p>
+
+<pre>
+...
+&gt; <b>--with-pmix=/path/to/pmix/install/1.2:/path/to/pmix/install/2.1</b> \
+...
+</pre>
+
+<p>NOTE: When submitting a job, the desired version can then be selected using
+any of the available from --mpi=list. The default for pmix will be the highest
+version of the library:</p>
+
+<pre>
+user@testbox:~/t$ srun --mpi=list
+srun: MPI types are...
+srun: pmix_v1
+srun: pmi2
+srun: openmpi
+srun: none
+srun: pmix
+srun: pmix_v2
+</pre>
+
+<p>NOTE: There is no need to configure Slurm with the multiple-slurmd option,
+but if it is configured with it, additional steps will be required to make PMIx
+work. That case is covered a few paragraphs below.
+</p>
+
+<p>Continuing with the configuration, if Slurm is unable to locate the PMIx
+installation and/or finds it but considers it not usable, the configure output
+should log something like this:</p>
+
+<pre>
+checking for pmix installation...
+configure: WARNING: unable to locate pmix installation
+</pre>
+
+<p>Otherwise, if Slurm finds it and considers it usable, something like this:
+</p>
+
+<pre>
+checking for pmix installation... /home/user/git/pmix/install/2.1
+</pre>
+
+<p>Inspecting the generated config.log in the Slurm build directory might
+provide even more detail for troubleshooting purposes. After configuration,
+we can proceed to install Slurm (using make or rpm accordingly):</p>
+
+<pre>
+user@testbox:~/slurm/17.11/testbox/slurm$ make -j install > /dev/null
+user@testbox:~/slurm/17.11/testbox/slurm$ cd ../lib/slurm/
+user@testbox:~/slurm/17.11/testbox/lib/slurm$ ls -l | grep pmix
+lrwxrwxrwx 1 user user       16 Dec  6 19:35 mpi_pmix.so -> ./mpi_pmix_v2.so
+-rw-r--r-- 1 user user  7008260 Dec  6 19:35 mpi_pmix_v2.a
+-rwxr-xr-x 1 user user     1040 Dec  6 19:35 mpi_pmix_v2.la
+-rwxr-xr-x 1 user user  1020112 Dec  6 19:35 mpi_pmix_v2.so
+user@testbox:~/slurm/17.11/testbox/lib/slurm$
+</pre>
+
+<p>If support for PMI2 version is also needed, it can also be installed from
+the contribs directory:</p>
+
+<pre>
+user@testbox:~/slurm/17.11/testbox/lib/slurm$ cd ../../slurm/contribs/pmi2
+user@testbox:~/slurm/17.11/testbox/slurm/contribs/pmi2$ make -j install
+user@testbox:~/slurm/17.11/testbox/slurm/contribs/pmi2$ cd ../../../lib
+user@testbox:~/slurm/17.11/testbox/lib$ ls -l | grep pmi
+-rw-r--r-- 1 user user   498144 Dec  6 20:05 libpmi2.a
+-rwxr-xr-x 1 user user      958 Dec  6 20:05 libpmi2.la
+lrwxrwxrwx 1 user user       16 Dec  6 20:05 libpmi2.so -> libpmi2.so.0.0.0
+lrwxrwxrwx 1 user user       16 Dec  6 20:05 libpmi2.so.0 -> libpmi2.so.0.0.0
+-rwxr-xr-x 1 user user   214512 Dec  6 20:05 libpmi2.so.0.0.0
+-rw-r--r-- 1 user user   414680 Dec  6 19:35 libpmi.a
+-rwxr-xr-x 1 user user     1011 Dec  6 19:35 libpmi.la
+lrwxrwxrwx 1 user user       15 Dec  6 19:35 libpmi.so -> libpmi.so.0.0.0
+lrwxrwxrwx 1 user user       15 Dec  6 19:35 libpmi.so.0 -> libpmi.so.0.0.0
+-rwxr-xr-x 1 user user   230552 Dec  6 19:35 libpmi.so.0.0.0
+user@testbox:~/slurm/17.11/testbox/lib$
+</pre>
+
+<p>NOTE: Since both Slurm and PMIx provide libpmi[2].so libraries, we recommend
+to install both pieces of software in different locations. Otherwise, both
+libraries provided by Slurm and PMIx might end up being installed under standard
+locations like /usr/lib64 and the package manager erroring out and reporting
+the conflict. It is planned to alleviate that by putting these libraries in a
+separate libpmi-slurm package.</p>
+
+<p>NOTE: If support for multiple-slurmd is required, the TmpFS option in
+slurm.conf needs to be specified and as many directory paths as nodes be
+created. These directories are used by the Slurm PMIx plugin to create temporal
+files and/or UNIX sockets. Here's an example setup for two nodes named
+compute[1-2]:
+</p>
+
+<pre>
+TmpFS=/home/user/slurm/17.11/testbox/spool/slurmd-tmpfs-%n
+user@testbox:~/slurm/17.11/testbox$ mkdir spool/slurmd-tmpfs-compute1
+user@testbox:~/slurm/17.11/testbox$ mkdir spool/slurmd-tmpfs-compute2
+</pre>
+
+<h3>Testing Slurm and PMIx</h3>
+
+<p>It is possible to directly test Slurm and PMIx without the need of a MPI
+implementation software being installed. Here's an example indicating that
+both components work properly:</p>
+
+<pre>
+user@testbox:~/t$ srun --mpi=list
+srun: MPI types are...
+srun: pmi2
+srun: openmpi
+srun: none
+srun: pmix
+srun: pmix_v2
+user@testbox:~/t$ srun --mpi=pmix -n2 -N2 \
+&gt; ~/git/pmix/build/2.1/test/pmix_client -n 2 --job-fence -c
+OK
+OK
+user@testbox:~/t$ srun --mpi=pmix_v2 -n2 -N2 \
+&gt; ~/git/pmix/build/2.1/test/pmix_client -n 2 --job-fence -c
+OK
+OK
+user@testbox:~/t$
+</pre>
 
 <h2><a name="open_mpi" href="http://www.open-mpi.org/"><b>OpenMPI</b></a></h2>
 
@@ -59,7 +275,19 @@ options '--mpi=pmi2' has to be specified on the srun command line.
 
 <p>Starting from Open MPI version 2.0 PMIx is natively supported. To launch
 Open MPI application using PMIx the '--mpi=pmix' option has to be
-specified on the srun command line.
+specified on the srun command line. It is also possible to build OpenMPI using
+an external PMIx installation. That option can take one of three values:
+"internal", "external", or a valid directory name. "internal" (or no DIR value)
+forces Open MPI to use its internal copy of PMIx. "external" forces Open MPI to
+use an external installation of PMIx. Supplying a valid directory name also
+forces Open MPI to use an external installation of PMIx, and adds DIR/include,
+DIR/lib, and DIR/lib64 to the search path for headers and libraries.
+Note that Open MPI does not support --without-pmix. Note also that if building
+OpenMPI using an external PMIx installation, both OpenMPI and PMIx need to be
+built against the same libevent/hwloc installations, otherwise a warning is
+shown. OpenMPI configure script provides the options <b>--with-libevent=PATH</b>
+ and/or <b>--with-hwloc=PATH</b> to make OpenMPI match what PMIx was built
+against.
 
 <p>A set of environment variables are available to control the behavior of Slurm
 PMIx plugin:
@@ -333,6 +561,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 29 September 2017</p>
+<p style="text-align:center;">Last modified 19 December 2017</p>
 
 <!--#include virtual="footer.txt"-->

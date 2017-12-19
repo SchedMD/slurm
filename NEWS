@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
     a background pthread (which will fail with invalid memory reference).
  -- Don't set the next jobid to give out to the highest jobid in the system on
     controller startup. Just use the checkpointed next use jobid.
+ -- Docs - add Slurm/PMIx and OpenMPI build notes to the mpi_guide page.
 
 * Changes in Slurm 17.11.0
 ==========================
