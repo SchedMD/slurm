@@ -1927,6 +1927,8 @@ documents those changes that are of interest to users and administrators.
     fails. The description of the failure will be in the job's "Reason" field.
  -- burst_buffer/cray - Append information about errors to job's AdminComments
     field.
+ -- DBD - When using LogTimeFormat=thread_id fill in the cluster name before
+    printing anything for a connection.
 
 * Changes in Slurm 16.05.0pre1
 ==============================
