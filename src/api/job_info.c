@@ -2128,8 +2128,8 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 		if (prio_obj->partition) {
 			uint32_t hf_hashv = 0;
 			HASH_FCN(prio_obj->partition,
-				 strlen(prio_obj->partition), 1000000,
-				 hf_hashv, hash_part_inx);
+				 strlen(prio_obj->partition),
+				 hf_hashv);
 		} else {
 			hash_part_inx = 0;
 		}
