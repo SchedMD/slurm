@@ -1299,6 +1299,11 @@ This should only be set on clusters providing exclusive access to each
 node to a single job at once, and not using parallel steps within the job,
 otherwise resources on the node can be oversubscribed.
 .TP 24
+\fBlustre_no_flush\fR
+If set on a Cray Native cluster, then do not flush the Lustre cache on job step
+completion. This setting will only take effect after reconfiguring, and will
+only take effect for newly launched jobs.
+.TP 24
 \fBmem_sort\fR
 Sort NUMA memory at step start. User can override this default with
 SLURM_MEM_BIND environment variable or \-\-mem\-bind=nosort command line option.
