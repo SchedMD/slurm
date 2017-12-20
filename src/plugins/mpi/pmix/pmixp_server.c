@@ -182,10 +182,10 @@ static void _base_hdr_pack_full(Buf packbuf, pmixp_base_hdr_t *hdr)
 	pack32(hdr->msgsize, packbuf);
 	pack8(hdr->ext_flag, packbuf);
 	if (hdr->ext_flag) {
-		uint32_t expected_size = PMIXP_BASE_HDR_SIZE +
-				PMIXP_BASE_HDR_EXT_SIZE(pmixp_dconn_ep_len());
 		packmem(pmixp_dconn_ep_data(), pmixp_dconn_ep_len(), packbuf);
-		xassert(get_buf_offset(packbuf) == expected_size);
+		xassert(get_buf_offset(packbuf) ==
+			(PMIXP_BASE_HDR_SIZE +
+			 PMIXP_BASE_HDR_EXT_SIZE(pmixp_dconn_ep_len())));
 	}
 }
 

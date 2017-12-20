@@ -58,6 +58,7 @@ documents those changes that are of interest to users and administrators.
     well.
  -- X11 forwarding: change xauth handling to use hostname/unix:display format,
     rather than localhost:display.
+ -- mpi/pmix - Fix warning if not compiling with debug.
 
 * Changes in Slurm 17.11.0
 ==========================
