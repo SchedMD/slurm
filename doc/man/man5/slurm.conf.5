@@ -2141,6 +2141,13 @@ should use this flag.
 By default, the Prolog and Epilog scripts run concurrently on each node.
 This flag forces those scripts to run serially within each node, but with
 a significant penalty to job throughput on each node.
+.TP
+\fBX11\fR
+Enable Slurm's built-in X11 forwarding capabilities. Slurm must have been
+compiled with libssh2 support enabled, and either SSH hostkey authentication
+or per-users SSH key authentication must be enabled within the cluster. Only
+RSA keys are supported at this time. Setting the X11 flag implicitly enables
+both Contain and Alloc flags as well.
 .RE
 
 .TP
