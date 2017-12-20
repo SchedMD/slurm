@@ -2958,10 +2958,10 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	 * timeout and resolved itself. */
 	cluster->fed.recv = persist_conn;
 
-	unlock_slurmctld(fed_read_lock);
-
 	slurm_persist_conn_recv_thread_init(persist_conn, -1, persist_conn);
 	_q_send_job_sync(cluster->name);
+
+	unlock_slurmctld(fed_read_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -4669,6 +4669,12 @@ static int _reconcile_fed_job(struct job_record *job_ptr,
 		if (job_ptr->fed_details->cluster_lock == sibling_id) {
 			if (IS_JOB_COMPLETE(remote_job)) {
 				info("%s: job %d on sibling %s is already completed, completing the origin job",
+				     __func__, job_ptr->job_id, sibling_name);
+				fed_mgr_job_revoke(job_ptr, true,
+						   remote_job->exit_code,
+						   job_ptr->start_time);
+			} else if (IS_JOB_CANCELLED(remote_job)) {
+				info("%s: job %d on sibling %s is already cancelled, completing the origin job",
 				     __func__, job_ptr->job_id, sibling_name);
 				fed_mgr_job_revoke(job_ptr, true,
 						   remote_job->exit_code,

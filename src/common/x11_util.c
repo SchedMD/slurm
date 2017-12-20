@@ -174,7 +174,8 @@ extern char *x11_get_xauth(void)
 	return cookie;
 }
 
-extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display)
+extern int x11_set_xauth(char *xauthority, char *cookie,
+			 char *host, uint16_t display)
 {
 	int i=0, status;
 	char *result;
@@ -186,7 +187,7 @@ extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display)
 	xauth_argv[i++] = xstrdup("-f");
 	xauth_argv[i++] = xstrdup(xauthority);
 	xauth_argv[i++] = xstrdup("add");
-	xauth_argv[i++] = xstrdup_printf("localhost:%u", display);
+	xauth_argv[i++] = xstrdup_printf("%s/unix:%u", host, display);
 	xauth_argv[i++] = xstrdup("MIT-MAGIC-COOKIE-1");
 	xauth_argv[i++] = xstrdup(cookie);
 	xauth_argv[i++] = NULL;
@@ -202,7 +203,7 @@ extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display)
 	return status;
 }
 
-extern int x11_delete_xauth(char *xauthority, uint16_t display)
+extern int x11_delete_xauth(char *xauthority, char *host, uint16_t display)
 {
 	int i=0, status;
 	char *result;
@@ -214,7 +215,7 @@ extern int x11_delete_xauth(char *xauthority, uint16_t display)
 	xauth_argv[i++] = xstrdup("-f");
 	xauth_argv[i++] = xstrdup(xauthority);
 	xauth_argv[i++] = xstrdup("remove");
-	xauth_argv[i++] = xstrdup_printf("localhost:%u", display);
+	xauth_argv[i++] = xstrdup_printf("%s/unix:%u", host, display);
 	xauth_argv[i++] = NULL;
 	xassert(i < 10);
 

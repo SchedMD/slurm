@@ -160,7 +160,7 @@ static void _shutdown_x11(int signal)
 	libssh2_exit();
 
 	if (xauthority) {
-		x11_delete_xauth(xauthority, x11_display);
+		x11_delete_xauth(xauthority, conf->hostname, x11_display);
 		xfree(xauthority);
 	}
 
@@ -293,13 +293,14 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	}
 
 	x11_display = port - X11_TCP_PORT_OFFSET;
-	if (x11_set_xauth(xauthority, job->x11_magic_cookie, x11_display)) {
+	if (x11_set_xauth(xauthority, job->x11_magic_cookie,
+			  conf->hostname, x11_display)) {
 		error("%s: failed to run xauth", __func__);
 		goto shutdown;
 	}
 
-	info("X11 forwarding established on DISPLAY=localhost:%d.0",
-	     x11_display);
+	info("X11 forwarding established on DISPLAY=%s:%d.0",
+	     conf->hostname, x11_display);
 
 	/*
 	 * Send keepalives every 60 seconds, and have the server

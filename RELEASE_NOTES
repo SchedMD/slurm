@@ -99,6 +99,11 @@ NOTE: Built-in BLCR support is deprecated, no longer built automatically, and
       will be removed in an upcoming release. You must add --with-blcr and
       --enable-deprecated options to configure to build this plugin.
 
+NOTE: srun will now only read in the environment variables SLURM_JOB_NODES and
+      SLURM_JOB_NODELIST instead of SLURM_NNODES and SLURM_NODELIST.  These
+      latter variables have been obsolete for some time please update any
+      scripts still using them.
+
 HIGHLIGHTS
 ==========
 

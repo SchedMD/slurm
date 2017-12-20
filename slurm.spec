@@ -224,6 +224,15 @@ Obsoletes: slurm-sql
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
 
+%package libpmi
+Summary: Slurm\'s implementation of the pmi libraries
+Group: System Environment/Base
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Conflicts: pmix-libpmi
+%description libpmi
+Slurm\'s version of libpmi. For systems using Slurm, this version
+is preferred over the compatibility libraries shipped by the PMIx project.
+
 %package torque
 Summary: Torque/PBS wrappers for transition from Torque/PBS to Slurm
 Group: Development/System
@@ -442,12 +451,10 @@ rm -rf %{buildroot}
 %exclude %{_bindir}/sjobexitmod
 %exclude %{_bindir}/sjstat
 %exclude %{_bindir}/smail
+%exclude %{_libdir}/libpmi*
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_libdir}/slurm/*.so
-%if %{with cray}
-%{_libdir}/slurmpmi/*
-%endif
 %exclude %{_libdir}/slurm/accounting_storage_mysql.so
 %exclude %{_libdir}/slurm/job_submit_pbs.so
 %exclude %{_libdir}/slurm/spank_pbs.so
@@ -518,6 +525,15 @@ rm -rf %{buildroot}
 %{_sbindir}/slurmdbd
 %{_libdir}/slurm/accounting_storage_mysql.so
 %{_unitdir}/slurmdbd.service
+#############################################################################
+
+%files libpmi
+%defattr(-,root,root)
+%if %{with cray}
+%{_libdir}/slurmpmi/*
+%else
+%{_libdir}/libpmi*
+%endif
 #############################################################################
 
 %files torque

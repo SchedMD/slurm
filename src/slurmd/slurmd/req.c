@@ -2249,6 +2249,10 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		goto done;
 	}
 
+	/* lookup user_name if not provided by slurmctld */
+	if (!req->user_name)
+		req->user_name = uid_to_string(req->uid);
+
 	/* lookup gids if they weren't sent by slurmctld */
 	if (!req->ngids)
 		req->ngids = group_cache_lookup(req->uid, req->gid,

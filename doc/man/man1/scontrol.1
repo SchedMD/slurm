@@ -368,7 +368,7 @@ only (e.g. SLURM_VERSION).
 \fIhostnames\fP takes an optional hostlist expression as input and
 writes a list of individual host names to standard output (one per
 line). If no hostlist expression is supplied, the contents of the
-SLURM_NODELIST environment variable is used. For example "tux[1\-3]"
+SLURM_JOB_NODELIST environment variable is used. For example "tux[1\-3]"
 is mapped to "tux1","tux2" and "tux3" (one hostname per line).
 \fIhostlist\fP takes a list of host names and prints the hostlist
 expression for them (the inverse of \fIhostnames\fP).

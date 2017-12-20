@@ -64,7 +64,6 @@ documents those changes that are of interest to users and administrators.
  -- Add ability for squeue to sort jobs by submit time.
  -- CRAY - Switch to standard pid files on Cray systems.
  -- Update jobcomp records on duplicate inserts.
- -- Make slurmd oom-unkillable by default, using oom.h OOM_SCORE_ADJ_MIN macro.
  -- If unrecognized configuration file option found then print an appropriate
     fatal error message rather than relying upon random errno value.
  -- Initialize job_desc_msg_t's instead of just memset'ing them.
@@ -83,6 +82,17 @@ documents those changes that are of interest to users and administrators.
  -- sacct - fix the display for the NNodes field when using the --units option.
  -- Prevent possible double-xfree on a buffer in stepd_completion.
  -- Fix for record job state on successful allocation but failed reply message.
+ -- Fill in the user_name field for batch jobs if not sent by the slurmctld.
+    (Which is the default behavior if PrologFlags=send_gids is not enabled.)
+    This prevents job launch problems for sites using UsePAM=1.
+ -- Handle syncing federated jobs that ran on non-origin clusters and were
+    cancelled while the origin cluster was down.
+ -- Fix accessing variable outside of lock.
+ -- slurm.spec: move libpmi to a separate package to solve a conflict with the
+    version provided by PMIx. This will require a separate change to PMIx as
+    well.
+ -- X11 forwarding: change xauth handling to use hostname/unix:display format,
+    rather than localhost:display.
 
 * Changes in Slurm 17.11.0
 ==========================
@@ -1969,6 +1979,8 @@ documents those changes that are of interest to users and administrators.
     field.
  -- DBD - When using LogTimeFormat=thread_id fill in the cluster name before
     printing anything for a connection.
+ -- Have srun read in modern env var's instead of obsolete ones
+ -- mpi/pmix: add the thresholds for the parameters of micro-benchmarks.
 
 * Changes in Slurm 16.05.0pre1
 ==============================
