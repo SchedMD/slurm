@@ -1488,23 +1488,21 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 	return rc;
 }
 
-static void _update_admin_comment(struct job_record *job_ptr, char *operation,
-				  char *resp_msg)
+static void _update_comment(struct job_record *job_ptr, char *operation,
+			    char *resp_msg)
 {
 	char *sep = NULL;
 
-	if (job_ptr->admin_comment &&
-	    (strlen(job_ptr->admin_comment) >= 1024)) {
-		/* Avoid filling admin_comment with repeated BB failures */
+	if (job_ptr->comment && (strlen(job_ptr->comment) >= 1024)) {
+		/* Avoid filling comment with repeated BB failures */
 		return;
 	}
 
-	if (job_ptr->admin_comment)
+	if (job_ptr->comment)
 		xstrftimecat(sep, "\n%x %X");
 	else
 		xstrftimecat(sep, "%x %X");
-	xstrfmtcat(job_ptr->admin_comment,
-		   "%s %s: %s: %s",
+	xstrfmtcat(job_ptr->comment, "%s %s: %s: %s",
 		   sep, plugin_type, operation, resp_msg);
 	xfree(sep);
 }
@@ -1557,7 +1555,7 @@ static void *_start_stage_in(void *x)
 		rc = SLURM_ERROR;
 		job_ptr = find_job_record(stage_args->job_id);
 		if (job_ptr)
-			_update_admin_comment(job_ptr, "setup", resp_msg);
+			_update_comment(job_ptr, "setup", resp_msg);
 	} else {
 		job_ptr = find_job_record(stage_args->job_id);
 		bb_job = bb_job_find(&bb_state, stage_args->job_id);
@@ -1611,10 +1609,8 @@ static void *_start_stage_in(void *x)
 			rc = SLURM_ERROR;
 			lock_slurmctld(job_write_lock);
 			job_ptr = find_job_record(stage_args->job_id);
-			if (job_ptr) {
-				_update_admin_comment(job_ptr, "data_in",
-						     resp_msg);
-			}
+			if (job_ptr)
+				_update_comment(job_ptr, "data_in",resp_msg);
 			unlock_slurmctld(job_write_lock);
 		}
 	}
@@ -1824,8 +1820,8 @@ static void *_start_stage_out(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: post_run: %s",
 				   plugin_type, resp_msg);
-			_update_admin_comment(job_ptr, "post_run", resp_msg);
-//FIXME: WRITE ADMIN_COMMENT UPDATE TO DATABASE HERE, JOB IS ALREADY COMPLETED
+			_update_comment(job_ptr, "post_run", resp_msg);
+//FIXME: WRITE COMMENT UPDATE TO DATABASE HERE, JOB IS ALREADY COMPLETED
 		}
 	}
 	if (!job_ptr) {
@@ -1873,9 +1869,8 @@ static void *_start_stage_out(void *x)
 				xstrfmtcat(job_ptr->state_desc,
 					   "%s: stage-out: %s",
 					   plugin_type, resp_msg);
-				_update_admin_comment(job_ptr, "data_out",
-						      resp_msg);
-//FIXME: WRITE ADMIN_COMMENT UPDATE TO DATABASE HERE, JOB IS ALREADY COMPLETED
+				_update_comment(job_ptr, "data_out", resp_msg);
+//FIXME: WRITE COMMENT UPDATE TO DATABASE HERE, JOB IS ALREADY COMPLETED
 			}
 			unlock_slurmctld(job_write_lock);
 		}
@@ -2050,7 +2045,7 @@ static void *_start_teardown(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: teardown: %s",
 				   plugin_type, resp_msg);
-			_update_admin_comment(job_ptr, "teardown", resp_msg);
+			_update_comment(job_ptr, "teardown", resp_msg);
 		}
 		unlock_slurmctld(job_write_lock);
 
@@ -3926,7 +3921,7 @@ static void *_start_pre_run(void *x)
 		error("%s: dws_pre_run for %s status:%u response:%s", __func__,
 		      jobid_buf, status, resp_msg);
 		if (job_ptr) {
-			_update_admin_comment(job_ptr, "pre_run", resp_msg);
+			_update_comment(job_ptr, "pre_run", resp_msg);
 			if (IS_JOB_RUNNING(job_ptr))
 				run_kill_job = true;
 			if (bb_job) {
@@ -4483,8 +4478,7 @@ static void *_create_persistent(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, __func__, resp_msg);
-			_update_admin_comment(job_ptr, "create_persistent",
-					      resp_msg);
+			_update_comment(job_ptr, "create_persistent", resp_msg);
 		}
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(create_args->user_id, create_args->job_id,
@@ -4623,7 +4617,7 @@ static void *_destroy_persistent(void *x)
 			error("%s: unable to find job record for job %u",
 			      __func__, destroy_args->job_id);
 		} else {
-			_update_admin_comment(job_ptr, "teardown", resp_msg);
+			_update_comment(job_ptr, "teardown", resp_msg);
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
