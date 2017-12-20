@@ -963,7 +963,7 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 		len = get_buf_offset(buffer);
 		safe_write(fd, &len, sizeof(int));
 		safe_write(fd, get_buf_data(buffer), len);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 
 		/* Receive the return code and errno */
 		safe_read(fd, &rc, sizeof(int));

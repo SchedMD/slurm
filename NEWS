@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Add lustre_no_flush option to LaunchParameters for Native Cray systems.
  -- Fix rpmbuild issue with rpm 4.13+ / Fedora 25+.
  -- sacct - fix the display for the NNodes field when using the --units option.
+ -- Prevent possible double-xfree on a buffer in stepd_completion.
 
 * Changes in Slurm 17.11.0
 ==========================
