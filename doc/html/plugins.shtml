@@ -241,13 +241,14 @@ for an example of how to do this.</p>
   uint32_t *pack_node_list;
 </pre>
 <p>
-  This <i>pack_*</i> related variables must match the current pack job configuration.
+  This <i>pack_*</i> related variables must match the current heterogeneous job
+  configuration.
   <br>
   For example, if for whatever reason you are reducing the number of tasks for
-  a node in a pack job, you should at least remove that task ID from
+  a node in a heterogeneous job, you should at least remove that task ID from
   <i>pack_tids</i>, decrement <i>pack_ntasks</i> and <i>pack_task_cnts</i>, and
-  possibly decrement the number of nodes of the pack job in <i>pack_nnodes</i>
-  and <i>pack_node_list</i>.
+  possibly decrement the number of nodes of the heterogeneous job in
+  <i>pack_nnodes</i> and <i>pack_node_list</i>.
 </p>
 <pre>
   char **spank_job_env;
@@ -308,6 +309,6 @@ uint32_t reason_uid;
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 November 2017</p>
+<p style="text-align:center;">Last modified 20 December 2017</p>
 
 <!--#include virtual="footer.txt"-->

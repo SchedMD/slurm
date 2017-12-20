@@ -239,7 +239,7 @@ unique <i>job_id</i>.</li>
 <li><i>pack_job_id</i>: This identification number applies to all components
 of the heterogeneous job. All components of the same job will have the same
 <i>pack_job_id</i> value and it will be equal to the <i>job_id</i> of the
-first component. We refer to this as the "pack leader".</li>
+first component. We refer to this as the "heterogeneous job leader".</li>
 <li><i>pack_job_id_set</i>: Regular expression identifying all <i>job_id</i>
 values associated with the job.</li>
 <li><i>pack_job_offset</i>: A unique sequence number applied to each component
@@ -270,8 +270,8 @@ For example "123+4" would represent heterogeneous job id 123 and it's fifth
 component (note: the first component has a <i>pack_job_offset</i> value of 0).</p>
 
 <p>A request for a specific job ID that identifies a ID of the first component
-of a heterogeneous job (i.e. the "pack leader" will return information about
-all components of that job. For example:</p>
+of a heterogeneous job (i.e. the "heterogeneous job leader") will return
+information about all components of that job. For example:</p>
 <pre>
 $ squeue --job=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
@@ -280,9 +280,9 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
  93+2     debug  bash  adam  R 18:18      1 nid00021
 </pre>
 
-<p>A request to cancel or otherwise signal a pack leader will be applied to
-all components of that pack job. A request to cancel a specific component of
-the pack job using the "#+#" notation will apply on to that specific component.
+<p>A request to cancel or otherwise signal a heterogeneous job leader will be applied to
+all components of that heterogeneous job. A request to cancel a specific component of
+the heterogeneous job using the "#+#" notation will apply only to that specific component.
 For example:</p>
 <pre>
 $ squeue --job=93
@@ -307,8 +307,9 @@ pending state will return an error.
 After the job has begun execution, the individual component can be cancelled.</p>
 
 <p>Email notification for job state changes (the <i>--mail-type</i> option)
-is only supported for a pack leader. Requests for email notifications for other
-components of a heterogeneous job will be silently ignored.</p>
+is only supported for a heterogeneous job leader. Requests for email
+notifications for other components of a heterogeneous job will be silently
+ignored.</p>
 
 <p>Requests to modify an individual component of a job using the scontrol
 command must specify the job ID with the "#+#" notation.
@@ -324,9 +325,9 @@ $ scontrol update jobid=123 timelimit=60
 </pre>
 
 <p>Requests to perform the following operations a job can only be requested for
-a pack leader and will be applied to all components of that heterogeneous job.
-Requests to operate on individual components of the heterogeneous will return
-an error.</p>
+a heterogeneous job leader and will be applied to all components of that
+heterogeneous job. Requests to operate on individual components of the
+heterogeneous will return an error.</p>
 <ul>
 <li>requeue</li>
 <li>resume</li>
@@ -461,9 +462,9 @@ $ srun --pack-group=0 t  rue   # Launches step  1721.1, no 1722.1
 $ srun --pack-group=0,1 true   # Launches steps 1721.2 and 1722.2
 </pre>
 
-<p>The maximum pack group specified in a job step allocation (either explicitly
-specified or implied by the ":" separator) must not exceed the number of pack
-groups in the job allocation. For example</p>
+<p>The maximum pack-group specified in a job step allocation (either explicitly
+specified or implied by the ":" separator) must not exceed the number of
+components in the heterogeneous job allocation. For example</p>
 <pre>
 $ salloc -n1 -C alpha : -n2 -C beta bash
 salloc: Pending job allocation 1728
@@ -473,7 +474,7 @@ nid00001
 nid00008
 nid00008
 $ srun hostname : date : id
-error: Attempt to run a job step with pack group value of 2,
+error: Attempt to run a job step with pack-group value of 2,
        but the job allocation has maximum value of 1
 </pre>
 
@@ -482,8 +483,8 @@ error: Attempt to run a job step with pack group value of 2,
 <p>Slurm environment variables will be set independently for each component of
 the job by appending "_PACK_GROUP_" and a sequence number the the usual name.
 In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
-of the pack leader and "SLURM_PACK_SIZE" will contain the number of components
-in the job. For example:</p>
+of the heterogeneous job leader and "SLURM_PACK_SIZE" will contain the number of
+components in the job. For example:</p>
 <pre>
 $ salloc -N1 : -N2 bash
 salloc: Pending job allocation 11741
@@ -689,6 +690,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 November 2017</p>
+<p style="text-align:center;">Last modified 20 December 2017</p>
 
 <!--#include virtual="footer.txt"-->

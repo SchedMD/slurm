@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "April 2016" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "December 2017" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -262,8 +262,8 @@ In the case of job arrays, the job ID format will be of the form
 By default, the job array index field size will be limited to 64 bytes.
 Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
 (Valid for jobs and job steps)
-In the case of heterogeneous (pack) job allocations, the job ID format will be
-of the form "#+#" where the first number is the "pack job leader" and the
+In the case of heterogeneous job allocations, the job ID format will be of the
+form "#+#" where the first number is the "heterogeneous job leader" and the
 second number the zero origin offset for each component of the job.
 .TP
 \fB%I\fR
@@ -627,7 +627,7 @@ For non\-array jobs, this is the job ID.
 \fBjobid\fR
 Job id.
 This will have a unique value for each element of job arrays and each
-component of pack jobs.
+component of heterogeneous jobs.
 (Valid for jobs only)
 .TP
 \fBlastschedeval\fR
