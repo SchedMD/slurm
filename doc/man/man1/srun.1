@@ -693,7 +693,7 @@ applies to job and step allocations.
 
 .TP
 \fB\-E\fR, \fB\-\-preserve-env\fR
-Pass the current values of environment variables SLURM_NNODES and
+Pass the current values of environment variables SLURM_JOB_NODES and
 SLURM_NTASKS through to the \fIexecutable\fR, rather than computing them
 from commandline parameters. This option applies to job allocations.
 
@@ -2510,6 +2510,7 @@ allocation, in which case it is ignored to avoid using the batch job's name
 as the name of each job step.
 .TP
 \fBSLURM_JOB_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
+Same as \fB\-N, \-\-nodes\fR
 Total number of nodes in the job’s resource allocation.
 .TP
 \fBSLURM_KILL_BAD_EXIT\fR
@@ -2538,9 +2539,6 @@ Same as \fB\-\-mpi\fR
 .TP
 \fBSLURM_NETWORK\fR
 Same as \fB\-\-network\fR
-.TP
-\fBSLURM_NNODES\fR
-Same as \fB\-N, \-\-nodes\fR
 .TP
 \fBSLURM_NO_ROTATE\fR
 Same as \fB\-R, \-\-no\-rotate\fR
@@ -2781,7 +2779,7 @@ Sort free cache pages (run zonesort on Intel KNL nodes).
 \-\-mem\-bind verbosity (quiet,verbose).
 
 .TP
-\fBSLURM_NNODES\fR
+\fBSLURM_JOB_NODES\fR
 Total number of nodes in the job's resource allocation.
 .TP
 \fBSLURM_NODE_ALIASES\fR
@@ -2795,7 +2793,7 @@ SLURM_NODE_ALIASES\:=\:ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 \fBSLURM_NODEID\fR
 The relative node ID of the current node.
 .TP
-\fBSLURM_NODELIST\fR
+\fBSLURM_JOB_NODELIST\fR
 List of nodes allocated to the job.
 .TP
 \fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
@@ -2846,7 +2844,7 @@ The process ID of the task being started.
 .TP
 \fBSLURM_TASKS_PER_NODE\fR
 Number of tasks to be initiated on each node. Values are
-comma separated and in the same order as SLURM_NODELIST.
+comma separated and in the same order as SLURM_JOB_NODELIST.
 If two or more consecutive nodes are to have the same task
 count, that count is followed by "(x#)" where "#" is the
 repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
@@ -3017,7 +3015,7 @@ of as a batch job in this case.
 
 > cat test.sh
 #!/bin/sh
-echo $SLURM_NODELIST
+echo $SLURM_JOB_NODELIST
 srun \-lN2 \-r2 hostname
 srun \-lN2 hostname
 

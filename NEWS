@@ -1943,6 +1943,7 @@ documents those changes that are of interest to users and administrators.
     field.
  -- DBD - When using LogTimeFormat=thread_id fill in the cluster name before
     printing anything for a connection.
+ -- Have srun read in modern env var's instead of obsolete ones
 
 * Changes in Slurm 16.05.0pre1
 ==============================

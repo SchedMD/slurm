@@ -554,18 +554,18 @@ One of the distribution methods for srun '<b>-m</b>
 or <b>--distribution</b>' is 'arbitrary'.  This means you can tell Slurm to
 layout your tasks in any fashion you want.  For instance if I had an
 allocation of 2 nodes and wanted to run 4 tasks on the first node and
-1 task on the second and my nodes allocated from SLURM_NODELIST
+1 task on the second and my nodes allocated from SLURM_JOB_NODELIST
 where tux[0-1] my srun line would look like this:<br><br>
 <i>srun -n5 -m arbitrary -w tux[0,0,0,0,1] hostname</i><br><br>
 If I wanted something similar but wanted the third task to be on tux 1
 I could run this:<br><br>
 <i>srun -n5 -m arbitrary -w tux[0,0,1,0,0] hostname</i><br><br>
 Here is a simple perl script named arbitrary.pl that can be ran to easily lay
-out tasks on nodes as they are in SLURM_NODELIST.</p>
+out tasks on nodes as they are in SLURM_JOB_NODELIST.</p>
 <pre>
 #!/usr/bin/perl
 my @tasks = split(',', $ARGV[0]);
-my @nodes = `scontrol show hostnames $SLURM_NODELIST`;
+my @nodes = `scontrol show hostnames $SLURM_JOB_NODELIST`;
 my $node_cnt = $#nodes + 1;
 my $task_cnt = $#tasks + 1;
 
@@ -641,8 +641,8 @@ Any job steps running on the nodes which are relinquished by the job will be
 killed unless initiated with the <i>--no-kill</i> option.
 After the job size is changed, some environment variables created by Slurm
 containing information about the job's environment will no longer be valid and
-should either be removed or altered (e.g. SLURM_NNODES, SLURM_NODELIST and
-SLURM_NPROCS).
+should either be removed or altered (e.g. SLURM_JOB_NODES, SLURM_JOB_NODELIST and
+SLURM_NTASKS).
 The <i>scontrol</i> command will generate a script that can be executed to
 reset local environment variables.
 You must retain the SLURM_JOB_ID environment variable in order for the
@@ -1590,7 +1590,7 @@ if [ X"$SLURM_STEP_ID" = "X" -a X"$SLURM_PROCID" = "X"0 ]
 then
   echo "print =========================================="
   echo "print SLURM_JOB_ID = $SLURM_JOB_ID"
-  echo "print SLURM_NODELIST = $SLURM_NODELIST"
+  echo "print SLURM_JOB_NODELIST = $SLURM_JOB_NODELIST"
   echo "print =========================================="
 fi
 </pre>
@@ -2172,6 +2172,6 @@ $ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 December 2017</p>
+<p style="text-align:center;">Last modified 20 December 2017</p>
 
 <!--#include virtual="footer.txt"-->
