@@ -1944,6 +1944,7 @@ documents those changes that are of interest to users and administrators.
  -- DBD - When using LogTimeFormat=thread_id fill in the cluster name before
     printing anything for a connection.
  -- Have srun read in modern env var's instead of obsolete ones
+ -- mpi/pmix: add the thresholds for the parameters of micro-benchmarks.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

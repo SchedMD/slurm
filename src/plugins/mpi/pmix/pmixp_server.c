@@ -1357,6 +1357,7 @@ static bool _consists_from_digits(char *s)
 void pmixp_server_init_pp(char ***env)
 {
 	char *env_ptr = NULL;
+	int tmp_int;
 
 	slurm_mutex_init(&_pmixp_pp_lock);
 
@@ -1376,15 +1377,17 @@ void pmixp_server_init_pp(char ***env)
 
 	if ((env_ptr = getenvp(*env, PMIXP_PP_LOW))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_pp_low = atoi(env_ptr) < PMIXP_PP_PWR2_MAX ?
-				atoi(env_ptr) : PMIXP_PP_PWR2_MAX;
+			tmp_int = atoi(env_ptr);
+			_pmixp_pp_low = tmp_int < PMIXP_PP_PWR2_MAX ?
+				tmp_int : PMIXP_PP_PWR2_MAX;
 		}
 	}
 
 	if ((env_ptr = getenvp(*env, PMIXP_PP_UP))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_pp_up = atoi(env_ptr) < PMIXP_PP_PWR2_MAX ?
-				atoi(env_ptr) : PMIXP_PP_PWR2_MAX;
+			tmp_int = atoi(env_ptr);
+			_pmixp_pp_up = tmp_int < PMIXP_PP_PWR2_MAX ?
+				tmp_int : PMIXP_PP_PWR2_MAX;
 		}
 	}
 
@@ -1557,6 +1560,7 @@ static void _pmixp_server_cperf_inc()
 void pmixp_server_init_cperf(char ***env)
 {
 	char *env_ptr = NULL;
+	int tmp_int;
 
 	slurm_mutex_init(&_pmixp_pp_lock);
 
@@ -1570,15 +1574,17 @@ void pmixp_server_init_cperf(char ***env)
 
 	if ((env_ptr = getenvp(*env, PMIXP_CPERF_LOW))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_cperf_low = atoi(env_ptr) < PMIXP_CPERF_PWR2_MAX ?
-				atoi(env_ptr) : PMIXP_CPERF_PWR2_MAX;
+			tmp_int = atoi(env_ptr);
+			_pmixp_cperf_low = tmp_int < PMIXP_CPERF_PWR2_MAX ?
+				tmp_int : PMIXP_CPERF_PWR2_MAX;
 		}
 	}
 
 	if ((env_ptr = getenvp(*env, PMIXP_CPERF_UP))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_cperf_up = atoi(env_ptr) < PMIXP_CPERF_PWR2_MAX ?
-				atoi(env_ptr) : PMIXP_CPERF_PWR2_MAX;
+			tmp_int = atoi(env_ptr);
+			_pmixp_cperf_up = tmp_int < PMIXP_CPERF_PWR2_MAX ?
+				tmp_int : PMIXP_CPERF_PWR2_MAX;
 		}
 	}
 
