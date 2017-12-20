@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
     controller startup. Just use the checkpointed next use jobid.
  -- Docs - add Slurm/PMIx and OpenMPI build notes to the mpi_guide page.
  -- Add lustre_no_flush option to LaunchParameters for Native Cray systems.
+ -- Fix rpmbuild issue with rpm 4.13+ / Fedora 25+.
 
 * Changes in Slurm 17.11.0
 ==========================
