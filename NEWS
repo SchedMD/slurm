@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
     This prevents job launch problems for sites using UsePAM=1.
  -- Handle syncing federated jobs that ran on non-origin clusters and were
     cancelled while the origin cluster was down.
+ -- Fix accessing variable outside of lock.
 
 * Changes in Slurm 17.11.0
 ==========================
