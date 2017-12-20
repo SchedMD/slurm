@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
  -- slurm.spec: move libpmi to a separate package to solve a conflict with the
     version provided by PMIx. This will require a separate change to PMIx as
     well.
+ -- X11 forwarding: change xauth handling to use hostname/unix:display format,
+    rather than localhost:display.
 
 * Changes in Slurm 17.11.0
 ==========================
