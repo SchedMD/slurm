@@ -1,5 +1,5 @@
 Name:		slurm
-Version:	17.11.0
+Version:	17.11.1
 %global rel	1
 Release:	%{rel}%{?dist}
 Summary:	Slurm Workload Manager
