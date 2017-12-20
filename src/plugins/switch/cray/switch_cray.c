@@ -69,6 +69,10 @@
 
 uint64_t debug_flags = 0;
 
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
+static bool lustre_no_flush = false;
+#endif
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -505,6 +509,10 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		 */
 		exclusive = 1;
 	}
+	if (launch_params && strstr(launch_params, "lustre_no_flush")) {
+		/* Lustre cache flush can cause job bus errors, see bug 4309 */
+		lustre_no_flush = true;
+	}
 	xfree(launch_params);
 
 	if (!exclusive) {
@@ -776,21 +784,23 @@ extern int switch_p_job_postfini(stepd_step_rec_t *job)
 		reset_gpu(job);
 	}
 #endif
-	// Flush Lustre Cache
-	rc = alpsc_flush_lustre(&err_msg);
-	ALPSC_CN_DEBUG("alpsc_flush_lustre");
-	if (rc != 1) {
-		return SLURM_ERROR;
-	}
+	if (!lustre_no_flush) {
+		// Flush Lustre Cache
+		rc = alpsc_flush_lustre(&err_msg);
+		ALPSC_CN_DEBUG("alpsc_flush_lustre");
+		if (rc != 1) {
+			return SLURM_ERROR;
+		}
 
-	// Flush virtual memory
-	rc = system("echo 3 > /proc/sys/vm/drop_caches");
-	if (rc != -1) {
-		rc = WEXITSTATUS(rc);
-	}
-	if (rc) {
-		CRAY_ERR("Flushing virtual memory failed. Return code: %d",
-			 rc);
+		// Flush virtual memory
+		rc = system("echo 3 > /proc/sys/vm/drop_caches");
+		if (rc != -1) {
+			rc = WEXITSTATUS(rc);
+		}
+		if (rc) {
+			CRAY_ERR("Flushing virtual memory failed. Return code: %d",
+				 rc);
+		}
 	}
 
 	END_TIMER;
