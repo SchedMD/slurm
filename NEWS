@@ -54,6 +54,9 @@ documents those changes that are of interest to users and administrators.
  -- Handle syncing federated jobs that ran on non-origin clusters and were
     cancelled while the origin cluster was down.
  -- Fix accessing variable outside of lock.
+ -- slurm.spec: move libpmi to a separate package to solve a conflict with the
+    version provided by PMIx. This will require a separate change to PMIx as
+    well.
 
 * Changes in Slurm 17.11.0
 ==========================
