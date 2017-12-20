@@ -5777,6 +5777,10 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 			job_ptr->exit_code = job_return_code;
 			job_ptr->state_reason = FAIL_EXIT_CODE;
 			xfree(job_ptr->state_desc);
+		} else if (WIFSIGNALED(job_return_code)) {
+			job_ptr->job_state = JOB_FAILED | job_comp_flag;
+			job_ptr->exit_code = job_return_code;
+			job_ptr->state_reason = FAIL_LAUNCH;
 		} else if (job_comp_flag
 			   && ((job_ptr->end_time
 				+ over_time_limit * 60) < now)) {
