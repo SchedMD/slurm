@@ -1301,6 +1301,12 @@ only take effect for newly launched jobs.
 \fBmem_sort\fR
 Sort NUMA memory at step start. User can override this default with
 SLURM_MEM_BIND environment variable or \-\-mem\-bind=nosort command line option.
+.TP
+\fBsend_gids\fR
+Lookup and send the user_name and extended gids for a job within the slurmctld,
+rather than individual on each node as part of each task launch. Should
+avoid issues around name service scalability when launching jobs involving
+many nodes.
 .TP 24
 \fBslurmstepd_memlock\fR
 Lock the slurmstepd process's current memory in RAM.
