@@ -698,7 +698,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 
 #if HAVE_SYS_PRCTL_H
 	{
-	char *name = xstrdup_printf("p-%s", slurmdbd_conn->conn->cluster_name);
+	char *name = xstrdup_printf("p-%s", init_msg->cluster_name);
 	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL) < 0)
 		error("%s: cannot set my name to %s %m", __func__, name);
 	xfree(name);

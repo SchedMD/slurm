@@ -155,6 +155,10 @@ BuildRequires: numactl-devel
 # Uncomment if needed again.
 #%define _unpackaged_files_terminate_build      0
 
+# Slurm may intentionally include empty manifest files, which will
+# cause errors with rpm 4.13 and on. Turn that check off.
+%define _empty_manifest_terminate_build 0
+
 # First we remove $prefix/local and then just prefix to make
 # sure we get the correct installdir
 %define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')

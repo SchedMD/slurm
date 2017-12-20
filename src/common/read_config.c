@@ -4205,7 +4205,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 			/*
 			 * The port count needs to be at most FD_SETSIZE,
-			 * otherwise we cannot poll() on those high numbered
+			 * otherwise we cannot select() on those high numbered
 			 * ports and may miss traffic.
 			 */
 			if (conf->slurmctld_port_count > FD_SETSIZE) {

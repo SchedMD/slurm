@@ -1307,6 +1307,12 @@ only take effect for newly launched jobs.
 \fBmem_sort\fR
 Sort NUMA memory at step start. User can override this default with
 SLURM_MEM_BIND environment variable or \-\-mem\-bind=nosort command line option.
+.TP
+\fBsend_gids\fR
+Lookup and send the user_name and extended gids for a job within the slurmctld,
+rather than individual on each node as part of each task launch. Should
+avoid issues around name service scalability when launching jobs involving
+many nodes.
 .TP 24
 \fBslurmstepd_memlock\fR
 Lock the slurmstepd process's current memory in RAM.
@@ -2141,6 +2147,13 @@ should use this flag.
 By default, the Prolog and Epilog scripts run concurrently on each node.
 This flag forces those scripts to run serially within each node, but with
 a significant penalty to job throughput on each node.
+.TP
+\fBX11\fR
+Enable Slurm's built-in X11 forwarding capabilities. Slurm must have been
+compiled with libssh2 support enabled, and either SSH hostkey authentication
+or per-users SSH key authentication must be enabled within the cluster. Only
+RSA keys are supported at this time. Setting the X11 flag implicitly enables
+both Contain and Alloc flags as well.
 .RE
 
 .TP
