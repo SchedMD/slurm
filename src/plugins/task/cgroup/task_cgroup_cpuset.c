@@ -137,16 +137,6 @@ static xcgroup_t step_cpuset_cg;
 
 static int _xcgroup_cpuset_init(xcgroup_t* cg);
 
-static inline int _val_to_char(int v)
-{
-	if (v >= 0 && v < 10)
-		return '0' + v;
-	else if (v >= 10 && v < 16)
-		return ('a' - 10) + v;
-	else
-		return -1;
-}
-
 static inline int _char_to_val(int c)
 {
 	int cl;
