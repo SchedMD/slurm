@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix REASONABLE_BUF_SIZE to actually be 3/4 of MAX_BUF_SIZE.
  -- When a job array is preempting make it so tasks in the array don't wait
     to preempt other possible jobs.
+ -- Change free_buffer to FREE_NULL_BUFFER to prevent possible double free
+    in slurmstepd.
 
 * Changes in Slurm 17.11.2
 ==========================

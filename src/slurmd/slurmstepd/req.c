@@ -389,7 +389,7 @@ _handle_accept(void *arg)
 	if (auth_cred == NULL) {
 		error("Unpacking authentication credential: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		goto fail;
 	}
 	auth_info = slurm_get_auth_info();
@@ -1610,7 +1610,7 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	if (jobacctinfo_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
 			       PROTOCOL_TYPE_SLURM, buffer, 1) != SLURM_SUCCESS)
 		goto rwfail;
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	/*
 	 * Record the completed nodes
