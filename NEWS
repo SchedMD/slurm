@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.2
 ==========================
+ -- jobcomp/elasticsearch - append Content-Type to the HTTP header.
 
 * Changes in Slurm 17.11.1-2
 ============================
