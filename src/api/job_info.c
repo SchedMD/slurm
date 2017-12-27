@@ -965,6 +965,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line (optional) ******/
+	if (job_ptr->system_comment) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "SystemComment=%s ", job_ptr->system_comment);
+	}
+
+	/****** Line (optional) ******/
 	if (job_ptr->comment) {
 		xstrcat(out, line_end);
 		xstrfmtcat(out, "Comment=%s ", job_ptr->comment);

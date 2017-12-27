@@ -1219,6 +1219,12 @@ extern int parse_long_format( char* format_long )
 							      field_size,
 							      right_justify,
 							      suffix );
+			else if (!xstrcasecmp(token, "system_comment"))
+				job_format_add_system_comment(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 			else if (!xstrcasecmp(token, "comment"))
 				job_format_add_comment( params.format_list,
 							field_size,
