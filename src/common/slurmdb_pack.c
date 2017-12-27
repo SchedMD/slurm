@@ -5666,7 +5666,15 @@ extern void slurmdb_pack_job_modify_cond(void *in, uint16_t protocol_version,
 {
 	slurmdb_job_modify_cond_t *cond = (slurmdb_job_modify_cond_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		if (!cond) {
+			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			return;
+		}
+		packstr(cond->cluster, buffer);
+		pack32(cond->job_id, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!cond) {
 			packnull(buffer);
 			pack32(NO_VAL, buffer);
@@ -5687,7 +5695,11 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&object_ptr->job_id, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&object_ptr->job_id, buffer);
