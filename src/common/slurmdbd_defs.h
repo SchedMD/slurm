@@ -245,6 +245,7 @@ typedef struct dbd_job_comp_msg {
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time needed to find job
 				 * record in db */
+	char *	 system_comment;/* job system comment field */
 	char    *tres_alloc_str;/* Simple comma separated list of TRES */
 } dbd_job_comp_msg_t;
 

@@ -1904,6 +1904,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	job.start_time = job_comp_msg->start_time;
 	details.submit_time = job_comp_msg->submit_time;
 	job.start_protocol_ver = slurmdbd_conn->conn->version;
+	job.system_comment = job_comp_msg->system_comment;
 	job.tres_alloc_str = job_comp_msg->tres_alloc_str;
 
 	job.details = &details;

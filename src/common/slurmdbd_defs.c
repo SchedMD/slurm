@@ -2658,6 +2658,7 @@ extern void slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 		xfree(msg->admin_comment);
 		xfree(msg->comment);
 		xfree(msg->nodes);
+		xfree(msg->system_comment);
 		xfree(msg->tres_alloc_str);
 		xfree(msg);
 	}
@@ -3192,6 +3193,7 @@ slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 		pack32(msg->req_uid, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
+		packstr(msg->system_comment, buffer);
 		packstr(msg->tres_alloc_str, buffer);
 	} else if (rpc_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		packstr(msg->admin_comment, buffer);
