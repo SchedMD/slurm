@@ -850,6 +850,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->req_gres);
 		xfree(job->resv_name);
 		FREE_NULL_LIST(job->steps);
+		xfree(job->system_comment);
 		xfree(job->tres_alloc_str);
 		xfree(job->tres_req_str);
 		xfree(job->user);
