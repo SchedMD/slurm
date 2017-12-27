@@ -834,20 +834,34 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, ", derived_es='%s'", derived_es);
 		xfree(derived_es);
 	}
+
+	if (job->system_comment) {
+		char *system_comment = slurm_add_slash_to_quotes(
+			job->system_comment);
+		xstrfmtcat(vals, ", system_comment='%s'",
+			   system_comment);
+		xfree(system_comment);
+	}
+
 	if (!vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("No change specified for job modification");
 		return NULL;
 	}
 
+	if (job_cond->submit_time)
+		xstrfmtcat(cond_char, "&& time_submit=%d ",
+			   (int)job_cond->submit_time);
+
 	/* Here we want to get the last job submitted here */
 	query = xstrdup_printf("select job_db_inx, id_job, time_submit, "
 			       "id_user "
 			       "from \"%s_%s\" where deleted=0 "
-			       "&& id_job=%u "
+			       "&& id_job=%u %s"
 			       "order by time_submit desc limit 1;",
 			       job_cond->cluster, job_table,
-			       job_cond->job_id);
+			       job_cond->job_id, cond_char);
+	xfree(cond_char);
 
 	if (debug_flags & DEBUG_FLAG_DB_JOB)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
