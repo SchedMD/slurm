@@ -778,6 +778,7 @@ struct job_record {
 					 * cleared at start of cycle) */
 	List step_list;			/* list of job's steps */
 	time_t suspend_time;		/* time job last suspended or resumed */
+	char *system_comment;		/* slurmctld's arbitrary comment */
 	time_t time_last_active;	/* time of last job activity */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
 					 * NO_VAL implies partition max_time */

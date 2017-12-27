@@ -1727,6 +1727,7 @@ typedef struct job_info {
 	char *std_out;		/* pathname of job's stdout file */
 	time_t submit_time;	/* time of job submission */
 	time_t suspend_time;	/* time job last suspended or resumed */
+	char *system_comment;	/* slurmctld's arbitrary comment */
 	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
 	uint32_t time_min;	/* minimum run time in minutes or INFINITE */
 	uint16_t threads_per_core; /* threads per core required by job  */

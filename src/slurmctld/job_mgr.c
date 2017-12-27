@@ -1299,6 +1299,7 @@ static int _dump_job_state(void *x, void *arg)
 	packstr(dump_job_ptr->batch_host, buffer);
 	packstr(dump_job_ptr->burst_buffer, buffer);
 	packstr(dump_job_ptr->burst_buffer_state, buffer);
+	packstr(dump_job_ptr->system_comment, buffer);
 
 	select_g_select_jobinfo_pack(dump_job_ptr->select_jobinfo,
 				     buffer, SLURM_PROTOCOL_VERSION);
@@ -1380,7 +1381,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *burst_buffer = NULL, *burst_buffer_state = NULL;
 	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
 	char *clusters = NULL, *pack_job_id_set = NULL, *user_name = NULL;
-	char *batch_features = NULL;
+	char *batch_features = NULL, *system_comment = NULL;
 	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
@@ -1551,6 +1552,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
 		safe_unpackstr_xmalloc(&burst_buffer, &name_len, buffer);
 		safe_unpackstr_xmalloc(&burst_buffer_state, &name_len, buffer);
+		safe_unpackstr_xmalloc(&system_comment, &name_len, buffer);
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
@@ -2094,6 +2096,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->admin_comment);
 	job_ptr->admin_comment = admin_comment;
 	admin_comment          = NULL;  /* reused, nothing left to free */
+	xfree(job_ptr->system_comment);
+	job_ptr->system_comment = system_comment;
+	system_comment          = NULL;  /* reused, nothing left to free */
 	xfree(job_ptr->batch_features);
 	job_ptr->batch_features = batch_features;
 	batch_features          = NULL;  /* reused, nothing left to free */
@@ -2396,6 +2401,7 @@ unpack_error:
 		xfree(spank_job_env[i]);
 	xfree(spank_job_env);
 	xfree(state_desc);
+	xfree(system_comment);
 	xfree(task_id_str);
 	xfree(tres_alloc_str);
 	xfree(tres_fmt_alloc_str);
@@ -4351,6 +4357,8 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 		}
 	}
 	job_ptr_pend->state_desc = xstrdup(job_ptr->state_desc);
+
+	job_ptr_pend->system_comment = xstrdup(job_ptr->system_comment);
 
 	i = sizeof(uint64_t) * slurmctld_tres_cnt;
 	job_ptr_pend->tres_req_cnt = xmalloc(i);
@@ -9072,6 +9080,7 @@ static void _list_delete_job(void *job_entry)
 		xfree(job_ptr->spank_job_env[i]);
 	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
+	xfree(job_ptr->system_comment);
 	xfree(job_ptr->tres_alloc_cnt);
 	xfree(job_ptr->tres_alloc_str);
 	xfree(job_ptr->tres_fmt_alloc_str);
@@ -9662,6 +9671,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->batch_host, buffer);
 		packstr(dump_job_ptr->burst_buffer, buffer);
 		packstr(dump_job_ptr->burst_buffer_state, buffer);
+		packstr(dump_job_ptr->system_comment, buffer);
 
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {

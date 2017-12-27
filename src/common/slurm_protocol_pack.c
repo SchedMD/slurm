@@ -5777,6 +5777,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->burst_buffer, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->burst_buffer_state, &uint32_tmp,
 				       buffer);
+		safe_unpackstr_xmalloc(&job->system_comment,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
