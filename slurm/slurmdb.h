@@ -715,7 +715,9 @@ typedef struct {
 
 typedef struct {
 	char *cluster;
+	uint32_t flags;
 	uint32_t job_id;
+	time_t submit_time;
 } slurmdb_job_modify_cond_t;
 
 typedef struct {
