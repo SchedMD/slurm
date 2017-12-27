@@ -1496,23 +1496,45 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 	return rc;
 }
 
-static void _update_comment(struct job_record *job_ptr, char *operation,
-			    char *resp_msg)
+static void _update_system_comment(struct job_record *job_ptr, char *operation,
+				   char *resp_msg, bool update_database)
 {
 	char *sep = NULL;
 
-	if (job_ptr->comment && (strlen(job_ptr->comment) >= 1024)) {
+	if (job_ptr->system_comment &&
+	    (strlen(job_ptr->system_comment) >= 1024)) {
 		/* Avoid filling comment with repeated BB failures */
 		return;
 	}
 
-	if (job_ptr->comment)
+	if (job_ptr->system_comment)
 		xstrftimecat(sep, "\n%x %X");
 	else
 		xstrftimecat(sep, "%x %X");
-	xstrfmtcat(job_ptr->comment, "%s %s: %s: %s",
+	xstrfmtcat(job_ptr->system_comment, "%s %s: %s: %s",
 		   sep, plugin_type, operation, resp_msg);
 	xfree(sep);
+
+	if (update_database) {
+		slurmdb_job_modify_cond_t job_cond;
+		slurmdb_job_rec_t job_rec;
+		List ret_list;
+
+		memset(&job_cond, 0, sizeof(slurmdb_job_modify_cond_t));
+		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));
+
+		job_cond.job_id = job_ptr->job_id;
+		job_cond.flags = SLURMDB_MODIFY_NO_WAIT;
+		job_cond.cluster = slurmctld_conf.cluster_name;
+		job_cond.submit_time = job_ptr->details->submit_time;
+
+		job_rec.system_comment = job_ptr->system_comment;
+
+		ret_list = acct_storage_g_modify_job(
+			acct_db_conn, slurmctld_conf.slurm_user_id,
+			&job_cond, &job_rec);
+		FREE_NULL_LIST(ret_list);
+	}
 }
 
 static void *_start_stage_in(void *x)
@@ -1563,7 +1585,7 @@ static void *_start_stage_in(void *x)
 		rc = SLURM_ERROR;
 		job_ptr = find_job_record(stage_args->job_id);
 		if (job_ptr)
-			_update_comment(job_ptr, "setup", resp_msg);
+			_update_system_comment(job_ptr, "setup", resp_msg, 0);
 	} else {
 		job_ptr = find_job_record(stage_args->job_id);
 		bb_job = bb_job_find(&bb_state, stage_args->job_id);
@@ -1618,7 +1640,8 @@ static void *_start_stage_in(void *x)
 			lock_slurmctld(job_write_lock);
 			job_ptr = find_job_record(stage_args->job_id);
 			if (job_ptr)
-				_update_comment(job_ptr, "data_in",resp_msg);
+				_update_system_comment(job_ptr, "data_in",
+						       resp_msg, 0);
 			unlock_slurmctld(job_write_lock);
 		}
 	}
@@ -1828,8 +1851,8 @@ static void *_start_stage_out(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: post_run: %s",
 				   plugin_type, resp_msg);
-			_update_comment(job_ptr, "post_run", resp_msg);
-//FIXME: WRITE COMMENT UPDATE TO DATABASE HERE, JOB IS ALREADY COMPLETED
+			_update_system_comment(job_ptr, "post_run",
+					       resp_msg, 1);
 		}
 	}
 	if (!job_ptr) {
@@ -1877,8 +1900,8 @@ static void *_start_stage_out(void *x)
 				xstrfmtcat(job_ptr->state_desc,
 					   "%s: stage-out: %s",
 					   plugin_type, resp_msg);
-				_update_comment(job_ptr, "data_out", resp_msg);
-//FIXME: WRITE COMMENT UPDATE TO DATABASE HERE, JOB IS ALREADY COMPLETED
+				_update_system_comment(job_ptr, "data_out",
+						       resp_msg, 1);
 			}
 			unlock_slurmctld(job_write_lock);
 		}
@@ -2064,7 +2087,8 @@ static void *_start_teardown(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: teardown: %s",
 				   plugin_type, resp_msg);
-			_update_comment(job_ptr, "teardown", resp_msg);
+			_update_system_comment(job_ptr, "teardown",
+					       resp_msg, 0);
 		}
 		unlock_slurmctld(job_write_lock);
 
@@ -4043,7 +4067,7 @@ static void *_start_pre_run(void *x)
 		error("%s: dws_pre_run for %s status:%u response:%s", __func__,
 		      jobid_buf, status, resp_msg);
 		if (job_ptr) {
-			_update_comment(job_ptr, "pre_run", resp_msg);
+			_update_system_comment(job_ptr, "pre_run", resp_msg, 0);
 			if (IS_JOB_RUNNING(job_ptr))
 				run_kill_job = true;
 			if (bb_job) {
@@ -4601,7 +4625,8 @@ static void *_create_persistent(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, __func__, resp_msg);
-			_update_comment(job_ptr, "create_persistent", resp_msg);
+			_update_system_comment(job_ptr, "create_persistent",
+					       resp_msg, 0);
 		}
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(create_args->user_id, create_args->job_id,
@@ -4740,7 +4765,8 @@ static void *_destroy_persistent(void *x)
 			error("%s: unable to find job record for job %u",
 			      __func__, destroy_args->job_id);
 		} else {
-			_update_comment(job_ptr, "teardown", resp_msg);
+			_update_system_comment(job_ptr, "teardown",
+					       resp_msg, 0);
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
