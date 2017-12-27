@@ -2243,10 +2243,19 @@ static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 		return rc;
 	}
 
-	*out_buffer = init_buf(1024);
-	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->conn->version,
-			       DBD_GOT_LIST, *out_buffer);
+	if (get_msg->cond &&
+	    (((slurmdb_job_modify_cond_t *)get_msg->cond)->flags &&
+	     SLURMDB_MODIFY_NO_WAIT)) {
+		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
+							rc, comment,
+							DBD_MODIFY_JOB);
+	} else {
+		*out_buffer = init_buf(1024);
+		pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->conn->version,
+				       DBD_GOT_LIST, *out_buffer);
+	}
+
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;

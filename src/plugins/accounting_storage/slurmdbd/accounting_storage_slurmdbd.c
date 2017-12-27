@@ -1047,6 +1047,16 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 
 	req.msg_type = DBD_MODIFY_JOB;
 	req.data = &get_msg;
+
+	/*
+	 * Just put it on the list and go, usually means we are coming from the
+	 * slurmctld.
+	 */
+	if (job_cond && (job_cond->flags & SLURMDB_MODIFY_NO_WAIT)) {
+		rc = slurm_send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req);
+		goto end_it;
+	}
+
 	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
@@ -1070,7 +1080,7 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 		got_msg->my_list = NULL;
 		slurmdbd_free_list_msg(got_msg);
 	}
-
+end_it:
 	return ret_list;
 }
 
