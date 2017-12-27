@@ -2045,6 +2045,21 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			xfree(tmp_char);
 			break;
+		case PRINT_SYSTEM_COMMENT:
+			switch(type) {
+			case JOB:
+				tmp_char = job->system_comment;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_TIMELIMIT:
 			switch (type) {
 			case JOB:

@@ -85,6 +85,7 @@ char *job_req_inx[] = {
 	"t1.partition",
 	"t1.priority",
 	"t1.state",
+	"t1.system_comment",
 	"t1.time_eligible",
 	"t1.time_end",
 	"t1.time_start",
@@ -137,6 +138,7 @@ enum {
 	JOB_REQ_PARTITION,
 	JOB_REQ_PRIORITY,
 	JOB_REQ_STATE,
+	JOB_REQ_SYSTEM_COMMENT,
 	JOB_REQ_ELIGIBLE,
 	JOB_REQ_END,
 	JOB_REQ_START,
@@ -733,6 +735,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->derived_ec = slurm_atoul(row[JOB_REQ_DERIVED_EC]);
 		job->derived_es = xstrdup(row[JOB_REQ_DERIVED_ES]);
 		job->admin_comment = xstrdup(row[JOB_REQ_ADMIN_COMMENT]);
+		job->system_comment = xstrdup(row[JOB_REQ_SYSTEM_COMMENT]);
 
 		if (row[JOB_REQ_PARTITION])
 			job->partition = xstrdup(row[JOB_REQ_PARTITION]);

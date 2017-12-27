@@ -1050,6 +1050,13 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		xfree(comment);
 	}
 
+	if (job_ptr->system_comment) {
+		char *comment = slurm_add_slash_to_quotes(
+			job_ptr->system_comment);
+		xstrfmtcat(query, ", system_comment='%s'", comment);
+		xfree(comment);
+	}
+
 	exit_code = job_ptr->exit_code;
 	if (exit_code == 1) {
 		/* This wasn't signaled, it was set by Slurm so don't

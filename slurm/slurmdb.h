@@ -768,6 +768,7 @@ typedef struct {
 	List    steps; /* list of slurmdb_step_rec_t *'s */
 	time_t submit;
 	uint32_t suspended;
+	char	*system_comment;
 	uint32_t sys_cpu_sec;
 	uint32_t sys_cpu_usec;
 	uint32_t timelimit;

@@ -111,6 +111,7 @@ typedef struct {
 	char *state;
 	char *submit;
 	char *suspended;
+	char *system_comment;
 	char *timelimit;
 	char *track_steps;
 	char *tres_alloc_str;
@@ -646,6 +647,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->state, buffer);
 	packstr(object->submit, buffer);
 	packstr(object->suspended, buffer);
+	packstr(object->system_comment, buffer);
 	packstr(object->track_steps, buffer);
 	packstr(object->tres_alloc_str, buffer);
 	packstr(object->tres_req_str, buffer);
@@ -719,6 +721,7 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->state, &tmp32, buffer);
 		unpackstr_ptr(&object->submit, &tmp32, buffer);
 		unpackstr_ptr(&object->suspended, &tmp32, buffer);
+		unpackstr_ptr(&object->system_comment, &tmp32, buffer);
 		unpackstr_ptr(&object->track_steps, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_alloc_str, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_req_str, &tmp32, buffer);
