@@ -445,7 +445,6 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 	int i;
 	char *argv[4], job_id_str[32], *pname;
 	pid_t child;
-	slurm_ctl_conf_t *ctlconf;
 
 	if (prog == NULL)	/* disabled, useful for testing */
 		return -1;
@@ -466,9 +465,7 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
 		setpgid(0, 0);
-		ctlconf = slurm_conf_lock();
-		setenv("SLURM_CONF", ctlconf->slurm_conf, 1);
-		slurm_conf_unlock();
+		setenv("SLURM_CONF", slurmctld_conf.slurm_conf, 1);
 		if (job_id)
 			setenv("SLURM_JOB_ID", job_id_str, 1);
 		execv(prog, argv);
