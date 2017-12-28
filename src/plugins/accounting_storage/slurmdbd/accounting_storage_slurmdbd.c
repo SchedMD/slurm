@@ -1053,7 +1053,7 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 	 * slurmctld.
 	 */
 	if (job_cond && (job_cond->flags & SLURMDB_MODIFY_NO_WAIT)) {
-		rc = slurm_send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req);
+		slurm_send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req);
 		goto end_it;
 	}
 
