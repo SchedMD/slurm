@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     For example "sbatch --batch=haswell ...".
  -- Add "BatchFeatures" field to output of "scontrol show job".
  -- Add support for "--bb" option to sbatch command.
+ -- Add new SystemComment field to job data structure and database. Currently
+    used for Burst Buffer error logs.
 
 * Changes in Slurm 17.11.2
 ==========================
