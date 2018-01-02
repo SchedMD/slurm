@@ -330,7 +330,7 @@ done:
 			uint16_t cr_type = slurm_get_select_type_param();
 			if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
 				fatal("Invalid SelectTypeParameters for "
-				      "%s: %s (%u), it's can't contain "
+				      "%s: %s (%u), it can't contain "
 				      "CR_(CPU|CORE|SOCKET).",
 				      select_type,
 				      select_type_param_string(cr_type),
