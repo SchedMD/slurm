@@ -6429,18 +6429,18 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	part_ptr = job_ptr->part_ptr;
 	qos_ptr = job_ptr->qos_ptr;
 	assoc_ptr = job_ptr->assoc_ptr;
-	if (!detail_ptr) {	/* To prevent CLANG error */
+	if (!detail_ptr) {
 		fatal("job %u has NULL details_ptr", job_ptr->job_id);
-		return WAIT_NO_REASON;
+		return WAIT_NO_REASON;	/* To prevent CLANG error */
 	}
 
 	fail_reason = WAIT_NO_REASON;
 
 	/*
 	 * Here we need to pretend we are just submitting the job so we can
-	 * utilize the already existing function _part_access_check.  If
-	 * anything else is ever checked in that function this will most likely
-	 * have to be updated.
+	 * utilize the already existing function _part_access_check. If any
+	 * additional fields in that function are ever checked, the fields set
+	 * below will need to be modified.
 	 */
 	slurm_init_job_desc_msg(&job_desc);
 	job_desc.reservation = job_ptr->resv_name;
@@ -6448,7 +6448,8 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	job_desc.alloc_node = job_ptr->alloc_node;
 	job_desc.min_cpus = detail_ptr->min_cpus;
 #ifdef HAVE_BG
-	/* The node counts have been altered to reflect slurm nodes instead of
+	/*
+	 * The node counts have been altered to reflect slurm nodes instead of
 	 * cnodes, so we need to figure out the cnode count
 	 * by using the cpu counts.  The partitions have been altered as well
 	 * so we have to use the original values.
