@@ -2449,7 +2449,7 @@ extern char *trigger_type(uint32_t trig_type)
 }
 
 /* user needs to xfree return value */
-extern char *reservation_flags_string(uint32_t flags)
+extern char *reservation_flags_string(uint64_t flags)
 {
 	char *flag_str = xstrdup("");
 

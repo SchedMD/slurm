@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- Add support for "--bb" option to sbatch command.
  -- Add new SystemComment field to job data structure and database. Currently
     used for Burst Buffer error logs.
+ -- Expand reservation "flags" field from 32 to 64 bits.
 
 * Changes in Slurm 17.11.2
 ==========================

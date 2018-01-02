@@ -273,7 +273,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	int free_tres_corecnt = 0;
 	int free_tres_nodecnt = 0;
 	int temp_int = 0;
-	uint32_t f;
+	uint64_t f;
 
 	/* need to clear global_edit_error here (just in case) */
 	global_edit_error = 0;

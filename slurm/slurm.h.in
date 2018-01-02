@@ -2567,7 +2567,7 @@ typedef struct reserve_info {
 	resv_core_spec_t *core_spec; /* reserved cores specification */
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
-	uint32_t flags;		/* see RESERVE_FLAG_* above */
+	uint64_t flags;		/* see RESERVE_FLAG_* above */
 	char *licenses;		/* names of licenses to be reserved */
 	char *name;		/* name of reservation */
 	uint32_t node_cnt;	/* count of nodes required */
@@ -2595,7 +2595,7 @@ typedef struct resv_desc_msg {
 	uint32_t duration;	/* duration of reservation in minutes */
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
-	uint32_t flags;		/* see RESERVE_FLAG_* above */
+	uint64_t flags;		/* see RESERVE_FLAG_* above */
 	char *licenses;		/* names of licenses to be reserved */
 	char *name;		/* name of reservation (optional on create) */
 	uint32_t *node_cnt;	/* Count of nodes required. Specify set of job

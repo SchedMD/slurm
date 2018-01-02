@@ -1548,7 +1548,7 @@ extern char *trigger_type(uint32_t trig_type);
 extern char *priority_flags_string(uint16_t priority_flags);
 
 /* user needs to xfree return value */
-extern char *reservation_flags_string(uint32_t flags);
+extern char *reservation_flags_string(uint64_t flags);
 
 /* Functions to convert burst buffer flags between strings and numbers */
 extern char *   slurm_bb_flags2str(uint32_t bb_flags);

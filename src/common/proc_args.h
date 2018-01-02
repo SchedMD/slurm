@@ -185,12 +185,15 @@ extern void bg_figure_nodes_tasks(int *min_nodes, int *max_nodes,
 				  bool set_tasks);
 
 /*
- *  _parse_flags  is used to parse the Flags= option.  It handles
- *  daily, weekly, static_alloc, part_nodes, and maint, optionally
- *  preceded by + or -, separated by a comma but no spaces.
+ * parse_resv_flags() used to parse the Flags= option.  It handles
+ * daily, weekly, static_alloc, part_nodes, and maint, optionally
+ * preceded by + or -, separated by a comma but no spaces.
+ *
+ * flagstr IN - reservation flag string
+ * msg IN - string to append to error message (e.g. function name)
+ * RET equivalent reservation flag bits
  */
-
-extern uint32_t parse_resv_flags(const char *flagstr, const char *msg);
+extern uint64_t parse_resv_flags(const char *flagstr, const char *msg);
 
 extern uint16_t parse_compress_type(const char *arg);
 

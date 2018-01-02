@@ -1678,13 +1678,19 @@ extern void bg_figure_nodes_tasks(int *min_nodes, int *max_nodes,
 
 }
 
-/* parse_resv_flags()
+/*
+ * parse_resv_flags() used to parse the Flags= option.  It handles
+ * daily, weekly, static_alloc, part_nodes, and maint, optionally
+ * preceded by + or -, separated by a comma but no spaces.
+ *
+ * flagstr IN - reservation flag string
+ * msg IN - string to append to error message (e.g. function name)
+ * RET equivalent reservation flag bits
  */
-uint32_t
-parse_resv_flags(const char *flagstr, const char *msg)
+extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
 {
 	int flip;
-	uint32_t outflags = 0;
+	uint64_t outflags = 0;
 	const char *curr = flagstr;
 	int taglen = 0;
 
@@ -1710,9 +1716,11 @@ parse_resv_flags(const char *flagstr, const char *msg)
 			    == 0) && (!flip)) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_OVERLAP;
-			/* "-OVERLAP" is not supported since that's the
+			/*
+			 * "-OVERLAP" is not supported since that's the
 			 * default behavior and the option only applies
-			 * for reservation creation, not updates */
+			 * for reservation creation, not updates
+			 */
 		} else if (xstrncasecmp(curr, "Flex", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)

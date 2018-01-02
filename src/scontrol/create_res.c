@@ -137,7 +137,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 
 		} else if (!xstrncasecmp(tag, "Flags", MAX(taglen, 2))) {
-			uint32_t f;
+			uint64_t f;
 			if (plus_minus) {
 				char *tmp =
 					_process_plus_minus(plus_minus, val);
