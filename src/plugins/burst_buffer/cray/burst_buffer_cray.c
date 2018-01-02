@@ -2706,7 +2706,8 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 		tok_len = strlen(access) + 7;
 		memset(tok, ' ', tok_len);
 	}
-	if ((tok = strstr(bb_copy, "access_mode="))) {
+	if ((access == NULL) &&		/* Not set above with "access=" */
+	    (tok = strstr(bb_copy, "access_mode="))) {
 		access = xstrdup(tok + 12);
 		sep = strchr(access, ',');
 		if (sep)
