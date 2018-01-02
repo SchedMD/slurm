@@ -336,6 +336,7 @@ static int _index_job(const char *jobcomp)
 	CURL *curl_handle = NULL;
 	CURLcode res;
 	struct http_response chunk;
+	struct curl_slist *slist = NULL;
 	int rc = SLURM_SUCCESS;
 	char *token = NULL;
 
@@ -354,6 +355,14 @@ static int _index_job(const char *jobcomp)
 		goto cleanup_easy_init;
 	}
 
+	slist = curl_slist_append(slist, "Content-Type: application/json");
+
+	if (slist == NULL) {
+		error("%s: curl_slist_append: %m", plugin_type);
+		rc = SLURM_ERROR;
+		goto cleanup_easy_init;
+	}
+
 	chunk.message = xmalloc(1);
 	chunk.size = 0;
 
@@ -361,6 +370,7 @@ static int _index_job(const char *jobcomp)
 	curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
 	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, jobcomp);
 	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, strlen(jobcomp));
+	curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, slist);
 	curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, _write_callback);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
@@ -370,7 +380,7 @@ static int _index_job(const char *jobcomp)
 			info("%s: Could not connect to: %s , reason: %s"
 			     ,plugin_type, log_url, curl_easy_strerror(res));
 		rc = SLURM_ERROR;
-		goto cleanup_chunk;
+		goto cleanup;
 	}
 
 	token = strtok(chunk.message, " ");
@@ -378,7 +388,7 @@ static int _index_job(const char *jobcomp)
 		error("%s: Could not receive the HTTP response status code from %s",
 		      plugin_type, log_url);
 		rc = SLURM_ERROR;
-		goto cleanup_chunk;
+		goto cleanup;
 	}
 	token = strtok(NULL, " ");
 
@@ -409,7 +419,8 @@ static int _index_job(const char *jobcomp)
 			     plugin_type, token);
 	}
 
-cleanup_chunk:
+cleanup:
+	curl_slist_free_all(slist);
 	xfree(chunk.message);
 cleanup_easy_init:
 	curl_easy_cleanup(curl_handle);
