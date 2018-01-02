@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.2
 ==========================
  -- jobcomp/elasticsearch - append Content-Type to the HTTP header.
+ -- MYSQL - Fix potential abort of slurmdbd when job has no TRES.
 
 * Changes in Slurm 17.11.1-2
 ============================
