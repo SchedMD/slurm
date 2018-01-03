@@ -62,12 +62,9 @@ if {[test_launch_poe]} {
 
 # find out if we have enough nodes to test functionality
 set partition [default_partition]
-
 set node_count [get_node_cnt_in_part $partition]
 if { $node_count < 3 } {
-	send_user "WARNING: system must have at least 3 \
-		   nodes to run this test on.  This system \
-		   only has $node_count.\n"
+	send_user "WARNING: Insufficient nodes in default partition ($node_count < 3)\n"
 	exit $exit_code
 }
 

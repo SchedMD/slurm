@@ -40,6 +40,14 @@ set file_out     "test$test_id.out"
 
 print_header $test_id
 
+# find out if we have enough nodes to test functionality
+set partition [default_partition]
+set node_count [get_node_cnt_in_part $partition]
+if { $node_count < 3 } {
+	send_user "WARNING: Insufficient nodes in default partition ($node_count < 3)\n"
+	exit $exit_code
+}
+
 proc sbatch {} {
 	global number sbatch file_in bin_sleep file_out job_id
 
