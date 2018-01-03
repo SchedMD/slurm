@@ -2641,10 +2641,10 @@ static int _filter_job(job_info_t * job)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
-			if (((job_step_id->array_id == NO_VAL)   &&
-			     ((job_step_id->job_id  == job->array_job_id) ||
+			if (((job_step_id->array_id == NO_VAL)             &&
+			     ((job_step_id->job_id  == job->array_job_id)  ||
 			      (job_step_id->job_id  == job->job_id)))      ||
-			    ((job_step_id->array_id == job->array_task_id)  &&
+			    ((job_step_id->array_id == job->array_task_id) &&
 			     (job_step_id->job_id   == job->array_job_id))) {
 				filter = 0;
 				break;
