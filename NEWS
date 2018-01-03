@@ -9,6 +9,9 @@ documents those changes that are of interest to users and administrators.
     nodes.
  -- slurm.spec-legacy - add missing libslurmfull.so to slurm.files.
  -- Fix squeue job ID filtering for pending job array records.
+ -- Fix potential deadlock in _run_prog() in power save code.
+ -- MYSQL - Add dynamic_offset in the database to force range for auto
+    increment ids for the tres_table.
 
 * Changes in Slurm 17.11.1-2
 ============================
