@@ -1594,8 +1594,17 @@ Once the reservation has been created, it must be populated within 5 minutes
 of its start time or it will be purged before any jobs have been run.
 .TP
 \fRREPLACE\fR
-Resources allocated to jobs as automatically replenished using idle resources.
+Nodes which are DOWN, DRAINED, or allocated to jobs as automatically
+replenished using idle resources.
 This option can be used to maintain a constant number of idle resources
+available for pending jobs (subject to availability of idle resources).
+This should be used with the \fINodeCnt\fP reservation option; do not identify
+specific nodes to be included in the reservation.
+This option is not supported on IBM Bluegene systems.
+.TP
+\fRREPLACE_DOWN\fR
+Nodes which are DOWN or DRAINED are automatically replenished using idle resources.
+This option can be used to maintain a constant sized pool of resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.

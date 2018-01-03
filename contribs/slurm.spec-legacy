@@ -729,6 +729,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
 %{_libdir}/*.so*
+%{_libdir}/slurm/libslurmfull.so
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
 %{_mandir}/man5/acct_gather.*

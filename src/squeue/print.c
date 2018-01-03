@@ -2631,16 +2631,20 @@ int _print_step_state(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-/* filter job records per input specifications,
- * returns >0 if job should be filter out (not printed) */
+/*
+ * Filter job records per input specifications,
+ * Returns >0 if job should be filter out (not printed)
+ * Returns 0 if job record should be printed
+ */
 static int _filter_job(job_info_t * job)
 {
-	int filter;
+	int i, filter;
 	ListIterator iterator;
 	uint32_t *user;
 	uint32_t *state_id;
 	char *account, *license, *qos, *name;
 	squeue_job_step_t *job_step_id;
+	bool partial_array = false;
 
 	if (job->job_id == 0)
 		return 1;
@@ -2649,12 +2653,21 @@ static int _filter_job(job_info_t * job)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
-			if (((job_step_id->array_id == NO_VAL)   &&
-			     ((job_step_id->job_id  == job->array_job_id) ||
+			if (((job_step_id->array_id == NO_VAL)             &&
+			     ((job_step_id->job_id  == job->array_job_id)  ||
 			      (job_step_id->job_id  == job->job_id)))      ||
-			    ((job_step_id->array_id == job->array_task_id)  &&
+			    ((job_step_id->array_id == job->array_task_id) &&
 			     (job_step_id->job_id   == job->array_job_id))) {
 				filter = 0;
+				break;
+			}
+			if ((job_step_id->array_id != NO_VAL)             &&
+			    (job_step_id->job_id   == job->array_job_id)  &&
+			    (job->array_bitmap &&
+			     bit_test((bitstr_t *)job->array_bitmap,
+				      job_step_id->array_id))) {
+				filter = 0;
+				partial_array = true;
 				break;
 			}
 			if (job_step_id->job_id == job->pack_job_id) {
@@ -2797,6 +2810,35 @@ static int _filter_job(job_info_t * job)
 		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 8;
+	}
+
+	if (partial_array) {
+		/* Print this record, but perhaps only some job array records */
+		bitstr_t *new_array_bitmap;
+		int array_len = bit_size((bitstr_t *)job->array_bitmap);
+		new_array_bitmap = bit_alloc(array_len);
+		iterator = list_iterator_create(params.job_list);
+		while ((job_step_id = list_next(iterator))) {
+			if ((job_step_id->job_id == job->array_job_id) &&
+			    (job_step_id->array_id < array_len)) {
+				bit_set(new_array_bitmap,job_step_id->array_id);
+			}
+		}
+		list_iterator_destroy(iterator);
+		bit_and((bitstr_t *)job->array_bitmap, new_array_bitmap);
+		bit_free(new_array_bitmap);
+		xfree(job->array_task_str);
+		i = bit_set_count((bitstr_t *)job->array_bitmap);
+		if (i == 1) {
+			job->array_task_id =
+				bit_ffs((bitstr_t *)job->array_bitmap);
+			bit_free((bitstr_t *)job->array_bitmap);
+		} else {
+			i = i * 16 + 10;
+			job->array_task_str = xmalloc(i);
+			(void) bit_fmt(job->array_task_str, i,
+				       (bitstr_t *)job->array_bitmap);
+		}
 	}
 
 	return 0;

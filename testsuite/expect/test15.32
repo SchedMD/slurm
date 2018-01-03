@@ -83,6 +83,11 @@ if {$found == 1} {
 #
 set def_node [get_idle_node_in_part [default_partition]]
 if {[string compare $def_node ""] == 0} {
+#	Wait for possible Epilog
+	sleep 10
+	set def_node [get_idle_node_in_part [default_partition]]
+}
+if {[string compare $def_node ""] == 0} {
 	send_user "\nFAILURE: default partition seems to have no nodes\n"
 	exit 1
 }
