@@ -846,19 +846,25 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		   it now.  We also add MEM here, the others tres
 		   are site specific and could vary.  None but CPU
 		   matter on order though.  CPU always has to be 1.
+
+		   TRES_OFFSET is needed since there's no way to force
+		   the number of first automatic id in MySQL. auto_increment
+		   value is lost on mysqld restart. Bug 4553.
 		*/
 		query = xstrdup_printf(
-			"insert into %s (creation_time, id, type) values "
-			"(%ld, %d, 'cpu'), "
-			"(%ld, %d, 'mem'), "
-			"(%ld, %d, 'energy'), "
-			"(%ld, %d, 'node') "
-			"on duplicate key update deleted=0, type=VALUES(type);",
+			"insert into %s (creation_time, id, deleted, type) values "
+			"(%ld, %d, 0, 'cpu'), "
+			"(%ld, %d, 0, 'mem'), "
+			"(%ld, %d, 0, 'energy'), "
+			"(%ld, %d, 0, 'node') "
+			"(%ld, %d, 1, 'dynamic_offset') "
+			"on duplicate key update deleted=VALUES(deleted), type=VALUES(type);",
 			tres_table,
 			now, TRES_CPU,
 			now, TRES_MEM,
 			now, TRES_ENERGY,
-			now, TRES_NODE);
+			now, TRES_NODE,
+			now, TRES_OFFSET);
 		if (debug_flags & DEBUG_FLAG_DB_QOS)
 			DB_DEBUG(mysql_conn->conn, "%s", query);
 		rc = mysql_db_query(mysql_conn, query);
