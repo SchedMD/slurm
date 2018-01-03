@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- jobcomp/elasticsearch - append Content-Type to the HTTP header.
  -- MYSQL - Fix potential abort of slurmdbd when job has no TRES.
+ -- Add advanced reservation flag of "REPLACE_DOWN" to replace DOWN or DRAINED
+    nodes.
 
 * Changes in Slurm 17.11.1-2
 ============================

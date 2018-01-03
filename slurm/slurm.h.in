@@ -2546,6 +2546,8 @@ void slurm_init_update_block_msg(update_block_msg_t *update_block_msg);
 							 * reservation */
 #define RESERVE_FLAG_NO_HOLD_JOBS	0x20000000	/* No hold jobs after
 							 * end of reservation */
+#define RESERVE_FLAG_REPLACE_DOWN	0x40000000	/* Replace DOWN or
+							 * DRAINED nodes */
 
 typedef struct resv_core_spec {
 	char *node_name;	/* Name of reserved node */

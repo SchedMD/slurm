@@ -2559,6 +2559,11 @@ extern char *reservation_flags_string(uint32_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "REPLACE");
 	}
+	if (flags & RESERVE_FLAG_REPLACE_DOWN) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "REPLACE_DOWN");
+	}
 	if (flags & RESERVE_FLAG_PURGE_COMP) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");

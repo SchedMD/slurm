@@ -2143,6 +2143,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	else {
 #ifdef HAVE_BG
 		resv_desc_ptr->flags &= (~RESERVE_FLAG_REPLACE);
+		resv_desc_ptr->flags &= (~RESERVE_FLAG_REPLACE_DOWN);
 #endif
 		resv_desc_ptr->flags &= RESERVE_FLAG_MAINT    |
 					RESERVE_FLAG_FLEX     |
@@ -2159,9 +2160,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_TIME_FLOAT  |
 					RESERVE_FLAG_PURGE_COMP  |
 					RESERVE_FLAG_REPLACE     |
+					RESERVE_FLAG_REPLACE_DOWN |
 					RESERVE_FLAG_NO_HOLD_JOBS;
 	}
-	if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) {
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
+	    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 		if (resv_desc_ptr->node_list) {
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto bad_parse;
@@ -2636,13 +2639,17 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
 #ifndef HAVE_BG
-		if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) {
+		if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
+		    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 			if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 			    (resv_ptr->full_nodes == 0)) {
 				error_code = ESLURM_NOT_SUPPORTED;
 				goto update_failure;
 			}
-			resv_ptr->flags |= RESERVE_FLAG_REPLACE;
+			if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE)
+				resv_ptr->flags |= RESERVE_FLAG_REPLACE;
+			else
+				resv_ptr->flags |= RESERVE_FLAG_REPLACE_DOWN;
 		}
 #endif
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES) {
@@ -3490,11 +3497,14 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 	/* Identify nodes which can be preserved in this reservation */
 	preserve_bitmap = bit_copy(resv_ptr->node_bitmap);
 	bit_and(preserve_bitmap, avail_node_bitmap);
-	bit_and(preserve_bitmap, idle_node_bitmap);
+	if (resv_ptr->flags & RESERVE_FLAG_REPLACE)
+		bit_and(preserve_bitmap, idle_node_bitmap);
 	preserve_nodes = bit_set_count(preserve_bitmap);
 
-	/* Try to get replacement nodes, first from idle pool then re-use
-	 * busy nodes in the current reservation as needed */
+	/*
+	 * Try to get replacement nodes, first from idle pool then re-use
+	 * busy nodes in the current reservation as needed
+	 */
 	add_nodes = resv_ptr->node_cnt - preserve_nodes;
 	while (add_nodes) {
 		memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
@@ -3569,7 +3579,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
 		return;
 
-	if (resv_ptr->flags & RESERVE_FLAG_REPLACE) {
+	if ((resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
+	    (resv_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 		_resv_node_replace(resv_ptr);
 		return;
 	}

@@ -1792,10 +1792,14 @@ parse_resv_flags(const char *flagstr, const char *msg)
 			   !flip) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_TIME_FLOAT;
-		} else if (!xstrncasecmp(curr, "Replace", MAX(taglen,1)) &&
+		} else if (!xstrncasecmp(curr, "Replace", MAX(taglen, 1)) &&
 			   !flip) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_REPLACE;
+		} else if (!xstrncasecmp(curr, "Replace_Down", MAX(taglen, 8))
+			   && !flip) {
+			curr += taglen;
+			outflags |= RESERVE_FLAG_REPLACE_DOWN;
 		} else if (!xstrncasecmp(curr, "NO_HOLD_JOBS_AFTER_END",
 					 MAX(taglen, 1)) && !flip) {
 			curr += taglen;
