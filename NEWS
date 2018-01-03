@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Fix potential abort of slurmdbd when job has no TRES.
  -- Add advanced reservation flag of "REPLACE_DOWN" to replace DOWN or DRAINED
     nodes.
+ -- slurm.spec-legacy - add missing libslurmfull.so to slurm.files.
 
 * Changes in Slurm 17.11.1-2
 ============================
