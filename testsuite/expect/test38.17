@@ -52,6 +52,14 @@ proc end_it { exit_code } {
 
 print_header $test_id
 
+# find out if we have enough nodes to test functionality
+set partition [default_partition]
+set node_count [get_node_cnt_in_part $partition]
+if { $node_count < 3 } {
+	send_user "WARNING: Insufficient nodes in default partition ($node_count < 3)\n"
+	exit $exit_code
+}
+
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
