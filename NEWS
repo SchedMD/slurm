@@ -18,8 +18,6 @@ documents those changes that are of interest to users and administrators.
  -- Add support in salloc/srun --bb option for "access_mode" in addition to
     "access" for consistency with DW options.
  -- Fix potential deadlock in _run_prog() in power save code.
- -- MYSQL - Add dynamic_offset in the database to force range for auto
-    increment ids for the tres_table.
 
 * Changes in Slurm 17.02.9
 ==========================
