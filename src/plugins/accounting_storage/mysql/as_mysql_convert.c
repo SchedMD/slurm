@@ -38,8 +38,10 @@
 
 #include "as_mysql_convert.h"
 
+List bad_tres_list = NULL;
+
 /* Any time you have to add to an existing convert update this number. */
-#define CONVERT_VERSION 4
+#define CONVERT_VERSION 5
 
 /*
  * Defined globally because it's used in 2 functions:
@@ -196,7 +198,7 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
-	char *query;
+	char *query = NULL;
 
 	if (db_curr_ver < 1) {
 		query = xstrdup_printf("update \"%s_%s\" as job "
@@ -222,6 +224,9 @@ static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 			error("Can't convert %s_%s info: %m",
 			      cluster_name, job_table);
 		xfree(query);
+
+		if (rc != SLURM_SUCCESS)
+			return rc;
 	}
 
 	if (db_curr_ver < 3) {
@@ -238,13 +243,35 @@ static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 			return rc;
 	}
 
+	if (db_curr_ver < 5) {
+		if (bad_tres_list) {
+			slurmdb_tres_rec_t *tres_rec;
+			ListIterator itr = list_iterator_create(bad_tres_list);
+			while ((tres_rec = list_next(itr))) {
+				xstrfmtcat(query,
+					   "update \"%s_%s\" set tres_alloc=replace(tres_alloc, ',%u=', ',%u='), tres_req=replace(tres_req, ',%u=', ',%u=');",
+					   cluster_name, job_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count);
+			}
+			list_iterator_destroy(itr);
+			if (debug_flags & DEBUG_FLAG_DB_QUERY)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if ((rc = mysql_db_query(mysql_conn, query))
+			    != SLURM_SUCCESS)
+				error("%d: Can't convert %s_%s info: %m",
+				      __LINE__, cluster_name, job_table);
+			xfree(query);
+		}
+	}
+
 	return rc;
 }
 
 static int _convert_step_table(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
-	char *query;
+	char *query = NULL;
 
 	if (db_curr_ver < 1) {
 		query = xstrdup_printf("update \"%s_%s\" set consumed_energy=%"
@@ -257,6 +284,250 @@ static int _convert_step_table(mysql_conn_t *mysql_conn, char *cluster_name)
 			error("Can't convert %s_%s info: %m",
 			      cluster_name, step_table);
 		xfree(query);
+
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
+
+	if (db_curr_ver < 5) {
+		if (bad_tres_list) {
+			slurmdb_tres_rec_t *tres_rec;
+			ListIterator itr = list_iterator_create(bad_tres_list);
+			while ((tres_rec = list_next(itr))) {
+				xstrfmtcat(query,
+					   "update \"%s_%s\" set tres_alloc=replace(tres_alloc, ',%u=', ',%u=');",
+					   cluster_name, step_table,
+					   tres_rec->id, tres_rec->rec_count);
+			}
+			list_iterator_destroy(itr);
+			if (debug_flags & DEBUG_FLAG_DB_QUERY)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if ((rc = mysql_db_query(mysql_conn, query))
+			    != SLURM_SUCCESS)
+				error("%d: Can't convert %s_%s info: %m",
+				      __LINE__, cluster_name, step_table);
+			xfree(query);
+		}
+	}
+
+	return rc;
+}
+
+static int _convert_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+
+	if (db_curr_ver < 5) {
+		if (bad_tres_list) {
+			slurmdb_tres_rec_t *tres_rec;
+			ListIterator itr = list_iterator_create(bad_tres_list);
+			while ((tres_rec = list_next(itr))) {
+				xstrfmtcat(query,
+					   "update \"%s_%s\" set tres=replace(tres, ',%u=', ',%u=');"
+					   "update \"%s_%s\" set id_tres=%u where id_tres=%u;"
+					   "update \"%s_%s\" set id_tres=%u where id_tres=%u;"
+					   "update \"%s_%s\" set id_tres=%u where id_tres=%u;"
+					   "update \"%s_%s\" set id_tres=%u where id_tres=%u;"
+					   "update \"%s_%s\" set id_tres=%u where id_tres=%u;"
+					   "update \"%s_%s\" set id_tres=%u where id_tres=%u;"
+					   "update \"%s_%s\" set id_tres=%u where id_tres=%u;"
+					   "update \"%s_%s\" set id_tres=%u where id_tres=%u;"
+					   "update \"%s_%s\" set id_tres=%u where id_tres=%u;",
+					   cluster_name, event_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   cluster_name, assoc_day_table,
+					   tres_rec->rec_count, tres_rec->id,
+					   cluster_name, assoc_hour_table,
+					   tres_rec->rec_count, tres_rec->id,
+					   cluster_name, assoc_month_table,
+					   tres_rec->rec_count, tres_rec->id,
+					   cluster_name, cluster_day_table,
+					   tres_rec->rec_count, tres_rec->id,
+					   cluster_name, cluster_hour_table,
+					   tres_rec->rec_count, tres_rec->id,
+					   cluster_name, cluster_month_table,
+					   tres_rec->rec_count, tres_rec->id,
+					   cluster_name, wckey_day_table,
+					   tres_rec->rec_count, tres_rec->id,
+					   cluster_name, wckey_hour_table,
+					   tres_rec->rec_count, tres_rec->id,
+					   cluster_name, wckey_month_table,
+					   tres_rec->rec_count, tres_rec->id);
+			}
+			list_iterator_destroy(itr);
+			if (debug_flags & DEBUG_FLAG_DB_QUERY)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if ((rc = mysql_db_query(mysql_conn, query))
+			    != SLURM_SUCCESS)
+				error("%d: Can't convert %s's cluster tables: %m",
+				      __LINE__, cluster_name);
+			xfree(query);
+		}
+	}
+
+	return rc;
+}
+
+static int _convert_assoc_table(mysql_conn_t *mysql_conn, char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+
+	if (db_curr_ver < 5) {
+		if (bad_tres_list) {
+			slurmdb_tres_rec_t *tres_rec;
+			ListIterator itr = list_iterator_create(bad_tres_list);
+			while ((tres_rec = list_next(itr))) {
+				xstrfmtcat(query,
+					   "update \"%s_%s\" set "
+					   "max_tres_pj=replace(max_tres_pj, ',%u=', ',%u='), "
+					   "max_tres_pn=replace(max_tres_pn, ',%u=', ',%u='), "
+					   "max_tres_mins_pj=replace(max_tres_mins_pj, ',%u=', ',%u='), "
+					   "max_tres_run_mins=replace(max_tres_run_mins, ',%u=', ',%u='), "
+					   "grp_tres=replace(grp_tres, ',%u=', ',%u='), "
+					   "grp_tres_mins=replace(grp_tres_mins, ',%u=', ',%u='), "
+					   "grp_tres_run_mins=replace(grp_tres_run_mins, ',%u=', ',%u=');"
+					   "update \"%s_%s\" set max_tres_pj=replace(max_tres_pj, '%u=', '%u=') where max_tres_pj like '%u=%%';"
+					   "update \"%s_%s\" set max_tres_pn=replace(max_tres_pn, '%u=', '%u=') where max_tres_pn like '%u=%%';"
+					   "update \"%s_%s\" set max_tres_mins_pj=replace(max_tres_mins_pj, '%u=', '%u=') where max_tres_mins_pj like '%u=%%';"
+					   "update \"%s_%s\" set max_tres_run_mins=replace(max_tres_run_mins, '%u=', '%u=') where max_tres_run_mins like '%u=%%';"
+					   "update \"%s_%s\" set grp_tres=replace(grp_tres, '%u=', '%u=') where grp_tres like '%u=%%';"
+					   "update \"%s_%s\" set grp_tres_mins=replace(grp_tres_mins, '%u=', '%u=') where grp_tres_mins like '%u=%%';"
+					   "update \"%s_%s\" set grp_tres_run_mins=replace(grp_tres_run_mins, '%u=', '%u=') where grp_tres_run_mins like '%u=%%';",
+					   cluster_name, assoc_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   cluster_name, assoc_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   cluster_name, assoc_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   cluster_name, assoc_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   cluster_name, assoc_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   cluster_name, assoc_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   cluster_name, assoc_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   cluster_name, assoc_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id);
+			}
+			list_iterator_destroy(itr);
+			if (debug_flags & DEBUG_FLAG_DB_QUERY)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if ((rc = mysql_db_query(mysql_conn, query))
+			    != SLURM_SUCCESS)
+				error("%d: Can't convert %s_%s info: %m",
+				      __LINE__, cluster_name, assoc_table);
+			xfree(query);
+		}
+	}
+
+	return rc;
+}
+
+static int _convert_qos_table(mysql_conn_t *mysql_conn)
+{
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+
+	if (db_curr_ver < 5) {
+		if (bad_tres_list) {
+			slurmdb_tres_rec_t *tres_rec;
+			ListIterator itr = list_iterator_create(bad_tres_list);
+			while ((tres_rec = list_next(itr))) {
+				xstrfmtcat(query,
+					   "update %s set "
+					   "max_tres_pa=replace(max_tres_pa, ',%u=', ',%u='), "
+					   "max_tres_pj=replace(max_tres_pj, ',%u=', ',%u='), "
+					   "max_tres_pn=replace(max_tres_pn, ',%u=', ',%u='), "
+					   "max_tres_pu=replace(max_tres_pu, ',%u=', ',%u='), "
+					   "max_tres_mins_pj=replace(max_tres_mins_pj, ',%u=', ',%u='), "
+					   "max_tres_run_mins_pa=replace(max_tres_run_mins_pa, ',%u=', ',%u='), "
+					   "max_tres_run_mins_pu=replace(max_tres_run_mins_pu, ',%u=', ',%u='), "
+					   "min_tres_pj=replace(min_tres_pj, ',%u=', ',%u='), "
+					   "grp_tres=replace(grp_tres, ',%u=', ',%u='), "
+					   "grp_tres_mins=replace(grp_tres_mins, ',%u=', ',%u='), "
+					   "grp_tres_run_mins=replace(grp_tres_run_mins, ',%u=', ',%u=');"
+					   "update %s set max_tres_pa=replace(max_tres_pa, '%u=', '%u=') where max_tres_pa like '%u=%%';"
+					   "update %s set max_tres_pj=replace(max_tres_pj, '%u=', '%u=') where max_tres_pj like '%u=%%';"
+					   "update %s set max_tres_pn=replace(max_tres_pn, '%u=', '%u=') where max_tres_pn like '%u=%%';"
+					   "update %s set max_tres_pu=replace(max_tres_pu, '%u=', '%u=') where max_tres_pu like '%u=%%';"
+					   "update %s set max_tres_mins_pj=replace(max_tres_mins_pj, '%u=', '%u=') where max_tres_mins_pj like '%u=%%';"
+					   "update %s set max_tres_run_mins_pa=replace(max_tres_run_mins_pa, '%u=', '%u=') where max_tres_run_mins_pa like '%u=%%';"
+					   "update %s set max_tres_run_mins_pu=replace(max_tres_run_mins_pu, '%u=', '%u=') where max_tres_run_mins_pu like '%u=%%';"
+					   "update %s set min_tres_pj=replace(min_tres_pj, '%u=', '%u=') where min_tres_pj like '%u=%%';"
+					   "update %s set grp_tres=replace(grp_tres, '%u=', '%u=') where grp_tres like '%u=%%';"
+					   "update %s set grp_tres_mins=replace(grp_tres_mins, '%u=', '%u=') where grp_tres_mins like '%u=%%';"
+					   "update %s set grp_tres_run_mins=replace(grp_tres_run_mins, '%u=', '%u=') where grp_tres_run_mins like '%u=%%';",
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id, tres_rec->rec_count,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id,
+					   qos_table,
+					   tres_rec->id, tres_rec->rec_count,
+					   tres_rec->id);
+			}
+			list_iterator_destroy(itr);
+			if (debug_flags & DEBUG_FLAG_DB_QUERY)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if ((rc = mysql_db_query(mysql_conn, query))
+			    != SLURM_SUCCESS)
+				error("%d: Can't convert %s info: %m",
+				      __LINE__, qos_table);
+			xfree(query);
+		}
 	}
 
 	return rc;
@@ -460,6 +731,28 @@ static int _convert_resv_table(mysql_conn_t *mysql_conn, char *cluster_name)
 	MYSQL_RES *result = NULL;
 	int rc = SLURM_SUCCESS;
 
+	/* 5 needs to happen before 4 since we are moving tres around */
+	if (db_curr_ver < 5) {
+		if (bad_tres_list) {
+			slurmdb_tres_rec_t *tres_rec;
+			ListIterator itr = list_iterator_create(bad_tres_list);
+			while ((tres_rec = list_next(itr))) {
+				xstrfmtcat(query,
+					   "update \"%s_%s\" set tres=replace(tres, '%u=', '%u=');",
+					   cluster_name, resv_table,
+					   tres_rec->id, tres_rec->rec_count);
+			}
+			list_iterator_destroy(itr);
+			if (debug_flags & DEBUG_FLAG_DB_QUERY)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if ((rc = mysql_db_query(mysql_conn, query))
+			    != SLURM_SUCCESS)
+				error("%d: Can't convert %s_%s info: %m",
+				      __LINE__, cluster_name, resv_table);
+			xfree(query);
+		}
+	}
+
 	/*
 	 * Previous to 17.11, the reservation table did not have unused_wall.
 	 * Populate the unused_wall field of the reservation records:
@@ -513,8 +806,6 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 	MYSQL_ROW row;
 	int rc = SLURM_SUCCESS;
 
-	xassert(as_mysql_total_cluster_list);
-
 	if (db_curr_ver != NO_VAL)
 		return SLURM_SUCCESS;
 
@@ -536,7 +827,8 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 		mysql_free_result(result);
 
 		/* no valid clusters, just return */
-		if (!list_count(as_mysql_total_cluster_list))
+		if (as_mysql_total_cluster_list &&
+		    !list_count(as_mysql_total_cluster_list))
 			tmp_ver = CONVERT_VERSION;
 
 		query = xstrdup_printf("insert into %s (version) values (%d);",
@@ -552,11 +844,159 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 	return rc;
 }
 
+extern int as_mysql_convert_get_bad_tres(mysql_conn_t *mysql_conn)
+{
+	char *query = NULL;
+	char *tmp = NULL;
+	int rc = SLURM_SUCCESS;
+	int i=0, auto_inc = TRES_OFFSET;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+
+	/* if this changes you will need to edit the corresponding enum */
+	char *tres_req_inx[] = {
+		"id",
+		"type",
+		"name"
+	};
+	enum {
+		SLURMDB_REQ_ID,
+		SLURMDB_REQ_TYPE,
+		SLURMDB_REQ_NAME,
+		SLURMDB_REQ_COUNT
+	};
+
+	if ((rc = _set_db_curr_ver(mysql_conn)) != SLURM_SUCCESS)
+		return rc;
+
+	if (db_curr_ver == CONVERT_VERSION) {
+		debug4("%s: No conversion needed, Horray!", __func__);
+		return SLURM_SUCCESS;
+	} else if (backup_dbd) {
+		/*
+		 * We do not want to create/check the database if we are the
+		 * backup (see Bug 3827). This is only handled on the primary.
+		 *
+		 * To avoid situations where someone might upgrade the database
+		 * through the backup we want to fatal so they know what
+		 * happened instead of potentially starting with the older
+		 * database.
+		 */
+		fatal("Backup DBD can not convert database, please start the primary DBD before starting the backup.");
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Check to see if we have a bad one to start with.
+	 * Any bad one will be in id=5 and will also have a name.  If we don't
+	 * have this then we are ok.  Otherwise fatal since it may involve
+	 * manually altering the database.
+	 */
+	query = xstrdup_printf(
+		"select id from %s where id=%d && type='billing' && name!=''",
+		tres_table, TRES_BILLING);
+
+	if (debug_flags & DEBUG_FLAG_DB_QUERY)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if ((row = mysql_fetch_row(result))) {
+		fatal("%s: There is a known bug dealing with MySQL and auto_increment numbers, unfortunately your system has hit this bug.  To temporarily resolve the issue please revert back to your last version of SlurmDBD.  Fixing this issue correctly will require manual intervention with the database.  SchedMD can assist with this.  Supported sites please open a ticket at https://bugs.schedmd.com/.  Non-supported sites please contact SchedMD at sales@schedmd.com if you would like to discuss commercial support options.",
+		      __func__);
+		return SLURM_ERROR;
+	}
+	mysql_free_result(result);
+
+	/*
+	 * Get the largest id in the tres table.
+	 */
+	query = xstrdup_printf("select MAX(id) from %s;", tres_table);
+	if (debug_flags & DEBUG_FLAG_DB_QUERY)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if (!(row = mysql_fetch_row(result))) {
+		fatal("%s: Couldn't get auto_increment for some reason",
+		      __func__);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Make sure it is at least TRES_OFFSET (blank/new databases will return
+	 * NULL.
+	 */
+	if (row[0] && row[0][0]) {
+		uint32_t max_id = slurm_atoul(row[0]);
+		auto_inc = MAX(auto_inc, max_id);
+	}
+
+	/*
+	 * Now get all the ones that need to me moved.
+	 */
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", tres_req_inx[i]);
+	for (i = 1; i < SLURMDB_REQ_COUNT; i++)
+		xstrfmtcat(tmp, ", %s", tres_req_inx[i]);
+
+	query = xstrdup_printf("select %s from %s where (id between 5 and 999) && type!='billing'",
+			       tmp, tres_table);
+	xfree(tmp);
+
+	if (debug_flags & DEBUG_FLAG_DB_QUERY)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	while ((row = mysql_fetch_row(result))) {
+		slurmdb_tres_rec_t *tres;
+
+		if (!bad_tres_list)
+			bad_tres_list = list_create(slurmdb_destroy_tres_rec);
+
+		tres = xmalloc(sizeof(slurmdb_tres_rec_t));
+		list_append(bad_tres_list, tres);
+
+		tres->id = slurm_atoul(row[SLURMDB_REQ_ID]);
+		/* use this to say where we are moving it to */
+		tres->rec_count = ++auto_inc;
+		if (row[SLURMDB_REQ_TYPE] && row[SLURMDB_REQ_TYPE][0])
+			tres->type = xstrdup(row[SLURMDB_REQ_TYPE]);
+		if (row[SLURMDB_REQ_NAME] && row[SLURMDB_REQ_NAME][0])
+			tres->name = xstrdup(row[SLURMDB_REQ_NAME]);
+		xstrfmtcat(query,
+			   "update %s set id=%u where id=%u;",
+			   tres_table, tres->rec_count, tres->id);
+	}
+	mysql_free_result(result);
+
+	if (query) {
+		if (debug_flags & DEBUG_FLAG_DB_QUERY)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+	}
+
+	return rc;
+}
+
 extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator itr;
 	char *cluster_name;
+
+	xassert(as_mysql_total_cluster_list);
 
 	if ((rc = _set_db_curr_ver(mysql_conn)) != SLURM_SUCCESS)
 		return rc;
@@ -594,10 +1034,11 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 
 extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 {
-	char *query;
 	int rc = SLURM_SUCCESS;
 	ListIterator itr;
 	char *cluster_name;
+
+	xassert(as_mysql_total_cluster_list);
 
 	if ((rc = _set_db_curr_ver(mysql_conn)) != SLURM_SUCCESS)
 		return rc;
@@ -628,14 +1069,50 @@ extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 		     != SLURM_SUCCESS))
 			break;
 
+		/* Convert the cluster tables */
+		info("converting cluster tables for %s", cluster_name);
+		if ((rc = _convert_cluster_tables(mysql_conn, cluster_name)
+		     != SLURM_SUCCESS))
+			return rc;
+
+		/* Convert the assoc table */
+		info("converting assoc table for %s", cluster_name);
+		if ((rc = _convert_assoc_table(mysql_conn, cluster_name)
+		     != SLURM_SUCCESS))
+			return rc;
 	}
 	list_iterator_destroy(itr);
 
+	return rc;
+}
+
+extern int as_mysql_convert_non_cluster_tables_post_create(
+	mysql_conn_t *mysql_conn)
+{
+	int rc = SLURM_SUCCESS;
+
+	if ((rc = _set_db_curr_ver(mysql_conn)) != SLURM_SUCCESS)
+		return rc;
+
+	if (db_curr_ver == CONVERT_VERSION) {
+		debug4("%s: No conversion needed, Horray!", __func__);
+		return SLURM_SUCCESS;
+	}
+
+	/* make it up to date */
+	/* Convert the QOS table */
+	info("converting QOS table");
+	if ((rc = _convert_qos_table(mysql_conn)
+	     != SLURM_SUCCESS))
+		return rc;
+
 	if (rc == SLURM_SUCCESS) {
+		char *query = xstrdup_printf(
+			"update %s set version=%d, mod_time=UNIX_TIMESTAMP()",
+			convert_version_table, CONVERT_VERSION);
+
 		info("Conversion done: success!");
-		query = xstrdup_printf("update %s set version=%d, "
-				       "mod_time=UNIX_TIMESTAMP()",
-				       convert_version_table, CONVERT_VERSION);
+
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);

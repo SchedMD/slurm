@@ -41,10 +41,23 @@
 
 #include "accounting_storage_mysql.h"
 
+/* See bug 4553 */
+extern List bad_tres_list;
+
+/* Fill in the bad_tres_list with anything from bug 4553 */
+extern int as_mysql_convert_get_bad_tres(mysql_conn_t *mysql_conn);
+
 /* Functions for converting tables before they are created in new schema */
 extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn);
 
 /* Functions for converting tables after they are created */
 extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn);
+
+/*
+ * Functions for converting tables that aren't cluster centric as the other
+ * functions in this deal with.
+ */
+extern int as_mysql_convert_non_cluster_tables_post_create(
+	mysql_conn_t *mysql_conn);
 
 #endif

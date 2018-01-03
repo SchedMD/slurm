@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential deadlock in _run_prog() in power save code.
  -- MYSQL - Add dynamic_offset in the database to force range for auto
     increment ids for the tres_table.
+ -- MYSQL - Fix fallout from MySQL auto increment bug, see RELEASE_NOTES,
+    only affects current 17.11 users tracking licenses or GRES in the database.
 
 * Changes in Slurm 17.11.1-2
 ============================
