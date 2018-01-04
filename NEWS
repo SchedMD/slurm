@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- Expand reservation "flags" field from 32 to 64 bits.
  -- Add job state flag of "SIGNALLING" to avoid race condition with multiple
     SIGSTOP/SIGCONT signals for the same job being active at the same time.
+ -- Properly handle srun --will-run option when there are jobs in COMPLETING
+    state.
 
 * Changes in Slurm 17.11.2
 ==========================

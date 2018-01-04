@@ -1206,9 +1206,30 @@ top:	orig_map = bit_copy(save_bitmap);
 	return rc;
 }
 
-/* _will_run_test - determine when and where a pending job can start, removes
- *	jobs from node table at termination time and run _test_job() after
- *	each one. Used by SLURM's sched/backfill plugin and Moab. */
+/*
+ * Return true if job is in the processing of cleaning up.
+ * This is used for Cray systems to indicate the Node Health Check (NHC)
+ * is still running. Until NHC completes, the job's resource use persists
+ * the select/cons_res plugin data structures.
+ */
+static bool _job_cleaning(struct job_record *job_ptr)
+{
+	uint16_t cleaning = 0;
+
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING,
+				    &cleaning);
+	if (cleaning)
+		return true;
+	return false;
+}
+
+/*
+ * Determine where and when the job at job_ptr can begin execution by updating
+ * a scratch cr_record structure to reflect each job terminating at the
+ * end of its time limit and use this to show where and when the job at job_ptr
+ * will begin execution. Used by Slurm's sched/backfill plugin.
+ */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint16_t job_node_share,
 			  List preemptee_candidates, List *preemptee_job_list)
@@ -1253,14 +1274,36 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	cr_job_list = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool cleaning = _job_cleaning(tmp_job_ptr);
+		if (!cleaning && IS_JOB_COMPLETING(tmp_job_ptr))
+			cleaning = true;
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
-		    !IS_JOB_SUSPENDED(tmp_job_ptr))
+		    !IS_JOB_SUSPENDED(tmp_job_ptr) &&
+		    !cleaning)
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
-			error("Job %u has zero end_time", tmp_job_ptr->job_id);
+			if (!cleaning) {
+				error("%s: Active job %u has zero end_time",
+				      __func__, tmp_job_ptr->job_id);
+			}
 			continue;
 		}
-		if (_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+		if (tmp_job_ptr->node_bitmap == NULL) {
+			/*
+			 * This should indicate a requeued job was cancelled
+			 * while NHC was running
+			 */
+			if (!cleaning) {
+				error("%s: Job %u has NULL node_bitmap",
+				      __func__, tmp_job_ptr->job_id);
+			}
+			continue;
+		}
+		if (cleaning ||
+		    !_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+			/* Queue job for later removal from data structures */
+			list_append(cr_job_list, tmp_job_ptr);
+		} else {
 			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
 			if (mode == PREEMPT_MODE_OFF)
 				continue;
@@ -1271,8 +1314,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* Remove preemptable job now */
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, action);
-		} else
-			list_append(cr_job_list, tmp_job_ptr);
+		}
 	}
 	list_iterator_destroy(job_iterator);
 
