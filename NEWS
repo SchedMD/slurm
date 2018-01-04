@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
     increment ids for the tres_table.
  -- MYSQL - Fix fallout from MySQL auto increment bug, see RELEASE_NOTES,
     only affects current 17.11 users tracking licenses or GRES in the database.
+ -- Refactor logging logic to avoid possible memory corruption on non-x86
+    architectures.
 
 * Changes in Slurm 17.11.1-2
 ============================
