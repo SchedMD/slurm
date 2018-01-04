@@ -860,7 +860,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 			       "&& id_job=%u %s"
 			       "order by time_submit desc limit 1;",
 			       job_cond->cluster, job_table,
-			       job_cond->job_id, cond_char);
+			       job_cond->job_id, cond_char ? cond_char : "");
 	xfree(cond_char);
 
 	if (debug_flags & DEBUG_FLAG_DB_JOB)
