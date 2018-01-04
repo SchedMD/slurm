@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
  -- Refactor logging logic to avoid possible memory corruption on non-x86
     architectures.
  -- Fix memory leak when getting jobs from the slurmdbd.
+ -- Fix incorrect logic behind MemorySwappiness, and only set the value when
+    specified in the configuration.
 
 * Changes in Slurm 17.11.1-2
 ============================

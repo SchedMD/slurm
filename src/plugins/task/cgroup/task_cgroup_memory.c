@@ -109,7 +109,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	}
 	xcgroup_set_param(&memory_cg, "memory.use_hierarchy","1");
 
-	set_swappiness = (slurm_cgroup_conf->memory_swappiness == NO_VAL64);
+	set_swappiness = (slurm_cgroup_conf->memory_swappiness != NO_VAL64);
 	if (set_swappiness)
 		xcgroup_set_uint64_param(&memory_cg, "memory.swappiness",
 					 slurm_cgroup_conf->memory_swappiness);
