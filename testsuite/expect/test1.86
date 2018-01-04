@@ -59,6 +59,14 @@ if {[test_launch_poe]} {
 	set node_name_env SLURMD_NODENAME
 }
 
+# find out if we have enough nodes to test functionality
+set partition [default_partition]
+set node_count [get_node_cnt_in_part $partition]
+if { $node_count < 2 } {
+	send_user "WARNING: Insufficient nodes in default partition ($node_count < 2)\n"
+	exit $exit_code
+}
+
 #
 # Build input script file
 #

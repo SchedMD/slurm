@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
     only affects current 17.11 users tracking licenses or GRES in the database.
  -- Refactor logging logic to avoid possible memory corruption on non-x86
     architectures.
+ -- Fix memory leak when getting jobs from the slurmdbd.
 
 * Changes in Slurm 17.11.1-2
 ============================

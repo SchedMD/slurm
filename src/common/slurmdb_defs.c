@@ -855,6 +855,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->tres_req_str);
 		xfree(job->user);
 		xfree(job->wckey);
+		xfree(job->work_dir);
 		xfree(job);
 	}
 }

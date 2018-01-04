@@ -54,6 +54,14 @@ if {[test_launch_poe]} {
 	set use_envvar SLURM_NODEID
 }
 
+# find out if we have enough nodes to test functionality
+set partition [default_partition]
+set node_count [get_node_cnt_in_part $partition]
+if { $node_count < 2 } {
+	send_user "WARNING: Insufficient nodes in default partition ($node_count < 2)\n"
+	exit $exit_code
+}
+
 #
 # Submit a two node job with block distribution
 #
