@@ -106,15 +106,17 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * JOB_STATE_BASE   0x00ff
+=item * JOB_STATE_BASE   0x000000ff
 
-=item * JOB_STATE_FLAGS  0xff00
+=item * JOB_STATE_FLAGS  0xffffff00
 
-=item * JOB_COMPLETING   0x8000
+=item * JOB_COMPLETING   0x00008000
 
-=item * JOB_CONFIGURING  0x4000
+=item * JOB_CONFIGURING  0x00004000
 
-=item * JOB_RESIZING     0x2000
+=item * JOB_RESIZING     0x00002000
+
+=item * JOB_SIGNALING    0x00400000
 
 =item * READY_JOB_FATAL  -2
 
