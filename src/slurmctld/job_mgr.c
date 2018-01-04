@@ -5150,6 +5150,18 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	}
 
 	if (IS_JOB_RUNNING(job_ptr)) {
+
+		if ((signal == SIGSTOP) || (signal == SIGCONT)) {
+			if (IS_JOB_SIGNALING(job_ptr)) {
+				verbose("%s: %u not send to %s 0x%x",
+					__func__, signal,
+					jobid2str(job_ptr, jbuf, sizeof(jbuf)),
+					job_ptr->job_state);
+				return ESLURM_TRANSITION_STATE_NO_UPDATE;
+			}
+			job_ptr->job_state |= JOB_SIGNALING;
+		}
+
 		if ((signal == SIGKILL)
 		    && !(flags & KILL_STEPS_ONLY)
 		    && !(flags & KILL_JOB_BATCH)) {
@@ -5169,6 +5181,8 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		} else if (job_ptr->batch_flag && (flags & KILL_JOB_BATCH)) {
 			_signal_batch_job(job_ptr, signal, flags);
 		} else if ((flags & KILL_JOB_BATCH) && !job_ptr->batch_flag) {
+			if ((signal == SIGSTOP) || (signal == SIGCONT))
+				job_ptr->job_state &= ~JOB_SIGNALING;
 			return ESLURM_JOB_SCRIPT_MISSING;
 		} else {
 			_signal_job(job_ptr, signal, flags);

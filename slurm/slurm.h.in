@@ -237,6 +237,7 @@ enum job_states {
 #define JOB_REVOKED       0x00080000 /* Sibling job revoked */
 #define JOB_REQUEUE_FED   0x00100000 /* Job is being requeued by federation */
 #define JOB_RESV_DEL_HOLD 0x00200000 /* Job is hold */
+#define JOB_SIGNALING     0x00400000 /* Outgoing signal is pending */
 
 
 #define READY_JOB_FATAL	   -2	/* fatal error */

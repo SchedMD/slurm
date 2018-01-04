@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "December 2017" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "January 2018" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -383,15 +383,15 @@ Actual or expected start time of the job or job step.
 Job state, compact form:
 PD (pending), R (running), CA (cancelled), CF(configuring),
 CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure), RV (revoked) and SE
-(special exit state).
+F (failed), TO (timeout), NF (node failure), RV (revoked), SI (signalling)
+and SE (special exit state).
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
 \fB%T\fR
 Job state, extended form:
 PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING,
-FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
+FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED, SIGNALLING and SPECIAL_EXIT.
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP

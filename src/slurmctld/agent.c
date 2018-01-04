@@ -1048,8 +1048,7 @@ static void *_thread_per_group_rpc(void *args)
 			continue;
 		}
 
-		if ((msg_type == REQUEST_SIGNAL_TASKS) &&
-		    (rc == SLURM_SUCCESS)) {
+		if (msg_type == REQUEST_SIGNAL_TASKS) {
 			struct job_record *job_ptr;
 			signal_tasks_msg_t *msg_ptr =
 				task_ptr->msg_args_ptr;
@@ -1059,13 +1058,22 @@ static void *_thread_per_group_rpc(void *args)
 				job_id = msg_ptr->job_id;
 				lock_slurmctld(job_write_lock);
 				job_ptr = find_job_record(job_id);
-				if (job_ptr == NULL)
+				if (job_ptr == NULL) {
 					info("%s: invalid JobId=%u", __func__,
 					     job_id);
-				else if (msg_ptr->signal == SIGSTOP)
-					job_ptr->job_state |= JOB_STOPPED;
-				else // SIGCONT
-					job_ptr->job_state &= (~JOB_STOPPED);
+				} else if (rc == SLURM_SUCCESS) {
+					if (msg_ptr->signal == SIGSTOP) {
+						job_ptr->job_state |=
+							JOB_STOPPED;
+					} else { // SIGCONT
+						job_ptr->job_state &=
+							~JOB_STOPPED;
+					}
+				}
+
+				if (job_ptr)
+					job_ptr->job_state &= ~JOB_SIGNALING;
+
 				unlock_slurmctld(job_write_lock);
 			}
 		}
@@ -1142,7 +1150,20 @@ static void *_thread_per_group_rpc(void *args)
 
 cleanup:
 	xfree(args);
-
+	if (!ret_list && (msg_type == REQUEST_SIGNAL_TASKS)) {
+		struct job_record *job_ptr;
+		signal_tasks_msg_t *msg_ptr =
+			task_ptr->msg_args_ptr;
+		if ((msg_ptr->signal == SIGCONT) ||
+		    (msg_ptr->signal == SIGSTOP)) {
+			job_id = msg_ptr->job_id;
+			lock_slurmctld(job_write_lock);
+			job_ptr = find_job_record(job_id);
+			if (job_ptr)
+				job_ptr->job_state &= ~JOB_SIGNALING;
+			unlock_slurmctld(job_write_lock);
+		}
+	}
 	/* handled at end of thread just in case resend is needed */
 	destroy_forward(&msg.forward);
 	slurm_mutex_lock(thread_mutex_ptr);

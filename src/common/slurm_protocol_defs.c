@@ -2216,7 +2216,8 @@ extern char *job_state_string(uint32_t inx)
 		return "REVOKED";
 	if (inx & JOB_RESV_DEL_HOLD)
 		return "RESV_DEL_HOLD";
-
+	if (inx & JOB_SIGNALING)
+		return "SIGNALING";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
@@ -2272,6 +2273,8 @@ extern char *job_state_string_compact(uint32_t inx)
 		return "RV";
 	if (inx & JOB_RESV_DEL_HOLD)
 		return "RD";
+	if (inx & JOB_SIGNALING)
+		return "SI";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
@@ -2340,6 +2343,8 @@ extern uint32_t job_state_num(const char *state_name)
 		return JOB_STOPPED;
 	if (_job_name_test(JOB_REVOKED, state_name))
 		return JOB_REVOKED;
+	if (_job_name_test(JOB_SIGNALING, state_name))
+		return JOB_SIGNALING;
 
 	return NO_VAL;
 }
