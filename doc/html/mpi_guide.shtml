@@ -53,7 +53,9 @@ with Slurm are provided below.
 
 <p>Before building PMIx, it is advisable to read these
 <a href="https://pmix.github.io/pmix/faq/building">FAQ entries</a>. They provide
-some details on building dependencies and installation steps.</p>
+some details on building dependencies and installation steps. There's also
+a <a href="https://pmix.org/support/how-to/slurm-support">
+Slurm Support How-To</a> available in the PMIx web page.</p>
 
 <p>This section is intended to complement the PMIx FAQ with some notes on how to
 prepare Slurm and PMIx to work together. PMIx can be obtained from the official

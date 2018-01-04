@@ -57,6 +57,20 @@
 #define	debug4			slurm_debug4
 #define	debug5			slurm_debug5
 
+/*
+ * Allow up to 999 static TRES
+ * NOTE: If this changes for some reason you will also need to update the 1001
+ * in accounting_storage_mysql.c...
+ *
+ * 	if (mysql_db_create_table(mysql_conn, tres_table,
+ *				  tres_table_fields,
+ *				  ", primary key (id), "
+ *				  "unique index (type(20), name(20))) "
+ *				  "auto_increment=1001")
+ *
+ */
+#define TRES_OFFSET 1000
+
 #include "src/common/assoc_mgr.h"
 #include "src/common/macros.h"
 #include "src/common/slurmdbd_defs.h"
