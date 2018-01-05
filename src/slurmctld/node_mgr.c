@@ -3653,8 +3653,8 @@ extern void make_node_comp(struct node_record *node_ptr,
 		}
 	}
 
-	if (!IS_NODE_DOWN(node_ptr))  {
-		/* Don't verify  RPC if DOWN */
+	if (!IS_NODE_DOWN(node_ptr) && !IS_NODE_POWER_UP(node_ptr)) {
+		/* Don't verify RPC if node in DOWN or POWER_UP state */
 		(node_ptr->comp_job_cnt)++;
 		node_ptr->node_state |= NODE_STATE_COMPLETING;
 		bit_set(cg_node_bitmap, inx);
