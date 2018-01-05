@@ -52,22 +52,25 @@ with Slurm are provided below.
 <h3>Building PMIx</h3>
 
 <p>Before building PMIx, it is advisable to read these
-<a href="https://pmix.github.io/pmix/faq/building">FAQ entries</a>. They provide
-some details on building dependencies and installation steps. There's also
-a <a href="https://pmix.org/support/how-to/slurm-support">
-Slurm Support How-To</a> available in the PMIx web page.</p>
+<a href="https://pmix.org/support/how-to/">How-To Guides</a>. They provide
+some details on
+<a href="https://pmix.org/code/getting-the-reference-implementation">
+building dependencies and installation steps</a> as well as some relevant notes
+with regards to <a href="https://pmix.org/support/how-to/slurm-support">Slurm
+Support</a>.</p>
 
 <p>This section is intended to complement the PMIx FAQ with some notes on how to
 prepare Slurm and PMIx to work together. PMIx can be obtained from the official
 <a href="https://github.com/pmix/pmix">PMIx GitHub</a> repository, either by
 cloning the repository or by downloading a packaged release.</p>
 
-<p>There are some relevant notes that should be considered when installing Slurm
-and PMIx in terms of versions compatibility:
+<p>Slurm support for PMIx was first included in Slurm 16.05 based on the PMIx
+v1.2 release. It has since been updated to support the PMIx v2.x series, as per
+the following table:
 <ul>
-<li>Slurm 17.02+ supports PMIx v1.x <b>(not PMIx v2.x)</b>.</li>
-<li>Slurm 17.11.0+ supports PMIx v1.x and v2.0 <b>(not PMIx v2.1)</b>.</li>
-<li>Slurm 17.11.1+ supports PMIx v1.x, v2.0 and (at least) v2.1 too.</li>
+<li>Slurm 16.05+ supports only the PMIx v1.x series, starting with v1.2.0. These
+Slurm versions specifically do <b>not</b> support PMIx v2.x and above.</li>
+<li>Slurm 17.11.0+ supports both PMIx v1.2+ and v2.x.</li>
 </ul>
 </p>
 
