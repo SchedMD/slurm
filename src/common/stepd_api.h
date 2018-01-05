@@ -50,8 +50,8 @@
 typedef enum {
 	REQUEST_CONNECT = 0,
 	REQUEST_SIGNAL_PROCESS_GROUP, /* Defunct, See REQUEST_SIGNAL_CONTAINER */
-	REQUEST_SIGNAL_TASK_LOCAL,
-	REQUEST_SIGNAL_TASK_GLOBAL,
+	REQUEST_SIGNAL_TASK_LOCAL, /* Defunct see REQUEST_SIGNAL_CONTAINER */
+	REQUEST_SIGNAL_TASK_GLOBAL, /* Defunct see REQUEST_SIGNAL_CONTAINER */
 	REQUEST_SIGNAL_CONTAINER,
 	REQUEST_STATE,
 	REQUEST_INFO,  /* Defunct, See REQUEST_STEP_MEM_LIMITS|UID|NODEID */
@@ -158,18 +158,6 @@ int stepd_notify_job(int fd, uint16_t protocol_version, char *message);
  */
 int stepd_checkpoint(int fd, uint16_t protocol_version,
 		     time_t timestamp, char *image_dir);
-
-/*
- * Send a signal to a single task in a job step.
- */
-int stepd_signal_task_local(int fd, uint16_t protocol_version,
-			    int signal, int ltaskid);
-
-/*
- * Send a signal to a single task in a job step.
- */
-int stepd_signal_task_global(int fd, uint16_t protocol_version,
-			     int signal, int gtaskid);
 
 /*
  * Send a signal to the proctrack container of a job step.

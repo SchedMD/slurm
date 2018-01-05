@@ -414,28 +414,6 @@ stepd_checkpoint(int fd, uint16_t protocol_version,
 }
 
 /*
- * Send a signal to a single task in a job step.
- */
-int
-stepd_signal_task_local(int fd, uint16_t protocol_version,
-			int signal, int ltaskid)
-{
-	int req = REQUEST_SIGNAL_TASK_LOCAL;
-	int rc;
-
-	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &signal, sizeof(int));
-	safe_write(fd, &ltaskid, sizeof(int));
-
-	/* Receive the return code */
-	safe_read(fd, &rc, sizeof(int));
-
-	return rc;
-rwfail:
-	return -1;
-}
-
-/*
  * Send a signal to the proctrack container of a job step.
  */
 int

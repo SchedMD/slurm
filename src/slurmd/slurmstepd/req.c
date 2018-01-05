@@ -82,7 +82,6 @@ static int _handle_info(int fd, stepd_step_rec_t *job);
 static int _handle_mem_limits(int fd, stepd_step_rec_t *job);
 static int _handle_uid(int fd, stepd_step_rec_t *job);
 static int _handle_nodeid(int fd, stepd_step_rec_t *job);
-static int _handle_signal_task_local(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_checkpoint_tasks(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid);
@@ -461,14 +460,9 @@ _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 	debug3("Got request %d", req);
 	rc = SLURM_SUCCESS;
 	switch (req) {
-	case REQUEST_SIGNAL_TASK_LOCAL:
-		debug("Handling REQUEST_SIGNAL_TASK_LOCAL");
-		rc = _handle_signal_task_local(fd, job, uid);
-		break;
-	case REQUEST_SIGNAL_TASK_GLOBAL:
-		debug("Handling REQUEST_SIGNAL_TASK_GLOBAL (not implemented)");
-		break;
 	case REQUEST_SIGNAL_PROCESS_GROUP:	/* Defunct */
+	case REQUEST_SIGNAL_TASK_LOCAL:		/* Defunct */
+	case REQUEST_SIGNAL_TASK_GLOBAL:	/* Defunct */
 	case REQUEST_SIGNAL_CONTAINER:
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
 		rc = _handle_signal_container(fd, job, uid);
@@ -624,79 +618,6 @@ _handle_nodeid(int fd, stepd_step_rec_t *job)
 {
 	safe_write(fd, &job->nodeid, sizeof(uid_t));
 
-	return SLURM_SUCCESS;
-rwfail:
-	return SLURM_FAILURE;
-}
-
-static int
-_handle_signal_task_local(int fd, stepd_step_rec_t *job, uid_t uid)
-{
-	int rc = SLURM_SUCCESS;
-	int signal;
-	int ltaskid; /* local task index */
-
-	safe_read(fd, &signal, sizeof(int));
-	safe_read(fd, &ltaskid, sizeof(int));
-	debug("_handle_signal_task_local for step=%u.%u uid=%d signal=%d",
-	      job->jobid, job->stepid, (int) uid, signal);
-
-	if (uid != job->uid && !_slurm_authorized_user(uid)) {
-		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
-		      (long)uid, job->jobid, job->stepid, (long)job->uid);
-		rc = EPERM;
-		goto done;
-	}
-
-	/*
-	 * Sanity checks
-	 */
-	if (ltaskid < 0 || ltaskid >= job->node_tasks) {
-		debug("step %u.%u invalid local task id %d",
-		      job->jobid, job->stepid, ltaskid);
-		rc = SLURM_ERROR;
-		goto done;
-	}
-	if (!job->task
-	    || !job->task[ltaskid]) {
-		debug("step %u.%u no task info for task id %d",
-		      job->jobid, job->stepid, ltaskid);
-		rc = SLURM_ERROR;
-		goto done;
-	}
-	if (job->task[ltaskid]->pid <= 1) {
-		debug("step %u.%u invalid pid %d for task %d",
-		      job->jobid, job->stepid,
-		      job->task[ltaskid]->pid, ltaskid);
-		rc = SLURM_ERROR;
-		goto done;
-	}
-
-	/*
-	 * Signal the task
-	 */
-	slurm_mutex_lock(&suspend_mutex);
-	if (suspended) {
-		rc = ESLURMD_STEP_SUSPENDED;
-		slurm_mutex_unlock(&suspend_mutex);
-		goto done;
-	}
-
-	if (kill(job->task[ltaskid]->pid, signal) == -1) {
-		rc = -1;
-		verbose("Error sending signal %d to %u.%u, pid %d: %m",
-			signal, job->jobid, job->stepid,
-			job->task[ltaskid]->pid);
-	} else {
-		verbose("Sent signal %d to %u.%u, pid %d",
-			signal, job->jobid, job->stepid,
-			job->task[ltaskid]->pid);
-	}
-	slurm_mutex_unlock(&suspend_mutex);
-
-done:
-	/* Send the return code */
-	safe_write(fd, &rc, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;
