@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
     SIGSTOP/SIGCONT signals for the same job being active at the same time.
  -- Properly handle srun --will-run option when there are jobs in COMPLETING
     state.
+ -- Properly report who is signaling a step.
 
 * Changes in Slurm 17.11.3
 ==========================

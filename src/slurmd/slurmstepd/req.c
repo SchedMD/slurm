@@ -708,19 +708,22 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 	int sig, flag;
+	uid_t req_uid;
 	static int msg_sent = 0;
 	stepd_step_task_info_t *task;
 	uint32_t i;
 
 	safe_read(fd, &sig, sizeof(int));
 	safe_read(fd, &flag, sizeof(int));
+	safe_read(fd, &req_uid, sizeof(uid_t));
 
 	debug("_handle_signal_container for step=%u.%u uid=%d signal=%d",
-	      job->jobid, job->stepid, (int) uid, sig);
+	      job->jobid, job->stepid, (int) req_uid, sig);
+	/* verify uid off uid instead of req_uid as we can trust that one */
 	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
 		error("signal container req from uid %ld for step=%u.%u "
 		      "owned by uid %ld",
-		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		      (long)req_uid, job->jobid, job->stepid, (long)job->uid);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
