@@ -43,6 +43,10 @@ documents those changes that are of interest to users and administrators.
  -- Properly handle srun --will-run option when there are jobs in COMPLETING
     state.
 
+* Changes in Slurm 17.11.3
+==========================
+ -- Send SIG_UME correctly to a step.
+
 * Changes in Slurm 17.11.2
 ==========================
  -- jobcomp/elasticsearch - append Content-Type to the HTTP header.
