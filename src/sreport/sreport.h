@@ -106,7 +106,6 @@ extern char *strip_quotes(char *option, int *increased);
 extern int sort_user_dec(void *, void *);
 extern int sort_cluster_dec(void *, void *);
 extern int sort_assoc_dec(void *, void *);
-extern int sort_reservations_dec(void *, void *);
 
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 

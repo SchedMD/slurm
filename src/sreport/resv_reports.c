@@ -589,7 +589,6 @@ extern int resv_utilization(int argc, char **argv)
 		req_tres_list = g_tres_list;
 	}
 
-	list_sort(tot_resv_list, (ListCmpF)sort_reservations_dec);
 	tot_itr = list_iterator_create(tot_resv_list);
 	while ((tot_resv = list_next(tot_itr))) {
 		List resv_tres_list = NULL;

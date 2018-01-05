@@ -47,6 +47,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.3
 ==========================
  -- Send SIG_UME correctly to a step.
+ -- Sort sreport's reservation report by cluster, time_start, resv_name instead
+    of cluster, resv_name, time_start.
 
 * Changes in Slurm 17.11.2
 ==========================
