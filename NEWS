@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Properly handle srun --will-run option when there are jobs in COMPLETING
     state.
  -- Properly report who is signaling a step.
+ -- Don't combine updated reservation records in sreport's reservation report.
 
 * Changes in Slurm 17.11.3
 ==========================
