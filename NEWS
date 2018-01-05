@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Send SIG_UME correctly to a step.
  -- Sort sreport's reservation report by cluster, time_start, resv_name instead
     of cluster, resv_name, time_start.
+ -- Avoid setting node in COMPLETING state indefinitely if the job initiating
+    the node reboot is cancelled while the reboot in in progress.
 
 * Changes in Slurm 17.11.2
 ==========================
@@ -577,6 +579,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential deadlock in _run_prog() in power save code.
  -- MYSQL - Add dynamic_offset in the database to force range for auto
     increment ids for the tres_table.
+ -- Avoid setting node in COMPLETING state indefinitely if the job initiating
+    the node reboot is cancelled while the reboot in in progress. 
 
 * Changes in Slurm 17.02.9
 ==========================
