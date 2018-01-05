@@ -6,7 +6,7 @@
  *  Copyright (C) 2016 F. Hoffmann - La Roche
  *
  *  Based on the HDF5 profiling plugin and Elasticsearch job completion plugin.
- *  
+ *
  *  Portions Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
  *
@@ -187,7 +187,7 @@ static bool _run_in_daemon(void)
 
 /* Callback to handle the HTTP response */
 static size_t _write_callback(void *contents, size_t size, size_t nmemb,
-		void *userp)
+			      void *userp)
 {
 	size_t realsize = size * nmemb;
 	struct http_response *mem = (struct http_response *) userp;
@@ -231,7 +231,7 @@ static int _send_data(const char *data)
 		datastrlen += length;
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PROFILE)
 			info("%s %s: %zu bytes of data added to buffer. New buffer size: %d",
-			      plugin_type, __func__, length, datastrlen);
+			     plugin_type, __func__, length, datastrlen);
 		return rc;
 	}
 
@@ -424,7 +424,7 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 }
 
 extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
-		void *data)
+				      void *data)
 {
 	uint32_t *uint32 = (uint32_t *) data;
 	char **tmp_char = (char **) data;
@@ -432,18 +432,18 @@ extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
 	debug3("%s %s called", plugin_type, __func__);
 
 	switch (info_type) {
-		case ACCT_GATHER_PROFILE_DIR:
-			*tmp_char = xstrdup(influxdb_conf.host);
-			break;
-		case ACCT_GATHER_PROFILE_DEFAULT:
-			*uint32 = influxdb_conf.def;
-			break;
-		case ACCT_GATHER_PROFILE_RUNNING:
-			*uint32 = g_profile_running;
-			break;
-		default:
-			debug2("%s %s: info_type %d invalid", plugin_type,
-			       __func__, info_type);
+	case ACCT_GATHER_PROFILE_DIR:
+		*tmp_char = xstrdup(influxdb_conf.host);
+		break;
+	case ACCT_GATHER_PROFILE_DEFAULT:
+		*uint32 = influxdb_conf.def;
+		break;
+	case ACCT_GATHER_PROFILE_RUNNING:
+		*uint32 = g_profile_running;
+		break;
+	default:
+		debug2("%s %s: info_type %d invalid", plugin_type,
+		       __func__, info_type);
 	}
 }
 
@@ -540,21 +540,21 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
 		table->names = xrealloc(table->names,
-				(table->size+1) * sizeof(char *));
+					(table->size+1) * sizeof(char *));
 		table->types = xrealloc(table->types,
-				(table->size+1) * sizeof(char *));
+					(table->size+1) * sizeof(char *));
 		(table->names)[table->size] = xstrdup(dataset_loc->name);
 		switch (dataset_loc->type) {
-			case PROFILE_FIELD_UINT64:
-				table->types[table->size] =
-					PROFILE_FIELD_UINT64;
-				break;
-			case PROFILE_FIELD_DOUBLE:
-				table->types[table->size] =
-					PROFILE_FIELD_DOUBLE;
-				break;
-			case PROFILE_FIELD_NOT_SET:
-				break;
+		case PROFILE_FIELD_UINT64:
+			table->types[table->size] =
+				PROFILE_FIELD_UINT64;
+			break;
+		case PROFILE_FIELD_DOUBLE:
+			table->types[table->size] =
+				PROFILE_FIELD_DOUBLE;
+			break;
+		case PROFILE_FIELD_NOT_SET:
+			break;
 		}
 		table->size++;
 		dataset_loc++;
@@ -564,7 +564,7 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 }
 
 extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
-		time_t sample_time)
+						 time_t sample_time)
 {
 	table_t *table = &tables[table_id];
 	int i = 0;
@@ -574,26 +574,26 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 
 	for(; i < table->size; i++) {
 		switch (table->types[i]) {
-			case PROFILE_FIELD_UINT64:
-				xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
-						"host=%s value=%"PRIu64" "
-						"%"PRIu64"\n", table->names[i],
-						g_job->jobid, g_job->stepid,
-						table->name, g_job->node_name,
-						((union data_t*)data)[i].u,
-						sample_time);
-				break;
-			case PROFILE_FIELD_DOUBLE:
-				xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
-						"host=%s value=%.2f %"PRIu64""
-						"\n", table->names[i],
-						g_job->jobid, g_job->stepid,
-						table->name, g_job->node_name,
-						((union data_t*)data)[i].d,
-						sample_time);
-				break;
-			case PROFILE_FIELD_NOT_SET:
-				break;
+		case PROFILE_FIELD_UINT64:
+			xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
+				   "host=%s value=%"PRIu64" "
+				   "%"PRIu64"\n", table->names[i],
+				   g_job->jobid, g_job->stepid,
+				   table->name, g_job->node_name,
+				   ((union data_t*)data)[i].u,
+				   sample_time);
+			break;
+		case PROFILE_FIELD_DOUBLE:
+			xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
+				   "host=%s value=%.2f %"PRIu64""
+				   "\n", table->names[i],
+				   g_job->jobid, g_job->stepid,
+				   table->name, g_job->node_name,
+				   ((union data_t*)data)[i].d,
+				   sample_time);
+			break;
+		case PROFILE_FIELD_NOT_SET:
+			break;
 		}
 	}
 
