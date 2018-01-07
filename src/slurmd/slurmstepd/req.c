@@ -445,7 +445,7 @@ rwfail:
 int
 _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 {
-	int rc = 0;
+	int rc = SLURM_SUCCESS;
 	int req;
 
 	debug3("Entering _handle_request");
@@ -458,7 +458,6 @@ _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 		}
 	}
 	debug3("Got request %d", req);
-	rc = SLURM_SUCCESS;
 	switch (req) {
 	case REQUEST_SIGNAL_PROCESS_GROUP:	/* Defunct */
 	case REQUEST_SIGNAL_TASK_LOCAL:		/* Defunct */
