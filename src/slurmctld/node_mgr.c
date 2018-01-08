@@ -830,7 +830,8 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 			    (_node_is_hidden(node_ptr, uid)))
 				hidden = true;
-			else if (IS_NODE_FUTURE(node_ptr))
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 ((show_flags & SHOW_FUTURE) == 0))
 				hidden = true;
 			else if (_is_cloud_hidden(node_ptr))
 				hidden = true;
@@ -916,7 +917,8 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 			    (_node_is_hidden(node_ptr, uid)))
 				hidden = true;
-			else if (IS_NODE_FUTURE(node_ptr))
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 ((show_flags & SHOW_FUTURE) != 0))
 				hidden = true;
 //			Don't hide the node if explicitly requested by name
 //			else if (_is_cloud_hidden(node_ptr))

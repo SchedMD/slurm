@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "December 2017" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "January 2018" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -38,6 +38,9 @@ Causes the \fIshow\fR command to provide additional details where available.
 .TP
 \fB\-\-federation\fR
 Report jobs from from federation if a member of one.
+.TP
+\fB\-F\fR, \fB\-\-future\fR
+Report nodes in FUTURE state.
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of scontrol.
@@ -1836,6 +1839,9 @@ Commandline options will always override these settings.)
 .TP
 \fBSCONTROL_FEDERATION\fR
 \fB\-\-federation\fR
+.TP
+\fBSCONTROL_FUTURE\fR
+\fB\-F, \-\-future\fR
 .TP
 \fBSCONTROL_LOCAL\fR
 \fB\-\-local\fR

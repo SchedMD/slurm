@@ -57,6 +57,7 @@ char *command_name;
 List clusters = NULL;
 int all_flag = 0;	/* display even hidden partitions */
 int detail_flag = 0;	/* display additional details */
+int future_flag = 0;	/* display future nodes */
 int exit_code = 0;	/* scontrol's exit code, =1 on any error at any time */
 int exit_flag = 0;	/* program to terminate if =1 */
 int federation_flag = 0;/* show federated jobs */
@@ -111,6 +112,7 @@ int main(int argc, char **argv)
 		{"clusters", 1, 0, 'M'},
 		{"details",  0, 0, 'd'},
 		{"federation",0, 0, OPT_LONG_FEDR},
+		{"future",   0, 0, 'F'},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"local",    0, 0, OPT_LONG_LOCAL},
@@ -144,6 +146,8 @@ int main(int argc, char **argv)
 	}
 	if (getenv("SCONTROL_FEDERATION"))
 		federation_flag = 1;
+	if (getenv("SCONTROL_FUTURE"))
+		future_flag = 1;
 	if (getenv("SCONTROL_LOCAL"))
 		local_flag = 1;
 	if (getenv("SCONTROL_SIB") || getenv("SCONTROL_SIBLING"))
@@ -153,7 +157,7 @@ int main(int argc, char **argv)
 		if ((optind < argc) &&
 		    !xstrncasecmp(argv[optind], "setdebugflags", 8))
 			break;	/* avoid parsing "-<flagname>" as option */
-		if ((opt_char = getopt_long(argc, argv, "adhM:oQu:vV",
+		if ((opt_char = getopt_long(argc, argv, "adhM:FoQu:vV",
 					    long_options, &option_index)) == -1)
 			break;
 		switch (opt_char) {
@@ -167,6 +171,9 @@ int main(int argc, char **argv)
 			break;
 		case (int)'d':
 			detail_flag++;
+			break;
+		case (int)'F':
+			future_flag = 1;
 			break;
 		case (int)'h':
 			_usage ();
@@ -1995,23 +2002,23 @@ void _usage(void)
 	printf ("\
 scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
-     -a or --all: equivalent to \"all\" command                            \n\
-     -d or --details: equivalent to \"details\" command                    \n\
-           --federation: Report federated job information if a member of a \n\
-	     one.                                                          \n\
-     -h or --help: equivalent to \"help\" command                          \n\
-           --hide: equivalent to \"hide\" command                          \n\
-           --local: Report information only about jobs on the local cluster.\n\
-	     Overrides --federation.                                       \n\
-     -M or --cluster: equivalent to \"cluster\" command. Implies --local.  \n\
-             NOTE: SlurmDBD must be up.                                    \n\
-     -o or --oneliner: equivalent to \"oneliner\" command                  \n\
-     -Q or --quiet: equivalent to \"quiet\" command                        \n\
-           --sibling: Report information about all sibling jobs on a       \n\
-	     federated cluster. Implies --federation.                      \n\
-     -u or --uid: Update job as user <uid> instead of the invoking user id.\n\
-     -v or --verbose: equivalent to \"verbose\" command                    \n\
-     -V or --version: equivalent to \"version\" command                    \n\
+     -a, --all      Equivalent to \"all\" command                          \n\
+     -d, --details  Equivalent to \"details\" command                      \n\
+     --federation   Report federated job information if a member of a  one \n\
+     -F, --future   Report information about nodes in \"FUTURE\" state.    \n\
+     -h, --help     Equivalent to \"help\" command                         \n\
+     --hide         Equivalent to \"hide\" command                         \n\
+     --local        Report information only about jobs on the local cluster.\n\
+	            Overrides --federation.                                \n\
+     -M, --cluster  Equivalent to \"cluster\" command. Implies --local.    \n\
+                    NOTE: SlurmDBD must be up.                             \n\
+     -o, --oneliner Equivalent to \"oneliner\" command                     \n\
+     -Q, --quiet    Equivalent to \"quiet\" command                        \n\
+     --sibling      Report information about all sibling jobs on a         \n\
+	            federated cluster. Implies --federation option.        \n\
+     -u,--uid       Update job as user \"uid\" instead of the invoking user.\n\
+     -v, --verbose  Equivalent to \"verbose\" command                      \n\
+     -V, --version  Equivalent to \"version\" command                      \n\
 									   \n\
   <keyword> may be omitted from the execute line and scontrol will execute \n\
   in interactive mode. It will process commands as entered until explicitly\n\

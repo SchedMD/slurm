@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     the node reboot is cancelled while the reboot in in progress.
  -- Scheduling fix for changing node features without any NodeFeatures plugins.
  -- Improve logic when summarizing job arrays mail notifications.
+ -- Add scontrol -F/--future option to display nodes in FUTURE state.
 
 * Changes in Slurm 17.11.2
 ==========================

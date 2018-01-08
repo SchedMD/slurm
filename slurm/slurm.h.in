@@ -933,7 +933,7 @@ enum node_states {
 #define SLURM_SSL_SIGNATURE_LENGTH 128
 
 /* Used as show_flags for slurm_get_ and slurm_load_ function calls.
- * Values can be can be ORed */
+ * Values can be ORed */
 #define SHOW_ALL	0x0001	/* Show info for "hidden" partitions */
 #define SHOW_DETAIL	0x0002	/* Show detailed resource information */
 #define SHOW_DETAIL2	0x0004	/* Show batch script listing */
@@ -943,6 +943,7 @@ enum node_states {
 #define SHOW_SIBLING	0x0020	/* Show sibling jobs on a federated cluster */
 #define SHOW_FEDERATION	0x0040	/* Show federated state information.
 				 * Shows local info if not in federation */
+#define SHOW_FUTURE	0x0080	/* Show future nodes */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {
