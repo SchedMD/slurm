@@ -257,6 +257,13 @@ enum job_states {
 					 * stage out */
 #define MAIL_ARRAY_TASKS   0x0200	/* Send emails for each array task */
 
+/*
+ * job_array_struct_t array_flags definitions. ARRAY_TASK_REQUEUED could be
+ * substituted in the future to tot_requeued_tasks member in the struct, which
+ * would provide a more accurated array statistic.
+ */
+#define ARRAY_TASK_REQUEUED 0x0001	/* At least one task was requeued. */
+
 #define NICE_OFFSET 0x80000000		/* offset for job's nice value */
 
 /* Reason for job to be pending rather than executing or reason for job
@@ -928,7 +935,7 @@ enum node_states {
 #define SLURM_SSL_SIGNATURE_LENGTH 128
 
 /* Used as show_flags for slurm_get_ and slurm_load_ function calls.
- * Values can be can be ORed */
+ * Values can be ORed */
 #define SHOW_ALL	0x0001	/* Show info for "hidden" partitions */
 #define SHOW_DETAIL	0x0002	/* Show detailed resource information */
 #define SHOW_DETAIL2	0x0004	/* Show batch script listing */
@@ -938,6 +945,7 @@ enum node_states {
 #define SHOW_SIBLING	0x0020	/* Show sibling jobs on a federated cluster */
 #define SHOW_FEDERATION	0x0040	/* Show federated state information.
 				 * Shows local info if not in federation */
+#define SHOW_FUTURE	0x0080	/* Show future nodes */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {

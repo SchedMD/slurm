@@ -152,6 +152,8 @@ scontrol_print_node_list (char *node_list)
 		show_flags |= SHOW_ALL;
 	if (detail_flag)
 		show_flags |= SHOW_DETAIL;
+	if (future_flag)
+		show_flags |= SHOW_FUTURE;
 
 	error_code = scontrol_load_nodes(&node_info_ptr, show_flags);
 	if (error_code) {

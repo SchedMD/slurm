@@ -827,7 +827,8 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 			    (_node_is_hidden(node_ptr, uid)))
 				hidden = true;
-			else if (IS_NODE_FUTURE(node_ptr))
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 ((show_flags & SHOW_FUTURE) == 0))
 				hidden = true;
 			else if (_is_cloud_hidden(node_ptr))
 				hidden = true;
@@ -913,7 +914,8 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 			    (_node_is_hidden(node_ptr, uid)))
 				hidden = true;
-			else if (IS_NODE_FUTURE(node_ptr))
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 ((show_flags & SHOW_FUTURE) != 0))
 				hidden = true;
 //			Don't hide the node if explicitly requested by name
 //			else if (_is_cloud_hidden(node_ptr))
@@ -1373,13 +1375,17 @@ int update_node ( update_node_msg_t * update_node_msg )
 				orig_features_act = xstrdup(node_ptr->features);
 		}
 		if (update_node_msg->features) {
-			if (update_node_msg->features_act &&
-			    !node_ptr->features_act) {
-				node_ptr->features_act = node_ptr->features;
-				node_ptr->features = NULL;
-			} else {
-				xfree(node_ptr->features);
+			if (!update_node_msg->features_act &&
+			    (node_features_g_count() == 0)) {
+				/*
+				 * If no NodeFeatures plugin and no explicit
+				 * active features, then make active and
+				 * available feature values match
+				 */
+				update_node_msg->features_act =
+					xstrdup(update_node_msg->features);
 			}
+			xfree(node_ptr->features);
 			if (update_node_msg->features[0]) {
 				node_ptr->features =
 					node_features_g_node_xlate2(
