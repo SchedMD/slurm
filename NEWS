@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
     of cluster, resv_name, time_start.
  -- Avoid setting node in COMPLETING state indefinitely if the job initiating
     the node reboot is cancelled while the reboot in in progress.
+ -- Scheduling fix for changing node features without any NodeFeatures plugins.
 
 * Changes in Slurm 17.11.2
 ==========================

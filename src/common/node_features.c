@@ -447,6 +447,10 @@ extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 	START_TIMER;
 	(void) node_features_g_init();
 	slurm_mutex_lock(&g_context_lock);
+
+	if (!g_context_cnt)
+		new_value = xstrdup(new_features);
+
 	for (i = 0; i < g_context_cnt; i++) {
 		if (new_value)
 			tmp_str = new_value;

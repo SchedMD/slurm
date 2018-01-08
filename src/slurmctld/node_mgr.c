@@ -1365,13 +1365,17 @@ int update_node ( update_node_msg_t * update_node_msg )
 				orig_features_act = xstrdup(node_ptr->features);
 		}
 		if (update_node_msg->features) {
-			if (update_node_msg->features_act &&
-			    !node_ptr->features_act) {
-				node_ptr->features_act = node_ptr->features;
-				node_ptr->features = NULL;
-			} else {
-				xfree(node_ptr->features);
+			if (!update_node_msg->features_act &&
+			    (node_features_g_count() == 0)) {
+				/*
+				 * If no NodeFeatures plugin and no explicit
+				 * active features, then make active and
+				 * available feature values match
+				 */
+				update_node_msg->features_act =
+					xstrdup(update_node_msg->features);
 			}
+			xfree(node_ptr->features);
 			if (update_node_msg->features[0]) {
 				node_ptr->features =
 					node_features_g_node_xlate2(
