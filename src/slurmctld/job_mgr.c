@@ -14749,11 +14749,6 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 				task_requeued =
 					(master_job->array_recs->array_flags &
 					 ARRAY_TASK_REQUEUED);
-				max_exit_code =
-					master_job->array_recs->max_exit_code;
-				task_failed = (WIFEXITED(max_exit_code) &&
-					       WEXITSTATUS(max_exit_code));
-
 				if (task_requeued &&
 				    (job_ptr->mail_type & MAIL_JOB_REQUEUE)) {
 					/*
@@ -14762,8 +14757,14 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 					 */
 					mail_job_info(master_job,
 						      MAIL_JOB_REQUEUE);
-				} else if (task_failed && (job_ptr->mail_type &
-					   MAIL_JOB_FAIL)) {
+				}
+
+				max_exit_code =
+					master_job->array_recs->max_exit_code;
+				task_failed = (WIFEXITED(max_exit_code) &&
+					       WEXITSTATUS(max_exit_code));
+				if (task_failed &&
+				    (job_ptr->mail_type & MAIL_JOB_FAIL)) {
 					/*
 					 * At least 1 task failed and job
 					 * req. to be notified on failures.
