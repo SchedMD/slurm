@@ -256,6 +256,13 @@ enum job_states {
 					 * stage out */
 #define MAIL_ARRAY_TASKS   0x0200	/* Send emails for each array task */
 
+/*
+ * job_array_struct_t array_flags definitions. ARRAY_TASK_REQUEUED could be
+ * substituted in the future to tot_requeued_tasks member in the struct, which
+ * would provide a more accurated array statistic.
+ */
+#define ARRAY_TASK_REQUEUED 0x0001	/* At least one task was requeued. */
+
 #define NICE_OFFSET 0x80000000		/* offset for job's nice value */
 
 /* Reason for job to be pending rather than executing or reason for job
