@@ -15,6 +15,8 @@ START_TEST(invalid_protocol)
 	uint32_t x;
 
 	slurmdb_assoc_rec_t *assoc_rec = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc_rec->usage = xmalloc(sizeof(slurmdb_assoc_usage_t));
+
 	Buf buf = init_buf(1024);
 
 	pack32(22, buf);
