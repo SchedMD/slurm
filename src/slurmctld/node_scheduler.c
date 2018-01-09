@@ -893,7 +893,8 @@ _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
 	}
 }
 
-/* Remove nodes from consideration for allocation based upon "ownership" by
+/*
+ * Remove nodes from consideration for allocation based upon "ownership" by
  * other users
  * job_ptr IN - Job to be scheduled
  * usable_node_mask IN/OUT - Nodes available for use by this job's user
@@ -933,7 +934,8 @@ extern void filter_by_node_owner(struct job_record *job_ptr,
 	}
 }
 
-/* Remove nodes from consideration for allocation based upon "mcs" by
+/*
+ * Remove nodes from consideration for allocation based upon "mcs" by
  * other users
  * job_ptr IN - Job to be scheduled
  * usable_node_mask IN/OUT - Nodes available for use by this job's mcs
@@ -969,8 +971,10 @@ extern void filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
 	}
 }
 
-/* Remove nodes from the "avail_node_bitmap" which need to be rebooted in order
- * to be used if the job's "delay_boot" time has not yet been reached. */
+/*
+ * Remove nodes from the "avail_node_bitmap" which need to be rebooted in order
+ * to be used if the job's "delay_boot" time has not yet been reached.
+ */
 static void _filter_by_node_feature(struct job_record *job_ptr,
 				    struct node_set *node_set_ptr,
 				    int node_set_size)
@@ -1022,10 +1026,12 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	uint32_t powercap;
 	int layout_power;
 
-	/* Mark nodes reserved for other jobs as off limit for this job.
+	/*
+	 * Mark nodes reserved for other jobs as off limit for this job.
 	 * If the job has a reservation, we've already limited the contents
 	 * of select_bitmap to those nodes. Assume node reboot required
-	 * since we have not selected the compute nodes yet. */
+	 * since we have not selected the compute nodes yet.
+	 */
 	if (job_ptr->resv_name == NULL) {
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
@@ -1087,8 +1093,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		job_ptr->details->req_node_bitmap = NULL;
 	}
 	saved_min_cpus = job_ptr->details->min_cpus;
-	/* Don't mess with max_cpus here since it is only set to be a limit
-	 * and not user configurable. */
+	/*
+	 * Don't mess with max_cpus here since it is only set to be a limit
+	 * and not user configurable.
+	 */
 	job_ptr->details->min_cpus = 1;
 	tmp_node_set_ptr = xmalloc(sizeof(struct node_set) * node_set_size * 2);
 
@@ -1222,7 +1230,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			xfree(tmp_str);
 }
 #endif
-			for (i=0; i<tmp_node_set_size; i++) {
+			for (i = 0; i < tmp_node_set_size; i++) {
 				xfree(tmp_node_set_ptr[i].features);
 				FREE_NULL_BITMAP(tmp_node_set_ptr[i].
 						 feature_bits);
@@ -1235,9 +1243,11 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				if (feat_ptr->op_code == FEATURE_OP_XAND)
 					has_xand = true;
 				if (has_xand) {
-					/* Don't make it required since we
+					/*
+					 * Don't make it required since we
 					 * check value on each call to
-					 * _pick_best_nodes() */
+					 * _pick_best_nodes()
+					 */
 				} else if (job_ptr->details->req_node_bitmap) {
 					bit_or(job_ptr->details->
 					       req_node_bitmap,
@@ -1331,7 +1341,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	} else if ((layout_power = which_power_layout()) == 0) {
 		debug5("powercapping disabled %d", which_power_layout());
 	} else if (!power_layout_ready()){
-		debug3("powercapping:checking job %u : skipped, problems with"
+		debug3("powercapping: checking job %u : skipped, problems with "
 		       "layouts, capping disabled", job_ptr->job_id);
 	} else {
 		uint32_t min_watts, max_watts, job_cap, tmp_pcap_cpu_freq = 0;
@@ -1343,7 +1353,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		bool reboot;
 
 		/*
-		 *centralized synchronization of all key/values
+		 * centralized synchronization of all key/values
 		 */
 		layouts_entity_pull_kv("power", "Cluster", "CurrentSumPower");
 
@@ -1353,16 +1363,20 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		max_watts = powercap_get_cluster_max_watts();
 		min_watts = powercap_get_cluster_min_watts();
 		cur_max_watts = powercap_get_cluster_current_max_watts();
-		/* in case of INFINITE cap, set it to max watts as it
-		 * is done in the powercapping logic */
+		/*
+		 * in case of INFINITE cap, set it to max watts as it
+		 * is done in the powercapping logic
+		 */
 		if (powercap == INFINITE)
 			powercap = max_watts;
 
-		/* build a temporary bitmap using idle_node_bitmap and
+		/*
+		 * build a temporary bitmap using idle_node_bitmap and
 		 * remove the selected bitmap from this bitmap.
 		 * Then compute the amount of power required for such a
 		 * configuration to check that is is allowed by the current
-		 * power cap */
+		 * power cap
+		 */
 		tmp_bitmap = bit_copy(idle_node_bitmap);
 		bit_and_not(tmp_bitmap, *select_bitmap);
 		if (layout_power == 1)
@@ -1393,11 +1407,13 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		}
 		bit_free(tmp_bitmap);
 
-		/* get job cap based on power reservation on the system,
+		/*
+		 * get job cap based on power reservation on the system,
 		 * if no reservation matches the job caracteristics, the
 		 * powercap or the max_wattswill be returned.
 		 * select the return code based on the impact of
-		 * reservations on the failure */
+		 * reservations on the failure
+		 */
 		reboot = node_features_reboot_test(job_ptr, *select_bitmap);
 		job_cap = powercap_get_job_cap(job_ptr, time(NULL), reboot);
 
@@ -1416,13 +1432,15 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			    (job_cap < powercap) ||
 			    (powercap < max_watts)) && (tmp_max_watts_dvfs)) {
 
-			/* Calculation of the CPU Frequency to set for the job:
+			/*
+			 * Calculation of the CPU Frequency to set for the job:
 			 * The optimal CPU Frequency is the maximum allowed
 			 * CPU Frequency that all idle nodes could run so that
 			 * the total power consumption of the cluster is below
 			 * the powercap value.since the number of Idle nodes
 			 * may change in every schedule the optimal CPU
-			 * Frequency may also change from one job to another.*/
+			 * Frequency may also change from one job to another.
+			 */
 				k = powercap_get_job_optimal_cpufreq(job_cap,
 							  allowed_freqs);
 				while ((tmp_max_watts_dvfs[k] > job_cap) &&
@@ -1450,14 +1468,15 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				job_ptr->details->cpu_freq_max = tmp_pcap_cpu_freq;
 				job_ptr->details->cpu_freq_gov = 0x10;
 
-			/* Since we alter the DVFS of jobs we need to deal with
+			/*
+			 * Since we alter the DVFS of jobs we need to deal with
 			 * their time_limit to calculate the extra time needed
 			 * for them to complete the execution without getting
 			 * killed there should be a parameter to declare the
 			 * effect of cpu frequency on execution time for the
 			 * moment we use time_limit and time_min
-			 * This has to be done to allow backfilling */
-
+			 * This has to be done to allow backfilling
+			 */
 				ratio = (1 + (float)allowed_freqs[k] /
 					     (float)allowed_freqs[-1]);
 				if ((job_ptr->time_limit != INFINITE) &&
@@ -1591,6 +1610,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	if ((job_ptr->details->min_nodes == 0) &&
 	    (job_ptr->details->max_nodes == 0)) {
+		/* Zero compute node job (burst buffer use only) */
 		avail_bitmap = bit_alloc(node_record_count);
 		pick_code = select_g_job_test(job_ptr,
 					      avail_bitmap,
@@ -1608,7 +1628,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
 	} else if (node_set_size == 0) {
-		info("_pick_best_nodes: empty node set for selection");
+		info("%s: empty node set for selection", __func__);
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
@@ -1628,14 +1648,18 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	if (cr_enabled)
 		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
-	/* If job preemption is enabled, then do NOT limit the set of available
-	 * nodes by their current 'sharable' or 'idle' setting */
+	/*
+	 * If job preemption is enabled, then do NOT limit the set of available
+	 * nodes by their current 'sharable' or 'idle' setting
+	 */
 	preempt_flag = slurm_preemption_enabled();
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
-		/* We have already confirmed that all of these nodes have a
+		/*
+		 * We have already confirmed that all of these nodes have a
 		 * usable configuration and are in the proper partition.
-		 * Check that these nodes can be used by this job. */
+		 * Check that these nodes can be used by this job.
+		 */
 		if (min_nodes != 0) {
 			total_nodes = bit_set_count(
 				job_ptr->details->req_node_bitmap);
@@ -1668,20 +1692,23 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 		}
 
-		/* check the availability of these nodes */
-		/* Should we check memory availability on these nodes? */
+		/*
+		 * Check the availability of these nodes.
+		 * Should we check memory availability on these nodes?
+		 */
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   avail_node_bitmap)) {
 			return ESLURM_NODE_NOT_AVAIL;
 		}
 
-		/* still must go through select_g_job_test() to
-		 * determine validity of request and/or perform
-		 * set-up before job launch */
+		/*
+		 * Still must go through select_g_job_test() to determine the
+		 * validity of request and/or perform set-up before job launch
+		 */
 		total_nodes = 0;	/* reinitialize */
 	}
 
-	/* identify the min and max feature values for exclusive OR */
+	/* identify the min and max feature values for possible exclusive OR */
 	max_feature = -1;
 	min_feature = MAX_FEATURES;
 	for (i = 0; i < node_set_size; i++) {
@@ -1693,11 +1720,13 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			max_feature = j;
 	}
 
-	debug3("_pick_best_nodes: job %u idle_nodes %u share_nodes %u",
+	debug3("%s: job %u idle_nodes %u share_nodes %u", __func__,
 		job_ptr->job_id, bit_set_count(idle_node_bitmap),
 		bit_set_count(share_node_bitmap));
-	/* Accumulate resources for this job based upon its required
-	 * features (possibly with node counts). */
+	/*
+	 * Accumulate resources for this job based upon its required
+	 * features (possibly with node counts).
+	 */
 	for (j = min_feature; j <= max_feature; j++) {
 		if (job_ptr->details->req_node_bitmap) {
 			bool missing_required_nodes = false;

@@ -1393,15 +1393,16 @@ static void _list_delete_feature(void *feature_entry)
 	xfree (feature_ptr);
 }
 
-/* For a configuration where available_features == active_features,
- * build new active and available feature lists */
+/*
+ * For a configuration where available_features == active_features,
+ * build new active and available feature lists
+ */
 extern void build_feature_list_eq(void)
 {
 	ListIterator config_iterator;
 	struct config_record *config_ptr;
 	node_feature_t *active_feature_ptr, *avail_feature_ptr;
 	ListIterator feature_iter;
-
 	char *tmp_str, *token, *last = NULL;
 
 	FREE_NULL_LIST(active_feature_list);
