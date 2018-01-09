@@ -116,6 +116,7 @@ void	bit_and(bitstr_t *b1, bitstr_t *b2);
 void	bit_and_not(bitstr_t *b1, bitstr_t *b2);
 void	bit_not(bitstr_t *b);
 void	bit_or(bitstr_t *b1, bitstr_t *b2);
+void	bit_or_not(bitstr_t *b1, bitstr_t *b2);
 int32_t	bit_set_count(bitstr_t *b);
 int32_t	bit_set_count_range(bitstr_t *b, int32_t start, int32_t end);
 int32_t	bit_clear_count(bitstr_t *b);
