@@ -583,7 +583,7 @@ pmix_internal_libs = \
 	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
 
 pmix_ldflags = $(PLUGIN_FLAGS) $(HWLOC_LDFLAGS) $(UCX_LDFLAGS)
-pmix_libadd = $(pmix_internal_libs) $(PMIX_LIBS) $(HWLOC_LIBS) $(UCX_LIBS)
+pmix_libadd = $(pmix_internal_libs) $(HWLOC_LIBS) $(UCX_LIBS)
 
 # pkglib_v#dir is needed in each one of the below because of the way we
 # use pkglib_v#_LTLIBRARIES even though it is the same for each one it still

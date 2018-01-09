@@ -9,12 +9,15 @@
 #include "src/common/list.h"
 #include "src/common/pack.h"
 
-START_TEST(invalid_protocol)
+#ifndef NDEBUG
+START_TEST(pack_null_usage)
 {
 	int rc;
 	uint32_t x;
 
 	slurmdb_assoc_rec_t *assoc_rec = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc_rec->usage = NULL;
+
 	Buf buf = init_buf(1024);
 
 	pack32(22, buf);
@@ -22,7 +25,34 @@ START_TEST(invalid_protocol)
 
 	slurmdb_assoc_rec_t *acr;
 
-	slurmdb_pack_assoc_rec_with_usage((void **)&assoc_rec, 0, buf);
+	/* Should assert */
+	slurmdb_pack_assoc_rec_with_usage((void *)assoc_rec, 0, buf);
+	unpack32(&x, buf);
+	rc = slurmdb_unpack_assoc_rec_with_usage((void **)&acr, 0, buf);
+	ck_assert_int_eq(rc, SLURM_ERROR);
+	ck_assert(x == 22);
+	free_buf(buf);
+	slurmdb_destroy_assoc_rec(assoc_rec);
+}
+END_TEST
+#endif
+
+START_TEST(invalid_protocol)
+{
+	int rc;
+	uint32_t x;
+
+	slurmdb_assoc_rec_t *assoc_rec = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc_rec->usage = xmalloc(sizeof(slurmdb_assoc_usage_t));
+
+	Buf buf = init_buf(1024);
+
+	pack32(22, buf);
+	set_buf_offset(buf, 0);
+
+	slurmdb_assoc_rec_t *acr;
+
+	slurmdb_pack_assoc_rec_with_usage((void *)assoc_rec, 0, buf);
 	unpack32(&x, buf);
 	rc = slurmdb_unpack_assoc_rec_with_usage((void **)&acr, 0, buf);
 	ck_assert_int_eq(rc, SLURM_ERROR);
@@ -191,11 +221,17 @@ END_TEST
  * TEST SUITE                                                                *
  ****************************************************************************/
 
-Suite* suite(void)
+Suite* suite(SRunner *sr)
 {
 	Suite* s = suite_create("Pack slurmdb_assoc_rec_t");
 	TCase* tc_core = tcase_create("Pack slurmdb_assoc_rec_t");
 	tcase_add_test(tc_core, invalid_protocol);
+
+#ifndef NDEBUG
+       if (srunner_fork_status(sr) != CK_NOFORK)
+               tcase_add_test_raise_signal(tc_core, pack_null_usage, SIGABRT);
+#endif
+
 	tcase_add_test(tc_core, pack_1702_assoc_rec);
 	suite_add_tcase(s, tc_core);
 	return s;
@@ -208,9 +244,9 @@ Suite* suite(void)
 int main(void)
 {
     int number_failed;
-    SRunner* sr = srunner_create(suite());
-
-    srunner_set_fork_status(sr, CK_NOFORK);
+    SRunner* sr = srunner_create(NULL);
+    //srunner_set_fork_status(sr, CK_NOFORK);
+    srunner_add_suite(sr, suite(sr));
 
     srunner_run_all(sr, CK_VERBOSE);
     //srunner_run_all(sr, CK_NORMAL);
