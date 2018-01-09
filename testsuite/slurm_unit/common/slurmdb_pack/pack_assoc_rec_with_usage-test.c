@@ -22,7 +22,7 @@ START_TEST(invalid_protocol)
 
 	slurmdb_assoc_rec_t *acr;
 
-	slurmdb_pack_assoc_rec_with_usage((void **)&assoc_rec, 0, buf);
+	slurmdb_pack_assoc_rec_with_usage((void *)assoc_rec, 0, buf);
 	unpack32(&x, buf);
 	rc = slurmdb_unpack_assoc_rec_with_usage((void **)&acr, 0, buf);
 	ck_assert_int_eq(rc, SLURM_ERROR);
