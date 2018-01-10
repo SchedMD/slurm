@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Scheduling fix for changing node features without any NodeFeatures plugins.
  -- Improve logic when summarizing job arrays mail notifications.
  -- Add scontrol -F/--future option to display nodes in FUTURE state.
+ -- Fix REASONABLE_BUF_SIZE to actually be 3/4 of MAX_BUF_SIZE.
 
 * Changes in Slurm 17.11.2
 ==========================
