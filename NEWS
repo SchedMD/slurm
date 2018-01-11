@@ -55,6 +55,15 @@ documents those changes that are of interest to users and administrators.
  -- Scheduling fix for changing node features without any NodeFeatures plugins.
  -- Improve logic when summarizing job arrays mail notifications.
  -- Add scontrol -F/--future option to display nodes in FUTURE state.
+ -- Fix REASONABLE_BUF_SIZE to actually be 3/4 of MAX_BUF_SIZE.
+ -- When a job array is preempting make it so tasks in the array don't wait
+    to preempt other possible jobs.
+ -- Change free_buffer to FREE_NULL_BUFFER to prevent possible double free
+    in slurmstepd.
+ -- node_feature/knl_cray - Fix memory leaks that occur when slurmctld
+    reconfigured.
+ -- node_feature/knl_cray - Fix memory leak that can occur during normal
+    operation.
 
 * Changes in Slurm 17.11.2
 ==========================
@@ -584,7 +593,11 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Add dynamic_offset in the database to force range for auto
     increment ids for the tres_table.
  -- Avoid setting node in COMPLETING state indefinitely if the job initiating
-    the node reboot is cancelled while the reboot in in progress. 
+    the node reboot is cancelled while the reboot in in progress.
+ -- node_feature/knl_cray - Fix memory leaks that occur when slurmctld
+    reconfigured.
+ -- node_feature/knl_cray - Fix memory leak that can occur during normal
+    operation.
 
 * Changes in Slurm 17.02.9
 ==========================

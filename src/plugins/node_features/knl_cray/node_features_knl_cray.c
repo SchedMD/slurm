@@ -1784,6 +1784,7 @@ extern int init(void)
 	capmc_timeout = DEFAULT_CAPMC_TIMEOUT;
 	for (i = 0; i < KNL_NUMA_CNT; i++)
 		cpu_bind[i] = 0;
+	xfree(cnselect_path);
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
@@ -1791,6 +1792,7 @@ extern int init(void)
 		mcdram_pct[i] = -1;
 	mcdram_set = 0;
 	xfree(numa_cpu_bind);
+	xfree(syscfg_path);
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
 		debug_flag = true;
@@ -2100,6 +2102,7 @@ extern void *_queue_agent(void *args)
 			node_time_queue = (time_t) 0;
 			slurm_mutex_unlock(&queue_mutex);
 			(void) _update_node_state(node_list, true);
+			xfree(node_list);
 		}
 	}
 

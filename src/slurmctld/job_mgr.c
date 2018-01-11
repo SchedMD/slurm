@@ -4377,6 +4377,13 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_details = job_ptr->details;
 	details_new = job_ptr_pend->details;
 	memcpy(details_new, job_details, sizeof(struct job_details));
+
+	/*
+	 * Reset the preempt_start_time or high priority array jobs will hang
+	 * for a period before preempting more jobs.
+	 */
+	details_new->preempt_start_time = 0;
+
 	details_new->acctg_freq = xstrdup(job_details->acctg_freq);
 	if (job_details->argc) {
 		details_new->argv =
