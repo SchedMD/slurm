@@ -1680,12 +1680,14 @@ extern int init(void)
 	xfree(capmc_path);
 	capmc_poll_freq = 45;
 	capmc_timeout = DEFAULT_CAPMC_TIMEOUT;
+	xfree(cnselect_path);
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
 	for (i = 0; i < KNL_MCDRAM_CNT; i++)
 		mcdram_pct[i] = -1;
 	mcdram_set = 0;
+	xfree(syscfg_path);
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((stat(knl_conf_file, &stat_buf) == 0) &&

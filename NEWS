@@ -545,7 +545,9 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Add dynamic_offset in the database to force range for auto
     increment ids for the tres_table.
  -- Avoid setting node in COMPLETING state indefinitely if the job initiating
-    the node reboot is cancelled while the reboot in in progress. 
+    the node reboot is cancelled while the reboot in in progress.
+ -- node_feature/knl_cray - Fix memory leaks that occur when slurmctld
+    reconfigured.
 
 * Changes in Slurm 17.02.9
 ==========================
