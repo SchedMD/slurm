@@ -2000,6 +2000,7 @@ extern void *_queue_agent(void *args)
 			node_time_queue = (time_t) 0;
 			slurm_mutex_unlock(&queue_mutex);
 			(void) _update_node_state(node_list, true);
+			xfree(node_list);
 		}
 	}
 
