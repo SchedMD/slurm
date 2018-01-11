@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     in slurmstepd.
  -- node_feature/knl_cray - Fix memory leaks that occur when slurmctld
     reconfigured.
+ -- node_feature/knl_cray - Fix memory leak that can occur during normal
+    operation.
 
 * Changes in Slurm 17.11.2
 ==========================
