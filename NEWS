@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     to preempt other possible jobs.
  -- Change free_buffer to FREE_NULL_BUFFER to prevent possible double free
     in slurmstepd.
+ -- node_feature/knl_cray - Fix memory leaks that occur when slurmctld
+    reconfigured.
 
 * Changes in Slurm 17.11.2
 ==========================
