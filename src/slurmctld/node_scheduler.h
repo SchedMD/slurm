@@ -60,6 +60,9 @@ extern void build_active_feature_bitmap(struct job_record *job_ptr,
 					bitstr_t *avail_bitmap,
 					bitstr_t **active_bitmap);
 
+/* Return bitmap of nodes with all specified features currently active */
+extern bitstr_t *build_active_feature_bitmap2(char *reboot_features);
+
 /*
  * build_node_details - sets addresses for allocated nodes
  * IN job_ptr - pointer to a job record

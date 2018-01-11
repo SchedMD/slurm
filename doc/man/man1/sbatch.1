@@ -155,9 +155,14 @@ with features "haswell" and "knl" respectively.
 On such a configuration the batch script would normally benefit by executing
 on a faster Haswell node.
 This would be specified using the option "\-\-batch=haswell".
+The specification can include AND and OR operators using the ampersand and
+vertical bar separators. For example:
+"\-\-batch=haswell|broadwell" or "\-\-batch=haswell|big_memory".
 The \-\-batch argument must be a subset of the job's
 \fB\-\-constraint\fR=<\fIlist\fR> argument (i.e. the job can not request only
 KNL nodes, but require the script to execute on a Haswell node).
+If the request can not be satisifed from the resources allocated to the job,
+the batch script will execute on the first node of the job allocation.
 
 .TP
 \fB\-\-bb\fR=<\fIspec\fR>
@@ -295,6 +300,13 @@ For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
 of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
+.TP
+\fBParenthesis\fR
+Parenthesis can be used to group like node features together. For example
+"\fB\-\-constraint=[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
+that four nodes with the features "knl", "snc4" and "flat" plus one node with
+the feature "haswell" are required. All options within parenthesis should be
+grouped with AND (e.g. "&") operands.
 .RE
 
 .TP

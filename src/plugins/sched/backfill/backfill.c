@@ -202,7 +202,8 @@ static void _load_config(void);
 static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
 static uint32_t _my_sleep(int usec);
-static int  _num_feature_count(struct job_record *job_ptr, bool *has_xor);
+static int  _num_feature_count(struct job_record *job_ptr, bool *has_xand,
+			       bool *has_xor);
 static int  _pack_find_map(void *x, void *key);
 static void _pack_map_del(void *x);
 static void _pack_rec_del(void *x);
@@ -295,14 +296,23 @@ static bool _many_pending_rpcs(void)
 	return false;
 }
 
-/* test if job has feature count specification */
-static int _num_feature_count(struct job_record *job_ptr, bool *has_xor)
+/*
+ * Report summary of job's feature specification
+ * IN job_ptr - job to schedule
+ * OUT has_xand - true if features are XANDed together
+ * OUT has_xor - true if features are XORed together
+ * RET Total count for ALL job features, even counts with XAND separator
+ */
+static int _num_feature_count(struct job_record *job_ptr, bool *has_xand,
+			      bool *has_xor)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	int rc = 0;
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
 
+	*has_xand = false;
+	*has_xor = false;
 	if (detail_ptr->feature_list == NULL)	/* no constraints */
 		return rc;
 
@@ -310,6 +320,8 @@ static int _num_feature_count(struct job_record *job_ptr, bool *has_xor)
 	while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 		if (feat_ptr->count)
 			rc++;
+		if (feat_ptr->op_code == FEATURE_OP_XAND)
+			*has_xand = true;
 		if (feat_ptr->op_code == FEATURE_OP_XOR)
 			*has_xor = true;
 	}
@@ -326,7 +338,8 @@ static int _clear_qos_blocked_times(void *x, void *arg)
 	return 0;
 }
 
-/* Attempt to schedule a specific job on specific available nodes
+/*
+ * Attempt to schedule a specific job on specific available nodes
  * IN job_ptr - job to schedule
  * IN/OUT avail_bitmap - nodes available/selected to use
  * IN exc_core_bitmap - cores which can not be used
@@ -338,76 +351,112 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 {
 	bitstr_t *low_bitmap = NULL, *tmp_bitmap = NULL;
 	int rc = SLURM_SUCCESS;
-	bool has_xor = false;
-	int feat_cnt = _num_feature_count(job_ptr, &has_xor);
+	bool has_xand = false, has_xor = false;
+	int feat_cnt = _num_feature_count(job_ptr, &has_xand, &has_xor);
 	struct job_details *detail_ptr = job_ptr->details;
+	List feature_cache = detail_ptr->feature_list;
 	List preemptee_candidates = NULL;
 	List preemptee_job_list = NULL;
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
+	job_feature_t *feature_base;
 
-	if (feat_cnt) {
-		/* Ideally schedule the job feature by feature,
-		 * but I don't want to add that complexity here
-		 * right now, so clear the feature counts and try
-		 * to schedule. This will work if there is only
-		 * one feature count. It should work fairly well
-		 * in cases where there are multiple feature
-		 * counts. */
-		int i = 0, list_size;
-		uint16_t *feat_cnt_orig = NULL, high_cnt = 0;
-
-		/* Clear the feature counts */
-		list_size = list_count(detail_ptr->feature_list);
-		feat_cnt_orig = xmalloc(sizeof(uint16_t) * list_size);
-		feat_iter = list_iterator_create(detail_ptr->feature_list);
-		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
-			high_cnt = MAX(high_cnt, feat_ptr->count);
-			feat_cnt_orig[i++] = feat_ptr->count;
-			feat_ptr->count = 0;
-		}
-		list_iterator_destroy(feat_iter);
-
-		if ((job_req_node_filter(job_ptr, *avail_bitmap, true) !=
-		     SLURM_SUCCESS) ||
-		    (bit_set_count(*avail_bitmap) < high_cnt)) {
-			rc = ESLURM_NODES_BUSY;
-		} else {
-			preemptee_candidates =
-				slurm_find_preemptable_jobs(job_ptr);
-			rc = select_g_job_test(job_ptr, *avail_bitmap,
-					       high_cnt, max_nodes, req_nodes,
-					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates,
-					       &preemptee_job_list,
-					       exc_core_bitmap);
-			FREE_NULL_LIST(preemptee_job_list);
-		}
-
-		/* Restore the feature counts */
-		i = 0;
-		feat_iter = list_iterator_create(detail_ptr->feature_list);
-		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
-			feat_ptr->count = feat_cnt_orig[i++];
-		}
-		list_iterator_destroy(feat_iter);
-		xfree(feat_cnt_orig);
-	} else if (has_xor) {
-		/* Cache the feature information and test the individual
-		 * features, one at a time */
-		job_feature_t feature_base;
-		List feature_cache = detail_ptr->feature_list;
-		time_t low_start = 0;
-
-		detail_ptr->feature_list = list_create(NULL);
-		feature_base.count = 0;
-		feature_base.op_code = FEATURE_OP_END;
-		list_append(detail_ptr->feature_list, &feature_base);
+	if (has_xand || feat_cnt) {
+		/*
+		 * Cache the feature information and test the individual
+		 * features (or sets of features in parenthesis), one at a time
+		 */
+		time_t high_start = 0;
+		uint32_t feat_min_node;
 
 		tmp_bitmap = bit_copy(*avail_bitmap);
 		feat_iter = list_iterator_create(feature_cache);
 		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
-			feature_base.name = feat_ptr->name;
+			detail_ptr->feature_list =
+				list_create(feature_list_delete);
+			feature_base = xmalloc(sizeof(job_feature_t));
+			feature_base->name = xstrdup(feat_ptr->name);
+			feature_base->op_code = feat_ptr->op_code;
+			list_append(detail_ptr->feature_list, feature_base);
+			while ((feat_ptr->paren > 0) &&
+			       ((feat_ptr = (job_feature_t *)
+					    list_next(feat_iter)))) {
+				feature_base = xmalloc(sizeof(job_feature_t));
+				feature_base->name = xstrdup(feat_ptr->name);
+				feature_base->op_code = feat_ptr->op_code;
+				list_append(detail_ptr->feature_list,
+					    feature_base);
+			}
+			feature_base->op_code = FEATURE_OP_END;
+			feat_min_node = MAX(1, feature_base->count);
+
+			if ((job_req_node_filter(job_ptr, *avail_bitmap, true)
+			     == SLURM_SUCCESS) &&
+			    (bit_set_count(*avail_bitmap) >= feat_min_node)) {
+				preemptee_candidates =
+					slurm_find_preemptable_jobs(job_ptr);
+				rc = select_g_job_test(job_ptr, *avail_bitmap,
+						       feat_min_node, max_nodes,
+						       req_nodes,
+						       SELECT_MODE_WILL_RUN,
+						       preemptee_candidates,
+						       &preemptee_job_list,
+						       exc_core_bitmap);
+				FREE_NULL_LIST(preemptee_job_list);
+				if ((rc == SLURM_SUCCESS) &&
+				    ((high_start == 0) ||
+				     (high_start < job_ptr->start_time))) {
+					high_start = job_ptr->start_time;
+					low_bitmap = *avail_bitmap;
+					*avail_bitmap = NULL;
+				}
+			}
+			FREE_NULL_BITMAP(*avail_bitmap);
+			*avail_bitmap = bit_copy(tmp_bitmap);
+			list_destroy(detail_ptr->feature_list);
+		}
+		list_iterator_destroy(feat_iter);
+		FREE_NULL_BITMAP(tmp_bitmap);
+		if (high_start) {
+			job_ptr->start_time = high_start;
+			rc = SLURM_SUCCESS;
+			*avail_bitmap = low_bitmap;
+		} else {
+			rc = ESLURM_NODES_BUSY;
+			FREE_NULL_BITMAP(low_bitmap);
+		}
+
+		/* Restore the original feature information */
+		detail_ptr->feature_list = feature_cache;
+	} else if (has_xor) {
+		/*
+		 * Cache the feature information and test the individual
+		 * features (or sets of features in parenthesis), one at a time
+		 */
+		job_feature_t *feature_base;
+		List feature_cache = detail_ptr->feature_list;
+		time_t low_start = 0;
+
+		tmp_bitmap = bit_copy(*avail_bitmap);
+		feat_iter = list_iterator_create(feature_cache);
+		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+			detail_ptr->feature_list =
+				list_create(feature_list_delete);
+			feature_base = xmalloc(sizeof(job_feature_t));
+			feature_base->name = xstrdup(feat_ptr->name);
+			feature_base->op_code = feat_ptr->op_code;
+			list_append(detail_ptr->feature_list, feature_base);
+			while ((feat_ptr->paren > 0) &&
+			       ((feat_ptr = (job_feature_t *)
+					    list_next(feat_iter)))) {
+				feature_base = xmalloc(sizeof(job_feature_t));
+				feature_base->name = xstrdup(feat_ptr->name);
+				feature_base->op_code = feat_ptr->op_code;
+				list_append(detail_ptr->feature_list,
+					    feature_base);
+			}
+			feature_base->op_code = FEATURE_OP_END;
+
 			if ((job_req_node_filter(job_ptr, *avail_bitmap, true)
 			     == SLURM_SUCCESS) &&
 			    (bit_set_count(*avail_bitmap) >= min_nodes)) {
@@ -431,6 +480,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			}
 			FREE_NULL_BITMAP(*avail_bitmap);
 			*avail_bitmap = bit_copy(tmp_bitmap);
+			list_destroy(detail_ptr->feature_list);
 		}
 		list_iterator_destroy(feat_iter);
 		FREE_NULL_BITMAP(tmp_bitmap);
@@ -444,7 +494,6 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		}
 
 		/* Restore the original feature information */
-		list_destroy(detail_ptr->feature_list);
 		detail_ptr->feature_list = feature_cache;
 	} else if (detail_ptr->feature_list) {
 		if ((job_req_node_filter(job_ptr, *avail_bitmap, true) !=

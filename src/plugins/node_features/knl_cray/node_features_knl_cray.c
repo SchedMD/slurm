@@ -2552,43 +2552,67 @@ extern int node_features_p_job_valid(char *job_features)
 {
 	uint16_t job_mcdram, job_numa;
 	int mcdram_cnt, numa_cnt;
+	int last_mcdram_cnt = 0, last_numa_cnt = 0;
+	int rc = SLURM_SUCCESS;
+	char last_sep = '\0', *tmp, *tok, *save_ptr = NULL;
 
 	if ((job_features == NULL) || (job_features[0] == '\0'))
 		return SLURM_SUCCESS;
 
-	if (strchr(job_features, '[') ||	/* Unsupported operator */
-	    strchr(job_features, ']') ||
-	    strchr(job_features, '|') ||
-	    strchr(job_features, '*'))
-		return ESLURM_INVALID_KNL;
-	
-	job_mcdram = _knl_mcdram_parse(job_features, "&,");
-	mcdram_cnt = _knl_mcdram_bits_cnt(job_mcdram);
-	if (mcdram_cnt > 1)			/* Multiple MCDRAM options */
-		return ESLURM_INVALID_KNL;
+	tmp = xstrdup(job_features);
+	tok = strtok_r(tmp, "[]()|", &save_ptr);
+	while (tok) {
+		last_sep = tok[strlen(tok) - 1];
+		job_mcdram = _knl_mcdram_parse(tok, "&,*");
+		mcdram_cnt = _knl_mcdram_bits_cnt(job_mcdram) + last_mcdram_cnt;
+		if (mcdram_cnt > 1) {	/* Multiple ANDed MCDRAM options */
+			rc = ESLURM_INVALID_KNL;
+			break;
+		}
 
-	job_numa = _knl_numa_parse(job_features, "&,");
-	numa_cnt = _knl_numa_bits_cnt(job_numa);
-	if (numa_cnt > 1)			/* Multiple NUMA options */
-		return ESLURM_INVALID_KNL;
+		job_numa = _knl_numa_parse(tok, "&,*");
+		numa_cnt = _knl_numa_bits_cnt(job_numa) + last_numa_cnt;
+		if (numa_cnt > 1) {	/* Multiple ANDed NUMA options */
+			rc = ESLURM_INVALID_KNL;
+			break;
+		}
+		tok = strtok_r(NULL, "[]()|", &save_ptr);
+		if (tok &&
+		    ((last_sep == '&') ||	/* e.g. "equal&(flat|cache)" */
+		     (tok[0] == '&'))) {	/* e.g. "(flat|cache)&equal" */
+			last_mcdram_cnt += mcdram_cnt;
+			last_numa_cnt += numa_cnt;
+		} else {
+			last_mcdram_cnt = 0;
+			last_numa_cnt = 0;
+		}
+	}
+	xfree(tmp);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
-/* Translate a job's feature request to the node features needed at boot time */
+/*
+ * Translate a job's feature request to the node features needed at boot time.
+ *	If multiple MCDRAM or NUMA values are ORed, pick the first ones.
+ * IN job_features - job's --constraint specification
+ * RET features required on node reboot. Must xfree to release memory
+ */
 extern char *node_features_p_job_xlate(char *job_features)
 {
 	char *node_features = NULL;
-	char *tmp, *save_ptr = NULL, *sep = "", *tok;
+	char *tmp, *save_ptr = NULL, *mult, *sep = "", *tok;
 	bool has_numa = false, has_mcdram = false;
 
 	if ((job_features == NULL) || (job_features[0] ==  '\0'))
 		return node_features;
 
 	tmp = xstrdup(job_features);
-	tok = strtok_r(tmp, "&", &save_ptr);
+	tok = strtok_r(tmp, "[]()|&", &save_ptr);
 	while (tok) {
 		bool knl_opt = false;
+		if ((mult = strchr(tok, '*')))
+			mult[0] = '\0';
 		if (_knl_mcdram_token(tok)) {
 			if (!has_mcdram) {
 				has_mcdram = true;
@@ -2605,32 +2629,19 @@ extern char *node_features_p_job_xlate(char *job_features)
 			xstrfmtcat(node_features, "%s%s", sep, tok);
 			sep = ",";
 		}
-		tok = strtok_r(NULL, "&", &save_ptr);
+		tok = strtok_r(NULL, "[]()|&", &save_ptr);
 	}
 	xfree(tmp);
 
-	/*
-	 * No MCDRAM or NUMA features specified. This might be a non-KNL node.
-	 * In that case, do not set the default any MCDRAM or NUMA features.
-	 */
-	if (!has_mcdram && !has_numa)
-		return xstrdup(job_features);
-
-	/* Add default options */
-	if (!has_mcdram) {
-		tmp = _knl_mcdram_str(default_mcdram);
-		xstrfmtcat(node_features, "%s%s", sep, tmp);
-		sep = ",";
-		xfree(tmp);
-	}
-	if (!has_numa) {
-		tmp = _knl_numa_str(default_numa);
-		xstrfmtcat(node_features, "%s%s", sep, tmp);
-		// sep = ",";		Removed to avoid CLANG error
-		xfree(tmp);
-	}
-
 	return node_features;
+}
+
+/* Return bitmap of KNL nodes, NULL if none identified */
+extern bitstr_t *node_features_p_get_node_bitmap(void)
+{
+	if (knl_node_bitmap)
+		return bit_copy(knl_node_bitmap);
+	return NULL;
 }
 
 /* Return true if the plugin requires PowerSave mode for booting nodes */
@@ -2831,10 +2842,11 @@ extern bool node_features_p_changible_feature(char *feature)
  * IN new_features - newly active features
  * IN orig_features - original active features
  * IN avail_features - original available features
+ * IN node_inx - index of node in node table
  * RET node's new merged features, must be xfreed
  */
 extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
-					char *avail_features)
+					char *avail_features, int node_inx)
 {
 	char *node_features = NULL;
 	char *tmp, *save_ptr = NULL, *sep = "", *tok;

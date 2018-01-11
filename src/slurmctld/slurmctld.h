@@ -453,6 +453,9 @@ typedef struct job_feature {
 	char *name;			/* name of feature */
 	uint16_t count;			/* count of nodes with this feature */
 	uint8_t op_code;		/* separator, see FEATURE_OP_ above */
+	bitstr_t *node_bitmap_active;	/* nodes with this feature active */
+	bitstr_t *node_bitmap_avail;	/* nodes with this feature available */
+	uint16_t paren;			/* count of enclosing parenthesis */
 } job_feature_t;
 
 /*
@@ -498,8 +501,7 @@ struct job_details {
 	char *exc_nodes;		/* excluded nodes */
 	uint32_t expanding_jobid;	/* ID of job to be expanded */
 	char *extra;			/* extra field, unused */
-	List feature_list;		/* required features with
-					 * node counts */
+	List feature_list;		/* required features with node counts */
 	char *features;			/* required features */
 	uint32_t magic;			/* magic cookie for data integrity */
 	uint32_t max_cpus;		/* maximum number of cpus */
@@ -1780,6 +1782,11 @@ extern int load_all_part_state ( void );
 extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			   uint16_t protocol_version);
 
+/*
+ * Log contents of avail_feature_list and active_feature_list
+ */
+extern void log_feature_lists(void);
+
 /* make_node_alloc - flag specified node as allocated to a job
  * IN node_ptr - pointer to node being allocated
  * IN job_ptr  - pointer to job that is starting
@@ -2023,6 +2030,14 @@ extern int part_policy_valid_qos(
  * RET true if the partition is in use, else false
  */
 extern bool partition_in_use(char *part_name);
+
+/*
+ * Set "batch_host" for this job based upon it's "batch_features" and
+ * "node_bitmap". The selection is deferred in case a node's "active_features"
+ * is changed by a reboot.
+ * Return SLURM_SUCCESS or error code
+ */
+extern int pick_batch_host(struct job_record *job_ptr);
 
 /*
  * prolog_complete - note the normal termination of the prolog

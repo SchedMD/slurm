@@ -90,6 +90,11 @@ extern bool deadline_ok(struct job_record *job_ptr, char *func);
 extern void epilog_slurmctld(struct job_record *job_ptr);
 
 /*
+ * Delete a record from a job's feature_list
+ */
+extern void feature_list_delete(void *x);
+
+/*
  * job_is_completing - Determine if jobs are in the process of completing.
  * IN/OUT  eff_cg_bitmap - optional bitmap of all relevent completing nodes,
  *                         relevenace determined by filtering via CompleteWait
@@ -126,13 +131,15 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 			       struct job_record *job_ptr,
 			       uint16_t protocol_version);
 
-/* Determine which nodes must be rebooted for a job
+/*
+ * Determine which nodes must be rebooted for a job
  * IN job_ptr - pointer to job that will be initiated
- * RET bitmap of nodes requiring a reboot
+ * RET bitmap of nodes requiring a reboot for NodeFeaturesPlugin or NULL if none
  */
 extern bitstr_t *node_features_reboot(struct job_record *job_ptr);
 
-/* Determine if node boot required for this job
+/*
+ * Determine if node boot required for this job
  * IN job_ptr - pointer to job that will be initiated
  * IN node_bitmap - nodes to be allocated
  * RET - true if reboot required

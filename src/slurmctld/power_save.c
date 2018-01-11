@@ -64,6 +64,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -453,20 +454,32 @@ static void _do_power_work(time_t now)
 	}
 }
 
-/* power_job_reboot - Reboot compute nodes for a job from the head node */
+/*
+ * power_job_reboot - Reboot compute nodes for a job from the head node.
+ * Also change the modes of KNL nodes for node_features/knl_cray plugin.
+ * IN job_ptr - pointer to job that will be initiated
+ * RET SLURM_SUCCESS(0) or error code
+ */
 extern int power_job_reboot(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	int i, i_first, i_last;
 	struct node_record *node_ptr;
-	bitstr_t *boot_node_bitmap = NULL;
+	bitstr_t *boot_node_bitmap = NULL, *feature_node_bitmap = NULL;
 	time_t now = time(NULL);
-	char *nodes, *features = NULL;
+	char *nodes, *reboot_features = NULL;
 	pid_t pid;
 
-	boot_node_bitmap = node_features_reboot(job_ptr);
+/*
+ *	NOTE: See reboot_job_reboot() in job_scheduler.c for similar logic
+ *	used by node_features/knl_generic plugin.
+ */
+	if (job_ptr->reboot)
+		boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
+	else
+		boot_node_bitmap = node_features_reboot(job_ptr);
 	if (boot_node_bitmap == NULL) {
-		/* Powered down nodes require reboot */
+		/* At minimum, the powered down nodes require reboot */
 		if (bit_overlap(power_node_bitmap, job_ptr->node_bitmap)) {
 			job_ptr->job_state |= JOB_CONFIGURING;
 			job_ptr->bit_flags |= NODE_REBOOT;
@@ -474,6 +487,7 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 	}
 
+	/* Modify state information for all nodes, KNL and others */
 	i_first = bit_ffs(boot_node_bitmap);
 	if (i_first >= 0)
 		i_last = bit_fls(boot_node_bitmap);
@@ -496,32 +510,66 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		bit_set(resume_node_bitmap,  i);
 	}
 
-	nodes = bitmap2node_name(boot_node_bitmap);
-	if (nodes) {
-		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
-		job_ptr->job_state |= JOB_CONFIGURING;
-		job_ptr->wait_all_nodes = 1;
-		job_ptr->bit_flags |= NODE_REBOOT;
-		if (job_ptr->details && job_ptr->details->features &&
-		    node_features_g_user_update(job_ptr->user_id)) {
-			features = node_features_g_job_xlate(
+	if (job_ptr->details && job_ptr->details->features &&
+	    node_features_g_user_update(job_ptr->user_id)) {
+		reboot_features = node_features_g_job_xlate(
 					job_ptr->details->features);
+		if (reboot_features)
+			feature_node_bitmap = node_features_g_get_node_bitmap();
+		if (feature_node_bitmap)
+			bit_and(feature_node_bitmap, boot_node_bitmap);
+		if (!feature_node_bitmap ||
+		    (bit_ffs(feature_node_bitmap) == -1)) {
+			/* No KNL nodes to reboot */
+			FREE_NULL_BITMAP(feature_node_bitmap);
+		} else {
+			bit_and_not(boot_node_bitmap, feature_node_bitmap);
+			if (bit_ffs(boot_node_bitmap) == -1) {
+				/* No non-KNL nodes to reboot */
+				FREE_NULL_BITMAP(boot_node_bitmap);
+			}
 		}
-		pid = _run_prog(resume_prog, nodes, features, job_ptr->job_id);
-#if _DEBUG
-		info("power_save: pid %d reboot nodes %s features %s",
-		     (int) pid, nodes, features);
-#else
-		verbose("power_save: pid %d reboot nodes %s features %s",
-			(int) pid, nodes, features);
-#endif
-		xfree(features);
-	} else {
-		error("power_save: bitmap2nodename");
-		rc = SLURM_ERROR;
 	}
-	xfree(nodes);
+
+	if (feature_node_bitmap) {
+		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
+		nodes = bitmap2node_name(feature_node_bitmap);
+		if (nodes) {
+			job_ptr->job_state |= JOB_CONFIGURING;
+			job_ptr->wait_all_nodes = 1;
+			job_ptr->bit_flags |= NODE_REBOOT;
+			pid = _run_prog(resume_prog, nodes, reboot_features,
+					job_ptr->job_id);
+			info("%s: pid %d reboot nodes %s features %s",
+			     __func__, (int) pid, nodes, reboot_features);
+		} else {
+			error("%s: bitmap2nodename", __func__);
+			rc = SLURM_ERROR;
+		}
+		xfree(nodes);
+		FREE_NULL_BITMAP(feature_node_bitmap);
+	}
+//	if (boot_node_bitmap && job_ptr->reboot) {
+	if (boot_node_bitmap) {
+		/* Reboot nodes with no feature changes */
+		nodes = bitmap2node_name(boot_node_bitmap);
+		if (nodes) {
+			job_ptr->job_state |= JOB_CONFIGURING;
+			job_ptr->wait_all_nodes = 1;
+			job_ptr->bit_flags |= NODE_REBOOT;
+			pid = _run_prog(resume_prog, nodes, NULL,
+					job_ptr->job_id);
+			info("%s: pid %d reboot nodes %s",
+			     __func__, (int) pid, nodes);
+		} else {
+			error("%s: bitmap2nodename", __func__);
+			rc = SLURM_ERROR;
+		}
+		xfree(nodes);
+	}
 	FREE_NULL_BITMAP(boot_node_bitmap);
+	xfree(reboot_features);
+
 	last_node_update = now;
 
 	return rc;

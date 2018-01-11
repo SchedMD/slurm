@@ -44,6 +44,13 @@ documents those changes that are of interest to users and administrators.
     state.
  -- Properly report who is signaling a step.
  -- Don't combine updated reservation records in sreport's reservation report.
+ -- node_features plugin - Add suport for XOR & XAND of job constraints (node
+    feature specifications).
+ -- Add support for parenthesis in a job's constraint specification to group
+    like options together. For example
+    --constraint="[(knl&snc4&flat)*4&haswell*1]" might be used to specify that
+    four nodes with the features "knl", "snc4" and "flat" plus one node with
+    the feature "haswell" are required.
 
 * Changes in Slurm 17.11.3
 ==========================

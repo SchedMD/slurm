@@ -365,7 +365,6 @@ static int _slurm_crypto_fini(void)
 
 	init_run = false;
 	FREE_NULL_LIST(sbcast_cache_list);
-	sbcast_cache_list = NULL;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;

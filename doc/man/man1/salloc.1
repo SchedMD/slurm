@@ -256,6 +256,13 @@ For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
 of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
+.TP
+\fBParenthesis\fR
+Parenthesis can be used to group like node features together. For example
+"\fB\-\-constraint=[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
+that four nodes with the features "knl", "snc4" and "flat" plus one node with
+the feature "haswell" are required. All options within parenthesis should be
+grouped with AND (e.g. "&") operands.
 .RE
 
 .TP
@@ -1797,7 +1804,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010\-2015 SchedMD LLC.
+Copyright (C) 2010\-2017 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

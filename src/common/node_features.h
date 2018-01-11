@@ -63,9 +63,16 @@ extern int node_features_g_get_node(char *node_list);
 /* Test if a job's feature specification is valid */
 extern int node_features_g_job_valid(char *job_features);
 
-/* Translate a job's feature specification to node boot options
- * RET node boot options, must be xfreed */
+/*
+ * Translate a job's feature request to the node features needed at boot time.
+ *	If multiple MCDRAM or NUMA values are ORed, pick the first ones.
+ * IN job_features - job's --constraint specification
+ * RET features required on node reboot. Must xfree to release memory
+ */
 extern char *node_features_g_job_xlate(char *job_features);
+
+/* Return bitmap of KNL nodes, NULL if none identified */
+extern bitstr_t *node_features_g_get_node_bitmap(void);
 
 /* Return true if the plugin requires PowerSave mode for booting nodes */
 extern bool node_features_g_node_power(void);
@@ -106,10 +113,11 @@ extern bool node_features_g_node_update_valid(void *node_ptr,
  * IN new_features - newly active features
  * IN orig_features - original active features
  * IN avail_features - original available features
+ * IN node_inx - index of node in node table
  * RET node's new merged features, must be xfreed
  */
 extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
-					char *avail_features);
+					char *avail_features, int node_inx);
 
 /* Translate a node's new feature specification into a "standard" ordering
  * RET node's new merged features, must be xfreed */

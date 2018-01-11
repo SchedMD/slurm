@@ -1400,7 +1400,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 		if (update_node_msg->features_act) {
 			tmp_feature = node_features_g_node_xlate(
 					update_node_msg->features_act,
-					orig_features_act, node_ptr->features);
+					orig_features_act, node_ptr->features,
+					node_inx);
 			xfree(node_ptr->features_act);
 			node_ptr->features_act = tmp_feature;
 			error_code = _update_node_active_features(
@@ -2285,7 +2286,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 
 	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
-	node_ptr = find_node_record (reg_msg->node_name);
+	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
 	node_inx = node_ptr - node_record_table_ptr;
@@ -2339,7 +2340,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		}
 		node_ptr->features = node_features_g_node_xlate(
 					reg_msg->features_avail,
-					orig_features, orig_features);
+					orig_features, orig_features,
+					node_inx);
 		(void) _update_node_avail_features(node_ptr->name,
 						   node_ptr->features);
 	}
@@ -2348,7 +2350,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		tmp_feature = node_features_g_node_xlate(
 						reg_msg->features_active,
 						orig_features_act,
-						orig_features);
+						orig_features,
+						node_inx);
 		xfree(node_ptr->features_act);
 		node_ptr->features_act = tmp_feature;
 		(void) _update_node_active_features(node_ptr->name,

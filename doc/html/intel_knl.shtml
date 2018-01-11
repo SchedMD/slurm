@@ -26,10 +26,10 @@ resources). Also note that the job will be charged for resources from the time
 of resource allocation, which may include time to reboot a node into the
 desired NUMA and MCDRAM configuration.</p>
 
-<p>While Slurm generally supports a very rich set of options for the node
-constraint options (exclusive OR, node counts for each constraint, etc.),
-only a simple AND operation is supported for KNL systems (specified using a
-comma or ampersand separator between specified constraints).
+<p>Slurm supports a very rich set of options for the node constraint options
+(exclusive OR, node counts for each constraint, etc.).
+See the man pages for the salloc, sbatch and srun commands for more information
+about the constraint syntax.
 Jobs may specify their desired NUMA and/or MCDRAM configuration. If no
 NUMA and/or MCDRAM configuration is specified, then a node with any possible
 value for that configuration will be used.</p>
@@ -343,6 +343,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 October 2017</p>
+<p style="text-align:center;">Last modified 11 December 2017</p>
 
 <!--#include virtual="footer.txt"-->

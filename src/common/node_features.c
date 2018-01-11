@@ -61,6 +61,7 @@ typedef struct node_features_ops {
 	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
+	bitstr_t * (*get_node_bitmap) (void);
 	bool	(*node_power)	(void);
 	int	(*node_set)	(char *active_features);
 	void	(*node_state)	(char **avail_modes, char **current_mode);
@@ -68,7 +69,7 @@ typedef struct node_features_ops {
 	bool	(*node_update_valid) (void *node_ptr,
 				      update_node_msg_t *update_node_msg);
 	char *	(*node_xlate)	(char *new_features, char *orig_features,
-				 char *avail_features);
+				 char *avail_features, int node_inx);
 	char *	(*node_xlate2)	(char *new_features);
 	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
 	int	(*reconfig)	(void);
@@ -85,6 +86,7 @@ static const char *syms[] = {
 	"node_features_p_get_node",
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
+	"node_features_p_get_node_bitmap",
 	"node_features_p_node_power",
 	"node_features_p_node_set",
 	"node_features_p_node_state",
@@ -287,8 +289,12 @@ extern int node_features_g_job_valid(char *job_features)
 	return rc;
 }
 
-/* Translate a job's feature specification to node boot options
- * RET node boot options, must be xfreed */
+/*
+ * Translate a job's feature request to the node features needed at boot time.
+ *	If multiple MCDRAM or NUMA values are ORed, pick the first ones.
+ * IN job_features - job's --constraint specification
+ * RET features required on node reboot. Must xfree to release memory
+ */
 extern char *node_features_g_job_xlate(char *job_features)
 {
 	DEF_TIMERS;
@@ -313,6 +319,27 @@ extern char *node_features_g_job_xlate(char *job_features)
 	END_TIMER2("node_features_g_job_xlate");
 
 	return node_features;
+}
+
+/* Return bitmap of KNL nodes, NULL if none identified */
+extern bitstr_t *node_features_g_get_node_bitmap(void)
+{
+	DEF_TIMERS;
+	bitstr_t *node_bitmap = NULL;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		node_bitmap = (*(ops[i].get_node_bitmap))();
+		if (node_bitmap)
+			break;
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_get_node_bitmap");
+
+	return node_bitmap;
 }
 
 /* Return true if the plugin requires PowerSave mode for booting nodes */
@@ -435,10 +462,11 @@ extern bool node_features_g_node_update_valid(void *node_ptr,
  * IN new_features - newly active features
  * IN orig_features - original active features
  * IN avail_features - original available features
+ * IN node_inx - index of node in node table
  * RET node's new merged features, must be xfreed
  */
 extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
-					char *avail_features)
+					char *avail_features, int node_inx)
 {
 	DEF_TIMERS;
 	char *new_value = NULL, *tmp_str;
@@ -459,7 +487,7 @@ extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 		else
 			tmp_str = NULL;
 		new_value = (*(ops[i].node_xlate))(new_features, tmp_str,
-						   avail_features);
+						   avail_features, node_inx);
 		xfree(tmp_str);
 
 	}
