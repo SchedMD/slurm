@@ -1153,25 +1153,40 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 	char *path, *fullpath = NULL;
 
 #if defined HAVE_BG
-	/* BGQ's runjob command required a fully qualified path */
-	if (((cmd[0] == '.') || (cmd[0] == '/')) &&
-	    (access(cmd, access_mode) == 0)) {
-		if (cmd[0] == '.')
-			xstrfmtcat(fullpath, "%s/", cwd);
-		xstrcat(fullpath, cmd);
+	/* BGQ's runjob command requires always a fully qualified path */
+	/* Relative path */
+	if (cmd[0] == '.') {
+		char *cmd1 = xstrdup_printf("%s/%s", cwd, cmd);
+		if (access(cmd1, access_mode) == 0)
+			xstrcat(fullpath, cmd1);
+		xfree(cmd1);
+		goto done;
+	}
+	/* Absolute path */
+	if (cmd[0] == '/') {
+		if (access(cmd, access_mode) == 0)
+			xstrcat(fullpath, cmd);
 		goto done;
 	}
 #else
-	if ((cmd[0] == '.') || (cmd[0] == '/')) {
-		if (test_exec && (access(cmd, access_mode) == 0)) {
-			if (cmd[0] == '.')
-				xstrfmtcat(fullpath, "%s/", cwd);
-			xstrcat(fullpath, cmd);
+	/* Relative path */
+	if (cmd[0] == '.') {
+		if (test_exec) {
+			char *cmd1 = xstrdup_printf("%s/%s", cwd, cmd);
+			if (access(cmd1, access_mode) == 0)
+				xstrcat(fullpath, cmd1);
+			xfree(cmd1);
 		}
 		goto done;
 	}
+	/* Absolute path */
+	if (cmd[0] == '/') {
+		if (test_exec && (access(cmd, access_mode) == 0))
+			xstrcat(fullpath, cmd);
+		goto done;
+	}
 #endif
-
+	/* Otherwise search in PATH */
 	l = _create_path_list();
 	if (l == NULL)
 		return NULL;
@@ -1181,7 +1196,10 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 
 	i = list_iterator_create(l);
 	while ((path = list_next(i))) {
-		xstrfmtcat(fullpath, "%s/%s", path, cmd);
+		if (path[0] == '.')
+			xstrfmtcat(fullpath, "%s/%s/%s", cwd, path, cmd);
+		else
+			xstrfmtcat(fullpath, "%s/%s", path, cmd);
 
 		if (access(fullpath, access_mode) == 0)
 			goto done;

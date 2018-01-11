@@ -2473,7 +2473,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	    (sropt.argc > command_pos)) {
 		if ((fullpath = search_path(opt.cwd,
 					    sropt.argv[command_pos],
-					    false, X_OK, test_exec))) {
+					    true, X_OK, test_exec))) {
 			xfree(sropt.argv[command_pos]);
 			sropt.argv[command_pos] = fullpath;
 		}
@@ -2483,8 +2483,9 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	(void) launch_g_handle_multi_prog_verify(command_pos, &opt);
 
 	if (!sropt.multi_prog && (test_exec || sropt.bcast_flag)) {
+
 		if ((fullpath = search_path(opt.cwd, sropt.argv[command_pos],
-					    false, X_OK, true))) {
+					    true, X_OK, true))) {
 			xfree(sropt.argv[command_pos]);
 			sropt.argv[command_pos] = fullpath;
 		} else {
