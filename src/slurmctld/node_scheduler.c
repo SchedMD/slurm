@@ -1180,6 +1180,13 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			bool sort_again = false;
 			if (last_paren_cnt < feat_ptr->paren) {
 				/* Start of expression in parenthesis */
+				if (paren_bitmap) {
+					error("%s@%d: Job %u has bad feature expression: %s",
+					      __func__, __LINE__,
+					      job_ptr->job_id,
+					      job_ptr->details->features);
+					bit_free(paren_bitmap);
+				}
 				paren_bitmap =
 					bit_copy(feat_ptr->node_bitmap_avail);
 				last_paren_opt = feat_ptr->op_code;
@@ -1363,8 +1370,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		}
 		list_iterator_destroy(feat_iter);
 		if (paren_bitmap) {
-			error("%s: Job %u has bad feature expression: %s",
-			      __func__, job_ptr->job_id,
+			error("%s@%d: Job %u has bad feature expression: %s",
+			      __func__, __LINE__, job_ptr->job_id,
 			      job_ptr->details->features);
 			bit_free(paren_bitmap);
 		}
