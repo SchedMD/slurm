@@ -126,7 +126,6 @@
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
 #define LONG_OPT_USAGE       0x101
-#define LONG_OPT_XTO         0x102
 #define LONG_OPT_BCAST       0x103
 #define LONG_OPT_TIMEO       0x104
 #define LONG_OPT_JOBID       0x105
@@ -308,7 +307,6 @@ struct option long_options[] = {
 	{"launcher-opts",    required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
 	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
-	{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
 	{"mcs-label",        required_argument, 0, LONG_OPT_MCS_LABEL},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
@@ -780,7 +778,6 @@ static void _opt_default(void)
 		sropt.job_name_set_env	= false;
 		sropt.kill_bad_exit	= NO_VAL;
 		sropt.labelio		= false;
-		sropt.max_exit_timeout	= 60; /* Warn user 60 sec after task exit */
 		sropt.max_wait		= slurm_get_wait_time();
 		xfree(opt.mcs_label);
 		/* Default launch msg timeout           */
@@ -1836,12 +1833,6 @@ static void _set_options(const int argc, char **argv)
 			sropt.msg_timeout =
 				_get_int(optarg, "msg-timeout", true);
 			break;
-		case LONG_OPT_XTO:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			sropt.max_exit_timeout =
-				_get_int(optarg, "max-exit-timeout", true);
-			break;
 		case LONG_OPT_UID:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -2832,12 +2823,6 @@ static bool _opt_verify(void)
 		error("Thread value exceeds defined limit, reset to %d",
 		      MAX_THREADS);
 	}
-
-	/*
-	 * --wait always overrides hidden max_exit_timeout
-	 */
-	if (sropt.max_wait)
-		sropt.max_exit_timeout = sropt.max_wait;
 
 	if (opt.time_limit_str) {
 		opt.time_limit = time_str2mins(opt.time_limit_str);

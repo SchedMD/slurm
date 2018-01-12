@@ -145,7 +145,6 @@ typedef struct srun_opt {
 	char *launcher_opts;		/* --launcher-opts commands to be sent
 					 * to the external launcher command if
 					 * not SLURM */
-	int max_exit_timeout;		/* undocumented			*/
 	int32_t max_threads;		/* --threads			*/
 	int max_wait;			/* --wait			*/
 	int msg_timeout;		/* undocumented			*/
