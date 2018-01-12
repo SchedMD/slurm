@@ -67,7 +67,7 @@
 /* Given a program name, translate it to a fully qualified pathname
  * as needed based upon the PATH environment variable */
 static char *
-_build_path(char* fname)
+_build_path(const char * cwd, char* fname)
 {
 	int i;
 	char *path_env = NULL, *dir = NULL, *ptrptr = NULL;
@@ -88,6 +88,12 @@ _build_path(char* fname)
 	/* check if already absolute path */
 	if ((file_name[0] == '/') || (file_name[0] == '.'))
 		return file_name;
+
+	/* search for the file using cwd*/
+	snprintf(file_path, sizeof(file_path), "%s/%s", cwd, file_name);
+	if ((stat(file_path, &buf) == 0)
+	    && (! S_ISDIR(buf.st_mode)))
+		return file_path;
 
 	/* search for the file using PATH environment variable */
 	dir = getenv("PATH");
@@ -135,12 +141,12 @@ _set_range(int low_num, int high_num, char *exec_name, bool ignore_duplicates)
 }
 
 static void
-_set_exec_names(char *ranks, char *exec_name, int ntasks)
+_set_exec_names(char *ranks, const char *cwd, char *exec_name, int ntasks)
 {
 	char *ptrptr = NULL, *exec_path = NULL;
 	int low_num, high_num, num, i;
 
-	exec_path = _build_path(exec_name);
+	exec_path = _build_path(cwd, exec_name);
 	if ((ranks[0] == '*') && (ranks[1] == '\0')) {
 		low_num = 0;
 		high_num = ntasks - 1;
@@ -180,7 +186,7 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 }
 
 extern int
-mpir_set_multi_name(int ntasks, const char *config_fname)
+mpir_set_multi_name(int ntasks, const char *config_fname, const char * cwd)
 {
 	FILE *config_fd;
 	char line[BUF_SIZE];
@@ -245,7 +251,7 @@ mpir_set_multi_name(int ntasks, const char *config_fname)
 			fclose(config_fd);
 			return -1;
 		}
-		_set_exec_names(ranks, exec_name, ntasks);
+		_set_exec_names(ranks, cwd, exec_name, ntasks);
 	}
 	fclose(config_fd);
 	return 0;
