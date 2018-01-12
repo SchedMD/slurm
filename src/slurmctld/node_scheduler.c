@@ -1250,6 +1250,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				if (bit_equal(prev_node_set_ptr->my_bitmap,
 					      inactive_bitmap)) {
 					prev_node_set_ptr->weight = INFINITE;
+					FREE_NULL_BITMAP(inactive_bitmap);
 					continue;
 				}
 				tmp_node_set_ptr[tmp_node_set_size].
