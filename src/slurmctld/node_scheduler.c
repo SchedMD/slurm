@@ -3227,6 +3227,12 @@ static bool _valid_feature_counts(struct job_record *job_ptr,
 			/* Start of expression in parenthesis */
 			last_paren_op = last_op;
 			last_op = FEATURE_OP_AND;
+			if (paren_bitmap) {
+				error("%s: Job %u has bad feature expression: %s",
+				      __func__, job_ptr->job_id,
+				      detail_ptr->features);
+				bit_free(paren_bitmap);
+			}
 			paren_bitmap = bit_copy(node_bitmap);
 			work_bitmap = paren_bitmap;
 		}
