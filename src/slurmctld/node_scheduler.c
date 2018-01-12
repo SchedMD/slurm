@@ -3967,7 +3967,7 @@ extern int pick_batch_host(struct job_record *job_ptr)
 	if (job_ptr->batch_host)
 		return SLURM_SUCCESS;
 
-	if (!job_ptr && !job_ptr->node_bitmap) {
+	if (!job_ptr->node_bitmap) {
 		error("%s: Job %u lacks a node_bitmap", __func__,
 		      job_ptr->job_id);
 		return SLURM_ERROR;
