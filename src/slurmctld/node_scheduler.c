@@ -4022,6 +4022,7 @@ extern int pick_batch_host(struct job_record *job_ptr)
 		tok = tmp + i + 1;
 		last_sep = sep;
 	}
+	xfree(tmp);
 
 	bit_and(feature_bitmap, job_ptr->node_bitmap);
 	if ((i = bit_ffs(feature_bitmap)) >= 0)
