@@ -21,6 +21,9 @@ documents those changes that are of interest to users and administrators.
  -- node_feature/knl_cray - Fix memory leak that can occur during normal
     operation.
  -- Fix srun environment variables for --prolog script.
+ -- Fix job array dependency with "aftercorr" option and some task arrays in
+    the first job fail. This fix lets all task array elements that can run
+    proceed rather than stopping all subsequent task array elements.
 
 * Changes in Slurm 17.11.2
 ==========================
