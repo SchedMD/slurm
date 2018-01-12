@@ -2716,7 +2716,11 @@ extern int test_job_dependency(struct job_record *job_ptr)
 						depends = true;
 					else if (array_complete)
 						clear_dep = true;
-					else {
+					else if (job_ptr->array_recs &&
+						 (job_ptr->array_task_id ==
+						  NO_VAL)) {
+						depends = true;
+					} else {
 						failure = true;
 						break;
 					}
