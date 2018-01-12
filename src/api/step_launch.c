@@ -243,6 +243,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	if (params->pack_jobid && (params->pack_jobid != NO_VAL))
 		_rebuild_mpi_layout(ctx, params);
 
+	mpi_env = xmalloc(sizeof(char *));  /* Needed for setenvf used by MPI */
 	if ((ctx->launch_state->mpi_state =
 	     mpi_hook_client_prelaunch(ctx->launch_state->mpi_info, &mpi_env))
 	    == NULL) {
