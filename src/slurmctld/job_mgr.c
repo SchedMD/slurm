@@ -184,7 +184,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
-static int  _dump_job_state(void *x, void *y);
+static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  Buf buffer);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
@@ -679,6 +679,8 @@ int dump_all_job_state(void)
 	/* Locks: Read config and job */
 	slurmctld_lock_t job_read_lock =
 		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
 	Buf buffer = init_buf(high_buffer_size);
 	time_t now = time(NULL);
 	time_t last_state_file_time;
@@ -719,7 +721,12 @@ int dump_all_job_state(void)
 
 	/* write individual job records */
 	lock_slurmctld(job_read_lock);
-	list_for_each(job_list, _dump_job_state, buffer);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		_dump_job_state(job_ptr, buffer);
+	}
+	list_iterator_destroy(job_iterator);
+
 
 	/* write the buffer to file */
 	old_file = xstrdup(slurmctld_conf.state_save_location);
@@ -1172,10 +1179,8 @@ unpack_error:
  * IN dump_job_ptr - pointer to job for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-static int _dump_job_state(void *x, void *arg)
+static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 {
-	struct job_record *dump_job_ptr = (struct job_record *) x;
-	Buf buffer = (Buf) arg;
 	struct job_details *detail_ptr;
 	uint32_t tmp_32;
 
@@ -1336,8 +1341,6 @@ static int _dump_job_state(void *x, void *arg)
 	_dump_job_fed_details(dump_job_ptr->fed_details, buffer);
 
 	packstr(dump_job_ptr->origin_cluster, buffer);
-
-	return 0;
 }
 
 /* Unpack a job's state information from a buffer */
@@ -9306,15 +9309,6 @@ static void _pack_job(struct job_record *job_ptr,
 	(*pack_info->jobs_packed)++;
 }
 
-static int _foreach_pack_job_ptr(void *object, void *arg)
-{
-	struct job_record *job_ptr = (struct job_record *)object;
-
-	_pack_job(job_ptr, (_foreach_pack_job_info_t *)arg);
-
-	return SLURM_SUCCESS;
-}
-
 static int _foreach_pack_jobid(void *object, void *arg)
 {
 	struct job_record *job_ptr;
@@ -9349,6 +9343,8 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	uint32_t jobs_packed = 0, tmp_offset;
 	_foreach_pack_job_info_t pack_info = {0};
 	Buf buffer;
+	ListIterator itr;
+	struct job_record *job_ptr = NULL;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -9368,7 +9364,11 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	pack_info.show_flags       = show_flags;
 	pack_info.uid              = uid;
 
-	list_for_each(job_list, _foreach_pack_job_ptr, &pack_info);
+	itr = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(itr))) {
+		_pack_job(job_ptr, &pack_info);
+	}
+	list_iterator_destroy(itr);
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
@@ -14178,6 +14178,7 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  * All pending batch jobs must have script and environment files
  * No other jobs should have such files
  * NOTE: READ lock_slurmctld config before entry
+ * NOTE: WRITE lock_slurmctld jobs before entry
  */
 int sync_job_files(void)
 {
