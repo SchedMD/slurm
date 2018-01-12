@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     reconfigured.
  -- node_feature/knl_cray - Fix memory leak that can occur during normal
     operation.
+ -- Fix srun environment variables for --prolog script.
 
 * Changes in Slurm 17.11.2
 ==========================
