@@ -596,9 +596,8 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 		env->ws_row   = job->ws_row;
 	}
 
-	env->env = env_array_copy((const char **) environ);
 	setup_env(env, srun_opt->preserve_env);
-	job->env = env->env;
+	job->env = environ;
 	xfree(env->task_count);
 	xfree(env);
 }
