@@ -623,13 +623,13 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		slurm_opt_t *opt_dup;
 		opt_dup = xmalloc(sizeof(slurm_opt_t));
 		memcpy(opt_dup, &opt, sizeof(slurm_opt_t));
+		opt_dup->burst_buffer = xstrdup(opt.burst_buffer);
 		opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
 		opt_dup->srun_opt->argv = xmalloc(sizeof(char *) * sropt.argc);
 		for (i = 0; i < sropt.argc; i++)
 			opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
 		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
 		opt_dup->srun_opt->bcast_file = xstrdup(sropt.bcast_file);
-		opt_dup->srun_opt->burst_buffer = xstrdup(sropt.burst_buffer);
 		opt_dup->srun_opt->ckpt_dir = xstrdup(sropt.ckpt_dir);
 		opt_dup->srun_opt->ckpt_interval_str =
 			xstrdup(sropt.ckpt_interval_str);
