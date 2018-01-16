@@ -872,12 +872,12 @@ static void _opt_default(void)
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
 	sropt.cpu_bind_type_set		= false;
-	sropt.exclusive			= false;
 	opt.cpu_freq_min		= NO_VAL;
 	opt.cpu_freq_max		= NO_VAL;
 	opt.cpu_freq_gov		= NO_VAL;
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
+	sropt.exclusive			= false;
 	opt.extra_set			= false;
 	/* opt.geometry[i]		= 0;	See above */
 	opt.gres			= NULL;
