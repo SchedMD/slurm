@@ -620,32 +620,57 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	bit_free(pack_grp_bits);
 
 	if (opt_list && pending_append) {		/* Last record */
+		/*
+		 * Copy the last option record:
+		 * Copy strings if the original values will be preserved and
+		 *   reused for additional heterogeneous job/steps
+		 * Otherwise clear/NULL the pointer so it does not get re-used
+		 *   and freed, which will render the copied pointer bad
+		 */
 		slurm_opt_t *opt_dup;
 		opt_dup = xmalloc(sizeof(slurm_opt_t));
 		memcpy(opt_dup, &opt, sizeof(slurm_opt_t));
-		opt_dup->burst_buffer = xstrdup(opt.burst_buffer);
 		opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
+		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
+		sropt.alloc_nodelist = NULL;	/* Moved by memcpy */
 		opt_dup->srun_opt->argv = xmalloc(sizeof(char *) * sropt.argc);
 		for (i = 0; i < sropt.argc; i++)
 			opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
-		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
-		opt_dup->srun_opt->bcast_file = xstrdup(sropt.bcast_file);
+		sropt.bcast_file = NULL;	/* Moved by memcpy */
+		opt.blrtsimage = NULL;		/* Moved by memcpy */
+		opt.burst_buffer = NULL;	/* Moved by memcpy */
 		opt_dup->srun_opt->ckpt_dir = xstrdup(sropt.ckpt_dir);
 		opt_dup->srun_opt->ckpt_interval_str =
 			xstrdup(sropt.ckpt_interval_str);
 		opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
+		opt.constraints = NULL;		/* Moved by memcpy */
+		sropt.cpu_bind = NULL;		/* Moved by memcpy */
 		opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
 		opt_dup->srun_opt->efname = xstrdup(sropt.efname);
 		opt_dup->srun_opt->epilog = xstrdup(sropt.epilog);
 		opt_dup->srun_opt->export_env = xstrdup(sropt.export_env);
-		opt_dup->srun_opt->hostfile = xstrdup(sropt.hostfile);
+		opt.gres = NULL;		/* Moved by memcpy */
+		opt.hint_env = NULL;		/* Moved by memcpy */
+		sropt.hostfile = NULL;		/* Moved by memcpy */
 		opt_dup->srun_opt->ifname = xstrdup(sropt.ifname);
 		opt_dup->srun_opt->ofname = xstrdup(sropt.ofname);
 		opt_dup->srun_opt->launcher_opts = xstrdup(sropt.launcher_opts);
-		opt_dup->srun_opt->pack_group = xstrdup(sropt.pack_group);
+		sropt.launcher_opts = NULL;	/* Moved by memcpy */
+		opt.licenses = NULL;		/* Moved by memcpy */
+		opt.linuximage = NULL;		/* Moved by memcpy */
+		opt.mail_user = NULL;		/* Moved by memcpy */
+		opt.mem_bind = NULL;		/* Moved by memcpy */
+		opt.mloaderimage = NULL;	/* Moved by memcpy */
+		opt.network = NULL;		/* Moved by memcpy */
+		opt.nodelist = NULL;		/* Moved by memcpy */
+		sropt.pack_group = NULL;	/* Moved by memcpy */
+		sropt.pack_grp_bits = NULL;	/* Moved by memcpy */
+		opt.partition = NULL;		/* Moved by memcpy */
 		opt_dup->srun_opt->prolog = xstrdup(sropt.prolog);
 		opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
-		opt_dup->srun_opt->restart_dir = xstrdup(sropt.restart_dir);
+		opt.ramdiskimage = NULL;	/* Moved by memcpy */
+		sropt.restart_dir = NULL;	/* Moved by memcpy */
+		opt.spank_job_env = NULL;	/* Moved by memcpy */
 		opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
 		opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
 
@@ -846,7 +871,8 @@ static void _opt_default(void)
 
 	/*
 	 * All other options must be specified individually for each component
-	 * of the job. Do not use xfree() as the pointers have been copied
+	 * of the job/step. Do not use xfree() as the pointers have been copied.
+	 * See initialize_and_process_args() above.
 	 */
 	sropt.alloc_nodelist		= NULL;
 	sropt.accel_bind_type		= 0;
@@ -860,7 +886,6 @@ static void _opt_default(void)
 		opt.geometry[i]		= 0;
 	}
 	sropt.compress			= 0;
-
 	opt.constraints			= NULL;
 	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
@@ -869,12 +894,12 @@ static void _opt_default(void)
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
 	sropt.cpu_bind_type_set		= false;
-	sropt.exclusive			= false;
 	opt.cpu_freq_min		= NO_VAL;
 	opt.cpu_freq_max		= NO_VAL;
 	opt.cpu_freq_gov		= NO_VAL;
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
+	sropt.exclusive			= false;
 	opt.extra_set			= false;
 	/* opt.geometry[i]		= 0;	See above */
 	opt.gres			= NULL;
