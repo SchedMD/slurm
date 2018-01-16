@@ -261,6 +261,8 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 	case 't':  /* '%t' => taskid         */
 		xmemcat(*name, *q, *p - offset);
 		if (!double_p) {
+			if (job->pack_task_offset != NO_VAL)
+				taskid += job->pack_task_offset;
 			xstrfmtcat(*name, "%0*u", wid, taskid);
 			(*p)++;
 		}
