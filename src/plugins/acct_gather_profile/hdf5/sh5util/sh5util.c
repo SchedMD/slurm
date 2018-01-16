@@ -303,6 +303,7 @@ static void _remove_empty_output(void)
 	 * the program failed somewhere along the
 	 * way and the file is just left hanging...
 	 */
+	info("Output file generated is empty, removing it: %s", params.output);
 	if ((sb.st_size == 0) &&
 	    (remove(params.output) == -1))
 		error("%s: remove(%s): %m", __func__, params.output);

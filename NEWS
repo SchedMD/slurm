@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Fix issue for multi-dimensional machines when using sacct to
     find jobs that ran on specific nodes.
  -- Reject --acctg-freq at submit if invalid.
+ -- Added info string on sh5util when deleting an empty file.
 
 * Changes in Slurm 17.11.2
 ==========================
