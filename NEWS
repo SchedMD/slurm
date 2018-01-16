@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     the first job fail. This fix lets all task array elements that can run
     proceed rather than stopping all subsequent task array elements.
  -- Fix potential deadlock in the slurmctld when using list_for_each.
+ -- Fix for possible memory corruption in srun when running heterogeneous job
+    steps.
 
 * Changes in Slurm 17.11.2
 ==========================
