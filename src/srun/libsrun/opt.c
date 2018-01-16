@@ -624,17 +624,38 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		opt_dup = xmalloc(sizeof(slurm_opt_t));
 		memcpy(opt_dup, &opt, sizeof(slurm_opt_t));
 		opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
+		opt_dup->srun_opt->argv = xmalloc(sizeof(char *) * sropt.argc);
+		for (i = 0; i < sropt.argc; i++)
+			opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
 		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
+		opt_dup->srun_opt->bcast_file = xstrdup(sropt.bcast_file);
+		opt_dup->srun_opt->burst_buffer = xstrdup(sropt.burst_buffer);
+		opt_dup->srun_opt->ckpt_dir = xstrdup(sropt.ckpt_dir);
+		opt_dup->srun_opt->ckpt_interval_str =
+			xstrdup(sropt.ckpt_interval_str);
 		opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
+		opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
+		opt_dup->srun_opt->efname = xstrdup(sropt.efname);
+		opt_dup->srun_opt->epilog = xstrdup(sropt.epilog);
+		opt_dup->srun_opt->export_env = xstrdup(sropt.export_env);
+		opt_dup->srun_opt->hostfile = xstrdup(sropt.hostfile);
+		opt_dup->srun_opt->ifname = xstrdup(sropt.ifname);
+		opt_dup->srun_opt->ofname = xstrdup(sropt.ofname);
+		opt_dup->srun_opt->launcher_opts = xstrdup(sropt.launcher_opts);
 		opt_dup->srun_opt->pack_group = xstrdup(sropt.pack_group);
+		opt_dup->srun_opt->prolog = xstrdup(sropt.prolog);
+		opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
+		opt_dup->srun_opt->restart_dir = xstrdup(sropt.restart_dir);
+		opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
+		opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
 
 		list_append(opt_list, opt_dup);
 		pending_append = false;
 	}
 
 	return 1;
-
 }
+
 static int _get_task_count(void)
 {
 	char *cpus_per_node = NULL, *end_ptr = NULL;
