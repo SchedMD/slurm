@@ -57,13 +57,10 @@ extern int  mpir_set_multi_name(int ntasks, const char *config_fname);
  * Verify that we have a valid executable program specified for each task
  *	when the --multi-prog option is used.
  * IN config_name - MPMD configuration file name
- * IN/OUT ntasks - number of tasks to launch
- * IN/OUT ntasks_set - true if task count explicitly set by user
- * OUT ncmds - number of commands
+ * IN/OUT opt_local - slurm options
  * RET 0 on success, -1 otherwise
  */
-extern int verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
-			     int32_t *ncmds);
+extern int verify_multi_name(char *config_fname, slurm_opt_t *opt_local);
 
 #endif
 

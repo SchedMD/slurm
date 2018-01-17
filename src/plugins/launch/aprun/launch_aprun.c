@@ -236,9 +236,7 @@ static void _handle_multi_prog(char *in_file, int *command_pos,
 	int count = 0;
 	xassert(srun_opt);
 
-	if (verify_multi_name(in_file, &opt_local->ntasks,
-			      &opt_local->ntasks_set,
-			      &srun_opt->multi_prog_cmds))
+	if (verify_multi_name(in_file, opt_local))
 		exit(error_exit);
 
 	fp = fopen(in_file, "r");

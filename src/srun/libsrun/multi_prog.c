@@ -58,6 +58,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/proc_args.h"
 
 #include "debugger.h"
 #include "multi_prog.h"
@@ -322,7 +323,7 @@ mpir_dump_proctable(void)
 }
 
 static int
-_update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
+_update_task_mask(int low_num, int high_num, slurm_opt_t *opt_local,
 		  bitstr_t **task_mask, bool ignore_duplicates)
 {
 	int i;
@@ -335,16 +336,17 @@ _update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
 		error("Invalid task id, %d < 0", low_num);
 		return -1;
 	}
-	if (high_num >= *ntasks) {
+	if (high_num >= opt_local->ntasks) {
 		static bool i_set_ntasks = false;
-		if (*ntasks_set && !i_set_ntasks) {
+		if (opt_local->ntasks_set && !i_set_ntasks) {
 			error("Invalid task id, %d >= ntasks", high_num);
 			return -1;
 		} else {
-			*ntasks = high_num + 1;
-			*ntasks_set = true;
+			opt_local->ntasks = high_num + 1;
+			opt_local->ntasks_set = true;
 			i_set_ntasks = true;
-			(*task_mask) = bit_realloc((*task_mask), *ntasks);
+			(*task_mask) = bit_realloc((*task_mask),
+						   opt_local->ntasks);
 		}
 	}
 	for (i=low_num; i<=high_num; i++) {
@@ -360,8 +362,7 @@ _update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
 }
 
 static int
-_validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
-		bitstr_t **task_mask)
+_validate_ranks(char *ranks, slurm_opt_t *opt_local, bitstr_t **task_mask)
 {
 	static bool has_asterisk = false;
 	char *range = NULL, *p = NULL;
@@ -370,11 +371,11 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
 
 	if (ranks[0] == '*' && ranks[1] == '\0') {
 		low_num = 0;
-		high_num = *ntasks - 1;
-		*ntasks_set = true;	/* do not allow to change later */
+		high_num = opt_local->ntasks - 1;
+		opt_local->ntasks_set = true; /* do not allow to change later */
 		has_asterisk = true;	/* must be last MPMD spec line */
-		(*ncmds)++;
-		return _update_task_mask(low_num, high_num, ntasks, ntasks_set,
+		opt_local->srun_opt->multi_prog_cmds++;
+		return _update_task_mask(low_num, high_num, opt_local,
 					 task_mask, true);
 	}
 
@@ -384,7 +385,7 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
 		 * Non-contiguous tasks are split into multiple commands
 		 * in the mpmd_set so count each token separately
 		 */
-		(*ncmds)++;
+		opt_local->srun_opt->multi_prog_cmds++;
 		p = range;
 		while (*p != '\0' && isdigit (*p))
 			p ++;
@@ -412,7 +413,7 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
 			return -1;
 		}
 
-		if (_update_task_mask(low_num, high_num, ntasks, ntasks_set,
+		if (_update_task_mask(low_num, high_num, opt_local,
 				      task_mask, false))
 			return -1;
 	}
@@ -423,14 +424,11 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
  * Verify that we have a valid executable program specified for each task
  *	when the --multi-prog option is used.
  * IN config_name - MPMD configuration file name
- * IN/OUT ntasks - number of tasks to launch
- * IN/OUT ntasks_set - true if task count explicitly set by user
- * OUT ncmds - number of commands
+ * IN/OUT opt_local - slurm options
  * RET 0 on success, -1 otherwise
  */
 extern int
-verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
-		  int32_t *ncmds)
+verify_multi_name(char *config_fname, slurm_opt_t *opt_local)
 {
 	FILE *config_fd;
 	char line[BUF_SIZE];
@@ -440,12 +438,12 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
 	int line_len;
 	bitstr_t *task_mask;
 
-	if (*ntasks <= 0) {
-		error("Invalid task count %d", *ntasks);
+	if (opt_local->ntasks <= 0) {
+		error("Invalid task count %d", opt_local->ntasks);
 		return -1;
 	}
 
-	*ncmds = 0;
+	opt_local->srun_opt->multi_prog_cmds = 0;
 
 	config_fd = fopen(config_fname, "r");
 	if (config_fd == NULL) {
@@ -453,7 +451,7 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
 		return -1;
 	}
 
-	task_mask = bit_alloc(*ntasks);
+	task_mask = bit_alloc(opt_local->ntasks);
 	while (fgets(line, sizeof(line), config_fd)) {
 		line_num++;
 		line_len = strlen(line);
@@ -492,8 +490,7 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
 			rc = -1;
 			goto fini;
 		}
-		if (_validate_ranks(ranks, ntasks, ntasks_set, ncmds,
-				    &task_mask)) {
+		if (_validate_ranks(ranks, opt_local, &task_mask)) {
 			error("Line %d of configuration file %s invalid",
 				line_num, config_fname);
 			rc = -1;
@@ -501,7 +498,7 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
 		}
 	}
 
-	for (i = 0; i < *ntasks; i++) {
+	for (i = 0; i < opt_local->ntasks; i++) {
 		if (!bit_test(task_mask, i)) {
 			error("Configuration file %s invalid, "
 				"no record for task id %d",

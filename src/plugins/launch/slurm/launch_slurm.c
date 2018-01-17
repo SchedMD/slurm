@@ -555,10 +555,7 @@ extern int launch_p_handle_multi_prog_verify(int command_pos,
 			exit(error_exit);
 		}
 		_load_multi(&srun_opt->argc, srun_opt->argv);
-		if (verify_multi_name(srun_opt->argv[command_pos],
-				      &opt_local->ntasks,
-				      &opt_local->ntasks_set,
-				      &srun_opt->multi_prog_cmds))
+		if (verify_multi_name(srun_opt->argv[command_pos], opt_local))
 			exit(error_exit);
 		return 1;
 	} else
