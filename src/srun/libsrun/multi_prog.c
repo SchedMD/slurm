@@ -496,6 +496,13 @@ verify_multi_name(char *config_fname, slurm_opt_t *opt_local)
 			rc = -1;
 			goto fini;
 		}
+		if (opt_local->srun_opt->test_exec &&
+		    !search_path(opt_local->cwd, exec_name, true, X_OK, true)) {
+			error("Line %d of configuration file %s, program %s not executable",
+			      line_num, config_fname, exec_name);
+			rc = -1;
+			goto fini;
+		}
 	}
 
 	for (i = 0; i < opt_local->ntasks; i++) {

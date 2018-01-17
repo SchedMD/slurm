@@ -852,6 +852,7 @@ static void _opt_default(void)
 		xfree(sropt.task_epilog);
 		xfree(sropt.task_prolog);
 		sropt.test_only		= false;
+		sropt.test_exec		= false;
 		opt.time_limit		= NO_VAL;
 		xfree(opt.time_limit_str);
 		opt.time_min		= NO_VAL;
@@ -2397,7 +2398,6 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	int i, command_pos = 0, command_args = 0;
 	char **rest = NULL;
 	char *fullpath, *launch_params;
-	bool test_exec = false;
 
 	sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
 	bit_set(sropt.pack_grp_bits, pack_offset);
@@ -2497,11 +2497,11 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	sropt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (getenv("SLURM_TEST_EXEC")) {
-		test_exec = true;
+		sropt.test_exec = true;
 	} else {
 		launch_params = slurm_get_launch_params();
 		if (launch_params && strstr(launch_params, "test_exec"))
-			test_exec = true;
+			sropt.test_exec = true;
 		xfree(launch_params);
 	}
 #if defined HAVE_BG
@@ -2510,7 +2510,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	    (sropt.argc > command_pos)) {
 		if ((fullpath = search_path(opt.cwd,
 					    sropt.argv[command_pos],
-					    true, X_OK, test_exec))) {
+					    true, X_OK, sropt.test_exec))) {
 			xfree(sropt.argv[command_pos]);
 			sropt.argv[command_pos] = fullpath;
 		}
@@ -2519,7 +2519,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	/* may exit() if an error with the multi_prog script */
 	(void) launch_g_handle_multi_prog_verify(command_pos, &opt);
 
-	if (!sropt.multi_prog && (test_exec || sropt.bcast_flag)) {
+	if (!sropt.multi_prog && (sropt.test_exec || sropt.bcast_flag)) {
 
 		if ((fullpath = search_path(opt.cwd, sropt.argv[command_pos],
 					    true, X_OK, true))) {

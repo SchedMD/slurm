@@ -173,6 +173,7 @@ typedef struct srun_opt {
 	int slurmd_debug;		/* --slurmd-debug		*/
 	char *task_epilog;		/* --task-epilog		*/
 	char *task_prolog;		/* --task-prolog		*/
+	bool test_exec;			/* test_exec set		*/
 	bool test_only;			/* --test-only			*/
 	bool unbuffered;		/* --unbuffered			*/
 	bool user_managed_io;		/* 0 for "normal" IO,		*/
