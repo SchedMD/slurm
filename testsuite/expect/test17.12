@@ -40,7 +40,8 @@ set test_part   "test$test_id\_part"
 set feat1       "test$test_id\_gpu"
 set feat2       "test$test_id\_mic"
 array set nodes {}
-array set def_node_feat {}
+array set def_active_node_feat {}
+array set def_avail_node_feat  {}
 
 print_header $test_id
 
@@ -197,7 +198,7 @@ proc sub_job_xor {nnode fail_test} {
 proc set_node_feature {node_name new_feature} {
 	global scontrol exit_code
 
-	spawn $scontrol update node=$node_name AvailableFeatures=$new_feature
+	spawn $scontrol update node=$node_name AvailableFeatures=$new_feature ActiveFeatures=$new_feature
 	expect {
 		timeout {
 			send_user "\nFAILURE: scontrol is not responding\n"
@@ -210,7 +211,7 @@ proc set_node_feature {node_name new_feature} {
 }
 
 proc clean_up {} {
-	global test_part scontrol def_node_feat nodes exit_code
+	global test_part scontrol def_active_node_feat def_avail_node_feat nodes exit_code
 
 	spawn $scontrol delete partition=$test_part
 	expect {
@@ -226,7 +227,7 @@ proc clean_up {} {
 	# Reset nodes back to normal
 	foreach option [array names nodes] {
 		set node $nodes($option)
-		spawn $scontrol update node=$node AvailableFeatures=$def_node_feat($node)
+		spawn $scontrol update node=$node AvailableFeatures=$def_avail_node_feat($node) ActiveFeatures=$def_active_node_feat($node)
 		expect {
 			timeout {
 				send_user "\nFAILURE: scontrol is not responding\n"
@@ -287,7 +288,9 @@ if {[test_super_user] == 0 || [string compare [test_node_features_plugin] ""]} {
 	exit $exit_code
 }
 
+#
 # Run job to get available nodes
+#
 log_user 0
 set job_id 0
 set srun_pid [spawn $srun -N1-4 -t1 -l printenv SLURM_JOB_ID]
@@ -356,11 +359,17 @@ foreach option [array names nodes] {
 	# Save the original features that are on the node.
 	log_user 0
 	set node $nodes($option)
-	set def_node_feat($node) ""
+	set def_active_node_feat($node) ""
+	set def_avail_node_feat($node)  ""
 	spawn $bin_bash -c "$scontrol show node $node | $bin_grep Features"
 	expect {
 		-re "AvailableFeatures=($alpha_numeric_comma)" {
-			set def_node_feat($node) $expect_out(1,string)
+			set def_avail_node_feat($node) $expect_out(1,string)
+			incr node_save
+			exp_continue
+		}
+		-re "ActiveFeatures=($alpha_numeric_comma)" {
+			set def_active_node_feat($node) $expect_out(1,string)
 			incr node_save
 			exp_continue
 		}
