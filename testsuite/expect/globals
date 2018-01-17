@@ -1987,6 +1987,13 @@ proc test_node_features_plugin { } {
 			set type $expect_out(1,string)
 			exp_continue
 		}
+		-re "null" {
+			exp_continue
+		}
+		-re "($alpha_numeric_under)" {
+			set type $expect_out(1,string)
+			exp_continue
+		}
 		eof {
 			wait
 		}

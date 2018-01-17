@@ -554,7 +554,7 @@ proc sub_job_xor {nnode fail_test} {
 proc set_node_feature {node_name new_feature} {
 	global scontrol exit_code
 
-	spawn $scontrol update node=$node_name ActiveFeatures=$new_feature AvailableFeatures=$new_feature
+	spawn $scontrol update node=$node_name AvailableFeatures=$new_feature ActiveFeatures=$new_feature
 	expect {
 		timeout {
 			send_user "\nFAILURE: scontrol is not responding\n"
@@ -583,7 +583,7 @@ proc clean_up {} {
 	# Reset nodes back to normal
 	foreach option [array names nodes] {
 		set node $nodes($option)
-		spawn $scontrol update node=$node ActiveFeatures=$def_active_node_feat($node) AvailableFeatures=$def_avail_node_feat($node)
+		spawn $scontrol update node=$node AvailableFeatures=$def_avail_node_feat($node) ActiveFeatures=$def_active_node_feat($node)
 		expect {
 			timeout {
 				send_user "\nFAILURE: scontrol is not responding\n"
@@ -645,7 +645,9 @@ if {[test_super_user] == 0 || [string compare [test_node_features_plugin] ""]} {
 	exit $exit_code
 }
 
+#
 # Run job to get available nodes
+#
 log_user 0
 set job_id 0
 set srun_pid [spawn $srun -N1-4 -t1 -l printenv SLURM_JOB_ID]

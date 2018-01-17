@@ -106,11 +106,11 @@ make_bash_script $file_in "
 
   $bin_date
   $bin_echo test3_n4_cyclic
-  $srun -n4 --distribution=cyclic ./$test_prog
+  $srun -n4 -N1-4 --distribution=cyclic ./$test_prog
 
   $bin_date
   $bin_echo test4_n4_block
-  $srun -n4 --distribution=block  ./$test_prog
+  $srun -n4 -N1-4 --distribution=block  ./$test_prog
 
   $bin_date
   $bin_echo TEST_COMPLETE
