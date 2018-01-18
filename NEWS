@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Fix potential abort when attempting to make an account a parent of
     itself.
  -- Fix potentially uninitialized variable in slurmctld.
+ -- MYSQL - Fix issue for multi-dimensional machines when using sacct to
+    find jobs that ran on specific nodes.
 
 * Changes in Slurm 17.11.2
 ==========================

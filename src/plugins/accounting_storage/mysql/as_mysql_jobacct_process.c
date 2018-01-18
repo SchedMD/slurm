@@ -1132,8 +1132,8 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		local_cluster->asked_bitmap =
 			bit_alloc(hostlist_count(local_cluster->hl));
 		while ((host = hostlist_next_dims(h_itr, dims))) {
-			if ((loc = hostlist_find(
-				     local_cluster->hl, host)) != -1)
+			if ((loc = hostlist_find_dims(
+				     local_cluster->hl, host, dims)) != -1)
 				bit_set(local_cluster->asked_bitmap, loc);
 			free(host);
 		}
