@@ -2465,6 +2465,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t req_nodes, uint32_t cr_node_cnt,
 			uint16_t *cpu_cnt, uint16_t cr_type)
 {
+	bitstr_t  *switch_use_bitmap = NULL;	/* leaf switches used */
 	bitstr_t **switches_bitmap = NULL;	/* nodes on this switch */
 	int       *switches_cpu_cnt = NULL;	/* total CPUs on switch */
 	int       *switches_node_cnt = NULL;	/* total nodes on switch */
@@ -2517,6 +2518,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Construct a set of switch array entries,
 	 * use the same indexes as switch_record_table in slurmctld */
+	switch_use_bitmap = bit_alloc(switch_record_cnt);
 	switches_bitmap   = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
 	switches_cpu_cnt  = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
@@ -2739,8 +2741,9 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (best_fit_nodes == 0)
 			break;
 
-		leaf_switch_count++;
 		/* Use select nodes from this leaf */
+		bit_set(switch_use_bitmap, best_fit_location);
+		leaf_switch_count = bit_set_count(switch_use_bitmap);
 		first = bit_ffs(switches_bitmap[best_fit_location]);
 		last  = bit_fls(switches_bitmap[best_fit_location]);
 
@@ -2840,7 +2843,8 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			min_rem_nodes--;
 			max_nodes--;
 			rem_cpus -= bfsize;
-			break;
+			if (job_ptr->req_switch != 1)
+				break;
 		}		
 
 		/* free best-switch nodes available cpus array */
@@ -2860,6 +2864,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			FREE_NULL_BITMAP(switches_bitmap[i]);
 		}
 	}
+	FREE_NULL_BITMAP(switch_use_bitmap);
 	xfree(switches_bitmap);
 	xfree(switches_cpu_cnt);
 	xfree(switches_node_cnt);
