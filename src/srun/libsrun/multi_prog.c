@@ -438,7 +438,7 @@ verify_multi_name(char *config_fname, slurm_opt_t *opt_local)
 {
 	FILE *config_fd;
 	char line[BUF_SIZE];
-	char *ranks, *exec_name, *p, *ptrptr;
+	char *ranks, *exec_name, *p, *ptrptr, *fullpath = NULL;
 	int line_num = 0, i, rc = 0;
 	bool last_line_break = false, line_break = false;
 	int line_len;
@@ -503,12 +503,14 @@ verify_multi_name(char *config_fname, slurm_opt_t *opt_local)
 			goto fini;
 		}
 		if (opt_local->srun_opt->test_exec &&
-		    !search_path(opt_local->cwd, exec_name, true, X_OK, true)) {
+		    !(fullpath = search_path(
+			      opt_local->cwd, exec_name, true, X_OK, true))) {
 			error("Line %d of configuration file %s, program %s not executable",
 			      line_num, config_fname, exec_name);
 			rc = -1;
 			goto fini;
 		}
+		xfree(fullpath);
 	}
 
 	for (i = 0; i < opt_local->ntasks; i++) {
