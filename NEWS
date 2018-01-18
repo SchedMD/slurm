@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
     heterogeneous job step.
  -- MYSQL - Fix potential abort when attempting to make an account a parent of
     itself.
+ -- Fix potentially uninitialized variable in slurmctld.
 
 * Changes in Slurm 17.11.2
 ==========================
