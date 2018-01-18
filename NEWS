@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix output file containing "%t" (task ID) for heterogeneous job step to
     be based upon global task ID rather than task ID for that component of the
     heterogeneous job step.
+ -- MYSQL - Fix potential abort when attempting to make an account a parent of
+    itself.
 
 * Changes in Slurm 17.11.2
 ==========================
