@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potentially uninitialized variable in slurmctld.
  -- MYSQL - Fix issue for multi-dimensional machines when using sacct to
     find jobs that ran on specific nodes.
+ -- Reject --acctg-freq at submit if invalid.
 
 * Changes in Slurm 17.11.2
 ==========================

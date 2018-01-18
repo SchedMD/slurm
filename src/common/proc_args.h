@@ -194,4 +194,6 @@ extern uint32_t parse_resv_flags(const char *flagstr, const char *msg);
 
 extern uint16_t parse_compress_type(const char *arg);
 
+extern int validate_acctg_freq(char *acctg_freq);
+
 #endif /* !_PROC_ARGS_H */

@@ -1312,6 +1312,8 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_ACCTG_FREQ:
 			xfree(opt.acctg_freq);
+			if (validate_acctg_freq(optarg))
+				exit(1);
 			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_NOSHELL:
