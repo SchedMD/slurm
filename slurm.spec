@@ -108,11 +108,7 @@ BuildRequires: pkgconfig
 BuildRequires: perl(ExtUtils::MakeMaker)
 
 %if %{with lua}
-%if %{defined suse_version}
-BuildRequires: lua51-devel
-%else
-BuildRequires: lua-devel
-%endif
+BuildRequires: pkgconfig(lua) >= 5.1.0
 %endif
 
 %if %{with hwloc}
