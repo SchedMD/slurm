@@ -74,6 +74,7 @@ typedef struct node_features_ops {
 	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
 	int	(*reconfig)	(void);
 	bool	(*user_update)	(uid_t uid);
+	void	(*get_config)	(List *data);
 } node_features_ops_t;
 
 /*
@@ -96,7 +97,8 @@ static const char *syms[] = {
 	"node_features_p_node_xlate2",
 	"node_features_p_step_config",
 	"node_features_p_reconfig",
-	"node_features_p_user_update"
+	"node_features_p_user_update",
+	"node_features_p_get_config"
 };
 
 static int g_context_cnt = -1;
@@ -564,4 +566,25 @@ extern uint32_t node_features_g_boot_time(void)
 	END_TIMER2("node_features_g_user_update");
 
 	return boot_time;
+}
+
+/* Get node features plugin configuration */
+extern List node_features_g_get_config(void)
+{
+	DEF_TIMERS;
+	int i, rc;
+	List node_features_conf_l = list_create(destroy_config_key_pair);
+
+	START_TIMER;
+	rc = node_features_g_init();
+
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		(*(ops[i].get_config))(&node_features_conf_l);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+
+	END_TIMER2("node_features_g_get_config");
+
+	return node_features_conf_l;
 }

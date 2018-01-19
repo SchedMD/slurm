@@ -6459,6 +6459,21 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->msg_timeout, buffer);
 
 		pack32(build_ptr->next_job_id, buffer);
+		if (build_ptr->node_features_conf)
+			count = list_count(build_ptr->node_features_conf);
+		else
+			count = NO_VAL;
+		pack32(count, buffer);
+		if (count && (count != NO_VAL)) {
+			ListIterator itr = list_iterator_create(
+				(List)build_ptr->node_features_conf);
+			config_key_pair_t *key_pair = NULL;
+			while ((key_pair = list_next(itr))) {
+				pack_config_key_pair(key_pair,
+						     protocol_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
 		packstr(build_ptr->node_features_plugins, buffer);
 		packstr(build_ptr->node_prefix, buffer);
 
@@ -7383,6 +7398,23 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->msg_timeout, buffer);
 
 		safe_unpack32(&build_ptr->next_job_id, buffer);
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			List tmp_list = list_create(destroy_config_key_pair);
+			config_key_pair_t *object = NULL;
+			int i;
+			for (i = 0; i < count; i++) {
+				if (unpack_config_key_pair(
+					    (void *)&object, protocol_version,
+					    buffer)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(tmp_list, object);
+			}
+			build_ptr->node_features_conf = (void *)tmp_list;
+		}
 		safe_unpackstr_xmalloc(&build_ptr->node_features_plugins,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->node_prefix,

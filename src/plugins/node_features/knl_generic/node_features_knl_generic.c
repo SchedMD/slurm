@@ -2037,3 +2037,76 @@ extern uint32_t node_features_p_boot_time(void)
 {
 	return boot_time;
 }
+
+/* Get node features plugin configuration */
+extern void node_features_p_get_config(List *data)
+{
+	config_key_pair_t *key_pair;
+
+	xassert(*data);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AllowMCDRAM");
+	key_pair->value = xstrdup_printf("%s", _knl_mcdram_str(allow_mcdram));
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AllowNUMA");
+	key_pair->value = xstrdup_printf("%s", _knl_numa_str(allow_numa));
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AllowUserBoot");
+	key_pair->value = xstrdup_printf("%s",
+				_make_uid_str(allowed_uid, allowed_uid_cnt));
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BootTime");
+	key_pair->value = xstrdup_printf("%u", boot_time);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("DefaultMCDRAM");
+	key_pair->value = xstrdup_printf("%s", _knl_mcdram_str(default_mcdram));
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("DefaultNUMA");
+	key_pair->value = xstrdup_printf("%s", _knl_numa_str(default_numa));
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("Force");
+	key_pair->value = xstrdup_printf("%u", force_load);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("McPath");
+	key_pair->value = xstrdup_printf("%s", mc_path);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SyscfgPath");
+	key_pair->value = xstrdup_printf("%s", syscfg_path);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SyscfgTimeout");
+	key_pair->value = xstrdup_printf("%u", syscfg_timeout);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SystemType");
+	key_pair->value = xstrdup_printf("%s", _knl_system_type_str(knl_system_type));
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("UmeCheckInterval");
+	key_pair->value = xstrdup_printf("%u", ume_check_interval);
+	list_append(*data, key_pair);
+
+	list_sort(*data, (ListCmpF) sort_key_pairs);
+
+	return;
+}

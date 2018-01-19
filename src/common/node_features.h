@@ -135,4 +135,7 @@ extern bool node_features_g_user_update(uid_t uid);
 /* Return estimated reboot time, in seconds */
 extern uint32_t node_features_g_boot_time(void);
 
+/* Get node features plugin configuration */
+extern List node_features_g_get_config(void);
+
 #endif /* !_NODE_FEATURES_H */

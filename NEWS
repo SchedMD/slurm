@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
  -- Improvements to how srun searches for the executible when using cwd.
  -- Now programs can be checked before execution if test_exec is set when using
     multi-prog option.
+ -- Report NodeFeatures plugin configuration with scontrol and sview commands.
 
 * Changes in Slurm 17.11.3
 ==========================
