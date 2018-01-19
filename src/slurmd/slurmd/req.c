@@ -4139,8 +4139,10 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 
 	/* first block must register the file and open fd/mmap */
 	if (req->block_no == 1) {
-		if ((rc = _file_bcast_register_file(msg, cred_arg, &key)))
+		if ((rc = _file_bcast_register_file(msg, cred_arg, &key))) {
+			sbcast_cred_arg_free(cred_arg);
 			return rc;
+		}
 	}
 	sbcast_cred_arg_free(cred_arg);
 
