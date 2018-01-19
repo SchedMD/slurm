@@ -6323,9 +6323,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		if (build_ptr->acct_gather_conf)
 			count = list_count(build_ptr->acct_gather_conf);
-
+		else
+			count = NO_VAL;
 		pack32(count, buffer);
-		if (count && count != NO_VAL) {
+		if (count && (count != NO_VAL)) {
 			ListIterator itr = list_iterator_create(
 				(List)build_ptr->acct_gather_conf);
 			config_key_pair_t *key_pair = NULL;
@@ -6335,7 +6336,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
@@ -6374,9 +6374,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		if (build_ptr->ext_sensors_conf)
 			count = list_count(build_ptr->ext_sensors_conf);
-
+		else
+			count = NO_VAL;
 		pack32(count, buffer);
-		if (count && count != NO_VAL) {
+		if (count && (count != NO_VAL)) {
 			ListIterator itr = list_iterator_create(
 				(List)build_ptr->ext_sensors_conf);
 			config_key_pair_t *key_pair = NULL;
@@ -6386,7 +6387,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
@@ -6519,9 +6519,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->select_type, buffer);
 		if (build_ptr->select_conf_key_pairs)
 			count = list_count(build_ptr->select_conf_key_pairs);
-
+		else
+			count = NO_VAL;
 		pack32(count, buffer);
-		if (count && count != NO_VAL) {
+		if (count && (count != NO_VAL)) {
 			ListIterator itr = list_iterator_create(
 				(List)build_ptr->select_conf_key_pairs);
 			config_key_pair_t *key_pair = NULL;
@@ -6656,9 +6657,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		if (build_ptr->ext_sensors_conf)
 			count = list_count(build_ptr->ext_sensors_conf);
-
 		pack32(count, buffer);
-		if (count && count != NO_VAL) {
+		if (count && (count != NO_VAL)) {
 			ListIterator itr = list_iterator_create(
 				(List)build_ptr->ext_sensors_conf);
 			config_key_pair_t *key_pair = NULL;
@@ -6799,11 +6799,11 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->sched_time_slice, buffer);
 		packstr(build_ptr->schedtype, buffer);
 		packstr(build_ptr->select_type, buffer);
+
 		if (build_ptr->select_conf_key_pairs)
 			count = list_count(build_ptr->select_conf_key_pairs);
-
 		pack32(count, buffer);
-		if (count && count != NO_VAL) {
+		if (count && (count != NO_VAL)) {
 			ListIterator itr = list_iterator_create(
 				(List)build_ptr->select_conf_key_pairs);
 			config_key_pair_t *key_pair = NULL;
@@ -6813,6 +6813,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			}
 			list_iterator_destroy(itr);
 		}
+		count = NO_VAL;
 
 		pack16(build_ptr->select_type_param, buffer);
 
