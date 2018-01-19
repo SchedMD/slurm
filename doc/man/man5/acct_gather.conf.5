@@ -131,6 +131,108 @@ Task (I/O, Memory, ...) data is collected.
 
 .RE
 .RE
+.TP
+\fBProfileInfluxDB\fR
+Options used for AcctGatherProfileType/influxdb are as follows:
+
+.RS
+.TP 10
+\fBProfileInfluxDBDatabase\fR
+InfluxDB database name where profiling information is to be written.
+
+.TP
+\fBProfileInfluxDBDefault\fR
+A comma delimited list of data types to be collected for each job submission.
+Allowed values are:
+
+.RS
+.TP 8
+\fBAll\fR
+All data types are collected. (Cannot be combined with other values.)
+
+.TP
+\fBNone\fR
+No data types are collected. This is the default.
+(Cannot be combined with other values.)
+
+.TP
+\fBEnergy\fR
+Energy data is collected.
+
+.TP
+\fBFilesystem\fR
+File system (Lustre) data is collected.
+
+.TP
+\fBNetwork\fR
+Network (InfiniBand) data is collected.
+
+.TP
+\fBTask\fR
+Task (I/O, Memory, ...) data is collected.
+.RE
+
+.TP
+\fBProfileInfluxDBHost\fR=<hostname>:<port>
+The hostname of the machine where the influxd instance is executed and the port
+used by the HTTP API. The port used by the HTTP API is the one configured
+through the bind-address influxdb.conf option in the [http] section. Example:
+
+ProfileInfluxDBHost=myinfluxhost:8086
+
+.TP
+\fBProfileInfluxDBPass\fR
+Optional password for username configured in ProfileInfluxDBUser.
+
+.TP
+\fBProfileInfluxDBRTPolicy\fR
+The InfluxDB retention policy name for the database configured in
+ProfileInfluxDBDatabase option.
+
+.TP
+\fBProfileInfluxDBUser\fR
+Optinal InfluxDB username that should be used to gain access to the database
+configured in ProfileInfluxDBDatabase. This is only needed InfluxDB is
+configured with authentication enabled in the [http] config section and a user
+has been granted at least WRITE access to the database. See also
+ProfileInfluxDBPass.
+.RE
+
+.TP
+NOTE:
+This plugin requires the libcurl development files to be installed.
+.TP
+NOTE:
+Information on how to install and configure InfluxDB and manage databases,
+retention policies and such is available on the official webpage.
+.TP
+NOTE:
+Collected information is written from every compute node where a job runs to
+the influxd instance listening on the ProfileInfluxDBHost. In order to avoid
+overloading the influxd instance with incoming connection requests, the plugin
+uses an internal buffer which is filled with samples. Once the buffer is full, a
+HTTP API write request is performed and the buffer is emptied to hold subsequent
+samples. A final request is also performed when a task ends even if the buffer
+isn't full.
+.TP
+NOTE:
+Failed HTTP API write requests are discarded. This means that collected profile
+information in the plugin buffer is lost if it can't be written to the influxd
+database for any reason.
+.TP
+NOTE:
+Plugin messages are logged along with the slurmstepd logs to SlurmdLogFile. In
+order to troubleshoot any issues, it is recommended to temporarily increase
+the slurmd debug level to debug3 and add Profile to the debug flags. This can
+be accomplished by setting the slurm.conf SlurmdDebug and DebugFlags
+respectively or dynamically through scontrol setdebug and setdebugflags.
+.TP
+NOTE:
+Perhaps it's a good idea to use a monitoring and analytics tool such as Grafana
+on top of InfluxDB. This kind of tools permit to create dashboards, tables, and
+other graphics using the stored time series. This way, it is easier to correlate
+resource usage peaks reported by other node monitoring tools such as Ganglia
+with specific job step tasks.
 
 .TP
 \fBInfinibandOFED\fR

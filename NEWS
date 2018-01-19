@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
  -- Now programs can be checked before execution if test_exec is set when using
     multi-prog option.
  -- Report NodeFeatures plugin configuration with scontrol and sview commands.
+ -- Add acct_gather_profile/influxdb plugin.
 
 * Changes in Slurm 17.11.3
 ==========================
