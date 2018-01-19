@@ -491,16 +491,22 @@ Job terminated with non\-zero exit code or other failure condition.
 Job terminated due to failure of one or more allocated nodes.
 .TP
 \fBPD  PENDING\fR
-Job is awaiting resource allocation.
+Sibling job (in federation) revoked.
 .TP
 \fBPR  PREEMPTED\fR
 Job terminated due to preemption.
 .TP
+\fBRV  REVOKED\fR
+Job currently has an allocation.
+.TP
 \fBR   RUNNING\fR
 Job currently has an allocation.
 .TP
-\fSI   SIGNALLING\fR
+\fBSI  SIGNALLING\fR
 Signal of job currently in progress.
+.TP
+\fBSO  STAGE_OUT\fR
+Staging out data after job completion.
 .TP
 \fBSE  SPECIAL_EXIT\fR
 The job was requeued in a special state. This state can be set by

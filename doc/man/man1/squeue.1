@@ -883,16 +883,19 @@ Actual or expected start time of the job or job step.
 .TP
 \fBstate\fR
 Job state, extended form:
-PENDING, RUNNING, STOPPED, SUSPENDED, CANCELLED, COMPLETING, COMPLETED,
-CONFIGURING, FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
+PENDING, CONFIGURING, RUNNING, STOPPED, SUSPENDED,
+CANCELLED, COMPLETING, COMPLETED, FAILED,
+STAGE_OUT, TIMEOUT, PREEMPTED, NODE_FAIL,
+REVOKED and SPECIAL_EXIT.
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
 \fBstatecompact\fR
 Job state, compact form:
-PD (pending), R (running), CA (cancelled), CF(configuring),
-CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure), RV (revoked) and SE (special exit state).
+PD (pending), CF(configuring), R (running), ST (stopped), S (suspended), 
+CA (cancelled), CG (completing), CD (completed), F (failed),
+SO (staging out data), TO (timeout), PR (preempted), NF (node failure),
+RV (revoked) and SE (special exit state).
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP

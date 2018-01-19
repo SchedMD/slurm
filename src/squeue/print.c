@@ -1080,6 +1080,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		_print_str(title, width, right, false);
 	} else if (!IS_JOB_COMPLETING(job)
 		   && (IS_JOB_PENDING(job)
+		       || IS_JOB_STAGE_OUT(job)
 		       || IS_JOB_TIMEOUT(job)
 		       || IS_JOB_OOM(job)
 		       || IS_JOB_DEADLINE(job)
@@ -2766,6 +2767,7 @@ static int _filter_job(job_info_t * job)
 	} else {
 		if (!IS_JOB_PENDING(job) &&
 		    !IS_JOB_RUNNING(job) &&
+		    !IS_JOB_STAGE_OUT(job) &&
 		    !IS_JOB_SUSPENDED(job) &&
 		    !IS_JOB_COMPLETING(job))
 			return 4;

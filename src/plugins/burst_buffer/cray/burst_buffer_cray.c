@@ -1918,6 +1918,10 @@ static void *_start_stage_out(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, op, resp_msg);
+		} else {
+			job_ptr->job_state &= (~JOB_STAGE_OUT);
+			xfree(job_ptr->state_desc);
+			last_job_update = time(NULL);
 		}
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = _get_bb_job(job_ptr);
@@ -4173,6 +4177,10 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	} else if (bb_job->state < BB_STATE_POST_RUN) {
 		bb_job->state = BB_STATE_POST_RUN;
+		job_ptr->job_state |= JOB_STAGE_OUT;
+		xfree(job_ptr->state_desc);
+		xstrfmtcat(job_ptr->state_desc, "%s: Stage-out in progress",
+			   plugin_type);
 		_queue_stage_out(bb_job);
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);

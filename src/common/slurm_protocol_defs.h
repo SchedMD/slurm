@@ -108,6 +108,8 @@
 	(_X->job_state & JOB_REVOKED)
 #define IS_JOB_SIGNALING(_X)		\
 	(_X->job_state & JOB_SIGNALING)
+#define IS_JOB_STAGE_OUT(_X)		\
+	(_X->job_state & JOB_STAGE_OUT)
 
 /* Defined node states */
 #define IS_NODE_UNKNOWN(_X)		\
