@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Correct dragonfly topology support when job allocation specifies desired
     switch count.
  -- Fix minor memory leak on an sbcast error path.
+ -- Fix issues when starting the backup slurmdbd.
 
 * Changes in Slurm 17.11.2
 ==========================
