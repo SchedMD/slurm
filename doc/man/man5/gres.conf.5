@@ -114,13 +114,13 @@ If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024)
 .br
 # Configure support for our four GPUs
 .br
-Name=gpu Type=gtx560 File=/dev/nvidia0 CPUs=0,1
+Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1
 .br
-Name=gpu Type=gtx560 File=/dev/nvidia1 CPUs=0,1
+Name=gpu Type=gtx560 File=/dev/nvidia1 COREs=0,1
 .br
-Name=gpu Type=tesla  File=/dev/nvidia2 CPUs=2,3
+Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3
 .br
-Name=gpu Type=tesla  File=/dev/nvidia3 CPUs=2,3
+Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
 .br
 Name=bandwidth Count=20M
 
