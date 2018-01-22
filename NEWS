@@ -78,7 +78,6 @@ documents those changes that are of interest to users and administrators.
  -- Make logging prefix for slurmstepd to happen as soon as possible.
  -- mpi/pmix: Fix the job registration for the PMIx v2.1.
  -- Fix uid check for signaling a step with anything but SIGKILL.
- -- Fix uid check when requesting a jobid from a pid.
  -- Return ESLURM_TRANSITION_STATE_NO_UPDATE instead of EAGAIN when trying to
     signal a step that is still running a prolog.
  -- Update Cray slurm_playbook.yaml with latest recommended version.
