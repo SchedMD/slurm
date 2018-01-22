@@ -715,7 +715,7 @@ int main(int argc, char **argv)
 	resv_fini();
 	trigger_fini();
 	fed_mgr_fini();
-	assoc_mgr_fini(slurmctld_conf.state_save_location);
+	assoc_mgr_fini(1);
 	reserve_port_config(NULL);
 	free_rpc_stats();
 
@@ -2096,7 +2096,7 @@ extern void save_all_state(void)
 	schedule_trigger_save();
 
 	select_g_state_save(slurmctld_conf.state_save_location);
-	dump_assoc_mgr_state(slurmctld_conf.state_save_location);
+	dump_assoc_mgr_state();
 	fed_mgr_state_save(slurmctld_conf.state_save_location);
 }
 
@@ -2128,9 +2128,10 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
                          	     ASSOC_MGR_CACHE_TRES;
 	if (slurmctld_conf.track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
+	assoc_init_arg.state_save_location = slurmctld_conf.state_save_location;
 
 	/* Don't save state but blow away old lists if they exist. */
-	assoc_mgr_fini(NULL);
+	assoc_mgr_fini(0);
 
 	if (acct_db_conn)
 		acct_storage_g_close_connection(&acct_db_conn);
@@ -2146,7 +2147,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 			debug("Association database appears down, "
 			      "reading from state file.");
 
-		if ((load_assoc_mgr_state(slurmctld_conf.state_save_location)
+		if ((load_assoc_mgr_state()
 		     != SLURM_SUCCESS)
 		    && (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 			error("Unable to get any information from "
@@ -2159,8 +2160,8 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	/* Now load the usage from a flat file since it isn't kept in
 	   the database
 	*/
-	load_assoc_usage(slurmctld_conf.state_save_location);
-	load_qos_usage(slurmctld_conf.state_save_location);
+	load_assoc_usage();
+	load_qos_usage();
 
 	lock_slurmctld(job_read_lock);
 	if (job_list)

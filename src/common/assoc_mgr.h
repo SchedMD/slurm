@@ -101,6 +101,7 @@ typedef struct {
 	void (*remove_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*remove_license_notify) (slurmdb_res_rec_t *rec);
 	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
+	char **state_save_location;
 	void (*sync_license_notify) (List clus_res_list);
 	void (*update_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*update_cluster_tres) (void);
@@ -129,7 +130,7 @@ extern uint32_t g_tres_count; /* Number of TRES from the database
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 			  int db_conn_errno);
-extern int assoc_mgr_fini(char *state_save_location);
+extern int assoc_mgr_fini(bool save_state);
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);
 
@@ -394,23 +395,23 @@ extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos);
  * Dump the state information of the association mgr just in case the
  * database isn't up next time we run.
  */
-extern int dump_assoc_mgr_state(char *state_save_location);
+extern int dump_assoc_mgr_state(void);
 
 /*
  * Read in the past usage for associations.
  */
-extern int load_assoc_usage(char *state_save_location);
+extern int load_assoc_usage(void);
 
 /*
  * Read in the past usage for qos.
  */
-extern int load_qos_usage(char *state_save_location);
+extern int load_qos_usage(void);
 
 /*
  * Read in the information of the association mgr if the database
  * isn't up when starting.
  */
-extern int load_assoc_mgr_state(char *state_save_location);
+extern int load_assoc_mgr_state(void);
 
 /*
  * Refresh the lists if when running_cache is set this will load new

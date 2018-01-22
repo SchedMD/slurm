@@ -2002,14 +2002,14 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_fini(char *state_save_location)
+extern int assoc_mgr_fini(bool save_state)
 {
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK,
 				   WRITE_LOCK, WRITE_LOCK, WRITE_LOCK,
 				   WRITE_LOCK };
 
-	if (state_save_location)
-		dump_assoc_mgr_state(state_save_location);
+	if (save_state)
+		dump_assoc_mgr_state();
 
 	assoc_mgr_lock(&locks);
 
@@ -5083,7 +5083,7 @@ extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos)
 	}
 }
 
-extern int dump_assoc_mgr_state(char *state_save_location)
+extern int dump_assoc_mgr_state(void)
 {
 	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, log_fd;
@@ -5095,7 +5095,11 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 				   READ_LOCK, READ_LOCK, READ_LOCK};
 	DEF_TIMERS;
 
+	if (!*init_setup.state_save_location)
+		return SLURM_SUCCESS;
+
 	START_TIMER;
+
 	/* write header: version, time */
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
@@ -5157,7 +5161,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	}
 
 	/* write the buffer to file */
-	reg_file = xstrdup_printf("%s/assoc_mgr_state", state_save_location);
+	reg_file = xstrdup_printf("%s/assoc_mgr_state",
+				  *init_setup.state_save_location);
 	old_file = xstrdup_printf("%s.old", reg_file);
 	new_file = xstrdup_printf("%s.new", reg_file);
 
@@ -5227,7 +5232,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		list_iterator_destroy(itr);
 	}
 
-	reg_file = xstrdup_printf("%s/assoc_usage", state_save_location);
+	reg_file = xstrdup_printf("%s/assoc_usage",
+				  *init_setup.state_save_location);
 	old_file = xstrdup_printf("%s.old", reg_file);
 	new_file = xstrdup_printf("%s.new", reg_file);
 
@@ -5294,7 +5300,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		list_iterator_destroy(itr);
 	}
 
-	reg_file = xstrdup_printf("%s/qos_usage", state_save_location);
+	reg_file = xstrdup_printf("%s/qos_usage",
+				  *init_setup.state_save_location);
 	old_file = xstrdup_printf("%s.old", reg_file);
 	new_file = xstrdup_printf("%s.new", reg_file);
 
@@ -5344,7 +5351,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 }
 
-extern int load_assoc_usage(char *state_save_location)
+extern int load_assoc_usage(void)
 {
 	int data_allocated, data_read = 0, i;
 	uint32_t data_size = 0;
@@ -5356,11 +5363,11 @@ extern int load_assoc_usage(char *state_save_location)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
-	if (!assoc_mgr_assoc_list)
+	if (!assoc_mgr_assoc_list || *init_setup.state_save_location)
 		return SLURM_SUCCESS;
 
 	/* read the file */
-	state_file = xstrdup(state_save_location);
+	state_file = xstrdup(*init_setup.state_save_location);
 	xstrcat(state_file, "/assoc_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
@@ -5471,7 +5478,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int load_qos_usage(char *state_save_location)
+extern int load_qos_usage(void)
 {
 	int data_allocated, data_read = 0;
 	uint32_t data_size = 0;
@@ -5484,11 +5491,11 @@ extern int load_qos_usage(char *state_save_location)
 	assoc_mgr_lock_t locks = { NO_LOCK, READ_LOCK, WRITE_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
-	if (!assoc_mgr_qos_list)
+	if (!assoc_mgr_qos_list || *init_setup.state_save_location)
 		return SLURM_SUCCESS;
 
 	/* read the file */
-	state_file = xstrdup(state_save_location);
+	state_file = xstrdup(*init_setup.state_save_location);
 	xstrcat(state_file, "/qos_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
@@ -5589,7 +5596,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int load_assoc_mgr_state(char *state_save_location)
+extern int load_assoc_mgr_state(void)
 {
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
 	uint32_t data_size = 0;
@@ -5604,8 +5611,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				   WRITE_LOCK, WRITE_LOCK, WRITE_LOCK,
 				   WRITE_LOCK, WRITE_LOCK };
 
+	if (!*init_setup.state_save_location)
+		return SLURM_SUCCESS;
+
 	/* read the file */
-	state_file = xstrdup(state_save_location);
+	state_file = xstrdup(*init_setup.state_save_location);
 	xstrcat(state_file, "/assoc_mgr_state"); /* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);

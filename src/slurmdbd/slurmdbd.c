@@ -309,7 +309,7 @@ end_it:
 		_restart_self(argc, argv);
 	}
 
-	assoc_mgr_fini(NULL);
+	assoc_mgr_fini(0);
 	slurm_acct_storage_fini();
 	slurm_auth_fini();
 	log_fini();
