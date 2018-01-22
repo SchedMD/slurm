@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
  -- Add acct_gather_profile/influxdb plugin.
  -- Add new job state of SO/STAGE_OUT indicating that burst buffer stage-out
     operation is in progress.
+ -- Correct SLURM_NTASKS and SLURM_NPROCS environment variable for heterogeneous
+    job step. Report values representing full allocation.
 
 * Changes in Slurm 17.11.3
 ==========================

@@ -564,7 +564,6 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 		env->jobid = job->pack_jobid;
 	else
 		env->jobid = job->jobid;
-	env->ntasks = job->ntasks;
 	env->stepid = job->stepid;
 	env->account = job->account;
 	env->qos = job->qos;
