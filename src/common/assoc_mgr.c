@@ -728,7 +728,7 @@ static slurmdb_assoc_rec_t* _find_assoc_parent(
 }
 
 /* locks should be put in place before calling this function
- * ASSOC_WRITE, USER_WRITE, TRES_READ */
+ * ASSOC_WRITE, USER_WRITE, QOS_READ, TRES_READ */
 static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 				      int reset)
 {
@@ -908,7 +908,7 @@ static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
 /* locks should be put in place before calling this function
- * ASSOC_WRITE, USER_WRITE, TRES_READ */
+ * ASSOC_WRITE, USER_WRITE, QOS_READ, TRES_READ */
 static int _post_assoc_list(void)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
@@ -1402,7 +1402,7 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
 	slurmdb_assoc_cond_t assoc_q;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				   READ_LOCK, WRITE_LOCK, NO_LOCK };
 
 //	DEF_TIMERS;
@@ -1625,7 +1625,7 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	ListIterator curr_itr = NULL;
 	ListIterator assoc_mgr_itr = NULL;
 	slurmdb_assoc_rec_t *curr_assoc = NULL, *assoc = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				   READ_LOCK, WRITE_LOCK, NO_LOCK };
 //	DEF_TIMERS;
 
