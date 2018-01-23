@@ -2128,8 +2128,8 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
                          	     ASSOC_MGR_CACHE_TRES;
 	if (slurmctld_conf.track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
-	assoc_init_arg.state_save_location = slurmctld_conf.state_save_location;
-
+	assoc_init_arg.state_save_location =
+		&slurmctld_conf.state_save_location;
 	/* Don't save state but blow away old lists if they exist. */
 	assoc_mgr_fini(0);
 
@@ -2146,9 +2146,14 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 		else
 			debug("Association database appears down, "
 			      "reading from state file.");
+		/*
+		 * We ignore the error here since this might not exist.  If
+		 * there is a real error we will get it from
+		 * load_assoc_mgr_state.
+		 */
+		(void)load_assoc_mgr_last_tres();
 
-		if ((load_assoc_mgr_state()
-		     != SLURM_SUCCESS)
+		if ((load_assoc_mgr_state(0) != SLURM_SUCCESS)
 		    && (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 			error("Unable to get any information from "
 			      "the state file");

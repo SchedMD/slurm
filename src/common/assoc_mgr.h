@@ -408,10 +408,15 @@ extern int load_assoc_usage(void);
 extern int load_qos_usage(void);
 
 /*
+ * Read in the past tres list.
+ */
+extern int load_assoc_mgr_last_tres(void);
+
+/*
  * Read in the information of the association mgr if the database
  * isn't up when starting.
  */
-extern int load_assoc_mgr_state(void);
+extern int load_assoc_mgr_state(bool only_tres);
 
 /*
  * Refresh the lists if when running_cache is set this will load new

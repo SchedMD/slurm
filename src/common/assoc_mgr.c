@@ -1952,10 +1952,23 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 
 	/* get tres before association and qos since it is used there */
 	if ((!assoc_mgr_tres_list)
-	    && (init_setup.cache_level & ASSOC_MGR_CACHE_TRES))
+	    && (init_setup.cache_level & ASSOC_MGR_CACHE_TRES)) {
+		/*
+		 * We need the old list just incase something changed.  If
+		 * the tres is still stored in the assoc_mgr_list we will get
+		 * it from there.  This second check can be removed 2 versions
+		 * after 18.08.
+		 */
+		if (load_assoc_mgr_last_tres() != SLURM_SUCCESS)
+			/* We don't care about the error here.  It should only
+			 * happen if we can't find the file.  If that is the
+			 * case then we don't need to worry about old state.
+			 */
+			(void)load_assoc_mgr_state(1);
 		if (_get_assoc_mgr_tres_list(db_conn, init_setup.enforce)
 		    == SLURM_ERROR)
 			return SLURM_ERROR;
+	}
 
 	/* get qos before association since it is used there */
 	if ((!assoc_mgr_qos_list)
@@ -5090,7 +5103,7 @@ extern int dump_assoc_mgr_state(void)
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL,
 		*tmp_char = NULL;
 	dbd_list_msg_t msg;
-	Buf buffer = init_buf(high_buffer_size);
+	Buf buffer = NULL;
 	assoc_mgr_lock_t locks = { READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK,
 				   READ_LOCK, READ_LOCK, READ_LOCK};
 	DEF_TIMERS;
@@ -5100,6 +5113,9 @@ extern int dump_assoc_mgr_state(void)
 
 	START_TIMER;
 
+	/* now make a file for last_tres */
+	buffer = init_buf(high_buffer_size);
+
 	/* write header: version, time */
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
@@ -5108,11 +5124,62 @@ extern int dump_assoc_mgr_state(void)
 	if (assoc_mgr_tres_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
 		msg.my_list = assoc_mgr_tres_list;
-		/* let us know what to unpack */
-		pack16(DBD_ADD_TRES, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_TRES, buffer);
 	}
+
+	reg_file = xstrdup_printf("%s/last_tres",
+				  *init_setup.state_save_location);
+	old_file = xstrdup_printf("%s.old", reg_file);
+	new_file = xstrdup_printf("%s.new", reg_file);
+
+	log_fd = creat(new_file, 0600);
+	if (log_fd < 0) {
+		error("Can't save state, create file %s error %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		if (link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+
+	free_buf(buffer);
+
+	/* Now write the rest of the lists */
+	buffer = init_buf(high_buffer_size);
+
+	/* write header: version, time */
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
+	pack_time(time(NULL), buffer);
 
 	if (assoc_mgr_user_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
@@ -5596,7 +5663,110 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int load_assoc_mgr_state(void)
+extern int load_assoc_mgr_last_tres(void)
+{
+	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	uint32_t data_size = 0;
+	uint16_t ver = 0;
+	int state_fd;
+	char *data = NULL, *state_file, *tmp_str = NULL;
+	Buf buffer = NULL;
+	time_t buf_time;
+	ListIterator itr = NULL;
+	dbd_list_msg_t *msg = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK,
+				   NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!*init_setup.state_save_location)
+		return SLURM_SUCCESS;
+
+	/* read the file Always ignore .old file */
+	state_file = xstrdup_printf("%s/last_tres",
+				    *init_setup.state_save_location);
+	//info("looking at the %s file", state_file);
+	assoc_mgr_lock(&locks);
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		debug2("No last_tres file (%s) to recover", state_file);
+		xfree(state_file);
+		assoc_mgr_unlock(&locks);
+		return ENOENT;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m",
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+
+	buffer = create_buf(data, data_size);
+
+	safe_unpack16(&ver, buffer);
+	debug3("Version in last_tres header is %u", ver);
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
+		if (!ignore_state_errors)
+			fatal("Can not recover last_tres state, incompatible version, got %u need >= %u <= %u, start with '-i' to ignore this",
+			      ver, SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
+		error("***********************************************");
+		error("Can not recover last_tres state, incompatible version, got %u need > %u <= %u", ver,
+		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
+		error("***********************************************");
+		free_buf(buffer);
+		assoc_mgr_unlock(&locks);
+		return EFAULT;
+	}
+
+	safe_unpack_time(&buf_time, buffer);
+	error_code = slurmdbd_unpack_list_msg(&msg, ver, DBD_ADD_TRES, buffer);
+	if (error_code != SLURM_SUCCESS)
+		goto unpack_error;
+	else if (!msg->my_list) {
+		error("No tres retrieved");
+	} else {
+		FREE_NULL_LIST(assoc_mgr_tres_list);
+		_post_tres_list(msg->my_list, list_count(msg->my_list));
+		/* assoc_mgr_tres_list gets set in _post_tres_list */
+		debug("Recovered %u tres",
+		      list_count(assoc_mgr_tres_list));
+		msg->my_list = NULL;
+	}
+	slurmdbd_free_list_msg(msg);
+	assoc_mgr_unlock(&locks);
+	info("done getting the info");
+	free_buf(buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete last_tres state file, start with '-i' to ignore this");
+	error("Incomplete last_tres state file");
+
+	free_buf(buffer);
+
+	if (itr)
+		list_iterator_destroy(itr);
+	xfree(tmp_str);
+	assoc_mgr_unlock(&locks);
+	return SLURM_ERROR;
+}
+
+extern int load_assoc_mgr_state(bool only_tres)
 {
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
 	uint32_t data_size = 0;
@@ -5672,6 +5842,7 @@ extern int load_assoc_mgr_state(void)
 	while (remaining_buf(buffer) > 0) {
 		safe_unpack16(&type, buffer);
 		switch(type) {
+		/* DBD_ADD_TRES can be removed 2 versions after 18.08 */
 		case DBD_ADD_TRES:
 			error_code = slurmdbd_unpack_list_msg(
 				&msg, ver, DBD_ADD_TRES, buffer);
@@ -5789,8 +5960,12 @@ extern int load_assoc_mgr_state(void)
 			goto unpack_error;
 			break;
 		}
+		/* The tres, if here, will always be first */
+		if (only_tres)
+			break;
 	}
-	running_cache = 1;
+	if (!only_tres)
+		running_cache = 1;
 	free_buf(buffer);
 	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
