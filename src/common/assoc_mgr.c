@@ -5109,8 +5109,8 @@ extern int dump_assoc_mgr_state(void)
 				   READ_LOCK, READ_LOCK, READ_LOCK};
 	DEF_TIMERS;
 
-	if (!*init_setup.state_save_location)
-		return SLURM_SUCCESS;
+	xassert(init_setup.state_save_location &&
+		*init_setup.state_save_location);
 
 	START_TIMER;
 
@@ -5431,8 +5431,11 @@ extern int load_assoc_usage(void)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
-	if (!assoc_mgr_assoc_list || *init_setup.state_save_location)
+	if (!assoc_mgr_assoc_list)
 		return SLURM_SUCCESS;
+
+	xassert(init_setup.state_save_location &&
+		*init_setup.state_save_location);
 
 	/* read the file */
 	state_file = xstrdup(*init_setup.state_save_location);
@@ -5559,8 +5562,11 @@ extern int load_qos_usage(void)
 	assoc_mgr_lock_t locks = { NO_LOCK, READ_LOCK, WRITE_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
-	if (!assoc_mgr_qos_list || *init_setup.state_save_location)
+	if (!assoc_mgr_qos_list)
 		return SLURM_SUCCESS;
+
+	xassert(init_setup.state_save_location &&
+		*init_setup.state_save_location);
 
 	/* read the file */
 	state_file = xstrdup(*init_setup.state_save_location);
@@ -5678,8 +5684,8 @@ extern int load_assoc_mgr_last_tres(void)
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
-	if (!*init_setup.state_save_location)
-		return SLURM_SUCCESS;
+	xassert(init_setup.state_save_location &&
+		*init_setup.state_save_location);
 
 	/* read the file Always ignore .old file */
 	state_file = xstrdup_printf("%s/last_tres",
@@ -5782,8 +5788,8 @@ extern int load_assoc_mgr_state(bool only_tres)
 				   WRITE_LOCK, WRITE_LOCK, WRITE_LOCK,
 				   WRITE_LOCK, WRITE_LOCK };
 
-	if (!*init_setup.state_save_location)
-		return SLURM_SUCCESS;
+	xassert(init_setup.state_save_location &&
+		*init_setup.state_save_location);
 
 	/* read the file */
 	state_file = xstrdup(*init_setup.state_save_location);
