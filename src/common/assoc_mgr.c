@@ -5755,7 +5755,6 @@ extern int load_assoc_mgr_last_tres(void)
 	}
 	slurmdbd_free_list_msg(msg);
 	assoc_mgr_unlock(&locks);
-	info("done getting the info");
 	free_buf(buffer);
 	return SLURM_SUCCESS;
 
