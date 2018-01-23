@@ -6956,10 +6956,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->details->orig_dependency = xstrdup(job_ptr->details->
 						    dependency);
 
-	if (build_feature_list(job_ptr)) {
-		error_code = ESLURM_INVALID_FEATURE;
+	if ((error_code = build_feature_list(job_ptr)))
 		goto cleanup_fail;
-	}
+
 	/*
 	 * NOTE: If this job is being used to expand another job, this job's
 	 * gres_list has already been filled in with a copy of gres_list job

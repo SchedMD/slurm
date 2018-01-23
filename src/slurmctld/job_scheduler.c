@@ -4570,15 +4570,11 @@ extern int build_feature_list(struct job_record *job_ptr)
 	job_feature_t *feat;
 	bool can_reboot;
 
-	can_reboot = node_features_g_user_update(job_ptr->user_id);
-	if (job_ptr->batch_features) {
-		rc = _valid_batch_features(job_ptr, can_reboot);
-		if (rc != SLURM_SUCCESS)
-			return rc;
-	}
-
-	if (!detail_ptr || !detail_ptr->features)	/* no constraints */
+	if (!detail_ptr || !detail_ptr->features) {	/* no constraints */
+		if (job_ptr->batch_features)
+			return ESLURM_BATCH_CONSTRAINT;
 		return SLURM_SUCCESS;
+	}
 	if (detail_ptr->feature_list)		/* already processed */
 		return SLURM_SUCCESS;
 
@@ -4586,6 +4582,7 @@ extern int build_feature_list(struct job_record *job_ptr)
 	while ((str_ptr = strstr(detail_ptr->features, ",")))
 		str_ptr[0] = '&';
 
+	can_reboot = node_features_g_user_update(job_ptr->user_id);
 	tmp_requested = xstrdup(detail_ptr->features);
 	detail_ptr->feature_list = list_create(feature_list_delete);
 	for (i = 0; ; i++) {
@@ -4705,6 +4702,12 @@ extern int build_feature_list(struct job_record *job_ptr)
 		return ESLURM_INVALID_FEATURE;
 	}
 
+	if (job_ptr->batch_features) {
+		rc = _valid_batch_features(job_ptr, can_reboot);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
+
 	return _valid_feature_list(job_ptr, can_reboot);
 }
 
@@ -4720,6 +4723,16 @@ extern void feature_list_delete(void *x)
 	xfree(feature_ptr);
 }
 
+static int _match_job_feature(void *x, void *key)
+{
+	job_feature_t *feat = (job_feature_t *) x;
+	char *tok = (char *) key;
+
+	if (!xstrcmp(feat->name, tok))	/* Found matching feature name */
+		return 1;
+	return 0;
+}
+
 static int _valid_batch_features(struct job_record *job_ptr, bool can_reboot)
 {
 	char *tmp, *tok, *save_ptr = NULL;
@@ -4728,18 +4741,28 @@ static int _valid_batch_features(struct job_record *job_ptr, bool can_reboot)
 
 	if (!job_ptr->batch_features)
 		return SLURM_SUCCESS;
+	if (!job_ptr->details || !job_ptr->details->feature_list)
+		return ESLURM_BATCH_CONSTRAINT;
 
 	if (strchr(job_ptr->batch_features, '|'))
 		have_or = true;
 	tmp = xstrdup(job_ptr->batch_features);
 	tok = strtok_r(tmp, "&|", &save_ptr);
 	while (tok) {
+		if (!list_find_first(job_ptr->details->feature_list,
+				     _match_job_feature, tok)) {
+			rc = ESLURM_BATCH_CONSTRAINT;
+			break;
+		}
 		rc = _valid_node_feature(tok, can_reboot);
 		if (have_or) {
 			if (rc == SLURM_SUCCESS)
 				success_or = true;
-		} else if (rc != SLURM_SUCCESS)
+			/* Ignore failure on some OR components */
+		} else if (rc != SLURM_SUCCESS) {
+			rc = ESLURM_BATCH_CONSTRAINT;
 			break;
+		}
 		tok = strtok_r(NULL, "&|", &save_ptr);
 	}
 	xfree(tmp);
