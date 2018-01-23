@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak on an sbcast error path.
  -- Fix issues when starting the backup slurmdbd.
  -- Revert uid check when requesting a jobid from a pid.
+ -- task/cgroup - add support to detect OOM_KILL cgroup events.
 
 * Changes in Slurm 17.11.2
 ==========================
