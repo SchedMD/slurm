@@ -4622,6 +4622,15 @@ extern int build_feature_list(struct job_record *job_ptr)
 				fail = true;
 				break;
 			}
+			if (paren) {
+				/*
+				 * Most (but not all) of the logic to support
+				 * OR within parenthesis works today. Disable
+				 * for now.
+				 */
+				fail = true;
+				break;
+			}
 			feat = xmalloc(sizeof(job_feature_t));
 			feat->name = xstrdup(feature);
 			feat->count = count;
