@@ -2222,6 +2222,8 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.acctg_freq);
+			if (validate_acctg_freq(optarg))
+				exit(1);
 			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_WCKEY:

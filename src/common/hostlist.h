@@ -282,6 +282,7 @@ char * hostlist_shift_range(hostlist_t hl);
  * Returns -1 if host is not found.
  *
  */
+int hostlist_find_dims(hostlist_t hl, const char *hostname, int dims);
 int hostlist_find(hostlist_t hl, const char *hostname);
 
 /* hostlist_delete():

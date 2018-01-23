@@ -3216,6 +3216,7 @@ static bool _valid_feature_counts(struct job_record *job_ptr,
 				  bitstr_t *node_bitmap, bool *has_xor)
 {
 	struct job_details *detail_ptr = job_ptr->details;
+	List feature_list = NULL;
 	ListIterator job_feat_iter;
 	job_feature_t *job_feat_ptr;
 	int last_op = FEATURE_OP_AND, last_paren_op = FEATURE_OP_AND;

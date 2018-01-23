@@ -1023,6 +1023,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			}
 
 			list_append(ret_list, object);
+			object = NULL;
 
 			if (moved_parent)
 				slurmdb_destroy_assoc_rec(mod_assoc);
@@ -1357,7 +1358,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 						assoc->parent_acct)) {
 					error("You can't make an account be a "
 					      "child of it's self");
-					xfree(object);
 					continue;
 				}
 				rc = _move_parent(mysql_conn, user->uid,
@@ -1389,6 +1389,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			account_type = 1;
 		}
 		list_append(ret_list, object);
+		object = NULL;
 		added++;
 
 		if (name_char)
