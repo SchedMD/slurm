@@ -3059,8 +3059,7 @@ extern void node_features_p_get_config(List *data)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowUserBoot");
-	key_pair->value = xstrdup_printf("%s",
-				_make_uid_str(allowed_uid, allowed_uid_cnt));
+	key_pair->value = _make_uid_str(allowed_uid, allowed_uid_cnt);
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -3095,12 +3094,12 @@ extern void node_features_p_get_config(List *data)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DefaultMCDRAM");
-	key_pair->value = xstrdup_printf("%s", _knl_mcdram_str(default_mcdram));
+	key_pair->value = _knl_mcdram_str(default_mcdram);
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DefaultNUMA");
-	key_pair->value = xstrdup_printf("%s", _knl_numa_str(default_numa));
+	key_pair->value = _knl_numa_str(default_numa);
 	list_append(*data, key_pair);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("McPath");
