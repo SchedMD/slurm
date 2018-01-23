@@ -318,16 +318,30 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 {
 	mpi_plugin_task_info_t info[1];
 
-	info->jobid = job->jobid;
-	info->stepid = job->stepid;
-	info->nnodes = job->nnodes;
-	info->nodeid = job->nodeid;
-	info->ntasks = job->ntasks;
-	info->ltasks = job->node_tasks;
-	info->gtaskid = job->task[ltaskid]->gtid;
-	info->ltaskid = job->task[ltaskid]->id;
-	info->self = job->envtp->self;
-	info->client = job->envtp->cli;
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
+		info->jobid   = job->pack_jobid;
+		info->stepid  = job->stepid;
+		info->nnodes  = job->pack_nnodes;
+		info->nodeid  = job->node_offset + job->nodeid;
+		info->ntasks  = job->pack_ntasks ;
+		info->ltasks  = job->node_tasks;
+		info->gtaskid = job->pack_task_offset +
+				job->task[ltaskid]->gtid;
+		info->ltaskid = job->task[ltaskid]->id;
+		info->self    = job->envtp->self;
+		info->client  = job->envtp->cli;
+	} else {
+		info->jobid   = job->jobid;
+		info->stepid  = job->stepid;
+		info->nnodes  = job->nnodes;
+		info->nodeid  = job->nodeid;
+		info->ntasks  = job->ntasks;
+		info->ltasks  = job->node_tasks;
+		info->gtaskid = job->task[ltaskid]->gtid;
+		info->ltaskid = job->task[ltaskid]->id;
+		info->self    = job->envtp->self;
+		info->client  = job->envtp->cli;
+	}
 
 	return mpi_hook_slurmstepd_task(info, &job->env);
 }
