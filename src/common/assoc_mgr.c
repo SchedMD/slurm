@@ -1959,7 +1959,8 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		 * it from there.  This second check can be removed 2 versions
 		 * after 18.08.
 		 */
-		if (load_assoc_mgr_last_tres() != SLURM_SUCCESS)
+		if (!slurmdbd_conf &&
+		    (load_assoc_mgr_last_tres() != SLURM_SUCCESS))
 			/* We don't care about the error here.  It should only
 			 * happen if we can't find the file.  If that is the
 			 * case then we don't need to worry about old state.
