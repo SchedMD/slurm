@@ -4038,9 +4038,16 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		bool dummy = false;
 		int total_node_cnt = 0;
 
+		/*
+		 * Build dummy job record so that existing job feature logic
+		 * can be re-used. The alternative of passing all of the
+		 * relevant fields to directly the functions rather than a
+		 * job record was explored and found too cumbersome.
+		 */
 		job_ptr = xmalloc(sizeof(struct job_record));
 		job_ptr->details = xmalloc(sizeof(struct job_details));
 		job_ptr->details->features = resv_desc_ptr->features;
+		/* job_ptr->job_id = 0; */
 		/* job_ptr->user_id = 0; */
 		rc = build_feature_list(job_ptr);
 		if ((rc == SLURM_SUCCESS) &&
