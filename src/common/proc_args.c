@@ -1848,10 +1848,14 @@ uint16_t parse_compress_type(const char *arg)
 extern int validate_acctg_freq(char *acctg_freq)
 {
 	int i;
-	char *save_ptr = NULL, *tok, *tmp = xstrdup(optarg);
+	char *save_ptr = NULL, *tok, *tmp;
 	bool valid;
 	int rc = SLURM_SUCCESS;
 
+	if (!optarg)
+		return rc;
+
+	tmp = xstrdup(optarg);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		valid = false;
