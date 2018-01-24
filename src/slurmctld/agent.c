@@ -172,6 +172,7 @@ typedef struct mail_info {
 
 static void _agent_retry(int min_wait, bool wait_too);
 static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
+static int  _signal_defer(queued_request_t *queued_req_ptr);
 static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
@@ -1405,7 +1406,7 @@ extern void agent_trigger(int min_wait, bool mail_too)
  * This is a separate thread so the job records can be locked */
 static void _agent_retry(int min_wait, bool mail_too)
 {
-	int rc;
+	int rc1, rc2;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
@@ -1458,15 +1459,16 @@ static void _agent_retry(int min_wait, bool mail_too)
 		retry_iter = list_iterator_create(retry_list);
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
-			rc = _batch_launch_defer(queued_req_ptr);
-			if (rc == -1) {		/* abort request */
+			rc1 = _batch_launch_defer(queued_req_ptr);
+			rc2 = _signal_defer(queued_req_ptr);
+			if (rc1 == -1 || rc2  == -1) {		/* abort request */
 				_purge_agent_args(queued_req_ptr->
 						  agent_arg_ptr);
 				xfree(queued_req_ptr);
 				list_remove(retry_iter);
 				continue;
 			}
-			if (rc > 0)
+			if (rc1 > 0 || rc2 > 0)
 				continue;
  			if (queued_req_ptr->last_attempt == 0) {
 				list_remove(retry_iter);
@@ -1485,15 +1487,16 @@ static void _agent_retry(int min_wait, bool mail_too)
 		/* next try to find an older record to retry */
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
-			rc = _batch_launch_defer(queued_req_ptr);
-			if (rc == -1) { 	/* abort request */
+			rc1 = _batch_launch_defer(queued_req_ptr);
+			rc2 = _signal_defer(queued_req_ptr);
+			if (rc1 == -1 || rc2 == -1) { 	/* abort request */
 				_purge_agent_args(queued_req_ptr->
 						  agent_arg_ptr);
 				xfree(queued_req_ptr);
 				list_remove(retry_iter);
 				continue;
 			}
-			if (rc > 0)
+			if (rc1 > 0 || rc2 > 0)
 				continue;
 			age = difftime(now, queued_req_ptr->last_attempt);
 			if (age > min_wait) {
@@ -1999,6 +2002,47 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	queued_req_ptr->last_attempt  = now;
+	return 1;
+}
+
+/* Test if a job signal request should be defered
+ * RET -1: abort the request
+ *      0: execute the request now
+ *      1: defer the request
+ */
+static int _signal_defer(queued_request_t *queued_req_ptr)
+{
+	agent_arg_t *agent_arg_ptr;
+	signal_tasks_msg_t *signal_msg_ptr;
+	time_t now = time(NULL);
+	struct job_record *job_ptr;
+
+	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+	if (agent_arg_ptr->msg_type != REQUEST_SIGNAL_TASKS)
+		return 0;
+
+
+	signal_msg_ptr = (signal_tasks_msg_t *)agent_arg_ptr->msg_args;
+	job_ptr = find_job_record(signal_msg_ptr->job_id);
+
+	if (job_ptr == NULL) {
+		info("agent(signal_task): removed pending request for cancelled job %u",
+		     signal_msg_ptr->job_id);
+		return -1;	/* job cancelled while waiting */
+	}
+
+	if (job_ptr->state_reason != WAIT_PROLOG)
+		return 0;
+
+	if (queued_req_ptr->first_attempt == 0) {
+		queued_req_ptr->first_attempt = now;
+	} else if (difftime(now, queued_req_ptr->first_attempt) >=
+				 2 * slurm_get_batch_start_timeout()) {
+		error("agent waited too long for nodes to respond, abort signal of job %u",
+		      job_ptr->job_id);
+		return -1;
+	}
+
 	return 1;
 }
 
