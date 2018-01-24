@@ -3501,7 +3501,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		bit_nset(usable_node_mask, 0, (node_record_count - 1));
 	}
 
-	if (valid_feature_counts(job_ptr, false, usable_node_mask, &has_xor)) {
+	if (!valid_feature_counts(job_ptr, false, usable_node_mask, &has_xor)) {
 		info("Job %u feature requirements can not be satisfied",
 		     job_ptr->job_id);
 		FREE_NULL_BITMAP(usable_node_mask);
