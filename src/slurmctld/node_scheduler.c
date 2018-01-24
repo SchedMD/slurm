@@ -105,7 +105,6 @@ static int  _build_node_list(struct job_record *job_ptr,
 			     struct node_set **node_set_pptr,
 			     int *node_set_size, char **err_msg,
 			     bool test_only, bool can_reboot);
-static void _find_feature_nodes(List feature_list, bool can_reboot);
 static int  _fill_in_gres_fields(struct job_record *job_ptr);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr,
@@ -130,8 +129,6 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    bitstr_t *exc_node_bitmap, bool resv_overlap);
 static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,
 			 bool job_mc_ok, char **err_msg);
-static bool _valid_feature_counts(struct job_record *job_ptr,
-				  bitstr_t *node_bitmap, bool *has_xor);
 static bitstr_t *_valid_features(struct job_record *job_ptr,
 				 struct config_record *config_ptr,
 				 bool can_reboot);
@@ -627,7 +624,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
  * either active or available and set the feature_list's node_bitmap_active and
  * node_bitmap_avail fields accordingly.
  */
-static void _find_feature_nodes(List feature_list, bool can_reboot)
+extern void find_feature_nodes(List feature_list, bool can_reboot)
 {
 	ListIterator feat_iter;
 	job_feature_t  *job_feat_ptr;
@@ -742,8 +739,7 @@ static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 			}
 		} else {	/* feature not found */
 			if (last_op == FEATURE_OP_AND) {
-				bit_nclear(work_bitmap, 0,
-					   (node_record_count - 1));
+				bit_clear_all(work_bitmap);
 			}
 		}
 
@@ -806,7 +802,7 @@ extern void build_active_feature_bitmap(struct job_record *job_ptr,
 		return;
 
 	can_reboot = node_features_g_user_update(job_ptr->user_id);
-	_find_feature_nodes(details_ptr->feature_list, can_reboot);
+	find_feature_nodes(details_ptr->feature_list, can_reboot);
 	if (_match_feature(details_ptr->feature_list, &tmp_bitmap) == 0)
 		return;		/* No inactive features */
 
@@ -3206,21 +3202,25 @@ extern int list_find_feature(void *feature_entry, void *key)
 }
 
 /*
- * _valid_feature_counts - validate a job's features can be satisfied
+ * valid_feature_counts - validate a job's features can be satisfied
  *	by the selected nodes (NOTE: does not process XOR or XAND operators)
  * IN job_ptr - job to operate on
+ * IN use_active - if set, then only consider nodes with the identified features
+ *	active, otherwise use available features
  * IN/OUT node_bitmap - nodes available for use, clear if unusable
+ * OUT has_xor - set if XOR/XAND found in feature expresion
  * RET true if valid, false otherwise
  */
-static bool _valid_feature_counts(struct job_record *job_ptr,
-				  bitstr_t *node_bitmap, bool *has_xor)
+extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
+				 bitstr_t *node_bitmap, bool *has_xor)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	ListIterator job_feat_iter;
 	job_feature_t *job_feat_ptr;
 	int last_op = FEATURE_OP_AND, last_paren_op = FEATURE_OP_AND;
 	int last_paren_cnt = 0;
-	bitstr_t *feature_bitmap, *paren_bitmap = NULL, *work_bitmap;
+	bitstr_t *feature_bitmap, *paren_bitmap = NULL;
+	bitstr_t *tmp_bitmap, *work_bitmap;
 	bool have_count = false, rc = true, user_update;
 
 	xassert(detail_ptr);
@@ -3232,7 +3232,7 @@ static bool _valid_feature_counts(struct job_record *job_ptr,
 		return rc;
 
 	user_update = node_features_g_user_update(job_ptr->user_id);
-	_find_feature_nodes(detail_ptr->feature_list, user_update);
+	find_feature_nodes(detail_ptr->feature_list, user_update);
 	feature_bitmap = bit_copy(node_bitmap);
 	work_bitmap = feature_bitmap;
 	job_feat_iter = list_iterator_create(detail_ptr->feature_list);
@@ -3242,26 +3242,32 @@ static bool _valid_feature_counts(struct job_record *job_ptr,
 			last_paren_op = last_op;
 			last_op = FEATURE_OP_AND;
 			if (paren_bitmap) {
-				error("%s: Job %u has bad feature expression: %s",
-				      __func__, job_ptr->job_id,
-				      detail_ptr->features);
+				if (job_ptr->job_id) {
+					error("%s: Job %u has bad feature expression: %s",
+					      __func__, job_ptr->job_id,
+					      detail_ptr->features);
+				} else {
+					error("%s: Reservation has bad feature expression: %s",
+					      __func__, detail_ptr->features);
+				}
 				bit_free(paren_bitmap);
 			}
 			paren_bitmap = bit_copy(node_bitmap);
 			work_bitmap = paren_bitmap;
 		}
 
-		if (job_feat_ptr->node_bitmap_avail) {
+		if (use_active)
+			tmp_bitmap = job_feat_ptr->node_bitmap_active;
+		else
+			tmp_bitmap = job_feat_ptr->node_bitmap_avail;
+		if (tmp_bitmap) {
 			if (last_op == FEATURE_OP_AND) {
-				bit_and(work_bitmap,
-					job_feat_ptr->node_bitmap_avail);
+				bit_and(work_bitmap, tmp_bitmap);
 			} else if (last_op == FEATURE_OP_OR) {
-				bit_or(work_bitmap,
-				       job_feat_ptr->node_bitmap_avail);
+				bit_or(work_bitmap, tmp_bitmap);
 			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
 				*has_xor = true;
-				bit_or(work_bitmap,
-				       job_feat_ptr->node_bitmap_avail);
+				bit_or(work_bitmap, tmp_bitmap);
 			}
 		} else {	/* feature not found */
 			if (last_op == FEATURE_OP_AND)
@@ -3383,7 +3389,7 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		}
 	}
 
-	if (!_valid_feature_counts(job_ptr, avail_bitmap, &has_xor))
+	if (!valid_feature_counts(job_ptr, false, avail_bitmap, &has_xor))
 		return EINVAL;
 
 	return SLURM_SUCCESS;
@@ -3495,7 +3501,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		bit_nset(usable_node_mask, 0, (node_record_count - 1));
 	}
 
-	if (!_valid_feature_counts(job_ptr, usable_node_mask, &has_xor)) {
+	if (valid_feature_counts(job_ptr, false, usable_node_mask, &has_xor)) {
 		info("Job %u feature requirements can not be satisfied",
 		     job_ptr->job_id);
 		FREE_NULL_BITMAP(usable_node_mask);

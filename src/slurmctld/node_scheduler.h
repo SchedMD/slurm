@@ -101,6 +101,13 @@ extern void filter_by_node_owner(struct job_record *job_ptr,
 				 bitstr_t *usable_node_mask);
 
 /*
+ * For every element in the feature_list, identify the nodes with that feature
+ * either active or available and set the feature_list's node_bitmap_active and
+ * node_bitmap_avail fields accordingly.
+ */
+extern void find_feature_nodes(List feature_list, bool can_reboot);
+
+/*
  * re_kill_job - for a given job, deallocate its nodes for a second time,
  *	basically a cleanup for failed deallocate() calls
  * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
@@ -156,5 +163,18 @@ extern int get_node_cnts(struct job_record *job_ptr,
  * IN job_ptr - pointer to the job record
  */
 extern void launch_prolog(struct job_record *job_ptr);
+
+/*
+ * valid_feature_counts - validate a job's features can be satisfied
+ *	by the selected nodes (NOTE: does not process XOR or XAND operators)
+ * IN job_ptr - job to operate on
+ * IN use_active - if set, then only consider nodes with the identified features
+ *	active, otherwise use available features
+ * IN/OUT node_bitmap - nodes available for use, clear if unusable
+ * OUT has_xor - set if XOR/XAND found in feature expresion
+ * RET true if valid, false otherwise
+ */
+extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
+				 bitstr_t *node_bitmap, bool *has_xor);
 
 #endif /* !_HAVE_NODE_SCHEDULER_H */

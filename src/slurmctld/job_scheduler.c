@@ -4557,6 +4557,7 @@ extern List feature_list_copy(List feature_list_src)
 
 /*
  * build_feature_list - Translate a job's feature string into a feature_list
+ * NOTE: This function is also used for reservations if job_id == 0
  * IN  details->features
  * OUT details->feature_list
  * RET error code
@@ -4651,8 +4652,14 @@ extern int build_feature_list(struct job_record *job_ptr)
 		} else if (tmp_requested[i] == ']') {
 			tmp_requested[i] = '\0';
 			if ((feature == NULL) || (bracket == 0)) {
-				verbose("Job %u invalid constraint %s",
-					job_ptr->job_id, detail_ptr->features);
+				if (job_ptr->job_id) {
+					verbose("Job %u invalid constraint %s",
+						job_ptr->job_id,
+						detail_ptr->features);
+				} else {
+					verbose("Reservation invalid constraint %s",
+						detail_ptr->features);
+				}
 				xfree(tmp_requested);
 				return ESLURM_INVALID_FEATURE;
 			}
@@ -4687,18 +4694,33 @@ extern int build_feature_list(struct job_record *job_ptr)
 	}
 	xfree(tmp_requested);
 	if (fail) {
-		verbose("Job %u invalid constraint %s",
-			job_ptr->job_id, detail_ptr->features);
+		if (job_ptr->job_id) {
+			verbose("Job %u invalid constraint %s",
+				job_ptr->job_id, detail_ptr->features);
+		} else {
+			verbose("Reservation invalid constraint %s",
+				detail_ptr->features);
+		}
 		return ESLURM_INVALID_FEATURE;
 	}
 	if (bracket != 0) {
-		verbose("Job %u constraint has unbalanced brackets: %s",
-			job_ptr->job_id, detail_ptr->features);
+		if (job_ptr->job_id) {
+			verbose("Job %u constraint has unbalanced brackets: %s",
+				job_ptr->job_id, detail_ptr->features);
+		} else {
+			verbose("Reservation constraint has unbalanced brackets: %s",
+				detail_ptr->features);
+		}
 		return ESLURM_INVALID_FEATURE;
 	}
 	if (paren != 0) {
-		verbose("Job %u constraint has unbalanced parenthesis: %s",
-			job_ptr->job_id, detail_ptr->features);
+		if (job_ptr->job_id) {
+			verbose("Job %u constraint has unbalanced parenthesis: %s",
+				job_ptr->job_id, detail_ptr->features);
+		} else {
+			verbose("Reservation constraint has unbalanced parenthesis: %s",
+				detail_ptr->features);
+		}
 		return ESLURM_INVALID_FEATURE;
 	}
 
@@ -4782,7 +4804,10 @@ static int _valid_feature_list(struct job_record *job_ptr, bool can_reboot)
 	int rc = SLURM_SUCCESS;
 
 	if (feature_list == NULL) {
-		debug2("Job %u feature list is empty", job_ptr->job_id);
+		if (job_ptr->job_id)
+			debug2("Job %u feature list is empty", job_ptr->job_id);
+		else
+			debug2("Reservation feature list is empty");
 		return rc;
 	}
 
@@ -4825,10 +4850,17 @@ static int _valid_feature_list(struct job_record *job_ptr, bool can_reboot)
 	list_iterator_destroy(feat_iter);
 
 	if (rc == SLURM_SUCCESS) {
-		debug("Job %u feature list: %s", job_ptr->job_id, buf);
+		if (job_ptr->job_id)
+			debug("Job %u feature list: %s", job_ptr->job_id, buf);
+		else
+			debug("Reservation feature list: %s", buf);
 	} else {
-		info("Job %u has invalid feature list: %s",
-		     job_ptr->job_id, buf);
+		if (job_ptr->job_id) {
+			info("Job %u has invalid feature list: %s",
+			     job_ptr->job_id, buf);
+		} else {
+			info("Reservation has invalid feature list: %s", buf);
+		}
 	}
 	xfree(buf);
 

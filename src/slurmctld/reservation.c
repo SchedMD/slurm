@@ -71,8 +71,10 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/burst_buffer.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
@@ -162,6 +164,10 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
 				  resv_desc_msg_t *resv_desc_ptr,
 				  bitstr_t **core_bitmap);
+static bitstr_t *_pick_idle_xand_nodes(bitstr_t *avail_bitmap,
+				       resv_desc_msg_t *resv_desc_ptr,
+				       bitstr_t **core_bitmap,
+				       List feature_list);
 static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 				     resv_desc_msg_t *resv_desc_ptr,
 				     uint32_t node_cnt,
@@ -3927,6 +3933,24 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	return i;
 }
 
+static int _have_xand_feature(void *x, void *key)
+{
+	job_feature_t *feat_ptr = (job_feature_t *) x;
+
+	if (feat_ptr->op_code == FEATURE_OP_XAND)
+		return 1;
+	return 0;
+}
+
+static int _have_xor_feature(void *x, void *key)
+{
+	job_feature_t *feat_ptr = (job_feature_t *) x;
+
+	if (feat_ptr->op_code == FEATURE_OP_XOR)
+		return 1;
+	return 0;
+}
+
 /* Given a reservation create request, select appropriate nodes for use */
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
@@ -3939,6 +3963,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	int i, rc = SLURM_SUCCESS;
 	time_t start_relative, end_relative;
 	time_t now = time(NULL);
+	bool have_xand = false;
 
 	if (*part_ptr == NULL) {
 		*part_ptr = default_part_loc;
@@ -3949,12 +3974,13 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	}
 
 	/* Start with all nodes in the partition */
-	if (*resv_bitmap)
-		node_bitmap = bit_copy(*resv_bitmap);
-	else
+	if (*resv_bitmap) {
+		node_bitmap = *resv_bitmap;
+		*resv_bitmap = NULL;
+	} else
 		node_bitmap = bit_copy((*part_ptr)->node_bitmap);
 
-	/* Don't use node already reserved */
+	/* Don't use nodes already reserved */
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
 	    !(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
 		iter = list_iterator_create(resv_list);
@@ -4000,84 +4026,67 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		list_iterator_destroy(iter);
 	}
 
-	/* Satisfy feature specification */
-	if (resv_desc_ptr->features) {
-		int   op_code = FEATURE_OP_AND, last_op_code = FEATURE_OP_AND;
-		char *features = xstrdup(resv_desc_ptr->features);
-		char *sep_ptr, *token = features;
-		bitstr_t *feature_bitmap = bit_copy(node_bitmap);
-		node_feature_t *feature_ptr;
-		ListIterator feature_iter;
-		bool match;
-
-		while (1) {
-			for (i=0; ; i++) {
-				if (token[i] == '\0') {
-					sep_ptr = NULL;
-					break;
-				} else if (token[i] == '|') {
-					op_code = FEATURE_OP_OR;
-					token[i] = '\0';
-					sep_ptr = &token[i];
-					break;
-				} else if ((token[i] == '&') ||
-					   (token[i] == ',')) {
-					op_code = FEATURE_OP_AND;
-					token[i] = '\0';
-					sep_ptr = &token[i];
-					break;
-				}
-			}
-
-			match = false;
-			feature_iter = list_iterator_create(avail_feature_list);
-			while ((feature_ptr = (node_feature_t *)
-					list_next(feature_iter))) {
-				if (xstrcmp(token, feature_ptr->name))
-					continue;
-				if (last_op_code == FEATURE_OP_OR) {
-					bit_or(feature_bitmap,
-					       feature_ptr->node_bitmap);
-				} else {
-					bit_and(feature_bitmap,
-						feature_ptr->node_bitmap);
-				}
-				match = true;
-				break;
-			}
-			list_iterator_destroy(feature_iter);
-			if (!match) {
-				info("reservation feature invalid: %s", token);
-				rc = ESLURM_INVALID_FEATURE;
-				bit_nclear(feature_bitmap, 0,
-					   (node_record_count - 1));
-				break;
-			}
-			if (sep_ptr == NULL)
-				break;
-			token = sep_ptr + 1;
-			last_op_code = op_code;
-		}
-		xfree(features);
-		bit_and(node_bitmap, feature_bitmap);
-		FREE_NULL_BITMAP(feature_bitmap);
-	}
-
 	if (((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) &&
 	    ((resv_desc_ptr->flags & RESERVE_FLAG_SPEC_NODES) == 0)) {
 		/* Nodes must be available */
 		bit_and(node_bitmap, avail_node_bitmap);
 	}
 
-	/* If *resv_bitmap exists we probably don't need to delete it, when it
-	 * gets created off of node_bitmap it will be the same, but just to be
-	 * safe we do. */
-	FREE_NULL_BITMAP(*resv_bitmap);
-	if (rc == SLURM_SUCCESS) {
-		/* Free node_list here since it could be filled in in the
-		   select plugin.
-		*/
-		xfree(resv_desc_ptr->node_list);
+	/* Satisfy feature specification */
+	if (resv_desc_ptr->features) {
+		struct job_record *job_ptr;
+		bool dummy = false;
+		int total_node_cnt = 0;
+
+		job_ptr = xmalloc(sizeof(struct job_record));
+		job_ptr->details = xmalloc(sizeof(struct job_details));
+		job_ptr->details->features = resv_desc_ptr->features;
+		/* job_ptr->user_id = 0; */
+		rc = build_feature_list(job_ptr);
+		if ((rc == SLURM_SUCCESS) &&
+		    list_find_first(job_ptr->details->feature_list,
+				    _have_xor_feature, &dummy)) {
+			rc = ESLURM_INVALID_FEATURE;
+		} else {
+			find_feature_nodes(job_ptr->details->feature_list,
+					   true);
+			if (resv_desc_ptr->node_cnt) {
+				for (i = 0; resv_desc_ptr->node_cnt[i]; i++)
+					total_node_cnt +=
+						resv_desc_ptr->node_cnt[i];
+			}
+		}
+		if (rc != SLURM_SUCCESS) {
+			;
+		} else if (list_find_first(job_ptr->details->feature_list,
+					   _have_xand_feature, &dummy)) {
+			/* Accumulate resoures by feature type/count */
+			have_xand = true;
+			*resv_bitmap = _pick_idle_xand_nodes(node_bitmap,
+						resv_desc_ptr, core_bitmap,
+						job_ptr->details->feature_list);
+		} else {
+			/*
+			 * Simple AND/OR node filtering.
+			 * First try to use nodes with the feature active.
+			 * If that fails, use nodes with the feature available.
+			 */
+			if (!valid_feature_counts(job_ptr, true, node_bitmap,
+						  &dummy)) {
+				rc = ESLURM_INVALID_FEATURE;
+			} else if (bit_set_count(node_bitmap) < total_node_cnt){
+				if (!valid_feature_counts(job_ptr, false,
+							  node_bitmap, &dummy)){
+					rc = ESLURM_INVALID_FEATURE;
+				}
+			}
+		}
+		FREE_NULL_LIST(job_ptr->details->feature_list);
+		xfree(job_ptr->details);
+		xfree(job_ptr);
+	}
+
+	if (!have_xand && (rc == SLURM_SUCCESS)) {
 		*resv_bitmap = _pick_idle_nodes(node_bitmap,
 						resv_desc_ptr, core_bitmap);
 	}
@@ -4092,6 +4101,94 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
 
 	return SLURM_SUCCESS;
+}
+
+static bitstr_t *_pick_idle_xand_nodes(bitstr_t *avail_bitmap,
+				       resv_desc_msg_t *resv_desc_ptr,
+				       bitstr_t **core_bitmap,
+				       List feature_list)
+{
+	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL, *tmp_avail_bitmap;
+	uint32_t *save_core_cnt, *save_node_cnt;
+	uint32_t new_node_cnt[2] = {0, 0};
+	job_feature_t *feat_ptr;
+	ListIterator feat_iter;
+	int paren = 0;
+	bool test_active = true;
+
+	save_core_cnt = resv_desc_ptr->core_cnt;
+	resv_desc_ptr->core_cnt = NULL;
+	save_node_cnt = resv_desc_ptr->node_cnt;
+	resv_desc_ptr->node_cnt = new_node_cnt;
+
+TRY_AVAIL:
+	/*
+	 * In the first pass, we try to satisfy the resource requirements using
+	 * currently active features. If that fails, use available features
+	 * and require a reboot to satisfy the request
+	 */
+	feat_iter = list_iterator_create(feature_list);
+	while ((feat_ptr = (job_feature_t *)list_next(feat_iter))) {
+		if (feat_ptr->paren > paren) {	/* Start parenthesis */
+			paren = feat_ptr->paren;
+			if (test_active)
+				tmp_bitmap = feat_ptr->node_bitmap_active;
+			else
+				tmp_bitmap = feat_ptr->node_bitmap_avail;
+			continue;
+		}
+		if ((feat_ptr->paren == 1) ||	 /* Continue parenthesis */
+		    (feat_ptr->paren < paren)) { /* End of parenthesis */
+			paren = feat_ptr->paren;
+			if (test_active) {
+				bit_and(feat_ptr->node_bitmap_active,
+					tmp_bitmap);
+				tmp_bitmap = feat_ptr->node_bitmap_active;
+			} else {
+				bit_and(feat_ptr->node_bitmap_avail,
+					tmp_bitmap);
+				tmp_bitmap = feat_ptr->node_bitmap_avail;
+			}
+			if (feat_ptr->paren == 1)
+				continue;
+		}
+		if (feat_ptr->count)
+			new_node_cnt[0] = feat_ptr->count;
+		else
+			new_node_cnt[0] = 1;
+		tmp_avail_bitmap = bit_copy(avail_bitmap);
+		if (ret_bitmap)
+			bit_and_not(tmp_avail_bitmap, ret_bitmap);
+		if (test_active)
+			bit_and(tmp_avail_bitmap, feat_ptr->node_bitmap_active);
+		else
+			bit_and(tmp_avail_bitmap, feat_ptr->node_bitmap_avail);
+		tmp_bitmap = _pick_idle_nodes(tmp_avail_bitmap, resv_desc_ptr,
+					      core_bitmap);
+		bit_free(tmp_avail_bitmap);
+		if (!tmp_bitmap) {
+			FREE_NULL_BITMAP(ret_bitmap);
+			break;
+		}
+		if (ret_bitmap) {
+			bit_or(ret_bitmap, tmp_bitmap);
+			bit_free(tmp_bitmap);
+		} else {
+			ret_bitmap = tmp_bitmap;
+			tmp_bitmap = NULL;
+		}
+	}
+	list_iterator_destroy(feat_iter);
+	if (!ret_bitmap && test_active) {
+		/* Test failed for active features, test available features */
+		test_active = false;
+		goto TRY_AVAIL;
+	}
+
+	resv_desc_ptr->core_cnt = save_core_cnt;
+	resv_desc_ptr->node_cnt = save_node_cnt;
+
+	return ret_bitmap;
 }
 
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
@@ -4115,6 +4212,9 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 #else
 	static uint16_t static_blocks = 0;
 #endif
+
+	/* Free node_list here, it could be filled in by the select plugin. */
+	xfree(resv_desc_ptr->node_list);
 
 	if (resv_desc_ptr->node_cnt == NULL) {
 		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr, 0,

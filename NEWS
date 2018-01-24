@@ -60,6 +60,9 @@ documents those changes that are of interest to users and administrators.
     operation is in progress.
  -- Correct SLURM_NTASKS and SLURM_NPROCS environment variable for heterogeneous
     job step. Report values representing full allocation.
+ -- Expand advanced reservation feature specification to support parenthesis and
+    counts of nodes with specified features. Nodes with the feature currently
+    active will be prefered.
 
 * Changes in Slurm 17.11.3
 ==========================

@@ -666,6 +666,10 @@ A request can also specify the number of nodes needed with some feature
 by appending an asterisk and count after the feature name.
 For example "\fBFeatures=graphics*4"\fR
 indicates that at least four allocated nodes must have the feature "graphics."
+Parenthesis are also supported for features to be ANDed together.
+For example "\fBFeatures=[(knl&a2a&flat)*4&haswell*2]"\fR indicates the
+resource allocation should include 4 nodes with ALL of the features "knl",
+"a2a", and "flat" plus 2 nodes with the feature "haswell".
 Constraints with node counts may only be combined with AND operators.
 Value may be cleared with blank data value, for example "Features=".
 
@@ -1643,6 +1647,12 @@ Repeat the reservation at the same time every week.
 Set the reservation's required node features. Multiple values
 may be "&" separated if all features are required (AND operation) or
 separated by "|" if any of the specified features are required (OR operation).
+Parenthesis are also supported for features to be ANDed together with counts
+of nodes having the specified features.
+For example "\fBFeatures=[(knl&a2a&flat)*4&haswell*2]"\fR indicates the
+advanced reservation should include 4 nodes with ALL of the features "knl",
+"a2a", and "flat" plus 2 nodes with the feature "haswell".
+
 Value may be cleared with blank data value, "Features=".
 
 .TP
