@@ -39,28 +39,32 @@ control flag):</p>
 account    sufficient    pam_slurm_adopt.so
 </pre>
 
-<p>The last PAM module in the account stack should be pam_slurm_adopt.so. For
-example, you might have the following account stack in sshd:</p>
+<p> pam_slurm_adopt.so should be the last PAM module in the account stack; it
+can be safely put at the very end of the file.
+You might have the following account stack in sshd:</p>
 
 <pre>
 account    required      pam_nologin.so
 account    include       password-auth
+...
 account    sufficient    pam_slurm_adopt.so
 </pre>
 
 <p>pam_slurm_adopt must be used with the task/cgroup plugin.
 The pam_systemd module will conflict with pam_slurm_adopt, so you need to
-disable it. In addition, make sure a different PAM module isn't short-circuiting
-the account stack before it gets to pam_slurm_adopt.so. For the example above,
-the following two lines have been commented out in password-auth:</p>
+disable it in all files that are included in sshd or system-auth (e.g.
+password-auth, common-session, etc.). You must also make sure a different PAM
+module isn't short-circuiting the account stack before it gets to
+pam_slurm_adopt.so. From the example above, the following two lines have been
+commented out in the included password-auth file:</p>
 
 <pre>
 #account    sufficient    pam_localuser.so
 #-session   optional      pam_systemd.so
 </pre>
 
-<p>Note: This may involve editing a file that is auto-generated (password-auth
-in this example). Do not run the config script that generates the file or your
+<p>Note: This may involve editing a file that is auto-generated.
+Do not run the config script that generates the file or your
 changes will be erased.</p>
 
 <p>If you always want to allow access for an administrative group (e.g., wheel),
