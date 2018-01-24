@@ -3673,7 +3673,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 	} else if (bb_job->state == BB_STATE_STAGED_IN) {
 		rc = 1;
 	} else {
-		rc = -1;	/* Requeued job still staging out */
+		rc = -1;	/* Requeued job still staging in */
 	}
 
 	slurm_mutex_unlock(&bb_state.bb_mutex);
@@ -4195,12 +4195,14 @@ static void _free_create_args(create_buf_data_t *create_args)
 	}
 }
 
-/* Create/destroy persistent burst buffers
+/*
+ * Create/destroy persistent burst buffers
  * job_ptr IN - job to operate upon
  * bb_job IN - job's burst buffer data
  * job_ready IN - if true, job is ready to run now, if false then do not
  *                delete persistent buffers
- * Returns count of buffer create/destroy requests which are pending */
+ * Returns count of buffer create/destroy requests which are pending
+ */
 static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			bool job_ready)
 {
