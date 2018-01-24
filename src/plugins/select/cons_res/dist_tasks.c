@@ -940,12 +940,17 @@ fini:	xfree(sock_avoid);
 }
 
 /* Remove any specialized cores from those allocated to the job */
-static void _clear_spec_cores(job_resources_t *job_res,
+static void _clear_spec_cores(struct job_record *job_ptr,
 			      bitstr_t *avail_core_bitmap)
 {
 	int first_node, last_node, i_node;
 	int first_core, last_core, i_core;
 	int alloc_node = -1, alloc_core = -1, size;
+	job_resources_t *job_res = job_ptr->job_resrcs;
+	multi_core_data_t *mc_ptr = NULL;
+
+	if (job_ptr->details && job_ptr->details->mc_ptr)
+		mc_ptr = job_ptr->details->mc_ptr;
 
 	size = bit_size(job_res->core_bitmap);
 	bit_nset(job_res->core_bitmap, 0, size - 1);
@@ -965,8 +970,13 @@ static void _clear_spec_cores(job_resources_t *job_res,
 		for (i_core = first_core; i_core <= last_core; i_core++) {
 			alloc_core++;
 			if (bit_test(avail_core_bitmap, i_core)) {
-				job_res->cpus[alloc_node] +=
-					select_node_record[i_node].vpus;
+				uint16_t tpc = select_node_record[i_node].vpus;
+				if (mc_ptr &&
+				    (mc_ptr->threads_per_core != NO_VAL16) &&
+				    (mc_ptr->threads_per_core < tpc))
+					tpc = mc_ptr->threads_per_core;
+
+				job_res->cpus[alloc_node] += tpc;
 			} else {
 				bit_clear(job_res->core_bitmap, alloc_core);
 			}
@@ -1026,7 +1036,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		 * the available CPUs in the cpus array. Up to this point
 		 * we might not have the correct CPU count, but a core count
 		 * and ignoring specialized cores. Fix that too. */
-		_clear_spec_cores(job_ptr->job_resrcs, avail_core_bitmap);
+		_clear_spec_cores(job_ptr, avail_core_bitmap);
 		return SLURM_SUCCESS;
 	}
 
