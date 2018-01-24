@@ -5676,10 +5676,9 @@ extern int load_assoc_mgr_last_tres(void)
 	uint32_t data_size = 0;
 	uint16_t ver = 0;
 	int state_fd;
-	char *data = NULL, *state_file, *tmp_str = NULL;
+	char *data = NULL, *state_file;
 	Buf buffer = NULL;
 	time_t buf_time;
-	ListIterator itr = NULL;
 	dbd_list_msg_t *msg = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -5765,9 +5764,6 @@ unpack_error:
 
 	free_buf(buffer);
 
-	if (itr)
-		list_iterator_destroy(itr);
-	xfree(tmp_str);
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
