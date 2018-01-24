@@ -190,7 +190,7 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 }
 
 static int
-_setup_stepd_tree_info(const stepd_step_rec_t *job, char ***env)
+_setup_stepd_tree_info(char ***env)
 {
 	hostlist_t hl;
 	char *srun_host;
@@ -285,18 +285,21 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	}
 	sa.sun_family = PF_UNIX;
 
-	/* tree_sock_addr has to remain unformatted since the formatting
-	 * happens on the slurmd side */
+	/*
+	 * tree_sock_addr has to remain unformatted since the formatting
+	 * happens on the slurmd side
+	 */
 	spool = slurm_get_slurmd_spooldir(NULL);
 	snprintf(tree_sock_addr, sizeof(tree_sock_addr), PMI2_SOCK_ADDR_FMT,
-		 spool, job->jobid, job->stepid);
-	/* Make sure we adjust for the spool dir coming in on the address to
+		 spool, job_info.jobid, job_info.stepid);
+	/*
+	 * Make sure we adjust for the spool dir coming in on the address to
 	 * point to the right spot.
 	 */
 	xstrsubstitute(spool, "%n", job->node_name);
 	xstrsubstitute(spool, "%h", job->node_name);
 	snprintf(sa.sun_path, sizeof(sa.sun_path), PMI2_SOCK_ADDR_FMT,
-		 spool, job->jobid, job->stepid);
+		 spool, job_info.jobid, job_info.stepid);
 	unlink(sa.sun_path);    /* remove possible old socket */
 	xfree(spool);
 
@@ -321,7 +324,7 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 }
 
 static int
-_setup_stepd_kvs(const stepd_step_rec_t *job, char ***env)
+_setup_stepd_kvs(char ***env)
 {
 	int rc = SLURM_SUCCESS, i = 0, pp_cnt = 0;
 	char *p, env_key[32], *ppkey, *ppval;
@@ -377,7 +380,7 @@ pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env)
 		return rc;
 
 	/* tree info */
-	rc = _setup_stepd_tree_info(job, env);
+	rc = _setup_stepd_tree_info(env);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -387,7 +390,7 @@ pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env)
 		return rc;
 
 	/* kvs */
-	rc = _setup_stepd_kvs(job, env);
+	rc = _setup_stepd_kvs(env);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -401,7 +404,7 @@ pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env)
 }
 
 extern void
-pmi2_cleanup_stepd()
+pmi2_cleanup_stepd(void)
 {
 	close(tree_sock);
 	_remove_tree_sock();
@@ -628,7 +631,7 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 }
 
 static int
-_setup_srun_tree_info(const mpi_plugin_client_info_t *job)
+_setup_srun_tree_info(void)
 {
 	char *p;
 	uint16_t p_port;
@@ -652,11 +655,13 @@ _setup_srun_tree_info(const mpi_plugin_client_info_t *job)
 	} else
 		tree_info.srun_addr = NULL;
 
-	/* FIXME: We need to handle %n and %h in the spool dir, but don't have
-	 * the node name here */
+	/*
+	 * FIXME: We need to handle %n and %h in the spool dir, but don't have
+	 * the node name here
+	 */
 	spool = slurm_get_slurmd_spooldir(NULL);
 	snprintf(tree_sock_addr, 128, PMI2_SOCK_ADDR_FMT,
-		 spool, job->jobid, job->stepid);
+		 spool, job_info.jobid, job_info.stepid);
 	xfree(spool);
 
 	/* init kvs seq to 0. TODO: reduce array size */
@@ -680,7 +685,7 @@ _setup_srun_socket(const mpi_plugin_client_info_t *job)
 }
 
 static int
-_setup_srun_kvs(const mpi_plugin_client_info_t *job)
+_setup_srun_kvs(void)
 {
 	int rc;
 
@@ -763,11 +768,11 @@ pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env)
 	if ((job->pack_jobid == NO_VAL) || (job->pack_jobid == job->jobid)) {
 		rc = _setup_srun_job_info(job);
 		if (rc == SLURM_SUCCESS)
-			rc = _setup_srun_tree_info(job);
+			rc = _setup_srun_tree_info();
 		if (rc == SLURM_SUCCESS)
 			rc = _setup_srun_socket(job);
 		if (rc == SLURM_SUCCESS)
-			rc = _setup_srun_kvs(job);
+			rc = _setup_srun_kvs();
 		if (rc == SLURM_SUCCESS)
 			rc = _setup_srun_environ(job, env);
 		if ((rc == SLURM_SUCCESS) && job_info.spawn_seq) {
