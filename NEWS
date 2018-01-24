@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix job array dependency with "aftercorr" option and some task arrays in
     the first job fail. This fix lets all task array elements that can run
     proceed rather than stopping all subsequent task array elements.
+ -- Fix whole node allocation cpu counts when --hint=nomultihtread.
 
 * Changes in Slurm 17.02.9
 ==========================
