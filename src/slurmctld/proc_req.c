@@ -3623,8 +3623,9 @@ static void _slurm_rpc_takeover(slurm_msg_t * msg)
 /* _slurm_rpc_shutdown_controller - process RPC to shutdown slurmctld */
 static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 {
-	int error_code = SLURM_SUCCESS, i;
+	int error_code = SLURM_SUCCESS;
 	uint16_t options = 0;
+	time_t now = time(NULL);
 	shutdown_msg_t *shutdown_msg = (shutdown_msg_t *) msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
@@ -3665,23 +3666,15 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 			pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 		else {
 			error("thread_id_sig undefined, hard shutdown");
-			slurmctld_config.shutdown_time = time(NULL);
+			slurmctld_config.shutdown_time = now;
 			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			slurmctld_shutdown();
 		}
 	}
 
 	if (msg->msg_type == REQUEST_CONTROL) {
-		/* Wait for workload to dry up before sending reply.
-		 * One thread should remain, this one. */
-		for (i = 1; i < (CONTROL_TIMEOUT * 10); i++) {
-			if (slurmctld_config.server_thread_count <= 1)
-				break;
-			usleep(100000);
-		}
-		if (slurmctld_config.server_thread_count > 1)
-			error("REQUEST_CONTROL reply with %d active threads",
-			      slurmctld_config.server_thread_count);
+		struct timespec ts = {0, 0};
+
 		/* save_all_state();	performed by _slurmctld_background */
 
 		/*
@@ -3694,8 +3687,24 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		 * dently scheduled. So we save it manually here.
 		 */
 		(void) g_slurm_jobcomp_fini();
-	}
 
+		/*
+		 * Wait for the backup to dump state and finish up everything.
+		 * This should happen in _slurmctld_background and then release
+		 * once we know for sure we are in backup mode in run_backup().
+		 * Here we will wait CONTROL_TIMEOUT - 1 before we reply.
+		 */
+		ts.tv_sec = now + CONTROL_TIMEOUT - 1;
+
+		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+		slurm_cond_timedwait(&slurmctld_config.backup_finish_cond,
+				     &slurmctld_config.thread_count_lock,
+				     &ts);
+		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
+		if (slurmctld_config.resume_backup)
+			error("%s: REQUEST_CONTROL reply but backup not completely done relinquishing control.  Old state possible", __func__);
+	}
 
 	slurm_send_rc_msg(msg, error_code);
 	if ((error_code == SLURM_SUCCESS) && (options == 1) &&

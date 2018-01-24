@@ -204,7 +204,6 @@ static char	node_name_long[MAX_SLURM_NAME];
 static pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static int	recover   = DEFAULT_RECOVER;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 static char *	slurm_conf_filename;
 
@@ -241,7 +240,7 @@ inline static int   _report_locks_set(void);
 static int          _running_jobs_count();
 static void *       _service_connection(void *arg);
 static void         _set_work_dir(void);
-static int          _shutdown_backup_controller(int wait_time);
+static int          _shutdown_backup_controller(void);
 static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
@@ -493,12 +492,12 @@ int main(int argc, char **argv)
 		if (!slurmctld_primary) {
 			slurm_sched_fini();	/* make sure shutdown */
 			run_backup(&callbacks);
-			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
+			(void) _shutdown_backup_controller();
 			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS)
 				fatal("failed to initialize "
 				      "accounting_storage plugin");
 		} else if (_valid_controller()) {
-			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
+			(void) _shutdown_backup_controller();
 			trigger_primary_ctld_res_ctrl();
 			ctld_assoc_mgr_init(&callbacks);
 			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS)
@@ -815,6 +814,7 @@ static void  _init_config(void)
 	}
 
 	memset(&slurmctld_config, 0, sizeof(slurmctld_config_t));
+	slurm_cond_init(&slurmctld_config.backup_finish_cond, NULL);
 	slurmctld_config.boot_time      = time(NULL);
 	slurmctld_config.daemonize      = DEFAULT_DAEMONIZE;
 	slurmctld_config.resume_backup  = false;
@@ -824,6 +824,7 @@ static void  _init_config(void)
 	slurmctld_config.scheduling_disabled  = false;
 	slurmctld_config.submissions_disabled = false;
 	slurm_mutex_init(&slurmctld_config.thread_count_lock);
+	slurm_cond_init(&slurmctld_config.thread_count_cond, NULL);
 	slurmctld_config.thread_id_main    = (pthread_t) 0;
 	slurmctld_config.thread_id_sig     = (pthread_t) 0;
 	slurmctld_config.thread_id_rpc     = (pthread_t) 0;
@@ -1191,7 +1192,7 @@ static bool _wait_for_server_thread(void)
 				}
 				print_it = false;
 			}
-			slurm_cond_wait(&server_thread_cond,
+			slurm_cond_wait(&slurmctld_config.thread_count_cond,
 					&slurmctld_config.thread_count_lock);
 		}
 	}
@@ -1207,7 +1208,7 @@ extern void server_thread_decr(void)
 		slurmctld_config.server_thread_count--;
 	else
 		error("slurmctld_config.server_thread_count underflow");
-	slurm_cond_broadcast(&server_thread_cond);
+	slurm_cond_broadcast(&slurmctld_config.thread_count_cond);
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 }
 
@@ -1822,19 +1823,25 @@ static void *_slurmctld_background(void *no_data)
 		if (slurmctld_config.shutdown_time) {
 			struct timespec ts = {0, 0};
 			struct timeval now;
+			int exp_thread_cnt =
+				slurmctld_config.resume_backup ? 1 : 0;
 			/* wait for RPC's to complete */
 			gettimeofday(&now, NULL);
 			ts.tv_sec = now.tv_sec + CONTROL_TIMEOUT;
 			ts.tv_nsec = now.tv_usec * 1000;
+
 			slurm_mutex_lock(&slurmctld_config.thread_count_lock);
-			while (slurmctld_config.server_thread_count > 0) {
-				slurm_cond_timedwait(&server_thread_cond,
+			while (slurmctld_config.server_thread_count >
+			       exp_thread_cnt) {
+				slurm_cond_timedwait(
+					&slurmctld_config.thread_count_cond,
 					&slurmctld_config.thread_count_lock,
 					&ts);
 			}
-			if (slurmctld_config.server_thread_count) {
+			if (slurmctld_config.server_thread_count >
+			    exp_thread_cnt) {
 				info("shutdown server_thread_count=%d",
-					slurmctld_config.server_thread_count);
+				     slurmctld_config.server_thread_count);
 			}
 			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 
@@ -2061,7 +2068,7 @@ static void *_slurmctld_background(void *no_data)
 		    _is_primary_ctld()) {
 			now = time(NULL);
 			last_assert_primary_time = now;
-			(void) _shutdown_backup_controller(0);
+			(void) _shutdown_backup_controller();
 		}
 		unlock_slurmctld(config_read_lock);
 
@@ -2583,14 +2590,19 @@ static void *_shutdown_bu_thread(void *arg)
 	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port,
 		       slurmctld_conf.control_addr[bu_inx]);
 	req.msg_type = REQUEST_CONTROL;
+	debug("Requesting control from backup controller %s",
+	      slurmctld_conf.control_machine[bu_inx]);
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc2,
 				(CONTROL_TIMEOUT * 1000)) < 0) {
-		error("%s:send/recv: %m", __func__);
+		error("%s:send/recv %s: %m",
+		      __func__, slurmctld_conf.control_machine[bu_inx]);
 		rc = SLURM_ERROR;
 	} else if (rc2 == ESLURM_DISABLED) {
-		debug("backup controller responding");
+		debug("backup controller %s responding",
+		      slurmctld_conf.control_machine[bu_inx]);
 	} else if (rc2 == SLURM_SUCCESS) {
-		debug("backup controller has relinquished control");
+		debug("backup controller %s has relinquished control",
+		      slurmctld_conf.control_machine[bu_inx]);
 		acct_reg = true;
 	} else {
 		error("%s (%s): %s", __func__,
@@ -2613,12 +2625,10 @@ static void *_shutdown_bu_thread(void *arg)
 /*
  * Tell the backup_controllers to relinquish control, primary control_machine
  *	has resumed operation. Messages sent to all controllers in parallel.
- * wait_time - How long to wait for backup controller to write state, seconds.
- *             Must be zero when called from _slurmctld_background() loop.
  * RET 0 or an error code
  * NOTE: READ lock_slurmctld config before entry (or be single-threaded)
  */
-static int _shutdown_backup_controller(int wait_time)
+static int _shutdown_backup_controller(void)
 {
 	int i, *arg;
 
@@ -2643,17 +2653,7 @@ static int _shutdown_backup_controller(int wait_time)
 	}
 	slurm_mutex_unlock(&bu_mutex);
 
-	if (wait_time) {
-		/*
-		 * FIXME: Ideally the REQUEST_CONTROL RPC does not return until
-		 * all other activity has ceased and the state has been saved.
-		 * That is not presently the case (it returns when no other work
-		 * is pending, so the state save should occur right away). We
-		 * sleep for a while here and give the backup controller time
-		 * to shutdown
-		 */
-		sleep(wait_time);
-	} else if (bu_acct_reg) {
+	if (bu_acct_reg) {
 		/*
 		 * In case primary controller really did not terminate,
 		 * but just temporarily became non-responsive

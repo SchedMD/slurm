@@ -141,6 +141,12 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 
 	/* default: don't resume if shutdown */
 	slurmctld_config.resume_backup = false;
+
+	/* It is now ok to tell the primary I am done (if I ever had control) */
+	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+	slurm_cond_broadcast(&slurmctld_config.backup_finish_cond);
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
 	if (xsignal_block(backup_sigarray) < 0)
 		error("Unable to block signals");
 

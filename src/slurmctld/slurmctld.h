@@ -117,7 +117,7 @@
 
 /* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
 #ifndef CONTROL_TIMEOUT
-#define CONTROL_TIMEOUT 10	/* seconds */
+#define CONTROL_TIMEOUT 30	/* seconds */
 #endif
 
 /* Maximum number of requeue attempts before the job is put JOB_REQUEUE_HOLD
@@ -133,6 +133,7 @@
 
 typedef struct slurmctld_config {
 	char *	auth_info;
+	pthread_cond_t backup_finish_cond; /* use thread_count_lock */
 	time_t	boot_time;
 	int	daemonize;
 	bool	send_groups_in_cred;
@@ -143,6 +144,7 @@ typedef struct slurmctld_config {
 	bool    submissions_disabled;
 
 	slurm_cred_ctx_t cred_ctx;
+	pthread_cond_t thread_count_cond;
 	pthread_mutex_t thread_count_lock;
 	pthread_t thread_id_main;
 	pthread_t thread_id_save;

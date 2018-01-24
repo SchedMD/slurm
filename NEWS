@@ -64,6 +64,8 @@ documents those changes that are of interest to users and administrators.
     counts of nodes with specified features. Nodes with the feature currently
     active will be prefered.
  -- Defer job signaling  until prolog is completed
+ -- Have the primary slurmctld wait until the backup has completely shutdown
+    before taking control.
 
 * Changes in Slurm 17.11.3
 ==========================
