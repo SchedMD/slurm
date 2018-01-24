@@ -526,7 +526,7 @@ static void *_oom_event_monitor(void *x)
 		error("%s: close(efd): %m", __func__);
 	if ((args->cfd != -1) && (close(args->cfd) == -1))
 		error("%s: close(cfd): %m", __func__);
-	if ((oom_pipe[0] != -1) && (close(oom_pipe[0]) == -1))
+	if ((oom_pipe[0] >= 0) && (close(oom_pipe[0]) == -1))
 		error("%s: close(oom_pipe[0]): %m", __func__);
 	xfree(args);
 
