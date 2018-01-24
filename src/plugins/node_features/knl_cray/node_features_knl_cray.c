@@ -3049,12 +3049,12 @@ extern void node_features_p_get_config(List *data)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowMCDRAM");
-	key_pair->value = xstrdup_printf("%s", _knl_mcdram_str(allow_mcdram));
+	key_pair->value = _knl_mcdram_str(allow_mcdram);
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowNUMA");
-	key_pair->value = xstrdup_printf("%s", _knl_numa_str(allow_numa));
+	key_pair->value = _knl_numa_str(allow_numa);
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
