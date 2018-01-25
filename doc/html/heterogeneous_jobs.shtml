@@ -411,12 +411,10 @@ component number zero. Some examples follow:</p>
 </ul>
 
 <p><b>IMPORTANT:</b> The ability to execute a single application across more
-than one job allocation does not work in Slurm version 17.11 except in the
-case of OpenMPI with Slurm's mpi/pmi2 plugin or a non-MPI job with Slurm's
-mpi/none. We expect support for other MPI implementations in a future release
-of Slurm. Until that time, an appropriate error message will be reported unless
-Slurm's SchedulerParameters configuration parameter includes the option
-"enable_hetero_steps".</p>
+than one job allocation does not work with all MPI implementations or Slurm MPI
+plugins. Slurm's ability to execute such an application can be disabled on the
+entire cluster by adding "disable_hetero_steps" to Slurm's SchedulerParameters
+configuration parameter.</p>
 
 <p>By default, the applications launched by a single execution of the srun
 command (even for different components of the heterogeneous job) are combined
@@ -689,6 +687,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 December 2017</p>
+<p style="text-align:center;">Last modified 25 January 2018</p>
 
 <!--#include virtual="footer.txt"-->

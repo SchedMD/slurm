@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "November 2017" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "January 2018" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2790,11 +2790,10 @@ will be gigabytes rather than megabytes.
 Users can override the default by using a suffix of "M" for megabytes.
 .TP
 \fBdisable_hetero_steps\fR
-Disable job steps that span heterogeneous job allocations, even with the
-mpi/none plugin.
+Disable job steps that span heterogeneous job allocations.
 .TP
 \fBenable_hetero_steps\fR
-Enable job steps that span heterogeneous job allocations.
+Enable job steps that span heterogeneous job allocations. The default value.
 .TP
 \fBenable_user_top\fR
 Enable use of the "scontrol top" command by non-privileged users.
