@@ -2603,4 +2603,15 @@ extern void free_job_fed_details(job_fed_details_t **fed_details_pptr);
 extern double calc_job_billable_tres(struct job_record *job_ptr,
 				     time_t start_time, bool assoc_mgr_locked);
 
+/*
+ * Realloc and possibly update a job_ptr->limit_set->tres array.
+ *
+ * If a new TRES is added the TRES positions in the array could have been moved
+ * around. The array either needs to be grown and/or the values need to be put
+ * in their new position.
+ *
+ * IN: tres_limits - job_ptr->limit_set->tres array.
+ */
+extern void update_job_limit_set_tres(uint16_t **tres_limits);
+
 #endif /* !_HAVE_SLURMCTLD_H */

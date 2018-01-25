@@ -66,6 +66,8 @@ documents those changes that are of interest to users and administrators.
  -- Defer job signaling  until prolog is completed
  -- Have the primary slurmctld wait until the backup has completely shutdown
     before taking control.
+ -- Fix issue where unpacking job state after TRES count changed could lead to
+    invalid reads.
 
 * Changes in Slurm 17.11.3
 ==========================

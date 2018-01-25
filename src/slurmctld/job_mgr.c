@@ -1167,6 +1167,14 @@ static int _unpack_acct_policy_limit_members(
 	xfree(limit_set->tres);
 	safe_unpack16_array(&limit_set->tres, &tmp32, buffer);
 
+	/*
+	 * Because the tres array could have grown or the tres could have moved
+	 * positions, the array needs to be rebuilt and the old values need to
+	 * be copied into their new spots.
+	 */
+	if ((tmp32 < slurmctld_tres_cnt) || assoc_mgr_tres_pos_changed())
+		update_job_limit_set_tres(&limit_set->tres);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -18006,5 +18014,28 @@ extern double calc_job_billable_tres(struct job_record *job_ptr,
 		     job_ptr->billable_tres);
 
 	return job_ptr->billable_tres;
+}
+
+extern void update_job_limit_set_tres(uint16_t **limits_pptr)
+{
+	int i, old_pos;
+	int new_size = sizeof(uint16_t) * slurmctld_tres_cnt;
+
+	xassert(limits_pptr);
+
+	*limits_pptr = xrealloc(*limits_pptr, new_size);
+
+	if (assoc_mgr_tres_pos_changed()) {
+		uint16_t *limits_ptr, tmp_tres[slurmctld_tres_cnt];
+		limits_ptr = *limits_pptr;
+
+		for (i = 0; i < slurmctld_tres_cnt; i++) {
+			if ((old_pos = assoc_mgr_get_old_tres_pos(i)) == -1)
+				tmp_tres[i] = 0;
+			else
+				tmp_tres[i] = limits_ptr[old_pos];
+		}
+		memcpy(limits_ptr, tmp_tres, new_size);
+	}
 }
 

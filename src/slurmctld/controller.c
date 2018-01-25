@@ -1604,6 +1604,8 @@ static void _update_cluster_tres(void)
 						 job_ptr->tres_alloc_str,
 						 0, true))
 			job_set_alloc_tres(job_ptr, true);
+
+		update_job_limit_set_tres(&job_ptr->limit_set.tres);
 	}
 	list_iterator_destroy(job_iterator);
 
