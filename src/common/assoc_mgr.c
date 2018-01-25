@@ -73,6 +73,7 @@ static assoc_mgr_lock_flags_t assoc_mgr_locks;
 static assoc_init_args_t init_setup;
 static slurmdb_assoc_rec_t **assoc_hash_id = NULL;
 static slurmdb_assoc_rec_t **assoc_hash = NULL;
+static int *assoc_mgr_tres_old_pos = NULL;
 
 static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
@@ -1125,7 +1126,6 @@ static int _post_tres_list(List new_list, int new_cnt)
 	char **new_name_array;
 	bool changed_size = false, changed_pos = false;
 	int i, new_size, new_name_size;
-	int old_pos[new_cnt];
 
 	xassert(new_list);
 
@@ -1156,7 +1156,9 @@ static int _post_tres_list(List new_list, int new_cnt)
 			tres_rec->name ? "/" : "",
 			tres_rec->name ? tres_rec->name : "");
 
-		/* This should only happen if a new static TRES are added. */
+		/*
+		 * This can happen when a new static or dynamic TRES is added.
+		 */
 		if (assoc_mgr_tres_array && (i < g_tres_count) &&
 		    (new_array[i]->id != assoc_mgr_tres_array[i]->id))
 			changed_pos = true;
@@ -1167,11 +1169,14 @@ static int _post_tres_list(List new_list, int new_cnt)
 	/* If for some reason the position changed
 	 * (new static) we need to move it to it's new place.
 	 */
+	xfree(assoc_mgr_tres_old_pos);
 	if (changed_pos) {
 		int pos;
+
+		assoc_mgr_tres_old_pos = xmalloc(sizeof(int) * new_cnt);
 		for (i=0; i<new_cnt; i++) {
 			if (!new_array[i]) {
-				old_pos[i] = -1;
+				assoc_mgr_tres_old_pos[i] = -1;
 				continue;
 			}
 
@@ -1179,9 +1184,9 @@ static int _post_tres_list(List new_list, int new_cnt)
 						i, g_tres_count);
 
 			if (pos == NO_VAL)
-				old_pos[i] = -1;
+				assoc_mgr_tres_old_pos[i] = -1;
 			else
-				old_pos[i] = pos;
+				assoc_mgr_tres_old_pos[i] = pos;
 		}
 	}
 
@@ -1244,18 +1249,18 @@ static int _post_tres_list(List new_list, int new_cnt)
 				memset(usage_tres_raw, 0, d_array_size);
 
 				for (i=0; i<new_cnt; i++) {
-					if (old_pos[i] == -1)
+					int old_pos = assoc_mgr_tres_old_pos[i];
+					if (old_pos == -1)
 						continue;
 
 					grp_used_tres[i] = assoc_rec->
-						usage->grp_used_tres
-						[old_pos[i]];
+						usage->grp_used_tres[old_pos];
 					grp_used_tres_run_secs[i] = assoc_rec->
 						usage->grp_used_tres_run_secs
-						[old_pos[i]];
+						[old_pos];
 					usage_tres_raw[i] =
 						assoc_rec->usage->usage_tres_raw
-						[old_pos[i]];
+						[old_pos];
 				}
 				memcpy(assoc_rec->usage->grp_used_tres,
 				       grp_used_tres, array_size);
@@ -1314,18 +1319,18 @@ static int _post_tres_list(List new_list, int new_cnt)
 				memset(usage_tres_raw, 0, d_array_size);
 
 				for (i=0; i<new_cnt; i++) {
-					if (old_pos[i] == -1)
+					int old_pos = assoc_mgr_tres_old_pos[i];
+					if (old_pos == -1)
 						continue;
 
 					grp_used_tres[i] = qos_rec->
-						usage->grp_used_tres
-						[old_pos[i]];
+						usage->grp_used_tres[old_pos];
 					grp_used_tres_run_secs[i] = qos_rec->
 						usage->grp_used_tres_run_secs
-						[old_pos[i]];
+						[old_pos];
 					usage_tres_raw[i] =
 						qos_rec->usage->usage_tres_raw
-						[old_pos[i]];
+						[old_pos];
 				}
 				memcpy(qos_rec->usage->grp_used_tres,
 				       grp_used_tres, array_size);
@@ -1344,18 +1349,19 @@ static int _post_tres_list(List new_list, int new_cnt)
 						memset(grp_used_tres_run_secs,
 						       0, array_size);
 						for (i=0; i<new_cnt; i++) {
-							if (old_pos[i] == -1)
+							int old_pos =
+								assoc_mgr_tres_old_pos[i];
+							if (old_pos == -1)
 								continue;
 
 							grp_used_tres[i] =
 								used_limits->
-								tres
-								[old_pos[i]];
+								tres[old_pos];
 							grp_used_tres_run_secs
 								[i] =
 								used_limits->
 								tres_run_mins
-								[old_pos[i]];
+								[old_pos];
 						}
 
 						memcpy(used_limits->tres,
@@ -2067,6 +2073,7 @@ extern int assoc_mgr_fini(bool save_state)
 		xfree(assoc_mgr_tres_name_array);
 	}
 	xfree(assoc_mgr_tres_array);
+	xfree(assoc_mgr_tres_old_pos);
 	xfree(assoc_mgr_cluster_name);
 	assoc_mgr_assoc_list = NULL;
 	assoc_mgr_res_list = NULL;
