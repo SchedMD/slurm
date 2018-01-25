@@ -13703,8 +13703,7 @@ static char *_build_step_id(char *buf, int buf_len,
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node
  *	are actually running, if not clean up the job records and/or node
- *	records, call this function after validate_node_specs() sets the node
- *	state properly
+ *	records.
  * IN reg_msg - node registration message
  */
 extern void
