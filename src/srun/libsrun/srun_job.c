@@ -738,6 +738,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	slurm_opt_t *opt_local = &opt;
 	uint32_t node_offset = 0, pack_nnodes = 0, step_id = NO_VAL;
 	uint32_t pack_offset = 0, pack_ntasks = 0, task_offset = 0;
+	job_step_create_response_msg_t *step_resp;
+	char *resv_ports = NULL;
 	int rc = 0;
 
 	if (srun_job_list) {
@@ -770,8 +772,47 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				break;
 			if (step_id == NO_VAL)
 				step_id = job->stepid;
+
+			if (slurm_step_ctx_get(job->step_ctx,
+					       SLURM_STEP_CTX_RESP,
+					       &step_resp) == SLURM_SUCCESS) {
+				if (resv_ports)
+					xstrcat(resv_ports, ",");
+				xstrcat(resv_ports, step_resp->resv_ports);
+			}
 			node_offset += job->nhosts;
 			task_offset += job->ntasks;
+		}
+
+		if (resv_ports) {
+			/*
+			 * Merge numeric values into single range
+			 * (e.g. "10-12,13-15,16-18" -> "10-18")
+			 */
+			hostset_t hs;
+			char *tmp = NULL, *sep;
+			xstrfmtcat(tmp, "[%s]", resv_ports);
+			hs = hostset_create(tmp);
+			hostset_ranged_string(hs, strlen(tmp) + 1, tmp);
+			sep = strchr(tmp, ']');
+			if (sep)
+				sep[0] = '\0';
+			xfree(resv_ports);
+			resv_ports = xstrdup(tmp + 1);
+			xfree(tmp);
+			hostset_destroy(hs);
+
+			list_iterator_reset(job_iter);
+			while ((job = (srun_job_t *) list_next(job_iter))) {
+				if (slurm_step_ctx_get(job->step_ctx,
+						SLURM_STEP_CTX_RESP,
+						&step_resp) == SLURM_SUCCESS) {
+					xfree(step_resp->resv_ports);
+					step_resp->resv_ports =
+						xstrdup(resv_ports);
+				}
+			}
+			xfree(resv_ports);
 		}
 		list_iterator_destroy(job_iter);
 		if (opt_iter)
