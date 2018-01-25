@@ -103,9 +103,11 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 
 	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
 		job_info.jobid  = job->pack_jobid;
+		job_info.stepid = job->stepid;
 		job_info.nnodes = job->pack_nnodes;
 		job_info.nodeid = job->nodeid + job->node_offset;
 		job_info.ntasks = job->pack_ntasks;
+		job_info.ltasks = job->node_tasks;
 		job_info.gtids = xmalloc(job_info.ltasks * sizeof(uint32_t));
 		for (i = 0; i < job_info.ltasks; i ++) {
 			job_info.gtids[i] = job->task[i]->gtid +
@@ -113,16 +115,16 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 		}
 	} else {
 		job_info.jobid  = job->jobid;
+		job_info.stepid = job->stepid;
 		job_info.nnodes = job->nnodes;
 		job_info.nodeid = job->nodeid;
 		job_info.ntasks = job->ntasks;
+		job_info.ltasks = job->node_tasks;
 		job_info.gtids = xmalloc(job_info.ltasks * sizeof(uint32_t));
 		for (i = 0; i < job_info.ltasks; i ++) {
 			job_info.gtids[i] = job->task[i]->gtid;
 		}
 	}
-	job_info.stepid = job->stepid;
-	job_info.ltasks = job->node_tasks;
 
 	p = getenvp(*env, PMI2_PMI_DEBUGGED_ENV);
 	if (p) {
@@ -558,12 +560,15 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 
 	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
 		job_info.jobid  = job->pack_jobid;
+		job_info.stepid = job->stepid;
+		job_info.nnodes = job->step_layout->node_cnt;
+		job_info.ntasks = job->step_layout->task_cnt;
 	} else {
 		job_info.jobid  = job->jobid;
+		job_info.stepid = job->stepid;
+		job_info.nnodes = job->step_layout->node_cnt;
+		job_info.ntasks = job->step_layout->task_cnt;
 	}
-	job_info.stepid = job->stepid;
-	job_info.nnodes = job->step_layout->node_cnt;
-	job_info.ntasks = job->step_layout->task_cnt;
 	job_info.nodeid = -1;	/* id in tree. not used. */
 	job_info.ltasks = 0;	/* not used */
 	job_info.gtids = NULL;	/* not used */
