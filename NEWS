@@ -119,6 +119,8 @@ documents those changes that are of interest to users and administrators.
     rights by a secondary group id.
  -- Validate command existence on the srun *[pro|epi]log options
     if LaunchParameter test_exec is set.
+ -- Fix potential memory leak if clean starting and the TRES didn't change
+    from when last started.
 
 * Changes in Slurm 17.11.2
 ==========================
