@@ -1088,6 +1088,34 @@ static int _post_res_list(List res_list)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Given the cur_pos of a tres in new_array return the old position of
+ * the same tres in the old_array.
+ */
+static int _get_old_tres_pos(slurmdb_tres_rec_t **new_array,
+			     slurmdb_tres_rec_t **old_array,
+			     int cur_pos, int old_cnt)
+{
+	int j, pos = NO_VAL;
+
+	/* This means the tres didn't change order */
+	if ((cur_pos < old_cnt) &&
+	    (new_array[cur_pos]->id == old_array[cur_pos]->id))
+		pos = cur_pos;
+	else {
+		/* This means we might of changed the location or it
+		 * wasn't there before so break
+		 */
+		for (j = 0; j < old_cnt; j++)
+			if (new_array[cur_pos]->id == old_array[j]->id) {
+				pos = j;
+				break;
+			}
+	}
+
+	return pos;
+}
+
 /* assoc, qos and tres write lock should be locked before calling this
  * return 1 if callback is needed */
 static int _post_tres_list(List new_list, int new_cnt)
@@ -1147,9 +1175,8 @@ static int _post_tres_list(List new_list, int new_cnt)
 				continue;
 			}
 
-			pos = slurmdb_get_old_tres_pos(new_array,
-						       assoc_mgr_tres_array,
-						       i, g_tres_count);
+			pos = _get_old_tres_pos(new_array, assoc_mgr_tres_array,
+						i, g_tres_count);
 
 			if (pos == NO_VAL)
 				old_pos[i] = -1;

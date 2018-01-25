@@ -4165,30 +4165,6 @@ extern void slurmdb_transfer_tres_time(
 	FREE_NULL_LIST(job_tres_list);
 }
 
-extern int slurmdb_get_old_tres_pos(slurmdb_tres_rec_t **new_array,
-				    slurmdb_tres_rec_t **old_array,
-				    int cur_pos, int old_cnt)
-{
-	int j, pos = NO_VAL;
-
-	/* This means the tres didn't change order */
-	if ((cur_pos < old_cnt) &&
-	    (new_array[cur_pos]->id == old_array[cur_pos]->id))
-		pos = cur_pos;
-	else {
-		/* This means we might of changed the location or it
-		 * wasn't there before so break
-		 */
-		for (j=0; j<old_cnt; j++)
-			if (new_array[cur_pos]->id == old_array[j]->id) {
-				pos = j;
-				break;
-			}
-	}
-
-	return pos;
-}
-
 extern int slurmdb_get_tres_base_unit(char *tres_type)
 {
 	int ret_unit = UNIT_NONE;

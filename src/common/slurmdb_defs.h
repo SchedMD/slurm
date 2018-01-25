@@ -269,13 +269,6 @@ extern void slurmdb_transfer_acct_list_2_tres(
 extern void slurmdb_transfer_tres_time(
 	List *tres_list_out, char *tres_str, int elapsed);
 
-/* Given the cur_pos of a tres in new_array return the old position of
- * the same tres in the old_array.
- */
-extern int slurmdb_get_old_tres_pos(slurmdb_tres_rec_t **new_array,
-				    slurmdb_tres_rec_t **old_array,
-				    int cur_pos, int old_cnt);
-
 extern int slurmdb_get_tres_base_unit(char *tres_type);
 
 /* Setup cluster rec with plugin_id that indexes into select list */
