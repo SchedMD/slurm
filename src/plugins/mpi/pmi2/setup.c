@@ -110,7 +110,8 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 		job_info.ltasks = job->node_tasks;
 		job_info.gtids = xmalloc(job_info.ltasks * sizeof(uint32_t));
 		for (i = 0; i < job_info.ltasks; i ++) {
-			job_info.gtids[i] = job->task[i]->gtid;
+			job_info.gtids[i] = job->task[i]->gtid +
+					    job->pack_task_offset;
 		}
 	} else {
 		job_info.jobid  = job->jobid;
