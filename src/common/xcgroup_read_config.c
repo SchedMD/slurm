@@ -307,8 +307,10 @@ extern List get_slurm_cgroup_conf(void)
 
 	/* Check for cgroup.conf access */
 	conf_path = get_extra_conf_path("cgroup.conf");
-	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1))
+	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
+		xfree(conf_path);
 		return NULL;
+	}
 	xfree(conf_path);
 
 	/* Read and parse cgroup.conf */
