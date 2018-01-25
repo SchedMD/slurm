@@ -38,7 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Add new SystemComment field to job data structure and database. Currently
     used for Burst Buffer error logs.
  -- Expand reservation "flags" field from 32 to 64 bits.
- -- Add job state flag of "SIGNALLING" to avoid race condition with multiple
+ -- Add job state flag of "SIGNALING" to avoid race condition with multiple
     SIGSTOP/SIGCONT signals for the same job being active at the same time.
  -- Properly handle srun --will-run option when there are jobs in COMPLETING
     state.
