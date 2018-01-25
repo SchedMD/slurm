@@ -2714,6 +2714,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PURGE_COMP)
 			resv_ptr->flags |= RESERVE_FLAG_PURGE_COMP;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PURGE_COMP)
+			resv_ptr->flags &= (~RESERVE_FLAG_PURGE_COMP);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS)
 			resv_ptr->flags |= RESERVE_FLAG_NO_HOLD_JOBS;
 	}

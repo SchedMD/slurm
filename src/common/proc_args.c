@@ -1801,7 +1801,10 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
 		} else if (xstrncasecmp(curr, "PURGE_COMP", MAX(taglen, 2))
 			   == 0) {
 			curr += taglen;
-			outflags |= RESERVE_FLAG_PURGE_COMP;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_PURGE_COMP;
+			else
+				outflags |= RESERVE_FLAG_PURGE_COMP;
 		} else if (!xstrncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
 			   !flip) {
 			curr += taglen;
