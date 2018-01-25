@@ -113,6 +113,10 @@ documents those changes that are of interest to users and administrators.
  -- Revert uid check when requesting a jobid from a pid.
  -- task/cgroup - add support to detect OOM_KILL cgroup events.
  -- Fix whole node allocation cpu counts when --hint=nomultihtread.
+ -- Allow execution of task prolog/epilog when uid has access
+    rights by a secondary group id.
+ -- Validate command existence on the srun *[pro|epi]log options
+    if LaunchParameter test_exec is set.
 
 * Changes in Slurm 17.11.2
 ==========================
