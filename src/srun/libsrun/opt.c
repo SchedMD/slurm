@@ -2515,6 +2515,43 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 			test_exec = true;
 		xfree(launch_params);
 	}
+
+	if (test_exec) {
+		/* Validate command's existence */
+		if (sropt.prolog) {
+			if ((fullpath = search_path(opt.cwd, sropt.prolog,
+						    true, R_OK|X_OK, true)))
+				sropt.prolog = fullpath;
+			else
+				error("prolog '%s' not found in PATH or CWD (%s), or wrong permissions",
+				      sropt.prolog, opt.cwd);
+		}
+		if (sropt.epilog) {
+			if ((fullpath = search_path(opt.cwd, sropt.epilog,
+						    true, R_OK|X_OK, true)))
+				sropt.epilog = fullpath;
+			else
+				error("epilog '%s' not found in PATH or CWD (%s), or wrong permissions",
+				      sropt.epilog, opt.cwd);
+		}
+		if (sropt.task_prolog) {
+			if ((fullpath = search_path(opt.cwd, sropt.task_prolog,
+						    true, R_OK|X_OK, true)))
+				sropt.task_prolog = fullpath;
+			else
+				error("task-prolog '%s' not found in PATH or CWD (%s), or wrong permissions",
+				      sropt.task_prolog, opt.cwd);
+		}
+		if (sropt.task_epilog) {
+			if ((fullpath = search_path(opt.cwd, sropt.task_epilog,
+						    true, R_OK|X_OK, true)))
+				sropt.task_epilog = fullpath;
+			else
+				error("task-epilog '%s' not found in PATH or CWD (%s), or wrong permissions",
+				      sropt.task_epilog, opt.cwd);
+		}
+	}
+
 #if defined HAVE_BG
 	/* BGQ's runjob command required a fully qualified path */
 	if (!launch_g_handle_multi_prog_verify(command_pos, &opt) &&
