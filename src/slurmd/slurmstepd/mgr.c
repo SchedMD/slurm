@@ -164,7 +164,7 @@ typedef struct kill_thread {
 /*
  * Job manager related prototypes
  */
-static int  _access(const char *path, int modes, uid_t uid, gid_t gid);
+static bool _access(const char *path, int modes, uid_t uid, gid_t gid);
 static void _send_launch_failure(launch_tasks_request_msg_t *,
 				 slurm_addr_t *, int, uint16_t);
 static int  _drain_node(char *reason);
@@ -2716,15 +2716,15 @@ _become_user(stepd_step_rec_t *job, struct priv_state *ps)
  * modes IN: desired access
  * uid IN: user ID to access the file
  * gid IN: group ID to access the file
- * RET 0 on success, -1 on failure
+ * RET true on success, false on failure
  */
-static int _access(const char *path, int modes, uid_t uid, gid_t gid)
+static bool _access(const char *path, int modes, uid_t uid, gid_t gid)
 {
 	struct stat buf;
 	int f_mode;
 
 	if (stat(path, &buf) != 0)
-		return -1;
+		return false;
 
 	if (buf.st_uid == uid)
 		f_mode = (buf.st_mode >> 6) & 07;
@@ -2734,8 +2734,9 @@ static int _access(const char *path, int modes, uid_t uid, gid_t gid)
 		f_mode = buf.st_mode & 07;
 
 	if ((f_mode & modes) == modes)
-		return 0;
-	return -1;
+		return true;
+
+	return false;
 }
 
 /*
@@ -2765,7 +2766,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 
 	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
 
-	if (_access(path, 5, job->uid, job->gid) < 0) {
+	if (!_access(path, 5, job->uid, job->gid)) {
 		error("Could not run %s [%s]: access denied", name, path);
 		return -1;
 	}
