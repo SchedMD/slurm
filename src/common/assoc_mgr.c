@@ -4848,6 +4848,8 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 		_post_tres_list(tmp_list, list_count(tmp_list));
 	} else if (freeit)
 		FREE_NULL_LIST(tmp_list);
+	else
+		assoc_mgr_tres_list = tmp_list;
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
