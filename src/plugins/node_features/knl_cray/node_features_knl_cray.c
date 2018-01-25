@@ -3069,7 +3069,7 @@ extern void node_features_p_get_config(List *data)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CapmcPath");
-	key_pair->value = xstrdup_printf("%s", capmc_path);
+	key_pair->value = xstrdup(capmc_path);
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -3089,7 +3089,7 @@ extern void node_features_p_get_config(List *data)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CnselectPath");
-	key_pair->value = xstrdup_printf("%s", cnselect_path);
+	key_pair->value = xstrdup(cnselect_path);
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -3103,12 +3103,12 @@ extern void node_features_p_get_config(List *data)
 	list_append(*data, key_pair);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("McPath");
-	key_pair->value = xstrdup_printf("%s", mc_path);
+	key_pair->value = xstrdup(mc_path);
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SyscfgPath");
-	key_pair->value = xstrdup_printf("%s", syscfg_path);
+	key_pair->value = xstrdup(syscfg_path);
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
