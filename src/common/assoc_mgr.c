@@ -6458,3 +6458,21 @@ extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 
 	return billable_tres;
 }
+
+/*
+ * Must have TRES read locks
+ */
+extern int assoc_mgr_tres_pos_changed()
+{
+	return assoc_mgr_tres_old_pos ? true : false;
+}
+
+/*
+ * Must have TRES read locks
+ */
+extern int assoc_mgr_get_old_tres_pos(int cur_pos)
+{
+	if (!assoc_mgr_tres_old_pos || (cur_pos >= g_tres_count))
+		return -1;
+	return assoc_mgr_tres_old_pos[cur_pos];
+}

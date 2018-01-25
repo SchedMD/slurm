@@ -495,4 +495,15 @@ extern void assoc_mgr_get_default_qos_info(
  */
 extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 				      uint16_t flags, bool locked);
+
+/* Get TRES's old position.
+ * IN: cur_pos - the current position in the tres array.
+ */
+extern int assoc_mgr_get_old_tres_pos(int cur_pos);
+
+/* Test whether the tres positions have changed since last reading the tres
+ * list.
+ */
+extern int assoc_mgr_tres_pos_changed();
+
 #endif /* _SLURM_ASSOC_MGR_H */
