@@ -450,7 +450,7 @@ void slurm_print_ctl_conf ( FILE* out,
 	void *ret_list = NULL;
 	char *select_title = "Select Plugin Configuration";
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	char *features_str = NULL;
+	char *tmp2_str = NULL;
 
 	if (cluster_flags & CLUSTER_FLAG_BGQ)
 		select_title = "\nBluegene/Q configuration\n";
@@ -474,14 +474,23 @@ void slurm_print_ctl_conf ( FILE* out,
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
 			      "\nAccount Gather\n");
 
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->cgroup_conf,
+			      "\nCgroup Support\n");
+
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->ext_sensors_conf,
 			      "\nExternal Sensors\n");
 
-	xstrfmtcat(features_str, "\nNode Features: %s\n",
+	xstrfmtcat(tmp2_str, "\nNode Features: %s\n",
 		   slurm_ctl_conf_ptr->node_features_plugins);
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->node_features_conf,
-			      features_str);
-	xfree(features_str);
+			      tmp2_str);
+	xfree(tmp2_str);
+
+	xstrfmtcat(tmp2_str, "\nSlurmctldPlugstack: %s\n",
+		   slurm_ctl_conf_ptr->slurmctld_plugstack);
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->slurmctld_plugstack_conf,
+			      tmp2_str);
+	xfree(tmp2_str);
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
 			      select_title);

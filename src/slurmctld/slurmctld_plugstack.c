@@ -54,14 +54,14 @@
 slurm_nonstop_ops_t nonstop_ops = { NULL, NULL, NULL };
 
 typedef struct slurmctld_plugstack_ops {
-	/* NO FUNCTIONS */
+	void	(*get_config)	(List *data);
 } slurmctld_plugstack_ops_t;
 
 /*
  * Must be synchronized with slurmctld_plugstack_t above.
  */
 static const char *syms[] = {
-	/* NO FUNCTIONS */
+	"slurmctld_plugstack_p_get_config"
 };
 
 static int g_context_cnt = -1;
@@ -159,4 +159,29 @@ extern int slurmctld_plugstack_fini(void)
 
 fini:	slurm_mutex_unlock(&g_context_lock);
 	return rc;
+}
+
+/*
+ * Gets the configuration for all slurmctl plugins in a List in key,value format
+ *
+ * Returns a List or NULL.
+ */
+extern List slurmctld_plugstack_g_get_config(void)
+{
+	DEF_TIMERS;
+	int i, rc;
+	List ctld_plugstack_conf_l = list_create(destroy_config_key_pair);
+
+	START_TIMER;
+	rc = slurmctld_plugstack_init();
+
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		(*(ops[i].get_config))(&ctld_plugstack_conf_l);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+
+	END_TIMER2("slurmctld_plugstack_g_get_config");
+
+	return ctld_plugstack_conf_l;
 }

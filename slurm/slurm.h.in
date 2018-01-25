@@ -2762,6 +2762,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t batch_start_timeout;	/* max secs for batch job to start */
 	char *bb_type;		/* burst buffer plugin type */
 	time_t boot_time;	/* time slurmctld last booted */
+	void *cgroup_conf;	/* cgroup support config file */
 	char *checkpoint_type;	/* checkpoint plugin type */
 	char *chos_loc;		/* Chroot OS path */
 	char *core_spec_plugin;	/* core specialization plugin name */
@@ -2935,6 +2936,7 @@ typedef struct slurm_ctl_conf {
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	char *slurmctld_pidfile;/* where to put slurmctld pidfile         */
 	char *slurmctld_plugstack;/* generic slurmctld plugins */
+	void *slurmctld_plugstack_conf ;/* generic slurmctld plugins configs */
 	uint32_t slurmctld_port;  /* default communications port to slurmctld */
 	uint16_t slurmctld_port_count; /* number of slurmctld comm ports */
 	uint16_t slurmctld_syslog_debug; /* slurmctld output to

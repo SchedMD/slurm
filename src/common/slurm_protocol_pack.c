@@ -6316,6 +6316,56 @@ static int _list_find_conf_entry(void *entry, void *key)
 }
 
 static void
+_pack_conf_plugin_msg(void *plugin_conf, Buf buffer,
+		      uint16_t protocol_version)
+{
+	uint32_t count = NO_VAL;
+
+	if (plugin_conf)
+		count = list_count(plugin_conf);
+	pack32(count, buffer);
+	if (count && (count != NO_VAL)) {
+		ListIterator itr = list_iterator_create(
+			(List)plugin_conf);
+		config_key_pair_t *key_pair = NULL;
+		while ((key_pair = list_next(itr))) {
+			pack_config_key_pair(key_pair,
+					     protocol_version, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+}
+
+static int
+_unpack_conf_plugin_msg(void **plugin_conf, Buf buffer,
+			uint16_t protocol_version)
+{
+	uint32_t count = NO_VAL;
+
+	safe_unpack32(&count, buffer);
+	if (count > NO_VAL)
+		goto unpack_error;
+	if (count != NO_VAL) {
+		List tmp_list = list_create(destroy_config_key_pair);
+		config_key_pair_t *object = NULL;
+		int i;
+		for (i = 0; i < count; i++) {
+			if (unpack_config_key_pair(
+				    (void *)&object, protocol_version,
+				    buffer)
+			    == SLURM_ERROR)
+				goto unpack_error;
+			list_append(tmp_list, object);
+		}
+		*plugin_conf = (void *)tmp_list;
+	}
+	return 0;
+
+unpack_error:
+	return -1;
+}
+
+static void
 _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			 uint16_t protocol_version)
 {
@@ -6377,6 +6427,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->batch_start_timeout, buffer);
 		pack_time(build_ptr->boot_time, buffer);
 		packstr(build_ptr->bb_type, buffer);
+
+		_pack_conf_plugin_msg(build_ptr->cgroup_conf, buffer,
+				      protocol_version);
 		packstr(build_ptr->checkpoint_type, buffer);
 		packstr(build_ptr->chos_loc, buffer);
 		packstr(build_ptr->cluster_name, buffer);
@@ -6400,21 +6453,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->epilog_msg_time, buffer);
 		packstr(build_ptr->epilog_slurmctld, buffer);
 
-		if (build_ptr->ext_sensors_conf)
-			count = list_count(build_ptr->ext_sensors_conf);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			ListIterator itr = list_iterator_create(
-				(List)build_ptr->ext_sensors_conf);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_conf_plugin_msg(build_ptr->ext_sensors_conf, buffer,
+				      protocol_version);
 
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
@@ -6487,21 +6527,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->msg_timeout, buffer);
 
 		pack32(build_ptr->next_job_id, buffer);
-		if (build_ptr->node_features_conf)
-			count = list_count(build_ptr->node_features_conf);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			ListIterator itr = list_iterator_create(
-				(List)build_ptr->node_features_conf);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+
+		_pack_conf_plugin_msg(build_ptr->node_features_conf, buffer,
+			      protocol_version);
+
 		packstr(build_ptr->node_features_plugins, buffer);
 		packstr(build_ptr->node_prefix, buffer);
 
@@ -6560,21 +6589,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->sched_time_slice, buffer);
 		packstr(build_ptr->schedtype, buffer);
 		packstr(build_ptr->select_type, buffer);
-		if (build_ptr->select_conf_key_pairs)
-			count = list_count(build_ptr->select_conf_key_pairs);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			ListIterator itr = list_iterator_create(
-				(List)build_ptr->select_conf_key_pairs);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+
+		_pack_conf_plugin_msg(build_ptr->select_conf_key_pairs, buffer,
+				      protocol_version);
 
 		pack16(build_ptr->select_type_param, buffer);
 
@@ -6588,6 +6605,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->slurmctld_logfile, buffer);
 		packstr(build_ptr->slurmctld_pidfile, buffer);
 		packstr(build_ptr->slurmctld_plugstack, buffer);
+		_pack_conf_plugin_msg(build_ptr->slurmctld_plugstack_conf,
+				      buffer,
+				      protocol_version);
 		pack32(build_ptr->slurmctld_port, buffer);
 		pack16(build_ptr->slurmctld_port_count, buffer);
 		pack16(build_ptr->slurmctld_syslog_debug, buffer);
@@ -6646,21 +6666,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_user, buffer);
 		pack16(build_ptr->acctng_store_job_comment, buffer);
 
-		if (build_ptr->acct_gather_conf)
-			count = list_count(build_ptr->acct_gather_conf);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			ListIterator itr = list_iterator_create(
-				(List)build_ptr->acct_gather_conf);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		_pack_conf_plugin_msg(build_ptr->acct_gather_conf, buffer,
+				      protocol_version);
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
@@ -6698,20 +6705,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->epilog_msg_time, buffer);
 		packstr(build_ptr->epilog_slurmctld, buffer);
 
-		if (build_ptr->ext_sensors_conf)
-			count = list_count(build_ptr->ext_sensors_conf);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			ListIterator itr = list_iterator_create(
-				(List)build_ptr->ext_sensors_conf);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		_pack_conf_plugin_msg(build_ptr->ext_sensors_conf, buffer,
+				      protocol_version);
 
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
@@ -6843,19 +6838,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->schedtype, buffer);
 		packstr(build_ptr->select_type, buffer);
 
-		if (build_ptr->select_conf_key_pairs)
-			count = list_count(build_ptr->select_conf_key_pairs);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			ListIterator itr = list_iterator_create(
-				(List)build_ptr->select_conf_key_pairs);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_conf_plugin_msg(build_ptr->select_conf_key_pairs, buffer,
+				      protocol_version);
 
 		pack16(build_ptr->select_type_param, buffer);
 
@@ -6927,21 +6911,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_user, buffer);
 		pack16(build_ptr->acctng_store_job_comment, buffer);
 
-		if (build_ptr->acct_gather_conf)
-			count = list_count(build_ptr->acct_gather_conf);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			ListIterator itr = list_iterator_create(
-				(List)build_ptr->acct_gather_conf);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		_pack_conf_plugin_msg(build_ptr->acct_gather_conf, buffer,
+				      protocol_version);
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
@@ -6979,21 +6950,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->epilog_msg_time, buffer);
 		packstr(build_ptr->epilog_slurmctld, buffer);
 
-		if (build_ptr->ext_sensors_conf)
-			count = list_count(build_ptr->ext_sensors_conf);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			ListIterator itr = list_iterator_create(
-				(List)build_ptr->ext_sensors_conf);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		_pack_conf_plugin_msg(build_ptr->ext_sensors_conf, buffer,
+						      protocol_version);
 
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
@@ -7123,20 +7081,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->sched_time_slice, buffer);
 		packstr(build_ptr->schedtype, buffer);
 		packstr(build_ptr->select_type, buffer);
-		if (build_ptr->select_conf_key_pairs)
-			count = list_count(build_ptr->select_conf_key_pairs);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			ListIterator itr = list_iterator_create(
-				(List)build_ptr->select_conf_key_pairs);
-			config_key_pair_t *key_pair = NULL;
-			while ((key_pair = list_next(itr))) {
-				pack_config_key_pair(key_pair,
-						     protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_conf_plugin_msg(build_ptr->select_conf_key_pairs, buffer,
+				      protocol_version);
 
 		pack16(build_ptr->select_type_param, buffer);
 
@@ -7207,7 +7153,6 @@ static int
 _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 			   Buf buffer, uint16_t protocol_version)
 {
-	uint32_t count = NO_VAL;
 	uint16_t uint16_tmp;
 	uint32_t uint32_tmp = 0;
 	slurm_ctl_conf_info_msg_t *build_ptr;
@@ -7241,23 +7186,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
 
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+		if (_unpack_conf_plugin_msg(&build_ptr->acct_gather_conf,
+					     buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->acct_gather_conf = (void *)tmp_list;
-		}
 
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_energy_type,
 				       &uint32_tmp, buffer);
@@ -7279,6 +7210,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->bb_type,
 				       &uint32_tmp, buffer);
 
+		if (_unpack_conf_plugin_msg(&build_ptr->cgroup_conf,
+					    buffer, protocol_version) != 0)
+			goto unpack_error;
 		safe_unpackstr_xmalloc(&build_ptr->checkpoint_type,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->chos_loc,
@@ -7309,23 +7243,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->epilog_slurmctld,
 				       &uint32_tmp, buffer);
 
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+		if (_unpack_conf_plugin_msg(&build_ptr->ext_sensors_conf,
+					     buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->ext_sensors_conf = (void *)tmp_list;
-		}
 
 		safe_unpackstr_xmalloc(&build_ptr->ext_sensors_type,
 				       &uint32_tmp, buffer);
@@ -7425,25 +7345,14 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->msg_timeout, buffer);
 
 		safe_unpack32(&build_ptr->next_job_id, buffer);
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+
+		if (_unpack_conf_plugin_msg(&build_ptr->node_features_conf,
+					    buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->node_features_conf = (void *)tmp_list;
-		}
+
 		safe_unpackstr_xmalloc(&build_ptr->node_features_plugins,
 				       &uint32_tmp, buffer);
+
 		safe_unpackstr_xmalloc(&build_ptr->node_prefix,
 				       &uint32_tmp, buffer);
 
@@ -7531,23 +7440,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->select_type,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+
+		if (_unpack_conf_plugin_msg(&build_ptr->select_conf_key_pairs,
+					     buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->select_conf_key_pairs = (void *)tmp_list;
-		}
 
 		safe_unpack16(&build_ptr->select_type_param, buffer);
 
@@ -7567,6 +7463,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmctld_plugstack,
 				       &uint32_tmp, buffer);
+		if (_unpack_conf_plugin_msg(
+			    &build_ptr->slurmctld_plugstack_conf,
+			    buffer, protocol_version) != 0)
+			goto unpack_error;
 		safe_unpack32(&build_ptr->slurmctld_port, buffer);
 		safe_unpack16(&build_ptr->slurmctld_port_count, buffer);
 		safe_unpack16(&build_ptr->slurmctld_syslog_debug, buffer);
@@ -7655,23 +7555,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
 
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+		if (_unpack_conf_plugin_msg(&build_ptr->acct_gather_conf,
+					     buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->acct_gather_conf = (void *)tmp_list;
-		}
 
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_energy_type,
 				       &uint32_tmp, buffer);
@@ -7730,23 +7616,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->epilog_slurmctld,
 				       &uint32_tmp, buffer);
 
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+		if (_unpack_conf_plugin_msg(&build_ptr->ext_sensors_conf,
+					     buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->ext_sensors_conf = (void *)tmp_list;
-		}
 
 		safe_unpackstr_xmalloc(&build_ptr->ext_sensors_type,
 				       &uint32_tmp, buffer);
@@ -7935,23 +7807,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->select_type,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+
+		if (_unpack_conf_plugin_msg(&build_ptr->select_conf_key_pairs,
+					     buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->select_conf_key_pairs = (void *)tmp_list;
-		}
 
 		safe_unpack16(&build_ptr->select_type_param, buffer);
 
@@ -8062,23 +7921,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
 
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+		if (_unpack_conf_plugin_msg(&build_ptr->acct_gather_conf,
+					     buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->acct_gather_conf = (void *)tmp_list;
-		}
 
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_energy_type,
 				       &uint32_tmp, buffer);
@@ -8137,23 +7982,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->epilog_slurmctld,
 				       &uint32_tmp, buffer);
 
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+		if (_unpack_conf_plugin_msg(&build_ptr->ext_sensors_conf,
+					     buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->ext_sensors_conf = (void *)tmp_list;
-		}
 
 		safe_unpackstr_xmalloc(&build_ptr->ext_sensors_type,
 				       &uint32_tmp, buffer);
@@ -8340,23 +8171,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->select_type,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
+
+		if (_unpack_conf_plugin_msg(&build_ptr->select_conf_key_pairs,
+					     buffer, protocol_version) != 0)
 			goto unpack_error;
-		if (count != NO_VAL) {
-			List tmp_list = list_create(destroy_config_key_pair);
-			config_key_pair_t *object = NULL;
-			int i;
-			for (i = 0; i < count; i++) {
-				if (unpack_config_key_pair(
-					    (void *)&object, protocol_version,
-					    buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(tmp_list, object);
-			}
-			build_ptr->select_conf_key_pairs = (void *)tmp_list;
-		}
 
 		safe_unpack16(&build_ptr->select_type_param, buffer);
 

@@ -85,4 +85,8 @@ extern void nonstop_free_config(void);
  * and purge vestigial reservations */
 extern void create_hot_spare_resv(void);
 
+/* Read the nonstop.conf configuration parameters into
+ * a key,pair values in List. */
+extern void nonstop_read_config_list(List *data);
+
 #endif	/* _HAVE_NONSTOP_READ_CONFIG_H */

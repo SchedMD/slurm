@@ -245,7 +245,7 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	GtkTreeIter iter;
 	List ret_list = NULL;
 	char *select_title = "Select Plugin Configuration";
-	char *features_title = NULL;
+	char *tmp_title = NULL;
 
 	if (cluster_flags & CLUSTER_FLAG_BGQ)
 		select_title = "Bluegene/Q configuration";
@@ -267,14 +267,23 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->acct_gather_conf,
 			     "Account Gather", 0, treestore, &iter);
 
+	_gtk_print_key_pairs(slurm_ctl_conf_ptr->cgroup_conf,
+			     "Cgroup Support", 0, treestore, &iter);
+
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->ext_sensors_conf,
 			     "External Sensors", 0, treestore, &iter);
 
-	xstrfmtcat(features_title, "Node Features: %s",
+	xstrfmtcat(tmp_title, "Node Features: %s",
 		   slurm_ctl_conf_ptr->node_features_plugins);
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->node_features_conf,
-			     features_title, 0, treestore, &iter);
-	xfree(features_title);
+			     tmp_title, 0, treestore, &iter);
+	xfree(tmp_title);
+
+	xstrfmtcat(tmp_title, "Slurmctld Plugstack Plugins: %s",
+		   slurm_ctl_conf_ptr->slurmctld_plugstack);
+	_gtk_print_key_pairs(slurm_ctl_conf_ptr->slurmctld_plugstack_conf,
+			     tmp_title, 0, treestore, &iter);
+	xfree(tmp_title);
 
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->select_conf_key_pairs,
 			     select_title, 0, treestore, &iter);

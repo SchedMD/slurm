@@ -94,4 +94,11 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf);
  */
 extern void free_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf);
 
+/*
+ * get_slurm_cgroup_conf - load the Slurm cgroup configuration from the
+ *      cgroup.conf  file and return a key pair <name,value> ordered list.
+ * RET List with cgroup.conf <name,value> pairs if no error, NULL otherwise.
+ */
+extern List get_slurm_cgroup_conf(void);
+
 #endif /* !_DBD_READ_CONFIG_H */

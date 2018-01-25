@@ -65,4 +65,11 @@ extern int slurmctld_plugstack_init(void);
  */
 extern int slurmctld_plugstack_fini(void);
 
+/*
+ * Gets the configuration for all slurmctl plugins in a List in key,value format
+ *
+ * Returns a List or NULL.
+ */
+extern List slurmctld_plugstack_g_get_config(void);
+
 #endif /* !_SLURMCTLD_PLUGSTACK_H */

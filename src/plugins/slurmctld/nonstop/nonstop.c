@@ -95,3 +95,10 @@ extern int fini(void)
 
 	return SLURM_SUCCESS;
 }
+
+/* Get node features plugin configuration */
+extern void slurmctld_plugstack_p_get_config(List *data)
+{
+	xassert(*data);
+	nonstop_read_config_list(data);
+}

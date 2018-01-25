@@ -81,6 +81,7 @@
 #include "src/common/switch.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/common/xcgroup_read_config.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -98,6 +99,7 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmctld_plugstack.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -717,6 +719,11 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->boot_time           = slurmctld_config.boot_time;
 	conf_ptr->bb_type             = xstrdup(conf->bb_type);
 
+	if (strstr(conf->job_acct_gather_type, "cgroup") ||
+	    strstr(conf->proctrack_type, "cgroup") ||
+	    strstr(conf->task_plugin, "cgroup"))
+		conf_ptr->cgroup_conf = get_slurm_cgroup_conf();
+
 	conf_ptr->checkpoint_type     = xstrdup(conf->checkpoint_type);
 	conf_ptr->chos_loc            = xstrdup(conf->chos_loc);
 	conf_ptr->cluster_name        = xstrdup(conf->cluster_name);
@@ -885,6 +892,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmctld_logfile   = xstrdup(conf->slurmctld_logfile);
 	conf_ptr->slurmctld_pidfile   = xstrdup(conf->slurmctld_pidfile);
 	conf_ptr->slurmctld_plugstack = xstrdup(conf->slurmctld_plugstack);
+	conf_ptr->slurmctld_plugstack_conf = slurmctld_plugstack_g_get_config();
 	conf_ptr->slurmctld_port      = conf->slurmctld_port;
 	conf_ptr->slurmctld_port_count = conf->slurmctld_port_count;
 	conf_ptr->slurmctld_syslog_debug = conf->slurmctld_syslog_debug;

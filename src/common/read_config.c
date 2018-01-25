@@ -2373,6 +2373,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->authinfo);
 	xfree (ctl_conf_ptr->authtype);
 	xfree (ctl_conf_ptr->bb_type);
+	FREE_NULL_LIST(ctl_conf_ptr->cgroup_conf);
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->chos_loc);
 	xfree (ctl_conf_ptr->cluster_name);
@@ -2421,6 +2422,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
+	FREE_NULL_LIST(ctl_conf_ptr->slurmctld_plugstack_conf);
 	xfree (ctl_conf_ptr->power_parameters);
 	xfree (ctl_conf_ptr->power_plugin);
 	xfree (ctl_conf_ptr->preempt_type);
