@@ -49,6 +49,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define _DEBUG 0
+
 /*
  * WARNING:  Do not change the order of these fields or add additional
  * fields at the beginning of the structure.  If you do, MPI plugins
@@ -81,6 +83,83 @@ static slurm_mpi_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+
+#if _DEBUG
+/* Debugging information is invaluable to debug heterogeneous step support */
+static inline void _log_env(char **env)
+{
+#if _DEBUG > 1
+	int i;
+
+	if (!env)
+		return;
+
+	for (i = 0; env[i]; i++)
+		info("%s", env[i]);
+#endif
+}
+
+static void _log_step_rec(const stepd_step_rec_t *job)
+{
+	int i;
+
+	info("STEPD_STEP_REC");
+	info("job_id:%u step_id:%u", job->jobid, job->stepid);
+	info("ntasks:%u nnodes:%u node_id:%u", job->ntasks, job->nnodes,
+	     job->nodeid);
+	info("node_tasks:%u", job->node_tasks);
+	for (i = 0; i < job->node_tasks; i ++)
+		info("gtid[%d]:%u", i, job->task[i]->gtid);
+	for (i = 0; i < job->nnodes; i++)
+		info("task_cnts[%d]:%u", i, job->task_cnts[i]);
+
+	if ((job->pack_jobid != 0) && (job->pack_jobid != NO_VAL)) {
+		info("pack_job_id:%u step_id:%u", job->pack_jobid, job->stepid);
+		info("pack_ntasks:%u pack_nnodes:%u", job->pack_ntasks,
+		     job->pack_nnodes);
+		info("pack_node_offset:%u pack_task_offset:%u",
+		     job->node_offset, job->pack_task_offset);
+		for (i = 0; i < job->pack_nnodes; i++)
+			info("pack_task_cnts[%d]:%u", i,job->pack_task_cnts[i]);
+		info("pack_node_list:%s", job->pack_node_list);
+	}
+}
+
+static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
+{
+	slurm_step_layout_t *layout = job->step_layout;
+	int i, j;
+
+	info("MPI_PLUGIN_CLIENT_INFO");
+	info("job_id:%u step_id:%u", job->jobid, job->stepid);
+	if ((job->pack_jobid != 0) && (job->pack_jobid != NO_VAL)) {
+		info("pack_job_id:%u step_id:%u", job->pack_jobid, job->stepid);
+	}
+	if (layout) {
+		info("node_cnt:%u task_cnt:%u", layout->node_cnt,
+		     layout->task_cnt);
+		info("node_list:%s", layout->node_list);
+		info("plane_size:%u task_dist:%u", layout->plane_size,
+		     layout->task_dist);
+		for (i = 0; i < layout->node_cnt; i++) {
+			info("tasks[%d]:%u", i, layout->tasks[i]);
+			for (j = 0; j < layout->tasks[i]; j++) {
+				info("tids[%d][%d]:%u", i, j,
+				     layout->tids[i][j]);
+			}
+		}
+	}
+}
+
+static void _log_task_rec(const mpi_plugin_task_info_t *job)
+{
+	info("MPI_PLUGIN_TASK_INFO");
+	info("job_id:%u step_id:%u", job->jobid, job->stepid);
+	info("nnodes:%u node_id:%u", job->nnodes, job->nodeid);
+	info("ntasks:%u local_tasks:%u", job->ntasks, job->ltasks);
+	info("global_task_id:%u local_task_id:%u", job->gtaskid, job->ltaskid);
+}
+#endif
 
 int _mpi_init (char *mpi_type)
 {
@@ -149,7 +228,12 @@ int mpi_hook_slurmstepd_init (char ***env)
 {
 	char *mpi_type = getenvp (*env, "SLURM_MPI_TYPE");
 
+#if _DEBUG
+	info("IN %s mpi_type:%s", __func__, mpi_type);
+	_log_env(*env);
+#else
 	debug("mpi type = %s", mpi_type);
+#endif
 
 	if (_mpi_init(mpi_type) == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -162,6 +246,12 @@ int mpi_hook_slurmstepd_init (char ***env)
 
 int mpi_hook_slurmstepd_prefork (const stepd_step_rec_t *job, char ***env)
 {
+#if _DEBUG
+	info("IN %s", __func__);
+	_log_env(*env);
+	_log_step_rec(job);
+#endif
+
 	if (mpi_hook_slurmstepd_init(env) == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -170,6 +260,12 @@ int mpi_hook_slurmstepd_prefork (const stepd_step_rec_t *job, char ***env)
 
 int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)
 {
+#if _DEBUG
+	info("IN %s", __func__);
+	_log_task_rec(job);
+	_log_env(*env);
+#endif
+
 	if (mpi_hook_slurmstepd_init(env) == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -178,7 +274,11 @@ int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)
 
 int mpi_hook_client_init (char *mpi_type)
 {
+#if _DEBUG
+	info("IN %s mpi_type:%s", __func__, mpi_type);
+#else
 	debug("mpi type = %s", mpi_type);
+#endif
 
 	if (_mpi_init(mpi_type) == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -189,14 +289,29 @@ int mpi_hook_client_init (char *mpi_type)
 mpi_plugin_client_state_t *
 mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 {
+	mpi_plugin_client_state_t *rc;
+#if _DEBUG
+	info("IN %s", __func__);
+	_log_env(*env);
+	_log_mpi_rec(job);
+#endif
+
 	if (_mpi_init(NULL) < 0)
 		return NULL;
 
-	return (*(ops.client_prelaunch))(job, env);
+	rc = (*(ops.client_prelaunch))(job, env);
+#if _DEBUG
+	_log_env(*env);
+#endif
+	return rc;
 }
 
 int mpi_hook_client_fini (mpi_plugin_client_state_t *state)
 {
+#if _DEBUG
+	info("IN %s", __func__);
+#endif
+
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
 
