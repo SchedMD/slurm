@@ -773,9 +773,11 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			if (step_id == NO_VAL)
 				step_id = job->stepid;
 
-			if (slurm_step_ctx_get(job->step_ctx,
-					       SLURM_STEP_CTX_RESP,
-					       &step_resp) == SLURM_SUCCESS) {
+			if ((slurm_step_ctx_get(job->step_ctx,
+						SLURM_STEP_CTX_RESP,
+						&step_resp) == SLURM_SUCCESS) &&
+			    step_resp->resv_ports &&
+			    strcmp(step_resp->resv_ports, "(null)")) {
 				if (resv_ports)
 					xstrcat(resv_ports, ",");
 				xstrcat(resv_ports, step_resp->resv_ports);
