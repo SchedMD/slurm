@@ -222,7 +222,7 @@ proc sub_batch_host {nnode} {
 	set test_job 0
 	set fail_node_config 0
 
-	spawn $sbatch -C "$feat0" --batch=$feat3 -p$test_part -N$nnode -t1 -o /dev/null $file_in
+	spawn $sbatch -C "$feat0|$feat3" --batch=$feat3 -p$test_part -N$nnode -t1 -o /dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set test_job $expect_out(1,string)
