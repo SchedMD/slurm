@@ -55,6 +55,9 @@ documents those changes that are of interest to users and administrators.
     from when last started.
  -- Fix for association MaxWall enforcement when none is given at submission.
  -- Add a job's allocated licenses to the [Pro|Epi]logSlurmctld.
+ -- burst_buffer/cray: Attempts by job to create persistent burst buffer when
+    one already exists owned by a different user will be logged and the job
+    held.
 
 * Changes in Slurm 17.11.2
 ==========================

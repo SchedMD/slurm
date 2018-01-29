@@ -4223,10 +4223,25 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			bb_alloc = bb_find_name_rec(buf_ptr->name,
 						    job_ptr->user_id,
 						    &bb_state);
-			if (bb_alloc) {
-				info("Attempt by job %u to create duplicate "
-				     "persistent burst buffer named %s",
-				     job_ptr->job_id, buf_ptr->name);
+			if (bb_alloc &&
+			    (bb_alloc->user_id != job_ptr->user_id)) {
+				info("Attempt by job %u user %u to create duplicate persistent burst buffer named %s and currently owned by user %u",
+				      job_ptr->job_id, job_ptr->user_id,
+				      buf_ptr->name, bb_alloc->user_id);
+				job_ptr->priority = 0;
+				job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+				xfree(job_ptr->state_desc);
+				job_ptr->state_desc = xstrdup(
+					"Burst buffer create_persistent error");
+				buf_ptr->state = BB_STATE_COMPLETE;
+				_update_comment(job_ptr, "create_persistent",
+						"Duplicate buffer name");
+				rc++;
+				break;
+			} else if (bb_alloc) {
+				/* Duplicate create likely result of requeue */
+				debug("Attempt by job %u to create duplicate persistent burst buffer named %s",
+				      job_ptr->job_id, buf_ptr->name);
 				buf_ptr->create = false; /* Creation complete */
 				if (bb_job->persist_add >= bb_alloc->size) {
 					bb_job->persist_add -= bb_alloc->size;
