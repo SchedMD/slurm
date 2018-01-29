@@ -1128,6 +1128,7 @@ static int _post_tres_list(List new_list, int new_cnt)
 	int i, new_size, new_name_size;
 
 	xassert(new_list);
+	xassert(new_cnt > 0);
 
 	new_size = sizeof(slurmdb_tres_rec_t) * new_cnt;
 	new_array = xmalloc(new_size);
