@@ -46,6 +46,7 @@
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -54,7 +55,7 @@
 slurm_nonstop_ops_t nonstop_ops = { NULL, NULL, NULL };
 
 typedef struct slurmctld_plugstack_ops {
-	void	(*get_config)	(List *data);
+	void	(*get_config)	(config_plugin_params_t *p);
 } slurmctld_plugstack_ops_t;
 
 /*
@@ -162,26 +163,40 @@ fini:	slurm_mutex_unlock(&g_context_lock);
 }
 
 /*
- * Gets the configuration for all slurmctl plugins in a List in key,value format
- *
- * Returns a List or NULL.
+ * Gets the configuration for all slurmctld plugins in a List of
+ * config_plugin_params_t elements. For each plugin this consists on:
+ * - Plugin name
+ * - List of key,pairs
+ * Returns List or NULL.
  */
 extern List slurmctld_plugstack_g_get_config(void)
 {
 	DEF_TIMERS;
 	int i, rc;
-	List ctld_plugstack_conf_l = list_create(destroy_config_key_pair);
+	List conf_list = NULL;
+	config_plugin_params_t *p;
 
 	START_TIMER;
 	rc = slurmctld_plugstack_init();
 
+	if (g_context_cnt > 0)
+		conf_list = list_create(destroy_config_plugin_params);
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		(*(ops[i].get_config))(&ctld_plugstack_conf_l);
+		p = xmalloc(sizeof(config_plugin_params_t));
+		p->key_pairs = list_create(destroy_config_key_pair);
+
+		(*(ops[i].get_config))(p);
+
+		if (!p->name)
+			destroy_config_plugin_params(p);
+		else
+			list_append(conf_list, p);
 	}
 	slurm_mutex_unlock(&g_context_lock);
 
 	END_TIMER2("slurmctld_plugstack_g_get_config");
 
-	return ctld_plugstack_conf_l;
+	return conf_list;
 }

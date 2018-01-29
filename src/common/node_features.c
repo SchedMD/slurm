@@ -74,7 +74,7 @@ typedef struct node_features_ops {
 	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
 	int	(*reconfig)	(void);
 	bool	(*user_update)	(uid_t uid);
-	void	(*get_config)	(List *data);
+	void	(*get_config)	(config_plugin_params_t *p);
 } node_features_ops_t;
 
 /*
@@ -573,18 +573,30 @@ extern List node_features_g_get_config(void)
 {
 	DEF_TIMERS;
 	int i, rc;
-	List node_features_conf_l = list_create(destroy_config_key_pair);
+	List conf_list = NULL;
+	config_plugin_params_t *p;
 
 	START_TIMER;
 	rc = node_features_g_init();
 
+	if (g_context_cnt > 0)
+		conf_list = list_create(destroy_config_plugin_params);
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		(*(ops[i].get_config))(&node_features_conf_l);
+		p = xmalloc(sizeof(config_plugin_params_t));
+		p->key_pairs = list_create(destroy_config_key_pair);
+
+		(*(ops[i].get_config))(p);
+
+		if (!p->name)
+			destroy_config_plugin_params(p);
+		else
+			list_append(conf_list, p);
 	}
 	slurm_mutex_unlock(&g_context_lock);
 
 	END_TIMER2("node_features_g_get_config");
 
-	return node_features_conf_l;
+	return conf_list;
 }

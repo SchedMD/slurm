@@ -302,6 +302,11 @@ typedef struct {
 	char *value;
 } config_key_pair_t;
 
+typedef struct {
+	char *name;
+	List key_pairs;
+} config_plugin_params_t;
+
 /* Destroy a front_end record built by slurm_conf_frontend_array() */
 extern void destroy_frontend(void *ptr);
 
@@ -568,10 +573,27 @@ extern char *reconfig_flags2str(uint16_t reconfig_flags);
  */
 extern uint16_t reconfig_str2flags(char *reconfig_flags);
 
+extern void destroy_config_plugin_params(void *object);
+extern void pack_config_plugin_params(void *in, uint16_t protocol_version,
+				      Buf buff);
+extern int unpack_config_plugin_params(void **object, uint16_t protocol_version,
+				       Buf buff);
+extern void pack_config_plugin_params_list(void *in, uint16_t protocol_version,
+					   Buf buff);
+extern int unpack_config_plugin_params_list(void **object,
+					    uint16_t protocol_version,
+					    Buf buff);
+
 extern void destroy_config_key_pair(void *object);
-extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer);
-extern int unpack_config_key_pair(void **object, uint16_t rpc_version,
+extern void pack_key_pair_list(void *key_pairs, uint16_t protocol_version,
+			       Buf buffer);
+extern int unpack_key_pair_list(void **key_pairs, uint16_t protocol_version,
+				Buf buffer);
+extern void pack_config_key_pair(void *in, uint16_t protocol_version,
+				 Buf buffer);
+extern int unpack_config_key_pair(void **object, uint16_t protocol_version,
 				  Buf buffer);
+
 extern int sort_key_pairs(void *v1, void *v2);
 /*
  * Return the pathname of the extra .conf file

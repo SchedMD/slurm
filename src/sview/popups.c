@@ -238,6 +238,33 @@ static void _gtk_print_key_pairs(List config_list, char *title, bool first,
 	list_iterator_destroy(itr);
 }
 
+static void
+_gtk_print_config_plugin_params_list(List l, char *title, bool first,
+				     GtkTreeStore *treestore,
+				     GtkTreeIter *iter)
+{
+	ListIterator itr = NULL;
+	config_plugin_params_t *p;
+	int update = 0;
+
+	if (!l || !list_count(l))
+		return;
+
+	if (!first)
+		add_display_treestore_line(update, treestore, iter, "", NULL);
+
+	add_display_treestore_line_with_font(update, treestore, iter,
+					     title, NULL, "bold");
+
+	itr = list_iterator_create(l);
+	while ((p = list_next(itr))){
+		add_display_treestore_line_with_font(update, treestore, iter,
+					   p->name, NULL, "italic");
+		_gtk_print_key_pairs(p->key_pairs, NULL, 1, treestore, iter);
+	}
+	list_iterator_destroy(itr);
+}
+
 static void _layout_conf_ctl(GtkTreeStore *treestore,
 			     slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr)
 {
@@ -273,16 +300,16 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->ext_sensors_conf,
 			     "External Sensors", 0, treestore, &iter);
 
-	xstrfmtcat(tmp_title, "Node Features: %s",
-		   slurm_ctl_conf_ptr->node_features_plugins);
-	_gtk_print_key_pairs(slurm_ctl_conf_ptr->node_features_conf,
-			     tmp_title, 0, treestore, &iter);
+	xstrcat(tmp_title, "Node Features:");
+	_gtk_print_config_plugin_params_list(
+		slurm_ctl_conf_ptr->node_features_conf,
+		tmp_title, 0, treestore, &iter);
 	xfree(tmp_title);
 
-	xstrfmtcat(tmp_title, "Slurmctld Plugstack Plugins: %s",
-		   slurm_ctl_conf_ptr->slurmctld_plugstack);
-	_gtk_print_key_pairs(slurm_ctl_conf_ptr->slurmctld_plugstack_conf,
-			     tmp_title, 0, treestore, &iter);
+	xstrcat(tmp_title, "Slurmctld Plugstack Plugins:");
+	_gtk_print_config_plugin_params_list(
+		slurm_ctl_conf_ptr->slurmctld_plugstack_conf,
+		tmp_title, 0, treestore, &iter);
 	xfree(tmp_title);
 
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->select_conf_key_pairs,

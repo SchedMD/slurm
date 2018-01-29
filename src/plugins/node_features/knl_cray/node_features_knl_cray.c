@@ -3041,82 +3041,86 @@ extern uint32_t node_features_p_boot_time(void)
 }
 
 /* Get node features plugin configuration */
-extern void node_features_p_get_config(List *data)
+extern void node_features_p_get_config(config_plugin_params_t *p)
 {
 	config_key_pair_t *key_pair;
+	List data;
 
-	xassert(*data);
+	xassert(p);
+	xstrcat(p->name, plugin_type);
+	data = p->key_pairs;
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowMCDRAM");
 	key_pair->value = _knl_mcdram_str(allow_mcdram);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowNUMA");
 	key_pair->value = _knl_numa_str(allow_numa);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowUserBoot");
 	key_pair->value = _make_uid_str(allowed_uid, allowed_uid_cnt);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("BootTime");
 	key_pair->value = xstrdup_printf("%u", boot_time);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CapmcPath");
 	key_pair->value = xstrdup(capmc_path);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CapmcPollFreq");
 	key_pair->value = xstrdup_printf("%u", capmc_poll_freq);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CapmcRetries");
 	key_pair->value = xstrdup_printf("%u", capmc_retries);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CapmcTimeout");
 	key_pair->value = xstrdup_printf("%u", capmc_timeout);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CnselectPath");
 	key_pair->value = xstrdup(cnselect_path);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DefaultMCDRAM");
 	key_pair->value = _knl_mcdram_str(default_mcdram);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DefaultNUMA");
 	key_pair->value = _knl_numa_str(default_numa);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
+
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("McPath");
 	key_pair->value = xstrdup(mc_path);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SyscfgPath");
 	key_pair->value = xstrdup(syscfg_path);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("UmeCheckInterval");
 	key_pair->value = xstrdup_printf("%u", ume_check_interval);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
-	list_sort(*data, (ListCmpF) sort_key_pairs);
+	list_sort(data, (ListCmpF) sort_key_pairs);
 
 	return;
 }

@@ -97,8 +97,8 @@ extern int fini(void)
 }
 
 /* Get node features plugin configuration */
-extern void slurmctld_plugstack_p_get_config(List *data)
+extern void slurmctld_plugstack_p_get_config(config_plugin_params_t *p)
 {
-	xassert(*data);
-	nonstop_read_config_list(data);
+	xstrcat(p->name, plugin_type);
+	nonstop_read_config_list(p->key_pairs);
 }

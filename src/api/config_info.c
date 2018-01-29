@@ -60,6 +60,7 @@
 /* Local functions */
 static void _write_group_header(FILE* out, char * header);
 static void _write_key_pairs(FILE* out, void *key_pairs);
+static void _print_config_plugin_params_list(FILE* out, List l, char *title);
 
 /*
  * slurm_api_version - Return a single number reflecting the SLURM API's
@@ -437,6 +438,23 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	fclose(fp);
 }
 
+static void _print_config_plugin_params_list(FILE* out, List l, char *title)
+{
+	ListIterator itr = NULL;
+	config_plugin_params_t *p;
+
+	if (!l || !list_count(l))
+		return;
+
+	fprintf(out, "%s", title);
+	itr = list_iterator_create(l);
+	while ((p = list_next(itr))){
+		fprintf(out, "\n----- %s -----\n", p->name);
+		slurm_print_key_pairs(out, p->key_pairs,"");
+	}
+	list_iterator_destroy(itr);
+}
+
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration
  *	message as loaded using slurm_load_ctl_conf()
@@ -472,31 +490,28 @@ void slurm_print_ctl_conf ( FILE* out,
 	}
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
-			      "\nAccount Gather\n");
+			      "\nAccount Gather Configuration:\n");
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->cgroup_conf,
-			      "\nCgroup Support\n");
+			      "\nCgroup Support Configuration:\n");
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->ext_sensors_conf,
-			      "\nExternal Sensors\n");
+			      "\nExternal Sensors Configuration:\n");
 
-	xstrfmtcat(tmp2_str, "\nNode Features: %s\n",
-		   slurm_ctl_conf_ptr->node_features_plugins);
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->node_features_conf,
-			      tmp2_str);
+	xstrcat(tmp2_str, "\nNode Features Configuration:");
+	_print_config_plugin_params_list(out,
+		 (List) slurm_ctl_conf_ptr->node_features_conf, tmp2_str);
 	xfree(tmp2_str);
 
-	xstrfmtcat(tmp2_str, "\nSlurmctldPlugstack: %s\n",
-		   slurm_ctl_conf_ptr->slurmctld_plugstack);
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->slurmctld_plugstack_conf,
-			      tmp2_str);
+	xstrcat(tmp2_str, "\nSlurmctld Plugstack Plugins Configuration:");
+	_print_config_plugin_params_list(out,
+		 (List) slurm_ctl_conf_ptr->slurmctld_plugstack_conf, tmp2_str);
 	xfree(tmp2_str);
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
 			      select_title);
 
 }
-
 extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 {
 	List ret_list = NULL;

@@ -387,7 +387,7 @@ extern void create_hot_spare_resv(void)
 	unlock_slurmctld(part_read_lock);
 }
 
-extern void nonstop_read_config_list(List *data)
+extern void nonstop_read_config_list(List data)
 {
 	config_key_pair_t *key_pair;
 	char *tmp_str = NULL;
@@ -396,17 +396,17 @@ extern void nonstop_read_config_list(List *data)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("BackupAddr");
 	key_pair->value = xstrdup(nonstop_backup_addr);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ControlAddr");
 	key_pair->value = xstrdup(nonstop_control_addr);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("Debug");
 	key_pair->value = xstrdup_printf("%hu",nonstop_debug);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("HotSpareCount");
@@ -423,42 +423,42 @@ extern void nonstop_read_config_list(List *data)
 	} else {
 		key_pair->value = xstrdup(hot_spare_count_str);
 	}
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MaxSpareNodeCount");
 	key_pair->value = xstrdup_printf("%u", max_spare_node_count);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("Port");
 	key_pair->value = xstrdup_printf("%hu", nonstop_comm_port);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ReadTimeout");
 	key_pair->value = xstrdup_printf("%u", read_timeout);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TimeLimitDelay");
 	key_pair->value = xstrdup_printf("%hu", time_limit_delay);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TimeLimitDrop");
 	key_pair->value = xstrdup_printf("%hu", time_limit_drop);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TimeLimitExtend");
 	key_pair->value = xstrdup_printf("%hu", time_limit_extend);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("UserDrainAllow");
 	key_pair->value = xstrdup(user_drain_allow_str);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	if ((nonstop_debug > 1) && user_drain_allow_cnt) {
 		for (i = 0; i < user_drain_allow_cnt; i++) {
@@ -469,14 +469,14 @@ extern void nonstop_read_config_list(List *data)
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("UserDrainAllow(UIDs)");
 		key_pair->value = xstrdup(tmp_str);
-		list_append(*data, key_pair);
+		list_append(data, key_pair);
 		xfree(tmp_str);
 	}
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("UserDrainDeny");
 	key_pair->value = xstrdup(user_drain_deny_str);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	if ((nonstop_debug > 1) && user_drain_deny_cnt) {
 		for (i = 0; i < user_drain_deny_cnt; i++) {
@@ -487,14 +487,14 @@ extern void nonstop_read_config_list(List *data)
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("UserDrainDeny(UIDs)");
 		key_pair->value = xstrdup(tmp_str);
-		list_append(*data, key_pair);
+		list_append(data, key_pair);
 		xfree(tmp_str);
 	}
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("WriteTimeout");
 	key_pair->value = xstrdup_printf("%u", write_timeout);
-	list_append(*data, key_pair);
+	list_append(data, key_pair);
 
 	return;
 }

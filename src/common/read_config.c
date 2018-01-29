@@ -91,6 +91,7 @@
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
 ** for details.
  */
+strong_alias(destroy_config_plugin_params, slurm_destroy_config_plugin_params);
 strong_alias(destroy_config_key_pair, slurm_destroy_config_key_pair);
 strong_alias(get_extra_conf_path, slurm_get_extra_conf_path);
 strong_alias(sort_key_pairs, slurm_sort_key_pairs);
@@ -5091,6 +5092,95 @@ extern uint16_t reconfig_str2flags(char *reconfig_flags)
 	return rc;
 }
 
+extern void destroy_config_plugin_params(void *object)
+{
+	config_plugin_params_t *plugin_ptr = (config_plugin_params_t *)object;
+
+	if (plugin_ptr) {
+		xfree(plugin_ptr->name);
+		FREE_NULL_LIST(plugin_ptr->key_pairs);
+		xfree(object);
+	}
+}
+
+extern void pack_config_plugin_params(void *in, uint16_t protocol_version,
+				      Buf buff)
+{
+       config_plugin_params_t *object = (config_plugin_params_t *)in;
+
+       packstr(object->name, buff);
+       pack_key_pair_list((void *)object->key_pairs, protocol_version, buff);
+}
+
+extern int
+unpack_config_plugin_params(void **object, uint16_t protocol_version, Buf buff)
+{
+	uint32_t uint32_tmp;
+	config_plugin_params_t *object_ptr =
+		xmalloc(sizeof(config_plugin_params_t));
+
+	*object = object_ptr;
+	safe_unpackstr_xmalloc(&object_ptr->name,  &uint32_tmp, buff);
+
+	if (unpack_key_pair_list((void *) &object_ptr->key_pairs,
+				 protocol_version, buff) != SLURM_SUCCESS)
+		goto unpack_error;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_config_plugin_params(object_ptr);
+	return SLURM_ERROR;
+}
+
+extern void
+pack_config_plugin_params_list(void *in, uint16_t protocol_version, Buf buff)
+{
+	uint32_t count = NO_VAL;
+
+	if (in)
+		count = list_count(in);
+	pack32(count, buff);
+	if (count && (count != NO_VAL))	{
+		ListIterator itr = list_iterator_create((List)in);
+		config_plugin_params_t *obj = NULL;
+		while ((obj = list_next(itr))) {
+			pack_config_plugin_params(obj, protocol_version, buff);
+		}
+		list_iterator_destroy(itr);
+	}
+}
+
+extern int
+unpack_config_plugin_params_list(void **plugin_params_l,
+				 uint16_t protocol_version, Buf buff)
+{
+	uint32_t count = NO_VAL;
+	List tmp_list = NULL;
+
+	safe_unpack32(&count, buff);
+	if (count > NO_VAL)
+		goto unpack_error;
+	if (count != NO_VAL) {
+		tmp_list = list_create(destroy_config_plugin_params);
+		config_plugin_params_t *object = NULL;
+		int i;
+		for (i = 0; i < count; i++) {
+			if (unpack_config_plugin_params(
+				    (void *)&object, protocol_version, buff)
+			    == SLURM_ERROR)
+				goto unpack_error;
+			list_append(tmp_list, object);
+		}
+		*plugin_params_l = (void *)tmp_list;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	FREE_NULL_LIST(tmp_list);
+	return SLURM_ERROR;
+}
+
 extern void destroy_config_key_pair(void *object)
 {
 	config_key_pair_t *key_pair_ptr = (config_key_pair_t *)object;
@@ -5102,15 +5192,16 @@ extern void destroy_config_key_pair(void *object)
 	}
 }
 
-extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer)
+extern void
+pack_config_key_pair(void *in, uint16_t protocol_version, Buf buffer)
 {
 	config_key_pair_t *object = (config_key_pair_t *)in;
 	packstr(object->name,  buffer);
 	packstr(object->value, buffer);
 }
 
-extern int unpack_config_key_pair(void **object, uint16_t rpc_version,
-				  Buf buffer)
+extern int
+unpack_config_key_pair(void **object, uint16_t protocol_version, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	config_key_pair_t *object_ptr = xmalloc(sizeof(config_key_pair_t));
@@ -5124,6 +5215,55 @@ extern int unpack_config_key_pair(void **object, uint16_t rpc_version,
 unpack_error:
 	destroy_config_key_pair(object_ptr);
 	*object = NULL;
+	return SLURM_ERROR;
+}
+
+extern void
+pack_key_pair_list(void *key_pairs, uint16_t protocol_version, Buf buffer)
+{
+	uint32_t count = NO_VAL;
+
+	if (key_pairs)
+		count = list_count(key_pairs);
+	pack32(count, buffer);
+	if (count && (count != NO_VAL)) {
+		ListIterator itr = list_iterator_create(
+			(List)key_pairs);
+		config_key_pair_t *key_pair = NULL;
+		while ((key_pair = list_next(itr))) {
+			pack_config_key_pair(key_pair, protocol_version,
+					     buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+}
+
+extern int
+unpack_key_pair_list(void **key_pairs, uint16_t protocol_version, Buf buffer)
+{
+	uint32_t count = NO_VAL;
+	List tmp_list = NULL;
+
+	safe_unpack32(&count, buffer);
+	if (count > NO_VAL)
+		goto unpack_error;
+	if (count != NO_VAL) {
+		tmp_list = list_create(destroy_config_key_pair);
+		config_key_pair_t *object = NULL;
+		int i;
+		for (i = 0; i < count; i++) {
+			if (unpack_config_key_pair((void *)&object,
+						   protocol_version, buffer)
+			    == SLURM_ERROR)
+				goto unpack_error;
+			list_append(tmp_list, object);
+		}
+		*key_pairs = (void *)tmp_list;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	FREE_NULL_LIST(tmp_list);
 	return SLURM_ERROR;
 }
 
