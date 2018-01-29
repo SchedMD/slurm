@@ -733,7 +733,7 @@ The recommended upgrade order is as follows:</p>
     execute "scontrol reconfig" for them to take effect</li>
 <li>Shutdown the slurmctld daemon(s)</li>
 <li>Shutdown the slurmd daemons on the compute nodes</li>
-<li>Copy the contents of the configured SlurmStateDir directory (in case
+<li>Copy the contents of the configured StateSaveLocation directory (in case
     of any possible failure)</li>
 <li>Upgrade the slurmctld and slurmd daemons</li>
 <li>Restart the slurmd daemons on the compute nodes</li>

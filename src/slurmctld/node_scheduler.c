@@ -2443,6 +2443,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	bb = bb_g_job_test_stage_in(job_ptr, test_only);
 	if (bb != 1) {
+		if ((bb == -1) &&
+		    (job_ptr->state_reason == FAIL_BURST_BUFFER_OP))
+			return ESLURM_BURST_BUFFER_WAIT; /* Fatal BB event */
 		xfree(job_ptr->state_desc);
 		last_job_update = now;
 		if (bb == 0)

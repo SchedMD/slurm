@@ -3951,6 +3951,8 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 	xfree(name);
 	setenvf(&my_env, "SLURM_JOBID", "%u", job_ptr->job_id);
 	setenvf(&my_env, "SLURM_JOB_ID", "%u", job_ptr->job_id);
+	if (job_ptr->licenses)
+		setenvf(&my_env, "SLURM_JOB_LICENSES", "%s", job_ptr->licenses);
 	setenvf(&my_env, "SLURM_JOB_NAME", "%s", job_ptr->name);
 	setenvf(&my_env, "SLURM_JOB_NODELIST", "%s", job_ptr->nodes);
 	if (job_ptr->part_ptr) {

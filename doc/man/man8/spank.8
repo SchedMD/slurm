@@ -77,7 +77,10 @@ option processing. This function is not called in slurmd context.
 Called in slurmd just after the daemon is started.
 .TP
 \fBslurm_spank_job_prolog\fR
-Called at the same time as the job prolog.
+Called at the same time as the job prolog. If this function returns a
+negative value and the \fBSPANK\fR plugin that contains it is required in the
+\fBplugstack.conf\fR, the node that this is run on will be drained.
+
 .TP
 \fBslurm_spank_init_post_opt\fR
 Called at the same point as \fBslurm_spank_init\fR, but after all
@@ -121,7 +124,9 @@ Called once just before \fBslurmstepd\fR exits in remote context.
 In local context, called before \fBsrun\fR exits.
 .TP
 \fBslurm_spank_job_epilog\fR
-Called at the same time as the job epilog.
+Called at the same time as the job epilog. If this function returns a
+negative value and the \fBSPANK\fR plugin that contains it is required in the
+\fBplugstack.conf\fR, the node that this is run on will be drained.
 .TP
 \fBslurm_spank_slurmd_exit\fR
 Called in slurmd when the daemon is shut down.
