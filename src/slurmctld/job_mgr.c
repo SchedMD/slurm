@@ -14850,12 +14850,12 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	time_t now = time(NULL);
 	int depend_rc;
 
-	if (job_ptr->state_reason == FAIL_BURST_BUFFER_OP
-	    || job_ptr->state_reason == WAIT_HELD
-	    || job_ptr->state_reason == WAIT_HELD_USER
-	    || job_ptr->state_reason == WAIT_MAX_REQUEUE
-	    || job_ptr->state_reason == WAIT_RESV_DELETED
-	    || job_ptr->state_reason == WAIT_DEP_INVALID)
+	if ((job_ptr->state_reason == FAIL_BURST_BUFFER_OP) ||
+	    (job_ptr->state_reason == WAIT_HELD) ||
+	    (job_ptr->state_reason == WAIT_HELD_USER) ||
+	    (job_ptr->state_reason == WAIT_MAX_REQUEUE) ||
+	    (job_ptr->state_reason == WAIT_RESV_DELETED) ||
+	    (job_ptr->state_reason == WAIT_DEP_INVALID))
 		return false;
 
 	/* Test dependencies first so we can cancel jobs before dependent
