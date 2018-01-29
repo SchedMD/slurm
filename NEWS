@@ -63,11 +63,14 @@ documents those changes that are of interest to users and administrators.
  -- Expand advanced reservation feature specification to support parenthesis and
     counts of nodes with specified features. Nodes with the feature currently
     active will be prefered.
- -- Defer job signaling  until prolog is completed
+ -- Defer job signaling until prolog is completed
  -- Have the primary slurmctld wait until the backup has completely shutdown
     before taking control.
  -- Fix issue where unpacking job state after TRES count changed could lead to
     invalid reads.
+ -- Heterogeneous job steps allocations supported with
+    * Open MPI (with Slurm's PMI2 and PMIx plugins) and
+    * Intel MPI (with Slurm's PMI2 plugin)
 
 * Changes in Slurm 17.11.3
 ==========================
