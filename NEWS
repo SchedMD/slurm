@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
     if LaunchParameter test_exec is set.
  -- Fix potential memory leak if clean starting and the TRES didn't change
     from when last started.
+ -- Fix for association MaxWall enforcement when none is given at submission.
 
 * Changes in Slurm 17.11.2
 ==========================
