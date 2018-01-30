@@ -1404,8 +1404,16 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
-	info("launch task %u.%u request from %u.%u@%s (port %hu)", req->job_id,
-	     req->job_step_id, req->uid, req->gid, host, port);
+	if (req->pack_jobid && (req->pack_jobid != NO_VAL)) {
+		info("launch task %u+%u.%u %u.%u request from UID:%u GID:%u HOST:%s PORT:%hu",
+		     req->pack_jobid, req->pack_offset, req->job_step_id,
+		     req->job_id, req->job_step_id, req->uid, req->gid,
+		     host, port);
+	} else {
+		info("launch task %u.%u request from UID:%u GID:%u HOST:%s PORT:%hu",
+		     req->job_id, req->job_step_id, req->uid, req->gid,
+		     host, port);
+	}
 
 	/* this could be set previously and needs to be overwritten by
 	 * this call for messages to work correctly for the new call */

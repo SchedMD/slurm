@@ -737,7 +737,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	ListIterator opt_iter = NULL, job_iter;
 	slurm_opt_t *opt_local = &opt;
 	uint32_t node_offset = 0, pack_nnodes = 0, step_id = NO_VAL;
-	uint32_t pack_offset = 0, pack_ntasks = 0, task_offset = 0;
+	uint32_t pack_ntasks = 0, task_offset = 0;
+
 	job_step_create_response_msg_t *step_resp;
 	char *resv_ports = NULL;
 	int rc = 0;
@@ -760,7 +761,6 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				opt_local = list_next(opt_iter);
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
-			job->pack_offset = pack_offset;
 			job->node_offset = node_offset;
 			job->pack_nnodes = pack_nnodes;
 			job->pack_ntasks = pack_ntasks;
@@ -1176,6 +1176,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 								 opt_local);
 				if (!job)
 					exit(error_exit);
+				job->pack_offset = pack_offset;
 				list_append(srun_job_list, job);
 			}	/* While more option structures */
 			pack_offset++;
@@ -1254,6 +1255,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					exit(error_exit);
 				}
 				job = job_create_allocation(resp, opt_local);
+				job->pack_offset = pack_offset;
 				list_append(srun_job_list, job);
 				_set_step_opts(opt_local);
 			}
