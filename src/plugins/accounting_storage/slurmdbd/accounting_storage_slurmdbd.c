@@ -2551,10 +2551,11 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	msg.msg_type      = DBD_JOB_START;
 	msg.data          = &req;
 
-	/* if we already have the db_index don't wait around for it
-	 * again just send the message.  This also applies when the
-	 * slurmdbd is down and we are about to remove the job from
-	 * the system.
+	/* If we already have the db_index don't wait around for it
+	 * again just send the message when not resizing.  This also applies
+	 * when the slurmdbd is down and we are about to remove the job from
+	 * the system.  We don't want to wait for the db_index in that situation
+	 * either.
 	 */
 	if ((req.db_index && !IS_JOB_RESIZING(job_ptr))
 	    || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
