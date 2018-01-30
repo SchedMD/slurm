@@ -85,8 +85,13 @@ static void _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc);
 #endif
 static int _process_cmdline (int argc, char **argv);
 
+/*
+ *  List of signals to block in this process
+ */
 int slurmstepd_blocked_signals[] = {
-	SIGPIPE, 0
+	SIGINT,  SIGTERM, SIGTSTP,
+	SIGQUIT, SIGPIPE, SIGUSR1,
+	SIGUSR2, SIGALRM, SIGHUP, 0
 };
 
 /* global variable */
