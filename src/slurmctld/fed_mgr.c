@@ -4141,6 +4141,22 @@ extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
 	job_ptr->end_time   = start_time;
 	job_ptr->state_reason = WAIT_NO_REASON;
 	xfree(job_ptr->state_desc);
+
+	/*
+	 * Since the job is purged/revoked quickly on the non-origin side it's
+	 * possible that the job_start message has not been sent yet. Send it
+	 * now so that the db record gets the uid set -- which the complete
+	 * message doesn't send.
+	 */
+	if (!job_ptr->db_index && (origin_id != fed_mgr_cluster_rec->fed.id)) {
+		if (IS_JOB_FINISHED(job_ptr))
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		else
+			info("%s: job (%u) isn't finished and isn't an origin job (%u != %u) and doesn't have a db_index yet.  We aren't sending a start message to the database.",
+			     __func__, job_ptr->job_id, origin_id,
+			     fed_mgr_cluster_rec->fed.id);
+	}
+
 	job_completion_logger(job_ptr, false);
 
 	/* Don't remove the origin job */
