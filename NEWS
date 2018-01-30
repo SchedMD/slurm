@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
     erroneously.
  -- Make sure the slurmstepd blocks signals like SIGTERM correctly.
  -- When submitting a --test-only job respect the -M option.
+ -- SPANK - When slurm_spank_init_post_opt() fails return error correctly.
 
 * Changes in Slurm 17.11.2
 ==========================
