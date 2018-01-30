@@ -64,8 +64,6 @@ documents those changes that are of interest to users and administrators.
  -- Make sure the slurmstepd blocks signals like SIGTERM correctly.
  -- When submitting a --test-only job respect the -M option.
  -- SPANK - When slurm_spank_init_post_opt() fails return error correctly.
- -- When revoking a sibling job in the federation we want to send a start
-    message before purging the job record to get the uid of the revoked job.
 
 * Changes in Slurm 17.11.2
 ==========================
