@@ -57,9 +57,23 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
+proc reconfigure { } {
+	global scontrol
+	spawn $scontrol reconfigure
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
 proc end_it { exit_code } {
 	global test_id orig_spank_conf spank_conf_file new_spank_conf spank_out
-	global file_out spank_out bin_cp bin_rm file_in file_prog
+	global file_out spank_out bin_cp bin_rm file_in file_prog reconfigure
 	#
 	# Restore the original plugstack
 	#
@@ -68,6 +82,7 @@ proc end_it { exit_code } {
 	} else {
 		exec $bin_rm -f $spank_conf_file
 	}
+	reconfigure
 
        if {$exit_code == 0} {
 		exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
@@ -161,6 +176,7 @@ expect {
 		wait
 	}
 }
+reconfigure
 
 #
 # Test of srun help message
@@ -270,7 +286,7 @@ exec $bin_rm -f $file_in
 #	configuration.
 #
 send_user "\n\nTest locally logged messages..........\n\n"
-$bin_sleep 30
+$bin_sleep 3
 make_bash_script $file_in "
   $srun --test_suite_srun=5 $bin_uname
 "
