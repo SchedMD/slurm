@@ -120,15 +120,6 @@
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
 
-/*
- *  List of signals to block in this process
- */
-static int mgr_sigarray[] = {
-	SIGINT,  SIGTERM, SIGTSTP,
-	SIGQUIT, SIGPIPE, SIGUSR1,
-	SIGUSR2, SIGALRM, SIGHUP, 0
-};
-
 struct priv_state {
 	uid_t	saved_uid;
 	gid_t	saved_gid;
@@ -1005,6 +996,9 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		setpgid(0, 0);
 		setsid();
 		acct_gather_profile_g_child_forked();
+
+		_unblock_signals();
+
 #ifdef WITH_SLURM_X11
 		if (job->x11) {
 			int display;
@@ -1337,7 +1331,6 @@ job_manager(stepd_step_rec_t *job)
 
 	io_close_task_fds(job);
 
-	xsignal_block (mgr_sigarray);
 	reattach_job = job;
 
 	/* Attach slurmstepd to system cgroups, if configured */
@@ -1639,10 +1632,10 @@ static void _unblock_signals (void)
 	sigset_t set;
 	int i;
 
-	for (i = 0; mgr_sigarray[i]; i++) {
+	for (i = 0; slurmstepd_blocked_signals[i]; i++) {
 		/* eliminate pending signals, then set to default */
-		xsignal(mgr_sigarray[i], SIG_IGN);
-		xsignal(mgr_sigarray[i], SIG_DFL);
+		xsignal(slurmstepd_blocked_signals[i], SIG_IGN);
+		xsignal(slurmstepd_blocked_signals[i], SIG_DFL);
 	}
 	sigemptyset(&set);
 	xsignal_set_mask (&set);

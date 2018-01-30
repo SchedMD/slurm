@@ -160,20 +160,18 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 		return SLURM_ERROR;
 	}
 
-	pid = getpid();
-
-	// Slurm detaches the slurmstepd from the job, so we temporarily
-	// reattach so the job_set_affinity doesn't mess up one of the
-	// task's affinity settings
-	if (job_attachpid(pid, cont_id) == (jid_t)-1) {
-		error("job_attachpid(%zu, %"PRIu64") failed: %m",
-		      (size_t)pid, cont_id);
+	// Get a pid in the job to use with job_set_affinity
+	pid = job_getprimepid(cont_id);
+	if (pid < 0) {
+		error("job_getprimepid(%"PRIu64") returned %d: %m",
+		      cont_id, (int)pid);
 		return SLURM_ERROR;
 	}
 
 	// Apply the core specialization with job_set_affinity
-	// Use NONE for the cpu list because Slurm handles its
-	// own task->cpu binding
+	// JOB_AFFINITY_NONE tells the kernel to not alter the process'
+	// affinity unless required (the process is only allowed to run
+	// on cores that will be specialized).
 	memset(&affinity_info, 0, sizeof(struct job_set_affinity_info));
 	affinity_info.cpu_list = JOB_AFFINITY_NONE;
 	rc = job_set_affinity(cont_id, pid, &affinity_info);
@@ -186,14 +184,12 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 			error("job_set_affinity(%"PRIu64", %zu) failed: %m",
 			      cont_id, (size_t)pid);
 		}
-		job_detachpid(pid);
 		return SLURM_ERROR;
 	} else if (affinity_info.message != NULL) {
 		info("job_set_affinity(%"PRIu64", %zu): %s",
 		     cont_id, (size_t)pid, affinity_info.message);
 		free(affinity_info.message);
 	}
-	job_detachpid(pid);
 #endif
 	END_TIMER;
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY)

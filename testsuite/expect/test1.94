@@ -96,7 +96,7 @@ file delete $file_out $file_err
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun -n1 $master_prog $slave_prog
+  $srun -n1 --mem=0 $master_prog $slave_prog
 "
 
 #
@@ -104,7 +104,7 @@ make_bash_script $file_in "
 #
 set timeout $max_job_delay
 set no_start 0
-set sbatch_pid [spawn $sbatch -n4 --output=$file_out --error=$file_err -t1 $file_in]
+set sbatch_pid [spawn $sbatch -n4 --mem=0 --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
