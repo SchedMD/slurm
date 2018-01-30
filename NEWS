@@ -58,6 +58,9 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray: Attempts by job to create persistent burst buffer when
     one already exists owned by a different user will be logged and the job
     held.
+ -- CRAY - Remove race in the core_spec where we add the slurmstepd to the
+    job container where if the step was canceled would also cancel the stepd
+    erroneously.
 
 * Changes in Slurm 17.11.2
 ==========================
