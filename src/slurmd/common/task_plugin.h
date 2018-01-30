@@ -82,9 +82,8 @@ extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
  *
  * RET - slurm error code
  */
-extern int task_g_slurmd_reserve_resources(uint32_t job_id,
-				    launch_tasks_request_msg_t *req,
-				    uint32_t node_id );
+extern int task_g_slurmd_reserve_resources(launch_tasks_request_msg_t *req,
+					   uint32_t node_id );
 
 /*
  * Slurmd is suspending a job.

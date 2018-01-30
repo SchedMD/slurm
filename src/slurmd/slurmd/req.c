@@ -1559,7 +1559,7 @@ done:
 
 	} else if (errnum == SLURM_SUCCESS) {
 		save_cred_state(conf->vctx);
-		task_g_slurmd_reserve_resources(req->job_id, req, nodeid);
+		task_g_slurmd_reserve_resources(req, nodeid);
 	}
 
 	/*

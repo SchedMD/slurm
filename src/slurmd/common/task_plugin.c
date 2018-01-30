@@ -56,8 +56,7 @@ typedef struct slurmd_task_ops {
 	int	(*slurmd_batch_request)	    (batch_job_launch_msg_t *req);
 	int	(*slurmd_launch_request)    (launch_tasks_request_msg_t *req,
 					     uint32_t node_id);
-	int	(*slurmd_reserve_resources) (uint32_t job_id,
-					     launch_tasks_request_msg_t *req,
+	int	(*slurmd_reserve_resources) (launch_tasks_request_msg_t *req,
 					     uint32_t node_id);
 	int	(*slurmd_suspend_job)	    (uint32_t job_id);
 	int	(*slurmd_resume_job)	    (uint32_t job_id);
@@ -250,8 +249,7 @@ extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
  *
  * RET - slurm error code
  */
-extern int task_g_slurmd_reserve_resources(uint32_t job_id,
-					   launch_tasks_request_msg_t *req,
+extern int task_g_slurmd_reserve_resources(launch_tasks_request_msg_t *req,
 					   uint32_t node_id )
 {
 	int i, rc = SLURM_SUCCESS;
@@ -261,8 +259,7 @@ extern int task_g_slurmd_reserve_resources(uint32_t job_id,
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].slurmd_reserve_resources))
-					(job_id, req, node_id);
+		rc = (*(ops[i].slurmd_reserve_resources))(req, node_id);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));

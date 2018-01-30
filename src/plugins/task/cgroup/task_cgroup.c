@@ -179,8 +179,7 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 /*
  * task_p_slurmd_reserve_resources()
  */
-extern int task_p_slurmd_reserve_resources (uint32_t job_id,
-					    launch_tasks_request_msg_t *req,
+extern int task_p_slurmd_reserve_resources (launch_tasks_request_msg_t *req,
 					    uint32_t node_id)
 {
 	return SLURM_SUCCESS;

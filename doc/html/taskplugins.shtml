@@ -104,13 +104,11 @@ ID of the node on which resources are being acquired (zero origin).</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_p_slurmd_reserve_resources (uint32_t job_id,
+<p class="commandline">int task_p_slurmd_reserve_resources (
 launch_tasks_request_msg_t *req, uint32_t node_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Reserve resources for
 the initiation of a job. Executed by the <b>slurmd</b> daemon as user root.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
-ID of the job being started.<br>
 <span class="commandline">req</span>&nbsp;&nbsp;&nbsp;(input)
 Task launch request specification including node, socket, and
 core specifications.

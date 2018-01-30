@@ -228,11 +228,10 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 /*
  * task_p_slurmd_reserve_resources()
  */
-extern int task_p_slurmd_reserve_resources (uint32_t job_id,
-					    launch_tasks_request_msg_t *req,
+extern int task_p_slurmd_reserve_resources (launch_tasks_request_msg_t *req,
 					    uint32_t node_id)
 {
-	debug("task_p_slurmd_reserve_resources: %u %u", job_id, node_id);
+	debug("%s: %u %u", __func__, req->job_id, node_id);
 	return SLURM_SUCCESS;
 }
 
