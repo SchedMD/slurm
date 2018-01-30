@@ -2266,7 +2266,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		req->ngids = group_cache_lookup(req->uid, req->gid,
 						req->user_name, &req->gids);
 
-	task_g_slurmd_batch_request(req->job_id, req);	/* determine task affinity */
+	task_g_slurmd_batch_request(req);	/* determine task affinity */
 
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);

@@ -53,8 +53,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurmd_task_ops {
-	int	(*slurmd_batch_request)	    (uint32_t job_id,
-					     batch_job_launch_msg_t *req);
+	int	(*slurmd_batch_request)	    (batch_job_launch_msg_t *req);
 	int	(*slurmd_launch_request)    (launch_tasks_request_msg_t *req,
 					     uint32_t node_id);
 	int	(*slurmd_reserve_resources) (uint32_t job_id,
@@ -198,8 +197,7 @@ done:
  *
  * RET - slurm error code
  */
-extern int task_g_slurmd_batch_request(uint32_t job_id,
-				       batch_job_launch_msg_t *req)
+extern int task_g_slurmd_batch_request(batch_job_launch_msg_t *req)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -208,7 +206,7 @@ extern int task_g_slurmd_batch_request(uint32_t job_id,
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].slurmd_batch_request))(job_id, req);
+		rc = (*(ops[i].slurmd_batch_request))(req);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));

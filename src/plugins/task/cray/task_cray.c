@@ -210,17 +210,16 @@ extern int fini (void)
 /*
  * task_p_slurmd_batch_request()
  */
-extern int task_p_slurmd_batch_request (uint32_t job_id,
-					batch_job_launch_msg_t *req)
+extern int task_p_slurmd_batch_request (batch_job_launch_msg_t *req)
 {
-	debug("task_p_slurmd_batch_request: %u", job_id);
+	debug("%s: %u", __func__, req->job_id);
 	return SLURM_SUCCESS;
 }
 
 /*
  * task_p_slurmd_launch_request()
  */
-extern int task_p_slurmd_launch_request ( launch_tasks_request_msg_t *req,
+extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 					 uint32_t node_id)
 {
 	return SLURM_SUCCESS;

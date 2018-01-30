@@ -172,10 +172,9 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 /*
  * task_p_slurmd_batch_request()
  */
-extern int task_p_slurmd_batch_request (uint32_t job_id,
-					batch_job_launch_msg_t *req)
+extern int task_p_slurmd_batch_request (batch_job_launch_msg_t *req)
 {
-	info("task_p_slurmd_batch_request: %u", job_id);
+	info("task_p_slurmd_batch_request: %u", req->job_id);
 	batch_bind(req);
 	return SLURM_SUCCESS;
 }

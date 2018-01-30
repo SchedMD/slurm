@@ -67,8 +67,7 @@ extern int slurmd_task_fini(void);
  *
  * RET - slurm error code
  */
-extern int task_g_slurmd_batch_request(uint32_t job_id,
-				       batch_job_launch_msg_t *req);
+extern int task_g_slurmd_batch_request(batch_job_launch_msg_t *req);
 
 /*
  * Slurmd has received a launch request.

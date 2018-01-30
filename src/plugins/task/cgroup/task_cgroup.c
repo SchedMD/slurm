@@ -162,8 +162,7 @@ extern int fini (void)
 /*
  * task_p_slurmd_batch_request()
  */
-extern int task_p_slurmd_batch_request (uint32_t job_id,
-					batch_job_launch_msg_t *req)
+extern int task_p_slurmd_batch_request (batch_job_launch_msg_t *req)
 {
 	return SLURM_SUCCESS;
 }
