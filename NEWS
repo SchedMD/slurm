@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Remove race in the core_spec where we add the slurmstepd to the
     job container where if the step was canceled would also cancel the stepd
     erroneously.
+ -- Make sure the slurmstepd blocks signals like SIGTERM correctly.
  -- When submitting a --test-only job respect the -M option.
  -- SPANK - When slurm_spank_init_post_opt() fails return error correctly.
  -- When revoking a sibling job in the federation we want to send a start

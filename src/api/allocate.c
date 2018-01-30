@@ -604,7 +604,17 @@ int slurm_job_will_run(job_desc_msg_t *req)
 		cluster_name = working_cluster_rec->name;
 	else
 		cluster_name = slurmctld_conf.cluster_name;
-	if (!slurm_load_federation(&ptr) &&
+
+	/*
+	 * If clusters is defined then slurmdb_get_first_avail_cluster() has
+	 * already been called and figured out the fastest cluster and a
+	 * will_run to the cluster is all that is needed. However if specific
+	 * clusters have been requested and the local cluster is in a federated
+	 * then check all of the clusters in the federation for the fastest
+	 * cluster.
+	 */
+	if (!req->clusters &&
+	    !slurm_load_federation(&ptr) &&
 	    cluster_in_federation(ptr, cluster_name))
 		rc = _fed_job_will_run(req, &will_run_resp, ptr);
 	else
