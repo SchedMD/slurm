@@ -225,7 +225,7 @@ if {$matches != 3} {
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
-	[cancel_job $job_id]
+	cancel_job $job_id
 	end_it 1
 }
 
