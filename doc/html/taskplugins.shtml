@@ -90,14 +90,12 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_p_slurmd_launch_request (uint32_t job_id,
+<p class="commandline">int task_p_slurmd_launch_request (
 launch_tasks_request_msg_t *req, uint32_t node_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Prepare to launch a job.
 Establish node, socket, and core resource availability for it.
 Executed by the <b>slurmd</b> daemon as user root.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
-ID of the job to be started.<br>
 <span class="commandline">req</span>&nbsp;&nbsp;&nbsp;(input/output)
 Task launch request specification including node, socket, and
 core specifications.
@@ -237,6 +235,6 @@ appropriate value to indicate the reason for failure.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 30 January 2018</p>
 
 <!--#include virtual="footer.txt"-->

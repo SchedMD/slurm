@@ -1436,7 +1436,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	/* Must follow _check_job_credential(), which sets some req fields */
-	task_g_slurmd_launch_request(req->job_id, req, nodeid);
+	task_g_slurmd_launch_request(req, nodeid);
 
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {

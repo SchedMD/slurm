@@ -71,6 +71,8 @@ documents those changes that are of interest to users and administrators.
  -- Heterogeneous job steps allocations supported with
     * Open MPI (with Slurm's PMI2 and PMIx plugins) and
     * Intel MPI (with Slurm's PMI2 plugin)
+ -- In task plugins:
+    * Remove "job_id" field from task_p_slurmd_launch_request() function.
 
 * Changes in Slurm 17.11.3
 ==========================

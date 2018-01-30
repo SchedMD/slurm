@@ -183,14 +183,10 @@ extern int task_p_slurmd_batch_request (uint32_t job_id,
 /*
  * task_p_slurmd_launch_request()
  */
-extern int task_p_slurmd_launch_request (uint32_t job_id,
-					 launch_tasks_request_msg_t *req,
+extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 					 uint32_t node_id)
 {
 	char buf_type[100];
-
-	debug("task_p_slurmd_launch_request: %u.%u %u",
-	      job_id, req->job_step_id, node_id);
 
 	if (((conf->sockets >= 1)
 	     && ((conf->cores > 1) || (conf->threads > 1)))
