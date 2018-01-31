@@ -2311,7 +2311,8 @@ the definitions in the slurm.conf file.
 
 .TP
 \fBRequeueExit\fR
-Enables automatic job requeue for jobs which exit with the specified values.
+Enables automatic requeue for batch jobs which exit with the specified
+values.
 Separate multiple exit code by a comma and/or specify numeric ranges using a
 "\-" separator (e.g. "RequeueExit=1\-9,18")
 Jobs will be put back in to pending state and later scheduled again.
@@ -2320,8 +2321,8 @@ set to the number of times the job has been restarted.
 
 .TP
 \fBRequeueExitHold\fR
-Enables automatic requeue of jobs into pending state in hold, meaning their
-priority is zero.
+Enables automatic requeue for batch jobs which exit with the specified
+values, with these jobs being held until released manually by the user.
 Separate multiple exit code by a comma and/or specify numeric ranges using a
 "\-" separator (e.g. "RequeueExitHold=10\-12,16")
 These jobs are put in the \fBJOB_SPECIAL_EXIT\fP exit state.
