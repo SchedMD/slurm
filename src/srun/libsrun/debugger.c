@@ -62,8 +62,8 @@ volatile int MPIR_debug_state;
 int MPIR_being_debugged;
 int MPIR_i_am_starter;
 int MPIR_acquired_pre_main;
-char *totalview_jobid;
-char *totalview_stepid;
+char *totalview_jobid  = NULL;
+char *totalview_stepid = NULL;
 
 #ifdef DEBUGGER_PARTIAL_ATTACH
   int MPIR_partial_attach_ok;

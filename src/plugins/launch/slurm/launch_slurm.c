@@ -564,7 +564,8 @@ extern int launch_p_handle_multi_prog_verify(int command_pos,
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, slurm_opt_t *opt_local)
+				    sig_atomic_t *destroy_job,
+				    slurm_opt_t *opt_local)
 {
 	if (launch_common_create_job_step(job, use_all_cpus,
 					  signal_function, destroy_job,
@@ -572,10 +573,10 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		return SLURM_ERROR;
 
 	/* set the jobid for totalview */
-	totalview_jobid = NULL;
-	xstrfmtcat(totalview_jobid, "%u", job->jobid);
-	totalview_stepid = NULL;
-	xstrfmtcat(totalview_stepid, "%u", job->stepid);
+	if (!totalview_jobid) {
+		xstrfmtcat(totalview_jobid,  "%u", job->jobid);
+		xstrfmtcat(totalview_stepid, "%u", job->stepid);
+	}
 
 	return SLURM_SUCCESS;
 }
