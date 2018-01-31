@@ -495,6 +495,23 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	} else {
 		if (need_mpir)
 			mpir_init(job->ntasks);
+		if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
+			(void) slurm_step_ctx_get(job->step_ctx,
+						  SLURM_STEP_CTX_TASKS,
+						  &tmp_task_cnt);
+			job->pack_task_cnts = xmalloc(sizeof(uint16_t) *
+						      job->pack_nnodes);
+			memcpy(job->pack_task_cnts, tmp_task_cnt,
+			       sizeof(uint16_t) * job->pack_nnodes);
+			(void) slurm_step_ctx_get(job->step_ctx,
+						  SLURM_STEP_CTX_TIDS,
+						  &tmp_tids);
+			job->pack_tids = xmalloc(sizeof(uint32_t *) *
+						 job->pack_nnodes);
+			memcpy(job->pack_tids, tmp_tids,
+			       sizeof(uint32_t *) * job->pack_nnodes);
+			job->pack_node_list = xstrdup(job->nodelist);
+		}
 		opts = xmalloc(sizeof(_launch_app_data_t));
 		opts->got_alloc   = got_alloc;
 		opts->job         = job;
