@@ -119,7 +119,7 @@ static int _file_state(struct bcast_parameters *params)
 		return SLURM_SUCCESS;
 	}
 	src = mmap(NULL, f_stat.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	if (src == (void *) -1) {
+	if (src == MAP_FAILED) {
 		error("Can't mmap file `%s`, %m.", params->src_fname);
 		return SLURM_ERROR;
 	}
