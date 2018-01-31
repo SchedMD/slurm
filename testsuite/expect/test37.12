@@ -326,7 +326,7 @@ set reg_default "Submitted batch job ($number)"
 
 sbatch_to "--test-only" $regex
 
-set ji0   [sbatch_to "-t5 -M$fedc1" $reg_default]
+set ji0   [sbatch_to "-t5" $reg_default]
 set f1    [wait_for_fed_job $ji0 RUNNING [join $feds ","]]
 sleep 2
 
@@ -334,9 +334,10 @@ sleep 2
 set feds  [lremove $feds $f1]
 set regex [build_regex $feds]
 sbatch_to "--test-only" $regex
-sbatch_to "--test-only -M$f1" [build_regex $f1]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
 
-set ji1 [sbatch_to "-t10 -M$fedc2" $reg_default]
+set ji1 [sbatch_to "-t10" $reg_default]
 set f2  [wait_for_fed_job $ji1 RUNNING [join $feds ","]]
 sleep 2
 
@@ -344,7 +345,8 @@ sleep 2
 set feds  [lremove $feds $f2]
 set regex [build_regex $feds]
 sbatch_to "--test-only" $regex
-sbatch_to "--test-only -M$f1,$f2" [build_regex $f1]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
 
 set ji2 [sbatch_to "-t15" $reg_default]
 set f3  [wait_for_fed_job $ji2 RUNNING [join $feds ","]]
@@ -352,8 +354,8 @@ sleep 2
 
 set regex [build_regex $f1]
 sbatch_to "--test-only" $regex
-sbatch_to "--test-only -M$f1,$f2" [build_regex $f1]
-sbatch_to "--test-only -M$f2,$f3" [build_regex $f2]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
 
 set pend_job [sbatch_to "-M$f1 -t50" $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f1]
@@ -364,8 +366,8 @@ if {[string compare $pend_cluster ""] == 0} {
 
 set regex [build_regex $f2]
 sbatch_to "--test-only" $regex
-sbatch_to "--test-only -M$f1,$f2" [build_regex $f2]
-sbatch_to "--test-only -M$f2,$f3" [build_regex $f2]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
 
 set pend_job [sbatch_to "-M$f2 -t50" $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f2]
@@ -376,9 +378,8 @@ if {[string compare $pend_cluster ""] == 0} {
 
 set regex [build_regex $f3]
 sbatch_to "--test-only" $regex
-sbatch_to "--test-only -M$f1" [build_regex $f1]
-sbatch_to "--test-only -M$f1,$f2" [build_regex $f1]
-sbatch_to "--test-only -M$f2,$f3" [build_regex $f3]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
 
 set pend_job [sbatch_to "-M$f3 -t50" $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f3]
@@ -389,7 +390,8 @@ if {[string compare $pend_cluster ""] == 0} {
 
 set regex [build_regex $f1]
 sbatch_to "--test-only" $regex
-sbatch_to "--test-only -M$f3" [build_regex $f3]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
 
 
 
@@ -422,7 +424,7 @@ set reg_default "srun: job ($number).+\\n"
 
 srun "--test-only" $regex
 
-set ji0 [srun "-t5 -$fedc1" $reg_default]
+set ji0 [srun "-t5" $reg_default]
 set f1  [wait_for_fed_job $ji0 RUNNING [join $feds ","]]
 sleep 2
 
@@ -430,11 +432,10 @@ set fed   [lremove $feds $f1]
 set regex [build_regex $feds]
 
 srun "--test-only" $regex
-sbatch_to "--test-only" $regex
-sbatch_to "--test-only -M$f1" [build_regex $f1]
+srun "--test-only" $regex
+srun "--test-only" $regex
 
-
-set ji1 [srun "-t10 -M$fedc2" $reg_default]
+set ji1 [srun "-t10" $reg_default]
 set f2  [wait_for_fed_job $ji1 RUNNING [join $feds ","]]
 sleep 2
 
@@ -442,8 +443,8 @@ set feds  [lremove $feds $f2]
 set regex [build_regex $feds]
 
 srun "--test-only" $regex
-sbatch_to "--test-only" $regex
-sbatch_to "--test-only -M$f1,$f2" [build_regex $f1]
+srun "--test-only" $regex
+srun "--test-only" $regex
 
 set ji2   [srun "-t15" $reg_default]
 set f3    [wait_for_fed_job $ji2 RUNNING [join $feds ","]]
@@ -451,8 +452,8 @@ set regex [build_regex $f1]
 sleep 2
 
 srun "--test-only" $regex
-sbatch_to "--test-only -M$f1,$f2" [build_regex $f1]
-sbatch_to "--test-only -M$f2,$f3" [build_regex $f2]
+srun "--test-only" $regex
+srun "--test-only" $regex
 
 set pend_job [srun "-M$f1 -t50"  $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f1]
@@ -463,8 +464,8 @@ if {[string compare $pend_cluster ""] == 0} {
 
 set regex [build_regex $f2]
 srun "--test-only" $regex
-sbatch_to "--test-only -M$f1,$f2" [build_regex $f2]
-sbatch_to "--test-only -M$f2,$f3" [build_regex $f2]
+srun "--test-only" $regex
+srun "--test-only" $regex
 
 set pend_job [srun "-M$f2 -t50"  $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f2]
@@ -475,9 +476,8 @@ if {[string compare $pend_cluster ""] == 0} {
 
 set regex [build_regex $f3]
 srun "--test-only" $regex
-sbatch_to "--test-only -M$f1" [build_regex $f1]
-sbatch_to "--test-only -M$f1,$f2" [build_regex $f1]
-sbatch_to "--test-only -M$f2,$f3" [build_regex $f3]
+srun "--test-only" $regex
+srun "--test-only" $regex
 
 set pend_job [srun "-M$f3 -t50"  $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f3]
@@ -488,7 +488,8 @@ if {[string compare $pend_cluster ""] == 0} {
 
 set regex [build_regex $f1]
 srun "--test-only" $regex
-sbatch_to "--test-only -M$f3" [build_regex $f3]
+srun "--test-only" $regex
+srun "--test-only" $regex
 
 set matches 0
 spawn $my_srun -N11 --exclusive --test-only sleep 30
