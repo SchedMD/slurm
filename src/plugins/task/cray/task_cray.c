@@ -164,9 +164,10 @@ extern int init (void)
 	char *task_cgroup = strstr(task_plugin, "cgroup");
 	char *task_cray = strstr(task_plugin, "cray");
 
-	if (!task_cgroup || !task_cray || task_cgroup < task_cray)
+	if (!task_cgroup || !task_cray || (task_cgroup < task_cray)) {
 		fatal("task/cgroup must be used with, and listed after, "
 		      "task/cray in TaskPlugin");
+	}
 
 	xfree(task_plugin);
 
@@ -179,7 +180,7 @@ extern int init (void)
 	// Create the run directory
 	errno = 0;
 	rc = mkdir(TASK_CRAY_RUN_DIR, 0755);
-	if (rc == -1 &&	errno != EEXIST) {
+	if ((rc == -1) && (errno != EEXIST)) {
 		CRAY_ERR("Couldn't create %s: %m", TASK_CRAY_RUN_DIR);
 		return SLURM_ERROR;
 	}
@@ -446,7 +447,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		// Unlink the file
 		errno = 0;
 		rc = unlink(llifile);
-		if (rc == -1 && errno != ENOENT) {
+		if ((rc == -1) && (errno != ENOENT)) {
 			CRAY_ERR("unlink(%s) failed: %m", llifile);
 		} else if (rc == 0) {
 			debug("Unlinked %s", llifile);
@@ -457,7 +458,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 			snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
 				 SLURM_ID_HASH_LEGACY(apid));
 			rc = unlink(llifile);
-			if (rc == -1 && errno != ENOENT) {
+			if ((rc == -1) && (errno != ENOENT)) {
 				CRAY_ERR("unlink(%s) failed: %m", llifile);
 			} else if (rc == 0) {
 				debug("Unlinked %s", llifile);
