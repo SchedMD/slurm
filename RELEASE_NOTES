@@ -43,17 +43,17 @@ NOTE FOR THOSE RUNNING 17.11.[0|1]: It was found a seeded MySQL auto_increment
       1001.  This is fine uptil 17.11 where a new static TRES was added taking
       up the id of 5.  If you are already running 17.11 you can easily check to
       see if you hit this problem by running 'sacctmgr list tres'.  If you see
-      any Name for the Type 'billing' TRES (id=5) you are unfortunately hit
-      with the bug. The fix for this issue requires manual intervention with the
-      database.  Most likely if you started a slurmctld up against the slurmdbd
-      the overwritten TRES is now at a different id.  You can fix the double
-      issue by altering all the tables with the new TRES id back to 5, remove
-      that entry in the tres_table, and then change the Type of billing back to
-      the original Type and restart the slurmdbd which should finish the
-      conversion.  SchedMD can assist with this. Supported sites please open a
-      ticket at https://bugs.schedmd.com/.  Non-supported sites please contact
-      SchedMD at sales@schedmd.com if you would like to discuss commercial
-      support options.
+      any entry in the Name column for the Type 'billing' TRES (id=5) you are
+      unfortunately hit with the bug. The fix for this issue requires manual
+      intervention with the database.  Most likely if you started a slurmctld
+      up against the slurmdbd the overwritten TRES is now at a different id.
+      You can fix the double issue by altering all the tables with the new TRES
+      id back to 5, remove that entry in the tres_table, and then change the
+      Type of billing back to the original Type and restart the slurmdbd which
+      should finish the conversion.  SchedMD can assist with this. Supported
+      sites please open a ticket at https://bugs.schedmd.com/.  Non-supported
+      sites please contact SchedMD at sales@schedmd.com if you would like to
+      discuss commercial support options.
 
 NOTE: The slurm.spec file used to build RPM packages has been aggressively
       refactored, and some package names may now be different. Notably,
