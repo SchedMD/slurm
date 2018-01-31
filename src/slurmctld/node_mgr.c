@@ -2901,10 +2901,11 @@ extern int validate_nodes_via_front_end(
 		}
 
 		else if (IS_JOB_COMPLETING(job_ptr)) {
-			/* Re-send kill request as needed,
-			 * not necessarily an error */
-			kill_job_on_node(reg_msg->job_id[i], job_ptr,
-					 node_ptr);
+			/*
+			 * Re-send kill request as needed,
+			 * not necessarily an error
+			 */
+			kill_job_on_node(job_ptr, node_ptr);
 		}
 
 		else if (IS_JOB_PENDING(job_ptr)) {
@@ -2935,8 +2936,7 @@ extern int validate_nodes_via_front_end(
 					     reg_msg->step_id[i]),
 			      job_state_string(job_ptr->job_state),
 			      front_end_ptr->name);
-			kill_job_on_node(reg_msg->job_id[i], job_ptr,
-					 node_ptr);
+			kill_job_on_node(job_ptr, node_ptr);
 		}
 	}
 

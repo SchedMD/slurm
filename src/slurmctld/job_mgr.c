@@ -13819,10 +13819,11 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		}
 
 		else if (IS_JOB_COMPLETING(job_ptr)) {
-			/* Re-send kill request as needed,
-			 * not necessarily an error */
-			kill_job_on_node(reg_msg->job_id[i], job_ptr,
-					 node_ptr);
+			/*
+			 * Re-send kill request as needed,
+			 * not necessarily an error
+			 */
+			kill_job_on_node(job_ptr, node_ptr);
 		}
 
 
@@ -13854,8 +13855,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 					     reg_msg->step_id[i]),
 			      job_state_string(job_ptr->job_state),
 			      reg_msg->node_name);
-			kill_job_on_node(reg_msg->job_id[i], job_ptr,
-					 node_ptr);
+			kill_job_on_node(job_ptr, node_ptr);
 		}
 	}
 
@@ -14039,20 +14039,18 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, char *node_name)
 }
 
 /*
- * kill_job_on_node - Kill the specific job_id on a specific node.
- * IN job_id - id of the job to be killed
+ * kill_job_on_node - Kill the specific job on a specific node.
  * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
  * IN node_ptr - pointer to the node on which the job resides
  */
-extern void
-kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
-		struct node_record *node_ptr)
+extern void kill_job_on_node(struct job_record *job_ptr,
+			     struct node_record *node_ptr)
 {
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
-	kill_req->job_id	= job_id;
+	kill_req->job_id	= job_ptr->job_id;
 	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
 	kill_req->start_time	= job_ptr->start_time;
@@ -14073,12 +14071,12 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 		agent_info->protocol_version =
 			job_ptr->front_end_ptr->protocol_version;
 	agent_info->hostlist	= hostlist_create(job_ptr->batch_host);
-	debug("Killing job %u on front end node %s", job_id,
+	debug("Killing job %u on front end node %s", job_ptr->job_id,
 	      job_ptr->batch_host);
 #else
 	agent_info->protocol_version = node_ptr->protocol_version;
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
-	debug("Killing job %u on node %s", job_id, node_ptr->name);
+	debug("Killing job %u on node %s", job_ptr->job_id, node_ptr->name);
 #endif
 	agent_info->msg_type	= REQUEST_TERMINATE_JOB;
 	agent_info->msg_args	= kill_req;
