@@ -1574,12 +1574,12 @@ This flag can be used to reserve all nodes within the specified
 partition.  PartitionName and Nodes=ALL must be specified or
 this option is ignored.
 .TP
-\fRPURGE_COMP\fR
+\fIPURGE_COMP\fR
 Purge the reservation once the last associated job has completed.
 Once the reservation has been created, it must be populated within 5 minutes
 of its start time or it will be purged before any jobs have been run.
 .TP
-\fRREPLACE\fR
+\fIREPLACE\fR
 Nodes which are DOWN, DRAINED, or allocated to jobs as automatically
 replenished using idle resources.
 This option can be used to maintain a constant number of idle resources
@@ -1588,7 +1588,7 @@ This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.
 This option is not supported on IBM Bluegene systems.
 .TP
-\fRREPLACE_DOWN\fR
+\fIREPLACE_DOWN\fR
 Nodes which are DOWN or DRAINED are automatically replenished using idle resources.
 This option can be used to maintain a constant sized pool of resources
 available for pending jobs (subject to availability of idle resources).
