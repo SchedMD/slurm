@@ -789,7 +789,7 @@ pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env)
 	int rc = SLURM_SUCCESS;
 
 	run_in_stepd = false;
-	if ((job->pack_jobid == NO_VAL) || (job->pack_jobid == job->jobid)) {
+	if ((job->pack_jobid == NO_VAL) || (job->pack_task_offset == 0)) {
 		rc = _setup_srun_job_info(job);
 		if (rc == SLURM_SUCCESS)
 			rc = _setup_srun_tree_info();

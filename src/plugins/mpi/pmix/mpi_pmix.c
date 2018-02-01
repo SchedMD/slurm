@@ -207,7 +207,7 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 	uint16_t *task_cnt;
 
 	PMIXP_DEBUG("setup process mapping in srun");
-	if ((job->pack_jobid == NO_VAL) || (job->pack_jobid == job->jobid)) {
+	if ((job->pack_jobid == NO_VAL) || (job->pack_task_offset == 0)) {
 		nnodes = job->step_layout->node_cnt;
 		ntasks = job->step_layout->task_cnt;
 		task_cnt = job->step_layout->tasks;
