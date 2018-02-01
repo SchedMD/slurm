@@ -435,6 +435,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	int control_nid = 0, num_branches = 0;
 	struct sockaddr_in control_soc;
 	alpsc_branchInfo_t alpsc_branch_info;
+	uint32_t jobid;
 #endif
 
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
@@ -460,7 +461,11 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 
 #ifdef HAVE_NATIVE_CRAY
 	// Attach to the cncu container
-	rc = alpsc_attach_cncu_container(&err_msg, job->jobid, job->cont_id);
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+	rc = alpsc_attach_cncu_container(&err_msg, jobid, job->cont_id);
 	ALPSC_CN_DEBUG("alpsc_attach_cncu_container");
 	if (rc != 1) {
 		return SLURM_ERROR;

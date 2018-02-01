@@ -1046,7 +1046,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	int rc;
 	int fstatus = SLURM_ERROR;
 	xcgroup_t cpuset_cg;
-	uint32_t jobid = job->jobid;
+	uint32_t jobid;
 	uint32_t stepid = job->stepid;
 	uid_t uid = job->uid;
 	uid_t gid = job->gid;
@@ -1108,6 +1108,10 @@ again:
 	xfree(slurm_cgpath);
 
 	/* build job cgroup relative path if no set (should not be) */
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
 	if (*job_cgroup_path == '\0') {
 		if (snprintf(job_cgroup_path,PATH_MAX,"%s/job_%u",
 			     user_cgroup_path, jobid) >= PATH_MAX) {

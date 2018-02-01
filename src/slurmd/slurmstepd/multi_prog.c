@@ -337,6 +337,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	char *last_rank_spec = NULL;
 	int args_len, line_len;
 	hostlist_t hl;
+	uint32_t jobid;
 
 	tmp_args = xmalloc(sizeof(char *) * job->ntasks);
 	tmp_cmd = xmalloc(sizeof(char *) * job->ntasks);
@@ -495,7 +496,13 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	}
 
 	job->mpmd_set = xmalloc(sizeof(mpmd_set_t));
-	job->mpmd_set->apid      = SLURM_ID_HASH(job->jobid, job->stepid);
+
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+
+	job->mpmd_set->apid      = SLURM_ID_HASH(jobid, job->stepid);
 	job->mpmd_set->args      = xmalloc(sizeof(char *) * job->ntasks);
 	job->mpmd_set->command   = xmalloc(sizeof(char *) * job->ntasks);
 	job->mpmd_set->first_pe  = xmalloc(sizeof(int) * job->ntasks);

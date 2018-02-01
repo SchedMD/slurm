@@ -292,8 +292,7 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 {
 	DEF_TIMERS;
 	START_TIMER;
-	debug("task_p_pre_setuid: %u.%u",
-	      job->jobid, job->stepid);
+	debug("%s: %u.%u",  __func__, job->jobid, job->stepid);
 
 #ifdef HAVE_NATIVE_CRAY
 	if (!job->batch)
@@ -316,11 +315,16 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 #ifdef HAVE_NATIVE_CRAY
 	int rc;
 	uint64_t apid;
+	uint32_t jobid;
 	DEF_TIMERS;
 
 	START_TIMER;
-	apid = SLURM_ID_HASH(job->jobid, job->stepid);
-	debug2("task_p_pre_launch: %u.%u, apid %"PRIu64", task %d",
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+	apid = SLURM_ID_HASH(jobid, job->stepid);
+	debug2("%s: %u.%u, apid %"PRIu64", task %d", __func__,
 	       job->jobid, job->stepid, apid, job->envtp->procid);
 
 	/*
@@ -383,8 +387,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	debug("task_p_pre_launch_priv: %u.%u",
-	      job->jobid, job->stepid);
+	debug("%s: %u.%u", __func__, job->jobid, job->stepid);
 
 	if (track_status) {
 		rc = _make_status_file(job);
@@ -410,7 +413,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
-	debug("task_p_post_term: %u.%u, task %d",
+	debug("%s: %u.%u, task %d", __func__,
 	      job->jobid, job->stepid, task->id);
 
 	if (track_status) {
@@ -435,12 +438,17 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	char *err_msg = NULL, path[PATH_MAX];
 	int32_t *numa_nodes;
 	cpu_set_t *cpuMasks;
+	uint64_t apid;
+	uint32_t jobid;
 	DEF_TIMERS;
 
 	START_TIMER;
-
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
 	if (track_status) {
-		uint64_t apid = SLURM_ID_HASH(job->jobid, job->stepid);
+		apid = SLURM_ID_HASH(jobid, job->stepid);
 		// Get the lli file name
 		snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE, apid);
 
@@ -485,7 +493,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		// Batch Job Step
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
-			      PRIu32 "/step_batch", job->uid, job->jobid);
+			      PRIu32 "/step_batch", job->uid, jobid);
 		if (rc < 0) {
 			CRAY_ERR("snprintf failed. Return code: %d", rc);
 			return SLURM_ERROR;
@@ -494,7 +502,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		// Container for PAM to use for externally launched processes
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
-			      PRIu32 "/step_extern", job->uid, job->jobid);
+			      PRIu32 "/step_extern", job->uid, jobid);
 		if (rc < 0) {
 			CRAY_ERR("snprintf failed. Return code: %d", rc);
 			return SLURM_ERROR;
@@ -508,7 +516,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
 			      PRIu32 "/step_%" PRIu32,
-			      job->uid, job->jobid, job->stepid);
+			      job->uid, jobid, job->stepid);
 		if (rc < 0) {
 			CRAY_ERR("snprintf failed. Return code: %d", rc);
 			return SLURM_ERROR;
@@ -580,7 +588,14 @@ static int _make_status_file(stepd_step_rec_t *job)
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
 	char oldllifile[LLI_STATUS_FILE_BUF_SIZE];
 	int rv, fd;
-	uint64_t apid = SLURM_ID_HASH(job->jobid, job->stepid);
+	uint32_t jobid;
+	uint64_t apid;
+
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+	apid = SLURM_ID_HASH(jobid, job->stepid);
 
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE, apid);
@@ -640,15 +655,21 @@ static int _check_status_file(stepd_step_rec_t *job,
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
 	char status;
 	int rv, fd;
+	uint32_t jobid;
 
 	// We only need to special case termination with exit(0)
 	// srun already handles abnormal exit conditions fine
 	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
 		return SLURM_SUCCESS;
 
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
-		 SLURM_ID_HASH(job->jobid, job->stepid));
+		 SLURM_ID_HASH(jobid, job->stepid));
 
 	// Open the lli file.
 	fd = open(llifile, O_RDONLY);

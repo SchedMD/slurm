@@ -2421,6 +2421,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t task_dist;
 	uint32_t max_tasks;
 	char *mpi_params;
+	uint32_t jobid;
 
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
@@ -2767,8 +2768,17 @@ step_create(job_step_create_request_msg_t *step_specs,
 		}
 	}
 
+#ifdef HAVE_NATIVE_CRAY
+	if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL))
+		jobid = job_ptr->pack_job_id;
+	else
+		jobid = job_ptr->job_id;
+#else
+	jobid = job_ptr->job_id;
+#endif
+
 	if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
-				   step_ptr->job_ptr->job_id,
+				   jobid,
 				   step_ptr->step_id) < 0)
 		fatal("%s: switch_g_alloc_jobinfo error", __func__);
 

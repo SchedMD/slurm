@@ -437,16 +437,21 @@ static void _initialize_event(alpsc_ev_app_t *event,
 	hostlist_iterator_t hlit;
 	char *node;
 	int rv;
+	uint32_t jobid;
 
 	DEF_TIMERS;
 
 	START_TIMER;
 
-	event->apid = SLURM_ID_HASH(job_ptr->job_id, step_ptr->step_id);
+	if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL))
+		jobid = job_ptr->pack_job_id;
+	else
+		jobid = job_ptr->job_id;
+
+	event->apid = SLURM_ID_HASH(jobid, step_ptr->step_id);
 	event->uid = job_ptr->user_id;
 	event->app_name = xstrdup(step_ptr->name);
-	event->batch_id = xmalloc(20);	// More than enough to hold max uint32
-	snprintf(event->batch_id, 20, "%"PRIu32, job_ptr->job_id);
+	event->batch_id = xstrdup_printf("%u", job_ptr->job_id);
 	event->state = state;
 	event->nodes = NULL;
 	event->num_nodes = 0;
@@ -562,6 +567,8 @@ static void _update_app(struct step_record *step_ptr,
 	int32_t i;
 	alpsc_ev_app_t app;
 	int found;
+	uint32_t jobid;
+
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -602,7 +609,13 @@ static void _update_app(struct step_record *step_ptr,
 	case ALPSC_EV_END:
 		// Search for the app matching this apid
 		found = 0;
-		apid = SLURM_ID_HASH(job_ptr->job_id, step_ptr->step_id);
+
+		if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL))
+			jobid = job_ptr->pack_job_id;
+		else
+			jobid = job_ptr->job_id;
+
+		apid = SLURM_ID_HASH(jobid, step_ptr->step_id);
 		for (i = 0; i < app_list_size; i++) {
 			if (app_list[i].apid == apid) {
 				found = 1;
@@ -631,7 +644,12 @@ static void _update_app(struct step_record *step_ptr,
 	case ALPSC_EV_SUSPEND:
 	case ALPSC_EV_RESUME:
 		// Search for the app matching this apid
-		apid = SLURM_ID_HASH(job_ptr->job_id, step_ptr->step_id);
+		if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL))
+			jobid = job_ptr->pack_job_id;
+		else
+			jobid = job_ptr->job_id;
+
+		apid = SLURM_ID_HASH(jobid, step_ptr->step_id);
 		for (i = 0; i < app_list_size; i++) {
 			if (app_list[i].apid == apid) {
 				// Found it, update the state

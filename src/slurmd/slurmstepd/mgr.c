@@ -960,6 +960,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	int status = 0;
 	pid_t pid;
 	int rc = SLURM_SUCCESS;
+	uint32_t jobid;
 	int x11_pipe[2] = {0, 0};
 
 	if (job->x11 && (pipe(x11_pipe) < 0)) {
@@ -1077,7 +1078,15 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	jobacct_id.job    = job;
 	jobacct_gather_set_proctrack_container_id(job->cont_id);
 	jobacct_gather_add_task(pid, &jobacct_id, 1);
-	container_g_add_cont(job->jobid, job->cont_id);
+#ifdef HAVE_NATIVE_CRAY
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+#else
+	jobid = job->jobid;
+#endif
+	container_g_add_cont(jobid, job->cont_id);
 
 	/*
 	 * For the X11 forwarding, we need to know what local port number the
@@ -1670,6 +1679,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	jobacct_id_t jobacct_id;
 	char *oom_value;
 	List exec_wait_list = NULL;
+	uint32_t jobid;
+
 	DEF_TIMERS;
 	START_TIMER;
 
@@ -1931,7 +1942,15 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		}
 	}
 //	jobacct_gather_set_proctrack_container_id(job->cont_id);
-	if (container_g_add_cont(job->jobid, job->cont_id) != SLURM_SUCCESS)
+#ifdef HAVE_NATIVE_CRAY
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+#else
+	jobid = job->jobid;
+#endif
+	if (container_g_add_cont(jobid, job->cont_id) != SLURM_SUCCESS)
 		error("container_g_add_cont(%u): %m", job->jobid);
 	if (!job->batch && core_spec_g_set(job->cont_id, job->job_core_spec) &&
 	    (job->stepid == 0))
@@ -2823,16 +2842,24 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 	if ((cpid = _exec_wait_get_pid (ei)) == 0) {
 		struct priv_state sprivs;
 		char *argv[2];
+		uint32_t jobid;
 
+#ifdef HAVE_NATIVE_CRAY
+		if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+			jobid = job->pack_jobid;
+		else
+			jobid = job->jobid;
+#else
+		jobid = job->jobid;
+#endif
 		/* container_g_join needs to be called in the
 		   forked process part of the fork to avoid a race
 		   condition where if this process makes a file or
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
-		if ((job->jobid != 0) &&	/* Ignore system processes */
-		    (container_g_join(job->jobid, job->uid)
-		     != SLURM_SUCCESS))
+		if ((jobid != 0) &&	/* Ignore system processes */
+		    (container_g_join(jobid, job->uid) != SLURM_SUCCESS))
 			error("container_g_join(%u): %m", job->jobid);
 
 		argv[0] = (char *)xstrdup(path);
