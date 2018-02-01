@@ -297,7 +297,7 @@ Used by \fIauth/munge\fR and \fIcrypto/munge\fR.
 .TP
 \fBttl\fR
 Credential lifetime, in seconds (e.g. "ttl=300").
-The default value is dependent upon the Munge installation, but is typically
+The default value is dependent upon the MUNGE installation, but is typically
 300 seconds.
 .RE
 
@@ -305,17 +305,15 @@ The default value is dependent upon the Munge installation, but is typically
 \fBAuthType\fR
 The authentication method for communications between Slurm
 components.
-Acceptable values at present include "auth/none" and "auth/munge".
+Acceptable values at present include "auth/munge" and "auth/none".
 The default value is "auth/munge".
 "auth/none" includes the UID in each communication, but it is not verified.
 This may be fine for testing purposes, but
 \fBdo not use "auth/none" if you desire any security\fR.
-"auth/munge" indicates that LLNL's MUNGE is to be used
-(this is the best supported authentication mechanism for Slurm,
-see "http://munge.googlecode.com/" for more information).
+"auth/munge" indicates that MUNGE is to be used.
+(See "https://dun.github.io/munge/" for more information).
 All Slurm daemons and commands must be terminated prior to changing
-the value of \fBAuthType\fR and later restarted (Slurm jobs can be
-preserved).
+the value of \fBAuthType\fR and later restarted.
 
 .TP
 \fBBackupAddr\fR
