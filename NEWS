@@ -68,6 +68,9 @@ documents those changes that are of interest to users and administrators.
  -- Make JobAcctGatherParams options case-insensitive. Previously, UsePss
     was the only correct capitialization; UsePSS or usepss were silently
     ignored.
+ -- Prevent pthread_atfork handlers from being added unnecessarily after
+    'scontrol reconfigure', which can eventually lead to a crash if too
+    many handlers have been registered.
 
 * Changes in Slurm 17.11.2
 ==========================
