@@ -3655,8 +3655,9 @@ More information is available at the Slurm web site
 Identifies the type of switch or interconnect used for application
 communications.
 Acceptable values include
+"switch/cray" for Cray systems,
 "switch/none" for switches not requiring special processing for job launch
-or termination (Myrinet, Ethernet, and InfiniBand) and
+or termination (Ethernet, and InfiniBand) and
 "switch/nrt" for IBM's Network Resource Table API.
 The default value is "switch/none".
 All Slurm daemons, commands and running jobs must be restarted for a
