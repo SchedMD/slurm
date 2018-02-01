@@ -6588,7 +6588,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	List license_list = NULL, gres_list = NULL;
 	bool valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
-	uint32_t user_submit_priority;
+	uint32_t user_submit_priority, acct_reason = 0;
 	static uint32_t node_scaling = 1;
 	static uint32_t cpus_per_mp = 1;
 	acct_policy_limit_set_t acct_policy_limit_set;
@@ -6766,10 +6766,15 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		job_desc->time_min = 1;
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
-				   assoc_ptr, qos_ptr, NULL,
+				   assoc_ptr, qos_ptr, &acct_reason,
 				   &acct_policy_limit_set, 0))) {
-		info("%s: exceeded association/QOS limit for user %u",
-		     __func__, job_desc->user_id);
+		if (err_msg) {
+			xfree(*err_msg);
+			*err_msg = xstrdup(job_reason_string(acct_reason));
+		}
+		info("%s: exceeded association/QOS limit for user %u: %s",
+		     __func__, job_desc->user_id,
+		     err_msg ? *err_msg : job_reason_string(acct_reason));
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup_fail;
 	}
@@ -11668,13 +11673,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	acct_limit_already_set = false;
 	if (!operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+		uint32_t acct_reason = 0;
 		uint32_t orig_time_limit = job_specs->time_limit;
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
-					  NULL, &acct_policy_limit_set, 1)) {
-			debug("%s: exceeded association's cpu, node, "
-			      "memory or time limit for user %u",
-			      __func__, job_specs->user_id);
+					  &acct_reason, &acct_policy_limit_set,
+					  1)) {
+			debug("%s: exceeded association/QOS limit for user %u: %s",
+			      __func__, job_specs->user_id,
+			      job_reason_string(acct_reason));
 			acct_limit_already_set = true;
 		}
 		if ((orig_time_limit == NO_VAL) &&
@@ -11925,14 +11932,16 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 
 	if (!operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+		uint32_t acct_reason = 0;
 		uint32_t orig_time_limit = job_specs->time_limit;
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
-					  NULL, &acct_policy_limit_set, 1)
+					  &acct_reason, &acct_policy_limit_set,
+					  1)
 		    && acct_limit_already_set == false) {
-			info("update_job: exceeded association's cpu, node, "
-			     "memory or time limit for user %u",
-			     job_specs->user_id);
+			info("%s: exceeded association/QOS limit for user %u: %s",
+			     __func__, job_specs->user_id,
+			     job_reason_string(acct_reason));
 			error_code = ESLURM_ACCOUNTING_POLICY;
 			goto fini;
 		}
