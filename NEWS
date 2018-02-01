@@ -65,6 +65,9 @@ documents those changes that are of interest to users and administrators.
  -- SPANK - When slurm_spank_init_post_opt() fails return error correctly.
  -- When revoking a sibling job in the federation we want to send a start
     message before purging the job record to get the uid of the revoked job.
+ -- Make JobAcctGatherParams options case-insensitive. Previously, UsePss
+    was the only correct capitialization; UsePSS or usepss were silently
+    ignored.
 
 * Changes in Slurm 17.11.2
 ==========================
