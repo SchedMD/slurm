@@ -95,7 +95,7 @@ information.</p>
 
 <pre>
 # Excerpt of burst_buffer.conf file for generic plugin
-AllowUsers=alan:brenda
+AllowUsers=alan,brenda
 Flags=EnablePersistent,PrivateData
 Granularity=1GB
 StageInTimeout=30
@@ -259,7 +259,7 @@ srun --bb="capacity=1G access=striped type=scratch" a.out
 $ scontrol show burst
 Name=generic DefaultPool=ssd Granularity=100G TotalSpace=50T UsedSpace=42T
   StageInTimeout=30 StageOutTimeout=30 Flags=EnablePersistent,PrivateData
-  AllowUsers=alan:brenda
+  AllowUsers=alan,brenda
   CreateBuffer=/usr/local/slurm/17.11/sbin/CB
   DestroyBuffer=/usr/local/slurm/17.11/sbin/DB
   GetSysState=/usr/local/slurm/17.11/sbin/GSS
