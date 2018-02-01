@@ -808,7 +808,7 @@ static int spank_stack_post_opt (struct spank_stack * stack,
 	 *  Now that all options have been processed, we can
 	 *   call the post_opt handlers here in remote context.
 	 */
-	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, job, -1) < 0);
+	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, job, -1));
 
 }
 

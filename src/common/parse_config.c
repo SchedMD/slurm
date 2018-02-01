@@ -97,6 +97,7 @@ static char *keyvalue_pattern =
 					    * or unquoted and no whitespace */
 	"([[:space:]]|$)";
 static bool keyvalue_initialized = false;
+static bool pthread_atfork_set = false;
 
 /* The following mutex and atfork() handler protect against receiving
  * a corrupted keyvalue_re state in a forked() child. While regexec() itself
@@ -111,6 +112,7 @@ static void _s_p_atfork_child(void)
 {
 	slurm_mutex_init(&s_p_lock);
 	keyvalue_initialized = false;
+	pthread_atfork_set = false;
 }
 
 struct s_p_values {
@@ -312,8 +314,11 @@ static void _keyvalue_regex_init(void)
 			/* FIXME - should be fatal? */
 			error("keyvalue regex compilation failed");
 		}
-		pthread_atfork(NULL, NULL, _s_p_atfork_child);
 		keyvalue_initialized = true;
+	}
+	if (!pthread_atfork_set) {
+		pthread_atfork(NULL, NULL, _s_p_atfork_child);
+		pthread_atfork_set = true;
 	}
 	slurm_mutex_unlock(&s_p_lock);
 }
