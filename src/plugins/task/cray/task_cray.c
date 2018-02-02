@@ -1012,7 +1012,7 @@ static int _update_num_steps(int val)
 	// Increment or decrement and check result
 	num_steps += val;
 	if (num_steps < 0) {
-		CRAY_ERR("Less than 0 steps on the node");
+		CRAY_ERR("Invalid step count (%d) on the node", num_steps);
 		TEMP_FAILURE_RETRY(close(fd));
 		return 0;
 	}
