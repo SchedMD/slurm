@@ -541,7 +541,7 @@ control<BR>
 <H2>Resource Selection</H2>
 Define resource (node) selection algorithm to be used.<BR>
 Select one value for <B>SelectType</B>:<BR>
-<input type="radio" name="select_type" value="alps">
+<input type="radio" name="select_type" value="cons_res">
 <B>Cons_res</B>: Allocate individual processors and memory<BR>
 <input type="radio" name="select_type" value="cray">
 <B>Cray</B>: Cray systems running native Slurm without ALPS<BR>
@@ -785,5 +785,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 27 October 2017</P>
+Last modified 5 February 2018</P>
 </BODY>
