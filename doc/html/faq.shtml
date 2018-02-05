@@ -191,6 +191,8 @@ script for Slurm?</a></li>
     jobs. How do I get the new UID to take effect?</a></li>
 <li><a href="#mysql_duplicate">Slurmdbd is failing to start with a 'Duplicate entry'
     error in the database. How do I fix that?</a></li>
+<li><a href="#cray_sigbus">Why are applications on my Cray system failing
+    with SIGBUS (bus error)?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -2170,8 +2172,83 @@ Bye
 $ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
 </pre>
 
+<p><a name="cray_sigbus"<b>69. Why are applications on my Cray system failing
+    with SIGBUS (bus error)?</b></a><br>
+By default, Slurm flushes Lustre file system and kernel caches upon completion
+of each job step. If multiple applications are run simultaneously on compute
+nodes (either multiple applications from a single Slurm job or multiple jobs)
+the result can be significant performance degredation and even bus errors.
+Failures occur more requently when more applications are executed at the same
+time on individual compute nodes.
+Failures are also more common when Lustre file systems are used.</p>
+
+<p>Two approaches exist to address this issue.
+One is to disable the flushing of caches, which can be accomplished by adding
+"LaunchParameters=lustre_no_flush" to your Slurm configuration file
+"slurm.conf".
+A second approach is to modify Cray file system as described below in order to
+prevent Slurm specific files needing to be re-resolved over DFS.
+This second approach does not address files used by applications, only those
+used directly by Slurm.</p>
+
+<p>On Cray CLE6.0, by default, nodes get the operating system, including the
+Slurm installation and all of its plugin, via a DVS mount of "/".
+Really "/" is an overlay filesystem where the lower portion is a loop-mounted
+squashfs layer and the upper layer is tmpfs.
+When buffer caches are flushed during a dlopen (used by Slurm to load its
+plugins), a timeout may result from waiting to re-resolve a Slurm plugin over
+DVS.</p>
+
+<p>The NERSC solution is to localize all files related to Slurm or involved in
+slurmstepd launch into that tmpfs layer at boot time.
+This is possible by creating a new netroot preload file:</p>
+
+<pre>
+# cat compute-preload.nersc
+/usr/lib64/libslurm*so*
+/usr/lib64/slurm/*.so
+/usr/sbin/slurmd
+/usr/sbin/slurmstepd
+/usr/bin/sbatch
+/usr/bin/srun
+/usr/bin/sbcast
+/usr/bin/numactl
+/usr/lib64/libnuma*so*
+/lib64/ast/libast.so*
+/lib64/ast/libcmd.so*
+/lib64/ast/libdll.so*
+/lib64/ast/libshell.so*
+/lib64/libacl.so*
+/lib64/libattr.so*
+/lib64/libc.so*
+/lib64/libcap.so*
+/lib64/libdl.so*
+/lib64/libgcc_s.so*
+...
+</pre>
+
+<p>NERSC generates its preload file by including everything installed by Slurm
+RPMs plus files identified as being used by Slurm's slurmd daemon on the compute
+node by running the "strace -f" command while the slurmd daemon is launching
+a job step.</p>
+
+<p>Once the netroot preload file is generated, it needs to then be included in the
+cray_netroot_preload_worksheet CLE configuration. For example:</p>
+
+<pre>
+cray_netroot_preload.settings.load.data.label.compute: null
+cray_netroot_preload.settings.load.data.compute.targets: []
+cray_netroot_preload.settings.load.data.compute.content_lists:
+- dist/compute-preload.cray
+- dist/compute-preload.nersc
+cray_netroot_preload.settings.load.data.compute.size_limit: 0
+</pre>
+
+<p>This is a generally useful technique for preventing remote lookups of commonly
+accessed files within jobs.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 December 2017</p>
+<p style="text-align:center;">Last modified 5 February 2018</p>
 
 <!--#include virtual="footer.txt"-->
