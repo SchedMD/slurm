@@ -71,6 +71,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent pthread_atfork handlers from being added unnecessarily after
     'scontrol reconfigure', which can eventually lead to a crash if too
     many handlers have been registered.
+ -- Better debug messages when MaxSubmitJobs is hit.
 
 * Changes in Slurm 17.11.2
 ==========================
