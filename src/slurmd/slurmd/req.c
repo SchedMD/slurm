@@ -5353,6 +5353,24 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		debug("credential for job %u revoked", req->job_id);
 	}
 
+	if (_prolog_is_running(req->job_id)) {
+		if (msg->conn_fd >= 0) {
+			/* If the step hasn't finished running the prolog
+			 * (or finshed starting the extern step) yet just send
+			 * a success to let the controller know we got
+			 * this request.
+			 */
+			debug("%s: sent SUCCESS for %u, waiting for prolog to finish",
+			      __func__, req->job_id);
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			if (close(msg->conn_fd) < 0)
+				error("%s: close(%d): %m",
+				      __func__, msg->conn_fd);
+			msg->conn_fd = -1;
+		}
+		_wait_for_job_running_prolog(req->job_id);
+	}
+
 	/*
 	 * Before signaling steps, if the job has any steps that are still
 	 * in the process of fork/exec/check in with slurmd, wait on a condition
@@ -5381,6 +5399,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			error("Error in _wait_for_starting_step");
 		}
 	}
+
 	if (IS_JOB_NODE_FAILED(req))
 		_kill_all_active_steps(req->job_id, SIG_NODE_FAIL, 0, true);
 	if (IS_JOB_PENDING(req))
