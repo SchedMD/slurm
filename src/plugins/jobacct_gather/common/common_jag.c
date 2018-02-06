@@ -447,6 +447,8 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 	/* Copy the values that slurm records into our data structure */
 	prec->disk_read = (double)rchar / (double)1048576;
 	prec->disk_write = (double)wchar / (double)1048576;
+	prec->mb_read[USAGE_DISK] = (uint64_t) prec->disk_read;
+	prec->mb_written[USAGE_DISK] = (uint64_t) prec->disk_write;
 
 	return 1;
 }
@@ -496,7 +498,12 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 		fclose(stat_fp);
 		return;
 	}
+	prec->mb_read = xmalloc(TRES_USAGE_CNT * sizeof(uint64_t));
+	prec->mb_written = xmalloc(TRES_USAGE_CNT * sizeof(uint64_t));
+
 	if (!_get_process_data_line(fd, prec)) {
+		xfree(prec->mb_read);
+		xfree(prec->mb_written);
 		xfree(prec);
 		fclose(stat_fp);
 		return;
@@ -510,6 +517,8 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	/* Use PSS instead if RSS */
 	if (use_pss) {
 		if (_get_pss(proc_smaps_file, prec) == -1) {
+			xfree(prec->mb_read);
+			xfree(prec->mb_written);
 			xfree(prec);
 			return;
 		}
@@ -736,11 +745,11 @@ static void _record_profile(struct jobacctinfo *jobacct)
 				(100.0 * (double)data[FIELD_CPUTIME].d) /
 				((double) et);
 
-		data[FIELD_READ].d = jobacct->tot_disk_read -
-			jobacct->last_tot_disk_read;
+		data[FIELD_READ].d = (double) jobacct->tres_tot_usage_in[
+			USAGE_DISK] - jobacct->last_tres_tot_usage_in;
 
-		data[FIELD_WRITE].d = jobacct->tot_disk_write -
-			jobacct->last_tot_disk_write;
+		data[FIELD_WRITE].d = (double) jobacct->tres_tot_usage_out[
+			USAGE_DISK] - jobacct->last_tres_tot_usage_out;
 	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -790,6 +799,8 @@ extern void jag_common_fini(void)
 extern void destroy_jag_prec(void *object)
 {
 	jag_prec_t *prec = (jag_prec_t *)object;
+	xfree(prec->mb_read);
+	xfree(prec->mb_written);
 	xfree(prec);
 	return;
 }
@@ -803,6 +814,8 @@ extern void print_jag_prec(jag_prec_t *prec)
 	info("pages\t%d", prec->pages);
 	info("rss  \t%"PRIu64"", prec->rss);
 	info("ssec \t%d", prec->ssec);
+	info("usage_disk_in \t%"PRIu64"", prec->mb_read[USAGE_DISK]);
+	info("usage_disk_out \t%"PRIu64"", prec->mb_written[USAGE_DISK]);
 	info("usec \t%d", prec->usec);
 	info("vsize\t%"PRIu64"", prec->vsize);
 }
@@ -822,6 +835,7 @@ extern void jag_common_poll_data(
 	int energy_counted = 0;
 	time_t ct;
 	static int no_over_memory_kill = -1;
+	int i = 0;
 
 	xassert(callbacks);
 
@@ -893,8 +907,19 @@ extern void jag_common_poll_data(
 		jobacct->max_disk_write = MAX(
 			jobacct->max_disk_write,
 			prec->disk_write);
-
 		jobacct->tot_disk_write = prec->disk_write;
+
+		for (i = 0; i < TRES_USAGE_CNT; i++) {
+			jobacct->tres_max_usage_in[i] =
+				MAX(jobacct->tres_tot_usage_in[i],
+				prec->mb_read[i]);
+			jobacct->tres_tot_usage_in[i] = prec->mb_read[i];
+			jobacct->tres_max_usage_out[i] =
+				MAX(jobacct->tres_tot_usage_out[i],
+				prec->mb_written[i]);
+			jobacct->tres_tot_usage_out[i] = prec->mb_written[i];
+		}
+
 		jobacct->min_cpu =
 			MAX((double)jobacct->min_cpu, cpu_calc);
 
@@ -943,8 +968,10 @@ extern void jag_common_poll_data(
 
 			_record_profile(jobacct);
 
-			jobacct->last_tot_disk_read = jobacct->tot_disk_read;
-			jobacct->last_tot_disk_write = jobacct->tot_disk_write;
+			jobacct->last_tres_tot_usage_in  =
+				jobacct->tres_tot_usage_in[USAGE_DISK];
+			jobacct->last_tres_tot_usage_out  =
+				jobacct->tres_tot_usage_out[USAGE_DISK];
 			jobacct->last_total_cputime = jobacct->tot_cpu;
 			jobacct->last_time = jobacct->cur_time;
 		}

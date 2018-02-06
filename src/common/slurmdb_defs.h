@@ -67,6 +67,11 @@ typedef enum {
 	TRES_STATIC_CNT
 } tres_types_t;
 
+typedef enum {
+	USAGE_DISK = 0,
+	TRES_USAGE_CNT
+} tres_usage_types_t;
+
 /* These #defines are for the tres_str functions below and should be
  * sent when flags are allowed in the functions.
  */
