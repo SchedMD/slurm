@@ -1,8 +1,10 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 17.11.4
+* Changes in Slurm 17.11.3-2
 ==========================
+ -- Fix potential segfault on invalid pointer by passing a pointer into strtok_r
+    that leads to free'd memory.
 
 * Changes in Slurm 17.11.3
 ==========================
