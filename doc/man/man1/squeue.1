@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "December 2017" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "February 2018" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -1227,11 +1227,17 @@ Job has been allocated resources, but are waiting for them to become ready for u
 \fBCG  COMPLETING\fR
 Job is in the process of completing. Some processes on some nodes may still be active.
 .TP
+\fBDL  DEADLINE\fR
+Job terminated on deadline.
+.TP
 \fBF   FAILED\fR
 Job terminated with non\-zero exit code or other failure condition.
 .TP
 \fBNF  NODE_FAIL\fR
 Job terminated due to failure of one or more allocated nodes.
+.TP
+\fBOOM OUT_OF_MEMORY\fR
+Job experienced out of memory error.
 .TP
 \fBPD  PENDING\fR
 Job is awaiting resource allocation.
@@ -1239,24 +1245,42 @@ Job is awaiting resource allocation.
 \fBPR  PREEMPTED\fR
 Job terminated due to preemption.
 .TP
-\fBR   REVOKED\fR
-Sibling was removed from cluster due to other cluster starting the job.
-.TP
 \fBR   RUNNING\fR
 Job currently has an allocation.
+.TP
+\fBRD  RESV_DEL_HOLD\fR
+Job is held.
+.TP
+\fBRF  REQUEUE_FED\fR
+Job is being requeued by a federation.
+.TP
+\fBRH  REQUEUE_HOLD\fR
+Held job is being requeued.
+.TP
+\fBRQ  REQUEUE\fR
+Completing job is being requeued.
+.TP
+\fBRS  RESIZING\fR
+Job is about to change size.
+.TP
+\fBRV  REVOKED\fR
+Sibling was removed from cluster due to other cluster starting the job.
+.TP
+\fBS   SUSPENDED\fR
+Job has an allocation, but execution has been suspended and CPUs have been
+released for other jobs.
 .TP
 \fBSE  SPECIAL_EXIT\fR
 The job was requeued in a special state. This state can be set by
 users, typically in EpilogSlurmctld, if the job has terminated with
 a particular exit value.
 .TP
+\fBSI  SIGNALING\fR
+Job is being signaled.
+.TP
 \fBST  STOPPED\fR
 Job has an allocation, but execution has been stopped with SIGSTOP signal.
 CPUS have been retained by this job.
-.TP
-\fBS   SUSPENDED\fR
-Job has an allocation, but execution has been suspended and CPUs have been
-released for other jobs.
 .TP
 \fBTO  TIMEOUT\fR
 Job terminated upon reaching its time limit.

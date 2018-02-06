@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
     'scontrol reconfigure', which can eventually lead to a crash if too
     many handlers have been registered.
  -- Better debug messages when MaxSubmitJobs is hit.
+ -- Docs - update squeue man page to describe all possible job states.
 
 * Changes in Slurm 17.11.2
 ==========================
