@@ -253,6 +253,22 @@ static void *_watch_tasks(void *arg)
 	return NULL;
 }
 
+extern char *make_tres_usage_str_from_array(uint64_t *tres_cnt)
+{
+	int tres_usage_id[TRES_USAGE_CNT] = {TRES_USAGE_DISK};
+	int i;
+	char *tres_str = NULL;
+
+	if (!tres_cnt)
+		return NULL;
+
+	for (i=0; i<TRES_USAGE_CNT; i++) {
+		xstrfmtcat(tres_str, "%s%u=%"PRIu64, tres_str ? "," : "",
+			   tres_usage_id[i], tres_cnt[i]);
+	}
+	return tres_str;
+}
+
 extern int jobacct_gather_init(void)
 {
 	char    *plugin_type = "jobacct_gather";
