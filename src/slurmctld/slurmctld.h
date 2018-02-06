@@ -2018,10 +2018,17 @@ extern bool part_policy_job_runnable_state(struct job_record *job_ptr);
  * DenyAccounts parameters. */
 extern int part_policy_valid_acct(struct part_record *part_ptr, char *acct);
 
-/* Validate a job's QOS against the partition's AllowQOS or
- * DenyQOS parameters. */
-extern int part_policy_valid_qos(
-	struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr);
+/*
+ * Validate a job's QOS against the partition's AllowQOS or DenyQOS parameters.
+ * IN part_ptr - Partition pointer
+ * IN qos_ptr - QOS pointer
+ * in job_ptr - Job pointer or NULL. If set and job can not run, then set the
+ *		job's state_desc and state_reason fields
+ * RET SLURM_SUCCESS or error code
+ */
+extern int part_policy_valid_qos(struct part_record *part_ptr,
+				 slurmdb_qos_rec_t *qos_ptr,
+				 struct job_record *job_ptr);
 
 /*
  * partition_in_use - determine whether a partition is in use by a RUNNING

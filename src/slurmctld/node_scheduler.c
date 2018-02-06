@@ -2408,12 +2408,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	assoc_mgr_lock(&qos_read_lock);
 	if (job_ptr->qos_ptr)
 		qos_flags = job_ptr->qos_ptr->flags;
-	if ((error_code = part_policy_valid_qos(
-		     job_ptr->part_ptr, job_ptr->qos_ptr)) != SLURM_SUCCESS) {
+	if ((error_code = part_policy_valid_qos(job_ptr->part_ptr,
+				job_ptr->qos_ptr, job_ptr)) != SLURM_SUCCESS) {
 		assoc_mgr_unlock(&qos_read_lock);
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_QOS;
-		last_job_update = now;
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 

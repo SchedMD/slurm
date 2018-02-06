@@ -2259,45 +2259,80 @@ extern int part_policy_valid_acct(
 	return SLURM_SUCCESS;
 }
 
-/* Validate a job's QOS against the partition's AllowQOS or
- * DenyQOS parameters. */
-extern int part_policy_valid_qos(
-	struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
+/*
+ * Validate a job's QOS against the partition's AllowQOS or DenyQOS parameters.
+ * IN part_ptr - Partition pointer
+ * IN qos_ptr - QOS pointer
+ * in job_ptr - Job pointer or NULL. If set and job can not run, then set the
+ *		job's state_desc and state_reason fields
+ * RET SLURM_SUCCESS or error code
+ */
+extern int part_policy_valid_qos(struct part_record *part_ptr,
+				 slurmdb_qos_rec_t *qos_ptr,
+				 struct job_record *job_ptr)
 {
+	char *tmp_err = NULL;
+
 	if (part_ptr->allow_qos_bitstr) {
 		int match = 0;
 		if (!qos_ptr) {
-			info("part_policy_valid_qos: job's QOS not known, "
-			     "so it can't use this partition (%s allows %s)",
-			     part_ptr->name, part_ptr->allow_qos);
+			xstrfmtcat(tmp_err,
+				   "Job's QOS not known, so it can't use this partition (%s allows %s)",
+				   part_ptr->name, part_ptr->allow_qos);
+			info("%s: %s", __func__, tmp_err);
+			if (job_ptr) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_desc = tmp_err;
+				job_ptr->state_reason = WAIT_QOS;
+				last_job_update = time(NULL);
+			} else {
+				xfree(tmp_err);
+			}
 			return ESLURM_INVALID_QOS;
 		}
 		if ((qos_ptr->id < bit_size(part_ptr->allow_qos_bitstr)) &&
 		    bit_test(part_ptr->allow_qos_bitstr, qos_ptr->id))
 			match = 1;
 		if (match == 0) {
-			info("part_policy_valid_qos: job's QOS not permitted to "
-			     "use this partition (%s allows %s not %s)",
-			     part_ptr->name, part_ptr->allow_qos,
-			     qos_ptr->name);
+			xstrfmtcat(tmp_err,
+				   "Job's QOS not permitted to use this partition (%s allows %s not %s)",
+				   part_ptr->name, part_ptr->allow_qos,
+				   qos_ptr->name);
+			info("%s: %s", __func__, tmp_err);
+			if (job_ptr) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_desc = tmp_err;
+				job_ptr->state_reason = WAIT_QOS;
+				last_job_update = time(NULL);
+			} else {
+				xfree(tmp_err);
+			}
 			return ESLURM_INVALID_QOS;
 		}
 	} else if (part_ptr->deny_qos_bitstr) {
 		int match = 0;
 		if (!qos_ptr) {
-			debug2("part_policy_valid_qos: job's QOS not known, "
-			       "so couldn't check if it was denied or not");
+			debug2("%s: Job's QOS not known, so couldn't check if it was denied or not",
+			       __func__);
 			return SLURM_SUCCESS;
 		}
 		if ((qos_ptr->id < bit_size(part_ptr->deny_qos_bitstr)) &&
 		    bit_test(part_ptr->deny_qos_bitstr, qos_ptr->id))
 			match = 1;
 		if (match == 1) {
-			info("part_policy_valid_qos: job's QOS not permitted "
-			     "to use this partition (%s denies %s "
-			     "including %s)",
-			     part_ptr->name, part_ptr->allow_qos,
-			     qos_ptr->name);
+			xstrfmtcat(tmp_err,
+				   "Job's QOS not permitted to use this partition (%s denies %s including %s)",
+				   part_ptr->name, part_ptr->deny_qos,
+				   qos_ptr->name);
+			info("%s: %s", __func__, tmp_err);
+			if (job_ptr) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_desc = tmp_err;
+				job_ptr->state_reason = WAIT_QOS;
+				last_job_update = time(NULL);
+			} else {
+				xfree(tmp_err);
+			}
 			return ESLURM_INVALID_QOS;
 		}
 	}

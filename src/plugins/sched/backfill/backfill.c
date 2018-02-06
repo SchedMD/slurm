@@ -1382,12 +1382,9 @@ static int _attempt_backfill(void)
 		else
 			qos_part_blocked_until = 0;
 
-		if (part_policy_valid_qos(job_ptr->part_ptr,
-					  job_ptr->qos_ptr) != SLURM_SUCCESS) {
+		if (part_policy_valid_qos(job_ptr->part_ptr, job_ptr->qos_ptr,
+					  job_ptr) != SLURM_SUCCESS) {
 			assoc_mgr_unlock(&qos_read_lock);
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_QOS;
-			last_job_update = now;
 			continue;
 		}
 		assoc_mgr_unlock(&qos_read_lock);
