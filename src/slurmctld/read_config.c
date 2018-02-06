@@ -1597,6 +1597,7 @@ static void _set_features(struct node_record *old_node_table_ptr,
 		else
 			sep = "";
 		tmp = xstrdup(old_node_ptr->features);
+		save_ptr = NULL;
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
 			if (node_features_g_changible_feature(tok)) {
