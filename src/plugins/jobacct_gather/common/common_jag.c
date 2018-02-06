@@ -745,11 +745,11 @@ static void _record_profile(struct jobacctinfo *jobacct)
 				(100.0 * (double)data[FIELD_CPUTIME].d) /
 				((double) et);
 
-		data[FIELD_READ].d = (double) jobacct->tres_tot_usage_in[
-			USAGE_DISK] - jobacct->last_tres_tot_usage_in;
+		data[FIELD_READ].d = (double) jobacct->tres_usage_in_tot[
+			USAGE_DISK] - jobacct->last_tres_usage_in_tot;
 
-		data[FIELD_WRITE].d = (double) jobacct->tres_tot_usage_out[
-			USAGE_DISK] - jobacct->last_tres_tot_usage_out;
+		data[FIELD_WRITE].d = (double) jobacct->tres_usage_out_tot[
+			USAGE_DISK] - jobacct->last_tres_usage_out_tot;
 	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -910,14 +910,14 @@ extern void jag_common_poll_data(
 		jobacct->tot_disk_write = prec->disk_write;
 
 		for (i = 0; i < TRES_USAGE_CNT; i++) {
-			jobacct->tres_max_usage_in[i] =
-				MAX(jobacct->tres_tot_usage_in[i],
+			jobacct->tres_usage_in_max[i] =
+				MAX(jobacct->tres_usage_in_tot[i],
 				prec->mb_read[i]);
-			jobacct->tres_tot_usage_in[i] = prec->mb_read[i];
-			jobacct->tres_max_usage_out[i] =
-				MAX(jobacct->tres_tot_usage_out[i],
+			jobacct->tres_usage_in_tot[i] = prec->mb_read[i];
+			jobacct->tres_usage_out_max[i] =
+				MAX(jobacct->tres_usage_out_tot[i],
 				prec->mb_written[i]);
-			jobacct->tres_tot_usage_out[i] = prec->mb_written[i];
+			jobacct->tres_usage_out_tot[i] = prec->mb_written[i];
 		}
 
 		jobacct->min_cpu =
@@ -968,10 +968,10 @@ extern void jag_common_poll_data(
 
 			_record_profile(jobacct);
 
-			jobacct->last_tres_tot_usage_in  =
-				jobacct->tres_tot_usage_in[USAGE_DISK];
-			jobacct->last_tres_tot_usage_out  =
-				jobacct->tres_tot_usage_out[USAGE_DISK];
+			jobacct->last_tres_usage_in_tot  =
+				jobacct->tres_usage_in_tot[USAGE_DISK];
+			jobacct->last_tres_usage_out_tot  =
+				jobacct->tres_usage_out_tot[USAGE_DISK];
 			jobacct->last_total_cputime = jobacct->tot_cpu;
 			jobacct->last_time = jobacct->cur_time;
 		}

@@ -115,12 +115,21 @@ struct jobacctinfo {
 	double max_disk_write; /* max disk write data */
 	jobacct_id_t max_disk_write_id; /* max disk write data task id */
 	double tot_disk_write; /* total local disk writes in megabytes */
+	uint64_t *tres_usage_in_tot; /* total usage in, in megabytes */
+	uint64_t *tres_usage_out_tot; /* total usage out, in megabytes */
+	uint64_t *tres_usage_in_max; /* tres max usage in data */
+	uint64_t *tres_usage_in_max_taskid; /* tres max usage in data task id */
+	uint64_t *tres_usage_in_max_nodeid; /* tres max usage in data node id */
+	uint64_t *tres_usage_out_max; /* tres max usage out data */
+	uint64_t *tres_usage_out_max_taskid; /* tres max usage data task id */
+	uint64_t *tres_usage_out_max_nodeid; /* tres max usage data node id */
 
 	jobacct_id_t id;
 	int dataset_id; /* dataset associated to this task when profiling */
 
-	double last_tot_disk_read;
-	double last_tot_disk_write;
+	/* FIXME: these need to be arrays like above */
+	double last_tres_usage_in_tot;
+	double last_tres_usage_out_tot;
 	time_t cur_time;
 	time_t last_time;
 };

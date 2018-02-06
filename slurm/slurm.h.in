@@ -718,7 +718,15 @@ enum jobacct_data_type {
 	JOBACCT_DATA_TOT_DISK_READ, /* data->double psize */
 	JOBACCT_DATA_MAX_DISK_WRITE, /* data->double psize */
 	JOBACCT_DATA_MAX_DISK_WRITE_ID, /* data->jobacct_id_t psize */
-	JOBACCT_DATA_TOT_DISK_WRITE /* data->double psize */
+	JOBACCT_DATA_TOT_DISK_WRITE, /* data->double psize */
+	JOBACCT_DATA_TRES_USAGE_IN_MAX,  /* data->char *psize */
+	JOBACCT_DATA_TRES_USAGE_IN_MAX_TASKID,  /* data->char *psize */
+	JOBACCT_DATA_TRES_USAGE_IN_MAX_NODEID,  /* data->char *psize */
+	JOBACCT_DATA_TRES_USAGE_IN_TOT, /* data-> char *psize */
+	JOBACCT_DATA_TRES_USAGE_OUT_MAX,  /* data->char *psize */
+	JOBACCT_DATA_TRES_USAGE_OUT_MAX_TASKID,  /* data->char *psize */
+	JOBACCT_DATA_TRES_USAGE_OUT_MAX_NODEID,  /* data->char *psize */
+	JOBACCT_DATA_TRES_USAGE_OUT_TOT /* data-> char *psize */
 };
 
 enum acct_energy_type {
