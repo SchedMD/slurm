@@ -2202,20 +2202,37 @@ extern bool part_policy_job_runnable_state(struct job_record *job_ptr)
 	return true;
 }
 
-/* Validate a job's account against the partition's AllowAccounts or
- * DenyAccounts parameters. */
-extern int part_policy_valid_acct(
-	struct part_record *part_ptr, char *acct)
+/*
+ * Validate a job's account against the partition's AllowAccounts or
+ *	DenyAccounts parameters.
+ * IN part_ptr - Partition pointer
+ * IN acct - account name
+ * in job_ptr - Job pointer or NULL. If set and job can not run, then set the
+ *		job's state_desc and state_reason fields
+ * RET SLURM_SUCCESS or error code
+ */
+extern int part_policy_valid_acct(struct part_record *part_ptr, char *acct,
+				  struct job_record *job_ptr)
 {
+	char *tmp_err = NULL;
 	int i;
 
 	if (part_ptr->allow_account_array && part_ptr->allow_account_array[0]) {
 		int match = 0;
 		if (!acct) {
-			info("part_policy_valid_acct: job's account "
-			     "not known, so it can't use this partition "
-			     "(%s allows %s)",
-			     part_ptr->name, part_ptr->allow_accounts);
+			xstrfmtcat(tmp_err,
+				   "Job's account not known, so it can't use this partition "
+				   "(%s allows %s)",
+				   part_ptr->name, part_ptr->allow_accounts);
+			info("%s: %s", __func__, tmp_err);
+			if (job_ptr) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_desc = tmp_err;
+				job_ptr->state_reason = WAIT_ACCOUNT;
+				last_job_update = time(NULL);
+			} else {
+				xfree(tmp_err);
+			}
 			return ESLURM_INVALID_ACCOUNT;
 		}
 
@@ -2226,19 +2243,28 @@ extern int part_policy_valid_acct(
 			break;
 		}
 		if (match == 0) {
-			info("part_policy_valid_acct: job's account "
-			     "not permitted to use this partition "
-			     "(%s allows %s not %s)",
-			     part_ptr->name, part_ptr->allow_accounts, acct);
+			xstrfmtcat(tmp_err,
+				   "Job's account not permitted to use this partition "
+				   "(%s allows %s not %s)",
+				   part_ptr->name, part_ptr->allow_accounts,
+				   acct);
+			info("%s: %s", __func__, tmp_err);
+			if (job_ptr) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_desc = tmp_err;
+				job_ptr->state_reason = WAIT_ACCOUNT;
+				last_job_update = time(NULL);
+			} else {
+				xfree(tmp_err);
+			}
 			return ESLURM_INVALID_ACCOUNT;
 		}
 	} else if (part_ptr->deny_account_array &&
 		   part_ptr->deny_account_array[0]) {
 		int match = 0;
 		if (!acct) {
-			debug2("part_policy_valid_acct: job's account "
-			       "not known, so couldn't check if it was "
-			       "denied or not");
+			debug2("%s: job's account not known, so couldn't check if it was denied or not",
+			       __func__);
 			return SLURM_SUCCESS;
 		}
 		for (i = 0; part_ptr->deny_account_array[i]; i++) {
@@ -2248,10 +2274,20 @@ extern int part_policy_valid_acct(
 			break;
 		}
 		if (match == 1) {
-			info("part_policy_valid_acct: job's account "
-			     "not permitted to use this partition "
-			     "(%s denies %s including %s)",
-			     part_ptr->name, part_ptr->deny_accounts, acct);
+			xstrfmtcat(tmp_err,
+				   "Job's account not permitted to use this partition "
+				   "(%s denies %s including %s)",
+				   part_ptr->name, part_ptr->deny_accounts,
+				   acct);
+			info("%s: %s", __func__, tmp_err);
+			if (job_ptr) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_desc = tmp_err;
+				job_ptr->state_reason = WAIT_ACCOUNT;
+				last_job_update = time(NULL);
+			} else {
+				xfree(tmp_err);
+			}
 			return ESLURM_INVALID_ACCOUNT;
 		}
 	}

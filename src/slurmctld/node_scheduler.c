@@ -2417,12 +2417,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* Quick check to see if this account is allowed on this partition. */
 	if ((error_code = part_policy_valid_acct(
 		     job_ptr->part_ptr,
-		     job_ptr->assoc_ptr ? job_ptr->assoc_ptr->acct : NULL))
+		     job_ptr->assoc_ptr ? job_ptr->assoc_ptr->acct : NULL,
+		     job_ptr))
 	    != SLURM_SUCCESS) {
 		assoc_mgr_unlock(&qos_read_lock);
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_ACCOUNT;
-		last_job_update = now;
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 	assoc_mgr_unlock(&qos_read_lock);

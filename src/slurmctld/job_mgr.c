@@ -6057,7 +6057,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	}
 
 	if (slurmctld_conf.enforce_part_limits) {
-		if ((rc = part_policy_valid_acct(part_ptr, acct))
+		if ((rc = part_policy_valid_acct(part_ptr, acct, NULL))
 		    != SLURM_SUCCESS)
 			goto fini;
 
