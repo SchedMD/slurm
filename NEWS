@@ -148,6 +148,8 @@ documents those changes that are of interest to users and administrators.
     many handlers have been registered.
  -- Better debug messages when MaxSubmitJobs is hit.
  -- Docs - update squeue man page to describe all possible job states.
+ -- Preserve node features when slurmctld daemons reconfigured including active
+    and available KNL features.
 
 * Changes in Slurm 17.11.2
 ==========================
