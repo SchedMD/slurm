@@ -150,6 +150,8 @@ documents those changes that are of interest to users and administrators.
  -- Docs - update squeue man page to describe all possible job states.
  -- Preserve node features when slurmctld daemons reconfigured including active
     and available KNL features.
+ -- Prevent orphaned step_extern steps when a job is cancelled while the
+    prolog is still running.
 
 * Changes in Slurm 17.11.2
 ==========================
