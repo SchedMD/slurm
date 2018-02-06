@@ -76,6 +76,9 @@ documents those changes that are of interest to users and administrators.
     * Remove "job_id" field from task_p_slurmd_launch_request() function.
     * Remove "job_id" field from task_p_slurmd_reserve_resources() function.
 
+* Changes in Slurm 17.11.4
+==========================
+
 * Changes in Slurm 17.11.3
 ==========================
  -- Send SIG_UME correctly to a step.
