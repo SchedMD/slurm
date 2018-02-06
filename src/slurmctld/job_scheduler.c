@@ -1851,6 +1851,9 @@ next_task:
 			 */
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
+			job_ptr->state_desc = xstrdup("Nodes required for job are "
+					"DOWN, DRAINED or reserved for jobs in "
+					"higher priority partitions");
 			last_job_update = now;
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u. Partition=%s.",
