@@ -271,6 +271,7 @@ test3.13   Validate scontrol update command for jobs by JobName and UserID.
 test3.14   Test of advanced reservation "replace" option.
 test3.15   Test of advanced reservation of licenses.
 test3.16   Test that licenses are sorted.
+test3.17   Test of node feature changes with reconfiguration.
 UNTESTED   "scontrol abort"    would stop slurm
 UNTESTED   "scontrol shutdown" would stop slurm
 
