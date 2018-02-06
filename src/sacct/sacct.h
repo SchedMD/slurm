@@ -204,7 +204,6 @@ extern List g_qos_list;
 extern List g_tres_list;
 
 /* process.c */
-char *find_hostname(uint32_t pos, char *hosts);
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
 
 /* print.c */

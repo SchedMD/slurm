@@ -140,7 +140,6 @@ extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 	nprintfields;
 
 /* process.c */
-char *find_hostname(uint32_t pos, char *hosts);
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
 
 /* print.c */

@@ -38,25 +38,6 @@
 
 #include "sacct.h"
 
-
-char *find_hostname(uint32_t pos, char *hosts)
-{
-	hostlist_t hostlist = NULL;
-	char *temp = NULL, *host = NULL;
-
-	if (!hosts || (pos == NO_VAL))
-		return NULL;
-
-	hostlist = hostlist_create(hosts);
-	temp = hostlist_nth(hostlist, pos);
-	if (temp) {
-		host = xstrdup(temp);
-		free(temp);
-	}
-	hostlist_destroy(hostlist);
-	return host;
-}
-
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
 {
 	/* Means it is a blank record */

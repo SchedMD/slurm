@@ -1084,3 +1084,21 @@ extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads,
 
 	return cpus;
 }
+
+extern char *find_hostname(uint32_t pos, char *hosts)
+{
+	hostlist_t hostlist = NULL;
+	char *temp = NULL, *host = NULL;
+
+	if (!hosts || (pos == NO_VAL))
+		return NULL;
+
+	hostlist = hostlist_create(hosts);
+	temp = hostlist_nth(hostlist, pos);
+	if (temp) {
+		host = xstrdup(temp);
+		free(temp);
+	}
+	hostlist_destroy(hostlist);
+	return host;
+}
