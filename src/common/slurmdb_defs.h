@@ -277,6 +277,8 @@ extern void slurmdb_transfer_tres_time(
 	List *tres_list_out, char *tres_str, int elapsed);
 
 extern int slurmdb_get_tres_base_unit(char *tres_type);
+extern char *slurmdb_ave_tres_usage(char *tres_string, char * ave,
+				    uint32_t tres_id, int tasks);
 
 /* Setup cluster rec with plugin_id that indexes into select list */
 extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec);

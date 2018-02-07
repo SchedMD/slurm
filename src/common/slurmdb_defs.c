@@ -4184,6 +4184,30 @@ extern int slurmdb_get_tres_base_unit(char *tres_type)
 	return ret_unit;
 }
 
+extern char *slurmdb_ave_tres_usage(char *tres_string, char *ave,
+				    uint32_t tres_id, int tasks)
+{
+	List tres_list = NULL;
+	slurmdb_tres_rec_t *tres_rec = NULL;
+	uint64_t count = (uint64_t) NO_VAL;
+	uint32_t flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REPLACE;
+	char *new_tres_str = NULL;
+
+	if (ave == NULL)
+		ave = xstrdup_printf("%d=0", TRES_USAGE_DISK);
+	tres_list = list_create(slurmdb_destroy_tres_rec);
+	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+	list_append(tres_list, tres_rec);
+	tres_rec->id = tres_id;
+	count = slurmdb_find_tres_count_in_string(tres_string, tres_id);
+	tres_rec->count = count / (uint64_t) tasks;
+	new_tres_str = slurmdb_make_tres_string(tres_list, flags);
+	new_tres_str = slurmdb_combine_tres_strings(&ave, new_tres_str, flags);
+	FREE_NULL_LIST(tres_list);
+
+	return new_tres_str;
+}
+
 extern void slurmdb_destroy_stats_rec(void *object)
 {
 	slurmdb_stats_rec_t *rpc_stats = (slurmdb_stats_rec_t *) object;
