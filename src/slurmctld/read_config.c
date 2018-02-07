@@ -1039,13 +1039,6 @@ int read_slurm_conf(int recover, bool reconfig)
 			xfree(node_ptr->features);
 			node_ptr->features = xstrdup(
 				node_ptr->config_ptr->feature);
-			/*
-			 * Store the original configured CPU count somewhere
-		for (i=0, node_ptr=old_node_table_ptr; i<node_record_count;
-		     i++, node_ptr++) {
-			xfree(node_ptr->features);
-			node_ptr->features = xstrdup(
-				node_ptr->config_ptr->feature);
 			/* Store the original configured CPU count somewhere
 			 * (port is reused here for that purpose) so we can
 			 * report changes in its configuration.
