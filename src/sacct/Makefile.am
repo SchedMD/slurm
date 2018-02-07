@@ -12,7 +12,7 @@ sacct_DEPENDENCIES = $(LIB_SLURM_BUILD) $(LIB_SLURMDB_BUILD)
 
 sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
-noinst_HEADERS = sacct.c
+noinst_HEADERS = sacct.h
 sacct_SOURCES =		\
 	options.c	\
 	print.c		\
