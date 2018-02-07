@@ -323,6 +323,14 @@ typedef struct {
 	uint64_t rss_max;
 	uint32_t rss_max_nodeid; /* contains which node number it was on */
 	uint32_t rss_max_taskid; /* contains which task number it was on */
+	char *tres_usage_in_ave; /* average amount of usage in data */
+	char *tres_usage_in_max; /* contains max amount of usage in data */
+	char *tres_usage_in_max_nodeid; /* contains node number max was on */
+	char *tres_usage_in_max_taskid; /* contains task number max was on */
+	char *tres_usage_out_ave; /* average amount of usage out data */
+	char *tres_usage_out_max; /* contains amount of max usage out data */
+	char *tres_usage_out_max_nodeid; /* contains node number max was on */
+	char *tres_usage_out_max_taskid; /* contains task number max was on */
 	double vsize_ave;
 	uint64_t vsize_max;
 	uint32_t vsize_max_nodeid; /* contains which node number it was on */

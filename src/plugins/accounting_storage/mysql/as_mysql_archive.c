@@ -182,6 +182,14 @@ typedef struct {
 	char *tasks;
 	char *task_dist;
 	char *tres_alloc_str;
+	char *tres_usage_in_ave;
+	char *tres_usage_out_ave;
+	char *tres_usage_in_max;
+	char *tres_usage_in_max_nodeid;
+	char *tres_usage_in_max_taskid;
+	char *tres_usage_out_max;
+	char *tres_usage_out_max_nodeid;
+	char *tres_usage_out_max_taskid;
 	char *user_sec;
 	char *user_usec;
 } local_step_t;
@@ -412,6 +420,14 @@ static char *step_req_inx[] = {
 	"max_disk_write_node",
 	"ave_disk_write",
 	"tres_alloc",
+	"tres_usage_in_ave",
+	"tres_usage_out_ave",
+	"tres_usage_in_max",
+	"tres_usage_in_max_nodeid",
+	"tres_usage_in_max_taskid",
+	"tres_usage_out_max",
+	"tres_usage_out_max_nodeid",
+	"tres_usage_out_max_taskid",
 };
 
 
@@ -464,6 +480,14 @@ enum {
 	STEP_REQ_MAX_DISK_WRITE_NODE,
 	STEP_REQ_AVE_DISK_WRITE,
 	STEP_REQ_TRES,
+	STEP_TRES_USAGE_IN_AVE,
+	STEP_TRES_USAGE_OUT_AVE,
+	STEP_TRES_USAGE_IN_MAX,
+	STEP_TRES_USAGE_IN_MAX_NODEID,
+	STEP_TRES_USAGE_IN_MAX_TASKID,
+	STEP_TRES_USAGE_OUT_MAX,
+	STEP_TRES_USAGE_OUT_MAX_NODEID,
+	STEP_TRES_USAGE_OUT_MAX_TASKID,
 	STEP_REQ_COUNT,
 };
 
@@ -1150,6 +1174,14 @@ static void _pack_local_step(local_step_t *object,
 	packstr(object->tasks, buffer);
 	packstr(object->task_dist, buffer);
 	packstr(object->tres_alloc_str, buffer);
+	packstr(object->tres_usage_in_ave, buffer);
+	packstr(object->tres_usage_out_ave, buffer);
+	packstr(object->tres_usage_in_max, buffer);
+	packstr(object->tres_usage_in_max_nodeid, buffer);
+	packstr(object->tres_usage_in_max_taskid, buffer);
+	packstr(object->tres_usage_out_max, buffer);
+	packstr(object->tres_usage_out_max_nodeid, buffer);
+	packstr(object->tres_usage_out_max_taskid, buffer);
 	packstr(object->user_sec, buffer);
 	packstr(object->user_usec, buffer);
 }
@@ -1209,6 +1241,18 @@ static int _unpack_local_step(local_step_t *object,
 		unpackstr_ptr(&object->tasks, &tmp32, buffer);
 		unpackstr_ptr(&object->task_dist, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_alloc_str, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_usage_in_ave, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_usage_out_ave, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_usage_in_max, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_usage_in_max_nodeid, &tmp32,
+			      buffer);
+		unpackstr_ptr(&object->tres_usage_in_max_taskid, &tmp32,
+			      buffer);
+		unpackstr_ptr(&object->tres_usage_out_max, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_usage_out_max_nodeid, &tmp32,
+			      buffer);
+		unpackstr_ptr(&object->tres_usage_out_max_taskid, &tmp32,
+			      buffer);
 		unpackstr_ptr(&object->user_sec, &tmp32, buffer);
 		unpackstr_ptr(&object->user_usec, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
@@ -2442,6 +2486,18 @@ static Buf _pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.tasks = row[STEP_REQ_TASKS];
 		step.task_dist = row[STEP_REQ_TASKDIST];
 		step.tres_alloc_str = row[STEP_REQ_TRES];
+		step.tres_usage_in_ave = row[STEP_TRES_USAGE_IN_AVE];
+		step.tres_usage_out_ave = row[STEP_TRES_USAGE_OUT_AVE];
+		step.tres_usage_in_max = row[STEP_TRES_USAGE_IN_MAX];
+		step.tres_usage_in_max_nodeid =
+			row[STEP_TRES_USAGE_IN_MAX_NODEID];
+		step.tres_usage_in_max_taskid =
+			row[STEP_TRES_USAGE_IN_MAX_TASKID];
+		step.tres_usage_out_max = row[STEP_TRES_USAGE_OUT_MAX];
+		step.tres_usage_out_max_nodeid =
+			row[STEP_TRES_USAGE_OUT_MAX_NODEID];
+		step.tres_usage_out_max_taskid =
+			row[STEP_TRES_USAGE_OUT_MAX_TASKID];
 		step.user_sec = row[STEP_REQ_USER_SEC];
 		step.user_usec = row[STEP_REQ_USER_USEC];
 
@@ -2529,7 +2585,15 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 			   object.ave_disk_write,
 			   object.req_cpufreq_min,
 			   object.req_cpufreq_gov,
-			   object.tres_alloc_str);
+			   object.tres_alloc_str,
+			   object.tres_usage_in_ave,
+			   object.tres_usage_out_ave,
+			   object.tres_usage_in_max,
+			   object.tres_usage_in_max_nodeid,
+			   object.tres_usage_in_max_taskid,
+			   object.tres_usage_out_max,
+			   object.tres_usage_out_max_nodeid,
+			   object.tres_usage_out_max_taskid);
 
 		if (rpc_version < SLURM_15_08_PROTOCOL_VERSION)
 			xfree(object.tres_alloc_str);

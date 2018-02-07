@@ -209,7 +209,15 @@ char *step_req_inx[] = {
 	"t1.req_cpufreq_min",
 	"t1.req_cpufreq",
 	"t1.req_cpufreq_gov",
-	"t1.tres_alloc"
+	"t1.tres_alloc",
+	"t1.tres_usage_in_max",
+	"t1.tres_usage_in_max_taskid",
+	"t1.tres_usage_in_max_nodeid",
+	"t1.tres_usage_in_ave",
+	"t1.tres_usage_out_max",
+	"t1.tres_usage_out_max_taskid",
+	"t1.tres_usage_out_max_nodeid",
+	"t1.tres_usage_out_ave"
 };
 
 enum {
@@ -260,6 +268,14 @@ enum {
 	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_GOV,
 	STEP_REQ_TRES,
+	STEP_REQ_TRES_USAGE_IN_MAX,
+	STEP_REQ_TRES_USAGE_IN_MAX_TASKID,
+	STEP_REQ_TRES_USAGE_IN_MAX_NODEID,
+	STEP_REQ_TRES_USAGE_IN_AVE,
+	STEP_REQ_TRES_USAGE_OUT_MAX,
+	STEP_REQ_TRES_USAGE_OUT_MAX_TASKID,
+	STEP_REQ_TRES_USAGE_OUT_MAX_NODEID,
+	STEP_REQ_TRES_USAGE_OUT_AVE,
 	STEP_REQ_COUNT
 };
 
@@ -951,6 +967,30 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					step_row[STEP_REQ_MAX_DISK_WRITE_TASK]);
 				step->stats.disk_write_ave =
 					atof(step_row[STEP_REQ_AVE_DISK_WRITE]);
+				if (step_row[STEP_REQ_TRES_USAGE_IN_MAX])
+					step->stats.tres_usage_in_max =
+						xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_MAX]);
+				if (step_row[STEP_REQ_TRES_USAGE_IN_MAX_TASKID])
+					step->stats.tres_usage_in_max_taskid =
+						xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_MAX_TASKID]);
+				if (step_row[STEP_REQ_TRES_USAGE_IN_MAX_NODEID])
+					step->stats.tres_usage_in_max_nodeid =
+						xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_MAX_NODEID]);
+				if (step_row[STEP_REQ_TRES_USAGE_IN_AVE])
+					step->stats.tres_usage_in_ave =
+						xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_AVE]);
+				if (step_row[STEP_REQ_TRES_USAGE_OUT_MAX])
+					step->stats.tres_usage_out_max =
+						xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MAX]);
+				if (step_row[STEP_REQ_TRES_USAGE_OUT_MAX_TASKID])
+					step->stats.tres_usage_out_max_taskid =
+						xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MAX_TASKID]);
+				if (step_row[STEP_REQ_TRES_USAGE_OUT_MAX_NODEID])
+					step->stats.tres_usage_out_max_nodeid =
+						xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MAX_NODEID]);
+				if (step_row[STEP_REQ_TRES_USAGE_OUT_AVE])
+					step->stats.tres_usage_out_ave =
+						xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_AVE]);
 				step->stats.vsize_max = slurm_atoul(
 					step_row[STEP_REQ_MAX_VSIZE]);
 				step->stats.vsize_max_taskid = slurm_atoul(

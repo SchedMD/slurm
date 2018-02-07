@@ -49,6 +49,21 @@
 
 #define BUFFER_SIZE 4096
 
+static char *_average_tres_usage(uint64_t *tres_array, int tasks)
+{
+	char *new_tres_str = NULL;
+	uint64_t *average;
+	int i = 0;
+
+	average = xmalloc_nz(TRES_USAGE_CNT * sizeof(uint64_t));
+	for (i = 0; i < TRES_USAGE_CNT; i++) {
+		average[i] = tres_array[i] /=(uint64_t) tasks;
+	}
+	new_tres_str = make_tres_usage_str_from_array(average);
+	xfree(average);
+	return new_tres_str;
+}
+
 /* Used in job functions for getting the database index based off the
  * submit time and job.  0 is returned if none is found
  */
@@ -1367,6 +1382,14 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		double ave_disk_read =  (double)NO_VAL;
 		double ave_disk_write = (double)NO_VAL;
 		double ave_cpu = (double)NO_VAL;
+		char *tres_usage_in_ave = NULL;
+		char *tres_usage_out_ave = NULL;
+		char *tres_usage_in_max = NULL;
+		char *tres_usage_in_max_taskid = NULL;
+		char *tres_usage_in_max_nodeid = NULL;
+		char *tres_usage_out_max = NULL;
+		char *tres_usage_out_max_taskid = NULL;
+		char *tres_usage_out_max_nodeid = NULL;
 		/* figure out the ave of the totals sent */
 		if (tasks > 0) {
 			ave_vsize = (double)jobacct->tot_vsize;
@@ -1381,7 +1404,25 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			ave_disk_read /= (double)tasks;
 			ave_disk_write = (double)jobacct->tot_disk_write;
 			ave_disk_write /= (double)tasks;
+			tres_usage_in_ave =
+				_average_tres_usage(jobacct->tres_usage_in_tot,
+				tasks);
+			tres_usage_out_ave =
+				_average_tres_usage(jobacct->tres_usage_out_tot,
+				tasks);
 		}
+		tres_usage_in_max = make_tres_usage_str_from_array(
+			jobacct->tres_usage_in_max);
+		tres_usage_in_max_taskid = make_tres_usage_str_from_array(
+			jobacct->tres_usage_in_max_taskid);
+		tres_usage_in_max_nodeid = make_tres_usage_str_from_array(
+			jobacct->tres_usage_in_max_nodeid);
+		tres_usage_out_max = make_tres_usage_str_from_array(
+			jobacct->tres_usage_out_max);
+		tres_usage_out_max_taskid = make_tres_usage_str_from_array(
+			jobacct->tres_usage_out_max_taskid);
+		tres_usage_out_max_nodeid = make_tres_usage_str_from_array(
+			jobacct->tres_usage_out_max_nodeid);
 
 		xstrfmtcat(query,
 			   ", user_sec=%u, user_usec=%u, "
@@ -1398,7 +1439,15 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			   "max_pages_node=%u, ave_pages=%f, "
 			   "min_cpu=%u, min_cpu_task=%u, "
 			   "min_cpu_node=%u, ave_cpu=%f, "
-			   "act_cpufreq=%u, consumed_energy=%"PRIu64"",
+			   "act_cpufreq=%u, consumed_energy=%"PRIu64", "
+			   "tres_usage_in_ave='%s', "
+			   "tres_usage_out_ave='%s', "
+			   "tres_usage_in_max='%s', "
+			   "tres_usage_in_max_taskid='%s', "
+			   "tres_usage_in_max_nodeid='%s', "
+			   "tres_usage_out_max='%s', "
+			   "tres_usage_out_max_taskid='%s', "
+			   "tres_usage_out_max_nodeid='%s'",
 			   /* user seconds */
 			   jobacct->user_cpu_sec,
 			   /* user microseconds */
@@ -1440,7 +1489,23 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			   jobacct->min_cpu_id.nodeid,	/* min cpu node */
 			   ave_cpu,	/* ave cpu */
 			   jobacct->act_cpufreq,
-			   jobacct->energy.consumed_energy);
+			   jobacct->energy.consumed_energy,
+			   tres_usage_in_ave,	/* ave usage in */
+			   tres_usage_out_ave,	/* ave usage out */
+			   tres_usage_in_max, 	/* max usage in */
+			   tres_usage_in_max_taskid, /* max usage in taskid */
+			   tres_usage_in_max_nodeid, /* max usage in nodeid */
+			   tres_usage_out_max,	/* max usage out */
+			   tres_usage_out_max_taskid, /* max usage out taskid */
+			   tres_usage_out_max_nodeid); /* max usage out nodeid */
+		xfree(tres_usage_in_ave);
+		xfree(tres_usage_out_ave);
+		xfree(tres_usage_in_max);
+		xfree(tres_usage_in_max_taskid);
+		xfree(tres_usage_in_max_nodeid);
+		xfree(tres_usage_out_max);
+		xfree(tres_usage_out_max_taskid);
+		xfree(tres_usage_out_max_nodeid);
 	}
 
 	/* id_step has to be %d here to handle the -2 -1 for the batch and
