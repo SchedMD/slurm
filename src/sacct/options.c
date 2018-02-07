@@ -1327,6 +1327,8 @@ extern void do_list(void)
 	ListIterator itr_step = NULL;
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
+	char *ave_usage_in = NULL;
+	char *ave_usage_out = NULL;
 
 	if (!jobs)
 		return;
@@ -1347,6 +1349,19 @@ extern void do_list(void)
 			job->stats.pages_ave /= (double)cnt;
 			job->stats.disk_read_ave /= (double)cnt;
 			job->stats.disk_write_ave /= (double)cnt;
+			ave_usage_in = slurmdb_ave_tres_usage(
+				job->stats.tres_usage_in_ave, ave_usage_in,
+				TRES_USAGE_DISK, cnt);
+			ave_usage_out =
+				slurmdb_ave_tres_usage(
+				job->stats.tres_usage_out_ave, ave_usage_out,
+				TRES_USAGE_DISK, cnt);
+			xfree(job->stats.tres_usage_in_ave);
+			xfree(job->stats.tres_usage_out_ave);
+			job->stats.tres_usage_in_ave = xstrdup(ave_usage_in);
+			job->stats.tres_usage_out_ave = xstrdup(ave_usage_out);
+			xfree(ave_usage_in);
+			xfree(ave_usage_out);
 		}
 
 		if (job->show_full)

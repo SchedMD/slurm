@@ -41,6 +41,10 @@
 #include "src/common/parse_time.h"
 #include "slurm.h"
 
+print_field_t *field = NULL;
+int curr_inx = 1;
+char outbuf[FORMAT_STRING_SIZE];
+
 char *_elapsed_time(long secs, long usecs);
 
 char *_elapsed_time(long secs, long usecs)
@@ -196,20 +200,39 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 	job_ptr->array_task_str = out_buf;
 }
 
+static void _print_tres_field(char *tmp_char, char *nodes)
+{
+
+	if (!g_tres_list) {
+		slurmdb_tres_cond_t tres_cond;
+		memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
+		tres_cond.with_deleted = 1;
+		g_tres_list = slurmdb_tres_get(acct_db_conn, &tres_cond);
+	}
+
+	tmp_char = slurmdb_make_tres_string_from_simple(tmp_char, g_tres_list,
+							params.units,
+							params.convert_flags,
+							nodes);
+
+	field->print_routine(field,tmp_char,(curr_inx == field_count));
+	return;
+}
 extern void print_fields(type_t type, void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
 	jobcomp_job_rec_t *job_comp = (jobcomp_job_rec_t *)object;
-	print_field_t *field = NULL;
-	int curr_inx = 1;
+//	print_field_t *field = NULL;
+//	int curr_inx = 1;
 	struct passwd *pw = NULL;
 	struct	group *gr = NULL;
-	char outbuf[FORMAT_STRING_SIZE];
+//	char outbuf[FORMAT_STRING_SIZE];
 	bool got_stats = false;
 	int cpu_tres_rec_count = 0;
 	int step_cpu_tres_rec_count = 0;
 	char tmp1[128];
+	char *nodes = NULL;
 
 	if (!object) {
 		fatal("Job or step record is NULL");
@@ -633,7 +656,7 @@ extern void print_fields(type_t type, void *object)
 					     slurmdb_find_tres_count_in_string(
 						     job->tres_alloc_str,
 						     TRES_ENERGY))
-					     == INFINITE64)
+					    == INFINITE64)
 						tmp_uint64 = 0;
 					break;
 				case JOBSTEP:
@@ -663,7 +686,7 @@ extern void print_fields(type_t type, void *object)
 					     slurmdb_find_tres_count_in_string(
 						     job->tres_alloc_str,
 						     TRES_ENERGY))
-					     == INFINITE64)
+					    == INFINITE64)
 						tmp_uint64 = 0;
 					break;
 				case JOBSTEP:
@@ -1352,6 +1375,167 @@ extern void print_fields(type_t type, void *object)
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
+			break;
+		case PRINT_TRESUIA:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char =
+						job->stats.tres_usage_in_ave;
+				break;
+			case JOBSTEP:
+				tmp_char =
+					step->stats.tres_usage_in_ave;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL);
+			xfree(tmp_char);
+			break;
+		case PRINT_TRESUIM:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char =
+						job->stats.tres_usage_in_max;
+				break;
+			case JOBSTEP:
+				tmp_char = step->stats.tres_usage_in_max;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL);
+			xfree(tmp_char);
+			break;
+		case PRINT_TRESUIMN:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = job->stats.
+						tres_usage_in_max_nodeid;
+				nodes = job->nodes;
+				break;
+			case JOBSTEP:
+				tmp_char = step->stats.tres_usage_in_max_nodeid;
+				nodes = step->nodes;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, nodes);
+			xfree(tmp_char);
+			break;
+		case PRINT_TRESUIMT:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = job->stats.
+						tres_usage_in_max_taskid;
+				break;
+			case JOBSTEP:
+				tmp_char = step->stats.tres_usage_in_max_taskid;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL);
+			xfree(tmp_char);
+			break;
+		case PRINT_TRESUOA:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char =
+						job->stats.tres_usage_out_ave;
+				break;
+			case JOBSTEP:
+				tmp_char =
+					step->stats.tres_usage_out_ave;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL);
+			xfree(tmp_char);
+			xfree(tmp_char);
+			break;
+		case PRINT_TRESUOM:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char =
+						job->stats.tres_usage_out_max;
+				break;
+			case JOBSTEP:
+				tmp_char = step->stats.tres_usage_out_max;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL);
+			xfree(tmp_char);
+			break;
+		case PRINT_TRESUOMN:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = job->stats.
+						tres_usage_out_max_nodeid;
+				nodes = job->nodes;
+				break;
+			case JOBSTEP:
+				tmp_char =
+					step->stats.tres_usage_out_max_nodeid;
+				nodes = step->nodes;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, nodes);
+			xfree(tmp_char);
+			break;
+		case PRINT_TRESUOMT:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = job->stats.
+						tres_usage_out_max_taskid;
+				break;
+			case JOBSTEP:
+				tmp_char =
+					step->stats.tres_usage_out_max_taskid;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL);
+			xfree(tmp_char);
 			break;
 		case PRINT_MAXVSIZENODE:
 			if (got_stats) {
@@ -2123,22 +2307,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			if (!g_tres_list) {
-				slurmdb_tres_cond_t tres_cond;
-				memset(&tres_cond, 0,
-				       sizeof(slurmdb_tres_cond_t));
-				tres_cond.with_deleted = 1;
-				g_tres_list = slurmdb_tres_get(
-					acct_db_conn, &tres_cond);
-			}
-
-			tmp_char = slurmdb_make_tres_string_from_simple(
-				tmp_char, g_tres_list, params.units,
-				params.convert_flags);
-
-			field->print_routine(field,
-					     tmp_char,
-					     (curr_inx == field_count));
+			_print_tres_field(tmp_char, NULL);
 			xfree(tmp_char);
 			break;
 		case PRINT_TRESR:
@@ -2153,22 +2322,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			if (!g_tres_list) {
-				slurmdb_tres_cond_t tres_cond;
-				memset(&tres_cond, 0,
-				       sizeof(slurmdb_tres_cond_t));
-				tres_cond.with_deleted = 1;
-				g_tres_list = slurmdb_tres_get(
-					acct_db_conn, &tres_cond);
-			}
-
-			tmp_char = slurmdb_make_tres_string_from_simple(
-				tmp_char, g_tres_list, params.units,
-				params.convert_flags);
-
-			field->print_routine(field,
-					     tmp_char,
-					     (curr_inx == field_count));
+			_print_tres_field(tmp_char, NULL);
 			xfree(tmp_char);
 			break;
 		case PRINT_UID:
