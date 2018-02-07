@@ -1329,6 +1329,7 @@ extern void do_list(void)
 	slurmdb_step_rec_t *step = NULL;
 	char *ave_usage_in = NULL;
 	char *ave_usage_out = NULL;
+	char *tmp_string = NULL;
 
 	if (!jobs)
 		return;
@@ -1352,10 +1353,19 @@ extern void do_list(void)
 			ave_usage_in = slurmdb_ave_tres_usage(
 				job->stats.tres_usage_in_ave, ave_usage_in,
 				TRES_USAGE_DISK, cnt);
-			ave_usage_out =
-				slurmdb_ave_tres_usage(
+			ave_usage_out =	slurmdb_ave_tres_usage(
 				job->stats.tres_usage_out_ave, ave_usage_out,
 				TRES_USAGE_DISK, cnt);
+			tmp_string = slurmdb_ave_tres_usage(
+				job->stats.tres_usage_in_ave, ave_usage_in,
+				TRES_USAGE_FS_LUSTRE, cnt);
+			ave_usage_in = xstrdup(tmp_string);
+			xfree(tmp_string);
+			tmp_string = slurmdb_ave_tres_usage(
+				job->stats.tres_usage_out_ave, ave_usage_out,
+				TRES_USAGE_FS_LUSTRE, cnt);
+			ave_usage_out = xstrdup(tmp_string);
+			xfree(tmp_string);
 			xfree(job->stats.tres_usage_in_ave);
 			xfree(job->stats.tres_usage_out_ave);
 			job->stats.tres_usage_in_ave = xstrdup(ave_usage_in);

@@ -64,11 +64,13 @@ typedef enum {
 	TRES_NODE,
 	TRES_BILLING,
 	TRES_USAGE_DISK,
+	TRES_USAGE_FS_LUSTRE,
 	TRES_STATIC_CNT
 } tres_types_t;
 
 typedef enum {
 	USAGE_DISK = 0,
+	USAGE_FS_LUSTRE,
 	TRES_USAGE_CNT
 } tres_usage_types_t;
 
