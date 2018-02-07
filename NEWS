@@ -1,8 +1,10 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 17.11.4
+* Changes in Slurm 17.11.3-2
 ==========================
+ -- Revert node_features changes in 17.11.3 that lead to various segfaults on
+    slurmctld startup.
 
 * Changes in Slurm 17.11.3
 ==========================
