@@ -147,16 +147,19 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 	char hostname[64] = "";
 
 	gethostname(hostname, sizeof(hostname));
-	if (opt_out_file) {
+	if (opt_out_file && (opt_arg_sbatch || opt_arg_srun)) {
 		FILE *fp = NULL;
+		usleep(getpid() % 500000);   /* Reduce NFS collisions */
 		for (i = 0; (i < 10) && !fp; i++)
 			fp = fopen(opt_out_file, "a");
-		if (!fp)
+		if (!fp) {
+			slurm_error("%s: could not open %s",
+				    __func__, opt_out_file);
 			return -1;
-		if (opt_arg_sbatch || opt_arg_srun)
-			usleep(getpid() % 500000);   /* Reduce NFS collisions */
+		}
 		fprintf(fp, "%s: opt_arg_sbatch=%d opt_arg_srun=%d hostname=%s\n",
 			__func__, opt_arg_sbatch, opt_arg_srun, hostname);
+		fflush(fp);
 		if (spank_get_item(sp, S_JOB_UID, &my_uid) == ESPANK_SUCCESS)
 			fprintf(fp, "spank_get_item: my_uid=%d\n", my_uid);
                 if (spank_get_item(sp, S_JOB_ARGV, &argc, &argv) ==
@@ -189,14 +192,16 @@ int slurm_spank_exit(spank_t sp, int ac, char **av)
 	int i;
 
 	gethostname(hostname, sizeof(hostname));
-	if (opt_out_file) {
+	if (opt_out_file && (opt_arg_sbatch || opt_arg_srun)) {
 		FILE *fp = NULL;
+		usleep(getpid() % 500000);   /* Reduce NFS collisions */
 		for (i = 0; (i < 10) && !fp; i++)
 			fp = fopen(opt_out_file, "a");
-		if (!fp)
+		if (!fp) {
+			slurm_error("%s: could not open %s",
+				    __func__, opt_out_file);
 			return -1;
-		if (opt_arg_sbatch || opt_arg_srun)
-			usleep(getpid() % 500000);   /* Reduce NFS collisions */
+		}
 		fprintf(fp, "%s: opt_arg_sbatch=%d opt_arg_srun=%d hostname=%s\n",
 			__func__, opt_arg_sbatch, opt_arg_srun, hostname);
 		fclose(fp);
