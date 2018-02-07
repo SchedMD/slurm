@@ -42,6 +42,10 @@
 #include "slurm.h"
 #define FORMAT_STRING_SIZE 34
 
+print_field_t *field = NULL;
+int curr_inx = 1;
+char outbuf[FORMAT_STRING_SIZE];
+
 char *_elapsed_time(long secs, long usecs);
 
 char *_elapsed_time(long secs, long usecs)
@@ -94,11 +98,33 @@ static void _print_small_double(
 		snprintf(outbuf, buf_size, "0");
 }
 
+static void _print_tres_field(char *tres_in, char *nodes)
+{
+	char *tmp_char = NULL;
+
+	if (!db_access)
+		return;
+	tmp_char = tres_in;
+	if (!g_tres_list) {
+		slurmdb_tres_cond_t tres_cond;
+		memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
+		tres_cond.with_deleted = 1;
+		g_tres_list = slurmdb_tres_get(acct_db_conn, &tres_cond);
+	}
+
+	tmp_char = slurmdb_make_tres_string_from_simple(tmp_char, g_tres_list,
+		params.units, params.convert_flags, nodes);
+
+	field->print_routine(field,tmp_char,(curr_inx == field_count));
+	xfree(tmp_char);
+	return;
+}
+
 void print_fields(slurmdb_step_rec_t *step)
 {
-	print_field_t *field = NULL;
-	int curr_inx = 1;
-	char outbuf[FORMAT_STRING_SIZE];
+//	print_field_t *field = NULL;
+//	int curr_inx = 1;
+//	char outbuf[FORMAT_STRING_SIZE];
 
 	list_iterator_reset(print_fields_itr);
 	while ((field = list_next(print_fields_itr))) {
@@ -342,6 +368,34 @@ void print_fields(slurmdb_step_rec_t *step)
 			field->print_routine(field,
 					     step->stats.cpu_min_taskid,
 					     (curr_inx == field_count));
+			break;
+		case PRINT_TRESUIA:
+			_print_tres_field(step->stats.tres_usage_in_ave, NULL);
+			break;
+		case PRINT_TRESUIM:
+			_print_tres_field(step->stats.tres_usage_in_max, NULL);
+			break;
+		case PRINT_TRESUIMN:
+			_print_tres_field(step->stats.tres_usage_in_max_nodeid,
+					  step->nodes);
+			break;
+		case PRINT_TRESUIMT:
+			_print_tres_field(step->stats.tres_usage_in_max_taskid,
+					  NULL);
+			break;
+		case PRINT_TRESUOA:
+			_print_tres_field(step->stats.tres_usage_out_ave, NULL);
+			break;
+		case PRINT_TRESUOM:
+			_print_tres_field(step->stats.tres_usage_out_max, NULL);
+			break;
+		case PRINT_TRESUOMN:
+			_print_tres_field(step->stats.tres_usage_out_max_nodeid,
+					  step->nodes);
+			break;
+		case PRINT_TRESUOMT:
+			_print_tres_field(step->stats.tres_usage_out_max_taskid,
+					  NULL);
 			break;
 		case PRINT_NODELIST:
 			field->print_routine(field,

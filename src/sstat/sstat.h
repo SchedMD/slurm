@@ -64,7 +64,7 @@
 
 #define ERROR 2
 
-#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite"
+#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageoutmax,tresusageoutmaxn,tresusageoutmaxt,tresusageoutave,tresusageinave"
 
 #define STAT_FIELDS_PID "jobid,nodelist,pids"
 
@@ -114,6 +114,14 @@ typedef enum {
 		PRINT_REQ_CPUFREQ_MIN,
 		PRINT_REQ_CPUFREQ_MAX,
 		PRINT_REQ_CPUFREQ_GOV,
+		PRINT_TRESUIM,
+		PRINT_TRESUIA,
+		PRINT_TRESUIMN,
+		PRINT_TRESUIMT,
+		PRINT_TRESUOA,
+		PRINT_TRESUOM,
+		PRINT_TRESUOMN,
+		PRINT_TRESUOMT,
 } sstat_print_types_t;
 
 
@@ -126,6 +134,7 @@ typedef struct {
 	int opt_verbose;	/* --verbose */
 	bool pid_format;
 	uint32_t convert_flags;
+	int units;		/* --units*/
 } sstat_parameters_t;
 
 extern List print_fields_list;
@@ -133,8 +142,11 @@ extern ListIterator print_fields_itr;
 extern print_field_t fields[];
 extern sstat_parameters_t params;
 extern int field_count;
+extern bool db_access;
 
 extern List jobs;
+extern List g_tres_list;
+extern void *acct_db_conn;
 
 extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 	nprintfields;

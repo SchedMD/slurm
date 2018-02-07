@@ -86,6 +86,14 @@ print_field_t fields[] = {
 	{13, "ReqCPUFreqMin", print_fields_str, PRINT_REQ_CPUFREQ_MIN},
 	{13, "ReqCPUFreqMax", print_fields_str, PRINT_REQ_CPUFREQ_MAX},
 	{13, "ReqCPUFreqGov", print_fields_str, PRINT_REQ_CPUFREQ_GOV},
+	{14, "TRESUsageInAve", print_fields_str, PRINT_TRESUIA},
+	{14, "TRESUsageInMax", print_fields_str, PRINT_TRESUIM},
+	{18, "TRESUsageInMaxNode", print_fields_str, PRINT_TRESUIMN},
+	{18, "TRESUsageInMaxTask", print_fields_str, PRINT_TRESUIMT},
+	{15, "TRESUsageOutAve", print_fields_str, PRINT_TRESUOA},
+	{15, "TRESUsageOutMax", print_fields_str, PRINT_TRESUOM},
+	{19, "TRESUsageOutMaxNode", print_fields_str, PRINT_TRESUOMN},
+	{19, "TRESUsageOutMaxTask", print_fields_str, PRINT_TRESUOMT},
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;
@@ -94,6 +102,9 @@ slurmdb_step_rec_t step;
 List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
+List g_tres_list = NULL;
+void *acct_db_conn = NULL;
+bool db_access = true;
 
 int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	     uint32_t req_cpufreq_min, uint32_t req_cpufreq_max,
@@ -107,6 +118,9 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	int ntasks = 0;
 	int tot_tasks = 0;
 	hostlist_t hl = NULL;
+
+	char *ave_usage_in = NULL;
+	char *ave_usage_out = NULL;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
 	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist, use_protocol_ver,
@@ -129,6 +143,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 
 	memset(&temp_stats, 0, sizeof(slurmdb_stats_t));
 	temp_stats.cpu_min = NO_VAL;
+
 	memset(&step.stats, 0, sizeof(slurmdb_stats_t));
 	step.stats.cpu_min = NO_VAL;
 
@@ -140,7 +155,6 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	step.req_cpufreq_gov = req_cpufreq_gov;
 	step.stepname = NULL;
 	step.state = JOB_RUNNING;
-
 	hl = hostlist_create(NULL);
 	itr = list_iterator_create(step_stat_response->stats_list);
 	while ((step_stat = list_next(itr))) {
@@ -174,7 +188,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	slurm_job_step_pids_response_msg_free(step_stat_response);
 	/* we printed it out already */
 	if (params.pid_format)
-		return rc;
+		goto getout;
 
 	hostlist_sort(hl);
 	hostlist_ranged_string(hl, BUF_SIZE, step.nodes);
@@ -189,10 +203,42 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 		step.stats.disk_read_ave /= (double)tot_tasks;
 		step.stats.disk_write_ave /= (double)tot_tasks;
 		step.stats.act_cpufreq /= (double)tot_tasks;
+
+		ave_usage_in =
+			slurmdb_ave_tres_usage(step.stats.tres_usage_in_ave,
+			ave_usage_in, TRES_USAGE_DISK, tot_tasks);
+		ave_usage_out =
+			slurmdb_ave_tres_usage(step.stats.tres_usage_out_ave,
+			ave_usage_out, TRES_USAGE_DISK, tot_tasks);
+		xfree(step.stats.tres_usage_in_ave);
+		step.stats.tres_usage_in_ave = xstrdup(ave_usage_in);
+		xfree(step.stats.tres_usage_out_ave);
+		step.stats.tres_usage_out_ave = xstrdup(ave_usage_out);
+		xfree(ave_usage_in);
+		xfree(ave_usage_out);
+
 		step.ntasks = tot_tasks;
+
+		xfree(temp_stats.tres_usage_in_max);
+		xfree(temp_stats.tres_usage_out_max);
+		xfree(temp_stats.tres_usage_in_max_taskid);
+		xfree(temp_stats.tres_usage_out_max_taskid);
+		xfree(temp_stats.tres_usage_in_max_nodeid);
+		xfree(temp_stats.tres_usage_out_max_nodeid);
 	}
 
 	print_fields(&step);
+
+getout:
+
+	xfree(step.stats.tres_usage_in_max);
+	xfree(step.stats.tres_usage_out_max);
+	xfree(step.stats.tres_usage_in_max_taskid);
+	xfree(step.stats.tres_usage_out_max_taskid);
+	xfree(step.stats.tres_usage_in_max_nodeid);
+	xfree(step.stats.tres_usage_out_max_nodeid);
+	xfree(step.stats.tres_usage_in_ave);
+	xfree(step.stats.tres_usage_out_ave);
 
 	return rc;
 }
@@ -219,6 +265,18 @@ int main(int argc, char **argv)
 	if (!params.opt_job_list || !list_count(params.opt_job_list)) {
 		error("You didn't give me any jobs to stat.");
 		return 1;
+	}
+
+	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS ) {
+		error("failed to initialize accounting_storage plugin");
+		return 1;
+	} else {
+		acct_db_conn = slurmdb_connection_get();
+		if (errno != SLURM_SUCCESS) {
+			info("Problem talking to the database: %m, no TRES "
+			     "stats will be displayed");
+			db_access = false;
+		}
 	}
 
 	print_fields_header(print_fields_list);
@@ -334,6 +392,12 @@ int main(int argc, char **argv)
 	if (print_fields_itr)
 		list_iterator_destroy(print_fields_itr);
 	FREE_NULL_LIST(print_fields_list);
+
+	if (db_access) {
+		FREE_NULL_LIST(g_tres_list);
+		slurmdb_connection_close(&acct_db_conn);
+	}
+	slurm_acct_storage_fini();
 
 	return 0;
 }
