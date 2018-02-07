@@ -490,8 +490,9 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
-sstat_LDADD = $(LIB_SLURM) $(DL_LIBS)
-sstat_DEPENDENCIES = $(LIB_SLURM_BUILD)
+sstat_LDADD = $(LIB_SLURMDB) $(DL_LIBS)
+sstat_DEPENDENCIES = $(LIB_SLURM_BUILD) $(LIB_SLURMDB_BUILD)
+sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 noinst_HEADERS = sstat.h
 sstat_SOURCES = \
 	options.c	\
@@ -500,7 +501,6 @@ sstat_SOURCES = \
 	sstat.c		\
 	sstat.h
 
-sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
