@@ -258,7 +258,6 @@ if {$matches != 1} {
 	send_user "\nFAILURE: spank help message not in sbatch help message ($matches != 1)\n"
 	end_it 1
 }
-exec $bin_rm -f $file_in
 
 #
 # Test of locally logged messages().
@@ -270,9 +269,23 @@ exec $bin_rm -f $file_in
 #	configuration.
 #
 send_user "\n\nTest locally logged messages..........\n\n"
+
+send_user "Checksum of local $spank_conf_file\n"
+spawn $bin_sum $spank_conf_file
+expect {
+	-re timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+send_user "\n\n"
+
 $bin_sleep 30
 make_bash_script $file_in "
-  $srun --test_suite_srun=5 $bin_uname
+  $srun --test_suite_srun=5 $bin_sum $spank_conf_file
 "
 
 set job_id 0
@@ -381,10 +394,11 @@ if {[wait_for_file $spank_out] == 0} {
 	set expected_spank_init 2
 	set expected_sbatch     2
 	set expected_srun       2
-	set expected_items      4
+	set expected_items      5
 
 	# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
 	# launched on each node, so we need to check for additional output
+	log_user 0
 	spawn $scontrol show config
 	expect {
 		-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
@@ -398,6 +412,7 @@ if {[wait_for_file $spank_out] == 0} {
 			wait
 		}
 	}
+	log_user 1
 
 	spawn $bin_sort $spank_out
 	expect {
@@ -431,28 +446,35 @@ if {[wait_for_file $spank_out] == 0} {
 			wait
 		}
 	}
+
+	set fail_cnt 0
 	if {$matches_spank_exit != $expected_spank_exit} {
 		send_user "\nFAILURE: remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != $expected_spank_exit)\n"
-		end_it 1
-	} elseif {$matches_spank_init != $expected_spank_init} {
-		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != $expected_spank_init)\n"
-		end_it 1
-	} elseif {$matches_sbatch != $expected_sbatch} {
-		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != $expected_sbatch)\n"
-		end_it 1
-	} elseif {$matches_srun != $expected_srun} {
-		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != $expected_srun)\n"
-		end_it 1
-	} elseif {$matches != $expected_items} {
-		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != $expected_items)\n"
-		end_it 1
-	} else {
-		send_user "\n remote (slurmd) spank plugin success\n"
+		set fail_cnt 1
 	}
+	if {$matches_spank_init != $expected_spank_init} {
+		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != $expected_spank_init)\n"
+		set fail_cnt 1
+	}
+	if {$matches_sbatch != $expected_sbatch} {
+		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != $expected_sbatch)\n"
+		set fail_cnt 1
+	}
+	if {$matches_srun != $expected_srun} {
+		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != $expected_srun)\n"
+		set fail_cnt 1
+	}
+	if {$matches != $expected_items} {
+		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != $expected_items)\n"
+		set fail_cnt 1
+	}
+	if {$fail_cnt != 0} {
+		send_user "\nWARNING: Check for matching checksums on the plugstack.conf file.\n"
+		send_user "         Different checksums could indicate file system delays\n"
+		end_it 1
+	}
+	send_user "\n remote (slurmd) spank plugin success\n"
 } else {
-	send_user "\nWARNING: This can be caused by the plugstack.conf file not\n"
-	send_user "      being propagated to the compute node or not being in a\n"
-	send_user "      shared file system.\n"
 	end_it 1
 }
 
