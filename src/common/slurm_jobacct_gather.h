@@ -76,6 +76,22 @@ struct lustre_data {
 	double		write_size;     // currently in megabytes
 };
 
+typedef struct jag_prec {	/* process record */
+	int	act_cpufreq;	/* actual average cpu frequency */
+	double	disk_read;	/* local disk read */
+	double	disk_write;	/* local disk write */
+	int	last_cpu;	/* last cpu */
+	uint64_t *mb_read;	/* megabytes read */
+	uint64_t *mb_written;	/* megabytes written */
+	int     pages;  /* pages */
+	pid_t	pid;
+	pid_t	ppid;
+	uint64_t rss;	/* rss */
+	int     ssec;   /* system cpu time */
+	int     usec;   /* user cpu time */
+	uint64_t vsize;	/* virtual size */
+} jag_prec_t;
+
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
 	uint32_t nodeid; /* contains which node number it was on */
