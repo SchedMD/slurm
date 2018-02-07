@@ -276,18 +276,23 @@ if {[wait_for_file $file_out] == 0} {
 			wait
 		}
 	}
+	set fail_cnt 0
 	if {$matches_sbatch != 2} {
 		send_user "\nFAILURE: local (sbatch) sbatch spank plugin failure ($matches_sbatch != 2)\n"
-		end_it 1
-	} elseif {$matches_srun != 2} {
-		send_user "\nFAILURE: local (srun) srun spank plugin failure ($matches_srun != 2)\n"
-		end_it 1
-	} elseif {$matches != 2} {
-		send_user "\nFAILURE: local (srun) spank plugin failure ($matches != 2)\n"
-		end_it 1
-	} else {
-		send_user "\nlocal (srun) spank plugin success\n"
+		set fail_cnt 1
 	}
+	if {$matches_srun != 2} {
+		send_user "\nFAILURE: local (srun) srun spank plugin failure ($matches_srun != 2)\n"
+		set fail_cnt 1
+	}
+	if {$matches != 2} {
+		send_user "\nFAILURE: local (srun) spank plugin failure ($matches != 2)\n"
+		set fail_cnt 1
+	}
+	if {$fail_cnt != 0} {
+		end_it 1
+	}
+	send_user "\nlocal (srun) spank plugin success\n"
 } else {
 	end_it 1
 }
@@ -363,6 +368,8 @@ if {[wait_for_file $spank_out] == 0} {
 		end_it 1
 	}
 	send_user "\nRemote (slurmd) spank plugin success\n"
+} else {
+	end_it 1
 }
 
 end_it $exit_code
