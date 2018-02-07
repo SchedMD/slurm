@@ -181,10 +181,24 @@ expect {
 #	slurmd/slurmstepd on the compute node will not get the updated
 #	configuration.
 #
-exec $bin_sleep 20
+exec $bin_sleep 30
 send_user "\n\nTest locally logged messages..........\n\n"
+
+send_user "Checksum of local $spank_conf_file\n"
+spawn $bin_sum $spank_conf_file
+expect {
+	-re timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+send_user "\n\n"
+
 make_bash_script $file_in "
-  $srun --mpi=none --test_suite_srun=5 --pack-group=0,1 $bin_hostname
+  $srun --mpi=none --test_suite_srun=5 --pack-group=0,1 $bin_sum $spank_conf_file
 "
 
 set job_id 0
@@ -322,29 +336,33 @@ if {[wait_for_file $spank_out] == 0} {
 		}
 	}
 
+	set fail_cnt 0
 	if {$matches_spank_exit != 3} {
 		send_user "\nFAILURE: remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != 3)\n"
-		end_it 1
-	} elseif {$matches_spank_init != 3} {
-		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != 3)\n"
-		end_it 1
-	} elseif {$matches_sbatch != 2} {
-		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != 2)\n"
-		end_it 1
-	} elseif {$matches_srun != 4} {
-		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != 4)\n"
-		end_it 1
-	} elseif {$matches != 6} {
-		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != 6)\n"
-		end_it 1
-	} else {
-		send_user "\nRemote (slurmd) spank plugin success\n"
+		set fail_cnt 1
 	}
-} else {
-	send_user "\nWARNING: This can be caused by the plugstack.conf file not\n"
-	send_user "      being propagated to the compute nodes or not being in a\n"
-	send_user "      shared file system.\n"
-	end_it 1
+	if {$matches_spank_init != 3} {
+		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != 3)\n"
+		set fail_cnt 1
+	}
+	if {$matches_sbatch != 2} {
+		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != 2)\n"
+		set fail_cnt 1
+	}
+	if {$matches_srun != 4} {
+		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != 4)\n"
+		set fail_cnt 1
+	}
+	if {$matches != 8} {
+		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != 8)\n"
+		set fail_cnt 1
+	}
+	if {$fail_cnt != 0} {
+		send_user "\nWARNING: Check for matching checksums on the plugstack.conf file.\n"
+		send_user "         Different checksums could indicate file system delays\n"
+		end_it 1
+	}
+	send_user "\nRemote (slurmd) spank plugin success\n"
 }
 
 end_it $exit_code
