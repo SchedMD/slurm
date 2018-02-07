@@ -83,6 +83,8 @@ typedef struct jag_prec {	/* process record */
 	int	last_cpu;	/* last cpu */
 	uint64_t *mb_read;	/* megabytes read */
 	uint64_t *mb_written;	/* megabytes written */
+	uint64_t *num_reads;	/* number of reads */
+	uint64_t *num_writes;	/* number of writes */
 	int     pages;  /* pages */
 	pid_t	pid;
 	pid_t	ppid;

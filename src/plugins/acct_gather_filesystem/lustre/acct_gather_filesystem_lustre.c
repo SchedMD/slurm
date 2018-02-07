@@ -428,6 +428,44 @@ extern void acct_gather_filesystem_p_conf_values(List *data)
 
 extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 {
+
+	static acct_filesystem_data_t starting;
+
 	int retval = SLURM_SUCCESS;
+	static bool first = true;
+	acct_filesystem_data_t current;
+
+	slurm_mutex_lock(&lustre_lock);
+
+	if (_read_lustre_counters() != SLURM_SUCCESS) {
+		error("%s: Cannot read lustre counters", __func__);
+		slurm_mutex_unlock(&lustre_lock);
+		return SLURM_FAILURE;
+	}
+	if (first) {
+		starting.reads = lustre_se.all_lustre_nb_reads;
+		starting.writes = lustre_se.all_lustre_nb_writes;
+		starting.read_size = (double)lustre_se.all_lustre_read_bytes;
+		starting.write_size = (double)lustre_se.all_lustre_write_bytes;
+
+		first = false;
+	}
+
+	/* Obtain the current values read from all lustre-xxxx directories */
+
+	current.reads = lustre_se.all_lustre_nb_reads;
+	current.writes = lustre_se.all_lustre_nb_writes;
+	current.read_size = (double)lustre_se.all_lustre_read_bytes;
+	current.write_size = (double)lustre_se.all_lustre_write_bytes;
+	prec->num_reads[USAGE_FS_LUSTRE] =
+		(double)current.reads - (double) starting.reads;
+	prec->num_writes[USAGE_FS_LUSTRE] =
+		(double) current.writes - (double) starting.writes;
+	prec->mb_read[USAGE_FS_LUSTRE] =
+		(current.read_size - starting.read_size) / (1 << 20);
+	prec->mb_written[USAGE_FS_LUSTRE] =
+		(current.write_size - starting.write_size) / (1 << 20);
+
+	slurm_mutex_unlock(&lustre_lock);
 	return retval;
 }

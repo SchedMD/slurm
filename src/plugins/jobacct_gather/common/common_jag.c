@@ -500,15 +500,23 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	}
 	prec->mb_read = xmalloc(TRES_USAGE_CNT * sizeof(uint64_t));
 	prec->mb_written = xmalloc(TRES_USAGE_CNT * sizeof(uint64_t));
+	prec->num_reads = xmalloc(TRES_USAGE_CNT * sizeof(uint64_t));
+	prec->num_writes = xmalloc(TRES_USAGE_CNT * sizeof(uint64_t));
 
 	if (!_get_process_data_line(fd, prec)) {
 		xfree(prec->mb_read);
 		xfree(prec->mb_written);
+		xfree(prec->num_reads);
+		xfree(prec->num_writes);
 		xfree(prec);
 		fclose(stat_fp);
 		return;
 	}
 	fclose(stat_fp);
+
+	if (acct_gather_filesystem_g_get_data(prec) < 0) {
+		debug2("problem retrieving filesystem data");
+	}
 
 	/* Remove shared data from rss */
 	if (no_share_data)
@@ -519,6 +527,8 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 		if (_get_pss(proc_smaps_file, prec) == -1) {
 			xfree(prec->mb_read);
 			xfree(prec->mb_written);
+			xfree(prec->num_reads);
+			xfree(prec->num_writes);
 			xfree(prec);
 			return;
 		}
@@ -801,6 +811,8 @@ extern void destroy_jag_prec(void *object)
 	jag_prec_t *prec = (jag_prec_t *)object;
 	xfree(prec->mb_read);
 	xfree(prec->mb_written);
+	xfree(prec->num_reads);
+	xfree(prec->num_writes);
 	xfree(prec);
 	return;
 }
@@ -816,6 +828,12 @@ extern void print_jag_prec(jag_prec_t *prec)
 	info("ssec \t%d", prec->ssec);
 	info("usage_disk_in \t%"PRIu64"", prec->mb_read[USAGE_DISK]);
 	info("usage_disk_out \t%"PRIu64"", prec->mb_written[USAGE_DISK]);
+	info("usage_fs_read \t%"PRIu64"", prec->mb_read[USAGE_FS_LUSTRE]);
+	info("usage_fs_written \t%"PRIu64"", prec->mb_written[USAGE_FS_LUSTRE]);
+	info("usage_fs_num_reads \t%"PRIu64"",
+	     prec->num_reads[USAGE_FS_LUSTRE]);
+	info("usage_fs_num_writes \t%"PRIu64"",
+	     prec->num_writes[USAGE_FS_LUSTRE]);
 	info("usec \t%d", prec->usec);
 	info("vsize\t%"PRIu64"", prec->vsize);
 }
