@@ -5,15 +5,25 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmstepd
 
-AM_CPPFLAGS = -I$(top_srcdir) $(SSH2_CPPFLAGS)
-
 depend_libs = 				   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	../common/libslurmd_common.o
 
-slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
-	$(DL_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
+# If slurmstepd_LDADD or slurmstepd_LDFLAGS change
+# make sure you alter the below depend_[ldadd|ldflags] to look identical in the
+# slurmd.  If these libs aren't available
+# on slurmstepd startup the slurmstepd will fail sliently and make debugging
+# rather difficult.  Making the slurmd link to them as well shouldn't increase
+# memory footprint and will fail way earlier and give the user a way to known
+# what is happening.
+depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
+depend_ldflags = $(HWLOC_LDFLAGS) $(SSH2_LDFLAGS)
+
+AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS) $(SSH2_CPPFLAGS)
+
+slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd)
+
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
 
 slurmstepd_SOURCES = 	        	\
 	slurmstepd.c slurmstepd.h	\
@@ -33,8 +43,6 @@ slurmstepd_SOURCES += x11_forwarding.c x11_forwarding.h
 else
 EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
 endif
-
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(SSH2_LDFLAGS)
 
 slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 
