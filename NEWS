@@ -79,6 +79,11 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.4
 ==========================
 
+* Changes in Slurm 17.11.3-2
+==========================
+ -- Revert node_features changes in 17.11.3 that lead to various segfaults on
+    slurmctld startup.
+
 * Changes in Slurm 17.11.3
 ==========================
  -- Send SIG_UME correctly to a step.
@@ -151,8 +156,6 @@ documents those changes that are of interest to users and administrators.
     many handlers have been registered.
  -- Better debug messages when MaxSubmitJobs is hit.
  -- Docs - update squeue man page to describe all possible job states.
- -- Preserve node features when slurmctld daemons reconfigured including active
-    and available KNL features.
  -- Prevent orphaned step_extern steps when a job is cancelled while the
     prolog is still running.
 
