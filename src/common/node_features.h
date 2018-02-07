@@ -54,7 +54,7 @@ extern int node_features_g_count(void);
 extern int node_features_g_reconfig(void);
 
 /* Return TRUE if this (one) feature name is under this plugin's control */
-extern bool node_features_g_changible_feature(char *feature);
+extern bool node_features_g_changeable_feature(char *feature);
 
 /* Update active and available features on specified nodes, sets features on
  * all nodes is node_list is NULL */

@@ -75,6 +75,8 @@ documents those changes that are of interest to users and administrators.
     * Remove "job_id" field from task_p_slurmd_batch_request() function.
     * Remove "job_id" field from task_p_slurmd_launch_request() function.
     * Remove "job_id" field from task_p_slurmd_reserve_resources() function.
+ -- Change function name from node_features_p_changible_feature() to
+    node_features_p_changeable_feature in node_features plugin.
 
 * Changes in Slurm 17.11.4
 ==========================

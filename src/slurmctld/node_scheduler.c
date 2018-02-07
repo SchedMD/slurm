@@ -647,7 +647,7 @@ extern void find_feature_nodes(List feature_list, bool can_reboot)
 				bit_alloc(node_record_count);
 		}
 		if (can_reboot &&
-		    node_features_g_changible_feature(job_feat_ptr->name)) {
+		    node_features_g_changeable_feature(job_feat_ptr->name)) {
 			node_feat_ptr = list_find_first(avail_feature_list,
 							list_find_feature,
 							job_feat_ptr->name);
