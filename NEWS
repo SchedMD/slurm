@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Add fatal_abort() function to be able to get core dumps if we hit an
     "impossible" edge case.
  -- Link slurmd against all libraries that slurmstepd links to.
+ -- Fix limits enforce order when they're set at partition and other levels.
 
 * Changes in Slurm 17.11.3-2
 ==========================

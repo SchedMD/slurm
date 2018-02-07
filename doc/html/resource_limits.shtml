@@ -30,6 +30,13 @@ Consider the following example:</p>
 </ul>
 <p>The limits in effect will be MaxJobs=20 and MaxSubmitJobs=50.</p>
 
+<p>Note: The precedence order specified above is respected except for the
+following limits: Max[Time|Wall], [Min|Max]Nodes. For these limits, the
+Partition limit takes precedence over the rest, unless the job's QOS is has
+the respective PartitionTimeLimit and/or Partition[Max|Min]Nodes, which would
+reverse the precedence order.
+</p>
+
 <h2>Configuration</h2>
 
 <p>Scheduling policy information must be stored in a database

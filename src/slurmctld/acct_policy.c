@@ -895,10 +895,12 @@ static void _set_time_limit(uint32_t *time_limit, uint32_t part_max_time,
 			    uint32_t limit_max_time, uint16_t *limit_set_time)
 {
 	if ((*time_limit) == NO_VAL) {
-		if (part_max_time == INFINITE)
+		if (limit_max_time)
 			(*time_limit) = limit_max_time;
+		else if (part_max_time != INFINITE)
+			(*time_limit) = part_max_time;
 		else
-			(*time_limit) = MIN(limit_max_time, part_max_time);
+			(*time_limit) = INFINITE;
 
 		if (limit_set_time)
 			(*limit_set_time) = 1;
