@@ -101,6 +101,7 @@ strong_alias(log_oom,		slurm_log_oom);
 strong_alias(log_has_data,	slurm_log_has_data);
 strong_alias(log_flush,		slurm_log_flush);
 strong_alias(fatal,		slurm_fatal);
+strong_alias(fatal_abort,	slurm_fatal_abort);
 strong_alias(error,		slurm_error);
 strong_alias(info,		slurm_info);
 strong_alias(verbose,		slurm_verbose);
@@ -1124,6 +1125,21 @@ void fatal(const char *fmt, ...)
 	log_flush();
 
 	exit(1);
+}
+
+/*
+ * attempt to log message and exit()
+ */
+void fatal_abort(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	log_msg(LOG_LEVEL_FATAL, fmt, ap);
+	va_end(ap);
+	log_flush();
+
+	abort();
 }
 
 int error(const char *fmt, ...)

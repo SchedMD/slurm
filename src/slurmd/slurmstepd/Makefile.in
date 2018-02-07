@@ -167,6 +167,8 @@ am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
 am__EXTRA_slurmstepd_SOURCES_DIST = x11_forwarding.c x11_forwarding.h
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -498,22 +500,29 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir) $(SSH2_CPPFLAGS)
 depend_libs = \
 	$(top_builddir)/src/common/libdaemonize.la \
 	../common/libslurmd_common.o
 
-slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
-	$(DL_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
 
+# If slurmstepd_LDADD or slurmstepd_LDFLAGS change
+# make sure you alter the below depend_[ldadd|ldflags] to look identical in the
+# slurmd.  If these libs aren't available
+# on slurmstepd startup the slurmstepd will fail sliently and make debugging
+# rather difficult.  Making the slurmd link to them as well shouldn't increase
+# memory footprint and will fail way earlier and give the user a way to known
+# what is happening.
+depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
+depend_ldflags = $(HWLOC_LDFLAGS) $(SSH2_LDFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS) $(SSH2_CPPFLAGS)
+slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd)
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
 slurmstepd_SOURCES = slurmstepd.c slurmstepd.h mgr.c mgr.h task.c \
 	task.h slurmstepd_job.c slurmstepd_job.h io.c io.h ulimits.c \
 	ulimits.h pdebug.c pdebug.h pam_ses.c pam_ses.h req.c req.h \
 	multi_prog.c multi_prog.h step_terminate_monitor.c \
 	step_terminate_monitor.h $(am__append_1)
 @WITH_SLURM_X11_FALSE@EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(SSH2_LDFLAGS)
 slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 all: all-am
 
