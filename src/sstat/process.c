@@ -103,7 +103,7 @@ static void _aggregate_tres_usage_stats(slurmdb_stats_t *dest,
 	from_count = slurmdb_find_tres_count_in_string(from->tres_usage_out_max,
 						       tres_id);
 	if (from_count == INFINITE64)
-		dest_count = 0;
+		from_count = 0;
 	if (dest_count < from_count) {
 		tres_rec->count = from_count;
 		new_tres_str = slurmdb_make_tres_string(tres_list, flags);

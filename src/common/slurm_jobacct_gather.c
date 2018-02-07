@@ -151,7 +151,6 @@ static void _allocate_tres_usage(struct jobacctinfo *jobacct)
 static void _free_tres_usage(struct jobacctinfo *jobacct)
 {
 
-
 	if (jobacct) {
 		xfree(jobacct->tres_usage_in_max);
 		xfree(jobacct->tres_usage_in_tot);
@@ -1276,6 +1275,8 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 
 	if (alloc)
 		*jobacct = xmalloc(sizeof(struct jobacctinfo));
+	else
+		_free_tres_usage(*jobacct);
 
 	if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpack32(&uint32_tmp, buffer);

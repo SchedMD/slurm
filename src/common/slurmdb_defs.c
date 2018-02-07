@@ -95,6 +95,20 @@ static void _free_federation_rec_members(slurmdb_federation_rec_t *federation)
 	}
 }
 
+static void _free_stats(slurmdb_stats_t *stats)
+{
+	if (stats) {
+		xfree(stats->tres_usage_in_ave);
+		xfree(stats->tres_usage_in_max);
+		xfree(stats->tres_usage_in_max_nodeid);
+		xfree(stats->tres_usage_in_max_taskid);
+		xfree(stats->tres_usage_out_ave);
+		xfree(stats->tres_usage_out_max);
+		xfree(stats->tres_usage_out_max_nodeid);
+		xfree(stats->tres_usage_out_max_taskid);
+	}
+}
+
 static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 {
 	if (wckey) {
@@ -849,6 +863,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->nodes);
 		xfree(job->req_gres);
 		xfree(job->resv_name);
+		_free_stats(&job->stats);
 		FREE_NULL_LIST(job->steps);
 		xfree(job->system_comment);
 		xfree(job->tres_alloc_str);
@@ -923,6 +938,7 @@ extern void slurmdb_destroy_step_rec(void *object)
 	if (step) {
 		xfree(step->nodes);
 		xfree(step->pid_str);
+		_free_stats(&step->stats);
 		xfree(step->stepname);
 		xfree(step->tres_alloc_str);
 		xfree(step);
@@ -4192,6 +4208,7 @@ extern char *slurmdb_ave_tres_usage(char *tres_string, char *ave,
 	uint64_t count = (uint64_t) NO_VAL;
 	uint32_t flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REPLACE;
 	char *new_tres_str = NULL;
+	char *ret_tres_str = NULL;
 
 	if (ave == NULL)
 		ave = xstrdup_printf("%d=0", TRES_USAGE_DISK);
@@ -4202,10 +4219,11 @@ extern char *slurmdb_ave_tres_usage(char *tres_string, char *ave,
 	count = slurmdb_find_tres_count_in_string(tres_string, tres_id);
 	tres_rec->count = count / (uint64_t) tasks;
 	new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-	new_tres_str = slurmdb_combine_tres_strings(&ave, new_tres_str, flags);
+	ret_tres_str = slurmdb_combine_tres_strings(&ave, new_tres_str, flags);
+	xfree(new_tres_str);
 	FREE_NULL_LIST(tres_list);
 
-	return new_tres_str;
+	return ret_tres_str;
 }
 
 extern void slurmdb_destroy_stats_rec(void *object)
