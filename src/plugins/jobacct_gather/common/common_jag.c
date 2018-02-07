@@ -518,6 +518,10 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 		debug2("problem retrieving filesystem data");
 	}
 
+	if (acct_gather_interconnect_g_get_data(prec) < 0) {
+		debug2("problem retrieving interconnect data");
+	}
+
 	/* Remove shared data from rss */
 	if (no_share_data)
 		_remove_share_data(proc_stat_file, prec);
@@ -834,6 +838,13 @@ extern void print_jag_prec(jag_prec_t *prec)
 	     prec->num_reads[USAGE_FS_LUSTRE]);
 	info("usage_fs_num_writes \t%"PRIu64"",
 	     prec->num_writes[USAGE_FS_LUSTRE]);
+	info("usage_ic_read \t%"PRIu64"", prec->mb_read[USAGE_IC_OFED]);
+	info("usage_ic_written \t%"PRIu64"", prec->mb_written[USAGE_IC_OFED]);
+	info("usage_ic_num_reads \t%"PRIu64"",
+	     prec->num_reads[USAGE_IC_OFED]);
+	info("usage_ic_num_writes \t%"PRIu64"",
+	     prec->num_writes[USAGE_IC_OFED]);
+
 	info("usec \t%d", prec->usec);
 	info("vsize\t%"PRIu64"", prec->vsize);
 }

@@ -341,6 +341,7 @@ static bool _run_in_daemon(void)
  */
 extern int init(void)
 {
+
 	debug_flags = slurm_get_debug_flags();
 
 	return SLURM_SUCCESS;
@@ -351,8 +352,10 @@ extern int fini(void)
 	if (!_run_in_daemon())
 		return SLURM_SUCCESS;
 
-	if (srcport) {
+	if ((srcport) && (!(dataset_id < 0))) {
 		_update_node_interconnect();
+		mad_rpc_close_port(srcport);
+	} else if (srcport) {
 		mad_rpc_close_port(srcport);
 	}
 
@@ -431,7 +434,42 @@ extern void acct_gather_interconnect_p_conf_values(List *data)
 
 extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
 {
+	static acct_network_data_t starting;
 	int retval = SLURM_SUCCESS;
+	static bool first = true;
+	acct_network_data_t current;
+
+	slurm_mutex_lock(&ofed_lock);
+
+	if (_read_ofed_values() != SLURM_SUCCESS) {
+		error("%s: Cannot retrieve ic_ofed counters", __func__);
+		slurm_mutex_unlock(&ofed_lock);
+		return SLURM_FAILURE;
+	}
+
+	if (first) {
+		starting.packets_in = ofed_sens.total_rcvpkts;
+		starting.packets_out = ofed_sens.total_xmtpkts;
+		starting.size_in = (double)ofed_sens.total_rcvdata;
+		starting.size_out = (double)ofed_sens.total_xmtdata;
+		first = false;
+	}
+	/* Obtain the current values read from all lustre-xxxx directories */
+	current.packets_in = ofed_sens.total_rcvpkts;
+	current.packets_out = ofed_sens.total_xmtpkts;
+	current.size_in = (double)ofed_sens.total_rcvdata;
+	current.size_out = (double)ofed_sens.total_xmtdata;
+
+	prec->num_reads[USAGE_IC_OFED] =
+		(double)current.packets_in - (double)starting.packets_in;
+	prec->num_writes[USAGE_IC_OFED] =
+		(double)current.packets_out - (double)starting.packets_out;
+	prec->mb_read[USAGE_IC_OFED] =
+		(current.size_in - starting.size_in) / (1 << 20);
+	prec->mb_written[USAGE_IC_OFED] =
+		(current.size_out - starting.size_out) / (1 << 20);
+
+	slurm_mutex_unlock(&ofed_lock);
 
 	return retval;
 }
