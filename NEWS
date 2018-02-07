@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.4
 ==========================
+ -- Add fatal_abort() function to be able to get core dumps if we hit an
+    "impossible" edge case.
 
 * Changes in Slurm 17.11.3-2
 ==========================
