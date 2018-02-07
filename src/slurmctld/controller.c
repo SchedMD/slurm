@@ -1626,6 +1626,8 @@ static int _init_tres(void)
 			tres_rec->id = TRES_USAGE_DISK;
 		else if (!xstrcasecmp(temp_char, "usage_fs_lustre"))
 			tres_rec->id = TRES_USAGE_FS_LUSTRE;
+		else if (!xstrcasecmp(temp_char, "usage_ic_ofed"))
+			tres_rec->id = TRES_USAGE_IC_OFED;
 		else if (!xstrncasecmp(temp_char, "bb/", 3)) {
 			tres_rec->type[2] = '\0';
 			tres_rec->name = xstrdup(temp_char+3);

@@ -867,6 +867,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			"(%ld, %d, 0, 'billing'), "
 			"(%ld, %d, 0, 'usage_disk'), "
 			"(%ld, %d, 0, 'usage_fs_lustre'), "
+			"(%ld, %d, 0, 'usage_ic_ofed'), "
 			"(%ld, %d, 1, 'dynamic_offset') "
 			"on duplicate key update deleted=VALUES(deleted), type=VALUES(type);",
 			tres_table,
@@ -877,6 +878,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			now, TRES_BILLING,
 			now, TRES_USAGE_DISK,
 			now, TRES_USAGE_FS_LUSTRE,
+			now, TRES_USAGE_IC_OFED,
 			now, TRES_OFFSET);
 		if (debug_flags & DEBUG_FLAG_DB_QOS)
 			DB_DEBUG(mysql_conn->conn, "%s", query);

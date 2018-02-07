@@ -431,7 +431,7 @@ static void _jobacctinfo_2_stats_tres_usage(slurmdb_stats_t *stats,
 extern char *make_tres_usage_str_from_array(uint64_t *tres_cnt)
 {
 	int tres_usage_id[TRES_USAGE_CNT] = {TRES_USAGE_DISK,
-			  TRES_USAGE_FS_LUSTRE};
+			  TRES_USAGE_FS_LUSTRE, TRES_USAGE_IC_OFED};
 	int i;
 	char *tres_str = NULL;
 

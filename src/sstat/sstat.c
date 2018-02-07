@@ -219,6 +219,16 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 			slurmdb_ave_tres_usage(step.stats.tres_usage_out_ave,
 			ave_usage_out, TRES_USAGE_FS_LUSTRE, tot_tasks);
 		ave_usage_out = xstrdup(tmp_string);
+		tmp_string = slurmdb_ave_tres_usage(
+			step.stats.tres_usage_in_ave, ave_usage_in,
+			TRES_USAGE_IC_OFED, tot_tasks);
+		ave_usage_in = xstrdup(tmp_string);
+		xfree(tmp_string);
+		tmp_string = slurmdb_ave_tres_usage(
+			step.stats.tres_usage_out_ave, ave_usage_out,
+			TRES_USAGE_IC_OFED, tot_tasks);
+		ave_usage_out = xstrdup(tmp_string);
+		xfree(tmp_string);
 		xfree(tmp_string);
 		xfree(step.stats.tres_usage_in_ave);
 		step.stats.tres_usage_in_ave = xstrdup(ave_usage_in);

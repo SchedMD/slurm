@@ -1366,6 +1366,16 @@ extern void do_list(void)
 				TRES_USAGE_FS_LUSTRE, cnt);
 			ave_usage_out = xstrdup(tmp_string);
 			xfree(tmp_string);
+			tmp_string = slurmdb_ave_tres_usage(
+				job->stats.tres_usage_in_ave, ave_usage_in,
+				TRES_USAGE_IC_OFED, cnt);
+			ave_usage_in = xstrdup(tmp_string);
+			xfree(tmp_string);
+			tmp_string = slurmdb_ave_tres_usage(
+				job->stats.tres_usage_out_ave, ave_usage_out,
+				TRES_USAGE_IC_OFED, cnt);
+			ave_usage_out = xstrdup(tmp_string);
+			xfree(tmp_string);
 			xfree(job->stats.tres_usage_in_ave);
 			xfree(job->stats.tres_usage_out_ave);
 			job->stats.tres_usage_in_ave = xstrdup(ave_usage_in);

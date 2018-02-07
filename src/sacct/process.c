@@ -192,4 +192,5 @@ void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
 
 	_aggregate_tres_usage_stats(dest, from, TRES_USAGE_DISK);
 	_aggregate_tres_usage_stats(dest, from, TRES_USAGE_FS_LUSTRE);
+	_aggregate_tres_usage_stats(dest, from, TRES_USAGE_IC_OFED);
 }
