@@ -425,3 +425,9 @@ extern void acct_gather_filesystem_p_conf_values(List *data)
 {
 	return;
 }
+
+extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
+{
+	int retval = SLURM_SUCCESS;
+	return retval;
+}
