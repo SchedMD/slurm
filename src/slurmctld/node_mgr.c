@@ -1702,11 +1702,10 @@ int update_node ( update_node_msg_t * update_node_msg )
  */
 extern void restore_node_features(int recover)
 {
-	int i, node_features_plugin_cnt;
+	int i;
 	struct node_record *node_ptr;
 
-	node_features_plugin_cnt = node_features_g_count();
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	     i++, node_ptr++) {
 		if (node_ptr->weight != node_ptr->config_ptr->weight) {
 			error("Node %s Weight(%u) differ from slurm.conf",
@@ -1721,13 +1720,16 @@ extern void restore_node_features(int recover)
 		}
 
 		if (xstrcmp(node_ptr->config_ptr->feature, node_ptr->features)){
-			if (node_features_plugin_cnt == 0) {
-				error("Node %s Features(%s) differ from slurm.conf",
-				      node_ptr->name, node_ptr->features);
-			}
+			error("Node %s Features(%s) differ from slurm.conf",
+			      node_ptr->name, node_ptr->features);
 			if (recover == 2) {
 				_update_node_avail_features(node_ptr->name,
 							    node_ptr->features);
+			} else {
+				xfree(node_ptr->features);
+				node_ptr->features = xstrdup(node_ptr->
+							     config_ptr->
+							     feature);
 			}
 		}
 
