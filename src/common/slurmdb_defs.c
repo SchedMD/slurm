@@ -3515,13 +3515,14 @@ extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
 
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list, int spec_unit,
-	uint32_t convert_flags)
+	uint32_t convert_flags, char *nodes)
 {
 	char *tres_str = NULL;
 	char *tmp_str = tres_in;
 	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
+	char *node_name = NULL;
 
 	if (!full_tres_list || !tmp_str || !tmp_str[0]
 	    || tmp_str[0] < '0' || tmp_str[0] > '9')
@@ -3571,6 +3572,10 @@ extern char *slurmdb_make_tres_string_from_simple(
 						 sizeof(outbuf), UNIT_MEGA,
 						 spec_unit, convert_flags);
 				xstrfmtcat(tres_str, "%s", outbuf);
+			} else if (nodes) {
+				node_name = find_hostname(count, nodes);
+				xstrfmtcat(tres_str, "%s", node_name);
+				xfree(node_name);
 			} else {
 				xstrfmtcat(tres_str, "%"PRIu64, count);
 			}

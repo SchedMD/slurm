@@ -592,7 +592,7 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 
 				tmp_char = slurmdb_make_tres_string_from_simple(
 					cluster->tres_str, g_tres_list, NO_VAL,
-					CONVERT_NUM_UNIT_EXACT);
+					CONVERT_NUM_UNIT_EXACT, NULL);
 				field->print_routine(field, tmp_char,
 						     (curr_inx == field_count));
 				xfree(tmp_char);

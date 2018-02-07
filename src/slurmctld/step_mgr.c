@@ -3680,7 +3680,7 @@ extern void step_set_alloc_tres(
 		step_ptr->tres_fmt_alloc_str =
 			slurmdb_make_tres_string_from_simple(
 				step_ptr->tres_alloc_str, assoc_mgr_tres_list,
-				NO_VAL, CONVERT_NUM_UNIT_EXACT);
+				NO_VAL, CONVERT_NUM_UNIT_EXACT, NULL);
 
 		if (!assoc_mgr_locked)
 			assoc_mgr_unlock(&locks);

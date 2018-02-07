@@ -230,7 +230,8 @@ extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
 
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list, int spec_unit,
-	uint32_t convert_flags);
+	uint32_t convert_flags, char *nodes);
+
 /* Used to combine 2 different TRES strings together
  *
  * IN/OUT: tres_str_old - original simple tres string
