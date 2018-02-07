@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Requeue jobs allocated to nodes requested to DRAIN or FAIL if nodes are
     POWER_SAVE or POWER_UP, preventing jobs to start on NHC-failed nodes.
  -- Make MAINT and OVERLAP resvervation flags order agnostic on overlap test.
+ -- Preserve node features when slurmctld daemons reconfigured including active
+    and available KNL features.
 
 * Changes in Slurm 17.11.3-2
 ==========================

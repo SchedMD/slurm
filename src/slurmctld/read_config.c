@@ -125,11 +125,14 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
 static int  _reset_node_bitmaps(void *x, void *arg);
 static int  _restore_job_dependencies(void);
+
 static int  _restore_node_state(int recover,
 				struct node_record *old_node_table_ptr,
 				int old_node_record_count);
 static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				uint16_t flags);
+static void _set_features(struct node_record *old_node_table_ptr,
+			  int old_node_record_count, int recover);
 static void _stat_slurm_dirs(void);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(bool reconfig);
@@ -1032,9 +1035,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		old_node_table_ptr    = node_record_table_ptr;
 		for (i=0, node_ptr=old_node_table_ptr; i<node_record_count;
 		     i++, node_ptr++) {
-			xfree(node_ptr->features);
-			node_ptr->features = xstrdup(
-				node_ptr->config_ptr->feature);
 			/* Store the original configured CPU count somewhere
 			 * (port is reused here for that purpose) so we can
 			 * report changes in its configuration. */
@@ -1146,6 +1146,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (reconfig) {		/* Preserve state from memory */
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");
+			_set_features(old_node_table_ptr, old_node_record_count,
+				      recover);
 			rc = _restore_node_state(recover, old_node_table_ptr,
 						 old_node_record_count);
 			error_code = MAX(error_code, rc);  /* not fatal */
@@ -1214,6 +1216,11 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	init_requeue_policy();
 
+	if (!reconfig) {
+		_set_features(node_record_table_ptr, node_record_count,
+			      recover);
+	}
+
 	/* NOTE: Run restore_node_features before _restore_job_dependencies */
 	restore_node_features(recover);
 
@@ -1225,17 +1232,10 @@ int read_slurm_conf(int recover, bool reconfig)
 				      * and preceed build_features_list_*() */
 		fatal("_build_bitmaps failure");
 
-	if (node_features_g_count() > 0) {
-		build_feature_list_ne();
-	} else {
-		/* Copy node's available_features to active_features */
-		for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
-		     i++, node_ptr++) {
-			xfree(node_ptr->features_act);
-			node_ptr->features_act = xstrdup(node_ptr->features);
-		}
+	if (node_features_g_count() == 0)
 		build_feature_list_eq();
-	}
+	else
+		build_feature_list_ne();
 
 	_validate_pack_jobs();
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
@@ -1526,7 +1526,119 @@ static void _gres_reconfig(bool reconfig)
 		}
 	}
 }
+/*
+ * Configure node features based on old records if we are in a reconfig,
+ * or from slurm.conf if we are starting slurmctld and reading config.
+ * If recover is 2, we will just copy what we had previously.
+ * old_node_table_ptr IN - Previous nodes information
+ * old_node_record_count IN - Count of previous nodes information
+ * recover IN - replace node features data with latest available information
+ *              depending upon value.
+ */
+static void _set_features(struct node_record *old_node_table_ptr,
+			  int old_node_record_count, int recover)
+{
+	struct node_record *node_ptr, *old_node_ptr;
+	char *tmp, *tok, *sep;
+	int i;
 
+	for (i = 0, old_node_ptr = old_node_table_ptr;
+	     i < old_node_record_count;
+	     i++, old_node_ptr++) {
+
+		node_ptr  = find_node_record(old_node_ptr->name);
+
+		if (node_ptr == NULL)
+			continue;
+
+		xfree(node_ptr->features);
+		xfree(node_ptr->features_act);
+
+		if (recover == 2) {
+			node_ptr->features = xstrdup(old_node_ptr->features);
+			node_ptr->features_act =
+				xstrdup(old_node_ptr->features_act);
+			continue;
+		}
+
+		/* Copy slurm.conf features to this node_ptr */
+		node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
+
+		if (node_features_g_count() == 0) {
+			node_ptr->features_act = xstrdup(node_ptr->features);
+			continue;
+		}
+
+		/* If we are here, there's a node_features plugin active */
+
+		/*
+		 * The subset of non-plugin-controlled features available found
+		 * in slurm.conf for this node are copied into features_act.
+		 * This does a reset of the active features for this node.
+		 */
+		if (node_ptr->features != NULL) {
+			char *save_ptr = NULL;
+			sep = "";
+			tmp = xstrdup(node_ptr->features);
+			tok = strtok_r(tmp, ",", &save_ptr);
+			while (tok) {
+				if (!node_features_g_changible_feature(tok)) {
+					xstrfmtcat(node_ptr->features_act,
+						   "%s%s", sep, tok);
+					sep = ",";
+				}
+				tok = strtok_r(NULL, ",", &save_ptr);
+			}
+			xfree(tmp);
+		}
+
+		/*
+		 * The subset of plugin-controlled features_available
+		 * and features_active found in the old node_ptr for this node
+		 * are copied into new node respective fields.
+		 * This will make that KNL modes are preserved while doing a
+		 * reconfigure. Otherwise, we should wait until node is
+		 * registered to get KNL available and active features.
+		 */
+		if (old_node_ptr->features != NULL) {
+			char *save_ptr = NULL;
+			if (node_ptr->features)
+				sep = ",";
+			else
+				sep = "";
+			tmp = xstrdup(old_node_ptr->features);
+			tok = strtok_r(tmp, ",", &save_ptr);
+			while (tok) {
+				if (node_features_g_changible_feature(tok)) {
+					xstrfmtcat(node_ptr->features,
+						   "%s%s", sep, tok);
+					sep = ",";
+				}
+				tok = strtok_r(NULL, ",", &save_ptr);
+			}
+			xfree(tmp);
+		}
+
+		if (old_node_ptr->features_act != NULL) {
+			char *save_ptr = NULL;
+			if (node_ptr->features_act)
+				sep = ",";
+			else
+				sep = "";
+			tmp = xstrdup(old_node_ptr->features_act);
+			tok = strtok_r(tmp, ",", &save_ptr);
+			while (tok) {
+				if (node_features_g_changible_feature(tok)) {
+					xstrfmtcat(node_ptr->features_act,
+						   "%s%s", sep, tok);
+					sep = ",";
+				}
+				tok = strtok_r(NULL, ",", &save_ptr);
+			}
+			xfree(tmp);
+		}
+	}
+}
 /* Restore node state and size information from saved records which match
  * the node registration message. If a node was re-configured to be down or
  * drained, we set those states. We only recover a node's Features if
