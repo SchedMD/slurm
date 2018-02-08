@@ -378,6 +378,7 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		debug2("Processing RPC: REQUEST_NODE_REGISTRATION_STATUS");
+		get_reg_resp = 1;
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		rc = _rpc_ping(msg);
 		last_slurmctld_msg = time(NULL);

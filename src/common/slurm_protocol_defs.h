@@ -160,6 +160,8 @@
 #define YEAR_SECONDS (365 * 24 * 60 * 60)
 
 #define SLURMD_REG_FLAG_STARTUP  0x0001
+#define SLURMD_REG_FLAG_RESP     0x0002
+
 /* These defines have to be here to avoid circular dependancy with
  * switch.h
  */

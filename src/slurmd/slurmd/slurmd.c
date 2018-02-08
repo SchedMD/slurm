@@ -66,6 +66,7 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
@@ -126,6 +127,7 @@
 
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
+bool get_reg_resp = 1;
 slurmd_conf_t * conf = NULL;
 int fini_job_cnt = 0;
 uint32_t *fini_job_id = NULL;
@@ -554,14 +556,60 @@ cleanup:
 	return NULL;
 }
 
+static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
+{
+	int rc;
+	slurm_node_reg_resp_msg_t *resp = NULL;
+
+	switch (resp_msg->msg_type) {
+	case RESPONSE_NODE_REGISTRATION:
+		resp = (slurm_node_reg_resp_msg_t *) resp_msg->data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg->data)->return_code;
+		slurm_free_return_code_msg(resp_msg->data);
+		if (rc)
+			slurm_seterrno(rc);
+		resp = NULL;
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+
+	if (resp) {
+		assoc_mgr_lock_t locks = {
+			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+			WRITE_LOCK, NO_LOCK, NO_LOCK };
+		/*
+		 * We don't care about the assoc/qos locks
+		 * assoc_mgr_post_tres_list is requesting as those lists
+		 * don't exist here.
+		 */
+		assoc_mgr_lock(&locks);
+		assoc_mgr_post_tres_list(resp->tres_list);
+		debug("%s: slurmctld sent back %u TRES.",
+		      __func__, g_tres_count);
+		assoc_mgr_unlock(&locks);
+		/* assoc_mgr_post_tres_list will destroy the list */
+		resp->tres_list = NULL;
+	}
+}
+
 extern int
 send_registration_msg(uint32_t status, bool startup)
 {
-	int rc, ret_val = SLURM_SUCCESS;
+	int ret_val = SLURM_SUCCESS;
 	slurm_node_registration_status_msg_t *msg =
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
+
 	if (startup)
 		msg->flags |= SLURMD_REG_FLAG_STARTUP;
+	if (get_reg_resp) {
+		msg->flags |= SLURMD_REG_FLAG_RESP;
+		get_reg_resp = false;
+	}
 
 	_fill_registration_msg(msg);
 	msg->status  = status;
@@ -573,24 +621,36 @@ send_registration_msg(uint32_t status, bool startup)
 		req->msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 		req->data     = msg;
 
-		msg_aggr_add_msg(req, 1, NULL);
+		msg_aggr_add_msg(req, 1, _handle_node_reg_resp);
 	} else {
 		slurm_msg_t req;
+		slurm_msg_t resp_msg;
+
 		slurm_msg_t_init(&req);
+		slurm_msg_t_init(&resp_msg);
+
 		req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 		req.data     = msg;
 
-		if (slurm_send_recv_controller_rc_msg(&req, &rc,
-						working_cluster_rec) < 0) {
+		if (slurm_send_recv_controller_msg(&req, &resp_msg,
+						   working_cluster_rec) < 0) {
 			error("Unable to register: %m");
 			ret_val = SLURM_FAILURE;
+			goto fail;
 		}
 		slurm_free_node_registration_status_msg(msg);
+
+		_handle_node_reg_resp(&resp_msg);
+		if (errno) {
+			ret_val = errno;
+			errno = 0;
+		}
+
 	}
 
 	if (ret_val == SLURM_SUCCESS)
 		sent_reg_time = time(NULL);
-
+fail:
 	return ret_val;
 }
 
