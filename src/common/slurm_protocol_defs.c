@@ -2311,6 +2311,98 @@ extern char *job_state_string_compact(uint32_t inx)
 	}
 }
 
+/*
+ * job_state_string_complete - build a string describing the job state
+ *
+ * IN: state - job state
+ * RET string representation of the job state;
+ * NOTE: the caller must call xfree() on the RET value to free memory
+ */
+extern char *job_state_string_complete(uint32_t state)
+{
+	/* Malloc space ahead of time to avoid realloc inside of xstrcat. */
+	char *state_str = xmalloc(100);
+
+	/* Process JOB_STATE_BASE */
+	switch (state & JOB_STATE_BASE) {
+	case JOB_PENDING:
+		xstrcat(state_str, "PENDING");
+		break;
+	case JOB_RUNNING:
+		xstrcat(state_str, "RUNNING");
+		break;
+	case JOB_SUSPENDED:
+		xstrcat(state_str, "SUSPENDED");
+		break;
+	case JOB_COMPLETE:
+		xstrcat(state_str, "COMPLETED");
+		break;
+	case JOB_CANCELLED:
+		xstrcat(state_str, "CANCELLED");
+		break;
+	case JOB_FAILED:
+		xstrcat(state_str, "FAILED");
+		break;
+	case JOB_TIMEOUT:
+		xstrcat(state_str, "TIMEOUT");
+		break;
+	case JOB_NODE_FAIL:
+		xstrcat(state_str, "NODE_FAIL");
+		break;
+	case JOB_PREEMPTED:
+		xstrcat(state_str, "PREEMPTED");
+		break;
+	case JOB_BOOT_FAIL:
+		xstrcat(state_str, "BOOT_FAIL");
+		break;
+	case JOB_DEADLINE:
+		xstrcat(state_str, "DEADLINE");
+		break;
+	case JOB_OOM:
+		xstrcat(state_str, "OUT_OF_MEMORY");
+		break;
+	default:
+		xstrcat(state_str, "?");
+		break;
+	}
+
+	/* Process JOB_STATE_FLAGS */
+	if (state & JOB_LAUNCH_FAILED)
+		xstrcat(state_str, ",LAUNCH_FAILED");
+	if (state & JOB_UPDATE_DB)
+		xstrcat(state_str, ",UPDATE_DB");
+	if (state & JOB_COMPLETING)
+		xstrcat(state_str, ",COMPLETING");
+	if (state & JOB_CONFIGURING)
+		xstrcat(state_str, ",CONFIGURING");
+	if (state & JOB_POWER_UP_NODE)
+		xstrcat(state_str, ",POWER_UP_NODE");
+	if (state & JOB_RECONFIG_FAIL)
+		xstrcat(state_str, ",RECONFIG_FAIL");
+	if (state & JOB_RESIZING)
+		xstrcat(state_str, ",RESIZING");
+	if (state & JOB_REQUEUE)
+		xstrcat(state_str, ",REQUEUED");
+	if (state & JOB_REQUEUE_FED)
+		xstrcat(state_str, ",REQUEUE_FED");
+	if (state & JOB_REQUEUE_HOLD)
+		xstrcat(state_str, ",REQUEUE_HOLD");
+	if (state & JOB_SPECIAL_EXIT)
+		xstrcat(state_str, ",SPECIAL_EXIT");
+	if (state & JOB_STOPPED)
+		xstrcat(state_str, ",STOPPED");
+	if (state & JOB_REVOKED)
+		xstrcat(state_str, ",REVOKED");
+	if (state & JOB_RESV_DEL_HOLD)
+		xstrcat(state_str, ",RESV_DEL_HOLD");
+	if (state & JOB_SIGNALING)
+		xstrcat(state_str, ",SIGNALING");
+	if (state & JOB_STAGE_OUT)
+		xstrcat(state_str, ",STAGE_OUT");
+
+	return state_str;
+}
+
 static bool _job_name_test(uint32_t state_num, const char *state_name)
 {
 	if (!xstrcasecmp(state_name, job_state_string(state_num)) ||

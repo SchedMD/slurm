@@ -1516,6 +1516,8 @@ extern bool job_state_qos_grp_limit(enum job_state_reason state_reason);
 extern char *job_share_string(uint16_t shared);
 extern char *job_state_string(uint32_t inx);
 extern char *job_state_string_compact(uint32_t inx);
+/* Caller must xfree() the return value */
+extern char *job_state_string_complete(uint32_t state);
 extern uint32_t job_state_num(const char *state_name);
 extern char *node_state_string(uint32_t inx);
 extern char *node_state_string_compact(uint32_t inx);

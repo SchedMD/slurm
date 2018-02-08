@@ -17558,29 +17558,44 @@ extern char *jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
 extern char *
 jobid2str(struct job_record *job_ptr, char *buf, int buf_size)
 {
+	char *state_str = NULL;
 
 	if (job_ptr == NULL)
 		return "jobid2str: Invalid job_ptr argument";
 	if (buf == NULL)
 		return "jobid2str: Invalid buf argument";
 
+	/* Also print job state as a string if log level is at least debug */
+	if (slurmctld_conf.slurmctld_debug >= LOG_LEVEL_DEBUG) {
+		state_str = job_state_string_complete(job_ptr->job_state);
+		xstrcat(state_str, ")");
+	}
+
 	if (job_ptr->pack_job_id) {
-		snprintf(buf, buf_size, "JobID=%u+%u(%u) State=0x%x NodeCnt=%u",
+		snprintf(buf, buf_size, "JobID=%u+%u(%u) State=0x%x%s%s NodeCnt=%u",
 			job_ptr->pack_job_id, job_ptr->pack_job_offset,
-			job_ptr->job_id, job_ptr->job_state, job_ptr->node_cnt);
+			job_ptr->job_id, job_ptr->job_state,
+			state_str ? "(" : "", state_str ? state_str : "",
+			job_ptr->node_cnt);
 	} else if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
-		snprintf(buf, buf_size, "JobID=%u_* State=0x%x NodeCnt=%u",
+		snprintf(buf, buf_size, "JobID=%u_* State=0x%x%s%s NodeCnt=%u",
 			job_ptr->array_job_id, job_ptr->job_state,
+			state_str ? "(" : "", state_str ? state_str : "",
 			job_ptr->node_cnt);
 	} else if (job_ptr->array_task_id == NO_VAL) {
-		snprintf(buf, buf_size, "JobID=%u State=0x%x NodeCnt=%u",
+		snprintf(buf, buf_size, "JobID=%u State=0x%x%s%s NodeCnt=%u",
 			job_ptr->job_id, job_ptr->job_state,
+			state_str ? "(" : "", state_str ? state_str : "",
 			job_ptr->node_cnt);
 	} else {
-		snprintf(buf, buf_size, "JobID=%u_%u(%u) State=0x%x NodeCnt=%u",
+		snprintf(buf, buf_size, "JobID=%u_%u(%u) State=0x%x%s%s NodeCnt=%u",
 			job_ptr->array_job_id, job_ptr->array_task_id,
-			job_ptr->job_id, job_ptr->job_state, job_ptr->node_cnt);
+			job_ptr->job_id, job_ptr->job_state,
+			state_str ? "(" : "", state_str ? state_str : "",
+			job_ptr->node_cnt);
 	}
+
+	xfree(state_str);
 
 	return buf;
 }
