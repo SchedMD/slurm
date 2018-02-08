@@ -3564,10 +3564,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 				   slurmdbd_msg_type_t type,
 				   Buf buffer)
 {
-	uint32_t count = 0;
-	uint32_t header_position;
-	ListIterator itr = NULL;
-	void *object = NULL;
+	int rc;
 	void (*my_function) (void *object, uint16_t rpc_version, Buf buffer);
 
 	switch (type) {
@@ -3642,30 +3639,9 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 		return;
 	}
 
-	if (msg->my_list) {
-		header_position = get_buf_offset(buffer);
-		count = list_count(msg->my_list);
-		pack32(count, buffer);
-	} else {
-		// to let user know there wasn't a list (error)
-		pack32(NO_VAL, buffer);
-	}
-
-	if (count) {
-		itr = list_iterator_create(msg->my_list);
-		while ((object = list_next(itr))) {
-			(*(my_function))(object, rpc_version, buffer);
-			if (size_buf(buffer) > REASONABLE_BUF_SIZE) {
-				error("%s: size limit exceeded", __func__);
-				/* rewind buffer, pack NO_VAL as count instead */
-				set_buf_offset(buffer, header_position);
-				pack32(NO_VAL, buffer);
-				msg->return_code = ESLURM_RESULT_TOO_LARGE;
-				break;
-			}
-		}
-		list_iterator_destroy(itr);
-	}
+	if ((rc = slurm_pack_list(msg->my_list, my_function,
+				  buffer, rpc_version)) != SLURM_SUCCESS)
+		msg->return_code = rc;
 
 	pack32(msg->return_code, buffer);
 }
@@ -3673,10 +3649,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 				    slurmdbd_msg_type_t type, Buf buffer)
 {
-	int i;
-	uint32_t count;
 	dbd_list_msg_t *msg_ptr = NULL;
-	void *object = NULL;
 	int (*my_function) (void **object, uint16_t rpc_version, Buf buffer);
 	void (*my_destroy) (void *object);
 
@@ -3773,21 +3746,9 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	msg_ptr = xmalloc(sizeof(dbd_list_msg_t));
 	*msg = msg_ptr;
 
-	safe_unpack32(&count, buffer);
-	if (count != NO_VAL) {
-		/*
-		 * Build the list for zero or more objects. If NO_VAL
-		 * was packed this indicates an error, and no list is
-		 * created.
-		 */
-		msg_ptr->my_list = list_create((*(my_destroy)));
-		for(i=0; i<count; i++) {
-			if (((*(my_function))(&object, rpc_version, buffer))
-			   == SLURM_ERROR)
-				goto unpack_error;
-			list_append(msg_ptr->my_list, object);
-		}
-	}
+	if (slurm_unpack_list(&msg_ptr->my_list, my_function, my_destroy,
+			      buffer, rpc_version) != SLURM_SUCCESS)
+		goto unpack_error;
 
 	safe_unpack32(&msg_ptr->return_code, buffer);
 
