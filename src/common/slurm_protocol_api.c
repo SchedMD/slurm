@@ -968,7 +968,7 @@ static int _tres_weight_item(double *weights, char *item_str)
 	return SLURM_SUCCESS;
 }
 
-/* slurm_get_priority_weight_tres_array
+/* slurm_get_tres_weight_array
  * IN weights_str - string of tres and weights to be parsed.
  * IN tres_cnt - count of how many tres' are on the system (e.g.
  * 		slurmctld_tres_cnt).
