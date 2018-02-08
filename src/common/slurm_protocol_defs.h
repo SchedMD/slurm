@@ -203,6 +203,7 @@ typedef enum {
 	REQUEST_LICENSE_INFO,
 	RESPONSE_LICENSE_INFO,
 	REQUEST_SET_FS_DAMPENING_FACTOR,
+	RESPONSE_NODE_REGISTRATION,
 
 	DBD_MESSAGES_START = 1400, /* We can't replace this with
 				    * REQUEST_PERSIST_INIT since DBD_INIT is
@@ -1235,6 +1236,10 @@ typedef struct slurm_node_registration_status_msg {
 	char *version;
 } slurm_node_registration_status_msg_t;
 
+typedef struct slurm_node_reg_resp_msg {
+	List tres_list;
+} slurm_node_reg_resp_msg_t;
+
 typedef struct requeue_msg {
 	uint32_t job_id;	/* slurm job ID (number) */
 	char *   job_id_str;	/* slurm job ID (string) */
@@ -1374,6 +1379,8 @@ extern void slurm_free_event_log_msg(slurm_event_log_msg_t * msg);
 extern void
 slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
 					msg);
+extern void slurm_free_node_reg_resp_msg(
+	slurm_node_reg_resp_msg_t *msg);
 
 extern void slurm_free_job_info(job_info_t * job);
 extern void slurm_free_job_info_members(job_info_t * job);

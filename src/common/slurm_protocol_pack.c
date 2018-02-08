@@ -466,6 +466,11 @@ static int _unpack_job_script_msg(char **msg, Buf buffer,
 static int _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer,
 				uint16_t protocol_version);
 
+static void _pack_node_reg_resp(slurm_node_reg_resp_msg_t *msg,
+				Buf buffer, uint16_t protocol_version);
+static int _unpack_node_reg_resp(slurm_node_reg_resp_msg_t **msg,
+				 Buf buffer, uint16_t protocol_version);
+
 static void _pack_last_update_msg(last_update_msg_t * msg, Buf buffer,
 				  uint16_t protocol_version);
 static int _unpack_last_update_msg(last_update_msg_t ** msg, Buf buffer,
@@ -1006,6 +1011,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_JOB_SBCAST_CRED:
 		_pack_step_alloc_info_msg((step_alloc_info_msg_t *) msg->data,
 					  buffer, msg->protocol_version);
+		break;
+	case RESPONSE_NODE_REGISTRATION:
+		_pack_node_reg_resp(
+			(slurm_node_reg_resp_msg_t *)msg->data,
+			buffer, msg->protocol_version);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case REQUEST_RECONFIGURE:
@@ -1715,6 +1725,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_step_alloc_info_msg((step_alloc_info_msg_t **) &
 						 (msg->data), buffer,
 						 msg->protocol_version);
+		break;
+	case RESPONSE_NODE_REGISTRATION:
+		rc = _unpack_node_reg_resp(
+			(slurm_node_reg_resp_msg_t **)&msg->data,
+			buffer, msg->protocol_version);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case REQUEST_RECONFIGURE:
@@ -9790,6 +9805,56 @@ _unpack_step_alloc_info_msg(step_alloc_info_msg_t **
 unpack_error:
 	slurm_free_step_alloc_info_msg(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_node_reg_resp(
+	slurm_node_reg_resp_msg_t *msg,
+	Buf buffer, uint16_t protocol_version)
+{
+	List pack_list;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		if (msg && msg->tres_list)
+			pack_list = msg->tres_list;
+		else
+			pack_list = assoc_mgr_tres_list;
+
+		if (pack_list == assoc_mgr_tres_list)
+			assoc_mgr_lock(&locks);
+
+		(void)slurm_pack_list(pack_list,
+				      slurmdb_pack_tres_rec, buffer,
+				      protocol_version);
+
+		if (pack_list == assoc_mgr_tres_list)
+			assoc_mgr_unlock(&locks);
+	}
+}
+
+static int _unpack_node_reg_resp(
+	slurm_node_reg_resp_msg_t **msg,
+	Buf buffer, uint16_t protocol_version)
+{
+	slurm_node_reg_resp_msg_t *msg_ptr;
+
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		xassert(msg);
+		msg_ptr = xmalloc(sizeof(slurm_node_reg_resp_msg_t));
+		*msg = msg_ptr;
+		if (slurm_unpack_list(&msg_ptr->tres_list,
+				      slurmdb_unpack_tres_rec,
+				      slurmdb_destroy_tres_rec, buffer,
+				      protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_reg_resp_msg(msg_ptr);
 	return SLURM_ERROR;
 }
 

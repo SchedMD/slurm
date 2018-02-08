@@ -1070,6 +1070,16 @@ extern void slurm_free_node_registration_status_msg(
 	}
 }
 
+extern void slurm_free_node_reg_resp_msg(
+	slurm_node_reg_resp_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	FREE_NULL_LIST(msg->tres_list);
+	xfree(msg);
+}
+
 extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg)
 {
 	if (msg) {
@@ -4264,6 +4274,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_ACCT_GATHER_UPDATE:
 		slurm_free_acct_gather_node_resp_msg(data);
+		break;
+	case RESPONSE_NODE_REGISTRATION:
+		slurm_free_node_reg_resp_msg(data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case MESSAGE_NODE_REGISTRATION_STATUS:
