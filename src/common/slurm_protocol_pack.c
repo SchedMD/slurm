@@ -4588,6 +4588,86 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern int slurm_pack_list(List send_list,
+			   void (*pack_function) (void *object,
+						  uint16_t protocol_version,
+						  Buf buffer),
+			   Buf buffer, uint16_t protocol_version)
+{
+	uint32_t count = 0;
+	uint32_t header_position;
+	int rc = SLURM_SUCCESS;
+
+	if (!send_list) {
+		// to let user know there wasn't a list (error)
+		pack32(NO_VAL, buffer);
+		return rc;
+	}
+
+	header_position = get_buf_offset(buffer);
+
+	count = list_count(send_list);
+	pack32(count, buffer);
+
+	if (count) {
+		ListIterator itr = list_iterator_create(send_list);
+		void *object = NULL;
+		while ((object = list_next(itr))) {
+			(*(pack_function))(object, protocol_version, buffer);
+			if (size_buf(buffer) > REASONABLE_BUF_SIZE) {
+				error("%s: size limit exceeded", __func__);
+				/*
+				 * rewind buffer, pack NO_VAL as count instead
+				 */
+				set_buf_offset(buffer, header_position);
+				pack32(NO_VAL, buffer);
+				rc = ESLURM_RESULT_TOO_LARGE;
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+
+	return rc;
+}
+
+extern int slurm_unpack_list(List *recv_list,
+			     int (*unpack_function) (void **object,
+						     uint16_t protocol_version,
+						     Buf buffer),
+			     void (*destroy_function) (void *object),
+			     Buf buffer, uint16_t protocol_version)
+{
+	uint32_t count;
+
+	xassert(recv_list);
+
+	safe_unpack32(&count, buffer);
+	if (count != NO_VAL) {
+		int i;
+		void *object = NULL;
+
+		/*
+		 * Build the list for zero or more objects. If NO_VAL
+		 * was packed this indicates an error, and no list is
+		 * created.
+		 */
+		*recv_list = list_create((*(destroy_function)));
+		for(i=0; i<count; i++) {
+			if (((*(unpack_function))(&object,
+						  protocol_version, buffer))
+			    == SLURM_ERROR)
+				goto unpack_error;
+			list_append(*recv_list, object);
+		}
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	FREE_NULL_LIST(*recv_list);
+	return SLURM_ERROR;
+}
+
 extern void
 pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 				 Buf buffer, uint16_t protocol_version)
