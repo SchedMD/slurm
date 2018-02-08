@@ -560,8 +560,9 @@ send_registration_msg(uint32_t status, bool startup)
 	int rc, ret_val = SLURM_SUCCESS;
 	slurm_node_registration_status_msg_t *msg =
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
+	if (startup)
+		msg->flags |= SLURMD_REG_FLAG_STARTUP;
 
-	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
 	msg->status  = status;
 
@@ -668,7 +669,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			   buf.sysname, buf.release, buf.version);
 	}
 
-	if (msg->startup) {
+	if (msg->flags & SLURMD_REG_FLAG_STARTUP) {
 		if (switch_g_alloc_node_info(&msg->switch_nodeinfo))
 			error("switch_g_alloc_node_info: %m");
 		if (switch_g_build_node_info(msg->switch_nodeinfo))

@@ -159,6 +159,7 @@
 #define YEAR_MINUTES (365 * 24 * 60)
 #define YEAR_SECONDS (365 * 24 * 60 * 60)
 
+#define SLURMD_REG_FLAG_STARTUP  0x0001
 /* These defines have to be here to avoid circular dependancy with
  * switch.h
  */
@@ -1207,6 +1208,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint16_t cores;
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
+	uint16_t flags;	        /* Flags from the slurmd SLURMD_REG_FLAG_* */
 	uint64_t free_mem;	/* Free memory in MiB */
 	char *cpu_spec_list;	/* list of specialized CPUs */
 	acct_gather_energy_t *energy;
@@ -1223,7 +1225,6 @@ typedef struct slurm_node_registration_status_msg {
 	uint64_t real_memory;
 	time_t slurmd_start_time;
 	uint32_t status;	/* node status code, same as return codes */
-	uint16_t startup;	/* slurmd just restarted */
 	uint32_t *step_id;	/* IDs of running job steps (if any) */
 	uint16_t sockets;
 	switch_node_info_t *switch_nodeinfo;	/* set only if startup != 0 */

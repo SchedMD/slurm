@@ -3435,8 +3435,8 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		for (i = 0; i < msg->job_count; i++) {
 			pack32(msg->step_id[i], buffer);
 		}
-		pack16(msg->startup, buffer);
-		if (msg->startup)
+		pack16(msg->flags, buffer);
+		if (msg->flags & SLURMD_REG_FLAG_STARTUP)
 			switch_g_pack_node_info(msg->switch_nodeinfo, buffer,
 						protocol_version);
 		if (msg->gres_info)
@@ -3512,8 +3512,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			safe_unpack32(&node_reg_ptr->step_id[i], buffer);
 		}
 
-		safe_unpack16(&node_reg_ptr->startup, buffer);
-		if (node_reg_ptr->startup
+		safe_unpack16(&node_reg_ptr->flags, buffer);
+		if ((node_reg_ptr->flags & SLURMD_REG_FLAG_STARTUP)
 		    &&  (switch_g_unpack_node_info(
 				 &node_reg_ptr->switch_nodeinfo, buffer,
 				 protocol_version)))
