@@ -4091,23 +4091,32 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _resp_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
+			    uint16_t msg_type, void *data)
+{
+	slurm_msg_t_init(resp_msg);
+	resp_msg->address = msg->address;
+	debug("setting it to: family = %u, port = %u",
+	      resp_msg->address.sin_family, resp_msg->address.sin_port);
+
+	resp_msg->conn = msg->conn;
+	resp_msg->data = data;
+	resp_msg->flags = msg->flags;
+	resp_msg->forward = msg->forward;
+	resp_msg->forward_struct = msg->forward_struct;
+	resp_msg->msg_type = msg_type;
+	resp_msg->protocol_version = msg->protocol_version;
+	resp_msg->ret_list = msg->ret_list;
+	resp_msg->orig_addr = msg->orig_addr;
+}
+
 static void _rc_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
 			  return_code_msg_t *rc_msg, int rc)
 {
 	memset(rc_msg, 0, sizeof(return_code_msg_t));
 	rc_msg->return_code = rc;
 
-	slurm_msg_t_init(resp_msg);
-	resp_msg->protocol_version = msg->protocol_version;
-	resp_msg->address  = msg->address;
-	resp_msg->msg_type = RESPONSE_SLURM_RC;
-	resp_msg->data     = rc_msg;
-	resp_msg->conn = msg->conn;
-	resp_msg->flags = msg->flags;
-	resp_msg->forward = msg->forward;
-	resp_msg->forward_struct = msg->forward_struct;
-	resp_msg->ret_list = msg->ret_list;
-	resp_msg->orig_addr = msg->orig_addr;
+	_resp_msg_setup(msg, resp_msg, RESPONSE_SLURM_RC, rc_msg);
 }
 
 
@@ -4116,6 +4125,43 @@ static void _rc_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
  * They open a connection do work then close the connection all within
  * the function
 \**********************************************************************/
+
+/* slurm_send_msg
+ * given the original request message this function sends a
+ *	arbitrary message back to the client that made the request
+ * IN request_msg	- slurm_msg the request msg
+ * IN msg_type          - message type being returned
+ * IN resp_msg		- the message being returned to the client
+ */
+int slurm_send_msg(slurm_msg_t *msg, uint16_t msg_type, void *resp)
+{
+	if (msg->msg_index && msg->ret_list) {
+		slurm_msg_t *resp_msg = xmalloc_nz(sizeof(slurm_msg_t));
+
+		_resp_msg_setup(msg, resp_msg, msg_type, resp);
+
+		resp_msg->msg_index = msg->msg_index;
+		resp_msg->ret_list = NULL;
+		/*
+		 * The return list here is the list we are sending to
+		 * the node, so after we attach this message to it set
+		 * it to NULL to remove it.
+		 */
+		list_append(msg->ret_list, resp_msg);
+		return SLURM_SUCCESS;
+	} else {
+		slurm_msg_t resp_msg;
+
+		if (msg->conn_fd < 0) {
+			slurm_seterrno(ENOTCONN);
+			return SLURM_ERROR;
+		}
+		_resp_msg_setup(msg, &resp_msg, msg_type, resp);
+
+		/* send message */
+		return slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	}
+}
 
 /* slurm_send_rc_msg
  * given the original request message this function sends a
