@@ -85,6 +85,7 @@ documents those changes that are of interest to users and administrators.
     "impossible" edge case.
  -- Link slurmd against all libraries that slurmstepd links to.
  -- Fix limits enforce order when they're set at partition and other levels.
+ -- Add slurm_load_single_node() function to the Perl API.
 
 * Changes in Slurm 17.11.3-2
 ==========================

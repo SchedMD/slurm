@@ -31,10 +31,14 @@ Consider the following example:</p>
 <p>The limits in effect will be MaxJobs=20 and MaxSubmitJobs=50.</p>
 
 <p>Note: The precedence order specified above is respected except for the
-following limits: Max[Time|Wall], [Min|Max]Nodes. For these limits, the
-Partition limit takes precedence over the rest, unless the job's QOS is has
-the respective PartitionTimeLimit and/or Partition[Max|Min]Nodes, which would
-reverse the precedence order.
+following limits: Max[Time|Wall], [Min|Max]Nodes. For these limits, even
+if the job is enforced with QOS and/or Association limits, it can't
+go over the limit imposed at Partition level, even if it listed at the bottom.
+So the default for these 3 types of limits is that they are upper bound by the
+Partition one. This Partition level bound can be ignored if
+the respective QOS PartitionTimeLimit and/or Partition[Max|Min]Nodes flags
+are set, then the job would be enforced the limits imposed at QOS
+and/or association level respecting the order above.
 </p>
 
 <h2>Configuration</h2>

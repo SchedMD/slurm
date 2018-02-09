@@ -197,7 +197,7 @@ if {$node_cnt >= 5} {
 }
 
 
-################## Test with new parition ##################
+################## Test with new partition ##################
 
 # Get the smallest node in the system
 log_user 0

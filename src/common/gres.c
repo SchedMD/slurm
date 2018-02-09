@@ -3353,7 +3353,7 @@ static void _validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 		if (cpus_slurmd == cpus_ctld)
 			continue;
 		if (log_mismatch) {
-			debug("Gres CPU count mismatch on node %s (%d != %d)",
+			debug("Rebuilding node %s gres CPU bitmap (%d != %d)",
 			      node_name, cpus_slurmd, cpus_ctld);
 			log_mismatch = false;
 		}
