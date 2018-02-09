@@ -1459,8 +1459,10 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, job_table);
-	/* sacct_def is the index for query's with state as time_tart is used in
-	 * these queries. sacct_def2 is for plain sacct queries. */
+	/*
+	 * sacct_def is the index for query's with state as time_start is used
+	 * in these queries. sacct_def2 is for plain sacct queries.
+	 */
 	if (mysql_db_create_table(mysql_conn, table_name, job_table_fields,
 				  ", primary key (job_db_inx), "
 				  "unique index (id_job, time_submit), "
