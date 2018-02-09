@@ -2434,6 +2434,17 @@ extern int update_node_record_acct_gather_data(
 	acct_gather_node_resp_msg_t *msg);
 
 /*
+ * Process string and set partition fields to appropriate values if valid
+ *
+ * IN billing_weights_str - suggested billing weights
+ * IN part_ptr - pointer to partition
+ * IN fail - whether the inner function should fatal if the string is invalid.
+ */
+extern void set_partition_billing_weights(char *billing_weights_str,
+					  struct part_record *part_ptr,
+					  bool fail);
+
+/*
  * update_part - create or update a partition's configuration data
  * IN part_desc - description of partition changes
  * IN create_flag - create a new partition

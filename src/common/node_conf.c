@@ -559,7 +559,7 @@ extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt)
 			config_ptr->tres_weights =
 				slurm_get_tres_weight_array(
 						node->tres_weights_str,
-						tres_cnt);
+						tres_cnt, true);
 		}
 
 		config_ptr->weight = node->weight;

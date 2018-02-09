@@ -972,9 +972,10 @@ static int _tres_weight_item(double *weights, char *item_str)
  * IN weights_str - string of tres and weights to be parsed.
  * IN tres_cnt - count of how many tres' are on the system (e.g.
  * 		slurmctld_tres_cnt).
+ * IN fail - whether to fatal or not if there are parsing errors.
  * RET double* of tres weights.
  */
-double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt)
+double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt, bool fail)
 {
 	double *weights;
 	char *tmp_str;
@@ -991,8 +992,12 @@ double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt)
 		if (_tres_weight_item(weights, token)) {
 			xfree(weights);
 			xfree(tmp_str);
-			fatal("failed to parse tres weights str '%s'",
-			      weights_str);
+			if (fail)
+				fatal("failed to parse tres weights str '%s'",
+				      weights_str);
+			else
+				error("failed to parse tres weights str '%s'",
+				      weights_str);
 			return NULL;
 		}
 		token = strtok_r(NULL, ",", &last);

@@ -711,14 +711,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->cr_type        = part->cr_type;
 
 	if (part->billing_weights_str) {
-		xfree(part_ptr->billing_weights_str);
-		xfree(part_ptr->billing_weights);
-		part_ptr->billing_weights_str =
-			xstrdup(part->billing_weights_str);
-		part_ptr->billing_weights =
-			slurm_get_tres_weight_array(
-					part_ptr->billing_weights_str,
-					slurmctld_tres_cnt);
+		set_partition_billing_weights(part->billing_weights_str,
+					      part_ptr, true);
 	}
 
 	if (part->allow_accounts) {

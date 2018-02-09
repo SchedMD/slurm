@@ -1292,6 +1292,35 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 	}
 }
 
+/*
+ * Process string and set partition fields to appropriate values if valid
+ *
+ * IN billing_weights_str - suggested billing weights
+ * IN part_ptr - pointer to partition
+ * IN fail - whether the inner function should fatal if the string is invalid.
+ */
+extern void set_partition_billing_weights(char *billing_weights_str,
+					  struct part_record *part_ptr,
+					  bool fail)
+{
+	double *tmp = NULL;
+
+	if (!billing_weights_str || *billing_weights_str == '\0') {
+		/* Clear the weights */
+		xfree(part_ptr->billing_weights_str);
+		xfree(part_ptr->billing_weights);
+	} else {
+		tmp = slurm_get_tres_weight_array(billing_weights_str,
+						  slurmctld_tres_cnt, fail);
+		if(tmp) {
+			xfree(part_ptr->billing_weights_str);
+			xfree(part_ptr->billing_weights);
+			part_ptr->billing_weights_str =
+				xstrdup(billing_weights_str);
+			part_ptr->billing_weights = tmp;
+		}
+	}
+}
 
 /*
  * update_part - create or update a partition's configuration data
@@ -1335,6 +1364,11 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	last_part_update = time(NULL);
+
+	if(part_desc->billing_weights_str) {
+		set_partition_billing_weights(part_desc->billing_weights_str,
+					      part_ptr, false);
+	}
 
 	if (part_desc->cpu_bind) {
 		char tmp_str[128];

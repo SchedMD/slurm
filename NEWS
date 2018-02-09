@@ -47,6 +47,8 @@ documents those changes that are of interest to users and administrators.
  -- Add configuration paramerers SlurmctldAddr for use with virtual IP to manage
     backup slurmctld daemons.
  -- Explicitly shutdown the slurmd process when instructed to reboot.
+ -- Add ability to create/update partition with TRESBillingWeights through
+    scontrol.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
