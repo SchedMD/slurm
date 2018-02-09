@@ -141,7 +141,7 @@ proc check_limit { type name } {
 	}
 
 	if {$match != 1 || $job_id} {
-		send_user "\nFAILURE: job should have been killed upon submittion\n"
+		send_user "\nFAILURE: job should have been killed upon submission\n"
 		#cleanup
 		cancel_job $job_id
 		exit 1
