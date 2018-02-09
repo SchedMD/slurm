@@ -101,32 +101,6 @@ proc check_release { job } {
 	}
 }
 
-proc check_state { job } {
-
-	global scontrol exit_code
-
-	set job_state 0
-	spawn $scontrol show job $job
-	expect {
-		-re "JobState=PENDING" {
-			set job_state 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
-			set exit_code 0
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$job_state != 1} {
-		send_user "\nFAILURE: Job $job state was not PENDING after it was requeued\n"
-		set exit_code 1
-	}
-}
-
 spawn $sbatch -N1 -t1 -o /dev/null -e /dev/null --requeue $script
 expect {
 	-re "Submitted batch job ($number)" {
@@ -164,7 +138,7 @@ expect {
 check_hold $job_id
 
 # Check that the job state is pending after released
-check_state $job_id
+check_job_state $job_id PENDING
 
 spawn $scontrol release $job_id
 expect {

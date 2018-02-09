@@ -153,33 +153,6 @@ if { ![string compare [priority_type] "multifactor"] } {
 	set prio_multifactor 0
 }
 
-# Checks the state of the job
-proc check_state { job } {
-
-	global scontrol job_id exit_code
-
-	set state_match 0
-	spawn $scontrol show job $job
-	expect {
-		"JobState=PENDING" {
-			incr state_match
-		}
-		timeout {
-			send_user "\nFAILURE scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$state_match != 1} {
-		send_user "\nFAILURE job should be pending, but is not\n"
-		set exit_code 1
-	}
-
-}
-
 # Determine what the selecttype param is
 if {[test_select_type_params "CR_CORE"]} {
 	set selectparam 1

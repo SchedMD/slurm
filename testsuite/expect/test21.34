@@ -195,33 +195,6 @@ proc cleanup { } {
 	}
 }
 
-# Checks the state of the job
-proc check_state { job } {
-
-	global scontrol job_id exit_code
-
-	set state_match 0
-	spawn $scontrol show job $job
-	expect {
-		"JobState=PENDING" {
-			incr state_match
-		}
-		timeout {
-			send_user "\nFAILURE scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$state_match != 1} {
-		send_user "\nFAILURE job should be pending, but is not\n"
-		set exit_code 1
-	}
-
-}
-
 if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0

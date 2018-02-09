@@ -86,7 +86,7 @@ proc inc21_30_1 {} {
 		set exit_code 1
 	} else {
 		# checks the state of the job
-		check_state $job_id2
+		check_job_state $job_id2 PENDING
 	}
 
 	# Cancels remaining jobs
