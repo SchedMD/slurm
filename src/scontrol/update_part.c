@@ -453,9 +453,12 @@ scontrol_update_part (int argc, char **argv)
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;
+	int err;
 
 	slurm_init_part_desc_msg ( &part_msg );
-	scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
+	err = scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
+	if (err)
+		return err;
 
 	if (part_msg.name == NULL) {
 		exit_code = 1;
@@ -490,9 +493,12 @@ scontrol_create_part (int argc, char **argv)
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;
+	int err;
 
 	slurm_init_part_desc_msg ( &part_msg );
-	scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
+	err = scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
+	if (err)
+		return err;
 
 	if (part_msg.name == NULL) {
 		exit_code = 1;
