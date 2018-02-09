@@ -3316,7 +3316,7 @@ static bool _job_pack_deadlock_test(struct job_record *job_ptr)
 	list_sort(dl_part_ptr->deadlock_job_list, _deadlock_job_list_sort);
 
 	/*
-	 * Log current table of pack job start times by parition
+	 * Log current table of pack job start times by partition
 	 */
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		part_iter = list_iterator_create(deadlock_global_list);

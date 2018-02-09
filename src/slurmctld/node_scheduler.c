@@ -1521,7 +1521,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
  *	ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE if request can never
  *	be satisfied,
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE if the job can not be
- *	initiated until the parition's configuration changes or
+ *	initiated until the partition's configuration changes or
  *	ESLURM_NODE_NOT_AVAIL if required nodes are DOWN or DRAINED
  *	ESLURM_RESERVATION_BUSY if requested reservation overlaps another
  * NOTE: the caller must FREE_NULL_BITMAP memory pointed to by select_bitmap
