@@ -1298,10 +1298,11 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
  * IN billing_weights_str - suggested billing weights
  * IN part_ptr - pointer to partition
  * IN fail - whether the inner function should fatal if the string is invalid.
+ * RET return SLURM_ERROR on error, SLURM_SUCESS otherwise.
  */
-extern void set_partition_billing_weights(char *billing_weights_str,
-					  struct part_record *part_ptr,
-					  bool fail)
+extern int set_partition_billing_weights(char *billing_weights_str,
+					 struct part_record *part_ptr,
+					 bool fail)
 {
 	double *tmp = NULL;
 
@@ -1310,16 +1311,19 @@ extern void set_partition_billing_weights(char *billing_weights_str,
 		xfree(part_ptr->billing_weights_str);
 		xfree(part_ptr->billing_weights);
 	} else {
-		tmp = slurm_get_tres_weight_array(billing_weights_str,
-						  slurmctld_tres_cnt, fail);
-		if(tmp) {
-			xfree(part_ptr->billing_weights_str);
-			xfree(part_ptr->billing_weights);
-			part_ptr->billing_weights_str =
-				xstrdup(billing_weights_str);
-			part_ptr->billing_weights = tmp;
-		}
+		if (!(tmp = slurm_get_tres_weight_array(billing_weights_str,
+							slurmctld_tres_cnt,
+							fail)))
+		    return SLURM_ERROR;
+
+		xfree(part_ptr->billing_weights_str);
+		xfree(part_ptr->billing_weights);
+		part_ptr->billing_weights_str =
+			xstrdup(billing_weights_str);
+		part_ptr->billing_weights = tmp;
 	}
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1365,9 +1369,14 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 
 	last_part_update = time(NULL);
 
-	if(part_desc->billing_weights_str) {
-		set_partition_billing_weights(part_desc->billing_weights_str,
-					      part_ptr, false);
+	if (part_desc->billing_weights_str &&
+	    set_partition_billing_weights(part_desc->billing_weights_str,
+					  part_ptr, false)) {
+
+		if (create_flag)
+			_delete_part_record(part_ptr->name);
+
+		return ESLURM_INVALID_TRES_BILLING_WEIGHTS;
 	}
 
 	if (part_desc->cpu_bind) {

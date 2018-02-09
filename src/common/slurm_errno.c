@@ -353,6 +353,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job --batch option is invalid or not a subset of --constraints" },
 	{ ESLURM_INVALID_TRES,
 	  "Invalid TRES specification"				},
+	{ ESLURM_INVALID_TRES_BILLING_WEIGHTS,
+	  "Invalid TRESBillingWeights specification"            },
 	{ ESLURM_INVALID_JOB_DEFAULTS,
 	  "Invalid JobDefaults specification"			},
 

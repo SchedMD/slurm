@@ -203,6 +203,7 @@ enum {
 	ESLURM_X11_NOT_AVAIL,
 	ESLURM_BATCH_CONSTRAINT,
 	ESLURM_INVALID_TRES,
+	ESLURM_INVALID_TRES_BILLING_WEIGHTS,
 	ESLURM_INVALID_JOB_DEFAULTS,
 
 	/* switch specific error codes, specific values defined in plugin module */
