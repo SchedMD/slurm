@@ -49,6 +49,8 @@
 #include "pmixp_conn.h"
 #include "pmixp_dconn.h"
 
+#include "src/common/slurm_auth.h"
+
 #define PMIXP_DEBUG_SERVER 1
 
 /*
@@ -489,6 +491,59 @@ void pmixp_server_cleanup(void)
 }
 
 /*
+ * --------------------- Authentication functionality -------------------
+ */
+
+static int _auth_cred_create(Buf buf)
+{
+	void *auth_cred = NULL;
+	char *auth_info = slurm_get_auth_info();
+	int rc = SLURM_SUCCESS;
+
+	auth_cred = g_slurm_auth_create(auth_info);
+	xfree(auth_info);
+	if (!auth_cred) {
+		rc = g_slurm_auth_errno(NULL);
+		PMIXP_ERROR("Creating authentication credential: %s",
+			    g_slurm_auth_errstr(rc));
+		return rc;
+	}
+
+	rc = g_slurm_auth_pack(auth_cred, buf);
+	if (rc)
+		PMIXP_ERROR("Packing authentication credential: %s",
+			    g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+
+	g_slurm_auth_destroy(auth_cred);
+
+	return rc;
+}
+
+static int _auth_cred_verify(Buf buf)
+{
+	void *auth_cred = NULL;
+	char *auth_info = NULL;
+	int rc = SLURM_SUCCESS;
+
+	auth_cred = g_slurm_auth_unpack(buf);
+	if (!auth_cred) {
+		PMIXP_ERROR("Unpacking authentication credential: %s",
+			    g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		return SLURM_FAILURE;
+	}
+
+	auth_info = slurm_get_auth_info();
+	rc = g_slurm_auth_verify(auth_cred, auth_info);
+	xfree(auth_info);
+
+	if (rc)
+		PMIXP_ERROR("Verifying authentication credential: %s",
+			    g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+	g_slurm_auth_destroy(auth_cred);
+	return rc;
+}
+
+/*
  * --------------------- Generic I/O functionality -------------------
  */
 
@@ -651,6 +706,12 @@ static int _process_extended_hdr(pmixp_base_hdr_t *hdr, Buf buf)
 		pmixp_base_hdr_t bhdr;
 		init_msg = xmalloc(sizeof(*init_msg));
 
+		rc = _auth_cred_create(buf_init);
+		if (rc) {
+			free_buf(init_msg->buf_ptr);
+			xfree(init_msg);
+			goto unlock;
+		}
 		PMIXP_BASE_HDR_SETUP(bhdr, PMIXP_MSG_INIT_DIRECT, 0, buf_init);
 		bhdr.ext_flag = 1;
 		hsize = _direct_hdr_pack(&bhdr, nhdr);
@@ -1032,9 +1093,45 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 	pmixp_dconn_t *dconn = NULL;
 	pmixp_conn_t *new_conn;
 	eio_obj_t *obj;
-	int fd;
+	int fd = pmixp_io_detach(eng);
+	char *ep_data = NULL;
+	uint32_t ep_len = 0;
+	Buf buf_msg;
+	int rc;
+	char *nodename = NULL;
 
-	fd = pmixp_io_detach(eng);
+	if (!hdr->ext_flag) {
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Connection failed from %u(%s)",
+			    hdr->nodeid, nodename);
+		xfree(nodename);
+		close(fd);
+		return;
+	}
+
+	buf_msg = create_buf(msg, hdr->msgsize);
+	/* Retrieve endpoint information */
+	rc = _base_hdr_unpack_ext(buf_msg, &ep_data, &ep_len);
+	if (rc) {
+		free_buf(buf_msg);
+		close(fd);
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Failed to unpack the direct connection message from %u(%s)",
+			    hdr->nodeid, nodename);
+		xfree(nodename);
+		return;
+	}
+	/* Unpack and verify the auth credential */
+	rc = _auth_cred_verify(buf_msg);
+	free_buf(buf_msg);
+	if (rc) {
+		close(fd);
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Connection reject from %u(%s)",
+			    hdr->nodeid, nodename);
+		xfree(nodename);
+		return;
+	}
 
 	dconn = pmixp_dconn_accept(hdr->nodeid, fd);
 	if (!dconn) {
@@ -1042,10 +1139,10 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 		 * have established connection
 		 * It seems that some sort of race condition occured
 		 */
-		char *nodename = pmixp_info_job_host(hdr->nodeid);
 		close(fd);
-		PMIXP_ERROR("Failed to accept direct connection from %s",
-			    nodename);
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Failed to accept direct connection from %u(%s)",
+			    hdr->nodeid, nodename);
 		xfree(nodename);
 		return;
 	}
