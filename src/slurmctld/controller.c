@@ -183,6 +183,8 @@ int   slurmctld_tres_cnt = 0;
 slurmdb_cluster_rec_t *response_cluster_rec = NULL;
 int     slurmctld_running_job_count    = 0;
 time_t  slurmctld_running_job_count_ts = 0;
+bool    test_config = false;
+int     test_config_rc = 0;
 
 /* Local variables */
 static pthread_t assoc_cache_thread = (pthread_t) 0;
@@ -266,7 +268,6 @@ int main(int argc, char **argv)
 	/* Locks: Write node and partition */
 	slurmctld_lock_t node_part_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-
 	slurm_trigger_callbacks_t callbacks;
 	bool create_clustername_file;
 
@@ -282,24 +283,27 @@ int main(int argc, char **argv)
 	 * Establish initial configuration
 	 */
 	_init_config();
+	_parse_commandline(argc, argv);
 	slurm_conf_init(NULL);
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	sched_log_init(argv[0], sched_log_opts, LOG_DAEMON, NULL);
 	slurmctld_pid = getpid();
-	_parse_commandline(argc, argv);
 	init_locks();
 	slurm_conf_reinit(slurm_conf_filename);
 
 	update_logging();
 
-	/* Verify clustername from conf matches value in spool dir
+	/*
+	 * Verify clustername from conf matches value in spool dir
 	 * exit if inconsistent to protect state files from corruption.
 	 * This needs to be done before we kill the old one just in case we
-	 * fail. */
+	 * fail.
+	 */
 	create_clustername_file = _verify_clustername();
 
 	_update_nice();
-	_kill_old_slurmctld();
+	if (!test_config)
+		_kill_old_slurmctld();
 
 	for (i = 0; i < 3; i++)
 		fd_set_close_on_exec(i);
@@ -318,14 +322,16 @@ int main(int argc, char **argv)
 		slurmctld_config.daemonize = 0;
 	}
 
-	/*
-	 * Need to create pidfile here in case we setuid() below
-	 * (init_pidfile() exits if it can't initialize pid file).
-	 * On Linux we also need to make this setuid job explicitly
-	 * able to write a core dump.
-	 */
-	_init_pidfile();
-	_become_slurm_user();
+	if (!test_config) {
+		/*
+		 * Need to create pidfile here in case we setuid() below
+		 * (init_pidfile() exits if it can't initialize pid file).
+		 * On Linux we also need to make this setuid job explicitly
+		 * able to write a core dump.
+		 */
+		_init_pidfile();
+		_become_slurm_user();
+	}
 
 	/*
 	 * Create StateSaveLocation directory if necessary.
@@ -338,8 +344,10 @@ int main(int argc, char **argv)
 	if (daemonize)
 		_set_work_dir();
 
-	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
+	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0) {
 		error("Configured MailProg is invalid");
+		test_config_rc = 1;
+	}
 
 	if (!xstrcmp(slurmctld_conf.accounting_storage_type,
 		     "accounting_storage/none")) {
@@ -354,8 +362,16 @@ int main(int argc, char **argv)
 			     "but details not gathered");
 	}
 
-	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
-		fatal("Invalid Licenses value: %s", slurmctld_conf.licenses);
+	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS) {
+		if (test_config) {
+			error("Invalid Licenses value: %s",
+			      slurmctld_conf.licenses);
+			test_config_rc = 1;
+		} else {
+			fatal("Invalid Licenses value: %s",
+			      slurmctld_conf.licenses);
+		}
+	}
 
 #ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
@@ -370,8 +386,10 @@ int main(int argc, char **argv)
 	test_core_limit();
 	_test_thread_limit();
 
-	/* This must happen before we spawn any threads
-	 * which are not designed to handle them */
+	/*
+	 * This must happen before we spawn any threads
+	 * which are not designed to handle them
+	 */
 	if (xsignal_block(controller_sigarray) < 0)
 		error("Unable to block signals");
 
@@ -402,20 +420,28 @@ int main(int argc, char **argv)
 	callbacks.db_fail     = trigger_primary_db_fail;
 	callbacks.db_resumed  = trigger_primary_db_res_op;
 
-	info("%s version %s started on cluster %s", slurm_prog_name,
-	     SLURM_VERSION_STRING, slurmctld_conf.cluster_name);
-
-	if ((error_code = gethostname_short(node_name_short, MAX_SLURM_NAME)))
+	if (!test_config)
+		info("%s version %s started on cluster %s", slurm_prog_name,
+		     SLURM_VERSION_STRING, slurmctld_conf.cluster_name);
+	if ((error_code = gethostname_short(node_name_short, MAX_SLURM_NAME)) &&
+	    !test_config)
 		fatal("getnodename_short error %s", slurm_strerror(error_code));
-	if ((error_code = gethostname(node_name_long, MAX_SLURM_NAME)))
+	if ((error_code = gethostname(node_name_long, MAX_SLURM_NAME)) &&
+	    !test_config)
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
 	/* init job credential stuff */
 	slurmctld_config.cred_ctx = slurm_cred_creator_ctx_create(
 			slurmctld_conf.job_credential_private_key);
 	if (!slurmctld_config.cred_ctx) {
-		fatal("slurm_cred_creator_ctx_create(%s): %m",
-			slurmctld_conf.job_credential_private_key);
+		if (test_config) {
+			fatal("slurm_cred_creator_ctx_create(%s): %m",
+				slurmctld_conf.job_credential_private_key);
+			test_config_rc = 1;
+		} else {
+			fatal("slurm_cred_creator_ctx_create(%s): %m",
+				slurmctld_conf.job_credential_private_key);
+		}
 	}
 
 	/*
@@ -438,7 +464,9 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
-	if (backup_inx > 0) {
+	if (test_config) {
+		slurmctld_primary = 1;
+	} else if (backup_inx > 0) {
 		slurmctld_primary = 0;
 
 #ifdef HAVE_ALPS_CRAY
@@ -452,33 +480,101 @@ int main(int argc, char **argv)
 
 	/*
 	 * Initialize plugins.
+	 * If running configuration test, report ALL failures.
 	 */
-	if (gres_plugin_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize gres plugin" );
-	if (slurm_select_init(1) != SLURM_SUCCESS )
-		fatal( "failed to initialize node selection plugin" );
-	if (slurm_preempt_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize preempt plugin" );
-	if (checkpoint_init(slurmctld_conf.checkpoint_type) != SLURM_SUCCESS )
-		fatal( "failed to initialize checkpoint plugin" );
-	if (acct_gather_conf_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize acct_gather plugins" );
-	if (jobacct_gather_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize jobacct_gather plugin");
-	if (job_submit_plugin_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize job_submit plugin");
-	if (ext_sensors_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize ext_sensors plugin");
-	if (node_features_g_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize node_features plugin");	
-	if (switch_g_slurmctld_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize switch plugin");
+	if (gres_plugin_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize gres plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize gres plugin");
+		}
+	}
+	if (slurm_select_init(1) != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize node selection plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize node selection plugin");
+		}
+	}
+	if (slurm_preempt_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize preempt plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize preempt plugin");
+		}
+	}
+	if (checkpoint_init(slurmctld_conf.checkpoint_type) != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize checkpoint plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize checkpoint plugin");
+		}
+	}
+	if (acct_gather_conf_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize acct_gather plugins");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize acct_gather plugins");
+		}
+	}
+	if (jobacct_gather_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize jobacct_gather plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize jobacct_gather plugin");
+		}
+	}
+	if (job_submit_plugin_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize job_submit plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize job_submit plugin");
+		}
+	}
+	if (ext_sensors_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize ext_sensors plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize ext_sensors plugin");
+		}
+	}
+	if (node_features_g_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize node_features plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize node_features plugin");
+		}
+	}
+	if (switch_g_slurmctld_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize switch plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize switch plugin");
+		}
+	}
 	config_power_mgr();
 	agent_init();
 	if (node_features_g_node_power() && !power_save_test()) {
-		fatal("PowerSave required with NodeFeatures plugin, "
-		      "but not fully configured (SuspendProgram, "
-		      "ResumeProgram and SuspendTime all required)");
+		if (test_config) {
+			error("PowerSave required with NodeFeatures plugin, "
+			      "but not fully configured (SuspendProgram, "
+			      "ResumeProgram and SuspendTime all required)");
+			test_config_rc = 1;
+		} else {
+			fatal("PowerSave required with NodeFeatures plugin, "
+			      "but not fully configured (SuspendProgram, "
+			      "ResumeProgram and SuspendTime all required)");
+		}
 	}
 
 	while (1) {
@@ -494,24 +590,62 @@ int main(int argc, char **argv)
 			run_backup(&callbacks);
 			(void) _shutdown_backup_controller();
 			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS)
-				fatal("failed to initialize "
-				      "accounting_storage plugin");
-		} else if (_valid_controller()) {
-			(void) _shutdown_backup_controller();
-			trigger_primary_ctld_res_ctrl();
-			ctld_assoc_mgr_init(&callbacks);
-			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS)
-				fatal("failed to initialize "
-				      "accounting_storage plugin");
+				fatal("failed to initialize accounting_storage plugin");
+		} else if (test_config || _valid_controller()) {
+			if (!test_config) {
+				(void) _shutdown_backup_controller();
+				trigger_primary_ctld_res_ctrl();
+				ctld_assoc_mgr_init(&callbacks);
+			}
+			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS) {
+				if (test_config) {
+					error("failed to initialize accounting_storage plugin");
+					test_config_rc = 1;
+				} else {
+					fatal("failed to initialize accounting_storage plugin");
+				}
+			}
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
 			if (switch_g_restore(slurmctld_conf.state_save_location,
-					   recover ? true : false))
-				fatal(" failed to initialize switch plugin");
+					   recover ? true : false)) {
+				if (test_config) {
+					error("failed to initialize switch plugin");
+					test_config_rc = 1;
+				} else {
+					fatal("failed to initialize switch plugin");
+				}
+			}
+
+			if (test_config) {
+				char *result_str;
+				if ((error_code = read_slurm_conf(0, false))) {
+					error("read_slurm_conf reading %s: %s",
+					      slurmctld_conf.slurm_conf,
+					      slurm_strerror(error_code));
+					test_config_rc = 1;
+				}
+				unlock_slurmctld(config_write_lock);
+				if (config_test_result() != SLURM_SUCCESS)
+					test_config_rc = 1;
+
+				if (test_config_rc == 0)
+					result_str = "Succeeded";
+				else
+					result_str = "FAILED";
+				log_opts.stderr_level  = LOG_LEVEL_INFO;
+				log_opts.logfile_level = LOG_LEVEL_QUIET;
+				log_opts.syslog_level  = LOG_LEVEL_QUIET;
+				log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
+					  slurmctld_conf.slurmctld_logfile);
+				info("%s configuration test", result_str);
+				exit(test_config_rc);
+			}
+
 			if ((error_code = read_slurm_conf(recover, false))) {
 				fatal("read_slurm_conf reading %s: %s",
-					slurmctld_conf.slurm_conf,
-					slurm_strerror(error_code));
+				      slurmctld_conf.slurm_conf,
+				      slurm_strerror(error_code));
 			}
 			unlock_slurmctld(config_write_lock);
 			select_g_select_nodeinfo_set_all();
@@ -579,10 +713,10 @@ int main(int argc, char **argv)
 			fatal("failed to initialize scheduling plugin");
 		if (slurmctld_plugstack_init())
 			fatal("failed to initialize slurmctld_plugstack");
-		if (bb_g_init() != SLURM_SUCCESS )
-			fatal( "failed to initialize burst buffer plugin");
-		if (power_g_init() != SLURM_SUCCESS )
-			fatal( "failed to initialize power management plugin");
+		if (bb_g_init() != SLURM_SUCCESS)
+			fatal("failed to initialize burst buffer plugin");
+		if (power_g_init() != SLURM_SUCCESS)
+			fatal("failed to initialize power management plugin");
 		if (slurm_mcs_init() != SLURM_SUCCESS)
 			fatal("failed to initialize mcs plugin");
 
@@ -2475,7 +2609,7 @@ static void _parse_commandline(int argc, char **argv)
 	bool bg_recover_override = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "BcdDf:hiL:n:rRvV")) != -1)
+	while ((c = getopt(argc, argv, "BcdDf:hiL:n:rRtvV")) != -1) {
 		switch (c) {
 		case 'B':
 			bg_recover = 0;
@@ -2524,6 +2658,9 @@ static void _parse_commandline(int argc, char **argv)
 			if (!bg_recover_override)
 				bg_recover = 1;
 			break;
+		case 't':
+			test_config = true;
+			break;
 		case 'v':
 			debug_level++;
 			break;
@@ -2535,6 +2672,12 @@ static void _parse_commandline(int argc, char **argv)
 			_usage(argv[0]);
 			exit(1);
 		}
+	}
+	if (test_config) {
+		daemonize = 0;
+		recover = 0;
+		config_test_start();
+	}
 }
 
 /* _usage - print a message describing the command line arguments of
@@ -2573,6 +2716,8 @@ static void _usage(char *prog_name)
 	fprintf(stderr, "  -R      "
 			"\tRecover full state from last checkpoint.\n");
 #endif
+	fprintf(stderr, "  -t      "
+			"\tTest configuration files for validity.\n");
 	fprintf(stderr, "  -v      "
 			"\tVerbose mode. Multiple -v's increase verbosity.\n");
 	fprintf(stderr, "  -V      "
@@ -2690,7 +2835,11 @@ void update_logging(void)
 			(LOG_LEVEL_INFO + debug_level),
 			(LOG_LEVEL_END - 1));
 	}
-	if (slurmctld_conf.slurmctld_debug != NO_VAL16) {
+	if (test_config) {
+		log_opts.stderr_level  = LOG_LEVEL_ERROR;
+		log_opts.logfile_level = LOG_LEVEL_QUIET;
+		log_opts.syslog_level  = LOG_LEVEL_QUIET;
+	} else if (slurmctld_conf.slurmctld_debug != NO_VAL16) {
 		log_opts.stderr_level  = slurmctld_conf.slurmctld_debug;
 		log_opts.logfile_level = slurmctld_conf.slurmctld_debug;
 		log_opts.syslog_level  = slurmctld_conf.slurmctld_debug;
@@ -3066,6 +3215,8 @@ static void _become_slurm_user(void)
 			fatal("Failed to set supplementary groups, "
 			      "initgroups: %m");
 		}
+	} else if (test_config) {
+		return;
 	} else {
 		info("Not running as root. Can't drop supplementary groups");
 	}

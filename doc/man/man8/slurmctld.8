@@ -1,4 +1,4 @@
-.TH slurmctld "8" "Slurm Daemon" "April 2015" "Slurm Daemon"
+.TH slurmctld "8" "Slurm Daemon" "February 2018" "Slurm Daemon"
 
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
@@ -61,6 +61,10 @@ Without this option, previously running jobs will be preserved along
 with node \fIState\fR of DOWN, DRAINED and DRAINING nodes and the associated
 \fIReason\fR field for those nodes. No other node or partition state will
 be preserved.
+
+.TP
+\fB\-t\fR
+Test configuration files for validit
 
 .TP
 \fB\-v\fR

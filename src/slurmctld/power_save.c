@@ -792,9 +792,11 @@ static void _clear_power_config(void)
 	FREE_NULL_LIST(partial_node_list);
 }
 
-/* Initialize power_save module parameters.
+/*
+ * Initialize power_save module parameters.
  * Return 0 on valid configuration to run power saving,
- * otherwise log the problem and return -1 */
+ * otherwise log the problem and return -1
+ */
 static int _init_power_config(void)
 {
 	last_config     = slurmctld_conf.last_update;
@@ -822,26 +824,32 @@ static int _init_power_config(void)
 	}
 	if (suspend_rate < 0) {
 		error("power_save module disabled, SuspendRate < 0");
+		test_config_rc = 1;
 		return -1;
 	}
 	if (resume_rate < 0) {
 		error("power_save module disabled, ResumeRate < 0");
+		test_config_rc = 1;
 		return -1;
 	}
 	if (suspend_prog == NULL) {
 		error("power_save module disabled, NULL SuspendProgram");
+		test_config_rc = 1;
 		return -1;
 	} else if (!_valid_prog(suspend_prog)) {
 		error("power_save module disabled, invalid SuspendProgram %s",
 		      suspend_prog);
+		test_config_rc = 1;
 		return -1;
 	}
 	if (resume_prog == NULL) {
 		error("power_save module disabled, NULL ResumeProgram");
+		test_config_rc = 1;
 		return -1;
 	} else if (!_valid_prog(resume_prog)) {
 		error("power_save module disabled, invalid ResumeProgram %s",
 		      resume_prog);
+		test_config_rc = 1;
 		return -1;
 	}
 
@@ -890,7 +898,8 @@ extern void config_power_mgr(void)
 	slurm_mutex_unlock(&power_mutex);
 }
 
-/* start_power_mgr - Start power management thread as needed. The thread
+/*
+ * start_power_mgr - Start power management thread as needed. The thread
  *	terminates automatically at slurmctld shutdown time.
  * IN thread_id - pointer to thread ID of the started pthread.
  */

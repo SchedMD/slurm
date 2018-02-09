@@ -675,6 +675,7 @@ EXTRA_DIST = \
 	test7.5.prog.c			\
 	test7.6				\
 	test7.6.prog.c			\
+	test7.8				\
 	test7.9				\
 	test7.9.prog.c			\
 	test7.10			\

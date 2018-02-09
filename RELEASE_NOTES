@@ -140,6 +140,7 @@ HIGHLIGHTS
     * Open MPI (with Slurm's PMI2 and PMIx plugins) and
     * Intel MPI (with Slurm's PMI2 plugin)
     * No support for Cray systems at this time.
+ -- Add Slurm configuration file check logic using "slurmctld -t" command.
 
 RPMBUILD CHANGES
 ================

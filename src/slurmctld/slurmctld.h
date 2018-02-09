@@ -209,10 +209,10 @@ extern void *acct_db_conn;
 extern int   accounting_enforce;
 extern int   association_based_accounting;
 extern int   backup_inx;		/* BackupController# index */
+extern int   batch_sched_delay;
 extern int   bg_recover;		/* state recovery mode */
 extern time_t control_time;		/* Time when became primary controller */
 extern uint32_t   cluster_cpus;
-extern int   batch_sched_delay;
 extern bool node_features_updated;
 extern pthread_cond_t purge_thread_cond;
 extern int   sched_interval;
@@ -222,6 +222,8 @@ extern int   slurmctld_tres_cnt;
 extern slurmdb_cluster_rec_t *response_cluster_rec;
 extern int    slurmctld_running_job_count;
 extern time_t slurmctld_running_job_count_ts;
+extern bool   test_config;
+extern int    test_config_rc;
 
 /* Buffer size use to print the jobid2str()
  * jobid, taskid and state.

@@ -339,6 +339,7 @@ test6.15   Test scancel signal of full job including batch script (--full option
 test6.16   Validate scancel of multiple job steps (job.step specification).
 test6.17   Test scancel handling of invalid job IDs and filters.
 
+
 test7.#    Testing of other functionality.
 ==========================================
 test7.1    Test priorities slurmctld assigns to jobs. Uses srun --hold and
@@ -352,7 +353,7 @@ test7.4    Test of TotalView operation with srun, with and without bulk
 test7.5    Test of TotalView termination logic for srun.
 test7.6    Test of TotalView operation with sattach
 test7.7    (removed)
-test7.8    (removed)
+test7.8    Test configuration file test logic ("slurmctld -t").
 test7.9    Test that no files are open in spawned tasks (except stdin,
 	   stdout, and stderr) to ensure successful checkpoint/restart.
 test7.10   Test if we can trick SLURM into using the wrong user ID

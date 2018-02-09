@@ -307,6 +307,17 @@ typedef struct {
 	List key_pairs;
 } config_plugin_params_t;
 
+/*
+ * Get result of configuration file test.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int config_test_result(void);
+
+/*
+ * Start configuration file test mode. Disables fatal errors.
+ */
+extern void config_test_start(void);
+
 /* Destroy a front_end record built by slurm_conf_frontend_array() */
 extern void destroy_frontend(void *ptr);
 
