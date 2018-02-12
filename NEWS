@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
     wait to retry or not.
  -- Fix issue where a job could be denied by Reason=MaxMemPerLimit when not
     requesting any tasks.
+ -- In perl tools, fix for regexp that caused extra incorrectly shown results.
 
 * Changes in Slurm 17.11.3-2
 ==========================

@@ -160,7 +160,7 @@ foreach my $job (@{$resp->{job_array}}) {
 
 	# Filter jobs according to options and arguments
 	if (@job_ids) {
-		next unless grep /^$job->{'job_id'}/, @job_ids;
+		next unless grep /^$job->{'job_id'}$/, @job_ids;
 	}
 
 	_print_job_brief($job, $line++);
