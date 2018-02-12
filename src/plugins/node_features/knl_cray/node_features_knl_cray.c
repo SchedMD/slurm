@@ -1687,6 +1687,7 @@ extern int init(void)
 	for (i = 0; i < KNL_MCDRAM_CNT; i++)
 		mcdram_pct[i] = -1;
 	mcdram_set = 0;
+	xfree(mc_path);
 	xfree(syscfg_path);
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");

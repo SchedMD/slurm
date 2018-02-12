@@ -725,6 +725,8 @@ extern int init(void)
 	allow_mcdram = KNL_MCDRAM_FLAG;
 	allow_numa = KNL_NUMA_FLAG;
 	xfree(allowed_uid);
+	xfree(mc_path);
+	xfree(syscfg_path);
 	allowed_uid_cnt = 0;
 	syscfg_timeout = DEFAULT_SYSCFG_TIMEOUT;
 	debug_flag = false;
