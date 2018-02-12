@@ -166,7 +166,7 @@ List active_feature_list __attribute__((weak_import));
 List active_feature_list;
 #endif
 
-/* Configuration Paramters */
+/* Configuration Parameters */
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
 static uint16_t allow_numa = KNL_NUMA_FLAG;
 static uid_t *allowed_uid = NULL;

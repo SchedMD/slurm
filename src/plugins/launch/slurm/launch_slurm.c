@@ -786,7 +786,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		slurm_mutex_lock(&launch_lock);
 		if (!opt_save) {
 			/*
-			 * Save opt_local paramters since _task_finish()
+			 * Save opt_local parameters since _task_finish()
 			 * will lack the values
 			 */
 			opt_save = xmalloc(sizeof(slurm_opt_t));
