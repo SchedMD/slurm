@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- Add slurm_load_single_node() function to the Perl API.
  -- slurm.spec - change dependency for --with lua to use pkgconfig.
  -- Fix small memory leaks in node_features plugins on reconfigure.
+ -- slurmdbd - only permit requests to update resources from operators or
+    administrators.
 
 * Changes in Slurm 17.11.3-2
 ==========================
