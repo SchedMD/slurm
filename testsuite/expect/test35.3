@@ -159,6 +159,8 @@ if {[find_bb_data $output_data $data_out] == 0} {
 	set exit_code 1
 }
 
+# Wait for stage-out completion
+sleep 5
 set found 0
 spawn $scontrol show burst
 expect {
