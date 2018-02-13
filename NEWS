@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
     administrators.
  -- Fix handling of partial writes in io_init_msg_write_to_fd() which can
     lead to job step launch failure under higher cluster loads.
+ -- MYSQL - Fix to handle quotes in a given work_dir of a job.
 
 * Changes in Slurm 17.11.3-2
 ==========================
