@@ -159,7 +159,7 @@ const char plugin_name[]        = "node_features knl_generic plugin";
 const char plugin_type[]        = "node_features/knl_generic";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-/* Configuration Paramters */
+/* Configuration Parameters */
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
 static uint16_t allow_numa = KNL_NUMA_FLAG;
 static uid_t *allowed_uid = NULL;
@@ -816,6 +816,8 @@ extern int init(void)
 	allow_mcdram = KNL_MCDRAM_FLAG;
 	allow_numa = KNL_NUMA_FLAG;
 	xfree(allowed_uid);
+	xfree(mc_path);
+	xfree(syscfg_path);
 	allowed_uid_cnt = 0;
 	for (i = 0; i < KNL_NUMA_CNT; i++)
 		cpu_bind[i] = 0;

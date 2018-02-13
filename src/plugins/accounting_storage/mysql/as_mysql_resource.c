@@ -1038,6 +1038,11 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
+
 	if (check_connection(mysql_conn) != SLURM_SUCCESS) {
 		return NULL;
 	}

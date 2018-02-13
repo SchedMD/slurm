@@ -3,7 +3,7 @@
  *			    single user can submit based upon configuration.
  *
  *  NOTE: Enforce by configuring
- *  SchedulingParamters=jobs_per_user_per_hour=#
+ *  SchedulingParameters=jobs_per_user_per_hour=#
  *****************************************************************************
  *  Copyright (C) 2014 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
