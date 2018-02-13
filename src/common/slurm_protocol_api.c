@@ -4096,9 +4096,6 @@ static void _resp_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
 {
 	slurm_msg_t_init(resp_msg);
 	resp_msg->address = msg->address;
-	debug("setting it to: family = %u, port = %u",
-	      resp_msg->address.sin_family, resp_msg->address.sin_port);
-
 	resp_msg->conn = msg->conn;
 	resp_msg->data = data;
 	resp_msg->flags = msg->flags;
