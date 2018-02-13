@@ -218,8 +218,9 @@ int
 io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
 {
 	Buf buf;
-	void *ptr;
-	int n;
+	char *ptr;
+	size_t rem_size;
+	ssize_t size_written;
 
 	xassert(msg);
 
@@ -230,17 +231,17 @@ io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
 	io_init_msg_pack(msg, buf);
 
 	ptr = get_buf_data(buf);
-again:
-	if ((n = write(fd, ptr, io_init_msg_packed_size())) < 0) {
-		if (errno == EINTR)
-			goto again;
-		free_buf(buf);
-		return SLURM_ERROR;
-	}
-	if (n != io_init_msg_packed_size()) {
-		error("io init msg write too small");
-		free_buf(buf);
-		return SLURM_ERROR;
+	rem_size = io_init_msg_packed_size();
+	while (rem_size) {
+		size_written = write(fd, ptr, rem_size);
+		if (size_written < 0) {
+			if (errno == EINTR)
+				continue;
+			free_buf(buf);
+			return SLURM_ERROR;
+		}
+		rem_size -= size_written;
+		ptr += size_written;
 	}
 
 	free_buf(buf);

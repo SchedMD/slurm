@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix small memory leaks in node_features plugins on reconfigure.
  -- slurmdbd - only permit requests to update resources from operators or
     administrators.
+ -- Fix handling of partial writes in io_init_msg_write_to_fd() which can
+    lead to job step launch failure under higher cluster loads.
 
 * Changes in Slurm 17.11.3-2
 ==========================
