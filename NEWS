@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Insure that "hbm" is a configured GresType on knl systems.
  -- Fix NodeFeaturesPlugins=node_features/knl_generic to allow other gres
     other than knl.
+ -- cons_res: Prevent overflow on multiply.
 
 * Changes in Slurm 18.08.4
 ==========================

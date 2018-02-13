@@ -492,12 +492,16 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	/* Step 4 - make sure that ntasks_per_socket is enforced when
 	 *          allocating cores
 	 */
-	cps = num_tasks;
-	if (ntasks_per_socket >= 1) {
+
+	if ((ntasks_per_socket != NO_VAL16) &&
+	    (ntasks_per_socket != INFINITE16) &&
+	    (ntasks_per_socket >= 1)) {
 		cps = ntasks_per_socket;
 		if (cpus_per_task > 1)
 			cps = ntasks_per_socket * cpus_per_task;
-	}
+	} else
+		cps = cores_per_socket * threads_per_core;
+
 	si = 9999;
 	tmp_cpt = cpus_per_task;
 	for (c = core_begin; c < core_end && avail_cpus > 0; c++) {
