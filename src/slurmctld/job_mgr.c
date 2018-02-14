@@ -4206,10 +4206,12 @@ int init_job_conf(void)
 
 /*
  * rehash_jobs - Create or rebuild the job hash table.
- * NOTE: run lock_slurmctld before entry: Read config, write job
  */
 extern void rehash_jobs(void)
 {
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
 	if (job_hash == NULL) {
 		hash_table_size = slurmctld_conf.max_job_cnt;
 		job_hash = (struct job_record **)
@@ -4695,7 +4697,6 @@ static inline bool _has_deadline(struct job_record *job_ptr)
  * globals: job_list - pointer to global job list
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition
- * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
 extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			int will_run, will_run_response_msg_t **resp,
@@ -4710,6 +4711,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	if (sched_update != slurmctld_conf.last_update) {
 		sched_update = slurmctld_conf.last_update;
@@ -8681,7 +8687,6 @@ time_check:
 	node_features_updated = false;
 }
 
-/* job write lock must be locked before calling this */
 extern void job_set_req_tres(
 	struct job_record *job_ptr, bool assoc_mgr_locked)
 {
@@ -8689,6 +8694,8 @@ extern void job_set_req_tres(
 	uint64_t mem_cnt = 0;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	xfree(job_ptr->tres_req_str);
 	xfree(job_ptr->tres_fmt_req_str);
@@ -10643,13 +10650,15 @@ static inline bool _purge_complete_pack_job(struct job_record *pack_leader)
  *	The jobs must have completed at least MIN_JOB_AGE minutes ago.
  *	Test job dependencies, handle after_ok, after_not_ok before
  *	purging any jobs.
- * NOTE: READ lock slurmctld config and WRITE lock jobs before entry
  */
 void purge_old_job(void)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	int i, purge_job_count;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	if ((purge_job_count = list_count(purge_files_list)))
 		debug("%s: job file deletion is falling behind, "
@@ -10940,10 +10949,10 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 	return;
 }
 
-/* update first assigned job id as needed on reconfigure
- * NOTE: READ lock_slurmctld config before entry */
+/* update first assigned job id as needed on reconfigure */
 void reset_first_job_id(void)
 {
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 }
 
@@ -14179,12 +14188,13 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  * Synchronize the batch job in the system with their files.
  * All pending batch jobs must have script and environment files
  * No other jobs should have such files
- * NOTE: READ lock_slurmctld config before entry
- * NOTE: WRITE lock_slurmctld jobs before entry
  */
 int sync_job_files(void)
 {
 	List batch_dirs;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	if (!slurmctld_primary)	/* Don't purge files from backup slurmctld */
 		return SLURM_SUCCESS;
@@ -14199,7 +14209,6 @@ int sync_job_files(void)
 
 /* Append to the batch_dirs list the job_id's associated with
  *	every batch job directory in existence
- * NOTE: READ lock_slurmctld config before entry
  */
 static void _get_batch_job_dir_ids(List batch_dirs)
 {
@@ -14208,6 +14217,8 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 	long long_job_id;
 	uint32_t *job_id_ptr;
 	char *endptr;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
 	xassert(slurmctld_conf.state_save_location);
 	f_dir = opendir(slurmctld_conf.state_save_location);
@@ -14317,12 +14328,13 @@ static void _del_batch_list_rec(void *x)
 	xfree(x);
 }
 
-/* Remove all batch_dir entries in the list
- * NOTE: READ lock_slurmctld config before entry */
+/* Remove all batch_dir entries in the list */
 static void _remove_defunct_batch_dirs(List batch_dirs)
 {
 	ListIterator batch_dir_inx;
 	uint32_t *job_id_ptr;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
 	batch_dir_inx = list_iterator_create(batch_dirs);
 	while ((job_id_ptr = list_next(batch_dir_inx))) {
