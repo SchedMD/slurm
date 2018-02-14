@@ -3786,6 +3786,13 @@ extern void slurmdb_tres_list_from_string(
 			       "replacing with %"PRIu64,
 			      tres_rec->id, tres_rec->count, count);
 			tres_rec->count = count;
+		} else if (flags & TRES_STR_FLAG_SUM) {
+			if (count != INFINITE64) {
+				if (tres_rec->count == INFINITE64)
+					tres_rec->count = count;
+				else
+					tres_rec->count += count;
+			}
 		}
 
 		if (!(tmp_str = strchr(tmp_str, ',')))

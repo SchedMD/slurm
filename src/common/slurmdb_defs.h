@@ -104,6 +104,8 @@ typedef enum {
 #define TRES_STR_FLAG_NO_NULL     0x00000040 /* return blank string
 					      * instead of NULL */
 #define TRES_STR_CONVERT_UNITS    0x00000080 /* Convert number units */
+#define TRES_STR_FLAG_SUM         0x00000100 /* Sum entries of the same type
+					      * ignoring -1 */
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
