@@ -1578,12 +1578,6 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	if (mysql_num_rows(result)) {
 		mysql_free_result(result);
-		/* If there were any associations removed fix it up
-		   here since the table isn't going to be deleted. */
-		xstrfmtcat(mysql_conn->pre_commit_query,
-			   "alter table \"%s_%s\" AUTO_INCREMENT=0;",
-			   cluster_name, assoc_table);
-
 		debug4("we still have associations, can't remove tables");
 		return SLURM_SUCCESS;
 	}
@@ -2043,20 +2037,10 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 					       "creation_time>%ld && (%s);",
 					       cluster_name, table, day_old,
 					       name_char);
-			/* Make sure the next id we get doesn't create holes
-			 * in the ids. */
-			xstrfmtcat(mysql_conn->pre_commit_query,
-				   "alter table \"%s_%s\" AUTO_INCREMENT=0;",
-				   cluster_name, table);
 		} else {
 			query = xstrdup_printf("delete from %s where "
 					       "creation_time>%ld && (%s);",
 					       table, day_old, name_char);
-			/* Make sure the next id we get doesn't create holes
-			 * in the ids. */
-			xstrfmtcat(mysql_conn->pre_commit_query,
-				   "alter table %s AUTO_INCREMENT=0;",
-				   table);
 		}
 	}
 
@@ -2356,15 +2340,6 @@ just_update:
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char);
 
-	/* if we are removing a cluster table this is handled in
-	   remove_cluster_tables if table still exists. */
-	if (table != cluster_table) {
-		/* Make sure the next id we get doesn't create holes
-		 * in the ids. */
-		xstrfmtcat(mysql_conn->pre_commit_query,
-			   "alter table \"%s_%s\" AUTO_INCREMENT=0;",
-			   cluster_name, assoc_table);
-	}
 	if (table != assoc_table)
 		xfree(loc_assoc_char);
 
@@ -2610,12 +2585,10 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 				error("rollback failed");
 		} else {
 			int rc = SLURM_SUCCESS;
-			/* Handle anything here we were unable to do
-			   because of rollback issues.  i.e. Since any
-			   use of altering a tables
-			   AUTO_INCREMENT will make it so you can't
-			   rollback, save it until right at the end.
-			*/
+			/*
+			 * Handle anything here we were unable to do
+			 * because of rollback issues.
+			 */
 			if (mysql_conn->pre_commit_query) {
 				if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 					DB_DEBUG(mysql_conn->conn, "query\n%s",
