@@ -327,12 +327,10 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
 
 		if (!fp) {
-			char *errmsg = NULL;
-			xslurm_strerrorcat(errmsg);
+			char *errmsg = slurm_strerror(errno);
 			fprintf(stderr,
 				"%s: log_init(): Unable to open logfile"
 			        "`%s': %s\n", prog, logfile, errmsg);
-			xfree(errmsg);
 			rc = errno;
 			goto out;
 		}

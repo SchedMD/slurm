@@ -73,7 +73,6 @@ static char *_xstrdup_vprintf(const char *_fmt, va_list _ap);
 strong_alias(_xstrcat,		slurm_xstrcat);
 strong_alias(_xstrncat,		slurm_xstrncat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
-strong_alias(_xslurm_strerrorcat, slurm_xslurm_strerrorcat);
 strong_alias(_xstrftimecat,	slurm_xstrftimecat);
 strong_alias(_xstrfmtcat,	slurm_xstrfmtcat);
 strong_alias(_xmemcat,		slurm_xmemcat);
@@ -171,19 +170,6 @@ void _xstrcatchar(char **str, char c)
 {
 	makespace(str, 1);
 	strcatchar(*str, c);
-}
-
-
-/*
- * concatenate slurm_strerror(errno) onto string in buf, expand buf as needed
- *
- */
-void _xslurm_strerrorcat(char **buf)
-{
-
-	char *err = slurm_strerror(errno);
-
-	xstrcat(*buf, err);
 }
 
 /*

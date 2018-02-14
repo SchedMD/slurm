@@ -45,7 +45,6 @@
 #define xstrcat(__p, __q)		_xstrcat(&(__p), __q)
 #define xstrncat(__p, __q, __l)		_xstrncat(&(__p), __q, __l)
 #define xstrcatchar(__p, __c)		_xstrcatchar(&(__p), __c)
-#define xslurm_strerrorcat(__p)		_xslurm_strerrorcat(&(__p))
 #define xstrftimecat(__p, __fmt)	_xstrftimecat(&(__p), __fmt)
 #define xiso8601timecat(__p, __msec)            _xiso8601timecat(&(__p), __msec)
 #define xrfc5424timecat(__p, __msec)            _xrfc5424timecat(&(__p), __msec)
@@ -81,11 +80,6 @@ void _xstrncat(char **str1, const char *str2, size_t len);
 ** concatenate one char, `c', onto str1, expanding str1 as needed
 */
 void _xstrcatchar(char **str1, char c);
-
-/*
-** concatenate stringified errno onto str
-*/
-void _xslurm_strerrorcat(char **str);
 
 /*
 ** concatenate current time onto str, using fmt if it is non-NUL
