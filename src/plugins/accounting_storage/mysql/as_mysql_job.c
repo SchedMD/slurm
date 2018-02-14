@@ -306,7 +306,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *nodes = NULL, *jname = NULL, *node_inx = NULL;
 	int track_steps = 0;
-	char *block_id = NULL, *partition = NULL;
+	char *block_id = NULL, *partition = NULL, *work_dir = NULL;
 	char *gres_req = NULL, *gres_alloc = NULL, *mcs_label = NULL;
 	char temp_bit[BUF_SIZE];
 	char *query = NULL;
@@ -520,6 +520,9 @@ no_rollup_change:
 		gres_alloc = slurm_add_slash_to_quotes(job_ptr->gres_alloc);
 	if (job_ptr->mcs_label)
 		mcs_label = slurm_add_slash_to_quotes(job_ptr->mcs_label);
+	if (job_ptr->details->work_dir)
+		work_dir = slurm_add_slash_to_quotes(
+			job_ptr->details->work_dir);
 
 	if (!job_ptr->db_index) {
 		if (start_time && (job_state >= JOB_COMPLETE) &&
@@ -579,7 +582,7 @@ no_rollup_change:
 			xstrcat(query, ", tres_alloc");
 		if (job_ptr->tres_req_str)
 			xstrcat(query, ", tres_req");
-		if (job_ptr->details->work_dir)
+		if (work_dir)
 			xstrcat(query, ", work_dir");
 
 		xstrfmtcat(query,
@@ -631,8 +634,8 @@ no_rollup_change:
 			xstrfmtcat(query, ", '%s'", job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
 			xstrfmtcat(query, ", '%s'", job_ptr->tres_req_str);
-		if (job_ptr->details->work_dir)
-			xstrfmtcat(query, ", '%s'", job_ptr->details->work_dir);
+		if (work_dir)
+			xstrfmtcat(query, ", '%s'", work_dir);
 
 		xstrfmtcat(query,
 			   ") on duplicate key update "
@@ -693,9 +696,8 @@ no_rollup_change:
 		if (job_ptr->tres_req_str)
 			xstrfmtcat(query, ", tres_req='%s'",
 				   job_ptr->tres_req_str);
-		if (job_ptr->details->work_dir)
-			xstrfmtcat(query, ", work_dir='%s'",
-				   job_ptr->details->work_dir);
+		if (work_dir)
+			xstrfmtcat(query, ", work_dir='%s'", work_dir);
 
 		if (debug_flags & DEBUG_FLAG_DB_JOB)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -754,9 +756,8 @@ no_rollup_change:
 		if (job_ptr->tres_req_str)
 			xstrfmtcat(query, "tres_req='%s', ",
 				   job_ptr->tres_req_str);
-		if (job_ptr->details->work_dir)
-			xstrfmtcat(query, "work_dir='%s', ",
-				   job_ptr->details->work_dir);
+		if (work_dir)
+			xstrfmtcat(query, "work_dir='%s', ", work_dir);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "nodes_alloc=%u, id_qos=%u, "
