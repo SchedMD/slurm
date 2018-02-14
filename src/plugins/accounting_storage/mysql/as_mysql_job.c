@@ -796,6 +796,7 @@ end_it:
 	xfree(jname);
 	xfree(query);
 	xfree(mcs_label);
+	xfree(work_dir);
 
 	return rc;
 }
