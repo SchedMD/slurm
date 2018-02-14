@@ -3,8 +3,6 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.0pre2
 ==============================
- -- Log that support for the ChosLoc configuration parameter will end in Slurm
-    version 19.05.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
@@ -99,6 +97,8 @@ documents those changes that are of interest to users and administrators.
     lead to job step launch failure under higher cluster loads.
  -- MYSQL - Fix to handle quotes in a given work_dir of a job.
  -- sbcast - fix a race condition that leads to "Unspecified error".
+ -- Log that support for the ChosLoc configuration parameter will end in Slurm
+    version 18.08.
 
 * Changes in Slurm 17.11.3-2
 ==========================
