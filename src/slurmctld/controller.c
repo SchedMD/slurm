@@ -346,6 +346,9 @@ int main(int argc, char **argv)
 			     "but details not gathered");
 	}
 
+	if (slurmctld_conf.chos_loc)
+		error("Support for the ChosLoc configuration parameter will end in Slurm version 18.08");
+
 	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
 		fatal("Invalid Licenses value: %s", slurmctld_conf.licenses);
 
