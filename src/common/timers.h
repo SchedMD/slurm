@@ -71,8 +71,4 @@ extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 			      char *tv_str, int len_tv_str, const char *from,
 			      long limit, long *delta_t);
 
-/* Block daemon indefinitely.
- */
-extern void block_daemon(void);
-
 #endif
