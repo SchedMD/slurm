@@ -191,3 +191,4 @@ Changed the following API's
 Removed the following API's
 ===========================
  -- Removed slurm_xslurm_strerrorcat() function.
+ -- Removed slurm_xstrstrip() function.
