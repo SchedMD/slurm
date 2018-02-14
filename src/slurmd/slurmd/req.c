@@ -4273,7 +4273,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	file_info->uid = key->uid;
 	file_info->gid = key->gid;
 	file_info->job_id = key->job_id;
-	file_info->start_time = time(NULL);
+	file_info->last_update = file_info->start_time = time(NULL);
 
 	//TODO: mmap the file here
 	_fb_wrlock();
