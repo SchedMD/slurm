@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.0pre2
 ==============================
+ -- Log that support for the ChosLoc configuration parameter will end in Slurm
+    version 19.05.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

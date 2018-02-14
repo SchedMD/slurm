@@ -397,21 +397,6 @@ OpenMPI (version 1.3 or higher)
 .RE
 
 .TP
-\fBChosLoc\fR
-If configured, then any processes invoked on the user behalf (namely the
-SPANK prolog/epilog scripts and the slurmstepd processes, which in turn spawn
-the user batch script and applications) are not directly executed by the slurmd
-daemon, but instead the \fBChosLoc\fR program is executed.
-Both are spawned with the same user ID as the configured SlurmdUser
-(typically user root).
-That program's argument are the program and arguments that would otherwise be
-invoked directly by the slurmd daemon.
-The intent of this feature is to be able to run a user application in some
-sort of container.
-This option specified the fully qualified pathname of the chos command
-(see https://github.com/scanon/chos for details).
-
-.TP
 \fBClusterName\fR
 The name by which this Slurm managed cluster is known in the
 accounting database.  This is needed distinguish accounting records
