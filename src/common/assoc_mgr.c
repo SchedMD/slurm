@@ -6347,6 +6347,7 @@ extern char *assoc_mgr_make_tres_str_from_array(
 				continue;
 		} else if (!tres_cnt[i])
 			continue;
+
 		if (flags & TRES_STR_FLAG_SIMPLE)
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 				   tres_str ? "," : "",
