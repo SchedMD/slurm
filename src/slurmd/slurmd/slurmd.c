@@ -761,9 +761,6 @@ _read_config(void)
 	xfree(conf->auth_info);
 	conf->auth_info = xstrdup(cf->authinfo);
 
-	xfree(conf->chos_loc);
-	conf->chos_loc = xstrdup(cf->chos_loc);
-
 	conf->last_update = time(NULL);
 
 	if (conf->conffile == NULL)
@@ -1119,7 +1116,6 @@ _print_conf(void)
 	debug3("Prolog      = `%s'",     conf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);
 	debug3("Public Cert = `%s'",     conf->pubkey);
-	debug3("ChosLoc     = `%s'",     conf->chos_loc);
 	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Syslog Debug  = %d",     cf->slurmd_syslog_debug);
@@ -1172,7 +1168,6 @@ _destroy_conf(void)
 		xfree(conf->auth_info);
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
-		xfree(conf->chos_loc);
 		xfree(conf->cluster_name);
 		xfree(conf->conffile);
 		xfree(conf->cpu_spec_list);
@@ -1561,8 +1556,6 @@ _slurmd_init(void)
 		fatal("Unable to find slurmstepd file at %s", conf->stepd_loc);
 	if (!S_ISREG(stat_buf.st_mode))
 		fatal("slurmstepd not a file at %s", conf->stepd_loc);
-	if (conf->chos_loc && (access(conf->chos_loc, X_OK) != 0))
-		error("Unable to execute ChosLoc at %s: %m", conf->chos_loc);
 
 	return SLURM_SUCCESS;
 }

@@ -725,7 +725,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 		conf_ptr->cgroup_conf = get_slurm_cgroup_conf();
 
 	conf_ptr->checkpoint_type     = xstrdup(conf->checkpoint_type);
-	conf_ptr->chos_loc            = xstrdup(conf->chos_loc);
 	conf_ptr->cluster_name        = xstrdup(conf->cluster_name);
 	conf_ptr->complete_wait       = conf->complete_wait;
 	conf_ptr->control_cnt         = conf->control_cnt;

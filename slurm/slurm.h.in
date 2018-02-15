@@ -2764,7 +2764,6 @@ typedef struct slurm_ctl_conf {
 	time_t boot_time;	/* time slurmctld last booted */
 	void *cgroup_conf;	/* cgroup support config file */
 	char *checkpoint_type;	/* checkpoint plugin type */
-	char *chos_loc;		/* Chroot OS path */
 	char *core_spec_plugin;	/* core specialization plugin name */
 	char *cluster_name;     /* general name of the entire cluster */
 	uint16_t complete_wait;	/* seconds to wait for job completion before

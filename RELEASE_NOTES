@@ -153,6 +153,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     task binding. Modify the scontrol to report and modify these parameters.
  -- Add "NumaCpuBind" option to knl.conf file to automatically change a node's
     CpuBind parameter based upon changes to a node's NUMA mode.
+ -- Remove support for "ChosLoc" configuration parameter.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

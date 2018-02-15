@@ -669,11 +669,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ChosLoc");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->chos_loc);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ClusterName");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->cluster_name);
 	list_append(ret_list, key_pair);

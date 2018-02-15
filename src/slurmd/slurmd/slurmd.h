@@ -71,7 +71,6 @@ typedef struct slurmd_config {
 	char         ***argv;           /* pointer to argument vector      */
 	int          *argc;             /* pointer to argument count       */
 	char         *auth_info;	/* AuthInfo for msg authentication */ 
-	char         *chos_loc;		/* Chroot OS wrapper path          */
 	char         *cluster_name; 	/* conf ClusterName		   */
 	char         *hostname;	 	/* local hostname		   */
 	uint16_t     cpus;              /* lowest-level logical processors */

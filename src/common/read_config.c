@@ -2430,7 +2430,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->bb_type);
 	FREE_NULL_LIST(ctl_conf_ptr->cgroup_conf);
 	xfree (ctl_conf_ptr->checkpoint_type);
-	xfree (ctl_conf_ptr->chos_loc);
 	xfree (ctl_conf_ptr->cluster_name);
 	for (i = 0; i < ctl_conf_ptr->control_cnt; i++) {
 		xfree(ctl_conf_ptr->control_addr[i]);
@@ -2559,7 +2558,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->batch_start_timeout	= 0;
 	xfree (ctl_conf_ptr->bb_type);
 	xfree (ctl_conf_ptr->checkpoint_type);
-	xfree (ctl_conf_ptr->chos_loc);
 	xfree (ctl_conf_ptr->cluster_name);
 	ctl_conf_ptr->complete_wait		= NO_VAL16;
 	for (i = 0; i < ctl_conf_ptr->control_cnt; i++) {
@@ -3253,8 +3251,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->checkpoint_type, "CheckpointType", hashtbl))
 		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);
-
-	(void) s_p_get_string(&conf->chos_loc, "ChosLoc", hashtbl);
 
 	if (s_p_get_string(&temp_str, "CpuFreqDef", hashtbl)) {
 		if (cpu_freq_verify_def(temp_str, &conf->cpu_freq_def)) {

@@ -6381,7 +6381,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack_key_pair_list(build_ptr->cgroup_conf, protocol_version,
 				   buffer);
 		packstr(build_ptr->checkpoint_type, buffer);
-		packstr(build_ptr->chos_loc, buffer);
 		packstr(build_ptr->cluster_name, buffer);
 		pack16(build_ptr->complete_wait, buffer);
 		packstr_array(build_ptr->control_addr,
@@ -6605,6 +6604,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->wait_time, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		char *chos_loc = NULL;
 		pack_time(build_ptr->last_update, buffer);
 
 		pack16(build_ptr->accounting_storage_enforce, buffer);
@@ -6636,7 +6636,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack_time(build_ptr->boot_time, buffer);
 		packstr(build_ptr->bb_type, buffer);
 		packstr(build_ptr->checkpoint_type, buffer);
-		packstr(build_ptr->chos_loc, buffer);
+		packstr(chos_loc, buffer);	/* Old chos_loc */
 		packstr(build_ptr->cluster_name, buffer);
 		pack16(build_ptr->complete_wait, buffer);
 		packstr(build_ptr->control_addr[0], buffer);
@@ -6850,6 +6850,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->wait_time, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *chos_loc = NULL;
 		pack_time(build_ptr->last_update, buffer);
 
 		pack16(build_ptr->accounting_storage_enforce, buffer);
@@ -6881,7 +6882,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack_time(build_ptr->boot_time, buffer);
 		packstr(build_ptr->bb_type, buffer);
 		packstr(build_ptr->checkpoint_type, buffer);
-		packstr(build_ptr->chos_loc, buffer);
+		packstr(chos_loc, buffer);	/* Old chos_loc */
 		packstr(build_ptr->cluster_name, buffer);
 		pack16(build_ptr->complete_wait, buffer);
 		packstr(build_ptr->control_addr[0], buffer);
@@ -7167,8 +7168,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&build_ptr->checkpoint_type,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->chos_loc,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->cluster_name,
 				       &uint32_tmp, buffer);
@@ -7491,6 +7490,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->wait_time, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		char *chos_loc = NULL;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -7545,8 +7545,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr_xmalloc(&build_ptr->checkpoint_type,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->chos_loc,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&chos_loc, &uint32_tmp, buffer);
+		xfree(chos_loc);	/* Old chos_loc */
 		safe_unpackstr_xmalloc(&build_ptr->cluster_name,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->complete_wait, buffer);
@@ -7857,7 +7857,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->wait_time, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		char *charptr_tmp;
+		char *charptr_tmp = NULL;
+		char *chos_loc = NULL;
 
 		/* unpack timestamp of snapshot */
 
@@ -7914,8 +7915,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr_xmalloc(&build_ptr->checkpoint_type,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->chos_loc,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&chos_loc, &uint32_tmp, buffer);
+		xfree(chos_loc);	/* Old chos_loc */
 		safe_unpackstr_xmalloc(&build_ptr->cluster_name,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->complete_wait, buffer);
