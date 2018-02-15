@@ -108,14 +108,14 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		pack32(stats->disk_read_max_taskid, buffer);
 		pack32(stats->disk_write_max_nodeid, buffer);
 		pack32(stats->disk_write_max_taskid, buffer);
-		packstr(stats->tres_usage_in_max, buffer);
-		packstr(stats->tres_usage_out_max, buffer);
-		packstr(stats->tres_usage_in_max_taskid, buffer);
-		packstr(stats->tres_usage_in_max_nodeid, buffer);
-		packstr(stats->tres_usage_out_max_taskid, buffer);
-		packstr(stats->tres_usage_out_max_nodeid, buffer);
 		packstr(stats->tres_usage_in_ave, buffer);
+		packstr(stats->tres_usage_in_max, buffer);
+		packstr(stats->tres_usage_in_max_nodeid, buffer);
+		packstr(stats->tres_usage_in_max_taskid, buffer);
 		packstr(stats->tres_usage_out_ave, buffer);
+		packstr(stats->tres_usage_out_max, buffer);
+		packstr(stats->tres_usage_out_max_nodeid, buffer);
+		packstr(stats->tres_usage_out_max_taskid, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		if (!stats) {
 			for (i=0; i<4; i++)
@@ -249,22 +249,22 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpack32(&stats->disk_read_max_taskid, buffer);
 		safe_unpack32(&stats->disk_write_max_nodeid, buffer);
 		safe_unpack32(&stats->disk_write_max_taskid, buffer);
-		safe_unpackstr_xmalloc(&stats->tres_usage_in_max,
-			&uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&stats->tres_usage_out_max,
-			&uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&stats->tres_usage_in_max_taskid,
-			&uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&stats->tres_usage_in_max_nodeid,
-			&uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&stats->tres_usage_out_max_taskid,
-			&uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&stats->tres_usage_out_max_nodeid,
-			&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&stats->tres_usage_in_ave,
-			&uint32_tmp, buffer);
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_max,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_max_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_max_taskid,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&stats->tres_usage_out_ave,
-			&uint32_tmp, buffer);
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_max,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_max_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_max_taskid,
+				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack64(&stats->vsize_max, buffer);
 		safe_unpack64(&stats->rss_max, buffer);
