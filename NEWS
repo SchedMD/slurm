@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- sbcast - fix a race condition that leads to "Unspecified error".
  -- Log that support for the ChosLoc configuration parameter will end in Slurm
     version 18.08.
+ -- Fix backfill performance issue where bf_min_prio_reserve was not respected.
 
 * Changes in Slurm 17.11.3-2
 ==========================
