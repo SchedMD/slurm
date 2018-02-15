@@ -6338,7 +6338,14 @@ extern char *assoc_mgr_make_tres_str_from_array(
 		assoc_mgr_lock(&locks);
 
 	for (i=0; i<g_tres_count; i++) {
-		if (!assoc_mgr_tres_array[i] || !tres_cnt[i])
+		if (!assoc_mgr_tres_array[i])
+			continue;
+
+		if (flags & TRES_STR_FLAG_ALLOW_REAL) {
+			if ((tres_cnt[i] == NO_VAL64) ||
+			    (tres_cnt[i] == INFINITE64))
+				continue;
+		} else if (!tres_cnt[i])
 			continue;
 		if (flags & TRES_STR_FLAG_SIMPLE)
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,

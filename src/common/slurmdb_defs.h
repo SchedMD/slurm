@@ -110,6 +110,8 @@ typedef enum {
 					      * the same type ignoring -1 */
 #define TRES_STR_FLAG_MIN         0x00000400 /* Set Min value from entries of
 					      * the same type ignoring -1 */
+#define TRES_STR_FLAG_ALLOW_REAL  0x00000800 /* Allow all counts (even zero)
+					      * unless INFINITE64 or NO_VAL64 */
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
