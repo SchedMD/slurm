@@ -4223,27 +4223,29 @@ extern int slurmdb_get_tres_base_unit(char *tres_type)
 	return ret_unit;
 }
 
-extern char *slurmdb_ave_tres_usage(char *tres_string, char *ave,
-				    uint32_t tres_id, int tasks)
+extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks)
 {
 	List tres_list = NULL;
+	ListIterator itr;
 	slurmdb_tres_rec_t *tres_rec = NULL;
-	uint64_t count = (uint64_t) NO_VAL;
 	uint32_t flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REPLACE;
-	char *new_tres_str = NULL;
 	char *ret_tres_str = NULL;
 
-	if (ave == NULL)
-		ave = xstrdup_printf("%d=0", TRES_USAGE_DISK);
-	tres_list = list_create(slurmdb_destroy_tres_rec);
-	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
-	list_append(tres_list, tres_rec);
-	tres_rec->id = tres_id;
-	count = slurmdb_find_tres_count_in_string(tres_string, tres_id);
-	tres_rec->count = count / (uint64_t) tasks;
-	new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-	ret_tres_str = slurmdb_combine_tres_strings(&ave, new_tres_str, flags);
-	xfree(new_tres_str);
+	if (!tres_string)
+		return NULL;
+
+	slurmdb_tres_list_from_string(&tres_list, tres_string, flags);
+	if (!tres_list) {
+		error("%s: couldn't make tres_list", __func__);
+		return ret_tres_str;
+	}
+
+	itr = list_iterator_create(tres_list);
+	while ((tres_rec = list_next(itr)))
+		tres_rec->count /= (uint64_t)tasks;
+	list_iterator_destroy(itr);
+
+	ret_tres_str = slurmdb_make_tres_string(tres_list, flags);
 	FREE_NULL_LIST(tres_list);
 
 	return ret_tres_str;
