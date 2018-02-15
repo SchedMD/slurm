@@ -3801,6 +3801,14 @@ extern void slurmdb_tres_list_from_string(
 					tres_rec->count =
 						MAX(tres_rec->count, count);
 			}
+		} else if (flags & TRES_STR_FLAG_MIN) {
+			if (count != INFINITE64) {
+				if (tres_rec->count == INFINITE64)
+					tres_rec->count = count;
+				else
+					tres_rec->count =
+						MIN(tres_rec->count, count);
+			}
 		}
 
 		if (!(tmp_str = strchr(tmp_str, ',')))

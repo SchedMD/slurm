@@ -108,6 +108,8 @@ typedef enum {
 					      * ignoring -1 */
 #define TRES_STR_FLAG_MAX         0x00000200 /* Set Max value from entries of
 					      * the same type ignoring -1 */
+#define TRES_STR_FLAG_MIN         0x00000400 /* Set Min value from entries of
+					      * the same type ignoring -1 */
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
