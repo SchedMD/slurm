@@ -455,7 +455,7 @@ $ salloc -n1 : -n2 beta bash
 salloc: Pending job allocation 1721
 salloc: Granted job allocation 1721
 $ srun --pack-group=0,1 true   # Launches steps 1721.0 and 1722.0
-$ srun --pack-group=0 t  rue   # Launches step  1721.1, no 1722.1
+$ srun --pack-group=0   true   # Launches step  1721.1, no 1722.1
 $ srun --pack-group=0,1 true   # Launches steps 1721.2 and 1722.2
 </pre>
 
@@ -687,6 +687,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 January 2018</p>
+<p style="text-align:center;">Last modified 15 February 2018</p>
 
 <!--#include virtual="footer.txt"-->
