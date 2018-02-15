@@ -200,7 +200,7 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 	job_ptr->array_task_str = out_buf;
 }
 
-static void _print_tres_field(char *tmp_char, char *nodes)
+static void _print_tres_field(char *tres_in, char *nodes)
 {
 	char *temp = NULL;
 
@@ -211,7 +211,7 @@ static void _print_tres_field(char *tmp_char, char *nodes)
 		g_tres_list = slurmdb_tres_get(acct_db_conn, &tres_cond);
 	}
 
-	temp = slurmdb_make_tres_string_from_simple(tmp_char, g_tres_list,
+	temp = slurmdb_make_tres_string_from_simple(tres_in, g_tres_list,
 						    params.units,
 						    params.convert_flags,
 						    nodes);
