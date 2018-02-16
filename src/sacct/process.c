@@ -38,104 +38,118 @@
 
 #include "sacct.h"
 
-static void _aggregate_tres_usage_stats(slurmdb_stats_t *dest,
-					slurmdb_stats_t *from,
-					uint32_t tres_id)
+static void _aggregate_tres_usage_stats_internal(char **dest_tres_max,
+						 char **dest_tres_max_nodeid,
+						 char **dest_tres_max_taskid,
+						 char *from_tres_max,
+						 char *from_tres_max_nodeid,
+						 char *from_tres_max_taskid)
 {
-	List tres_list = NULL;
-	slurmdb_tres_rec_t *tres_rec = NULL;
-	uint32_t flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REPLACE;
-	char *new_tres_str = NULL;
-	uint64_t dest_count = 0;
-	uint64_t from_count = 0;
+	List dest_tres_list = NULL, from_tres_list = NULL;
+	ListIterator itr;
+	slurmdb_tres_rec_t *dest_tres_rec, *from_tres_rec;
+	uint32_t flags;
 
-	tres_list = list_create(slurmdb_destroy_tres_rec);
-	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
-	tres_rec->id = tres_id;
-	list_append(tres_list, tres_rec);
-	dest_count = slurmdb_find_tres_count_in_string(dest->tres_usage_in_max,
-						       tres_id);
-	if (dest_count == INFINITE64)
-		dest_count = 0;
-	from_count = slurmdb_find_tres_count_in_string(from->tres_usage_in_max,
-						       tres_id);
-	if (from_count == INFINITE64)
-		from_count = 0;
-	if (dest_count < from_count) {
-		tres_rec->count = from_count;
-		new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-		dest->tres_usage_in_max = slurmdb_combine_tres_strings(
-			&dest->tres_usage_in_max,
-			new_tres_str, flags);
-		xfree(new_tres_str);
-		tres_rec->count = slurmdb_find_tres_count_in_string(
-			from->tres_usage_in_max_taskid, tres_id);
-		new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-		dest->tres_usage_in_max_taskid = slurmdb_combine_tres_strings(
-			&dest->tres_usage_in_max_taskid, new_tres_str, flags);
-		xfree(new_tres_str);
-		tres_rec->count = slurmdb_find_tres_count_in_string(
-			from->tres_usage_in_max_nodeid, tres_id);
-		new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-		dest->tres_usage_in_max_nodeid = slurmdb_combine_tres_strings(
-			&dest->tres_usage_in_max_nodeid, new_tres_str, flags);
-		xfree(new_tres_str);
+	xassert(dest_tres_max);
+	xassert(dest_tres_max_nodeid);
+	xassert(dest_tres_max_taskid);
+
+	flags = TRES_STR_FLAG_REMOVE;
+	slurmdb_tres_list_from_string(&dest_tres_list, *dest_tres_max, flags);
+	slurmdb_tres_list_from_string(&from_tres_list, from_tres_max, flags);
+
+	itr = list_iterator_create(from_tres_list);
+	while ((from_tres_rec = list_next(itr))) {
+		if (from_tres_rec->count == INFINITE64)
+			continue;
+
+		if (!(dest_tres_rec = list_find_first(dest_tres_list,
+						      slurmdb_find_tres_in_list,
+						      &from_tres_rec->id))) {
+			list_append(dest_tres_list, from_tres_rec);
+		} else {
+			if (dest_tres_rec->count == INFINITE64 ||
+			    (dest_tres_rec->count < from_tres_rec->count)) {
+				dest_tres_rec->count = from_tres_rec->count;
+
+				/* overload rec_count to be the nodeid */
+				dest_tres_rec->rec_count =
+					slurmdb_find_tres_count_in_string(
+						from_tres_max_nodeid,
+						from_tres_rec->id);
+				/* overload alloc_secs to be the taskid */
+				dest_tres_rec->alloc_secs =
+					slurmdb_find_tres_count_in_string(
+						from_tres_max_taskid,
+						from_tres_rec->id);
+			}
+		}
 	}
-	dest_count = slurmdb_find_tres_count_in_string(dest->tres_usage_in_ave,
-						       tres_id);
-	if (dest_count == INFINITE64)
-		dest_count = 0;
-	from_count = slurmdb_find_tres_count_in_string(from->tres_usage_in_ave,
-						       tres_id);
-	if (from_count == INFINITE64)
-		from_count = 0;
-	tres_rec->count = dest_count + from_count;
-	new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-	dest->tres_usage_in_ave = slurmdb_combine_tres_strings(
-		&dest->tres_usage_in_ave, new_tres_str, flags);
-	xfree(new_tres_str);
-	dest_count = slurmdb_find_tres_count_in_string(dest->tres_usage_out_max,
-						       tres_id);
-	if (dest_count == INFINITE64)
-		dest_count = 0;
-	from_count = slurmdb_find_tres_count_in_string(from->tres_usage_out_max,
-						       tres_id);
-	if (dest_count == INFINITE64)
-		dest_count = 0;
-	if (dest_count < from_count) {
-		tres_rec->count = from_count;
-		new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-		dest->tres_usage_out_max = slurmdb_combine_tres_strings(
-			&dest->tres_usage_out_max,
-			new_tres_str, flags);
-		xfree(new_tres_str);
-		tres_rec->count = slurmdb_find_tres_count_in_string(
-			from->tres_usage_out_max_taskid, tres_id);
-		new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-		dest->tres_usage_out_max_taskid = slurmdb_combine_tres_strings(
-			&dest->tres_usage_out_max_taskid, new_tres_str, flags);
-		xfree(new_tres_str);
-		tres_rec->count = slurmdb_find_tres_count_in_string(
-			from->tres_usage_out_max_nodeid, tres_id);
-		new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-		dest->tres_usage_out_max_nodeid = slurmdb_combine_tres_strings(
-			&dest->tres_usage_out_max_nodeid, new_tres_str, flags);
-		xfree(new_tres_str);
+	/* make the string now from the list */
+	flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REMOVE;
+	xfree(*dest_tres_max);
+	*dest_tres_max = slurmdb_make_tres_string(dest_tres_list, flags);
+
+	itr = list_iterator_create(dest_tres_list);
+
+	/* Now process the nodeid */
+	xfree(*dest_tres_max_nodeid);
+	while ((dest_tres_rec = list_next(itr)))
+		dest_tres_rec->count = (uint64_t)dest_tres_rec->rec_count;
+	*dest_tres_max_nodeid = slurmdb_make_tres_string(dest_tres_list, flags);
+
+	/* Now process the taskid */
+	xfree(*dest_tres_max_taskid);
+	while ((dest_tres_rec = list_next(itr)))
+		dest_tres_rec->count = dest_tres_rec->alloc_secs;
+	*dest_tres_max_taskid = slurmdb_make_tres_string(dest_tres_list, flags);
+
+	list_iterator_destroy(itr);
+
+	FREE_NULL_LIST(dest_tres_list);
+	FREE_NULL_LIST(from_tres_list);
+}
+
+static void _aggregate_tres_usage_stats(slurmdb_stats_t *dest,
+					slurmdb_stats_t *from)
+{
+	uint32_t flags;
+
+	if (!dest->tres_usage_in_max) {
+		dest->tres_usage_in_ave = xstrdup(from->tres_usage_in_ave);
+		dest->tres_usage_in_max = xstrdup(from->tres_usage_in_max);
+		dest->tres_usage_in_max_taskid =
+			xstrdup(from->tres_usage_in_max_taskid);
+		dest->tres_usage_in_max_nodeid =
+			xstrdup(from->tres_usage_in_max_nodeid);
+
+		dest->tres_usage_out_ave = xstrdup(from->tres_usage_out_ave);
+		dest->tres_usage_out_max = xstrdup(from->tres_usage_out_max);
+		dest->tres_usage_out_max_taskid =
+			xstrdup(from->tres_usage_out_max_taskid);
+		dest->tres_usage_out_max_nodeid =
+			xstrdup(from->tres_usage_out_max_nodeid);
+		return;
 	}
-	dest_count = slurmdb_find_tres_count_in_string(dest->tres_usage_out_ave,
-						       tres_id);
-	if (dest_count == INFINITE64)
-		dest_count = 0;
-	from_count = slurmdb_find_tres_count_in_string(from->tres_usage_out_ave,
-						       tres_id);
-	if (from_count == INFINITE64)
-		from_count = 0;
-	tres_rec->count = dest_count + from_count;
-	new_tres_str = slurmdb_make_tres_string(tres_list, flags);
-	dest->tres_usage_out_ave = slurmdb_combine_tres_strings(
-		&dest->tres_usage_out_ave, new_tres_str, flags);
-	xfree(new_tres_str);
-	FREE_NULL_LIST(tres_list);
+
+	_aggregate_tres_usage_stats_internal(&dest->tres_usage_in_max,
+					     &dest->tres_usage_in_max_nodeid,
+					     &dest->tres_usage_in_max_taskid,
+					     from->tres_usage_in_max,
+					     from->tres_usage_in_max_nodeid,
+					     from->tres_usage_in_max_taskid);
+	_aggregate_tres_usage_stats_internal(&dest->tres_usage_out_max,
+					     &dest->tres_usage_out_max_nodeid,
+					     &dest->tres_usage_out_max_taskid,
+					     from->tres_usage_out_max,
+					     from->tres_usage_out_max_nodeid,
+					     from->tres_usage_out_max_taskid);
+
+	flags =	TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REMOVE + TRES_STR_FLAG_SUM;
+	(void)slurmdb_combine_tres_strings(
+		&dest->tres_usage_in_ave, from->tres_usage_in_ave, flags);
+	(void)slurmdb_combine_tres_strings(
+		&dest->tres_usage_out_ave, from->tres_usage_out_ave, flags);
 }
 
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
@@ -190,7 +204,5 @@ void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
 	}
 	dest->disk_write_ave += from->disk_write_ave;
 
-	_aggregate_tres_usage_stats(dest, from, TRES_USAGE_DISK);
-	_aggregate_tres_usage_stats(dest, from, TRES_USAGE_FS_LUSTRE);
-	_aggregate_tres_usage_stats(dest, from, TRES_USAGE_IC_OFED);
+	_aggregate_tres_usage_stats(dest, from);
 }
