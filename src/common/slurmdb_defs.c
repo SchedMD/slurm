@@ -3584,7 +3584,11 @@ extern char *slurmdb_make_tres_string_from_simple(
 				   tres_rec->name ? "/" : "",
 				   tres_rec->name ? tres_rec->name : "");
 		if (count != INFINITE64) {
-			if ((tres_rec->id == TRES_MEM) ||
+			if (nodes) {
+				node_name = find_hostname(count, nodes);
+				xstrfmtcat(tres_str, "%s", node_name);
+				xfree(node_name);
+			} else if ((tres_rec->id == TRES_MEM) ||
 			    (tres_rec->type &&
 			     !xstrcasecmp(tres_rec->type, "bb"))) {
 				char outbuf[FORMAT_STRING_SIZE];
@@ -3592,10 +3596,6 @@ extern char *slurmdb_make_tres_string_from_simple(
 						 sizeof(outbuf), UNIT_MEGA,
 						 spec_unit, convert_flags);
 				xstrfmtcat(tres_str, "%s", outbuf);
-			} else if (nodes) {
-				node_name = find_hostname(count, nodes);
-				xstrfmtcat(tres_str, "%s", node_name);
-				xfree(node_name);
 			} else {
 				xstrfmtcat(tres_str, "%"PRIu64, count);
 			}
