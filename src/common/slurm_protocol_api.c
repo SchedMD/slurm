@@ -4900,6 +4900,8 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 				orig_type++;
 			}
 		}
+	} else if (flags & CONVERT_NUM_UNIT_RAW) {
+		orig_type = UNIT_NONE;
 	} else if (flags & CONVERT_NUM_UNIT_NO) {
 		/* no op */
 	} else if (flags & CONVERT_NUM_UNIT_EXACT) {

@@ -59,6 +59,7 @@
 
 #define CONVERT_NUM_UNIT_EXACT 0x00000001
 #define CONVERT_NUM_UNIT_NO    0x00000002
+#define CONVERT_NUM_UNIT_RAW   0x00000004
 
 /* unit types */
 enum {
