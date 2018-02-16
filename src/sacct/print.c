@@ -1449,7 +1449,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = NULL;
 				break;
 			}
-			info("sending in %s", tmp_char);
 			_print_tres_field(tmp_char, NULL, 0);
 			break;
 		case PRINT_TRESUOA:
