@@ -49,6 +49,7 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_acct_gather_filesystem.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -113,6 +114,7 @@ static lustre_sens_t lustre_se = {0,0,0,0,0,0,0,0};
 
 static uint64_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
+static int tres_pos = -1;
 
 /* Default path to lustre stats */
 const char proc_base_path[] = "/proc/fs/lustre";
@@ -381,7 +383,17 @@ static bool _run_in_daemon(void)
  */
 extern int init(void)
 {
+	slurmdb_tres_rec_t tres_rec;
+
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
+
 	debug_flags = slurm_get_debug_flags();
+
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+	tres_rec.type = "usage";
+	tres_rec.name = "lustre";
+	tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 
 	return SLURM_SUCCESS;
 }
@@ -435,6 +447,11 @@ extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 	static bool first = true;
 	acct_filesystem_data_t current;
 
+	if (tres_pos == -1) {
+		debug2("%s: We are not tracking TRES usage/lustre", __func__);
+		return SLURM_SUCCESS;
+	}
+
 	slurm_mutex_lock(&lustre_lock);
 
 	if (_read_lustre_counters() != SLURM_SUCCESS) {
@@ -443,6 +460,11 @@ extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 		return SLURM_FAILURE;
 	}
 	if (first) {
+		prec->mb_read[tres_pos] = 0;
+		prec->mb_written[tres_pos] = 0;
+		prec->num_reads[tres_pos] = 0;
+		prec->num_writes[tres_pos] = 0;
+
 		starting.reads = lustre_se.all_lustre_nb_reads;
 		starting.writes = lustre_se.all_lustre_nb_writes;
 		starting.read_size = (double)lustre_se.all_lustre_read_bytes;
@@ -457,13 +479,13 @@ extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 	current.writes = lustre_se.all_lustre_nb_writes;
 	current.read_size = (double)lustre_se.all_lustre_read_bytes;
 	current.write_size = (double)lustre_se.all_lustre_write_bytes;
-	prec->num_reads[USAGE_FS_LUSTRE] =
+	prec->num_reads[tres_pos] =
 		(double)current.reads - (double) starting.reads;
-	prec->num_writes[USAGE_FS_LUSTRE] =
+	prec->num_writes[tres_pos] =
 		(double) current.writes - (double) starting.writes;
-	prec->mb_read[USAGE_FS_LUSTRE] =
+	prec->mb_read[tres_pos] =
 		(current.read_size - starting.read_size) / (1 << 20);
-	prec->mb_written[USAGE_FS_LUSTRE] =
+	prec->mb_written[tres_pos] =
 		(current.write_size - starting.write_size) / (1 << 20);
 
 	slurm_mutex_unlock(&lustre_lock);

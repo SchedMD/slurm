@@ -1622,12 +1622,6 @@ static int _init_tres(void)
 			tres_rec->id = TRES_NODE;
 		else if (!xstrcasecmp(temp_char, "billing"))
 			tres_rec->id = TRES_BILLING;
-		else if (!xstrcasecmp(temp_char, "usage_disk"))
-			tres_rec->id = TRES_USAGE_DISK;
-		else if (!xstrcasecmp(temp_char, "usage_fs_lustre"))
-			tres_rec->id = TRES_USAGE_FS_LUSTRE;
-		else if (!xstrcasecmp(temp_char, "usage_ic_ofed"))
-			tres_rec->id = TRES_USAGE_IC_OFED;
 		else if (!xstrncasecmp(temp_char, "bb/", 3)) {
 			tres_rec->type[2] = '\0';
 			tres_rec->name = xstrdup(temp_char+3);
@@ -1650,9 +1644,16 @@ static int _init_tres(void)
 				      "have a name, (i.e. License/Foo).  "
 				      "You gave %s",
 				      temp_char);
+		} else if (!xstrncasecmp(temp_char, "usage/", 6)) {
+			tres_rec->type[5] = '\0';
+			tres_rec->name = xstrdup(temp_char+6);
+			if (!tres_rec->name)
+				fatal("Usage type tres need to have a name, "
+				      "(i.e. usage/disk).  You gave %s",
+				      temp_char);
 		} else {
 			fatal("%s: Unknown tres type '%s', acceptable "
-			      "types are CPU,Gres/,License/,Mem",
+			      "types are CPU,Gres/,License/,Mem,Usage/",
 			      __func__, temp_char);
 			xfree(tres_rec->type);
 			xfree(tres_rec);

@@ -133,6 +133,9 @@ struct jobacctinfo {
 	double max_disk_write; /* max disk write data */
 	jobacct_id_t max_disk_write_id; /* max disk write data task id */
 	double tot_disk_write; /* total local disk writes in megabytes */
+	uint32_t tres_count; /* count of tres in the usage array's */
+	uint32_t *tres_ids; /* array of tres_count of the tres id's */
+	List tres_list; /* list of tres we are dealing with */
 	uint64_t *tres_usage_in_tot; /* total usage in, in megabytes */
 	uint64_t *tres_usage_out_tot; /* total usage out, in megabytes */
 	uint64_t *tres_usage_in_max; /* tres max usage in data */

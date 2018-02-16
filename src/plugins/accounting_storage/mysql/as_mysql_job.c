@@ -41,6 +41,7 @@
 #include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
@@ -49,19 +50,24 @@
 
 #define BUFFER_SIZE 4096
 
-static char *_average_tres_usage(uint64_t *tres_array, int tasks)
+static char *_average_tres_usage(uint32_t *tres_ids, uint64_t *tres_cnts,
+				 int tres_cnt, int tasks)
 {
-	char *new_tres_str = NULL;
-	uint64_t *average;
-	int i = 0;
+	char *ret_str = NULL;
+	int i;
 
-	average = xmalloc_nz(TRES_USAGE_CNT * sizeof(uint64_t));
-	for (i = 0; i < TRES_USAGE_CNT; i++) {
-		average[i] = tres_array[i] /=(uint64_t) tasks;
+	if (!tasks)
+		return ret_str;
+
+	for (i = 0; i < tres_cnt; i++) {
+		if (tres_cnts[i] == INFINITE64)
+			continue;
+		xstrfmtcat(ret_str, "%s%u=%"PRIu64,
+			   ret_str ? "," : "",
+			   tres_ids[i], tres_cnts[i] / (uint64_t)tasks);
 	}
-	new_tres_str = make_tres_usage_str_from_array(average);
-	xfree(average);
-	return new_tres_str;
+
+	return ret_str;
 }
 
 /* Used in job functions for getting the database index based off the
@@ -1405,24 +1411,46 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			ave_disk_write = (double)jobacct->tot_disk_write;
 			ave_disk_write /= (double)tasks;
 			tres_usage_in_ave =
-				_average_tres_usage(jobacct->tres_usage_in_tot,
-				tasks);
+				_average_tres_usage(jobacct->tres_ids,
+						    jobacct->tres_usage_in_tot,
+						    jobacct->tres_count,
+						    tasks);
 			tres_usage_out_ave =
-				_average_tres_usage(jobacct->tres_usage_out_tot,
-				tasks);
+				_average_tres_usage(jobacct->tres_ids,
+						    jobacct->tres_usage_out_tot,
+						    jobacct->tres_count,
+						    tasks);
 		}
-		tres_usage_in_max = make_tres_usage_str_from_array(
-			jobacct->tres_usage_in_max);
-		tres_usage_in_max_taskid = make_tres_usage_str_from_array(
-			jobacct->tres_usage_in_max_taskid);
-		tres_usage_in_max_nodeid = make_tres_usage_str_from_array(
-			jobacct->tres_usage_in_max_nodeid);
-		tres_usage_out_max = make_tres_usage_str_from_array(
-			jobacct->tres_usage_out_max);
-		tres_usage_out_max_taskid = make_tres_usage_str_from_array(
-			jobacct->tres_usage_out_max_taskid);
-		tres_usage_out_max_nodeid = make_tres_usage_str_from_array(
-			jobacct->tres_usage_out_max_nodeid);
+
+		/*
+		 * We can't trust the assoc_mgr here as the tres may have
+		 * changed, we have to go off what was sent us.  We can just use
+		 * the _average_tres_usage to do this by dividing by 1.
+		 */
+		tres_usage_in_max = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_max,
+			jobacct->tres_count, 1);
+		tres_usage_in_max_nodeid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_max_nodeid,
+			jobacct->tres_count, 1);
+		tres_usage_in_max_taskid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_max_taskid,
+			jobacct->tres_count, 1);
+		tres_usage_out_max = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_max,
+			jobacct->tres_count, 1);
+		tres_usage_out_max_nodeid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_max_nodeid,
+			jobacct->tres_count, 1);
+		tres_usage_out_max_taskid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_max_taskid,
+			jobacct->tres_count, 1);
 
 		xstrfmtcat(query,
 			   ", user_sec=%u, user_usec=%u, "

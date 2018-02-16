@@ -6360,8 +6360,11 @@ extern char *assoc_mgr_make_tres_str_from_array(
 			if ((flags & TRES_STR_CONVERT_UNITS) &&
 			    ((assoc_mgr_tres_array[i]->id == TRES_MEM) ||
 			     (assoc_mgr_tres_array[i]->type &&
-			      !xstrcasecmp(
-				      assoc_mgr_tres_array[i]->type, "bb")))) {
+			      (!xstrcasecmp(
+				      assoc_mgr_tres_array[i]->type, "bb") ||
+			       !xstrcasecmp(
+				       assoc_mgr_tres_array[i]->type, "usage"))
+				     ))) {
 				char outbuf[32];
 				convert_num_unit((double)tres_cnt[i], outbuf,
 						 sizeof(outbuf), UNIT_MEGA,

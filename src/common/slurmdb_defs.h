@@ -63,18 +63,8 @@ typedef enum {
 	TRES_ENERGY,
 	TRES_NODE,
 	TRES_BILLING,
-	TRES_USAGE_DISK,
-	TRES_USAGE_FS_LUSTRE,
-	TRES_USAGE_IC_OFED,
 	TRES_STATIC_CNT
 } tres_types_t;
-
-typedef enum {
-	USAGE_DISK = 0,
-	USAGE_FS_LUSTRE,
-	USAGE_IC_OFED,
-	TRES_USAGE_CNT
-} tres_usage_types_t;
 
 /* These #defines are for the tres_str functions below and should be
  * sent when flags are allowed in the functions.

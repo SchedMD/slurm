@@ -47,6 +47,7 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_acct_gather_interconnect.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -135,6 +136,7 @@ static uint64_t debug_flags = 0;
 static pthread_mutex_t ofed_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int dataset_id = -1; /* id of the dataset for profile data */
+static int tres_pos = -1;
 
 static uint8_t *_slurm_pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
 				     unsigned timeout, unsigned id,
@@ -184,8 +186,8 @@ static int _read_ofed_values(void)
 				       IB_SA_CLASS, IB_PERFORMANCE_CLASS};
 		srcport = mad_rpc_open_port(ibd_ca, ofed_conf.port,
 					    mgmt_classes, 4);
-		if (!srcport){
-			error("Failed to open '%s' port '%d'", ibd_ca,
+		if (!srcport) {
+			debug("Failed to open '%s' port '%d'", ibd_ca,
 			      ofed_conf.port);
 			debug("OFED: failed");
 			return SLURM_ERROR;
@@ -341,8 +343,17 @@ static bool _run_in_daemon(void)
  */
 extern int init(void)
 {
+	slurmdb_tres_rec_t tres_rec;
+
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
 
 	debug_flags = slurm_get_debug_flags();
+
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+	tres_rec.type = "usage";
+	tres_rec.name = "ofed";
+	tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 
 	return SLURM_SUCCESS;
 }
@@ -439,15 +450,25 @@ extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
 	static bool first = true;
 	acct_network_data_t current;
 
+	if (tres_pos == -1) {
+		debug2("%s: We are not tracking TRES usage/ofed", __func__);
+		return SLURM_SUCCESS;
+	}
+
 	slurm_mutex_lock(&ofed_lock);
 
 	if (_read_ofed_values() != SLURM_SUCCESS) {
-		error("%s: Cannot retrieve ic_ofed counters", __func__);
+		debug2("%s: Cannot retrieve ofed counters", __func__);
 		slurm_mutex_unlock(&ofed_lock);
 		return SLURM_FAILURE;
 	}
 
 	if (first) {
+		prec->mb_read[tres_pos] = 0;
+		prec->mb_written[tres_pos] = 0;
+		prec->num_reads[tres_pos] = 0;
+		prec->num_writes[tres_pos] = 0;
+
 		starting.packets_in = ofed_sens.total_rcvpkts;
 		starting.packets_out = ofed_sens.total_xmtpkts;
 		starting.size_in = (double)ofed_sens.total_rcvdata;
@@ -460,13 +481,13 @@ extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
 	current.size_in = (double)ofed_sens.total_rcvdata;
 	current.size_out = (double)ofed_sens.total_xmtdata;
 
-	prec->num_reads[USAGE_IC_OFED] =
+	prec->num_reads[tres_pos] =
 		(double)current.packets_in - (double)starting.packets_in;
-	prec->num_writes[USAGE_IC_OFED] =
+	prec->num_writes[tres_pos] =
 		(double)current.packets_out - (double)starting.packets_out;
-	prec->mb_read[USAGE_IC_OFED] =
+	prec->mb_read[tres_pos] =
 		(current.size_in - starting.size_in) / (1 << 20);
-	prec->mb_written[USAGE_IC_OFED] =
+	prec->mb_written[tres_pos] =
 		(current.size_out - starting.size_out) / (1 << 20);
 
 	slurm_mutex_unlock(&ofed_lock);
