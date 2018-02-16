@@ -477,6 +477,31 @@ _init_from_slurmd(int sock, char **argv,
 
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
+	/* Receive TRES information for slurmd */
+	safe_read(sock, &len, sizeof(int));
+	if (len > 0) {
+		List tmp_list = NULL;
+		assoc_mgr_lock_t locks = {
+			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+			WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+		incoming_buffer = xmalloc(sizeof(char) * len);
+		safe_read(sock, incoming_buffer, len);
+		buffer = create_buf(incoming_buffer,len);
+		slurm_unpack_list(&tmp_list,
+				  slurmdb_unpack_tres_rec,
+				  slurmdb_destroy_tres_rec,
+				  buffer, SLURM_PROTOCOL_VERSION);
+		assoc_mgr_lock(&locks);
+		assoc_mgr_post_tres_list(tmp_list);
+		debug("%s: slurmd sent %u TRES.", __func__, g_tres_count);
+		/* assoc_mgr_post_tres_list destroys tmp_list */
+		tmp_list = NULL;
+		assoc_mgr_unlock(&locks);
+
+		free_buf(buffer);
+	}
+
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
 	debug3("step_type = %d", step_type);
@@ -535,31 +560,6 @@ _init_from_slurmd(int sock, char **argv,
 			fatal("slurmstepd: problem with unpack of "
 			      "slurmd_conf");
 		}
-		free_buf(buffer);
-	}
-
-	/* Receive TRES information for slurmd */
-	safe_read(sock, &len, sizeof(int));
-	if (len > 0) {
-		List tmp_list = NULL;
-		assoc_mgr_lock_t locks = {
-			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-			WRITE_LOCK, NO_LOCK, NO_LOCK };
-
-		incoming_buffer = xmalloc(sizeof(char) * len);
-		safe_read(sock, incoming_buffer, len);
-		buffer = create_buf(incoming_buffer,len);
-		slurm_unpack_list(&tmp_list,
-				  slurmdb_unpack_tres_rec,
-				  slurmdb_destroy_tres_rec,
-				  buffer, SLURM_PROTOCOL_VERSION);
-		assoc_mgr_lock(&locks);
-		assoc_mgr_post_tres_list(tmp_list);
-		debug("%s: slurmd sent %u TRES.", __func__, g_tres_count);
-		/* assoc_mgr_post_tres_list destroys tmp_list */
-		tmp_list = NULL;
-		assoc_mgr_unlock(&locks);
-
 		free_buf(buffer);
 	}
 
