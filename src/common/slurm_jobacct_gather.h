@@ -69,13 +69,6 @@
 #define PROTOCOL_TYPE_SLURM 0
 #define PROTOCOL_TYPE_DBD 1
 
-struct lustre_data {
-	uint64_t	reads;
-	uint64_t	writes;
-	double		read_size;      // currently in megabytes
-	double		write_size;     // currently in megabytes
-};
-
 typedef struct jag_prec {	/* process record */
 	int	act_cpufreq;	/* actual average cpu frequency */
 	double	disk_read;	/* local disk read */
