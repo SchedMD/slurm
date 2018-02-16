@@ -102,9 +102,6 @@ slurmdb_step_rec_t step;
 List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
-List g_tres_list = NULL;
-void *acct_db_conn = NULL;
-bool db_access = true;
 
 int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	     uint32_t req_cpufreq_min, uint32_t req_cpufreq_max,
@@ -277,18 +274,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS ) {
-		error("failed to initialize accounting_storage plugin");
-		return 1;
-	} else {
-		acct_db_conn = slurmdb_connection_get();
-		if (errno != SLURM_SUCCESS) {
-			info("Problem talking to the database: %m, no TRES "
-			     "stats will be displayed");
-			db_access = false;
-		}
-	}
-
 	print_fields_header(print_fields_list);
 	itr = list_iterator_create(params.opt_job_list);
 	while ((selected_step = list_next(itr))) {
@@ -402,12 +387,6 @@ int main(int argc, char **argv)
 	if (print_fields_itr)
 		list_iterator_destroy(print_fields_itr);
 	FREE_NULL_LIST(print_fields_list);
-
-	if (db_access) {
-		FREE_NULL_LIST(g_tres_list);
-		slurmdb_connection_close(&acct_db_conn);
-	}
-	slurm_acct_storage_fini();
 
 	return 0;
 }

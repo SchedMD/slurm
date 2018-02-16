@@ -59,7 +59,6 @@
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/print_fields.h"
 
@@ -143,11 +142,8 @@ extern ListIterator print_fields_itr;
 extern print_field_t fields[];
 extern sstat_parameters_t params;
 extern int field_count;
-extern bool db_access;
 
 extern List jobs;
-extern List g_tres_list;
-extern void *acct_db_conn;
 
 extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 	nprintfields;

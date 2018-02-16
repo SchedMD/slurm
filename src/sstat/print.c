@@ -100,22 +100,11 @@ static void _print_small_double(
 
 static void _print_tres_field(char *tres_in, char *nodes)
 {
-	char *tmp_char = NULL;
-
-	if (!db_access)
-		return;
-	tmp_char = tres_in;
-	if (!g_tres_list) {
-		slurmdb_tres_cond_t tres_cond;
-		memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-		tres_cond.with_deleted = 1;
-		g_tres_list = slurmdb_tres_get(acct_db_conn, &tres_cond);
-	}
-
-	tmp_char = slurmdb_make_tres_string_from_simple(tmp_char, g_tres_list,
+	char *tmp_char = slurmdb_make_tres_string_from_simple(
+		tres_in, assoc_mgr_tres_list,
 		params.units, params.convert_flags, nodes);
 
-	field->print_routine(field,tmp_char,(curr_inx == field_count));
+	field->print_routine(field, tmp_char, (curr_inx == field_count));
 	xfree(tmp_char);
 	return;
 }
