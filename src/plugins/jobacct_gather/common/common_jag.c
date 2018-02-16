@@ -528,11 +528,11 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	}
 	fclose(stat_fp);
 
-	if (acct_gather_filesystem_g_get_data(prec) < 0) {
+	if (acct_gather_filesystem_g_get_data(prec->tres_data) < 0) {
 		debug2("problem retrieving filesystem data");
 	}
 
-	if (acct_gather_interconnect_g_get_data(prec) < 0) {
+	if (acct_gather_interconnect_g_get_data(prec->tres_data) < 0) {
 		debug2("problem retrieving interconnect data");
 	}
 

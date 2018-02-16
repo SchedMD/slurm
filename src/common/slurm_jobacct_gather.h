@@ -76,22 +76,6 @@ typedef struct acct_gather_data {
 	uint64_t	size_write; /* raw amount written (out) */
 } acct_gather_data_t;
 
-typedef struct jag_prec {	/* process record */
-	int	act_cpufreq;	/* actual average cpu frequency */
-	double	disk_read;	/* local disk read */
-	double	disk_write;	/* local disk write */
-	int	last_cpu;	/* last cpu */
-	int     pages;  /* pages */
-	pid_t	pid;
-	pid_t	ppid;
-	uint64_t rss;	/* rss */
-	int     ssec;   /* system cpu time */
-	/* Units of tres_[in|out] should be raw numbers (bytes/joules) */
-	acct_gather_data_t *tres_data; /* array of tres data */
-	int     usec;   /* user cpu time */
-	uint64_t vsize;	/* virtual size */
-} jag_prec_t;
-
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
 	uint32_t nodeid; /* contains which node number it was on */

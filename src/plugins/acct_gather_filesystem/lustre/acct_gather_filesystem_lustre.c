@@ -438,11 +438,11 @@ extern void acct_gather_filesystem_p_conf_values(List *data)
 	return;
 }
 
-extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
+extern int acct_gather_filesystem_p_get_data(acct_gather_data_t *data)
 {
 	int retval = SLURM_SUCCESS;
 
-	if (tres_pos == -1) {
+	if ((tres_pos == -1) || !data) {
 		debug2("%s: We are not tracking TRES usage/lustre", __func__);
 		return SLURM_SUCCESS;
 	}
@@ -457,10 +457,10 @@ extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 
 	/* Obtain the current values read from all lustre-xxxx directories */
 
-	prec->tres_data[tres_pos].num_reads = lustre_se.all_lustre_nb_reads;
-	prec->tres_data[tres_pos].num_writes = lustre_se.all_lustre_nb_writes;
-	prec->tres_data[tres_pos].size_read = lustre_se.all_lustre_read_bytes;
-	prec->tres_data[tres_pos].size_write = lustre_se.all_lustre_write_bytes;
+	data[tres_pos].num_reads = lustre_se.all_lustre_nb_reads;
+	data[tres_pos].num_writes = lustre_se.all_lustre_nb_writes;
+	data[tres_pos].size_read = lustre_se.all_lustre_read_bytes;
+	data[tres_pos].size_write = lustre_se.all_lustre_write_bytes;
 
 	slurm_mutex_unlock(&lustre_lock);
 	return retval;

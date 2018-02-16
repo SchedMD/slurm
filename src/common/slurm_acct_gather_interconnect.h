@@ -57,7 +57,7 @@
 extern int acct_gather_interconnect_init(void); /* load the plugin */
 extern int acct_gather_interconnect_fini(void); /* unload the plugin */
 extern int acct_gather_interconnect_startpoll(uint32_t frequency);
-extern int acct_gather_interconnect_g_get_data(jag_prec_t *data);
+extern int acct_gather_interconnect_g_get_data(acct_gather_data_t *data);
 
 extern int acct_gather_interconnect_g_node_update(void);
 /*

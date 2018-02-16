@@ -443,11 +443,11 @@ extern void acct_gather_interconnect_p_conf_values(List *data)
 	return;
 }
 
-extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
+extern int acct_gather_interconnect_p_get_data(acct_gather_data_t *data)
 {
 	int retval = SLURM_SUCCESS;
 
-	if (tres_pos == -1) {
+	if ((tres_pos == -1) || !data) {
 		debug2("%s: We are not tracking TRES usage/ofed", __func__);
 		return SLURM_SUCCESS;
 	}
@@ -460,10 +460,10 @@ extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
 		return SLURM_FAILURE;
 	}
 
-	prec->tres_data[tres_pos].num_reads = ofed_sens.total_rcvpkts;
-	prec->tres_data[tres_pos].num_writes = ofed_sens.total_xmtpkts;
-	prec->tres_data[tres_pos].size_read = ofed_sens.total_rcvdata;
-	prec->tres_data[tres_pos].size_write = ofed_sens.total_xmtdata;
+	data[tres_pos].num_reads = ofed_sens.total_rcvpkts;
+	data[tres_pos].num_writes = ofed_sens.total_xmtpkts;
+	data[tres_pos].size_read = ofed_sens.total_rcvdata;
+	data[tres_pos].size_write = ofed_sens.total_xmtdata;
 
 	slurm_mutex_unlock(&ofed_lock);
 

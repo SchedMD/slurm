@@ -43,6 +43,22 @@
 
 #include "src/common/list.h"
 
+typedef struct jag_prec {	/* process record */
+	int	act_cpufreq;	/* actual average cpu frequency */
+	double	disk_read;	/* local disk read */
+	double	disk_write;	/* local disk write */
+	int	last_cpu;	/* last cpu */
+	int     pages;  /* pages */
+	pid_t	pid;
+	pid_t	ppid;
+	uint64_t rss;	/* rss */
+	int     ssec;   /* system cpu time */
+	/* Units of tres_[in|out] should be raw numbers (bytes/joules) */
+	acct_gather_data_t *tres_data; /* array of tres data */
+	int     usec;   /* user cpu time */
+	uint64_t vsize;	/* virtual size */
+} jag_prec_t;
+
 typedef struct jag_callbacks {
 	void (*prec_extra) (jag_prec_t *prec);
 	List (*get_precs) (List task_list, bool pgid_plugin, uint64_t cont_id,

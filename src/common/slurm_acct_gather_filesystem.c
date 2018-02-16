@@ -62,7 +62,7 @@ typedef struct slurm_acct_gather_filesystem_ops {
 				 int *full_options_cnt);
 	void (*conf_set)	(s_p_hashtbl_t *tbl);
 	void (*conf_values)        (List *data);
-	int (*get_data)		(jag_prec_t *data);
+	int (*get_data)		(acct_gather_data_t *data);
 } slurm_acct_gather_filesystem_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -170,7 +170,11 @@ extern int acct_gather_filesystem_fini(void)
 	return rc;
 }
 
-extern int acct_gather_filesystem_g_get_data(jag_prec_t *data)
+/*
+ * This is sent an array that will be filled in from the plugin(s).  It is not a
+ * direct pointer since we could have (in the future) this be stackable.
+ */
+extern int acct_gather_filesystem_g_get_data(acct_gather_data_t *data)
 {
 	int retval = SLURM_SUCCESS;
 
