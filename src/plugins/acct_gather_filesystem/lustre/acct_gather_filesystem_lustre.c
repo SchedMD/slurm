@@ -457,10 +457,10 @@ extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 
 	/* Obtain the current values read from all lustre-xxxx directories */
 
-	prec->num_reads[tres_pos] = lustre_se.all_lustre_nb_reads;
-	prec->num_writes[tres_pos] = lustre_se.all_lustre_nb_writes;
-	prec->tres_in[tres_pos] = lustre_se.all_lustre_read_bytes;
-	prec->tres_out[tres_pos] = lustre_se.all_lustre_write_bytes;
+	prec->tres_data[tres_pos].num_reads = lustre_se.all_lustre_nb_reads;
+	prec->tres_data[tres_pos].num_writes = lustre_se.all_lustre_nb_writes;
+	prec->tres_data[tres_pos].size_read = lustre_se.all_lustre_read_bytes;
+	prec->tres_data[tres_pos].size_write = lustre_se.all_lustre_write_bytes;
 
 	slurm_mutex_unlock(&lustre_lock);
 	return retval;

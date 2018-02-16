@@ -460,10 +460,10 @@ extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
 		return SLURM_FAILURE;
 	}
 
-	prec->num_reads[tres_pos] = ofed_sens.total_rcvpkts;
-	prec->num_writes[tres_pos] = ofed_sens.total_xmtpkts;
-	prec->tres_in[tres_pos] = ofed_sens.total_rcvdata;
-	prec->tres_out[tres_pos] = ofed_sens.total_xmtdata;
+	prec->tres_data[tres_pos].num_reads = ofed_sens.total_rcvpkts;
+	prec->tres_data[tres_pos].num_writes = ofed_sens.total_xmtpkts;
+	prec->tres_data[tres_pos].size_read = ofed_sens.total_rcvdata;
+	prec->tres_data[tres_pos].size_write = ofed_sens.total_xmtdata;
 
 	slurm_mutex_unlock(&ofed_lock);
 

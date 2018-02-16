@@ -81,16 +81,13 @@ typedef struct jag_prec {	/* process record */
 	double	disk_read;	/* local disk read */
 	double	disk_write;	/* local disk write */
 	int	last_cpu;	/* last cpu */
-	/* Units of tres_[in|out] should be raw numbers (bytes/joules) */
-	uint64_t *tres_in;	/* amount of tres read (in) */
-	uint64_t *tres_out;	/* amount of tres written (out) */
-	uint64_t *num_reads;	/* number of reads */
-	uint64_t *num_writes;	/* number of writes */
 	int     pages;  /* pages */
 	pid_t	pid;
 	pid_t	ppid;
 	uint64_t rss;	/* rss */
 	int     ssec;   /* system cpu time */
+	/* Units of tres_[in|out] should be raw numbers (bytes/joules) */
+	acct_gather_data_t *tres_data; /* array of tres data */
 	int     usec;   /* user cpu time */
 	uint64_t vsize;	/* virtual size */
 } jag_prec_t;

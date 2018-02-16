@@ -452,8 +452,8 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 
 	if (tres_disk_pos != -1) {
 		/* keep real value here since we aren't doubles */
-		prec->tres_in[tres_disk_pos] = rchar;
-		prec->tres_out[tres_disk_pos] = wchar;
+		prec->tres_data[tres_disk_pos].size_read = rchar;
+		prec->tres_data[tres_disk_pos].size_write = wchar;
 	}
 
 	return 1;
@@ -509,25 +509,19 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	}
 
 	assoc_mgr_lock(&locks);
-	prec->tres_in = xmalloc(g_tres_count * sizeof(uint64_t));
-	prec->tres_out = xmalloc(g_tres_count * sizeof(uint64_t));
-	prec->num_reads = xmalloc(g_tres_count * sizeof(uint64_t));
-	prec->num_writes = xmalloc(g_tres_count * sizeof(uint64_t));
+	prec->tres_data = xmalloc(g_tres_count * sizeof(acct_gather_data_t));
 
 	/* Initialize read/writes */
 	for (i = 0; i < g_tres_count; i++) {
-		prec->tres_in[i] = NO_VAL64;
-		prec->tres_out[i] = NO_VAL64;
-		prec->num_reads[i] = NO_VAL64;
-		prec->num_writes[i] = NO_VAL64;
+		prec->tres_data[i].num_reads = NO_VAL64;
+		prec->tres_data[i].num_writes = NO_VAL64;
+		prec->tres_data[i].size_read = NO_VAL64;
+		prec->tres_data[i].size_write = NO_VAL64;
 	}
 	assoc_mgr_unlock(&locks);
 
 	if (!_get_process_data_line(fd, prec)) {
-		xfree(prec->tres_in);
-		xfree(prec->tres_out);
-		xfree(prec->num_reads);
-		xfree(prec->num_writes);
+		xfree(prec->tres_data);
 		xfree(prec);
 		fclose(stat_fp);
 		return;
@@ -549,10 +543,7 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	/* Use PSS instead if RSS */
 	if (use_pss) {
 		if (_get_pss(proc_smaps_file, prec) == -1) {
-			xfree(prec->tres_in);
-			xfree(prec->tres_out);
-			xfree(prec->num_reads);
-			xfree(prec->num_writes);
+			xfree(prec->tres_data);
 			xfree(prec);
 			return;
 		}
@@ -845,10 +836,7 @@ extern void jag_common_fini(void)
 extern void destroy_jag_prec(void *object)
 {
 	jag_prec_t *prec = (jag_prec_t *)object;
-	xfree(prec->tres_in);
-	xfree(prec->tres_out);
-	xfree(prec->num_reads);
-	xfree(prec->num_writes);
+	xfree(prec->tres_data);
 	xfree(prec);
 	return;
 }
@@ -869,12 +857,14 @@ extern void print_jag_prec(jag_prec_t *prec)
 	info("ssec \t%d", prec->ssec);
 	assoc_mgr_lock(&locks);
 	for (i=0; i<g_tres_count; i++) {
-		if (prec->tres_in[i] == NO_VAL64)
+		if (prec->tres_data[i].size_read == NO_VAL64)
 			continue;
 		info("%s in/read \t%"PRIu64"",
-		     assoc_mgr_tres_name_array[i], prec->tres_in[i]);
+		     assoc_mgr_tres_name_array[i],
+		     prec->tres_data[i].size_read);
 		info("%s out/write \t%"PRIu64"",
-		     assoc_mgr_tres_name_array[i], prec->tres_out[i]);
+		     assoc_mgr_tres_name_array[i],
+		     prec->tres_data[i].size_write);
 	}
 	assoc_mgr_unlock(&locks);
 	info("usec \t%d", prec->usec);
@@ -971,25 +961,27 @@ extern void jag_common_poll_data(
 		jobacct->tot_disk_write = prec->disk_write;
 
 		for (i = 0; i < jobacct->tres_count; i++) {
-			if (prec->tres_in[i] == NO_VAL64)
+			if (prec->tres_data[i].size_read == NO_VAL64)
 				continue;
 			if (jobacct->tres_usage_in_max[i] == INFINITE64)
 				jobacct->tres_usage_in_max[i] =
-					prec->tres_in[i];
+					prec->tres_data[i].size_read;
 			else
 				jobacct->tres_usage_in_max[i] =
 					MAX(jobacct->tres_usage_in_max[i],
-					    prec->tres_in[i]);
-			jobacct->tres_usage_in_tot[i] = prec->tres_in[i];
+					    prec->tres_data[i].size_read);
+			jobacct->tres_usage_in_tot[i] =
+				prec->tres_data[i].size_read;
 
 			if (jobacct->tres_usage_out_max[i] == INFINITE64)
 				jobacct->tres_usage_out_max[i] =
-					prec->tres_out[i];
+					prec->tres_data[i].size_write;
 			else
 				jobacct->tres_usage_out_max[i] =
 					MAX(jobacct->tres_usage_out_max[i],
-					    prec->tres_out[i]);
-			jobacct->tres_usage_out_tot[i] = prec->tres_out[i];
+					    prec->tres_data[i].size_write);
+			jobacct->tres_usage_out_tot[i] =
+				prec->tres_data[i].size_write;
 		}
 
 		jobacct->min_cpu =
