@@ -273,10 +273,10 @@ static int _read_lustre_counters(void)
  */
 static int _update_node_filesystem(void)
 {
-	static acct_filesystem_data_t previous;
+	static acct_gather_data_t previous;
 	static int dataset_id = -1;
 	static bool first = true;
-	acct_filesystem_data_t current;
+	acct_gather_data_t current;
 
 	enum {
 		FIELD_READ,
@@ -317,10 +317,10 @@ static int _update_node_filesystem(void)
 			return SLURM_ERROR;
 		}
 
-		previous.reads = lustre_se.all_lustre_nb_reads;
-		previous.writes = lustre_se.all_lustre_nb_writes;
-		previous.read_size = (double)lustre_se.all_lustre_read_bytes;
-		previous.write_size = (double)lustre_se.all_lustre_write_bytes;
+		previous.num_reads = lustre_se.all_lustre_nb_reads;
+		previous.num_writes = lustre_se.all_lustre_nb_writes;
+		previous.size_read = lustre_se.all_lustre_read_bytes;
+		previous.size_write = lustre_se.all_lustre_write_bytes;
 
 		first = false;
 	}
@@ -331,18 +331,18 @@ static int _update_node_filesystem(void)
 	}
 
 	/* Compute the current values read from all lustre-xxxx directories */
-	current.reads = lustre_se.all_lustre_nb_reads;
-	current.writes = lustre_se.all_lustre_nb_writes;
-	current.read_size = (double)lustre_se.all_lustre_read_bytes;
-	current.write_size = (double)lustre_se.all_lustre_write_bytes;
+	current.num_reads = lustre_se.all_lustre_nb_reads;
+	current.num_writes = lustre_se.all_lustre_nb_writes;
+	current.size_read = lustre_se.all_lustre_read_bytes;
+	current.size_write = lustre_se.all_lustre_write_bytes;
 
 	/* record sample */
-	data[FIELD_READ].u64 = current.reads - previous.reads;
-	data[FIELD_READMB].d = (current.read_size - previous.read_size) /
-		(1 << 20);
-	data[FIELD_WRITE].u64 = current.writes - previous.writes;
-	data[FIELD_WRITEMB].d = (current.write_size - previous.write_size) /
-		(1 << 20);
+	data[FIELD_READ].u64 = current.num_reads - previous.num_reads;
+	data[FIELD_READMB].d =
+		(double)(current.size_read - previous.size_read) / (1 << 20);
+	data[FIELD_WRITE].u64 = current.num_writes - previous.num_writes;
+	data[FIELD_WRITEMB].d =
+		(double)(current.size_write - previous.size_write) / (1 << 20);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
 		char str[256];
@@ -355,7 +355,7 @@ static int _update_node_filesystem(void)
 	/* Save current as previous and clean up the working
 	 * data structure.
 	 */
-	memcpy(&previous, &current, sizeof(acct_filesystem_data_t));
+	memcpy(&previous, &current, sizeof(acct_gather_data_t));
 	memset(&lustre_se, 0, sizeof(lustre_sens_t));
 
 	slurm_mutex_unlock(&lustre_lock);

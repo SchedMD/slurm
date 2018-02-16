@@ -54,13 +54,6 @@
 #include "src/common/slurm_acct_gather.h"
 #include "src/common/slurm_jobacct_gather.h"
 
-typedef struct acct_filesystem_data {
-	uint64_t	reads;
-	uint64_t	writes;
-	double		read_size;        // currently in megabytes
-	double		write_size;       // currently in megabytes
-} acct_filesystem_data_t;
-
 extern int acct_gather_filesystem_init(void); /* load the plugin */
 extern int acct_gather_filesystem_fini(void); /* unload the plugin */
 extern int acct_gather_filesystem_startpoll(uint32_t);
