@@ -296,7 +296,7 @@ extern int read_slurmdbd_conf(void)
 			slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
 
 		if (s_p_get_string(&temp_str, "MaxQueryTimeRange", tbl)) {
-			slurmdbd_conf->max_time_range = time_str2mins(temp_str);
+			slurmdbd_conf->max_time_range = time_str2secs(temp_str);
 			xfree(temp_str);
 		} else {
 			slurmdbd_conf->max_time_range = INFINITE;
