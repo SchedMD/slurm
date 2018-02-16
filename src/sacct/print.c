@@ -2297,7 +2297,6 @@ extern void print_fields(type_t type, void *object)
 			}
 
 			_print_tres_field(tmp_char, NULL);
-			xfree(tmp_char);
 			break;
 		case PRINT_TRESR:
 			switch(type) {
@@ -2312,7 +2311,6 @@ extern void print_fields(type_t type, void *object)
 			}
 
 			_print_tres_field(tmp_char, NULL);
-			xfree(tmp_char);
 			break;
 		case PRINT_UID:
 			switch(type) {
