@@ -45,6 +45,8 @@ print_field_t *field = NULL;
 int curr_inx = 1;
 char outbuf[FORMAT_STRING_SIZE];
 
+static int tres_disk_id = -1;
+
 char *_elapsed_time(long secs, long usecs);
 
 char *_elapsed_time(long secs, long usecs)
@@ -223,6 +225,32 @@ static void _print_tres_field(char *tres_in, char *nodes, bool convert)
 	xfree(temp);
 	return;
 }
+
+static void _set_disk_tres_id(void)
+{
+	static bool first = 1;
+	slurmdb_tres_rec_t *tres_rec;
+	char *name;
+
+	if (!first && tres_disk_id != -1)
+		return;
+
+	first = 0;
+
+	if (!g_tres_list) {
+		slurmdb_tres_cond_t tres_cond;
+		memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
+		tres_cond.with_deleted = 1;
+		g_tres_list = slurmdb_tres_get(acct_db_conn, &tres_cond);
+	}
+
+	name = "usage/disk";
+	if ((tres_rec = list_find_first(g_tres_list,
+					slurmdb_find_tres_in_list_by_type,
+					name)))
+		tres_disk_id = tres_rec->id;
+}
+
 extern void print_fields(type_t type, void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
@@ -482,19 +510,36 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_AVEDISKREAD:
 			if (got_stats) {
+				_set_disk_tres_id();
+
 				switch(type) {
 				case JOB:
-					if (!job->track_steps)
-						tmp_dub = job->
-							stats.disk_read_ave;
+					if (!job->track_steps &&
+					    ((tmp_uint64 =
+					      slurmdb_find_tres_count_in_string(
+						      job->stats.
+						      tres_usage_in_ave,
+						      tres_disk_id))
+					     == INFINITE64))
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBSTEP:
-					tmp_dub = step->stats.disk_read_ave;
+					if ((tmp_uint64 =
+					     slurmdb_find_tres_count_in_string(
+						     step->stats.
+						     tres_usage_in_ave,
+						     tres_disk_id))
+					    == INFINITE64)
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBCOMP:
 				default:
+					tmp_uint64 = NO_VAL64;
 					break;
 				}
+				if (tmp_uint64 != NO_VAL64)
+					tmp_dub = (double)tmp_uint64 /
+						(1 << 20);
 			}
 			_print_small_double(outbuf, sizeof(outbuf),
 					    tmp_dub, UNIT_MEGA);
@@ -505,19 +550,35 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_AVEDISKWRITE:
 			if (got_stats) {
+				_set_disk_tres_id();
 				switch(type) {
 				case JOB:
-					if (!job->track_steps)
-						tmp_dub = job->
-							stats.disk_write_ave;
+					if (!job->track_steps &&
+					    ((tmp_uint64 =
+					      slurmdb_find_tres_count_in_string(
+						      job->stats.
+						      tres_usage_out_ave,
+						      tres_disk_id))
+					     == INFINITE64))
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBSTEP:
-					tmp_dub = step->stats.disk_write_ave;
+					if ((tmp_uint64 =
+					     slurmdb_find_tres_count_in_string(
+						     step->stats.
+						     tres_usage_out_ave,
+						     tres_disk_id))
+					    == INFINITE64)
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBCOMP:
 				default:
+					tmp_uint64 = NO_VAL64;
 					break;
 				}
+				if (tmp_uint64 != NO_VAL64)
+					tmp_dub = (double)tmp_uint64 /
+						(1 << 20);
 			}
 			_print_small_double(outbuf, sizeof(outbuf),
 					    tmp_dub, UNIT_MEGA);
@@ -1045,19 +1106,36 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_MAXDISKREAD:
 			if (got_stats) {
+				_set_disk_tres_id();
+
 				switch(type) {
 				case JOB:
-					if (!job->track_steps)
-						tmp_dub = job->
-							stats.disk_read_max;
+					if (!job->track_steps &&
+					    ((tmp_uint64 =
+					      slurmdb_find_tres_count_in_string(
+						      job->stats.
+						      tres_usage_in_max,
+						      tres_disk_id))
+					     == INFINITE64))
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBSTEP:
-					tmp_dub = step->stats.disk_read_max;
+					if ((tmp_uint64 =
+					     slurmdb_find_tres_count_in_string(
+						     step->stats.
+						     tres_usage_in_max,
+						     tres_disk_id))
+					    == INFINITE64)
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBCOMP:
 				default:
+					tmp_uint64 = NO_VAL64;
 					break;
 				}
+				if (tmp_uint64 != NO_VAL64)
+					tmp_dub = (double)tmp_uint64 /
+						(1 << 20);
 			}
 			_print_small_double(outbuf, sizeof(outbuf),
 					    tmp_dub, UNIT_MEGA);
@@ -1068,18 +1146,24 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_MAXDISKREADNODE:
 			if (got_stats) {
+				_set_disk_tres_id();
+
 				switch(type) {
 				case JOB:
 					if (!job->track_steps)
 						tmp_char = find_hostname(
-							job->stats.
-							disk_read_max_nodeid,
+							slurmdb_find_tres_count_in_string(
+								job->stats.
+								tres_usage_in_max_nodeid,
+								tres_disk_id),
 							job->nodes);
 					break;
 				case JOBSTEP:
 					tmp_char = find_hostname(
-						step->stats.
-						disk_read_max_nodeid,
+						slurmdb_find_tres_count_in_string(
+							step->stats.
+							tres_usage_in_max_nodeid,
+							tres_disk_id),
 						step->nodes);
 					break;
 				case JOBCOMP:
@@ -1095,44 +1179,74 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_MAXDISKREADTASK:
 			if (got_stats) {
+				_set_disk_tres_id();
+
 				switch(type) {
 				case JOB:
-					if (!job->track_steps)
-						tmp_uint32 =
-							job->stats.
-							disk_read_max_taskid;
+					if (!job->track_steps &&
+					    ((tmp_uint64 =
+					      slurmdb_find_tres_count_in_string(
+						      job->stats.
+						      tres_usage_in_max_taskid,
+						      tres_disk_id))
+					     == INFINITE64))
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBSTEP:
-					tmp_uint32 = step->stats.
-						disk_read_max_taskid;
+					if ((tmp_uint64 =
+					     slurmdb_find_tres_count_in_string(
+						     step->stats.
+						     tres_usage_in_max_taskid,
+						     tres_disk_id))
+					    == INFINITE64)
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBCOMP:
 				default:
-					tmp_uint32 = NO_VAL;
+					tmp_uint64 = NO_VAL64;
 					break;
 				}
+
+				if (tmp_uint64 != NO_VAL64)
+					tmp_uint32 = tmp_uint64;
 			}
-			if (tmp_uint32 == NO_VAL)
-				tmp_uint32 = NO_VAL;
+
 			field->print_routine(field,
 					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXDISKWRITE:
 			if (got_stats) {
+				_set_disk_tres_id();
+
 				switch(type) {
 				case JOB:
-					if (!job->track_steps)
-						tmp_dub = job->stats.
-							disk_write_max;
+					if (!job->track_steps &&
+					    ((tmp_uint64 =
+					      slurmdb_find_tres_count_in_string(
+						      job->stats.
+						      tres_usage_out_max,
+						      tres_disk_id))
+					     == INFINITE64))
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBSTEP:
-					tmp_dub = step->stats.disk_write_max;
+					if ((tmp_uint64 =
+					     slurmdb_find_tres_count_in_string(
+						     step->stats.
+						     tres_usage_out_max,
+						     tres_disk_id))
+					    == INFINITE64)
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBCOMP:
 				default:
+					tmp_uint64 = NO_VAL64;
 					break;
 				}
+				if (tmp_uint64 != NO_VAL64)
+					tmp_dub = (double)tmp_uint64 /
+						(1 << 20);
 			}
 			_print_small_double(outbuf, sizeof(outbuf),
 					    tmp_dub, UNIT_MEGA);
@@ -1143,18 +1257,24 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_MAXDISKWRITENODE:
 			if (got_stats) {
+				_set_disk_tres_id();
+
 				switch(type) {
 				case JOB:
 					if (!job->track_steps)
 						tmp_char = find_hostname(
-							job->stats.
-							disk_write_max_nodeid,
+							slurmdb_find_tres_count_in_string(
+								job->stats.
+								tres_usage_out_max_nodeid,
+								tres_disk_id),
 							job->nodes);
 					break;
 				case JOBSTEP:
 					tmp_char = find_hostname(
-						step->stats.
-						disk_write_max_nodeid,
+						slurmdb_find_tres_count_in_string(
+							step->stats.
+							tres_usage_out_max_nodeid,
+							tres_disk_id),
 						step->nodes);
 					break;
 				case JOBCOMP:
@@ -1170,24 +1290,36 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_MAXDISKWRITETASK:
 			if (got_stats) {
+				_set_disk_tres_id();
+
 				switch(type) {
 				case JOB:
-					if (!job->track_steps)
-						tmp_uint32 =
-							job->stats.
-							disk_write_max_taskid;
+					if (!job->track_steps &&
+					    ((tmp_uint64 =
+					      slurmdb_find_tres_count_in_string(
+						      job->stats.
+						      tres_usage_in_max_taskid,
+						      tres_disk_id))
+					     == INFINITE64))
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBSTEP:
-					tmp_uint32 = step->stats.
-						disk_write_max_taskid;
+					if ((tmp_uint64 =
+					     slurmdb_find_tres_count_in_string(
+						     step->stats.
+						     tres_usage_in_max_taskid,
+						     tres_disk_id))
+					    == INFINITE64)
+						tmp_uint64 = NO_VAL64;
 					break;
 				case JOBCOMP:
 				default:
-					tmp_uint32 = NO_VAL;
+					tmp_uint64 = NO_VAL64;
 					break;
 				}
-				if (tmp_uint32 == NO_VAL)
-					tmp_uint32 = NO_VAL;
+
+				if (tmp_uint64 != NO_VAL64)
+					tmp_uint32 = tmp_uint64;
 			}
 			field->print_routine(field,
 					     tmp_uint32,
