@@ -451,8 +451,9 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 	prec->disk_write = (double)wchar / (double)1048576;
 
 	if (tres_disk_pos != -1) {
-		prec->mb_read[tres_disk_pos] = (uint64_t) prec->disk_read;
-		prec->mb_written[tres_disk_pos] = (uint64_t) prec->disk_write;
+		/* keep real value here since we aren't doubles */
+		prec->tres_in[tres_disk_pos] = rchar;
+		prec->tres_out[tres_disk_pos] = wchar;
 	}
 
 	return 1;
@@ -508,23 +509,23 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	}
 
 	assoc_mgr_lock(&locks);
-	prec->mb_read = xmalloc(g_tres_count * sizeof(uint64_t));
-	prec->mb_written = xmalloc(g_tres_count * sizeof(uint64_t));
+	prec->tres_in = xmalloc(g_tres_count * sizeof(uint64_t));
+	prec->tres_out = xmalloc(g_tres_count * sizeof(uint64_t));
 	prec->num_reads = xmalloc(g_tres_count * sizeof(uint64_t));
 	prec->num_writes = xmalloc(g_tres_count * sizeof(uint64_t));
 
 	/* Initialize read/writes */
 	for (i = 0; i < g_tres_count; i++) {
-		prec->mb_read[i] = NO_VAL64;
-		prec->mb_written[i] = NO_VAL64;
+		prec->tres_in[i] = NO_VAL64;
+		prec->tres_out[i] = NO_VAL64;
 		prec->num_reads[i] = NO_VAL64;
 		prec->num_writes[i] = NO_VAL64;
 	}
 	assoc_mgr_unlock(&locks);
 
 	if (!_get_process_data_line(fd, prec)) {
-		xfree(prec->mb_read);
-		xfree(prec->mb_written);
+		xfree(prec->tres_in);
+		xfree(prec->tres_out);
 		xfree(prec->num_reads);
 		xfree(prec->num_writes);
 		xfree(prec);
@@ -548,8 +549,8 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	/* Use PSS instead if RSS */
 	if (use_pss) {
 		if (_get_pss(proc_smaps_file, prec) == -1) {
-			xfree(prec->mb_read);
-			xfree(prec->mb_written);
+			xfree(prec->tres_in);
+			xfree(prec->tres_out);
 			xfree(prec->num_reads);
 			xfree(prec->num_writes);
 			xfree(prec);
@@ -844,8 +845,8 @@ extern void jag_common_fini(void)
 extern void destroy_jag_prec(void *object)
 {
 	jag_prec_t *prec = (jag_prec_t *)object;
-	xfree(prec->mb_read);
-	xfree(prec->mb_written);
+	xfree(prec->tres_in);
+	xfree(prec->tres_out);
 	xfree(prec->num_reads);
 	xfree(prec->num_writes);
 	xfree(prec);
@@ -868,12 +869,12 @@ extern void print_jag_prec(jag_prec_t *prec)
 	info("ssec \t%d", prec->ssec);
 	assoc_mgr_lock(&locks);
 	for (i=0; i<g_tres_count; i++) {
-		if (prec->mb_read[i] == NO_VAL64)
+		if (prec->tres_in[i] == NO_VAL64)
 			continue;
 		info("%s in/read \t%"PRIu64"",
-		     assoc_mgr_tres_name_array[i], prec->mb_read[i]);
+		     assoc_mgr_tres_name_array[i], prec->tres_in[i]);
 		info("%s out/write \t%"PRIu64"",
-		     assoc_mgr_tres_name_array[i], prec->mb_written[i]);
+		     assoc_mgr_tres_name_array[i], prec->tres_out[i]);
 	}
 	assoc_mgr_unlock(&locks);
 	info("usec \t%d", prec->usec);
@@ -970,25 +971,25 @@ extern void jag_common_poll_data(
 		jobacct->tot_disk_write = prec->disk_write;
 
 		for (i = 0; i < jobacct->tres_count; i++) {
-			if (prec->mb_read[i] == NO_VAL64)
+			if (prec->tres_in[i] == NO_VAL64)
 				continue;
 			if (jobacct->tres_usage_in_max[i] == INFINITE64)
 				jobacct->tres_usage_in_max[i] =
-					prec->mb_read[i];
+					prec->tres_in[i];
 			else
 				jobacct->tres_usage_in_max[i] =
 					MAX(jobacct->tres_usage_in_max[i],
-					    prec->mb_read[i]);
-			jobacct->tres_usage_in_tot[i] = prec->mb_read[i];
+					    prec->tres_in[i]);
+			jobacct->tres_usage_in_tot[i] = prec->tres_in[i];
 
 			if (jobacct->tres_usage_out_max[i] == INFINITE64)
 				jobacct->tres_usage_out_max[i] =
-					prec->mb_written[i];
+					prec->tres_out[i];
 			else
 				jobacct->tres_usage_out_max[i] =
 					MAX(jobacct->tres_usage_out_max[i],
-					    prec->mb_written[i]);
-			jobacct->tres_usage_out_tot[i] = prec->mb_written[i];
+					    prec->tres_out[i]);
+			jobacct->tres_usage_out_tot[i] = prec->tres_out[i];
 		}
 
 		jobacct->min_cpu =

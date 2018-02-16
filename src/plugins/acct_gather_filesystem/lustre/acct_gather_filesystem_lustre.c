@@ -460,8 +460,8 @@ extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 		return SLURM_FAILURE;
 	}
 	if (first) {
-		prec->mb_read[tres_pos] = 0;
-		prec->mb_written[tres_pos] = 0;
+		prec->tres_in[tres_pos] = 0;
+		prec->tres_out[tres_pos] = 0;
 		prec->num_reads[tres_pos] = 0;
 		prec->num_writes[tres_pos] = 0;
 
@@ -483,10 +483,8 @@ extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 		(double)current.reads - (double) starting.reads;
 	prec->num_writes[tres_pos] =
 		(double) current.writes - (double) starting.writes;
-	prec->mb_read[tres_pos] =
-		(current.read_size - starting.read_size) / (1 << 20);
-	prec->mb_written[tres_pos] =
-		(current.write_size - starting.write_size) / (1 << 20);
+	prec->tres_in[tres_pos] = (current.read_size - starting.read_size);
+	prec->tres_out[tres_pos] = (current.write_size - starting.write_size);
 
 	slurm_mutex_unlock(&lustre_lock);
 	return retval;

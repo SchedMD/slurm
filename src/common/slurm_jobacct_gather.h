@@ -74,8 +74,9 @@ typedef struct jag_prec {	/* process record */
 	double	disk_read;	/* local disk read */
 	double	disk_write;	/* local disk write */
 	int	last_cpu;	/* last cpu */
-	uint64_t *mb_read;	/* megabytes read */
-	uint64_t *mb_written;	/* megabytes written */
+	/* Units of tres_[in|out] should be raw numbers (bytes/joules) */
+	uint64_t *tres_in;	/* amount of tres read (in) */
+	uint64_t *tres_out;	/* amount of tres written (out) */
 	uint64_t *num_reads;	/* number of reads */
 	uint64_t *num_writes;	/* number of writes */
 	int     pages;  /* pages */

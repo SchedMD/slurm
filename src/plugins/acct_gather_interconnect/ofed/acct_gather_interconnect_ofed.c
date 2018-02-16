@@ -464,8 +464,8 @@ extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
 	}
 
 	if (first) {
-		prec->mb_read[tres_pos] = 0;
-		prec->mb_written[tres_pos] = 0;
+		prec->tres_in[tres_pos] = 0;
+		prec->tres_out[tres_pos] = 0;
 		prec->num_reads[tres_pos] = 0;
 		prec->num_writes[tres_pos] = 0;
 
@@ -485,10 +485,8 @@ extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
 		(double)current.packets_in - (double)starting.packets_in;
 	prec->num_writes[tres_pos] =
 		(double)current.packets_out - (double)starting.packets_out;
-	prec->mb_read[tres_pos] =
-		(current.size_in - starting.size_in) / (1 << 20);
-	prec->mb_written[tres_pos] =
-		(current.size_out - starting.size_out) / (1 << 20);
+	prec->tres_in[tres_pos] = (current.size_in - starting.size_in);
+	prec->tres_out[tres_pos] = (current.size_out - starting.size_out);
 
 	slurm_mutex_unlock(&ofed_lock);
 
