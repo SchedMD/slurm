@@ -3590,7 +3590,8 @@ extern char *slurmdb_make_tres_string_from_simple(
 				xfree(node_name);
 			} else if ((tres_rec->id == TRES_MEM) ||
 			    (tres_rec->type &&
-			     !xstrcasecmp(tres_rec->type, "bb"))) {
+			     (!xstrcasecmp(tres_rec->type, "bb") ||
+			      !xstrcasecmp(tres_rec->type, "usage")))) {
 				char outbuf[FORMAT_STRING_SIZE];
 				convert_num_unit((double)count, outbuf,
 						 sizeof(outbuf), UNIT_MEGA,
