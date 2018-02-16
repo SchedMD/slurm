@@ -98,11 +98,13 @@ static void _print_small_double(
 		snprintf(outbuf, buf_size, "0");
 }
 
-static void _print_tres_field(char *tres_in, char *nodes)
+static void _print_tres_field(char *tres_in, char *nodes, bool convert)
 {
 	char *tmp_char = slurmdb_make_tres_string_from_simple(
 		tres_in, assoc_mgr_tres_list,
-		params.units, params.convert_flags, nodes);
+		convert ? params.units : NO_VAL,
+		convert ? params.convert_flags : CONVERT_NUM_UNIT_RAW,
+		nodes);
 
 	field->print_routine(field, tmp_char, (curr_inx == field_count));
 	xfree(tmp_char);
@@ -359,32 +361,36 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_TRESUIA:
-			_print_tres_field(step->stats.tres_usage_in_ave, NULL);
+			_print_tres_field(step->stats.tres_usage_in_ave,
+					  NULL, 1);
 			break;
 		case PRINT_TRESUIM:
-			_print_tres_field(step->stats.tres_usage_in_max, NULL);
+			_print_tres_field(step->stats.tres_usage_in_max,
+					  NULL, 1);
 			break;
 		case PRINT_TRESUIMN:
 			_print_tres_field(step->stats.tres_usage_in_max_nodeid,
-					  step->nodes);
+					  step->nodes, 0);
 			break;
 		case PRINT_TRESUIMT:
 			_print_tres_field(step->stats.tres_usage_in_max_taskid,
-					  NULL);
+					  NULL, 0);
 			break;
 		case PRINT_TRESUOA:
-			_print_tres_field(step->stats.tres_usage_out_ave, NULL);
+			_print_tres_field(step->stats.tres_usage_out_ave,
+					  NULL, 1);
 			break;
 		case PRINT_TRESUOM:
-			_print_tres_field(step->stats.tres_usage_out_max, NULL);
+			_print_tres_field(step->stats.tres_usage_out_max,
+					  NULL, 1);
 			break;
 		case PRINT_TRESUOMN:
 			_print_tres_field(step->stats.tres_usage_out_max_nodeid,
-					  step->nodes);
+					  step->nodes, 0);
 			break;
 		case PRINT_TRESUOMT:
 			_print_tres_field(step->stats.tres_usage_out_max_taskid,
-					  NULL);
+					  NULL, 0);
 			break;
 		case PRINT_NODELIST:
 			field->print_routine(field,

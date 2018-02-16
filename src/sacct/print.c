@@ -200,7 +200,7 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 	job_ptr->array_task_str = out_buf;
 }
 
-static void _print_tres_field(char *tres_in, char *nodes)
+static void _print_tres_field(char *tres_in, char *nodes, bool convert)
 {
 	char *temp = NULL;
 
@@ -212,8 +212,11 @@ static void _print_tres_field(char *tres_in, char *nodes)
 	}
 
 	temp = slurmdb_make_tres_string_from_simple(tres_in, g_tres_list,
-						    params.units,
-						    params.convert_flags,
+						    convert ?
+						    params.units : NO_VAL,
+						    convert ?
+						    params.convert_flags :
+						    CONVERT_NUM_UNIT_RAW,
 						    nodes);
 
 	field->print_routine(field, temp, (curr_inx == field_count));
@@ -1392,7 +1395,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL);
+			_print_tres_field(tmp_char, NULL, 1);
 			break;
 		case PRINT_TRESUIM:
 			switch(type) {
@@ -1409,7 +1412,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL);
+			_print_tres_field(tmp_char, NULL, 1);
 			break;
 		case PRINT_TRESUIMN:
 			switch(type) {
@@ -1429,7 +1432,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, nodes);
+			_print_tres_field(tmp_char, nodes, 0);
 			break;
 		case PRINT_TRESUIMT:
 			switch(type) {
@@ -1446,8 +1449,8 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = NULL;
 				break;
 			}
-
-			_print_tres_field(tmp_char, NULL);
+			info("sending in %s", tmp_char);
+			_print_tres_field(tmp_char, NULL, 0);
 			break;
 		case PRINT_TRESUOA:
 			switch(type) {
@@ -1466,7 +1469,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL);
+			_print_tres_field(tmp_char, NULL, 1);
 			break;
 		case PRINT_TRESUOM:
 			switch(type) {
@@ -1484,7 +1487,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL);
+			_print_tres_field(tmp_char, NULL, 1);
 			break;
 		case PRINT_TRESUOMN:
 			switch(type) {
@@ -1505,7 +1508,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, nodes);
+			_print_tres_field(tmp_char, nodes, 0);
 			break;
 		case PRINT_TRESUOMT:
 			switch(type) {
@@ -1524,7 +1527,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL);
+			_print_tres_field(tmp_char, NULL, 0);
 			break;
 		case PRINT_MAXVSIZENODE:
 			if (got_stats) {
@@ -2296,7 +2299,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL);
+			_print_tres_field(tmp_char, NULL, 1);
 			break;
 		case PRINT_TRESR:
 			switch(type) {
@@ -2310,7 +2313,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL);
+			_print_tres_field(tmp_char, NULL, 1);
 			break;
 		case PRINT_UID:
 			switch(type) {
