@@ -3487,6 +3487,10 @@ extern char *slurmdb_make_tres_string(List tres, uint32_t flags)
 
 	itr = list_iterator_create(tres);
 	while ((tres_rec = list_next(itr))) {
+		if ((flags & TRES_STR_FLAG_REMOVE) &&
+		    (tres_rec->count == INFINITE64))
+			continue;
+
 		if ((flags & TRES_STR_FLAG_SIMPLE) || !tres_rec->type)
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 				   (tres_str ||
