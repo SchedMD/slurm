@@ -445,10 +445,7 @@ extern void acct_gather_interconnect_p_conf_values(List *data)
 
 extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
 {
-	static acct_network_data_t starting;
 	int retval = SLURM_SUCCESS;
-	static bool first = true;
-	acct_network_data_t current;
 
 	if (tres_pos == -1) {
 		debug2("%s: We are not tracking TRES usage/ofed", __func__);
@@ -463,30 +460,10 @@ extern int acct_gather_interconnect_p_get_data(jag_prec_t *prec)
 		return SLURM_FAILURE;
 	}
 
-	if (first) {
-		prec->tres_in[tres_pos] = 0;
-		prec->tres_out[tres_pos] = 0;
-		prec->num_reads[tres_pos] = 0;
-		prec->num_writes[tres_pos] = 0;
-
-		starting.packets_in = ofed_sens.total_rcvpkts;
-		starting.packets_out = ofed_sens.total_xmtpkts;
-		starting.size_in = (double)ofed_sens.total_rcvdata;
-		starting.size_out = (double)ofed_sens.total_xmtdata;
-		first = false;
-	}
-	/* Obtain the current values read from all lustre-xxxx directories */
-	current.packets_in = ofed_sens.total_rcvpkts;
-	current.packets_out = ofed_sens.total_xmtpkts;
-	current.size_in = (double)ofed_sens.total_rcvdata;
-	current.size_out = (double)ofed_sens.total_xmtdata;
-
-	prec->num_reads[tres_pos] =
-		(double)current.packets_in - (double)starting.packets_in;
-	prec->num_writes[tres_pos] =
-		(double)current.packets_out - (double)starting.packets_out;
-	prec->tres_in[tres_pos] = (current.size_in - starting.size_in);
-	prec->tres_out[tres_pos] = (current.size_out - starting.size_out);
+	prec->num_reads[tres_pos] = ofed_sens.total_rcvpkts;
+	prec->num_writes[tres_pos] = ofed_sens.total_xmtpkts;
+	prec->tres_in[tres_pos] = ofed_sens.total_rcvdata;
+	prec->tres_out[tres_pos] = ofed_sens.total_xmtdata;
 
 	slurm_mutex_unlock(&ofed_lock);
 

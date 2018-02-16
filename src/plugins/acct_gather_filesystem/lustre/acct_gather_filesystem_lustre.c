@@ -440,12 +440,7 @@ extern void acct_gather_filesystem_p_conf_values(List *data)
 
 extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 {
-
-	static acct_filesystem_data_t starting;
-
 	int retval = SLURM_SUCCESS;
-	static bool first = true;
-	acct_filesystem_data_t current;
 
 	if (tres_pos == -1) {
 		debug2("%s: We are not tracking TRES usage/lustre", __func__);
@@ -459,32 +454,13 @@ extern int acct_gather_filesystem_p_get_data(jag_prec_t *prec)
 		slurm_mutex_unlock(&lustre_lock);
 		return SLURM_FAILURE;
 	}
-	if (first) {
-		prec->tres_in[tres_pos] = 0;
-		prec->tres_out[tres_pos] = 0;
-		prec->num_reads[tres_pos] = 0;
-		prec->num_writes[tres_pos] = 0;
-
-		starting.reads = lustre_se.all_lustre_nb_reads;
-		starting.writes = lustre_se.all_lustre_nb_writes;
-		starting.read_size = (double)lustre_se.all_lustre_read_bytes;
-		starting.write_size = (double)lustre_se.all_lustre_write_bytes;
-
-		first = false;
-	}
 
 	/* Obtain the current values read from all lustre-xxxx directories */
 
-	current.reads = lustre_se.all_lustre_nb_reads;
-	current.writes = lustre_se.all_lustre_nb_writes;
-	current.read_size = (double)lustre_se.all_lustre_read_bytes;
-	current.write_size = (double)lustre_se.all_lustre_write_bytes;
-	prec->num_reads[tres_pos] =
-		(double)current.reads - (double) starting.reads;
-	prec->num_writes[tres_pos] =
-		(double) current.writes - (double) starting.writes;
-	prec->tres_in[tres_pos] = (current.read_size - starting.read_size);
-	prec->tres_out[tres_pos] = (current.write_size - starting.write_size);
+	prec->num_reads[tres_pos] = lustre_se.all_lustre_nb_reads;
+	prec->num_writes[tres_pos] = lustre_se.all_lustre_nb_writes;
+	prec->tres_in[tres_pos] = lustre_se.all_lustre_read_bytes;
+	prec->tres_out[tres_pos] = lustre_se.all_lustre_write_bytes;
 
 	slurm_mutex_unlock(&lustre_lock);
 	return retval;
