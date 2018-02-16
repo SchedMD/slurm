@@ -53,6 +53,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"

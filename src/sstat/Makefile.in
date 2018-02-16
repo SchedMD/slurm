@@ -153,8 +153,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sstat_OBJECTS = options.$(OBJEXT) print.$(OBJEXT) process.$(OBJEXT) \
-	sstat.$(OBJEXT)
+am_sstat_OBJECTS = options.$(OBJEXT) print.$(OBJEXT) sstat.$(OBJEXT)
 sstat_OBJECTS = $(am_sstat_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -497,7 +496,6 @@ noinst_HEADERS = sstat.h
 sstat_SOURCES = \
 	options.c	\
 	print.c		\
-	process.c	\
 	sstat.c		\
 	sstat.h
 
@@ -596,7 +594,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sstat.Po@am__quote@
 
 .c.o:

@@ -17,13 +17,9 @@ noinst_HEADERS = sstat.h
 sstat_SOURCES =		\
 	options.c	\
 	print.c		\
-	process.c	\
 	sstat.c		\
 	sstat.h
 
 force:
 $(sstat_LDADD) : force
 	 @cd `dirname $@` && $(MAKE) `basename $@`
-
-sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-
