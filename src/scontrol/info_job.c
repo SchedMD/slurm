@@ -1073,22 +1073,31 @@ extern int scontrol_batch_script(int argc, char **argv)
 	else
 		filename = xstrdup_printf("slurm-%u.sh", jobid);
 
-	if (!(out = fopen(filename, "w"))) {
-		fprintf(stderr, "failed to open file `%s`: %m\n", filename);
-		xfree(filename);
-		return errno;
+	if (!xstrcmp(filename, "-")) {
+		out = stdout;
+	} else {
+		if (!(out = fopen(filename, "w"))) {
+			fprintf(stderr, "failed to open file `%s`: %m\n",
+				filename);
+			xfree(filename);
+			return errno;
+		}
 	}
 
 	exit_code = slurm_job_batch_script(out, jobid);
-	fclose(out);
+
+	if (out != stdout)
+		fclose(out);
+
 	if (exit_code != SLURM_SUCCESS) {
-		unlink(filename);
+		if (out != stdout)
+			unlink(filename);
 		slurm_perror("job script retrieval failed");
-	} else if (quiet_flag != 1) {
+	} else if ((out != stdout) && (quiet_flag != 1)) {
 		printf("batch script for job %u written to %s\n",
 		       jobid, filename);
 	}
-	xfree(filename);
 
+	xfree(filename);
 	return exit_code;
 }

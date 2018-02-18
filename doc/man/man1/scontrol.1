@@ -472,8 +472,9 @@ automatically as needed.
 
 .TP
 \fBwrite batch_script\fP \fIjob_id optional_filename\fP
-Write the batch script for a given job_id to a file. The file will default to
-\fIslurm-\<job_id\>.sh\fP if the optional filename argument is not given.
+Write the batch script for a given job_id to a file or to stdout. The file will
+default to \fIslurm-\<job_id\>.sh\fP if the optional filename argument is not
+given. The script will be written to stdout if - is given instead of a filename.
 The batch script can only be retrieved by an admin or operator, or by the
 owner of the job.
 
