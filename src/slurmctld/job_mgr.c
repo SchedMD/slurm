@@ -6540,8 +6540,14 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		 */
 		job_desc.pn_min_memory = detail_ptr->pn_min_memory;
 		job_desc.cpus_per_task = detail_ptr->cpus_per_task;
-		job_desc.num_tasks = detail_ptr->num_tasks ?
-			detail_ptr->num_tasks : job_desc.min_cpus;
+		if (detail_ptr->num_tasks)
+			job_desc.num_tasks = detail_ptr->num_tasks;
+		else {
+			job_desc.num_tasks = job_desc.min_nodes;
+			if (detail_ptr->ntasks_per_node != NO_VAL16)
+				job_desc.num_tasks *=
+					detail_ptr->ntasks_per_node;
+		}
 		//job_desc.min_cpus = detail_ptr->min_cpus; /* init'ed above */
 		job_desc.max_cpus = detail_ptr->max_cpus;
 		job_desc.shared = (uint16_t)detail_ptr->share_res;
