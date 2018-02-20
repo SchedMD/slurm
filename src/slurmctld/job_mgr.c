@@ -9001,7 +9001,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	return SLURM_SUCCESS;
 }
 
-/* _validate_pn_min_mem()
+/*
  * Traverse the list of partitions and invoke the
  * function validating the job memory specification.
  */
