@@ -1273,8 +1273,11 @@ static int _list_find_fed_job_info_by_jobid(void *x, void *key)
 	return 0;
 }
 
+/* Must have fed_job_mutex before entering */
 static fed_job_info_t *_find_fed_job_info(uint32_t job_id)
 {
+	if (!fed_job_list)
+		return NULL;
 	return list_find_first(fed_job_list, _list_find_fed_job_info_by_jobid,
 			       &job_id);
 }
@@ -2386,6 +2389,11 @@ extern int fed_mgr_init(void *db_conn)
 		fed_job_list = list_create(_destroy_fed_job_info);
 	slurm_mutex_unlock(&fed_job_list_mutex);
 
+	/*
+	 * fed_job_update_list should only be appended to and popped from.
+	 * So rely on the list's lock. If there are ever changes to iterate the
+	 * list, then a lock will be needed around the list.
+	 */
 	if (!fed_job_update_list)
 		fed_job_update_list = list_create(_destroy_fed_job_update_info);
 
@@ -2498,7 +2506,16 @@ extern int fed_mgr_fini(void)
 	if (agent_thread_id)
 		pthread_join(agent_thread_id, NULL);
 
+	if (fed_job_update_thread_id)
+		pthread_join(fed_job_update_thread_id, NULL);
+
 	_remove_job_watch_thread();
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+	FREE_NULL_LIST(fed_job_list);
+	slurm_mutex_unlock(&fed_job_list_mutex);
+
+	FREE_NULL_LIST(fed_job_update_list);
 
 	return SLURM_SUCCESS;
 }
