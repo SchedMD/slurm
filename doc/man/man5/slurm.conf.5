@@ -321,29 +321,12 @@ All Slurm daemons and commands must be terminated prior to changing
 the value of \fBAuthType\fR and later restarted.
 
 .TP
-\fBBackupAddr[#]\fR
-The name that \fBBackupController\fR should be referred to in
-establishing a communications path. This name will
-be used as an argument to the gethostbyname() function for
-identification. For example, "elx0000" might be used to designate
-the Ethernet address for node "lx0000". Multiple backup controllers may be
-configured by specifying a numeric suffix identifying the order in which they
-should be used. The suffix value should start at "1" (the default value) and
-monotonically increase to a maximum value of "9".
-By default the \fBBackupAddr[#]\fR will be identical in value to
-\fBBackupController[#]\fR.
+\fBBackupAddr\fR
+Defunct option, see \fBSlurmctldHost\fR.
 
 .TP
-\fBBackupController[#]\fR
-The short, or long, name of the machine where Slurm control functions are to be
-executed in the event that \fBControlMachine\fR fails (i.e. the name returned by
-the command "hostname \-s"). This node may also be used as a compute server if
-so desired. It will come into service as a controller only upon the failure of
-ControlMachine and will revert to a "standby" mode when the ControlMachine
-becomes available once again. Multiple backup controllers may be configured
-by specifying a numeric suffix identifying the order in which they should be
-used. The suffix value should start at "1" (the default value) and monotonically
-increase to a maximum value of "9".
+\fBBackupController\fR
+Defunct option, see \fBSlurmctldHost\fR.
 
 The backup controller recovers state information from the
 \fBStateSaveLocation\fR directory, which must be readable and writable from both
@@ -424,24 +407,11 @@ The value may not exceed 65533.
 
 .TP
 \fBControlAddr\fR
-Name that \fBControlMachine\fR should be referred to in
-establishing a communications path. This name will
-be used as an argument to the gethostbyname() function for
-identification. For example, "elx0000" might be used to designate
-the Ethernet address for node "lx0000".
-By default the \fBControlAddr\fR will be identical in value to
-\fBControlMachine\fR.
+Defunct option, see \fBSlurmctldHost\fR.
 
 .TP
 \fBControlMachine\fR
-The short, or long, hostname of the machine where Slurm control functions are
-executed (i.e. the name returned by the command "hostname \-s").
-This value must be specified.
-In order to support some high availability architectures, multiple
-hostnames may be listed with comma separators and one \fBControlAddr\fR
-must be specified. The high availability system must ensure that the
-slurmctld daemon is running on only one of these hosts at a time.
-See the \fBRELOCATING CONTROLLERS\fR section if you change this.
+Defunct option, see \fBSlurmctldHost\fR.
 
 .TP
 \fBCoreSpecPlugin\fR
@@ -3249,6 +3219,19 @@ Log errors and verbose informational messages and even more debugging messages
 .RE
 
 .TP
+\fBSlurmctldHost\fR
+The short, or long, hostname of the machine where Slurm control daemon is
+executed (i.e. the name returned by the command "hostname \-s").
+This hostname is optionally followed by the address, either the IP address or
+a name by which the address can be identifed.
+This value must be specified at least once.
+If specified more than once, the first hostname named will be where the daemon
+runs.
+If the first specified host fails, the daemon will execute on the second host.
+If both the first and second specified host fails, the daemon will execute on
+the third host.
+
+.TP
 \fBSlurmctldLogFile\fR
 Fully qualified pathname of a file into which the \fBslurmctld\fR daemon's
 logs are written.
@@ -5263,13 +5246,9 @@ unusable, but no other harm will result.
 .br
 #
 .br
-ControlMachine=dev0
+SlurmctldHost=dev0(12.34.56.78)  # Primary server
 .br
-ControlAddr=edev0
-.br
-BackupController=dev1
-.br
-BackupAddr=edev1
+SlurmctldHost=dev1(12.34.56.79)  # Backup server
 .br
 #
 .br

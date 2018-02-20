@@ -1213,8 +1213,7 @@ will be out of service for an extended period of time, it may be desirable
 to relocate them. In order to do so, follow this procedure:</p>
 <ol>
 <li>Stop all Slurm daemons</li>
-<li>Modify the <i>ControlMachine</i>, <i>ControlAddr</i>,
-<i>BackupController</i>, and/or <i>BackupAddr</i> in the <i>slurm.conf</i> file</li>
+<li>Modify the <i>SlurmctldHost</i> values in the <i>slurm.conf</i> file</li>
 <li>Distribute the updated <i>slurm.conf</i> file to all nodes</li>
 <li>Copy the <i>StateSaveLocation</i> directory to the new host and
 make sure the permissions allow the <i>SlurmUser</i> to read and write it.
@@ -1224,11 +1223,10 @@ make sure the permissions allow the <i>SlurmUser</i> to read and write it.
 any nodes added to the cluster have a current <i>slurm.conf</i> file
 installed.
 <b>CAUTION:</b> If two nodes are simultaneously configured as the primary
-controller (two nodes on which <i>ControlMachine</i> specify the local host
+controller (two nodes on which <i>SlurmctldHost</i> specify the local host
 and the <i>slurmctld</i> daemon is executing on each), system behavior will be
-destructive. If a compute node has an incorrect <i>ControlMachine</i> or
-<i>BackupController</i> parameter, that node may be rendered unusable, but no
-other harm will result.
+destructive. If a compute node has an incorrect <i>SlurmctldHost</i> parameter,
+that node may be rendered unusable, but no other harm will result.
 
 <p><a name="multi_slurm"><b>13. Can multiple Slurm systems be run in
 parallel for testing purposes?</b></a><br>
@@ -2249,6 +2247,6 @@ accessed files within jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 February 2018</p>
+<p style="text-align:center;">Last modified 15 February 2018</p>
 
 <!--#include virtual="footer.txt"-->

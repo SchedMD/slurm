@@ -117,7 +117,8 @@ extern int slurm_shutdown(uint16_t options)
 	 * Explicity send the message to both primary and backup controllers
 	 */
 	if (!working_cluster_rec) {
-		for (i = 1; i < MAX_CONTROLLERS; i++)
+		uint32_t control_cnt = slurm_get_control_cnt();
+		for (i = 1; i < control_cnt; i++)
 			(void) _send_message_controller(i, &req_msg);
 	}
 	return _send_message_controller(0, &req_msg);

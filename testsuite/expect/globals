@@ -2810,6 +2810,10 @@ proc get_control_machine { } {
 			set control_machine $expect_out(1,string)
 			exp_continue
 		}
+		-re "SlurmctldHost.0. *= ($controlmachine_regex)" {
+			set control_machine $expect_out(1,string)
+			exp_continue
+		}
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
 			slow_kill $scon_pid

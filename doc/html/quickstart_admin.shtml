@@ -277,7 +277,7 @@ build time by defining SAVE_MAX_WAIT to a different value than five.</p>
 <p>There must be a uniform user and group name space (including
 UIDs and GIDs) across the cluster.
 It is not necessary to permit user logins to the control hosts
-(<b>ControlMachine</b> or <b>BackupController</b>), but the
+(<b>SlurmctldHost</b>), but the
 users and groups must be resolvable on those hosts.</p>
 
 <h3>Authentication of Slurm communications</h3>
@@ -435,10 +435,8 @@ manually edited for more complex configurations.</p>
 #
 # Sample /etc/slurm.conf for mcr.llnl.gov
 #
-ControlMachine=mcri
-ControlAddr=emcri
-BackupController=mcrj
-BackupAddr=emcrj
+SlurmctldHost=mcri(12.34.56.78)
+SlurmctldHost=mcrj(12.34.56.79)
 #
 AuthType=auth/munge
 Epilog=/usr/local/slurm/etc/epilog
@@ -630,8 +628,6 @@ BackupAddr        = eadevj
 BackupController  = adevj
 BOOT_TIME         = 01/10-09:19:21
 CheckpointType    = checkpoint/none
-ControlAddr       = eadevi
-ControlMachine    = adevi
 ...
 WaitTime          = 0
 
@@ -769,6 +765,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 04 October 2017</p>
+<p style="text-align:center;">Last modified 15 February 2018</p>
 
 <!--#include virtual="footer.txt"-->

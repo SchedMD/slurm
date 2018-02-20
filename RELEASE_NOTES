@@ -147,6 +147,11 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- Configuration parameters "ControlMachine", "ControlAddr", "BackupController"
+    and "BackupAddr" replaced by an ordered list of "SlurmctldHost" records
+    with the optional address appended to the name enclosed in parenthesis.
+    For example: "SlurmctldHost=head(12.34.56.78)". An arbitrary number of
+    backup servers can be configured.
  -- Add "GetSysStatus" option to burst_buffer.conf file. For burst_buffer/cray
     this would indicate the location of the "dwstat" command.
  -- Add node and partition configuration options of "CpuBind" to control default

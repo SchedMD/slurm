@@ -2733,8 +2733,6 @@ typedef struct reservation_name_msg {
 #define LOG_FMT_SHORT           5
 #define LOG_FMT_THREAD_ID       6
 
-#define MAX_CONTROLLERS 10
-
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	char *accounting_storage_tres; /* list of tres */

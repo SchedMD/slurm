@@ -144,6 +144,11 @@ static bool nodehash_initialized = false;
 static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
 static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
 
+typedef struct slurm_conf_server {
+	char *hostname;
+	char *addr;
+} slurm_conf_server_t;
+
 static void _destroy_nodename(void *ptr);
 static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
@@ -160,6 +165,13 @@ static int _parse_downnodes(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
 static void _destroy_downnodes(void *ptr);
+
+static void _load_slurmctld_host(slurm_ctl_conf_t *conf);
+static int _parse_slurmctld_host(void **dest, slurm_parser_enum_t type,
+				 const char *key, const char *value,
+				 const char *line, char **leftover);
+static void _destroy_slurmctld_host(void *ptr);
+
 static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover);
@@ -188,25 +200,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AuthInfo", S_P_STRING},
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
-	{"BackupAddr1", S_P_STRING},
-	{"BackupAddr2", S_P_STRING},
-	{"BackupAddr3", S_P_STRING},
-	{"BackupAddr4", S_P_STRING},
-	{"BackupAddr5", S_P_STRING},
-	{"BackupAddr6", S_P_STRING},
-	{"BackupAddr7", S_P_STRING},
-	{"BackupAddr8", S_P_STRING},
-	{"BackupAddr9", S_P_STRING},
 	{"BackupController", S_P_STRING},
-	{"BackupController1", S_P_STRING},
-	{"BackupController2", S_P_STRING},
-	{"BackupController3", S_P_STRING},
-	{"BackupController4", S_P_STRING},
-	{"BackupController5", S_P_STRING},
-	{"BackupController6", S_P_STRING},
-	{"BackupController7", S_P_STRING},
-	{"BackupController8", S_P_STRING},
-	{"BackupController9", S_P_STRING},
 	{"BatchStartTimeout", S_P_UINT16},
 	{"BurstBufferParameters", S_P_STRING},
 	{"BurstBufferType", S_P_STRING},
@@ -389,11 +383,13 @@ s_p_options_t slurm_conf_options[] = {
 	{"VSizeFactor", S_P_UINT16},
 	{"WaitTime", S_P_UINT16},
 
+	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
 	{"FrontendName", S_P_ARRAY, _parse_frontend, destroy_frontend},
 	{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
 	{"PartitionName", S_P_ARRAY, _parse_partitionname,
 	 _destroy_partitionname},
-	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
+	{"SlurmctldHost", S_P_ARRAY, _parse_slurmctld_host,
+	 _destroy_slurmctld_host},
 
 	{NULL}
 };
@@ -1021,7 +1017,7 @@ hosed:
 
 int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 {
-	int count;
+	int count = 0;
 	slurm_conf_frontend_t **ptr;
 
 	if (s_p_get_array((void ***)&ptr, &count, "FrontendName",
@@ -1079,7 +1075,7 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 
 int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 {
-	int count;
+	int count = 0;
 	slurm_conf_node_t **ptr;
 
 	if (s_p_get_array((void ***)&ptr, &count, "NodeName", conf_hashtbl)) {
@@ -1497,9 +1493,82 @@ static void _destroy_partitionname(void *ptr)
 	xfree(ptr);
 }
 
+static void _load_slurmctld_host(slurm_ctl_conf_t *conf)
+{
+	int count = 0, i, rc;
+	slurm_conf_server_t **ptr = NULL;
+
+	rc = s_p_get_array((void ***)&ptr, &count, "SlurmctldHost",
+			   conf_hashtbl);
+	conf->control_machine = xmalloc(sizeof(char *) * (count + 2));
+	conf->control_addr    = xmalloc(sizeof(char *) * (count + 2));
+	if (rc == 0)
+		return;
+
+	for (i = 0; i < count; i++) {
+		conf->control_machine[i] = xstrdup(ptr[i]->hostname);
+		conf->control_addr[i] = xstrdup(ptr[i]->addr);
+	}
+}
+
+static int _parse_slurmctld_host(void **dest, slurm_parser_enum_t type,
+				 const char *key, const char *value,
+				 const char *line, char **leftover)
+{
+	s_p_hashtbl_t *tbl;
+	slurm_conf_server_t *p;
+	char *open_paren, *close_paren;
+	static s_p_options_t _slurmctld_host_options[] = {
+		{NULL}
+	};
+
+	tbl = s_p_hashtbl_create(_slurmctld_host_options);
+	s_p_parse_line(tbl, *leftover, leftover);
+
+	open_paren = strchr(value, '(');
+	close_paren = strchr(value, ')');
+	if ((open_paren && !close_paren) ||
+	    (!open_paren && close_paren) ||
+	    (close_paren && (close_paren[1] != '\0')) ||
+	    (close_paren && (close_paren != strrchr(value, ')')))) {
+		error("Bad value \"%s\" for SlurmctldHost", value);
+		return -1;
+	}
+
+	p = xmalloc(sizeof(slurm_conf_server_t));
+	if (open_paren && close_paren) {
+		p->hostname = xstrdup(value);
+		open_paren = strchr(p->hostname, '(');
+		if (open_paren)
+			open_paren[0] = '\0';
+		p->addr = xstrdup(open_paren + 1);
+		close_paren = strchr(p->addr, ')');
+		if (close_paren)
+			close_paren[0] = '\0';
+	} else {
+		p->hostname = xstrdup(value);
+		p->addr = xstrdup(value);
+	}
+
+	s_p_hashtbl_destroy(tbl);
+	*dest = (void *) p;
+
+	return 1;
+}
+
+/* May not be needed */
+static void _destroy_slurmctld_host(void *ptr)
+{
+	slurm_conf_server_t *p = (slurm_conf_server_t *) ptr;
+
+	xfree(p->hostname);
+	xfree(p->addr);
+	xfree(ptr);
+}
+
 int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[])
 {
-	int count;
+	int count = 0;
 	slurm_conf_partition_t **ptr;
 
 	if (s_p_get_array((void ***)&ptr, &count, "PartitionName",
@@ -1555,7 +1624,7 @@ static void _destroy_downnodes(void *ptr)
 
 extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[])
 {
-	int count;
+	int count = 0;
 	slurm_conf_downnodes_t **ptr;
 
 	if (s_p_get_array((void ***)&ptr, &count, "DownNodes", conf_hashtbl)) {
@@ -3000,7 +3069,7 @@ slurm_conf_lock(void)
 			 * should call slurm_conf_init() to get a fatal
 			 * error instead.
 			 */
-			for (i = 0; i < MAX_CONTROLLERS; i++)
+			for (i = 0; i < conf_ptr->control_cnt; i++)
 				xfree(conf_ptr->control_addr[i]);
 			xfree(conf_ptr->control_addr);
 		}
@@ -3084,65 +3153,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	uint32_t default_storage_port = 0;
 	uint16_t uint16_tmp;
 	uint64_t tot_prio_weight;
-	int i;
-
-	conf->control_machine = xmalloc(sizeof(char *) * MAX_CONTROLLERS);
-	conf->control_addr    = xmalloc(sizeof(char *) * MAX_CONTROLLERS);
-	for (i = 0; i < MAX_CONTROLLERS; i++) {
-		char name[32], addr[32];
-		int offset;
-		if (i == 0) {
-			snprintf(name, sizeof(name), "BackupController");
-			snprintf(addr, sizeof(addr), "BackupAddr");
-			offset = 1;
-		} else {
-			snprintf(name, sizeof(name), "BackupController%d", i);
-			snprintf(addr, sizeof(addr), "BackupAddr%d", i);
-			offset = i;
-		}
-		if (s_p_get_string(&conf->control_machine[offset], name,
-				   hashtbl) &&
-		    !xstrcasecmp("localhost", conf->control_machine[offset])) {
-			xfree(conf->control_machine[offset]);
-			conf->control_machine[offset] = xmalloc(MAX_SLURM_NAME);
-			if (gethostname_short(conf->control_machine[offset],
-					      MAX_SLURM_NAME)) {
-				error("getnodename: %m");
-				return SLURM_ERROR;
-			}
-		}
-		if (s_p_get_string(&conf->control_addr[offset], addr,
-				   hashtbl)) {
-			if (conf->control_machine[offset] == NULL) {
-				error("%s specified without %s", addr, name);
-				xfree(conf->control_addr[offset]);
-			}
-		} else if (conf->control_machine[offset]) {
-			conf->control_addr[offset] =
-				xstrdup(conf->control_machine[offset]);
-		}
-		if ((i == 0) && conf->control_machine[offset])
-			i++;
-		else if ((i != 0) && !conf->control_machine[offset])
-			break;
-	}
-	for (i = 1; i < MAX_CONTROLLERS; i++) {
-		if (!conf->control_machine[i])
-			break;
-	}
-	conf->control_cnt = i;
+	int i, j;
 
 	if (!s_p_get_uint16(&conf->batch_start_timeout, "BatchStartTimeout",
 			    hashtbl))
 		conf->batch_start_timeout = DEFAULT_BATCH_START_TIMEOUT;
 
 	s_p_get_string(&conf->cluster_name, "ClusterName", hashtbl);
-	/* Some databases are case sensitive so we have to make sure
+	/*
+	 * Some databases are case sensitive so we have to make sure
 	 * the cluster name is lower case since sacctmgr makes sure
 	 * this is the case as well.
 	 */
 	if (conf->cluster_name) {
-		int i;
 		for (i = 0; conf->cluster_name[i] != '\0'; i++)
 			conf->cluster_name[i] =
 				(char)tolower((int)conf->cluster_name[i]);
@@ -3151,36 +3174,47 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->complete_wait, "CompleteWait", hashtbl))
 		conf->complete_wait = DEFAULT_COMPLETE_WAIT;
 
-	if (!s_p_get_string(&conf->control_machine[0], "ControlMachine", hashtbl)){
-		error("ControlMachine not specified.");
+	_load_slurmctld_host(conf);
+	(void) s_p_get_string(&conf->control_machine[0], "ControlMachine",
+			      hashtbl);
+	if (!s_p_get_string(&conf->control_addr[0], "ControlAddr", hashtbl) &&
+	    conf->control_machine[0] &&
+	    strchr(conf->control_machine[0], ',')) {
+		error("ControlMachine has multiple host names so ControlAddr must be specified");
 		return SLURM_ERROR;
 	}
-	else if (xstrcasecmp("localhost", conf->control_machine[0]) == 0) {
-		xfree(conf->control_machine[0]);
-		conf->control_machine[0] = xmalloc(MAX_SLURM_NAME);
-		if (gethostname_short(conf->control_machine[0], MAX_SLURM_NAME)) {
-			error("getnodename: %m");
-			return SLURM_ERROR;
+	(void) s_p_get_string(&conf->control_machine[1], "BackupController",
+			      hashtbl);
+	if (s_p_get_string(&conf->control_addr[1], "BackupAddr", hashtbl)) {
+		if (!conf->control_machine[1]) {
+			error("BackupAddr specified without BackupController");
+			xfree(conf->control_addr[1]);
 		}
 	}
-
-	if (!s_p_get_string(&conf->control_addr[0], "ControlAddr", hashtbl) &&
-	    (conf->control_machine[0] != NULL)) {
-		if (strchr(conf->control_machine[0], ',')) {
-			error("ControlMachine has multiple host names so "
-			      "ControlAddr must be specified");
-			return SLURM_ERROR;
+	for (i = 0; conf->control_machine[i]; i++) {
+		if (!conf->control_addr[i]) {
+			conf->control_addr[i] =
+				xstrdup(conf->control_machine[i]);
 		}
-		conf->control_addr[0] = xstrdup(conf->control_machine[0]);
+		if (!xstrcasecmp("localhost", conf->control_machine[i])) {
+			xfree(conf->control_machine[i]);
+			conf->control_machine[i] = xmalloc(MAX_SLURM_NAME);
+			if (gethostname_short(conf->control_machine[i],
+					      MAX_SLURM_NAME)) {
+				error("getnodename: %m");
+				return SLURM_ERROR;
+			}
+		}
+		for (j = 0; j < i; j++) {
+			if (!xstrcmp(conf->control_machine[i],
+				     conf->control_machine[j])) {
+				error("Duplicate SlurmctldHost records: %s",
+				      conf->control_machine[i]);
+				return SLURM_ERROR;
+			}
+		}
 	}
-
-	if ((conf->control_machine[1] != NULL) &&
-	    (xstrcmp(conf->control_machine[1], conf->control_machine[0]) == 0)){
-		error("ControlMachine and BackupController identical");
-		xfree(conf->control_addr[1]);
-		xfree(conf->control_machine[1]);
-		conf->control_cnt = 1;
-	}
+	conf->control_cnt = i;
 
 	if (!s_p_get_string(&conf->acct_gather_energy_type,
 			    "AcctGatherEnergyType", hashtbl))

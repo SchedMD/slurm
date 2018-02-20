@@ -103,10 +103,8 @@ function displayfile()
    "# Put this file on all nodes of your cluster.<br>" +
    "# See the slurm.conf man page for more information.<br>" +
    "#<br>" +
-   "ControlMachine=" + document.config.control_machine.value + "<br>" +
-   get_field("ControlAddr",document.config.control_addr) + "<br>" +
-   get_field("BackupController",document.config.backup_controller) + "<br>" +
-   get_field("BackupAddr",document.config.backup_addr) + "<br>" +
+   "SlurmctldHost=" + document.config.control_machine.value + "<br>" +
+   get_field("SlurmctldHost",document.config.backup_controller) + "<br>" +
    "# <br>" +
    "AuthType=auth/" + get_radio_value(document.config.auth_type) + "<br>" +
    "#CheckpointType=checkpoint/none <br>" +
@@ -330,23 +328,15 @@ as <I>slurm.conf</I> for use by Slurm.
 
 <H2>Control Machines</H2>
 Define the hostname of the computer on which the Slurm controller and
-optional backup controller will execute. You can also specify addresses
-of these computers if desired (defaults to their hostnames).
-The IP addresses can be either numeric IP addresses or names.
+optional backup controller will execute.
 Hostname values should not be the fully qualified domain
 name (e.g. use <I>tux</I> rather than <I>tux.abc.com</I>).
 <P>
-<input type="text" name="control_machine" value="linux0"> <B>ControlMachine</B>:
+<input type="text" name="control_machine" value="linux0"> <B>SlurmctldHost</B>:
 Master Controller Hostname
-<P>
-<input type="text" name="control_addr"> <B>ControlAddr</B>: Master Controller
-Address (optional)
 <P>
 <input type="text" name="backup_controller"> <B>BackupController</B>: Backup
 Controller Hostname (optional)
-<P>
-<input type="text" name="backup_addr"> <B>BackupAddr</B>: Backup Controller
-Address (optional)
 <P>
 
 <H2>Compute Machines</H2>
@@ -463,7 +453,7 @@ This must be a unique directory on each compute server (local disk).
 The use of a highly reliable file system (e.g. RAID) is recommended.
 <P>
 <input type="text" name="state_save_location" value="/var/spool"> <B>StateSaveLocation</B>:
-Slurmctld state save directory <B>Must be writable by both ControlMachine and BackupController</B>
+Slurmctld state save directory <B>Must be writable by all SlurmctldHost nodes</B>
 <P>
 <input type="text" name="slurmd_spool_dir" value="/var/spool/slurmd"> <B>SlurmdSpoolDir</B>:
 Slurmd state save directory
@@ -785,5 +775,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 5 February 2018</P>
+Last modified 15 February 2018</P>
 </BODY>

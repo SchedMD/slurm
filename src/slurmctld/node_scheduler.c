@@ -597,7 +597,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 #endif
 
 	if ((agent_args->node_count - down_node_cnt) == 0) {
-		/* Can not wait for epilog completet to release licenses and
+		/* Can not wait for epilog complete to release licenses and
 		 * update gang scheduling table */
 		cleanup_completing(job_ptr);
 	}

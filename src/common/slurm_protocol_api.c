@@ -89,8 +89,6 @@ strong_alias(get_unit_type, slurm_get_unit_type);
 
 /* STATIC VARIABLES */
 /* static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER; */
-static slurm_protocol_config_t proto_conf_default;
-static slurm_protocol_config_t *proto_conf = &proto_conf_default;
 /* static slurm_ctl_conf_t slurmctld_conf; */
 static int message_timeout = -1;
 
@@ -110,73 +108,69 @@ slurm_dbd_conf_t *slurmdbd_conf = NULL;
 /**********************************************************************\
  * protocol configuration functions
 \**********************************************************************/
-/* slurm_set_api_config
- * sets the slurm_protocol_config object
- * NOT THREAD SAFE
- * IN protocol_conf		-  slurm_protocol_config object
- *
- * XXX: Why isn't the "config_lock" mutex used here?
- */
-int slurm_set_api_config(slurm_protocol_config_t * protocol_conf)
+
+/* Free memory space returned by _slurm_api_get_comm_config() */
+static void _slurm_api_free_comm_config(slurm_protocol_config_t *proto_conf)
 {
-	proto_conf = protocol_conf;
-	return SLURM_SUCCESS;
+	if (proto_conf) {
+		xfree(proto_conf->controller_addr);
+		xfree(proto_conf);
+	}
 }
 
-/* slurm_get_api_config
- * returns a pointer to the current slurm_protocol_config object
- * RET slurm_protocol_config_t  - current slurm_protocol_config object
+/*
+ * Get communication data structure based upon configuration file
+ * RET communication information structure, call _slurm_api_free_comm_config
+ *	to release allocated memory
  */
-slurm_protocol_config_t *slurm_get_api_config(void)
+static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 {
-	return proto_conf;
-}
-
-/* slurm_api_set_default_config
- *      called by the send_controller_msg function to ensure that at least
- *	the compiled in default slurm_protocol_config object is initialized
- * RET int		 - return code
- */
-int slurm_api_set_default_config(void)
-{
-	int rc = SLURM_SUCCESS;
+	slurm_protocol_config_t *proto_conf = NULL;
+	slurm_addr_t controller_addr;
 	slurm_ctl_conf_t *conf;
 	int i;
 
 	conf = slurm_conf_lock();
 
-	if (conf->control_addr[0] == NULL) {
+	if (!conf->control_cnt ||
+	    !conf->control_addr || !conf->control_addr[0]) {
 		error("Unable to establish controller machine");
-		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 	if (conf->slurmctld_port == 0) {
 		error("Unable to establish controller port");
-		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+	if (conf->control_cnt == 0) {
+		error("No slurmctld servers cvonfigured");
 		goto cleanup;
 	}
 
-	slurm_set_addr(&proto_conf_default.controller_addr[0],
-		       conf->slurmctld_port,
+	slurm_set_addr(&controller_addr, conf->slurmctld_port,
 		       conf->control_addr[0]);
-	if (proto_conf_default.controller_addr[0].sin_port == 0) {
+	if (controller_addr.sin_port == 0) {
 		error("Unable to establish control machine address");
-		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 
-	for (i = 1; i < MAX_CONTROLLERS; i++) {
+	proto_conf = xmalloc(sizeof(slurm_protocol_config_t));
+	proto_conf->controller_addr = xmalloc(sizeof(slurm_addr_t) *
+					      conf->control_cnt);
+	proto_conf->control_cnt = conf->control_cnt;
+	memcpy(&proto_conf->controller_addr[0], &controller_addr,
+	       sizeof(slurm_addr_t));
+
+	for (i = 1; i < proto_conf->control_cnt; i++) {
 		if (conf->control_addr[i]) {
-			slurm_set_addr(&proto_conf_default.controller_addr[i],
+			slurm_set_addr(&proto_conf->controller_addr[i],
 				       conf->slurmctld_port,
 				       conf->control_addr[i]);
 		}
 	}
-	proto_conf = &proto_conf_default;
 
 cleanup:
 	slurm_conf_unlock();
-	return rc;
+	return proto_conf;
 }
 
 /* slurm_api_clear_config
@@ -252,6 +246,25 @@ uint16_t slurm_get_batch_start_timeout(void)
 		slurm_conf_unlock();
 	}
 	return batch_start_timeout;
+}
+
+/*
+ * slurm_get_control_cnt
+ * RET Count of SlurmctldHost records from slurm.conf
+ * (slurmctld server count, primary plus backups) 
+ */
+uint32_t slurm_get_control_cnt(void)
+{
+	uint32_t control_cnt = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		control_cnt = conf->control_cnt;
+		slurm_conf_unlock();
+	}
+	return control_cnt;
 }
 
 /* slurm_get_suspend_timeout
@@ -3017,24 +3030,22 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 				      slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	int fd = -1;
-	slurm_ctl_conf_t *conf;
-	slurm_protocol_config_t *myproto = NULL;
+	slurm_protocol_config_t *proto_conf = NULL;
 	int i, retry, max_retry_period;
-	static int backup_cnt = 0;
 
 	if (!comm_cluster_rec) {
 		/* This means the addr wasn't set up already */
-		if (slurm_api_set_default_config() < 0)
+		if (!(proto_conf = _slurm_api_get_comm_config()))
 			return SLURM_FAILURE;
-		myproto = xmalloc(sizeof(slurm_protocol_config_t));
-		memcpy(myproto, proto_conf, sizeof(slurm_protocol_config_t));
-		myproto->controller_addr[0].sin_port =
-				htons(slurmctld_conf.slurmctld_port +
-				(((time(NULL) + getpid()) %
-				slurmctld_conf.slurmctld_port_count)));
-		for (i = 0; i < MAX_CONTROLLERS; i++) {
-			myproto->controller_addr[i].sin_port =
-					myproto->controller_addr[0].sin_port;
+		if (proto_conf->control_cnt) {
+			proto_conf->controller_addr[0].sin_port =
+					htons(slurmctld_conf.slurmctld_port +
+					(((time(NULL) + getpid()) %
+					slurmctld_conf.slurmctld_port_count)));
+		}
+		for (i = 1; i < proto_conf->control_cnt; i++) {
+			proto_conf->controller_addr[i].sin_port =
+					proto_conf->controller_addr[0].sin_port;
 		}
 	}
 
@@ -3062,29 +3073,20 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 		} else {
 			if (!*use_backup) {
 				fd = slurm_open_msg_conn(
-						&myproto->controller_addr[0]);
+						&proto_conf->controller_addr[0]);
 				if (fd >= 0) {
 					*use_backup = false;
 					goto end_it;
 				}
-				debug("Failed to contact primary controller: "
-				      "%m");
-
-				if (retry == 0) {
-					conf = slurm_conf_lock();
-					for (i = 1; i < MAX_CONTROLLERS; i++) {
-						if (conf->control_machine[i])
-							backup_cnt = i;
-					}
-					slurm_conf_unlock();
-				}
+				debug("Failed to contact primary controller: %m");
 			}
-			if ((backup_cnt > 0) || *use_backup) {
-				for (i = 1; i <= backup_cnt; i++) {
-					fd = slurm_open_msg_conn(&myproto->
-							controller_addr[i]);
+			if ((proto_conf->control_cnt > 0) || *use_backup) {
+				for (i = 1; i <= proto_conf->control_cnt; i++) {
+					fd = slurm_open_msg_conn(
+						&proto_conf->controller_addr[i]);
 					if (fd >= 0) {
-						debug("Contacted secondary controller");
+						debug("Contacted backup controller %d",
+						      (i - 1));
 						*use_backup = true;
 						goto end_it;
 					}
@@ -3095,11 +3097,11 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 		}
 	}
 	addr = NULL;
-	xfree(myproto);
+	_slurm_api_free_comm_config(proto_conf);
 	slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
 end_it:
-	xfree(myproto);
+	_slurm_api_free_comm_config(proto_conf);
 	return fd;
 }
 
@@ -3113,13 +3115,9 @@ end_it:
 extern int slurm_open_controller_conn_spec(int dest,
 				      slurmdb_cluster_rec_t *comm_cluster_rec)
 {
+	slurm_protocol_config_t *proto_conf = NULL;
 	slurm_addr_t *addr;
 	int rc;
-
-	if (slurm_api_set_default_config() < 0) {
-		debug3("Error: Unable to set default config");
-		return SLURM_ERROR;
-	}
 
 	if (comm_cluster_rec) {
 		if (comm_cluster_rec->control_addr.sin_port == 0) {
@@ -3129,23 +3127,24 @@ extern int slurm_open_controller_conn_spec(int dest,
 				comm_cluster_rec->control_host);
 		}
 		addr = &comm_cluster_rec->control_addr;
-	} else if (dest == 0) {	/* Primary */
-		addr = &proto_conf->controller_addr[0];
 	} else {	/* Some backup slurmctld */
-		slurm_ctl_conf_t *conf;
-		addr = NULL;
-		conf = slurm_conf_lock();
-		if ((dest > 0) && (dest <= conf->control_cnt) &&
-		    conf->control_addr[dest])
-			addr = &proto_conf->controller_addr[dest];
-		slurm_conf_unlock();
-		if (!addr)
+		if (!(proto_conf = _slurm_api_get_comm_config())) {
+			debug3("Error: Unable to set default config");
 			return SLURM_ERROR;
+		}
+		addr = NULL;
+		if ((dest >= 0) && (dest <= proto_conf->control_cnt))
+			addr = &proto_conf->controller_addr[dest];
+		if (!addr) {
+			rc = SLURM_ERROR;
+			goto fini;
+		}
 	}
 
 	rc = slurm_open_msg_conn(addr);
 	if (rc == -1)
 		_remap_slurmctld_errno();
+fini:	_slurm_api_free_comm_config(proto_conf);
 	return rc;
 }
 

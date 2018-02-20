@@ -4,6 +4,11 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 18.08.0pre2
 ==============================
  -- Remove support for "ChosLoc" configuration parameter.
+ -- Configuration parameters "ControlMachine", "ControlAddr", "BackupController"
+    and "BackupAddr" replaced by an ordered list of "SlurmctldHost" records
+    with the optional address appended to the name enclosed in parenthesis.
+    For example: "SlurmctldHost=head(12.34.56.78)". An arbitrary number of
+    backup servers can be configured.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
@@ -19,9 +24,9 @@ documents those changes that are of interest to users and administrators.
     * Output format of "scontrol ping" and the daemon status at the end of
       "scontrol status" is modified to report up status of the primary and all
       backup servers.
-    * "scontrol takeover [#]" command can now identify the BackupController
-      index number. Default value is "1" (the configured "BackupController" or
-      "BackupController1" node).
+    * "scontrol takeover [#]" command can now identify the SlurmctldHost
+      index number. Default value is "1" (the first backup configured
+      SlurmctldHost).
  -- Enable jobs with zero node count for creation and/or deletion of persistent
     burst buffers.
     * The partition default MinNodes configuration parameter is now 0

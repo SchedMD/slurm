@@ -92,7 +92,7 @@ typedef struct {
 } ctld_ping_t;
 
 /* Local variables */
-static ctld_ping_t	ctld_ping[MAX_CONTROLLERS];
+static ctld_ping_t *	ctld_ping = NULL;
 static bool		dump_core = false;
 static time_t		last_controller_response;
 static char		node_name_short[MAX_SLURM_NAME];
@@ -169,6 +169,7 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	}
 
 	/* repeatedly ping ControlMachine */
+	ctld_ping = xmalloc(sizeof(ctld_ping_t) * slurmctld_conf.control_cnt);
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 		/* Lock of slurmctld_conf below not important */
@@ -213,6 +214,7 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 				break;
 		}
 	}
+	xfree(ctld_ping);
 
 	if (slurmctld_config.shutdown_time != 0) {
 		/*
