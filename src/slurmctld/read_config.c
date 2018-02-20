@@ -1756,11 +1756,19 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			 * report differences from slurm.conf configuration */
 			if (xstrcmp(part_ptr->allow_accounts,
 				    old_part_ptr->allow_accounts)) {
-				error("Partition %s AllowAccounts differs from "
-				      "slurm.conf", part_ptr->name);
+				error("Partition %s AllowAccounts differs from slurm.conf",
+				      part_ptr->name);
 				xfree(part_ptr->allow_accounts);
 				part_ptr->allow_accounts =
 					xstrdup(old_part_ptr->allow_accounts);
+			}
+			if (xstrcmp(part_ptr->allow_alloc_nodes,
+				    old_part_ptr->allow_alloc_nodes)) {
+				error("Partition %s AllowNodes differs from slurm.conf",
+				      part_ptr->name);
+				xfree(part_ptr->allow_alloc_nodes);
+				part_ptr->allow_alloc_nodes =
+					xstrdup(old_part_ptr->allow_alloc_nodes);
 			}
 			if (xstrcmp(part_ptr->allow_groups,
 				    old_part_ptr->allow_groups)) {
@@ -1782,17 +1790,28 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				qos_list_build(part_ptr->allow_qos,
 					       &part_ptr->allow_qos_bitstr);
 			}
-
-			if (xstrcmp(part_ptr->qos_char,
-				    old_part_ptr->qos_char)) {
-				error("Partition %s QOS differs from "
-				      "slurm.conf", part_ptr->name);
-				xfree(part_ptr->qos_char);
-				part_ptr->qos_char = xstrdup(
-					old_part_ptr->qos_char);
-				part_ptr->qos_ptr = old_part_ptr->qos_ptr;
+			if (xstrcmp(part_ptr->alternate,
+				    old_part_ptr->alternate)) {
+				error("Partition %s Alternate differs from slurm.conf",
+				      part_ptr->name);
+				xfree(part_ptr->alternate);
+				part_ptr->alternate =
+					xstrdup(old_part_ptr->alternate);
 			}
-
+			if (part_ptr->def_mem_per_cpu !=
+			    old_part_ptr->def_mem_per_cpu) {
+				error("Partition %s DefMemPerCPU differs from slurm.conf",
+				      part_ptr->name);
+				part_ptr->def_mem_per_cpu =
+					old_part_ptr->def_mem_per_cpu;
+			}
+			if (part_ptr->default_time !=
+			    old_part_ptr->default_time) {
+				error("Partition %s DefaultTime differs from slurm.conf",
+				      part_ptr->name);
+				part_ptr->default_time =
+					old_part_ptr->default_time;
+			}
 			if (xstrcmp(part_ptr->deny_accounts,
 				    old_part_ptr->deny_accounts)) {
 				error("Partition %s DenyAccounts differs from "
@@ -1812,22 +1831,6 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 							     deny_qos);
 				qos_list_build(part_ptr->deny_qos,
 					       &part_ptr->deny_qos_bitstr);
-			}
-			if (xstrcmp(part_ptr->allow_alloc_nodes,
-				    old_part_ptr->allow_alloc_nodes)) {
-				error("Partition %s AllowNodes differs from "
-				      "slurm.conf", part_ptr->name);
-				xfree(part_ptr->allow_alloc_nodes);
-				part_ptr->allow_alloc_nodes =
-					xstrdup(old_part_ptr->
-						allow_alloc_nodes);
-			}
-			if (part_ptr->default_time !=
-			    old_part_ptr->default_time) {
-				error("Partition %s DefaultTime differs from "
-				      "slurm.conf", part_ptr->name);
-				part_ptr->default_time = old_part_ptr->
-							 default_time;
 			}
 			if ((part_ptr->flags & PART_FLAG_HIDDEN) !=
 			    (old_part_ptr->flags & PART_FLAG_HIDDEN)) {
@@ -1887,6 +1890,31 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				else
 					part_ptr->flags &= (~PART_FLAG_LLN);
 			}
+			if (part_ptr->grace_time != old_part_ptr->grace_time) {
+				error("Partition %s GraceTime differs from slurm.conf",
+				      part_ptr->name);
+				part_ptr->grace_time = old_part_ptr->grace_time;
+			}
+			if (part_ptr->max_cpus_per_node !=
+			    old_part_ptr->max_cpus_per_node) {
+				error("Partition %s MaxCPUsPerNode differs from slurm.conf"
+				      " (%u != %u)",
+				      part_ptr->name,
+				      part_ptr->max_cpus_per_node,
+				      old_part_ptr->max_cpus_per_node);
+				part_ptr->max_cpus_per_node =
+					old_part_ptr->max_cpus_per_node;
+			}
+			if (part_ptr->max_mem_per_cpu !=
+			    old_part_ptr->max_mem_per_cpu) {
+				error("Partition %s MaxMemPerNode/MaxMemPerCPU differs from slurm.conf"
+				      " (%"PRIu64" != %"PRIu64")",
+				      part_ptr->name,
+				      part_ptr->max_mem_per_cpu,
+				      old_part_ptr->max_mem_per_cpu);
+				part_ptr->max_mem_per_cpu =
+					old_part_ptr->max_mem_per_cpu;
+			}
 			if (part_ptr->max_nodes_orig !=
 			    old_part_ptr->max_nodes_orig) {
 				error("Partition %s MaxNodes differs from "
@@ -1908,11 +1936,6 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				      "slurm.conf", part_ptr->name);
 				part_ptr->max_time = old_part_ptr->max_time;
 			}
-			if (part_ptr->grace_time != old_part_ptr->grace_time) {
-				error("Partition %s GraceTime differs from "
-				      "slurm.conf", part_ptr->name);
-				part_ptr->grace_time = old_part_ptr->grace_time;
-			}
 			if (part_ptr->min_nodes_orig !=
 			    old_part_ptr->min_nodes_orig) {
 				error("Partition %s MinNodes differs from "
@@ -1929,6 +1952,13 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				      "slurm.conf", part_ptr->name);
 				xfree(part_ptr->nodes);
 				part_ptr->nodes = xstrdup(old_part_ptr->nodes);
+			}
+			if (part_ptr->over_time_limit !=
+			    old_part_ptr->over_time_limit) {
+				error("Partition %s OverTimeLimit differs from slurm.conf",
+				      part_ptr->name);
+				part_ptr->over_time_limit =
+					old_part_ptr->over_time_limit;
 			}
 			if (part_ptr->preempt_mode !=
 			    old_part_ptr->preempt_mode) {
@@ -1950,6 +1980,15 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				      "slurm.conf", part_ptr->name);
 				part_ptr->priority_tier =
 					old_part_ptr->priority_tier;
+			}
+			if (xstrcmp(part_ptr->qos_char,
+				    old_part_ptr->qos_char)) {
+				error("Partition %s QOS differs from slurm.conf",
+				      part_ptr->name);
+				xfree(part_ptr->qos_char);
+				part_ptr->qos_char =
+					xstrdup(old_part_ptr->qos_char);
+				part_ptr->qos_ptr = old_part_ptr->qos_ptr;
 			}
 			if (part_ptr->state_up != old_part_ptr->state_up) {
 				error("Partition %s State differs from "
