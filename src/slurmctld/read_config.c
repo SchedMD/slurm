@@ -1761,6 +1761,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				xfree(part_ptr->allow_accounts);
 				part_ptr->allow_accounts =
 					xstrdup(old_part_ptr->allow_accounts);
+				accounts_list_build(part_ptr->allow_accounts,
+						&part_ptr->allow_account_array);
 			}
 			if (xstrcmp(part_ptr->allow_alloc_nodes,
 				    old_part_ptr->allow_alloc_nodes)) {
@@ -1777,8 +1779,6 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				xfree(part_ptr->allow_groups);
 				part_ptr->allow_groups = xstrdup(old_part_ptr->
 								 allow_groups);
-				accounts_list_build(part_ptr->allow_accounts,
-						&part_ptr->allow_account_array);
 			}
 			if (xstrcmp(part_ptr->allow_qos,
 				    old_part_ptr->allow_qos)) {
