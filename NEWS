@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix backfill performance issue where bf_min_prio_reserve was not respected.
  -- Fix MaxQueryTimeRange checks.
  -- Print MaxQueryTimeRange in "sacctmgr show config".
+ -- Correctly check return codes when creating a step to check if needing to
+    wait to retry or not.
 
 * Changes in Slurm 17.11.3-2
 ==========================
