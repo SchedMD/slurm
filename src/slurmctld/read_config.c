@@ -2006,21 +2006,21 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			      "restoring it", old_part_ptr->name);
 			part_ptr = create_part_record();
 			part_ptr->name = xstrdup(old_part_ptr->name);
-			part_ptr->allow_alloc_nodes = xstrdup(old_part_ptr->
-							    allow_alloc_nodes);
-			part_ptr->allow_accounts = xstrdup(old_part_ptr->
-							   allow_accounts);
+
+			part_ptr->allow_accounts =
+				xstrdup(old_part_ptr->allow_accounts);
 			accounts_list_build(part_ptr->allow_accounts,
 					 &part_ptr->allow_account_array);
+			part_ptr->allow_alloc_nodes =
+				xstrdup(old_part_ptr->allow_alloc_nodes);
 			part_ptr->allow_groups = xstrdup(old_part_ptr->
 							 allow_groups);
 			part_ptr->allow_qos = xstrdup(old_part_ptr->
 						      allow_qos);
 			qos_list_build(part_ptr->allow_qos,
 				       &part_ptr->allow_qos_bitstr);
-			part_ptr->qos_char = xstrdup(old_part_ptr->
-						     qos_char);
-			part_ptr->qos_ptr = old_part_ptr->qos_ptr;
+			part_ptr->def_mem_per_cpu =
+				old_part_ptr->def_mem_per_cpu;
 			part_ptr->default_time = old_part_ptr->default_time;
 			part_ptr->deny_accounts = xstrdup(old_part_ptr->
 							  deny_accounts);
@@ -2031,19 +2031,29 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			qos_list_build(part_ptr->deny_qos,
 				       &part_ptr->deny_qos_bitstr);
 			part_ptr->flags = old_part_ptr->flags;
+			part_ptr->grace_time = old_part_ptr->grace_time;
+			part_ptr->max_cpus_per_node =
+				old_part_ptr->max_cpus_per_node;
+			part_ptr->max_mem_per_cpu =
+				old_part_ptr->max_mem_per_cpu;
 			part_ptr->max_nodes = old_part_ptr->max_nodes;
 			part_ptr->max_nodes_orig = old_part_ptr->
 						   max_nodes_orig;
 			part_ptr->max_share = old_part_ptr->max_share;
 			part_ptr->max_time = old_part_ptr->max_time;
-			part_ptr->grace_time = old_part_ptr->grace_time;
 			part_ptr->min_nodes = old_part_ptr->min_nodes;
 			part_ptr->min_nodes_orig = old_part_ptr->
 						   min_nodes_orig;
 			part_ptr->nodes = xstrdup(old_part_ptr->nodes);
+			part_ptr->over_time_limit =
+				old_part_ptr->over_time_limit;
+			part_ptr->preempt_mode = old_part_ptr->preempt_mode;
 			part_ptr->priority_job_factor =
 				old_part_ptr->priority_job_factor;
 			part_ptr->priority_tier = old_part_ptr->priority_tier;
+			part_ptr->qos_char =
+				xstrdup(old_part_ptr->qos_char);
+			part_ptr->qos_ptr = old_part_ptr->qos_ptr;
 			part_ptr->state_up = old_part_ptr->state_up;
 		}
 	}
