@@ -67,12 +67,12 @@ expect {
 }
 
 if {[string compare $cluster_name $lsid_cluster_name]} {
-	send_user "\nFAILURE: lsid's cluster name does not match the configured parameter\n"
+	send_user "\nFAILURE: lsid's cluster name does not match the configured parameter ($cluster_name != $lsid_cluster_name)\n"
 	set exit_code 1
 }
 
 if {[string compare $control_machine $lsid_control_machine]} {
-	send_user "\nFAILURE: lsid's master name does not match the configured parameter\n"
+	send_user "\nFAILURE: lsid's master name does not match the configured parameter ($control_machine != $lsid_control_machine)\n"
 	set exit_code 1
 }
 
