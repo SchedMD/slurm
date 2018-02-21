@@ -485,7 +485,7 @@ extern resource_allocation_response_msg_t *
 	job_desc_msg_t *j;
 	slurm_allocation_callbacks_t callbacks;
 	int i;
-	char *line = NULL, *buf = NULL, *ptrptr = NULL;
+
 	xassert(srun_opt);
 
 	if (srun_opt->relative_set && srun_opt->relative)
@@ -543,15 +543,8 @@ extern resource_allocation_response_msg_t *
 		}
 	}
 
-	if (resp && resp->job_submit_user_msg) {
-		buf = xstrdup(resp->job_submit_user_msg);
-		line = strtok_r(buf, "\n", &ptrptr);
-		while (line) {
-			info("%s", line);
-			line = strtok_r(NULL, "\n", &ptrptr);
-		}
-		xfree(buf);
-	}
+	if (resp)
+		print_multi_line_string(resp->job_submit_user_msg, -1);
 
 	if (resp && !destroy_job) {
 		/*

@@ -84,7 +84,6 @@ int main(int argc, char **argv)
 	submit_response_msg_t *resp = NULL;
 	char *script_name;
 	char *script_body;
-	char *line = NULL, *buf = NULL, *ptrptr = NULL;
 	char **pack_argv;
 	int script_size = 0, pack_argc, pack_argc_off = 0, pack_inx;
 	int i, rc = SLURM_SUCCESS, retries = 0;
@@ -286,15 +285,7 @@ int main(int argc, char **argv)
 		exit(error_exit);
 	}
 
-	if (resp->job_submit_user_msg) {
-		buf = xstrdup(resp->job_submit_user_msg);
-		line = strtok_r(buf, "\n", &ptrptr);
-		while (line) {
-			info("%s", line);
-			line = strtok_r(NULL, "\n", &ptrptr);
-		}
-		xfree(buf);
-	}
+	print_multi_line_string(resp->job_submit_user_msg, -1);
 
 	if (!sbopt.parsable) {
 		printf("Submitted batch job %u", resp->job_id);

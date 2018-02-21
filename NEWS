@@ -121,6 +121,13 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues restoring certain Partition configuration elements, especially
     when ReconfigFlags=KeepPartInfo is enabled.
  -- Don't add TRES whose value is NO_VAL64 when building string line.
+ -- Fix removing array jobs from hash in slurmctld.
+ -- Print out missing user messages from jobsubmit plugin when srun/salloc are
+    waiting for an allocation.
+ -- Handle --clusters=all as case insensitive.
+ -- Only check requested clusters in federation when using --test-only
+    submission option.
+ -- In the federation, make it so you can cancel stranded sibling jobs.
 
 * Changes in Slurm 17.11.3-2
 ==========================
