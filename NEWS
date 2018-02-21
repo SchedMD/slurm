@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix removing array jobs from hash in slurmctld.
  -- Print out missing user messages from jobsubmit plugin when srun/salloc are
     waiting for an allocation.
+ -- Handle --clusters=all as case insensitive.
 
 * Changes in Slurm 17.11.3-2
 ==========================
