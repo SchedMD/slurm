@@ -2863,8 +2863,21 @@ static void _remove_job_hash(struct job_record *job_entry,
 		}
 		return;
 	}
-	*job_pptr = job_entry->job_next;
-	job_entry->job_next = NULL;
+
+	switch (type) {
+	case JOB_HASH_JOB:
+		*job_pptr = job_entry->job_next;
+		job_entry->job_next = NULL;
+		break;
+	case JOB_HASH_ARRAY_JOB:
+		*job_pptr = job_entry->job_array_next_j;
+		job_entry->job_array_next_j = NULL;
+		break;
+	case JOB_HASH_ARRAY_TASK:
+		*job_pptr = job_entry->job_array_next_t;
+		job_entry->job_array_next_t = NULL;
+		break;
+	}
 }
 
 /* _add_job_array_hash - add a job hash entry for given job record,

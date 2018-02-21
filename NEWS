@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues restoring certain Partition configuration elements, especially
     when ReconfigFlags=KeepPartInfo is enabled.
  -- Don't add TRES whose value is NO_VAL64 when building string line.
+ -- Fix removing array jobs from hash in slurmctld.
 
 * Changes in Slurm 17.11.3-2
 ==========================
