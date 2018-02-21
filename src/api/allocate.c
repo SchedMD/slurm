@@ -340,11 +340,21 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	will_run_response_msg_t *earliest_resp = NULL;
 	load_willrun_resp_struct_t *tmp_resp;
 	slurmdb_cluster_rec_t *cluster;
+	List req_clusters = NULL;
 
 	xassert(req);
 	xassert(will_run_resp);
 
 	*will_run_resp = NULL;
+
+	/*
+	 * If a subset of clusters was specified then only do a will_run to
+	 * those clusters, otherwise check all clusters in the federation.
+	 */
+	if (req->clusters && xstrcasecmp(req->clusters, "all")) {
+		req_clusters = list_create(slurm_destroy_char);
+		slurm_addto_char_list(req_clusters, req->clusters);
+	}
 
 	/* Spawn one pthread per cluster to collect job information */
 	resp_msg_list = list_create(NULL);
@@ -356,6 +366,11 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 		    (cluster->control_host[0] == '\0'))
 			continue;	/* Cluster down */
 
+		if (req_clusters &&
+		    !list_find_first(req_clusters, slurm_find_char_in_list,
+				     cluster->name))
+			continue;
+
 		load_args = xmalloc(sizeof(load_willrun_req_struct_t));
 		load_args->cluster       = cluster;
 		load_args->req           = req;
@@ -365,6 +380,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 		pthread_count++;
 	}
 	list_iterator_destroy(iter);
+	FREE_NULL_LIST(req_clusters);
 
 	/* Wait for all pthreads to complete */
 	for (i = 0; i < pthread_count; i++)

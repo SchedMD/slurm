@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- Print out missing user messages from jobsubmit plugin when srun/salloc are
     waiting for an allocation.
  -- Handle --clusters=all as case insensitive.
+ -- Only check requested clusters in federation when using --test-only
+    submission option.
 
 * Changes in Slurm 17.11.3-2
 ==========================
