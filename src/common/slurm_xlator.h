@@ -362,6 +362,7 @@
 #define node_use_string		slurm_node_use_string
 #define bg_block_state_string	slurm_bg_block_state_string
 #define reservation_flags_string slurm_reservation_flags_string
+#define print_multi_line_string slurm_print_multi_line_string
 
 /* slurmdbd_defs.[ch] functions */
 #define slurmdbd_defs_init      slurm_slurmdbd_defs_init

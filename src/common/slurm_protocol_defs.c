@@ -82,7 +82,7 @@ strong_alias(node_use_string, slurm_node_use_string);
 strong_alias(bg_block_state_string, slurm_bg_block_state_string);
 strong_alias(cray_nodelist2nids, slurm_cray_nodelist2nids);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
-
+strong_alias(print_multi_line_string, slurm_print_multi_line_string);
 
 static void _free_all_front_end_info(front_end_info_msg_t *msg);
 
@@ -5151,5 +5151,24 @@ extern int get_cluster_node_offset(char *cluster_name,
 			return offset;
 
 	return 0;
+}
+
+extern void print_multi_line_string(char *user_msg, int inx)
+{
+	char *line, *buf, *ptrptr = NULL;
+
+	if (!user_msg)
+		return;
+
+	buf = xstrdup(user_msg);
+	line = strtok_r(buf, "\n", &ptrptr);
+	while (line) {
+		if (inx == -1)
+			info("%s", line);
+		else
+			info("%d: %s", inx, line);
+		line = strtok_r(NULL, "\n", &ptrptr);
+	}
+	xfree(buf);
 }
 

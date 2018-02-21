@@ -396,7 +396,6 @@ static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 {
 	resource_allocation_response_msg_t *alloc;
 	uint32_t inx = 0, pack_node_cnt = 0, pack_job_id = 0;
-	char *buf, *ptrptr = NULL, *line;
 	ListIterator iter;
 
 	xassert(resp);
@@ -405,15 +404,7 @@ static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 		pack_node_cnt += alloc->node_cnt;
 		if (pack_job_id == 0)
 			pack_job_id = alloc->job_id;
-		if (alloc->job_submit_user_msg) {
-			buf = xstrdup(alloc->job_submit_user_msg);
-			line = strtok_r(buf, "\n", &ptrptr);
-			while (line) {
-				info("%d: %s", inx, line);
-				line = strtok_r(NULL, "\n", &ptrptr);
-			}
-			xfree(buf);
-		}
+		print_multi_line_string(alloc->job_submit_user_msg, inx);
 		inx++;
 	}
 	list_iterator_destroy(iter);
@@ -610,16 +601,9 @@ int slurm_job_will_run(job_desc_msg_t *req)
 	else
 		rc = slurm_job_will_run2(req, &will_run_resp);
 
-	if (will_run_resp && will_run_resp->job_submit_user_msg) {
-		char *line = NULL, *buf = NULL, *ptrptr = NULL;
-		buf = xstrdup(will_run_resp->job_submit_user_msg);
-		line = strtok_r(buf, "\n", &ptrptr);
-		while (line) {
-			info("%s", line);
-			line = strtok_r(NULL, "\n", &ptrptr);
-		}
-		xfree(buf);
-	}
+	if (will_run_resp)
+		print_multi_line_string(
+			will_run_resp->job_submit_user_msg, -1);
 
 	if ((rc == 0) && will_run_resp) {
 		if (cluster_flags & CLUSTER_FLAG_BG)
@@ -691,16 +675,9 @@ extern int slurm_pack_job_will_run(List job_req_list)
 		will_run_resp = NULL;
 		rc = slurm_job_will_run2(req, &will_run_resp);
 
-		if (will_run_resp && will_run_resp->job_submit_user_msg) {
-			char *line = NULL, *buf = NULL, *ptrptr = NULL;
-			buf = xstrdup(will_run_resp->job_submit_user_msg);
-			line = strtok_r(buf, "\n", &ptrptr);
-			while (line) {
-				info("%d: %s", inx, line);
-				line = strtok_r(NULL, "\n", &ptrptr);
-			}
-			xfree(buf);
-		}
+		if (will_run_resp)
+			print_multi_line_string(
+				will_run_resp->job_submit_user_msg, inx);
 
 		if ((rc == SLURM_SUCCESS) && will_run_resp) {
 			if (first_job_id == 0)

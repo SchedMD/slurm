@@ -1538,6 +1538,14 @@ extern bool cluster_in_federation(void *ptr, char *cluster_name);
 extern int get_cluster_node_offset(char *cluster_name,
 				   node_info_msg_t *node_info_ptr);
 
+/*
+ * Print the char* given.
+ *
+ * Each \n will result in a new line.
+ * If inx is != -1 it is prepended to the string.
+ */
+extern void print_multi_line_string(char *user_msg, int inx);
+
 /* Given a protocol opcode return its string
  * description mapping the slurm_msg_type_t
  * to its name.
