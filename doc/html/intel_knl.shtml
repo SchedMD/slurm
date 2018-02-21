@@ -182,7 +182,7 @@ copied from the node's "Features" configuration in "slurm.conf" to both the
 available and active feature fields and not modified by the NodeFeatures
 plugin.</p>
 
-<p>NOTE: For Dell KNL systems you must also include the<i>SystemType=Dell</i>
+<p>NOTE: For Dell KNL systems you must also include the <i>SystemType=Dell</i>
 option for successful operation and will likely need to increase the
 <i>SyscfgTimeout</i> to allow enough time for the command to successfully
 complete.  Experience at one site has shown that a 10 second timeout may
