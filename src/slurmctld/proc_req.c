@@ -990,7 +990,7 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 {
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	error("Job allocate response msg send failure, killing JobId=%u",
 	      job_id);
@@ -3033,7 +3033,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg,
 		(slurm_node_registration_status_msg_t *) msg->data;
 	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -3717,7 +3717,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	bool dump_job = false;
@@ -6526,10 +6526,10 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 	struct timeval start_tv;
 	bool run_scheduler = false;
 	composite_msg_t *comp_msg, comp_resp_msg;
-	/* Locks: Read configuration, write job, write node */
+	/* Locks: Read configuration, write job, write node, read federation */
 	/* Must match locks in _slurm_rpc_comp_msg_list */
 	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	memset(&comp_resp_msg, 0, sizeof(composite_msg_t));
 	comp_resp_msg.msg_list = list_create(_slurmctld_free_comp_msg_list);
@@ -6617,10 +6617,10 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 	slurm_msg_t *next_msg;
 	composite_msg_t *ncomp_msg;
 	composite_msg_t *comp_resp_msg;
-	/* Locks: Read configuration, write job, write node */
+	/* Locks: Read configuration, write job, write node, read federation */
 	/* Must match locks in _slurm_rpc_composite_msg */
 	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	DEF_TIMERS;
 
 	START_TIMER;

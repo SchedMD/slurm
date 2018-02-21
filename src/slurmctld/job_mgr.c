@@ -5670,6 +5670,9 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 	int use_cloud = false;
 	uint16_t over_time_limit;
 
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
 	if (IS_JOB_FINISHED(job_ptr)) {
 		if (job_ptr->exit_code == 0)
 			job_ptr->exit_code = job_return_code;
@@ -5697,6 +5700,7 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 	else if (IS_JOB_PENDING(job_ptr)) {
 		job_return_code = NO_VAL;
 		job_ptr->start_time = now;
+		fed_mgr_job_revoke_sibs(job_ptr);
 	}
 
 	if ((job_return_code == NO_VAL) &&
@@ -5861,6 +5865,9 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	struct job_record *job_ptr, *job_pack_ptr;
 	ListIterator iter;
 	int rc, rc1;
+
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {

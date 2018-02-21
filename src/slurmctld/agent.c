@@ -700,7 +700,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	int is_ret_list = 1;
 	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t node_write_lock =
-	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	int i;
 
@@ -865,7 +865,7 @@ static void *_thread_per_group_rpc(void *args)
 	int sig_array[2] = {SIGUSR1, 0};
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	/* Lock: Read node */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };

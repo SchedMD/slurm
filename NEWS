@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Handle --clusters=all as case insensitive.
  -- Only check requested clusters in federation when using --test-only
     submission option.
+ -- In the federation, make it so you can cancel stranded sibling jobs.
 
 * Changes in Slurm 17.11.3-2
 ==========================

@@ -4118,6 +4118,9 @@ extern int fed_mgr_job_revoke_sibs(struct job_record *job_ptr)
 	uint32_t origin_id;
 	time_t now = time(NULL);
 
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
 

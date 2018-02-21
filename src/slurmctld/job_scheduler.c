@@ -715,9 +715,9 @@ static void _do_diag_stats(long delta_t)
 extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job, bool locked)
 {
 	static int select_serial = -1;
-	/* Locks: Read config, write job, write node, read partition */
+	/* Locks: Read config, write job, write node, read partition, read fed*/
 	slurmctld_lock_t job_write_lock =
-	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	struct job_record *job_ptr = NULL;
 	struct job_record *fini_job_ptr = (struct job_record *) fini_job;
 	struct part_record *part_ptr;
