@@ -91,6 +91,7 @@
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
 bitstr_t *booting_node_bitmap = NULL;	/* bitmap of booting nodes */
 bitstr_t *cg_node_bitmap    = NULL;	/* bitmap of completing nodes */
+bitstr_t *future_node_bitmap = NULL;	/* bitmap of FUTURE nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
@@ -1169,6 +1170,7 @@ void set_slurmd_addr (void)
 			continue;
 		error("slurm_set_addr failure on %s", node_ptr->comm_name);
 		node_ptr->node_state = NODE_STATE_FUTURE;
+		bit_set(future_node_bitmap, i);
 		node_ptr->port = 0;
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup("NO NETWORK ADDRESS FOUND");
@@ -1487,6 +1489,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 						node_ptr->node_state |=
 							NODE_STATE_NO_RESPOND;
 #endif
+						bit_clear(future_node_bitmap,
+							  node_inx);
 						node_ptr->last_response =
 							MAX(now,
 							node_ptr->last_response);
@@ -1521,6 +1525,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if (state_val == NODE_STATE_FUTURE) {
 					node_ptr->node_state = NODE_STATE_FUTURE
 							       | node_flags;
+					bit_set(future_node_bitmap, node_inx);
 				}
 			} else if (state_val == NODE_STATE_IDLE) {
 				/* assume they want to clear DRAIN and
@@ -3925,6 +3930,7 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
+	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);

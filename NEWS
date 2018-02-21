@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     with the optional address appended to the name enclosed in parenthesis.
     For example: "SlurmctldHost=head(12.34.56.78)". An arbitrary number of
     backup servers can be configured.
+ -- When a pending job's state includes "UnavailableNodes" do not include the
+    nodes in FUTURE state.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

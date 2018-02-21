@@ -334,6 +334,7 @@ static int _build_bitmaps(void)
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
+	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
@@ -341,6 +342,7 @@ static int _build_bitmaps(void)
 	avail_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	booting_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	cg_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
+	future_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	idle_node_bitmap  = (bitstr_t *) bit_alloc(node_record_count);
 	power_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
@@ -379,6 +381,8 @@ static int _build_bitmaps(void)
 		}
 		if (IS_NODE_POWER_SAVE(node_ptr))
 			bit_set(power_node_bitmap, i);
+		if (IS_NODE_FUTURE(node_ptr))
+			bit_set(future_node_bitmap, i);
 	}
 
 	return error_code;
