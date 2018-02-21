@@ -1838,7 +1838,7 @@ next_task:
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
 		    (job_req_node_filter(job_ptr, avail_bitmap, true))) {
-			if (later_start) {
+			if (later_start && !job_no_reserve) {
 				job_ptr->start_time = 0;
 				goto TRY_LATER;
 			}
@@ -1952,7 +1952,7 @@ next_task:
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			_set_job_time_limit(job_ptr, orig_time_limit);
-			if (later_start) {
+			if (later_start && !job_no_reserve) {
 				job_ptr->start_time = 0;
 				goto TRY_LATER;
 			}

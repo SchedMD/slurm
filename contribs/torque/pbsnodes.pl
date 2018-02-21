@@ -187,7 +187,7 @@ Main:
 
 	    # Filter nodes according to options and arguments
 	    if (@nodeIds) {
-		    next unless grep /^$nodeId/, @nodeIds;
+		    next unless grep /^$nodeId$/, @nodeIds;
 	    }
 
             if ( !defined($shortlist) ) {

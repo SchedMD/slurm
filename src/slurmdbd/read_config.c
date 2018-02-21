@@ -296,7 +296,7 @@ extern int read_slurmdbd_conf(void)
 			slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
 
 		if (s_p_get_string(&temp_str, "MaxQueryTimeRange", tbl)) {
-			slurmdbd_conf->max_time_range = time_str2mins(temp_str);
+			slurmdbd_conf->max_time_range = time_str2secs(temp_str);
 			xfree(temp_str);
 		} else {
 			slurmdbd_conf->max_time_range = INFINITE;
@@ -723,6 +723,7 @@ extern void slurmdbd_conf_unlock(void)
 extern List dump_config(void)
 {
 	config_key_pair_t *key_pair;
+	char time_str[32];
 	List my_list = list_create(destroy_config_key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -848,6 +849,13 @@ extern List dump_config(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("LogFile");
 	key_pair->value = xstrdup(slurmdbd_conf->log_file);
+	list_append(my_list, key_pair);
+
+	secs2time_str(slurmdbd_conf->max_time_range, time_str,
+		      sizeof(time_str));
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MaxQueryTimeRange");
+	key_pair->value = xstrdup_printf("%s", time_str);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

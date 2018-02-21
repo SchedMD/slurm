@@ -1234,7 +1234,10 @@ extern void add_fed_job_info(struct job_record *job_ptr)
 	job_info->siblings_active = job_ptr->fed_details->siblings_active;
 	job_info->siblings_viable = job_ptr->fed_details->siblings_viable;
 
-	list_append(fed_job_list, job_info);
+	slurm_mutex_lock(&fed_job_list_mutex);
+	if (fed_job_list)
+		list_append(fed_job_list, job_info);
+	slurm_mutex_unlock(&fed_job_list_mutex);
 }
 
 static int _delete_fed_job_info_by_id(void *object, void *arg)
@@ -1270,8 +1273,11 @@ static int _list_find_fed_job_info_by_jobid(void *x, void *key)
 	return 0;
 }
 
+/* Must have fed_job_mutex before entering */
 static fed_job_info_t *_find_fed_job_info(uint32_t job_id)
 {
+	if (!fed_job_list)
+		return NULL;
 	return list_find_first(fed_job_list, _list_find_fed_job_info_by_jobid,
 			       &job_id);
 }
@@ -2378,8 +2384,16 @@ extern int fed_mgr_init(void *db_conn)
 	if (!association_based_accounting)
 		goto end_it;
 
+	slurm_mutex_lock(&fed_job_list_mutex);
 	if (!fed_job_list)
 		fed_job_list = list_create(_destroy_fed_job_info);
+	slurm_mutex_unlock(&fed_job_list_mutex);
+
+	/*
+	 * fed_job_update_list should only be appended to and popped from.
+	 * So rely on the list's lock. If there are ever changes to iterate the
+	 * list, then a lock will be needed around the list.
+	 */
 	if (!fed_job_update_list)
 		fed_job_update_list = list_create(_destroy_fed_job_update_info);
 
@@ -2492,7 +2506,16 @@ extern int fed_mgr_fini(void)
 	if (agent_thread_id)
 		pthread_join(agent_thread_id, NULL);
 
+	if (fed_job_update_thread_id)
+		pthread_join(fed_job_update_thread_id, NULL);
+
 	_remove_job_watch_thread();
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+	FREE_NULL_LIST(fed_job_list);
+	slurm_mutex_unlock(&fed_job_list_mutex);
+
+	FREE_NULL_LIST(fed_job_update_list);
 
 	return SLURM_SUCCESS;
 }
@@ -2619,6 +2642,11 @@ static void _dump_fed_job_list(Buf buffer, uint16_t protocol_version)
 	fed_job_info_t *fed_job_info;
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		/*
+		 * Need to be in the lock to prevent the window between getting
+		 * the count and actually looping on the list.
+		 */
+		slurm_mutex_lock(&fed_job_list_mutex);
 		if (fed_job_list)
 			count = list_count(fed_job_list);
 		else
@@ -2633,6 +2661,7 @@ static void _dump_fed_job_list(Buf buffer, uint16_t protocol_version)
 			}
 			list_iterator_destroy(itr);
 		}
+		slurm_mutex_unlock(&fed_job_list_mutex);
 	} else {
 		error("%s: protocol_version %hu not supported.",
 		      __func__, protocol_version);
@@ -2840,11 +2869,13 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 		fed_job_info_t *tmp_info;
 
 		slurm_mutex_lock(&fed_job_list_mutex);
-		while ((tmp_info = list_pop(tmp_list))) {
-			if (find_job_record(tmp_info->job_id))
-				list_append(fed_job_list, tmp_info);
-			else
-				_destroy_fed_job_info(tmp_info);
+		if (fed_job_list) {
+			while ((tmp_info = list_pop(tmp_list))) {
+				if (find_job_record(tmp_info->job_id))
+					list_append(fed_job_list, tmp_info);
+				else
+					_destroy_fed_job_info(tmp_info);
+			}
 		}
 		slurm_mutex_unlock(&fed_job_list_mutex);
 
@@ -3025,8 +3056,10 @@ extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
 	slurmdb_cluster_rec_t *sibling;
 	fed_job_info_t *job_info;
 
+	slurm_mutex_lock(&fed_job_list_mutex);
 	if (!(job_info = _find_fed_job_info(job_id))) {
 		error("Didn't find job %d in fed_job_list", job_id);
+		slurm_mutex_unlock(&fed_job_list_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -3049,6 +3082,7 @@ extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
 		job_info->updating_time[sibling->fed.id] = time(NULL);
 	}
 	list_iterator_destroy(sib_itr);
+	slurm_mutex_unlock(&fed_job_list_mutex);
 
 	return SLURM_SUCCESS;
 }

@@ -3588,6 +3588,12 @@ extern slurm_step_ctx_t *slurm_step_ctx_create_timeout(const slurm_step_ctx_para
 						       int timeout);
 
 /*
+ * Return TRUE if the job step create request should be retried later
+ * (i.e. the errno set by slurm_step_ctx_create_timeout() is recoverable).
+ */
+extern bool slurm_step_retry_errno(int rc);
+
+/*
  * slurm_step_ctx_create_no_alloc - Create a job step and its context without
  *                                  getting an allocation.
  * IN step_params - job step parameters

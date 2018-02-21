@@ -140,7 +140,7 @@ if(defined($queueList)) {
 	my $line = 0;
 	foreach my $part (@{$resp->{partition_array}}) {
 		if (@queueIds) {
-			next unless grep /^$part->{'name'}/, @queueIds;
+			next unless grep /^$part->{'name'}$/, @queueIds;
 		}
 
 		if ($full) { # Full
@@ -203,7 +203,7 @@ if(defined($queueList)) {
 
 		# Filter jobs according to options and arguments
 		if (@jobIds) {
-			next unless grep /^$job->{'job_id'}/, @jobIds;
+			next unless grep /^$job->{'job_id'}$/, @jobIds;
 		} else {
 			if ($running) {
 				next unless ($job->{'stateCode'} eq 'R'

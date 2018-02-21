@@ -105,6 +105,19 @@ documents those changes that are of interest to users and administrators.
  -- sbcast - fix a race condition that leads to "Unspecified error".
  -- Log that support for the ChosLoc configuration parameter will end in Slurm
     version 18.08.
+ -- Fix backfill performance issue where bf_min_prio_reserve was not respected.
+ -- Fix MaxQueryTimeRange checks.
+ -- Print MaxQueryTimeRange in "sacctmgr show config".
+ -- Correctly check return codes when creating a step to check if needing to
+    wait to retry or not.
+ -- Fix issue where a job could be denied by Reason=MaxMemPerLimit when not
+    requesting any tasks.
+ -- In perl tools, fix for regexp that caused extra incorrectly shown results.
+ -- Add some extra locks in fed_mgr to be extra safe.
+ -- Minor memory leak fixes in the fed_mgr on slurmctld shutdown.
+ -- Make sreport job reports also report duplicate jobs correctly.
+ -- Fix issues restoring certain Partition configuration elements, especially
+    when ReconfigFlags=KeepPartInfo is enabled.
 
 * Changes in Slurm 17.11.3-2
 ==========================

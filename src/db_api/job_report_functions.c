@@ -182,6 +182,7 @@ static List _process_grouped_report(
 
 	tmp_acct_list = job_cond->acct_list;
 	job_cond->acct_list = NULL;
+	job_cond->duplicates = 1;
 
 	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond);
 	job_cond->acct_list = tmp_acct_list;

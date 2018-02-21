@@ -210,6 +210,25 @@ fail:
 }
 
 /*
+ * Return TRUE if the job step create request should be retried later
+ * (i.e. the errno set by slurm_step_ctx_create_timeout() is recoverable).
+ */
+extern bool slurm_step_retry_errno(int rc)
+{
+	if ((rc == EAGAIN) ||
+	    (rc == ESLURM_DISABLED) ||
+	    (rc == ESLURM_INTERCONNECT_BUSY) ||
+	    (rc == ESLURM_NODES_BUSY) ||
+	    (rc == ESLURM_PORTS_BUSY) ||
+	    (rc == ESLURM_POWER_NOT_AVAIL) ||
+	    (rc == ESLURM_POWER_RESERVED) ||
+	    (rc == ESLURM_PROLOG_RUNNING) ||
+	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
+		return true;
+	return false;
+}
+
+/*
  * slurm_step_ctx_create - Create a job step and its context.
  * IN step_params - job step parameters
  * IN timeout - in milliseconds
@@ -252,12 +271,7 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	step_req->host = xshort_hostname();
 
 	rc = slurm_job_step_create(step_req, &step_resp);
-	if ((rc < 0) &&
-	    ((errno == ESLURM_NODES_BUSY) ||
-	     (errno == ESLURM_POWER_NOT_AVAIL) ||
-	     (errno == ESLURM_POWER_RESERVED) ||
-	     (errno == ESLURM_PORTS_BUSY) ||
-	     (errno == ESLURM_INTERCONNECT_BUSY))) {
+	if ((rc < 0) && slurm_step_retry_errno(errno)) {
 		START_TIMER;
 		errnum = errno;
 		fds.fd = sock;

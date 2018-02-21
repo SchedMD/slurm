@@ -1416,7 +1416,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 {
 	dbd_cond_msg_t *cond_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
-	slurmdb_job_cond_t *job_cond = msg->data;
+	slurmdb_job_cond_t *job_cond = cond_msg->cond;
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_JOBS_COND: called");
@@ -1445,7 +1445,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	list_msg.my_list = jobacct_storage_g_get_jobs_cond(
-		slurmdbd_conn->db_conn, *uid, cond_msg->cond);
+		slurmdbd_conn->db_conn, *uid, job_cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)
