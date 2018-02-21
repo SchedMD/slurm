@@ -3547,6 +3547,9 @@ extern char *slurmdb_make_tres_string_from_simple(
 		}
 		count = slurm_atoull(++tmp_str);
 
+		if (count == NO_VAL64)
+			goto get_next;
+
 		if (tres_str)
 			xstrcat(tres_str, ",");
 		if (!tres_rec->type)
