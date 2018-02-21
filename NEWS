@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
     when ReconfigFlags=KeepPartInfo is enabled.
  -- Don't add TRES whose value is NO_VAL64 when building string line.
  -- Fix removing array jobs from hash in slurmctld.
+ -- Print out missing user messages from jobsubmit plugin when srun/salloc are
+    waiting for an allocation.
 
 * Changes in Slurm 17.11.3-2
 ==========================

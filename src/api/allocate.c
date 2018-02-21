@@ -269,6 +269,12 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			if (resp->error_code != SLURM_SUCCESS)
 				info("%s", slurm_strerror(resp->error_code));
 			/* no, we need to wait for a response */
+
+			/* print out any user messages before we wait. */
+			if (resp)
+				print_multi_line_string(
+					resp->job_submit_user_msg, -1);
+
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
 			if (pending_callback != NULL)
