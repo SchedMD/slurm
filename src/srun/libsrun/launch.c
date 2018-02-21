@@ -347,7 +347,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		     ((opt_local->immediate == 1) ||
 		      (difftime(time(NULL), srun_begin_time) >=
 		       opt_local->immediate))) ||
-		    !slurm_step_retry_errno(rc)) {
+		    ((rc != ESLURM_PROLOG_RUNNING) &&
+		     !slurm_step_retry_errno(rc))) {
 			error("Unable to create step for job %u: %m",
 			      job->ctx_params.job_id);
 			return SLURM_ERROR;
