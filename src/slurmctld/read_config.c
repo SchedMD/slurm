@@ -1691,7 +1691,7 @@ static void _set_features(struct node_record *old_node_table_ptr,
 			tmp = xstrdup(node_ptr->features);
 			tok = strtok_r(tmp, ",", &save_ptr);
 			while (tok) {
-				if (!node_features_g_changible_feature(tok)) {
+				if (!node_features_g_changeable_feature(tok)) {
 					xstrfmtcat(node_ptr->features_act,
 						   "%s%s", sep, tok);
 					sep = ",";
@@ -1718,7 +1718,7 @@ static void _set_features(struct node_record *old_node_table_ptr,
 			tmp = xstrdup(old_node_ptr->features);
 			tok = strtok_r(tmp, ",", &save_ptr);
 			while (tok) {
-				if (node_features_g_changible_feature(tok)) {
+				if (node_features_g_changeable_feature(tok)) {
 					xstrfmtcat(node_ptr->features,
 						   "%s%s", sep, tok);
 					sep = ",";
@@ -1737,7 +1737,7 @@ static void _set_features(struct node_record *old_node_table_ptr,
 			tmp = xstrdup(old_node_ptr->features_act);
 			tok = strtok_r(tmp, ",", &save_ptr);
 			while (tok) {
-				if (node_features_g_changible_feature(tok)) {
+				if (node_features_g_changeable_feature(tok)) {
 					xstrfmtcat(node_ptr->features_act,
 						   "%s%s", sep, tok);
 					sep = ",";
