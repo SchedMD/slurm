@@ -1875,6 +1875,9 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 			continue;	/* skip self */
 		if (resv_ptr->node_bitmap == NULL)
 			continue;	/* no specific nodes in reservation */
+		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
+		    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))
+			continue;
 		if (!bit_overlap(resv_ptr->node_bitmap, node_bitmap))
 			continue;	/* no overlap */
 		if (!resv_ptr->full_nodes)
