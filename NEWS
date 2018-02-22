@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
     submission option.
  -- In the federation, make it so you can cancel stranded sibling jobs.
  -- Silence an error from PSS memory stat collection process.
+ -- Requeue jobs allocated to nodes requested to DRAIN or FAIL if nodes are
+    POWER_SAVE or POWER_UP, preventing jobs to start on NHC-failed nodes.
 
 * Changes in Slurm 17.11.3-2
 ==========================

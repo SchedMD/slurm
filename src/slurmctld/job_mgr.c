@@ -3845,7 +3845,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 			kill_job_cnt++;
 			if ((job_ptr->details) &&
 			    (job_ptr->kill_on_node_fail == 0) &&
-			    (job_ptr->node_cnt > 1)) {
+			    (job_ptr->node_cnt > 1) &&
+			    !IS_JOB_CONFIGURING(job_ptr)) {
 				/* keep job running on remaining nodes */
 				srun_node_fail(job_ptr->job_id, node_name);
 				error("Removing failed node %s from job_id %u",
