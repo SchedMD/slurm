@@ -1569,6 +1569,15 @@ int update_node ( update_node_msg_t * update_node_msg )
 			} else if ((state_val == NODE_STATE_DRAIN) ||
 				   (state_val == NODE_STATE_FAIL)) {
 				uint32_t new_state = state_val;
+				if ((IS_NODE_ALLOCATED(node_ptr) ||
+				     IS_NODE_MIXED(node_ptr)) &&
+				    (IS_NODE_POWER_SAVE(node_ptr) ||
+				     IS_NODE_POWER_UP(node_ptr))) {
+					info("%s: DRAIN/FAIL request for node %s which is allocated and being powered up. Requeueing jobs",
+					     __func__, this_node_name);
+					kill_running_job_by_node_name(
+								this_node_name);
+				}
 				bit_clear (avail_node_bitmap, node_inx);
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);

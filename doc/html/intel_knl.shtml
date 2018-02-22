@@ -182,8 +182,11 @@ copied from the node's "Features" configuration in "slurm.conf" to both the
 available and active feature fields and not modified by the NodeFeatures
 plugin.</p>
 
-<p>NOTE: For Dell KNL systems you must also include the<i>SystemType=Dell</i>
-option for successful operation.</p>
+<p>NOTE: For Dell KNL systems you must also include the <i>SystemType=Dell</i>
+option for successful operation and will likely need to increase the
+<i>SyscfgTimeout</i> to allow enough time for the command to successfully
+complete.  Experience at one site has shown that a 10 second timeout may
+be necessary, configured as <i>SyscfgTimeout=10000</i>.</p>
 
 <p>Slurm does not support the concept of multiple NUMA nodes
 within a single socket. If a KNL node is booted with multiple NUMA, then each
