@@ -132,6 +132,11 @@ documents those changes that are of interest to users and administrators.
  -- Requeue jobs allocated to nodes requested to DRAIN or FAIL if nodes are
     POWER_SAVE or POWER_UP, preventing jobs to start on NHC-failed nodes.
  -- Make MAINT and OVERLAP resvervation flags order agnostic on overlap test.
+ -- Preserve node features when slurmctld daemons reconfigured including active
+    and available KNL features.
+ -- Prevent creation of multiple io_timeout threads within srun, which can
+    lead to fatal() messages when those unexpected and additional mutexes are
+    destroyed when srun shuts down.
 
 * Changes in Slurm 17.11.3-2
 ==========================
