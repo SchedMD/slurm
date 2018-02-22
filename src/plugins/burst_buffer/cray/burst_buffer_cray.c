@@ -4582,7 +4582,7 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 		    (old_state == BB_STATE_ALLOCATING) ||
 		    (old_state == BB_STATE_DELETING)   ||
 		    (old_state == BB_STATE_TEARDOWN)   ||
-		    (old_state == BB_STATE_TEARDOWN_FAIL))				//
+		    (old_state == BB_STATE_TEARDOWN_FAIL))
 			active_buf = true;
 		break;
 	}
