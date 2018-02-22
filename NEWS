@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Only check requested clusters in federation when using --test-only
     submission option.
  -- In the federation, make it so you can cancel stranded sibling jobs.
+ -- Silence an error from PSS memory stat collection process.
 
 * Changes in Slurm 17.11.3-2
 ==========================

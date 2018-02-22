@@ -167,7 +167,8 @@ static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
 	/* Check for error
 	 */
 	if (ferror(fp)) {
-		error("%s: ferror() indicates error on file %s",
+		debug("%s: ferror() indicates error on file %s, "
+		      "process may have exited while reading",
 		      __func__, proc_smaps_file);
 		fclose(fp);
 		return -1;
