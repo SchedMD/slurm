@@ -515,6 +515,11 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	bool core_cyclic, core_fcyclic, sock_fcyclic;
 	bool hwloc_success = true;
 
+	/*
+	 * We can't trust the slurmd_conf_t *conf here as we need actual
+	 * hardware instead of whatever is possibly configured.  So we need to
+	 * look it up again.
+	 */
 	if (get_cpuinfo(&npus, &nboards, &nsockets, &ncores, &nthreads,
 			NULL, NULL, NULL) != SLURM_SUCCESS) {
 		/*
@@ -530,6 +535,11 @@ static int _task_cgroup_cpuset_dist_cyclic(
 							HWLOC_OBJ_PU);
 		npus = (uint16_t) hwloc_get_nbobjs_by_type(topology,
 							   HWLOC_OBJ_PU);
+	} else {
+		/* Translate cores-per-socket to total core count, etc. */
+		nsockets *= nboards;
+		ncores *= nsockets;
+		nthreads *= ncores;
 	}
 
 	if ((nsockets == 0) || (ncores == 0))

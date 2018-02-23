@@ -41,6 +41,21 @@
 #define XCPUINFO_SUCCESS  0
 
 extern int get_procs(uint16_t *procs);
+
+/*
+ * Get the node's cpu info.
+ *
+ * OUT - cpus - cpus per node
+ * OUT - boards - boards per node
+ * OUT - sockets - sockets per board
+ * OUT - cores - cores per socket
+ * OUT - threads - threads per core
+ * OUT - block_map_size - should be same as cpus
+ * OUT - block_map - physical map of cpus
+ * OUT - block_map_inv - absolute map of cpus
+ *
+ * RET SLURM_SUCCESS on success and 1 or 2 on failure.
+ */
 extern int get_cpuinfo(uint16_t *cpus, uint16_t *boards,
 		       uint16_t *sockets, uint16_t *cores, uint16_t *threads,
 		       uint16_t *block_map_size,
