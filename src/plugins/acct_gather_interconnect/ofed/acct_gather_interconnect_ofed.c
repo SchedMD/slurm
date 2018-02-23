@@ -351,7 +351,7 @@ extern int init(void)
 	debug_flags = slurm_get_debug_flags();
 
 	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
-	tres_rec.type = "usage";
+	tres_rec.type = "ic";
 	tres_rec.name = "ofed";
 	tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 
@@ -448,7 +448,7 @@ extern int acct_gather_interconnect_p_get_data(acct_gather_data_t *data)
 	int retval = SLURM_SUCCESS;
 
 	if ((tres_pos == -1) || !data) {
-		debug2("%s: We are not tracking TRES usage/ofed", __func__);
+		debug2("%s: We are not tracking TRES ic/ofed", __func__);
 		return SLURM_SUCCESS;
 	}
 

@@ -12,7 +12,9 @@ Current TRES Types are:
 <li>BB (burst buffers)</li>
 <li>CPU</li>
 <li>Energy</li>
+<li>FS (filesystem)</li>
 <li>GRES</li>
+<li>IC (interconnect)</li>
 <li>License</li>
 <li>Mem (Memory)</li>
 <li>Node</li>
@@ -25,6 +27,16 @@ Current TRES Types are:
   TRES limits. The final Billing TRES is calculated after the job has been
   allocated resources. The final number can be seen in <i>scontrol show jobs</i>
   and <i>sacct</i> output.
+</p>
+
+<p>
+  Valid 'FS' TRES are 'disk' (local disk) and 'lustre'.  These are primarily
+  there for reporting usage, not limiting access.
+</p>
+
+<p>
+  Valid 'IC' TRES is 'ofed'.  These are primarily there for reporting usage, not
+  limiting access.
 </p>
 
 <h2>slurm.conf settings</h2>

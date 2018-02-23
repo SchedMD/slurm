@@ -3539,7 +3539,7 @@ extern char *slurmdb_make_tres_string_from_simple(
 {
 	char *tres_str = NULL;
 	char *tmp_str = tres_in;
-	int id, is_usage = 0;
+	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 	char *node_name = NULL;
@@ -3589,15 +3589,17 @@ extern char *slurmdb_make_tres_string_from_simple(
 				xstrfmtcat(tres_str, "%s", node_name);
 				xfree(node_name);
 			} else if ((tres_rec->id == TRES_MEM) ||
-				   (tres_rec->type &&
-				    (!xstrcasecmp(tres_rec->type, "bb") ||
-				     (is_usage = !xstrcasecmp(
-					     tres_rec->type, "usage"))))) {
+				   !xstrcasecmp(tres_rec->type, "bb")) {
 				char outbuf[FORMAT_STRING_SIZE];
 				convert_num_unit((double)count, outbuf,
-						 sizeof(outbuf),
-						 is_usage ?
-						 UNIT_NONE : UNIT_MEGA,
+						 sizeof(outbuf), UNIT_MEGA,
+						 spec_unit, convert_flags);
+				xstrfmtcat(tres_str, "%s", outbuf);
+			} else if (!xstrcasecmp(tres_rec->type, "fs") ||
+				   !xstrcasecmp(tres_rec->type, "ic")) {
+				char outbuf[FORMAT_STRING_SIZE];
+				convert_num_unit((double)count, outbuf,
+						 sizeof(outbuf), UNIT_NONE,
 						 spec_unit, convert_flags);
 				xstrfmtcat(tres_str, "%s", outbuf);
 			} else {

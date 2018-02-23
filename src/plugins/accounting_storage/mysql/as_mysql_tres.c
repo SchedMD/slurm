@@ -72,7 +72,8 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 		} else if ((!xstrcasecmp(object->type, "gres") ||
 			    !xstrcasecmp(object->type, "bb") ||
 			    !xstrcasecmp(object->type, "license") ||
-			    !xstrcasecmp(object->type, "usage"))) {
+			    !xstrcasecmp(object->type, "fs") ||
+			    !xstrcasecmp(object->type, "ic"))) {
 			if (!object->name) {
 				error("%s type tres "
 				      "need to have a name, "

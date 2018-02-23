@@ -803,7 +803,7 @@ extern void jag_common_init(long in_hertz)
 				  &profile_opt);
 
 	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
-	tres_rec.type = "usage";
+	tres_rec.type = "fs";
 	tres_rec.name = "disk";
 	tres_disk_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 

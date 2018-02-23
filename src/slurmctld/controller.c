@@ -1644,16 +1644,20 @@ static int _init_tres(void)
 				      "have a name, (i.e. License/Foo).  "
 				      "You gave %s",
 				      temp_char);
-		} else if (!xstrncasecmp(temp_char, "usage/", 6)) {
-			tres_rec->type[5] = '\0';
-			tres_rec->name = xstrdup(temp_char+6);
+		} else if (!xstrncasecmp(temp_char, "fs/", 3)) {
+			tres_rec->type[2] = '\0';
+			tres_rec->name = xstrdup(temp_char+3);
 			if (!tres_rec->name)
-				fatal("Usage type tres need to have a name, "
-				      "(i.e. usage/disk).  You gave %s",
+				fatal("Filesystem type tres need to have a name, (i.e. fs/disk).  You gave %s",
+				      temp_char);
+		} else if (!xstrncasecmp(temp_char, "ic/", 3)) {
+			tres_rec->type[2] = '\0';
+			tres_rec->name = xstrdup(temp_char+3);
+			if (!tres_rec->name)
+				fatal("Interconnect type tres need to have a name, (i.e. ic/ofed).  You gave %s",
 				      temp_char);
 		} else {
-			fatal("%s: Unknown tres type '%s', acceptable "
-			      "types are CPU,Gres/,License/,Mem,Usage/",
+			fatal("%s: Unknown tres type '%s', acceptable types are Billing,CPU,Energy,FS/,Gres/,IC/,License/,Mem,Node",
 			      __func__, temp_char);
 			xfree(tres_rec->type);
 			xfree(tres_rec);

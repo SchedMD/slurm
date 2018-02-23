@@ -244,7 +244,7 @@ static void _set_disk_tres_id(void)
 		g_tres_list = slurmdb_tres_get(acct_db_conn, &tres_cond);
 	}
 
-	name = "usage/disk";
+	name = "fs/disk";
 	if ((tres_rec = list_find_first(g_tres_list,
 					slurmdb_find_tres_in_list_by_type,
 					name)))
