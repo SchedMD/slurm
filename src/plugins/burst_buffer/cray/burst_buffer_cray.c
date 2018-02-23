@@ -2651,6 +2651,16 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				xfree(bb_pool);
 			} else if (!xstrncmp(tok, "stage_out", 9)) {
 				have_stage_out = true;
+			} else if (!xstrncmp(tok, "create_persistent", 17) ||
+				   !xstrncmp(tok, "destroy_persistent", 18)) {
+				/*
+				 * Disable support until Slurm v18.08 to prevent
+				 * user directed persistent burst buffer changes
+				 * outside of Slurm control.
+				 */
+				rc = ESLURM_BURST_BUFFER_PERMISSION;
+				break;
+
 			}
 		}
 		tok = strtok_r(NULL, "\n", &save_ptr);

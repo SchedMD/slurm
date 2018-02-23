@@ -137,6 +137,10 @@ documents those changes that are of interest to users and administrators.
  -- Prevent creation of multiple io_timeout threads within srun, which can
     lead to fatal() messages when those unexpected and additional mutexes are
     destroyed when srun shuts down.
+ -- burst_buffer/cray - Prevent use of "#DW create_persistent" and
+    "#DW destroy_persistent" directives available in Cray CLE6.0UP06. This
+    will be supported in Slurm version 18.08. Use "#BB" directives until then.
+ -- Fix task/cgroup affinity to behave correctly.
 
 * Changes in Slurm 17.11.3-2
 ==========================
