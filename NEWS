@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
     will be supported in Slurm version 18.08. Use "#BB" directives until then.
  -- Fix task/cgroup affinity to behave correctly.
  -- FreeBSD - fix build on systems built with WITHOUT_KERBEROS.
+ -- Fix to restore pn_min_memory calculated result to correctly enforce
+    MaxMemPerCPU setting on a partition when the job uses --mem.
 
 * Changes in Slurm 17.11.3-2
 ==========================
