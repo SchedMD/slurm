@@ -468,8 +468,6 @@ log_level_t _parse_log_level(pam_handle_t *pamh, const char *log_level_str)
 			u = LOG_LEVEL_DEBUG4;
 		else if(!strcasecmp(log_level_str, "debug5"))
 			u = LOG_LEVEL_DEBUG5;
-		else if(!strcasecmp(log_level_str, "sched"))
-			u = LOG_LEVEL_SCHED;
 		else {
 			pam_syslog(pamh,
 				   LOG_ERR,

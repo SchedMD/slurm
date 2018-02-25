@@ -992,7 +992,6 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 			pfx = "error: ";
 			break;
 
-		case LOG_LEVEL_SCHED:
 		case LOG_LEVEL_INFO:
 		case LOG_LEVEL_VERBOSE:
 			priority = LOG_INFO;
@@ -1219,15 +1218,6 @@ void debug5(const char *fmt, ...)
 
 	va_start(ap, fmt);
 	log_msg(LOG_LEVEL_DEBUG5, fmt, ap);
-	va_end(ap);
-}
-
-void schedlog(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_SCHED, fmt, ap);
 	va_end(ap);
 }
 

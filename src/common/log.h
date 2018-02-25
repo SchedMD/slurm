@@ -85,7 +85,6 @@ typedef enum {
 	LOG_LEVEL_DEBUG3,
 	LOG_LEVEL_DEBUG4,
 	LOG_LEVEL_DEBUG5,
-	LOG_LEVEL_SCHED,
 	LOG_LEVEL_END
 }	log_level_t;
 
@@ -147,9 +146,6 @@ int log_init(char *argv0, log_options_t opts,
  */
 int sched_log_init(char *argv0, log_options_t opts, log_facility_t fac,
 		   char *logfile);
-
-/* Write to scheduler log */
-void schedlog(const char *fmt, ...);
 
 /* reinitialize log module.
  * Keep same log options as previously initialized log, but reinit mutex
