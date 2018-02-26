@@ -63,18 +63,12 @@
 #include "src/common/pack.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
+#include "src/common/slurm_acct_gather.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define PROTOCOL_TYPE_SLURM 0
 #define PROTOCOL_TYPE_DBD 1
-
-typedef struct acct_gather_data {
-	uint64_t	num_reads;  /* count of reads */
-	uint64_t	num_writes; /* count of writes */
-	uint64_t	size_read;  /* raw amount read (in) */
-	uint64_t	size_write; /* raw amount written (out) */
-} acct_gather_data_t;
 
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */

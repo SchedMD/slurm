@@ -63,6 +63,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_acct_gather_profile.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "../hdf5_api.h"
 #include "sh5util.h"
 

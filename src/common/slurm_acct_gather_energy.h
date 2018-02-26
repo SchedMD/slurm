@@ -54,13 +54,6 @@
 #include "src/common/slurm_acct_gather.h"
 #include "src/common/slurm_jobacct_gather.h"
 
-typedef struct acct_energy_data {
-	time_t		time;
-	uint64_t	power;
-	uint64_t	cpu_freq;
-} acct_energy_data_t;
-
-
 extern int acct_gather_energy_init(void); /* load the plugin */
 extern int acct_gather_energy_fini(void); /* unload the plugin */
 extern acct_gather_energy_t *acct_gather_energy_alloc(uint16_t cnt);

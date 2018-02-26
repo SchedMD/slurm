@@ -50,6 +50,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_acct_gather_filesystem.h"
 #include "src/common/slurm_acct_gather_interconnect.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/common/proctrack.h"
