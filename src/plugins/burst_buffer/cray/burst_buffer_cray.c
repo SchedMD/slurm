@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  burst_buffer_cray.c - Plugin for managing a Cray burst_buffer
  *****************************************************************************
- *  Copyright (C) 2014-2017 SchedMD LLC.
+ *  Copyright (C) 2014-2018 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -494,7 +494,20 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 	bb_specs = xstrdup(job_ptr->burst_buffer);
 	tok = strtok_r(bb_specs, "\n", &save_ptr);
 	while (tok) {
-		if ((tok[1] == 'B') && (tok[2] == 'B')) {
+		uint32_t bb_flag = 0;
+		if (tok[0] != '#')
+			continue;
+		if ((tok[1] == 'B') && (tok[2] == 'B'))
+			bb_flag = BB_FLAG_BB_OP;
+		else if ((tok[1] == 'D') && (tok[2] == 'W'))
+			bb_flag = BB_FLAG_DW_OP;
+
+		/*
+		 * Effective Slurm v18.08 and CLE6.0UP06 the create_persistent
+		 * and destroy_persistent functions are directly supported by
+		 * dw_wlm_cli. Support "#BB" format for backward compatibility.
+		 */
+		if (bb_flag == BB_FLAG_BB_OP) {
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
@@ -547,6 +560,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 							   bb_job->buf_cnt);
 				bb_job->buf_ptr[inx].access = bb_access;
 				bb_job->buf_ptr[inx].create = true;
+				bb_job->buf_ptr[inx].flags = bb_flag;
 				//bb_job->buf_ptr[inx].hurry = false;
 				bb_job->buf_ptr[inx].name = bb_name;
 				bb_job->buf_ptr[inx].pool = bb_pool;
@@ -556,8 +570,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->buf_ptr[inx].type = bb_type;
 				//bb_job->buf_ptr[inx].use = false;
 				bb_job->persist_add += tmp_cnt;
-			} else if (!xstrncmp(tok, "destroy_persistent", 17) ||
-				   !xstrncmp(tok, "delete_persistent", 16)) {
+			} else if (!xstrncmp(tok, "destroy_persistent", 18)) {
 				have_bb = true;
 				bb_name = NULL;
 				if ((sub_tok = strstr(tok, "name="))) {
@@ -580,6 +593,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				//bb_job->buf_ptr[inx].access = NULL;
 				//bb_job->buf_ptr[inx].create = false;
 				bb_job->buf_ptr[inx].destroy = true;
+				bb_job->buf_ptr[inx].flags = bb_flag;
 				bb_job->buf_ptr[inx].hurry = (bb_hurry != NULL);
 				bb_job->buf_ptr[inx].name = bb_name;
 				//bb_job->buf_ptr[inx].pool = NULL;
@@ -590,10 +604,8 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 			} else {
 				/* Ignore other (future) options */
 			}
-		} else if ((tok[1] == 'D') && (tok[2] == 'W')) {
-			tok += 3;
-			while (isspace(tok[0]))
-				tok++;
+		}
+		if (bb_flag == BB_FLAG_DW_OP) {
 			if (!xstrncmp(tok, "jobdw", 5)) {
 				have_bb = true;
 				if ((sub_tok = strstr(tok, "capacity="))) {
@@ -1679,12 +1691,12 @@ static void *_start_stage_in(void *x)
 		} else if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 			error("%s: real_size for job %u status:%u response:%s",
 			      __func__, stage_args->job_id, status, resp_msg2);
-		} else {
+		} else if (resp_msg2 && resp_msg2[0]) {
 			json_object *j;
 			struct bb_total_size *ent;
 			j = json_tokener_parse(resp_msg2);
 			if (j == NULL) {
-				error("%s: json parser failed on %s",
+				error("%s: json parser failed on \"%s\"",
 				      __func__, resp_msg2);
 			} else {
 				ent = _json_parse_real_size(j);
@@ -2535,10 +2547,22 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 	bb_script = xstrdup(job_desc->burst_buffer);
 	tok = strtok_r(bb_script, "\n", &save_ptr);
 	while (tok) {
+		uint32_t bb_flag = 0;
 		tmp_cnt = 0;
-		if (tok[0] != '#') {
+		if (tok[0] != '#')
 			break;	/* Quit at first non-comment */
-		} else if ((tok[1] == 'B') && (tok[2] == 'B')) {
+
+		if ((tok[1] == 'B') && (tok[2] == 'B'))
+			bb_flag = BB_FLAG_BB_OP;
+		else if ((tok[1] == 'D') && (tok[2] == 'W'))
+			bb_flag = BB_FLAG_DW_OP;
+
+		/*
+		 * Effective Slurm v18.08 and CLE6.0UP06 the create_persistent
+		 * and destroy_persistent functions are directly supported by
+		 * dw_wlm_cli. Support "#BB" format for backward compatibility.
+		 */
+		if (bb_flag == BB_FLAG_BB_OP) {
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
@@ -2581,14 +2605,14 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				xfree(bb_pool);
 				if (rc != SLURM_SUCCESS)
 					break;
-			} else if (!xstrncmp(tok, "destroy_persistent", 17) &&
+			} else if (!xstrncmp(tok, "destroy_persistent", 18) &&
 				   !enable_persist) {
 				info("%s: User %d disabled from destroying "
 				     "persistent burst buffer",
 				     __func__, submit_uid);
 				rc = ESLURM_BURST_BUFFER_PERMISSION;
 				break;
-			} else if (!xstrncmp(tok, "destroy_persistent", 17)) {
+			} else if (!xstrncmp(tok, "destroy_persistent", 18)) {
 				have_bb = true;
 				if (!(sub_tok = strstr(tok, "name="))) {
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
@@ -2597,10 +2621,8 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 			} else {
 				/* Ignore other (future) options */
 			}
-		} else if ((tok[1] == 'D') && (tok[2] == 'W')) {
-			tok += 3;
-			while (isspace(tok[0]) && (tok[0] != '\0'))
-				tok++;
+		}
+		if (bb_flag == BB_FLAG_DW_OP) {
 			if (!xstrncmp(tok, "jobdw", 5) &&
 			    (capacity = strstr(tok, "capacity="))) {
 				bb_pool = NULL;
@@ -4383,6 +4405,8 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			rc++;
 		} else if (buf_ptr->state != BB_STATE_PENDING) {
 			;	/* Nothing to do */
+		} else if (buf_ptr->flags != BB_FLAG_BB_OP) {
+			;	/* Not processed using dw_wlm_cli */
 		} else if (buf_ptr->create) {	/* Create the buffer */
 			bb_alloc = bb_find_name_rec(buf_ptr->name,
 						    job_ptr->user_id,
@@ -4910,7 +4934,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	_python2json(resp_msg);
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, resp_msg);
+		error("%s: json parser failed on \"%s\"", __func__, resp_msg);
 		xfree(resp_msg);
 		return ents;
 	}
@@ -4977,7 +5001,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	_python2json(resp_msg);
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, resp_msg);
+		error("%s: json parser failed on \"%s\"", __func__, resp_msg);
 		xfree(resp_msg);
 		return ents;
 	}
@@ -5046,7 +5070,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	_python2json(resp_msg);
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, resp_msg);
+		error("%s: json parser failed on \"%s\"", __func__, resp_msg);
 		xfree(resp_msg);
 		return ents;
 	}
@@ -5110,7 +5134,7 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	_python2json(resp_msg);
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, resp_msg);
+		error("%s: json parser failed on \"%s\"", __func__, resp_msg);
 		xfree(resp_msg);
 		return ents;
 	}

@@ -127,9 +127,13 @@ typedef struct bb_user {
 	uint32_t user_id;
 } bb_user_t;
 
+#define BB_FLAG_BB_OP		1	/* Requested using #BB prefix */
+#define BB_FLAG_DW_OP		2	/* Requested using #DW prefix */
+
 /* Burst buffer creation records with state */
 typedef struct {
 	char    *access;	/* Buffer access */
+	uint32_t flags;		/* See BB_FLAG_* above */
 	bool     create;	/* Set if buffer create requested */
 	bool     destroy;	/* Set if buffer destroy requested */
 	bool     hurry;		/* Fast buffer destroy */
