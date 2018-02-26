@@ -46,6 +46,8 @@ print_field_t *field = NULL;
 int curr_inx = 1;
 char outbuf[FORMAT_STRING_SIZE];
 
+static int tres_disk_id = -1;
+
 char *_elapsed_time(long secs, long usecs);
 
 char *_elapsed_time(long secs, long usecs)
@@ -111,6 +113,24 @@ static void _print_tres_field(char *tres_in, char *nodes, bool convert)
 	return;
 }
 
+static void _set_disk_tres_id(void)
+{
+	static bool first = 1;
+	slurmdb_tres_rec_t *tres_rec;
+	char *name;
+
+	if (!first && tres_disk_id != -1)
+		return;
+
+	first = 0;
+
+	name = "fs/disk";
+	if ((tres_rec = list_find_first(assoc_mgr_tres_list,
+					slurmdb_find_tres_in_list_by_type,
+					name)))
+		tres_disk_id = tres_rec->id;
+}
+
 void print_fields(slurmdb_step_rec_t *step)
 {
 //	print_field_t *field = NULL;
@@ -120,6 +140,7 @@ void print_fields(slurmdb_step_rec_t *step)
 	list_iterator_reset(print_fields_itr);
 	while ((field = list_next(print_fields_itr))) {
 		char *tmp_char = NULL;
+		uint64_t tmp_uint64 = NO_VAL64;
 
 		memset(&outbuf, 0, sizeof(outbuf));
 		switch(field->type) {
@@ -163,18 +184,38 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_AVEDISKREAD:
-			_print_small_double(outbuf, sizeof(outbuf),
-					    step->stats.disk_read_ave,
-					    UNIT_MEGA);
+			_set_disk_tres_id();
+
+			if (tres_disk_id != -1)
+				if ((tmp_uint64 =
+				     slurmdb_find_tres_count_in_string(
+					     step->stats.tres_usage_in_ave,
+					     tres_disk_id)) == INFINITE64)
+					tmp_uint64 = NO_VAL64;
+
+			if (tmp_uint64 != NO_VAL64)
+				_print_small_double(outbuf, sizeof(outbuf),
+						    (double)tmp_uint64,
+						    UNIT_NONE);
 
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_AVEDISKWRITE:
-			_print_small_double(outbuf, sizeof(outbuf),
-					    step->stats.disk_write_ave,
-					    UNIT_MEGA);
+			_set_disk_tres_id();
+
+			if (tres_disk_id != -1)
+				if ((tmp_uint64 =
+				     slurmdb_find_tres_count_in_string(
+					     step->stats.tres_usage_out_ave,
+					     tres_disk_id)) == INFINITE64)
+					tmp_uint64 = NO_VAL64;
+
+			if (tmp_uint64 != NO_VAL64)
+				_print_small_double(outbuf, sizeof(outbuf),
+						    (double)tmp_uint64,
+						    UNIT_NONE);
 
 			field->print_routine(field,
 					     outbuf,
@@ -224,49 +265,103 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXDISKREAD:
-			_print_small_double(outbuf, sizeof(outbuf),
-					    step->stats.disk_read_max,
-					    UNIT_MEGA);
+			_set_disk_tres_id();
+
+			if (tres_disk_id != -1)
+				if ((tmp_uint64 =
+				     slurmdb_find_tres_count_in_string(
+					     step->stats.tres_usage_in_max,
+					     tres_disk_id)) == INFINITE64)
+					tmp_uint64 = NO_VAL64;
+
+			if (tmp_uint64 != NO_VAL64)
+				_print_small_double(outbuf, sizeof(outbuf),
+						    (double)tmp_uint64,
+						    UNIT_NONE);
 
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXDISKREADNODE:
-			tmp_char = find_hostname(
-					step->stats.disk_read_max_nodeid,
+			_set_disk_tres_id();
+
+			if (tres_disk_id != -1)
+				tmp_char = find_hostname(
+					slurmdb_find_tres_count_in_string(
+						step->stats.
+						tres_usage_in_max_nodeid,
+						tres_disk_id),
 					step->nodes);
+
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
 			xfree(tmp_char);
 			break;
 		case PRINT_MAXDISKREADTASK:
+			_set_disk_tres_id();
+
+			if (tres_disk_id != -1)
+				if ((tmp_uint64 =
+				     slurmdb_find_tres_count_in_string(
+					     step->stats.
+					     tres_usage_in_max_taskid,
+					     tres_disk_id)) == INFINITE64)
+					tmp_uint64 = NO_VAL64;
+
 			field->print_routine(field,
-					     step->stats.disk_read_max_taskid,
+					     tmp_uint64,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXDISKWRITE:
-			_print_small_double(outbuf, sizeof(outbuf),
-					    step->stats.disk_write_max,
-					    UNIT_MEGA);
+			_set_disk_tres_id();
+
+			if (tres_disk_id != -1)
+				if ((tmp_uint64 =
+				     slurmdb_find_tres_count_in_string(
+					     step->stats.tres_usage_out_max,
+					     tres_disk_id)) == INFINITE64)
+					tmp_uint64 = NO_VAL64;
+
+			if (tmp_uint64 != NO_VAL64)
+				_print_small_double(outbuf, sizeof(outbuf),
+						    (double)tmp_uint64,
+						    UNIT_NONE);
 
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXDISKWRITENODE:
-			tmp_char = find_hostname(
-					step->stats.disk_write_max_nodeid,
+			_set_disk_tres_id();
+
+			if (tres_disk_id != -1)
+				tmp_char = find_hostname(
+					slurmdb_find_tres_count_in_string(
+						step->stats.
+						tres_usage_out_max_nodeid,
+						tres_disk_id),
 					step->nodes);
+
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
 			xfree(tmp_char);
 			break;
 		case PRINT_MAXDISKWRITETASK:
+			_set_disk_tres_id();
+
+			if (tres_disk_id != -1)
+				if ((tmp_uint64 =
+				     slurmdb_find_tres_count_in_string(
+					     step->stats.
+					     tres_usage_in_max_taskid,
+					     tres_disk_id)) == INFINITE64)
+					tmp_uint64 = NO_VAL64;
+
 			field->print_routine(field,
-					     step->stats.disk_write_max_taskid,
+					     tmp_uint64,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXPAGES:
