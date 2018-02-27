@@ -20,18 +20,18 @@ _perldir=$(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=
 
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
-	test -z "$(DESTDIR)$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
+	test -z "$(DESTDIR)/usr/libexec/slurm/wrapper" || $(mkdir_p) "$(DESTDIR)/usr/libexec/slurm/wrapper"
 	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	   echo "sed 's%use lib .*%use lib qw(${_perldir});%' $(top_srcdir)/contribs/torque/$$p.pl > $(DESTDIR)$(bindir)/$$p"; \
-	   sed "s%use lib .*%use lib qw(${_perldir});%" $(top_srcdir)/contribs/torque/$$p.pl >$(DESTDIR)$(bindir)/$$p; \
-	   chmod 755 $(DESTDIR)$(bindir)/$$p;\
+	   echo "sed 's%use lib .*%use lib qw(${_perldir});%' $(top_srcdir)/contribs/torque/$$p.pl > $(DESTDIR)/usr/libexec/slurm/wrapper/$$p"; \
+	   sed "s%use lib .*%use lib qw(${_perldir});%" $(top_srcdir)/contribs/torque/$$p.pl >$(DESTDIR)/usr/libexec/slurm/wrapper/$$p; \
+	   chmod 755 $(DESTDIR)/usr/libexec/slurm/wrapper/$$p;\
 	done
 
 uninstall-binSCRIPTS:
 	@$(NORMAL_UNINSTALL)
 	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	  echo " rm -f '$(DESTDIR)$(bindir)/$$p'"; \
-	  rm -f "$(DESTDIR)$(bindir)/$$p"; \
+	  echo " rm -f '$(DESTDIR)/usr/libexec/slurm/wrapper/$$p'"; \
+	  rm -f "$(DESTDIR)/usr/libexec/slurm/wrapper/$$p"; \
 	done
 
 clean:
