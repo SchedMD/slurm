@@ -1,34 +1,33 @@
-# This is the simple Travis configuration, which is intended for use
-# on applications which do not require cross-platform and
-# multiple-GHC-version support. For more information and other
-# options, see:
-#
-# https://docs.haskellstack.org/en/stable/travis_ci/
-#
-# Copy these contents into the root directory of your Github project in a file
-# named .travis.yml
-
-# Use new container infrastructure to enable caching
-dist: trusty
 sudo: required
-
-# Do not choose a language; we provide our own build tools.
-language: C
-
-# Ensure necessary system libraries are present
+language: c
+dist: trusty
 addons:
+  mariadb: '10.1'
   apt:
     packages:
-      - libgmp-dev
-      - libzmq3-dev
-
-before_install:
-# Download and unpack the stack executable
-- sudo apt-get -qq update
-
-
+    - cmake
+    - libmunge-dev
+    - liblua5.2-dev
+    - munge
+    - expect
+    - libhwloc-dev
+    - libnuma1
+    - libnuma-dev
+    - libpam-dev
+    - libhwloc-dev
+    - gdb
+    - valgrind
+    - libfreeipmi-dev
+    - man2html
+compiler:
+  - clang
+  - gcc
+cache: ccache
+before_script:
+  - export PATH=/usr/lib/ccache:$PATH
+  - sudo mount -t tmpfs -o size=1024m tmpfs /tmp
 script:
-# Build the package, its tests, and its docs and run the tests
-- configure --prefix=$HOME/slurm-test --with-hwloc --with-numa --with-lua --with-mysql
-- make
-- make check
+  - ./configure --enable-multiple-slurmd --prefix=/tmp/slurm/ > /dev/null
+  - make -j > /dev/null
+  - make -j check
+  - make -j install > /dev/null
