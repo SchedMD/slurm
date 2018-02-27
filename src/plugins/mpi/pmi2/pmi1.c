@@ -38,7 +38,6 @@
 #include "config.h"
 
 #if defined(__FreeBSD__)
-#include <roken.h>
 #include <sys/socket.h> /* AF_INET */
 #endif
 
