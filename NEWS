@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
     "#DW destroy_persistent" directives available in Cray CLE6.0UP06. This
     will be supported in Slurm version 18.08. Use "#BB" directives until then.
  -- Fix task/cgroup affinity to behave correctly.
+ -- FreeBSD - fix build on systems built with WITHOUT_KERBEROS.
 
 * Changes in Slurm 17.11.3-2
 ==========================
