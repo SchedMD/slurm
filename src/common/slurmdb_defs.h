@@ -64,6 +64,8 @@ typedef enum {
 	TRES_NODE,
 	TRES_BILLING,
 	TRES_FS_DISK,
+	TRES_VMEM,
+	TRES_PAGES,
 	TRES_STATIC_CNT
 } tres_types_t;
 

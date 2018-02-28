@@ -10,6 +10,7 @@ Current TRES Types are:
 </p>
 <ul>
 <li>BB (burst buffers)</li>
+<li>Billing</li>
 <li>CPU</li>
 <li>Energy</li>
 <li>FS (filesystem)</li>
@@ -18,7 +19,8 @@ Current TRES Types are:
 <li>License</li>
 <li>Mem (Memory)</li>
 <li>Node</li>
-<li>Billing</li>
+<li>Pages</li>
+<li>VMem (Virtual Memory/Size)</li>
 </ul>
 
 <p>
