@@ -69,7 +69,10 @@ static void _aggregate_tres_usage_stats_internal(char **dest_tres_max,
 			list_append(dest_tres_list, from_tres_rec);
 		} else {
 			if (dest_tres_rec->count == INFINITE64 ||
-			    (dest_tres_rec->count < from_tres_rec->count)) {
+			    ((dest_tres_rec->id == TRES_ARRAY_CPU) &&
+			     (dest_tres_rec->count > from_tres_rec->count)) ||
+			    ((dest_tres_rec->id != TRES_ARRAY_CPU) &&
+			     (dest_tres_rec->count < from_tres_rec->count))) {
 				dest_tres_rec->count = from_tres_rec->count;
 
 				/* overload rec_count to be the nodeid */

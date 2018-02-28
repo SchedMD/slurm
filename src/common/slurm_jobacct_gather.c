@@ -383,8 +383,12 @@ static void _jobacctinfo_aggregate_tres_usage(jobacctinfo_t *dest,
 	for (i = 0; i < dest->tres_count; i++) {
 		if (from->tres_usage_in_max[i] != INFINITE64) {
 			if ((dest->tres_usage_in_max[i] == INFINITE64) ||
-			    (dest->tres_usage_in_max[i] <
-			     from->tres_usage_in_max[i])) {
+			    ((i == TRES_ARRAY_CPU) &&
+			     (dest->tres_usage_in_max[i] >
+			      from->tres_usage_in_max[i])) ||
+			    ((i != TRES_ARRAY_CPU) &&
+			     (dest->tres_usage_in_max[i] <
+			      from->tres_usage_in_max[i]))) {
 				dest->tres_usage_in_max[i] =
 					from->tres_usage_in_max[i];
 				dest->tres_usage_in_max_taskid[i] =
@@ -405,8 +409,12 @@ static void _jobacctinfo_aggregate_tres_usage(jobacctinfo_t *dest,
 
 		if (from->tres_usage_out_max[i] != INFINITE64) {
 			if ((dest->tres_usage_out_max[i] == INFINITE64) ||
-			    (dest->tres_usage_out_max[i] <
-			     from->tres_usage_out_max[i])) {
+			    ((i == TRES_ARRAY_CPU) &&
+			     (dest->tres_usage_out_max[i] >
+			      from->tres_usage_out_max[i])) ||
+			    ((i != TRES_ARRAY_CPU) &&
+			     (dest->tres_usage_out_max[i] <
+			      from->tres_usage_out_max[i]))) {
 				dest->tres_usage_out_max[i] =
 					from->tres_usage_out_max[i];
 				dest->tres_usage_out_max_taskid[i] =
