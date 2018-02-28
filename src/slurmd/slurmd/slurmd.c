@@ -589,8 +589,8 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		 */
 		assoc_mgr_lock(&locks);
 		assoc_mgr_post_tres_list(resp->tres_list);
-		debug("%s: slurmctld sent back %u TRES.",
-		      __func__, g_tres_count);
+		debug2("%s: slurmctld sent back %u TRES.",
+		       __func__, g_tres_count);
 		assoc_mgr_unlock(&locks);
 		/* assoc_mgr_post_tres_list will destroy the list */
 		resp->tres_list = NULL;
