@@ -64,7 +64,6 @@ static int my_pagesize = 0;
 static DIR  *slash_proc = NULL;
 static int energy_profile = ENERGY_DATA_NODE_ENERGY_UP;
 static uint64_t debug_flags = 0;
-static int tres_disk_pos = -1;
 
 static int _find_prec(void *x, void *key)
 {
@@ -346,11 +345,16 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 
 	/* Copy the values that slurm records into our data structure */
 	prec->ppid  = ppid;
+
+	prec->tres_data[TRES_ARRAY_PAGES].size_read = majflt;
+	prec->tres_data[TRES_ARRAY_VMEM].size_read = vsize;
+	prec->tres_data[TRES_ARRAY_MEM].size_read = rss * my_pagesize;
+
 	prec->pages = majflt;
 	prec->usec  = utime;
 	prec->ssec  = stime;
 	prec->vsize = vsize / 1024; /* convert from bytes to KB */
-	prec->rss   = rss * my_pagesize;/* convert from pages to KB */
+	prec->rss   = prec->tres_data[TRES_ARRAY_MEM].size_read / 1024;
 	prec->last_cpu = last_cpu;
 	return 1;
 }
@@ -393,7 +397,10 @@ static int _get_process_memory_line(int in, jag_prec_t *prec)
 	}
 
 	/* Copy the values that slurm records into our data structure */
-	prec->rss = (rss - share) * my_pagesize; /* convert from pages to KB */
+	prec->tres_data[TRES_ARRAY_MEM].size_read =
+		(rss - share) * my_pagesize;;
+	prec->rss = prec->tres_data[TRES_ARRAY_MEM].size_read / 1024;
+
 	return 1;
 }
 
@@ -451,11 +458,9 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 	prec->disk_read = (double)rchar / (double)1048576;
 	prec->disk_write = (double)wchar / (double)1048576;
 
-	if (tres_disk_pos != -1) {
-		/* keep real value here since we aren't doubles */
-		prec->tres_data[tres_disk_pos].size_read = rchar;
-		prec->tres_data[tres_disk_pos].size_write = wchar;
-	}
+	/* keep real value here since we aren't doubles */
+	prec->tres_data[TRES_ARRAY_FS_DISK].size_read = rchar;
+	prec->tres_data[TRES_ARRAY_FS_DISK].size_write = wchar;
 
 	return 1;
 }
@@ -514,10 +519,10 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 
 	/* Initialize read/writes */
 	for (i = 0; i < g_tres_count; i++) {
-		prec->tres_data[i].num_reads = NO_VAL64;
-		prec->tres_data[i].num_writes = NO_VAL64;
-		prec->tres_data[i].size_read = NO_VAL64;
-		prec->tres_data[i].size_write = NO_VAL64;
+		prec->tres_data[i].num_reads = INFINITE64;
+		prec->tres_data[i].num_writes = INFINITE64;
+		prec->tres_data[i].size_read = INFINITE64;
+		prec->tres_data[i].size_write = INFINITE64;
 	}
 	assoc_mgr_unlock(&locks);
 
@@ -750,9 +755,9 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		return;
 
 	data[FIELD_CPUFREQ].u64 = jobacct->act_cpufreq;
-	data[FIELD_RSS].u64 = jobacct->tot_rss;
-	data[FIELD_VMSIZE].u64 = jobacct->tot_vsize;
-	data[FIELD_PAGES].u64 = jobacct->tot_pages;
+	data[FIELD_RSS].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
+	data[FIELD_VMSIZE].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+	data[FIELD_PAGES].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES];
 
 	/* delta from last snapshot */
 	if (!jobacct->last_time) {
@@ -762,7 +767,8 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_WRITE].d = 0.0;
 	} else {
 		data[FIELD_CPUTIME].d =
-			jobacct->tot_cpu - jobacct->last_total_cputime;
+			(double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] -
+			jobacct->last_total_cputime;
 		et = (jobacct->cur_time - jobacct->last_time);
 		if (!et)
 			data[FIELD_CPUUTIL].d = 0.0;
@@ -771,17 +777,13 @@ static void _record_profile(struct jobacctinfo *jobacct)
 				(100.0 * (double)data[FIELD_CPUTIME].d) /
 				((double) et);
 
-		if (tres_disk_pos != -1) {
-			data[FIELD_READ].d =
-				(double) jobacct->
-				tres_usage_in_tot[tres_disk_pos] -
-				jobacct->last_tres_usage_in_tot;
+		data[FIELD_READ].d = (double) jobacct->
+			tres_usage_in_tot[TRES_ARRAY_FS_DISK] -
+			jobacct->last_tres_usage_in_tot;
 
-			data[FIELD_WRITE].d =
-				(double) jobacct->
-				tres_usage_out_tot[tres_disk_pos] -
-				jobacct->last_tres_usage_out_tot;
-		}
+		data[FIELD_WRITE].d = (double) jobacct->
+			tres_usage_out_tot[TRES_ARRAY_FS_DISK] -
+			jobacct->last_tres_usage_out_tot;
 	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -796,17 +798,11 @@ static void _record_profile(struct jobacctinfo *jobacct)
 extern void jag_common_init(long in_hertz)
 {
 	uint32_t profile_opt;
-	slurmdb_tres_rec_t tres_rec;
 
 	debug_flags = slurm_get_debug_flags();
 
 	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
 				  &profile_opt);
-
-	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
-	tres_rec.type = "fs";
-	tres_rec.name = "disk";
-	tres_disk_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 
 	/* If we are profiling energy it will be checked at a
 	   different rate, so just grab the last one.
@@ -825,7 +821,7 @@ extern void jag_common_init(long in_hertz)
 		}
 	}
 
-	my_pagesize = getpagesize() / 1024;
+	my_pagesize = getpagesize();
 }
 
 extern void jag_common_fini(void)
@@ -858,7 +854,7 @@ extern void print_jag_prec(jag_prec_t *prec)
 	info("ssec \t%d", prec->ssec);
 	assoc_mgr_lock(&locks);
 	for (i=0; i<g_tres_count; i++) {
-		if (prec->tres_data[i].size_read == NO_VAL64)
+		if (prec->tres_data[i].size_read == INFINITE64)
 			continue;
 		info("%s in/read \t%"PRIu64"",
 		     assoc_mgr_tres_name_array[i],
@@ -891,7 +887,7 @@ extern void jag_common_poll_data(
 
 	xassert(callbacks);
 
-	if (!pgid_plugin && (cont_id == NO_VAL64)) {
+	if (!pgid_plugin && (cont_id == INFINITE64)) {
 		debug("cont_id hasn't been set yet not running poll");
 		return;
 	}
@@ -940,6 +936,9 @@ extern void jag_common_poll_data(
 		last_total_cputime = jobacct->tot_cpu;
 
 		cpu_calc = (double)(prec->ssec + prec->usec)/(double)hertz;
+
+		prec->tres_data[TRES_ARRAY_CPU].size_read = (uint64_t)cpu_calc;
+
 		/* tally their usage */
 		jobacct->max_rss =
 			MAX(jobacct->max_rss, prec->rss);
@@ -962,11 +961,15 @@ extern void jag_common_poll_data(
 		jobacct->tot_disk_write = prec->disk_write;
 
 		for (i = 0; i < jobacct->tres_count; i++) {
-			if (prec->tres_data[i].size_read == NO_VAL64)
+			if (prec->tres_data[i].size_read == INFINITE64)
 				continue;
 			if (jobacct->tres_usage_in_max[i] == INFINITE64)
 				jobacct->tres_usage_in_max[i] =
 					prec->tres_data[i].size_read;
+			else if (i == TRES_ARRAY_CPU)
+				jobacct->tres_usage_in_max[i] =
+					MIN(jobacct->tres_usage_in_max[i],
+					    prec->tres_data[i].size_read);
 			else
 				jobacct->tres_usage_in_max[i] =
 					MAX(jobacct->tres_usage_in_max[i],
@@ -977,6 +980,10 @@ extern void jag_common_poll_data(
 			if (jobacct->tres_usage_out_max[i] == INFINITE64)
 				jobacct->tres_usage_out_max[i] =
 					prec->tres_data[i].size_write;
+			else if (i == TRES_ARRAY_CPU)
+				jobacct->tres_usage_out_max[i] =
+					MIN(jobacct->tres_usage_out_max[i],
+					    prec->tres_data[i].size_write);
 			else
 				jobacct->tres_usage_out_max[i] =
 					MAX(jobacct->tres_usage_out_max[i],
@@ -1033,15 +1040,13 @@ extern void jag_common_poll_data(
 
 			_record_profile(jobacct);
 
-			if (tres_disk_pos != -1) {
-				jobacct->last_tres_usage_in_tot  =
-					jobacct->tres_usage_in_tot[
-						tres_disk_pos];
-				jobacct->last_tres_usage_out_tot  =
-					jobacct->tres_usage_out_tot[
-						tres_disk_pos];
-			}
-			jobacct->last_total_cputime = jobacct->tot_cpu;
+			jobacct->last_tres_usage_in_tot =
+				jobacct->tres_usage_in_tot[TRES_ARRAY_FS_DISK];
+			jobacct->last_tres_usage_out_tot =
+				jobacct->tres_usage_out_tot[TRES_ARRAY_FS_DISK];
+			jobacct->last_total_cputime =
+				jobacct->tres_usage_out_tot[TRES_ARRAY_CPU];
+
 			jobacct->last_time = jobacct->cur_time;
 		}
 	}
