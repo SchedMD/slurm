@@ -874,7 +874,21 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			now, TRES_NODE,
 			now, TRES_BILLING,
 			now, TRES_OFFSET);
-		if (debug_flags & DEBUG_FLAG_DB_QOS)
+		if (debug_flags & DEBUG_FLAG_DB_TRES)
+			DB_DEBUG(mysql_conn->conn, "%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if (rc != SLURM_SUCCESS)
+			fatal("problem adding static tres");
+
+		/* Now insert TRES that have a name */
+		query = xstrdup_printf(
+			"insert into %s (creation_time, id, deleted, type, name) values "
+			"(%ld, %d, 0, 'fs', 'disk') "
+			"on duplicate key update deleted=VALUES(deleted), type=VALUES(type), name=VALUES(name);",
+			tres_table,
+			now, TRES_FS_DISK);
+		if (debug_flags & DEBUG_FLAG_DB_TRES)
 			DB_DEBUG(mysql_conn->conn, "%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
