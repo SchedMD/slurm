@@ -144,6 +144,7 @@ static bool _qos_preemptable(struct job_record *preemptee,
 	slurmdb_qos_rec_t *qos_or = preemptor->qos_ptr;
 
 	if ((qos_ee == NULL) || (qos_or == NULL) ||
+	    (qos_or->id == qos_ee->id) ||
 	    (qos_or->preempt_bitstr == NULL) ||
 	    !bit_test(qos_or->preempt_bitstr, qos_ee->id))
 		return false;

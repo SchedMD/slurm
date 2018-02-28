@@ -83,6 +83,11 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 
 	xassert(preempt_bitstr);
 
+	if (bit_test(preempt_bitstr, begin_qosid)) {
+		error("QOS ID %d has an internal loop", begin_qosid);
+		return 1;
+	}
+
 	/* check in the preempt list for all qos's preempted */
 	for (i = 0; i < bit_size(preempt_bitstr); i++) {
 		if (!bit_test(preempt_bitstr, i))
@@ -102,7 +107,8 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 		 * if so we have a loop
 		 */
 		if (qos_rec.preempt_bitstr
-		    && bit_test(qos_rec.preempt_bitstr, begin_qosid)) {
+		    && (bit_test(qos_rec.preempt_bitstr, begin_qosid) ||
+			bit_test(qos_rec.preempt_bitstr, i))) {
 			error("QOS ID %d has a loop at QOS %s",
 			      begin_qosid, qos_rec.name);
 			rc = 1;

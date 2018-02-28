@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
  -- FreeBSD - fix build on systems built with WITHOUT_KERBEROS.
  -- Fix to restore pn_min_memory calculated result to correctly enforce
     MaxMemPerCPU setting on a partition when the job uses --mem.
+ -- slurmdbd - prevent infinite loop if a QOS is set to preempt itself.
 
 * Changes in Slurm 17.11.3-2
 ==========================
