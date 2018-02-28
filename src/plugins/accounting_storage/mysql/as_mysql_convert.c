@@ -871,7 +871,8 @@ extern int as_mysql_convert_get_bad_tres(mysql_conn_t *mysql_conn)
 	if ((rc = _set_db_curr_ver(mysql_conn)) != SLURM_SUCCESS)
 		return rc;
 
-	if (db_curr_ver == CONVERT_VERSION) {
+	/* This is only for db's not having converted to 5 yet */
+	if (db_curr_ver >= 5) {
 		debug4("%s: No conversion needed, Horray!", __func__);
 		return SLURM_SUCCESS;
 	} else if (backup_dbd) {
