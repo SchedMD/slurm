@@ -269,7 +269,8 @@ empty:
 		xstrfmtcat(tmp, ", %s", tres_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s %s", tmp, tres_table, extra);
+	query = xstrdup_printf("select %s from %s %s order by id",
+			       tmp, tres_table, extra);
 	xfree(tmp);
 	xfree(extra);
 
