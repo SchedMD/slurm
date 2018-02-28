@@ -1384,6 +1384,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "max_disk_write_task", "int unsigned default 0 not null" },
 		{ "max_disk_write_node", "int unsigned default 0 not null" },
 		{ "ave_disk_write", "double unsigned default 0.0 not null" },
+		{ "tres_alloc", "text not null default ''" },
 		{ "tres_usage_in_ave", "text not null default ''" },
 		{ "tres_usage_in_max", "text not null default ''" },
 		{ "tres_usage_in_max_taskid", "text not null default ''" },
@@ -1392,7 +1393,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "tres_usage_out_max", "text not null default ''" },
 		{ "tres_usage_out_max_taskid", "text not null default ''" },
 		{ "tres_usage_out_max_nodeid", "text not null default ''" },
-		{ "tres_alloc", "text not null default ''" },
 		{ NULL, NULL}
 	};
 
