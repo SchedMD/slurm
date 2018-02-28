@@ -7,9 +7,9 @@
   Name:		slurm
   Major:	17
   Minor:	11
-  Micro:	3
-  Version:	17.11.3
-  Release:	2
+  Micro:	4
+  Version:	17.11.4
+  Release:	1
 
 ##
 #  When making a new Major/Minor version update
