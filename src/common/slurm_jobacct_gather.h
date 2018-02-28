@@ -112,14 +112,14 @@ struct jobacctinfo {
 	uint32_t tres_count; /* count of tres in the usage array's */
 	uint32_t *tres_ids; /* array of tres_count of the tres id's */
 	List tres_list; /* list of tres we are dealing with */
-	uint64_t *tres_usage_in_tot; /* total usage in, in megabytes */
-	uint64_t *tres_usage_out_tot; /* total usage out, in megabytes */
 	uint64_t *tres_usage_in_max; /* tres max usage in data */
-	uint64_t *tres_usage_in_max_taskid; /* tres max usage in data task id */
 	uint64_t *tres_usage_in_max_nodeid; /* tres max usage in data node id */
+	uint64_t *tres_usage_in_max_taskid; /* tres max usage in data task id */
+	uint64_t *tres_usage_in_tot; /* total usage in, in megabytes */
 	uint64_t *tres_usage_out_max; /* tres max usage out data */
-	uint64_t *tres_usage_out_max_taskid; /* tres max usage data task id */
 	uint64_t *tres_usage_out_max_nodeid; /* tres max usage data node id */
+	uint64_t *tres_usage_out_max_taskid; /* tres max usage data task id */
+	uint64_t *tres_usage_out_tot; /* total usage out, in megabytes */
 
 	jobacct_id_t id;
 	int dataset_id; /* dataset associated to this task when profiling */
