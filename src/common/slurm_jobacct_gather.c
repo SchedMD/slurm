@@ -887,13 +887,9 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
 	struct rusage *rusage = (struct rusage *)data;
-	uint32_t *uint32 = (uint32_t *) data;
 	uint64_t *uint64 = (uint64_t *) data;
-	double *dub = (double *) data;
-	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 	Buf buffer = NULL;
-	int i=0;
 
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
@@ -932,97 +928,11 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 			jobacct->sys_cpu_sec = rusage->ru_stime.tv_sec;
 		jobacct->sys_cpu_usec = rusage->ru_stime.tv_usec;
 		break;
-	case JOBACCT_DATA_MAX_RSS:
-		jobacct->max_rss = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_RSS_ID:
-		jobacct->max_rss_id = *jobacct_id;
-		break;
 	case JOBACCT_DATA_TOT_RSS:
 		jobacct->tot_rss = *uint64;
 		break;
-	case JOBACCT_DATA_MAX_VSIZE:
-		jobacct->max_vsize = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_VSIZE_ID:
-		jobacct->max_vsize_id = *jobacct_id;
-		break;
 	case JOBACCT_DATA_TOT_VSIZE:
 		jobacct->tot_vsize = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_PAGES:
-		jobacct->max_pages = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_PAGES_ID:
-		jobacct->max_pages_id = *jobacct_id;
-		break;
-	case JOBACCT_DATA_TOT_PAGES:
-		jobacct->tot_pages = *uint64;
-		break;
-	case JOBACCT_DATA_MIN_CPU:
-		jobacct->min_cpu = *uint32;
-		break;
-	case JOBACCT_DATA_MIN_CPU_ID:
-		jobacct->min_cpu_id = *jobacct_id;
-		break;
-	case JOBACCT_DATA_TOT_CPU:
-		jobacct->tot_cpu = *dub;
-		break;
-	case JOBACCT_DATA_ACT_CPUFREQ:
-		jobacct->act_cpufreq = *uint32;
-		break;
-	case JOBACCT_DATA_CONSUMED_ENERGY:
-		jobacct->energy.consumed_energy = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_DISK_READ:
-		jobacct->max_disk_read = *dub;
-		break;
-	case JOBACCT_DATA_MAX_DISK_READ_ID:
-		jobacct->max_disk_read_id = *jobacct_id;
-		break;
-	case JOBACCT_DATA_TOT_DISK_READ:
-		jobacct->tot_disk_read = *dub;
-		break;
-	case JOBACCT_DATA_MAX_DISK_WRITE:
-		jobacct->max_disk_write = *dub;
-		break;
-	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
-		jobacct->max_disk_write_id = *jobacct_id;
-		break;
-	case JOBACCT_DATA_TOT_DISK_WRITE:
-		jobacct->tot_disk_write = *dub;
-		break;
-	case JOBACCT_DATA_TRES_USAGE_IN_TOT:
-		for (i = 0; i < jobacct->tres_count; i++)
-			jobacct->tres_usage_in_tot[i] =  uint64[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_OUT_TOT:
-		for (i = 0; i < jobacct->tres_count; i++)
-			jobacct->tres_usage_out_tot[i] =  uint64[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_IN_MAX:
-		for (i = 0; i < jobacct->tres_count; i++)
-			jobacct->tres_usage_in_max[i] = uint64[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_IN_MAX_TASKID:
-		for (i = 0; i < jobacct->tres_count; i++)
-			jobacct->tres_usage_in_max_taskid[i] = uint64[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_IN_MAX_NODEID:
-		for (i = 0; i < jobacct->tres_count; i++)
-			jobacct->tres_usage_in_max_nodeid[i] = uint64[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_OUT_MAX:
-		for (i = 0; i < jobacct->tres_count; i++)
-			jobacct->tres_usage_out_max[i] = uint64[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_OUT_MAX_TASKID:
-		for (i = 0; i < jobacct->tres_count; i++)
-			jobacct->tres_usage_out_max_taskid[i] = uint64[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_OUT_MAX_NODEID:
-		for (i = 0; i < jobacct->tres_count; i++)
-			jobacct->tres_usage_out_max_nodeid[i] = uint64[i];
 		break;
 	default:
 		debug("jobacct_g_set_setinfo data_type %d invalid", type);
@@ -1041,14 +951,10 @@ extern int jobacctinfo_getinfo(
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
-	uint32_t *uint32 = (uint32_t *) data;
 	uint64_t *uint64 = (uint64_t *) data;
-	double *dub = (double *) data;
-	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct rusage *rusage = (struct rusage *)data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 	char *buf = NULL;
-	int i=0;
 
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
@@ -1082,97 +988,11 @@ extern int jobacctinfo_getinfo(
 		rusage->ru_stime.tv_sec = jobacct->sys_cpu_sec;
 		rusage->ru_stime.tv_usec = jobacct->sys_cpu_usec;
 		break;
-	case JOBACCT_DATA_MAX_RSS:
-		*uint64 = jobacct->max_rss;
-		break;
-	case JOBACCT_DATA_MAX_RSS_ID:
-		*jobacct_id = jobacct->max_rss_id;
-		break;
 	case JOBACCT_DATA_TOT_RSS:
 		*uint64 = jobacct->tot_rss;
 		break;
-	case JOBACCT_DATA_MAX_VSIZE:
-		*uint64 = jobacct->max_vsize;
-		break;
-	case JOBACCT_DATA_MAX_VSIZE_ID:
-		*jobacct_id = jobacct->max_vsize_id;
-		break;
 	case JOBACCT_DATA_TOT_VSIZE:
 		*uint64 = jobacct->tot_vsize;
-		break;
-	case JOBACCT_DATA_MAX_PAGES:
-		*uint64 = jobacct->max_pages;
-		break;
-	case JOBACCT_DATA_MAX_PAGES_ID:
-		*jobacct_id = jobacct->max_pages_id;
-		break;
-	case JOBACCT_DATA_TOT_PAGES:
-		*uint64 = jobacct->tot_pages;
-		break;
-	case JOBACCT_DATA_MIN_CPU:
-		*uint32 = jobacct->min_cpu;
-		break;
-	case JOBACCT_DATA_MIN_CPU_ID:
-		*jobacct_id = jobacct->min_cpu_id;
-		break;
-	case JOBACCT_DATA_TOT_CPU:
-		*dub = jobacct->tot_cpu;
-		break;
-	case JOBACCT_DATA_ACT_CPUFREQ:
-		*uint32 = jobacct->act_cpufreq;
-		break;
-	case JOBACCT_DATA_CONSUMED_ENERGY:
-		*uint64 = jobacct->energy.consumed_energy;
-		break;
-	case JOBACCT_DATA_MAX_DISK_READ:
-		*dub = jobacct->max_disk_read;
-		break;
-	case JOBACCT_DATA_MAX_DISK_READ_ID:
-		*jobacct_id = jobacct->max_disk_read_id;
-		break;
-	case JOBACCT_DATA_TOT_DISK_READ:
-		*dub = jobacct->tot_disk_read;
-		break;
-	case JOBACCT_DATA_MAX_DISK_WRITE:
-		*dub = jobacct->max_disk_write;
-		break;
-	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
-		*jobacct_id = jobacct->max_disk_write_id;
-		break;
-	case JOBACCT_DATA_TOT_DISK_WRITE:
-		*dub = jobacct->tot_disk_write;
-		break;
-	case JOBACCT_DATA_TRES_USAGE_IN_TOT:
-		for (i = 0; i < jobacct->tres_count; i++)
-			uint64[i] = jobacct->tres_usage_in_tot[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_OUT_TOT:
-		for (i = 0; i < jobacct->tres_count; i++)
-			uint64[i] = jobacct->tres_usage_out_tot[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_IN_MAX:
-		for (i = 0; i < jobacct->tres_count; i++)
-			uint64[i] = jobacct->tres_usage_in_max[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_IN_MAX_TASKID:
-		for (i = 0; i < jobacct->tres_count; i++)
-			uint64[i] = jobacct->tres_usage_in_max_taskid[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_IN_MAX_NODEID:
-		for (i = 0; i < jobacct->tres_count; i++)
-			uint64[i] = jobacct->tres_usage_in_max_nodeid[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_OUT_MAX:
-		for (i = 0; i < jobacct->tres_count; i++)
-			uint64[i] = jobacct->tres_usage_out_max[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_OUT_MAX_TASKID:
-		for (i = 0; i < jobacct->tres_count; i++)
-			uint64[i] = jobacct->tres_usage_out_max_taskid[i];
-		break;
-	case JOBACCT_DATA_TRES_USAGE_OUT_MAX_NODEID:
-		for (i = 0; i < jobacct->tres_count; i++)
-			uint64[i] = jobacct->tres_usage_out_max_nodeid[i];
 		break;
 	default:
 		debug("jobacct_g_set_getinfo data_type %d invalid", type);
