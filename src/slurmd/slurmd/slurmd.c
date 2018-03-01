@@ -826,6 +826,14 @@ _read_config(void)
 	xfree(conf->block_map);
 	xfree(conf->block_map_inv);
 
+	/*
+	 * This must be reset before _update_logging(), otherwise the
+	 * slurmstepd processes will not get the reconfigure request,
+	 * and logs may be lost if the path changed or the log was rotated.
+	 */
+	_free_and_set(conf->spooldir, xstrdup(cf->slurmd_spooldir));
+	_massage_pathname(&conf->spooldir);
+
 	_update_logging();
 	_update_nice();
 
@@ -931,8 +939,6 @@ _read_config(void)
 	_free_and_set(conf->tmpfs,    xstrdup(cf->tmp_fs));
 	_free_and_set(conf->health_check_program,
 		      xstrdup(cf->health_check_program));
-	_free_and_set(conf->spooldir, xstrdup(cf->slurmd_spooldir));
-	_massage_pathname(&conf->spooldir);
 	_free_and_set(conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
 	_free_and_set(conf->plugstack,   xstrdup(cf->plugstack));

@@ -6584,6 +6584,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 			detail_ptr->cpus_per_task = job_desc.cpus_per_task;
 			detail_ptr->min_cpus = job_desc.min_cpus;
 			detail_ptr->max_cpus = job_desc.max_cpus;
+			detail_ptr->pn_min_cpus = job_desc.pn_min_cpus;
 		}
 	}
 
