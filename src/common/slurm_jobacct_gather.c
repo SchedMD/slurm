@@ -759,7 +759,7 @@ extern int jobacct_gather_set_mem_limit(uint32_t job_id,
 
 	jobacct_job_id      = job_id;
 	jobacct_step_id     = step_id;
-	jobacct_mem_limit   = mem_limit * 1024; /* MB to KB */
+	jobacct_mem_limit   = mem_limit * 1048576; /* MB to B */
 	jobacct_vmem_limit  = jobacct_mem_limit;
 	jobacct_vmem_limit *= (slurm_get_vsize_factor() / 100.0);
 	return SLURM_SUCCESS;
