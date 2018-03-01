@@ -1341,12 +1341,6 @@ extern void do_list(void)
 
 		if (list_count(job->steps)) {
 			int cnt = list_count(job->steps);
-			job->stats.cpu_ave /= (double)cnt;
-			job->stats.rss_ave /= (double)cnt;
-			job->stats.vsize_ave /= (double)cnt;
-			job->stats.pages_ave /= (double)cnt;
-			job->stats.disk_read_ave /= (double)cnt;
-			job->stats.disk_write_ave /= (double)cnt;
 			ave_usage_tmp = job->stats.tres_usage_in_ave;
 			job->stats.tres_usage_in_ave = slurmdb_ave_tres_usage(
 				ave_usage_tmp, cnt);

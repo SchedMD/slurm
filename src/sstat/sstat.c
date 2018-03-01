@@ -137,7 +137,6 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	memset(&step, 0, sizeof(slurmdb_step_rec_t));
 
 	memset(&step.stats, 0, sizeof(slurmdb_stats_t));
-	step.stats.cpu_min = NO_VAL;
 
 	step.job_ptr = &job;
 	step.stepid = stepid;
@@ -214,12 +213,6 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	tot_tasks += ntasks;
 
 	if (tot_tasks) {
-		step.stats.cpu_ave /= (double)tot_tasks;
-		step.stats.rss_ave /= (double)tot_tasks;
-		step.stats.vsize_ave /= (double)tot_tasks;
-		step.stats.pages_ave /= (double)tot_tasks;
-		step.stats.disk_read_ave /= (double)tot_tasks;
-		step.stats.disk_write_ave /= (double)tot_tasks;
 		step.stats.act_cpufreq /= (double)tot_tasks;
 
 		ave_usage_tmp = step.stats.tres_usage_in_ave;

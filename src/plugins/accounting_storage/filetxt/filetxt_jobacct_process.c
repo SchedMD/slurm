@@ -374,7 +374,6 @@ static filetxt_job_rec_t *_create_filetxt_job_rec(filetxt_header_t header)
 	memcpy(&job->header, &header, sizeof(filetxt_header_t));
 	memset(&job->rusage, 0, sizeof(struct rusage));
 	memset(&job->stats, 0, sizeof(slurmdb_stats_t));
-	job->stats.cpu_min = NO_VAL;
 	job->job_start_seen = 0;
 	job->job_step_seen = 0;
 	job->job_terminated_seen = 0;
@@ -562,12 +561,31 @@ static int _parse_header(char *f[], filetxt_header_t *header)
 	return SLURM_SUCCESS;
 }
 
+static char *_make_tres_str(uint64_t *tres_array)
+{
+	int i;
+	char *tres_str = NULL;
+
+	for (i=0; i<TRES_ARRAY_TOTAL_CNT; i++) {
+		if ((tres_array[i] == NO_VAL64) ||
+		    (tres_array[i] == INFINITE64))
+			continue;
+		xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+			   tres_str ? "," : "",
+			   i, tres_array[i]);
+	}
+	return tres_str;
+}
+
 static int _parse_line(char *f[], void **data, int len)
 {
 	int i = atoi(f[F_RECTYPE]);
 	filetxt_job_rec_t **job = (filetxt_job_rec_t **)data;
 	filetxt_step_rec_t **step = (filetxt_step_rec_t **)data;
 	filetxt_header_t header;
+	uint64_t tres_array[TRES_ARRAY_TOTAL_CNT];
+	int cnt;
+
 	_parse_header(f, &header);
 
 	switch (i) {
@@ -624,55 +642,45 @@ static int _parse_line(char *f[], void **data, int len)
 		(*step)->rusage.ru_nsignals = atoi(f[F_NSIGNALS]);
 		(*step)->rusage.ru_nvcsw = atoi(f[F_NVCSW]);
 		(*step)->rusage.ru_nivcsw = atoi(f[F_NIVCSW]);
-		(*step)->stats.vsize_max = atoi(f[F_MAX_VSIZE]);
-		if (len > F_STEPNODES) {
-			(*step)->stats.vsize_max_taskid =
-				atoi(f[F_MAX_VSIZE_TASK]);
-			(*step)->stats.vsize_ave = atof(f[F_AVE_VSIZE]);
-			(*step)->stats.rss_max = atoi(f[F_MAX_RSS]);
-			(*step)->stats.rss_max_taskid =
-				atoi(f[F_MAX_RSS_TASK]);
-			(*step)->stats.rss_ave = atof(f[F_AVE_RSS]);
-			(*step)->stats.pages_max = atoi(f[F_MAX_PAGES]);
-			(*step)->stats.pages_max_taskid =
-				atoi(f[F_MAX_PAGES_TASK]);
-			(*step)->stats.pages_ave = atof(f[F_AVE_PAGES]);
-			(*step)->stats.cpu_min = atoi(f[F_MIN_CPU]);
-			(*step)->stats.cpu_min_taskid =
-				atoi(f[F_MIN_CPU_TASK]);
-			(*step)->stats.cpu_ave = atof(f[F_AVE_CPU]);
-			(*step)->stepname = xstrdup(f[F_STEPNAME]);
-			(*step)->nodes = xstrdup(f[F_STEPNODES]);
-		} else {
-			(*step)->stats.vsize_max_taskid = NO_VAL16;
-			(*step)->stats.vsize_ave = (float)NO_VAL;
-			(*step)->stats.rss_max = NO_VAL;
-			(*step)->stats.rss_max_taskid = NO_VAL16;
-			(*step)->stats.rss_ave = (float)NO_VAL;
-			(*step)->stats.pages_max = NO_VAL;
-			(*step)->stats.pages_max_taskid = NO_VAL16;
-			(*step)->stats.pages_ave = (float)NO_VAL;
-			(*step)->stats.cpu_min = NO_VAL;
-			(*step)->stats.cpu_min_taskid = NO_VAL16;
-			(*step)->stats.cpu_ave =  (float)NO_VAL;
-			(*step)->stepname = NULL;
-			(*step)->nodes = NULL;
-		}
-		if (len > F_MIN_CPU_NODE) {
-			(*step)->stats.vsize_max_nodeid =
-				atoi(f[F_MAX_VSIZE_NODE]);
-			(*step)->stats.rss_max_nodeid =
-				atoi(f[F_MAX_RSS_NODE]);
-			(*step)->stats.pages_max_nodeid =
-				atoi(f[F_MAX_PAGES_NODE]);
-			(*step)->stats.cpu_min_nodeid =
-				atoi(f[F_MIN_CPU_NODE]);
-		} else {
-			(*step)->stats.vsize_max_nodeid = NO_VAL;
-			(*step)->stats.rss_max_nodeid = NO_VAL;
-			(*step)->stats.pages_max_nodeid = NO_VAL;
-			(*step)->stats.cpu_min_nodeid = NO_VAL;
-		}
+
+		for (cnt = 0; cnt < TRES_ARRAY_TOTAL_CNT; cnt++)
+			tres_array[cnt] = INFINITE64;
+
+		tres_array[TRES_ARRAY_CPU] = slurm_atoull(f[F_AVE_CPU]);
+		tres_array[TRES_ARRAY_MEM] = slurm_atoull(f[F_AVE_RSS]);
+		tres_array[TRES_ARRAY_VMEM] = slurm_atoull(f[F_AVE_VSIZE]);
+		tres_array[TRES_ARRAY_PAGES] = slurm_atoull(f[F_AVE_PAGES]);
+
+		(*step)->stats.tres_usage_in_ave = _make_tres_str(tres_array);
+
+		tres_array[TRES_ARRAY_CPU] = slurm_atoull(f[F_MIN_CPU]);
+		tres_array[TRES_ARRAY_MEM] = slurm_atoull(f[F_MAX_RSS]);
+		tres_array[TRES_ARRAY_VMEM] = slurm_atoull(f[F_MAX_VSIZE]);
+		tres_array[TRES_ARRAY_PAGES] = slurm_atoull(f[F_MAX_PAGES]);
+
+		(*step)->stats.tres_usage_in_max = _make_tres_str(tres_array);
+
+		tres_array[TRES_ARRAY_CPU] = slurm_atoull(f[F_MIN_CPU_NODE]);
+		tres_array[TRES_ARRAY_MEM] = slurm_atoull(f[F_MAX_RSS_NODE]);
+		tres_array[TRES_ARRAY_VMEM] = slurm_atoull(f[F_MAX_VSIZE_NODE]);
+		tres_array[TRES_ARRAY_PAGES] =
+			slurm_atoull(f[F_MAX_PAGES_NODE]);
+
+		(*step)->stats.tres_usage_in_max_nodeid =
+			_make_tres_str(tres_array);
+
+		tres_array[TRES_ARRAY_CPU] = slurm_atoull(f[F_MIN_CPU_TASK]);
+		tres_array[TRES_ARRAY_MEM] = slurm_atoull(f[F_MAX_RSS_TASK]);
+		tres_array[TRES_ARRAY_VMEM] = slurm_atoull(f[F_MAX_VSIZE_TASK]);
+		tres_array[TRES_ARRAY_PAGES] =
+			slurm_atoull(f[F_MAX_PAGES_TASK]);
+
+		(*step)->stats.tres_usage_in_max_taskid =
+			_make_tres_str(tres_array);
+
+		(*step)->stepname = xstrdup(f[F_STEPNAME]);
+		(*step)->nodes = xstrdup(f[F_STEPNODES]);
+
 		if (len > F_STEP_ACCOUNT)
 			(*step)->account = xstrdup(f[F_STEP_ACCOUNT]);
 		if (len > F_STEP_REQUID)
