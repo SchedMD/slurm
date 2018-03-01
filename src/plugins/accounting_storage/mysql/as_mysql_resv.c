@@ -98,11 +98,9 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 	}
 
 	if (resv->name) {
-		char *tmp_char = slurm_add_slash_to_quotes(resv->name);
 		xstrcat(*cols, ", resv_name");
-		xstrfmtcat(*vals, ", '%s'", tmp_char);
-		xstrfmtcat(*extra, ", resv_name='%s'", tmp_char);
-		xfree(tmp_char);
+		xstrfmtcat(*vals, ", '%s'", resv->name);
+		xstrfmtcat(*extra, ", resv_name='%s'", resv->name);
 	}
 
 	if (resv->nodes) {

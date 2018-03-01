@@ -1382,9 +1382,9 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 
 	if (reason)
-		my_reason = slurm_add_slash_to_quotes(reason);
+		my_reason = reason;
 	else
-		my_reason = slurm_add_slash_to_quotes(node_ptr->reason);
+		my_reason = node_ptr->reason;
 
 	row = mysql_fetch_row(result);
 	if (row && (node_ptr->node_state == slurm_atoul(row[0])) &&
@@ -1396,7 +1396,6 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 				 node_ptr->name, mysql_conn->cluster_name,
 				 node_ptr->node_state, row[0],
 				 my_reason, row[1]);
-		xfree(my_reason);
 		mysql_free_result(result);
 		return SLURM_SUCCESS;
 	}
@@ -1434,7 +1433,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
-	xfree(my_reason);
+
 	return rc;
 }
 
