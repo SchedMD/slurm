@@ -82,33 +82,12 @@ struct jobacctinfo {
 	uint32_t sys_cpu_usec;
 	uint32_t user_cpu_sec;
 	uint32_t user_cpu_usec;
-	uint64_t max_vsize; /* max size of virtual memory */
-	jobacct_id_t max_vsize_id; /* contains which task number it was on */
-	uint64_t tot_vsize; /* total virtual memory
-			       (used to figure out ave later) */
-	uint64_t max_rss; /* max Resident Set Size */
-	jobacct_id_t max_rss_id; /* contains which task it was on */
-	uint64_t tot_rss; /* total rss
-			     (used to figure out ave later) */
-	uint64_t max_pages; /* max pages */
-	jobacct_id_t max_pages_id; /* contains which task it was on */
-	uint64_t tot_pages; /* total pages
-			     (used to figure out ave later) */
-	uint32_t min_cpu; /* min cpu time */
-	jobacct_id_t min_cpu_id; /* contains which task it was on */
-	double tot_cpu; /* total cpu time(used to figure out ave later) */
 	uint32_t act_cpufreq; /* actual cpu frequency */
 	acct_gather_energy_t energy;
 	double last_total_cputime;
 	double this_sampled_cputime;
 	uint32_t current_weighted_freq;
 	uint32_t current_weighted_power;
-	double max_disk_read; /* max disk read data */
-	jobacct_id_t max_disk_read_id; /* max disk read data task id */
-	double tot_disk_read; /* total local disk read in megabytes */
-	double max_disk_write; /* max disk write data */
-	jobacct_id_t max_disk_write_id; /* max disk write data task id */
-	double tot_disk_write; /* total local disk writes in megabytes */
 	uint32_t tres_count; /* count of tres in the usage array's */
 	uint32_t *tres_ids; /* array of tres_count of the tres id's */
 	List tres_list; /* list of tres we are dealing with */

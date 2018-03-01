@@ -92,7 +92,7 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 	jobacct->current_weighted_freq =
 		jobacct->current_weighted_freq +
 		(uint32_t)jobacct->this_sampled_cputime * thisfreq;
-	tot_cpu = (uint32_t) jobacct->tot_cpu;	/* Cast from double */
+	tot_cpu = (uint32_t) jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
 	if (tot_cpu) {
 		return (uint32_t) (jobacct->current_weighted_freq / tot_cpu);
 	} else
@@ -933,33 +933,14 @@ extern void jag_common_poll_data(
 			(*(callbacks->get_offspring_data))
 				(prec_list, prec, prec->pid);
 
-		last_total_cputime = jobacct->tot_cpu;
+		last_total_cputime =
+			(double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
 
 		cpu_calc = (double)(prec->ssec + prec->usec)/(double)hertz;
 
 		prec->tres_data[TRES_ARRAY_CPU].size_read = (uint64_t)cpu_calc;
 
 		/* tally their usage */
-		jobacct->max_rss =
-			MAX(jobacct->max_rss, prec->rss);
-		jobacct->tot_rss = prec->rss;
-		total_job_mem += prec->rss;
-		jobacct->max_vsize =
-			MAX(jobacct->max_vsize, prec->vsize);
-		jobacct->tot_vsize = prec->vsize;
-		total_job_vsize += prec->vsize;
-		jobacct->max_pages =
-			MAX(jobacct->max_pages, prec->pages);
-		jobacct->tot_pages = prec->pages;
-		jobacct->max_disk_read = MAX(
-			jobacct->max_disk_read,
-			prec->disk_read);
-		jobacct->tot_disk_read = prec->disk_read;
-		jobacct->max_disk_write = MAX(
-			jobacct->max_disk_write,
-			prec->disk_write);
-		jobacct->tot_disk_write = prec->disk_write;
-
 		for (i = 0; i < jobacct->tres_count; i++) {
 			if (prec->tres_data[i].size_read == INFINITE64)
 				continue;
@@ -992,20 +973,15 @@ extern void jag_common_poll_data(
 				prec->tres_data[i].size_write;
 		}
 
-		jobacct->min_cpu =
-			MAX((double)jobacct->min_cpu, cpu_calc);
+		jobacct->tres_usage_in_max[TRES_ARRAY_CPU] =
+			MAX((double)jobacct->tres_usage_in_max[TRES_ARRAY_CPU],
+			    cpu_calc);
 
-		/* Update the cpu times
-		 */
-		jobacct->tot_cpu = cpu_calc;
+		/* Update the cpu times */
+		jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] = (uint64_t)cpu_calc;
 		jobacct->user_cpu_sec = prec->usec/hertz;
 		jobacct->sys_cpu_sec = prec->ssec/hertz;
-		debug2("%s: %d mem size %"PRIu64" %"PRIu64" "
-		       "time %f(%u+%u)", __func__,
-		       jobacct->pid, jobacct->max_rss,
-		       jobacct->max_vsize, jobacct->tot_cpu,
-		       jobacct->user_cpu_sec,
-		       jobacct->sys_cpu_sec);
+
 		/* compute frequency */
 		jobacct->this_sampled_cputime =
 			cpu_calc - last_total_cputime;
@@ -1015,13 +991,16 @@ extern void jag_common_poll_data(
 		jobacct->act_cpufreq =
 			_update_weighted_freq(jobacct, sbuf);
 		debug("%s: Task average frequency = %u "
-		       "pid %d mem size %"PRIu64" %"PRIu64" "
-		       "time %f(%u+%u)", __func__,
-		       jobacct->act_cpufreq,
-		       jobacct->pid, jobacct->max_rss,
-		       jobacct->max_vsize, jobacct->tot_cpu,
-		       jobacct->user_cpu_sec,
-		       jobacct->sys_cpu_sec);
+		      "pid %d mem size %"PRIu64" %"PRIu64" "
+		      "time %"PRIu64"(%u+%u)",
+		      __func__,
+		      jobacct->act_cpufreq,
+		      jobacct->pid,
+		      jobacct->tres_usage_in_max[TRES_ARRAY_MEM],
+		      jobacct->tres_usage_in_max[TRES_ARRAY_VMEM],
+		      jobacct->tres_usage_in_tot[TRES_ARRAY_CPU],
+		      jobacct->user_cpu_sec,
+		      jobacct->sys_cpu_sec);
 		/* get energy consumption
 		 * only once is enough since we
 		 * report per node energy consumption */
