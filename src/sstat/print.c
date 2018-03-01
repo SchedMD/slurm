@@ -128,8 +128,10 @@ void print_fields(slurmdb_step_rec_t *step)
 			tmp_uint64 = slurmdb_find_tres_count_in_string(
 				step->stats.tres_usage_in_ave, TRES_CPU);
 
-			if (tmp_uint64 != NO_VAL64)
+			if (tmp_uint64 != NO_VAL64) {
+				tmp_uint64 /= CPU_TIME_ADJ;
 				tmp_char = _elapsed_time((long)tmp_uint64, 0);
+			}
 
 			field->print_routine(field,
 					     tmp_char,
@@ -458,8 +460,10 @@ void print_fields(slurmdb_step_rec_t *step)
 				     TRES_CPU)) == INFINITE64)
 				tmp_uint64 = NO_VAL64;
 
-			if (tmp_uint64 != NO_VAL64)
+			if (tmp_uint64 != NO_VAL64) {
+				tmp_uint64 /= CPU_TIME_ADJ;
 				tmp_char = _elapsed_time((long)tmp_uint64, 0);
+			}
 
 			field->print_routine(field,
 					     tmp_char,

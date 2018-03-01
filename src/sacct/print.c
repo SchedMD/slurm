@@ -564,6 +564,7 @@ extern void print_fields(type_t type, void *object)
 			tmp_uint64 = _get_tres_cnt(
 				type, object, TRES_CPU, SACCT_TRES_AVE);
 			if (tmp_uint64 != NO_VAL64) {
+				tmp_uint64 /= CPU_TIME_ADJ;
 				tmp_char = _elapsed_time(
 					(long)tmp_uint64, 0);
 			}
@@ -1401,6 +1402,7 @@ extern void print_fields(type_t type, void *object)
 			tmp_uint64 = _get_tres_cnt(type, object, TRES_CPU, 0);
 
 			if (tmp_uint64 != NO_VAL64) {
+				tmp_uint64 /= CPU_TIME_ADJ;
 				tmp_char = _elapsed_time((long)tmp_uint64, 0);
 			}
 

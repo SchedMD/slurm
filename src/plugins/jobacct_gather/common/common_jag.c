@@ -938,6 +938,12 @@ extern void jag_common_poll_data(
 
 		cpu_calc = (double)(prec->ssec + prec->usec)/(double)hertz;
 
+		/*
+		 * Since we are not storing things as a double anymore make it
+		 * bigger so we don't loose precision.
+		 */
+		cpu_calc *= CPU_TIME_ADJ;
+
 		prec->tres_data[TRES_ARRAY_CPU].size_read = (uint64_t)cpu_calc;
 
 		/* tally their usage */
