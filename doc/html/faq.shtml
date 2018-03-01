@@ -64,6 +64,8 @@
   and srun commands?</a></li>
 <li><a href="#squeue_color">Can squeue output be color coded?</a></li>
 <li><a href="#x11">Can Slurm export an X11 display on an allocated compute node?</a></li>
+<li><a href="#unbuffered_cr">Why is the srun --u/--unbuffered option adding
+   a carriage return to my output?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -1006,6 +1008,19 @@ $ cd ~/tests
 $ srun -n1 --pty --x11 xclock
 adam@node1's password:
 </pre>
+
+<p><a name="unbuffered_cr"><b>34. Why is the srun --u/--unbuffered option adding
+   a carriage character return to my output?</b></a><br>
+The libc library used by many programs internally buffers output rather than
+writing it immediately. This is done for performance reasons.
+he only way to disable this internal buffering is to configure the program to
+write to a pseudo terminal (PTY) rather than to a regular file.
+This configuration causes <u>some</u> implementations of libc to prepend the
+carriage return character before all line feed characters.
+Removing the carriage return character would result in desired formatting
+in some instances, while causing bad formatting in other cases.
+In any case, Slurm is not adding the carriage return character, but displaying
+the actual program's output.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -2249,6 +2264,6 @@ accessed files within jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 February 2018</p>
+<p style="text-align:center;">Last modified 1 March 2018</p>
 
 <!--#include virtual="footer.txt"-->
