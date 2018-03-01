@@ -2959,6 +2959,11 @@ extern int select_p_reconfigure(void)
 				 * resources that are not marked as allocated
 				 * to this job without line below. */
 				//_add_job_to_res(job_ptr, 0);
+				uint16_t released = 1;
+				select_g_select_jobinfo_set(
+					               job_ptr->select_jobinfo,
+					               SELECT_JOBDATA_RELEASED,
+					               &released);
 			} else {
 				_add_job_to_res(job_ptr, 0);
 			}

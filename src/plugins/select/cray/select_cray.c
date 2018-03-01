@@ -75,6 +75,7 @@ struct select_jobinfo {
 	bitstr_t               *blade_map;
 	bool                    killing; /* (NO NEED TO PACK) used on
 					    a step to signify it being killed */
+	uint16_t                released;
 	uint16_t                cleaning;
 	uint16_t		magic;
 	uint8_t                 npc;
@@ -1063,9 +1064,11 @@ static void *_job_fini(void *args)
 	if (job_ptr->magic == JOB_MAGIC) {
 		select_jobinfo_t *jobinfo = NULL;
 
-		other_job_fini(job_ptr);
-
 		jobinfo = job_ptr->select_jobinfo->data;
+
+		/* free resources on the job if not released before */
+		if (jobinfo->released == 0)
+			other_job_fini(job_ptr);
 
 		_remove_job_from_blades(jobinfo);
 		jobinfo->cleaning |= CLEANING_COMPLETE;
@@ -1903,6 +1906,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 
 	jobinfo = job_ptr->select_jobinfo->data;
 	jobinfo->cleaning = CLEANING_INIT;	/* Reset needed if requeued */
+	jobinfo->released = 0;
 
 	slurm_mutex_lock(&blade_mutex);
 
@@ -2411,6 +2415,9 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 	switch (data_type) {
 	case SELECT_JOBDATA_CLEANING:
 		jobinfo->cleaning = *uint16;
+		break;
+	case SELECT_JOBDATA_RELEASED:
+		jobinfo->released = *uint16;
 		break;
 	case SELECT_JOBDATA_NETWORK:
 		if (!in_char || !strlen(in_char)
