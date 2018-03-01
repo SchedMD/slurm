@@ -129,15 +129,15 @@ static uint32_t jobacct_step_id    = 0;
 static uint64_t jobacct_mem_limit  = 0;
 static uint64_t jobacct_vmem_limit = 0;
 
-static void _init_tres_usage(struct jobacctinfo *jobacct, uint32_t tres_cnt)
+static void _init_tres_usage(struct jobacctinfo *jobacct,
+			     jobacct_id_t *jobacct_id,
+			     uint32_t tres_cnt)
 {
 	int alloc_size, i;
 
 	jobacct->tres_count = tres_cnt;
 
 	jobacct->tres_ids = xmalloc(tres_cnt * sizeof(uint32_t));
-	for (i = 0; i < tres_cnt; i++)
-		jobacct->tres_ids[i] = assoc_mgr_tres_array[i]->id;
 
 	alloc_size = tres_cnt * sizeof(uint64_t);
 
@@ -149,6 +149,36 @@ static void _init_tres_usage(struct jobacctinfo *jobacct, uint32_t tres_cnt)
 	jobacct->tres_usage_out_tot = xmalloc(alloc_size);
 	jobacct->tres_usage_out_max_taskid = xmalloc(alloc_size);
 	jobacct->tres_usage_out_max_nodeid = xmalloc(alloc_size);
+
+	for (i = 0; i < jobacct->tres_count; i++) {
+		jobacct->tres_ids[i] =
+			assoc_mgr_tres_array ? assoc_mgr_tres_array[i]->id : i;
+
+		jobacct->tres_usage_in_max[i] = INFINITE64;
+		jobacct->tres_usage_in_tot[i] = INFINITE64;
+		jobacct->tres_usage_out_max[i] = INFINITE64;
+		jobacct->tres_usage_out_tot[i] = INFINITE64;
+
+		if (jobacct_id && jobacct_id->taskid != NO_VAL16) {
+			jobacct->tres_usage_in_max_taskid[i] =
+				(uint64_t) jobacct_id->taskid;
+			jobacct->tres_usage_out_max_taskid[i] =
+				(uint64_t) jobacct_id->taskid;
+		} else {
+			jobacct->tres_usage_in_max_taskid[i] = INFINITE64;
+			jobacct->tres_usage_out_max_taskid[i] = INFINITE64;
+		}
+
+		if (jobacct_id && jobacct_id->nodeid != NO_VAL) {
+			jobacct->tres_usage_in_max_nodeid[i] =
+				(uint64_t) jobacct_id->nodeid;
+			jobacct->tres_usage_out_max_nodeid[i] =
+				(uint64_t) jobacct_id->nodeid;
+		} else {
+			jobacct->tres_usage_in_max_nodeid[i] = INFINITE64;
+			jobacct->tres_usage_out_max_nodeid[i] = INFINITE64;
+		}
+	}
 }
 
 static void _free_tres_usage(struct jobacctinfo *jobacct)
@@ -186,7 +216,7 @@ static void _copy_tres_usage(jobacctinfo_t **dest_jobacct,
 
 	memcpy(*dest_jobacct, source_jobacct, sizeof(jobacctinfo_t));
 
-	_init_tres_usage(*dest_jobacct, source_jobacct->tres_count);
+	_init_tres_usage(*dest_jobacct, NULL, source_jobacct->tres_count);
 
 	for (i = 0; i < source_jobacct->tres_count; i++) {
 		(*dest_jobacct)->tres_usage_in_max[i] =
@@ -338,41 +368,13 @@ static void *_watch_tasks(void *arg)
 static void _jobacctinfo_create_tres_usage(jobacct_id_t *jobacct_id,
 					   struct jobacctinfo *jobacct)
 {
-	uint32_t i = 0;
 	assoc_mgr_lock_t locks = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 		READ_LOCK, NO_LOCK, NO_LOCK };
 
 	assoc_mgr_lock(&locks);
-	_init_tres_usage(jobacct, g_tres_count);
+	_init_tres_usage(jobacct, jobacct_id, g_tres_count);
 	assoc_mgr_unlock(&locks);
-
-	for (i = 0; i < jobacct->tres_count; i++) {
-		jobacct->tres_usage_in_max[i] = INFINITE64;
-		jobacct->tres_usage_in_tot[i] = INFINITE64;
-		jobacct->tres_usage_out_max[i] = INFINITE64;
-		jobacct->tres_usage_out_tot[i] = INFINITE64;
-
-		if (jobacct_id->taskid != NO_VAL16) {
-			jobacct->tres_usage_in_max_taskid[i] =
-				(uint64_t) jobacct_id->taskid;
-			jobacct->tres_usage_out_max_taskid[i] =
-				(uint64_t) jobacct_id->taskid;
-		} else {
-			jobacct->tres_usage_in_max_taskid[i] = INFINITE64;
-			jobacct->tres_usage_out_max_taskid[i] = INFINITE64;
-		}
-
-		if (jobacct_id->nodeid != NO_VAL) {
-			jobacct->tres_usage_in_max_nodeid[i] =
-				(uint64_t) jobacct_id->nodeid;
-			jobacct->tres_usage_out_max_nodeid[i] =
-				(uint64_t) jobacct_id->nodeid;
-		} else {
-			jobacct->tres_usage_in_max_nodeid[i] = INFINITE64;
-			jobacct->tres_usage_out_max_nodeid[i] = INFINITE64;
-		}
-	}
 }
 
 static void _jobacctinfo_aggregate_tres_usage(jobacctinfo_t *dest,
