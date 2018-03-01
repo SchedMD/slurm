@@ -50,6 +50,7 @@ typedef struct jag_prec {	/* process record */
 	pid_t	ppid;
 	int     ssec;   /* system cpu time */
 	/* Units of tres_[in|out] should be raw numbers (bytes/joules) */
+	int     tres_count; /* count of tres in the tres_data */
 	acct_gather_data_t *tres_data; /* array of tres data */
 	int     usec;   /* user cpu time */
 } jag_prec_t;

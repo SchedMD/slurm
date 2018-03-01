@@ -43,7 +43,6 @@
 #include <fcntl.h>
 #include <signal.h>
 #include "src/common/slurm_xlator.h"
-#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -109,11 +108,7 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 	ListIterator itr;
 	jag_prec_t *prec = NULL;
 	int i;
-	assoc_mgr_lock_t locks = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-		READ_LOCK, NO_LOCK, NO_LOCK };
 
-	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(prec_list);
 	while((prec = list_next(itr))) {
 		if (prec->ppid != pid)
@@ -128,7 +123,7 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 		ancestor->usec += prec->usec;
 		ancestor->ssec += prec->ssec;
 
-		for (i = 0; i < g_tres_count; i++) {
+		for (i = 0; i < prec->tres_count; i++) {
 			if (prec->tres_data[i].num_reads != INFINITE64) {
 				if (ancestor->tres_data[i].num_reads ==
 				    INFINITE64)
@@ -171,7 +166,6 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 		}
 	}
 	list_iterator_destroy(itr);
-	assoc_mgr_unlock(&locks);
 
 	return;
 }

@@ -458,8 +458,10 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 	return 1;
 }
 
-static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_file,
-			  char *proc_smaps_file, jag_callbacks_t *callbacks)
+static void _handle_stats(List prec_list, char *proc_stat_file,
+			  char *proc_io_file, char *proc_smaps_file,
+			  jag_callbacks_t *callbacks,
+			  int tres_count)
 {
 	static int no_share_data = -1;
 	static int use_pss = -1;
@@ -467,9 +469,6 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	FILE *io_fp = NULL;
 	int fd, fd2, i;
 	jag_prec_t *prec = NULL;
-	assoc_mgr_lock_t locks = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-		READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if (no_share_data == -1) {
 		char *acct_params = slurm_get_jobacct_gather_params();
@@ -507,17 +506,26 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 		return;
 	}
 
-	assoc_mgr_lock(&locks);
-	prec->tres_data = xmalloc(g_tres_count * sizeof(acct_gather_data_t));
+	if (!tres_count) {
+		assoc_mgr_lock_t locks = {
+			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+			READ_LOCK, NO_LOCK, NO_LOCK };
+		assoc_mgr_lock(&locks);
+		tres_count = g_tres_count;
+		assoc_mgr_unlock(&locks);
+	}
+
+	prec->tres_count = tres_count;
+	prec->tres_data = xmalloc(prec->tres_count *
+				  sizeof(acct_gather_data_t));
 
 	/* Initialize read/writes */
-	for (i = 0; i < g_tres_count; i++) {
+	for (i = 0; i < prec->tres_count; i++) {
 		prec->tres_data[i].num_reads = INFINITE64;
 		prec->tres_data[i].num_writes = INFINITE64;
 		prec->tres_data[i].size_read = INFINITE64;
 		prec->tres_data[i].size_write = INFINITE64;
 	}
-	assoc_mgr_unlock(&locks);
 
 	if (!_get_process_data_line(fd, prec)) {
 		xfree(prec->tres_data);
@@ -570,6 +578,11 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 	char	proc_smaps_file[256];	/* Allow ~20x extra length */
 	static	int	slash_proc_open = 0;
 	int i;
+	struct jobacctinfo *jobacct = NULL;
+
+	xassert(task_list);
+
+	jobacct = list_peek(task_list);
 
 	if (!pgid_plugin) {
 		pid_t *pids = NULL;
@@ -578,8 +591,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		proctrack_g_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
 			/* update consumed energy even if pids do not exist */
-			struct jobacctinfo *jobacct = NULL;
-			if ((jobacct = list_peek(task_list))) {
+			if (jobacct) {
 				acct_gather_energy_g_get_data(
 					energy_profile,
 					&jobacct->energy);
@@ -595,7 +607,8 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 			snprintf(proc_io_file, 256, "/proc/%d/io", pids[i]);
 			snprintf(proc_smaps_file, 256, "/proc/%d/smaps", pids[i]);
 			_handle_stats(prec_list, proc_stat_file, proc_io_file,
-				      proc_smaps_file, callbacks);
+				      proc_smaps_file, callbacks,
+				      jobacct ? jobacct->tres_count : 0);
 		}
 		xfree(pids);
 	} else {
@@ -684,7 +697,8 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 			*optr2 = 0;
 
 			_handle_stats(prec_list, proc_stat_file, proc_io_file,
-				      proc_smaps_file,callbacks);
+				      proc_smaps_file,callbacks,
+				      jobacct ? jobacct->tres_count : 0);
 		}
 	}
 
@@ -842,7 +856,7 @@ extern void print_jag_prec(jag_prec_t *prec)
 	info("act_cpufreq\t%d", prec->act_cpufreq);
 	info("ssec \t%d", prec->ssec);
 	assoc_mgr_lock(&locks);
-	for (i=0; i<g_tres_count; i++) {
+	for (i = 0; i < prec->tres_count; i++) {
 		if (prec->tres_data[i].size_read == INFINITE64)
 			continue;
 		info("%s in/read \t%"PRIu64"",
