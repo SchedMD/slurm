@@ -178,8 +178,9 @@ static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
 
         fclose(fp);
         /* Sanity checks */
-        if (pss > 0 && prec->rss > pss) {
-                prec->rss = pss;
+
+        if (pss > 0 && prec->tres_data[TRES_ARRAY_MEM].size_read > pss) {
+                prec->tres_data[TRES_ARRAY_MEM].size_read = pss;
         }
 
 	debug3("%s: read pss %"PRIu64" for process %s",
@@ -350,11 +351,8 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 	prec->tres_data[TRES_ARRAY_VMEM].size_read = vsize;
 	prec->tres_data[TRES_ARRAY_MEM].size_read = rss * my_pagesize;
 
-	prec->pages = majflt;
 	prec->usec  = utime;
 	prec->ssec  = stime;
-	prec->vsize = vsize / 1024; /* convert from bytes to KB */
-	prec->rss   = prec->tres_data[TRES_ARRAY_MEM].size_read / 1024;
 	prec->last_cpu = last_cpu;
 	return 1;
 }
@@ -399,7 +397,6 @@ static int _get_process_memory_line(int in, jag_prec_t *prec)
 	/* Copy the values that slurm records into our data structure */
 	prec->tres_data[TRES_ARRAY_MEM].size_read =
 		(rss - share) * my_pagesize;;
-	prec->rss = prec->tres_data[TRES_ARRAY_MEM].size_read / 1024;
 
 	return 1;
 }
@@ -453,10 +450,6 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 
 	if (_is_a_lwp(prec->pid) > 0)
 		return 0;
-
-	/* Copy the values that slurm records into our data structure */
-	prec->disk_read = (double)rchar / (double)1048576;
-	prec->disk_write = (double)wchar / (double)1048576;
 
 	/* keep real value here since we aren't doubles */
 	prec->tres_data[TRES_ARRAY_FS_DISK].size_read = rchar;
@@ -847,10 +840,6 @@ extern void print_jag_prec(jag_prec_t *prec)
 
 	info("pid %d (ppid %d)", prec->pid, prec->ppid);
 	info("act_cpufreq\t%d", prec->act_cpufreq);
-	info("disk read\t%f", prec->disk_read);
-	info("disk_write\t%f", prec->disk_write);
-	info("pages\t%d", prec->pages);
-	info("rss  \t%"PRIu64"", prec->rss);
 	info("ssec \t%d", prec->ssec);
 	assoc_mgr_lock(&locks);
 	for (i=0; i<g_tres_count; i++) {
@@ -865,7 +854,6 @@ extern void print_jag_prec(jag_prec_t *prec)
 	}
 	assoc_mgr_unlock(&locks);
 	info("usec \t%d", prec->usec);
-	info("vsize\t%"PRIu64"", prec->vsize);
 }
 
 extern void jag_common_poll_data(
@@ -925,8 +913,9 @@ extern void jag_common_poll_data(
 			continue;
 
 #if _DEBUG
-		info("pid:%u ppid:%u rss:%d KB",
-		     prec->pid, prec->ppid, prec->rss);
+		info("pid:%u ppid:%u rss:%"PRIu64" B",
+		     prec->pid, prec->ppid,
+		     prec->tres_data[TRES_ARRAY_MEM].size_read);
 #endif
 		/* find all my descendents */
 		if (callbacks->get_offspring_data)
@@ -982,6 +971,8 @@ extern void jag_common_poll_data(
 		jobacct->tres_usage_in_max[TRES_ARRAY_CPU] =
 			MAX((double)jobacct->tres_usage_in_max[TRES_ARRAY_CPU],
 			    cpu_calc);
+		total_job_mem += jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
+		total_job_vsize += jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
 
 		/* Update the cpu times */
 		jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] = (uint64_t)cpu_calc;

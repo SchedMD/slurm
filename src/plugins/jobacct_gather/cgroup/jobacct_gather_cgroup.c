@@ -134,7 +134,7 @@ static void _prec_extra(jag_prec_t *prec)
 		 */
 		if ((ptr = strstr(memory_stat, "total_rss"))) {
 			sscanf(ptr, "total_rss %lu", &total_rss);
-			prec->rss = total_rss / 1024; /* bytes to KB */
+			prec->tres_data[TRES_ARRAY_MEM].size_read = total_rss;
 		}
 
 		/*
@@ -143,7 +143,8 @@ static void _prec_extra(jag_prec_t *prec)
 		 */
 		if ((ptr = strstr(memory_stat, "total_pgmajfault"))) {
 			sscanf(ptr, "total_pgmajfault %lu", &total_pgpgin);
-			prec->pages = total_pgpgin;
+			prec->tres_data[TRES_ARRAY_PAGES].size_read =
+				total_pgpgin;
 		}
 	}
 

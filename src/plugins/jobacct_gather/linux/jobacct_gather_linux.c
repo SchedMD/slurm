@@ -43,6 +43,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -107,13 +108,18 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 {
 	ListIterator itr;
 	jag_prec_t *prec = NULL;
+	int i;
+	assoc_mgr_lock_t locks = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+		READ_LOCK, NO_LOCK, NO_LOCK };
 
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(prec_list);
 	while((prec = list_next(itr))) {
 		if (prec->ppid != pid)
 			continue;
 #if _DEBUG
-		info("pid:%u ppid:%u rss:%d B",
+		info("pid:%u ppid:%u rss:%"PRIu64" B",
 		     prec->pid, prec->ppid,
 		     prec->tres_data[TRES_ARRAY_MEM].size_read);
 #endif
@@ -121,13 +127,52 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 
 		ancestor->usec += prec->usec;
 		ancestor->ssec += prec->ssec;
-		ancestor->pages += prec->pages;
-		ancestor->rss += prec->rss;
-		ancestor->vsize += prec->vsize;
-		ancestor->disk_read += prec->disk_read;
-		ancestor->disk_write += prec->disk_write;
+
+		for (i = 0; i < g_tres_count; i++) {
+			if (prec->tres_data[i].num_reads != INFINITE64) {
+				if (ancestor->tres_data[i].num_reads ==
+				    INFINITE64)
+					ancestor->tres_data[i].num_reads =
+						prec->tres_data[i].num_reads;
+				else
+					ancestor->tres_data[i].num_reads +=
+						prec->tres_data[i].num_reads;
+			}
+
+			if (prec->tres_data[i].num_writes != INFINITE64) {
+				if (ancestor->tres_data[i].num_writes ==
+				    INFINITE64)
+					ancestor->tres_data[i].num_writes =
+						prec->tres_data[i].num_writes;
+				else
+					ancestor->tres_data[i].num_writes +=
+						prec->tres_data[i].num_writes;
+			}
+
+			if (prec->tres_data[i].size_read != INFINITE64) {
+				if (ancestor->tres_data[i].size_read ==
+				    INFINITE64)
+					ancestor->tres_data[i].size_read =
+						prec->tres_data[i].size_read;
+				else
+					ancestor->tres_data[i].size_read +=
+						prec->tres_data[i].size_read;
+			}
+
+			if (prec->tres_data[i].size_write != INFINITE64) {
+				if (ancestor->tres_data[i].size_write ==
+				    INFINITE64)
+					ancestor->tres_data[i].size_write =
+						prec->tres_data[i].size_write;
+				else
+					ancestor->tres_data[i].size_write +=
+						prec->tres_data[i].size_write;
+			}
+		}
 	}
 	list_iterator_destroy(itr);
+	assoc_mgr_unlock(&locks);
+
 	return;
 }
 
