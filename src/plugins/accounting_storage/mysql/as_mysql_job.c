@@ -244,7 +244,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	char *nodes = NULL, *jname = NULL, *node_inx = NULL;
 	int track_steps = 0;
 	char *block_id = NULL, *partition = NULL;
-	char *gres_req = NULL, *gres_alloc = NULL;
 	char temp_bit[BUF_SIZE];
 	char *query = NULL;
 	int reinit = 0;
@@ -403,9 +402,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 no_rollup_change:
 
 	if (job_ptr->name && job_ptr->name[0])
-		jname = slurm_add_slash_to_quotes(job_ptr->name);
+		jname = job_ptr->name;
 	else {
-		jname = xstrdup("allocation");
+		jname = "allocation";
 		track_steps = 1;
 	}
 
@@ -446,15 +445,9 @@ no_rollup_change:
 				       job_ptr->assoc_id);
 
 	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
-		partition = slurm_add_slash_to_quotes(job_ptr->part_ptr->name);
+		partition = job_ptr->part_ptr->name;
 	else if (job_ptr->partition)
-		partition = slurm_add_slash_to_quotes(job_ptr->partition);
-
-	if (job_ptr->gres_req)
-		gres_req = slurm_add_slash_to_quotes(job_ptr->gres_req);
-
-	if (job_ptr->gres_alloc)
-		gres_alloc = slurm_add_slash_to_quotes(job_ptr->gres_alloc);
+		partition = job_ptr->partition;
 
 	if (!job_ptr->db_index) {
 		query = xstrdup_printf(
@@ -479,9 +472,9 @@ no_rollup_change:
 			xstrcat(query, ", wckey");
 		if (node_inx)
 			xstrcat(query, ", node_inx");
-		if (gres_req)
+		if (job_ptr->gres_req)
 			xstrcat(query, ", gres_req");
-		if (gres_alloc)
+		if (job_ptr->gres_alloc)
 			xstrcat(query, ", gres_alloc");
 		if (array_recs && array_recs->task_id_str)
 			xstrcat(query, ", array_task_str, array_max_tasks, "
@@ -522,10 +515,10 @@ no_rollup_change:
 			xstrfmtcat(query, ", '%s'", job_ptr->wckey);
 		if (node_inx)
 			xstrfmtcat(query, ", '%s'", node_inx);
-		if (gres_req)
-			xstrfmtcat(query, ", '%s'", gres_req);
-		if (gres_alloc)
-			xstrfmtcat(query, ", '%s'", gres_alloc);
+		if (job_ptr->gres_req)
+			xstrfmtcat(query, ", '%s'", job_ptr->gres_req);
+		if (job_ptr->gres_alloc)
+			xstrfmtcat(query, ", '%s'", job_ptr->gres_alloc);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcat(query, ", '%s', %u, %u",
 				   array_recs->task_id_str,
@@ -572,10 +565,11 @@ no_rollup_change:
 			xstrfmtcat(query, ", wckey='%s'", job_ptr->wckey);
 		if (node_inx)
 			xstrfmtcat(query, ", node_inx='%s'", node_inx);
-		if (gres_req)
-			xstrfmtcat(query, ", gres_req='%s'", gres_req);
-		if (gres_alloc)
-			xstrfmtcat(query, ", gres_alloc='%s'", gres_alloc);
+		if (job_ptr->gres_req)
+			xstrfmtcat(query, ", gres_req='%s'", job_ptr->gres_req);
+		if (job_ptr->gres_alloc)
+			xstrfmtcat(query, ", gres_alloc='%s'",
+				   job_ptr->gres_alloc);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcat(query, ", array_task_str='%s', "
 				   "array_max_tasks=%u, array_task_pending=%u",
@@ -625,10 +619,11 @@ no_rollup_change:
 			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
 		if (node_inx)
 			xstrfmtcat(query, "node_inx='%s', ", node_inx);
-		if (gres_req)
-			xstrfmtcat(query, "gres_req='%s', ", gres_req);
-		if (gres_alloc)
-			xstrfmtcat(query, "gres_alloc='%s', ", gres_alloc);
+		if (job_ptr->gres_req)
+			xstrfmtcat(query, "gres_req='%s', ", job_ptr->gres_req);
+		if (job_ptr->gres_alloc)
+			xstrfmtcat(query, "gres_alloc='%s', ",
+				   job_ptr->gres_alloc);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcat(query, "array_task_str='%s', "
 				   "array_max_tasks=%u, "
@@ -669,10 +664,6 @@ no_rollup_change:
 	}
 
 	xfree(block_id);
-	xfree(partition);
-	xfree(gres_req);
-	xfree(gres_alloc);
-	xfree(jname);
 	xfree(query);
 
 	/* now we will reset all the steps */
@@ -715,11 +706,9 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (job->derived_ec != NO_VAL)
 		xstrfmtcat(vals, ", derived_ec=%u", job->derived_ec);
 
-	if (job->derived_es) {
-		char *derived_es = slurm_add_slash_to_quotes(job->derived_es);
-		xstrfmtcat(vals, ", derived_es='%s'", derived_es);
-		xfree(derived_es);
-	}
+	if (job->derived_es)
+		xstrfmtcat(vals, ", derived_es='%s'", job->derived_es);
+
 	if (!vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("No change specified for job modification");
@@ -905,18 +894,12 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	if (job_ptr->derived_ec != NO_VAL)
 		xstrfmtcat(query, ", derived_ec=%u", job_ptr->derived_ec);
 
-	if (job_ptr->comment) {
-		char *comment = slurm_add_slash_to_quotes(job_ptr->comment);
-		xstrfmtcat(query, ", derived_es='%s'", comment);
-		xfree(comment);
-	}
+	if (job_ptr->comment)
+		xstrfmtcat(query, ", derived_es='%s'", job_ptr->comment);
 
-	if (job_ptr->admin_comment) {
-		char *comment = slurm_add_slash_to_quotes(
-			job_ptr->admin_comment);
-		xstrfmtcat(query, ", admin_comment='%s'", comment);
-		xfree(comment);
-	}
+	if (job_ptr->admin_comment)
+		xstrfmtcat(query, ", admin_comment='%s'",
+			   job_ptr->admin_comment);
 
 	exit_code = job_ptr->exit_code;
 	if (exit_code == 1) {
@@ -946,7 +929,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char temp_bit[BUF_SIZE];
 	char node_list[BUFFER_SIZE];
-	char *node_inx = NULL, *step_name = NULL;
+	char *node_inx = NULL;
 	time_t start_time, submit_time;
 	char *query = NULL;
 
@@ -1066,8 +1049,6 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	step_name = slurm_add_slash_to_quotes(step_ptr->name);
-
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
 	/* The stepid could be -2 so use %d not %u */
@@ -1086,7 +1067,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		mysql_conn->cluster_name, step_table,
 		step_ptr->job_ptr->db_index,
 		step_ptr->step_id,
-		(int)start_time, step_name,
+		(int)start_time, step_ptr->name,
 		JOB_RUNNING, step_ptr->tres_alloc_str,
 		nodes, tasks, node_list, node_inx, task_dist,
 		step_ptr->cpu_freq_max, step_ptr->cpu_freq_min,
@@ -1098,7 +1079,6 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
-	xfree(step_name);
 
 	return rc;
 }
