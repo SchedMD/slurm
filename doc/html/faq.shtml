@@ -1013,7 +1013,7 @@ adam@node1's password:
    a carriage character return to my output?</b></a><br>
 The libc library used by many programs internally buffers output rather than
 writing it immediately. This is done for performance reasons.
-he only way to disable this internal buffering is to configure the program to
+The only way to disable this internal buffering is to configure the program to
 write to a pseudo terminal (PTY) rather than to a regular file.
 This configuration causes <u>some</u> implementations of libc to prepend the
 carriage return character before all line feed characters.
