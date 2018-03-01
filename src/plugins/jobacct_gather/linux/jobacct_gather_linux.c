@@ -110,20 +110,22 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 
 	itr = list_iterator_create(prec_list);
 	while((prec = list_next(itr))) {
-		if (prec->ppid == pid) {
+		if (prec->ppid != pid)
+			continue;
 #if _DEBUG
-			info("pid:%u ppid:%u rss:%d KB",
-			     prec->pid, prec->ppid, prec->rss);
+		info("pid:%u ppid:%u rss:%d B",
+		     prec->pid, prec->ppid,
+		     prec->tres_data[TRES_ARRAY_MEM].size_read);
 #endif
-			_get_offspring_data(prec_list, ancestor, prec->pid);
-			ancestor->usec += prec->usec;
-			ancestor->ssec += prec->ssec;
-			ancestor->pages += prec->pages;
-			ancestor->rss += prec->rss;
-			ancestor->vsize += prec->vsize;
-			ancestor->disk_read += prec->disk_read;
-			ancestor->disk_write += prec->disk_write;
-		}
+		_get_offspring_data(prec_list, ancestor, prec->pid);
+
+		ancestor->usec += prec->usec;
+		ancestor->ssec += prec->ssec;
+		ancestor->pages += prec->pages;
+		ancestor->rss += prec->rss;
+		ancestor->vsize += prec->vsize;
+		ancestor->disk_read += prec->disk_read;
+		ancestor->disk_write += prec->disk_write;
 	}
 	list_iterator_destroy(itr);
 	return;
