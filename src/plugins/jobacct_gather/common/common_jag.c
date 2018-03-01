@@ -1001,15 +1001,21 @@ extern void jag_common_poll_data(
 			"cpuinfo_cur_freq", sbuf);
 		jobacct->act_cpufreq =
 			_update_weighted_freq(jobacct, sbuf);
-		debug("%s: Task average frequency = %u "
-		      "pid %d mem size %"PRIu64" %"PRIu64" "
-		      "time %"PRIu64"(%u+%u)",
+		debug("%s: Task %u pid %d ave_freq = %u mem size/max %"PRIu64"/%"PRIu64" vmem size/max %"PRIu64"/%"PRIu64", disk read size/max (%"PRIu64"/%"PRIu64"), disk write size/max (%"PRIu64"/%"PRIu64"), time %f(%u+%u)",
 		      __func__,
-		      jobacct->act_cpufreq,
+		      jobacct->id.taskid,
 		      jobacct->pid,
+		      jobacct->act_cpufreq,
+		      jobacct->tres_usage_in_tot[TRES_ARRAY_MEM],
 		      jobacct->tres_usage_in_max[TRES_ARRAY_MEM],
+		      jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM],
 		      jobacct->tres_usage_in_max[TRES_ARRAY_VMEM],
-		      jobacct->tres_usage_in_tot[TRES_ARRAY_CPU],
+		      jobacct->tres_usage_in_tot[TRES_ARRAY_FS_DISK],
+		      jobacct->tres_usage_in_max[TRES_ARRAY_FS_DISK],
+		      jobacct->tres_usage_out_tot[TRES_ARRAY_FS_DISK],
+		      jobacct->tres_usage_out_max[TRES_ARRAY_FS_DISK],
+		      (double)(jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] /
+			       CPU_TIME_ADJ),
 		      jobacct->user_cpu_sec,
 		      jobacct->sys_cpu_sec);
 		/* get energy consumption
