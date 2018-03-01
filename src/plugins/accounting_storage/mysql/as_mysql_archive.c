@@ -137,34 +137,10 @@ typedef struct {
 
 typedef struct {
 	char *act_cpufreq;
-	char *ave_cpu;
-	char *ave_disk_read;
-	char *ave_disk_write;
-	char *ave_pages;
-	char *ave_rss;
-	char *ave_vsize;
 	char *exit_code;
 	char *consumed_energy;
 	char *job_db_inx;
 	char *kill_requid;
-	char *max_disk_read;
-	char *max_disk_read_node;
-	char *max_disk_read_task;
-	char *max_disk_write;
-	char *max_disk_write_node;
-	char *max_disk_write_task;
-	char *max_pages;
-	char *max_pages_node;
-	char *max_pages_task;
-	char *max_rss;
-	char *max_rss_node;
-	char *max_rss_task;
-	char *max_vsize;
-	char *max_vsize_node;
-	char *max_vsize_task;
-	char *min_cpu;
-	char *min_cpu_node;
-	char *min_cpu_task;
 	char *name;
 	char *nodelist;
 	char *nodes;
@@ -183,10 +159,10 @@ typedef struct {
 	char *task_dist;
 	char *tres_alloc_str;
 	char *tres_usage_in_ave;
-	char *tres_usage_out_ave;
 	char *tres_usage_in_max;
 	char *tres_usage_in_max_nodeid;
 	char *tres_usage_in_max_taskid;
+	char *tres_usage_out_ave;
 	char *tres_usage_out_max;
 	char *tres_usage_out_max_nodeid;
 	char *tres_usage_out_max_taskid;
@@ -390,35 +366,11 @@ static char *step_req_inx[] = {
 	"user_usec",
 	"sys_sec",
 	"sys_usec",
-	"max_vsize",
-	"max_vsize_task",
-	"max_vsize_node",
-	"ave_vsize",
-	"max_rss",
-	"max_rss_task",
-	"max_rss_node",
-	"ave_rss",
-	"max_pages",
-	"max_pages_task",
-	"max_pages_node",
-	"ave_pages",
-	"min_cpu",
-	"min_cpu_task",
-	"min_cpu_node",
-	"ave_cpu",
 	"act_cpufreq",
 	"consumed_energy",
 	"req_cpufreq_min",
 	"req_cpufreq",
 	"req_cpufreq_gov",
-	"max_disk_read",
-	"max_disk_read_task",
-	"max_disk_read_node",
-	"ave_disk_read",
-	"max_disk_write",
-	"max_disk_write_task",
-	"max_disk_write_node",
-	"ave_disk_write",
 	"tres_alloc",
 	"tres_usage_in_ave",
 	"tres_usage_out_ave",
@@ -450,35 +402,11 @@ enum {
 	STEP_REQ_USER_USEC,
 	STEP_REQ_SYS_SEC,
 	STEP_REQ_SYS_USEC,
-	STEP_REQ_MAX_VSIZE,
-	STEP_REQ_MAX_VSIZE_TASK,
-	STEP_REQ_MAX_VSIZE_NODE,
-	STEP_REQ_AVE_VSIZE,
-	STEP_REQ_MAX_RSS,
-	STEP_REQ_MAX_RSS_TASK,
-	STEP_REQ_MAX_RSS_NODE,
-	STEP_REQ_AVE_RSS,
-	STEP_REQ_MAX_PAGES,
-	STEP_REQ_MAX_PAGES_TASK,
-	STEP_REQ_MAX_PAGES_NODE,
-	STEP_REQ_AVE_PAGES,
-	STEP_REQ_MIN_CPU,
-	STEP_REQ_MIN_CPU_TASK,
-	STEP_REQ_MIN_CPU_NODE,
-	STEP_REQ_AVE_CPU,
 	STEP_REQ_ACT_CPUFREQ,
 	STEP_REQ_CONSUMED_ENERGY,
 	STEP_REQ_REQ_CPUFREQ_MIN,
 	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_GOV,
-	STEP_REQ_MAX_DISK_READ,
-	STEP_REQ_MAX_DISK_READ_TASK,
-	STEP_REQ_MAX_DISK_READ_NODE,
-	STEP_REQ_AVE_DISK_READ,
-	STEP_REQ_MAX_DISK_WRITE,
-	STEP_REQ_MAX_DISK_WRITE_TASK,
-	STEP_REQ_MAX_DISK_WRITE_NODE,
-	STEP_REQ_AVE_DISK_WRITE,
 	STEP_REQ_TRES,
 	STEP_TRES_USAGE_IN_AVE,
 	STEP_TRES_USAGE_OUT_AVE,
@@ -1129,34 +1057,10 @@ static void _pack_local_step(local_step_t *object,
 			     uint16_t rpc_version, Buf buffer)
 {
 	packstr(object->act_cpufreq, buffer);
-	packstr(object->ave_cpu, buffer);
-	packstr(object->ave_disk_read, buffer);
-	packstr(object->ave_disk_write, buffer);
-	packstr(object->ave_pages, buffer);
-	packstr(object->ave_rss, buffer);
-	packstr(object->ave_vsize, buffer);
 	packstr(object->exit_code, buffer);
 	packstr(object->consumed_energy, buffer);
 	packstr(object->job_db_inx, buffer);
 	packstr(object->kill_requid, buffer);
-	packstr(object->max_disk_read, buffer);
-	packstr(object->max_disk_read_node, buffer);
-	packstr(object->max_disk_read_task, buffer);
-	packstr(object->max_disk_write, buffer);
-	packstr(object->max_disk_write_node, buffer);
-	packstr(object->max_disk_write_task, buffer);
-	packstr(object->max_pages, buffer);
-	packstr(object->max_pages_node, buffer);
-	packstr(object->max_pages_task, buffer);
-	packstr(object->max_rss, buffer);
-	packstr(object->max_rss_node, buffer);
-	packstr(object->max_rss_task, buffer);
-	packstr(object->max_vsize, buffer);
-	packstr(object->max_vsize_node, buffer);
-	packstr(object->max_vsize_task, buffer);
-	packstr(object->min_cpu, buffer);
-	packstr(object->min_cpu_node, buffer);
-	packstr(object->min_cpu_task, buffer);
 	packstr(object->name, buffer);
 	packstr(object->nodelist, buffer);
 	packstr(object->nodes, buffer);
@@ -1196,34 +1100,10 @@ static int _unpack_local_step(local_step_t *object,
 
 	if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		unpackstr_ptr(&object->act_cpufreq, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_cpu, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_disk_read, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_disk_write, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_pages, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_rss, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_vsize, &tmp32, buffer);
 		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
 		unpackstr_ptr(&object->consumed_energy, &tmp32, buffer);
 		unpackstr_ptr(&object->job_db_inx, &tmp32, buffer);
 		unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_read, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_read_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_read_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_write, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_write_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_write_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_pages, &tmp32, buffer);
-		unpackstr_ptr(&object->max_pages_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_pages_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_rss, &tmp32, buffer);
-		unpackstr_ptr(&object->max_rss_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_rss_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_vsize, &tmp32, buffer);
-		unpackstr_ptr(&object->max_vsize_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_vsize_task, &tmp32, buffer);
-		unpackstr_ptr(&object->min_cpu, &tmp32, buffer);
-		unpackstr_ptr(&object->min_cpu_node, &tmp32, buffer);
-		unpackstr_ptr(&object->min_cpu_task, &tmp32, buffer);
 		unpackstr_ptr(&object->name, &tmp32, buffer);
 		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
 		unpackstr_ptr(&object->nodes, &tmp32, buffer);
@@ -1256,35 +1136,107 @@ static int _unpack_local_step(local_step_t *object,
 		unpackstr_ptr(&object->user_sec, &tmp32, buffer);
 		unpackstr_ptr(&object->user_usec, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		char *ave_cpu;
+		char *ave_disk_read;
+		char *ave_disk_write;
+		char *ave_pages;
+		char *ave_rss;
+		char *ave_vsize;
+		char *max_disk_read;
+		char *max_disk_read_node;
+		char *max_disk_read_task;
+		char *max_disk_write;
+		char *max_disk_write_node;
+		char *max_disk_write_task;
+		char *max_pages;
+		char *max_pages_node;
+		char *max_pages_task;
+		char *max_rss;
+		char *max_rss_node;
+		char *max_rss_task;
+		char *max_vsize;
+		char *max_vsize_node;
+		char *max_vsize_task;
+		char *min_cpu;
+		char *min_cpu_node;
+		char *min_cpu_task;
+
 		unpackstr_ptr(&object->act_cpufreq, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_cpu, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_disk_read, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_disk_write, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_pages, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_rss, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_vsize, &tmp32, buffer);
+		unpackstr_ptr(&ave_cpu, &tmp32, buffer);
+		unpackstr_ptr(&ave_disk_read, &tmp32, buffer);
+		unpackstr_ptr(&ave_disk_write, &tmp32, buffer);
+		unpackstr_ptr(&ave_pages, &tmp32, buffer);
+		unpackstr_ptr(&ave_rss, &tmp32, buffer);
+		unpackstr_ptr(&ave_vsize, &tmp32, buffer);
 		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
 		unpackstr_ptr(&object->consumed_energy, &tmp32, buffer);
 		unpackstr_ptr(&object->job_db_inx, &tmp32, buffer);
 		unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_read, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_read_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_read_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_write, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_write_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_write_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_pages, &tmp32, buffer);
-		unpackstr_ptr(&object->max_pages_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_pages_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_rss, &tmp32, buffer);
-		unpackstr_ptr(&object->max_rss_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_rss_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_vsize, &tmp32, buffer);
-		unpackstr_ptr(&object->max_vsize_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_vsize_task, &tmp32, buffer);
-		unpackstr_ptr(&object->min_cpu, &tmp32, buffer);
-		unpackstr_ptr(&object->min_cpu_node, &tmp32, buffer);
-		unpackstr_ptr(&object->min_cpu_task, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_read, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_read_node, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_read_task, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_write, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_write_node, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_write_task, &tmp32, buffer);
+		unpackstr_ptr(&max_pages, &tmp32, buffer);
+		unpackstr_ptr(&max_pages_node, &tmp32, buffer);
+		unpackstr_ptr(&max_pages_task, &tmp32, buffer);
+		unpackstr_ptr(&max_rss, &tmp32, buffer);
+		unpackstr_ptr(&max_rss_node, &tmp32, buffer);
+		unpackstr_ptr(&max_rss_task, &tmp32, buffer);
+		unpackstr_ptr(&max_vsize, &tmp32, buffer);
+		unpackstr_ptr(&max_vsize_node, &tmp32, buffer);
+		unpackstr_ptr(&max_vsize_task, &tmp32, buffer);
+		unpackstr_ptr(&min_cpu, &tmp32, buffer);
+		unpackstr_ptr(&min_cpu_node, &tmp32, buffer);
+		unpackstr_ptr(&min_cpu_task, &tmp32, buffer);
+
+		if (atol(min_cpu) != NO_VAL) {
+			object->tres_usage_in_ave = xstrdup_printf(
+				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
+				TRES_CPU, ave_cpu,
+				TRES_MEM, ave_rss,
+				TRES_VMEM, ave_vsize,
+				TRES_PAGES, ave_pages,
+				TRES_FS_DISK, ave_disk_read);
+			object->tres_usage_out_ave = xstrdup_printf(
+				"%d=%s",
+				TRES_FS_DISK, ave_disk_write);
+
+			object->tres_usage_in_max = xstrdup_printf(
+				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
+				TRES_CPU, min_cpu,
+				TRES_MEM, max_rss,
+				TRES_VMEM, max_vsize,
+				TRES_PAGES, max_pages,
+				TRES_FS_DISK, max_disk_read);
+			object->tres_usage_out_max = xstrdup_printf(
+				"%d=%s",
+				TRES_FS_DISK, max_disk_write);
+
+			object->tres_usage_in_max_nodeid = xstrdup_printf(
+				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
+				TRES_CPU, min_cpu_node,
+				TRES_MEM, max_rss_node,
+				TRES_VMEM, max_vsize_node,
+				TRES_PAGES, max_pages_node,
+				TRES_FS_DISK, max_disk_read_node);
+			object->tres_usage_out_max_nodeid = xstrdup_printf(
+				"%d=%s",
+				TRES_FS_DISK, max_disk_write_node);
+
+			object->tres_usage_in_max_taskid = xstrdup_printf(
+				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
+				TRES_CPU, min_cpu_task,
+				TRES_MEM, max_rss_task,
+				TRES_VMEM, max_vsize_task,
+				TRES_PAGES, max_pages_task,
+				TRES_FS_DISK, max_disk_read_task);
+			object->tres_usage_out_max_taskid = xstrdup_printf(
+				"%d=%s",
+				TRES_FS_DISK, max_disk_write_task);
+		}
+
 		unpackstr_ptr(&object->name, &tmp32, buffer);
 		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
 		unpackstr_ptr(&object->nodes, &tmp32, buffer);
@@ -1305,13 +1257,38 @@ static int _unpack_local_step(local_step_t *object,
 		unpackstr_ptr(&object->user_sec, &tmp32, buffer);
 		unpackstr_ptr(&object->user_usec, &tmp32, buffer);
 	} else if (rpc_version >= SLURMDBD_2_6_VERSION) {
+		char *ave_cpu;
+		char *ave_disk_read;
+		char *ave_disk_write;
+		char *ave_pages;
+		char *ave_rss;
+		char *ave_vsize;
+		char *max_disk_read;
+		char *max_disk_read_node;
+		char *max_disk_read_task;
+		char *max_disk_write;
+		char *max_disk_write_node;
+		char *max_disk_write_task;
+		char *max_pages;
+		char *max_pages_node;
+		char *max_pages_task;
+		char *max_rss;
+		char *max_rss_node;
+		char *max_rss_task;
+		char *max_vsize;
+		char *max_vsize_node;
+		char *max_vsize_task;
+		char *min_cpu;
+		char *min_cpu_node;
+		char *min_cpu_task;
+
 		unpackstr_ptr(&object->act_cpufreq, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_cpu, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_disk_read, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_disk_write, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_pages, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_rss, &tmp32, buffer);
-		unpackstr_ptr(&object->ave_vsize, &tmp32, buffer);
+		unpackstr_ptr(&ave_cpu, &tmp32, buffer);
+		unpackstr_ptr(&ave_disk_read, &tmp32, buffer);
+		unpackstr_ptr(&ave_disk_write, &tmp32, buffer);
+		unpackstr_ptr(&ave_pages, &tmp32, buffer);
+		unpackstr_ptr(&ave_rss, &tmp32, buffer);
+		unpackstr_ptr(&ave_vsize, &tmp32, buffer);
 		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
 		unpackstr_ptr(&object->consumed_energy, &tmp32, buffer);
 		unpackstr_ptr(&tmp_char, &tmp32, buffer);
@@ -1319,24 +1296,71 @@ static int _unpack_local_step(local_step_t *object,
 			"%d=%s", TRES_CPU, tmp_char);
 		unpackstr_ptr(&object->job_db_inx, &tmp32, buffer);
 		unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_read, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_read_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_read_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_write, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_write_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_disk_write_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_pages, &tmp32, buffer);
-		unpackstr_ptr(&object->max_pages_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_pages_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_rss, &tmp32, buffer);
-		unpackstr_ptr(&object->max_rss_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_rss_task, &tmp32, buffer);
-		unpackstr_ptr(&object->max_vsize, &tmp32, buffer);
-		unpackstr_ptr(&object->max_vsize_node, &tmp32, buffer);
-		unpackstr_ptr(&object->max_vsize_task, &tmp32, buffer);
-		unpackstr_ptr(&object->min_cpu, &tmp32, buffer);
-		unpackstr_ptr(&object->min_cpu_node, &tmp32, buffer);
-		unpackstr_ptr(&object->min_cpu_task, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_read, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_read_node, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_read_task, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_write, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_write_node, &tmp32, buffer);
+		unpackstr_ptr(&max_disk_write_task, &tmp32, buffer);
+		unpackstr_ptr(&max_pages, &tmp32, buffer);
+		unpackstr_ptr(&max_pages_node, &tmp32, buffer);
+		unpackstr_ptr(&max_pages_task, &tmp32, buffer);
+		unpackstr_ptr(&max_rss, &tmp32, buffer);
+		unpackstr_ptr(&max_rss_node, &tmp32, buffer);
+		unpackstr_ptr(&max_rss_task, &tmp32, buffer);
+		unpackstr_ptr(&max_vsize, &tmp32, buffer);
+		unpackstr_ptr(&max_vsize_node, &tmp32, buffer);
+		unpackstr_ptr(&max_vsize_task, &tmp32, buffer);
+		unpackstr_ptr(&min_cpu, &tmp32, buffer);
+		unpackstr_ptr(&min_cpu_node, &tmp32, buffer);
+		unpackstr_ptr(&min_cpu_task, &tmp32, buffer);
+
+		if (atol(min_cpu) != NO_VAL) {
+			object->tres_usage_in_ave = xstrdup_printf(
+				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
+				TRES_CPU, ave_cpu,
+				TRES_MEM, ave_rss,
+				TRES_VMEM, ave_vsize,
+				TRES_PAGES, ave_pages,
+				TRES_FS_DISK, ave_disk_read);
+			object->tres_usage_out_ave = xstrdup_printf(
+				"%d=%s",
+				TRES_FS_DISK, ave_disk_write);
+
+			object->tres_usage_in_max = xstrdup_printf(
+				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
+				TRES_CPU, min_cpu,
+				TRES_MEM, max_rss,
+				TRES_VMEM, max_vsize,
+				TRES_PAGES, max_pages,
+				TRES_FS_DISK, max_disk_read);
+			object->tres_usage_out_max = xstrdup_printf(
+				"%d=%s",
+				TRES_FS_DISK, max_disk_write);
+
+			object->tres_usage_in_max_nodeid = xstrdup_printf(
+				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
+				TRES_CPU, min_cpu_node,
+				TRES_MEM, max_rss_node,
+				TRES_VMEM, max_vsize_node,
+				TRES_PAGES, max_pages_node,
+				TRES_FS_DISK, max_disk_read_node);
+			object->tres_usage_out_max_nodeid = xstrdup_printf(
+				"%d=%s",
+				TRES_FS_DISK, max_disk_write_node);
+
+			object->tres_usage_in_max_taskid = xstrdup_printf(
+				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
+				TRES_CPU, min_cpu_task,
+				TRES_MEM, max_rss_task,
+				TRES_VMEM, max_vsize_task,
+				TRES_PAGES, max_pages_task,
+				TRES_FS_DISK, max_disk_read_task);
+			object->tres_usage_out_max_taskid = xstrdup_printf(
+				"%d=%s",
+				TRES_FS_DISK, max_disk_write_task);
+		}
+
 		unpackstr_ptr(&object->name, &tmp32, buffer);
 		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
 		unpackstr_ptr(&object->nodes, &tmp32, buffer);
@@ -2440,35 +2464,11 @@ static Buf _pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 
 		memset(&step, 0, sizeof(local_step_t));
 
-		step.ave_cpu = row[STEP_REQ_AVE_CPU];
 		step.act_cpufreq = row[STEP_REQ_ACT_CPUFREQ];
 		step.consumed_energy = row[STEP_REQ_CONSUMED_ENERGY];
-		step.ave_disk_read = row[STEP_REQ_AVE_DISK_READ];
-		step.ave_disk_write = row[STEP_REQ_AVE_DISK_WRITE];
-		step.ave_pages = row[STEP_REQ_AVE_PAGES];
-		step.ave_rss = row[STEP_REQ_AVE_RSS];
-		step.ave_vsize = row[STEP_REQ_AVE_VSIZE];
 		step.exit_code = row[STEP_REQ_EXIT_CODE];
 		step.job_db_inx = row[STEP_REQ_DB_INX];
 		step.kill_requid = row[STEP_REQ_KILL_REQUID];
-		step.max_disk_read = row[STEP_REQ_MAX_DISK_READ];
-		step.max_disk_read_node = row[STEP_REQ_MAX_DISK_READ_NODE];
-		step.max_disk_read_task = row[STEP_REQ_MAX_DISK_READ_TASK];
-		step.max_disk_write = row[STEP_REQ_MAX_DISK_WRITE];
-		step.max_disk_write_node = row[STEP_REQ_MAX_DISK_WRITE_NODE];
-		step.max_disk_write_task = row[STEP_REQ_MAX_DISK_WRITE_TASK];
-		step.max_pages = row[STEP_REQ_MAX_PAGES];
-		step.max_pages_node = row[STEP_REQ_MAX_PAGES_NODE];
-		step.max_pages_task = row[STEP_REQ_MAX_PAGES_TASK];
-		step.max_rss = row[STEP_REQ_MAX_RSS];
-		step.max_rss_node = row[STEP_REQ_MAX_RSS_NODE];
-		step.max_rss_task = row[STEP_REQ_MAX_RSS_TASK];
-		step.max_vsize = row[STEP_REQ_MAX_VSIZE];
-		step.max_vsize_node = row[STEP_REQ_MAX_VSIZE_NODE];
-		step.max_vsize_task = row[STEP_REQ_MAX_VSIZE_TASK];
-		step.min_cpu = row[STEP_REQ_MIN_CPU];
-		step.min_cpu_node = row[STEP_REQ_MIN_CPU_NODE];
-		step.min_cpu_task = row[STEP_REQ_MIN_CPU_TASK];
 		step.name = row[STEP_REQ_NAME];
 		step.nodelist = row[STEP_REQ_NODELIST];
 		step.nodes = row[STEP_REQ_NODES];
@@ -2556,33 +2556,9 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 			   object.user_usec,
 			   object.sys_sec,
 			   object.sys_usec,
-			   object.max_vsize,
-			   object.max_vsize_task,
-			   object.max_vsize_node,
-			   object.ave_vsize,
-			   object.max_rss,
-			   object.max_rss_task,
-			   object.max_rss_node,
-			   object.ave_rss,
-			   object.max_pages,
-			   object.max_pages_task,
-			   object.max_pages_node,
-			   object.ave_pages,
-			   object.min_cpu,
-			   object.min_cpu_task,
-			   object.min_cpu_node,
-			   object.ave_cpu,
 			   object.act_cpufreq,
 			   object.consumed_energy,
 			   object.req_cpufreq_max,
-			   object.max_disk_read,
-			   object.max_disk_read_task,
-			   object.max_disk_read_node,
-			   object.ave_disk_read,
-			   object.max_disk_write,
-			   object.max_disk_write_task,
-			   object.max_disk_write_node,
-			   object.ave_disk_write,
 			   object.req_cpufreq_min,
 			   object.req_cpufreq_gov,
 			   object.tres_alloc_str,
@@ -2594,6 +2570,17 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 			   object.tres_usage_out_max,
 			   object.tres_usage_out_max_nodeid,
 			   object.tres_usage_out_max_taskid);
+
+		if (rpc_version < SLURM_18_08_PROTOCOL_VERSION) {
+			xfree(object.tres_usage_in_ave);
+			xfree(object.tres_usage_in_max);
+			xfree(object.tres_usage_in_max_nodeid);
+			xfree(object.tres_usage_in_max_taskid);
+			xfree(object.tres_usage_out_ave);
+			xfree(object.tres_usage_out_max);
+			xfree(object.tres_usage_out_max_nodeid);
+			xfree(object.tres_usage_out_max_taskid);
+		}
 
 		if (rpc_version < SLURM_15_08_PROTOCOL_VERSION)
 			xfree(object.tres_alloc_str);
