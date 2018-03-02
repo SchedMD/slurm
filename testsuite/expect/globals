@@ -3341,6 +3341,8 @@ proc scale_to_megs { value factor } {
 		set value [expr $value * 1024]
 	} elseif {[string compare $factor "M"] == 0} {
 		set value [expr $value * 1]
+	} elseif {[string compare $factor "K"] == 0} {
+		set value [expr $value / 1024]
 	} else {
 		set value [expr $value / (1024 * 1024)]
 	}
