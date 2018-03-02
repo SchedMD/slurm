@@ -3542,6 +3542,7 @@ extern char *slurmdb_make_tres_string_from_simple(
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 	char *node_name = NULL;
+	List char_list = NULL;
 
 	if (!full_tres_list || !tmp_str || !tmp_str[0]
 	    || tmp_str[0] < '0' || tmp_str[0] > '9')
@@ -3606,11 +3607,21 @@ extern char *slurmdb_make_tres_string_from_simple(
 		} else
 			xstrfmtcat(tres_str, "NONE");
 
-
+		if (!(tres_str_flags & TRES_STR_FLAG_SORT_ID)) {
+			if (!char_list)
+				char_list = list_create(slurm_destroy_char);
+			list_append(char_list, tres_str);
+			tres_str = NULL;
+		}
 	get_next:
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
 		tmp_str++;
+	}
+
+	if (char_list) {
+		tres_str = slurm_char_list_to_xstr(char_list);
+		FREE_NULL_LIST(char_list);
 	}
 
 	return tres_str;
