@@ -595,6 +595,8 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 				acct_gather_energy_g_get_data(
 					energy_profile,
 					&jobacct->energy);
+				jobacct->tres_usage_in_tot[TRES_ARRAY_ENERGY] =
+					jobacct->energy.consumed_energy;
 				debug2("getjoules_task energy = %"PRIu64"",
 				       jobacct->energy.consumed_energy);
 			}
@@ -957,6 +959,8 @@ extern void jag_common_poll_data(
 			acct_gather_energy_g_get_data(
 				energy_profile,
 				&jobacct->energy);
+			prec->tres_data[TRES_ARRAY_ENERGY].size_read =
+				jobacct->energy.consumed_energy;
 			debug2("getjoules_task energy = %"PRIu64,
 			       jobacct->energy.consumed_energy);
 			energy_counted = 1;
