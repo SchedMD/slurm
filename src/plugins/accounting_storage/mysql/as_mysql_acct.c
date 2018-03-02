@@ -763,8 +763,6 @@ empty:
 				list_remove(assoc_itr);
 			}
 			list_iterator_reset(assoc_itr);
-			if (!acct->assoc_list)
-				list_remove(itr);
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(assoc_itr);

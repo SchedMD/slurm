@@ -514,8 +514,10 @@ when using the WithCoordinator option.)
 .P
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the account may have on all the
-clusters in the system.  The Association format fields are described
-in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+clusters in the system. The association information can be filtered.
+Note that all the accounts in the database will always be shown as filter only
+takes effect over the association data. The Association format fields are
+described in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 
 .SH "SPECIFICATIONS FOR ASSOCIATIONS"
@@ -1741,7 +1743,7 @@ Display information with previously deleted data.
 .P
 NOTE: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
-this account may have.  These extra options can be found in the
+this user may have.  These extra options can be found in the
 \fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
 general specifications list above in the \fIGENERAL SPECIFICATIONS FOR
 ASSOCIATION BASED ENTITIES\fP section.
@@ -1768,8 +1770,10 @@ The name of a user.
 .P
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the user may have on all the
-clusters in the system.  The Association format fields are described
-in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+clusters in the system. The association information can be filtered.
+Note that all the users in the database will always be shown as filter only
+takes effect over the association data. The Association format fields are
+described in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 
 .SH "LIST/SHOW WCKey"
