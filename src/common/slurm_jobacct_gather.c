@@ -382,8 +382,14 @@ static void _jobacctinfo_aggregate_tres_usage(jobacctinfo_t *dest,
 			      from->tres_usage_in_max[i]))) {
 				dest->tres_usage_in_max[i] =
 					from->tres_usage_in_max[i];
-				dest->tres_usage_in_max_taskid[i] =
-					from->tres_usage_in_max_taskid[i];
+				/*
+				 * At the time of writing Energy was only on a
+				 * per node basis.
+				 */
+				if (i != TRES_ARRAY_ENERGY)
+					dest->tres_usage_in_max_taskid[i] =
+						from->
+						tres_usage_in_max_taskid[i];
 				dest->tres_usage_in_max_nodeid[i] =
 					from->tres_usage_in_max_nodeid[i];
 			}
@@ -408,8 +414,14 @@ static void _jobacctinfo_aggregate_tres_usage(jobacctinfo_t *dest,
 			      from->tres_usage_out_max[i]))) {
 				dest->tres_usage_out_max[i] =
 					from->tres_usage_out_max[i];
-				dest->tres_usage_out_max_taskid[i] =
-					from->tres_usage_out_max_taskid[i];
+				/*
+				 * At the time of writing Energy was only on a
+				 * per node basis.
+				 */
+				if (i != TRES_ARRAY_ENERGY)
+					dest->tres_usage_out_max_taskid[i] =
+						from->
+						tres_usage_out_max_taskid[i];
 				dest->tres_usage_out_max_nodeid[i] =
 					from->tres_usage_out_max_nodeid[i];
 			}
