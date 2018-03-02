@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.5
 ==========================
+ -- Fix cloud nodes getting stuck in DOWN+POWER_UP+NO_RESPOND state after not
+    responding by ResumeTimeout.
 
 * Changes in Slurm 17.11.4
 ==========================
