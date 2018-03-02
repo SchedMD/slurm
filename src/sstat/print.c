@@ -104,7 +104,7 @@ static void _print_tres_field(char *tres_in, char *nodes, bool convert)
 		tres_in, assoc_mgr_tres_list,
 		convert ? params.units : NO_VAL,
 		convert ? params.convert_flags : CONVERT_NUM_UNIT_RAW,
-		0,
+		TRES_STR_FLAG_BYTES,
 		nodes);
 
 	field->print_routine(field, tmp_char, (curr_inx == field_count));

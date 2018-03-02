@@ -3587,18 +3587,17 @@ extern char *slurmdb_make_tres_string_from_simple(
 				node_name = find_hostname(count, nodes);
 				xstrfmtcat(tres_str, "%s", node_name);
 				xfree(node_name);
+			} else if (tres_str_flags & TRES_STR_FLAG_BYTES) {
+				char outbuf[FORMAT_STRING_SIZE];
+				convert_num_unit((double)count, outbuf,
+						 sizeof(outbuf), UNIT_NONE,
+						 spec_unit, convert_flags);
+				xstrfmtcat(tres_str, "%s", outbuf);
 			} else if ((tres_rec->id == TRES_MEM) ||
 				   !xstrcasecmp(tres_rec->type, "bb")) {
 				char outbuf[FORMAT_STRING_SIZE];
 				convert_num_unit((double)count, outbuf,
 						 sizeof(outbuf), UNIT_MEGA,
-						 spec_unit, convert_flags);
-				xstrfmtcat(tres_str, "%s", outbuf);
-			} else if (!xstrcasecmp(tres_rec->type, "fs") ||
-				   !xstrcasecmp(tres_rec->type, "ic")) {
-				char outbuf[FORMAT_STRING_SIZE];
-				convert_num_unit((double)count, outbuf,
-						 sizeof(outbuf), UNIT_NONE,
 						 spec_unit, convert_flags);
 				xstrfmtcat(tres_str, "%s", outbuf);
 			} else {
