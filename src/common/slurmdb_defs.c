@@ -3534,7 +3534,7 @@ extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
 
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list, int spec_unit,
-	uint32_t convert_flags, char *nodes)
+	uint32_t convert_flags, uint32_t tres_str_flags, char *nodes)
 {
 	char *tres_str = NULL;
 	char *tmp_str = tres_in;
