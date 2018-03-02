@@ -949,6 +949,19 @@ extern void jag_common_poll_data(
 
 		prec->tres_data[TRES_ARRAY_CPU].size_read = (uint64_t)cpu_calc;
 
+		/* get energy consumption
+		 * only once is enough since we
+		 * report per node energy consumption */
+		debug2("energycounted = %d", energy_counted);
+		if (energy_counted == 0) {
+			acct_gather_energy_g_get_data(
+				energy_profile,
+				&jobacct->energy);
+			debug2("getjoules_task energy = %"PRIu64,
+			       jobacct->energy.consumed_energy);
+			energy_counted = 1;
+		}
+
 		/* tally their usage */
 		for (i = 0; i < jobacct->tres_count; i++) {
 			if (prec->tres_data[i].size_read == INFINITE64)
@@ -1001,6 +1014,7 @@ extern void jag_common_poll_data(
 			"cpuinfo_cur_freq", sbuf);
 		jobacct->act_cpufreq =
 			_update_weighted_freq(jobacct, sbuf);
+
 		debug("%s: Task %u pid %d ave_freq = %u mem size/max %"PRIu64"/%"PRIu64" vmem size/max %"PRIu64"/%"PRIu64", disk read size/max (%"PRIu64"/%"PRIu64"), disk write size/max (%"PRIu64"/%"PRIu64"), time %f(%u+%u)",
 		      __func__,
 		      jobacct->id.taskid,
@@ -1018,18 +1032,7 @@ extern void jag_common_poll_data(
 			       CPU_TIME_ADJ),
 		      jobacct->user_cpu_sec,
 		      jobacct->sys_cpu_sec);
-		/* get energy consumption
-		 * only once is enough since we
-		 * report per node energy consumption */
-		debug2("energycounted = %d", energy_counted);
-		if (energy_counted == 0) {
-			acct_gather_energy_g_get_data(
-				energy_profile,
-				&jobacct->energy);
-			debug2("getjoules_task energy = %"PRIu64,
-			       jobacct->energy.consumed_energy);
-			energy_counted = 1;
-		}
+
 		if (profile &&
 		    acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
 			jobacct->cur_time = ct;
