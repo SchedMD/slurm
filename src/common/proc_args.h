@@ -81,6 +81,12 @@ uint64_t str_to_mbytes2(const char *arg);
  */
 extern char *mbytes2_to_str(uint64_t mbytes);
 
+/*
+ * str_to_mbytes_pbs(): verify that arg is numeric with optional "K", "M", "G"
+ * or "T" at end and return the number in mega-bytes. Default units are B.
+ */
+long str_to_mbytes_pbs(const char *arg);
+
 /* verify that a node count in arg is of a known form (count or min-max) */
 bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes);
 
