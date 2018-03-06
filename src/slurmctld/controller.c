@@ -1654,6 +1654,8 @@ static int _init_tres(void)
 			if (!tres_rec->name)
 				fatal("Filesystem type tres need to have a name, (i.e. fs/disk).  You gave %s",
 				      temp_char);
+			if (!xstrncasecmp(tres_rec->name, "disk", 4))
+				tres_rec->id = TRES_FS_DISK;
 		} else if (!xstrncasecmp(temp_char, "ic/", 3)) {
 			tres_rec->type[2] = '\0';
 			tres_rec->name = xstrdup(temp_char+3);
