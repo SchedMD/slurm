@@ -159,6 +159,9 @@
 #define YEAR_MINUTES (365 * 24 * 60)
 #define YEAR_SECONDS (365 * 24 * 60 * 60)
 
+#define SLURMD_REG_FLAG_STARTUP  0x0001
+#define SLURMD_REG_FLAG_RESP     0x0002
+
 /* These defines have to be here to avoid circular dependancy with
  * switch.h
  */
@@ -202,6 +205,7 @@ typedef enum {
 	REQUEST_LICENSE_INFO,
 	RESPONSE_LICENSE_INFO,
 	REQUEST_SET_FS_DAMPENING_FACTOR,
+	RESPONSE_NODE_REGISTRATION,
 
 	DBD_MESSAGES_START = 1400, /* We can't replace this with
 				    * REQUEST_PERSIST_INIT since DBD_INIT is
@@ -1207,6 +1211,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint16_t cores;
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
+	uint16_t flags;	        /* Flags from the slurmd SLURMD_REG_FLAG_* */
 	uint64_t free_mem;	/* Free memory in MiB */
 	char *cpu_spec_list;	/* list of specialized CPUs */
 	acct_gather_energy_t *energy;
@@ -1223,7 +1228,6 @@ typedef struct slurm_node_registration_status_msg {
 	uint64_t real_memory;
 	time_t slurmd_start_time;
 	uint32_t status;	/* node status code, same as return codes */
-	uint16_t startup;	/* slurmd just restarted */
 	uint32_t *step_id;	/* IDs of running job steps (if any) */
 	uint16_t sockets;
 	switch_node_info_t *switch_nodeinfo;	/* set only if startup != 0 */
@@ -1233,6 +1237,10 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t up_time;	/* seconds since reboot */
 	char *version;
 } slurm_node_registration_status_msg_t;
+
+typedef struct slurm_node_reg_resp_msg {
+	List tres_list;
+} slurm_node_reg_resp_msg_t;
 
 typedef struct requeue_msg {
 	uint32_t job_id;	/* slurm job ID (number) */
@@ -1373,6 +1381,8 @@ extern void slurm_free_event_log_msg(slurm_event_log_msg_t * msg);
 extern void
 slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
 					msg);
+extern void slurm_free_node_reg_resp_msg(
+	slurm_node_reg_resp_msg_t *msg);
 
 extern void slurm_free_job_info(job_info_t * job);
 extern void slurm_free_job_info_members(job_info_t * job);

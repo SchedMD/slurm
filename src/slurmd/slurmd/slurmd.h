@@ -54,6 +54,7 @@ extern pid_t getpgid(pid_t pid);
 #endif
 
 extern int devnull;
+extern bool get_reg_resp;
 
 /*
  * Message aggregation types

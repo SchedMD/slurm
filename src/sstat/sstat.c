@@ -86,6 +86,14 @@ print_field_t fields[] = {
 	{13, "ReqCPUFreqMin", print_fields_str, PRINT_REQ_CPUFREQ_MIN},
 	{13, "ReqCPUFreqMax", print_fields_str, PRINT_REQ_CPUFREQ_MAX},
 	{13, "ReqCPUFreqGov", print_fields_str, PRINT_REQ_CPUFREQ_GOV},
+	{14, "TRESUsageInAve", print_fields_str, PRINT_TRESUIA},
+	{14, "TRESUsageInMax", print_fields_str, PRINT_TRESUIM},
+	{18, "TRESUsageInMaxNode", print_fields_str, PRINT_TRESUIMN},
+	{18, "TRESUsageInMaxTask", print_fields_str, PRINT_TRESUIMT},
+	{15, "TRESUsageOutAve", print_fields_str, PRINT_TRESUOA},
+	{15, "TRESUsageOutMax", print_fields_str, PRINT_TRESUOM},
+	{19, "TRESUsageOutMaxNode", print_fields_str, PRINT_TRESUOMN},
+	{19, "TRESUsageOutMaxTask", print_fields_str, PRINT_TRESUOMT},
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;
@@ -102,11 +110,12 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
 	ListIterator itr;
-	slurmdb_stats_t temp_stats;
+	jobacctinfo_t *total_jobacct = NULL;
 	job_step_stat_t *step_stat = NULL;
 	int ntasks = 0;
 	int tot_tasks = 0;
 	hostlist_t hl = NULL;
+	char *ave_usage_tmp = NULL;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
 	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist, use_protocol_ver,
@@ -127,10 +136,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 
 	memset(&step, 0, sizeof(slurmdb_step_rec_t));
 
-	memset(&temp_stats, 0, sizeof(slurmdb_stats_t));
-	temp_stats.cpu_min = NO_VAL;
 	memset(&step.stats, 0, sizeof(slurmdb_stats_t));
-	step.stats.cpu_min = NO_VAL;
 
 	step.job_ptr = &job;
 	step.stepid = stepid;
@@ -140,7 +146,6 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	step.req_cpufreq_gov = req_cpufreq_gov;
 	step.stepname = NULL;
 	step.state = JOB_RUNNING;
-
 	hl = hostlist_create(NULL);
 	itr = list_iterator_create(step_stat_response->stats_list);
 	while ((step_stat = list_next(itr))) {
@@ -164,17 +169,43 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 			hostlist_push_host(hl, step_stat->step_pids->node_name);
 			ntasks += step_stat->num_tasks;
 			if (step_stat->jobacct) {
-				jobacctinfo_2_stats(&temp_stats,
-						    step_stat->jobacct);
-				aggregate_stats(&step.stats, &temp_stats);
+				if (!assoc_mgr_tres_list &&
+				    step_stat->jobacct->tres_list) {
+					assoc_mgr_lock_t locks = {
+						NO_LOCK, NO_LOCK, NO_LOCK,
+						NO_LOCK, WRITE_LOCK, NO_LOCK,
+						NO_LOCK };
+					assoc_mgr_lock(&locks);
+					assoc_mgr_post_tres_list(
+						step_stat->jobacct->tres_list);
+					assoc_mgr_unlock(&locks);
+					/*
+					 * assoc_mgr_post_tres_list destroys the
+					 * input list
+					 */
+					step_stat->jobacct->tres_list = NULL;
+				}
+
+				/*
+				 * total_jobacct has to be created after
+				 * assoc_mgr is set up.
+				 */
+				if (!total_jobacct)
+					total_jobacct =
+						jobacctinfo_create(NULL);
+
+				jobacctinfo_aggregate(total_jobacct,
+						      step_stat->jobacct);
 			}
 		}
 	}
 	list_iterator_destroy(itr);
+	jobacctinfo_2_stats(&step.stats, total_jobacct);
+
 	slurm_job_step_pids_response_msg_free(step_stat_response);
 	/* we printed it out already */
 	if (params.pid_format)
-		return rc;
+		goto getout;
 
 	hostlist_sort(hl);
 	hostlist_ranged_string(hl, BUF_SIZE, step.nodes);
@@ -182,17 +213,32 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	tot_tasks += ntasks;
 
 	if (tot_tasks) {
-		step.stats.cpu_ave /= (double)tot_tasks;
-		step.stats.rss_ave /= (double)tot_tasks;
-		step.stats.vsize_ave /= (double)tot_tasks;
-		step.stats.pages_ave /= (double)tot_tasks;
-		step.stats.disk_read_ave /= (double)tot_tasks;
-		step.stats.disk_write_ave /= (double)tot_tasks;
 		step.stats.act_cpufreq /= (double)tot_tasks;
+
+		ave_usage_tmp = step.stats.tres_usage_in_ave;
+		step.stats.tres_usage_in_ave = slurmdb_ave_tres_usage(
+			ave_usage_tmp, tot_tasks);
+		xfree(ave_usage_tmp);
+		ave_usage_tmp = step.stats.tres_usage_out_ave;
+		step.stats.tres_usage_out_ave = slurmdb_ave_tres_usage(
+			ave_usage_tmp, tot_tasks);
+		xfree(ave_usage_tmp);
+
 		step.ntasks = tot_tasks;
 	}
 
 	print_fields(&step);
+
+getout:
+
+	xfree(step.stats.tres_usage_in_max);
+	xfree(step.stats.tres_usage_out_max);
+	xfree(step.stats.tres_usage_in_max_taskid);
+	xfree(step.stats.tres_usage_out_max_taskid);
+	xfree(step.stats.tres_usage_in_max_nodeid);
+	xfree(step.stats.tres_usage_out_max_nodeid);
+	xfree(step.stats.tres_usage_in_ave);
+	xfree(step.stats.tres_usage_out_ave);
 
 	return rc;
 }

@@ -339,4 +339,14 @@ extern bitstr_t *cr_create_cluster_core_bitmap(int core_mult);
 extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads,
 			     int cpus);
 
+/*
+ * find_hostname - Given a position and a string of hosts, return the hostname
+ *                 from that position.
+ * IN pos - position in hosts you want returned.
+ * IN hosts - string representing a hostlist of hosts.
+ * RET - hostname or NULL on error.
+ * NOTE: caller must xfree result.
+ */
+extern char *find_hostname(uint32_t pos, char *hosts);
+
 #endif /* !_HAVE_NODE_CONF_H */

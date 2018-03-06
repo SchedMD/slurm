@@ -63,6 +63,7 @@
 #include <unistd.h>
 #include <utime.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/callerid.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
@@ -378,6 +379,7 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		debug2("Processing RPC: REQUEST_NODE_REGISTRATION_STATUS");
+		get_reg_resp = 1;
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		rc = _rpc_ping(msg);
 		last_slurmctld_msg = time(NULL);
@@ -483,8 +485,34 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	slurm_addr_t parent_addr = {0};
+	assoc_mgr_lock_t locks = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+		READ_LOCK, NO_LOCK, NO_LOCK };
 
 	slurm_msg_t_init(&msg);
+
+	/*
+	 * Send first! We don't care about the assoc/qos locks
+	 * assoc_mgr_post_tres_list is requesting as those lists
+	 * don't exist here.
+	 */
+	assoc_mgr_lock(&locks);
+	if (assoc_mgr_tres_list) {
+		buffer = init_buf(0);
+		slurm_pack_list(assoc_mgr_tres_list,
+				slurmdb_pack_tres_rec, buffer,
+				SLURM_PROTOCOL_VERSION);
+		len = get_buf_offset(buffer);
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, get_buf_data(buffer), len);
+		free_buf(buffer);
+		buffer = NULL;
+	} else {
+		len = 0;
+		safe_write(fd, &len, sizeof(int));
+	}
+	assoc_mgr_unlock(&locks);
+
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
 

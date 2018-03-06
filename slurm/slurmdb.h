@@ -302,31 +302,15 @@ typedef struct {
  */
 typedef struct {
 	double act_cpufreq;	/* contains actual average cpu frequency */
-	double cpu_ave;
 	uint64_t consumed_energy; /* contains energy consumption in joules */
-	uint32_t cpu_min;
-	uint32_t cpu_min_nodeid; /* contains which node number it was on */
-	uint32_t cpu_min_taskid; /* contains which task number it was on */
-	double disk_read_ave; /* average amount of disk read data, in mb */
-	double disk_read_max; /* maximum amount of disk read data, in mb */
-	uint32_t disk_read_max_nodeid; /* contains  node number max was on */
-	uint32_t disk_read_max_taskid;/* contains task number max was on */
-	double disk_write_ave; /* average amount of disk write data, in mb */
-	double disk_write_max; /* maximum amount of disk write data, in mb */
-	uint32_t disk_write_max_nodeid; /* contains  node number max was on */
-	uint32_t disk_write_max_taskid;/* contains task number max was on */
-	double pages_ave;
-	uint64_t pages_max;
-	uint32_t pages_max_nodeid; /* contains which node number it was on */
-	uint32_t pages_max_taskid; /* contains which task number it was on */
-	double rss_ave;
-	uint64_t rss_max;
-	uint32_t rss_max_nodeid; /* contains which node number it was on */
-	uint32_t rss_max_taskid; /* contains which task number it was on */
-	double vsize_ave;
-	uint64_t vsize_max;
-	uint32_t vsize_max_nodeid; /* contains which node number it was on */
-	uint32_t vsize_max_taskid; /* contains which task number it was on */
+	char *tres_usage_in_ave; /* average amount of usage in data */
+	char *tres_usage_in_max; /* contains max amount of usage in data */
+	char *tres_usage_in_max_nodeid; /* contains node number max was on */
+	char *tres_usage_in_max_taskid; /* contains task number max was on */
+	char *tres_usage_out_ave; /* average amount of usage out data */
+	char *tres_usage_out_max; /* contains amount of max usage out data */
+	char *tres_usage_out_max_nodeid; /* contains node number max was on */
+	char *tres_usage_out_max_taskid; /* contains task number max was on */
 } slurmdb_stats_t;
 
 /************** alphabetical order of structures **************/

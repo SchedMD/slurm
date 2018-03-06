@@ -180,36 +180,20 @@ char *step_req_inx[] = {
 	"t1.user_usec",
 	"t1.sys_sec",
 	"t1.sys_usec",
-	"t1.max_disk_read",
-	"t1.max_disk_read_task",
-	"t1.max_disk_read_node",
-	"t1.ave_disk_read",
-	"t1.max_disk_write",
-	"t1.max_disk_write_task",
-	"t1.max_disk_write_node",
-	"t1.ave_disk_write",
-	"t1.max_vsize",
-	"t1.max_vsize_task",
-	"t1.max_vsize_node",
-	"t1.ave_vsize",
-	"t1.max_rss",
-	"t1.max_rss_task",
-	"t1.max_rss_node",
-	"t1.ave_rss",
-	"t1.max_pages",
-	"t1.max_pages_task",
-	"t1.max_pages_node",
-	"t1.ave_pages",
-	"t1.min_cpu",
-	"t1.min_cpu_task",
-	"t1.min_cpu_node",
-	"t1.ave_cpu",
 	"t1.act_cpufreq",
 	"t1.consumed_energy",
 	"t1.req_cpufreq_min",
 	"t1.req_cpufreq",
 	"t1.req_cpufreq_gov",
-	"t1.tres_alloc"
+	"t1.tres_alloc",
+	"t1.tres_usage_in_max",
+	"t1.tres_usage_in_max_taskid",
+	"t1.tres_usage_in_max_nodeid",
+	"t1.tres_usage_in_ave",
+	"t1.tres_usage_out_max",
+	"t1.tres_usage_out_max_taskid",
+	"t1.tres_usage_out_max_nodeid",
+	"t1.tres_usage_out_ave"
 };
 
 enum {
@@ -230,36 +214,20 @@ enum {
 	STEP_REQ_USER_USEC,
 	STEP_REQ_SYS_SEC,
 	STEP_REQ_SYS_USEC,
-	STEP_REQ_MAX_DISK_READ,
-	STEP_REQ_MAX_DISK_READ_TASK,
-	STEP_REQ_MAX_DISK_READ_NODE,
-	STEP_REQ_AVE_DISK_READ,
-	STEP_REQ_MAX_DISK_WRITE,
-	STEP_REQ_MAX_DISK_WRITE_TASK,
-	STEP_REQ_MAX_DISK_WRITE_NODE,
-	STEP_REQ_AVE_DISK_WRITE,
-	STEP_REQ_MAX_VSIZE,
-	STEP_REQ_MAX_VSIZE_TASK,
-	STEP_REQ_MAX_VSIZE_NODE,
-	STEP_REQ_AVE_VSIZE,
-	STEP_REQ_MAX_RSS,
-	STEP_REQ_MAX_RSS_TASK,
-	STEP_REQ_MAX_RSS_NODE,
-	STEP_REQ_AVE_RSS,
-	STEP_REQ_MAX_PAGES,
-	STEP_REQ_MAX_PAGES_TASK,
-	STEP_REQ_MAX_PAGES_NODE,
-	STEP_REQ_AVE_PAGES,
-	STEP_REQ_MIN_CPU,
-	STEP_REQ_MIN_CPU_TASK,
-	STEP_REQ_MIN_CPU_NODE,
-	STEP_REQ_AVE_CPU,
 	STEP_REQ_ACT_CPUFREQ,
 	STEP_REQ_CONSUMED_ENERGY,
 	STEP_REQ_REQ_CPUFREQ_MIN,
 	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_GOV,
 	STEP_REQ_TRES,
+	STEP_REQ_TRES_USAGE_IN_MAX,
+	STEP_REQ_TRES_USAGE_IN_MAX_TASKID,
+	STEP_REQ_TRES_USAGE_IN_MAX_NODEID,
+	STEP_REQ_TRES_USAGE_IN_AVE,
+	STEP_REQ_TRES_USAGE_OUT_MAX,
+	STEP_REQ_TRES_USAGE_OUT_MAX_TASKID,
+	STEP_REQ_TRES_USAGE_OUT_MAX_NODEID,
+	STEP_REQ_TRES_USAGE_OUT_AVE,
 	STEP_REQ_COUNT
 };
 
@@ -923,69 +891,46 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			step->requid =
 				slurm_atoul(step_row[STEP_REQ_KILL_REQUID]);
 
-			step->stats.cpu_min = slurm_atoul(
-				step_row[STEP_REQ_MIN_CPU]);
-
-			if (step->stats.cpu_min != NO_VAL) {
-				step->user_cpu_sec = slurm_atoul(
-					step_row[STEP_REQ_USER_SEC]);
-				step->user_cpu_usec = slurm_atoul(
-					step_row[STEP_REQ_USER_USEC]);
-				step->sys_cpu_sec =
-					slurm_atoul(step_row[STEP_REQ_SYS_SEC]);
-				step->sys_cpu_usec = slurm_atoul(
-					step_row[STEP_REQ_SYS_USEC]);
-				step->tot_cpu_sec +=
-					step->user_cpu_sec + step->sys_cpu_sec;
-				step->tot_cpu_usec += step->user_cpu_usec +
-					step->sys_cpu_usec;
-				step->stats.disk_read_max =
-					atof(step_row[STEP_REQ_MAX_DISK_READ]);
-				step->stats.disk_read_max_taskid = slurm_atoul(
-					step_row[STEP_REQ_MAX_DISK_READ_TASK]);
-				step->stats.disk_read_ave =
-					atof(step_row[STEP_REQ_AVE_DISK_READ]);
-				step->stats.disk_write_max =
-					atof(step_row[STEP_REQ_MAX_DISK_WRITE]);
-				step->stats.disk_write_max_taskid = slurm_atoul(
-					step_row[STEP_REQ_MAX_DISK_WRITE_TASK]);
-				step->stats.disk_write_ave =
-					atof(step_row[STEP_REQ_AVE_DISK_WRITE]);
-				step->stats.vsize_max = slurm_atoul(
-					step_row[STEP_REQ_MAX_VSIZE]);
-				step->stats.vsize_max_taskid = slurm_atoul(
-					step_row[STEP_REQ_MAX_VSIZE_TASK]);
-				step->stats.vsize_ave =
-					atof(step_row[STEP_REQ_AVE_VSIZE]);
-				step->stats.rss_max =
-					slurm_atoul(step_row[STEP_REQ_MAX_RSS]);
-				step->stats.rss_max_taskid = slurm_atoul(
-					step_row[STEP_REQ_MAX_RSS_TASK]);
-				step->stats.rss_ave =
-					atof(step_row[STEP_REQ_AVE_RSS]);
-				step->stats.pages_max = slurm_atoul(
-					step_row[STEP_REQ_MAX_PAGES]);
-				step->stats.pages_max_taskid = slurm_atoul(
-					step_row[STEP_REQ_MAX_PAGES_TASK]);
-				step->stats.pages_ave =
-					atof(step_row[STEP_REQ_AVE_PAGES]);
-				step->stats.cpu_min_taskid = slurm_atoul(
-					step_row[STEP_REQ_MIN_CPU_TASK]);
-				step->stats.cpu_ave =
-					atof(step_row[STEP_REQ_AVE_CPU]);
-				step->stats.act_cpufreq =
-					atof(step_row[STEP_REQ_ACT_CPUFREQ]);
-				step->stats.consumed_energy = slurm_atoull(
-					step_row[STEP_REQ_CONSUMED_ENERGY]);
-				step->stats.vsize_max_nodeid = slurm_atoul(
-					step_row[STEP_REQ_MAX_VSIZE_NODE]);
-				step->stats.rss_max_nodeid = slurm_atoul(
-					step_row[STEP_REQ_MAX_RSS_NODE]);
-				step->stats.pages_max_nodeid = slurm_atoul(
-					step_row[STEP_REQ_MAX_PAGES_NODE]);
-				step->stats.cpu_min_nodeid = slurm_atoul(
-					step_row[STEP_REQ_MIN_CPU_NODE]);
-			}
+			step->user_cpu_sec = slurm_atoul(
+				step_row[STEP_REQ_USER_SEC]);
+			step->user_cpu_usec = slurm_atoul(
+				step_row[STEP_REQ_USER_USEC]);
+			step->sys_cpu_sec =
+				slurm_atoul(step_row[STEP_REQ_SYS_SEC]);
+			step->sys_cpu_usec = slurm_atoul(
+				step_row[STEP_REQ_SYS_USEC]);
+			step->tot_cpu_sec +=
+				step->user_cpu_sec + step->sys_cpu_sec;
+			step->tot_cpu_usec += step->user_cpu_usec +
+				step->sys_cpu_usec;
+			if (step_row[STEP_REQ_TRES_USAGE_IN_MAX])
+				step->stats.tres_usage_in_max =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_MAX]);
+			if (step_row[STEP_REQ_TRES_USAGE_IN_MAX_TASKID])
+				step->stats.tres_usage_in_max_taskid =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_MAX_TASKID]);
+			if (step_row[STEP_REQ_TRES_USAGE_IN_MAX_NODEID])
+				step->stats.tres_usage_in_max_nodeid =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_MAX_NODEID]);
+			if (step_row[STEP_REQ_TRES_USAGE_IN_AVE])
+				step->stats.tres_usage_in_ave =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_AVE]);
+			if (step_row[STEP_REQ_TRES_USAGE_OUT_MAX])
+				step->stats.tres_usage_out_max =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MAX]);
+			if (step_row[STEP_REQ_TRES_USAGE_OUT_MAX_TASKID])
+				step->stats.tres_usage_out_max_taskid =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MAX_TASKID]);
+			if (step_row[STEP_REQ_TRES_USAGE_OUT_MAX_NODEID])
+				step->stats.tres_usage_out_max_nodeid =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MAX_NODEID]);
+			if (step_row[STEP_REQ_TRES_USAGE_OUT_AVE])
+				step->stats.tres_usage_out_ave =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_AVE]);
+			step->stats.act_cpufreq =
+				atof(step_row[STEP_REQ_ACT_CPUFREQ]);
+			step->stats.consumed_energy = slurm_atoull(
+				step_row[STEP_REQ_CONSUMED_ENERGY]);
 
 			if (step_row[STEP_REQ_TRES])
 				step->tres_alloc_str =

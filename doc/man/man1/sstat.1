@@ -236,6 +236,46 @@ Total number of tasks in a job or step.
 \f3ReqCPUFreq\fP
 Requested CPU frequency for the step, in kHz.
 
+.TP
+\f3TresUsageInAve\fP
+Tres average usage in by all tasks in job.
+NOTE: If corresponding TresUsageInMaxTask is -1 the metric is node centric
+instead of task.
+
+.TP
+\f3TresUsageInMax\fP
+Tres maximum usage in by all tasks in job.
+NOTE: If corresponding TresUsageInMaxTask is -1 the metric is node centric
+instead of task.
+
+.TP
+\f3TresUsageInMaxNode\fP
+Node for which each maximum TRES usage out occurred.
+
+.TP
+\f3TresUsageInMaxTask\fP
+Task for which each maximum TRES usage out occurred.
+
+.TP
+\f3TresUsageOutAve\fP
+Tres average usage out by all tasks in job.
+NOTE: If corresponding TresUsageOutMaxTask is -1 the metric is node centric
+instead of task.
+
+.TP
+\f3TresUsageOutMax\fP
+Tres maximum usage out by all tasks in job.
+NOTE: If corresponding TresUsageOutMaxTask is -1 the metric is node centric
+instead of task.
+
+.TP
+\f3TresUsageOutMaxNode\fP
+Node for which each maximum TRES usage out occurred.
+
+.TP
+\f3TresUsageOutMaxTask\fP
+Task for which each maximum TRES usage out occurred.
+
 .SH "ENVIRONMENT VARIABLES"
 .PP
 Some \fBsstat\fR options may be set via environment variables. These

@@ -466,6 +466,11 @@ static int _unpack_job_script_msg(char **msg, Buf buffer,
 static int _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer,
 				uint16_t protocol_version);
 
+static void _pack_node_reg_resp(slurm_node_reg_resp_msg_t *msg,
+				Buf buffer, uint16_t protocol_version);
+static int _unpack_node_reg_resp(slurm_node_reg_resp_msg_t **msg,
+				 Buf buffer, uint16_t protocol_version);
+
 static void _pack_last_update_msg(last_update_msg_t * msg, Buf buffer,
 				  uint16_t protocol_version);
 static int _unpack_last_update_msg(last_update_msg_t ** msg, Buf buffer,
@@ -1006,6 +1011,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_JOB_SBCAST_CRED:
 		_pack_step_alloc_info_msg((step_alloc_info_msg_t *) msg->data,
 					  buffer, msg->protocol_version);
+		break;
+	case RESPONSE_NODE_REGISTRATION:
+		_pack_node_reg_resp(
+			(slurm_node_reg_resp_msg_t *)msg->data,
+			buffer, msg->protocol_version);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case REQUEST_RECONFIGURE:
@@ -1715,6 +1725,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_step_alloc_info_msg((step_alloc_info_msg_t **) &
 						 (msg->data), buffer,
 						 msg->protocol_version);
+		break;
+	case RESPONSE_NODE_REGISTRATION:
+		rc = _unpack_node_reg_resp(
+			(slurm_node_reg_resp_msg_t **)&msg->data,
+			buffer, msg->protocol_version);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case REQUEST_RECONFIGURE:
@@ -3435,8 +3450,8 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		for (i = 0; i < msg->job_count; i++) {
 			pack32(msg->step_id[i], buffer);
 		}
-		pack16(msg->startup, buffer);
-		if (msg->startup)
+		pack16(msg->flags, buffer);
+		if (msg->flags & SLURMD_REG_FLAG_STARTUP)
 			switch_g_pack_node_info(msg->switch_nodeinfo, buffer,
 						protocol_version);
 		if (msg->gres_info)
@@ -3512,8 +3527,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			safe_unpack32(&node_reg_ptr->step_id[i], buffer);
 		}
 
-		safe_unpack16(&node_reg_ptr->startup, buffer);
-		if (node_reg_ptr->startup
+		safe_unpack16(&node_reg_ptr->flags, buffer);
+		if ((node_reg_ptr->flags & SLURMD_REG_FLAG_STARTUP)
 		    &&  (switch_g_unpack_node_info(
 				 &node_reg_ptr->switch_nodeinfo, buffer,
 				 protocol_version)))
@@ -4585,6 +4600,86 @@ _unpack_resv_name_msg(reservation_name_msg_t ** msg, Buf buffer,
 unpack_error:
 	slurm_free_resv_name_msg(tmp_ptr);
 	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+extern int slurm_pack_list(List send_list,
+			   void (*pack_function) (void *object,
+						  uint16_t protocol_version,
+						  Buf buffer),
+			   Buf buffer, uint16_t protocol_version)
+{
+	uint32_t count = 0;
+	uint32_t header_position;
+	int rc = SLURM_SUCCESS;
+
+	if (!send_list) {
+		// to let user know there wasn't a list (error)
+		pack32(NO_VAL, buffer);
+		return rc;
+	}
+
+	header_position = get_buf_offset(buffer);
+
+	count = list_count(send_list);
+	pack32(count, buffer);
+
+	if (count) {
+		ListIterator itr = list_iterator_create(send_list);
+		void *object = NULL;
+		while ((object = list_next(itr))) {
+			(*(pack_function))(object, protocol_version, buffer);
+			if (size_buf(buffer) > REASONABLE_BUF_SIZE) {
+				error("%s: size limit exceeded", __func__);
+				/*
+				 * rewind buffer, pack NO_VAL as count instead
+				 */
+				set_buf_offset(buffer, header_position);
+				pack32(NO_VAL, buffer);
+				rc = ESLURM_RESULT_TOO_LARGE;
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+
+	return rc;
+}
+
+extern int slurm_unpack_list(List *recv_list,
+			     int (*unpack_function) (void **object,
+						     uint16_t protocol_version,
+						     Buf buffer),
+			     void (*destroy_function) (void *object),
+			     Buf buffer, uint16_t protocol_version)
+{
+	uint32_t count;
+
+	xassert(recv_list);
+
+	safe_unpack32(&count, buffer);
+	if (count != NO_VAL) {
+		int i;
+		void *object = NULL;
+
+		/*
+		 * Build the list for zero or more objects. If NO_VAL
+		 * was packed this indicates an error, and no list is
+		 * created.
+		 */
+		*recv_list = list_create((*(destroy_function)));
+		for(i=0; i<count; i++) {
+			if (((*(unpack_function))(&object,
+						  protocol_version, buffer))
+			    == SLURM_ERROR)
+				goto unpack_error;
+			list_append(*recv_list, object);
+		}
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	FREE_NULL_LIST(*recv_list);
 	return SLURM_ERROR;
 }
 
@@ -9710,6 +9805,50 @@ _unpack_step_alloc_info_msg(step_alloc_info_msg_t **
 unpack_error:
 	slurm_free_step_alloc_info_msg(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_node_reg_resp(
+	slurm_node_reg_resp_msg_t *msg,
+	Buf buffer, uint16_t protocol_version)
+{
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		/*
+		 * We ignore the list sent in, at the time of writing we always
+		 * want the assoc_mgr_tres_list.
+		 */
+		assoc_mgr_lock(&locks);
+		(void)slurm_pack_list(assoc_mgr_tres_list,
+				      slurmdb_pack_tres_rec, buffer,
+				      protocol_version);
+		assoc_mgr_unlock(&locks);
+	}
+}
+
+static int _unpack_node_reg_resp(
+	slurm_node_reg_resp_msg_t **msg,
+	Buf buffer, uint16_t protocol_version)
+{
+	slurm_node_reg_resp_msg_t *msg_ptr;
+
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		xassert(msg);
+		msg_ptr = xmalloc(sizeof(slurm_node_reg_resp_msg_t));
+		*msg = msg_ptr;
+		if (slurm_unpack_list(&msg_ptr->tres_list,
+				      slurmdb_unpack_tres_rec,
+				      slurmdb_destroy_tres_rec, buffer,
+				      protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_reg_resp_msg(msg_ptr);
 	return SLURM_ERROR;
 }
 

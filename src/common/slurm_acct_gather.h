@@ -41,10 +41,15 @@
 #include <inttypes.h>
 
 #include "read_config.h"
-#include "slurm_acct_gather_energy.h"
+
 #include "slurm_acct_gather_profile.h"
-#include "slurm_acct_gather_interconnect.h"
-#include "slurm_acct_gather_filesystem.h"
+
+typedef struct acct_gather_data {
+	uint64_t	num_reads;  /* count of reads */
+	uint64_t	num_writes; /* count of writes */
+	uint64_t	size_read;  /* raw amount read (in) */
+	uint64_t	size_write; /* raw amount written (out) */
+} acct_gather_data_t;
 
 extern int acct_gather_conf_init(void);
 extern int acct_gather_conf_destroy(void);

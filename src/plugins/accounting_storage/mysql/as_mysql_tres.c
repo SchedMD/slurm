@@ -71,7 +71,9 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 			continue;
 		} else if ((!xstrcasecmp(object->type, "gres") ||
 			    !xstrcasecmp(object->type, "bb") ||
-			    !xstrcasecmp(object->type, "license"))) {
+			    !xstrcasecmp(object->type, "license") ||
+			    !xstrcasecmp(object->type, "fs") ||
+			    !xstrcasecmp(object->type, "ic"))) {
 			if (!object->name) {
 				error("%s type tres "
 				      "need to have a name, "
@@ -267,7 +269,8 @@ empty:
 		xstrfmtcat(tmp, ", %s", tres_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s %s", tmp, tres_table, extra);
+	query = xstrdup_printf("select %s from %s %s order by id",
+			       tmp, tres_table, extra);
 	xfree(tmp);
 	xfree(extra);
 

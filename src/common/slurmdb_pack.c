@@ -60,7 +60,33 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		if (!stats) {
+			packdouble(0, buffer);
+
+			pack64(0, buffer);
+
+			for (i=0; i<8; i++) {
+				packnull(buffer);
+			}
+			return;
+		}
+
+		packdouble(stats->act_cpufreq, buffer);
+
+		pack64(stats->consumed_energy, buffer);
+
+		packstr(stats->tres_usage_in_ave, buffer);
+		packstr(stats->tres_usage_in_max, buffer);
+		packstr(stats->tres_usage_in_max_nodeid, buffer);
+		packstr(stats->tres_usage_in_max_taskid, buffer);
+		packstr(stats->tres_usage_out_ave, buffer);
+		packstr(stats->tres_usage_out_max, buffer);
+		packstr(stats->tres_usage_out_max_nodeid, buffer);
+		packstr(stats->tres_usage_out_max_taskid, buffer);
+	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		uint64_t tmp_uint64;
+
 		if (!stats) {
 			for (i=0; i<4; i++)
 				pack64(0, buffer);
@@ -76,36 +102,85 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 			return;
 		}
 
-		pack64(stats->vsize_max, buffer);
-		pack64(stats->rss_max, buffer);
-		pack64(stats->pages_max, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_VMEM);
+		pack64(tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_MEM);
+		pack64(tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_PAGES);
+		pack64(tmp_uint64, buffer);
 		pack64(stats->consumed_energy, buffer);
 
-		pack32(stats->cpu_min, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_CPU);
+		pack32((uint32_t)tmp_uint64, buffer);
 
-		packdouble(stats->vsize_ave, buffer);
-		packdouble(stats->rss_ave, buffer);
-		packdouble(stats->pages_ave, buffer);
-		packdouble(stats->cpu_ave, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_VMEM);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_MEM);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_PAGES);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_CPU);
+		packdouble((double)tmp_uint64, buffer);
 		packdouble(stats->act_cpufreq, buffer);
-		packdouble(stats->disk_read_max, buffer);
-		packdouble(stats->disk_read_ave, buffer);
-		packdouble(stats->disk_write_max, buffer);
-		packdouble(stats->disk_write_ave, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_FS_DISK);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_FS_DISK);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_out_max, TRES_FS_DISK);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_out_ave, TRES_FS_DISK);
+		packdouble((double)tmp_uint64, buffer);
 
-		pack32(stats->vsize_max_nodeid, buffer);
-		pack32(stats->vsize_max_taskid, buffer);
-		pack32(stats->rss_max_nodeid, buffer);
-		pack32(stats->rss_max_taskid, buffer);
-		pack32(stats->pages_max_nodeid, buffer);
-		pack32(stats->pages_max_taskid, buffer);
-		pack32(stats->cpu_min_nodeid, buffer);
-		pack32(stats->cpu_min_taskid, buffer);
-		pack32(stats->disk_read_max_nodeid, buffer);
-		pack32(stats->disk_read_max_taskid, buffer);
-		pack32(stats->disk_write_max_nodeid, buffer);
-		pack32(stats->disk_write_max_taskid, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_VMEM);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_VMEM);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_MEM);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_MEM);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_PAGES);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_PAGES);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_CPU);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_CPU);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_FS_DISK);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_FS_DISK);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_out_max_nodeid, TRES_FS_DISK);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_out_max_taskid, TRES_FS_DISK);
+		pack32((uint32_t)tmp_uint64, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint64_t tmp_uint64;
 		if (!stats) {
 			for (i=0; i<3; i++)
 				pack64(0, buffer);
@@ -121,110 +196,336 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 			return;
 		}
 
-		pack64(stats->vsize_max, buffer);
-		pack64(stats->rss_max, buffer);
-		pack64(stats->pages_max, buffer);
-		pack32(stats->cpu_min, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_VMEM);
+		pack64(tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_MEM);
+		pack64(tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_PAGES);
+		pack64(tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_CPU);
+		pack32((uint32_t)tmp_uint64, buffer);
 
-		packdouble(stats->vsize_ave, buffer);
-		packdouble(stats->rss_ave, buffer);
-		packdouble(stats->pages_ave, buffer);
-		packdouble(stats->cpu_ave, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_VMEM);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_MEM);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_PAGES);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_CPU);
+		packdouble((double)tmp_uint64, buffer);
 		packdouble(stats->act_cpufreq, buffer);
 		packdouble((double)stats->consumed_energy, buffer);
-		packdouble(stats->disk_read_max, buffer);
-		packdouble(stats->disk_read_ave, buffer);
-		packdouble(stats->disk_write_max, buffer);
-		packdouble(stats->disk_write_ave, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max, TRES_FS_DISK);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_ave, TRES_FS_DISK);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_out_max, TRES_FS_DISK);
+		packdouble((double)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_out_ave, TRES_FS_DISK);
+		packdouble((double)tmp_uint64, buffer);
 
-		pack32(stats->vsize_max_nodeid, buffer);
-		pack32(stats->vsize_max_taskid, buffer);
-		pack32(stats->rss_max_nodeid, buffer);
-		pack32(stats->rss_max_taskid, buffer);
-		pack32(stats->pages_max_nodeid, buffer);
-		pack32(stats->pages_max_taskid, buffer);
-		pack32(stats->cpu_min_nodeid, buffer);
-		pack32(stats->cpu_min_taskid, buffer);
-		pack32(stats->disk_read_max_nodeid, buffer);
-		pack32(stats->disk_read_max_taskid, buffer);
-		pack32(stats->disk_write_max_nodeid, buffer);
-		pack32(stats->disk_write_max_taskid, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_VMEM);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_VMEM);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_MEM);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_MEM);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_PAGES);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_PAGES);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_CPU);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_CPU);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_nodeid, TRES_FS_DISK);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_in_max_taskid, TRES_FS_DISK);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_out_max_nodeid, TRES_FS_DISK);
+		pack32((uint32_t)tmp_uint64, buffer);
+		tmp_uint64 = slurmdb_find_tres_count_in_string(
+			stats->tres_usage_out_max_taskid, TRES_FS_DISK);
+		pack32((uint32_t)tmp_uint64, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
 	}
 }
 
+static char *_make_tres_str(uint64_t *tres_array)
+{
+	int i;
+	char *tres_str = NULL;
+
+	for (i=0; i<TRES_ARRAY_TOTAL_CNT; i++) {
+		if ((tres_array[i] == NO_VAL64) ||
+		    (tres_array[i] == INFINITE64))
+			continue;
+		xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+			   tres_str ? "," : "",
+			   i, tres_array[i]);
+	}
+	return tres_str;
+}
+
 static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 				 uint16_t protocol_version, Buf buffer)
 {
+	uint32_t uint32_tmp;
+
 	xassert(stats);
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
-		safe_unpack64(&stats->vsize_max, buffer);
-		safe_unpack64(&stats->rss_max, buffer);
-		safe_unpack64(&stats->pages_max, buffer);
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpackdouble(&stats->act_cpufreq, buffer);
+
 		safe_unpack64(&stats->consumed_energy, buffer);
 
-		safe_unpack32(&stats->cpu_min, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_ave,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_max,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_max_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_max_taskid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_ave,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_max,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_max_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_max_taskid,
+				       &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		double tmp_double;
+		uint32_t tmp_uint32;
+		uint64_t tres_array_max[TRES_ARRAY_TOTAL_CNT];
+		uint64_t tres_array_ave[TRES_ARRAY_TOTAL_CNT];
+		int i;
 
-		safe_unpackdouble(&stats->vsize_ave, buffer);
-		safe_unpackdouble(&stats->rss_ave, buffer);
-		safe_unpackdouble(&stats->pages_ave, buffer);
-		safe_unpackdouble(&stats->cpu_ave, buffer);
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_max[i] = INFINITE64;
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_ave[i] = INFINITE64;
+
+		safe_unpack64(&tres_array_max[TRES_ARRAY_VMEM], buffer);
+		safe_unpack64(&tres_array_max[TRES_ARRAY_MEM], buffer);
+		safe_unpack64(&tres_array_max[TRES_ARRAY_PAGES], buffer);
+		safe_unpack64(&stats->consumed_energy, buffer);
+
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_CPU] = tmp_uint32;
+
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_VMEM] = tmp_double * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_MEM] = tmp_double * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_PAGES] = tmp_double;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_CPU] = tmp_double;
+
 		safe_unpackdouble(&stats->act_cpufreq, buffer);
-		safe_unpackdouble(&stats->disk_read_max, buffer);
-		safe_unpackdouble(&stats->disk_read_ave, buffer);
-		safe_unpackdouble(&stats->disk_write_max, buffer);
-		safe_unpackdouble(&stats->disk_write_ave, buffer);
 
-		safe_unpack32(&stats->vsize_max_nodeid, buffer);
-		safe_unpack32(&stats->vsize_max_taskid, buffer);
-		safe_unpack32(&stats->rss_max_nodeid, buffer);
-		safe_unpack32(&stats->rss_max_taskid, buffer);
-		safe_unpack32(&stats->pages_max_nodeid, buffer);
-		safe_unpack32(&stats->pages_max_taskid, buffer);
-		safe_unpack32(&stats->cpu_min_nodeid, buffer);
-		safe_unpack32(&stats->cpu_min_taskid, buffer);
-		safe_unpack32(&stats->disk_read_max_nodeid, buffer);
-		safe_unpack32(&stats->disk_read_max_taskid, buffer);
-		safe_unpack32(&stats->disk_write_max_nodeid, buffer);
-		safe_unpack32(&stats->disk_write_max_taskid, buffer);
-	}else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+
+		stats->tres_usage_in_max = _make_tres_str(tres_array_max);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_max[i] = INFINITE64;
+
+		stats->tres_usage_in_ave = _make_tres_str(tres_array_ave);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_ave[i] = INFINITE64;
+
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+
+		stats->tres_usage_out_max = _make_tres_str(tres_array_max);
+		stats->tres_usage_out_ave = _make_tres_str(tres_array_ave);
+		tres_array_max[TRES_ARRAY_FS_DISK] = INFINITE64;
+		tres_array_ave[TRES_ARRAY_FS_DISK] = INFINITE64;
+
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_VMEM] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_VMEM] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_MEM] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_MEM] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_PAGES] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_PAGES] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_CPU] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_CPU] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_uint32;
+
+		stats->tres_usage_in_max_nodeid =
+			_make_tres_str(tres_array_ave);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_max[i] = INFINITE64;
+
+		stats->tres_usage_in_max_taskid =
+			_make_tres_str(tres_array_max);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_ave[i] = INFINITE64;
+
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_uint32;
+
+		stats->tres_usage_out_max_nodeid =
+			_make_tres_str(tres_array_ave);
+
+		stats->tres_usage_out_max_taskid =
+			_make_tres_str(tres_array_max);
+
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		double consumed_energy;
+		double tmp_double;
+		uint32_t tmp_uint32;
+		uint64_t tres_array_max[TRES_ARRAY_TOTAL_CNT];
+		uint64_t tres_array_ave[TRES_ARRAY_TOTAL_CNT];
+		int i;
 
-		safe_unpack64(&stats->vsize_max, buffer);
-		safe_unpack64(&stats->rss_max, buffer);
-		safe_unpack64(&stats->pages_max, buffer);
-		safe_unpack32(&stats->cpu_min, buffer);
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_max[i] = INFINITE64;
 
-		safe_unpackdouble(&stats->vsize_ave, buffer);
-		safe_unpackdouble(&stats->rss_ave, buffer);
-		safe_unpackdouble(&stats->pages_ave, buffer);
-		safe_unpackdouble(&stats->cpu_ave, buffer);
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_ave[i] = INFINITE64;
+
+		safe_unpack64(&tres_array_max[TRES_ARRAY_VMEM], buffer);
+		safe_unpack64(&tres_array_max[TRES_ARRAY_MEM], buffer);
+		safe_unpack64(&tres_array_max[TRES_ARRAY_PAGES], buffer);
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_CPU] = tmp_uint32;
+
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_VMEM] = tmp_double * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_MEM] = tmp_double * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_PAGES] = tmp_double;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_CPU] = tmp_double;
+
 		safe_unpackdouble(&stats->act_cpufreq, buffer);
 
 		safe_unpackdouble(&consumed_energy, buffer);
 		stats->consumed_energy = (uint64_t)consumed_energy;
 
-		safe_unpackdouble(&stats->disk_read_max, buffer);
-		safe_unpackdouble(&stats->disk_read_ave, buffer);
-		safe_unpackdouble(&stats->disk_write_max, buffer);
-		safe_unpackdouble(&stats->disk_write_ave, buffer);
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
 
-		safe_unpack32(&stats->vsize_max_nodeid, buffer);
-		safe_unpack32(&stats->vsize_max_taskid, buffer);
-		safe_unpack32(&stats->rss_max_nodeid, buffer);
-		safe_unpack32(&stats->rss_max_taskid, buffer);
-		safe_unpack32(&stats->pages_max_nodeid, buffer);
-		safe_unpack32(&stats->pages_max_taskid, buffer);
-		safe_unpack32(&stats->cpu_min_nodeid, buffer);
-		safe_unpack32(&stats->cpu_min_taskid, buffer);
-		safe_unpack32(&stats->disk_read_max_nodeid, buffer);
-		safe_unpack32(&stats->disk_read_max_taskid, buffer);
-		safe_unpack32(&stats->disk_write_max_nodeid, buffer);
-		safe_unpack32(&stats->disk_write_max_taskid, buffer);
+		stats->tres_usage_in_max = _make_tres_str(tres_array_max);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_max[i] = INFINITE64;
+
+		stats->tres_usage_in_ave = _make_tres_str(tres_array_ave);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_ave[i] = INFINITE64;
+
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+
+		stats->tres_usage_out_max = _make_tres_str(tres_array_max);
+		stats->tres_usage_out_ave = _make_tres_str(tres_array_ave);
+		tres_array_max[TRES_ARRAY_FS_DISK] = INFINITE64;
+		tres_array_ave[TRES_ARRAY_FS_DISK] = INFINITE64;
+
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_VMEM] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_VMEM] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_MEM] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_MEM] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_PAGES] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_PAGES] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_CPU] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_CPU] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_uint32;
+
+		stats->tres_usage_in_max_nodeid =
+			_make_tres_str(tres_array_ave);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_max[i] = INFINITE64;
+
+		stats->tres_usage_in_max_taskid =
+			_make_tres_str(tres_array_max);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_ave[i] = INFINITE64;
+
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_uint32;
+
+		stats->tres_usage_out_max_nodeid =
+			_make_tres_str(tres_array_ave);
+
+		stats->tres_usage_out_max_taskid =
+			_make_tres_str(tres_array_max);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

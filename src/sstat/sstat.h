@@ -53,18 +53,18 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/print_fields.h"
 
 #define ERROR 2
 
-#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite"
+#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageoutmax,tresusageoutmaxn,tresusageoutmaxt,tresusageoutave,tresusageinave"
 
 #define STAT_FIELDS_PID "jobid,nodelist,pids"
 
@@ -114,6 +114,14 @@ typedef enum {
 		PRINT_REQ_CPUFREQ_MIN,
 		PRINT_REQ_CPUFREQ_MAX,
 		PRINT_REQ_CPUFREQ_GOV,
+		PRINT_TRESUIM,
+		PRINT_TRESUIA,
+		PRINT_TRESUIMN,
+		PRINT_TRESUIMT,
+		PRINT_TRESUOA,
+		PRINT_TRESUOM,
+		PRINT_TRESUOMN,
+		PRINT_TRESUOMT,
 } sstat_print_types_t;
 
 
@@ -126,6 +134,7 @@ typedef struct {
 	int opt_verbose;	/* --verbose */
 	bool pid_format;
 	uint32_t convert_flags;
+	int units;		/* --units*/
 } sstat_parameters_t;
 
 extern List print_fields_list;
@@ -140,7 +149,6 @@ extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 	nprintfields;
 
 /* process.c */
-char *find_hostname(uint32_t pos, char *hosts);
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
 
 /* print.c */

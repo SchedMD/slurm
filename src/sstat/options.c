@@ -58,7 +58,7 @@ void _help_fields_msg(void)
 			printf(" ");
 		else if (i)
 			printf("\n");
-		printf("%-17s", fields[i].name);
+		printf("%-19s", fields[i].name);
 	}
 	printf("\n");
 	return;
@@ -138,6 +138,7 @@ void _init_params()
 {
 	memset(&params, 0, sizeof(sstat_parameters_t));
 	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
+	params.units = NO_VAL;
 }
 
 /* returns number of objects added to list */

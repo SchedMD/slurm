@@ -63,6 +63,9 @@ typedef enum {
 	TRES_ENERGY,
 	TRES_NODE,
 	TRES_BILLING,
+	TRES_FS_DISK,
+	TRES_VMEM,
+	TRES_PAGES,
 	TRES_STATIC_CNT
 } tres_types_t;
 
@@ -94,6 +97,15 @@ typedef enum {
 #define TRES_STR_FLAG_NO_NULL     0x00000040 /* return blank string
 					      * instead of NULL */
 #define TRES_STR_CONVERT_UNITS    0x00000080 /* Convert number units */
+#define TRES_STR_FLAG_SUM         0x00000100 /* Sum entries of the same type
+					      * ignoring -1 */
+#define TRES_STR_FLAG_MAX         0x00000200 /* Set Max value from entries of
+					      * the same type ignoring -1 */
+#define TRES_STR_FLAG_MIN         0x00000400 /* Set Min value from entries of
+					      * the same type ignoring -1 */
+#define TRES_STR_FLAG_ALLOW_REAL  0x00000800 /* Allow all counts (even zero)
+					      * unless INFINITE64 or NO_VAL64 */
+#define TRES_STR_FLAG_BYTES       0x00000800 /* Convertable Usage in Bytes */
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
@@ -224,7 +236,8 @@ extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
 
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list, int spec_unit,
-	uint32_t convert_flags);
+	uint32_t convert_flags, uint32_t tres_str_flags, char *nodes);
+
 /* Used to combine 2 different TRES strings together
  *
  * IN/OUT: tres_str_old - original simple tres string
@@ -270,6 +283,7 @@ extern void slurmdb_transfer_tres_time(
 	List *tres_list_out, char *tres_str, int elapsed);
 
 extern int slurmdb_get_tres_base_unit(char *tres_type);
+extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks);
 
 /* Setup cluster rec with plugin_id that indexes into select list */
 extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec);

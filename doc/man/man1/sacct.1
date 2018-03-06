@@ -131,28 +131,30 @@ Print a list of fields that can be specified with the \f3\-\-format\fP option.
 .ft 3
 Fields available:
 
-Account           AdminComment      AllocCPUS         AllocGRES
-AllocNodes        AllocTRES         AssocID           AveCPU
-AveCPUFreq        AveDiskRead       AveDiskWrite      AvePages
-AveRSS            AveVMSize         BlockID           Cluster
-Comment           ConsumedEnergy    ConsumedEnergyRaw CPUTime
-CPUTimeRAW        DerivedExitCode   Elapsed           ElapsedRaw
-Eligible          End               ExitCode          GID
-Group             JobID             JobIDRaw          JobName
-Layout            MaxDiskRead       MaxDiskReadNode   MaxDiskReadTask
-MaxDiskWrite      MaxDiskWriteNode  MaxDiskWriteTask  MaxPages
-MaxPagesNode      MaxPagesTask      MaxRSS            MaxRSSNode
-MaxRSSTask        MaxVMSize         MaxVMSizeNode     MaxVMSizeTask
-McsLabel          MinCPU            MinCPUNode        MinCPUTask
-NCPUS             NNodes            NodeList          NTasks
-Priority          Partition         QOS               QOSRAW
-ReqCPUFreq        ReqCPUFreqMin     ReqCPUFreqMax     ReqCPUFreqGov
-ReqCPUS           ReqGRES           ReqMem            ReqNodes
-ReqTRES           Reservation       ReservationId     Reserved
-ResvCPU           ResvCPURAW        Start             State
-Submit            Suspended         SystemCPU         SystemComment
-Timelimit         TotalCPU          UID               User
-UserCPU           WCKey             WCKeyID           WorkDir
+Account             AdminComment        AllocCPUS           AllocGRES
+AllocNodes          AllocTRES           AssocID             AveCPU
+AveCPUFreq          AveDiskRead         AveDiskWrite        AvePages
+AveRSS              AveVMSize           BlockID             Cluster
+Comment             ConsumedEnergy      ConsumedEnergyRaw   CPUTime
+CPUTimeRAW          DerivedExitCode     Elapsed             ElapsedRaw
+Eligible            End                 ExitCode            GID
+Group               JobID               JobIDRaw            JobName
+Layout              MaxDiskRead         MaxDiskReadNode     MaxDiskReadTask
+MaxDiskWrite        MaxDiskWriteNode    MaxDiskWriteTask    MaxPages
+MaxPagesNode        MaxPagesTask        MaxRSS              MaxRSSNode
+MaxRSSTask          MaxVMSize           MaxVMSizeNode       MaxVMSizeTask
+McsLabel            MinCPU              MinCPUNode          MinCPUTask
+NCPUS               NNodes              NodeList            NTasks
+Priority            Partition           QOS                 QOSRAW
+ReqCPUFreq          ReqCPUFreqMin       ReqCPUFreqMax       ReqCPUFreqGov
+ReqCPUS             ReqGRES             ReqMem              ReqNodes
+ReqTRES             Reservation         ReservationId       Reserved
+ResvCPU             ResvCPURAW          Start               State
+Submit              Suspended           SystemCPU           SystemComment
+Timelimit           TotalCPU            TRESUsageInAve      TRESUsageInMax
+TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageOutAve     TRESUsageOutMax
+TRESUsageOutMaxNode TRESUsageOutMaxTask UID                 User
+UserCPU             WCKey               WCKeyID             WorkDir
 
 .ft 1
 .fi
@@ -243,7 +245,9 @@ avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,
 maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,
 alloccpus,elapsed,state,exitcode,maxdiskread,maxdiskreadnode,maxdiskreadtask,
 avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,
-allocgres,reqgres,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov
+allocgres,reqgres,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,
+tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageoutmax,tresusageoutmaxn,
+tresusageoutmaxt,tresusageoutave,tresusageinave
 .ad
 
 .TP
@@ -767,7 +771,6 @@ Trackable resources. These are the minimum resource counts requested by the
 job/step at submission time.
 For more details see AccountingStorageTRES in slurm.conf.
 
-
 .TP
 \f3Reservation\fP
 Reservation Name.
@@ -849,6 +852,46 @@ identical to that of the \f3Elapsed\fP field.
 
 NOTE: TotalCPU provides a measure of the task's parent process and
 does not include CPU time of child processes.
+
+.TP
+\f3TresUsageInAve\fP
+Tres average usage in by all tasks in job.
+NOTE: If corresponding TresUsageInMaxTask is -1 the metric is node centric
+instead of task.
+
+.TP
+\f3TresUsageInMax\fP
+Tres maximum usage in by all tasks in job.
+NOTE: If corresponding TresUsageInMaxTask is -1 the metric is node centric
+instead of task.
+
+.TP
+\f3TresUsageInMaxNode\fP
+Node for which each maximum TRES usage out occurred.
+
+.TP
+\f3TresUsageInMaxTask\fP
+Task for which each maximum TRES usage out occurred.
+
+.TP
+\f3TresUsageOutAve\fP
+Tres average usage out by all tasks in job.
+NOTE: If corresponding TresUsageOutMaxTask is -1 the metric is node centric
+instead of task.
+
+.TP
+\f3TresUsageOutMax\fP
+Tres maximum usage out by all tasks in job.
+NOTE: If corresponding TresUsageOutMaxTask is -1 the metric is node centric
+instead of task.
+
+.TP
+\f3TresUsageOutMaxNode\fP
+Node for which each maximum TRES usage out occurred.
+
+.TP
+\f3TresUsageOutMaxTask\fP
+Task for which each maximum TRES usage out occurred.
 
 .TP
 \f3UID\fP

@@ -134,6 +134,9 @@ extern int assoc_mgr_fini(bool save_state);
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);
 
+/* ran after a new tres_list is given */
+extern int assoc_mgr_post_tres_list(List new_list);
+
 /*
  * get info from the storage
  * IN:  assoc - slurmdb_assoc_rec_t with at least cluster and

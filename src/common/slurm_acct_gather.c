@@ -39,6 +39,9 @@
 #include <stdlib.h>
 
 #include "src/common/slurm_acct_gather.h"
+#include "slurm_acct_gather_energy.h"
+#include "slurm_acct_gather_interconnect.h"
+#include "slurm_acct_gather_filesystem.h"
 #include "src/common/xstring.h"
 
 static bool acct_gather_suspended = false;

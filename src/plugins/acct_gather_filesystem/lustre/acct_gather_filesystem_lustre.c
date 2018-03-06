@@ -49,6 +49,7 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_acct_gather_filesystem.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -113,6 +114,7 @@ static lustre_sens_t lustre_se = {0,0,0,0,0,0,0,0};
 
 static uint64_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
+static int tres_pos = -1;
 
 /* Default path to lustre stats */
 const char proc_base_path[] = "/proc/fs/lustre";
@@ -271,10 +273,10 @@ static int _read_lustre_counters(void)
  */
 static int _update_node_filesystem(void)
 {
-	static acct_filesystem_data_t previous;
+	static acct_gather_data_t previous;
 	static int dataset_id = -1;
 	static bool first = true;
-	acct_filesystem_data_t current;
+	acct_gather_data_t current;
 
 	enum {
 		FIELD_READ,
@@ -315,10 +317,10 @@ static int _update_node_filesystem(void)
 			return SLURM_ERROR;
 		}
 
-		previous.reads = lustre_se.all_lustre_nb_reads;
-		previous.writes = lustre_se.all_lustre_nb_writes;
-		previous.read_size = (double)lustre_se.all_lustre_read_bytes;
-		previous.write_size = (double)lustre_se.all_lustre_write_bytes;
+		previous.num_reads = lustre_se.all_lustre_nb_reads;
+		previous.num_writes = lustre_se.all_lustre_nb_writes;
+		previous.size_read = lustre_se.all_lustre_read_bytes;
+		previous.size_write = lustre_se.all_lustre_write_bytes;
 
 		first = false;
 	}
@@ -329,18 +331,18 @@ static int _update_node_filesystem(void)
 	}
 
 	/* Compute the current values read from all lustre-xxxx directories */
-	current.reads = lustre_se.all_lustre_nb_reads;
-	current.writes = lustre_se.all_lustre_nb_writes;
-	current.read_size = (double)lustre_se.all_lustre_read_bytes;
-	current.write_size = (double)lustre_se.all_lustre_write_bytes;
+	current.num_reads = lustre_se.all_lustre_nb_reads;
+	current.num_writes = lustre_se.all_lustre_nb_writes;
+	current.size_read = lustre_se.all_lustre_read_bytes;
+	current.size_write = lustre_se.all_lustre_write_bytes;
 
 	/* record sample */
-	data[FIELD_READ].u64 = current.reads - previous.reads;
-	data[FIELD_READMB].d = (current.read_size - previous.read_size) /
-		(1 << 20);
-	data[FIELD_WRITE].u64 = current.writes - previous.writes;
-	data[FIELD_WRITEMB].d = (current.write_size - previous.write_size) /
-		(1 << 20);
+	data[FIELD_READ].u64 = current.num_reads - previous.num_reads;
+	data[FIELD_READMB].d =
+		(double)(current.size_read - previous.size_read) / (1 << 20);
+	data[FIELD_WRITE].u64 = current.num_writes - previous.num_writes;
+	data[FIELD_WRITEMB].d =
+		(double)(current.size_write - previous.size_write) / (1 << 20);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
 		char str[256];
@@ -353,7 +355,7 @@ static int _update_node_filesystem(void)
 	/* Save current as previous and clean up the working
 	 * data structure.
 	 */
-	memcpy(&previous, &current, sizeof(acct_filesystem_data_t));
+	memcpy(&previous, &current, sizeof(acct_gather_data_t));
 	memset(&lustre_se, 0, sizeof(lustre_sens_t));
 
 	slurm_mutex_unlock(&lustre_lock);
@@ -381,7 +383,17 @@ static bool _run_in_daemon(void)
  */
 extern int init(void)
 {
+	slurmdb_tres_rec_t tres_rec;
+
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
+
 	debug_flags = slurm_get_debug_flags();
+
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+	tres_rec.type = "fs";
+	tres_rec.name = "lustre";
+	tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 
 	return SLURM_SUCCESS;
 }
@@ -424,4 +436,32 @@ extern void acct_gather_filesystem_p_conf_options(s_p_options_t **full_options,
 extern void acct_gather_filesystem_p_conf_values(List *data)
 {
 	return;
+}
+
+extern int acct_gather_filesystem_p_get_data(acct_gather_data_t *data)
+{
+	int retval = SLURM_SUCCESS;
+
+	if ((tres_pos == -1) || !data) {
+		debug2("%s: We are not tracking TRES fs/lustre", __func__);
+		return SLURM_SUCCESS;
+	}
+
+	slurm_mutex_lock(&lustre_lock);
+
+	if (_read_lustre_counters() != SLURM_SUCCESS) {
+		error("%s: Cannot read lustre counters", __func__);
+		slurm_mutex_unlock(&lustre_lock);
+		return SLURM_FAILURE;
+	}
+
+	/* Obtain the current values read from all lustre-xxxx directories */
+
+	data[tres_pos].num_reads = lustre_se.all_lustre_nb_reads;
+	data[tres_pos].num_writes = lustre_se.all_lustre_nb_writes;
+	data[tres_pos].size_read = lustre_se.all_lustre_read_bytes;
+	data[tres_pos].size_write = lustre_se.all_lustre_write_bytes;
+
+	slurm_mutex_unlock(&lustre_lock);
+	return retval;
 }

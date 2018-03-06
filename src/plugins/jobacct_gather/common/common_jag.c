@@ -45,10 +45,12 @@
 #include <ctype.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_acct_gather_filesystem.h"
 #include "src/common/slurm_acct_gather_interconnect.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/common/proctrack.h"
@@ -90,7 +92,7 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 	jobacct->current_weighted_freq =
 		jobacct->current_weighted_freq +
 		(uint32_t)jobacct->this_sampled_cputime * thisfreq;
-	tot_cpu = (uint32_t) jobacct->tot_cpu;	/* Cast from double */
+	tot_cpu = (uint32_t) jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
 	if (tot_cpu) {
 		return (uint32_t) (jobacct->current_weighted_freq / tot_cpu);
 	} else
@@ -176,8 +178,9 @@ static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
 
         fclose(fp);
         /* Sanity checks */
-        if (pss > 0 && prec->rss > pss) {
-                prec->rss = pss;
+
+        if (pss > 0 && prec->tres_data[TRES_ARRAY_MEM].size_read > pss) {
+                prec->tres_data[TRES_ARRAY_MEM].size_read = pss;
         }
 
 	debug3("%s: read pss %"PRIu64" for process %s",
@@ -343,11 +346,13 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 
 	/* Copy the values that slurm records into our data structure */
 	prec->ppid  = ppid;
-	prec->pages = majflt;
+
+	prec->tres_data[TRES_ARRAY_PAGES].size_read = majflt;
+	prec->tres_data[TRES_ARRAY_VMEM].size_read = vsize;
+	prec->tres_data[TRES_ARRAY_MEM].size_read = rss * my_pagesize;
+
 	prec->usec  = utime;
 	prec->ssec  = stime;
-	prec->vsize = vsize / 1024; /* convert from bytes to KB */
-	prec->rss   = rss * my_pagesize;/* convert from pages to KB */
 	prec->last_cpu = last_cpu;
 	return 1;
 }
@@ -390,7 +395,9 @@ static int _get_process_memory_line(int in, jag_prec_t *prec)
 	}
 
 	/* Copy the values that slurm records into our data structure */
-	prec->rss = (rss - share) * my_pagesize; /* convert from pages to KB */
+	prec->tres_data[TRES_ARRAY_MEM].size_read =
+		(rss - share) * my_pagesize;;
+
 	return 1;
 }
 
@@ -444,21 +451,23 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 	if (_is_a_lwp(prec->pid) > 0)
 		return 0;
 
-	/* Copy the values that slurm records into our data structure */
-	prec->disk_read = (double)rchar / (double)1048576;
-	prec->disk_write = (double)wchar / (double)1048576;
+	/* keep real value here since we aren't doubles */
+	prec->tres_data[TRES_ARRAY_FS_DISK].size_read = rchar;
+	prec->tres_data[TRES_ARRAY_FS_DISK].size_write = wchar;
 
 	return 1;
 }
 
-static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_file,
-			  char *proc_smaps_file, jag_callbacks_t *callbacks)
+static void _handle_stats(List prec_list, char *proc_stat_file,
+			  char *proc_io_file, char *proc_smaps_file,
+			  jag_callbacks_t *callbacks,
+			  int tres_count)
 {
 	static int no_share_data = -1;
 	static int use_pss = -1;
 	FILE *stat_fp = NULL;
 	FILE *io_fp = NULL;
-	int fd, fd2;
+	int fd, fd2, i;
 	jag_prec_t *prec = NULL;
 
 	if (no_share_data == -1) {
@@ -496,12 +505,43 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 		fclose(stat_fp);
 		return;
 	}
+
+	if (!tres_count) {
+		assoc_mgr_lock_t locks = {
+			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+			READ_LOCK, NO_LOCK, NO_LOCK };
+		assoc_mgr_lock(&locks);
+		tres_count = g_tres_count;
+		assoc_mgr_unlock(&locks);
+	}
+
+	prec->tres_count = tres_count;
+	prec->tres_data = xmalloc(prec->tres_count *
+				  sizeof(acct_gather_data_t));
+
+	/* Initialize read/writes */
+	for (i = 0; i < prec->tres_count; i++) {
+		prec->tres_data[i].num_reads = INFINITE64;
+		prec->tres_data[i].num_writes = INFINITE64;
+		prec->tres_data[i].size_read = INFINITE64;
+		prec->tres_data[i].size_write = INFINITE64;
+	}
+
 	if (!_get_process_data_line(fd, prec)) {
+		xfree(prec->tres_data);
 		xfree(prec);
 		fclose(stat_fp);
 		return;
 	}
 	fclose(stat_fp);
+
+	if (acct_gather_filesystem_g_get_data(prec->tres_data) < 0) {
+		debug2("problem retrieving filesystem data");
+	}
+
+	if (acct_gather_interconnect_g_get_data(prec->tres_data) < 0) {
+		debug2("problem retrieving interconnect data");
+	}
 
 	/* Remove shared data from rss */
 	if (no_share_data)
@@ -510,6 +550,7 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	/* Use PSS instead if RSS */
 	if (use_pss) {
 		if (_get_pss(proc_smaps_file, prec) == -1) {
+			xfree(prec->tres_data);
 			xfree(prec);
 			return;
 		}
@@ -537,6 +578,11 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 	char	proc_smaps_file[256];	/* Allow ~20x extra length */
 	static	int	slash_proc_open = 0;
 	int i;
+	struct jobacctinfo *jobacct = NULL;
+
+	xassert(task_list);
+
+	jobacct = list_peek(task_list);
 
 	if (!pgid_plugin) {
 		pid_t *pids = NULL;
@@ -545,11 +591,12 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		proctrack_g_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
 			/* update consumed energy even if pids do not exist */
-			struct jobacctinfo *jobacct = NULL;
-			if ((jobacct = list_peek(task_list))) {
+			if (jobacct) {
 				acct_gather_energy_g_get_data(
 					energy_profile,
 					&jobacct->energy);
+				jobacct->tres_usage_in_tot[TRES_ARRAY_ENERGY] =
+					jobacct->energy.consumed_energy;
 				debug2("getjoules_task energy = %"PRIu64"",
 				       jobacct->energy.consumed_energy);
 			}
@@ -562,7 +609,8 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 			snprintf(proc_io_file, 256, "/proc/%d/io", pids[i]);
 			snprintf(proc_smaps_file, 256, "/proc/%d/smaps", pids[i]);
 			_handle_stats(prec_list, proc_stat_file, proc_io_file,
-				      proc_smaps_file, callbacks);
+				      proc_smaps_file, callbacks,
+				      jobacct ? jobacct->tres_count : 0);
 		}
 		xfree(pids);
 	} else {
@@ -651,7 +699,8 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 			*optr2 = 0;
 
 			_handle_stats(prec_list, proc_stat_file, proc_io_file,
-				      proc_smaps_file,callbacks);
+				      proc_smaps_file,callbacks,
+				      jobacct ? jobacct->tres_count : 0);
 		}
 	}
 
@@ -715,9 +764,9 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		return;
 
 	data[FIELD_CPUFREQ].u64 = jobacct->act_cpufreq;
-	data[FIELD_RSS].u64 = jobacct->tot_rss;
-	data[FIELD_VMSIZE].u64 = jobacct->tot_vsize;
-	data[FIELD_PAGES].u64 = jobacct->tot_pages;
+	data[FIELD_RSS].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
+	data[FIELD_VMSIZE].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+	data[FIELD_PAGES].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES];
 
 	/* delta from last snapshot */
 	if (!jobacct->last_time) {
@@ -727,7 +776,8 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_WRITE].d = 0.0;
 	} else {
 		data[FIELD_CPUTIME].d =
-			jobacct->tot_cpu - jobacct->last_total_cputime;
+			(double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] -
+			jobacct->last_total_cputime;
 		et = (jobacct->cur_time - jobacct->last_time);
 		if (!et)
 			data[FIELD_CPUUTIL].d = 0.0;
@@ -736,11 +786,13 @@ static void _record_profile(struct jobacctinfo *jobacct)
 				(100.0 * (double)data[FIELD_CPUTIME].d) /
 				((double) et);
 
-		data[FIELD_READ].d = jobacct->tot_disk_read -
-			jobacct->last_tot_disk_read;
+		data[FIELD_READ].d = (double) jobacct->
+			tres_usage_in_tot[TRES_ARRAY_FS_DISK] -
+			jobacct->last_tres_usage_in_tot;
 
-		data[FIELD_WRITE].d = jobacct->tot_disk_write -
-			jobacct->last_tot_disk_write;
+		data[FIELD_WRITE].d = (double) jobacct->
+			tres_usage_out_tot[TRES_ARRAY_FS_DISK] -
+			jobacct->last_tres_usage_out_tot;
 	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -778,7 +830,7 @@ extern void jag_common_init(long in_hertz)
 		}
 	}
 
-	my_pagesize = getpagesize() / 1024;
+	my_pagesize = getpagesize();
 }
 
 extern void jag_common_fini(void)
@@ -790,21 +842,34 @@ extern void jag_common_fini(void)
 extern void destroy_jag_prec(void *object)
 {
 	jag_prec_t *prec = (jag_prec_t *)object;
+	xfree(prec->tres_data);
 	xfree(prec);
 	return;
 }
 
 extern void print_jag_prec(jag_prec_t *prec)
 {
+	int i;
+	assoc_mgr_lock_t locks = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+		READ_LOCK, NO_LOCK, NO_LOCK };
+
 	info("pid %d (ppid %d)", prec->pid, prec->ppid);
 	info("act_cpufreq\t%d", prec->act_cpufreq);
-	info("disk read\t%f", prec->disk_read);
-	info("disk_write\t%f", prec->disk_write);
-	info("pages\t%d", prec->pages);
-	info("rss  \t%"PRIu64"", prec->rss);
 	info("ssec \t%d", prec->ssec);
+	assoc_mgr_lock(&locks);
+	for (i = 0; i < prec->tres_count; i++) {
+		if (prec->tres_data[i].size_read == INFINITE64)
+			continue;
+		info("%s in/read \t%"PRIu64"",
+		     assoc_mgr_tres_name_array[i],
+		     prec->tres_data[i].size_read);
+		info("%s out/write \t%"PRIu64"",
+		     assoc_mgr_tres_name_array[i],
+		     prec->tres_data[i].size_write);
+	}
+	assoc_mgr_unlock(&locks);
 	info("usec \t%d", prec->usec);
-	info("vsize\t%"PRIu64"", prec->vsize);
 }
 
 extern void jag_common_poll_data(
@@ -822,10 +887,11 @@ extern void jag_common_poll_data(
 	int energy_counted = 0;
 	time_t ct;
 	static int no_over_memory_kill = -1;
+	int i = 0;
 
 	xassert(callbacks);
 
-	if (!pgid_plugin && (cont_id == NO_VAL64)) {
+	if (!pgid_plugin && (cont_id == INFINITE64)) {
 		debug("cont_id hasn't been set yet not running poll");
 		return;
 	}
@@ -863,68 +929,28 @@ extern void jag_common_poll_data(
 			continue;
 
 #if _DEBUG
-		info("pid:%u ppid:%u rss:%d KB",
-		     prec->pid, prec->ppid, prec->rss);
+		info("pid:%u ppid:%u rss:%"PRIu64" B",
+		     prec->pid, prec->ppid,
+		     prec->tres_data[TRES_ARRAY_MEM].size_read);
 #endif
 		/* find all my descendents */
 		if (callbacks->get_offspring_data)
 			(*(callbacks->get_offspring_data))
 				(prec_list, prec, prec->pid);
 
-		last_total_cputime = jobacct->tot_cpu;
+		last_total_cputime =
+			(double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
 
 		cpu_calc = (double)(prec->ssec + prec->usec)/(double)hertz;
-		/* tally their usage */
-		jobacct->max_rss =
-			MAX(jobacct->max_rss, prec->rss);
-		jobacct->tot_rss = prec->rss;
-		total_job_mem += prec->rss;
-		jobacct->max_vsize =
-			MAX(jobacct->max_vsize, prec->vsize);
-		jobacct->tot_vsize = prec->vsize;
-		total_job_vsize += prec->vsize;
-		jobacct->max_pages =
-			MAX(jobacct->max_pages, prec->pages);
-		jobacct->tot_pages = prec->pages;
-		jobacct->max_disk_read = MAX(
-			jobacct->max_disk_read,
-			prec->disk_read);
-		jobacct->tot_disk_read = prec->disk_read;
-		jobacct->max_disk_write = MAX(
-			jobacct->max_disk_write,
-			prec->disk_write);
 
-		jobacct->tot_disk_write = prec->disk_write;
-		jobacct->min_cpu =
-			MAX((double)jobacct->min_cpu, cpu_calc);
-
-		/* Update the cpu times
+		/*
+		 * Since we are not storing things as a double anymore make it
+		 * bigger so we don't loose precision.
 		 */
-		jobacct->tot_cpu = cpu_calc;
-		jobacct->user_cpu_sec = prec->usec/hertz;
-		jobacct->sys_cpu_sec = prec->ssec/hertz;
-		debug2("%s: %d mem size %"PRIu64" %"PRIu64" "
-		       "time %f(%u+%u)", __func__,
-		       jobacct->pid, jobacct->max_rss,
-		       jobacct->max_vsize, jobacct->tot_cpu,
-		       jobacct->user_cpu_sec,
-		       jobacct->sys_cpu_sec);
-		/* compute frequency */
-		jobacct->this_sampled_cputime =
-			cpu_calc - last_total_cputime;
-		_get_sys_interface_freq_line(
-			prec->last_cpu,
-			"cpuinfo_cur_freq", sbuf);
-		jobacct->act_cpufreq =
-			_update_weighted_freq(jobacct, sbuf);
-		debug("%s: Task average frequency = %u "
-		       "pid %d mem size %"PRIu64" %"PRIu64" "
-		       "time %f(%u+%u)", __func__,
-		       jobacct->act_cpufreq,
-		       jobacct->pid, jobacct->max_rss,
-		       jobacct->max_vsize, jobacct->tot_cpu,
-		       jobacct->user_cpu_sec,
-		       jobacct->sys_cpu_sec);
+		cpu_calc *= CPU_TIME_ADJ;
+
+		prec->tres_data[TRES_ARRAY_CPU].size_read = (uint64_t)cpu_calc;
+
 		/* get energy consumption
 		 * only once is enough since we
 		 * report per node energy consumption */
@@ -933,19 +959,97 @@ extern void jag_common_poll_data(
 			acct_gather_energy_g_get_data(
 				energy_profile,
 				&jobacct->energy);
+			prec->tres_data[TRES_ARRAY_ENERGY].size_read =
+				jobacct->energy.consumed_energy;
 			debug2("getjoules_task energy = %"PRIu64,
 			       jobacct->energy.consumed_energy);
 			energy_counted = 1;
 		}
+
+		/* tally their usage */
+		for (i = 0; i < jobacct->tres_count; i++) {
+			if (prec->tres_data[i].size_read == INFINITE64)
+				continue;
+			if (jobacct->tres_usage_in_max[i] == INFINITE64)
+				jobacct->tres_usage_in_max[i] =
+					prec->tres_data[i].size_read;
+			else if (i == TRES_ARRAY_CPU)
+				jobacct->tres_usage_in_max[i] =
+					MIN(jobacct->tres_usage_in_max[i],
+					    prec->tres_data[i].size_read);
+			else
+				jobacct->tres_usage_in_max[i] =
+					MAX(jobacct->tres_usage_in_max[i],
+					    prec->tres_data[i].size_read);
+			jobacct->tres_usage_in_tot[i] =
+				prec->tres_data[i].size_read;
+
+			if (jobacct->tres_usage_out_max[i] == INFINITE64)
+				jobacct->tres_usage_out_max[i] =
+					prec->tres_data[i].size_write;
+			else if (i == TRES_ARRAY_CPU)
+				jobacct->tres_usage_out_max[i] =
+					MIN(jobacct->tres_usage_out_max[i],
+					    prec->tres_data[i].size_write);
+			else
+				jobacct->tres_usage_out_max[i] =
+					MAX(jobacct->tres_usage_out_max[i],
+					    prec->tres_data[i].size_write);
+			jobacct->tres_usage_out_tot[i] =
+				prec->tres_data[i].size_write;
+		}
+
+		jobacct->tres_usage_in_max[TRES_ARRAY_CPU] =
+			MAX((double)jobacct->tres_usage_in_max[TRES_ARRAY_CPU],
+			    cpu_calc);
+		total_job_mem += jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
+		total_job_vsize += jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+
+		/* Update the cpu times */
+		jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] = (uint64_t)cpu_calc;
+		jobacct->user_cpu_sec = prec->usec/hertz;
+		jobacct->sys_cpu_sec = prec->ssec/hertz;
+
+		/* compute frequency */
+		jobacct->this_sampled_cputime =
+			cpu_calc - last_total_cputime;
+		_get_sys_interface_freq_line(
+			prec->last_cpu,
+			"cpuinfo_cur_freq", sbuf);
+		jobacct->act_cpufreq =
+			_update_weighted_freq(jobacct, sbuf);
+
+		debug("%s: Task %u pid %d ave_freq = %u mem size/max %"PRIu64"/%"PRIu64" vmem size/max %"PRIu64"/%"PRIu64", disk read size/max (%"PRIu64"/%"PRIu64"), disk write size/max (%"PRIu64"/%"PRIu64"), time %f(%u+%u)",
+		      __func__,
+		      jobacct->id.taskid,
+		      jobacct->pid,
+		      jobacct->act_cpufreq,
+		      jobacct->tres_usage_in_tot[TRES_ARRAY_MEM],
+		      jobacct->tres_usage_in_max[TRES_ARRAY_MEM],
+		      jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM],
+		      jobacct->tres_usage_in_max[TRES_ARRAY_VMEM],
+		      jobacct->tres_usage_in_tot[TRES_ARRAY_FS_DISK],
+		      jobacct->tres_usage_in_max[TRES_ARRAY_FS_DISK],
+		      jobacct->tres_usage_out_tot[TRES_ARRAY_FS_DISK],
+		      jobacct->tres_usage_out_max[TRES_ARRAY_FS_DISK],
+		      (double)(jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] /
+			       CPU_TIME_ADJ),
+		      jobacct->user_cpu_sec,
+		      jobacct->sys_cpu_sec);
+
 		if (profile &&
 		    acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
 			jobacct->cur_time = ct;
 
 			_record_profile(jobacct);
 
-			jobacct->last_tot_disk_read = jobacct->tot_disk_read;
-			jobacct->last_tot_disk_write = jobacct->tot_disk_write;
-			jobacct->last_total_cputime = jobacct->tot_cpu;
+			jobacct->last_tres_usage_in_tot =
+				jobacct->tres_usage_in_tot[TRES_ARRAY_FS_DISK];
+			jobacct->last_tres_usage_out_tot =
+				jobacct->tres_usage_out_tot[TRES_ARRAY_FS_DISK];
+			jobacct->last_total_cputime =
+				jobacct->tres_usage_out_tot[TRES_ARRAY_CPU];
+
 			jobacct->last_time = jobacct->cur_time;
 		}
 	}

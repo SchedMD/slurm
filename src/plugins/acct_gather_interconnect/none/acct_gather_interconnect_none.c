@@ -118,3 +118,8 @@ extern void acct_gather_interconnect_p_conf_values(List *data)
 {
 	return;
 }
+
+extern int acct_gather_interconnect_p_get_data(acct_gather_data_t *data)
+{
+	return SLURM_SUCCESS;
+}

@@ -59,6 +59,7 @@
 
 #define CONVERT_NUM_UNIT_EXACT 0x00000001
 #define CONVERT_NUM_UNIT_NO    0x00000002
+#define CONVERT_NUM_UNIT_RAW   0x00000004
 
 /* unit types */
 enum {
@@ -1177,6 +1178,15 @@ extern int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
  * They open a connection do work then close the connection all within
  * the function
 \**********************************************************************/
+
+/* slurm_send_msg
+ * given the original request message this function sends a
+ *	arbitrary message back to the client that made the request
+ * IN request_msg	- slurm_msg the request msg
+ * IN msg_type          - message type being returned
+ * IN resp_msg		- the message being returned to the client
+ */
+int slurm_send_msg(slurm_msg_t *msg, uint16_t msg_type, void *resp);
 
 /* slurm_send_rc_msg
  * given the original request message this function sends a

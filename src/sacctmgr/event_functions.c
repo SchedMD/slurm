@@ -632,7 +632,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 
 				tmp_char = slurmdb_make_tres_string_from_simple(
 					event->tres_str, g_tres_list, NO_VAL,
-					CONVERT_NUM_UNIT_EXACT);
+					CONVERT_NUM_UNIT_EXACT, 0, NULL);
 
 				field->print_routine(
 					field,

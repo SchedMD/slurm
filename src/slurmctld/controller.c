@@ -1622,6 +1622,10 @@ static int _init_tres(void)
 			tres_rec->id = TRES_NODE;
 		else if (!xstrcasecmp(temp_char, "billing"))
 			tres_rec->id = TRES_BILLING;
+		else if (!xstrcasecmp(temp_char, "vmem"))
+			tres_rec->id = TRES_VMEM;
+		else if (!xstrcasecmp(temp_char, "pages"))
+			tres_rec->id = TRES_PAGES;
 		else if (!xstrncasecmp(temp_char, "bb/", 3)) {
 			tres_rec->type[2] = '\0';
 			tres_rec->name = xstrdup(temp_char+3);
@@ -1644,9 +1648,20 @@ static int _init_tres(void)
 				      "have a name, (i.e. License/Foo).  "
 				      "You gave %s",
 				      temp_char);
+		} else if (!xstrncasecmp(temp_char, "fs/", 3)) {
+			tres_rec->type[2] = '\0';
+			tres_rec->name = xstrdup(temp_char+3);
+			if (!tres_rec->name)
+				fatal("Filesystem type tres need to have a name, (i.e. fs/disk).  You gave %s",
+				      temp_char);
+		} else if (!xstrncasecmp(temp_char, "ic/", 3)) {
+			tres_rec->type[2] = '\0';
+			tres_rec->name = xstrdup(temp_char+3);
+			if (!tres_rec->name)
+				fatal("Interconnect type tres need to have a name, (i.e. ic/ofed).  You gave %s",
+				      temp_char);
 		} else {
-			fatal("%s: Unknown tres type '%s', acceptable "
-			      "types are CPU,Gres/,License/,Mem",
+			fatal("%s: Unknown tres type '%s', acceptable types are Billing,CPU,Energy,FS/,Gres/,IC/,License/,Mem,Node,Pages,VMem",
 			      __func__, temp_char);
 			xfree(tres_rec->type);
 			xfree(tres_rec);

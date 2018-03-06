@@ -95,6 +95,20 @@ static void _free_federation_rec_members(slurmdb_federation_rec_t *federation)
 	}
 }
 
+static void _free_stats(slurmdb_stats_t *stats)
+{
+	if (stats) {
+		xfree(stats->tres_usage_in_ave);
+		xfree(stats->tres_usage_in_max);
+		xfree(stats->tres_usage_in_max_nodeid);
+		xfree(stats->tres_usage_in_max_taskid);
+		xfree(stats->tres_usage_out_ave);
+		xfree(stats->tres_usage_out_max);
+		xfree(stats->tres_usage_out_max_nodeid);
+		xfree(stats->tres_usage_out_max_taskid);
+	}
+}
+
 static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 {
 	if (wckey) {
@@ -574,7 +588,6 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 	memset(&job->stats, 0, sizeof(slurmdb_stats_t));
 	job->array_task_id = NO_VAL;
 	job->derived_ec = NO_VAL;
-	job->stats.cpu_min = NO_VAL;
 	job->state = JOB_PENDING;
 	job->steps = list_create(slurmdb_destroy_step_rec);
 	job->requid = -1;
@@ -849,6 +862,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->nodes);
 		xfree(job->req_gres);
 		xfree(job->resv_name);
+		_free_stats(&job->stats);
 		FREE_NULL_LIST(job->steps);
 		xfree(job->system_comment);
 		xfree(job->tres_alloc_str);
@@ -923,6 +937,7 @@ extern void slurmdb_destroy_step_rec(void *object)
 	if (step) {
 		xfree(step->nodes);
 		xfree(step->pid_str);
+		_free_stats(&step->stats);
 		xfree(step->stepname);
 		xfree(step->tres_alloc_str);
 		xfree(step);
@@ -3471,6 +3486,10 @@ extern char *slurmdb_make_tres_string(List tres, uint32_t flags)
 
 	itr = list_iterator_create(tres);
 	while ((tres_rec = list_next(itr))) {
+		if ((flags & TRES_STR_FLAG_REMOVE) &&
+		    (tres_rec->count == INFINITE64))
+			continue;
+
 		if ((flags & TRES_STR_FLAG_SIMPLE) || !tres_rec->type)
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 				   (tres_str ||
@@ -3515,13 +3534,15 @@ extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
 
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list, int spec_unit,
-	uint32_t convert_flags)
+	uint32_t convert_flags, uint32_t tres_str_flags, char *nodes)
 {
 	char *tres_str = NULL;
 	char *tmp_str = tres_in;
 	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
+	char *node_name = NULL;
+	List char_list = NULL;
 
 	if (!full_tres_list || !tmp_str || !tmp_str[0]
 	    || tmp_str[0] < '0' || tmp_str[0] > '9')
@@ -3563,9 +3584,18 @@ extern char *slurmdb_make_tres_string_from_simple(
 				   tres_rec->name ? "/" : "",
 				   tres_rec->name ? tres_rec->name : "");
 		if (count != INFINITE64) {
-			if ((tres_rec->id == TRES_MEM) ||
-			    (tres_rec->type &&
-			     !xstrcasecmp(tres_rec->type, "bb"))) {
+			if (nodes) {
+				node_name = find_hostname(count, nodes);
+				xstrfmtcat(tres_str, "%s", node_name);
+				xfree(node_name);
+			} else if (tres_str_flags & TRES_STR_FLAG_BYTES) {
+				char outbuf[FORMAT_STRING_SIZE];
+				convert_num_unit((double)count, outbuf,
+						 sizeof(outbuf), UNIT_NONE,
+						 spec_unit, convert_flags);
+				xstrfmtcat(tres_str, "%s", outbuf);
+			} else if ((tres_rec->id == TRES_MEM) ||
+				   !xstrcasecmp(tres_rec->type, "bb")) {
 				char outbuf[FORMAT_STRING_SIZE];
 				convert_num_unit((double)count, outbuf,
 						 sizeof(outbuf), UNIT_MEGA,
@@ -3577,11 +3607,21 @@ extern char *slurmdb_make_tres_string_from_simple(
 		} else
 			xstrfmtcat(tres_str, "NONE");
 
-
+		if (!(tres_str_flags & TRES_STR_FLAG_SORT_ID)) {
+			if (!char_list)
+				char_list = list_create(slurm_destroy_char);
+			list_append(char_list, tres_str);
+			tres_str = NULL;
+		}
 	get_next:
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
 		tmp_str++;
+	}
+
+	if (char_list) {
+		tres_str = slurm_char_list_to_xstr(char_list);
+		FREE_NULL_LIST(char_list);
 	}
 
 	return tres_str;
@@ -3765,6 +3805,29 @@ extern void slurmdb_tres_list_from_string(
 			       "replacing with %"PRIu64,
 			      tres_rec->id, tres_rec->count, count);
 			tres_rec->count = count;
+		} else if (flags & TRES_STR_FLAG_SUM) {
+			if (count != INFINITE64) {
+				if (tres_rec->count == INFINITE64)
+					tres_rec->count = count;
+				else
+					tres_rec->count += count;
+			}
+		} else if (flags & TRES_STR_FLAG_MAX) {
+			if (count != INFINITE64) {
+				if (tres_rec->count == INFINITE64)
+					tres_rec->count = count;
+				else
+					tres_rec->count =
+						MAX(tres_rec->count, count);
+			}
+		} else if (flags & TRES_STR_FLAG_MIN) {
+			if (count != INFINITE64) {
+				if (tres_rec->count == INFINITE64)
+					tres_rec->count = count;
+				else
+					tres_rec->count =
+						MIN(tres_rec->count, count);
+			}
 		}
 
 		if (!(tmp_str = strchr(tmp_str, ',')))
@@ -4177,6 +4240,34 @@ extern int slurmdb_get_tres_base_unit(char *tres_type)
 	}
 
 	return ret_unit;
+}
+
+extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks)
+{
+	List tres_list = NULL;
+	ListIterator itr;
+	slurmdb_tres_rec_t *tres_rec = NULL;
+	uint32_t flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REPLACE;
+	char *ret_tres_str = NULL;
+
+	if (!tres_string)
+		return NULL;
+
+	slurmdb_tres_list_from_string(&tres_list, tres_string, flags);
+	if (!tres_list) {
+		error("%s: couldn't make tres_list", __func__);
+		return ret_tres_str;
+	}
+
+	itr = list_iterator_create(tres_list);
+	while ((tres_rec = list_next(itr)))
+		tres_rec->count /= (uint64_t)tasks;
+	list_iterator_destroy(itr);
+
+	ret_tres_str = slurmdb_make_tres_string(tres_list, flags);
+	FREE_NULL_LIST(tres_list);
+
+	return ret_tres_str;
 }
 
 extern void slurmdb_destroy_stats_rec(void *object)

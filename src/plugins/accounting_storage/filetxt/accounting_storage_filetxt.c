@@ -927,19 +927,18 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 #endif
 	/* figure out the ave of the totals sent */
 	if (cpus > 0) {
-		ave_vsize = jobacct->tot_vsize;
+		ave_vsize = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
 		ave_vsize /= cpus;
-		ave_rss = jobacct->tot_rss;
+		ave_rss = jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
 		ave_rss /= cpus;
-		ave_pages = jobacct->tot_pages;
+		ave_pages = jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES];
 		ave_pages /= cpus;
-		ave_cpu = jobacct->tot_cpu;
+		ave_cpu = jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
 		ave_cpu /= cpus;
 	}
 
-	if (jobacct->min_cpu != NO_VAL) {
-		ave_cpu2 = jobacct->min_cpu;
-	}
+	if (jobacct->tres_usage_in_max[TRES_ARRAY_CPU] != INFINITE64)
+		ave_cpu2 = jobacct->tres_usage_in_max[TRES_ARRAY_CPU];
 
 	account   = _safe_dup(step_ptr->job_ptr->account);
 	step_name = _safe_dup(step_ptr->name);
@@ -976,24 +975,24 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		 0,	/* total nsignals */
 		 0,	/* total nvcsw */
 		 0,	/* total nivcsw */
-		 jobacct->max_vsize,	/* max vsize */
-		 jobacct->max_vsize_id.taskid,	/* max vsize node */
+		 jobacct->tres_usage_in_max[TRES_ARRAY_VMEM],
+		 jobacct->tres_usage_in_max_taskid[TRES_ARRAY_VMEM],
 		 ave_vsize,	/* ave vsize */
-		 jobacct->max_rss,	/* max vsize */
-		 jobacct->max_rss_id.taskid,	/* max rss node */
+		 jobacct->tres_usage_in_max[TRES_ARRAY_MEM],
+		 jobacct->tres_usage_in_max_taskid[TRES_ARRAY_MEM],
 		 ave_rss,	/* ave rss */
-		 jobacct->max_pages,	/* max pages */
-		 jobacct->max_pages_id.taskid,	/* max pages node */
+		 jobacct->tres_usage_in_max[TRES_ARRAY_PAGES],
+		 jobacct->tres_usage_in_max_taskid[TRES_ARRAY_PAGES],
 		 ave_pages,	/* ave pages */
 		 ave_cpu2,	/* min cpu */
-		 jobacct->min_cpu_id.taskid,	/* min cpu node */
+		 jobacct->tres_usage_in_max_taskid[TRES_ARRAY_CPU],
 		 ave_cpu,	/* ave cpu */
 		 step_name,	/* step exe name */
 		 node_list, /* name of nodes step running on */
-		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
-		 jobacct->max_rss_id.nodeid,	/* max rss task */
-		 jobacct->max_pages_id.nodeid,	/* max pages task */
-		 jobacct->min_cpu_id.nodeid,	/* min cpu task */
+		 jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_VMEM],
+		 jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_MEM],
+		 jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_PAGES],
+		 jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_CPU],
 		 account,
 		 step_ptr->job_ptr->requid); /* requester user id */
 

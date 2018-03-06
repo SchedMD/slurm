@@ -3119,7 +3119,33 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg,
 	} else {
 		debug2("_slurm_rpc_node_registration complete for %s %s",
 		       node_reg_stat_msg->node_name, TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		/* If the slurmd is requesting a response send it */
+		if (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP) {
+			slurm_node_reg_resp_msg_t *resp = NULL, tmp_resp;
+			if (msg->msg_index && msg->ret_list) {
+				/*
+				 * If this is the case then the resp must be
+				 * xmalloced and will be freed when dealt with
+				 * later.
+				 */
+				resp = xmalloc(
+					sizeof(slurm_node_reg_resp_msg_t));
+			} else {
+				memset(&tmp_resp, 0,
+				       sizeof(slurm_node_reg_resp_msg_t));
+				resp = &tmp_resp;
+			}
+
+			/*
+			 * Don't add the assoc_mgr_tres_list here as it could
+			 * get freed later if you do.  The pack functions grab
+			 * it for us if it isn't here.
+			 */
+			//resp->tres_list = assoc_mgr_tres_list;
+
+			slurm_send_msg(msg, RESPONSE_NODE_REGISTRATION, resp);
+		} else
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }
 

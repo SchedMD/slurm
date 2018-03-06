@@ -865,6 +865,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			"(%ld, %d, 0, 'energy'), "
 			"(%ld, %d, 0, 'node'), "
 			"(%ld, %d, 0, 'billing'), "
+			"(%ld, %d, 0, 'vmem'), "
+			"(%ld, %d, 0, 'pages'), "
 			"(%ld, %d, 1, 'dynamic_offset') "
 			"on duplicate key update deleted=VALUES(deleted), type=VALUES(type);",
 			tres_table,
@@ -873,8 +875,24 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			now, TRES_ENERGY,
 			now, TRES_NODE,
 			now, TRES_BILLING,
+			now, TRES_VMEM,
+			now, TRES_PAGES,
 			now, TRES_OFFSET);
-		if (debug_flags & DEBUG_FLAG_DB_QOS)
+		if (debug_flags & DEBUG_FLAG_DB_TRES)
+			DB_DEBUG(mysql_conn->conn, "%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if (rc != SLURM_SUCCESS)
+			fatal("problem adding static tres");
+
+		/* Now insert TRES that have a name */
+		query = xstrdup_printf(
+			"insert into %s (creation_time, id, deleted, type, name) values "
+			"(%ld, %d, 0, 'fs', 'disk') "
+			"on duplicate key update deleted=VALUES(deleted), type=VALUES(type), name=VALUES(name);",
+			tres_table,
+			now, TRES_FS_DISK);
+		if (debug_flags & DEBUG_FLAG_DB_TRES)
 			DB_DEBUG(mysql_conn->conn, "%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
@@ -1337,36 +1355,20 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "int unsigned default 0 not null" },
 		{ "sys_usec", "int unsigned default 0 not null" },
-		{ "max_pages", "int unsigned default 0 not null" },
-		{ "max_pages_task", "int unsigned default 0 not null" },
-		{ "max_pages_node", "int unsigned default 0 not null" },
-		{ "ave_pages", "double unsigned default 0.0 not null" },
-		{ "max_rss", "bigint unsigned default 0 not null" },
-		{ "max_rss_task", "int unsigned default 0 not null" },
-		{ "max_rss_node", "int unsigned default 0 not null" },
-		{ "ave_rss", "double unsigned default 0.0 not null" },
-		{ "max_vsize", "bigint unsigned default 0 not null" },
-		{ "max_vsize_task", "int unsigned default 0 not null" },
-		{ "max_vsize_node", "int unsigned default 0 not null" },
-		{ "ave_vsize", "double unsigned default 0.0 not null" },
-		{ "min_cpu", "int unsigned default 0xfffffffe not null" },
-		{ "min_cpu_task", "int unsigned default 0 not null" },
-		{ "min_cpu_node", "int unsigned default 0 not null" },
-		{ "ave_cpu", "double unsigned default 0.0 not null" },
 		{ "act_cpufreq", "double unsigned default 0.0 not null" },
 		{ "consumed_energy", "bigint unsigned default 0 not null" },
 		{ "req_cpufreq_min", "int unsigned default 0 not null" },
 		{ "req_cpufreq", "int unsigned default 0 not null" }, /* max */
 		{ "req_cpufreq_gov", "int unsigned default 0 not null" },
-		{ "max_disk_read", "double unsigned default 0.0 not null" },
-		{ "max_disk_read_task", "int unsigned default 0 not null" },
-		{ "max_disk_read_node", "int unsigned default 0 not null" },
-		{ "ave_disk_read", "double unsigned default 0.0 not null" },
-		{ "max_disk_write", "double unsigned default 0.0 not null" },
-		{ "max_disk_write_task", "int unsigned default 0 not null" },
-		{ "max_disk_write_node", "int unsigned default 0 not null" },
-		{ "ave_disk_write", "double unsigned default 0.0 not null" },
 		{ "tres_alloc", "text not null default ''" },
+		{ "tres_usage_in_ave", "text not null default ''" },
+		{ "tres_usage_in_max", "text not null default ''" },
+		{ "tres_usage_in_max_taskid", "text not null default ''" },
+		{ "tres_usage_in_max_nodeid", "text not null default ''" },
+		{ "tres_usage_out_ave", "text not null default ''" },
+		{ "tres_usage_out_max", "text not null default ''" },
+		{ "tres_usage_out_max_taskid", "text not null default ''" },
+		{ "tres_usage_out_max_nodeid", "text not null default ''" },
 		{ NULL, NULL}
 	};
 

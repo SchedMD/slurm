@@ -1659,7 +1659,8 @@ extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
 	sacctmgr_initialize_g_tres_list();
 
 	print_this = slurmdb_make_tres_string_from_simple(
-		tres_simple_str, g_tres_list, NO_VAL, CONVERT_NUM_UNIT_EXACT);
+		tres_simple_str, g_tres_list, NO_VAL, CONVERT_NUM_UNIT_EXACT, 0,
+		NULL);
 
 
 	if (!print_this)
@@ -1711,7 +1712,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->grp_tres, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  GrpTRES       = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1719,7 +1720,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->grp_tres_mins, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);;
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);;
 		printf("  GrpTRESMins   = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1727,7 +1728,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->grp_tres_run_mins, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  GrpTRESRunMins= %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1756,7 +1757,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_pj, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRES       = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1764,7 +1765,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_pn, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESPerNode= %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1772,7 +1773,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_mins_pj, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESMins   = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1780,7 +1781,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_run_mins, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESRUNMins= %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1931,7 +1932,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->grp_tres, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  GrpTRES                  = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1939,7 +1940,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->grp_tres_mins, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  GrpTRESMins              = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1947,7 +1948,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->grp_tres_run_mins, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  GrpTRESRunMins           = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1988,7 +1989,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_pa, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESPerAccount        = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -1996,7 +1997,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_pj, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESPerJob            = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -2004,7 +2005,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_pn, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESPerNode           = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -2012,7 +2013,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_pu, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESPerUser           = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -2020,7 +2021,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_mins_pj, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESMins              = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -2028,7 +2029,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_run_mins_pa, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESRUNMinsPerAccount = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
@@ -2036,7 +2037,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_run_mins_pu, g_tres_list, NO_VAL,
-			CONVERT_NUM_UNIT_EXACT);
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
 		printf("  MaxTRESRUNMinsPerUser    = %s\n", tmp_char);
 		xfree(tmp_char);
 	}

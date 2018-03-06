@@ -643,31 +643,15 @@ int
 stats_to_hv(slurmdb_stats_t *stats, HV* hv)
 {
     STORE_FIELD(hv, stats, act_cpufreq,           double);
-    STORE_FIELD(hv, stats, cpu_ave,               double);
     STORE_FIELD(hv, stats, consumed_energy,       uint64_t);
-    STORE_FIELD(hv, stats, cpu_min,               uint32_t);
-    STORE_FIELD(hv, stats, cpu_min_nodeid,        uint32_t);
-    STORE_FIELD(hv, stats, cpu_min_taskid,        uint32_t);
-    STORE_FIELD(hv, stats, disk_read_ave,         double);
-    STORE_FIELD(hv, stats, disk_read_max,         double);
-    STORE_FIELD(hv, stats, disk_read_max_nodeid,  uint32_t);
-    STORE_FIELD(hv, stats, disk_read_max_taskid,  uint32_t);
-    STORE_FIELD(hv, stats, disk_write_ave,        double);
-    STORE_FIELD(hv, stats, disk_write_max,        double);
-    STORE_FIELD(hv, stats, disk_write_max_nodeid, uint32_t);
-    STORE_FIELD(hv, stats, disk_write_max_taskid, uint32_t);
-    STORE_FIELD(hv, stats, pages_ave,             double);
-    STORE_FIELD(hv, stats, pages_max,             uint64_t);
-    STORE_FIELD(hv, stats, pages_max_nodeid,      uint32_t);
-    STORE_FIELD(hv, stats, pages_max_taskid,      uint32_t);
-    STORE_FIELD(hv, stats, rss_ave,               double);
-    STORE_FIELD(hv, stats, rss_max,               uint64_t);
-    STORE_FIELD(hv, stats, rss_max_nodeid,        uint32_t);
-    STORE_FIELD(hv, stats, rss_max_taskid,        uint32_t);
-    STORE_FIELD(hv, stats, vsize_ave,             double);
-    STORE_FIELD(hv, stats, vsize_max,             uint64_t);
-    STORE_FIELD(hv, stats, vsize_max_nodeid,      uint32_t);
-    STORE_FIELD(hv, stats, vsize_max_taskid,      uint32_t);
+    STORE_FIELD(hv, stats, tres_usage_in_ave,     charp);
+    STORE_FIELD(hv, stats, tres_usage_in_max,     charp);
+    STORE_FIELD(hv, stats, tres_usage_in_max_nodeid, charp);
+    STORE_FIELD(hv, stats, tres_usage_in_max_taskid, charp);
+    STORE_FIELD(hv, stats, tres_usage_out_ave,    charp);
+    STORE_FIELD(hv, stats, tres_usage_out_max,    charp);
+    STORE_FIELD(hv, stats, tres_usage_out_max_nodeid, charp);
+    STORE_FIELD(hv, stats, tres_usage_out_max_taskid, charp);
 
     return 0;
 }

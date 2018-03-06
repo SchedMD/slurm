@@ -42,9 +42,10 @@ main (int argc, char **argv)
 	long long int n;
 	long long int file_size;
 	int fd;
-	char *mem;
+	char *mem = NULL;
 	char *file_name;
 	time_t time_start = time(NULL);
+	int size, rank;
 
 	if (argc != 6) {
 		fprintf(stderr,
@@ -58,41 +59,53 @@ main (int argc, char **argv)
 	mem_kb     = atoi(argv[3]);
 	file_size  = atoll(argv[4]);
 	file_name  = argv[5];
-	mem = malloc(mem_kb * 1024);
-	/* need to do a memset on the memory or AIX will not count
-	 * the memory in the job step's Resident Set Size
-	 */
-	memset(mem, 0, (mem_kb * 1024));
 
-	/* Don't use malloc() to write() and read() a blob
-	 * of memory as it will interfere with the memory
-	 * test, don't use stdio for the same reason, it
-	 * allocates memory.
-	 */
-	fd = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
-	n = file_size/sizeof(int);
+	rank = atoi(getenv("SLURM_PROCID"));
 
-	for (i = 0; i < n; i++) {
-		if (write(fd, &i, sizeof(int)) != sizeof(int)) {
-			fprintf(stderr, "FAILURE: write error\n");
-			exit(1);
-		}
+	if (rank == 0) {
+		mem = malloc(mem_kb * 1024);
+		/* need to do a memset on the memory or AIX will not count
+		 * the memory in the job step's Resident Set Size
+		 */
+		memset(mem, 0, (mem_kb * 1024));
 	}
-	fsync(fd);
-	close(fd);
 
-	fd = open(file_name, O_RDONLY, S_IRUSR|S_IWUSR);
-	for (i = 0; i < n; i++) {
-		if (read(fd, &i, sizeof(int)) != sizeof(int)) {
-			fprintf(stderr, "FAILURE: read error\n");
-			exit(1);
+	if (rank == 1) {
+		/* Don't use malloc() to write() and read() a blob
+		 * of memory as it will interfere with the memory
+		 * test, don't use stdio for the same reason, it
+		 * allocates memory.
+		 */
+		fd = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
+		n = file_size/sizeof(int);
+
+		for (i = 0; i < n; i++) {
+			if (write(fd, &i, sizeof(int)) != sizeof(int)) {
+				fprintf(stderr, "FAILURE: write error\n");
+				exit(1);
+			}
 		}
+		fsync(fd);
+		close(fd);
 	}
-	close(fd);
+
+	if (rank == 2) {
+		sleep(5);
+		fd = open(file_name, O_RDONLY, S_IRUSR|S_IWUSR);
+		n = file_size/sizeof(int);
+		for (i = 0; i < n; i++) {
+			if (read(fd, &i, sizeof(int)) != sizeof(int)) {
+				fprintf(stderr, "FAILURE: read error\n");
+				exit(1);
+			}
+		}
+		close(fd);
+	}
 
 	sleep_time -= difftime(time(NULL), time_start);
 	sleep(sleep_time);
-	free(mem);
+	if (mem)
+		free(mem);
 
 	exit(exit_code);
 }

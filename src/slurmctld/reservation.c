@@ -2067,7 +2067,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	assoc_mgr_lock(&locks);
 	resv_ptr->tres_fmt_str = slurmdb_make_tres_string_from_simple(
 		resv_ptr->tres_str, assoc_mgr_tres_list, NO_VAL,
-		CONVERT_NUM_UNIT_EXACT);
+		CONVERT_NUM_UNIT_EXACT, 0, NULL);
 	assoc_mgr_unlock(&locks);
 
 	slurm_make_time_str(&resv_ptr->start_time, start_time,

@@ -96,7 +96,7 @@ static void _help_fields_msg(void)
 			printf(" ");
 		else if (i)
 			printf("\n");
-		printf("%-17s", fields[i].name);
+		printf("%-19s", fields[i].name);
 	}
 	printf("\n");
 	return;
@@ -1327,6 +1327,7 @@ extern void do_list(void)
 	ListIterator itr_step = NULL;
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
+	char *ave_usage_tmp = NULL;
 
 	if (!jobs)
 		return;
@@ -1338,15 +1339,16 @@ extern void do_list(void)
 		    xstrcmp(params.cluster_name, job->cluster))
 			continue;
 
-
 		if (list_count(job->steps)) {
 			int cnt = list_count(job->steps);
-			job->stats.cpu_ave /= (double)cnt;
-			job->stats.rss_ave /= (double)cnt;
-			job->stats.vsize_ave /= (double)cnt;
-			job->stats.pages_ave /= (double)cnt;
-			job->stats.disk_read_ave /= (double)cnt;
-			job->stats.disk_write_ave /= (double)cnt;
+			ave_usage_tmp = job->stats.tres_usage_in_ave;
+			job->stats.tres_usage_in_ave = slurmdb_ave_tres_usage(
+				ave_usage_tmp, cnt);
+			xfree(ave_usage_tmp);
+			ave_usage_tmp = job->stats.tres_usage_out_ave;
+			job->stats.tres_usage_out_ave = slurmdb_ave_tres_usage(
+				ave_usage_tmp, cnt);
+			xfree(ave_usage_tmp);
 		}
 
 		if (job->show_full)

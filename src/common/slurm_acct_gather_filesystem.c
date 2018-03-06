@@ -62,6 +62,7 @@ typedef struct slurm_acct_gather_filesystem_ops {
 				 int *full_options_cnt);
 	void (*conf_set)	(s_p_hashtbl_t *tbl);
 	void (*conf_values)        (List *data);
+	int (*get_data)		(acct_gather_data_t *data);
 } slurm_acct_gather_filesystem_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -72,6 +73,7 @@ static const char *syms[] = {
 	"acct_gather_filesystem_p_conf_options",
 	"acct_gather_filesystem_p_conf_set",
 	"acct_gather_filesystem_p_conf_values",
+	"acct_gather_filesystem_p_get_data",
 };
 
 static slurm_acct_gather_filesystem_ops_t ops;
@@ -166,6 +168,20 @@ extern int acct_gather_filesystem_fini(void)
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
+}
+
+/*
+ * This is sent an array that will be filled in from the plugin(s).  It is not a
+ * direct pointer since we could have (in the future) this be stackable.
+ */
+extern int acct_gather_filesystem_g_get_data(acct_gather_data_t *data)
+{
+	int retval = SLURM_SUCCESS;
+
+	if (acct_gather_filesystem_init() < 0)
+		return SLURM_ERROR;
+	retval = (*(ops.get_data))(data);
+	return retval;
 }
 
 extern int acct_gather_filesystem_startpoll(uint32_t frequency)

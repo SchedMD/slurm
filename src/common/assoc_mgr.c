@@ -1119,15 +1119,19 @@ static int _get_old_tres_pos(slurmdb_tres_rec_t **new_array,
 
 /* assoc, qos and tres write lock should be locked before calling this
  * return 1 if callback is needed */
-static int _post_tres_list(List new_list, int new_cnt)
+extern int assoc_mgr_post_tres_list(List new_list)
 {
 	ListIterator itr;
 	slurmdb_tres_rec_t *tres_rec, **new_array;
 	char **new_name_array;
 	bool changed_size = false, changed_pos = false;
 	int i, new_size, new_name_size;
+	int new_cnt;
 
 	xassert(new_list);
+
+	new_cnt = list_count(new_list);
+
 	xassert(new_cnt > 0);
 
 	new_size = sizeof(slurmdb_tres_rec_t) * new_cnt;
@@ -1419,7 +1423,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 		}
 	}
 
-	changed = _post_tres_list(new_list, list_count(new_list));
+	changed = assoc_mgr_post_tres_list(new_list);
 
 	assoc_mgr_unlock(&locks);
 
@@ -4891,10 +4895,10 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 	list_iterator_destroy(itr);
 	if (changed) {
 		/* We want to run this on the assoc_mgr_tres_list, but we need
-		 * to make a tmp variable since _post_tres_list will set
-		 * assoc_mgr_tres_list for us.
+		 * to make a tmp variable since assoc_mgr_post_tres_list will
+		 * set assoc_mgr_tres_list for us.
 		 */
-		_post_tres_list(tmp_list, list_count(tmp_list));
+		assoc_mgr_post_tres_list(tmp_list);
 	} else if (freeit)
 		FREE_NULL_LIST(tmp_list);
 	else
@@ -5783,8 +5787,8 @@ extern int load_assoc_mgr_last_tres(void)
 		error("No tres retrieved");
 	} else {
 		FREE_NULL_LIST(assoc_mgr_tres_list);
-		_post_tres_list(msg->my_list, list_count(msg->my_list));
-		/* assoc_mgr_tres_list gets set in _post_tres_list */
+		assoc_mgr_post_tres_list(msg->my_list);
+		/* assoc_mgr_tres_list gets set in assoc_mgr_post_tres_list */
 		debug("Recovered %u tres",
 		      list_count(assoc_mgr_tres_list));
 		msg->my_list = NULL;
@@ -5892,8 +5896,11 @@ extern int load_assoc_mgr_state(bool only_tres)
 				break;
 			}
 			FREE_NULL_LIST(assoc_mgr_tres_list);
-			_post_tres_list(msg->my_list, list_count(msg->my_list));
-			/* assoc_mgr_tres_list gets set in _post_tres_list */
+			assoc_mgr_post_tres_list(msg->my_list);
+			/*
+			 * assoc_mgr_tres_list gets set in
+			 * assoc_mgr_post_tres_list
+			 */
 			debug("Recovered %u tres",
 			      list_count(assoc_mgr_tres_list));
 			msg->my_list = NULL;
@@ -6331,23 +6338,45 @@ extern char *assoc_mgr_make_tres_str_from_array(
 		assoc_mgr_lock(&locks);
 
 	for (i=0; i<g_tres_count; i++) {
-		if (!assoc_mgr_tres_array[i] || !tres_cnt[i])
+		if (!assoc_mgr_tres_array[i])
 			continue;
+
+		if (flags & TRES_STR_FLAG_ALLOW_REAL) {
+			if ((tres_cnt[i] == NO_VAL64) ||
+			    (tres_cnt[i] == INFINITE64))
+				continue;
+		} else if (!tres_cnt[i])
+			continue;
+
 		if (flags & TRES_STR_FLAG_SIMPLE)
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 				   tres_str ? "," : "",
 				   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
 		else {
-			if (tres_cnt[i] == NO_VAL64)
+			/* Always skip these when printing out named TRES */
+			if ((tres_cnt[i] == NO_VAL64) ||
+			    (tres_cnt[i] == INFINITE64))
 				continue;
 			if ((flags & TRES_STR_CONVERT_UNITS) &&
 			    ((assoc_mgr_tres_array[i]->id == TRES_MEM) ||
-			     (assoc_mgr_tres_array[i]->type &&
-			      !xstrcasecmp(
-				      assoc_mgr_tres_array[i]->type, "bb")))) {
+			     !xstrcasecmp(assoc_mgr_tres_array[i]->type, "bb"))
+				) {
 				char outbuf[32];
 				convert_num_unit((double)tres_cnt[i], outbuf,
 						 sizeof(outbuf), UNIT_MEGA,
+						 NO_VAL,
+						 CONVERT_NUM_UNIT_EXACT);
+				xstrfmtcat(tres_str, "%s%s=%s",
+					   tres_str ? "," : "",
+					   assoc_mgr_tres_name_array[i],
+					   outbuf);
+			} else if (!xstrcasecmp(assoc_mgr_tres_array[i]->type,
+						"fs") ||
+				   !xstrcasecmp(assoc_mgr_tres_array[i]->type,
+						"ic")) {
+				char outbuf[32];
+				convert_num_unit((double)tres_cnt[i], outbuf,
+						 sizeof(outbuf), UNIT_NONE,
 						 NO_VAL,
 						 CONVERT_NUM_UNIT_EXACT);
 				xstrfmtcat(tres_str, "%s%s=%s",

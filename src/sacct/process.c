@@ -38,74 +38,136 @@
 
 #include "sacct.h"
 
-
-char *find_hostname(uint32_t pos, char *hosts)
+static void _aggregate_tres_usage_stats_internal(char **dest_tres_max,
+						 char **dest_tres_max_nodeid,
+						 char **dest_tres_max_taskid,
+						 char *from_tres_max,
+						 char *from_tres_max_nodeid,
+						 char *from_tres_max_taskid)
 {
-	hostlist_t hostlist = NULL;
-	char *temp = NULL, *host = NULL;
+	List dest_tres_list = NULL, from_tres_list = NULL;
+	ListIterator itr;
+	slurmdb_tres_rec_t *dest_tres_rec, *from_tres_rec;
+	uint32_t flags;
 
-	if (!hosts || (pos == NO_VAL))
-		return NULL;
+	xassert(dest_tres_max);
+	xassert(dest_tres_max_nodeid);
+	xassert(dest_tres_max_taskid);
 
-	hostlist = hostlist_create(hosts);
-	temp = hostlist_nth(hostlist, pos);
-	if (temp) {
-		host = xstrdup(temp);
-		free(temp);
+	flags = TRES_STR_FLAG_REMOVE;
+	slurmdb_tres_list_from_string(&dest_tres_list, *dest_tres_max, flags);
+	slurmdb_tres_list_from_string(&from_tres_list, from_tres_max, flags);
+
+	itr = list_iterator_create(from_tres_list);
+	while ((from_tres_rec = list_next(itr))) {
+		if (from_tres_rec->count == INFINITE64)
+			continue;
+
+		if (!(dest_tres_rec = list_find_first(dest_tres_list,
+						      slurmdb_find_tres_in_list,
+						      &from_tres_rec->id))) {
+			list_append(dest_tres_list, from_tres_rec);
+		} else {
+			if (dest_tres_rec->count == INFINITE64 ||
+			    ((dest_tres_rec->id == TRES_ARRAY_CPU) &&
+			     (dest_tres_rec->count > from_tres_rec->count)) ||
+			    ((dest_tres_rec->id != TRES_ARRAY_CPU) &&
+			     (dest_tres_rec->count < from_tres_rec->count))) {
+				dest_tres_rec->count = from_tres_rec->count;
+
+				/* overload rec_count to be the nodeid */
+				dest_tres_rec->rec_count =
+					slurmdb_find_tres_count_in_string(
+						from_tres_max_nodeid,
+						from_tres_rec->id);
+				/* overload alloc_secs to be the taskid */
+				dest_tres_rec->alloc_secs =
+					slurmdb_find_tres_count_in_string(
+						from_tres_max_taskid,
+						from_tres_rec->id);
+			}
+		}
 	}
-	hostlist_destroy(hostlist);
-	return host;
+	/* make the string now from the list */
+	flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REMOVE;
+	xfree(*dest_tres_max);
+	*dest_tres_max = slurmdb_make_tres_string(dest_tres_list, flags);
+
+	itr = list_iterator_create(dest_tres_list);
+
+	/* Now process the nodeid */
+	xfree(*dest_tres_max_nodeid);
+	while ((dest_tres_rec = list_next(itr)))
+		dest_tres_rec->count = (uint64_t)dest_tres_rec->rec_count;
+	*dest_tres_max_nodeid = slurmdb_make_tres_string(dest_tres_list, flags);
+
+	/* Now process the taskid */
+	xfree(*dest_tres_max_taskid);
+	while ((dest_tres_rec = list_next(itr)))
+		dest_tres_rec->count = dest_tres_rec->alloc_secs;
+	*dest_tres_max_taskid = slurmdb_make_tres_string(dest_tres_list, flags);
+
+	list_iterator_destroy(itr);
+
+	FREE_NULL_LIST(dest_tres_list);
+	FREE_NULL_LIST(from_tres_list);
+}
+
+static void _aggregate_tres_usage_stats(slurmdb_stats_t *dest,
+					slurmdb_stats_t *from)
+{
+	uint32_t flags;
+
+	if (!dest->tres_usage_in_max) {
+		dest->tres_usage_in_ave = xstrdup(from->tres_usage_in_ave);
+		dest->tres_usage_in_max = xstrdup(from->tres_usage_in_max);
+		dest->tres_usage_in_max_taskid =
+			xstrdup(from->tres_usage_in_max_taskid);
+		dest->tres_usage_in_max_nodeid =
+			xstrdup(from->tres_usage_in_max_nodeid);
+
+		dest->tres_usage_out_ave = xstrdup(from->tres_usage_out_ave);
+		dest->tres_usage_out_max = xstrdup(from->tres_usage_out_max);
+		dest->tres_usage_out_max_taskid =
+			xstrdup(from->tres_usage_out_max_taskid);
+		dest->tres_usage_out_max_nodeid =
+			xstrdup(from->tres_usage_out_max_nodeid);
+		return;
+	}
+
+	_aggregate_tres_usage_stats_internal(&dest->tres_usage_in_max,
+					     &dest->tres_usage_in_max_nodeid,
+					     &dest->tres_usage_in_max_taskid,
+					     from->tres_usage_in_max,
+					     from->tres_usage_in_max_nodeid,
+					     from->tres_usage_in_max_taskid);
+	_aggregate_tres_usage_stats_internal(&dest->tres_usage_out_max,
+					     &dest->tres_usage_out_max_nodeid,
+					     &dest->tres_usage_out_max_taskid,
+					     from->tres_usage_out_max,
+					     from->tres_usage_out_max_nodeid,
+					     from->tres_usage_out_max_taskid);
+
+	flags =	TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REMOVE + TRES_STR_FLAG_SUM;
+	(void)slurmdb_combine_tres_strings(
+		&dest->tres_usage_in_ave, from->tres_usage_in_ave, flags);
+	(void)slurmdb_combine_tres_strings(
+		&dest->tres_usage_out_ave, from->tres_usage_out_ave, flags);
 }
 
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
 {
 	/* Means it is a blank record */
-	if (from->cpu_min == NO_VAL)
+	if (from->act_cpufreq == NO_VAL)
 		return;
 
-	if (dest->vsize_max < from->vsize_max) {
-		dest->vsize_max = from->vsize_max;
-		dest->vsize_max_nodeid = from->vsize_max_nodeid;
-		dest->vsize_max_taskid = from->vsize_max_taskid;
-	}
-	dest->vsize_ave += from->vsize_ave;
-
-	if (dest->rss_max < from->rss_max) {
-		dest->rss_max = from->rss_max;
-		dest->rss_max_nodeid = from->rss_max_nodeid;
-		dest->rss_max_taskid = from->rss_max_taskid;
-	}
-	dest->rss_ave += from->rss_ave;
-
-	if (dest->pages_max < from->pages_max) {
-		dest->pages_max = from->pages_max;
-		dest->pages_max_nodeid = from->pages_max_nodeid;
-		dest->pages_max_taskid = from->pages_max_taskid;
-	}
-	dest->pages_ave += from->pages_ave;
-
-	if ((dest->cpu_min > from->cpu_min) || (dest->cpu_min == NO_VAL)) {
-		dest->cpu_min = from->cpu_min;
-		dest->cpu_min_nodeid = from->cpu_min_nodeid;
-		dest->cpu_min_taskid = from->cpu_min_taskid;
-	}
-	dest->cpu_ave += from->cpu_ave;
 	if ((from->consumed_energy == NO_VAL64) ||
 	    (dest->consumed_energy == NO_VAL64))
 		dest->consumed_energy = NO_VAL64;
 	else
 		dest->consumed_energy += from->consumed_energy;
+
 	dest->act_cpufreq += from->act_cpufreq;
-	if (dest->disk_read_max < from->disk_read_max) {
-		dest->disk_read_max = from->disk_read_max;
-		dest->disk_read_max_nodeid = from->disk_read_max_nodeid;
-		dest->disk_read_max_taskid = from->disk_read_max_taskid;
-	}
-	dest->disk_read_ave += from->disk_read_ave;
-	if (dest->disk_write_max < from->disk_write_max) {
-		dest->disk_write_max = from->disk_write_max;
-		dest->disk_write_max_nodeid = from->disk_write_max_nodeid;
-		dest->disk_write_max_taskid = from->disk_write_max_taskid;
-	}
-	dest->disk_write_ave += from->disk_write_ave;
+
+	_aggregate_tres_usage_stats(dest, from);
 }

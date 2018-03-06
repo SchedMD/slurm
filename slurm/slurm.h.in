@@ -699,26 +699,8 @@ enum jobacct_data_type {
 	JOBACCT_DATA_PIPE,      /* data-> file descriptor */
 	JOBACCT_DATA_RUSAGE,	/* data-> rusage set user_cpu_sec,
 				 * user_cpu_usec, sys_cpu_sec, sys_cpu_usec */
-	JOBACCT_DATA_MAX_VSIZE,	/* data-> uint64_t vsize */
-	JOBACCT_DATA_MAX_VSIZE_ID,	/* data-> jobacct_id_t vsize */
-	JOBACCT_DATA_TOT_VSIZE,	/* data-> uint64_t vsize */
-	JOBACCT_DATA_MAX_RSS,	/* data-> uint64_t psize */
-	JOBACCT_DATA_MAX_RSS_ID,	/* data-> jobacct_id_t psize */
-	JOBACCT_DATA_TOT_RSS,	/* data-> uint64_t psize */
-	JOBACCT_DATA_MAX_PAGES,	/* data-> uint64_t psize */
-	JOBACCT_DATA_MAX_PAGES_ID,	/* data-> jobacct_id_t psize */
-	JOBACCT_DATA_TOT_PAGES,	/* data-> uint64_t psize */
-	JOBACCT_DATA_MIN_CPU,	/* data-> uint32_t psize */
-	JOBACCT_DATA_MIN_CPU_ID,	/* data-> jobacct_id_t psize */
-	JOBACCT_DATA_TOT_CPU,	/* data-> double psize */
-	JOBACCT_DATA_ACT_CPUFREQ, /* data-> uint32_t psize hb*/
-	JOBACCT_DATA_CONSUMED_ENERGY, /* data-> uint64_t psize hb*/
-	JOBACCT_DATA_MAX_DISK_READ, /* data->double psize */
-	JOBACCT_DATA_MAX_DISK_READ_ID, /* data->jobacct_id_t psize */
-	JOBACCT_DATA_TOT_DISK_READ, /* data->double psize */
-	JOBACCT_DATA_MAX_DISK_WRITE, /* data->double psize */
-	JOBACCT_DATA_MAX_DISK_WRITE_ID, /* data->jobacct_id_t psize */
-	JOBACCT_DATA_TOT_DISK_WRITE /* data->double psize */
+	JOBACCT_DATA_TOT_VSIZE = 5,	/* data-> uint64_t vsize */
+	JOBACCT_DATA_TOT_RSS = 8,	/* data-> uint64_t psize */
 };
 
 enum acct_energy_type {
