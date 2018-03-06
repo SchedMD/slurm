@@ -250,21 +250,21 @@ static void _set_collectors(char *this_node_name)
 			xfree(backup[i]);
 		parent = hostlist_shift(nodes);
 		tmp = hostlist_nth(nodes, 0);
-		backup[1] = xstrdup(tmp);
+		backup[0] = xstrdup(tmp);
 		free(tmp);
 		tmp = NULL;
-		if (xstrcmp(backup[1], this_node_name) == 0) {
-			xfree(backup[1]);
+		if (xstrcmp(backup[0], this_node_name) == 0) {
+			xfree(backup[0]);
 			if (hostlist_count(nodes) > 1) {
 				tmp = hostlist_nth(nodes, 1);
-				backup[1] = xstrdup(tmp);
+				backup[0] = xstrdup(tmp);
 				free(tmp);
 				tmp = NULL;
 			}
 		}
 		parent_port =  slurm_conf_get_port(parent);
-		if (backup[1])
-			backup_port = slurm_conf_get_port(backup[1]);
+		if (backup[0])
+			backup_port = slurm_conf_get_port(backup[0]);
 		else
 			backup_port = 0;
 	}
