@@ -504,7 +504,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
   {"SBATCH_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
-  {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL          },
   {"SBATCH_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL          },
   {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL          },
   {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL          },
@@ -1486,7 +1485,7 @@ static void _set_options(int argc, char **argv)
 				sbopt.ifname = xstrdup(optarg);
 			break;
 		case 'I':
-			opt.immediate = true;
+			info("--immediate option is not supported for the sbatch command, ignored");
 			break;
 		case 'J':
 			xfree(opt.job_name);
@@ -3385,7 +3384,6 @@ static void _opt_list(void)
 	if ((opt.distribution  & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		info("plane size        : %u", opt.plane_size);
 	info("verbose           : %d", opt.verbose);
-	info("immediate         : %s", tf_(opt.immediate));
 	if (sbopt.requeue != NO_VAL)
 		info("requeue           : %u", sbopt.requeue);
 	info("overcommit        : %s", tf_(opt.overcommit));
@@ -3482,7 +3480,7 @@ static void _usage(void)
 	printf(
 "Usage: sbatch [-N nnodes] [-n ntasks]\n"
 "              [-c ncpus] [-r n] [-p partition] [--hold] [--parsable] [-t minutes]\n"
-"              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
+"              [-D path] [--no-kill] [--overcommit]\n"
 "              [--input file] [--output file] [--error file]\n"
 "              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
 "              [--chdir=directory] [--oversubscibe] [-m dist] [-J jobname]\n"
@@ -3541,7 +3539,6 @@ static void _help(void)
 "  -H, --hold                  submit job in held state\n"
 "      --ignore-pbs            Ignore #PBS options in the batch script\n"
 "  -i, --input=in              file for batch script's standard input\n"
-"  -I, --immediate             exit if resources are not immediately available\n"
 "      --jobid=id              run under already allocated job\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"

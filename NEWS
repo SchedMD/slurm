@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
     backup servers can be configured.
  -- When a pending job's state includes "UnavailableNodes" do not include the
     nodes in FUTURE state.
+ -- Remove --immediate option from sbatch.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "December 2017" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "March 2018" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -653,14 +653,6 @@ Only supported with the task/affinity plugin.
 .B help
 show this help message
 .RE
-
-.TP
-\fB\-I\fR, \fB\-\-immediate\fR
-The batch script will only be submitted to the controller if the resources
-necessary to grant its job allocation are immediately available.  If the
-job allocation will have to wait in a queue of pending jobs, the batch script
-will not be submitted.
-NOTE: There is limited support for this option with batch jobs.
 
 .TP
 \fB\-\-ignore\-pbs\fR
@@ -1762,9 +1754,6 @@ Same as \fB\-\-hint\fR
 .TP
 \fBSBATCH_IGNORE_PBS\fR
 Same as \fB\-\-ignore\-pbs\fR
-.TP
-\fBSBATCH_IMMEDIATE\fR
-Same as \fB\-I, \-\-immediate\fR
 .TP
 \fBSBATCH_IOLOAD_IMAGE\fR
 Same as \fB\-\-ioload\-image\fR
