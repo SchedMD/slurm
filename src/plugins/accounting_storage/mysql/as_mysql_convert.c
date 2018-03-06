@@ -382,7 +382,7 @@ static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ NULL, NULL}
 	};
 
-	char *query, *tmp = NULL;
+	char *query = NULL, *tmp = NULL;
 	char table_name[200];
 	int i;
 
