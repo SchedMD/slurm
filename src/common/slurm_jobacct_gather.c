@@ -1115,10 +1115,14 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	if (uint8_tmp == (uint8_t) 0)
 		return SLURM_SUCCESS;
 
+	xassert(jobacct);
+
 	if (alloc)
 		*jobacct = xmalloc(sizeof(struct jobacctinfo));
-	else
+	else {
+		xassert(*jobacct);
 		_free_tres_usage(*jobacct);
+	}
 
 	if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpack32(&uint32_tmp, buffer);
