@@ -1189,6 +1189,8 @@ static int _part_rec_field(const struct part_record *part_ptr,
 		lua_pushnumber (L, part_ptr->max_nodes);
 	} else if (!xstrcmp(name, "max_nodes_orig")) {
 		lua_pushnumber (L, part_ptr->max_nodes_orig);
+	} else if (!xstrcmp(name, "max_share")) {
+		lua_pushnumber (L, part_ptr->max_share);
 	} else if (!xstrcmp(name, "max_time")) {
 		lua_pushnumber (L, part_ptr->max_time);
 	} else if (!xstrcmp(name, "min_nodes")) {
@@ -1422,6 +1424,8 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "NO_VAL16");
 	lua_pushnumber (L, NO_VAL8);
 	lua_setfield (L, -2, "NO_VAL8");
+	lua_pushnumber (L, SHARED_FORCE);
+	lua_setfield (L, -2, "SHARED_FORCE");
 
 	/*
 	 * job_desc bitflags
