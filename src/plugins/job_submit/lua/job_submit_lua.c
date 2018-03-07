@@ -1177,6 +1177,8 @@ static int _part_rec_field(const struct part_record *part_ptr,
 		lua_pushnumber (L, is_default);
 	} else if (!xstrcmp(name, "flags")) {
 		lua_pushnumber (L, part_ptr->flags);
+	} else if (!xstrcmp(name, "max_cpus_per_node")) {
+		lua_pushnumber (L, part_ptr->max_cpus_per_node);
 	} else if (!xstrcmp(name, "max_mem_per_cpu") &&
 		  (part_ptr->max_mem_per_cpu & MEM_PER_CPU)) {
 		lua_pushnumber (L, part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
