@@ -57,6 +57,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/xlua.h"
+#include "src/common/uid.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/reservation.h"
@@ -862,6 +863,10 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->time_min);
 	} else if (!xstrcmp(name, "user_id")) {
 		lua_pushnumber (L, job_desc->user_id);
+	} else if (!xstrcmp(name, "user_name")) {
+		char *username = uid_to_string_or_null(job_desc->user_id);
+		lua_pushstring (L, username);
+		xfree(username);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		lua_pushnumber (L, job_desc->wait4switch);
 	} else if (!xstrcmp(name, "work_dir")) {
