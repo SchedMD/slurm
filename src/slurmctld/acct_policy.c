@@ -2645,8 +2645,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
 	if (qos_ptr_1) {
-		strict_checking =
-			(reason || (qos_ptr_1->flags & QOS_FLAG_DENY_LIMIT));
+		strict_checking = (qos_ptr_1->flags & QOS_FLAG_DENY_LIMIT);
 		if (qos_ptr_2 && !strict_checking)
 			strict_checking =
 				qos_ptr_2->flags & QOS_FLAG_DENY_LIMIT;
@@ -2664,8 +2663,11 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 			      user_name, job_cnt, strict_checking)))
 			goto end_it;
 
-	} else
-		strict_checking = reason ? true : false;
+	} else /*
+		* We don't have a QOS to determine if we should fail or not, so
+		* we will go with strict_checking by default.
+		*/
+		strict_checking = true;
 
 	while (assoc_ptr) {
 		int tres_pos = 0;
