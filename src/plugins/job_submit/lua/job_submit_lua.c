@@ -1164,6 +1164,12 @@ static int _part_rec_field(const struct part_record *part_ptr,
 		lua_pushstring (L, part_ptr->allow_qos);
 	} else if (!xstrcmp(name, "default_time")) {
 		lua_pushnumber (L, part_ptr->default_time);
+	} else if (!xstrcmp(name, "def_mem_per_cpu") &&
+		  (part_ptr->def_mem_per_cpu & MEM_PER_CPU)) {
+		lua_pushnumber (L, part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
+	} else if (!xstrcmp(name, "def_mem_per_node") &&
+		  !(part_ptr->def_mem_per_cpu & MEM_PER_CPU)) {
+		lua_pushnumber (L, part_ptr->def_mem_per_cpu);
 	} else if (!xstrcmp(name, "flag_default")) {
 		int is_default = 0;
 		if (part_ptr->flags & PART_FLAG_DEFAULT)
@@ -1171,6 +1177,12 @@ static int _part_rec_field(const struct part_record *part_ptr,
 		lua_pushnumber (L, is_default);
 	} else if (!xstrcmp(name, "flags")) {
 		lua_pushnumber (L, part_ptr->flags);
+	} else if (!xstrcmp(name, "max_mem_per_cpu") &&
+		  (part_ptr->max_mem_per_cpu & MEM_PER_CPU)) {
+		lua_pushnumber (L, part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
+	} else if (!xstrcmp(name, "max_mem_per_node") &&
+		  !(part_ptr->max_mem_per_cpu & MEM_PER_CPU)) {
+		lua_pushnumber (L, part_ptr->max_mem_per_cpu);
 	} else if (!xstrcmp(name, "max_nodes")) {
 		lua_pushnumber (L, part_ptr->max_nodes);
 	} else if (!xstrcmp(name, "max_nodes_orig")) {
