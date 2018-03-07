@@ -295,6 +295,11 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushstring (L, job_ptr->account);
 	} else if (!xstrcmp(name, "admin_comment")) {
 		lua_pushstring (L, job_ptr->admin_comment);
+	} else if (!xstrcmp(name, "array_task_cnt")) {
+		if (job_ptr->array_recs)
+			lua_pushnumber (L, job_ptr->array_recs->task_cnt);
+		else
+			lua_pushnil (L);
 	} else if (!xstrcmp(name, "burst_buffer")) {
 		lua_pushstring (L, job_ptr->burst_buffer);
 	} else if (!xstrcmp(name, "comment")) {
