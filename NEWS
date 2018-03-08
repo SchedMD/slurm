@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Add job's array_task_cnt and user_name along with partitions
     [max|def]_mem_per_[cpu|node], max_cpus_per_node, and max_share with the
     SHARED_FORCE definition to the job_submit/lua plugin.
+ -- srun - fix for SLURM_JOB_NUM_NODES env variable assignment.
 
 * Changes in Slurm 17.11.4
 ==========================

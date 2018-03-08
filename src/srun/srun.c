@@ -554,7 +554,7 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	if (job->pack_nnodes != NO_VAL)
 		env->nhosts = job->pack_nnodes;
 	else if (got_alloc)	/* Don't overwrite unless we got allocation */
-		env->nhosts = job->ntasks;
+		env->nhosts = job->nhosts;
 	if (job->pack_ntasks != NO_VAL)
 		env->ntasks = job->pack_ntasks;
 	else
