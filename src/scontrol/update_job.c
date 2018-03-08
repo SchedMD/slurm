@@ -1096,7 +1096,7 @@ extern int scontrol_update_job(int argc, char **argv)
 			else if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.shared = 0;
 			else if (parse_uint16(val, &job_msg.shared)) {
-				error ("Invalid wait-for-switch value: %s", val);
+				error("Invalid OverSubscribe value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
