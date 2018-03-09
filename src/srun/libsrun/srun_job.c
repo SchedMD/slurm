@@ -1176,7 +1176,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 								 opt_local);
 				if (!job)
 					exit(error_exit);
-				job->pack_offset = pack_offset;
+				if (max_pack_offset > 0)
+					job->pack_offset = pack_offset;
 				list_append(srun_job_list, job);
 			}	/* While more option structures */
 			pack_offset++;
