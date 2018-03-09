@@ -80,7 +80,7 @@ static int   _set_umask_env(void);
 int main(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	job_desc_msg_t *desc = NULL;
+	job_desc_msg_t *desc = NULL, *first_desc = NULL;
 	submit_response_msg_t *resp = NULL;
 	char *script_name;
 	char *script_body;
@@ -186,6 +186,13 @@ int main(int argc, char **argv)
 		slurm_init_job_desc_msg(desc);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
+		if (!first_desc)
+			first_desc = desc;
+		if (pack_inx || !pack_fini) {
+			set_env_from_opts(&opt, &first_desc->environment,
+					  pack_inx);
+		} else
+			set_env_from_opts(&opt, &first_desc->environment, -1);
 		if (!job_req_list) {
 			desc->script = (char *) script_body;
 		} else {
@@ -750,6 +757,23 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->bitflags = opt.job_flags;
 	if (opt.mcs_label)
 		desc->mcs_label = xstrdup(opt.mcs_label);
+
+	if (opt.cpus_per_gpu)
+		xstrfmtcat(desc->cpus_per_tres, "gpu=%d", opt.cpus_per_gpu);
+	if (opt.gpu_bind)
+		xstrfmtcat(desc->tres_bind, "gpu=%s", opt.gpu_bind);
+	if (opt.gpu_freq)
+		xstrfmtcat(desc->tres_freq, "gpu=%s", opt.gpu_freq);
+	if (opt.gpus)
+		xstrfmtcat(desc->tres_per_job, "gpu=%s", opt.gpus);
+	if (opt.gpus_per_node)
+		xstrfmtcat(desc->tres_per_node, "gpu=%s", opt.gpus_per_node);
+	if (opt.gpus_per_socket)
+		xstrfmtcat(desc->tres_per_socket, "gpu=%s",opt.gpus_per_socket);
+	if (opt.gpus_per_task)
+		xstrfmtcat(desc->tres_per_task, "gpu=%s", opt.gpus_per_task);
+	if (opt.mem_per_gpu)
+		xstrfmtcat(desc->mem_per_tres, "gpu=%"PRIi64, opt.mem_per_gpu);
 
 	desc->clusters = xstrdup(opt.clusters);
 

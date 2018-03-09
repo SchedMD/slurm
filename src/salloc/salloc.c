@@ -284,6 +284,10 @@ int main(int argc, char **argv)
 		slurm_init_job_desc_msg(desc);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
+		if (pack_inx || !pack_fini)
+			set_env_from_opts(&opt, &env, pack_inx);
+		else
+			set_env_from_opts(&opt, &env, -1);
 		if (job_req_list)
 			list_append(job_req_list, desc);
 		if (!first_job)
@@ -970,6 +974,23 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->bitflags |= JOB_NTASKS_SET;
 
 	desc->clusters = xstrdup(opt.clusters);
+
+	if (opt.cpus_per_gpu)
+		xstrfmtcat(desc->cpus_per_tres, "gpu=%d", opt.cpus_per_gpu);
+	if (opt.gpu_bind)
+		xstrfmtcat(desc->tres_bind, "gpu=%s", opt.gpu_bind);
+	if (opt.gpu_freq)
+		xstrfmtcat(desc->tres_freq, "gpu=%s", opt.gpu_freq);
+	if (opt.gpus)
+		xstrfmtcat(desc->tres_per_job, "gpu=%s", opt.gpus);
+	if (opt.gpus_per_node)
+		xstrfmtcat(desc->tres_per_node, "gpu=%s", opt.gpus_per_node);
+	if (opt.gpus_per_socket)
+		xstrfmtcat(desc->tres_per_socket, "gpu=%s",opt.gpus_per_socket);
+	if (opt.gpus_per_task)
+		xstrfmtcat(desc->tres_per_task, "gpu=%s", opt.gpus_per_task);
+	if (opt.mem_per_gpu)
+		xstrfmtcat(desc->mem_per_tres, "gpu=%"PRIi64, opt.mem_per_gpu);
 
 	return 0;
 }

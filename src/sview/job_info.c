@@ -127,6 +127,7 @@ enum {
 /* 	SORTID_CORES_MAX, */
 /* 	SORTID_CORES_MIN, */
 	SORTID_CPUS,
+	SORTID_CPUS_PER_TRES,
 	SORTID_CPU_MAX,
 	SORTID_CPU_MIN,
 	SORTID_CPUS_PER_TASK,
@@ -152,6 +153,7 @@ enum {
 	SORTID_MCS_LABEL,
 	SORTID_CPU_REQ,
 	SORTID_MEM_MIN,
+	SORTID_MEM_PER_TRES,
 	SORTID_TMP_DISK,
 #ifdef HAVE_BG
 	SORTID_NODELIST,
@@ -189,6 +191,7 @@ enum {
 	SORTID_RESV_NAME,
 	SORTID_RESTARTS,
 	SORTID_ROTATE,
+	SORTID_SMALL_BLOCK,
 /* 	SORTID_SOCKETS_MAX, */
 /* 	SORTID_SOCKETS_MIN, */
 	SORTID_STATE,
@@ -209,8 +212,13 @@ enum {
 	SORTID_TIME_START,
 	SORTID_TIME_SUBMIT,
 	SORTID_TIME_SUSPEND,
-	SORTID_TRES,
-	SORTID_SMALL_BLOCK,
+	SORTID_TRES_ALLOC,
+	SORTID_TRES_BIND,
+	SORTID_TRES_FREQ,
+	SORTID_TRES_PER_JOB,
+	SORTID_TRES_PER_NODE,
+	SORTID_TRES_PER_SOCKET,
+	SORTID_TRES_PER_TASK,
 	SORTID_UPDATED,
 	SORTID_USER_ID,
 	SORTID_WCKEY,
@@ -449,7 +457,23 @@ static display_data_t display_data_job[] = {
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_SMALL_BLOCK, NULL, false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TRES, "TRES", false,
+	{G_TYPE_STRING, SORTID_CPUS_PER_TRES, "CPUs per TRES",  false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_MEM_PER_TRES, "Mem per TRES", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TRES_ALLOC, "TRES Alloc", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TRES_BIND, "TRES Bind", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TRES_FREQ, "TRES Freq", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TRES_PER_JOB, "TRES Per Job", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TRES_PER_NODE, "TRES Per Node", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TRES_PER_SOCKET, "TRES Per Socket", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TRES_PER_TASK, "TRES Per Task", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -1585,6 +1609,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_CPUS_PER_TASK),
 				   tmp_char);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_CPUS_PER_TRES),
+				   job_ptr->cpus_per_tres);
+
 	if (job_ptr->deadline)
 		slurm_make_time_str((time_t *)&job_ptr->deadline, tmp_char,
 				     sizeof(tmp_char));
@@ -1767,6 +1797,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_MEM_MIN),
 				   tmp_char);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_MEM_PER_TRES),
+				   job_ptr->mem_per_tres);
 
 	if (job_ptr->pn_min_tmp_disk > 0)
 		convert_num_unit((float)job_ptr->pn_min_tmp_disk, tmp_char,
@@ -2072,8 +2107,38 @@ static void _layout_job_record(GtkTreeView *treeview,
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
-						 SORTID_TRES),
+						 SORTID_TRES_ALLOC),
 				   job_ptr->tres_alloc_str);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_BIND),
+				   job_ptr->tres_bind);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_FREQ),
+				   job_ptr->tres_freq);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_PER_JOB),
+				   job_ptr->tres_per_job);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_PER_NODE),
+				   job_ptr->tres_per_node);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_PER_SOCKET),
+				   job_ptr->tres_per_socket);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_PER_TASK),
+				   job_ptr->tres_per_task);
 
 	uname = uid_to_string_cached((uid_t)job_ptr->user_id);
 	add_display_treestore_line(update, treestore, &iter,
@@ -2529,6 +2594,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_CPU_MAX,      tmp_cpus_max,
 				   SORTID_CPU_MIN,      tmp_cpu_cnt,
 				   SORTID_CPUS_PER_TASK,tmp_cpus_per_task,
+				   SORTID_CPUS_PER_TRES,job_ptr->cpus_per_tres,
 				   SORTID_CPU_REQ,      tmp_cpu_req,
 				   SORTID_DEADLINE,     tmp_time_deadline,
 				   SORTID_DEPENDENCY,   job_ptr->dependency,
@@ -2547,6 +2613,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_LICENSES,     job_ptr->licenses,
 				   SORTID_MCS_LABEL,	job_ptr->mcs_label,
 				   SORTID_MEM_MIN,      tmp_mem_min,
+				   SORTID_MEM_PER_TRES, job_ptr->cpus_per_tres,
 				   SORTID_NAME,         job_ptr->name,
 				   SORTID_NICE,         tmp_nice,
 				   SORTID_NODE_INX,     job_ptr->node_inx,
@@ -2589,7 +2656,14 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_TIME_SUSPEND, tmp_time_sus,
 				   SORTID_TIMELIMIT,    tmp_time_limit,
 				   SORTID_TMP_DISK,     tmp_disk,
-				   SORTID_TRES,         job_ptr->tres_alloc_str,
+				   SORTID_TRES_ALLOC,   job_ptr->tres_alloc_str,
+				   SORTID_TRES_BIND,    job_ptr->tres_bind,
+				   SORTID_TRES_FREQ,    job_ptr->tres_freq,
+				   SORTID_TRES_PER_JOB, job_ptr->tres_per_job,
+				   SORTID_TRES_PER_NODE,job_ptr->tres_per_node,
+				   SORTID_TRES_PER_SOCKET,
+				   job_ptr->tres_per_socket,
+				   SORTID_TRES_PER_TASK,job_ptr->tres_per_task,
 				   SORTID_UPDATED,      1,
 				   SORTID_USER_ID,      tmp_uname,
 				   SORTID_WCKEY,        job_ptr->wckey,
@@ -2857,7 +2931,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
-						 SORTID_TRES),
+						 SORTID_TRES_ALLOC),
 				   step_ptr->tres_alloc_str);
 }
 
@@ -2965,7 +3039,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_TIME_RUNNING, tmp_time_run,
 			   SORTID_TIME_START,   tmp_time_start,
 			   SORTID_TIMELIMIT,    tmp_time_limit,
-			   SORTID_TRES,         step_ptr->tres_alloc_str,
+			   SORTID_TRES_ALLOC,   step_ptr->tres_alloc_str,
 			   SORTID_UPDATED,      1,
 			   SORTID_USER_ID,      tmp_uname,
 			   -1);

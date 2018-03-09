@@ -202,6 +202,7 @@ enum {
 	ESLURM_INVALID_CORE_CNT,
 	ESLURM_X11_NOT_AVAIL,
 	ESLURM_BATCH_CONSTRAINT,
+	ESLURM_INVALID_TRES,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

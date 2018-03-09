@@ -301,6 +301,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushstring (L, job_ptr->burst_buffer);
 	} else if (!xstrcmp(name, "comment")) {
 		lua_pushstring (L, job_ptr->comment);
+	} else if (!xstrcmp(name, "cpus_per_tres")) {
+		lua_pushstring (L, job_ptr->cpus_per_tres);
 	} else if (!xstrcmp(name, "delay_boot")) {
 		lua_pushnumber (L, job_ptr->delay_boot);
 	} else if (!xstrcmp(name, "direct_set_prio")) {
@@ -328,6 +330,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 			lua_pushnumber (L, job_ptr->details->max_nodes);
 		else
 			lua_pushnumber (L, 0);
+	} else if (!xstrcmp(name, "mem_per_tres")) {
+		lua_pushstring (L, job_ptr->mem_per_tres);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		if (job_ptr->details)
 			lua_pushnumber (L, job_ptr->details->min_cpus);
@@ -411,6 +415,18 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushnumber (L, job_ptr->time_limit);
 	} else if (!xstrcmp(name, "time_min")) {
 		lua_pushnumber (L, job_ptr->time_min);
+	} else if (!xstrcmp(name, "tres_bind")) {
+		lua_pushstring (L, job_ptr->tres_bind);
+	} else if (!xstrcmp(name, "tres_freq")) {
+		lua_pushstring (L, job_ptr->tres_freq);
+	} else if (!xstrcmp(name, "tres_per_job")) {
+		lua_pushstring (L, job_ptr->tres_per_job);
+	} else if (!xstrcmp(name, "tres_per_node")) {
+		lua_pushstring (L, job_ptr->tres_per_node);
+	} else if (!xstrcmp(name, "tres_per_socket")) {
+		lua_pushstring (L, job_ptr->tres_per_socket);
+	} else if (!xstrcmp(name, "tres_per_task")) {
+		lua_pushstring (L, job_ptr->tres_per_task);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		lua_pushnumber (L, job_ptr->wait4switch);
 	} else if (!xstrcmp(name, "wckey")) {
@@ -732,6 +748,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->cpu_freq_gov);
 	} else if (!xstrcmp(name, "cpus_per_task")) {
 		lua_pushnumber (L, job_desc->cpus_per_task);
+	} else if (!xstrcmp(name, "cpus_per_tres")) {
+		lua_pushstring (L, job_desc->cpus_per_tres);
 	} else if (!xstrcmp(name, "default_account")) {
 		lua_pushstring (L, _get_default_account(job_desc->user_id));
 	} else if (!xstrcmp(name, "default_qos")) {
@@ -768,6 +786,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->max_cpus);
 	} else if (!xstrcmp(name, "max_nodes")) {
 		lua_pushnumber (L, job_desc->max_nodes);
+	} else if (!xstrcmp(name, "mem_per_tres")) {
+		lua_pushstring (L, job_desc->mem_per_tres);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		lua_pushnumber (L, job_desc->min_cpus);
 	} else if (!xstrcmp(name, "min_mem_per_node") &&
@@ -859,6 +879,18 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->time_limit);
 	} else if (!xstrcmp(name, "time_min")) {
 		lua_pushnumber (L, job_desc->time_min);
+	} else if (!xstrcmp(name, "tres_bind")) {
+		lua_pushstring (L, job_desc->tres_bind);
+	} else if (!xstrcmp(name, "tres_freq")) {
+		lua_pushstring (L, job_desc->tres_freq);
+	} else if (!xstrcmp(name, "tres_per_job")) {
+		lua_pushstring (L, job_desc->tres_per_job);
+	} else if (!xstrcmp(name, "tres_per_node")) {
+		lua_pushstring (L, job_desc->tres_per_node);
+	} else if (!xstrcmp(name, "tres_per_socket")) {
+		lua_pushstring (L, job_desc->tres_per_socket);
+	} else if (!xstrcmp(name, "tres_per_task")) {
+		lua_pushstring (L, job_desc->tres_per_task);
 	} else if (!xstrcmp(name, "user_id")) {
 		lua_pushnumber (L, job_desc->user_id);
 	} else if (!xstrcmp(name, "wait4switch")) {
@@ -957,14 +989,19 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->contiguous = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cores_per_socket")) {
 		job_desc->cores_per_socket = luaL_checknumber(L, 3);
-	} else if (!xstrcmp(name, "cpus_per_task")) {
-		job_desc->cpus_per_task = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cpu_freq_min")) {
 		job_desc->cpu_freq_min = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cpu_freq_max")) {
 		job_desc->cpu_freq_max = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cpu_freq_gov")) {
 		job_desc->cpu_freq_gov = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "cpus_per_task")) {
+		job_desc->cpus_per_task = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "cpus_per_tres")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->cpus_per_tres);
+		if (strlen(value_str))
+			job_desc->cpus_per_tres = xstrdup(value_str);
 	} else if (!xstrcmp(name, "dependency")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->dependency);
@@ -1005,6 +1042,11 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->max_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "max_nodes")) {
 		job_desc->max_nodes = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "mem_per_tres")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->mem_per_tres);
+		if (strlen(value_str))
+			job_desc->mem_per_tres = xstrdup(value_str);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		job_desc->min_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "min_mem_per_cpu")) {
@@ -1097,6 +1139,36 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->time_limit = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "time_min")) {
 		job_desc->time_min = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "tres_bind")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->tres_bind);
+		if (strlen(value_str))
+			job_desc->tres_bind = xstrdup(value_str);
+	} else if (!xstrcmp(name, "tres_freq")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->tres_freq);
+		if (strlen(value_str))
+			job_desc->tres_freq = xstrdup(value_str);
+	} else if (!xstrcmp(name, "tres_per_job")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->tres_per_job);
+		if (strlen(value_str))
+			job_desc->tres_per_job = xstrdup(value_str);
+	} else if (!xstrcmp(name, "tres_per_node")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->tres_per_node);
+		if (strlen(value_str))
+			job_desc->tres_per_node = xstrdup(value_str);
+	} else if (!xstrcmp(name, "tres_per_socket")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->tres_per_socket);
+		if (strlen(value_str))
+			job_desc->tres_per_socket = xstrdup(value_str);
+	} else if (!xstrcmp(name, "tres_per_task")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->tres_per_task);
+		if (strlen(value_str))
+			job_desc->tres_per_task = xstrdup(value_str);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		job_desc->wait4switch = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "wckey")) {

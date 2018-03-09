@@ -313,8 +313,24 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_min_time)
 #define job_format_add_wait4switch(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_wait4switch)
-#define job_format_add_tres(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_tres)
+#define job_format_add_cpus_per_tres(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_cpus_per_tres)
+#define job_format_add_mem_per_tres(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_mem_per_tres)
+#define job_format_add_tres_alloc(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_alloc)
+#define job_format_add_tres_bind(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_bind)
+#define job_format_add_tres_freq(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_freq)
+#define job_format_add_tres_per_job(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_per_job)
+#define job_format_add_tres_per_node(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_per_node)
+#define job_format_add_tres_per_socket(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_per_socket)
+#define job_format_add_tres_per_task(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_per_task)
 #define job_format_add_mcs_label(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_mcs_label)
 
@@ -527,8 +543,24 @@ int _print_job_min_time(job_info_t * job, int width,
 			bool right_justify, char* suffix);
 int _print_job_wait4switch(job_info_t * job, int width,
 			   bool right_justify, char* suffix);
-int _print_job_tres(job_info_t * job, int width,
-		    bool right_justify, char *suffix);
+int _print_job_cpus_per_tres(job_info_t * job, int width,
+			     bool right_justify, char *suffix);
+int _print_job_mem_per_tres(job_info_t * job, int width,
+			    bool right_justify, char *suffix);
+int _print_job_tres_alloc(job_info_t * job, int width,
+			  bool right_justify, char *suffix);
+int _print_job_tres_bind(job_info_t * job, int width,
+			 bool right_justify, char *suffix);
+int _print_job_tres_freq(job_info_t * job, int width,
+			 bool right_justify, char *suffix);
+int _print_job_tres_per_job(job_info_t * job, int width,
+			    bool right_justify, char *suffix);
+int _print_job_tres_per_node(job_info_t * job, int width,
+			     bool right_justify, char *suffix);
+int _print_job_tres_per_socket(job_info_t * job, int width,
+			       bool right_justify, char *suffix);
+int _print_job_tres_per_task(job_info_t * job, int width,
+			     bool right_justify, char *suffix);
 int _print_job_mcs_label(job_info_t * job, int width,
 			 bool right_justify, char* suffix);
 int _print_job_pack_job_id(job_info_t * job, int width,
@@ -575,9 +607,6 @@ int step_format_add_function(List list, int width, bool right_justify,
 #define step_format_add_invalid(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,	\
 				 (void*)_print_com_invalid)
-
-
-
 #define step_format_add_array_job_id(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_array_job_id)
 #define step_format_add_array_task_id(list,wid,right,suffix) \
@@ -602,8 +631,22 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_resv_ports)
 #define step_format_add_step_state(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_state)
-
-
+#define step_format_add_cpus_per_tres(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_cpus_per_tres)
+#define step_format_add_mem_per_tres(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_mem_per_tres)
+#define step_format_add_tres_bind(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_bind)
+#define step_format_add_tres_freq(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_freq)
+#define step_format_add_tres_per_job(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_job)
+#define step_format_add_tres_per_node(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_node)
+#define step_format_add_tres_per_socket(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_socket)
+#define step_format_add_tres_per_task(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_task)
 
 // finish adding macros and function headers in the .h file.
 
@@ -658,6 +701,22 @@ int _print_step_resv_ports(job_step_info_t * step, int width, bool right,
 			   char* suffix);
 int _print_step_state(job_step_info_t * step, int width, bool right,
 		      char* suffix);
+int _print_step_cpus_per_tres(job_step_info_t * step, int width, bool right,
+			      char* suffix);
+int _print_step_mem_per_tres(job_step_info_t * step, int width, bool right,
+			     char* suffix);
+int _print_step_tres_bind(job_step_info_t * step, int width, bool right,
+			  char* suffix);
+int _print_step_tres_freq(job_step_info_t * step, int width, bool right,
+			  char* suffix);
+int _print_step_tres_per_job(job_step_info_t * step, int width, bool right,
+			     char* suffix);
+int _print_step_tres_per_node(job_step_info_t * step, int width, bool right,
+			      char* suffix);
+int _print_step_tres_per_socket(job_step_info_t * step, int width, bool right,
+				char* suffix);
+int _print_step_tres_per_task(job_step_info_t * step, int width, bool right,
+			      char* suffix);
 
 /*****************************************************************************
  * Common Line Print Functions

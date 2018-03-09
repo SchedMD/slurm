@@ -636,6 +636,7 @@ struct job_record {
 					 * by the job, decremented while job is
 					 * completing (N/A for bluegene
 					 * systems) */
+	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
 	uint16_t cr_enabled;            /* specify if Consumable Resources
 					 * is enabled. Needed since CR deals
 					 * with a finer granularity in its
@@ -698,6 +699,7 @@ struct job_record {
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t magic;			/* magic cookie for data integrity */
+	char *mem_per_tres;		/* semicolon delimited list of TRES=# values */
 	char *mcs_label;		/* mcs_label if mcs plugin in use */
 	char *name;			/* name of the job */
 	char *network;			/* network/switch requirement spec */
@@ -799,6 +801,12 @@ struct job_record {
 					 * for accounting */
 	uint32_t total_nodes;		/* number of allocated nodes
 					 * for accounting */
+	char *tres_bind;		/* Task to TRES binding directives */
+	char *tres_freq;		/* TRES frequency directives */
+	char *tres_per_job;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_node;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_socket;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
 	uint64_t *tres_req_cnt;         /* array of tres counts requested
 					 * based off g_tres_count in
 					 * assoc_mgr */
@@ -866,6 +874,7 @@ struct 	step_record {
 	uint32_t cpu_freq_max; 		/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov; 		/* cpu frequency governor */
 	uint16_t cpus_per_task;		/* cpus per task initiated */
+	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation
 					 * across nodes */
 	uint16_t exclusive;		/* dedicated resources for the step */
@@ -878,12 +887,13 @@ struct 	step_record {
 	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
 	jobacctinfo_t *jobacct;         /* keep track of process info in the
 					 * step */
-	uint64_t pn_min_memory;		/* minimum real memory per node OR
-					 * real memory per CPU | MEM_PER_CPU,
-					 * default=0 (use job limit) */
+	char *mem_per_tres;		/* semicolon delimited list of TRES=# values */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
 	uint8_t no_kill;		/* 1 if no kill on node failure */
+	uint64_t pn_min_memory;		/* minimum real memory per node OR
+					 * real memory per CPU | MEM_PER_CPU,
+					 * default=0 (use job limit) */
 	uint16_t port;			/* port for srun communications */
 	time_t pre_sus_time;		/* time step ran prior to last suspend */
 	uint16_t start_protocol_ver;	/* Slurm version step was
@@ -911,7 +921,13 @@ struct 	step_record {
 	time_t time_last_active;	/* time step was last found on node */
 	time_t tot_sus_time;		/* total time in suspended state */
 	char *tres_alloc_str;           /* simple tres string for step */
+	char *tres_bind;		/* Task to TRES binding directives */
 	char *tres_fmt_alloc_str;       /* formatted tres string for step */
+	char *tres_freq;		/* TRES frequency directives */
+	char *tres_per_job;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_node;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_socket;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
 };
 
 extern List job_list;			/* list of job_record entries */
@@ -2631,5 +2647,20 @@ extern double calc_job_billable_tres(struct job_record *job_ptr,
  * IN: tres_limits - job_ptr->limit_set->tres array.
  */
 extern void update_job_limit_set_tres(uint16_t **tres_limits);
+
+/* Validate TRES specification of the form "name=spec[;name=spec]" */
+extern bool valid_tres_bind(char *tres);
+
+/* Validate TRES specification of the form "name=[type:]#[;name=[type:]#]" */
+extern bool valid_tres_cnt(char *tres);
+
+/* Validate TRES specification of the form "name=spec[;name=spec]" */
+extern bool valid_tres_freq(char *tres);
+
+/*
+ * Validate the named TRES is valid for scheduling parameters.
+ * This is currently a subset of all defined TRES.
+ */
+extern bool valid_tres_name(char *name);
 
 #endif /* !_HAVE_SLURMCTLD_H */

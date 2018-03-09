@@ -1068,6 +1068,49 @@ extern int parse_long_format( char* format_long )
 							    field_size,
 							    right_justify,
 							    suffix );
+			else if (!xstrcasecmp(token, "cpus-per-tres"))
+				step_format_add_cpus_per_tres(params.format_list,
+							      field_size,
+							      right_justify,
+							     suffix );
+			else if (!xstrcasecmp(token, "mem-per-tres"))
+				step_format_add_mem_per_tres(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix );
+			else if (!xstrcasecmp(token, "tres-bind"))
+				step_format_add_tres_bind(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!xstrcasecmp(token, "tres-freq"))
+				step_format_add_tres_freq(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!xstrcasecmp(token, "tres-per-job"))
+				step_format_add_tres_per_job(params.format_list,
+							     field_size,
+							    right_justify,
+							      suffix );
+			else if (!xstrcasecmp(token, "tres-per-node"))
+				step_format_add_tres_per_node(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!xstrcasecmp(token, "tres-per-socket"))
+				step_format_add_tres_per_socket(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!xstrcasecmp(token, "tres-per-task"))
+				step_format_add_tres_per_task(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
 			else {
 				step_format_add_invalid( params.format_list,
 							 field_size,
@@ -1414,7 +1457,8 @@ extern int parse_long_format( char* format_long )
 					field_size,
 					right_justify,
 					suffix );
-			else if (!xstrcasecmp(token, "cpuspertask"))
+			else if (!xstrcasecmp(token, "cpuspertask") ||
+				 !xstrcasecmp(token, "cpus-per-task"))
 				job_format_add_cpus_per_task(params.format_list,
 							     field_size,
 							     right_justify,
@@ -1574,11 +1618,53 @@ extern int parse_long_format( char* format_long )
 							   field_size,
 							   right_justify,
 							   suffix );
-			else if (!xstrcasecmp(token, "tres"))
-				job_format_add_tres(params.format_list,
-						    field_size,
-						    right_justify,
-						    suffix );
+			else if (!xstrcasecmp(token, "cpus-per-tres"))
+				job_format_add_cpus_per_tres(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix );
+			else if (!xstrcasecmp(token, "mem-per-tres"))
+				job_format_add_mem_per_tres(params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!xstrcasecmp(token, "tres") ||
+				 !xstrcasecmp(token, "tres-alloc"))
+				job_format_add_tres_alloc(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!xstrcasecmp(token, "tres-bind"))
+				job_format_add_tres_bind(params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!xstrcasecmp(token, "tres-freq"))
+				job_format_add_tres_freq(params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!xstrcasecmp(token, "tres-per-job"))
+				job_format_add_tres_per_job(params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!xstrcasecmp(token, "tres-per-node"))
+				job_format_add_tres_per_node(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix );
+			else if (!xstrcasecmp(token, "tres-per-socket"))
+				job_format_add_tres_per_socket(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!xstrcasecmp(token, "tres-per-task"))
+				job_format_add_tres_per_task(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix );
 			else if (!xstrcasecmp(token, "mcslabel"))
 				job_format_add_mcs_label(params.format_list,
 							 field_size,

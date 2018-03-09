@@ -60,6 +60,7 @@
 #include "src/common/macros.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_step_layout.h"
@@ -2271,4 +2272,57 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	}
 
 	return env;
+}
+
+/*
+ * Set TRES related env vars. Set here rather than env_array_for_job() since
+ * we don't have array of opt values and the raw values are not stored in the
+ * job_desc_msg_t structure (only the strings with possibly combined TRES)
+ *
+ * opt IN - options set by command parsing
+ * dest IN/OUT - location to write environment variables
+ * pack_offset IN - component offset into pack job, -1 if not pack job
+ */
+extern void set_env_from_opts(slurm_opt_t *opt, char ***dest, int pack_offset)
+{
+	if (opt->cpus_per_gpu) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_CPUS_PER_GPU",
+					     pack_offset, "%d",
+					     opt->cpus_per_gpu);
+	}
+	if (opt->gpus) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS",
+					     pack_offset, "%s",
+					     opt->gpus);
+	}
+	if (opt->gpu_bind) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPU_BIND",
+					     pack_offset, "%s",
+					     opt->gpu_bind);
+	}
+	if (opt->gpu_freq) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPU_FREQ",
+					     pack_offset, "%s",
+					     opt->gpu_freq);
+	}
+	if (opt->gpus_per_node) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS_PER_NODE",
+					     pack_offset, "%s",
+					     opt->gpus_per_node);
+	}
+	if (opt->gpus_per_socket) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS_PER_SOCKET",
+					     pack_offset, "%s",
+					     opt->gpus_per_socket);
+	}
+	if (opt->gpus_per_task) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS_PER_TASK",
+					     pack_offset, "%s",
+					     opt->gpus_per_task);
+	}
+	if (opt->mem_per_gpu) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_MEM_PER_GPU",
+					     pack_offset, "%"PRIi64,
+					     opt->mem_per_gpu);
+	}
 }

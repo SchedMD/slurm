@@ -33,6 +33,7 @@
 
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 
 typedef struct env_options {
@@ -348,5 +349,16 @@ extern char *uint16_array_to_str(int array_len, const uint16_t *array);
 char *uint32_compressed_to_str(uint32_t array_len,
 			       const uint16_t *array,
 			       const uint32_t *array_reps);
+
+/*
+ * Set TRES related env vars. Set here rather than env_array_for_job() since
+ * we don't have array of opt values and the raw values are not stored in the
+ * job_desc_msg_t structure (only the strings with possibly combined TRES)
+ *
+ * opt IN - options set by command parsing
+ * dest IN/OUT - location to write environment variables
+ * pack_offset IN - component offset into pack job, -1 if not pack job
+ */
+extern void set_env_from_opts(slurm_opt_t *opt, char ***dest, int pack_offset);
 
 #endif

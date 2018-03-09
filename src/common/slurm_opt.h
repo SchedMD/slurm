@@ -253,8 +253,16 @@ typedef struct slurm_options {
 	int verbose;
 
 	/* constraint options */
+	int cpus_per_gpu;		/* --cpus-per-gpu		*/
+	char *gpus;			/* --gpus			*/
+	char *gpu_bind;			/* --gpu_bind			*/
+	char *gpu_freq;			/* --gpu_freq			*/
+	char *gpus_per_node;		/* --gpus_per_node		*/
+	char *gpus_per_socket;		/* --gpus_per_socket		*/
+	char *gpus_per_task;		/* --gpus_per_task		*/
 	int pn_min_cpus;		/* --mincpus			*/
 	int64_t mem_per_cpu;		/* --mem-per-cpu		*/
+	int64_t mem_per_gpu;		/* --mem-per-gpu		*/
 	int64_t pn_min_memory;		/* --mem			*/
 	long pn_min_tmp_disk;		/* --tmp			*/
 	char *constraints;		/* --constraints		*/

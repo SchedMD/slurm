@@ -1140,6 +1140,23 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	 * and run it there */
 	j->clusters = xstrdup(opt_local->clusters);
 
+	if (opt.cpus_per_gpu)
+		xstrfmtcat(j->cpus_per_tres, "gpu=%d", opt.cpus_per_gpu);
+	if (opt.gpu_bind)
+		xstrfmtcat(j->tres_bind, "gpu=%s", opt.gpu_bind);
+	if (opt.gpu_freq)
+		xstrfmtcat(j->tres_freq, "gpu=%s", opt.gpu_freq);
+	if (opt.gpus)
+		xstrfmtcat(j->tres_per_job, "gpu=%s", opt.gpus);
+	if (opt.gpus_per_node)
+		xstrfmtcat(j->tres_per_node, "gpu=%s", opt.gpus_per_node);
+	if (opt.gpus_per_socket)
+		xstrfmtcat(j->tres_per_socket, "gpu=%s", opt.gpus_per_socket);
+	if (opt.gpus_per_task)
+		xstrfmtcat(j->tres_per_task, "gpu=%s", opt.gpus_per_task);
+	if (opt.mem_per_gpu)
+		xstrfmtcat(j->mem_per_tres, "gpu=%"PRIi64, opt.mem_per_gpu);
+
 	return j;
 }
 

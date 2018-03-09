@@ -48,8 +48,10 @@
 /* struct job_resources defines exactly which resources are allocated
  *	to a job, step, partition, etc.
  *
- * core_bitmap		- Bitmap of allocated cores for all nodes and sockets
- * core_bitmap_used	- Bitmap of cores allocated to job steps
+ * core_bitmap		- Bitmap of allocated cores for all nodes and sockets.
+ *			  The bitmap reflects allocated resources only on the
+ *			  allocated nodes, not the full system resources.
+ * core_bitmap_used	- Bitmap of cores allocated to job steps (see above)
  * cores_per_socket	- Count of cores per socket on this node, build by
  *			  build_job_resources() and ensures consistent
  *			  interpretation of core_bitmap

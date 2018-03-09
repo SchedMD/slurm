@@ -12,6 +12,10 @@ documents those changes that are of interest to users and administrators.
  -- When a pending job's state includes "UnavailableNodes" do not include the
     nodes in FUTURE state.
  -- Remove --immediate option from sbatch.
+ -- Add infrastructure for per-job and per-step TRES parameters: tres-per-job,
+    tres-per-node, tres-per-socket, tres-per-task, cpus-per-tres, mem-per-tres,
+    tres-bind and tres-freq. These new parameters are not currently used, but
+    have been added to the appropriate RPCs.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

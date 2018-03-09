@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2018" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "March 2018" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -625,6 +625,10 @@ including state, job ids and allocated nodes counter.
 Slurmctld triggers
 .RE
 
+.\ .TP
+.\ \fBDefCpusPerGPU\fR
+.\ Default count of CPUs allocated per allocated GPU.
+.\ 
 .TP
 \fBDefMemPerCPU\fR
 Default real memory size available per allocated CPU in megabytes.
@@ -634,10 +638,18 @@ are allocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
+.\ FIXME: REMOVE TWO LINES ABOVE
+.\ Also see \fBDefMemPerGPU\fR, \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+.\ \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are
+.\ mutually exclusive.
 
-NOTE: Enforcement of memory limits currently requires enabling of
-accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected).
+.\ .TP
+.\ \fBDefMemPerGPU\fR
+.\ Default real memory size available per allocated GPU in megabytes.
+.\ The default value is 0 (unlimited).
+.\ Also see \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR.
+.\ \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are
+.\ mutually exclusive.
 
 .TP
 \fBDefMemPerNode\fR
@@ -650,10 +662,10 @@ resources are over\-subscribed (\fBOverSubscribe=yes\fR or
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
-
-NOTE: Enforcement of memory limits currently requires enabling of
-accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected).
+.\ FIXME: REMOVE TWO LINES ABOVE
+.\ Also see \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBMaxMemPerCPU\fR.
+.\ \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are
+.\ mutually exclusive.
 
 .TP
 \fBDefaultStorageHost\fR
@@ -1391,11 +1403,9 @@ Used to avoid over\-subscribing memory and causing paging.
 are allocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
+.\ FIXME: REMOVE ONE LINE ABOVE
+.\ Also see \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
-
-NOTE: Enforcement of memory limits currently requires enabling of
-accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected).
 
 NOTE: If a job specifies a memory per CPU limit that exceeds this system limit,
 that job's count of CPUs per task will automatically be increased. This may
@@ -1412,10 +1422,6 @@ resources are over\-subscribed (\fBOverSubscribe=yes\fR or
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
-
-NOTE: Enforcement of memory limits currently requires enabling of
-accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected).
 
 .TP
 \fBMaxStepCount\fR
@@ -4642,6 +4648,10 @@ specification will utilize this partition.
 Possible values are "YES" and "NO".
 The default value is "NO".
 
+.\ .TP
+.\ \fBDefCpusPerGPU\fR
+.\ Default count of CPUs allocated per allocated GPU.
+.\ 
 .TP
 \fBDefMemPerCPU\fR
 Default real memory size available per allocated CPU in megabytes.
@@ -4651,10 +4661,18 @@ are allocated to jobs (\fBSelectType=select/cons_res\fR).
 If not set, the \fBDefMemPerCPU\fR value for the entire cluster will be used.
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
-NOTE: Enforcement of memory limits currently requires enabling of
-accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected).
+.\ FIXME: REMOVE TWO LINES ABOVE
+.\ Also see \fBDefMemPerGPU\fR, \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+.\ \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are mutually
+.\ exclusive.
 
+.\ .TP
+.\ \fBDefMemPerGPU\fR
+.\ Default real memory size available per allocated GPU in megabytes.
+.\ Also see \fBDefMemPerCPU\fR, \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+.\ \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are mutually
+.\ exclusive.
+.\ 
 .TP
 \fBDefMemPerNode\fR
 Default real memory size available per allocated node in megabytes.
@@ -4666,9 +4684,10 @@ resources are over\-subscribed (\fBOverSubscribe=yes\fR or
 If not set, the \fBDefMemPerNode\fR value for the entire cluster will be used.
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
-NOTE: Enforcement of memory limits currently requires enabling of
-accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected).
+.\ FIXME: REMOVE TWO LINES ABOVE
+.\ Also see \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBMaxMemPerCPU\fR.
+.\ \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are mutually
+.\ exclusive.
 
 .TP
 \fBDenyAccounts\fR
@@ -4757,9 +4776,6 @@ are allocated to jobs (\fBSelectType=select/cons_res\fR).
 If not set, the \fBMaxMemPerCPU\fR value for the entire cluster will be used.
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
-NOTE: Enforcement of memory limits currently requires enabling of
-accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected).
 
 .TP
 \fBMaxMemPerNode\fR
@@ -4772,9 +4788,6 @@ resources are over\-subscribed (\fBOverSubscribe=yes\fR or
 If not set, the \fBMaxMemPerNode\fR value for the entire cluster will be used.
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
-NOTE: Enforcement of memory limits currently requires enabling of
-accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected).
 
 .TP
 \fBMaxNodes\fR

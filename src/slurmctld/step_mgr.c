@@ -402,7 +402,14 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);
 	xfree(step_ptr->ext_sensors);
-	step_ptr->job_ptr = NULL;
+	xfree(step_ptr->cpus_per_tres);
+	xfree(step_ptr->mem_per_tres);
+	xfree(step_ptr->tres_bind);
+	xfree(step_ptr->tres_freq);
+	xfree(step_ptr->tres_per_job);
+	xfree(step_ptr->tres_per_node);
+	xfree(step_ptr->tres_per_socket);
+	xfree(step_ptr->tres_per_task);
 	xfree(step_ptr);
 }
 
@@ -492,6 +499,23 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->immediate, step_spec->no_kill);
 	debug3("   overcommit=%d time_limit=%u gres=%s",
 	       step_spec->overcommit, step_spec->time_limit, step_spec->gres);
+
+	if (step_spec->cpus_per_tres)
+		debug3("   CPUs_per_TRES=%s", step_spec->cpus_per_tres);
+	if (step_spec->mem_per_tres)
+		debug3("   Mem_per_TRES=%s", step_spec->mem_per_tres);
+	if (step_spec->tres_bind)
+		debug3("   TRES_bind=%s", step_spec->tres_bind);
+	if (step_spec->tres_freq)
+		debug3("   TRES_freq=%s", step_spec->tres_freq);
+	if (step_spec->tres_per_job)
+		debug3("   TRES_per_job=%s", step_spec->tres_per_job);
+	if (step_spec->tres_per_node)
+		debug3("   TRES_per_node=%s", step_spec->tres_per_node);
+	if (step_spec->tres_per_socket)
+		debug3("   TRES_per_socket=%s", step_spec->tres_per_socket);
+	if (step_spec->tres_per_task)
+		debug3("   TRES_per_task=%s", step_spec->tres_per_task);
 }
 
 
@@ -2403,6 +2427,16 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    (task_dist != SLURM_DIST_ARBITRARY))
 		return ESLURM_BAD_DIST;
 
+	if (!valid_tres_cnt(step_specs->cpus_per_tres)	||
+	    !valid_tres_cnt(step_specs->mem_per_tres)	||
+	    !valid_tres_bind(step_specs->tres_bind)	||
+	    !valid_tres_freq(step_specs->tres_freq)	||
+	    !valid_tres_cnt(step_specs->tres_per_job)	||
+	    !valid_tres_cnt(step_specs->tres_per_node)	||
+	    !valid_tres_cnt(step_specs->tres_per_socket)||
+	    !valid_tres_cnt(step_specs->tres_per_task))
+		return ESLURM_INVALID_TRES;
+
 	if (_test_strlen(step_specs->ckpt_dir, "ckpt_dir", MAXPATHLEN)	||
 	    _test_strlen(step_specs->gres, "gres", 1024)		||
 	    _test_strlen(step_specs->host, "host", 1024)		||
@@ -2635,6 +2669,15 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->ckpt_dir  = xstrdup(step_specs->ckpt_dir);
 	step_ptr->no_kill   = step_specs->no_kill;
 	step_ptr->ext_sensors = ext_sensors_alloc();
+
+	step_ptr->cpus_per_tres = xstrdup(step_specs->cpus_per_tres);
+	step_ptr->mem_per_tres = xstrdup(step_specs->mem_per_tres);
+	step_ptr->tres_bind = xstrdup(step_specs->tres_bind);
+	step_ptr->tres_freq = xstrdup(step_specs->tres_freq);
+	step_ptr->tres_per_job = xstrdup(step_specs->tres_per_job);
+	step_ptr->tres_per_node = xstrdup(step_specs->tres_per_node);
+	step_ptr->tres_per_socket = xstrdup(step_specs->tres_per_socket);
+	step_ptr->tres_per_task = xstrdup(step_specs->tres_per_task);
 
 	/* step's name and network default to job's values if not
 	 * specified in the step specification */
@@ -3049,7 +3092,64 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 	cpu_cnt = step_ptr->cpu_count;
 #endif
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->array_job_id, buffer);
+		pack32(step_ptr->job_ptr->array_task_id, buffer);
+		pack32(step_ptr->job_ptr->job_id, buffer);
+		pack32(step_ptr->step_id, buffer);
+		pack16(step_ptr->ckpt_interval, buffer);
+		pack32(step_ptr->job_ptr->user_id, buffer);
+		pack32(cpu_cnt, buffer);
+		pack32(step_ptr->cpu_freq_min, buffer);
+		pack32(step_ptr->cpu_freq_max, buffer);
+		pack32(step_ptr->cpu_freq_gov, buffer);
+		pack32(task_cnt, buffer);
+		if (step_ptr->step_layout)
+			pack32(step_ptr->step_layout->task_dist, buffer);
+		else
+			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
+		pack32(step_ptr->time_limit, buffer);
+		pack32(step_ptr->state, buffer);
+		pack32(step_ptr->srun_pid, buffer);
+
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		packstr(slurmctld_conf.cluster_name, buffer);
+		if (step_ptr->job_ptr->part_ptr)
+			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
+		else
+			packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->host, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_str_hex(pack_bitstr, buffer);
+		packstr(step_ptr->ckpt_dir, buffer);
+		packstr(step_ptr->gres, buffer);
+		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
+					     protocol_version);
+		packstr(step_ptr->tres_fmt_alloc_str, buffer);
+		pack16(step_ptr->start_protocol_ver, buffer);
+
+		packstr(step_ptr->cpus_per_tres, buffer);
+		packstr(step_ptr->mem_per_tres, buffer);
+		packstr(step_ptr->tres_bind, buffer);
+		packstr(step_ptr->tres_freq, buffer);
+		packstr(step_ptr->tres_per_job, buffer);
+		packstr(step_ptr->tres_per_node, buffer);
+		packstr(step_ptr->tres_per_socket, buffer);
+		packstr(step_ptr->tres_per_task, buffer);
+	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 		pack32(step_ptr->job_ptr->job_id, buffer);
@@ -3911,6 +4011,14 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->tres_alloc_str, buffer);
 	packstr(step_ptr->tres_fmt_alloc_str, buffer);
 
+	packstr(step_ptr->cpus_per_tres, buffer);
+	packstr(step_ptr->mem_per_tres, buffer);
+	packstr(step_ptr->tres_bind, buffer);
+	packstr(step_ptr->tres_freq, buffer);
+	packstr(step_ptr->tres_per_job, buffer);
+	packstr(step_ptr->tres_per_node, buffer);
+	packstr(step_ptr->tres_per_socket, buffer);
+	packstr(step_ptr->tres_per_task, buffer);
 	return 0;
 }
 
@@ -3937,13 +4045,88 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
 	char *gres = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
+	char *cpus_per_tres = NULL, *mem_per_tres = NULL, *tres_bind = NULL;
+	char *tres_freq = NULL, *tres_per_job = NULL, *tres_per_node = NULL;
+	char *tres_per_socket = NULL, *tres_per_task = NULL;
 	dynamic_plugin_data_t *switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	List gres_list = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpack32(&step_id, buffer);
+		safe_unpack16(&cyclic_alloc, buffer);
+		safe_unpack32(&srun_pid, buffer);
+		safe_unpack16(&port, buffer);
+		safe_unpack16(&ckpt_interval, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&resv_port_cnt, buffer);
+		safe_unpack16(&state, buffer);
+		safe_unpack16(&start_protocol_ver, buffer);
+
+		safe_unpack8(&no_kill, buffer);
+
+		safe_unpack32(&cpu_count, buffer);
+		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack32(&exit_code, buffer);
+		if (exit_code != NO_VAL) {
+			unpack_bit_str_hex(&exit_node_bitmap, buffer);
+		}
+		unpack_bit_str_hex(&core_bitmap_job, buffer);
+
+		safe_unpack32(&time_limit, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+
+		safe_unpack_time(&start_time, buffer);
+		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&tot_sus_time, buffer);
+		safe_unpack_time(&ckpt_time, buffer);
+
+		safe_unpackstr_xmalloc(&host, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
+		safe_unpackstr_xmalloc(&name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&network, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		if (gres_plugin_step_state_unpack(&gres_list, buffer,
+						  job_ptr->job_id, step_id,
+						  protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack16(&batch_step, buffer);
+		if (!batch_step) {
+			if (unpack_slurm_step_layout(&step_layout, buffer,
+						     protocol_version))
+				goto unpack_error;
+			if (switch_g_unpack_jobinfo(&switch_tmp, buffer,
+						    protocol_version))
+				goto unpack_error;
+		}
+		checkpoint_alloc_jobinfo(&check_tmp);
+		if (checkpoint_unpack_jobinfo(check_tmp, buffer,
+					      protocol_version))
+			goto unpack_error;
+
+		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
+						   protocol_version))
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&tres_alloc_str, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_fmt_alloc_str, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&cpus_per_tres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&mem_per_tres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_bind, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_freq, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_job, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_node, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_socket, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_task, &name_len, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack32(&srun_pid, buffer);
@@ -4074,6 +4257,31 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->tres_alloc_str     = tres_alloc_str;
 	tres_alloc_str = NULL;
 
+	xfree(step_ptr->cpus_per_tres);
+	step_ptr->cpus_per_tres = cpus_per_tres;
+	cpus_per_tres = NULL;
+	xfree(step_ptr->mem_per_tres);
+	step_ptr->mem_per_tres = mem_per_tres;
+	mem_per_tres = NULL;
+	xfree(step_ptr->tres_bind);
+	step_ptr->tres_bind = tres_bind;
+	tres_bind = NULL;
+	xfree(step_ptr->tres_freq);
+	step_ptr->tres_freq = tres_freq;
+	tres_freq = NULL;
+	xfree(step_ptr->tres_per_job);
+	step_ptr->tres_per_job = tres_per_job;
+	tres_per_job = NULL;
+	xfree(step_ptr->tres_per_node);
+	step_ptr->tres_per_node = tres_per_node;
+	tres_per_node = NULL;
+	xfree(step_ptr->tres_per_socket);
+	step_ptr->tres_per_socket = tres_per_socket;
+	tres_per_socket = NULL;
+	xfree(step_ptr->tres_per_task);
+	step_ptr->tres_per_task = tres_per_task;
+	tres_per_task = NULL;
+
 	xfree(step_ptr->tres_fmt_alloc_str);
 	step_ptr->tres_fmt_alloc_str = tres_fmt_alloc_str;
 	tres_fmt_alloc_str = NULL;
@@ -4126,6 +4334,14 @@ unpack_error:
 	select_g_select_jobinfo_free(select_jobinfo);
 	xfree(tres_alloc_str);
 	xfree(tres_fmt_alloc_str);
+	xfree(cpus_per_tres);
+	xfree(mem_per_tres);
+	xfree(tres_bind);
+	xfree(tres_freq);
+	xfree(tres_per_job);
+	xfree(tres_per_node);
+	xfree(tres_per_socket);
+	xfree(tres_per_task);
 
 	return SLURM_FAILURE;
 }

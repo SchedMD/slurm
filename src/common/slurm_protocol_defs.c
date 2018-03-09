@@ -818,6 +818,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->clusters);
 		xfree(msg->comment);
 		xfree(msg->cpu_bind);
+		xfree(msg->cpus_per_tres);
 		xfree(msg->dependency);
 		if (msg->environment) {
 			for (i = 0; i < msg->env_size; i++)
@@ -835,6 +836,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->mail_user);
 		xfree(msg->mcs_label);
 		xfree(msg->mem_bind);
+		xfree(msg->mem_per_tres);
 		xfree(msg->mloaderimage);
 		xfree(msg->name);
 		xfree(msg->network);
@@ -856,7 +858,13 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 				xfree(msg->spank_job_env[i]);
 			xfree(msg->spank_job_env);
 		}
+		xfree(msg->tres_bind);
+		xfree(msg->tres_freq);
 		xfree(msg->tres_req_cnt);
+		xfree(msg->tres_per_job);
+		xfree(msg->tres_per_node);
+		xfree(msg->tres_per_socket);
+		xfree(msg->tres_per_task);
 		xfree(msg->wckey);
 		xfree(msg->work_dir);
 		xfree(msg->x11_magic_cookie);
@@ -987,6 +995,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->cluster);
 		xfree(job->command);
 		xfree(job->comment);
+		xfree(job->cpus_per_tres);
 		xfree(job->dependency);
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
@@ -1002,6 +1011,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		}
 		xfree(job->licenses);
 		xfree(job->mcs_label);
+		xfree(job->mem_per_tres);
 		xfree(job->name);
 		xfree(job->network);
 		xfree(job->node_inx);
@@ -1021,6 +1031,12 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->std_in);
 		xfree(job->std_out);
 		xfree(job->tres_alloc_str);
+		xfree(job->tres_bind);
+		xfree(job->tres_freq);
+		xfree(job->tres_per_job);
+		xfree(job->tres_per_node);
+		xfree(job->tres_per_socket);
+		xfree(job->tres_per_task);
 		xfree(job->tres_req_str);
 		xfree(job->user_name);
 		xfree(job->wckey);
@@ -1186,12 +1202,20 @@ extern void slurm_free_job_step_create_request_msg(
 {
 	if (msg) {
 		xfree(msg->ckpt_dir);
+		xfree(msg->cpus_per_tres);
 		xfree(msg->features);
 		xfree(msg->gres);
 		xfree(msg->host);
+		xfree(msg->mem_per_tres);
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->node_list);
+		xfree(msg->tres_bind);
+		xfree(msg->tres_freq);
+		xfree(msg->tres_per_job);
+		xfree(msg->tres_per_node);
+		xfree(msg->tres_per_socket);
+		xfree(msg->tres_per_task);
 		xfree(msg);
 	}
 }

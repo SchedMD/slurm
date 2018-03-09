@@ -913,12 +913,16 @@ extern int scontrol_update_job(int argc, char **argv)
 			job_msg.nice = NICE_OFFSET + tmp_nice;
 			update_cnt++;
 		}
-		else if (xstrncasecmp(tag, "CPUsPerTask", MAX(taglen, 6)) == 0) {
+		else if (!xstrncasecmp(tag, "CPUsPerTask", MAX(taglen, 9))) {
 			if (parse_uint16(val, &job_msg.cpus_per_task)) {
 				error("Invalid CPUsPerTask value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "CpusPerTres", MAX(taglen, 9))) {
+			job_msg.cpus_per_tres = val;
 			update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "NumCPUs", MAX(taglen, 6)) == 0) {
@@ -1124,6 +1128,10 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			update_cnt++;
 		}
+		else if (!xstrncasecmp(tag, "MemPerTres", MAX(taglen, 5))) {
+			job_msg.mem_per_tres = val;
+			update_cnt++;
+		}
 		else if (xstrncasecmp(tag, "ThreadSpec", MAX(taglen, 4)) == 0) {
 			if (!xstrcmp(val, "-1") || !xstrcmp(val, "*"))
 				job_msg.core_spec = INFINITE16;
@@ -1133,6 +1141,30 @@ extern int scontrol_update_job(int argc, char **argv)
 				return 0;
 			} else
 				job_msg.core_spec |= CORE_SPEC_THREAD;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresBind", MAX(taglen, 5))) {
+			job_msg.tres_bind = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresFreq", MAX(taglen, 5))) {
+			job_msg.tres_freq = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresPerJob", MAX(taglen, 8))) {
+			job_msg.tres_per_job = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresPerNode", MAX(taglen, 8))) {
+			job_msg.tres_per_node = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresPerSocket", MAX(taglen, 8))) {
+			job_msg.tres_per_socket = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresPerTask", MAX(taglen, 8))) {
+			job_msg.tres_per_task = val;
 			update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "ExcNodeList", MAX(taglen, 3)) == 0){

@@ -2179,17 +2179,153 @@ int _print_job_wait4switch(job_info_t * job, int width,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_tres(job_info_t *job, int width,
-		    bool right_justify, char *suffix)
+int _print_job_cpus_per_tres(job_info_t *job, int width,
+			     bool right_justify, char *suffix)
 {
 	if (job == NULL) {
-		_print_str("TRES", width, right_justify, true);
+		_print_str("CPUS_PER_TRES", width, right_justify, true);
+	} else {
+		if (job->cpus_per_tres)
+			_print_str(job->cpus_per_tres, width,
+				   right_justify, true);
+		else
+			_print_str("N/A", width,
+				   right_justify, true);
+
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_mem_per_tres(job_info_t *job, int width,
+			    bool right_justify, char *suffix)
+{
+	if (job == NULL) {
+		_print_str("MEM_PER_TRES", width, right_justify, true);
+	} else {
+		if (job->mem_per_tres)
+			_print_str(job->mem_per_tres, width,
+				   right_justify, true);
+		else
+			_print_str("N/A", width,
+				   right_justify, true);
+
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_tres_alloc(job_info_t *job, int width,
+			  bool right_justify, char *suffix)
+{
+	if (job == NULL) {
+		_print_str("TRES_ALLOC", width, right_justify, true);
 	} else {
 		if (job->tres_alloc_str)
 			_print_str(job->tres_alloc_str, width,
 				   right_justify, true);
 		else if (job->tres_req_str)
 			_print_str(job->tres_req_str, width,
+				   right_justify, true);
+		else
+			_print_str("N/A", width,
+				   right_justify, true);
+
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_tres_bind(job_info_t *job, int width,
+			 bool right_justify, char *suffix)
+{
+	if (job == NULL) {
+		_print_str("TRES_BIND", width, right_justify, true);
+	} else {
+		if (job->tres_bind)
+			_print_str(job->tres_bind, width,
+				   right_justify, true);
+		else
+			_print_str("N/A", width,
+				   right_justify, true);
+
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_tres_freq(job_info_t *job, int width,
+			 bool right_justify, char *suffix)
+{
+	if (job == NULL) {
+		_print_str("TRES_FREQ", width, right_justify, true);
+	} else {
+		if (job->tres_freq)
+			_print_str(job->tres_freq, width,
+				   right_justify, true);
+		else
+			_print_str("N/A", width,
+				   right_justify, true);
+
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_tres_per_job(job_info_t *job, int width,
+			    bool right_justify, char *suffix)
+{
+	if (job == NULL) {
+		_print_str("TRES_PER_JOB", width, right_justify, true);
+	} else {
+		if (job->tres_per_job)
+			_print_str(job->tres_per_job, width,
+				   right_justify, true);
+		else
+			_print_str("N/A", width,
+				   right_justify, true);
+
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_tres_per_node(job_info_t *job, int width,
+			     bool right_justify, char *suffix)
+{
+	if (job == NULL) {
+		_print_str("TRES_PER_NODE", width, right_justify, true);
+	} else {
+		if (job->tres_per_node)
+			_print_str(job->tres_per_node, width,
+				   right_justify, true);
+		else
+			_print_str("N/A", width,
+				   right_justify, true);
+
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_tres_per_socket(job_info_t *job, int width,
+			       bool right_justify, char *suffix)
+{
+	if (job == NULL) {
+		_print_str("TRES_PER_SOCKET", width, right_justify, true);
+	} else {
+		if (job->tres_per_socket)
+			_print_str(job->tres_per_socket, width,
+				   right_justify, true);
+		else
+			_print_str("N/A", width,
+				   right_justify, true);
+
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_tres_per_task(job_info_t *job, int width,
+			     bool right_justify, char *suffix)
+{
+	if (job == NULL) {
+		_print_str("TRES_PER_TASK", width, right_justify, true);
+	} else {
+		if (job->tres_per_task)
+			_print_str(job->tres_per_task, width,
 				   right_justify, true);
 		else
 			_print_str("N/A", width,
@@ -2626,6 +2762,110 @@ int _print_step_state(job_step_info_t * step, int width, bool right,
 		_print_str("STATE", width, right, true);
 	else
 		_print_str(job_state_string(step->state), width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_cpus_per_tres(job_step_info_t * step, int width, bool right,
+			      char* suffix)
+{
+	if (step == NULL)
+		_print_str("CPUS_PER_TRES", width, right, true);
+	else
+		_print_str(step->cpus_per_tres, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_mem_per_tres(job_step_info_t * step, int width, bool right,
+			     char* suffix)
+{
+	if (step == NULL)
+		_print_str("MEM_PER_TRES", width, right, true);
+	else
+		_print_str(step->mem_per_tres, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_tres_bind(job_step_info_t * step, int width, bool right,
+			  char* suffix)
+{
+	if (step == NULL)
+		_print_str("TRES_BIND", width, right, true);
+	else
+		_print_str(step->tres_bind, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_tres_freq(job_step_info_t * step, int width, bool right,
+			  char* suffix)
+{
+	if (step == NULL)
+		_print_str("TRES_FREQ", width, right, true);
+	else
+		_print_str(step->tres_freq, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_tres_per_job(job_step_info_t * step, int width, bool right,
+			     char* suffix)
+{
+	if (step == NULL)
+		_print_str("TRES_PER_JOB", width, right, true);
+	else
+		_print_str(step->tres_per_job, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_tres_per_node(job_step_info_t * step, int width, bool right,
+			      char* suffix)
+{
+	if (step == NULL)
+		_print_str("TRES_PER_JOB", width, right, true);
+	else
+		_print_str(step->tres_per_node, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_tres_per_socket(job_step_info_t * step, int width, bool right,
+				char* suffix)
+{
+	if (step == NULL)
+		_print_str("TRES_PER_SOCKET", width, right, true);
+	else
+		_print_str(step->tres_per_socket, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_tres_per_task(job_step_info_t * step, int width, bool right,
+			      char* suffix)
+{
+	if (step == NULL)
+		_print_str("TRES_PER_TASK", width, right, true);
+	else
+		_print_str(step->tres_per_task, width, right, true);
 
 	if (suffix)
 		printf("%s", suffix);

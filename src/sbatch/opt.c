@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>
+ *  Portions Copyright (C) 2010-2018 SchedMD LLC <https://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -83,6 +83,8 @@ enum wrappers {
 	WRPR_CNT
 };
 
+// #define HAVE_GPUS 1
+
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
@@ -120,6 +122,7 @@ enum wrappers {
 #define OPT_DELAY_BOOT	  0x23
 #define OPT_INT64	  0x24
 #define OPT_USE_MIN_NODES 0x25
+#define OPT_MEM_PER_GPU   0x26
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -193,6 +196,14 @@ enum wrappers {
 #define LONG_OPT_CLUSTER_CONSTRAINT 0x169
 #define LONG_OPT_X11             0x170
 #define LONG_OPT_BURST_BUFFER_SPEC  0x171
+#define LONG_OPT_CPUS_PER_GPU    0x172
+#define LONG_OPT_GPU_BIND        0x173
+#define LONG_OPT_GPU_FREQ        0x174
+#define LONG_OPT_GPUS            0x175
+#define LONG_OPT_GPUS_PER_NODE   0x176
+#define LONG_OPT_GPUS_PER_SOCKET 0x177
+#define LONG_OPT_GPUS_PER_TASK   0x178
+#define LONG_OPT_MEM_PER_GPU     0x179
 
 /*---- global variables, defined in opt.h ----*/
 slurm_opt_t opt;
@@ -317,6 +328,7 @@ static void _opt_default(bool first_pass)
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
 		xfree(opt.clusters);
+		opt.cpus_per_gpu	= 0;
 		xfree(opt.comment);
 		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
 			error("getcwd failed: %m");
@@ -336,10 +348,17 @@ static void _opt_default(bool first_pass)
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
+		xfree(opt.gpus);
+		xfree(opt.gpu_bind);
+		xfree(opt.gpu_freq);
+		xfree(opt.gpus_per_node);
+		xfree(opt.gpus_per_socket);
+		xfree(opt.gpus_per_task);
 		opt.hold		= false;
 		sbopt.ifname		= xstrdup("/dev/null");
 		opt.immediate		= false;
 		xfree(opt.mcs_label);
+		opt.mem_per_gpu		= 0;
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
 		xfree(sbopt.ofname);
@@ -494,6 +513,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
+  {"SBATCH_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SBATCH_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL          },
@@ -502,6 +522,12 @@ env_vars_t env_vars[] = {
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
   {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
   {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
+  {"SBATCH_GPUS",          OPT_STRING,     &opt.gpus,          NULL          },
+  {"SBATCH_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
+  {"SBATCH_GPU_FREQ",      OPT_STRING,     &opt.gpu_freq,      NULL          },
+  {"SBATCH_GPUS_PER_NODE", OPT_STRING,     &opt.gpus_per_node, NULL          },
+  {"SBATCH_GPUS_PER_SOCKET", OPT_STRING,   &opt.gpus_per_socket, NULL        },
+  {"SBATCH_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL          },
   {"SBATCH_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SBATCH_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL          },
@@ -509,6 +535,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL          },
   {"SBATCH_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL          },
   {"SBATCH_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
+  {"SBATCH_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
   {"SBATCH_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL          },
   {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL          },
   {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
@@ -690,6 +717,14 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
+	case OPT_MEM_PER_GPU:
+		opt.mem_per_gpu = (int64_t) str_to_mbytes2(val);
+		if (opt.mem_per_gpu < 0) {
+			error("\"%s=%s\" -- invalid value, ignoring...",
+			      e->var, val);
+		}
+		break;
+
 	case OPT_OVERCOMMIT:
 		opt.overcommit = true;
 		break;
@@ -781,6 +816,7 @@ static struct option long_options[] = {
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
 	{"geometry",      required_argument, 0, 'g'},
+	{"gpus",          required_argument, 0, 'G'},
 	{"help",          no_argument,       0, 'h'},
 	{"hold",          no_argument,       0, 'H'},
 	{"input",         required_argument, 0, 'i'},
@@ -825,6 +861,7 @@ static struct option long_options[] = {
 	{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
+	{"cpus-per-gpu",  required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 	{"deadline",      required_argument, 0, LONG_OPT_DEADLINE},
 	{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 	{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
@@ -834,6 +871,11 @@ static struct option long_options[] = {
 	{"gres",          required_argument, 0, LONG_OPT_GRES},
 	{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
+	{"gpu-bind",      required_argument, 0, LONG_OPT_GPU_BIND},
+	{"gpu-freq",      required_argument, 0, LONG_OPT_GPU_FREQ},
+	{"gpus-per-node", required_argument, 0, LONG_OPT_GPUS_PER_NODE},
+	{"gpus-per-socket", required_argument, 0, LONG_OPT_GPUS_PER_SOCKET},
+	{"gpus-per-task", required_argument, 0, LONG_OPT_GPUS_PER_TASK},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"ioload-image",  required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
@@ -844,6 +886,7 @@ static struct option long_options[] = {
 	{"mcs-label",     required_argument, 0, LONG_OPT_MCS_LABEL},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
+	{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
 	{"mem-bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mincores",      required_argument, 0, LONG_OPT_MINCORES},
@@ -889,7 +932,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+ba:A:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:q:QRsS:t:uU:vVw:Wx:";
+	"+ba:A:B:c:C:d:D:e:F:g:G:hHi:IJ:kL:m:M:n:N:o:Op:P:q:QRsS:t:uU:vVw:Wx:";
 char *pos_delimit;
 
 
@@ -1469,6 +1512,10 @@ static void _set_options(int argc, char **argv)
 			if (verify_geometry(optarg, opt.geometry))
 				exit(error_exit);
 			break;
+		case 'G':
+			xfree(opt.gpus);
+			opt.gpus = xstrdup(optarg);
+			break;
 		case 'h':
 			/* handled in process_options_first_pass() */
 			break;
@@ -1599,6 +1646,10 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
 			break;
+		case LONG_OPT_CPUS_PER_GPU:
+			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,
+						     true);
+			break;
 		case LONG_OPT_DEADLINE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1629,6 +1680,40 @@ static void _set_options(int argc, char **argv)
 				opt.shared = JOB_SHARED_MCS;
 			} else {
 				error("invalid exclusive option %s", optarg);
+				exit(error_exit);
+			}
+			break;
+		case LONG_OPT_GPU_BIND:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
+			xfree(opt.gpu_bind);
+			opt.gpu_bind = xstrdup(optarg);
+			break;
+		case LONG_OPT_GPU_FREQ:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
+			xfree(opt.gpu_freq);
+			opt.gpu_freq = xstrdup(optarg);
+			break;
+		case LONG_OPT_GPUS_PER_NODE:
+			xfree(opt.gpus_per_node);
+			opt.gpus_per_node = xstrdup(optarg);
+			break;
+		case LONG_OPT_GPUS_PER_SOCKET:
+			xfree(opt.gpus_per_socket);
+			opt.gpus_per_socket = xstrdup(optarg);
+			break;
+		case LONG_OPT_GPUS_PER_TASK:
+			xfree(opt.gpus_per_task);
+			opt.gpus_per_task = xstrdup(optarg);
+			break;
+		case LONG_OPT_MEM_PER_GPU:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
+			opt.mem_per_gpu = (int64_t) str_to_mbytes2(optarg);
+			if (opt.mem_per_gpu < 0) {
+				error("invalid mem-per-gpu constraint %s",
+				      optarg);
 				exit(error_exit);
 			}
 			break;
@@ -3456,7 +3541,6 @@ static void _opt_list(void)
 	     sbopt.propagate == NULL ? "NONE" : sbopt.propagate);
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
-	str = print_commandline(sbopt.script_argc, sbopt.script_argv);
 	if (opt.core_spec == NO_VAL16)
 		info("core-spec         : NA");
 	else if (opt.core_spec & CORE_SPEC_THREAD) {
@@ -3466,13 +3550,21 @@ static void _opt_list(void)
 		info("core-spec         : %d", opt.core_spec);
 	info("burst_buffer      : `%s'", opt.burst_buffer);
 	info("burst_buffer_file : `%s'", sbopt.burst_buffer_file);
+	str = print_commandline(sbopt.script_argc, sbopt.script_argv);
 	info("remote command    : `%s'", str);
+	xfree(str);
 	info("power             : %s", power_flags_str(opt.power_flags));
 	info("wait              : %s", sbopt.wait ? "no" : "yes");
 	if (opt.mcs_label)
 		info("mcs-label         : %s",opt.mcs_label);
-	xfree(str);
-
+	info("cpus-per-gpu      : %d", opt.cpus_per_gpu);
+	info("gpus              : %s", opt.gpus);
+	info("gpu-bind          : %s", opt.gpu_bind);
+	info("gpu-freq          : %s", opt.gpu_freq);
+	info("gpus-per-node     : %s", opt.gpus_per_node);
+	info("gpus-per-socket   : %s", opt.gpus_per_socket);
+	info("gpus-per-task     : %s", opt.gpus_per_task);
+	info("mem-per-gpu       : %"PRIi64, opt.mem_per_gpu);
 }
 
 static void _usage(void)
@@ -3503,7 +3595,13 @@ static void _usage(void)
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs] [--spread-job]\n"
 "              [--export[=names]] [--export-file=file|fd] [--delay-boot=mins]\n"
-"              [--use-min-nodes] executable [args...]\n");
+"              [--use-min-nodes]\n"
+#ifdef HAVE_GPUS
+"              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
+"              [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
+"              [--mem-per-gpu=MB]\n"
+#endif
+"              executable [args...]\n");
 }
 
 static void _help(void)
@@ -3637,6 +3735,20 @@ static void _help(void)
 
 	spank_print_options(stdout, 6, 30);
 
+#ifdef HAVE_GPUS
+	printf("\n"
+"GPU scheduling options:\n"
+"      --cpus-per-gpu=n        number of CPUs required per allocated GPU\n"
+"  -G, --gpus=n                count of GPUs required for the job\n"
+"      --gpu-bind=...          task to gpu binding options\n"
+"      --gpu-freq=...          frequency and voltage of GPUs\n"
+"      --gpus-per-node=n       number of GPUs required per allocated node\n"
+"      --gpus-per-socket=n     number of GPUs required per allocated socket\n"
+"      --gpus-per-task=n       number of GPUs required per spawned task\n"
+"      --mem-per-gpu=n         real memory required per allocated GPU\n"
+		);
+#endif
+
 	printf("\n"
 #ifdef HAVE_NATIVE_CRAY			/* Native Cray specific options */
 "Cray related options:\n"
@@ -3659,8 +3771,8 @@ static void _help(void)
 "      --cnload-image=path     path to compute node image for bluegene block.  Default if not set\n"
 "      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
 "      --ioload-image=path     path to ioload image for bluegene block.  Default if not set\n"
-#endif
 "\n"
+#endif
 "Help options:\n"
 "  -h, --help                  show this help message\n"
 "  -u, --usage                 display brief usage message\n"
