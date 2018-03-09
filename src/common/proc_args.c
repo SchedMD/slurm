@@ -42,9 +42,7 @@
 #define __USE_ISOC99
 #endif
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #ifndef SYSTEM_DIMENSIONS
 #  define SYSTEM_DIMENSIONS 1

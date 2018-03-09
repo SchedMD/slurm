@@ -36,9 +36,7 @@
 
 #include "config.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #ifdef __FreeBSD__
 #include <sys/socket.h>
