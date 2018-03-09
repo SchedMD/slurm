@@ -1481,7 +1481,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->nodelist = xstrdup(ainfo->nodelist);
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
- 	job->pack_jobid  = NO_VAL;
+	job->pack_jobid  = NO_VAL;
 	job->pack_nnodes = NO_VAL;
 	job->pack_ntasks = NO_VAL;
  	job->pack_offset = NO_VAL;
