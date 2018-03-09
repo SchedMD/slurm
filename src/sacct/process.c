@@ -55,6 +55,11 @@ static void _aggregate_tres_usage_stats_internal(char **dest_tres_max,
 	xassert(dest_tres_max_taskid);
 
 	flags = TRES_STR_FLAG_REMOVE;
+
+	/* We always want these lists to exist */
+	dest_tres_list = list_create(slurmdb_destroy_tres_rec);
+	from_tres_list = list_create(slurmdb_destroy_tres_rec);
+
 	slurmdb_tres_list_from_string(&dest_tres_list, *dest_tres_max, flags);
 	slurmdb_tres_list_from_string(&from_tres_list, from_tres_max, flags);
 
