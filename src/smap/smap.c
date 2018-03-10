@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 	/* no need for this if you are resolving */
 	while (slurm_load_node((time_t) NULL,
 			       &new_node_ptr, SHOW_ALL)) {
-		if (params.resolve || (params.display == COMMANDS)) {
+		if (params.resolve) {
 			new_node_ptr = NULL;
 			break;		/* just continue */
 		}
@@ -224,18 +224,6 @@ redraw:
 			break;
 		case SLURMPART:
 			get_slurm_part();
-			break;
-		case COMMANDS:
-#ifdef HAVE_BG
-			wclear(text_win);
-			get_command();
-#else
-			error("Must be on a real BG SYSTEM to "
-			      "run this command");
-			if (!params.commandline)
-				endwin();
-			_smap_exit(1);	/* Calls exit(), no return */
-#endif
 			break;
 		case BGPART:
 			if (params.cluster_flags & CLUSTER_FLAG_BG)
@@ -421,12 +409,6 @@ static int _get_option(void)
 			return 1;
 		}
 		break;
-	case 'c':
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
-			params.display = COMMANDS;
-			return 1;
-		}
-		break;
 	case 'u':
 	case KEY_UP:
 		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
@@ -527,11 +509,6 @@ static void *_resize_handler(int sig)
 		break;
 	case SLURMPART:
 		get_slurm_part();
-		break;
-	case COMMANDS:
-#ifdef HAVE_BG
-		get_command();
-#endif
 		break;
 	case BGPART:
 		if (params.cluster_flags & CLUSTER_FLAG_BG)

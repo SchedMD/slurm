@@ -150,23 +150,7 @@ extern void init_grid(node_info_msg_t *node_info_ptr, int cols)
 	smap_system_ptr = xmalloc(sizeof(smap_system_t));
 
 	if (!node_info_ptr) {
-		if (params.display != COMMANDS)
-			return;
-#ifdef HAVE_BG
-		uint16_t coords[params.cluster_dims];
-
-		smap_system_ptr->node_cnt = 1;
-		for (i=0; i<params.cluster_dims; i++)
-			smap_system_ptr->node_cnt *= dim_size[i];
-		smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
-						smap_system_ptr->node_cnt);
-		/* We need to make sure we set up the wires if we
-		   don't have a node_info_ptr.
-		*/
-		bg_configure_ba_setup_wires();
-
-		_internal_setup_grid(0, coords);
-#endif
+		return;
 	} else {
 		smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
 						node_info_ptr->record_count);
