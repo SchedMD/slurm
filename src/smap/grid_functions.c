@@ -140,35 +140,6 @@ extern void set_grid_inx(int start, int end, int count)
 	}
 }
 
-/* This function is only called when HAVE_BG is set */
-extern int set_grid_bg(int *start, int *end, int count, int set)
-{
-	int node_cnt = 0, i, j;
-
-	if (!smap_system_ptr || !smap_system_ptr->grid)
-		return 0;
-
-	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
-		if (!smap_system_ptr->grid[i])		/* Null node name */
-			continue;
-		for (j = 0; j < params.cluster_dims; j++) {
-			if ((smap_system_ptr->grid[i]->coord[j] < start[j]) ||
-			    (smap_system_ptr->grid[i]->coord[j] > end[j]))
-				break;
-		}
-		if (j < params.cluster_dims)
-			continue;	/* outside of boundary */
-		if (set ||
-		    ((smap_system_ptr->grid[i]->letter == '.') &&
-		     (smap_system_ptr->grid[i]->letter != '#'))) {
-			smap_system_ptr->grid[i]->letter = letters[count%62];
-			smap_system_ptr->grid[i]->color  = colors[count%6];
-		}
-		node_cnt++;
-	}
-	return node_cnt;
-}
-
 /* Build the smap_system_ptr structure from the node records */
 extern void init_grid(node_info_msg_t *node_info_ptr, int cols)
 {

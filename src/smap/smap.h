@@ -174,7 +174,6 @@ extern void clear_grid(void);
 extern void free_grid(void);
 extern int *get_cluster_dims(node_info_msg_t *node_info_ptr);
 extern void set_grid_inx(int start, int end, int count);
-extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(void);
 bitstr_t *get_requested_node_bitmap(void);
 

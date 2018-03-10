@@ -66,7 +66,6 @@ static List block_list = NULL;
 static void _block_list_del(void *object);
 static int  _in_slurm_partition(List slurm_nodes, List bg_nodes);
 static int  _make_nodelist(char *nodes, List nodelist);
-static void _marknodes(db2_block_info_t *block_ptr, int count);
 static void _nodelist_del(void *object);
 static void _print_header_part(void);
 static int  _print_rest(db2_block_info_t *block_ptr);
@@ -315,7 +314,7 @@ extern void get_bg_part(void)
 
 		if (!found_block) {
 			last_count++;
-			_marknodes(block_ptr, last_count);
+//			_marknodes(block_ptr, last_count);
 		}
 
 		block_ptr->job_list = list_create(slurm_free_block_job_info);
@@ -419,47 +418,6 @@ static char *_set_running_job_str(List job_list, bool compact)
 	}
 
 	return NULL;
-}
-
-static void _marknodes(db2_block_info_t *block_ptr, int count)
-{
-	int i, j = 0;
-	int start[params.cluster_dims];
-	int end[params.cluster_dims];
-	char *nodes = block_ptr->mp_str;
-
-	block_ptr->letter_num = count;
-	while (nodes[j] != '\0') {
-		int mid = j   + params.cluster_dims + 1;
-		int fin = mid + params.cluster_dims + 1;
-		if (((nodes[j] == '[')   || (nodes[j] == ','))   &&
-		    ((nodes[mid] == 'x') || (nodes[mid] == '-')) &&
-		    ((nodes[fin] == ']') || (nodes[fin] == ','))) {
-			j++;	/* Skip leading '[' or ',' */
-			for (i = 0; i < params.cluster_dims; i++, j++)
-				start[i] = select_char2coord(nodes[j]);
-			j++;	/* Skip middle 'x' or '-' */
-			for (i = 0; i < params.cluster_dims; i++, j++)
-				end[i] = select_char2coord(nodes[j]);
-			if (block_ptr->state != BG_BLOCK_FREE) {
-				block_ptr->size += set_grid_bg(
-					start, end, count, 1);
-			} else {
-				block_ptr->size += set_grid_bg(
-					start, end, count, 0);
-			}
-			if (nodes[j] != ',')
-				break;
-		} else if (((nodes[j] >= '0') && (nodes[j] <= '9')) ||
-			   ((nodes[j] >= 'A') && (nodes[j] <= 'Z'))) {
-			for (i = 0; i < params.cluster_dims; i++, j++)
-				start[i] = select_char2coord(nodes[j]);
-			block_ptr->size += set_grid_bg(start, start, count, 1);
-			if (nodes[j] != ',')
-				break;
-		} else
-			j++;
-	}
 }
 
 static void _print_header_part(void)
