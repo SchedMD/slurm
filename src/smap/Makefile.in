@@ -98,7 +98,6 @@ host_triplet = @host@
 target_triplet = @target@
 @BUILD_SMAP_TRUE@bin_PROGRAMS = smap$(EXEEXT)
 @BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__append_1 = $(bg_dir)/libconfigure_api.la
-@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__append_2 = configure_functions.c
 subdir = src/smap
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -160,18 +159,16 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__smap_SOURCES_DIST = smap.c job_functions.c partition_functions.c \
-	grid_functions.c reservation_functions.c opts.c \
-	configure_functions.c
-@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__objects_1 = configure_functions.$(OBJEXT)
+	grid_functions.c reservation_functions.c opts.c
 @BUILD_SMAP_TRUE@am_smap_OBJECTS = smap.$(OBJEXT) \
 @BUILD_SMAP_TRUE@	job_functions.$(OBJEXT) \
 @BUILD_SMAP_TRUE@	partition_functions.$(OBJEXT) \
 @BUILD_SMAP_TRUE@	grid_functions.$(OBJEXT) \
 @BUILD_SMAP_TRUE@	reservation_functions.$(OBJEXT) \
-@BUILD_SMAP_TRUE@	opts.$(OBJEXT) $(am__objects_1)
+@BUILD_SMAP_TRUE@	opts.$(OBJEXT)
 am__EXTRA_smap_SOURCES_DIST = smap.h smap.c job_functions.c \
-	partition_functions.c configure_functions.c grid_functions.c \
-	reservation_functions.c opts.c
+	partition_functions.c grid_functions.c reservation_functions.c \
+	opts.c
 smap_OBJECTS = $(am_smap_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -508,10 +505,10 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 @BUILD_SMAP_TRUE@noinst_HEADERS = smap.h
-@BUILD_SMAP_TRUE@smap_SOURCES = smap.c job_functions.c \
-@BUILD_SMAP_TRUE@	partition_functions.c grid_functions.c \
-@BUILD_SMAP_TRUE@	reservation_functions.c opts.c \
-@BUILD_SMAP_TRUE@	$(am__append_2)
+@BUILD_SMAP_TRUE@smap_SOURCES = smap.c \
+@BUILD_SMAP_TRUE@	job_functions.c partition_functions.c \
+@BUILD_SMAP_TRUE@	grid_functions.c reservation_functions.c opts.c
+
 @BUILD_SMAP_TRUE@smap_LDADD = $(LIB_SLURM) $(DL_LIBS) $(NCURSES) \
 @BUILD_SMAP_TRUE@	$(am__append_1)
 @BUILD_SMAP_TRUE@smap_DEPENDENCIES = $(LIB_SLURM_BUILD)
@@ -519,7 +516,7 @@ AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 @BUILD_SMAP_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @BUILD_SMAP_FALSE@EXTRA_smap_SOURCES = smap.h smap.c \
 @BUILD_SMAP_FALSE@	job_functions.c partition_functions.c \
-@BUILD_SMAP_FALSE@	configure_functions.c grid_functions.c \
+@BUILD_SMAP_FALSE@	grid_functions.c \
 @BUILD_SMAP_FALSE@	reservation_functions.c opts.c
 
 all: all-am
@@ -615,7 +612,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/configure_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grid_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opts.Po@am__quote@

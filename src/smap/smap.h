@@ -186,7 +186,6 @@ extern char *resolve_mp(char *desc, node_info_msg_t *node_info_ptr);
 extern void get_slurm_part(void);
 extern void get_bg_part(void);
 extern void get_job(void);
-extern void get_command(void);
 extern void get_reservation(void);
 
 #endif

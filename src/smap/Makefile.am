@@ -26,8 +26,6 @@ bg_dir = $(top_builddir)/src/plugins/select/bluegene
 
 smap_LDADD += $(bg_dir)/libconfigure_api.la
 
-smap_SOURCES += configure_functions.c
-
 endif
 
 force:
@@ -40,7 +38,7 @@ else
 
 EXTRA_smap_SOURCES = smap.h smap.c \
 	job_functions.c partition_functions.c \
-	configure_functions.c grid_functions.c \
+	grid_functions.c \
 	reservation_functions.c opts.c
 
 endif
