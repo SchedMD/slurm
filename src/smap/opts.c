@@ -63,7 +63,6 @@ extern void parse_command_line(int argc, char **argv)
 		{"display", required_argument, 0, 'D'},
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
-		{"ionodes", required_argument, 0, 'I'},
 		{"cluster", required_argument, 0, 'M'},
 		{"clusters",required_argument, 0, 'M'},
 		{"nodes", required_argument, 0, 'n'},
@@ -79,7 +78,7 @@ extern void parse_command_line(int argc, char **argv)
 	memset(&params, 0, sizeof(params));
 
 	while ((opt_char =
-		getopt_long(argc, argv, "cC:D:hi:I:Hn:M:QR:vV",
+		getopt_long(argc, argv, "cC:D:hi:Hn:M:QR:vV",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
@@ -113,20 +112,6 @@ extern void parse_command_line(int argc, char **argv)
 			params.iterate = atoi(optarg);
 			if (params.iterate <= 0) {
 				error("Error: --iterate=%s", optarg);
-				exit(1);
-			}
-			break;
-		case 'I':
-			/*
-			 * confirm valid ionodelist entry (The 128 is
-			 * a large number here to avoid having to do a
-			 * lot more querying to figure out the correct
-			 * pset size.  This number should be large enough.
-			 */
-			params.io_bit = bit_alloc(128);
-			if (bit_unfmt(params.io_bit, optarg) == -1) {
-				error("'%s' invalid entry for --ionodes",
-				      optarg);
 				exit(1);
 			}
 			break;
@@ -202,13 +187,8 @@ extern void clear_window(WINDOW *win)
 
 static void _usage(void)
 {
-#ifdef HAVE_BG
-	printf("Usage: smap [-chQV] [-D bcjrs] [-i seconds] "
-	       "[-n nodelist] [-i ionodelist] [-M cluster_name]\n");
-#else
 	printf("Usage: smap [-chQV] [-D jrs] [-i seconds] [-n nodelist] "
 	       "[-M cluster_name]\n");
-#endif
 }
 
 static void _help(void)
@@ -226,19 +206,11 @@ Usage: smap [OPTIONS]\n\
   -h, --noheader             no headers on output\n\
   -H, --show_hidden          display hidden partitions and their jobs\n\
   -i, --iterate=seconds      specify an interation period\n\
-  -I, --ionodes=[ionodes]    only show objects with these ionodes\n\
-                             This should be used inconjuction with the -n\n\
-                             option.  Only specify the ionode number range \n\
-                             here.  Specify the node name with the -n option.\n\
-                             This option is only valid on Bluegene systems,\n\
-                             and only valid when querying blocks.\n\
   -M, --cluster=cluster_name cluster to issue commands to.  Default is\n\
                              current cluster.  cluster with no name will\n\
                              reset to default.\n\
                              NOTE: SlurmDBD must be up.\n\
   -n, --nodes=[nodes]        only show objects with these nodes.\n\
-                             If querying to the ionode level use the -I\n\
-                             option in conjunction with this option.\n\
   -V, --version              output version information and exit\n\
 \nHelp options:\n\
   --help                     show this help message\n\

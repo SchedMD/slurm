@@ -119,7 +119,6 @@ typedef struct {
 	char *command;
 	int display;
 	int iterate;
-	bitstr_t *io_bit;
 	bool no_header;
 	hostlist_t hl;
 	int verbose;
