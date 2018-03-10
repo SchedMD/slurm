@@ -276,7 +276,7 @@ static int _print_text_job(job_info_t * job_ptr)
 	char time_buf[20];
 	char tmp_cnt[8];
 	uint32_t node_cnt = 0;
-	char *ionodes = NULL, *uname;
+	char *uname;
 
 	node_cnt = job_ptr->num_nodes;
 
@@ -357,7 +357,6 @@ static int _print_text_job(job_info_t * job_ptr)
 						main_ycord,
 						main_xcord,
 						job_ptr->nodes[i])) < 0) {
-				xfree(ionodes);
 				return printed;
 			}
 			main_xcord++;
@@ -370,14 +369,6 @@ static int _print_text_job(job_info_t * job_ptr)
 				main_xcord = tempxcord + prefixlen;
 			}
 			i++;
-		}
-		if (ionodes) {
-			mvwprintw(text_win,
-				  main_ycord,
-				  main_xcord, "[%s]",
-				  ionodes);
-			main_xcord += strlen(ionodes)+2;
-			xfree(ionodes);
 		}
 
 		main_xcord = 1;
@@ -413,10 +404,6 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("%5s ", tmp_cnt);
 
 		printf("%s", job_ptr->nodes);
-		if (ionodes) {
-			printf("[%s]", ionodes);
-			xfree(ionodes);
-		}
 
 		printf("\n");
 
