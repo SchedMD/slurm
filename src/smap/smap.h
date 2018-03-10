@@ -181,7 +181,6 @@ extern void print_date(void);
 extern void clear_window(WINDOW *win);
 
 extern void get_slurm_part(void);
-extern void get_bg_part(void);
 extern void get_job(void);
 extern void get_reservation(void);
 
