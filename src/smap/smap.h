@@ -106,7 +106,7 @@
 #define OPT_LONG_USAGE	0x101
 #define OPT_LONG_HIDE	0x102
 
-enum { JOBS, RESERVATIONS, SLURMPART, BGPART };
+enum { JOBS, RESERVATIONS, SLURMPART };
 
 /* Input parameters */
 typedef struct {

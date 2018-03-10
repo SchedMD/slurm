@@ -99,8 +99,6 @@ extern void parse_command_line(int argc, char **argv)
 				tmp = JOBS;
 			else if (!xstrcmp(optarg, "s"))
 				tmp = SLURMPART;
-			else if (!xstrcmp(optarg, "b"))
-				tmp = BGPART;
 			else if (!xstrcmp(optarg, "r"))
 				tmp = RESERVATIONS;
 

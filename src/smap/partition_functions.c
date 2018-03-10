@@ -394,32 +394,6 @@ extern void get_bg_part(void)
 	return;
 }
 
-static char *_set_running_job_str(List job_list, bool compact)
-{
-	int cnt = list_count(job_list);
-	block_job_info_t *block_job;
-
-	if (!cnt) {
-		return xstrdup("-");
-	} else if (cnt == 1) {
-		block_job = list_peek(job_list);
-		return xstrdup_printf("%u", block_job->job_id);
-	} else if (compact)
-		return xstrdup("multiple");
-	else {
-		char *tmp_char = NULL;
-		ListIterator itr = list_iterator_create(job_list);
-		while ((block_job = list_next(itr))) {
-			if (tmp_char)
-				xstrcat(tmp_char, " ");
-			xstrfmtcat(tmp_char, "%u", block_job->job_id);
-		}
-		return tmp_char;
-	}
-
-	return NULL;
-}
-
 static void _print_header_part(void)
 {
 	if (!params.commandline) {
@@ -430,33 +404,12 @@ static void _print_header_part(void)
 			  main_xcord, "PARTITION");
 		main_xcord += 10;
 
-		if (params.display != BGPART) {
-			mvwprintw(text_win,
-				  main_ycord,
-				  main_xcord, "AVAIL");
-			main_xcord += 7;
-			mvwprintw(text_win,
-				  main_ycord,
-				  main_xcord, "TIMELIMIT");
-			main_xcord += 11;
-		} else {
-			mvwprintw(text_win,
-				  main_ycord,
-				  main_xcord, "BG_BLOCK");
-			main_xcord += 18;
-			mvwprintw(text_win,
-				  main_ycord,
-				  main_xcord, "STATE");
-			main_xcord += 8;
-			mvwprintw(text_win,
-				  main_ycord,
-				  main_xcord, "JOBID");
-			main_xcord += 8;
-			mvwprintw(text_win,
-				  main_ycord,
-				  main_xcord, "CONN");
-			main_xcord += 8;
-		}
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "AVAIL");
+		main_xcord += 7;
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "TIMELIMIT");
+		main_xcord += 11;
 
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "NODES");
@@ -471,16 +424,8 @@ static void _print_header_part(void)
 		main_ycord++;
 	} else {
 		printf("PARTITION ");
-		if (params.display != BGPART) {
-			printf("AVAIL ");
-			printf("TIMELIMIT ");
-		} else {
-			printf("        BG_BLOCK ");
-			printf("STATE ");
-			printf("    JOBID ");
-			printf("     CONN ");
-		}
-
+		printf("AVAIL ");
+		printf("TIMELIMIT ");
 		printf("NODES ");
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			printf("MIDPLANELIST\n");
@@ -497,9 +442,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 	int prefixlen;
 	int i = 0;
 	int width = 0;
-	char *nodes = NULL, time_buf[20], *conn_str = NULL;
+	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[8];
-	char tmp_char[8];
 
 	if (params.cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_nodes, tmp_cnt,
@@ -521,105 +465,37 @@ static int _print_text_part(partition_info_t *part_ptr,
 				  main_xcord, "%.9s",
 				  part_ptr->name);
 			main_xcord += 10;
-			if (params.display != BGPART) {
-				char *tmp_state;
-				if (part_ptr->state_up == PARTITION_INACTIVE)
-					tmp_state = "inact";
-				else if (part_ptr->state_up == PARTITION_UP)
-					tmp_state = "up";
-				else if (part_ptr->state_up == PARTITION_DOWN)
-					tmp_state = "down";
-				else if (part_ptr->state_up == PARTITION_DRAIN)
-					tmp_state = "drain";
-				else
-					tmp_state = "unk";
-				mvwprintw(text_win, main_ycord, main_xcord,
-					  tmp_state);
-				main_xcord += 7;
 
-				if (part_ptr->max_time == INFINITE)
-					snprintf(time_buf, sizeof(time_buf),
-						 "infinite");
-				else {
-					secs2time_str((part_ptr->max_time
-						       * 60),
-						      time_buf,
-						      sizeof(time_buf));
-				}
+			char *tmp_state;
+			if (part_ptr->state_up == PARTITION_INACTIVE)
+				tmp_state = "inact";
+			else if (part_ptr->state_up == PARTITION_UP)
+				tmp_state = "up";
+			else if (part_ptr->state_up == PARTITION_DOWN)
+				tmp_state = "down";
+			else if (part_ptr->state_up == PARTITION_DRAIN)
+				tmp_state = "drain";
+			else
+				tmp_state = "unk";
+			mvwprintw(text_win, main_ycord, main_xcord,
+				  tmp_state);
+			main_xcord += 7;
 
-				width = strlen(time_buf);
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord + (9 - width),
-					  "%s",
-					  time_buf);
-				main_xcord += 11;
-			}
+			if (part_ptr->max_time == INFINITE)
+				snprintf(time_buf, sizeof(time_buf),
+					 "infinite");
+			else
+				secs2time_str((part_ptr->max_time * 60),
+					      time_buf, sizeof(time_buf));
+
+			width = strlen(time_buf);
+			mvwprintw(text_win, main_ycord,
+				  main_xcord + (9 - width),
+				  "%s", time_buf);
+			main_xcord += 11;
 		} else
 			main_xcord += 10;
 
-		if (params.display == BGPART) {
-			if (db2_info_ptr) {
-				char *job_running = _set_running_job_str(
-					db2_info_ptr->job_list, 1);
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "%.16s",
-					  db2_info_ptr->bg_block_name);
-				main_xcord += 18;
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "%.7s",
-					  bg_block_state_string(
-						  db2_info_ptr->state));
-				main_xcord += 8;
-
-				snprintf(tmp_char, sizeof(tmp_char),
-					 "%s", job_running);
-				xfree(job_running);
-
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord,
-					  "%.8s", tmp_char);
-				main_xcord += 8;
-
-				conn_str = conn_type_string_full(
-					db2_info_ptr->bg_conn_type);
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "%.7s",
-					  conn_str);
-				xfree(conn_str);
-				main_xcord += 8;
-
-			} else {
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "?");
-				main_xcord += 18;
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "?");
-				main_xcord += 8;
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "?");
-				main_xcord += 8;
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "?");
-				main_xcord += 9;
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "?");
-				main_xcord += 7;
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "?");
-				main_xcord += 10;
-			}
-		}
 		mvwprintw(text_win,
 			  main_ycord,
 			  main_xcord, "%5s", tmp_cnt);
@@ -628,10 +504,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 
 		tempxcord = main_xcord;
 
-		if (params.display == BGPART)
-			nodes = part_ptr->allow_groups;
-		else
-			nodes = part_ptr->nodes;
+		nodes = part_ptr->nodes;
 		i = 0;
 		prefixlen = i;
 		while (nodes && nodes[i]) {
@@ -658,13 +531,6 @@ static int _print_text_part(partition_info_t *part_ptr,
 
 			i++;
 		}
-		if ((params.display == BGPART) && db2_info_ptr &&
-		    (db2_info_ptr->ionode_str)) {
-			mvwprintw(text_win,
-				  main_ycord,
-				  main_xcord, "[%s]",
-				  db2_info_ptr->ionode_str);
-		}
 
 		main_xcord = 1;
 		main_ycord++;
@@ -672,65 +538,32 @@ static int _print_text_part(partition_info_t *part_ptr,
 		if (part_ptr->name) {
 			printf("%9.9s ", part_ptr->name);
 
-			if (params.display != BGPART) {
-				if (part_ptr->state_up == PARTITION_INACTIVE)
-					printf(" inact ");
-				else if (part_ptr->state_up == PARTITION_UP)
-					printf("   up ");
-				else if (part_ptr->state_up == PARTITION_DOWN)
-					printf(" down ");
-				else if (part_ptr->state_up == PARTITION_DRAIN)
-					printf(" drain ");
-				else
-					printf(" unk ");
+			if (part_ptr->state_up == PARTITION_INACTIVE)
+				printf(" inact ");
+			else if (part_ptr->state_up == PARTITION_UP)
+				printf("   up ");
+			else if (part_ptr->state_up == PARTITION_DOWN)
+				printf(" down ");
+			else if (part_ptr->state_up == PARTITION_DRAIN)
+				printf(" drain ");
+			else
+				printf(" unk ");
 
-				if (part_ptr->max_time == INFINITE)
-					snprintf(time_buf, sizeof(time_buf),
-						 "infinite");
-				else {
-					secs2time_str((part_ptr->max_time
-						       * 60),
-						      time_buf,
-						      sizeof(time_buf));
-				}
+			if (part_ptr->max_time == INFINITE)
+				snprintf(time_buf, sizeof(time_buf),
+					 "infinite");
+			else
+				secs2time_str((part_ptr->max_time * 60),
+					      time_buf, sizeof(time_buf));
 
-				printf("%9.9s ", time_buf);
-			}
-		}
-
-		if (params.display == BGPART) {
-			if (db2_info_ptr) {
-				char *job_running = _set_running_job_str(
-					db2_info_ptr->job_list, 1);
-				printf("%16.16s ",
-				       db2_info_ptr->bg_block_name);
-				printf("%-7.7s ",
-				       bg_block_state_string(
-					       db2_info_ptr->state));
-
-				printf("%8.8s ", job_running);
-				xfree(job_running);
-
-				conn_str = conn_type_string_full(
-					db2_info_ptr->bg_conn_type);
-				printf("%8.8s ", conn_str);
-				xfree(conn_str);
-			}
+			printf("%9.9s ", time_buf);
 		}
 
 		printf("%5s ", tmp_cnt);
 
-		if (params.display == BGPART)
-			nodes = part_ptr->allow_groups;
-		else
-			nodes = part_ptr->nodes;
-
-		if ((params.display == BGPART) && db2_info_ptr &&
-		    (db2_info_ptr->ionode_str)) {
-			printf("%s[%s]\n", nodes, db2_info_ptr->ionode_str);
-		} else
-			printf("%s\n",nodes);
+		printf("%s\n", part_ptr->nodes);
 	}
+
 	return printed;
 }
 

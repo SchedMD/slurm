@@ -225,17 +225,6 @@ redraw:
 		case SLURMPART:
 			get_slurm_part();
 			break;
-		case BGPART:
-			if (params.cluster_flags & CLUSTER_FLAG_BG)
-				get_bg_part();
-			else {
-				error("Must be on a BG SYSTEM to "
-				      "run this command");
-				if (!params.commandline)
-					endwin();
-				_smap_exit(1);	/* Calls exit(), no return */
-			}
-			break;
 		}
 
 		if (!params.commandline) {
@@ -401,14 +390,6 @@ static int _get_option(void)
 		params.display = RESERVATIONS;
 		return 1;
 		break;
-	case 'b':
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
-			text_line_cnt = 0;
-			grid_line_cnt = 0;
-			params.display = BGPART;
-			return 1;
-		}
-		break;
 	case 'u':
 	case KEY_UP:
 		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
@@ -509,10 +490,6 @@ static void *_resize_handler(int sig)
 		break;
 	case SLURMPART:
 		get_slurm_part();
-		break;
-	case BGPART:
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			get_bg_part();
 		break;
 	}
 
