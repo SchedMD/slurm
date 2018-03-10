@@ -6,7 +6,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 if BUILD_SMAP
 
@@ -20,13 +20,6 @@ smap_SOURCES = smap.c \
 smap_LDADD = $(LIB_SLURM) $(DL_LIBS) $(NCURSES)
 
 smap_DEPENDENCIES = $(LIB_SLURM_BUILD)
-
-if BLUEGENE_LOADED
-bg_dir = $(top_builddir)/src/plugins/select/bluegene
-
-smap_LDADD += $(bg_dir)/libconfigure_api.la
-
-endif
 
 force:
 $(smap_LDADD) : force
@@ -42,5 +35,3 @@ EXTRA_smap_SOURCES = smap.h smap.c \
 	reservation_functions.c opts.c
 
 endif
-
-

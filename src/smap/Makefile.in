@@ -97,7 +97,6 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BUILD_SMAP_TRUE@bin_PROGRAMS = smap$(EXEEXT)
-@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__append_1 = $(bg_dir)/libconfigure_api.la
 subdir = src/smap
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -503,16 +502,14 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)
 @BUILD_SMAP_TRUE@noinst_HEADERS = smap.h
 @BUILD_SMAP_TRUE@smap_SOURCES = smap.c \
 @BUILD_SMAP_TRUE@	job_functions.c partition_functions.c \
 @BUILD_SMAP_TRUE@	grid_functions.c reservation_functions.c opts.c
 
-@BUILD_SMAP_TRUE@smap_LDADD = $(LIB_SLURM) $(DL_LIBS) $(NCURSES) \
-@BUILD_SMAP_TRUE@	$(am__append_1)
+@BUILD_SMAP_TRUE@smap_LDADD = $(LIB_SLURM) $(DL_LIBS) $(NCURSES)
 @BUILD_SMAP_TRUE@smap_DEPENDENCIES = $(LIB_SLURM_BUILD)
-@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@bg_dir = $(top_builddir)/src/plugins/select/bluegene
 @BUILD_SMAP_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @BUILD_SMAP_FALSE@EXTRA_smap_SOURCES = smap.h smap.c \
 @BUILD_SMAP_FALSE@	job_functions.c partition_functions.c \
