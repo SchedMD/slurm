@@ -86,38 +86,6 @@ extern int *get_cluster_dims(node_info_msg_t *node_info_ptr)
 	return dim_size;
 }
 
-#ifdef HAVE_BG
-static void _internal_setup_grid(int level, uint16_t *coords)
-{
-	ba_mp_t *ba_mp;
-	smap_node_t *smap_node;
-
-	if (level > params.cluster_dims)
-		return;
-
-	if (level < params.cluster_dims) {
-		for (coords[level] = 0;
-		     coords[level] < dim_size[level];
-		     coords[level]++) {
-			/* handle the outer dims here */
-			_internal_setup_grid(level+1, coords);
-		}
-		return;
-	}
-	ba_mp = bg_configure_coord2ba_mp(coords);
-
-	if (!ba_mp || ba_mp->index > smap_system_ptr->node_cnt)
-		return;
-	smap_node = xmalloc(sizeof(smap_node_t));
-	smap_node->coord = xmalloc(sizeof(uint16_t) * params.cluster_dims);
-
-	memcpy(smap_node->coord, coords,
-	       sizeof(uint16_t) * params.cluster_dims);
-	smap_node->index = ba_mp->index;
-	smap_system_ptr->grid[smap_node->index] = smap_node;
-}
-#endif
-
 extern void set_grid_inx(int start, int end, int count)
 {
 	int i;

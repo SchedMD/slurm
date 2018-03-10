@@ -332,10 +332,6 @@ static void _smap_exit(int rc)
 	uid_cache_clear();
 	free_grid();
 
-#ifdef HAVE_BG
-	bg_configure_ba_fini();
-#endif
-
 #endif
 	if (!params.commandline)
 		curs_set(1);
