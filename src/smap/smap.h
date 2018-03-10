@@ -97,10 +97,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/plugins/select/bluegene/bg_enums.h"
-#include "src/plugins/select/bluegene/ba_common.h"
-#include "src/plugins/select/bluegene/configure_api.h"
-
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP	0x100
 #define OPT_LONG_USAGE	0x101
@@ -160,8 +156,6 @@ extern int main_ycord;
 
 extern smap_parameters_t params;
 extern int text_line_cnt;
-
-extern void parse_command_line(int argc, char **argv);
 
 extern smap_system_t *smap_system_ptr;
 extern int quiet_flag;

@@ -209,11 +209,6 @@ static void _print_header_job(void)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "PARTITION");
 		main_xcord += 10;
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "BG_BLOCK");
-			main_xcord += 18;
-		}
 		if (params.cluster_flags & CLUSTER_FLAG_CRAY_A) {
 			mvwprintw(text_win, main_ycord,
 				  main_xcord, "RESV_ID");
@@ -234,28 +229,19 @@ static void _print_header_job(void)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "NODES");
 		main_xcord += 6;
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "MIDPLANELIST");
-		else
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "NODELIST");
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "NODELIST");
 		main_xcord = 1;
 		main_ycord++;
 	} else {
 		printf("   JOBID ");
 		printf("PARTITION ");
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			printf("        BG_BLOCK ");
 		printf("    USER ");
 		printf("  NAME ");
 		printf("ST ");
 		printf("      TIME ");
 		printf("NODES ");
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			printf("MIDPLANELIST\n");
-		else
-			printf("NODELIST\n");
+		printf("NODELIST\n");
 	}
 }
 static long _job_time_used(job_info_t * job_ptr)
@@ -292,26 +278,12 @@ static int _print_text_job(job_info_t * job_ptr)
 	uint32_t node_cnt = 0;
 	char *ionodes = NULL, *uname;
 
-	if (params.cluster_flags & CLUSTER_FLAG_BG) {
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_IONODES,
-					    &ionodes);
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &node_cnt);
-		if (!xstrcasecmp(job_ptr->nodes,"waiting..."))
-			xfree(ionodes);
-	} else
-		node_cnt = job_ptr->num_nodes;
+	node_cnt = job_ptr->num_nodes;
 
 	if ((node_cnt  == 0) || (node_cnt == NO_VAL))
 		node_cnt = job_ptr->num_nodes;
 
-	if (params.cluster_flags & CLUSTER_FLAG_BG)
-		convert_num_unit((float)node_cnt, tmp_cnt, sizeof(tmp_cnt),
-				 UNIT_NONE, NO_VAL, CONVERT_NUM_UNIT_EXACT);
-	else
-		snprintf(tmp_cnt, sizeof(tmp_cnt), "%d", node_cnt);
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%d", node_cnt);
 
 	if (!params.commandline) {
 		mvwprintw(text_win, main_ycord,
@@ -339,16 +311,6 @@ static int _print_text_job(job_info_t * job_ptr)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.10s", job_ptr->partition);
 		main_xcord += 10;
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "%.16s",
-				  select_g_select_jobinfo_sprint(
-					  job_ptr->select_jobinfo,
-					  time_buf,
-					  sizeof(time_buf),
-					  SELECT_PRINT_BG_ID));
-			main_xcord += 18;
-		}
 		if (params.cluster_flags & CLUSTER_FLAG_CRAY_A) {
 			mvwprintw(text_win, main_ycord,
 				  main_xcord, "%.16s",
@@ -428,12 +390,6 @@ static int _print_text_job(job_info_t * job_ptr)
 			printf("%8u ", job_ptr->job_id);
 
 		printf("%9.9s ", job_ptr->partition);
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			printf("%16.16s ",
-			       select_g_select_jobinfo_sprint(
-				       job_ptr->select_jobinfo,
-				       time_buf, sizeof(time_buf),
-				       SELECT_PRINT_BG_ID));
 		if (params.cluster_flags & CLUSTER_FLAG_CRAY_A)
 			printf("%16.16s ",
 			       select_g_select_jobinfo_sprint(

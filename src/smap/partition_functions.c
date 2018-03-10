@@ -166,12 +166,8 @@ static void _print_header_part(void)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "NODES");
 		main_xcord += 7;
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "MIDPLANELIST");
-		else
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "NODELIST");
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "NODELIST");
 		main_xcord = 1;
 		main_ycord++;
 	} else {
@@ -179,10 +175,7 @@ static void _print_header_part(void)
 		printf("AVAIL ");
 		printf("TIMELIMIT ");
 		printf("NODES ");
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			printf("MIDPLANELIST\n");
-		else
-			printf("NODELIST\n");
+		printf("NODELIST\n");
 	}
 }
 
@@ -196,12 +189,7 @@ static int _print_text_part(partition_info_t *part_ptr)
 	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[8];
 
-	if (params.cluster_flags & CLUSTER_FLAG_BG)
-		convert_num_unit((float)part_ptr->total_nodes, tmp_cnt,
-				 sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
-				 CONVERT_NUM_UNIT_EXACT);
-	else
-		snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", part_ptr->total_nodes);
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", part_ptr->total_nodes);
 
 	if (!params.commandline) {
 		mvwprintw(text_win,

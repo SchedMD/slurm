@@ -354,7 +354,7 @@ static int _get_option(void)
 			params.all_flag = 0;
 		else
 			params.all_flag = 1;
-	return 1;
+		return 1;
 		break;
 	case 's':
 		text_line_cnt = 0;
@@ -374,33 +374,12 @@ static int _get_option(void)
 		params.display = RESERVATIONS;
 		return 1;
 		break;
-	case 'u':
-	case KEY_UP:
-		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
-			grid_line_cnt--;
-			if (grid_line_cnt<0) {
-				grid_line_cnt = 0;
-				return 0;
-			}
-			return 1;
-		}
-	break;
-	case 'd':
-	case KEY_DOWN:
-		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
-			grid_line_cnt++;
-			if ((((grid_line_cnt - 2) * (getmaxx(grid_win) - 2)) +
-			    max_display) > dim_size[0]) {
-				grid_line_cnt--;
-				return 0;
-			}
-			return 1;
-		}
-		break;
 	case 'q':
 	case '\n':
 		endwin();
 		_smap_exit(0);	/* Calls exit(), no return */
+		break;
+	default:
 		break;
 	}
 	return 0;
