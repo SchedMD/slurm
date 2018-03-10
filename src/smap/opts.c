@@ -59,7 +59,6 @@ extern void parse_command_line(int argc, char **argv)
 
 	static struct option long_options[] = {
 		{"commandline", no_argument, 0, 'c'},
-		{"command", required_argument, 0, 'C'},
 		{"display", required_argument, 0, 'D'},
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
@@ -78,7 +77,7 @@ extern void parse_command_line(int argc, char **argv)
 	memset(&params, 0, sizeof(params));
 
 	while ((opt_char =
-		getopt_long(argc, argv, "cC:D:hi:Hn:M:QR:vV",
+		getopt_long(argc, argv, "cD:hHi:M:n:QvV",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
@@ -88,9 +87,6 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case 'c':
 			params.commandline = true;
-			break;
-		case 'C':
-			params.command = xstrdup(optarg);
 			break;
 		case 'D':
 			if (!xstrcmp(optarg, "j"))
@@ -198,11 +194,9 @@ Usage: smap [OPTIONS]\n\
   -c, --commandline          output written with straight to the\n\
                              commandline.\n\
   -D, --display              set which display mode to use\n\
-                             b = bluegene blocks\n\
-                             c = set bluegene configuration\n\
                              j = jobs\n\
                              r = reservations\n\
-                             s = slurm partitions\n\
+                             s = partitions\n\
   -h, --noheader             no headers on output\n\
   -H, --show_hidden          display hidden partitions and their jobs\n\
   -i, --iterate=seconds      specify an interation period\n\

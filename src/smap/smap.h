@@ -100,7 +100,6 @@
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP	0x100
 #define OPT_LONG_USAGE	0x101
-#define OPT_LONG_HIDE	0x102
 
 enum { JOBS, RESERVATIONS, PARTITION };
 
@@ -112,7 +111,6 @@ typedef struct {
 	uint16_t cluster_dims;
 	uint32_t cluster_flags;
 	bool commandline;
-	char *command;
 	int display;
 	int iterate;
 	bool no_header;

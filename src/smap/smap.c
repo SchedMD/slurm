@@ -105,7 +105,6 @@ int main(int argc, char **argv)
 	} else if (params.cluster_dims == 3)
 		min_screen_width = 92;
 
-	/* no need for this if you are resolving */
 	while (slurm_load_node((time_t) NULL,
 			       &new_node_ptr, SHOW_ALL)) {
 		error_code = slurm_get_errno();
@@ -115,8 +114,6 @@ int main(int argc, char **argv)
 			exit(1);
 		sleep(10);	/* keep trying to reconnect */
 	}
-
-	select_g_ba_init(new_node_ptr, 0);
 
 	if (dim_size == NULL) {
 		dim_size = get_cluster_dims(new_node_ptr);
