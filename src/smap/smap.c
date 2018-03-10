@@ -222,7 +222,7 @@ redraw:
 		case RESERVATIONS:
 			get_reservation();
 			break;
-		case SLURMPART:
+		case PARTITION:
 			get_slurm_part();
 			break;
 		}
@@ -375,7 +375,7 @@ static int _get_option(void)
 	case 's':
 		text_line_cnt = 0;
 		grid_line_cnt = 0;
-		params.display = SLURMPART;
+		params.display = PARTITION;
 		return 1;
 		break;
 	case 'j':
@@ -488,7 +488,7 @@ static void *_resize_handler(int sig)
 	case RESERVATIONS:
 		get_reservation();
 		break;
-	case SLURMPART:
+	case PARTITION:
 		get_slurm_part();
 		break;
 	}
