@@ -108,10 +108,6 @@ int main(int argc, char **argv)
 	/* no need for this if you are resolving */
 	while (slurm_load_node((time_t) NULL,
 			       &new_node_ptr, SHOW_ALL)) {
-		if (params.resolve) {
-			new_node_ptr = NULL;
-			break;		/* just continue */
-		}
 		error_code = slurm_get_errno();
 		printf("slurm_load_node: %s\n",
 		       slurm_strerror(error_code));
@@ -129,14 +125,6 @@ int main(int argc, char **argv)
 	}
 	_init_colors();
 
-	if (params.resolve) {
-		char *ret_str = resolve_mp(params.resolve, new_node_ptr);
-		if (ret_str) {
-			printf("%s", ret_str);
-			xfree(ret_str);
-		}
-		_smap_exit(0);	/* Calls exit(), no return */
-	}
 	if (!params.commandline) {
 		int check_width = min_screen_width;
 
