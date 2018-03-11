@@ -196,8 +196,6 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 			sview_config->default_page = PART_PAGE;
 		else if (!xstrcasecmp(new_text, "res"))
 			sview_config->default_page = RESV_PAGE;
-		else if (!xstrcasecmp(new_text, "block"))
-			sview_config->default_page = BLOCK_PAGE;
 		else if (!xstrcasecmp(new_text, "node"))
 			sview_config->default_page = NODE_PAGE;
 		else if (!xstrcasecmp(new_text, "frontend"))
@@ -620,8 +618,6 @@ extern int load_defaults(void)
 			default_sview_config.default_page = PART_PAGE;
 		else if (xstrcasestr(tmp_str, "res"))
 			default_sview_config.default_page = RESV_PAGE;
-		else if (xstrcasestr(tmp_str, "block"))
-			default_sview_config.default_page = BLOCK_PAGE;
 		else if (xstrcasestr(tmp_str, "node"))
 			default_sview_config.default_page = NODE_PAGE;
 		else if (xstrcasestr(tmp_str, "frontend"))
@@ -681,8 +677,6 @@ extern int load_defaults(void)
 			default_sview_config.page_visible[PART_PAGE] = 1;
 		if (xstrcasestr(tmp_str, "res"))
 			default_sview_config.page_visible[RESV_PAGE] = 1;
-		if (xstrcasestr(tmp_str, "block"))
-			default_sview_config.page_visible[BLOCK_PAGE] = 1;
 		if (xstrcasestr(tmp_str, "node"))
 			default_sview_config.page_visible[NODE_PAGE] = 1;
 		if (xstrcasestr(tmp_str, "frontend"))
@@ -1129,7 +1123,6 @@ extern int configure_defaults(void)
 			if (tmp_config.ruled_treeview
 			    != working_sview_config.ruled_treeview) {
 				/* get rid of each existing table */
-				cluster_change_block();
 				cluster_change_resv();
 				cluster_change_part();
 				cluster_change_job();

@@ -83,7 +83,6 @@ enum { JOB_PAGE,
        PART_PAGE,
        RESV_PAGE,
        BB_PAGE,
-       BLOCK_PAGE,
        NODE_PAGE,
        FRONT_END_PAGE,
        SUBMIT_PAGE,
@@ -133,10 +132,6 @@ typedef enum {
 	       SEARCH_JOB_ID = 10,
 	       SEARCH_JOB_USER,
 	       SEARCH_JOB_STATE,
-	       SEARCH_BLOCK_NAME,
-	       SEARCH_BLOCK_NODENAME,
-	       SEARCH_BLOCK_SIZE,
-	       SEARCH_BLOCK_STATE,
 	       SEARCH_PARTITION_NAME,
 	       SEARCH_PARTITION_STATE,
 	       SEARCH_NODE_NAME,
@@ -433,25 +428,6 @@ extern void admin_edit_accnt(GtkCellRendererText *cell,
 			     const char *new_text,
 			     gpointer data);
 extern void specific_info_accnt(popup_info_t *popup_win);
-
-// block_info.c
-extern void refresh_block(GtkAction *action, gpointer user_data);
-extern int update_state_block(GtkDialog *dialog,
-			      const char *blockid, const char *type);
-extern GtkListStore *create_model_block(int type);
-extern void admin_edit_block(GtkCellRendererText *cell,
-			     const char *path_string,
-			     const char *new_text,
-			     gpointer data);
-extern int get_new_info_block(block_info_msg_t **block_ptr, int force);
-extern void get_info_block(GtkTable *table, display_data_t *display_data);
-extern void specific_info_block(popup_info_t *popup_win);
-extern void set_menus_block(void *arg, void *arg2, GtkTreePath *path, int type);
-extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
-extern void select_admin_block(GtkTreeModel *model, GtkTreeIter *iter,
-			       display_data_t *display_data,
-			       GtkTreeView *treeview);
-extern void cluster_change_block(void);
 
 // front_end_info.c
 extern void admin_edit_front_end(GtkCellRendererText *cell,

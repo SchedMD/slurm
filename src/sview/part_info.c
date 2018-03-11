@@ -304,7 +304,6 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, PART_PAGE, "Change Partition State",
 	 true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", true, PART_PAGE},
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, PART_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, PART_PAGE},
 	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", false, PART_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Reservations", true, PART_PAGE},

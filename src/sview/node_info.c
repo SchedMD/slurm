@@ -184,7 +184,6 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_STRING, NODE_PAGE, "Update Available Features", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Update Gres", true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE,  "Jobs", true, NODE_PAGE},
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, NODE_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partitions", true, NODE_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Reservations", true, NODE_PAGE},
 	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", false, NODE_PAGE},

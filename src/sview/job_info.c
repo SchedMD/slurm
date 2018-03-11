@@ -465,7 +465,6 @@ static display_data_t options_data_job[] = {
 	{G_TYPE_STRING, JOB_PAGE, "Suspend/Resume", true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Edit Job", true, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partition", true, JOB_PAGE},
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, JOB_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, JOB_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Reservation", true, JOB_PAGE},
 	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}

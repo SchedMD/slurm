@@ -133,10 +133,6 @@ display_data_t main_display_data[] = {
 	 refresh_main, create_model_bb, admin_edit_bb,
 	 get_info_bb, specific_info_bb,
 	 set_menus_bb, NULL},
-	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", false, -1,
-	 refresh_main, NULL, NULL,
-	 get_info_block, specific_info_block,
-	 set_menus_block, NULL},
 	{G_TYPE_NONE, NODE_PAGE, "Nodes", false, -1,
 	 refresh_main, NULL, NULL,
 	 get_info_node, specific_info_node,
@@ -451,7 +447,6 @@ static void _set_ruled(GtkToggleAction *action)
 			"Tables ruled");
 
 	/* get rid of each existing table */
-	cluster_change_block();
 	cluster_change_front_end();
 	cluster_change_resv();
 	cluster_change_part();
@@ -1166,7 +1161,6 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	xfree(ui_description);
 
 	/* make changes for each object */
-	cluster_change_block();
 	cluster_change_front_end();
 	cluster_change_resv();
 	cluster_change_part();

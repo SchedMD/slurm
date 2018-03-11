@@ -180,7 +180,6 @@ static display_data_t options_data_resv[] = {
 	{G_TYPE_STRING, RESV_PAGE, "Edit Reservation", true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", true, RESV_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partitions", true, RESV_PAGE},
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, RESV_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, RESV_PAGE},
 	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };

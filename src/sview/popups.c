@@ -807,7 +807,6 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			goto end_it;
 
 		switch(sview_search_info.search_type) {
-		case SEARCH_BLOCK_STATE:
 		case SEARCH_JOB_STATE:
 		case SEARCH_NODE_STATE:
 		case SEARCH_PARTITION_STATE:
@@ -827,8 +826,6 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			break;
 		case SEARCH_JOB_ID:
 		case SEARCH_JOB_USER:
-		case SEARCH_BLOCK_NAME:
-		case SEARCH_BLOCK_SIZE:
 		case SEARCH_PARTITION_NAME:
 		case SEARCH_NODE_NAME:
 		case SEARCH_RESERVATION_NAME:
