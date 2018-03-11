@@ -804,29 +804,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 G_CALLBACK(configure_defaults)},
 	};
 
-	GtkActionEntry bg_entries[] = {
-		{"bg_block_name", NULL, "BG Block Name",
-		 "", "Search for a specific BG Block",
-		 G_CALLBACK(create_search_popup)},
-		{"bg_block_size", NULL, "BG Block Size",
-		 "",
-		 "Search for BG Blocks having given size in cnodes",
-		 G_CALLBACK(create_search_popup)},
-		{"bg_block_state", NULL, "BG Block State",
-		 "",
-		 "Search for BG Blocks having given state",
-		 G_CALLBACK(create_search_popup)},
-		{"node_name_bg", NULL,
-		 "Midplane(s) Name",
-		 "", "Search for a specific Midplane(s)",
-		 G_CALLBACK(create_search_popup)},
-		{"node_state_bg", NULL,
-		 "Midplane State",
-		 "", "Search for a Midplane in a given state",
-		 G_CALLBACK(create_search_popup)},
-	};
-
-	GtkActionEntry nonbg_entries[] = {
+	GtkActionEntry node_entries[] = {
 		{"node_name", NULL,
 		 "Node(s) Name",
 		 "", "Search for a specific Node(s)",
@@ -929,10 +907,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_add_actions(menu_action_group, entries,
 				     G_N_ELEMENTS(entries), window);
 
-	gtk_action_group_add_actions(menu_action_group, bg_entries,
-				     G_N_ELEMENTS(bg_entries), window);
-	gtk_action_group_add_actions(menu_action_group, nonbg_entries,
-				     G_N_ELEMENTS(nonbg_entries),
+	gtk_action_group_add_actions(menu_action_group, node_entries,
+				     G_N_ELEMENTS(node_entries),
 				     window);
 
 	gtk_action_group_add_radio_actions(menu_action_group, radio_entries,
