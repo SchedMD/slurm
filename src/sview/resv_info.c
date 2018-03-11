@@ -1730,52 +1730,5 @@ end_it:
 
 extern void cluster_change_resv(void)
 {
-	display_data_t *display_data = display_data_resv;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
-			case SORTID_NODELIST:
-				display_data->name = "MidplaneList";
-				break;
-			default:
-				break;
-			}
-		} else {
-			switch(display_data->id) {
-			case SORTID_NODELIST:
-				display_data->name = "NodeList";
-				break;
-			default:
-				break;
-			}
-		}
-	}
-	display_data = options_data_resv;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = "Blocks";
-				break;
-			case NODE_PAGE:
-				display_data->name = "Midplanes";
-				break;
-			}
-		} else {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = NULL;
-				break;
-			case NODE_PAGE:
-				display_data->name = "Nodes";
-				break;
-			}
-		}
-	}
 	get_info_resv(NULL, NULL);
 }

@@ -1147,32 +1147,5 @@ end_it:
 
 extern void cluster_change_front_end(void)
 {
-	display_data_t *display_data = display_data_front_end;
-
-	display_data = options_data_front_end;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch (display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = "Blocks";
-				break;
-			case NODE_PAGE:
-				display_data->name = "Midplanes";
-				break;
-			}
-		} else {
-			switch (display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = NULL;
-				break;
-			case NODE_PAGE:
-				display_data->name = "Nodes";
-				break;
-			}
-		}
-	}
 	get_info_front_end(NULL, NULL);
 }
