@@ -52,8 +52,6 @@ typedef struct {
 static gboolean control_key_in_effect = false;
 static gboolean enter_key_in_effect = false;
 
-
-
 static int _find_node_inx (char *name)
 {
 	int i;
@@ -74,7 +72,6 @@ static int _find_node_inx (char *name)
 	return -1;
 }
 
-
 static void _display_topology(void)
 {
 	int i, one_liner = 1;
@@ -90,8 +87,6 @@ static void _display_topology(void)
 					one_liner);
 	}
 }
-
-
 
 static void _foreach_popup_all(GtkTreeModel  *model,
 			       GtkTreePath   *path,
@@ -120,7 +115,6 @@ static void _foreach_full_info(GtkTreeModel  *model,
 		popup_pos.slider += 100;
 	}
 }
-
 
 /* These next 2 functions are here to make it so we don't magically
  * click on something before we really want to in a menu.
@@ -168,9 +162,6 @@ static gboolean _frame_callback(GtkWindow *window,
 
 	return false;
 }
-
-
-
 
 static void _handle_response(GtkDialog *dialog, gint response_id,
 			     popup_info_t *popup_win)
@@ -325,93 +316,6 @@ static int _sort_iter_compare_func_nodes(GtkTreeModel *model,
 
 		if (int1 != int2)
 			ret = (int1 > int2) ? 1 : -1;
-	}
-cleanup:
-	g_free(name1);
-	g_free(name2);
-
-	return ret;
-}
-
-/* Translate a three-digit alpha-numeric value into it's
- * base 36 equivalent number */
-static int _xlate_mp_coord(const char *name)
-{
-	int i, rc = 0;
-
-	for (i=0; i<cluster_dims; i++) {
-		rc *= 36;
-		rc += select_char2coord(name[i]);
-	}
-	return rc;
-}
-
-/* Make a BlueGene node name into a numeric representation of
- * its location.
- * Value is (low_node_coordinate * io_val_max) + I/O node (io_val if none)
- * with use of base 36 for the node coordinate on an L/P:
- * (e.g. bg123[4]    ->  1,371,004
- *       bg[234x235] ->  2,704,999
- *       bglZZZ      -> 46,655,999
- */
-static int _mp_coordinate(const char *name)
-{
-	int i, io_val, io_val_max, low_val = -1;
-
-	/* Since io_val needs to handle all dimensions of the ionode
-	   field with Q the number could be much bigger that 999.
-	   This will have to be handled when a new system comes with
-	   more dims.
-	*/
-	if (cluster_flags & CLUSTER_FLAG_BGQ) {
-		io_val = 99999;
-		io_val_max = 100000;
-	} else {
-		io_val = 999;
-		io_val_max = 1000;
-	}
-
-	for (i=0; name[i]; i++) {
-		if (name[i] == '[') {
-			i++;
-			if (low_val < 0)
-				low_val = _xlate_mp_coord(name+i);
-			else
-				io_val = atoi(name+i);
-			break;
-		} else if ((low_val < 0) &&
-			   ((name[i] >= '0' && (name[i] <= '9')) ||
-			    (name[i] >= 'A' && (name[i] <= 'Z')))) {
-			low_val = _xlate_mp_coord(name+i);
-			i += 2;
-		}
-	}
-
-	if (low_val < 0)
-		return low_val;
-
-	return ((low_val * io_val_max) + io_val);
-}
-
-static int _sort_iter_compare_func_mp_list(GtkTreeModel *model,
-					   GtkTreeIter  *a,
-					   GtkTreeIter  *b,
-					   gpointer      userdata)
-{
-	int sortcol = GPOINTER_TO_INT(userdata);
-	int ret = 0;
-	gchar *name1 = NULL, *name2 = NULL;
-
-	gtk_tree_model_get(model, a, sortcol, &name1, -1);
-	gtk_tree_model_get(model, b, sortcol, &name2, -1);
-
-	if (!name1 && !name2)
-		goto cleanup; /* both equal => ret = 0 */
-	else if (!name1 || !name2)
-		ret = (name1 == NULL) ? -1 : 1;
-	else {
-		/* Sort in numeric order based upon coordinates */
-		ret = _mp_coordinate(name1) - _mp_coordinate(name2);
 	}
 cleanup:
 	g_free(name1);
@@ -663,7 +567,6 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 	xfree(treedata);
 }
 
-
 extern char * replspace (char *str)
 {
 	int pntr = 0;
@@ -739,7 +642,6 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 	return SLURM_SUCCESS;
 }
 
-
 extern int get_topo_conf(void)
 {
 	int i;
@@ -794,8 +696,6 @@ extern int get_topo_conf(void)
 
 	return SLURM_SUCCESS;
 }
-
-
 
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path)
 {
@@ -912,7 +812,6 @@ extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
 	}
 }
 
-
 extern void set_page_opts(int page, display_data_t *display_data,
 			  int count, char* initial_opts)
 {
@@ -978,7 +877,6 @@ extern void set_page_opts(int page, display_data_t *display_data,
 	}
 	list_iterator_destroy(itr);
 }
-
 
 extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 			      GtkMenu *menu, display_data_t *display_data)
@@ -1240,15 +1138,6 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 					GTK_TREE_SORTABLE(treestore),
 					display_data[i].id,
 					_sort_iter_compare_func_nodes,
-					GINT_TO_POINTER(display_data[i].id),
-					NULL);
-				break;
-			} else if (!xstrcasecmp(display_data[i].name,
-						"MidplaneList")) {
-				gtk_tree_sortable_set_sort_func(
-					GTK_TREE_SORTABLE(treestore),
-					display_data[i].id,
-					_sort_iter_compare_func_mp_list,
 					GINT_TO_POINTER(display_data[i].id),
 					NULL);
 				break;
