@@ -1260,14 +1260,6 @@ extern List copy_main_button_list(int initial_color)
 	return button_list;
 }
 
-extern void add_extra_cr_buttons(List *button_list, node_info_t *node_ptr)
-{
-	/* FIXME: this is here for consumable resources "multi-core"
-	   and what not to add buttons for each.  This needs to be added
-	   when HP is done with the multi-core code. */
-	return;
-}
-
 extern void put_buttons_in_table(GtkTable *table, List button_list)
 {
 	int coord_x=0, coord_y=0;
