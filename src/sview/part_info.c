@@ -1078,14 +1078,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			temp_char = part_ptr->allow_alloc_nodes;
 			break;
 		case SORTID_NODES:
-			if (cluster_flags & CLUSTER_FLAG_BG)
-				convert_num_unit((float)part_ptr->total_nodes,
-						 tmp_cnt, sizeof(tmp_cnt),
-						 UNIT_NONE, NO_VAL,
-						 working_sview_config.
-						 convert_flags);
-			else
-				sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
+			sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
 			temp_char = tmp_cnt;
 			break;
 		case SORTID_NODES_MAX:
@@ -1239,12 +1232,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else
 		tmp_alt = "";
 
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		convert_num_unit((float)part_ptr->total_cpus, tmp_cpu_cnt,
-				 sizeof(tmp_cpu_cnt), UNIT_NONE, NO_VAL,
-				 working_sview_config.convert_flags);
-	else
-		sprintf(tmp_cpu_cnt, "%u", part_ptr->total_cpus);
+	sprintf(tmp_cpu_cnt, "%u", part_ptr->total_cpus);
 
 	if (part_ptr->flags & PART_FLAG_DEFAULT)
 		tmp_default = "yes";
@@ -1318,12 +1306,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			part_ptr->max_cpus_per_node);
 	}
 
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		convert_num_unit((float)part_ptr->total_nodes, tmp_node_cnt,
-				 sizeof(tmp_node_cnt), UNIT_NONE, NO_VAL,
-				 working_sview_config.convert_flags);
-	else
-		sprintf(tmp_node_cnt, "%u", part_ptr->total_nodes);
+	sprintf(tmp_node_cnt, "%u", part_ptr->total_nodes);
 
 	if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
 		tmp_root = "yes";
@@ -1477,15 +1460,6 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 					 sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
 					 working_sview_config.convert_flags);
 			xstrfmtcat(tmp_cpus, "Alloc:%s", tmp_cnt);
-			if (cluster_flags & CLUSTER_FLAG_BG) {
-				convert_num_unit(
-					(float)(sview_part_sub->cpu_alloc_cnt
-						/ cpus_per_node),
-					tmp_cnt,
-					sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
-					working_sview_config.convert_flags);
-				xstrfmtcat(tmp_nodes, "Alloc:%s", tmp_cnt);
-			}
 		}
 		if (sview_part_sub->cpu_error_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_error_cnt,
@@ -1495,17 +1469,6 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 			if (tmp_cpus)
 				xstrcat(tmp_cpus, " ");
 			xstrfmtcat(tmp_cpus, "Err:%s", tmp_cnt);
-			if (cluster_flags & CLUSTER_FLAG_BG) {
-				convert_num_unit(
-					(float)(sview_part_sub->cpu_error_cnt
-						/ cpus_per_node),
-					tmp_cnt,
-					sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
-					working_sview_config.convert_flags);
-				if (tmp_nodes)
-					xstrcat(tmp_nodes, " ");
-				xstrfmtcat(tmp_nodes, "Err:%s", tmp_cnt);
-			}
 		}
 		if (sview_part_sub->cpu_idle_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_idle_cnt,
@@ -1515,17 +1478,6 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 			if (tmp_cpus)
 				xstrcat(tmp_cpus, " ");
 			xstrfmtcat(tmp_cpus, "Idle:%s", tmp_cnt);
-			if (cluster_flags & CLUSTER_FLAG_BG) {
-				convert_num_unit(
-					(float)(sview_part_sub->cpu_idle_cnt
-						/ cpus_per_node),
-					tmp_cnt,
-					sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
-					working_sview_config.convert_flags);
-				if (tmp_nodes)
-					xstrcat(tmp_nodes, " ");
-				xstrfmtcat(tmp_nodes, "Idle:%s", tmp_cnt);
-			}
 		}
 	} else {
 		tmp_cpus = xmalloc(20);
@@ -1675,7 +1627,6 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 				   node_info_t *node_ptr,
 				   int node_scaling)
 {
-	int cpus_per_node = 1;
 	int idle_cpus = node_ptr->cpus;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 
@@ -1704,23 +1655,12 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 					  SELECT_NODEDATA_SUBCNT,
 					  NODE_STATE_ALLOCATED,
 					  &alloc_cpus);
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			if (!alloc_cpus
-			    && (IS_NODE_ALLOCATED(node_ptr)
-				|| IS_NODE_COMPLETING(node_ptr)))
-				alloc_cpus = node_ptr->cpus;
-			else
-				alloc_cpus *= cpus_per_node;
-		}
 		idle_cpus -= alloc_cpus;
 
 		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 					  SELECT_NODEDATA_SUBCNT,
 					  NODE_STATE_ERROR,
 					  &err_cpus);
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			err_cpus *= cpus_per_node;
-
 		idle_cpus -= err_cpus;
 	} else if (sview_part_sub->node_state == NODE_STATE_ALLOCATED) {
 		alloc_cpus = idle_cpus;
@@ -1946,14 +1886,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 			sview_part_info->sub_part_total.cpu_cnt +=
 				sview_part_sub->cpu_cnt;
 
-			if (cluster_flags & CLUSTER_FLAG_BG) {
-				sview_part_info->sub_part_total.node_alloc_cnt
-					+= sview_part_sub->cpu_alloc_cnt;
-				sview_part_info->sub_part_total.node_idle_cnt
-					+= sview_part_sub->cpu_idle_cnt;
-				sview_part_info->sub_part_total.node_error_cnt
-					+= sview_part_sub->cpu_error_cnt;
-			} else if (((sview_part_sub->node_state
+			if (((sview_part_sub->node_state
 				     & NODE_STATE_BASE) == NODE_STATE_MIXED) ||
 				   (sview_part_sub->node_state
 				    == NODE_STATE_ALLOCATED))
@@ -1990,15 +1923,6 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 			hostlist_sort(sview_part_sub->hl);
 		}
 		list_iterator_destroy(itr);
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			sview_part_info->sub_part_total.node_alloc_cnt /=
-				cpus_per_node;
-			sview_part_info->sub_part_total.node_idle_cnt /=
-				cpus_per_node;
-			sview_part_info->sub_part_total.node_error_cnt /=
-				cpus_per_node;
-		}
-
 	}
 	list_sort(info_list, (ListCmpF)_sview_part_sort_aval_dec);
 
@@ -2999,26 +2923,14 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		if (!only_line)
 			gtk_tree_model_get(model, iter,
 					   SORTID_NODE_STATE, &state, -1);
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			if (!state || !strlen(state))
-				snprintf(title, 100,
-					 "Midplane(s) in partition %s",
-					 name);
-			else
-				snprintf(title, 100,
-					 "Midplane(s) in partition %s "
-					 "that are in '%s' state",
-					 name, state);
-		} else {
-			if (!state || !strlen(state))
-				snprintf(title, 100, "Node(s) in partition %s ",
-					 name);
-			else
-				snprintf(title, 100,
-					 "Node(s) in partition %s that are in "
-					 "'%s' state",
-					 name, state);
-		}
+		if (!state || !strlen(state))
+			snprintf(title, 100, "Node(s) in partition %s ",
+				 name);
+		else
+			snprintf(title, 100,
+				 "Node(s) in partition %s that are in "
+				 "'%s' state",
+				 name, state);
 		break;
 	case BLOCK_PAGE:
 		snprintf(title, 100, "Block(s) in partition %s", name);
@@ -3319,15 +3231,7 @@ extern void cluster_change_part(void)
 	while (display_data++) {
 		if (display_data->id == -1)
 			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch (display_data->id) {
-			case SORTID_NODELIST:
-				display_data->name = "MidplaneList";
-				break;
-			default:
-				break;
-			}
-		} else if (cluster_flags & CLUSTER_FLAG_FED) {
+		if (cluster_flags & CLUSTER_FLAG_FED) {
 			switch(display_data->id) {
 			case SORTID_CLUSTER_NAME:
 				display_data->show = true;
@@ -3335,13 +3239,8 @@ extern void cluster_change_part(void)
 			}
 		} else {
 			switch (display_data->id) {
-			case SORTID_NODELIST:
-				display_data->name = "NodeList";
-				break;
 			case SORTID_CLUSTER_NAME:
 				display_data->show = false;
-				break;
-			default:
 				break;
 			}
 		}
