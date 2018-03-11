@@ -1326,7 +1326,6 @@ display_it:
 		resv_ptr = sview_resv_info_ptr->resv_ptr;
 		switch(spec_info->type) {
 		case PART_PAGE:
-		case BLOCK_PAGE:
 		case NODE_PAGE:
 			if (!resv_ptr->node_list)
 				continue;
@@ -1447,9 +1446,6 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case NODE_PAGE:
 		snprintf(title, 100, "Node(s) in reservation %s ", name);
 		break;
-	case BLOCK_PAGE:
-		snprintf(title, 100, "Block(s) in reservation %s", name);
-		break;
 	case SUBMIT_PAGE:
 		snprintf(title, 100, "Submit job in reservation %s", name);
 		break;
@@ -1493,7 +1489,6 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		popup_win->spec_info->search_info->gchar_data = name;
 		//specific_info_job(popup_win);
 		break;
-	case BLOCK_PAGE:
 	case NODE_PAGE:
 	case PART_PAGE:
 		g_free(name);

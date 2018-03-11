@@ -4062,7 +4062,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
-	char name[30], *uname = NULL;
+	char *uname = NULL;
 	hostset_t hostset = NULL;
 	int name_diff;
 	int top_node_inx, array_size, *color_inx;
@@ -4234,15 +4234,6 @@ display_it:
 				       job_ptr->resv_name))
 				continue;
 			break;
-		case BLOCK_PAGE:
-			select_g_select_jobinfo_sprint(
-				job_ptr->select_jobinfo,
-				name,
-				sizeof(name),
-				SELECT_PRINT_BG_ID);
-			if (xstrcmp(search_info->gchar_data, name))
-				continue;
-			break;
 		case NODE_PAGE:
 			if (!job_ptr->nodes)
 				continue;
@@ -4396,13 +4387,6 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			snprintf(title, 100, "Node(s) running job step %s",
 				 tmp_jobid);
 		break;
-	case BLOCK_PAGE:
-		if (stepid == NO_VAL)
-			snprintf(title, 100, "Block with job %s", tmp_jobid);
-		else
-			snprintf(title, 100, "Block with job step %s",
-				 tmp_jobid);
-		break;
 	case INFO_PAGE:
 		if (stepid == NO_VAL)
 			snprintf(title, 100, "Full info for job %s", tmp_jobid);
@@ -4471,8 +4455,6 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case RESV_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_RESV_NAME, &name, -1);
 		popup_win->spec_info->search_info->gchar_data = name;
-		break;
-	case BLOCK_PAGE:
 		break;
 	case SUBMIT_PAGE:
 		break;

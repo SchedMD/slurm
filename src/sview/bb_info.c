@@ -878,7 +878,6 @@ display_it:
 		case BB_PAGE:
 			list_push(send_bb_list, sview_bb_info_ptr);
 			break;
-		case BLOCK_PAGE:
 		case JOB_PAGE:
 		case NODE_PAGE:
 		case PART_PAGE:
@@ -999,7 +998,6 @@ extern void popup_all_bb(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		popup_win->spec_info->search_info->gchar_data = name;
 		specific_info_bb(popup_win);
 		break;
-	case BLOCK_PAGE:
 	case NODE_PAGE:
 	case PART_PAGE:
 	case SUBMIT_PAGE:

@@ -1982,9 +1982,6 @@ extern void popup_all_node_name(char *name, int id, char *cluster_name)
 	case RESV_PAGE:
 		snprintf(title, 100, "Reservation(s) with Node %s", name);
 		break;
-	case BLOCK_PAGE:
-		snprintf(title, 100, "Blocks(s) with Node %s", name);
-		break;
 	case SUBMIT_PAGE:
 		snprintf(title, 100, "Submit job on Node %s", name);
 		break;

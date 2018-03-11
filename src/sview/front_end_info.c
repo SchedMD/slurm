@@ -849,7 +849,6 @@ display_it:
 		front_end_ptr = sview_front_end_info_ptr->front_end_ptr;
 		switch (spec_info->type) {
 		case PART_PAGE:
-		case BLOCK_PAGE:
 		case NODE_PAGE:
 			break;
 		case JOB_PAGE:

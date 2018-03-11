@@ -2812,7 +2812,6 @@ display_it:
 				break;
 			}
 			break;
-		case BLOCK_PAGE:
 		case JOB_PAGE:
 			if (!spec_info->search_info->gchar_data)
 				continue;
@@ -2932,9 +2931,6 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 				 "'%s' state",
 				 name, state);
 		break;
-	case BLOCK_PAGE:
-		snprintf(title, 100, "Block(s) in partition %s", name);
-		break;
 	case SUBMIT_PAGE:
 		snprintf(title, 100, "Submit job in partition %s", name);
 		break;
@@ -2990,7 +2986,6 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	switch (id) {
 	case JOB_PAGE:
-	case BLOCK_PAGE:
 	case INFO_PAGE:
 		popup_win->spec_info->search_info->gchar_data = name;
 		//specific_info_job(popup_win);

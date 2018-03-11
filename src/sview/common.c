@@ -503,9 +503,6 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 	case NODE_PAGE:
 		each.pfunc = &popup_all_node;
 		break;
-	case BLOCK_PAGE:
-		each.pfunc = &popup_all_block;
-		break;
 	case RESV_PAGE:
 		each.pfunc = &popup_all_resv;
 		break;
@@ -526,10 +523,6 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 						&treedata->iter,
 						display_data,
 						treedata->treeview);
-			break;
-		case BLOCK_PAGE:
-			select_admin_block(treedata->model, &treedata->iter,
-					   display_data, treedata->treeview);
 			break;
 		case FRONT_END_PAGE:
 			select_admin_front_end(treedata->model,
@@ -1724,9 +1717,6 @@ extern void *popup_thr(popup_info_t *popup_win)
 	case NODE_PAGE:
 		specifc_info = specific_info_node;
 		break;
-	case BLOCK_PAGE:
-		specifc_info = specific_info_block;
-		break;
 	case RESV_PAGE:
 		specifc_info = specific_info_resv;
 		break;
@@ -2166,8 +2156,6 @@ extern char *page_to_str(int page)
 		return "Reservation";
 	case BB_PAGE:
 		return "BurstBuffer";
-	case BLOCK_PAGE:
-		return "Block";
 	case NODE_PAGE:
 		return "Node";
 	case FRONT_END_PAGE:
