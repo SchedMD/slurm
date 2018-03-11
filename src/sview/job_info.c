@@ -120,7 +120,6 @@ enum {
 	SORTID_COLOR_INX,
 	SORTID_COMMAND,
 	SORTID_COMMENT,
-	SORTID_CONNECTION,
 	SORTID_CONTIGUOUS,
 	SORTID_CORE_SPEC,
 /* 	SORTID_CORES_MAX, */
@@ -138,13 +137,8 @@ enum {
 	SORTID_FED_ACTIVE_SIBS,
 	SORTID_FED_ORIGIN,
 	SORTID_FED_VIABLE_SIBS,
-	SORTID_GEOMETRY,
 	SORTID_GRES,
 	SORTID_GROUP_ID,
-	SORTID_IMAGE_BLRTS,
-	SORTID_IMAGE_LINUX,
-	SORTID_IMAGE_RAMDISK,
-	SORTID_IMAGE_MLOADER,
 	SORTID_JOBID,
 	SORTID_JOBID_FORMATTED,
 	SORTID_LAST_SCHED_EVAL,
@@ -181,7 +175,6 @@ enum {
 	SORTID_REQUEUE,
 	SORTID_RESV_NAME,
 	SORTID_RESTARTS,
-	SORTID_ROTATE,
 /* 	SORTID_SOCKETS_MAX, */
 /* 	SORTID_SOCKETS_MIN, */
 	SORTID_STATE,
@@ -249,20 +242,6 @@ static display_data_t display_data_job[] = {
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_PACK_JOB_OFFSET, "Pack Job Offset", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_GEOMETRY, NULL,
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ROTATE, NULL,
-	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_CONNECTION, NULL,
-	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_BLRTS, NULL,
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_LINUX, NULL,
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_RAMDISK, NULL,
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_MLOADER, NULL,
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #ifdef HAVE_ALPS_CRAY
 	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, "ALPS Resv ID", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
@@ -716,30 +695,11 @@ static void _set_active_combo_job(GtkComboBox *combo,
 	case SORTID_CONTIGUOUS:
 	case SORTID_REBOOT:
 	case SORTID_REQUEUE:
-	case SORTID_ROTATE:
 	case SORTID_OVER_SUBSCRIBE:
 		if (!xstrcasecmp(temp_char, "yes"))
 			action = 0;
 		else if (!xstrcasecmp(temp_char, "no"))
 			action = 1;
-		else
-			action = 0;
-		break;
-	case SORTID_CONNECTION:
-		if (!xstrcasecmp(temp_char, "Torus"))
-			action = 0;
-		else if (!xstrcasecmp(temp_char, "Mesh"))
-			action = 1;
-		else if (!xstrcasecmp(temp_char, "NAV"))
-			action = 2;
-		else if (!xstrcasecmp(temp_char, "HTC_S"))
-			action = 3;
-		else if (!xstrcasecmp(temp_char, "HTC_D"))
-			action = 4;
-		else if (!xstrcasecmp(temp_char, "HTC_V"))
-			action = 5;
-		else if (!xstrcasecmp(temp_char, "HTC_L"))
-			action = 6;
 		else
 			action = 0;
 		break;
@@ -761,21 +721,15 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	int temp_int = 0;
 	long long int temp_ll = 0;
 	char *p;
-	uint16_t rotate;
-	uint16_t conn_type[cluster_dims];
-	char *token, *delimiter = ",x", *next_ptr;
+	char *token;
 	char *sep_char;
 	int j;
-	uint16_t geo[cluster_dims];
-	char *geometry_tmp, *original_ptr;
 
 	/* need to clear global_edit_error here (just in case) */
 	global_edit_error = 0;
 	if (!job_msg)
 		return NULL;
 
-	geometry_tmp = xstrdup(new_text);
-	original_ptr = geometry_tmp;
 	switch (column) {
 	case SORTID_ACTION:
 		xfree(got_edit_signal);
@@ -1053,105 +1007,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->dependency = xstrdup(new_text);
 		type = "dependency";
 		break;
-	case SORTID_GEOMETRY:
-		type = "geometry";
-		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-		for (j = 0; j < cluster_dims; j++)
-			geo[j] = NO_VAL16;
-		for (j = 0; j < cluster_dims; j++) {
-			if (!token) {
-				//error("insufficient dimensions in "
-				//      "Geometry");
-				goto return_error;
-			}
-			geo[j] = (uint16_t) atoi(token);
-			if (geo[j] <= 0) {
-				//error("invalid --geometry argument");
-				goto return_error;
-				break;
-			}
-			geometry_tmp = next_ptr;
-			token = strtok_r(geometry_tmp, delimiter,
-					 &next_ptr);
-		}
-		if (token) {
-			//error("too many dimensions in Geometry");
-			goto return_error;
-		}
-
-		if (!job_msg->select_jobinfo)
-			job_msg->select_jobinfo
-				= select_g_select_jobinfo_alloc();
-		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-					    SELECT_JOBDATA_GEOMETRY,
-					    (void *) &geo);
-		break;
-	case SORTID_ROTATE:
-		type = "rotate";
-		if (!xstrcasecmp(new_text, "yes")) {
-			rotate = 1;
-
-		} else {
-			rotate = 0;
-
-		}
-		if (!job_msg->select_jobinfo)
-			job_msg->select_jobinfo
-				= select_g_select_jobinfo_alloc();
-		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-					    SELECT_JOBDATA_ROTATE,
-					    (void *) &rotate);
-		break;
-	case SORTID_CONNECTION:
-		verify_conn_type(new_text, conn_type);
-
-		type = "connection";
-
-		if (!job_msg->select_jobinfo)
-			job_msg->select_jobinfo
-				= select_g_select_jobinfo_alloc();
-		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-					    SELECT_JOBDATA_CONN_TYPE,
-					    (void *) &conn_type);
-		break;
-	case SORTID_IMAGE_BLRTS:
-		type = "BlrtsImage";
-		if (!job_msg->select_jobinfo)
-			job_msg->select_jobinfo
-				= select_g_select_jobinfo_alloc();
-		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-					    SELECT_JOBDATA_BLRTS_IMAGE,
-					    (void *) new_text);
-		break;
-	case SORTID_IMAGE_LINUX:
-		type = "CnloadImage";
-
-		if (!job_msg->select_jobinfo)
-			job_msg->select_jobinfo
-				= select_g_select_jobinfo_alloc();
-		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-					    SELECT_JOBDATA_LINUX_IMAGE,
-					    (void *) new_text);
-		break;
-	case SORTID_IMAGE_MLOADER:
-		type = "MloaderImage";
-		if (!job_msg->select_jobinfo)
-			job_msg->select_jobinfo
-				= select_g_select_jobinfo_alloc();
-		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-					    SELECT_JOBDATA_MLOADER_IMAGE,
-					    (void *) new_text);
-		break;
-	case SORTID_IMAGE_RAMDISK:
-		type = "IoloadImage";
-
-		if (!job_msg->select_jobinfo)
-			job_msg->select_jobinfo
-				= select_g_select_jobinfo_alloc();
-		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-					    SELECT_JOBDATA_RAMDISK_IMAGE,
-					    (void *) new_text);
-		break;
 	case SORTID_TIME_ELIGIBLE:
 	case SORTID_TIME_START:
 		type = "start time";
@@ -1190,11 +1045,9 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	if (xstrcmp(type, "unknown"))
 		global_send_update_msg = 1;
 
-	xfree(original_ptr);
 	return type;
 
 return_error:
-	xfree(original_ptr);
 	global_edit_error = 1;
 	return type;
 }
@@ -3703,7 +3556,6 @@ extern GtkListStore *create_model_job(int type)
 	case SORTID_CONTIGUOUS:
 	case SORTID_REBOOT:
 	case SORTID_REQUEUE:
-	case SORTID_ROTATE:
 	case SORTID_OVER_SUBSCRIBE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
@@ -3715,44 +3567,6 @@ extern GtkListStore *create_model_job(int type)
 		gtk_list_store_set(model, &iter,
 				   0, "no",
 				   1, type,
-				   -1);
-		break;
-	case SORTID_CONNECTION:
-		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "Torus",
-				   1, SORTID_CONNECTION,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "Mesh",
-				   1, SORTID_CONNECTION,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "NAV",
-				   1, SORTID_CONNECTION,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "HTC SMP",
-				   1, SORTID_CONNECTION,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "HTC Dual",
-				   1, SORTID_CONNECTION,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "HTC Virtual",
-				   1, SORTID_CONNECTION,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "HTC Linux",
-				   1, SORTID_CONNECTION,
 				   -1);
 		break;
 	default:
