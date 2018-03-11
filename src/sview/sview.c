@@ -1090,7 +1090,6 @@ static void _get_info_tabs(GtkTable *table, display_data_t *display_data)
 extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 {
 	GtkTreeModel *model;
-	display_data_t *display_data;
 	GtkTreeIter iter;
 	slurmdb_cluster_rec_t *cluster_rec = NULL;
 	char *tmp, *ui_description, *selected_name;
@@ -1175,35 +1174,6 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		xfree(federation_name);
 		if (working_sview_config.show_grid)
 			gtk_widget_show(grid_window);
-	}
-
-	display_data = main_display_data;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch (display_data->id) {
-			case BLOCK_PAGE:
-				display_data->show = true;
-				break;
-			case NODE_PAGE:
-				display_data->name = "Midplanes";
-				break;
-			default:
-				break;
-			}
-		} else {
-			switch (display_data->id) {
-			case BLOCK_PAGE:
-				display_data->show = false;
-				break;
-			case NODE_PAGE:
-				display_data->name = "Nodes";
-				break;
-			default:
-				break;
-			}
-		}
 	}
 
 	/* set up menu */
