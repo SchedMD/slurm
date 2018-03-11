@@ -267,9 +267,7 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	char *select_title = "Select Plugin Configuration";
 	char *tmp_title = NULL;
 
-	if (cluster_flags & CLUSTER_FLAG_BGQ)
-		select_title = "Bluegene/Q configuration";
-	else if (cluster_flags & CLUSTER_FLAG_CRAY)
+	if (cluster_flags & CLUSTER_FLAG_CRAY)
 		select_title = "\nCray configuration\n";
 
 	if (!slurm_ctl_conf_ptr)
@@ -769,12 +767,8 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 	} else if (!xstrcmp(name, "node_name")) {
 		sview_search_info.search_type = SEARCH_NODE_NAME;
 		entry = create_entry();
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			label = gtk_label_new("Which Midplane(s)?\n"
-					      "(ranged or comma separated)");
-		else
-			label = gtk_label_new("Which node(s)?\n"
-					      "(ranged or comma separated)");
+		label = gtk_label_new("Which node(s)?\n"
+				      "(ranged or comma separated)");
 	} else if (!xstrcmp(name, "node_state")) {
 		display_data_t pulldown_display_data[] = {
 			{G_TYPE_NONE, NODE_STATE_ALLOCATED, "Allocated",
@@ -810,42 +804,6 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		};
 
 		sview_search_info.search_type = SEARCH_NODE_STATE;
-		entry = create_pulldown_combo(pulldown_display_data);
-		label = gtk_label_new("Which state?");
-	} else if ((cluster_flags & CLUSTER_FLAG_BG)
-		   && !xstrcmp(name, "bg_block_name")) {
-		sview_search_info.search_type = SEARCH_BLOCK_NAME;
-		entry = create_entry();
-		label = gtk_label_new("Which block?");
-	} else if ((cluster_flags & CLUSTER_FLAG_BG)
-		   && !xstrcmp(name, "bg_block_size")) {
-		sview_search_info.search_type = SEARCH_BLOCK_SIZE;
-		entry = create_entry();
-		label = gtk_label_new("Which block size?");
-	} else if (!xstrcmp(name, "bg_block_state")) {
-		display_data_t pulldown_display_data[] = {
-			{G_TYPE_NONE, BG_BLOCK_NAV, "Nav", true, -1},
-			{G_TYPE_NONE, BG_BLOCK_FREE, "Free", true, -1},
-			{G_TYPE_NONE, BG_BLOCK_BUSY, NULL, true, -1},
-			{G_TYPE_NONE, BG_BLOCK_BOOTING, "Booting", true, -1},
-			{G_TYPE_NONE, BG_BLOCK_REBOOTING, NULL, true, -1},
-			{G_TYPE_NONE, BG_BLOCK_INITED, "Inited", true, -1},
-			{G_TYPE_NONE, BG_BLOCK_ALLOCATED, NULL, true, -1},
-			{G_TYPE_NONE, BG_BLOCK_TERM, "Terminating", true, -1},
-			{G_TYPE_NONE, BG_BLOCK_ERROR_FLAG, "Error", true, -1},
-			{G_TYPE_NONE, -1, NULL, false, -1}
-		};
-		display_data_t *display_data = pulldown_display_data;
-		while (display_data++) {
-			if (display_data->id == -1)
-				break;
-			switch(display_data->id) {
-			case BG_BLOCK_ALLOCATED:
-				display_data->name = "Allocated";
-				break;
-			}
-		}
-		sview_search_info.search_type = SEARCH_BLOCK_STATE;
 		entry = create_pulldown_combo(pulldown_display_data);
 		label = gtk_label_new("Which state?");
 	} else if (!xstrcmp(name, "reservation_name")) {
