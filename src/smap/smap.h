@@ -133,8 +133,6 @@ typedef struct {
 	/* letter used in smap */
 	char letter;
 	uint32_t state;
-	/* set if using this midplane in a block */
-	uint16_t used;
 } smap_node_t;
 
 typedef struct {

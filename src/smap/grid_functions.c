@@ -38,8 +38,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #include "src/smap/smap.h"
 
 static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
