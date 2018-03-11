@@ -102,13 +102,8 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR, refresh_node,
 	 create_model_node, admin_edit_node},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_RACK_MP, "RackMidplane", false, EDIT_NONE,
-	 refresh_node, create_model_node, admin_edit_node},
-#else
 	{G_TYPE_STRING, SORTID_RACK_MP, NULL, true, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-#endif
 	{G_TYPE_STRING, SORTID_NODE_ADDR, "NodeAddr", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NODE_HOSTNAME, "NodeHostName", false, EDIT_NONE,
@@ -183,30 +178,16 @@ static display_data_t display_data_node[] = {
 static display_data_t options_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", true, NODE_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, NODE_PAGE, "Drain Midplane", true, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Undrain Midplane", true, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Resume Midplane", true, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Set Midplane Down",
-	 true, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Make Midplane Idle",
-	 true, ADMIN_PAGE},
-#else
 	{G_TYPE_STRING, NODE_PAGE, "Drain Node", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Undrain Node", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Resume Node", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Set Node(s) Down", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Make Node(s) Idle", true, ADMIN_PAGE},
-#endif
 	{G_TYPE_STRING, NODE_PAGE, "Update Active Features", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Update Available Features", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Update Gres", true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE,  "Jobs", true, NODE_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", true, NODE_PAGE},
-#else
 	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, NODE_PAGE},
-#endif
 	{G_TYPE_STRING, PART_PAGE, "Partitions", true, NODE_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Reservations", true, NODE_PAGE},
 	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", false, NODE_PAGE},

@@ -605,11 +605,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 		label = gtk_label_new(
 			"Reservation creation specifications\n\n"
 			"Specify Time_Start and either Duration or Time_End.\n"
-#ifdef HAVE_BG
-			"Specify either Node_Count or Midplane_List.\n"
-#else
 			"Specify either Node_Count or Node_List.\n"
-#endif
 			"Specify either Accounts or Users.\n\n"
 			"Supported Flags include: Maintenance, Overlap,\n"
 			"Ignore_Jobs, Daily and Weekly, License_Only\n"

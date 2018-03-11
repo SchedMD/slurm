@@ -155,21 +155,13 @@ enum {
 	SORTID_MEM_MIN,
 	SORTID_MEM_PER_TRES,
 	SORTID_TMP_DISK,
-#ifdef HAVE_BG
-	SORTID_NODELIST,
-	SORTID_NODELIST_EXC,
-	SORTID_NODELIST_REQ,
-	SORTID_NODELIST_SCHED,
-#endif
 	SORTID_NAME,
 	SORTID_NETWORK,
 	SORTID_NICE,
-#ifndef HAVE_BG
 	SORTID_NODELIST,
 	SORTID_NODELIST_EXC,
 	SORTID_NODELIST_REQ,
 	SORTID_NODELIST_SCHED,
-#endif
 	SORTID_NODE_INX,
 	SORTID_NODES,
 	SORTID_NODES_MAX,
@@ -259,24 +251,6 @@ static display_data_t display_data_job[] = {
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_PACK_JOB_OFFSET, "Pack Job Offset", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", false, EDIT_NONE, refresh_job,
-	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_GEOMETRY, "Geometry",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ROTATE, "Rotate",
-	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_CONNECTION, "Connection",
-	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_BLRTS, NULL,
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_LINUX, "Image Cnload",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_RAMDISK, "Image Ioload",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_MLOADER, "Image Mloader",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-#else
 	{G_TYPE_STRING, SORTID_BLOCK, NULL, true, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GEOMETRY, NULL,
@@ -293,7 +267,6 @@ static display_data_t display_data_job[] = {
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_MLOADER, NULL,
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-#endif
 #ifdef HAVE_ALPS_CRAY
 	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, "ALPS Resv ID", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
@@ -338,16 +311,6 @@ static display_data_t display_data_job[] = {
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS, "CPU Count",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", false, EDIT_NONE,
-	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODELIST_EXC, "MidplaneList Excluded",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODELIST_REQ, "MidplaneList Requested",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODELIST_SCHED, "MidplaneList Scheduled",
-	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-#else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_EXC, "NodeList Excluded",
@@ -356,7 +319,6 @@ static display_data_t display_data_job[] = {
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_SCHED, "NodeList Scheduled",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-#endif
 	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", false, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CORE_SPEC, "CoreSpec", false, EDIT_TEXTBOX,
@@ -503,13 +465,8 @@ static display_data_t options_data_job[] = {
 	{G_TYPE_STRING, JOB_PAGE, "Suspend/Resume", true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Edit Job", true, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partition", true, JOB_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Block", true, JOB_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Midplanes", true, JOB_PAGE},
-#else
 	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, JOB_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, JOB_PAGE},
-#endif
 	{G_TYPE_STRING, RESV_PAGE, "Reservation", true, JOB_PAGE},
 	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };

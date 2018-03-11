@@ -133,16 +133,6 @@ display_data_t main_display_data[] = {
 	 refresh_main, create_model_bb, admin_edit_bb,
 	 get_info_bb, specific_info_bb,
 	 set_menus_bb, NULL},
-#ifdef HAVE_BG
-	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", true, -1,
-	 refresh_main, NULL, NULL,
-	 get_info_block, specific_info_block,
-	 set_menus_block, NULL},
-	{G_TYPE_NONE, NODE_PAGE, "Midplanes", false, -1,
-	 refresh_main, NULL, NULL,
-	 get_info_node, specific_info_node,
-	 set_menus_node, NULL},
-#else
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", false, -1,
 	 refresh_main, NULL, NULL,
 	 get_info_block, specific_info_block,
@@ -151,7 +141,6 @@ display_data_t main_display_data[] = {
 	 refresh_main, NULL, NULL,
 	 get_info_node, specific_info_node,
 	 set_menus_node, NULL},
-#endif
 	{G_TYPE_NONE, FRONT_END_PAGE, "Front End Nodes", false, -1,
 	 refresh_main, create_model_front_end, admin_edit_front_end,
 	 get_info_front_end, specific_info_front_end,

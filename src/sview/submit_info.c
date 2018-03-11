@@ -47,11 +47,7 @@ static display_data_t display_data_submit[] = {
 	{G_TYPE_STRING, SORTID_AVAIL, "AVAIL", true, -1},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "TIMELIMIT", true, -1},
 	{G_TYPE_STRING, SORTID_NODES, "NODES", true, -1},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "MIDPLANELIST", true, -1},
-#else
 	{G_TYPE_STRING, SORTID_NODELIST, "NODELIST", true, -1},
-#endif
 	{G_TYPE_NONE, -1, NULL, false, -1}
 };
 

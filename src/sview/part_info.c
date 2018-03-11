@@ -101,15 +101,9 @@ enum {
 	SORTID_JOB_SIZE,
 	SORTID_MAX_CPUS_PER_NODE,
 	SORTID_MEM,
-#ifdef HAVE_BG
-	SORTID_NODELIST,
-	SORTID_NODES_ALLOWED,
-#endif
 	SORTID_NAME,
-#ifndef HAVE_BG
 	SORTID_NODELIST,
 	SORTID_NODES_ALLOWED,
-#endif
 	SORTID_NODE_INX,
 	SORTID_NODE_STATE,
 	SORTID_NODE_STATE_NUM,
@@ -214,13 +208,8 @@ static display_data_t display_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", false,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-#else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-#endif
 	{G_TYPE_INT, SORTID_NODE_STATE_NUM, NULL, false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, false, EDIT_NONE, refresh_part,
@@ -292,13 +281,8 @@ static display_data_t create_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_NONE, SORTID_REASON, "Reason", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", false,
-	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-#else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-#endif
 	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
@@ -307,18 +291,6 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", true, PART_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Edit Partition", true, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Remove Partition", true, ADMIN_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, PART_PAGE, "Drain Midplanes",
-	 true, ADMIN_PAGE | EXTRA_NODES},
-	{G_TYPE_STRING, PART_PAGE, "Resume Midplanes",
-	 true, ADMIN_PAGE | EXTRA_NODES},
-	{G_TYPE_STRING, PART_PAGE, "Put Midplanes Down",
-	 true, ADMIN_PAGE | EXTRA_NODES},
-	{G_TYPE_STRING, PART_PAGE, "Make Midplanes Idle",
-	 true, ADMIN_PAGE | EXTRA_NODES},
-	{G_TYPE_STRING, PART_PAGE, "Update Midplane Features",
-	 true, ADMIN_PAGE | EXTRA_NODES},
-#else
 	{G_TYPE_STRING, PART_PAGE, "Drain Nodes",
 	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Resume Nodes",
@@ -329,17 +301,11 @@ static display_data_t options_data_part[] = {
 	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Update Node Features",
 	 true, ADMIN_PAGE | EXTRA_NODES},
-#endif
 	{G_TYPE_STRING, PART_PAGE, "Change Partition State",
 	 true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", true, PART_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", true, PART_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Midplanes", true, PART_PAGE},
-#else
 	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, PART_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, PART_PAGE},
-#endif
 	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", false, PART_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Reservations", true, PART_PAGE},
 	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}

@@ -98,27 +98,12 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACTION, "Action", false, EDIT_MODEL,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_CNT,
-#ifdef HAVE_BG
-	 "Midplane Count",
-#else
-	 "Node Count",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_CORE_CNT,
-#ifdef HAVE_BG
-	 "Cnode Count",
-#else
-	 "Core Count",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODELIST,
-#ifdef HAVE_BG
-	 "MidplaneList",
-#else
-	 "Node List",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODE_CNT, "Node Count", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_CORE_CNT, "Core Count", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODELIST, "Node List", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_END, "Time End", false, EDIT_TEXTBOX,
@@ -157,30 +142,13 @@ static display_data_t create_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NAME, "Name", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_CNT,
-#ifdef HAVE_BG
-	 "Midplane_Count",
-#else
-	 "Node_Count",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_CORE_CNT,
-#ifdef HAVE_BG
-	 "Cnode_Count",
-#else
-	 "Core_Count",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODELIST,
-#ifdef HAVE_BG
-	 "Midplane_List",
-#else
-	 "Node_List",
-#endif
-	 false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_NODE_CNT, "Node_Count", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TIME_START, "Time_Start",
-	 false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_CORE_CNT, "Core_Count", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODELIST, "Node_List", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TIME_START, "Time_Start", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_END, "Time_End", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -212,16 +180,10 @@ static display_data_t options_data_resv[] = {
 	{G_TYPE_STRING, RESV_PAGE, "Edit Reservation", true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", true, RESV_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partitions", true, RESV_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", true, RESV_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Midplanes", true, RESV_PAGE},
-#else
 	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, RESV_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, RESV_PAGE},
-#endif
 	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
-
 
 static display_data_t *local_display_data = NULL;
 static char *got_edit_signal = NULL;
@@ -259,7 +221,6 @@ end_it:
 	gtk_combo_box_set_active(combo, action);
 
 }
-
 
 /* don't free this char */
 static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
