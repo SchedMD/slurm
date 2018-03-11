@@ -259,10 +259,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "burst_buffer";
 		break;
 	case SORTID_CORE_CNT:
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			type = "Cnode Count";
-		else
-			type = "Core Count";
+		type = "Core Count";
 		if (state_control_corecnt_supported() != SLURM_SUCCESS) {
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
@@ -310,10 +307,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "name";
 		break;
 	case SORTID_NODE_CNT:
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			type = "Midplane Count";
-		else
-			type = "Node Count";
+		type = "Node Count";
 		if (parse_resv_nodecnt(resv_msg, (char *)new_text,
 				       &free_tres_nodecnt, false,
 				       &err_msg) == SLURM_ERROR) {
@@ -326,10 +320,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		break;
 	case SORTID_NODELIST:
 		resv_msg->node_list = xstrdup(new_text);
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			type = "Midplane List";
-		else
-			type = "Node List";
+		type = "Node List";
 		break;
 	case SORTID_PARTITION:
 		resv_msg->partition = xstrdup(new_text);
@@ -1454,13 +1445,7 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		snprintf(title, 100, "Job(s) in reservation %s", name);
 		break;
 	case NODE_PAGE:
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			snprintf(title, 100,
-				 "Midplane(s) in reservation %s",
-				 name);
-		else
-			snprintf(title, 100, "Node(s) in reservation %s ",
-				 name);
+		snprintf(title, 100, "Node(s) in reservation %s ", name);
 		break;
 	case BLOCK_PAGE:
 		snprintf(title, 100, "Block(s) in reservation %s", name);
