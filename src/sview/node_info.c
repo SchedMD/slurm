@@ -2240,53 +2240,5 @@ extern void cluster_change_node(void)
 		}
 	}
 
-	display_data = options_data_node;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = "Blocks";
-				break;
-			}
-
-			if (!display_data->name) {
-			} else if (!xstrcmp(display_data->name, "Drain Node"))
-				display_data->name = "Drain Midplane";
-			else if (!xstrcmp(display_data->name, "Undrain Node"))
-				display_data->name = "Undrain Midplane";
-			else if (!xstrcmp(display_data->name, "Resume Node"))
-				display_data->name = "Resume Midplane";
-			else if (!xstrcmp(display_data->name, "Put Node Down"))
-				display_data->name = "Put Midplane Down";
-			else if (!xstrcmp(display_data->name, "Make Node Idle"))
-				display_data->name =
-					"Make Midplane Idle";
-		} else {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = NULL;
-				break;
-			}
-
-			if (!display_data->name) {
-			} else if (!xstrcmp(display_data->name,
-					   "Drain Midplanes"))
-				display_data->name = "Drain Nodes";
-			else if (!xstrcmp(display_data->name,
-					   "Undrain Midplanes"))
-				display_data->name = "Undrain Nodes";
-			else if (!xstrcmp(display_data->name,
-					 "Resume Midplanes"))
-				display_data->name = "Resume Nodes";
-			else if (!xstrcmp(display_data->name,
-					 "Put Midplanes Down"))
-				display_data->name = "Put Nodes Down";
-			else if (!xstrcmp(display_data->name,
-					 "Make Midplanes Idle"))
-				display_data->name = "Make Nodes Idle";
-		}
-	}
 	get_info_node(NULL, NULL);
 }
