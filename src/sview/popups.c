@@ -98,27 +98,6 @@ void _search_entry(sview_search_info_t *sview_search_info)
 		snprintf(title, 100, "Job(s) info for user %s",
 			 sview_search_info->gchar_data);
 		break;
-	case SEARCH_BLOCK_STATE:
-		id = BLOCK_PAGE;
-		upper = bg_block_state_string(sview_search_info->int_data);
-		lower = str_tolower(upper);
-		snprintf(title, 100, "BG Block(s) in the %s state", lower);
-		xfree(lower);
-		break;
-	case SEARCH_BLOCK_NAME:
-		id = BLOCK_PAGE;
-		snprintf(title, 100, "Block %s info",
-			 sview_search_info->gchar_data);
-		break;
-	case SEARCH_BLOCK_SIZE:
-		id = BLOCK_PAGE;
-		sview_search_info->int_data =
-			revert_num_unit(sview_search_info->gchar_data);
-		if (sview_search_info->int_data == -1)
-			return;
-		snprintf(title, 100, "Block(s) of size %d cnodes",
-			 sview_search_info->int_data);
-		break;
 	case SEARCH_PARTITION_NAME:
 		id = PART_PAGE;
 		snprintf(title, 100, "Partition %s info",
