@@ -67,7 +67,6 @@ enum {
 	SORTID_PORT,
 	SORTID_REAL_MEMORY,
 	SORTID_REASON,
-	SORTID_RACK_MP,
 	SORTID_SLURMD_START_TIME,
 	SORTID_SOCKETS,
 	SORTID_STATE,
@@ -101,8 +100,6 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_STRING, SORTID_NAME, "Name", false, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR, refresh_node,
-	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_RACK_MP, NULL, true, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NODE_ADDR, "NodeAddr", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
@@ -227,12 +224,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   find_col_name(display_data_node,
 						 SORTID_NAME),
 				   node_ptr->name);
-
-	if (sview_node_info_ptr->rack_mp)
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_node,
-							 SORTID_RACK_MP),
-					   sview_node_info_ptr->rack_mp);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
@@ -631,7 +622,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_NODE_ADDR, node_ptr->node_addr,
 			   SORTID_NODE_HOSTNAME, node_ptr->node_hostname,
 			   SORTID_OWNER,     tmp_owner,
-			   SORTID_RACK_MP,   sview_node_info_ptr->rack_mp,
 			   SORTID_REASON,    sview_node_info_ptr->reason,
 			   SORTID_SLURMD_START_TIME,
 				sview_node_info_ptr->slurmd_start_time,
@@ -902,10 +892,6 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 		sview_node_info_ptr->node_name = xstrdup(node_ptr->name);
 		sview_node_info_ptr->node_ptr = node_ptr;
 		sview_node_info_ptr->pos = i;
-
-		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-					  SELECT_NODEDATA_RACK_MP,
-					  0, &sview_node_info_ptr->rack_mp);
 
 		if (node_ptr->reason &&
 		    (node_ptr->reason_uid != NO_VAL) && node_ptr->reason_time) {
@@ -2169,9 +2155,6 @@ extern void cluster_change_node(void)
 			switch(display_data->id) {
 			case SORTID_CLUSTER_NAME:
 				display_data->show = false;
-				break;
-			case SORTID_RACK_MP:
-				display_data->name = NULL;
 				break;
 			}
 		}
