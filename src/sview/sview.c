@@ -665,26 +665,14 @@ static char *_get_ui_description()
 		"        <menuitem action='jobid'/>"
 		"        <menuitem action='user_jobs'/>"
 		"        <menuitem action='state_jobs'/>");
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		xstrcat(ui_description,
-			"      <separator/>"
-			"        <menuitem action='bg_block_name'/>"
-			"        <menuitem action='bg_block_size'/>"
-			"        <menuitem action='bg_block_state'/>");
-
 	xstrcat(ui_description,
 		"      <separator/>"
 		"        <menuitem action='partition_name'/>"
 		"        <menuitem action='partition_state'/>"
 		"      <separator/>");
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		xstrcat(ui_description,
-			"        <menuitem action='node_name_bg'/>"
-			"        <menuitem action='node_state_bg'/>");
-	else
-		xstrcat(ui_description,
-			"        <menuitem action='node_name'/>"
-			"        <menuitem action='node_state'/>");
+	xstrcat(ui_description,
+		"        <menuitem action='node_name'/>"
+		"        <menuitem action='node_state'/>");
 	xstrcat(ui_description,
 		"      <separator/>"
 		"        <menuitem action='reservation_name'/>"
