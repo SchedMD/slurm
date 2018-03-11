@@ -114,7 +114,6 @@ enum {
 	SORTID_ARRAY_TASK_ID,
 	SORTID_BATCH,
 	SORTID_BATCH_HOST,
-	SORTID_BLOCK,
 	SORTID_BURST_BUFFER,
 	SORTID_CLUSTER_NAME,
 	SORTID_COLOR,
@@ -183,7 +182,6 @@ enum {
 	SORTID_RESV_NAME,
 	SORTID_RESTARTS,
 	SORTID_ROTATE,
-	SORTID_SMALL_BLOCK,
 /* 	SORTID_SOCKETS_MAX, */
 /* 	SORTID_SOCKETS_MIN, */
 	SORTID_STATE,
@@ -251,8 +249,6 @@ static display_data_t display_data_job[] = {
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_PACK_JOB_OFFSET, "Pack Job Offset", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_BLOCK, NULL, true, EDIT_NONE, refresh_job,
-	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GEOMETRY, NULL,
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ROTATE, NULL,
@@ -417,8 +413,6 @@ static display_data_t display_data_job[] = {
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_INT, SORTID_SMALL_BLOCK, NULL, false, EDIT_NONE, refresh_job,
-	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS_PER_TRES, "CPUs per TRES",  false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MEM_PER_TRES, "Mem per TRES", false,
