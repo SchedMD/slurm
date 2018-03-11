@@ -296,14 +296,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		if (!alloc_cpus
-		    && ((node_ptr->node_state & NODE_STATE_ALLOCATED)
-			||  (node_ptr->node_state & NODE_STATE_COMPLETING)))
-			alloc_cpus = node_ptr->cpus;
-		else
-			alloc_cpus *= cpus_per_node;
-	}
 	idle_cpus -= alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_cnt,
 			 sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
@@ -317,9 +309,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &err_cpus);
-
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		err_cpus *= cpus_per_node;
 
 	idle_cpus -= err_cpus;
 	convert_num_unit((float)err_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE,
@@ -550,14 +539,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		if (!alloc_cpus &&
-		    (IS_NODE_ALLOCATED(node_ptr) ||
-		     IS_NODE_COMPLETING(node_ptr)))
-			alloc_cpus = node_ptr->cpus;
-		else
-			alloc_cpus *= cpus_per_node;
-	}
+
 	idle_cpus = node_ptr->cpus - alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
 			 sizeof(tmp_used_cpus), UNIT_NONE, NO_VAL,
@@ -577,8 +559,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &err_cpus);
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		err_cpus *= cpus_per_node;
+
 	idle_cpus -= err_cpus;
 	convert_num_unit((float)err_cpus, tmp_err_cpus, sizeof(tmp_err_cpus),
 			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
@@ -787,10 +768,7 @@ need_refresh:
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
 
-			if (cluster_flags & CLUSTER_FLAG_BG)
-				temp = "MIDPLANE NOT FOUND\n";
-			else
-				temp = "NODE NOT FOUND\n";
+			temp = "NODE NOT FOUND\n";
 			/* only time this will be run so no update */
 			model = gtk_tree_view_get_model(treeview);
 			add_display_treestore_line(0,
@@ -1063,14 +1041,6 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				SELECT_NODEDATA_SUBCNT,
 				NODE_STATE_ALLOCATED,
 				&alloc_cpus);
-			if (cluster_flags & CLUSTER_FLAG_BG) {
-				if (!alloc_cpus
-				    && (IS_NODE_ALLOCATED(node_ptr)
-					|| IS_NODE_COMPLETING(node_ptr)))
-					alloc_cpus = node_ptr->cpus;
-				else
-					alloc_cpus *= cpus_per_node;
-			}
 			idle_cpus -= alloc_cpus;
 
 			slurm_get_select_nodeinfo(
@@ -1078,8 +1048,6 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				SELECT_NODEDATA_SUBCNT,
 				NODE_STATE_ERROR,
 				&err_cpus);
-			if (cluster_flags & CLUSTER_FLAG_BG)
-				err_cpus *= cpus_per_node;
 
 			idle_cpus -= err_cpus;
 
@@ -2017,34 +1985,28 @@ extern void popup_all_node_name(char *name, int id, char *cluster_name)
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
-	char *node;
-
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		node = "Midplane";
-	else
-		node = "Node";
 
 	switch(id) {
 	case JOB_PAGE:
-		snprintf(title, 100, "Job(s) with %s %s", node, name);
+		snprintf(title, 100, "Job(s) with Node %s", name);
 		break;
 	case PART_PAGE:
-		snprintf(title, 100, "Partition(s) with %s %s", node, name);
+		snprintf(title, 100, "Partition(s) with Node %s", name);
 		break;
 	case RESV_PAGE:
-		snprintf(title, 100, "Reservation(s) with %s %s", node, name);
+		snprintf(title, 100, "Reservation(s) with Node %s", name);
 		break;
 	case BLOCK_PAGE:
-		snprintf(title, 100, "Blocks(s) with %s %s", node, name);
+		snprintf(title, 100, "Blocks(s) with Node %s", name);
 		break;
 	case SUBMIT_PAGE:
-		snprintf(title, 100, "Submit job on %s %s", node, name);
+		snprintf(title, 100, "Submit job on Node %s", name);
 		break;
 	case INFO_PAGE:
-		snprintf(title, 100, "Full Info for %s %s", node, name);
+		snprintf(title, 100, "Full Info for Node %s", name);
 		break;
 	default:
-		g_print("%s got %d\n", node, id);
+		g_print("Node got %d\n", id);
 	}
 
 	if (cluster_name && federation_name &&
@@ -2197,13 +2159,7 @@ extern void cluster_change_node(void)
 	while (display_data++) {
 		if (display_data->id == -1)
 			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
-			case SORTID_RACK_MP:
-				display_data->name = "RackMidplane";
-				break;
-			}
-		} else if (cluster_flags & CLUSTER_FLAG_FED) {
+		if (cluster_flags & CLUSTER_FLAG_FED) {
 			switch(display_data->id) {
 			case SORTID_CLUSTER_NAME:
 				display_data->show = true;
