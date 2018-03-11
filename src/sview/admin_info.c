@@ -97,8 +97,6 @@ extern void row_clicked_admin(GtkTreeView *tree_view,
 			      GtkTreeViewColumn *column,
 			      gpointer user_data)
 {
-	/* job_info_msg_t *job_info_ptr = (job_info_msg_t *)user_data; */
-/* 	job_info_t *job_ptr = NULL; */
 	int line = get_row_number(tree_view, path);
 	GtkWidget *popup = NULL;
 	GtkWidget *label = NULL;
@@ -107,13 +105,6 @@ extern void row_clicked_admin(GtkTreeView *tree_view,
 		g_error("problem getting line number");
 		return;
 	}
-
-/* 	part_ptr = &new_part_ptr->partition_array[line]; */
-	/* if (!(info = slurm_sprint_partition_info(part_ptr, 0))) { */
-/* 		info = xmalloc(100); */
-/* 		sprintf(info, "Problem getting partition info for %s",  */
-/* 			part_ptr->name); */
-/* 	}  */
 
 	popup = gtk_dialog_new();
 
