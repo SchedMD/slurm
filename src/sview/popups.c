@@ -72,12 +72,6 @@ void _search_entry(sview_search_info_t *sview_search_info)
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 	char *upper = NULL, *lower = NULL;
-	char *type;
-
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		type = "Midplane";
-	else
-		type = "Node";
 
 	if (sview_search_info->int_data == NO_VAL &&
 	    (!sview_search_info->gchar_data
@@ -139,15 +133,14 @@ void _search_entry(sview_search_info_t *sview_search_info)
 		break;
 	case SEARCH_NODE_NAME:
 		id = NODE_PAGE;
-		snprintf(title, 100, "%s(s) %s info",
-			 type, sview_search_info->gchar_data);
+		snprintf(title, 100, "Node(s) %s info",
+			 sview_search_info->gchar_data);
 		break;
 	case SEARCH_NODE_STATE:
 		id = NODE_PAGE;
 		upper = node_state_string(sview_search_info->int_data);
 		lower = str_tolower(upper);
-		snprintf(title, 100, "%s(s) in the %s state",
-			 type, lower);
+		snprintf(title, 100, "Node(s) in the %s state", lower);
 		xfree(lower);
 
 		break;
