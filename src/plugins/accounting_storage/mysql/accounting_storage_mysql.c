@@ -868,7 +868,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			"(%ld, %d, 0, 'vmem'), "
 			"(%ld, %d, 0, 'pages'), "
 			"(%ld, %d, 1, 'dynamic_offset') "
-			"on duplicate key update deleted=VALUES(deleted), type=VALUES(type);",
+			"on duplicate key update deleted=VALUES(deleted), type=VALUES(type), id=VALUES(id);",
 			tres_table,
 			now, TRES_CPU,
 			now, TRES_MEM,
@@ -889,7 +889,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		query = xstrdup_printf(
 			"insert into %s (creation_time, id, deleted, type, name) values "
 			"(%ld, %d, 0, 'fs', 'disk') "
-			"on duplicate key update deleted=VALUES(deleted), type=VALUES(type), name=VALUES(name);",
+			"on duplicate key update deleted=VALUES(deleted), type=VALUES(type), name=VALUES(name), id=VALUES(id);",
 			tres_table,
 			now, TRES_FS_DISK);
 		if (debug_flags & DEBUG_FLAG_DB_TRES)
