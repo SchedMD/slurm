@@ -759,7 +759,8 @@ no_rollup_change:
 		if (work_dir)
 			xstrfmtcat(query, "work_dir='%s', ", work_dir);
 
-		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
+		xstrfmtcat(query, "time_start=%ld, job_name='%s', "
+			   "state=greatest(state, %u), "
 			   "nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_resv=%u, "
 			   "timelimit=%u, mem_req=%"PRIu64", "
