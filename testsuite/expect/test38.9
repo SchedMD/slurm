@@ -250,6 +250,7 @@ set matches 0
 send "$srun --mpi=none --pack-group=0-3 printenv SLURMD_NODENAME\r"
 expect {
 	-re "srun: error: Attempt to run a job step with pack group value of 3, but the job allocation has maximum value of 2" {
+		send_user "Error is expected, no worries.\n\n"
 		incr matches
 		exp_continue
 	}
@@ -270,6 +271,7 @@ set matches 0
 send "$srun --mpi=none --pack-group=0,5 printenv SLURMD_NODENAME\r"
 expect {
 	-re "srun: error: Attempt to run a job step with pack group value of 5, but the job allocation has maximum value of 2" {
+		send_user "Error is expected, no worries.\n\n"
 		incr matches
 		exp_continue
 	}
@@ -290,6 +292,7 @@ set matches 0
 send "$srun --mpi=none --pack-group=0 printenv SLURMD_NODENAME : --pack-group=0 env\r"
 expect {
 	-re "srun: fatal: Duplicate pack groups in single srun not supported" {
+		send_user "Error is expected, no worries.\n\n"
 		incr matches
 		exp_continue
 	}
