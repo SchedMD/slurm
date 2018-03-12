@@ -831,7 +831,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\
      -t <time_format>: Second, Minute, Hour, Percent, SecPer, MinPer, HourPer\n\
-     -T pr --tres: comma separated list of TRES, or 'ALL' for all TRES     \n\
+     -T or --tres: comma separated list of TRES, or 'ALL' for all TRES     \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\

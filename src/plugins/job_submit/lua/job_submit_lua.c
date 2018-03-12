@@ -57,6 +57,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/xlua.h"
+#include "src/common/uid.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/reservation.h"
@@ -295,6 +296,11 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushstring (L, job_ptr->account);
 	} else if (!xstrcmp(name, "admin_comment")) {
 		lua_pushstring (L, job_ptr->admin_comment);
+	} else if (!xstrcmp(name, "array_task_cnt")) {
+		if (job_ptr->array_recs)
+			lua_pushnumber (L, job_ptr->array_recs->task_cnt);
+		else
+			lua_pushnil (L);
 	} else if (!xstrcmp(name, "batch_features")) {
 		lua_pushstring (L, job_ptr->batch_features);
 	} else if (!xstrcmp(name, "burst_buffer")) {
@@ -893,6 +899,10 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->tres_per_task);
 	} else if (!xstrcmp(name, "user_id")) {
 		lua_pushnumber (L, job_desc->user_id);
+	} else if (!xstrcmp(name, "user_name")) {
+		char *username = uid_to_string_or_null(job_desc->user_id);
+		lua_pushstring (L, username);
+		xfree(username);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		lua_pushnumber (L, job_desc->wait4switch);
 	} else if (!xstrcmp(name, "work_dir")) {
@@ -1235,6 +1245,12 @@ static int _part_rec_field(const struct part_record *part_ptr,
 		lua_pushstring (L, part_ptr->allow_qos);
 	} else if (!xstrcmp(name, "default_time")) {
 		lua_pushnumber (L, part_ptr->default_time);
+	} else if (!xstrcmp(name, "def_mem_per_cpu") &&
+		  (part_ptr->def_mem_per_cpu & MEM_PER_CPU)) {
+		lua_pushnumber (L, part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
+	} else if (!xstrcmp(name, "def_mem_per_node") &&
+		  !(part_ptr->def_mem_per_cpu & MEM_PER_CPU)) {
+		lua_pushnumber (L, part_ptr->def_mem_per_cpu);
 	} else if (!xstrcmp(name, "flag_default")) {
 		int is_default = 0;
 		if (part_ptr->flags & PART_FLAG_DEFAULT)
@@ -1242,10 +1258,20 @@ static int _part_rec_field(const struct part_record *part_ptr,
 		lua_pushnumber (L, is_default);
 	} else if (!xstrcmp(name, "flags")) {
 		lua_pushnumber (L, part_ptr->flags);
+	} else if (!xstrcmp(name, "max_cpus_per_node")) {
+		lua_pushnumber (L, part_ptr->max_cpus_per_node);
+	} else if (!xstrcmp(name, "max_mem_per_cpu") &&
+		  (part_ptr->max_mem_per_cpu & MEM_PER_CPU)) {
+		lua_pushnumber (L, part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
+	} else if (!xstrcmp(name, "max_mem_per_node") &&
+		  !(part_ptr->max_mem_per_cpu & MEM_PER_CPU)) {
+		lua_pushnumber (L, part_ptr->max_mem_per_cpu);
 	} else if (!xstrcmp(name, "max_nodes")) {
 		lua_pushnumber (L, part_ptr->max_nodes);
 	} else if (!xstrcmp(name, "max_nodes_orig")) {
 		lua_pushnumber (L, part_ptr->max_nodes_orig);
+	} else if (!xstrcmp(name, "max_share")) {
+		lua_pushnumber (L, part_ptr->max_share);
 	} else if (!xstrcmp(name, "max_time")) {
 		lua_pushnumber (L, part_ptr->max_time);
 	} else if (!xstrcmp(name, "min_nodes")) {
@@ -1479,6 +1505,8 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "NO_VAL16");
 	lua_pushnumber (L, NO_VAL8);
 	lua_setfield (L, -2, "NO_VAL8");
+	lua_pushnumber (L, SHARED_FORCE);
+	lua_setfield (L, -2, "SHARED_FORCE");
 
 	/*
 	 * job_desc bitflags
