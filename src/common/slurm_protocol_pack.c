@@ -10007,19 +10007,25 @@ static void _pack_node_reg_resp(
 	slurm_node_reg_resp_msg_t *msg,
 	Buf buffer, uint16_t protocol_version)
 {
+	List pack_list;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
-		/*
-		 * We ignore the list sent in, at the time of writing we always
-		 * want the assoc_mgr_tres_list.
-		 */
-		assoc_mgr_lock(&locks);
-		(void)slurm_pack_list(assoc_mgr_tres_list,
+		if (msg && msg->tres_list)
+			pack_list = msg->tres_list;
+		else
+			pack_list = assoc_mgr_tres_list;
+
+		if (pack_list == assoc_mgr_tres_list)
+			assoc_mgr_lock(&locks);
+
+		(void)slurm_pack_list(pack_list,
 				      slurmdb_pack_tres_rec, buffer,
 				      protocol_version);
-		assoc_mgr_unlock(&locks);
+
+		if (pack_list == assoc_mgr_tres_list)
+			assoc_mgr_unlock(&locks);
 	}
 }
 
