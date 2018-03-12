@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     tres-per-node, tres-per-socket, tres-per-task, cpus-per-tres, mem-per-tres,
     tres-bind and tres-freq. These new parameters are not currently used, but
     have been added to the appropriate RPCs.
+ -- Fix for setting always the correct status on job update in mysql
 
 * Changes in Slurm 18.08.0pre1
 ==============================
