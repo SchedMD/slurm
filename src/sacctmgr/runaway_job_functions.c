@@ -197,8 +197,7 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 	List runaway_jobs = NULL;
 	List cluster_list;
 
-	job_cond->without_steps = 1;
-	job_cond->without_usage_truncation = 1;
+	job_cond->flags |= JOBCOND_FLAG_RUNAWAY;
 	job_cond->state_list = list_create(slurm_destroy_char);
 	slurm_addto_char_list(job_cond->state_list, "0");
 	slurm_addto_char_list(job_cond->state_list, "1");

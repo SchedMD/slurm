@@ -47,7 +47,7 @@ my $conf = $slurm->load_ctl_conf();
 my $clustername = $conf->{'cluster_name'};
 
 my %job_cond = ();
-$job_cond{without_usage_truncation} = 1;
+$job_cond{flags} = JOBCOND_FLAG_NO_TRUNC;
 $job_cond{cluster_list} = [$clustername];
 $job_cond{step_list} = $jobid_arg;
 $job_cond{usage_start} = 0;

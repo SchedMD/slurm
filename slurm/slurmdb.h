@@ -168,6 +168,14 @@ enum cluster_fed_states {
 /* flags and types of resources */
 /* when we come up with some */
 
+/* Slurm job condition flags */
+#define JOBCOND_FLAG_DUP      0x00000001 /* Report duplicate job entries */
+#define JOBCOND_FLAG_NO_STEP  0x00000002 /* Don't report job step info */
+#define JOBCOND_FLAG_NO_TRUNC 0x00000004 /* Report info. without truncating
+					  * the time to the usage_start and
+					  * usage_end */
+#define JOBCOND_FLAG_RUNAWAY  0x00000008 /* Report runaway jobs only */
+
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
 					    * of units */
@@ -270,8 +278,8 @@ typedef struct {
 	List cluster_list;	/* list of char * */
 	uint32_t cpus_max;      /* number of cpus high range */
 	uint32_t cpus_min;      /* number of cpus low range */
-	uint16_t duplicates;    /* report duplicate job entries */
 	int32_t exitcode;       /* exit code of job */
+	uint32_t flags;         /* Reporting flags*/
 	List format_list; 	/* list of char * */
 	List groupid_list;	/* list of char * */
 	List jobname_list;	/* list of char * */
@@ -290,11 +298,6 @@ typedef struct {
 	char *used_nodes;       /* a ranged node string where jobs ran */
 	List userid_list;	/* list of char * */
 	List wckey_list;	/* list of char * */
-	uint16_t without_steps; /* don't give me step info */
-	uint16_t without_usage_truncation; /* give me the information
-					    * without truncating the
-					    * time to the usage_start
-					    * and usage_end */
 } slurmdb_job_cond_t;
 
 /* slurmdb_stats_t needs to be defined before slurmdb_job_rec_t and

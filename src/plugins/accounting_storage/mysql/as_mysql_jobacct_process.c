@@ -460,6 +460,14 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			       job_fields, cluster_name, job_table,
 			       cluster_name, assoc_table,
 			       cluster_name, resv_table);
+
+	if (job_cond->flags & JOBCOND_FLAG_RUNAWAY) {
+		if (extra)
+			xstrcat(extra, " && (t1.time_end=0)");
+		else
+			xstrcat(extra, " where (t1.time_end=0)");
+	}
+
 	if (extra) {
 		xstrcat(query, extra);
 		xfree(extra);
@@ -504,7 +512,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		curr_id = slurm_atoul(row[JOB_REQ_JOBID]);
 
-		if (job_cond && !job_cond->duplicates
+		if (job_cond && !(job_cond->flags & JOBCOND_FLAG_DUP)
 		    && (curr_id == last_id)
 		    && (slurm_atoul(row[JOB_REQ_STATE]) != JOB_RESIZING))
 			continue;
@@ -603,7 +611,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				job->start = job->end;
 		}
 
-		if (job_cond && !job_cond->without_usage_truncation
+		if (job_cond && !(job_cond->flags & JOBCOND_FLAG_NO_TRUNC)
 		    && job_cond->usage_start) {
 			if (job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
@@ -733,7 +741,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		if (row[JOB_REQ_TRESR])
 			job->tres_req_str = xstrdup(row[JOB_REQ_TRESR]);
 
-		if (only_pending || (job_cond && job_cond->without_steps))
+		if (only_pending ||
+		    (job_cond &&
+		     (job_cond->flags & (JOBCOND_FLAG_NO_STEP |
+					 JOBCOND_FLAG_RUNAWAY))))
 			goto skip_steps;
 
 		if (job_cond && job_cond->step_list
@@ -846,7 +857,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				step->state = job->state;
 			}
 
-			if (job_cond && !job_cond->without_usage_truncation
+			if (job_cond &&
+			    !(job_cond->flags & JOBCOND_FLAG_NO_TRUNC)
 			    && job_cond->usage_start) {
 				if (step->start
 				    && (step->start < job_cond->usage_start))
@@ -1241,7 +1253,7 @@ no_resv:
 	}
 
 	/* Don't show revoked sibling federated jobs w/out -D */
-	if (!job_cond->duplicates)
+	if (!(job_cond->flags & JOBCOND_FLAG_DUP))
 		xstrfmtcat(*extra, " %s (state != %d)",
 			   *extra ? "&&" : "where",
 			   JOB_REVOKED);
@@ -1257,7 +1269,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	char *object = NULL;
 	slurmdb_selected_step_t *selected_step = NULL;
 
-	if (!job_cond)
+	if (!job_cond || (job_cond->flags & JOBCOND_FLAG_RUNAWAY))
 		return 0;
 
 	if (job_cond->acct_list && list_count(job_cond->acct_list)) {

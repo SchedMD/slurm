@@ -449,7 +449,7 @@ static void _init_params(void)
 {
 	memset(&params, 0, sizeof(sacct_parameters_t));
 	params.job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
-	params.job_cond->without_usage_truncation = 1;
+	params.job_cond->flags |= JOBCOND_FLAG_NO_TRUNC;
 	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
 	params.units = NO_VAL;
 }
@@ -569,7 +569,7 @@ extern int get_data(void)
 	 * one cluster but not when jobs for multiple clusters are requested.
 	 * Remove the current job if there were jobs with the same id submitted
 	 * in the future. */
-	if (params.cluster_name && !params.opt_dup)
+	if (params.cluster_name && !(job_cond->flags & JOBCOND_FLAG_DUP))
 	    _remove_duplicate_fed_jobs(jobs);
 
 	itr = list_iterator_create(jobs);
@@ -737,7 +737,7 @@ extern void parse_command_line(int argc, char **argv)
 			slurm_addto_char_list(job_cond->cluster_list, optarg);
 			break;
 		case 'D':
-			params.opt_dup = 1;
+			job_cond->flags |= JOBCOND_FLAG_DUP;
 			break;
 		case 'e':
 			params.opt_help = 2;
@@ -900,7 +900,7 @@ extern void parse_command_line(int argc, char **argv)
 				exit(1);
 			break;
 		case 'T':
-			job_cond->without_usage_truncation = 0;
+			job_cond->flags &= ~JOBCOND_FLAG_NO_TRUNC;
 			break;
 		case 'U':
 			params.opt_help = 3;
@@ -939,7 +939,7 @@ extern void parse_command_line(int argc, char **argv)
 		case 't':
 			/* 't' is deprecated and was replaced with 'X'.	*/
 		case 'X':
-			params.opt_allocs = 1;
+			job_cond->flags |= JOBCOND_FLAG_NO_STEP;
 			break;
 		case ':':
 		case '?':	/* getopt() has explained it */
@@ -952,14 +952,6 @@ extern void parse_command_line(int argc, char **argv)
 		opts.prefix_level = 1;
 		log_alter(opts, 0, NULL);
 	}
-
-
-	/* Now set params.opt_dup, unless they've already done so */
-	if (params.opt_dup < 0)	/* not already set explicitly */
-		params.opt_dup = 0;
-
-	job_cond->duplicates = params.opt_dup;
-	job_cond->without_steps = params.opt_allocs;
 
 	if (!job_cond->usage_start && !job_cond->step_list) {
 		struct tm start_tm;
@@ -999,12 +991,12 @@ extern void parse_command_line(int argc, char **argv)
 	      "\topt_dup=%d\n"
 	      "\topt_field_list=%s\n"
 	      "\topt_help=%d\n"
-	      "\topt_allocs=%d",
+	      "\topt_no_steps=%d",
 	      params.opt_completion,
-	      params.opt_dup,
+	      job_cond->flags & JOBCOND_FLAG_DUP,
 	      params.opt_field_list,
 	      params.opt_help,
-	      params.opt_allocs);
+	      job_cond->flags & JOBCOND_FLAG_NO_STEP);
 
 	if (params.opt_completion) {
 		slurmdb_jobcomp_init(params.opt_filein);
@@ -1328,6 +1320,7 @@ extern void do_list(void)
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
 	char *ave_usage_tmp = NULL;
+	slurmdb_job_cond_t *job_cond = params.job_cond;
 
 	if (!jobs)
 		return;
@@ -1354,7 +1347,7 @@ extern void do_list(void)
 		if (job->show_full)
 			print_fields(JOB, job);
 
-		if (!params.opt_allocs
+		if (!(job_cond->flags & JOBCOND_FLAG_NO_STEP)
 		    && (job->track_steps || !job->show_full)) {
 			itr_step = list_iterator_create(job->steps);
 			while ((step = list_next(itr_step))) {

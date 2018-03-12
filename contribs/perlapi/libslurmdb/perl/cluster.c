@@ -141,16 +141,14 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
 
     job_cond->cpus_max = 0;
     job_cond->cpus_min = 0;
-    job_cond->duplicates = 0;
+    job_cond->flags = 0;
     job_cond->nodes_max = 0;
     job_cond->nodes_min = 0;
     job_cond->used_nodes = NULL;
-    job_cond->without_steps = 0;
-    job_cond->without_usage_truncation = 0;
 
     FETCH_FIELD(hv, job_cond, cpus_max,                 uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, cpus_min,                 uint32_t, FALSE);
-    FETCH_FIELD(hv, job_cond, duplicates,               uint16_t, FALSE);
+    FETCH_FIELD(hv, job_cond, flags,                    uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, exitcode,                 int32_t, FALSE);
     FETCH_FIELD(hv, job_cond, nodes_max,                uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, nodes_min,                uint32_t, FALSE);
@@ -159,8 +157,6 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
     FETCH_FIELD(hv, job_cond, usage_end,                time_t, FALSE);
     FETCH_FIELD(hv, job_cond, usage_start,              time_t, FALSE);
     FETCH_FIELD(hv, job_cond, used_nodes,               charp, FALSE);
-    FETCH_FIELD(hv, job_cond, without_steps,            uint16_t, FALSE);
-    FETCH_FIELD(hv, job_cond, without_usage_truncation, uint16_t, FALSE);
 
     FETCH_LIST_FIELD(hv, job_cond, acct_list);
     FETCH_LIST_FIELD(hv, job_cond, associd_list);

@@ -185,11 +185,9 @@ typedef enum {
 
 typedef struct {
 	char *cluster_name;	/* Set if in federated cluster */
-	int opt_allocs;		/* --total */
 	uint32_t convert_flags;	/* --noconvert */
 	slurmdb_job_cond_t *job_cond;
 	int opt_completion;	/* --completion */
-	int opt_dup;		/* --duplicates; +1 = explicitly set */
 	bool opt_federation;	/* --federation */
 	char *opt_field_list;	/* --fields= */
 	char *opt_filein;	/* --file */

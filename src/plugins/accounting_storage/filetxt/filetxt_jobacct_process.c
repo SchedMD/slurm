@@ -935,7 +935,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	filein = slurm_get_accounting_storage_loc();
 
 	if (job_cond) {
-		if (!job_cond->duplicates)
+		if (!(job_cond->flags & JOBCOND_FLAG_DUP))
 			itr2 = list_iterator_create(ret_job_list);
 	}
 

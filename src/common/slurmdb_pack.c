@@ -5080,8 +5080,8 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);	/* count(cluster_list) */
 			pack32(0, buffer);	/* cpus_max */
 			pack32(0, buffer);	/* cpus_min */
-			pack16(0, buffer);	/* duplicates */
 			pack32(0, buffer);	/* exitcode */
+			pack32(0, buffer);	/* job cond flags */
 			pack32(NO_VAL, buffer);	/* count(format_list) */
 			pack32(NO_VAL, buffer);	/* count(groupid_list) */
 			pack32(NO_VAL, buffer);	/* count(jobname_list) */
@@ -5100,8 +5100,6 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			packnull(buffer);	/* used_nodes */
 			pack32(NO_VAL, buffer);	/* count(userid_list) */
 			pack32(NO_VAL, buffer);	/* count(wckey_list) */
-			pack16(0, buffer);	/* without_steps */
-			pack16(0, buffer);	/* without_usage_truncation */
 			return;
 		}
 
@@ -5145,8 +5143,8 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
-		pack16(object->duplicates, buffer);
 		pack32((uint32_t)object->exitcode, buffer);
+		pack32(object->flags, buffer);
 
 		count = _list_count_null(object->format_list);
 		pack32(count, buffer);
@@ -5299,9 +5297,6 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
-
-		pack16(object->without_steps, buffer);
-		pack16(object->without_usage_truncation, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);	/* count(acct_list) */
@@ -5374,7 +5369,12 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
-		pack16(object->duplicates, buffer);
+
+		if (object->flags & JOBCOND_FLAG_DUP)
+			pack16(1, buffer);
+		else
+			pack16(0, buffer);
+
 		pack32((uint32_t)object->exitcode, buffer);
 
 		count = _list_count_null(object->format_list);
@@ -5529,8 +5529,15 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			list_iterator_destroy(itr);
 		}
 
-		pack16(object->without_steps, buffer);
-		pack16(object->without_usage_truncation, buffer);
+		if (object->flags & JOBCOND_FLAG_NO_STEP)
+			pack16(1, buffer);
+		else
+			pack16(0, buffer);
+
+		if (object->flags & JOBCOND_FLAG_NO_TRUNC)
+			pack16(1, buffer);
+		else
+			pack16(0, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);	/* count(acct_list) */
@@ -5602,7 +5609,12 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
-		pack16(object->duplicates, buffer);
+
+		if (object->flags & JOBCOND_FLAG_DUP)
+			pack16(1, buffer);
+		else
+			pack16(0, buffer);
+
 		pack32((uint32_t)object->exitcode, buffer);
 
 		if (object->groupid_list)
@@ -5747,8 +5759,15 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			list_iterator_destroy(itr);
 		}
 
-		pack16(object->without_steps, buffer);
-		pack16(object->without_usage_truncation, buffer);
+		if (object->flags & JOBCOND_FLAG_NO_STEP)
+			pack16(1, buffer);
+		else
+			pack16(0, buffer);
+
+		if (object->flags & JOBCOND_FLAG_NO_TRUNC)
+			pack16(1, buffer);
+		else
+			pack16(0, buffer);
 	}
 }
 
@@ -5756,6 +5775,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 				   Buf buffer)
 {
 	uint32_t uint32_tmp;
+	uint16_t uint16_tmp;
 	int i;
 	uint32_t count;
 	slurmdb_job_cond_t *object_ptr = xmalloc(sizeof(slurmdb_job_cond_t));
@@ -5805,9 +5825,9 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&object_ptr->cpus_max, buffer);
 		safe_unpack32(&object_ptr->cpus_min, buffer);
-		safe_unpack16(&object_ptr->duplicates, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		object_ptr->exitcode = (int32_t)uint32_tmp;
+		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
@@ -5976,9 +5996,6 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 				list_append(object_ptr->wckey_list, tmp_info);
 			}
 		}
-
-		safe_unpack16(&object_ptr->without_steps, buffer);
-		safe_unpack16(&object_ptr->without_usage_truncation, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
@@ -6020,7 +6037,11 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&object_ptr->cpus_max, buffer);
 		safe_unpack32(&object_ptr->cpus_min, buffer);
-		safe_unpack16(&object_ptr->duplicates, buffer);
+
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp)
+			object_ptr->flags |= JOBCOND_FLAG_DUP;
+
 		safe_unpack32(&uint32_tmp, buffer);
 		object_ptr->exitcode = (int32_t)uint32_tmp;
 
@@ -6192,8 +6213,13 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 			}
 		}
 
-		safe_unpack16(&object_ptr->without_steps, buffer);
-		safe_unpack16(&object_ptr->without_usage_truncation, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp)
+			object_ptr->flags |= JOBCOND_FLAG_NO_STEP;
+
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp)
+			object_ptr->flags |= JOBCOND_FLAG_NO_TRUNC;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
@@ -6235,7 +6261,11 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&object_ptr->cpus_max, buffer);
 		safe_unpack32(&object_ptr->cpus_min, buffer);
-		safe_unpack16(&object_ptr->duplicates, buffer);
+
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp)
+			object_ptr->flags |= JOBCOND_FLAG_DUP;
+
 		safe_unpack32(&uint32_tmp, buffer);
 		object_ptr->exitcode = (int32_t)uint32_tmp;
 
@@ -6394,8 +6424,13 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 			}
 		}
 
-		safe_unpack16(&object_ptr->without_steps, buffer);
-		safe_unpack16(&object_ptr->without_usage_truncation, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp)
+			object_ptr->flags |= JOBCOND_FLAG_NO_STEP;
+
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp)
+			object_ptr->flags |= JOBCOND_FLAG_NO_TRUNC;
 	}
 
 	return SLURM_SUCCESS;

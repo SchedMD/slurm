@@ -571,6 +571,20 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =back
 
+=head3 Job Condition Flags
+
+=over 2
+
+=item * JOBCOND_FLAG_DUP         0x00000001
+
+=item * JOBCOND_FLAG_NO_STEP     0x00000002
+
+=item * JOBCOND_FLAG_NO_TRUNC    0x00000004
+
+=item * JOBCOND_FLAG_RUNAWAY     0x00000008
+
+=back
+
 =head3 Connection type
 
 =over 2
