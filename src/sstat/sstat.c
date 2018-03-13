@@ -200,7 +200,11 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 		}
 	}
 	list_iterator_destroy(itr);
-	jobacctinfo_2_stats(&step.stats, total_jobacct);
+
+	if (total_jobacct) {
+		jobacctinfo_2_stats(&step.stats, total_jobacct);
+		jobacctinfo_destroy(total_jobacct);
+	}
 
 	slurm_job_step_pids_response_msg_free(step_stat_response);
 	/* we printed it out already */
