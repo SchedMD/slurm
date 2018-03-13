@@ -1659,7 +1659,6 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	List current_assocs = NULL;
 	uid_t uid = getuid();
 	ListIterator curr_itr = NULL;
-	ListIterator assoc_mgr_itr = NULL;
 	slurmdb_assoc_rec_t *curr_assoc = NULL, *assoc = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				   READ_LOCK, WRITE_LOCK, NO_LOCK };
@@ -1703,17 +1702,15 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	}
 
 	curr_itr = list_iterator_create(current_assocs);
-	assoc_mgr_itr = list_iterator_create(assoc_mgr_assoc_list);
 
 	/* add used limits We only look for the user associations to
 	 * do the parents since a parent may have moved */
 	while ((curr_assoc = list_next(curr_itr))) {
 		if (!curr_assoc->user)
 			continue;
-		while ((assoc = list_next(assoc_mgr_itr))) {
-			if (assoc->id == curr_assoc->id)
-				break;
-		}
+
+		if (!(assoc = _find_assoc_rec_id(curr_assoc->id)))
+			continue;
 
 		while (assoc) {
 			_addto_used_info(assoc, curr_assoc);
@@ -1721,11 +1718,9 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 			   different than the one we are updating from */
 			assoc = assoc->usage->parent_assoc_ptr;
 		}
-		list_iterator_reset(assoc_mgr_itr);
 	}
 
 	list_iterator_destroy(curr_itr);
-	list_iterator_destroy(assoc_mgr_itr);
 
 	assoc_mgr_unlock(&locks);
 
