@@ -3896,6 +3896,17 @@ extern int slurmdb_find_qos_in_list_by_name(void *x, void *key)
 	return 0;
 }
 
+extern int slurmdb_find_qos_in_list(void *x, void *key)
+{
+	slurmdb_qos_rec_t *qos_rec = (slurmdb_qos_rec_t *)x;
+	uint32_t qos_id = *(uint32_t *)key;
+
+	if (qos_rec->id == qos_id)
+		return 1;
+
+	return 0;
+}
+
 extern int slurmdb_find_selected_step_in_list(void *x, void *key)
 {
 	slurmdb_selected_step_t *selected_step = (slurmdb_selected_step_t *)x;
