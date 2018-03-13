@@ -110,6 +110,15 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 	if (spank_getenv(sp, "SYSTEM", val, sizeof(val)) == ESPANK_SUCCESS)
 		spank_setenv(sp, "PBS_O_SYSTEM", val, 1);
 
+	if (spank_getenv(sp, "SLURM_JOB_NUM_NODES", val, sizeof(val)) == ESPANK_SUCCESS)
+		spank_setenv(sp, "PBS_NUM_NODES", val, 1);
+
+	if (spank_getenv(sp, "SLURM_NTASKS", val, sizeof(val)) == ESPANK_SUCCESS)
+		spank_setenv(sp, "PBS_NP", val, 1);
+
+	if (spank_getenv(sp, "SLURM_NTASKS_PER_NODE", val, sizeof(val)) == ESPANK_SUCCESS)
+		spank_setenv(sp, "PBS_NUM_PPN", val, 1);
+
 	if (spank_getenv(sp, "SLURM_SUBMIT_DIR", val, sizeof(val)) ==
 	    ESPANK_SUCCESS)
 		spank_setenv(sp, "PBS_O_WORKDIR", val, 1);
