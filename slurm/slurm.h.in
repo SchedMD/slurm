@@ -2291,6 +2291,13 @@ typedef struct acct_gather_energy_req_msg {
 	uint16_t delta;
 } acct_gather_energy_req_msg_t;
 
+#define JOB_DEF_CPU_PER_GPU	0x0001
+#define JOB_DEF_MEM_PER_GPU	0x0002
+typedef struct job_defaults {
+	uint16_t type;	/* See JOB_DEF_* above */
+	uint64_t value;	/* Value */
+} job_defaults_t;
+
 /* Current partition state information and used to set partition options
  * using slurm_update_partition(). */
 #define PART_FLAG_DEFAULT	0x0001	/* Set if default partition */
@@ -2334,6 +2341,7 @@ typedef struct partition_info {
 	char *deny_qos;		/* comma delimited list of denied qos */
 	uint16_t flags;		/* see PART_FLAG_* above */
 	uint32_t grace_time; 	/* preemption grace time in seconds */
+	List job_defaults_list;	/* List of job_defaults_t elements */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
 	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint32_t max_nodes;	/* per job or INFINITE */
@@ -2834,6 +2842,7 @@ typedef struct slurm_ctl_conf {
 	char *job_container_plugin; /* job container plugin type */
 	char *job_credential_private_key;	/* path to private key */
 	char *job_credential_public_certificate;/* path to public certificate*/
+	List job_defaults_list;	/* List of job_defaults_t elements */
 	uint16_t job_file_append; /* if set, append to stdout/err file */
 	uint16_t job_requeue;	/* If set, jobs get requeued on node failre */
 	char *job_submit_plugins;  /* List of job_submit plugins to use */

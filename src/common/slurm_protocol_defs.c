@@ -3765,13 +3765,14 @@ extern void slurm_free_partition_info_members(partition_info_t * part)
 	if (part) {
 		xfree(part->allow_alloc_nodes);
 		xfree(part->allow_accounts);
-		xfree(part->cluster_name);
 		xfree(part->allow_groups);
 		xfree(part->allow_qos);
 		xfree(part->alternate);
 		xfree(part->billing_weights_str);
+		xfree(part->cluster_name);
 		xfree(part->deny_accounts);
 		xfree(part->deny_qos);
+		FREE_NULL_LIST(part->job_defaults_list);
 		xfree(part->name);
 		xfree(part->nodes);
 		xfree(part->node_inx);

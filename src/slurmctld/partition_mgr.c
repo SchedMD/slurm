@@ -298,6 +298,8 @@ struct part_record *create_part_record(void)
 	part_ptr->name              = xstrdup("DEFAULT");
 	part_ptr->alternate         = xstrdup(default_part.alternate);
 	part_ptr->cr_type	    = default_part.cr_type;
+	part_ptr->job_defaults_list =
+			job_defaults_copy(default_part.job_defaults_list);
 	part_ptr->flags             = default_part.flags;
 	part_ptr->grace_time 	    = default_part.grace_time;
 	part_ptr->max_share         = default_part.max_share;
@@ -370,11 +372,10 @@ struct part_record *create_part_record(void)
 		}
 	}
 
-	if (default_part.allow_alloc_nodes)
-		part_ptr->allow_alloc_nodes = xstrdup(default_part.
-						      allow_alloc_nodes);
-	else
-		part_ptr->allow_alloc_nodes = NULL;
+	if (default_part.allow_alloc_nodes) {
+		part_ptr->allow_alloc_nodes =
+			xstrdup(default_part.allow_alloc_nodes);
+	}
 
 	if (default_part.nodes)
 		part_ptr->nodes = xstrdup(default_part.nodes);
@@ -980,6 +981,7 @@ int init_part_conf(void)
 		default_part.flags |= PART_FLAG_NO_ROOT;
 	default_part.max_time       = INFINITE;
 	default_part.default_time   = NO_VAL;
+	FREE_NULL_LIST(default_part.job_defaults_list);
 	default_part.max_cpus_per_node = INFINITE;
 	default_part.max_nodes      = INFINITE;
 	default_part.max_nodes_orig = INFINITE;
@@ -1011,6 +1013,7 @@ int init_part_conf(void)
 	accounts_list_free(&default_part.deny_account_array);
 	xfree(default_part.deny_qos);
 	FREE_NULL_BITMAP(default_part.deny_qos_bitstr);
+	FREE_NULL_LIST(default_part.job_defaults_list);
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */
@@ -1058,18 +1061,18 @@ static void _list_delete_part(void *part_entry)
 	xfree(part_ptr->allow_uids);
 	xfree(part_ptr->allow_qos);
 	FREE_NULL_BITMAP(part_ptr->allow_qos_bitstr);
-	xfree(part_ptr->qos_char);
-	part_ptr->qos_ptr = NULL;
 	xfree(part_ptr->alternate);
+	xfree(part_ptr->billing_weights_str);
+	xfree(part_ptr->billing_weights);
 	xfree(part_ptr->deny_accounts);
 	accounts_list_free(&part_ptr->deny_account_array);
 	xfree(part_ptr->deny_qos);
 	FREE_NULL_BITMAP(part_ptr->deny_qos_bitstr);
+	FREE_NULL_LIST(part_ptr->job_defaults_list);
 	xfree(part_ptr->name);
 	xfree(part_ptr->nodes);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
-	xfree(part_ptr->billing_weights_str);
-	xfree(part_ptr->billing_weights);
+	xfree(part_ptr->qos_char);
 	xfree(part_ptr->tres_cnt);
 	xfree(part_ptr->tres_fmt_str);
 	xfree(part_entry);
@@ -1230,6 +1233,9 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack_bit_str_hex(part_ptr->node_bitmap, buffer);
 		packstr(part_ptr->billing_weights_str, buffer);
 		packstr(part_ptr->tres_fmt_str, buffer);
+		(void)slurm_pack_list(part_ptr->job_defaults_list,
+				      job_defaults_pack, buffer,
+				      protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;

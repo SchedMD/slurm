@@ -267,6 +267,7 @@ typedef struct slurm_conf_partition {
 	uint16_t exclusive_user; /* 1 if node allocations by user */
 	uint32_t grace_time;	/* default grace time for partition */
 	bool     hidden_flag;	/* 1 if hidden by default */
+	List job_defaults_list;	/* List of job_defaults_t elements */
 	bool     lln_flag;	/* 1 if nodes are selected in LLN order */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
 	uint16_t max_share;	/* number of jobs to gang schedule */
@@ -320,6 +321,25 @@ extern void config_test_start(void);
 
 /* Destroy a front_end record built by slurm_conf_frontend_array() */
 extern void destroy_frontend(void *ptr);
+
+/* Copy list of job_defaults_t elements */
+extern List job_defaults_copy(List in_list);
+
+/* Destroy list of job_defaults_t elements */
+extern void job_defaults_free(void *x);
+
+/*
+ * Translate list of job_defaults_t elements into a string.
+ * Return value must be released using xfree()
+ */
+extern char *job_defaults_str(List in_list);
+
+/* Pack a job_defaults_t element. Used by slurm_pack_list() */
+extern void job_defaults_pack(void *in, uint16_t protocol_version, Buf buffer);
+
+/* Unpack a job_defaults_t element. Used by slurm_pack_list() */
+extern int job_defaults_unpack(void **out, uint16_t protocol_version,
+			       Buf buffer);
 
 /*
  * list_find_frontend - find an entry in the front_end list, see list.h for

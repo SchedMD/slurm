@@ -97,6 +97,7 @@ enum {
 	SORTID_FEATURES_ACT,
 	SORTID_GRACE_TIME,
 	SORTID_HIDDEN,
+	SORTID_JOB_DEFAULTS,
 	SORTID_JOB_SIZE,
 	SORTID_MAX_CPUS_PER_NODE,
 	SORTID_MEM,
@@ -165,6 +166,8 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_NODE_STATE, "Node State", false,
 	 EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_JOB_DEFAULTS, "Job Defaults", false,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", false,
@@ -960,7 +963,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
 	sview_part_sub_t *sview_part_sub = NULL;
 	char ind_cnt[1024];
-	const char *temp_char = NULL;
+	const char *job_def_str = NULL, *temp_char = NULL;
 	uint16_t temp_uint16 = 0;
 	int i;
 	int yes_no = -1;
@@ -1074,6 +1077,11 @@ static void _layout_part_record(GtkTreeView *treeview,
 				yes_no = 1;
 			else
 				yes_no = 0;
+			break;
+		case SORTID_JOB_DEFAULTS:
+			job_def_str =
+				job_defaults_str(part_ptr->job_defaults_list);
+			temp_char = job_def_str;
 			break;
 		case SORTID_JOB_SIZE:
 			_build_min_max_32_string(time_buf, sizeof(time_buf),
@@ -1232,6 +1240,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			}
 			temp_char = NULL;
 		}
+		xfree(job_def_str);
 	}
 }
 
@@ -1245,7 +1254,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
 	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
 	char *tmp_deny_accounts, *tmp_qos_char, *tmp_exc_user;
-	char *tmp_qos, *tmp_deny_qos;
+	char *tmp_qos, *tmp_deny_qos, *job_def_str = NULL;
 	char *tmp_root, *tmp_over_subscribe, *tmp_over_time_limit, *tmp_state;
 	uint16_t tmp_preempt;
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
@@ -1309,6 +1318,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		secs2time_str(part_ptr->grace_time,
 			      tmp_grace, sizeof(tmp_grace));
 	}
+
+	job_def_str = job_defaults_str(part_ptr->job_defaults_list);
 
 	if (part_ptr->max_nodes == INFINITE)
 		snprintf(tmp_max_nodes, sizeof(tmp_max_nodes), "infinite");
@@ -1431,6 +1442,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_DENY_QOS,   tmp_deny_qos,
 			   SORTID_EXCLUSIVE_USER, tmp_exc_user,
 			   SORTID_HIDDEN,     tmp_hidden,
+			   SORTID_JOB_DEFAULTS, job_def_str,
 			   SORTID_JOB_SIZE,   tmp_size,
 			   SORTID_MAX_CPUS_PER_NODE, tmp_max_cpus_per_node,
 			   SORTID_MEM,        "",
@@ -1456,6 +1468,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_TMP_DISK,   "",
 			   SORTID_UPDATED,    1,
 			   -1);
+	xfree(job_def_str);
 
 	if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 					 &sub_iter,

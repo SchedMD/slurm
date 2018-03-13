@@ -46,6 +46,7 @@
 #include "slurm/slurmdb.h"
 
 #include "src/common/parse_time.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_selecttype_info.h"
@@ -363,7 +364,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	xstrcat(out, line_end);
 
-	/****** Line 9 ******/
+	/****** Line ******/
+	value = job_defaults_str(part_ptr->job_defaults_list);
+	xstrfmtcat(out, "JobDefaults=%s", value);
+	xfree(value);
+	xstrcat(out, line_end);
+
+	/****** Line ******/
 	if (part_ptr->def_mem_per_cpu & MEM_PER_CPU) {
 		if (part_ptr->def_mem_per_cpu == MEM_PER_CPU) {
 			xstrcat(out, "DefMemPerCPU=UNLIMITED");
@@ -374,7 +381,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	} else if (part_ptr->def_mem_per_cpu == 0) {
 		xstrcat(out, "DefMemPerNode=UNLIMITED");
 	} else {
-		xstrfmtcat(out, "DefMemPerNode=%"PRIu64"", part_ptr->def_mem_per_cpu);
+		xstrfmtcat(out, "DefMemPerNode=%"PRIu64"",
+			   part_ptr->def_mem_per_cpu);
 	}
 
 	if (part_ptr->max_mem_per_cpu & MEM_PER_CPU) {
@@ -387,7 +395,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	} else if (part_ptr->max_mem_per_cpu == 0) {
 		xstrcat(out, " MaxMemPerNode=UNLIMITED");
 	} else {
-		xstrfmtcat(out, " MaxMemPerNode=%"PRIu64"", part_ptr->max_mem_per_cpu);
+		xstrfmtcat(out, " MaxMemPerNode=%"PRIu64"",
+			   part_ptr->max_mem_per_cpu);
 	}
 
 	/****** Line 10 ******/

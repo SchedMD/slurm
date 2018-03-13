@@ -5474,6 +5474,10 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&part->tres_fmt_str, &uint32_tmp,
 				       buffer);
+		if (slurm_unpack_list(&part->job_defaults_list,
+				job_defaults_unpack, job_defaults_free,
+				buffer, protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&part->name, &uint32_tmp, buffer);
 		if (part->name == NULL)
@@ -5521,8 +5525,8 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpackstr_xmalloc(&part->tres_fmt_str, &uint32_tmp,
 				       buffer);
 	} else {
-		error("_unpack_partition_info_members: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 		goto unpack_error;
 	}
 	return SLURM_SUCCESS;
@@ -6705,6 +6709,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->job_credential_private_key, buffer);
 		packstr(build_ptr->job_credential_public_certificate, buffer);
+		(void)slurm_pack_list(build_ptr->job_defaults_list,
+				      job_defaults_pack, buffer,
+				      protocol_version);
 		pack16(build_ptr->job_file_append, buffer);
 		pack16(build_ptr->job_requeue, buffer);
 		packstr(build_ptr->job_submit_plugins, buffer);
@@ -7516,6 +7523,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->
 				       job_credential_public_certificate,
 				       &uint32_tmp, buffer);
+		if (slurm_unpack_list(&build_ptr->job_defaults_list,
+				      job_defaults_unpack, job_defaults_free,
+				      buffer,protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack16(&build_ptr->job_file_append, buffer);
 		safe_unpack16(&build_ptr->job_requeue, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->job_submit_plugins,

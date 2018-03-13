@@ -785,6 +785,8 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 		xstrdup(conf->job_credential_private_key);
 	conf_ptr->job_credential_public_certificate =
 		xstrdup(conf->job_credential_public_certificate);
+	conf_ptr->job_defaults_list   =
+		job_defaults_copy(conf->job_defaults_list);
 	conf_ptr->job_file_append     = conf->job_file_append;
 	conf_ptr->job_requeue         = conf->job_requeue;
 	conf_ptr->job_submit_plugins  = xstrdup(conf->job_submit_plugins);

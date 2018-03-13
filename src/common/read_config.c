@@ -67,6 +67,7 @@
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/hostlist.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
@@ -222,7 +223,9 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefaultStoragePort", S_P_UINT32},
 	{"DefaultStorageType", S_P_STRING},
 	{"DefaultStorageUser", S_P_STRING},
+	{"DefCPUPerGPU" , S_P_UINT64},
 	{"DefMemPerCPU", S_P_UINT64},
+	{"DefMemPerGPU" , S_P_UINT64},
 	{"DefMemPerNode", S_P_UINT64},
 	{"DisableRootJobs", S_P_BOOLEAN},
 	{"EioTimeout", S_P_UINT16},
@@ -1087,12 +1090,113 @@ int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 	}
 }
 
+/* Copy list of job_defaults_t elements */
+extern List job_defaults_copy(List in_list)
+{
+	List out_list = NULL;
+	job_defaults_t *in_default, *out_default;
+	ListIterator iter;
+
+	if (!in_list)
+		return out_list;
+
+	out_list = list_create(job_defaults_free);
+	iter = list_iterator_create(in_list);
+	while ((in_default = list_next(iter))) {
+		out_default = xmalloc(sizeof(job_defaults_t));
+		memcpy(out_default, in_default, sizeof(job_defaults_t));
+		list_append(out_list, out_default);
+	}
+	list_iterator_destroy(iter);
+
+	return out_list;
+}
+
+/* Destroy list of job_defaults_t elements */
+extern void job_defaults_free(void *x)
+{
+	xfree(x);
+}
+
+static char *_job_def_name(uint16_t type)
+{
+	static char name[32];
+
+	switch (type) {
+	case JOB_DEF_CPU_PER_GPU:
+		return "DefCpuPerGPU";
+	case JOB_DEF_MEM_PER_GPU:
+		return "DefMemPerGPU";
+	}
+	snprintf(name, sizeof(name), "Unknown(%u)", type);
+	return name;
+}
+
+/*
+ * Translate list of job_defaults_t elements into a string.
+ * Return value must be released using xfree()
+ */
+extern char *job_defaults_str(List in_list)
+{
+	job_defaults_t *in_default;
+	ListIterator iter;
+	char *out_str = NULL, *sep = "";
+
+	if (!in_list)
+		return out_str;
+
+	iter = list_iterator_create(in_list);
+	while ((in_default = list_next(iter))) {
+		xstrfmtcat(out_str, "%s%s=%"PRIu64, sep,
+			   _job_def_name(in_default->type), in_default->value);
+		sep = ",";
+	}
+	list_iterator_destroy(iter);
+
+	return out_str;
+
+}
+
+/* Pack a job_defaults_t element. Used by slurm_pack_list() */
+extern void job_defaults_pack(void *in, uint16_t protocol_version, Buf buffer)
+{
+	job_defaults_t *object = (job_defaults_t *)in;
+
+	if (!object) {
+		pack16(0, buffer);
+		pack64(0, buffer);
+		return;
+	}
+
+	pack16(object->type, buffer);
+	pack64(object->value, buffer);
+}
+
+/* Unpack a job_defaults_t element. Used by slurm_unpack_list() */
+extern int job_defaults_unpack(void **out, uint16_t protocol_version,
+			       Buf buffer)
+{
+	job_defaults_t *object = xmalloc(sizeof(job_defaults_t));
+
+	safe_unpack16(&object->type, buffer);
+	safe_unpack64(&object->value, buffer);
+	*out = object;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(object);
+	*out = NULL;
+	return SLURM_ERROR;
+}
+
 static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			       const char *key, const char *value,
 			       const char *line, char **leftover)
 {
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_partition_t *p;
+	uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0;
+	job_defaults_t *job_defaults;
 	char *cpu_bind = NULL, *tmp = NULL;
 	uint16_t tmp_16 = 0;
 	static s_p_options_t _partition_options[] = {
@@ -1102,7 +1206,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"AllowQos", S_P_STRING},
 		{"Alternate", S_P_STRING},
 		{"CpuBind", S_P_STRING},
+		{"DefCPUPerGPU" , S_P_UINT64},
 		{"DefMemPerCPU", S_P_UINT64},
+		{"DefMemPerGPU" , S_P_UINT64},
 		{"DefMemPerNode", S_P_UINT64},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
 		{"DefaultTime", S_P_STRING},
@@ -1226,6 +1332,30 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    !s_p_get_uint32(&p->max_cpus_per_node, "MaxCPUsPerNode",
 				    dflt))
 			p->max_cpus_per_node = INFINITE;
+
+
+		if (s_p_get_uint64(&def_cpu_per_gpu, "DefCPUPerGPU", tbl) ||
+		    s_p_get_uint64(&def_cpu_per_gpu, "DefCPUPerGPU", dflt)) {
+			job_defaults = xmalloc(sizeof(job_defaults_t));
+			job_defaults->type  = JOB_DEF_CPU_PER_GPU;
+			job_defaults->value = def_cpu_per_gpu;
+			if (!p->job_defaults_list) {
+				p->job_defaults_list =
+					list_create(job_defaults_free);
+			}
+			list_append(p->job_defaults_list, job_defaults);
+		}
+		if (s_p_get_uint64(&def_mem_per_gpu, "DefMemPerGPU", tbl) ||
+		    s_p_get_uint64(&def_mem_per_gpu, "DefMemPerGPU", dflt)) {
+			job_defaults = xmalloc(sizeof(job_defaults_t));
+			job_defaults->type  = JOB_DEF_CPU_PER_GPU;
+			job_defaults->value = def_mem_per_gpu;
+			if (!p->job_defaults_list) {
+				p->job_defaults_list =
+					list_create(job_defaults_free);
+			}
+			list_append(p->job_defaults_list, job_defaults);
+		}
 
 		if (!s_p_get_uint64(&p->def_mem_per_cpu, "DefMemPerNode",
 				    tbl) &&
@@ -1483,13 +1613,14 @@ static void _destroy_partitionname(void *ptr)
 	xfree(p->allow_accounts);
 	xfree(p->allow_groups);
 	xfree(p->allow_qos);
-	xfree(p->qos_char);
-	xfree(p->deny_accounts);
-	xfree(p->deny_qos);
 	xfree(p->alternate);
 	xfree(p->billing_weights_str);
+	xfree(p->deny_accounts);
+	xfree(p->deny_qos);
+	FREE_NULL_LIST(p->job_defaults_list);
 	xfree(p->name);
 	xfree(p->nodes);
+	xfree(p->qos_char);
 	xfree(ptr);
 }
 
@@ -2527,6 +2658,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_container_plugin);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
+	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
 	xfree (ctl_conf_ptr->job_submit_plugins);
 	xfree (ctl_conf_ptr->launch_params);
 	xfree (ctl_conf_ptr->launch_type);
@@ -2674,6 +2806,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_container_plugin);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
+	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
 	ctl_conf_ptr->job_file_append		= NO_VAL16;
 	ctl_conf_ptr->job_requeue		= NO_VAL16;
 	xfree(ctl_conf_ptr->job_submit_plugins);
@@ -3152,7 +3285,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	char *default_storage_loc = NULL;
 	uint32_t default_storage_port = 0;
 	uint16_t uint16_tmp;
-	uint64_t tot_prio_weight;
+	uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0, tot_prio_weight;
+	job_defaults_t *job_defaults;
 	int i, j;
 
 	if (!s_p_get_uint16(&conf->batch_start_timeout, "BatchStartTimeout",
@@ -3324,6 +3458,28 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else if (!s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerNode",
 				 hashtbl))
 		conf->def_mem_per_cpu = DEFAULT_MEM_PER_CPU;
+
+	if (s_p_get_uint64(&def_cpu_per_gpu, "DefCPUPerGPU", hashtbl)) {
+		job_defaults = xmalloc(sizeof(job_defaults_t));
+		job_defaults->type  = JOB_DEF_CPU_PER_GPU;
+		job_defaults->value = def_cpu_per_gpu;
+		if (!conf->job_defaults_list) {
+			conf->job_defaults_list =
+				list_create(job_defaults_free);
+		}
+		list_append(conf->job_defaults_list, job_defaults);
+	}
+
+	if (s_p_get_uint64(&def_mem_per_gpu, "DefMemPerGPU", hashtbl)) {
+		job_defaults = xmalloc(sizeof(job_defaults_t));
+		job_defaults->type  = JOB_DEF_MEM_PER_GPU;
+		job_defaults->value = def_mem_per_gpu;
+		if (!conf->job_defaults_list) {
+			conf->job_defaults_list =
+				list_create(job_defaults_free);
+		}
+		list_append(conf->job_defaults_list, job_defaults);
+	}
 
 	if (s_p_get_string(&temp_str, "DebugFlags", hashtbl)) {
 		if (debug_str2flags(temp_str, &conf->debug_flags)
