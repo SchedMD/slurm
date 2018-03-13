@@ -106,6 +106,8 @@ documents those changes that are of interest to users and administrators.
  -- srun - fix for SLURM_JOB_NUM_NODES env variable assignment.
  -- sacctmgr - fix runaway jobs identification.
  -- Fix for setting always the correct status on job update in mysql.
+ -- Fix issue if running with an association manager cache (slurmdbd was down
+    when slurmctld was started) you could loose QOS usage information.
 
 * Changes in Slurm 17.11.4
 ==========================
