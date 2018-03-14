@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     or DOWN without specifying a reason.
  -- Fix race condition when running with an association manager cache
     (slurmdbd was down when slurmctld was started).
+ -- Print out missing SLURM_PERSIST_INIT slurmdbd message type.
 
 * Changes in Slurm 17.11.4
 ==========================

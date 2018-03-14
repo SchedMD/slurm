@@ -1100,6 +1100,9 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_SEND_MULT_MSG;
 	} else if (!xstrcasecmp(msg_type, "Got Multiple Message Returns")) {
 		return DBD_GOT_MULT_MSG;
+	} else if (!xstrcasecmp(msg_type,
+				"Persistent Connection Initialization")) {
+		return SLURM_PERSIST_INIT;
 	} else {
 		return NO_VAL;
 	}
@@ -1657,6 +1660,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_SHUTDOWN";
 		} else
 			return "Shutdown daemon";
+		break;
+	case SLURM_PERSIST_INIT:
+		if (get_enum) {
+			return "SLURM_PERSIST_INIT";
+		} else
+			return "Persistent Connection Initialization";
 		break;
 	default:
 		snprintf(unk_str, sizeof(unk_str), "MsgType=%d", msg_type);
