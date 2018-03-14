@@ -1554,6 +1554,27 @@ static int _init_tres(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * NOTE: the job_write_lock as well as the assoc_mgr TRES Read lock should be
+ * locked before coming in here.
+ */
+static void _update_job_tres(struct job_record *job_ptr)
+{
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
+	/* If this returns 1 it means the positions were
+	   altered so just rebuild it.
+	*/
+	if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_req_cnt,
+					 job_ptr->tres_req_str,
+					 0, true))
+		job_set_req_tres(job_ptr, true);
+	if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_alloc_cnt,
+					 job_ptr->tres_alloc_str,
+					 0, true))
+		job_set_alloc_tres(job_ptr, true);
+}
+
 /* any association manager locks should be unlocked before hand */
 static void _update_cluster_tres(void)
 {
@@ -1572,17 +1593,7 @@ static void _update_cluster_tres(void)
 	assoc_mgr_lock(&locks);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
-		/* If this returns 1 it means the positions were
-		   altered so just rebuild it.
-		*/
-		if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_req_cnt,
-						 job_ptr->tres_req_str,
-						 0, true))
-			job_set_req_tres(job_ptr, true);
-		if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_alloc_cnt,
-						 job_ptr->tres_alloc_str,
-						 0, true))
-			job_set_alloc_tres(job_ptr, true);
+		_update_job_tres(job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 
