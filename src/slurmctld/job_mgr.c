@@ -107,6 +107,7 @@
 #define MAX_EXIT_VAL 255	/* Maximum value returned by WIFEXITED() */
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
+#define PURGE_OLD_JOB_IN_SEC 2592000 /* 30 days in seconds */
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 #define JOB_ARRAY_HASH_INX(_job_id, _task_id) \
@@ -9439,7 +9440,19 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (job_ptr->step_list && list_count(job_ptr->step_list)) {
 		debug("Job %u still has %d active steps",
 		      job_ptr->job_id, list_count(job_ptr->step_list));
-		return 0;	/* steps are still active */
+		/*
+		 * If the job has been around more than 30 days the steps are
+		 * bogus.  Blow the job away.  This was witnessed <= 16.05 but
+		 * hasn't be seen since.  This is here just to clear them out if
+		 * this ever shows up again.
+		 */
+		min_age = now - PURGE_OLD_JOB_IN_SEC;
+		if (job_ptr->end_time <= min_age) {
+			info("Force purge of job %u.  It ended over 30 days ago, the slurmctld thinks there are still steps running but they are most likely bogus.  In any case you might want to check nodes %s to make sure nothing remains of the job.",
+			     job_ptr->job_id, job_ptr->nodes);
+			goto end_it;
+		} else
+			return 0;	/* steps are still active */
 	}
 
 	if (job_ptr->array_recs) {
@@ -9464,6 +9477,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	 * when slurmdbd comes back up since we won't get another chance.
 	 * job_start won't pend for job_db_inx when the job is finished.
 	 */
+end_it:
 	if (with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
