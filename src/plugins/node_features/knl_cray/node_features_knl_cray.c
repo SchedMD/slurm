@@ -2986,7 +2986,7 @@ extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
 	if (mem_sort && (numa_available() != -1)) {
 		struct stat sb;
 		int buf_len, fd, i, len, rc;
-		char buf[8];
+		char buf[12];
 
 		if (stat(ZONE_SORT_PATH, &sb) == -1) {
 			rc = system(MODPROBE_PATH " zonesort_module");
