@@ -160,9 +160,6 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-sstat_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(sstat_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -498,7 +495,6 @@ sstat_SOURCES = \
 	sstat.c		\
 	sstat.h
 
-sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -584,7 +580,7 @@ clean-binPROGRAMS:
 
 sstat$(EXEEXT): $(sstat_OBJECTS) $(sstat_DEPENDENCIES) $(EXTRA_sstat_DEPENDENCIES) 
 	@rm -f sstat$(EXEEXT)
-	$(AM_V_CCLD)$(sstat_LINK) $(sstat_OBJECTS) $(sstat_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(sstat_OBJECTS) $(sstat_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
