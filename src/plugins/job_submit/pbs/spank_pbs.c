@@ -68,9 +68,25 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 	if (getcwd(val, sizeof(val)))
 		spank_setenv(sp, "PBS_JOBDIR", val, 1);
 
-	if (spank_getenv(sp, "SLURM_JOB_ID", val, sizeof(val)) ==
-	    ESPANK_SUCCESS)
-		spank_setenv(sp, "PBS_JOBID", val, 1);
+
+	if (spank_getenv(sp, "SLURM_ARRAY_JOB_ID", val, sizeof(val)) ==
+	    ESPANK_SUCCESS) {
+        /* 20 is enough for unit32 (max index is 4M) */
+        char aid[20];
+        if (spank_getenv(sp, "SLURM_ARRAY_TASK_ID", aid, sizeof(aid)) ==
+            ESPANK_SUCCESS) {
+            /* 30k val is large enough for job id and array index */
+            strncat(val, "[", 1);
+            strncat(val, aid, sizeof(aid));
+            strncat(val, "]", 1);
+        }
+        spank_setenv(sp, "PBS_JOBID", val, 1);
+    } else {
+        if (spank_getenv(sp, "SLURM_JOB_ID", val, sizeof(val)) ==
+            ESPANK_SUCCESS)
+            spank_setenv(sp, "PBS_JOBID", val, 1);
+    }
+
 
 	if (spank_getenv(sp, "SLURM_JOB_NAME", val, sizeof(val)) ==
 	    ESPANK_SUCCESS)
