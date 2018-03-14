@@ -46,6 +46,7 @@ set file_flag_2   "test$test_id.run.2"
 set file_flag_3   "test$test_id.run.3"
 set file_flag_4   "test$test_id.run.4"
 set job_id        0
+set node_cnt 1-4
 
 print_header $test_id
 
@@ -75,11 +76,6 @@ make_bash_script $file_in "
     fi
     $srun -n4 -O -l $bin_sleep 60
 "
-if { [test_bluegene] } {
-	set node_cnt 512-2048
-} else {
-	set node_cnt 1-4
-}
 
 #
 # Spawn a srun batch job that uses stdout/err and confirm their contents

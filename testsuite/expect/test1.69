@@ -43,10 +43,7 @@ print_header $test_id
 set select_type [test_select_type]
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-if {![string compare $select_type "bluegene"]} {
-	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
-	exit $exit_code
-} elseif {![string compare $select_type "alps"]} {
+if {![string compare $select_type "alps"]} {
 	send_user "\nWARNING: This test is incompatible with Cray/ALPS systems\n"
 	exit $exit_code
 } elseif {![string compare $select_type "linear"]} {

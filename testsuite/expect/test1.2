@@ -40,10 +40,7 @@ set tasks       0
 print_header $test_id
 
 # if the srun --overcommit option worked this test would work.
-if {[test_bluegene]} {
-	# We never launch more than one task on emulated Bluegene
-	set task_cnt 1
-} elseif {[test_launch_poe]} {
+if {[test_launch_poe]} {
 	# POE does not support the overcommit option
 	set task_cnt 1
 } elseif {[test_alps]} {

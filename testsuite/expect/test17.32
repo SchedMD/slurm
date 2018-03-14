@@ -56,13 +56,7 @@ make_bash_script $file_in "
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
-if { [test_bluegene] } {
-	if { [test_emulated] } {
-		set task_cnt 1
-	} else {
-		set task_cnt 10
-	}
-} elseif { [test_serial] } {
+if { [test_serial] } {
 	set task_cnt 1
 } else {
 	set task_cnt 10

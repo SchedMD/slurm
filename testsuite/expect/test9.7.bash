@@ -54,13 +54,6 @@ else
 	iterations=3
 fi
 
-bluegene=0
-if [ $# -gt 5 ]; then
-	if  [ $5 ]; then
-		bluegene=1
-	fi
-fi
-
 exit_code=0
 inx=1
 log="test9.7.$$.output"
@@ -75,11 +68,7 @@ do
 		exit_code=$rc
 	fi
 	sleep $sleep_time
-	if [ $bluegene ]; then
-		$exec2 --job-name=test9.7 -N1-512 -n1 -s -l -t1 hostname         >>$log 2>&1
-	else
-		$exec2 --job-name=test9.7 -N1-$inx -n$inx -O -s -l -t1 hostname  >>$log 2>&1
-	fi
+	$exec2 --job-name=test9.7 -N1-$inx -n$inx -O -s -l -t1 hostname  >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
 		echo "exec2 rc=$rc" >> $log

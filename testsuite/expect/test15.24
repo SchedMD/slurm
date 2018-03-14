@@ -43,12 +43,6 @@ print_header $test_id
 if {[test_alps]} {
         send_user "\nWARNING: This test is incompatible with Cray systems\n"
         exit $exit_code
-} elseif { [test_bluegene] } {
-	if { [test_emulated] } {
-		set task_cnt 1
-	} else {
-		set task_cnt 10
-	}
 } elseif {[test_serial]} {
 	set task_cnt 1
 } else {

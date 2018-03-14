@@ -42,9 +42,6 @@ print_header $test_id
 if {[test_alps]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit 0
-} elseif {[test_bluegene]} {
-	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
-	exit 0
 } elseif {[test_serial]} {
 	send_user "\nWARNING: This test is incompatible with serial systems\n"
 	exit 0

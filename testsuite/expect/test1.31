@@ -43,15 +43,7 @@ set file_in          "test$test_id.input"
 
 print_header $test_id
 
-if { [test_bluegene] } {
-	set min_nodes        1
-	set max_nodes        1024
-	if { [test_emulated] } {
-		set env_valu_nprocs  1
-	} else {
-		set env_valu_nprocs  32
-	}
-} elseif {[test_alps]} {
+if {[test_alps]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit 0
 } elseif {[test_serial]} {

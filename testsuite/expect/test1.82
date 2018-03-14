@@ -64,13 +64,8 @@ set host_0      ""
 set host_1      ""
 set host_2      ""
 set host_3      ""
+set node_cnt 3
 set timeout $max_job_delay
-
-if { [test_bluegene] } {
-	set node_cnt 1536
-} else {
-	set node_cnt 3
-}
 
 set partition [default_partition]
 set available [available_nodes $partition idle]
@@ -132,7 +127,6 @@ if {[string compare $host_2 ""] == 0} {
 }
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
-#	On blue gene we could get extra tasks
 	exit $exit_code
 }
 if {[string compare $host_3 ""] != 0} {

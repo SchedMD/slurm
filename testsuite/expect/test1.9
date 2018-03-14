@@ -39,10 +39,7 @@ set verbosity   0
 
 print_header $test_id
 
-if {[test_bluegene]} {
-	# We never launch more than one task on emulated Bluegene
-	set task_cnt 1
-} elseif {[test_alps]} {
+if {[test_alps]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
 } elseif {[test_serial]} {

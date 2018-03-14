@@ -58,9 +58,7 @@ if {[test_alps]} {
 #
 set timeout [expr $max_job_delay + 60 + 60 + 120]
 
-if { [test_bluegene] } {
-	set node_cnt 1-1024
-} elseif {[test_serial]} {
+if {[test_serial]} {
 	set node_cnt 1-1
 	set task_cnt 1
 } elseif { [test_xcpu] } {

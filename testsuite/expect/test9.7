@@ -53,7 +53,7 @@ if {[test_front_end] != 0} {
 # Initiate $task_cnt parallel tasks
 #
 for {set inx 0} {$inx < $task_cnt} {incr inx} {
-	spawn $bin_bash $file_script $sinfo $srun $squeue $sleep_time $iterations [test_bluegene]
+	spawn $bin_bash $file_script $sinfo $srun $squeue $sleep_time $iterations
 	set task_id($inx) $spawn_id
 }
 

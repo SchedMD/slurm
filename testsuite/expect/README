@@ -368,36 +368,6 @@ test7.16   Verify that auth/munge credential is properly validated.
 test7.17   Test GRES APIs.
 
 
-test8.#    Test of Blue Gene specific functionality.
-=================================================
-test8.1    Test of Blue Gene specific sbatch command line options
-test8.2    Test of Blue Gene specific sbatch environment variables
-test8.3    Test of Blue Gene specific job geometry support
-test8.4    Test of Blue Gene MPI job execution
-test8.5    Test creation of all blocks 1 midplane and smaller.
-test8.6    Stress test Dynamic mode block creation.
-test8.7    (removed)
-test8.8    Test result of marking smaller blocks in an error state.
-test8.9    Bluegene/Q only: Test to make sure if a nodeboard goes unavailable
-	   while another block is using it for passthrough to make sure the
-	   job using the block with passthrough fails.
-test8.10   Bluegene/Q only: Test to make sure that the correct number of
-	   nodes and tasks in a job and a step.
-test8.11   Bluegene/Q only: Test that certain number of tasks will submit to
-	   srun.
-test8.20   Bluegene/Q only: Test that job step allocations are a valid size
-	   and within the job's allocation
-test8.21   Bluegene/Q only: Test that multiple job step allocations are
-	   properly packed within the job's allocation
-test8.22   Bluegene/Q only: Stress test of running many job step allocations
-	   within the job's allocation
-test8.23   Bluegene/Q only: Test that multiple jobs allocations are properly
-	   packed within a midplane
-test8.24   Bluegene/Q only: Test advanced reservation creation with multiple
-	   blocks.
-test8.25   Bluegene/P only: Confirm salloc can reserve the HTC partitions.
-
-
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
 test9.1    Stress test of stdin broadcast.
@@ -419,15 +389,14 @@ test10.3   Test slurm partition information (-Ds option).
 test10.4   Test slurm partition information, in command mode (-Ds -c option).
 test10.5   Test bg partition information (-Db option).
 test10.6   Test bg partition information, in command mode (-Db -c option).
-test10.7   Test job information, (-Dj option).
-test10.8   Test job information, in commandline mode (-Dj -c option).
+test10.7   (removed)
+test10.8   (removed)
 test10.9   Test smap iteration (--iterate option).
 test10.10  Check smap output without header (--noheader option).
 test10.11  Confirm that smap reports a proper version number
 	   (--version option).
-test10.12  Test bg base partition XYZ to Rack Midplane and back
-	   resolution (--resolve option).
-test10.13  Test bluegene.conf file creation and validate it (-Dc option).
+test10.12  (removed)
+test10.13  (removed)
 
 
 test11.#   Testing of poe options

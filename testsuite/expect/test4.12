@@ -400,57 +400,7 @@ send_user "found idle node $inode_name with $inode_procs processors\n"
 
 # figure out the select plugin we are using
 set select_type [test_select_type]
-if {![string compare $select_type "bluegene"]} {
-	# figure out some things if a bluegene system
-	set layout [get_bluegene_layout]
-	if {$layout == 0} {
-		send_user "\nFAILURE: No layout mode found for this system\n"
-		exit 1
-	}
-	set psets [get_bluegene_psets]
-
-	if {$psets == 0} {
-		send_user "\nFAILURE: No psets are set on this system\n"
-		exit 1
-	}
-	set type [get_bluegene_type]
-
-	if {$type == 0} {
-		send_user "\nFAILURE: No bluegene type found \n"
-		exit 1
-	}
-
-	if {![string compare $type "Q"]} {
-		if {$psets >= 16} {
-			set smallest 32
-		} elseif {$psets >= 8} {
-			set smallest 64
-		} else {
-			set smallest 128
-		}
-	} elseif {![string compare $type "P"]} {
-		if {$psets >= 32} {
-			set smallest 16
-		} elseif {$psets >= 16} {
-			set smallest 32
-		} elseif {$psets >= 8} {
-			set smallest 64
-		} else {
-			set smallest 128
-		}
-	} elseif {![string compare $type "L"]} {
-		if {$psets >= 16} {
-			set smallest 32
-		} else {
-			set smallest 128
-		}
-	} else {
-		send_user "\nFAILURE: unknown bluegene system type '$type'\n";
-		exit 1
-	}
-	set node_scaling [get_bluegene_procs_per_cnode]
-	set smallest [expr $smallest * $node_scaling]
-} elseif {![string compare $select_type "cray"]} {
+if {![string compare $select_type "cray"]} {
 	set smallest $inode_procs
 } elseif {![string compare $select_type "linear"]} {
 	 set smallest $inode_procs

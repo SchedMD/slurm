@@ -59,20 +59,6 @@ if {[test_alps]} {
 	    SLURM_NTASKS 1
 	    SLURM_STEPID 0
 	}
-} elseif { [test_bluegene] } {
-	array set good_vars {
-	    SLURM_CPUS_ON_NODE 1
-	    SLURM_CPUS_PER_TASK 1
-	    SLURM_JOB_ID 1
-	    SLURM_LAUNCH_NODE_IPADDR 0
-	    SLURM_NNODES 0
-	    SLURM_NODELIST 0
-	    SLURM_NTASKS 1
-	    SLURM_SRUN_COMM_HOST 0
-	    SLURM_SRUN_COMM_PORT 1
-	    SLURM_STEPID 0
-	    SLURM_TASKS_PER_NODE 1
-	}
 } elseif {[test_front_end]} {
 	array set good_vars {
 	    SLURM_CPUS_ON_NODE 1

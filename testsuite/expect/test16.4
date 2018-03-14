@@ -49,18 +49,8 @@ if { [string compare [test_launch_type] "slurm"] } {
 	exit 0
 }
 
-if { [test_bluegene] } {
-	if { [test_emulated] } {
-		set node_cnt 1
-		set task_cnt 1
-	} else {
-		set node_cnt 1-4
-		set task_cnt 4
-	}
-} else {
-	set node_cnt 1-4
-	set task_cnt 4
-}
+set node_cnt 1-4
+set task_cnt 4
 
 #
 # Delete left-over program and rebuild it

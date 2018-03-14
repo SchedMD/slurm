@@ -87,14 +87,7 @@ make_bash_script $file_in "
 set matches 0
 set timeout [expr $max_job_delay + 30]
 set tasks   4
-if { [test_bluegene] } {
-	if { [test_emulated] } {
-		set node_cnt 1
-		set tasks    1
-	} else {
-		set node_cnt 1-1024
-	}
-} elseif { [test_serial] } {
+if { [test_serial] } {
 	set node_cnt 1
 	set tasks    1
 } else {
