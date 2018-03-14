@@ -38,6 +38,8 @@
 
 #include <config.h>
 
+#define _GNU_SOURCE
+
 #include <fcntl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>

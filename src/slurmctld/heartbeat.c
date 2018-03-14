@@ -34,8 +34,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
+#include <fcntl.h>
 #include <pthread.h>
 #include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "src/common/fd.h"
 #include "src/common/xstring.h"
