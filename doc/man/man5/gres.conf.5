@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "April 2015" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "March 2018" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for generic resource management.
@@ -38,8 +38,13 @@ to use specific cores with specific devices (e.g. on a NUMA
 architecture). Multiple cores may be specified using a comma
 delimited list or a range may be specified using a "\-" separator
 (e.g. "0,1,2,3" or "0\-3").
-If specified, then only the identified cores can be allocated with each generic
-resource; an attempt to use other cores will not be honored.
+If the \fBCores\fR configuration option is specified and a job is submitted
+with the \fB\-\-gres-flags=enforce\-binding\fR option then only the identified cores
+can be allocated with each generic resource; which will tend to improve
+performance of jobs, but slow the allocation of resources to them.
+If specified and a job is \fInot\fR submitted with the with the
+\fB\-\-gres-flags=enforce\-binding\fR option the identified cores will be
+preferred for scheduled with each generic resource.
 If not specified, then any core can be used with the resources, which also
 increases the speed of Slurm's scheduling algorithm.
 If any core can be effectively used with the resources, then do not specify the
