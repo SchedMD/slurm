@@ -231,6 +231,7 @@ scontrol_update_node (int argc, char **argv)
 	     (node_msg.node_state == NODE_STATE_DRAIN) ||
 	     (node_msg.node_state == NODE_STATE_FAIL)) &&
 	    ((node_msg.reason == NULL) || (strlen(node_msg.reason) == 0))) {
+		exit_code = 1;
 		fprintf(stderr, "You must specify a reason when DOWNING or "
 			"DRAINING a node. Request denied\n");
 		goto done;
@@ -334,18 +335,15 @@ scontrol_update_front_end (int argc, char **argv)
 		}
 	}
 
-	if ((front_end_msg.node_state == NODE_STATE_DOWN) &&
+	if (((front_end_msg.node_state == NODE_STATE_DOWN)  ||
+	     (front_end_msg.node_state == NODE_STATE_DRAIN) ||
+	     (front_end_msg.node_state == NODE_STATE_FAIL)) &&
 	    ((front_end_msg.reason == NULL) ||
 	     (strlen(front_end_msg.reason) == 0))) {
-		fprintf (stderr, "You must specify a reason when DOWNING a "
-			"frontend node\nRequest aborted\n");
-		goto done;
-	}
-	if ((front_end_msg.node_state == NODE_STATE_DRAIN) &&
-	    ((front_end_msg.reason == NULL) ||
-	     (strlen(front_end_msg.reason) == 0))) {
-		fprintf (stderr, "You must specify a reason when DRAINING a "
-			"frontend node\nRequest aborted\n");
+		exit_code = 1;
+		fprintf(stderr,
+			"You must specify a reason when DOWNING or DRAINING a frontend node\n"
+			"Request aborted\n");
 		goto done;
 	}
 
