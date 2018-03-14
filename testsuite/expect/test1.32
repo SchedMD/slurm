@@ -49,9 +49,6 @@ print_header $test_id
 if { [test_alps] } {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
-} elseif { [test_xcpu] } {
-	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
-	exit $exit_code:
 }
 
 if {[test_launch_poe]} {

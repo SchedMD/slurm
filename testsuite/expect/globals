@@ -133,9 +133,6 @@ cset use_pmi	0
 cset upcc       "/usr/bin/xlupc"
 cset oshcc      "/usr/local/bin/oshcc"
 
-# If using XCPU job launch, specify directory location as needed
-cset xcpu_dir	"/mnt/xcpu"
-
 cset poe	"/usr/bin/poe"
 cset mpirun	"mpirun"
 cset totalviewcli	"/usr/local/bin/totalviewcli"
@@ -1709,36 +1706,6 @@ proc test_multiple_slurmd { } {
 	return $multiple_slurmd
 }
 
-
-################################################################
-#
-# Proc: test_xcpu
-#
-# Purpose: Determine if the system xcpu for task launch
-#
-# Returns 1 if the system is xcpu, 0 otherwise
-#
-################################################################
-
-proc test_xcpu { } {
-	global scontrol
-
-	log_user 0
-	set have_xcpu 0
-	spawn $scontrol show config
-	expect {
-		"HAVE_XCPU" {
-			set have_xcpu 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $have_xcpu
-}
 
 ################################################################
 #

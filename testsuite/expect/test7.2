@@ -95,14 +95,10 @@ if { $exit_code == 0 } {
 # Spawn a job to test PMI functionality
 #
 set timeout $max_job_delay
-if {[test_xcpu] } {
-	set node_cnt 1-1
-	set task_cnt 8
 
-} elseif {[test_serial]} {
+if {[test_serial]} {
 	set node_cnt 1
 	set task_cnt 1
-
 } else {
 	set node_cnt 1-4
 	set task_cnt 8

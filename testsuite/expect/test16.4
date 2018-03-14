@@ -44,9 +44,6 @@ print_header $test_id
 if { [string compare [test_launch_type] "slurm"] } {
 	send_user "\nWARNING: This test is only compatible with systems using launch/slurm\n"
 	exit $exit_code
-} elseif { [test_xcpu] } {
-	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
-	exit 0
 }
 
 set node_cnt 1-4

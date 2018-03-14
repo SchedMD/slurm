@@ -56,9 +56,6 @@ if {[test_aix]} {
 } elseif {[test_serial]} {
 	set task_cnt 1
 	set node_cnt 1-1
-} elseif { [test_xcpu] } {
-	set task_cnt 4
-	set node_cnt 1-1
 } else {
 	set task_cnt 4
 	set node_cnt 1-4

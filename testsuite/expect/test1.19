@@ -373,9 +373,6 @@ for {set step_id 0} {$step_id < 4} {incr step_id} {
 if { [test_serial] } {
 	set node_cnt 1-1
 	set task_cnt 1
-} elseif { [test_xcpu] } {
-	set node_cnt 1-1
-	set task_cnt 4
 } else {
 	set node_cnt 1-4
 	set task_cnt 4

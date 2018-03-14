@@ -61,8 +61,6 @@ set timeout [expr $max_job_delay + 60 + 60 + 120]
 if {[test_serial]} {
 	set node_cnt 1-1
 	set task_cnt 1
-} elseif { [test_xcpu] } {
-	set node_cnt 1-1
 } else {
 	set node_cnt 1-2
 }

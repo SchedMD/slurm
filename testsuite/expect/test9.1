@@ -46,8 +46,6 @@ set task_cnt    $max_stress_tasks
 if { [test_serial] } {
 	set node_cnt 1
 	set task_cnt 1
-} elseif { [test_xcpu] } {
-	set node_cnt 1-1
 } else {
 	set node_cnt 1-6
 }

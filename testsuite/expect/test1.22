@@ -49,10 +49,7 @@ if {[test_alps]} {
 #
 set host_0      ""
 set timeout $max_job_delay
-if { [test_xcpu] } {
-	set node_cnt 1-1
-	set task_num [get_max_tasks]
-} elseif {[test_serial]} {
+if {[test_serial]} {
 	set node_cnt 1
 	set task_num 1
 } else {

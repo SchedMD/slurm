@@ -44,12 +44,8 @@ print_header $test_id
 # Submit a job with one thread fanout
 #
 set host_0      ""
+set node_cnt 1-64
 set timeout [expr $max_job_delay + $sleep_time]
-if { [test_xcpu] } {
-	set node_cnt 1-1
-} else {
-	set node_cnt 1-64
-}
 
 set srun_pid [spawn $srun -N$node_cnt --no-kill -t1 $bin_sleep $sleep_time]
 expect {

@@ -39,11 +39,6 @@ set srun_opts "-c1"
 
 print_header $test_id
 
-if { [test_xcpu] } {
-	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
-	exit 0
-}
-
 if { [test_front_end] } {
 	set max_node_cnt 2
 } else {

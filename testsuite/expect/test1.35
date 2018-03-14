@@ -88,12 +88,8 @@ make_bash_script $file_in "
 #
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
+set node_cnt 1-4
 set timeout $max_job_delay
-if { [test_xcpu] } {
-	set node_cnt 1-1
-} else {
-	set node_cnt 1-4
-}
 
 set srun_pid [eval spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 --gres=craynetwork:0 $job_mem_opt $file_in]
 expect {
