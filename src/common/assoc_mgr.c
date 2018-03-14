@@ -1387,7 +1387,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 
 	assoc_mgr_unlock(&locks);
 
-	if (changed && init_setup.update_cluster_tres) {
+	if (!running_cache && changed && init_setup.update_cluster_tres) {
 		/* update jobs here, this needs to be outside of the
 		 * assoc_mgr locks */
 		init_setup.update_cluster_tres();
@@ -5848,7 +5848,6 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 		if (_refresh_assoc_wckey_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-
 	if (cache_level & ASSOC_MGR_CACHE_RES)
 		if (_refresh_assoc_mgr_res_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)

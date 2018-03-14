@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Fix spec file to work correctly.
  -- Set scontrol exit code to 1 if attempting to update a node state to DRAIN
     or DOWN without specifying a reason.
+ -- Fix race condition when running with an association manager cache
+    (slurmdbd was down when slurmctld was started).
 
 * Changes in Slurm 17.11.4
 ==========================
