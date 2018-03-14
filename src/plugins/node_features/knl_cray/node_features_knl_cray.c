@@ -191,6 +191,7 @@ static bool reconfig = false;
 static uint32_t ume_check_interval = 0;
 static pthread_mutex_t ume_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t ume_thread = 0;
+static uint32_t validate_mode = 0;
 
 static bitstr_t *knl_node_bitmap = NULL;	/* KNL nodes found by capmc */
 static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -223,6 +224,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"NumaCpuBind", S_P_STRING},
 	{"SyscfgPath", S_P_STRING},
 	{"UmeCheckInterval", S_P_UINT32},
+	{"ValidateMode", S_P_UINT32},
 	{NULL}
 };
 
@@ -325,6 +327,7 @@ static void _update_node_features(struct node_record *node_ptr,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static int _update_node_state(char *node_list, bool set_locks);
+static void _validate_node_features(struct node_record *node_ptr);
 
 /* Function used both internally and externally */
 extern int node_features_p_node_update(char *active_features,
@@ -1382,6 +1385,70 @@ next_tok:	tok1 = strtok_r(NULL, ",", &save_ptr1);
 	xfree(tmp_str1);
 }
 
+static void _make_node_down(struct node_record *node_ptr)
+{
+	if (!avail_node_bitmap) {
+		/*
+		 * In process of initial slurmctld startup,
+		 * node data structures not completely built yet
+		 */
+		node_ptr->node_state |= NODE_STATE_DRAIN;
+		node_ptr->reason = xstrdup("Invalid KNL modes");
+		node_ptr->reason_time = time(NULL);
+		node_ptr->reason_uid = getuid();
+	} else {
+		(void) drain_nodes(node_ptr->name, "Invalid KNL modes",
+				   getuid());
+	}
+}
+
+/*
+ * Determine that the actual KNL mode matches the available and current node
+ * features, otherwise DRAIN the node
+ */
+static void _validate_node_features(struct node_record *node_ptr)
+{
+	char *tmp_str, *tok, *save_ptr = NULL;
+	uint16_t actual_mcdram = 0, actual_numa = 0;
+	uint16_t config_mcdram = 0, config_numa = 0;
+	uint16_t count_mcdram = 0,  count_numa = 0;
+	uint16_t tmp_mcdram, tmp_numa;
+
+	if (!node_ptr->features || IS_NODE_DOWN(node_ptr))
+		return;
+
+	tmp_str = xstrdup(node_ptr->features);
+	tok = strtok_r(tmp_str, ",", &save_ptr);
+	while (tok) {
+		if ((tmp_mcdram = _knl_mcdram_token(tok))) {
+			config_mcdram |= tmp_mcdram;
+			count_mcdram++;
+		} else if ((tmp_numa = _knl_numa_token(tok))) {
+			config_numa |= tmp_numa;
+			count_numa++;
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+
+	tmp_str = xstrdup(node_ptr->features_act);
+	tok = strtok_r(tmp_str, ",", &save_ptr);
+	while (tok) {
+		if ((tmp_mcdram = _knl_mcdram_token(tok)))
+			actual_mcdram |= tmp_mcdram;
+		else if ((tmp_numa = _knl_numa_token(tok)))
+			actual_numa |= tmp_numa;
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+
+	if ((config_mcdram != actual_mcdram) || (count_mcdram != 1) ||
+	    (config_numa   != actual_numa)   || (count_numa != 1)) {
+		_make_node_down(node_ptr);
+		error("Invalid KNL modes on node %s", node_ptr->name);
+	}
+}
+
 /*
  * Remove all KNL MCDRAM and NUMA type GRES from this node (it isn't KNL),
  * returns count of KNL features found.
@@ -1454,9 +1521,11 @@ static void _update_all_node_features(
 			if (node_ptr) {
 				node_inx = node_ptr - node_record_table_ptr;
 				bit_set(knl_node_bitmap, node_inx);
-				_merge_strings(&node_ptr->features,
-					       mcdram_cap[i].mcdram_cfg,
-					       allow_mcdram);
+				if (validate_mode == 0) {
+					_merge_strings(&node_ptr->features,
+						       mcdram_cap[i].mcdram_cfg,
+						       allow_mcdram);
+				}
 			}
 		}
 	}
@@ -1482,7 +1551,7 @@ static void _update_all_node_features(
 						 &node_ptr->gres_list);
 		}
 	}
-	if (numa_cap) {
+	if (numa_cap && (validate_mode == 0)) {
 		for (i = 0; i < numa_cap_cnt; i++) {
 			snprintf(node_name, sizeof(node_name),
 				 "%s%.*d", prefix, width, numa_cap[i].nid);
@@ -1516,18 +1585,19 @@ static void _update_all_node_features(
 	 */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		if (bit_test(knl_node_bitmap, i))
+		if (bit_test(knl_node_bitmap, i)) {
+			if (validate_mode)
+				_validate_node_features(node_ptr);
 			continue;
+		}
 		node_inx = _strip_knl_features(&node_ptr->features) +
 			   _strip_knl_features(&node_ptr->features_act);
 		if (node_inx) {
 			error("Removed KNL features from non-KNL node %s",
 			      node_ptr->name);
 		}
-		if (!node_ptr->gres) {
-			node_ptr->gres =
-				xstrdup(node_ptr->config_ptr->gres);
-		}
+		if (!node_ptr->gres)
+			node_ptr->gres = xstrdup(node_ptr->config_ptr->gres);
 		gres_plugin_node_feature(node_ptr->name, "hbm", 0,
 					 &node_ptr->gres, &node_ptr->gres_list);
 	}
@@ -1563,7 +1633,7 @@ static void _update_node_features(struct node_record *node_ptr,
 		node_ptr->features_act = xstrdup(node_ptr->features);
 	_strip_knl_opts(&node_ptr->features_act);
 
-	if (mcdram_cap) {
+	if (mcdram_cap && (validate_mode == 0)) {
 		for (i = 0; i < mcdram_cap_cnt; i++) {
 			if (nid == mcdram_cap[i].nid) {
 				_merge_strings(&node_ptr->features,
@@ -1580,8 +1650,8 @@ static void _update_node_features(struct node_record *node_ptr,
 			if (nid != mcdram_cfg[i].nid)
 				continue;
 			_merge_strings(&node_ptr->features_act,
-				       mcdram_cfg[i].mcdram_cfg,
-				       allow_mcdram);
+				       mcdram_cfg[i].mcdram_cfg, allow_mcdram);
+
 			mcdram_per_node[node_ptr - node_record_table_ptr] =
 				mcdram_cfg[i].mcdram_size;
 			mcdram_size = mcdram_cfg[i].mcdram_size *
@@ -1600,7 +1670,7 @@ static void _update_node_features(struct node_record *node_ptr,
 			break;
 		}
 	}
-	if (numa_cap) {
+	if (numa_cap && (validate_mode == 0)) {
 		for (i = 0; i < numa_cap_cnt; i++) {
 			if (nid == numa_cap[i].nid) {
 				_merge_strings(&node_ptr->features,
@@ -1626,7 +1696,10 @@ static void _update_node_features(struct node_record *node_ptr,
 
 	/* Make sure that only nodes reported by "capmc get_mcdram_capabilities"
 	 * contain KNL features */
-	if (!is_knl) {
+	if (is_knl) {
+		if (validate_mode)
+			_validate_node_features(node_ptr);
+	} else {
 		node_inx = _strip_knl_features(&node_ptr->features) +
 			   _strip_knl_features(&node_ptr->features_act);
 		if (node_inx) {
@@ -1849,6 +1922,7 @@ extern int init(void)
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
 		(void) s_p_get_uint32(&ume_check_interval, "UmeCheckInterval",
 				      tbl);
+		(void) s_p_get_uint32(&validate_mode, "ValidateMode", tbl);
 		s_p_hashtbl_destroy(tbl);
 	} else {
 		error("something wrong with opening/reading knl_cray.conf");
@@ -1885,6 +1959,7 @@ extern int init(void)
 		info("NumaCpuBind=%s", numa_cpu_bind);
 		info("SyscfgPath=%s", syscfg_path);
 		info("UmeCheckInterval=%u", ume_check_interval);
+		info("ValidateMode=%u", validate_mode);
 		xfree(allow_mcdram_str);
 		xfree(allow_numa_str);
 		xfree(allow_user_str);
@@ -2493,15 +2568,24 @@ static int _update_node_state(char *node_list, bool set_locks)
 		time_t now = time(NULL);
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
-			_strip_knl_opts(&node_ptr->features);
 			if (node_ptr->last_response > now) {
-				/* Reboot likely in progress.
+				/*
+				 * Reboot likely in progress.
 				 * Preserve active KNL features and merge
-				 * with configured non-KNL features */
+				 * with configured non-KNL features
+				 */
 				_merge_strings(&node_ptr->features_act,
 					       node_ptr->features, 0);
-			} else {
+				continue;
+			}
+			if (validate_mode == 0) {
+				_strip_knl_opts(&node_ptr->features);
 				xfree(node_ptr->features_act);
+				if (node_ptr->features) {
+					node_ptr->features_act =
+						xstrdup(node_ptr->features);
+				}
+			} else {
 				if (node_ptr->features) {
 					node_ptr->features_act =
 						xstrdup(node_ptr->features);
@@ -2831,7 +2915,8 @@ extern bool node_features_p_node_update_valid(void *arg,
 /* Return TRUE if this (one) feature name is under this plugin's control */
 extern bool node_features_p_changeable_feature(char *feature)
 {
-	if (_knl_mcdram_token(feature) || _knl_numa_token(feature))
+	if ((validate_mode == 0) &&
+	    (_knl_mcdram_token(feature) || _knl_numa_token(feature)))
 		return true;
 	return false;
 }

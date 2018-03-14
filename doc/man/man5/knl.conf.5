@@ -201,6 +201,14 @@ slurmd daemon will shutdown.
 The default value is 0 (disabled).
 See also \fBMcPath\fR.
 
+.TP
+\fBValidateMode\fR
+If set to 1 then validate, but do not modify the node's configured MCDRAM and
+NUMA modes from the slurm.conf file. If the actual modes do not match configured
+values the node will be set to a DOWN state. Every KNL nodes MCDRAM and NUMA
+states must both be listed in the slurm.conf file.
+This parameter is used only by the "knl_cray" plugin.
+
 .SH "EXAMPLE"
 .LP
 .br

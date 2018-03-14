@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Add DefCpuPerGpu and DefMemPerGpu to global and per-partition configuration
     parameters. Shown in scontrol/sview as "JobDefaults=...".
  -- Fix for setting always the correct status on job update in mysql
+ -- Add ValidateMode configuration parameter to knl_cray.conf for static
+    MCDRAM/NUMA configurations.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
