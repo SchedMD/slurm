@@ -665,6 +665,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(action);
 	sview_search_info_t sview_search_info;
 
+	sview_search_info.cluster_name = NULL;
 	sview_search_info.gchar_data = NULL;
 	sview_search_info.int_data = NO_VAL;
 	sview_search_info.int_data2 = NO_VAL;
