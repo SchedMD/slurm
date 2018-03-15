@@ -2532,6 +2532,25 @@ uint32_t slurm_get_slurmd_user_id(void)
 	return slurmd_uid;
 }
 
+/*
+ * slurm_get_slurmd_params
+ * RET slurmd_params must be xfreed by caller
+ */
+char *slurm_get_slurmd_params(void)
+{
+	char *slurmd_params = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		slurmd_params = xstrdup(conf->slurmd_params);
+		slurm_conf_unlock();
+	}
+	return slurmd_params;
+}
+
+
 /* slurm_get_sched_params
  * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
 extern char *slurm_get_sched_params(void)

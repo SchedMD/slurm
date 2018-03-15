@@ -807,6 +807,13 @@ uint32_t slurm_get_slurm_user_id(void);
  */
 uint32_t slurm_get_slurmd_user_id(void);
 
+/*
+ * slurm_get_slurmd_parmams
+ * returns slurmd_params
+ * RET char * - slurmd_params
+ */
+char *slurm_get_slurmd_params(void);
+
 /* slurm_get_sched_type
  * get sched type from slurmctld_conf object
  * RET char *   - sched type, MUST be xfreed by caller

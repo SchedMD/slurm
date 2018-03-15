@@ -2966,6 +2966,7 @@ typedef struct slurm_ctl_conf {
 				    * on non-responding primarly controller */
 	uint16_t slurmd_debug;	/* slurmd logging level */
 	char *slurmd_logfile;	/* where slurmd error log gets written */
+	char *slurmd_params;	/* SlurmdParameters */
 	char *slurmd_pidfile;   /* where to put slurmd pidfile           */
 	uint32_t slurmd_port;	/* default communications port to slurmd */
 	char *slurmd_spooldir;	/* where slurmd put temporary state info */
