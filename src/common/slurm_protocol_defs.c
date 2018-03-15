@@ -2745,6 +2745,14 @@ extern char *node_state_string(uint32_t inx)
 	if (inx == NODE_STATE_POWER_UP)
 		return "POWER_UP";
 	if (base == NODE_STATE_DOWN) {
+		if (maint_flag)
+			return "DOWN$";
+		if (reboot_flag)
+			return "DOWN@";
+		if (power_up_flag)
+			return "DOWN#";
+		if (power_down_flag)
+			return "DOWN~";
 		if (no_resp_flag)
 			return "DOWN*";
 		return "DOWN";
@@ -2766,6 +2774,14 @@ extern char *node_state_string(uint32_t inx)
 		return "ALLOCATED";
 	}
 	if (comp_flag) {
+		if (maint_flag)
+			return "COMPLETING$";
+		if (reboot_flag)
+			return "COMPLETING@";
+		if (power_up_flag)
+			return "COMPLETING#";
+		if (power_down_flag)
+			return "COMPLETING~";
 		if (no_resp_flag)
 			return "COMPLETING*";
 		return "COMPLETING";
@@ -2814,6 +2830,14 @@ extern char *node_state_string(uint32_t inx)
 		return "MIXED";
 	}
 	if (base == NODE_STATE_FUTURE) {
+		if (maint_flag)
+			return "FUTURE$";
+		if (reboot_flag)
+			return "FUTURE@";
+		if (power_up_flag)
+			return "FUTURE#";
+		if (power_down_flag)
+			return "FUTURE~";
 		if (no_resp_flag)
 			return "FUTURE*";
 		return "FUTURE";
@@ -2896,6 +2920,14 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_POWER_UP)
 		return "POW_UP";
 	if (inx == NODE_STATE_DOWN) {
+		if (maint_flag)
+			return "DOWN$";
+		if (reboot_flag)
+			return "DOWN@";
+		if (power_up_flag)
+			return "DOWN#";
+		if (power_down_flag)
+			return "DOWN~";
 		if (no_resp_flag)
 			return "DOWN*";
 		return "DOWN";
@@ -2917,6 +2949,14 @@ extern char *node_state_string_compact(uint32_t inx)
 		return "ALLOC";
 	}
 	if (comp_flag) {
+		if (maint_flag)
+			return "COMP$";
+		if (reboot_flag)
+			return "COMP@";
+		if (power_up_flag)
+			return "COMP#";
+		if (power_down_flag)
+			return "COMP~";
 		if (no_resp_flag)
 			return "COMP*";
 		return "COMP";
@@ -2965,6 +3005,14 @@ extern char *node_state_string_compact(uint32_t inx)
 		return "MIX";
 	}
 	if (inx == NODE_STATE_FUTURE) {
+		if (maint_flag)
+			return "FUTR$";
+		if (reboot_flag)
+			return "FUTR@";
+		if (power_up_flag)
+			return "FUTR#";
+		if (power_down_flag)
+			return "FUTR~";
 		if (no_resp_flag)
 			return "FUTR*";
 		return "FUTR";
