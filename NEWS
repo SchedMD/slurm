@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Add Google Cloud Platform integration scripts into contribs directory.
  -- Fix minor potential memory leak in backfill plugin.
  -- Add missing node flags (maint/power/etc) to node states.
+ -- Fix issue where job time limits may end up at 1 minute when using the
+    NoReserve flag on their QOS.
 
 * Changes in Slurm 17.11.4
 ==========================
