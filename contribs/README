@@ -38,6 +38,8 @@ of the Slurm contribs distribution follows:
      opt_modulefiles_slurm - enables use of Munge as soon as built
      pam_job.c             - Less verbose version of the default Cray job service.
 
+  gcp/               [Google Cloud Platform integration scripts]
+
   lua/               [ LUA scripts ]
      Example LUA scripts that can serve as Slurm plugins.
      job_submit.lua - job_submit plugin that can set a job's default partition
