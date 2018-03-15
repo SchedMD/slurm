@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix for setting always the correct status on job update in mysql
  -- Add ValidateMode configuration parameter to knl_cray.conf for static
     MCDRAM/NUMA configurations.
+ -- Fix security issue in accounting_storage/mysql plugin by always escaping
+    strings within the slurmdbd. CVE-2018-7033.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
@@ -100,6 +102,9 @@ documents those changes that are of interest to users and administrators.
     node_features_p_changeable_feature in node_features plugin.
  -- Add Slurm configuration file check logic using "slurmctld -t" command.
 
+* Changes in Slurm 17.11.6
+==========================
+
 * Changes in Slurm 17.11.5
 ==========================
  -- Fix cloud nodes getting stuck in DOWN+POWER_UP+NO_RESPOND state after not
@@ -121,6 +126,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix two build errors related to use of the O_CLOEXEC flag with older glibc.
  -- Add Google Cloud Platform integration scripts into contribs directory.
  -- Fix minor potential memory leak in backfill plugin.
+ -- Add missing node flags (maint/power/etc) to node states.
+ -- Fix issue where job time limits may end up at 1 minute when using the
+    NoReserve flag on their QOS.
+ -- Fix security issue in accounting_storage/mysql plugin by always escaping
+    strings within the slurmdbd. CVE-2018-7033.
 
 * Changes in Slurm 17.11.4
 ==========================
@@ -766,6 +776,9 @@ documents those changes that are of interest to users and administrators.
     '--quit-on-interrupt' to '--qos'.
  -- Change sched_min_interval default from 0 to 2 microseconds.
 
+* Changes in Slurm 17.02.11
+==========================
+
 * Changes in Slurm 17.02.10
 ==========================
  -- Fix updating of requested TRES memory.
@@ -797,6 +810,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix whole node allocation cpu counts when --hint=nomultihtread.
  -- NRT - Fix issue when running on a HFI (p775) system with multiple protocols.
  -- Fix uninitialized variables when unpacking slurmdb_archive_cond_t.
+ -- Fix security issue in accounting_storage/mysql plugin by always escaping
+    strings within the slurmdbd. CVE-2018-7033.
 
 * Changes in Slurm 17.02.9
 ==========================

@@ -134,7 +134,8 @@ SwitchName=s4 Switches=s[0-3]
 </pre>
 
 <p>Note that compute nodes on switches that lack a common parent switch can
-be used, but no job will span leaf switches without a common parent.
+be used, but no job will span leaf switches without a common parent
+(unless the TopologyParam=TopoOptional option is used).
 For example, it is legal to remove the line "SwitchName=s4 Switches=s[0-3]"
 from the above topology.conf file.
 In that case, no job will span more than four compute nodes on any single leaf
