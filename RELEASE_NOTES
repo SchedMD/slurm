@@ -33,6 +33,11 @@ of Slurm will result in loss of state information.
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
+NOTE FOR THOSE UPGRADING SLURMDBD: The database conversion process from
+      SlurmDBD 16.05 or 17.02 may not work properly with MySQL 5.1 (as was the
+      default version for RHEL 6).  Upgrading to a newer version of MariaDB or
+      MySQL is strongly encouraged to prevent this problem.
+
 NOTE FOR THOSE RUNNING 17.11.[0|1]: It was found a seeded MySQL auto_increment
       value would be lost eventually if used.  This was found in the tres_table
       which tracks static TRES under 1001.  This was fixed in MariaDB >=10.2.4,
