@@ -672,6 +672,9 @@ documents those changes that are of interest to users and administrators.
     '--quit-on-interrupt' to '--qos'.
  -- Change sched_min_interval default from 0 to 2 microseconds.
 
+* Changes in Slurm 17.02.11
+==========================
+
 * Changes in Slurm 17.02.10
 ==========================
  -- Fix updating of requested TRES memory.
