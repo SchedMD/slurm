@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.6
 ==========================
+ -- CRAY - Add slurmsmwd to the contribs/cray dir.
 
 * Changes in Slurm 17.11.5
 ==========================
