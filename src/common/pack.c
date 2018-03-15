@@ -54,6 +54,7 @@
 #include "src/common/pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
+#include "src/slurmdbd/read_config.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -87,6 +88,8 @@ strong_alias(unpackmem,		slurm_unpackmem);
 strong_alias(unpackmem_ptr,	slurm_unpackmem_ptr);
 strong_alias(unpackmem_xmalloc,	slurm_unpackmem_xmalloc);
 strong_alias(unpackmem_malloc,	slurm_unpackmem_malloc);
+strong_alias(unpackstr_xmalloc_escaped, slurm_unpackstr_xmalloc_escaped);
+strong_alias(unpackstr_xmalloc_chooser, slurm_unpackstr_xmalloc_chooser);
 strong_alias(packstr_array,	slurm_packstr_array);
 strong_alias(unpackstr_array,	slurm_unpackstr_array);
 strong_alias(packmem_array,	slurm_packmem_array);
@@ -826,6 +829,79 @@ int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 		*valp = NULL;
 	return SLURM_SUCCESS;
 }
+
+/*
+ * Given a buffer containing a network byte order 16-bit integer,
+ * and an arbitrary char string, copy the data string into the location
+ * specified by valp and escape ' and \ to be database safe.
+ * Also return the sizes of 'valp' in bytes.
+ * Adjust buffer counters.
+ * NOTE: valp is set to point into a newly created buffer,
+ *	the caller is responsible for calling xfree() on *valp
+ *	if non-NULL (set to NULL on zero size buffer value)
+ * NOTE: size_valp may not match how much data was processed from buffer, but
+ *       will match the length of the returned 'valp'.
+ * WARNING: These escapes are sufficient to protect MariaDB/MySQL, but
+ *          may not be sufficient if databases are added in the future.
+ */
+int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, Buf buffer)
+{
+	uint32_t ns;
+
+	if (remaining_buf(buffer) < sizeof(ns))
+		return SLURM_ERROR;
+
+	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
+	*size_valp = ntohl(ns);
+	buffer->processed += sizeof(ns);
+
+	if (*size_valp > MAX_PACK_MEM_LEN) {
+		error("%s: Buffer to be unpacked is too large (%u > %u)",
+		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		return SLURM_ERROR;
+	} else if (*size_valp > 0) {
+		uint32_t cnt = *size_valp;
+
+		if (remaining_buf(buffer) < cnt)
+			return SLURM_ERROR;
+
+		/* make a buffer 2 times the size just to be safe */
+		*valp = xmalloc_nz((cnt * 2) + 1);
+		if (*valp) {
+			char *copy = NULL, *str, tmp;
+			uint32_t i;
+			copy = *valp;
+			str = &buffer->head[buffer->processed];
+
+			for (i = 0; i < cnt && *str; i++) {
+				tmp = *str++;
+				if ((tmp == '\\') || (tmp == '\'')) {
+					*copy++ = '\\';
+					(*size_valp)++;
+				}
+
+				*copy++ = tmp;
+			}
+
+			/* Since we used xmalloc_nz, terminate the string. */
+			*copy++ = '\0';
+		}
+
+		/* add the original value since that is what we processed */
+		buffer->processed += cnt;
+	} else
+		*valp = NULL;
+	return SLURM_SUCCESS;
+}
+
+int unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp, Buf buf)
+{
+	if (slurmdbd_conf)
+		return unpackstr_xmalloc_escaped(valp, size_valp, buf);
+	else
+		return unpackmem_xmalloc(valp, size_valp, buf);
+}
+
 
 /*
  * Given a pointer to array of char * (char ** or char *[] ) and a size

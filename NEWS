@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
  -- Add missing node flags (maint/power/etc) to node states.
  -- Fix issue where job time limits may end up at 1 minute when using the
     NoReserve flag on their QOS.
+ -- Fix security issue in accounting_storage/mysql plugin by always escaping
+    strings within the slurmdbd. CVE-2018-7033.
 
 * Changes in Slurm 17.11.4
 ==========================
@@ -701,6 +703,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix whole node allocation cpu counts when --hint=nomultihtread.
  -- NRT - Fix issue when running on a HFI (p775) system with multiple protocols.
  -- Fix uninitialized variables when unpacking slurmdb_archive_cond_t.
+ -- Fix security issue in accounting_storage/mysql plugin by always escaping
+    strings within the slurmdbd. CVE-2018-7033.
 
 * Changes in Slurm 17.02.9
 ==========================

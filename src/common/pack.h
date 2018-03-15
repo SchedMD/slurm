@@ -126,6 +126,9 @@ int	unpackmem_ptr(char **valp, uint32_t *size_valp, Buf buffer);
 int	unpackmem_xmalloc(char **valp, uint32_t *size_valp, Buf buffer);
 int	unpackmem_malloc(char **valp, uint32_t *size_valp, Buf buffer);
 
+int	unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, Buf buffer);
+int	unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp, Buf buffer);
+
 void	packstr_array(char **valp, uint32_t size_val, Buf buffer);
 int	unpackstr_array(char ***valp, uint32_t* size_val, Buf buffer);
 
@@ -334,8 +337,12 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 #define safe_unpackstr_malloc	                        \
         safe_unpackmem_malloc
 
-#define safe_unpackstr_xmalloc	                        \
-        safe_unpackmem_xmalloc
+#define safe_unpackstr_xmalloc(valp, size_valp, buf) do {	\
+	assert(sizeof(*size_valp) == sizeof(uint32_t));        	\
+	assert(buf->magic == BUF_MAGIC);		        \
+	if (unpackstr_xmalloc_chooser(valp, size_valp, buf))    \
+		goto unpack_error;		       		\
+} while (0)
 
 #define safe_unpackstr_array(valp,size_valp,buf) do {	\
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
