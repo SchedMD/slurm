@@ -247,6 +247,7 @@ static bool dynamic_window_err = false;	/* print error only once */
 /* Keep track of local ID so slurmd can determine which switch tables
  * are for that particular node */
 static uint64_t my_lpar_id = 0;
+static uint64_t my_lid = 0;
 static bool     my_lpar_id_set = false;
 static uint64_t my_network_id = 0;
 static bool     my_network_id_set = false;
@@ -2072,6 +2073,7 @@ static int _get_my_id(void)
 				if (adapter_info.port[k].status != 1)
 					continue;
 				my_lpar_id = adapter_info.port[k].special;
+				my_lid = adapter_info.port[k].lid;
 				my_lpar_id_set = true;
 				break;
 			}
@@ -2329,6 +2331,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 						       special;
 				if (adapter_ptr->adapter_type == NRT_HFI) {
 					my_lpar_id = adapter_ptr->special;
+					my_lid = adapter_ptr->lid;
 					my_lpar_id_set = true;
 				}
 				break;
@@ -3723,7 +3726,8 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 			nrt_hfi_task_info_t *hfi_tbl_ptr;
 			hfi_tbl_ptr = (nrt_hfi_task_info_t *) tableinfo->table;
 			hfi_tbl_ptr += i;
-			if (hfi_tbl_ptr->lpar_id != my_lpar_id)
+			if ((hfi_tbl_ptr->lpar_id != my_lpar_id) ||
+			    (hfi_tbl_ptr->lid != my_lid))
 				continue;
 			window_id = hfi_tbl_ptr->win_id;
 		}
