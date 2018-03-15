@@ -487,6 +487,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		if (low_start) {
 			job_ptr->start_time = low_start;
 			rc = SLURM_SUCCESS;
+			FREE_NULL_BITMAP(*avail_bitmap);
 			*avail_bitmap = low_bitmap;
 		} else {
 			rc = ESLURM_NODES_BUSY;

@@ -119,6 +119,8 @@ documents those changes that are of interest to users and administrators.
     (slurmdbd was down when slurmctld was started).
  -- Print out missing SLURM_PERSIST_INIT slurmdbd message type.
  -- Fix two build errors related to use of the O_CLOEXEC flag with older glibc.
+ -- Add Google Cloud Platform integration scripts into contribs directory.
+ -- Fix minor potential memory leak in backfill plugin.
 
 * Changes in Slurm 17.11.4
 ==========================

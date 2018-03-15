@@ -7,7 +7,8 @@
 <p>Slurm has the ability to support a cluster that grows and
 shrinks on demand, typically relying upon a service such as
 <a href="http://aws.amazon.com/ec2/">Amazon Elastic Computing Cloud (Amazon EC2)</a>
-for resources.
+and <a href="https://cloud.google.com">Google Cloud Platform</a> (GCP
+integration scripts can be found in the contribs directory) for resources.
 These resources can be combined with an existing cluster to process excess
 workload (cloud bursting) or it can operate as an independent self-contained
 cluster.
@@ -169,6 +170,6 @@ expands (adds resources).</li>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 14 March 2018</p>
 
 <!--#include virtual="footer.txt"-->

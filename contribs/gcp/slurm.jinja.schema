@@ -1,0 +1,164 @@
+# Copyright 2017 SchedMD LLC.
+# Modified for use with the Slurm Resource Manager.
+#
+# Copyright 2015 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+info:
+  title: A template for creating a Slurm cluster.
+  author: SchedMD LLC
+  description: |
+    Create a Slurm cluster in GCP.
+
+imports:
+- path: scripts/resume.py
+- path: scripts/startup-script.py
+- path: scripts/suspend.py
+
+required:
+- cidr
+- cluster_name
+- compute_machine_type
+- controller_machine_type
+- default_account
+- default_users
+- login_machine_type
+- max_node_count
+- munge_key
+- region
+- slurm_version
+- static_node_count
+- zone
+
+optional:
+- compute_disk_size_gb
+- compute_disk_type
+- controller_disk_size_gb
+- controller_disk_type
+- external_compute_ips
+- login_disk_size_gb
+- login_disk_type
+- preemptible_bursting
+
+properties:
+  cidr:
+    type        : string
+    description : RFC1918 subnet to run instances in, eg. 10.10.0.0/16.
+
+  cluster_name:
+    type        : string
+    description : Name of the cluster
+
+  compute_machine_type:
+    type        : string
+    description : |
+      Machine type to use for compute node instances, eg. n1-standard-4.
+
+  compute_disk_type:
+    enum        : ["pd-ssd", "pd-standard"]
+    default     : pd-standard
+    description : Disk type (pd-ssd or pd-standard) for compute nodes.
+
+  compute_disk_size_gb:
+    type        : integer
+    default     : 100
+    minimum     : 10
+    maximum     : 64000
+    description : Size of disk for compute nodes.
+
+  controller_machine_type:
+    type        : string
+    description : |
+      Machine type to use for the controller instance, eg. n1-standard-4.
+
+  controller_disk_type:
+    enum        : ["pd-ssd", "pd-standard"]
+    default     : pd-standard
+    description : Disk type (pd-ssd or pd-standard) for controller.
+
+  controller_disk_size_gb:
+    type        : integer
+    default     : 100
+    minimum     : 10
+    maximum     : 64000
+    description : Size of disk for the controller.
+
+  default_account:
+    type        : string
+    description : Default account to setup in accounting.
+
+  default_users:
+    type        : string
+    description : |
+      Default users to add to accounting. Added to default_account. Users can be
+      added later using sacctmgr.
+
+  external_compute_ips:
+    type        : boolean
+    default     : True
+    description : |
+      Whether compute nodes are assigned external IPs or not. If set to false,
+      then the compute nodes will get to the internet through the controller
+      through a NAT'ed gateway.
+
+  login_machine_type:
+    type        : string
+    description : |
+      Machine type to use for login node instances, eg. n1-standard-4.
+
+  login_disk_type:
+    enum        : ["pd-ssd", "pd-standard"]
+    default     : pd-standard
+    description : Disk type (pd-ssd or pd-standard) for login node.
+
+  login_disk_size_gb:
+    type        : integer
+    default     : 100
+    minimum     : 10
+    maximum     : 64000
+    description : Size of disk for login node.
+
+  max_node_count:
+    type        : integer
+    description : Maximum number of instances that the cluster can grow to.
+
+  munge_key:
+    type        : string
+    description : The generated mungekey
+
+  preemptible_bursting:
+    type        : boolean
+    default     : False
+    description : |
+      Whether bursted compute nodes are preemptible instances or not. Makre sure
+      to choose a zone that has preemptible resources.
+
+  region:
+    type        : string
+    description : Region to run the instances in.
+
+  slurm_version:
+    type        : string
+    description : |
+      The Slurm version to install. The version should match link name found at
+      https : //www.schedmd.com/downloads.php.
+
+  static_node_count:
+    type        : integer
+    description : Number of initial instances in the cluster.
+
+  zone:
+    type        : string
+    description : Zone to run the instances in based on Region.
+
