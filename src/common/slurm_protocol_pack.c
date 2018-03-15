@@ -6904,8 +6904,13 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->authtype, buffer);
 
 		/* Old BackupAddr and BackupController */
-		packstr(build_ptr->control_addr[1], buffer);
-		packstr(build_ptr->control_machine[1], buffer);
+		if (build_ptr->control_cnt > 1) {
+			packstr(build_ptr->control_addr[1], buffer);
+			packstr(build_ptr->control_machine[1], buffer);
+		} else {
+			packnull(buffer);
+			packnull(buffer);
+		}
 		pack16(build_ptr->batch_start_timeout, buffer);
 		pack_time(build_ptr->boot_time, buffer);
 		packstr(build_ptr->bb_type, buffer);
@@ -7150,8 +7155,13 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->authtype, buffer);
 
 		/* Old BackupAddr and BackupController */
-		packstr(build_ptr->control_addr[1], buffer);
-		packstr(build_ptr->control_machine[1], buffer);
+		if (build_ptr->control_cnt > 1) {
+			packstr(build_ptr->control_addr[1], buffer);
+			packstr(build_ptr->control_machine[1], buffer);
+		} else {
+			packnull(buffer);
+			packnull(buffer);
+		}
 		pack16(build_ptr->batch_start_timeout, buffer);
 		pack_time(build_ptr->boot_time, buffer);
 		packstr(build_ptr->bb_type, buffer);
