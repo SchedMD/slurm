@@ -1133,6 +1133,70 @@ static char *_job_def_name(uint16_t type)
 	return name;
 }
 
+static uint16_t _job_def_type(char *type)
+{
+	if (!xstrcasecmp(type, "DefCpuPerGPU"))
+		return JOB_DEF_CPU_PER_GPU;
+	if (!xstrcasecmp(type, "DefMemPerGPU"))
+		return JOB_DEF_MEM_PER_GPU;
+	return NO_VAL16;
+}
+
+/*
+ * Translate string of job_defaults_t elements into a List.
+ * in_str IN - comma separated key=value pairs
+ * out_list OUT - equivalent list of key=value pairs
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int job_defaults_list(char *in_str, List *out_list)
+{
+	int rc = SLURM_SUCCESS;
+	List tmp_list;
+	char *end_ptr = NULL, *tmp_str, *save_ptr = NULL, *sep, *tok;
+	uint16_t type;
+	long long int value;
+	job_defaults_t *out_default;
+
+	*out_list = NULL;
+	if (!in_str || (in_str[0] == '\0'))
+		return rc;
+
+	tmp_list = list_create(job_defaults_free);
+	tmp_str = xstrdup(in_str);
+	tok = strtok_r(tmp_str, ",", &save_ptr);
+	while (tok) {
+		sep = strchr(tok, '=');
+		if (!sep) {
+			rc = EINVAL;
+			break;
+		}
+		sep[0] = '\0';
+		sep++;
+		type = _job_def_type(tok);
+		if (type == NO_VAL16) {
+			rc = EINVAL;
+			break;
+		}
+		value = strtoll(sep, &end_ptr, 10);
+		if (!end_ptr || (end_ptr[0] != '\0') ||
+		    (value < 0) || (value == LLONG_MAX)) {
+			rc = EINVAL;
+			break;
+		}
+		out_default = xmalloc(sizeof(job_defaults_t));
+		out_default->type = type;
+		out_default->value = (uint64_t) value;
+		list_append(tmp_list, out_default);
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+	if (rc != SLURM_SUCCESS)
+		FREE_NULL_LIST(tmp_list);
+	else
+		*out_list = tmp_list;
+	return rc;
+}
+
 /*
  * Translate list of job_defaults_t elements into a string.
  * Return value must be released using xfree()

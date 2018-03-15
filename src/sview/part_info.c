@@ -132,8 +132,10 @@ enum {
 	SORTID_CNT
 };
 
-/*these are the settings to apply for the user
- * on the first startup after a fresh slurm install.*/
+/*
+ * These are the settings to apply for the user
+ * on the first startup after a fresh slurm install.
+ */
 static char *_initial_page_opts = "Partition,Default,Part_State,Time_Limit,"
 	"Node_Count,Node_State,NodeList";
 
@@ -167,7 +169,7 @@ static display_data_t display_data_part[] = {
 	 EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_DEFAULTS, "Job Defaults", false,
-	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", false,
@@ -248,6 +250,8 @@ static display_data_t create_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_JOB_DEFAULTS, "Job Defaults", false,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PART_STATE, "State", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", false,
@@ -572,6 +576,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 			part_msg->flags |= PART_FLAG_HIDDEN_CLR;
 		}
 		type = "hidden";
+		break;
+	case SORTID_JOB_DEFAULTS:
+		type = "job_defaults";
+		part_msg->job_defaults_str = xstrdup(new_text);
 		break;
 	case SORTID_TIMELIMIT:
 		if ((xstrcasecmp(new_text, "infinite") == 0))
@@ -2421,6 +2429,7 @@ extern GtkListStore *create_model_part(int type)
 				   0, "suspend", 1, SORTID_PREEMPT_MODE, -1);
 		break;
 	case SORTID_GRACE_TIME:
+	case SORTID_JOB_DEFAULTS:
 	case SORTID_PRIORITY_JOB_FACTOR:
 	case SORTID_PRIORITY_TIER:
 	case SORTID_TIMELIMIT:
@@ -2479,7 +2488,7 @@ extern GtkListStore *create_model_part(int type)
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, "resume", 1, SORTID_NODE_STATE, -1);
-		for(i = 0; i < NODE_STATE_END; i++) {
+		for (i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);
 			if (!xstrcmp(upper, "UNKNOWN"))
 				continue;
@@ -2553,7 +2562,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		goto no_input;
 	}
 
-	if (column != SORTID_NODE_STATE && column != SORTID_FEATURES) {
+	if ((column != SORTID_NODE_STATE) && (column != SORTID_FEATURES)) {
 		if (old_text && !xstrcmp(old_text, new_text)) {
 			temp = g_strdup_printf("No change in value.");
 		} else if (slurm_update_partition(part_msg)

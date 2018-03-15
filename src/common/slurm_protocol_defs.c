@@ -3773,6 +3773,7 @@ extern void slurm_free_partition_info_members(partition_info_t * part)
 		xfree(part->deny_accounts);
 		xfree(part->deny_qos);
 		FREE_NULL_LIST(part->job_defaults_list);
+		xfree(part->job_defaults_str);
 		xfree(part->name);
 		xfree(part->nodes);
 		xfree(part->node_inx);

@@ -1710,6 +1710,25 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->max_mem_per_cpu = part_desc->max_mem_per_cpu;
 	}
 
+	if (part_desc->job_defaults_str) {
+		List new_job_def_list = NULL;
+		if (part_desc->job_defaults_str[0] == '\0') {
+			FREE_NULL_LIST(part_ptr->job_defaults_list);
+		} else if (job_defaults_list(part_desc->job_defaults_str,
+					     &new_job_def_list)
+					!= SLURM_SUCCESS) {
+			error("%s: Invalid JobDefaults(%s) given",
+			      __func__, part_desc->job_defaults_str);
+			error_code = ESLURM_INVALID_JOB_DEFAULTS;
+		} else {	/* New list successfully built */
+			FREE_NULL_LIST(part_ptr->job_defaults_list);
+			part_ptr->job_defaults_list = new_job_def_list;
+			info("%s: Setting JobDefaults to %s for partition %s",
+			      __func__, part_desc->job_defaults_str,
+			      part_desc->name);
+		}
+	}
+
 	if (part_desc->nodes != NULL) {
 		char *backup_node_list = part_ptr->nodes;
 

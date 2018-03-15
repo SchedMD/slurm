@@ -329,6 +329,14 @@ extern List job_defaults_copy(List in_list);
 extern void job_defaults_free(void *x);
 
 /*
+ * Translate string of job_defaults_t elements into a List.
+ * in_str IN - comma separated key=value pairs
+ * out_list OUT - equivalent list of key=value pairs
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int job_defaults_list(char *in_str, List *out_list);
+
+/*
  * Translate list of job_defaults_t elements into a string.
  * Return value must be released using xfree()
  */

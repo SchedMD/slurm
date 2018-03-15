@@ -353,6 +353,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job --batch option is invalid or not a subset of --constraints" },
 	{ ESLURM_INVALID_TRES,
 	  "Invalid TRES specification"				},
+	{ ESLURM_INVALID_JOB_DEFAULTS,
+	  "Invalid JobDefaults specification"			},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,

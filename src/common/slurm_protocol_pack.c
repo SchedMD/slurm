@@ -4155,6 +4155,7 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		packstr(msg->deny_accounts, buffer);
 		packstr(msg->deny_qos,     buffer);
 		pack16(msg-> flags,        buffer);
+		packstr(msg->job_defaults_str, buffer);
 		pack32(msg-> grace_time,   buffer);
 
 		pack32(msg-> max_cpus_per_node, buffer);
@@ -4202,8 +4203,8 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		pack16(msg-> priority_tier, buffer);
 		pack16(msg-> state_up,     buffer);
 	} else {
-		error("_pack_update_partition_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 	}
 }
 
@@ -4240,6 +4241,8 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 		safe_unpackstr_xmalloc(&tmp_ptr->deny_qos,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&tmp_ptr->flags,     buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->job_defaults_str, &uint32_tmp,
+				       buffer);
 		safe_unpack32(&tmp_ptr->grace_time, buffer);
 
 		safe_unpack32(&tmp_ptr->max_cpus_per_node, buffer);
@@ -4296,8 +4299,8 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 		safe_unpack16(&tmp_ptr->priority_tier, buffer);
 		safe_unpack16(&tmp_ptr->state_up,  buffer);
 	} else {
-		error("_unpack_update_partition_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 		goto unpack_error;
 	}
 	return SLURM_SUCCESS;
