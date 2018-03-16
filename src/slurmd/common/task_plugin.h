@@ -40,6 +40,12 @@
 #ifndef _SLURMD_TASK_PLUGIN_H_
 #define _SLURMD_TASK_PLUGIN_H_
 
+#ifdef __FreeBSD__
+#include <sys/param.h>
+#include <sys/cpuset.h>
+typedef cpuset_t cpu_set_t;
+#endif
+
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
