@@ -1062,7 +1062,7 @@ static void
 _print_conf(void)
 {
 	slurm_ctl_conf_t *cf;
-	char *str, time_str[32];
+	char *str = NULL, time_str[32];
 	int i;
 
 	cf = slurm_conf_lock();
@@ -1096,24 +1096,17 @@ _print_conf(void)
 	secs2time_str((time_t)conf->up_time, time_str, sizeof(time_str));
 	debug3("UpTime      = %u = %s", conf->up_time, time_str);
 
-	str = xmalloc(conf->block_map_size*5);
-	str[0] = '\0';
-	for (i = 0; i < conf->block_map_size; i++) {
-		char id[10];
-		sprintf(id, "%u,", conf->block_map[i]);
-		strcat(str, id);
-	}
-	str[strlen(str)-1] = '\0';		/* trim trailing "," */
+	for (i = 0; i < conf->block_map_size; i++)
+		xstrfmtcat(str, "%s%u", (str ? "," : ""),
+			   conf->block_map[i]);
 	debug3("Block Map   = %s", str);
-	str[0] = '\0';
-	for (i = 0; i < conf->block_map_size; i++) {
-		char id[10];
-		sprintf(id, "%u,", conf->block_map_inv[i]);
-		strcat(str, id);
-	}
-	str[strlen(str)-1] = '\0';		/* trim trailing "," */
+	xfree(str);
+	for (i = 0; i < conf->block_map_size; i++)
+		xstrfmtcat(str, "%s%u", (str ? "," : ""),
+			   conf->block_map_inv[i]);
 	debug3("Inverse Map = %s", str);
 	xfree(str);
+
 	debug3("RealMemory  = %"PRIu64"",conf->real_memory_size);
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     conf->epilog);

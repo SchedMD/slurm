@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix scontrol create res segfault when wrong user/account parameters given.
  -- Fix documentation for sacct on parameter -X (--allocations)
  -- Change TRES Weights debug messages to debug3.
+ -- FreeBSD - assorted fixes to restore build.
 
 * Changes in Slurm 17.11.5
 ==========================
