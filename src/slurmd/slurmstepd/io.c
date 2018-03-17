@@ -1060,6 +1060,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	} else {
 		/* create pipe and eio object */
 		int pout[2];
+		struct termios tio;
 #if HAVE_PTY_H
 		if (!(job->flags & LAUNCH_BUFFERED_IO)) {
 #if HAVE_SETRESUID
@@ -1070,6 +1071,12 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			if (openpty(pout, pout + 1, NULL, NULL, NULL) < 0) {
 				error("%s: stdout openpty: %m", __func__);
 				return SLURM_ERROR;
+			}
+			memset(&tio, 0, sizeof(tio));
+			if (tcgetattr(pout[1], &tio) == 0) {
+				tio.c_oflag &= ~OPOST;
+				if (tcsetattr(pout[1], 0, &tio) != 0)
+					error("%s: tcsetattr: %m", __func__);
 			}
 #if HAVE_SETRESUID
 			if (setresuid(0, getuid(), 0) < 0)

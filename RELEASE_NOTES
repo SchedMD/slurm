@@ -146,6 +146,9 @@ HIGHLIGHTS
     * Intel MPI (with Slurm's PMI2 plugin)
     * No support for Cray systems at this time.
  -- Add Slurm configuration file check logic using "slurmctld -t" command.
+ -- Disable local PTY output processing when using 'srun --unbuffered'. This
+    prevents the PTY subsystem from inserting extraneous \r characters into
+    the output stream.
 
 RPMBUILD CHANGES
 ================

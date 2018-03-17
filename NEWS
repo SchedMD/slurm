@@ -23,6 +23,9 @@ documents those changes that are of interest to users and administrators.
     MCDRAM/NUMA configurations.
  -- Fix security issue in accounting_storage/mysql plugin by always escaping
     strings within the slurmdbd. CVE-2018-7033.
+ -- Disable local PTY output processing when using 'srun --unbuffered'. This
+    prevents the PTY subsystem from inserting extraneous \r characters into
+    the output stream.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
