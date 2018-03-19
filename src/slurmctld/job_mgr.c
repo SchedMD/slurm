@@ -13556,7 +13556,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			info("sched: update_job: clearing TresPerJob option for jobid %u",
 			     job_ptr->job_id);
 		} else {
-			job_ptr->tres_per_node = xstrdup(job_specs->tres_per_job);
+			job_ptr->tres_per_job =
+					xstrdup(job_specs->tres_per_job);
 			info("sched: update_job: setting TresPerJob to %s for jobid %u",
 			     job_ptr->tres_per_job, job_ptr->job_id);
 		}
@@ -13571,7 +13572,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			info("sched: update_job: clearing TresPerNode option for jobid %u",
 			     job_ptr->job_id);
 		} else {
-			job_ptr->tres_per_node = xstrdup(job_specs->tres_per_node);
+			job_ptr->tres_per_node =
+					xstrdup(job_specs->tres_per_node);
 			info("sched: update_job: setting TresPerNode to %s for jobid %u",
 			     job_ptr->tres_per_node, job_ptr->job_id);
 		}
