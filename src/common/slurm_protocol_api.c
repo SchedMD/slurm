@@ -146,7 +146,7 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 		goto cleanup;
 	}
 
-	memset(controller_addr, 0, sizeof(slurm_addr_t));
+	memset(&controller_addr, 0, sizeof(slurm_addr_t));
 	slurm_set_addr(&controller_addr, conf->slurmctld_port,
 		       conf->control_addr[0]);
 	if (controller_addr.sin_port == 0) {
