@@ -1940,14 +1940,13 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_STEP_LAYOUT:
 	case REQUEST_JOB_STEP_STAT:
 	case REQUEST_JOB_STEP_PIDS:
-		_unpack_job_step_id_msg((job_step_id_msg_t **)&msg->data,
-					buffer,
-					msg->protocol_version);
+		rc = _unpack_job_step_id_msg((job_step_id_msg_t **)&msg->data,
+					     buffer, msg->protocol_version);
 		break;
 	case RESPONSE_STEP_LAYOUT:
-		unpack_slurm_step_layout((slurm_step_layout_t **)&msg->data,
-					 buffer,
-					 msg->protocol_version);
+		rc = unpack_slurm_step_layout(
+					(slurm_step_layout_t **)&msg->data,
+					buffer, msg->protocol_version);
 		break;
 	case RESPONSE_JOB_STEP_PIDS:
 		_unpack_job_step_pids(
