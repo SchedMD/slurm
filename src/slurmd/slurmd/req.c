@@ -2333,6 +2333,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 			 * happened.
 			 */
 			if (retry_cnt > 50) {
+				slurm_mutex_unlock(&prolog_mutex);
 				rc = ESLURMD_PROLOG_FAILED;
 				goto done;
 			}
