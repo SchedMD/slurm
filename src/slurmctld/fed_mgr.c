@@ -1229,7 +1229,6 @@ extern void add_fed_job_info(struct job_record *job_ptr)
 	fed_job_info_t *job_info;
 
 	job_info = xmalloc(sizeof(fed_job_info_t));
-	memset(job_info, 0, sizeof(fed_job_info_t));
 	job_info->job_id          = job_ptr->job_id;
 	job_info->siblings_active = job_ptr->fed_details->siblings_active;
 	job_info->siblings_viable = job_ptr->fed_details->siblings_viable;
@@ -1237,6 +1236,8 @@ extern void add_fed_job_info(struct job_record *job_ptr)
 	slurm_mutex_lock(&fed_job_list_mutex);
 	if (fed_job_list)
 		list_append(fed_job_list, job_info);
+	else
+		xfree(job_info);
 	slurm_mutex_unlock(&fed_job_list_mutex);
 }
 
