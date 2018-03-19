@@ -248,6 +248,8 @@ static void _set_collectors(char *this_node_name)
 		/* set our parent, backup, and continue search */
 		for (i = 0; i < backup_cnt; i++)
 			xfree(backup[i]);
+		if (parent)
+			free(parent);
 		parent = hostlist_shift(nodes);
 		tmp = hostlist_nth(nodes, 0);
 		backup[0] = xstrdup(tmp);
