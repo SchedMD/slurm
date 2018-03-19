@@ -160,7 +160,7 @@ static void _set_collectors(char *this_node_name)
 			backup[i] = NULL;
 	}
 	msg_backup_cnt = backup_cnt + 2;
-	msg_collect_backup = xmalloc(sizeof(slurm_addr_t) * msg_backup_cnt);
+	msg_collect_backup = xmalloc(sizeof(slurm_addr_t *) * msg_backup_cnt);
 	parent_port = conf->slurmctld_port;
 	backup_port = parent_port;
 	slurm_conf_unlock();
