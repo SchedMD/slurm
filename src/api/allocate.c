@@ -271,9 +271,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			/* no, we need to wait for a response */
 
 			/* print out any user messages before we wait. */
-			if (resp)
-				print_multi_line_string(
-					resp->job_submit_user_msg, -1);
+			print_multi_line_string(resp->job_submit_user_msg, -1);
 
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
