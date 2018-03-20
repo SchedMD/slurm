@@ -119,7 +119,7 @@ the slurmctld daemon.</li>
 The <i>priority/builtin</i> is considerably faster than other options, but
 schedules jobs only on a First In First Out (FIFO) basis.</li>
 <li><b>SchedulerParameters</b>:
-Several scheduling parameters are available.
+Many scheduling parameters are available.
 <ul>
 <li>Setting option <b>batch_sched_delay</b> will control how long the
 scheduling of batch jobs can be delayed. This effects only batch jobs.
@@ -151,6 +151,22 @@ overhead of backfill scheduling (NOTE: the default values are fine for both
 of these parameters). Other backfill options available for tuning backfill 
 scheduling include <b>bf_max_job_user</b>, <b>bf_resolution</b> and
 <b>bf_window</b>. See the slurm.conf man page for details.</li>
+<li>A set of scheduling parameters currently used for running hundreds of jobs
+per second on a sustained basis on one cluster follows. Note that every
+environment is different and this set of parameters will not work well
+in every case, but it may serve as a good starting point.</li>
+<ul>
+<li>assoc_limit_continue</li>
+<li>batch_sched_delay=20</li>
+<li>bf_continue</li>
+<li>bf_interval=300</li>
+<li>bf_min_age_reserve=10800</li>
+<li>bf_resolution=600</li>
+<li>bf_yield_interval=1000000</li>
+<li>partition_job_depth=500</li>
+<li>sched_max_job_start=200</li>
+<li>sched_min_interval=2000000</li>
+</ul>
 </ul></li>
 <li><b>SchedulerType</b>:
 If most jobs are short lived then use of the <i>sched/builtin</i> plugin is
@@ -213,6 +229,6 @@ appropriate for your environment.</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 15 November 2017</p>
+<p style="text-align:center;">Last modified 19 March 2018</p>
 
 <!--#include virtual="footer.txt"-->
