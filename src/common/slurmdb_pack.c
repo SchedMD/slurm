@@ -9051,6 +9051,8 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			return;
 		}
 
@@ -9063,6 +9065,8 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t protocol_version,
 		pack32(object->purge_resv, buffer);
 		pack32(object->purge_step, buffer);
 		pack32(object->purge_suspend, buffer);
+		pack32(object->purge_txn, buffer);
+		pack32(object->purge_usage, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
@@ -9098,13 +9102,6 @@ extern int slurmdb_unpack_archive_cond(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
-		/*
-		 * Looks like we missed these when added to the structure.
-		 * Correctly fixed in 18.08.
-		 */
-		object_ptr->purge_txn = NO_VAL;
-		object_ptr->purge_usage = NO_VAL;
-
 		safe_unpackstr_xmalloc(&object_ptr->archive_dir,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->archive_script,
@@ -9118,6 +9115,8 @@ extern int slurmdb_unpack_archive_cond(void **object, uint16_t protocol_version,
 		safe_unpack32(&object_ptr->purge_resv, buffer);
 		safe_unpack32(&object_ptr->purge_step, buffer);
 		safe_unpack32(&object_ptr->purge_suspend, buffer);
+		safe_unpack32(&object_ptr->purge_txn, buffer);
+		safe_unpack32(&object_ptr->purge_usage, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/*
 		 * Looks like we missed these when added to the structure.
