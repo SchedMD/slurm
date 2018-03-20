@@ -94,7 +94,7 @@ if {$pack_job_id == 0} {
 }
 
 make_bash_script $file_in "
-#!/bin/bash
+#!/usr/bin/env bash
 sleep_time=`expr 3 - \$SLURM_PROCID`
 sleep \$sleep_time
 env | grep SLURMD
@@ -125,7 +125,7 @@ if {$matches != 3} {
 }
 
 make_bash_script $file_in "
-#!/bin/bash
+#!/usr/bin/env bash
 sleep_time=`expr \$SLURM_PROCID`
 sleep \$sleep_time
 env | grep SLURMD
