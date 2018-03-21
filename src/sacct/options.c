@@ -427,8 +427,8 @@ sacct [<OPTION>]                                                            \n \
      -x, --associations:                                                    \n\
                    Only send data about these association id.  Default is all.\n\
      -X, --allocations:                                                     \n\
-	           Only show cumulative statistics for each job, not the    \n\
-	           intermediate steps.                                      \n\
+	           Only show statistics relevant to the job allocation      \n\
+	           itself, not taking steps into consideration.             \n\
 	                                                                    \n\
      Note, valid start/end time formats are...                              \n\
 	           HH:MM[:SS] [AM|PM]                                       \n\

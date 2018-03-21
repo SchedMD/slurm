@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix initialization of variable in stepd when using native x11.
  -- Fix reading slurm_io_init_msg to handle partial messages.
  -- Fix scontrol create res segfault when wrong user/account parameters given.
+ -- Fix documentation for sacct on parameter -X (--allocations)
 
 * Changes in Slurm 17.11.5
 ==========================
