@@ -1054,7 +1054,7 @@ extern void jag_common_poll_data(
 			jobacct->last_tres_usage_out_tot =
 				jobacct->tres_usage_out_tot[TRES_ARRAY_FS_DISK];
 			jobacct->last_total_cputime =
-				jobacct->tres_usage_out_tot[TRES_ARRAY_CPU];
+				jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
 
 			jobacct->last_time = jobacct->cur_time;
 		}
