@@ -6223,9 +6223,9 @@ extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 		if (i == TRES_ARRAY_BILLING)
 			continue;
 
-		debug("TRES Weight: %s = %f * %f = %f",
-		      assoc_mgr_tres_name_array[i], tres_value, tres_weight,
-		      tres_value * tres_weight);
+		debug3("TRES Weight: %s = %f * %f = %f",
+		       assoc_mgr_tres_name_array[i], tres_value, tres_weight,
+		       tres_value * tres_weight);
 
 		tres_value *= tres_weight;
 
@@ -6241,10 +6241,10 @@ extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 
 	billable_tres = to_bill_node + to_bill_global;
 
-	debug("TRES Weighted: %s = %f",
-	      (flags & PRIORITY_FLAGS_MAX_TRES) ?
-	      "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
-	      billable_tres);
+	debug3("TRES Weighted: %s = %f",
+	       (flags & PRIORITY_FLAGS_MAX_TRES) ?
+	       "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
+	       billable_tres);
 
 	if (!locked)
 		assoc_mgr_unlock(&tres_read_lock);
