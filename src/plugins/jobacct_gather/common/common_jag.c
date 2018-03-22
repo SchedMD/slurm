@@ -764,8 +764,11 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		return;
 
 	data[FIELD_CPUFREQ].u64 = jobacct->act_cpufreq;
-	data[FIELD_RSS].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
-	data[FIELD_VMSIZE].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+	/* Profile Mem and VMem as KB */
+	data[FIELD_RSS].u64 =
+		jobacct->tres_usage_in_tot[TRES_ARRAY_MEM] / 1024;
+	data[FIELD_VMSIZE].u64 =
+		jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM] / 1024;
 	data[FIELD_PAGES].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES];
 
 	/* delta from last snapshot */
@@ -776,8 +779,8 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_WRITE].d = 0.0;
 	} else {
 		data[FIELD_CPUTIME].d =
-			(double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] -
-			jobacct->last_total_cputime;
+			((double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] -
+			 jobacct->last_total_cputime) / CPU_TIME_ADJ;
 		et = (jobacct->cur_time - jobacct->last_time);
 		if (!et)
 			data[FIELD_CPUUTIL].d = 0.0;
@@ -793,6 +796,9 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_WRITE].d = (double) jobacct->
 			tres_usage_out_tot[TRES_ARRAY_FS_DISK] -
 			jobacct->last_tres_usage_out_tot;
+		/* Profile disk as MB */
+		data[FIELD_READ].d /= 1048576.0;
+		data[FIELD_WRITE].d /= 1048576.0;
 	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
