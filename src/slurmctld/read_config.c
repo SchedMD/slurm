@@ -1216,7 +1216,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	init_requeue_policy();
 
-	if (!reconfig) {
+	if (!reconfig && recover < 2) {
 		_set_features(node_record_table_ptr, node_record_count,
 			      recover);
 	}
@@ -1553,13 +1553,6 @@ static void _set_features(struct node_record *old_node_table_ptr,
 
 		xfree(node_ptr->features);
 		xfree(node_ptr->features_act);
-
-		if (recover == 2) {
-			node_ptr->features = xstrdup(old_node_ptr->features);
-			node_ptr->features_act =
-				xstrdup(old_node_ptr->features_act);
-			continue;
-		}
 
 		/* Copy slurm.conf features to this node_ptr */
 		node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
