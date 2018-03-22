@@ -351,8 +351,8 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 	prec->tres_data[TRES_ARRAY_VMEM].size_read = vsize;
 	prec->tres_data[TRES_ARRAY_MEM].size_read = rss * my_pagesize;
 
-	prec->usec  = utime;
-	prec->ssec  = stime;
+	prec->usec  = (double)utime/(double)hertz;
+	prec->ssec  = (double)stime/(double)hertz;
 	prec->last_cpu = last_cpu;
 	return 1;
 }
@@ -862,7 +862,7 @@ extern void print_jag_prec(jag_prec_t *prec)
 
 	info("pid %d (ppid %d)", prec->pid, prec->ppid);
 	info("act_cpufreq\t%d", prec->act_cpufreq);
-	info("ssec \t%d", prec->ssec);
+	info("ssec \t%f", prec->ssec);
 	assoc_mgr_lock(&locks);
 	for (i = 0; i < prec->tres_count; i++) {
 		if (prec->tres_data[i].size_read == INFINITE64)
@@ -875,7 +875,7 @@ extern void print_jag_prec(jag_prec_t *prec)
 		     prec->tres_data[i].size_write);
 	}
 	assoc_mgr_unlock(&locks);
-	info("usec \t%d", prec->usec);
+	info("usec \t%f", prec->usec);
 }
 
 extern void jag_common_poll_data(
@@ -947,7 +947,7 @@ extern void jag_common_poll_data(
 		last_total_cputime =
 			(double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
 
-		cpu_calc = (double)(prec->ssec + prec->usec)/(double)hertz;
+		cpu_calc = prec->ssec + prec->usec;
 
 		/*
 		 * Since we are not storing things as a double anymore make it
@@ -1013,8 +1013,8 @@ extern void jag_common_poll_data(
 
 		/* Update the cpu times */
 		jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] = (uint64_t)cpu_calc;
-		jobacct->user_cpu_sec = prec->usec/hertz;
-		jobacct->sys_cpu_sec = prec->ssec/hertz;
+		jobacct->user_cpu_sec = (uint32_t)prec->usec;
+		jobacct->sys_cpu_sec = (uint32_t)prec->ssec;
 
 		/* compute frequency */
 		jobacct->this_sampled_cputime =
