@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix documentation for sacct on parameter -X (--allocations)
  -- Change TRES Weights debug messages to debug3.
  -- FreeBSD - assorted fixes to restore build.
+ -- Fix for not tracking environment variables from unrelated different jobs.
 
 * Changes in Slurm 17.11.5
 ==========================
