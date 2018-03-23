@@ -1123,6 +1123,9 @@ _print_conf(void)
 	char *str, time_str[32];
 	int i;
 
+	if (conf->log_opts.stderr_level < LOG_LEVEL_DEBUG3)
+		return;
+
 	cf = slurm_conf_lock();
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("TopoAddr    = %s",       conf->node_topo_addr);
