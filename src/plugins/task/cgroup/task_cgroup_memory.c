@@ -39,7 +39,6 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>		/* getenv */
-#include <sys/eventfd.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -54,6 +53,8 @@
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
+#else
+#include <sys/eventfd.h>
 #endif
 
 extern slurmd_conf_t *conf;
@@ -408,6 +409,17 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	return 0;
 }
 
+#if defined(__FreeBSD__) || defined(__NetBSD__)
+
+static int _register_oom_notifications(char *ignored)
+{
+	error("OOM notification does not work on FreeBSD or NetBSD");
+
+	return SLURM_ERROR;
+}
+
+#else
+
 static int _read_fd(int fd, uint64_t *buf)
 {
 	int rc = SLURM_ERROR;
@@ -640,6 +652,7 @@ fini:
 
 	return rc;
 }
+#endif
 
 extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 {
