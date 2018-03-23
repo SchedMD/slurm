@@ -127,6 +127,12 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 		val++;
 
 		if (!xstrncasecmp(tag, "Accounts", MAX(taglen, 1))) {
+			if (resv_msg_ptr->accounts) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
 			if (plus_minus) {
 				resv_msg_ptr->accounts =
 					_process_plus_minus(plus_minus, val);
@@ -154,6 +160,12 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			else
 				resv_msg_ptr->flags |= f;
 		} else if (!xstrncasecmp(tag, "Users", MAX(taglen, 1))) {
+			if (resv_msg_ptr->users) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
 			if (plus_minus) {
 				resv_msg_ptr->users =
 					_process_plus_minus(plus_minus, val);

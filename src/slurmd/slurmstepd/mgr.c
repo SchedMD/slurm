@@ -965,7 +965,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	int rc = SLURM_SUCCESS;
 
 #ifdef WITH_SLURM_X11
-	int x11_pipe[2];
+	int x11_pipe[2] = {0, 0};
 
 	if (job->x11 && (pipe(x11_pipe) < 0)) {
 		error("x11 pipe: %m");
