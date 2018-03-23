@@ -168,8 +168,16 @@ extern int node_config_load(List gres_conf_list)
  */
 extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
 {
-	static int local_inx = 0;
-	static bool already_seen = false;
+	/*
+	 * Variables are not static like in step_*_env since we could be calling
+	 * this from the slurmd where we are dealing with a different job each
+	 * time we hit this function, so we don't want to keep track of other
+	 * unrelated job's status.  This can also get called multiple times
+	 * (different prologs and such) which would also result in bad info each
+	 * call after the first.
+	 */
+	int local_inx = 0;
+	bool already_seen = false;
 
 	_set_env(job_env_ptr, gres_ptr, node_inx, NULL,
 		 &already_seen, &local_inx, false, true);
