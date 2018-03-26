@@ -457,7 +457,7 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_MINCPU:
 			if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
-				     step->stats.tres_usage_in_max,
+				     step->stats.tres_usage_in_min,
 				     TRES_CPU)) == INFINITE64)
 				tmp_uint64 = NO_VAL64;
 
@@ -475,7 +475,7 @@ void print_fields(slurmdb_step_rec_t *step)
 			tmp_char = find_hostname(
 				slurmdb_find_tres_count_in_string(
 					step->stats.
-					tres_usage_in_max_nodeid,
+					tres_usage_in_min_nodeid,
 					TRES_CPU),
 				step->nodes);
 
@@ -487,7 +487,7 @@ void print_fields(slurmdb_step_rec_t *step)
 		case PRINT_MINCPUTASK:
 			if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				     step->stats.
-				     tres_usage_in_max_taskid,
+				     tres_usage_in_min_taskid,
 				     TRES_CPU)) == INFINITE64)
 				tmp_uint64 = NO_VAL64;
 
