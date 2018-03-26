@@ -1359,22 +1359,18 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 
 
 	if (jobacct) {
-		char *tres_usage_in_ave = NULL;
-		char *tres_usage_out_ave = NULL;
-		char *tres_usage_in_max = NULL;
-		char *tres_usage_in_max_taskid = NULL;
-		char *tres_usage_in_max_nodeid = NULL;
-		char *tres_usage_out_max = NULL;
-		char *tres_usage_out_max_taskid = NULL;
-		char *tres_usage_out_max_nodeid = NULL;
+		slurmdb_stats_t stats;
+
+		memset(&stats, 0, sizeof(slurmdb_stats_t));
+
 		/* figure out the ave of the totals sent */
 		if (tasks > 0) {
-			tres_usage_in_ave =
+			stats.tres_usage_in_ave =
 				_average_tres_usage(jobacct->tres_ids,
 						    jobacct->tres_usage_in_tot,
 						    jobacct->tres_count,
 						    tasks);
-			tres_usage_out_ave =
+			stats.tres_usage_out_ave =
 				_average_tres_usage(jobacct->tres_ids,
 						    jobacct->tres_usage_out_tot,
 						    jobacct->tres_count,
@@ -1386,29 +1382,61 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		 * changed, we have to go off what was sent us.  We can just use
 		 * the _average_tres_usage to do this by dividing by 1.
 		 */
-		tres_usage_in_max = _average_tres_usage(
+		stats.tres_usage_in_max = _average_tres_usage(
 			jobacct->tres_ids,
 			jobacct->tres_usage_in_max,
 			jobacct->tres_count, 1);
-		tres_usage_in_max_nodeid = _average_tres_usage(
+		stats.tres_usage_in_max_nodeid = _average_tres_usage(
 			jobacct->tres_ids,
 			jobacct->tres_usage_in_max_nodeid,
 			jobacct->tres_count, 1);
-		tres_usage_in_max_taskid = _average_tres_usage(
+		stats.tres_usage_in_max_taskid = _average_tres_usage(
 			jobacct->tres_ids,
 			jobacct->tres_usage_in_max_taskid,
 			jobacct->tres_count, 1);
-		tres_usage_out_max = _average_tres_usage(
+		stats.tres_usage_in_min = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_min,
+			jobacct->tres_count, 1);
+		stats.tres_usage_in_min_nodeid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_min_nodeid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_in_min_taskid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_min_taskid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_in_tot = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_tot,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_max = _average_tres_usage(
 			jobacct->tres_ids,
 			jobacct->tres_usage_out_max,
 			jobacct->tres_count, 1);
-		tres_usage_out_max_nodeid = _average_tres_usage(
+		stats.tres_usage_out_max_nodeid = _average_tres_usage(
 			jobacct->tres_ids,
 			jobacct->tres_usage_out_max_nodeid,
 			jobacct->tres_count, 1);
-		tres_usage_out_max_taskid = _average_tres_usage(
+		stats.tres_usage_out_max_taskid = _average_tres_usage(
 			jobacct->tres_ids,
 			jobacct->tres_usage_out_max_taskid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_min = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_min,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_min_nodeid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_min_nodeid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_min_taskid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_min_taskid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_tot = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_tot,
 			jobacct->tres_count, 1);
 
 		xstrfmtcat(query,
@@ -1420,9 +1448,17 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			   "tres_usage_in_max='%s', "
 			   "tres_usage_in_max_taskid='%s', "
 			   "tres_usage_in_max_nodeid='%s', "
+			   "tres_usage_in_min='%s', "
+			   "tres_usage_in_min_taskid='%s', "
+			   "tres_usage_in_min_nodeid='%s', "
+			   "tres_usage_in_tot='%s', "
 			   "tres_usage_out_max='%s', "
 			   "tres_usage_out_max_taskid='%s', "
-			   "tres_usage_out_max_nodeid='%s'",
+			   "tres_usage_out_max_nodeid='%s', "
+			   "tres_usage_out_min='%s', "
+			   "tres_usage_out_min_taskid='%s', "
+			   "tres_usage_out_min_nodeid='%s', "
+			   "tres_usage_out_tot='%s'",
 			   /* user seconds */
 			   jobacct->user_cpu_sec,
 			   /* user microseconds */
@@ -1433,22 +1469,24 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			   jobacct->sys_cpu_usec,
 			   jobacct->act_cpufreq,
 			   jobacct->energy.consumed_energy,
-			   tres_usage_in_ave,	/* ave usage in */
-			   tres_usage_out_ave,	/* ave usage out */
-			   tres_usage_in_max, 	/* max usage in */
-			   tres_usage_in_max_taskid, /* max usage in taskid */
-			   tres_usage_in_max_nodeid, /* max usage in nodeid */
-			   tres_usage_out_max,	/* max usage out */
-			   tres_usage_out_max_taskid, /* max usage out taskid */
-			   tres_usage_out_max_nodeid); /* max usage out nodeid */
-		xfree(tres_usage_in_ave);
-		xfree(tres_usage_out_ave);
-		xfree(tres_usage_in_max);
-		xfree(tres_usage_in_max_taskid);
-		xfree(tres_usage_in_max_nodeid);
-		xfree(tres_usage_out_max);
-		xfree(tres_usage_out_max_taskid);
-		xfree(tres_usage_out_max_nodeid);
+			   stats.tres_usage_in_ave,
+			   stats.tres_usage_out_ave,
+			   stats.tres_usage_in_max,
+			   stats.tres_usage_in_max_taskid,
+			   stats.tres_usage_in_max_nodeid,
+			   stats.tres_usage_in_min,
+			   stats.tres_usage_in_min_taskid,
+			   stats.tres_usage_in_min_nodeid,
+			   stats.tres_usage_in_tot,
+			   stats.tres_usage_out_max,
+			   stats.tres_usage_out_max_taskid,
+			   stats.tres_usage_out_max_nodeid,
+			   stats.tres_usage_out_min,
+			   stats.tres_usage_out_min_taskid,
+			   stats.tres_usage_out_min_nodeid,
+			   stats.tres_usage_out_tot);
+
+		slurmdb_free_slurmdb_stats_members(&stats);
 	}
 
 	/* id_step has to be %d here to handle the -2 -1 for the batch and

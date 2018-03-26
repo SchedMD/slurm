@@ -143,7 +143,7 @@ static int _parse_comp_file(
 			atoi(update[UPDATE_STEP_USER_SEC]);
 		step_msg->jobacct->sys_cpu_sec =
 			atoi(update[UPDATE_STEP_SYS_SEC]);
-		step_msg->jobacct->tres_usage_in_max[TRES_ARRAY_CPU] =
+		step_msg->jobacct->tres_usage_in_min[TRES_ARRAY_CPU] =
 			step_msg->jobacct->user_cpu_sec
 			+ step_msg->jobacct->sys_cpu_sec;
 		step_msg->jobacct->tres_usage_in_max[TRES_ARRAY_MEM] =

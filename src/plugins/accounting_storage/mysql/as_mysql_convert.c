@@ -375,10 +375,18 @@ static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "tres_usage_in_max", "text not null default ''" },
 		{ "tres_usage_in_max_taskid", "text not null default ''" },
 		{ "tres_usage_in_max_nodeid", "text not null default ''" },
+		{ "tres_usage_in_min", "text not null default ''" },
+		{ "tres_usage_in_min_taskid", "text not null default ''" },
+		{ "tres_usage_in_min_nodeid", "text not null default ''" },
+		{ "tres_usage_in_tot", "text not null default ''" },
 		{ "tres_usage_out_ave", "text not null default ''" },
 		{ "tres_usage_out_max", "text not null default ''" },
 		{ "tres_usage_out_max_taskid", "text not null default ''" },
 		{ "tres_usage_out_max_nodeid", "text not null default ''" },
+		{ "tres_usage_out_min", "text not null default ''" },
+		{ "tres_usage_out_min_taskid", "text not null default ''" },
+		{ "tres_usage_out_min_nodeid", "text not null default ''" },
+		{ "tres_usage_out_tot", "text not null default ''" },
 		{ NULL, NULL}
 	};
 
@@ -528,13 +536,13 @@ static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 			/* TRES_CPU */
 			tmp32 = slurm_atoul(row[STEP_REQ_MIN_CPU]);
 			if (tmp32 != NO_VAL) {
-				jobacct->tres_usage_in_max[TRES_ARRAY_CPU] =
+				jobacct->tres_usage_in_min[TRES_ARRAY_CPU] =
 					tmp32;
-				jobacct->tres_usage_in_max_nodeid[
+				jobacct->tres_usage_in_min_nodeid[
 					TRES_ARRAY_CPU] =
 					slurm_atoull(
 						row[STEP_REQ_MIN_CPU_NODE]);
-				jobacct->tres_usage_in_max_taskid[
+				jobacct->tres_usage_in_min_taskid[
 					TRES_ARRAY_CPU] =
 					slurm_atoull(
 						row[STEP_REQ_MIN_CPU_TASK]);

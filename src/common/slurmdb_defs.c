@@ -95,20 +95,6 @@ static void _free_federation_rec_members(slurmdb_federation_rec_t *federation)
 	}
 }
 
-static void _free_stats(slurmdb_stats_t *stats)
-{
-	if (stats) {
-		xfree(stats->tres_usage_in_ave);
-		xfree(stats->tres_usage_in_max);
-		xfree(stats->tres_usage_in_max_nodeid);
-		xfree(stats->tres_usage_in_max_taskid);
-		xfree(stats->tres_usage_out_ave);
-		xfree(stats->tres_usage_out_max);
-		xfree(stats->tres_usage_out_max_nodeid);
-		xfree(stats->tres_usage_out_max_taskid);
-	}
-}
-
 static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 {
 	if (wckey) {
@@ -862,7 +848,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->nodes);
 		xfree(job->req_gres);
 		xfree(job->resv_name);
-		_free_stats(&job->stats);
+		slurmdb_free_slurmdb_stats_members(&job->stats);
 		FREE_NULL_LIST(job->steps);
 		xfree(job->system_comment);
 		xfree(job->tres_alloc_str);
@@ -937,7 +923,7 @@ extern void slurmdb_destroy_step_rec(void *object)
 	if (step) {
 		xfree(step->nodes);
 		xfree(step->pid_str);
-		_free_stats(&step->stats);
+		slurmdb_free_slurmdb_stats_members(&step->stats);
 		xfree(step->stepname);
 		xfree(step->tres_alloc_str);
 		xfree(step);
@@ -4298,4 +4284,32 @@ extern void slurmdb_destroy_stats_rec(void *object)
 		xfree(rpc_stats->rpc_user_time);
 		xfree(object);
 	}
+}
+
+extern void slurmdb_free_slurmdb_stats_members(slurmdb_stats_t *stats)
+{
+	if (stats) {
+		xfree(stats->tres_usage_in_ave);
+		xfree(stats->tres_usage_in_max);
+		xfree(stats->tres_usage_in_max_nodeid);
+		xfree(stats->tres_usage_in_max_taskid);
+		xfree(stats->tres_usage_in_min);
+		xfree(stats->tres_usage_in_min_nodeid);
+		xfree(stats->tres_usage_in_min_taskid);
+		xfree(stats->tres_usage_in_tot);
+		xfree(stats->tres_usage_out_ave);
+		xfree(stats->tres_usage_out_max);
+		xfree(stats->tres_usage_out_max_nodeid);
+		xfree(stats->tres_usage_out_max_taskid);
+		xfree(stats->tres_usage_out_min);
+		xfree(stats->tres_usage_out_min_nodeid);
+		xfree(stats->tres_usage_out_min_taskid);
+		xfree(stats->tres_usage_out_tot);
+	}
+}
+
+extern void slurmdb_destroy_slurmdb_stats(slurmdb_stats_t *stats)
+{
+	slurmdb_free_slurmdb_stats_members(stats);
+	xfree(stats);
 }

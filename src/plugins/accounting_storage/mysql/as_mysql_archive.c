@@ -162,10 +162,18 @@ typedef struct {
 	char *tres_usage_in_max;
 	char *tres_usage_in_max_nodeid;
 	char *tres_usage_in_max_taskid;
+	char *tres_usage_in_min;
+	char *tres_usage_in_min_nodeid;
+	char *tres_usage_in_min_taskid;
+	char *tres_usage_in_tot;
 	char *tres_usage_out_ave;
 	char *tres_usage_out_max;
 	char *tres_usage_out_max_nodeid;
 	char *tres_usage_out_max_taskid;
+	char *tres_usage_out_min;
+	char *tres_usage_out_min_nodeid;
+	char *tres_usage_out_min_taskid;
+	char *tres_usage_out_tot;
 	char *user_sec;
 	char *user_usec;
 } local_step_t;
@@ -373,13 +381,21 @@ static char *step_req_inx[] = {
 	"req_cpufreq_gov",
 	"tres_alloc",
 	"tres_usage_in_ave",
-	"tres_usage_out_ave",
 	"tres_usage_in_max",
 	"tres_usage_in_max_nodeid",
 	"tres_usage_in_max_taskid",
+	"tres_usage_in_min",
+	"tres_usage_in_min_nodeid",
+	"tres_usage_in_min_taskid",
+	"tres_usage_in_tot",
+	"tres_usage_out_ave",
 	"tres_usage_out_max",
 	"tres_usage_out_max_nodeid",
 	"tres_usage_out_max_taskid",
+	"tres_usage_out_min",
+	"tres_usage_out_min_nodeid",
+	"tres_usage_out_min_taskid",
+	"tres_usage_out_tot",
 };
 
 
@@ -409,13 +425,21 @@ enum {
 	STEP_REQ_REQ_CPUFREQ_GOV,
 	STEP_REQ_TRES,
 	STEP_TRES_USAGE_IN_AVE,
-	STEP_TRES_USAGE_OUT_AVE,
 	STEP_TRES_USAGE_IN_MAX,
 	STEP_TRES_USAGE_IN_MAX_NODEID,
 	STEP_TRES_USAGE_IN_MAX_TASKID,
+	STEP_TRES_USAGE_IN_MIN,
+	STEP_TRES_USAGE_IN_MIN_NODEID,
+	STEP_TRES_USAGE_IN_MIN_TASKID,
+	STEP_TRES_USAGE_IN_TOT,
+	STEP_TRES_USAGE_OUT_AVE,
 	STEP_TRES_USAGE_OUT_MAX,
 	STEP_TRES_USAGE_OUT_MAX_NODEID,
 	STEP_TRES_USAGE_OUT_MAX_TASKID,
+	STEP_TRES_USAGE_OUT_MIN,
+	STEP_TRES_USAGE_OUT_MIN_NODEID,
+	STEP_TRES_USAGE_OUT_MIN_TASKID,
+	STEP_TRES_USAGE_OUT_TOT,
 	STEP_REQ_COUNT,
 };
 
@@ -1079,13 +1103,21 @@ static void _pack_local_step(local_step_t *object,
 	packstr(object->task_dist, buffer);
 	packstr(object->tres_alloc_str, buffer);
 	packstr(object->tres_usage_in_ave, buffer);
-	packstr(object->tres_usage_out_ave, buffer);
 	packstr(object->tres_usage_in_max, buffer);
 	packstr(object->tres_usage_in_max_nodeid, buffer);
 	packstr(object->tres_usage_in_max_taskid, buffer);
+	packstr(object->tres_usage_in_min, buffer);
+	packstr(object->tres_usage_in_min_nodeid, buffer);
+	packstr(object->tres_usage_in_min_taskid, buffer);
+	packstr(object->tres_usage_in_tot, buffer);
+	packstr(object->tres_usage_out_ave, buffer);
 	packstr(object->tres_usage_out_max, buffer);
 	packstr(object->tres_usage_out_max_nodeid, buffer);
 	packstr(object->tres_usage_out_max_taskid, buffer);
+	packstr(object->tres_usage_out_min, buffer);
+	packstr(object->tres_usage_out_min_nodeid, buffer);
+	packstr(object->tres_usage_out_min_taskid, buffer);
+	packstr(object->tres_usage_out_tot, buffer);
 	packstr(object->user_sec, buffer);
 	packstr(object->user_usec, buffer);
 }
@@ -1122,17 +1154,29 @@ static int _unpack_local_step(local_step_t *object,
 		unpackstr_ptr(&object->task_dist, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_alloc_str, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_usage_in_ave, &tmp32, buffer);
-		unpackstr_ptr(&object->tres_usage_out_ave, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_usage_in_max, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_usage_in_max_nodeid, &tmp32,
 			      buffer);
 		unpackstr_ptr(&object->tres_usage_in_max_taskid, &tmp32,
 			      buffer);
+		unpackstr_ptr(&object->tres_usage_in_min, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_usage_in_min_nodeid, &tmp32,
+			      buffer);
+		unpackstr_ptr(&object->tres_usage_in_min_taskid, &tmp32,
+			      buffer);
+		unpackstr_ptr(&object->tres_usage_in_tot, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_usage_out_ave, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_usage_out_max, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_usage_out_max_nodeid, &tmp32,
 			      buffer);
 		unpackstr_ptr(&object->tres_usage_out_max_taskid, &tmp32,
 			      buffer);
+		unpackstr_ptr(&object->tres_usage_out_min, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_usage_out_min_nodeid, &tmp32,
+			      buffer);
+		unpackstr_ptr(&object->tres_usage_out_min_taskid, &tmp32,
+			      buffer);
+		unpackstr_ptr(&object->tres_usage_out_tot, &tmp32, buffer);
 		unpackstr_ptr(&object->user_sec, &tmp32, buffer);
 		unpackstr_ptr(&object->user_usec, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
@@ -1204,8 +1248,7 @@ static int _unpack_local_step(local_step_t *object,
 				TRES_FS_DISK, ave_disk_write);
 
 			object->tres_usage_in_max = xstrdup_printf(
-				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
-				TRES_CPU, min_cpu,
+				"%d=%s,%d=%s,%d=%s,%d=%s",
 				TRES_MEM, max_rss,
 				TRES_VMEM, max_vsize,
 				TRES_PAGES, max_pages,
@@ -1215,8 +1258,7 @@ static int _unpack_local_step(local_step_t *object,
 				TRES_FS_DISK, max_disk_write);
 
 			object->tres_usage_in_max_nodeid = xstrdup_printf(
-				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
-				TRES_CPU, min_cpu_node,
+				"%d=%s,%d=%s,%d=%s,%d=%s",
 				TRES_MEM, max_rss_node,
 				TRES_VMEM, max_vsize_node,
 				TRES_PAGES, max_pages_node,
@@ -1235,6 +1277,16 @@ static int _unpack_local_step(local_step_t *object,
 			object->tres_usage_out_max_taskid = xstrdup_printf(
 				"%d=%s",
 				TRES_FS_DISK, max_disk_write_task);
+
+			object->tres_usage_in_min = xstrdup_printf(
+				"%d=%s",
+				TRES_CPU, min_cpu);
+			object->tres_usage_in_min_nodeid = xstrdup_printf(
+				"%d=%s",
+				TRES_CPU, min_cpu_node);
+			object->tres_usage_in_min_taskid = xstrdup_printf(
+				"%d=%s",
+				TRES_CPU, min_cpu_task);
 		}
 
 		unpackstr_ptr(&object->name, &tmp32, buffer);
@@ -1328,8 +1380,7 @@ static int _unpack_local_step(local_step_t *object,
 				TRES_FS_DISK, ave_disk_write);
 
 			object->tres_usage_in_max = xstrdup_printf(
-				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
-				TRES_CPU, min_cpu,
+				"%d=%s,%d=%s,%d=%s,%d=%s",
 				TRES_MEM, max_rss,
 				TRES_VMEM, max_vsize,
 				TRES_PAGES, max_pages,
@@ -1339,8 +1390,7 @@ static int _unpack_local_step(local_step_t *object,
 				TRES_FS_DISK, max_disk_write);
 
 			object->tres_usage_in_max_nodeid = xstrdup_printf(
-				"%d=%s,%d=%s,%d=%s,%d=%s,%d=%s",
-				TRES_CPU, min_cpu_node,
+				"%d=%s,%d=%s,%d=%s,%d=%s",
 				TRES_MEM, max_rss_node,
 				TRES_VMEM, max_vsize_node,
 				TRES_PAGES, max_pages_node,
@@ -1359,6 +1409,16 @@ static int _unpack_local_step(local_step_t *object,
 			object->tres_usage_out_max_taskid = xstrdup_printf(
 				"%d=%s",
 				TRES_FS_DISK, max_disk_write_task);
+
+			object->tres_usage_in_min = xstrdup_printf(
+				"%d=%s",
+				TRES_CPU, min_cpu);
+			object->tres_usage_in_min_nodeid = xstrdup_printf(
+				"%d=%s",
+				TRES_CPU, min_cpu_node);
+			object->tres_usage_in_min_taskid = xstrdup_printf(
+				"%d=%s",
+				TRES_CPU, min_cpu_task);
 		}
 
 		unpackstr_ptr(&object->name, &tmp32, buffer);
@@ -2487,17 +2547,29 @@ static Buf _pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.task_dist = row[STEP_REQ_TASKDIST];
 		step.tres_alloc_str = row[STEP_REQ_TRES];
 		step.tres_usage_in_ave = row[STEP_TRES_USAGE_IN_AVE];
-		step.tres_usage_out_ave = row[STEP_TRES_USAGE_OUT_AVE];
 		step.tres_usage_in_max = row[STEP_TRES_USAGE_IN_MAX];
 		step.tres_usage_in_max_nodeid =
 			row[STEP_TRES_USAGE_IN_MAX_NODEID];
 		step.tres_usage_in_max_taskid =
 			row[STEP_TRES_USAGE_IN_MAX_TASKID];
+		step.tres_usage_in_min = row[STEP_TRES_USAGE_IN_MIN];
+		step.tres_usage_in_min_nodeid =
+			row[STEP_TRES_USAGE_IN_MIN_NODEID];
+		step.tres_usage_in_min_taskid =
+			row[STEP_TRES_USAGE_IN_MIN_TASKID];
+		step.tres_usage_in_tot = row[STEP_TRES_USAGE_IN_TOT];
+		step.tres_usage_out_ave = row[STEP_TRES_USAGE_OUT_AVE];
 		step.tres_usage_out_max = row[STEP_TRES_USAGE_OUT_MAX];
 		step.tres_usage_out_max_nodeid =
 			row[STEP_TRES_USAGE_OUT_MAX_NODEID];
 		step.tres_usage_out_max_taskid =
 			row[STEP_TRES_USAGE_OUT_MAX_TASKID];
+		step.tres_usage_out_min = row[STEP_TRES_USAGE_OUT_MAX];
+		step.tres_usage_out_min_nodeid =
+			row[STEP_TRES_USAGE_OUT_MIN_NODEID];
+		step.tres_usage_out_min_taskid =
+			row[STEP_TRES_USAGE_OUT_MIN_TASKID];
+		step.tres_usage_out_tot = row[STEP_TRES_USAGE_OUT_TOT];
 		step.user_sec = row[STEP_REQ_USER_SEC];
 		step.user_usec = row[STEP_REQ_USER_USEC];
 
@@ -2563,19 +2635,30 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 			   object.req_cpufreq_gov,
 			   object.tres_alloc_str,
 			   object.tres_usage_in_ave,
-			   object.tres_usage_out_ave,
 			   object.tres_usage_in_max,
 			   object.tres_usage_in_max_nodeid,
 			   object.tres_usage_in_max_taskid,
+			   object.tres_usage_in_min,
+			   object.tres_usage_in_min_nodeid,
+			   object.tres_usage_in_min_taskid,
+			   object.tres_usage_in_tot,
+			   object.tres_usage_out_ave,
 			   object.tres_usage_out_max,
 			   object.tres_usage_out_max_nodeid,
-			   object.tres_usage_out_max_taskid);
+			   object.tres_usage_out_max_taskid,
+			   object.tres_usage_out_min,
+			   object.tres_usage_out_min_nodeid,
+			   object.tres_usage_out_min_taskid,
+			   object.tres_usage_out_tot);
 
 		if (rpc_version < SLURM_18_08_PROTOCOL_VERSION) {
 			xfree(object.tres_usage_in_ave);
 			xfree(object.tres_usage_in_max);
 			xfree(object.tres_usage_in_max_nodeid);
 			xfree(object.tres_usage_in_max_taskid);
+			xfree(object.tres_usage_in_min);
+			xfree(object.tres_usage_in_min_nodeid);
+			xfree(object.tres_usage_in_min_taskid);
 			xfree(object.tres_usage_out_ave);
 			xfree(object.tres_usage_out_max);
 			xfree(object.tres_usage_out_max_nodeid);

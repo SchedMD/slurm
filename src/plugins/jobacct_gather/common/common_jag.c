@@ -792,7 +792,6 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_READ].d = (double) jobacct->
 			tres_usage_in_tot[TRES_ARRAY_FS_DISK] -
 			jobacct->last_tres_usage_in_tot;
-
 		data[FIELD_WRITE].d = (double) jobacct->
 			tres_usage_out_tot[TRES_ARRAY_FS_DISK] -
 			jobacct->last_tres_usage_out_tot;
@@ -979,40 +978,41 @@ extern void jag_common_poll_data(
 			if (jobacct->tres_usage_in_max[i] == INFINITE64)
 				jobacct->tres_usage_in_max[i] =
 					prec->tres_data[i].size_read;
-			else if (i == TRES_ARRAY_CPU)
-				jobacct->tres_usage_in_max[i] =
-					MIN(jobacct->tres_usage_in_max[i],
-					    prec->tres_data[i].size_read);
 			else
 				jobacct->tres_usage_in_max[i] =
 					MAX(jobacct->tres_usage_in_max[i],
 					    prec->tres_data[i].size_read);
+			/*
+			 * Even with min we want to get the max as we are
+			 * looking at a specific task aso we are always looking
+			 * at the max that task had, not the min (or lots of
+			 * things will be zero).  The min is from compairing
+			 * ranks later when combining.  So here it will be the
+			 * same as the max value set above.
+			 * (same thing goes for the out)
+			 */
+			jobacct->tres_usage_in_min[i] =
+				jobacct->tres_usage_in_max[i];
 			jobacct->tres_usage_in_tot[i] =
 				prec->tres_data[i].size_read;
 
 			if (jobacct->tres_usage_out_max[i] == INFINITE64)
 				jobacct->tres_usage_out_max[i] =
 					prec->tres_data[i].size_write;
-			else if (i == TRES_ARRAY_CPU)
-				jobacct->tres_usage_out_max[i] =
-					MIN(jobacct->tres_usage_out_max[i],
-					    prec->tres_data[i].size_write);
 			else
 				jobacct->tres_usage_out_max[i] =
 					MAX(jobacct->tres_usage_out_max[i],
 					    prec->tres_data[i].size_write);
+			jobacct->tres_usage_out_min[i] =
+				jobacct->tres_usage_out_max[i];
 			jobacct->tres_usage_out_tot[i] =
 				prec->tres_data[i].size_write;
 		}
 
-		jobacct->tres_usage_in_max[TRES_ARRAY_CPU] =
-			MAX((double)jobacct->tres_usage_in_max[TRES_ARRAY_CPU],
-			    cpu_calc);
 		total_job_mem += jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
 		total_job_vsize += jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
 
 		/* Update the cpu times */
-		jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] = (uint64_t)cpu_calc;
 		jobacct->user_cpu_sec = (uint32_t)prec->usec;
 		jobacct->sys_cpu_sec = (uint32_t)prec->ssec;
 

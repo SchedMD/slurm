@@ -66,7 +66,7 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 
 			pack64(0, buffer);
 
-			for (i=0; i<8; i++) {
+			for (i=0; i<16; i++) {
 				packnull(buffer);
 			}
 			return;
@@ -80,10 +80,18 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		packstr(stats->tres_usage_in_max, buffer);
 		packstr(stats->tres_usage_in_max_nodeid, buffer);
 		packstr(stats->tres_usage_in_max_taskid, buffer);
+		packstr(stats->tres_usage_in_min, buffer);
+		packstr(stats->tres_usage_in_min_nodeid, buffer);
+		packstr(stats->tres_usage_in_min_taskid, buffer);
+		packstr(stats->tres_usage_in_tot, buffer);
 		packstr(stats->tres_usage_out_ave, buffer);
 		packstr(stats->tres_usage_out_max, buffer);
 		packstr(stats->tres_usage_out_max_nodeid, buffer);
 		packstr(stats->tres_usage_out_max_taskid, buffer);
+		packstr(stats->tres_usage_out_min, buffer);
+		packstr(stats->tres_usage_out_min_nodeid, buffer);
+		packstr(stats->tres_usage_out_min_taskid, buffer);
+		packstr(stats->tres_usage_out_tot, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		uint64_t tmp_uint64;
 
@@ -114,7 +122,7 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		pack64(stats->consumed_energy, buffer);
 
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_CPU);
+			stats->tres_usage_in_min, TRES_CPU);
 		pack32((uint32_t)tmp_uint64, buffer);
 
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
@@ -162,10 +170,10 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 			stats->tres_usage_in_max_taskid, TRES_PAGES);
 		pack32((uint32_t)tmp_uint64, buffer);
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_CPU);
+			stats->tres_usage_in_min_nodeid, TRES_CPU);
 		pack32((uint32_t)tmp_uint64, buffer);
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_CPU);
+			stats->tres_usage_in_min_taskid, TRES_CPU);
 		pack32((uint32_t)tmp_uint64, buffer);
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
 			stats->tres_usage_in_max_nodeid, TRES_FS_DISK);
@@ -206,7 +214,7 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 			stats->tres_usage_in_max, TRES_PAGES);
 		pack64(tmp_uint64, buffer);
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_CPU);
+			stats->tres_usage_in_min, TRES_CPU);
 		pack32((uint32_t)tmp_uint64, buffer);
 
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
@@ -255,10 +263,10 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 			stats->tres_usage_in_max_taskid, TRES_PAGES);
 		pack32((uint32_t)tmp_uint64, buffer);
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_CPU);
+			stats->tres_usage_in_min_nodeid, TRES_CPU);
 		pack32((uint32_t)tmp_uint64, buffer);
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_CPU);
+			stats->tres_usage_in_min_taskid, TRES_CPU);
 		pack32((uint32_t)tmp_uint64, buffer);
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
 			stats->tres_usage_in_max_nodeid, TRES_FS_DISK);
@@ -315,6 +323,14 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&stats->tres_usage_in_max_taskid,
 				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_min,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_min_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_min_taskid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_tot,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&stats->tres_usage_out_ave,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&stats->tres_usage_out_max,
@@ -323,15 +339,31 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&stats->tres_usage_out_max_taskid,
 				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_min,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_min_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_min_taskid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_tot,
+				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		double tmp_double;
 		uint32_t tmp_uint32;
 		uint64_t tres_array_max[TRES_ARRAY_TOTAL_CNT];
+		uint64_t tres_array_min[TRES_ARRAY_TOTAL_CNT];
+		uint64_t tres_array_min2[TRES_ARRAY_TOTAL_CNT];
 		uint64_t tres_array_ave[TRES_ARRAY_TOTAL_CNT];
 		int i;
 
 		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
 			tres_array_max[i] = INFINITE64;
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_min[i] = INFINITE64;
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_min2[i] = INFINITE64;
 
 		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
 			tres_array_ave[i] = INFINITE64;
@@ -342,7 +374,7 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpack64(&stats->consumed_energy, buffer);
 
 		safe_unpack32(&tmp_uint32, buffer);
-		tres_array_max[TRES_ARRAY_CPU] = tmp_uint32;
+		tres_array_min[TRES_ARRAY_CPU] = tmp_uint32;
 
 		safe_unpackdouble(&tmp_double, buffer);
 		tres_array_ave[TRES_ARRAY_VMEM] = tmp_double * 1024;
@@ -359,6 +391,11 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
 		safe_unpackdouble(&tmp_double, buffer);
 		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+
+		stats->tres_usage_in_min = _make_tres_str(tres_array_min);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_min[i] = INFINITE64;
 
 		stats->tres_usage_in_max = _make_tres_str(tres_array_max);
 
@@ -393,13 +430,19 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpack32(&tmp_uint32, buffer);
 		tres_array_max[TRES_ARRAY_PAGES] = tmp_uint32;
 		safe_unpack32(&tmp_uint32, buffer);
-		tres_array_ave[TRES_ARRAY_CPU] = tmp_uint32;
+		tres_array_min2[TRES_ARRAY_CPU] = tmp_uint32;
 		safe_unpack32(&tmp_uint32, buffer);
-		tres_array_max[TRES_ARRAY_CPU] = tmp_uint32;
+		tres_array_min[TRES_ARRAY_CPU] = tmp_uint32;
 		safe_unpack32(&tmp_uint32, buffer);
 		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_uint32;
 		safe_unpack32(&tmp_uint32, buffer);
 		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_uint32;
+
+		stats->tres_usage_in_min_nodeid =
+			_make_tres_str(tres_array_min2);
+
+		stats->tres_usage_in_min_taskid =
+			_make_tres_str(tres_array_min);
 
 		stats->tres_usage_in_max_nodeid =
 			_make_tres_str(tres_array_ave);
@@ -429,11 +472,19 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		double tmp_double;
 		uint32_t tmp_uint32;
 		uint64_t tres_array_max[TRES_ARRAY_TOTAL_CNT];
+		uint64_t tres_array_min[TRES_ARRAY_TOTAL_CNT];
+		uint64_t tres_array_min2[TRES_ARRAY_TOTAL_CNT];
 		uint64_t tres_array_ave[TRES_ARRAY_TOTAL_CNT];
 		int i;
 
 		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
 			tres_array_max[i] = INFINITE64;
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_min[i] = INFINITE64;
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_min2[i] = INFINITE64;
 
 		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
 			tres_array_ave[i] = INFINITE64;
@@ -442,7 +493,7 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpack64(&tres_array_max[TRES_ARRAY_MEM], buffer);
 		safe_unpack64(&tres_array_max[TRES_ARRAY_PAGES], buffer);
 		safe_unpack32(&tmp_uint32, buffer);
-		tres_array_max[TRES_ARRAY_CPU] = tmp_uint32;
+		tres_array_min[TRES_ARRAY_CPU] = tmp_uint32;
 
 		safe_unpackdouble(&tmp_double, buffer);
 		tres_array_ave[TRES_ARRAY_VMEM] = tmp_double * 1024;
@@ -462,6 +513,11 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
 		safe_unpackdouble(&tmp_double, buffer);
 		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+
+		stats->tres_usage_in_min = _make_tres_str(tres_array_min);
+
+		for (i = 0; i < TRES_ARRAY_TOTAL_CNT; i++)
+			tres_array_min[i] = INFINITE64;
 
 		stats->tres_usage_in_max = _make_tres_str(tres_array_max);
 
@@ -496,13 +552,19 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpack32(&tmp_uint32, buffer);
 		tres_array_max[TRES_ARRAY_PAGES] = tmp_uint32;
 		safe_unpack32(&tmp_uint32, buffer);
-		tres_array_ave[TRES_ARRAY_CPU] = tmp_uint32;
+		tres_array_min2[TRES_ARRAY_CPU] = tmp_uint32;
 		safe_unpack32(&tmp_uint32, buffer);
-		tres_array_max[TRES_ARRAY_CPU] = tmp_uint32;
+		tres_array_min[TRES_ARRAY_CPU] = tmp_uint32;
 		safe_unpack32(&tmp_uint32, buffer);
 		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_uint32;
 		safe_unpack32(&tmp_uint32, buffer);
 		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_uint32;
+
+		stats->tres_usage_in_min_nodeid =
+			_make_tres_str(tres_array_min2);
+
+		stats->tres_usage_in_min_taskid =
+			_make_tres_str(tres_array_min);
 
 		stats->tres_usage_in_max_nodeid =
 			_make_tres_str(tres_array_ave);

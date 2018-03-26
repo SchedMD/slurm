@@ -96,10 +96,16 @@ struct jobacctinfo {
 	uint64_t *tres_usage_in_max; /* tres max usage in data */
 	uint64_t *tres_usage_in_max_nodeid; /* tres max usage in data node id */
 	uint64_t *tres_usage_in_max_taskid; /* tres max usage in data task id */
+	uint64_t *tres_usage_in_min; /* tres min usage in data */
+	uint64_t *tres_usage_in_min_nodeid; /* tres min usage in data node id */
+	uint64_t *tres_usage_in_min_taskid; /* tres min usage in data task id */
 	uint64_t *tres_usage_in_tot; /* total usage in, in megabytes */
 	uint64_t *tres_usage_out_max; /* tres max usage out data */
 	uint64_t *tres_usage_out_max_nodeid; /* tres max usage data node id */
 	uint64_t *tres_usage_out_max_taskid; /* tres max usage data task id */
+	uint64_t *tres_usage_out_min; /* tres min usage out data */
+	uint64_t *tres_usage_out_min_nodeid; /* tres min usage data node id */
+	uint64_t *tres_usage_out_min_taskid; /* tres min usage data task id */
 	uint64_t *tres_usage_out_tot; /* total usage out, in megabytes */
 
 	jobacct_id_t id;

@@ -190,10 +190,18 @@ char *step_req_inx[] = {
 	"t1.tres_usage_in_max_taskid",
 	"t1.tres_usage_in_max_nodeid",
 	"t1.tres_usage_in_ave",
+	"t1.tres_usage_in_min",
+	"t1.tres_usage_in_min_taskid",
+	"t1.tres_usage_in_min_nodeid",
+	"t1.tres_usage_in_tot",
 	"t1.tres_usage_out_max",
 	"t1.tres_usage_out_max_taskid",
 	"t1.tres_usage_out_max_nodeid",
-	"t1.tres_usage_out_ave"
+	"t1.tres_usage_out_ave",
+	"t1.tres_usage_out_min",
+	"t1.tres_usage_out_min_taskid",
+	"t1.tres_usage_out_min_nodeid",
+	"t1.tres_usage_out_tot",
 };
 
 enum {
@@ -224,10 +232,18 @@ enum {
 	STEP_REQ_TRES_USAGE_IN_MAX_TASKID,
 	STEP_REQ_TRES_USAGE_IN_MAX_NODEID,
 	STEP_REQ_TRES_USAGE_IN_AVE,
+	STEP_REQ_TRES_USAGE_IN_MIN,
+	STEP_REQ_TRES_USAGE_IN_MIN_TASKID,
+	STEP_REQ_TRES_USAGE_IN_MIN_NODEID,
+	STEP_REQ_TRES_USAGE_IN_TOT,
 	STEP_REQ_TRES_USAGE_OUT_MAX,
 	STEP_REQ_TRES_USAGE_OUT_MAX_TASKID,
 	STEP_REQ_TRES_USAGE_OUT_MAX_NODEID,
 	STEP_REQ_TRES_USAGE_OUT_AVE,
+	STEP_REQ_TRES_USAGE_OUT_MIN,
+	STEP_REQ_TRES_USAGE_OUT_MIN_TASKID,
+	STEP_REQ_TRES_USAGE_OUT_MIN_NODEID,
+	STEP_REQ_TRES_USAGE_OUT_TOT,
 	STEP_REQ_COUNT
 };
 
@@ -927,6 +943,18 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if (step_row[STEP_REQ_TRES_USAGE_IN_AVE])
 				step->stats.tres_usage_in_ave =
 					xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_AVE]);
+			if (step_row[STEP_REQ_TRES_USAGE_IN_MIN])
+				step->stats.tres_usage_in_min =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_MIN]);
+			if (step_row[STEP_REQ_TRES_USAGE_IN_MIN_TASKID])
+				step->stats.tres_usage_in_min_taskid =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_MIN_TASKID]);
+			if (step_row[STEP_REQ_TRES_USAGE_IN_MIN_NODEID])
+				step->stats.tres_usage_in_min_nodeid =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_MIN_NODEID]);
+			if (step_row[STEP_REQ_TRES_USAGE_IN_TOT])
+				step->stats.tres_usage_in_tot =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_IN_TOT]);
 			if (step_row[STEP_REQ_TRES_USAGE_OUT_MAX])
 				step->stats.tres_usage_out_max =
 					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MAX]);
@@ -939,6 +967,18 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if (step_row[STEP_REQ_TRES_USAGE_OUT_AVE])
 				step->stats.tres_usage_out_ave =
 					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_AVE]);
+			if (step_row[STEP_REQ_TRES_USAGE_OUT_MIN])
+				step->stats.tres_usage_out_min =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MIN]);
+			if (step_row[STEP_REQ_TRES_USAGE_OUT_MIN_TASKID])
+				step->stats.tres_usage_out_min_taskid =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MIN_TASKID]);
+			if (step_row[STEP_REQ_TRES_USAGE_OUT_MIN_NODEID])
+				step->stats.tres_usage_out_min_nodeid =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_MIN_NODEID]);
+			if (step_row[STEP_REQ_TRES_USAGE_OUT_TOT])
+				step->stats.tres_usage_out_tot =
+					xstrdup(step_row[STEP_REQ_TRES_USAGE_OUT_TOT]);
 			step->stats.act_cpufreq =
 				atof(step_row[STEP_REQ_ACT_CPUFREQ]);
 			step->stats.consumed_energy = slurm_atoull(

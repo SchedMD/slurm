@@ -310,10 +310,18 @@ typedef struct {
 	char *tres_usage_in_max; /* contains max amount of usage in data */
 	char *tres_usage_in_max_nodeid; /* contains node number max was on */
 	char *tres_usage_in_max_taskid; /* contains task number max was on */
+	char *tres_usage_in_min; /* contains min amount of usage in data */
+	char *tres_usage_in_min_nodeid; /* contains node number min was on */
+	char *tres_usage_in_min_taskid; /* contains task number min was on */
+	char *tres_usage_in_tot; /* total amount of usage in data */
 	char *tres_usage_out_ave; /* average amount of usage out data */
 	char *tres_usage_out_max; /* contains amount of max usage out data */
 	char *tres_usage_out_max_nodeid; /* contains node number max was on */
 	char *tres_usage_out_max_taskid; /* contains task number max was on */
+	char *tres_usage_out_min; /* contains amount of min usage out data */
+	char *tres_usage_out_min_nodeid; /* contains node number min was on */
+	char *tres_usage_out_min_taskid; /* contains task number min was on */
+	char *tres_usage_out_tot; /* total amount of usage out data */
 } slurmdb_stats_t;
 
 /************** alphabetical order of structures **************/
@@ -1724,6 +1732,9 @@ extern void slurmdb_destroy_report_job_grouping(void *object);
 extern void slurmdb_destroy_report_acct_grouping(void *object);
 extern void slurmdb_destroy_report_cluster_grouping(void *object);
 extern void slurmdb_destroy_stats_rec(void *object);
+
+extern void slurmdb_free_slurmdb_stats_members(slurmdb_stats_t *stats);
+extern void slurmdb_destroy_slurmdb_stats(slurmdb_stats_t *stats);
 
 extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				   bool free_it);

@@ -1365,10 +1365,18 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "tres_usage_in_max", "text not null default ''" },
 		{ "tres_usage_in_max_taskid", "text not null default ''" },
 		{ "tres_usage_in_max_nodeid", "text not null default ''" },
+		{ "tres_usage_in_min", "text not null default ''" },
+		{ "tres_usage_in_min_taskid", "text not null default ''" },
+		{ "tres_usage_in_min_nodeid", "text not null default ''" },
+		{ "tres_usage_in_tot", "text not null default ''" },
 		{ "tres_usage_out_ave", "text not null default ''" },
 		{ "tres_usage_out_max", "text not null default ''" },
 		{ "tres_usage_out_max_taskid", "text not null default ''" },
 		{ "tres_usage_out_max_nodeid", "text not null default ''" },
+		{ "tres_usage_out_min", "text not null default ''" },
+		{ "tres_usage_out_min_taskid", "text not null default ''" },
+		{ "tres_usage_out_min_nodeid", "text not null default ''" },
+		{ "tres_usage_out_tot", "text not null default ''" },
 		{ NULL, NULL}
 	};
 
