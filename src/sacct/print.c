@@ -47,6 +47,8 @@ char outbuf[FORMAT_STRING_SIZE];
 
 #define SACCT_TRES_AVE  0x0001
 #define SACCT_TRES_OUT  0x0002
+#define SACCT_TRES_MIN  0x0004
+#define SACCT_TRES_TOT  0x0008
 
 char *_elapsed_time(long secs, long usecs);
 
