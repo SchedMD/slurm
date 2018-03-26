@@ -554,6 +554,8 @@ extern int get_data(void)
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
+	int cnt;
+	char *tmp_usage;
 
 	if (params.opt_completion) {
 		jobs = slurmdb_jobcomp_jobs_get(job_cond);
@@ -581,7 +583,7 @@ extern int get_data(void)
 				job->uid = pw->pw_uid;
 		}
 
-		if (!job->steps || !list_count(job->steps))
+		if (!job->steps || !(cnt = list_count(job->steps)))
 			continue;
 
 		itr_step = list_iterator_create(job->steps);
@@ -604,6 +606,17 @@ extern int get_data(void)
 			/* get the max for all the sacct_t struct */
 			aggregate_stats(&job->stats, &step->stats);
 		}
+
+		/* Now figure out the average of the total of averages */
+		tmp_usage = job->stats.tres_usage_in_ave;
+		job->stats.tres_usage_in_ave = slurmdb_ave_tres_usage(
+			tmp_usage, cnt);
+		xfree(tmp_usage);
+		tmp_usage = job->stats.tres_usage_out_ave;
+		job->stats.tres_usage_out_ave = slurmdb_ave_tres_usage(
+			tmp_usage, cnt);
+		xfree(tmp_usage);
+
 		list_iterator_destroy(itr_step);
 	}
 	list_iterator_destroy(itr);
@@ -1319,7 +1332,6 @@ extern void do_list(void)
 	ListIterator itr_step = NULL;
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
-	char *ave_usage_tmp = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
 
 	if (!jobs)
@@ -1331,18 +1343,6 @@ extern void do_list(void)
 		    _test_local_job(job->jobid) &&
 		    xstrcmp(params.cluster_name, job->cluster))
 			continue;
-
-		if (list_count(job->steps)) {
-			int cnt = list_count(job->steps);
-			ave_usage_tmp = job->stats.tres_usage_in_ave;
-			job->stats.tres_usage_in_ave = slurmdb_ave_tres_usage(
-				ave_usage_tmp, cnt);
-			xfree(ave_usage_tmp);
-			ave_usage_tmp = job->stats.tres_usage_out_ave;
-			job->stats.tres_usage_out_ave = slurmdb_ave_tres_usage(
-				ave_usage_tmp, cnt);
-			xfree(ave_usage_tmp);
-		}
 
 		if (job->show_full)
 			print_fields(JOB, job);
