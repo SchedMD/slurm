@@ -127,6 +127,12 @@ static void _aggregate_tres_usage_stats(slurmdb_stats_t *dest,
 			xstrdup(from->tres_usage_in_max_taskid);
 		dest->tres_usage_in_max_nodeid =
 			xstrdup(from->tres_usage_in_max_nodeid);
+		dest->tres_usage_in_min = xstrdup(from->tres_usage_in_min);
+		dest->tres_usage_in_min_taskid =
+			xstrdup(from->tres_usage_in_min_taskid);
+		dest->tres_usage_in_min_nodeid =
+			xstrdup(from->tres_usage_in_min_nodeid);
+		dest->tres_usage_in_tot = xstrdup(from->tres_usage_in_tot);
 
 		dest->tres_usage_out_ave = xstrdup(from->tres_usage_out_ave);
 		dest->tres_usage_out_max = xstrdup(from->tres_usage_out_max);
@@ -134,6 +140,12 @@ static void _aggregate_tres_usage_stats(slurmdb_stats_t *dest,
 			xstrdup(from->tres_usage_out_max_taskid);
 		dest->tres_usage_out_max_nodeid =
 			xstrdup(from->tres_usage_out_max_nodeid);
+		dest->tres_usage_out_min = xstrdup(from->tres_usage_out_min);
+		dest->tres_usage_out_min_taskid =
+			xstrdup(from->tres_usage_out_min_taskid);
+		dest->tres_usage_out_min_nodeid =
+			xstrdup(from->tres_usage_out_min_nodeid);
+		dest->tres_usage_out_tot = xstrdup(from->tres_usage_out_tot);
 		return;
 	}
 
@@ -143,18 +155,34 @@ static void _aggregate_tres_usage_stats(slurmdb_stats_t *dest,
 					     from->tres_usage_in_max,
 					     from->tres_usage_in_max_nodeid,
 					     from->tres_usage_in_max_taskid);
+	_aggregate_tres_usage_stats_internal(&dest->tres_usage_in_min,
+					     &dest->tres_usage_in_min_nodeid,
+					     &dest->tres_usage_in_min_taskid,
+					     from->tres_usage_in_min,
+					     from->tres_usage_in_min_nodeid,
+					     from->tres_usage_in_min_taskid);
 	_aggregate_tres_usage_stats_internal(&dest->tres_usage_out_max,
 					     &dest->tres_usage_out_max_nodeid,
 					     &dest->tres_usage_out_max_taskid,
 					     from->tres_usage_out_max,
 					     from->tres_usage_out_max_nodeid,
 					     from->tres_usage_out_max_taskid);
+	_aggregate_tres_usage_stats_internal(&dest->tres_usage_out_min,
+					     &dest->tres_usage_out_min_nodeid,
+					     &dest->tres_usage_out_min_taskid,
+					     from->tres_usage_out_min,
+					     from->tres_usage_out_min_nodeid,
+					     from->tres_usage_out_min_taskid);
 
 	flags =	TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REMOVE + TRES_STR_FLAG_SUM;
 	(void)slurmdb_combine_tres_strings(
 		&dest->tres_usage_in_ave, from->tres_usage_in_ave, flags);
 	(void)slurmdb_combine_tres_strings(
 		&dest->tres_usage_out_ave, from->tres_usage_out_ave, flags);
+	(void)slurmdb_combine_tres_strings(
+		&dest->tres_usage_in_tot, from->tres_usage_in_tot, flags);
+	(void)slurmdb_combine_tres_strings(
+		&dest->tres_usage_out_tot, from->tres_usage_out_tot, flags);
 }
 
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
