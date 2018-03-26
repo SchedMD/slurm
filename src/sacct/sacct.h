@@ -66,7 +66,7 @@
 #define BRIEF_COMP_FIELDS "jobid,uid,state"
 #define DEFAULT_FIELDS "jobid,jobname,partition,account,alloccpus,state,exitcode"
 #define DEFAULT_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodelist,state,end"
-#define LONG_FIELDS "jobid,jobidraw,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,reqmem,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,allocgres,reqgres,reqtres,alloctres,tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageoutmax,tresusageoutmaxn,tresusageoutmaxt,tresusageoutave,tresusageinave"
+#define LONG_FIELDS "jobid,jobidraw,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,reqmem,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,allocgres,reqgres,reqtres,alloctres,tresusageinave,tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageinmin,tresusageinminn,tresusageinmint,tresusageintot,tresusageoutmax,tresusageoutmaxn,tresusageoutmaxt,tresusageoutave,tresusageouttot"
 
 #define LONG_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodelist,state,start,end,timelimit"
 
@@ -167,14 +167,22 @@ typedef enum {
 		PRINT_SYSTEM_COMMENT,
 		PRINT_TIMELIMIT,
 		PRINT_TOTALCPU,
-		PRINT_TRESUIM,
 		PRINT_TRESUIA,
+		PRINT_TRESUIM,
 		PRINT_TRESUIMN,
 		PRINT_TRESUIMT,
+		PRINT_TRESUIMI,
+		PRINT_TRESUIMIN,
+		PRINT_TRESUIMIT,
+		PRINT_TRESUIT,
 		PRINT_TRESUOA,
 		PRINT_TRESUOM,
 		PRINT_TRESUOMN,
 		PRINT_TRESUOMT,
+		PRINT_TRESUOMI,
+		PRINT_TRESUOMIN,
+		PRINT_TRESUOMIT,
+		PRINT_TRESUOT,
 		PRINT_UID,
 		PRINT_USER,
 		PRINT_USERCPU,
