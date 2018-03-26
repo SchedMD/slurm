@@ -254,6 +254,23 @@ _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 	return rc;
 }
 
+static void _local_jobacctinfo_aggregate(
+	jobacctinfo_t *dest, jobacctinfo_t *from)
+{
+	/*
+	 * Here to make any sense for some variables we need to move the
+	 * Max to the total (i.e. Mem VMem) since the total might be
+	 * incorrect data, this way the total/ave will be of the Max
+	 * values.
+	 */
+	from->tres_usage_in_tot[TRES_ARRAY_MEM] =
+		from->tres_usage_in_max[TRES_ARRAY_MEM];
+	from->tres_usage_in_tot[TRES_ARRAY_VMEM] =
+		from->tres_usage_in_max[TRES_ARRAY_VMEM];
+
+	jobacctinfo_aggregate(dest, from);
+}
+
 /*
  * Find the maximum task return code
  */
@@ -770,6 +787,10 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 	msg.jobacct = jobacctinfo_create(NULL);
 	/************* acct stuff ********************/
 	if (!acct_sent) {
+		/*
+		 * No need to call _local_jobaccinfo_aggregate, job->jobacct
+		 * already has the modified total for this node in the step.
+		 */
 		jobacctinfo_aggregate(step_complete.jobacct, job->jobacct);
 		jobacctinfo_getinfo(step_complete.jobacct,
 				    JOBACCT_DATA_TOTAL, msg.jobacct,
@@ -1114,7 +1135,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 				    JOBACCT_DATA_RUSAGE, &rusage,
 				    SLURM_PROTOCOL_VERSION);
 		job->jobacct->energy.consumed_energy = 0;
-		jobacctinfo_aggregate(job->jobacct, jobacct);
+		_local_jobacctinfo_aggregate(job->jobacct, jobacct);
 		jobacctinfo_destroy(jobacct);
 	}
 	acct_gather_profile_g_task_end(pid);
@@ -2081,7 +2102,7 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 			*/
 			if (jobacct->energy.consumed_energy)
 				job->jobacct->energy.consumed_energy = 0;
-			jobacctinfo_aggregate(job->jobacct, jobacct);
+			_local_jobacctinfo_aggregate(job->jobacct, jobacct);
 			jobacctinfo_destroy(jobacct);
 		}
 		acct_gather_profile_g_task_end(pid);
