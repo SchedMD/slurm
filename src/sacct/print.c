@@ -88,13 +88,6 @@ char *_elapsed_time(long secs, long usecs)
 	return str;
 }
 
-static int _find_qosid_in_qos_list(void *x, void *key)
-{
-	slurmdb_qos_rec_t *qos = (slurmdb_qos_rec_t *) x;
-	int *qosid =  (int *) key;
-	return (*qosid == qos->id);
-}
-
 static char *_find_qos_name_from_list(List qos_list, int qosid)
 {
 	slurmdb_qos_rec_t *qos;
@@ -102,7 +95,7 @@ static char *_find_qos_name_from_list(List qos_list, int qosid)
 	if (!qos_list || qosid == NO_VAL)
 		return NULL;
 
-	qos = list_find_first(qos_list, _find_qosid_in_qos_list, &qosid);
+	qos = list_find_first(qos_list, slurmdb_find_qos_in_list, &qosid);
 
 	if (qos)
 		return qos->name;
