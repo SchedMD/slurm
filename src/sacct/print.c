@@ -330,7 +330,8 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 	job_ptr->array_task_str = out_buf;
 }
 
-static void _print_tres_field(char *tres_in, char *nodes, bool convert)
+static void _print_tres_field(char *tres_in, char *nodes, bool convert,
+			      uint32_t tres_flags)
 {
 	char *temp = NULL;
 
@@ -347,7 +348,7 @@ static void _print_tres_field(char *tres_in, char *nodes, bool convert)
 						    convert ?
 						    params.convert_flags :
 						    CONVERT_NUM_UNIT_RAW,
-						    TRES_STR_FLAG_BYTES,
+						    tres_flags,
 						    nodes);
 
 	field->print_routine(field, temp, (curr_inx == field_count));
@@ -1251,7 +1252,8 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL, 1);
+			_print_tres_field(tmp_char, NULL, 1,
+					  TRES_STR_FLAG_BYTES);
 			break;
 		case PRINT_TRESUIM:
 			switch(type) {
@@ -1268,7 +1270,8 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL, 1);
+			_print_tres_field(tmp_char, NULL, 1,
+					  TRES_STR_FLAG_BYTES);
 			break;
 		case PRINT_TRESUIMN:
 			switch(type) {
@@ -1288,7 +1291,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, nodes, 0);
+			_print_tres_field(tmp_char, nodes, 0, 0);
 			break;
 		case PRINT_TRESUIMT:
 			switch(type) {
@@ -1305,7 +1308,81 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = NULL;
 				break;
 			}
-			_print_tres_field(tmp_char, NULL, 0);
+			_print_tres_field(tmp_char, NULL, 0, 0);
+			break;
+		case PRINT_TRESUIMI:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = job->stats.tres_usage_in_min;
+				break;
+			case JOBSTEP:
+				tmp_char = step->stats.tres_usage_in_min;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL, 1,
+					  TRES_STR_FLAG_BYTES);
+			break;
+		case PRINT_TRESUIMIN:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = job->stats.
+						tres_usage_in_min_nodeid;
+				nodes = job->nodes;
+				break;
+			case JOBSTEP:
+				tmp_char = step->stats.tres_usage_in_min_nodeid;
+				nodes = step->nodes;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, nodes, 0, 0);
+			break;
+		case PRINT_TRESUIMIT:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = job->stats.
+						tres_usage_in_min_taskid;
+				break;
+			case JOBSTEP:
+				tmp_char = step->stats.tres_usage_in_min_taskid;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			_print_tres_field(tmp_char, NULL, 0, 0);
+			break;
+		case PRINT_TRESUIT:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char =
+						job->stats.tres_usage_in_tot;
+				break;
+			case JOBSTEP:
+				tmp_char =
+					step->stats.tres_usage_in_tot;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			_print_tres_field(tmp_char, NULL, 1,
+					  TRES_STR_FLAG_BYTES);
 			break;
 		case PRINT_TRESUOA:
 			switch(type) {
@@ -1324,7 +1401,8 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL, 1);
+			_print_tres_field(tmp_char, NULL, 1,
+					  TRES_STR_FLAG_BYTES);
 			break;
 		case PRINT_TRESUOM:
 			switch(type) {
@@ -1342,7 +1420,8 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL, 1);
+			_print_tres_field(tmp_char, NULL, 1,
+					  TRES_STR_FLAG_BYTES);
 			break;
 		case PRINT_TRESUOMN:
 			switch(type) {
@@ -1363,7 +1442,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, nodes, 0);
+			_print_tres_field(tmp_char, nodes, 0, 0);
 			break;
 		case PRINT_TRESUOMT:
 			switch(type) {
@@ -1382,7 +1461,86 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL, 0);
+			_print_tres_field(tmp_char, NULL, 0, 0);
+			break;
+		case PRINT_TRESUOMI:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char =
+						job->stats.tres_usage_out_min;
+				break;
+			case JOBSTEP:
+				tmp_char = step->stats.tres_usage_out_min;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL, 1,
+					  TRES_STR_FLAG_BYTES);
+			break;
+		case PRINT_TRESUOMIN:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = job->stats.
+						tres_usage_out_min_nodeid;
+				nodes = job->nodes;
+				break;
+			case JOBSTEP:
+				tmp_char =
+					step->stats.tres_usage_out_min_nodeid;
+				nodes = step->nodes;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, nodes, 0, 0);
+			break;
+		case PRINT_TRESUOMIT:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = job->stats.
+						tres_usage_out_min_taskid;
+				break;
+			case JOBSTEP:
+				tmp_char =
+					step->stats.tres_usage_out_min_taskid;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL, 0, 0);
+			break;
+		case PRINT_TRESUOT:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char =
+						job->stats.tres_usage_out_tot;
+				break;
+			case JOBSTEP:
+				tmp_char =
+					step->stats.tres_usage_out_tot;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			_print_tres_field(tmp_char, NULL, 1,
+					  TRES_STR_FLAG_BYTES);
 			break;
 		case PRINT_MAXVSIZENODE:
 			tmp_char = _get_tres_node(type, object, TRES_VMEM, 0);
@@ -1418,7 +1576,8 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MINCPU:
-			tmp_uint64 = _get_tres_cnt(type, object, TRES_CPU, 0);
+			tmp_uint64 = _get_tres_cnt(type, object, TRES_CPU,
+						   SACCT_TRES_MIN);
 
 			if (tmp_uint64 != NO_VAL64) {
 				tmp_uint64 /= CPU_TIME_ADJ;
@@ -1431,7 +1590,8 @@ extern void print_fields(type_t type, void *object)
 			xfree(tmp_char);
 			break;
 		case PRINT_MINCPUNODE:
-			tmp_char = _get_tres_node(type, object, TRES_CPU, 0);
+			tmp_char = _get_tres_node(type, object, TRES_CPU,
+						  SACCT_TRES_MIN);
 
 			field->print_routine(field,
 					     tmp_char,
@@ -1439,7 +1599,8 @@ extern void print_fields(type_t type, void *object)
 			xfree(tmp_char);
 			break;
 		case PRINT_MINCPUTASK:
-			tmp_uint32 = _get_tres_task(type, object, TRES_CPU, 0);
+			tmp_uint32 = _get_tres_task(type, object, TRES_CPU,
+						    SACCT_TRES_MIN);
 
 			field->print_routine(field,
 					     tmp_uint32,
@@ -2067,7 +2228,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL, 1);
+			_print_tres_field(tmp_char, NULL, 1, 0);
 			break;
 		case PRINT_TRESR:
 			switch(type) {
@@ -2081,7 +2242,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			_print_tres_field(tmp_char, NULL, 1);
+			_print_tres_field(tmp_char, NULL, 1, 0);
 			break;
 		case PRINT_UID:
 			switch(type) {
