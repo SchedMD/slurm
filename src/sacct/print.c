@@ -123,53 +123,73 @@ static void _print_small_double(
 static char *_get_tres_node(int type, void *object, int tres_pos,
 			    uint16_t flags)
 {
-	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
-	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
+	slurmdb_stats_t *stats = NULL;
 	char *tmp_char = NULL;
+	char *nodes = NULL;
 
 	if ((type != JOB) && (type != JOBSTEP))
 		return NULL;
 
-	if (flags & SACCT_TRES_OUT) {
-		if (type == JOB) {
-			if (!job->track_steps)
-				tmp_char = job->stats.tres_usage_out_max_nodeid;
-		} else
-			tmp_char = step->stats.tres_usage_out_max_nodeid;
-	} else if (type == JOB) {
-		if (!job->track_steps)
-			tmp_char = job->stats.tres_usage_in_max_nodeid;
-	} else
-		tmp_char = step->stats.tres_usage_in_max_nodeid;
+	if (type == JOB) {
+		slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
+		if (!job->track_steps) {
+			stats = &job->stats;
+			nodes = job->nodes;
+		}
+	} else {
+		slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
+		stats = &step->stats;
+		nodes = step->nodes;
+	}
+
+	if (!stats)
+		return NULL;
+
+	if (flags & SACCT_TRES_OUT)
+		tmp_char = (flags & SACCT_TRES_MIN) ?
+			stats->tres_usage_out_min_nodeid :
+			stats->tres_usage_out_max_nodeid;
+	else
+		tmp_char = (flags & SACCT_TRES_MIN) ?
+			stats->tres_usage_in_min_nodeid :
+			stats->tres_usage_in_max_nodeid;
 
 	return find_hostname(
 		slurmdb_find_tres_count_in_string(tmp_char, tres_pos),
-		(type == JOB) ? job->nodes : step->nodes);
+		nodes);
 }
 
 static uint32_t _get_tres_task(int type, void *object, int tres_pos,
 			       uint16_t flags)
 {
-	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
-	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
+	slurmdb_stats_t *stats = NULL;
 	uint32_t tmp_uint32 = NO_VAL;
-	uint64_t tmp_uint64 = NO_VAL;
+	uint64_t tmp_uint64 = NO_VAL64;
 	char *tmp_char = NULL;
 
 	if ((type != JOB) && (type != JOBSTEP))
 		return tmp_uint32;
 
-	if (flags & SACCT_TRES_OUT) {
-		if (type == JOB) {
-			if (!job->track_steps)
-				tmp_char = job->stats.tres_usage_out_max_taskid;
-		} else
-			tmp_char = step->stats.tres_usage_out_max_taskid;
-	} else if (type == JOB) {
+	if (type == JOB) {
+		slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 		if (!job->track_steps)
-			tmp_char = job->stats.tres_usage_in_max_taskid;
-	} else
-		tmp_char = step->stats.tres_usage_in_max_taskid;
+			stats = &job->stats;
+	} else {
+		slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
+		stats = &step->stats;
+	}
+
+	if (!stats)
+		return tmp_uint32;
+
+	if (flags & SACCT_TRES_OUT)
+		tmp_char = (flags & SACCT_TRES_MIN) ?
+			stats->tres_usage_out_min_taskid :
+			stats->tres_usage_out_max_taskid;
+	else
+		tmp_char = (flags & SACCT_TRES_MIN) ?
+			stats->tres_usage_in_min_taskid :
+			stats->tres_usage_in_max_taskid;
 
 	tmp_uint64 = slurmdb_find_tres_count_in_string(tmp_char, tres_pos);
 
@@ -185,40 +205,43 @@ static uint32_t _get_tres_task(int type, void *object, int tres_pos,
 static uint64_t _get_tres_cnt(int type, void *object, int tres_pos,
 			      uint16_t flags)
 {
-	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
-	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
-	uint64_t tmp_uint64 = NO_VAL;
+	slurmdb_stats_t *stats = NULL;
+	uint64_t tmp_uint64 = NO_VAL64;
 	char *tmp_char = NULL;
 
 	if ((type != JOB) && (type != JOBSTEP))
 		return NO_VAL64;
 
+	if (type == JOB) {
+		slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
+		if (!job->track_steps)
+			stats = &job->stats;
+	} else {
+		slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
+		stats = &step->stats;
+	}
+
+	if (!stats)
+		return tmp_uint64;
+
 	if (flags & SACCT_TRES_OUT) {
 		if (flags & SACCT_TRES_AVE)
-			if (type == JOB) {
-				if (!job->track_steps)
-					tmp_char =
-						job->stats.tres_usage_out_ave;
-			} else
-				tmp_char = step->stats.tres_usage_out_ave;
-		else if (type == JOB) {
-			if (!job->track_steps)
-				tmp_char = job->stats.tres_usage_out_max;
-		} else
-			tmp_char = step->stats.tres_usage_out_max;
+			tmp_char = stats->tres_usage_out_ave;
+		else if (flags & SACCT_TRES_TOT)
+			tmp_char = stats->tres_usage_out_tot;
+		else
+			tmp_char = (flags & SACCT_TRES_MIN) ?
+				stats->tres_usage_out_min :
+				stats->tres_usage_out_max;
 	} else {
 		if (flags & SACCT_TRES_AVE)
-			if (type == JOB) {
-				if (!job->track_steps)
-					tmp_char =
-						job->stats.tres_usage_in_ave;
-			} else
-				tmp_char = step->stats.tres_usage_in_ave;
-		else if (type == JOB) {
-			if (!job->track_steps)
-				tmp_char = job->stats.tres_usage_in_max;
-		} else
-			tmp_char = step->stats.tres_usage_in_max;
+			tmp_char = stats->tres_usage_in_ave;
+		else if (flags & SACCT_TRES_TOT)
+			tmp_char = stats->tres_usage_in_tot;
+		else
+			tmp_char = (flags & SACCT_TRES_MIN) ?
+				stats->tres_usage_in_min :
+				stats->tres_usage_in_max;
 	}
 
 	tmp_uint64 = slurmdb_find_tres_count_in_string(tmp_char, tres_pos);
