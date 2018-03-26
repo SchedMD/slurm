@@ -42,6 +42,19 @@
 
 #define IO_PROTOCOL_VERSION 0xb001
 
+/* If this changes, io_hdr_pack|unpack must change. */
+int g_io_hdr_size = sizeof(uint32_t) + 3*sizeof(uint16_t);
+
+/* If this changes, io_init_msg_pack|unpack must change. */
+static int g_io_init_msg_packed_size =
+	sizeof(uint16_t)    /* version */
+	+ sizeof(uint32_t)  /* nodeid */
+	+ (SLURM_IO_KEY_SIZE + sizeof(uint32_t)) /* signature */
+	+ sizeof(uint32_t)  /* stdout_objs */
+	+ sizeof(uint32_t); /* stderr_objs */
+
+#define io_init_msg_packed_size() g_io_init_msg_packed_size
+
 /*
 static void
 _print_data(char *data, int datalen)
@@ -60,6 +73,7 @@ _print_data(char *data, int datalen)
 void
 io_hdr_pack(io_hdr_t *hdr, Buf buffer)
 {
+	/* If this function changes, io_hdr_packed_size must change. */
 	pack16(hdr->type, buffer);
 	pack16(hdr->gtaskid, buffer);
 	pack16(hdr->ltaskid, buffer);
@@ -69,6 +83,7 @@ io_hdr_pack(io_hdr_t *hdr, Buf buffer)
 int
 io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
 {
+	/* If this function changes, io_hdr_packed_size must change. */
 	safe_unpack16(&hdr->type, buffer);
 	safe_unpack16(&hdr->gtaskid, buffer);
 	safe_unpack16(&hdr->ltaskid, buffer);
@@ -78,12 +93,6 @@ io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
     unpack_error:
 	error("io_hdr_unpack error: %m");
 	return SLURM_ERROR;
-}
-
-int
-io_hdr_packed_size()
-{
-	return sizeof(uint32_t) + 3*sizeof(uint16_t);
 }
 
 /*
@@ -169,22 +178,10 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 }
 
 
-static int
-io_init_msg_packed_size(void)
-{
-	int len;
-
-	len = sizeof(uint16_t)        /* version */
-		+ sizeof(uint32_t)    /* nodeid */
-		+ (SLURM_IO_KEY_SIZE + sizeof(uint32_t))  /* signature */
-		+ sizeof(uint32_t)    /* stdout_objs */
-		+ sizeof(uint32_t);   /* stderr_objs */
-	return len;
-}
-
 static void
 io_init_msg_pack(struct slurm_io_init_msg *hdr, Buf buffer)
 {
+	/* If this function changes, io_init_msg_packed_size must change. */
 	pack16(hdr->version, buffer);
        	pack32(hdr->nodeid, buffer);
 	pack32(hdr->stdout_objs, buffer);
@@ -197,6 +194,7 @@ io_init_msg_pack(struct slurm_io_init_msg *hdr, Buf buffer)
 static int
 io_init_msg_unpack(struct slurm_io_init_msg *hdr, Buf buffer)
 {
+	/* If this function changes, io_init_msg_packed_size must change. */
 	uint32_t val;
 	safe_unpack16(&hdr->version, buffer);
 	safe_unpack32(&hdr->nodeid, buffer);

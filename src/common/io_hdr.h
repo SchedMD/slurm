@@ -71,10 +71,12 @@ typedef struct slurm_io_header {
 	uint32_t      length;
 } io_hdr_t;
 
+extern int g_io_hdr_size;
+
 /*
  * Return the packed size of an IO header in bytes;
  */
-int io_hdr_packed_size();
+#define io_hdr_packed_size() g_io_hdr_size
 void io_hdr_pack(io_hdr_t *hdr, Buf buffer);
 int io_hdr_unpack(io_hdr_t *hdr, Buf buffer);
 int io_hdr_read_fd(int fd, io_hdr_t *hdr);
