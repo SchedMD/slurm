@@ -1159,16 +1159,10 @@ Create a resource reservation as described b. Slurm's
 
 <p><a name="pam"><b>9. How can PAM be used to control a user's limits on
 or access to compute nodes?</b></a><br>
-The pam_slurm_adopt PAM module is highly recommended for most installations,
-and is documented in its <a href="pam_slurm_adopt.shtml">own guide</a>. The
-following info applies to the older less-functional pam_slurm plugin instead.
-
-You will need to build and install Slurm including it's PAM module
-(a <i>slurm_pam</i> package is provided, the code is located in the
-<i>contribs/pam</i> directory).
-First, enable Slurm's use of PAM by setting <i>UsePAM=1</i> in
-<i>slurm.conf</i>.<br>
-Second, establish PAM configuration file(s) for Slurm in <i>/etc/pam.conf</i>
+To control a user's limits on a compute node:<br>
+<p>First, enable Slurm's use of PAM by setting <i>UsePAM=1</i> in
+<i>slurm.conf</i>.</p>
+<p>Second, establish PAM configuration file(s) for Slurm in <i>/etc/pam.conf</i>
 or the appropriate files in the <i>/etc/pam.d</i> directory (e.g.
 <i>/etc/pam.d/sshd</i> by adding the line "account required pam_slurm.so".
 A basic configuration you might use is:</p>
@@ -1190,16 +1184,21 @@ all resource limits are propagated from that session. For example, adding
 the following line to <i>slurm.conf</i> will prevent the locked memory
 limit from being propagated:<i>PropagateResourceLimitsExcept=MEMLOCK</i>.</p>
 
-<p>We also have a PAM module for Slurm that prevents users from
+<p>To control a user's access to a compute node:</p>
+<p>The pam_slurm_adopt and pam_slurm modules prevent users from
 logging into nodes that they have not been allocated (except for user
 root, which can always login).
-This pam_slurm module is included with the Slurm distribution.
-The module is built by default, but can be disabled using the
-.rpmmacros option "%_without_pam 1" or by entering the command line
+They are both included with the Slurm distribution.
+<p>The pam_slurm_adopt module is highly recommended for most installations,
+and is documented in its <a href="pam_slurm_adopt.shtml">own guide</a>.</p>
+<p>pam_slurm is older and less functional.
+These modules are built by default for RPM packages, but can be disabled using
+the .rpmmacros option "%_without_pam 1" or by entering the command line
 option "--without pam" when the configure program is executed.
-It's source code is in the directory "contribs/pam".
-The use of pam_slurm does not require <i>UsePAM</i> being set. The
-two uses of PAM are independent.
+Their source code is in the "contribs/pam" and "contribs/pam_slurm_adopt"
+directories respectively.</p>
+<p>The use of either pam_slurm_adopt or pam_slurm does not require
+<i>UsePAM</i> being set. The two uses of PAM are independent.</p>
 
 <p><a name="time"><b>10. Why are jobs allocated nodes and then unable
 to initiate programs on some nodes?</b></a><br>
@@ -2264,6 +2263,6 @@ accessed files within jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 March 2018</p>
+<p style="text-align:center;">Last modified 27 March 2018</p>
 
 <!--#include virtual="footer.txt"-->
