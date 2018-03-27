@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Add documentation for fix IDLE*+POWER due to capmc stuck in Cray systems.
  -- Fix missing mutex unlock when prolog is failing on a node, leading to a
     hung slurmd.
+ -- Fix locking around Cray CCM prolog/epilog.
 
 * Changes in Slurm 17.11.5
 ==========================
