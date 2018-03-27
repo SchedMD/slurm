@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent the backup slurmctld from loosing the active/available node
     features list on takeover.
  -- Add documentation for fix IDLE*+POWER due to capmc stuck in Cray systems.
+ -- Fix missing mutex unlock when prolog is failing on a node, leading to a
+    hung slurmd.
 
 * Changes in Slurm 17.11.5
 ==========================
