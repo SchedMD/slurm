@@ -1170,7 +1170,7 @@ end_it:
 		cluster_tres_msg->tres_str = NULL;
 	}
 	if (!slurmdbd_conn->conn->rem_port) {
-		info("DBD_CLUSTER_TRES: cluster not registered");
+		debug3("DBD_CLUSTER_TRES: cluster not registered");
 		slurmdbd_conn->conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
@@ -1924,7 +1924,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	xfree(job.wckey);
 
 	if (!slurmdbd_conn->conn->rem_port) {
-		info("DBD_JOB_COMPLETE: cluster not registered");
+		debug3("DBD_JOB_COMPLETE: cluster not registered");
 		slurmdbd_conn->conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
@@ -2691,7 +2691,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 		xfree(job.wckey);
 
 	if (!slurmdbd_conn->conn->rem_port) {
-		info("DBD_JOB_START: cluster not registered");
+		debug3("DBD_JOB_START: cluster not registered");
 		slurmdbd_conn->conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
@@ -3449,7 +3449,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	xfree(job.wckey);
 
 	if (!slurmdbd_conn->conn->rem_port) {
-		info("DBD_STEP_COMPLETE: cluster not registered");
+		debug3("DBD_STEP_COMPLETE: cluster not registered");
 		slurmdbd_conn->conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
@@ -3525,7 +3525,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	xfree(job.wckey);
 
 	if (!slurmdbd_conn->conn->rem_port) {
-		info("DBD_STEP_START: cluster not registered");
+		debug3("DBD_STEP_START: cluster not registered");
 		slurmdbd_conn->conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
