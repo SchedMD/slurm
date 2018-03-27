@@ -3817,6 +3817,74 @@ proc get_partition_nodes {partition states} {
 
 #####################################################################
 #
+# Proc: get_partition_maximum_time_limit
+#
+# Purpose: Get the maximum time limit in a given partition
+#
+# Input:   partition - partition to get the max time limit of
+#
+# Returns: time limit in seconds, -1 if undefined or error
+#
+#####################################################################
+
+proc get_partition_maximum_time_limit {partition} {
+
+	global sinfo number exit_code
+
+	if {[string length $partition] == 0} {
+		set partition [default_partition]
+	}
+
+	set secs 0
+	log_user 0
+	set sinfo_pid [spawn -noecho $sinfo -h -p $partition -O time -e]
+	expect {
+		-re "infinite" {
+			set secs -1
+			exp_continue
+		}
+		-re "n/a" {
+			set secs -1
+			exp_continue
+		}
+		-re "($number)-($number):($number):($number)" {
+			set days  [expr $expect_out(1,string) * 24 * 60 * 60]
+			set hours [expr $expect_out(2,string) * 60 * 60]
+			set mins  [expr $expect_out(3,string) * 60]
+			set secs  [expr $days + $hours + $mins + $expect_out(4,string)]
+			exp_continue
+		}
+		-re "($number):($number):($number)" {
+			set hours [expr $expect_out(1,string) * 60 * 60]
+			set mins  [expr $expect_out(2,string) * 60]
+			set secs  [expr $hours + $mins + $expect_out(3,string)]
+			exp_continue
+		}
+		-re "($number):($number)" {
+			set mins  [expr $expect_out(1,string) * 60]
+			set secs  [expr $mins + $expect_out(2,string)]
+			exp_continue
+		}
+		-re "($number)" {
+			set secs  [expr $expect_out(1,string) * 60]
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sinfo not responding\n"
+			slow_kill $sinfo_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $secs
+}
+
+#####################################################################
+#
 # Proc: get_partition_default_time_limit
 #
 # Purpose: Get the default time limit in a given partition
