@@ -4289,7 +4289,8 @@ static void *_wait_boot(void *arg)
 		READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Write jobs; write nodes */
 	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+	bitstr_t *boot_node_bitmap;
 	uint16_t resume_timeout = slurm_get_resume_timeout();
 	struct node_record *node_ptr;
 	time_t start_time = time(NULL);
@@ -4389,7 +4390,7 @@ static void *_run_prolog(void *arg)
 	char *argv[2], **my_env;
 	/* Locks: Read config; Write jobs, nodes */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	bitstr_t *node_bitmap = NULL;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
@@ -4504,6 +4505,9 @@ static void *_run_prolog(void *arg)
 /* Decrement a job's prolog_running counter and launch the job if zero */
 extern void prolog_running_decr(struct job_record *job_ptr)
 {
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
 	if (!job_ptr)
 		return;
 

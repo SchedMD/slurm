@@ -227,8 +227,15 @@ to be distributed over 9 nodes or 184 watts per node.</p>
   It is not clear that configuration is practical to support as gang scheduling
   time slices will typically be smaller than the power management
   balance_interval and synchronizing changes may be difficult</li>
+<li>There can be situations where capmc program gets stuck for some reason and
+  the node remains in IDLE*+POWER state until ResumeTimeout is reached, despite
+  it has been rebooted or manually cleaned.
+  In this situation the node can be brought back into service issuing an
+  'scontrol update nodename=xxx state=power_down' which will cancel the
+  previous power_up request. Then capmc program must be diagnosed and fixed.
+</li>
 </ul>
 
-<p style="text-align:center;">Last modified 5 May 2015</p>
+<p style="text-align:center;">Last modified 7 Mar 2018</p>
 
 <!--#include virtual="footer.txt"-->

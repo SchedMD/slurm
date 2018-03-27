@@ -122,6 +122,11 @@ documents those changes that are of interest to users and administrators.
     slurmstepd versions where some are less than 17.11.6.
  -- Prevent the backup slurmctld from loosing the active/available node
     features list on takeover.
+ -- Add documentation for fix IDLE*+POWER due to capmc stuck in Cray systems.
+ -- Fix missing mutex unlock when prolog is failing on a node, leading to a
+    hung slurmd.
+ -- Fix locking around Cray CCM prolog/epilog.
+ -- Add missing fed_mgr read locks.
 
 * Changes in Slurm 17.11.5
 ==========================

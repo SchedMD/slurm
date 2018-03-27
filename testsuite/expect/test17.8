@@ -42,6 +42,44 @@ set time_get    0
 print_header $test_id
 
 #
+# We must be SlurmUser or root in order to change the partition MaxTime limit,
+# otherwise this test may fail.
+#
+if {[test_super_user] == 0} {
+	log_warn "You must be SlurmUser or root to run this test."
+	exit 0
+}
+
+set default_part [default_partition]
+if { $default_part == "" } {
+	log_error "Unable to get the default partition."
+	exit 1
+}
+
+#
+# Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
+# time limits greater than MaxTime.
+#
+spawn $scontrol update partitionname=$default_part MaxTime=-1
+expect {
+	timeout {
+		log_error "scontrol not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if { $exit_code == 1 } {
+	exit $exit_code
+}
+set maxtime [get_partition_maximum_time_limit $default_part]
+if { $maxtime != -1 } {
+	log_error "Unable to update partition MaxTime"
+	exit 1
+}
+
+#
 # Delete left-over stdin/out/err files
 # Build stdin file
 #
@@ -183,6 +221,12 @@ if {$time_get != 1500} {
 	set exit_code 1
 }
 cancel_job $job_id
+
+#
+# Restore partition MaxTime.
+# reconfigure will set exit_code and log any errors if it fails.
+#
+reconfigure
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in

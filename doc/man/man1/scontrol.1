@@ -1124,8 +1124,13 @@ node to be terminated.
 "POWER_DOWN" and "POWER_UP" will use the configured \fISuspendProg\fR and
 \fIResumeProg\fR programs to explicitly place a node in or out of a power
 saving mode. If a node is already in the process of being powered up or down,
-the command will have no effect until the configured ResumeTimeout or
-SuspendTimeout is reached.
+the command will only change the state of the node but won't have any
+effect until the configured ResumeTimeout or SuspendTimeout is reached.
+Use of this command can be useful in situations
+where a \fIResumeProg\fR like \fIcapmc\fR in Cray machines is stalled and one
+wants to restore the node to "IDLE" manually, in this case rebooting the node
+and setting the state to "POWER_DOWN" will cancel the previous "POWER_UP"
+state and the node will become "IDLE".
 The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
 While all of the above states are valid, some of them are not valid new
