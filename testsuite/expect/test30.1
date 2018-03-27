@@ -32,7 +32,7 @@
 source ./globals
 
 set test_id      "30.1"
-set tar_name     "Slurm-0-0.tar.bz2"
+set tar_name     "slurm-0-0.tar.bz2"
 set prefix_loc   "_prefix /opt/slurm"
 set rpm_loc      "/opt/slurm"
 set topdir       "_topdir /tmp/built_rpms"
@@ -41,7 +41,7 @@ set data_dir     "_slurm_datadir /tmp/slurm_data/data"
 set lib_dir      "_libdir /opt/slurm/slurm_lib"
 set bin_dir      "_bindir /etc/slurm"
 set rpm_base     "/tmp/built_rpms/RPMS"
-set file_name    "slurm"
+set file_name    "slurm-0-0"
 set exit_code    0
 
 print_header $test_id
@@ -82,8 +82,8 @@ if { [catch {exec which rpmbuild}]} {
 
 
 set timeout 1200
-exec $bin_rm -fr /tmp/slurm $tar_name /tmp/built_rpms
-spawn $bin_cp -L -R -v $src_dir /tmp/slurm
+exec $bin_rm -fr /tmp/slurm-0-0 $tar_name /tmp/built_rpms
+spawn $bin_cp -L -R -v $src_dir /tmp/slurm-0-0
 expect {
 	timeout {
 		send_user "\nFAILURE: $src_dir was not copied\n"
@@ -93,15 +93,13 @@ expect {
 		wait
 	}
 }
-exec $bin_rm -fr /tmp/slurm/.git
-exec $bin_sed -i "s/Name:    see META file/Name:    Slurm/g" /tmp/slurm/slurm.spec
-exec $bin_sed -i "s/Version: see META file/Version: 0/g" /tmp/slurm/slurm.spec
-exec $bin_sed -i "s/Release: see META file/Release: 0/g" /tmp/slurm/slurm.spec
-exec $bin_sed -i "s/Source: %{name}-%{version}-%{release}.tgz/Source: Slurm-0-0.tar.bz2/g" /tmp/slurm/slurm.spec
-exec $bin_sed -i "s/%setup -n %{name}-%{version}-%{release}/%setup -n $file_name/g" /tmp/slurm/slurm.spec
+exec $bin_rm -fr /tmp/slurm-0-0/.git
+exec $bin_sed -i "s/Version:\t.*/Version:\t0/" /tmp/slurm-0-0/slurm.spec
+exec $bin_sed -i "s/%global\ rel\t.*/%global\ rel\t0/" /tmp/slurm-0-0/slurm.spec
+exec $bin_sed -i "s/Release:\t.*/Release:\t0/" /tmp/slurm-0-0/slurm.spec
 
 set build_match 0
-spawn tar -v -jcf $tar_name -C /tmp slurm
+spawn tar -v -jcf $tar_name -C /tmp slurm-0-0
 expect {
 	-re "slurm/" {
 		set build_match 1
@@ -147,6 +145,18 @@ expect {
 		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
 		exp_continue
 	}
+	-re "\nwarning: remember to run 'libtool --finish" {
+		send_user "\nWARNING: This seems to be a harmless warning.\n"
+		exp_continue
+	}
+	-re "\nwarning: relinking" {
+		send_user "\nWARNING: This seems to be a harmless warning.\n"
+		exp_continue
+	}
+	-re "\nwarning: Empty %files file" {
+		send_user "\nWARNING: This seems to be a harmless warning.\n"
+		exp_continue
+	}
 	-re "\nwarning: " {
 		send_user "\nFAILURE: There was a warning during the RPM build.\n"
 		set exit_code 1
@@ -178,7 +188,7 @@ expect {
 		wait
 	}
 }
-set rpm_path "${rpm_base}/${sub_dir}/Slurm-0-0.${sub_dir}.rpm"
+set rpm_path "${rpm_base}/${sub_dir}/slurm-0-0.${sub_dir}.rpm"
 set timeout 1200
 
 # Check to see that srun man pages are in the correct directory.
@@ -187,6 +197,7 @@ check_path /opt/slurm srun.1
 # Check to see that srun is in the correct directory.
 check_path /opt/slurm srun
 
+set rpm_path "${rpm_base}/${sub_dir}/slurm-slurmctld-0-0.${sub_dir}.rpm"
 # Check to see that slurmctld is in the correct directory.
 check_path /opt/slurm/sbin slurmctld
 
@@ -226,6 +237,10 @@ expect {
 		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
 		exp_continue
 	}
+	-re "\nwarning: Empty %files file" {
+		send_user "\nWARNING: This seems to be a harmless warning problem.\n"
+		exp_continue
+	}
 	-re "\nwarning: " {
 		send_user "\nFAILURE: There was a warning during the RPM build.\n"
 		set exit_code 1
@@ -244,14 +259,12 @@ if {$build_match != 1} {
 	set exit_code 1
 }
 
+set rpm_path "${rpm_base}/${sub_dir}/slurm-0-0.${sub_dir}.rpm"
 # Check that scontrol is in the correct place
 check_path /etc/slurm scontrol
 
 # Check that srun man page is in the correct place
 check_path /tmp/slurm_man/man srun.1
-
-# Check that slurmctld is in the correct place
-check_path /opt/slurm/sbin slurmctld
 
 # Check that libraries are in the correct place
 check_path /opt/slurm/slurm_lib lib
@@ -259,9 +272,13 @@ check_path /opt/slurm/slurm_lib lib
 # Check that web pages are in the correct place
 check_path /tmp/slurm_data/data accounting.html
 
+set rpm_path "${rpm_base}/${sub_dir}/slurm-slurmctld-0-0.${sub_dir}.rpm"
+# Check that slurmctld is in the correct place
+check_path /opt/slurm/sbin slurmctld
+
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
-	exec $bin_rm -fr /tmp/slurm $tar_name /tmp/built_rpms
+	exec $bin_rm -fr /tmp/slurm-0-0 $tar_name /tmp/built_rpms
 } else {
 	send_user "\nFAILURE: In phase two of the rpmbuild\n"
 }
