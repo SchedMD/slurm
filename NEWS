@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- Disable local PTY output processing when using 'srun --unbuffered'. This
     prevents the PTY subsystem from inserting extraneous \r characters into
     the output stream.
+ -- Change the column name for the %U (User ID) field in squeue to 'UID'.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

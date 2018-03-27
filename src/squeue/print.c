@@ -732,7 +732,7 @@ int _print_job_wckey(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_user_id(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("USER", width, right, true);
+		_print_str("UID", width, right, true);
 	else
 		_print_int(job->user_id, width, right, true);
 	if (suffix)
@@ -2470,7 +2470,7 @@ int _print_step_user_id(job_step_info_t * step, int width, bool right,
 			char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("USER", width, right, true);
+		_print_str("UID", width, right, true);
 	else
 		_print_int(step->user_id, width, right, true);
 	if (suffix)

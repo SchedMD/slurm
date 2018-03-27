@@ -131,6 +131,9 @@ NOTE: srun will now only read in the environment variables SLURM_JOB_NODES and
       latter variables have been obsolete for some time please update any
       scripts still using them.
 
+NOTE: squeue will now print "UID" as the header for the User ID field;
+      corresponding to the %U type specification.
+
 HIGHLIGHTS
 ==========
  -- Add support for parenthesis in a job's constraint specification to group
