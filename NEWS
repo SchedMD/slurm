@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix missing mutex unlock when prolog is failing on a node, leading to a
     hung slurmd.
  -- Fix locking around Cray CCM prolog/epilog.
+ -- Add missing fed_mgr read locks.
 
 * Changes in Slurm 17.11.5
 ==========================
