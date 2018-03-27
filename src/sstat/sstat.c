@@ -90,10 +90,18 @@ print_field_t fields[] = {
 	{14, "TRESUsageInMax", print_fields_str, PRINT_TRESUIM},
 	{18, "TRESUsageInMaxNode", print_fields_str, PRINT_TRESUIMN},
 	{18, "TRESUsageInMaxTask", print_fields_str, PRINT_TRESUIMT},
+	{14, "TRESUsageInMin", print_fields_str, PRINT_TRESUIMI},
+	{18, "TRESUsageInMinNode", print_fields_str, PRINT_TRESUIMIN},
+	{18, "TRESUsageInMinTask", print_fields_str, PRINT_TRESUIMIT},
+	{14, "TRESUsageInTot", print_fields_str, PRINT_TRESUIT},
 	{15, "TRESUsageOutAve", print_fields_str, PRINT_TRESUOA},
 	{15, "TRESUsageOutMax", print_fields_str, PRINT_TRESUOM},
 	{19, "TRESUsageOutMaxNode", print_fields_str, PRINT_TRESUOMN},
 	{19, "TRESUsageOutMaxTask", print_fields_str, PRINT_TRESUOMT},
+	{15, "TRESUsageOutMin", print_fields_str, PRINT_TRESUOMI},
+	{19, "TRESUsageOutMinNode", print_fields_str, PRINT_TRESUOMIN},
+	{19, "TRESUsageOutMinTask", print_fields_str, PRINT_TRESUOMIT},
+	{15, "TRESUsageOutTot", print_fields_str, PRINT_TRESUOT},
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;

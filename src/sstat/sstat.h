@@ -64,7 +64,7 @@
 
 #define ERROR 2
 
-#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageoutmax,tresusageoutmaxn,tresusageoutmaxt,tresusageoutave,tresusageinave"
+#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,tresusageinave,tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageinmin,tresusageinminn,tresusageinmint,tresusageintot,tresusageoutave,tresusageoutmax,tresusageoutmaxn,tresusageoutmaxt,tresusageoutmin,tresusageoutminn,tresusageoutmint,tresusageouttot"
 
 #define STAT_FIELDS_PID "jobid,nodelist,pids"
 
@@ -114,14 +114,22 @@ typedef enum {
 		PRINT_REQ_CPUFREQ_MIN,
 		PRINT_REQ_CPUFREQ_MAX,
 		PRINT_REQ_CPUFREQ_GOV,
-		PRINT_TRESUIM,
 		PRINT_TRESUIA,
+		PRINT_TRESUIM,
 		PRINT_TRESUIMN,
 		PRINT_TRESUIMT,
+		PRINT_TRESUIMI,
+		PRINT_TRESUIMIN,
+		PRINT_TRESUIMIT,
+		PRINT_TRESUIT,
 		PRINT_TRESUOA,
 		PRINT_TRESUOM,
 		PRINT_TRESUOMN,
 		PRINT_TRESUOMT,
+		PRINT_TRESUOMI,
+		PRINT_TRESUOMIN,
+		PRINT_TRESUOMIT,
+		PRINT_TRESUOT,
 } sstat_print_types_t;
 
 

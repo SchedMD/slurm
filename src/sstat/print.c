@@ -511,6 +511,22 @@ void print_fields(slurmdb_step_rec_t *step)
 			_print_tres_field(step->stats.tres_usage_in_max_taskid,
 					  NULL, 0);
 			break;
+		case PRINT_TRESUIMI:
+			_print_tres_field(step->stats.tres_usage_in_min,
+					  NULL, 1);
+			break;
+		case PRINT_TRESUIMIN:
+			_print_tres_field(step->stats.tres_usage_in_min_nodeid,
+					  step->nodes, 0);
+			break;
+		case PRINT_TRESUIMIT:
+			_print_tres_field(step->stats.tres_usage_in_min_taskid,
+					  NULL, 0);
+			break;
+		case PRINT_TRESUIT:
+			_print_tres_field(step->stats.tres_usage_in_tot,
+					  NULL, 1);
+			break;
 		case PRINT_TRESUOA:
 			_print_tres_field(step->stats.tres_usage_out_ave,
 					  NULL, 1);
@@ -526,6 +542,22 @@ void print_fields(slurmdb_step_rec_t *step)
 		case PRINT_TRESUOMT:
 			_print_tres_field(step->stats.tres_usage_out_max_taskid,
 					  NULL, 0);
+			break;
+		case PRINT_TRESUOMI:
+			_print_tres_field(step->stats.tres_usage_out_min,
+					  NULL, 1);
+			break;
+		case PRINT_TRESUOMIN:
+			_print_tres_field(step->stats.tres_usage_out_min_nodeid,
+					  step->nodes, 0);
+			break;
+		case PRINT_TRESUOMIT:
+			_print_tres_field(step->stats.tres_usage_out_min_taskid,
+					  NULL, 0);
+			break;
+		case PRINT_TRESUOT:
+			_print_tres_field(step->stats.tres_usage_out_tot,
+					  NULL, 1);
 			break;
 		case PRINT_NODELIST:
 			field->print_routine(field,
