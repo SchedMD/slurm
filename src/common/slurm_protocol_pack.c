@@ -6652,6 +6652,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 				   buffer);
 		packstr(build_ptr->checkpoint_type, buffer);
 		packstr(build_ptr->cluster_name, buffer);
+		packstr(build_ptr->comm_params, buffer);
 		pack16(build_ptr->complete_wait, buffer);
 		packstr_array(build_ptr->control_addr,
 			      build_ptr->control_cnt, buffer);
@@ -7453,6 +7454,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->checkpoint_type,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->cluster_name,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->comm_params,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->complete_wait, buffer);
 		safe_unpackstr_array(&build_ptr->control_addr,

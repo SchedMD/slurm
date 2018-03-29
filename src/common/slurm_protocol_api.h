@@ -459,6 +459,12 @@ extern char *slurm_get_checkpoint_dir(void);
  */
 char *slurm_get_cluster_name(void);
 
+/* slurm_get_comm_parameters
+ * returns the value of comm_param in slurmctld_conf object
+ * RET char *    - comm parameters, MUST be xfreed by caller
+ */
+extern char *slurm_get_comm_parameters(void);
+
 /* slurm_get_crypto_type
  * returns the crypto_type from slurmctld_conf object
  * RET char *    - crypto type, MUST be xfreed by caller

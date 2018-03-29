@@ -2789,6 +2789,7 @@ typedef struct slurm_ctl_conf {
 	char *checkpoint_type;	/* checkpoint plugin type */
 	char *core_spec_plugin;	/* core specialization plugin name */
 	char *cluster_name;     /* general name of the entire cluster */
+	char *comm_params;     /* Communication parameters */
 	uint16_t complete_wait;	/* seconds to wait for job completion before
 				 * scheduling another job */
 	char **control_addr;	/* comm path of slurmctld

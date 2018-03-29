@@ -1162,6 +1162,25 @@ char *slurm_get_cluster_name(void)
 	return name;
 }
 
+/* slurm_get_comm_parameters
+ * returns the value of comm_param in slurmctld_conf object
+ * RET char *    - comm parameters, MUST be xfreed by caller
+ */
+extern char *slurm_get_comm_parameters(void)
+{
+	char *comm_params = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		comm_params = xstrdup(conf->comm_params);
+		slurm_conf_unlock();
+	}
+	return comm_params;
+}
+
+
 /* slurm_get_crypto_type
  * returns the crypto_type from slurmctld_conf object
  * RET char *    - crypto type, MUST be xfreed by caller
