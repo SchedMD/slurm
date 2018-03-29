@@ -4780,6 +4780,20 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->wait_time = DEFAULT_WAIT_TIME;
 
 	(void) s_p_get_string(&conf->topology_param, "TopologyParam", hashtbl);
+	if (conf->topology_param) {
+		/* Move legacy settings over to new spot */
+		char *legacy_var = "NoInAddrAny";
+		if (xstrcasestr(conf->topology_param, legacy_var) &&
+		    !xstrcasestr(conf->comm_params, legacy_var))
+			xstrfmtcat(conf->comm_params, "%s%s",
+				   conf->comm_params ? "," : "", legacy_var);
+
+		legacy_var = "NoCtldInAddrAny";
+		if (xstrcasestr(conf->topology_param, legacy_var) &&
+		    !xstrcasestr(conf->comm_params, legacy_var))
+			xstrfmtcat(conf->comm_params, "%s%s",
+				   conf->comm_params ? "," : "", legacy_var);
+	}
 
 	if (!s_p_get_string(&conf->topology_plugin, "TopologyPlugin", hashtbl))
 		conf->topology_plugin = xstrdup(DEFAULT_TOPOLOGY_PLUGIN);

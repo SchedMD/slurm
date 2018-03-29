@@ -5137,7 +5137,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		 * want to get just any address.  This is the case on
 		 * a Cray system with RSIP.
 		 */
-		char *topology_params = slurm_get_topology_param();
+		char *comm_params = slurm_get_comm_parameters();
 		char *var;
 
 		if (run_in_daemon("slurmctld"))
@@ -5145,8 +5145,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		else
 			var = "NoInAddrAny";
 
-		if (topology_params &&
-		    xstrcasestr(topology_params, var)) {
+		if (xstrcasestr(comm_params, var)) {
 			char host[MAXHOSTNAMELEN];
 
 			if (!gethostname(host, MAXHOSTNAMELEN)) {
@@ -5158,7 +5157,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		} else
 			s_addr = htonl(INADDR_ANY);
 
-		xfree(topology_params);
+		xfree(comm_params);
 	}
 
 	sin->sin_addr.s_addr = s_addr;

@@ -388,6 +388,21 @@ in some databases, any upper case letters in the name will be silently mapped
 to lower case. In order to avoid confusion, it is recommended that the name
 be lower case.
 
+.TP
+\fBCommunicationParameters\fR
+Comma separated options identifying communication options.
+.RS
+.TP 15
+\fBNoCtldInAddrAny\fR
+Used to directly bind to the address of what the node resolves to running
+the slurmctld instead of binding messages to any address on the node,
+which is the default.
+.TP
+\fBNoInAddrAny\fR
+Used to directly bind to the address of what the node resolves to instead
+of binding messages to any address on the node which is the default.
+This option is for all daemons/clients except for the slurmctld.
+.RE
 
 .TP
 \fBCompleteWait\fR
@@ -3832,16 +3847,6 @@ Comma separated options identifying network topology options.
 \fBDragonfly\fR
 Optimize allocation for Dragonfly network.
 Valid when TopologyPlugin=topology/tree.
-.TP
-\fBNoCtldInAddrAny\fR
-Used to directly bind to the address of what the node resolves to running
-the slurmctld instead of binding messages to any address on the node,
-which is the default.
-.TP
-\fBNoInAddrAny\fR
-Used to directly bind to the address of what the node resolves to instead
-of binding messages to any address on the node which is the default.
-This option is for all daemons/clients except for the slurmctld.
 .TP
 \fBTopoOptional\fR
 Only optimize allocation for network topology if the job includes a switch

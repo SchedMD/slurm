@@ -1639,8 +1639,8 @@ instead of the correct address and prevent communications between nodes.
 The solution is to either remove this line or configure a different NodeAddr
 that is known by your other nodes.</p>
 
-<p>The TopologyParam=NoInAddrAny configuration parameter is subject to this
-same problem, which can also be addressed by removing actual node
+<p>The CommunicationParameters=NoInAddrAny configuration parameter is subject to
+this same problem, which can also be addressed by removing actual node
 name from the "127.0.1.1" as well as the "127.0.0.1"
 addresses in the /etc/hosts file.  It is ok if they point to
 localhost, but not the actual name of the node.</p>
