@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
     hung slurmd.
  -- Fix locking around Cray CCM prolog/epilog.
  -- Add missing fed_mgr read locks.
+ -- Fix issue incorrectly setting a job time_start to 0 while requeueing.
 
 * Changes in Slurm 17.11.5
 ==========================

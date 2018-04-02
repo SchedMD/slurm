@@ -925,8 +925,12 @@ extern int jobacct_storage_g_job_start(void *db_conn,
 	/* A pending job's start_time is it's expected initiation time
 	 * (changed in slurm v2.1). Rather than changing a bunch of code
 	 * in the accounting_storage plugins and SlurmDBD, just clear
-	 * start_time before accounting and restore it later. */
-	if (IS_JOB_PENDING(job_ptr)) {
+	 * start_time before accounting and restore it later.
+	 * If an update for a job that is being requeued[hold] happens,
+	 * we don't want to modify the start_time of the old record.
+	 * Pending + Completing is equivalent to Requeue.
+	 */
+	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_COMPLETING(job_ptr)) {
 		int rc;
 		time_t orig_start_time = job_ptr->start_time;
 		job_ptr->start_time = (time_t) 0;
