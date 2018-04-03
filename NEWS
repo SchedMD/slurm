@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- Add missing fed_mgr read locks.
  -- Fix issue incorrectly setting a job time_start to 0 while requeueing.
  -- smail - remove stray '-s' from mail subject line.
+ -- srun - prevent segfault if ClusterName setting is unset but
+    SLURM_WORKING_CLUSTER environment variable is defined.
 
 * Changes in Slurm 17.11.5
 ==========================
