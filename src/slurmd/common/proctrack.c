@@ -288,34 +288,59 @@ typedef struct agent_arg {
 
 static void *_sig_agent(void *args)
 {
+	bool hung_pids = false;
 	agent_arg_t *agent_arg_ptr = args;
 
 	while (1) {
 		pid_t *pids = NULL;
-		int i, npids = 0, hung_pids = 0;
+		int i, npids = 0;
 		char *stat_fname = NULL;
+
+		if (hung_pids)
+			sleep(5);
+
+		hung_pids = false;
 
 		if (proctrack_g_get_pids(agent_arg_ptr->cont_id, &pids,
 					     &npids) == SLURM_SUCCESS) {
-			hung_pids = 0;
+			/*
+			 * Check if any processes are core dumping.
+			 * If so, do not signal any of them, instead
+			 * jump back to the sleep and wait for the core
+			 * dump to finish.
+			 *
+			 * This works around an issue with OpenMP
+			 * applications failing to write a full core
+			 * file out - only one of the processes will
+			 * be marked are core dumping, but killing any
+			 * of them will terminate the application.
+			 */
 			for (i = 0; i < npids; i++) {
 				xstrfmtcat(stat_fname, "/proc/%d/stat",
 					   (int) pids[i]);
 				if (_test_core_dumping(stat_fname)) {
-					debug("Process %d continuing "
-					      "core dump",
+					debug("Process %d continuing core dump",
 					      (int) pids[i]);
-					hung_pids++;
-				} else {
-					/* Kill processes that we can now */
-					kill(pids[i], agent_arg_ptr->signal);
+					hung_pids = true;
+					xfree(stat_fname);
+					break;
 				}
 				xfree(stat_fname);
 			}
+
+			if (hung_pids) {
+				xfree(pids);
+				continue;
+			}
+
+			for (i = 0; i < npids; i++) {
+				/* Kill processes */
+				kill(pids[i], agent_arg_ptr->signal);
+			}
+			xfree(pids);
 		}
-		if (hung_pids == 0)
-			break;
-		sleep(5);
+
+		break;
 	}
 
 	(void) (*(ops.signal)) (agent_arg_ptr->cont_id, agent_arg_ptr->signal);

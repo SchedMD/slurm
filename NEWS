@@ -28,6 +28,9 @@ documents those changes that are of interest to users and administrators.
     the output stream.
  -- Change the column name for the %U (User ID) field in squeue to 'UID'.
  -- CRAY - Add CheckGhalQuiesce to the CommunicationParameters.
+ -- When a process is core dumping, avoid terminating other processes in that
+    task group. This fixes a problem with writing out incomplete OpenMP core
+    files.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
