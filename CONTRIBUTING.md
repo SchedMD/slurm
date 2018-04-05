@@ -17,6 +17,10 @@ If in doubt, please follow their example.
 A brief overview, with some notable exceptions:
 - Tabs not spaces, tabs are 8-spaces wide.
 - Lines should be less than 80-characters wide.
+- Except that error message and other log messages should not be broken up
+  mid-sentence. They should be split on a format sequence, comma, or period
+  instead. (This is to make it easier to grep for that string in the source
+  code at a later point.)
 - Use K&R style for braces.
 - Slurm does use typedef's for certain types, ignore Chapter 5 of the kernel
   guidelines.
