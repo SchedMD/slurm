@@ -215,7 +215,7 @@ static layouts_mgr_t* mgr = &layouts_mgr;
 \*****************************************************************************/
 
 /* entities added to the layouts mgr hash table come from the heap,
- * this funciton will help to free them while freeing the hash table */
+ * this function will help to free them while freeing the hash table */
 static void _entity_free(void* item)
 {
 	entity_t* entity = (entity_t*) item;
@@ -224,7 +224,7 @@ static void _entity_free(void* item)
 }
 
 /* layouts added to the layouts mgr hash table come from the heap,
- * this funciton will help to free them while freeing the hash table */
+ * this function will help to free them while freeing the hash table */
 static void _layout_free(void* item)
 {
 	layout_t* layout = (layout_t*) item;
@@ -233,7 +233,7 @@ static void _layout_free(void* item)
 }
 
 /* keydef added to the layouts mgr hash table come from the heap,
- * this funciton will help to free them while freeing the hash table */
+ * this function will help to free them while freeing the hash table */
 static void _layouts_keydef_free(void* x)
 {
 	layouts_keydef_t* keydef = (layouts_keydef_t*)x;

@@ -49,7 +49,7 @@ START_TEST(pack_1702_null_clus_res_rec)
 	ck_assert(rc               == SLURM_SUCCESS);
 	ck_assert(pack_crr.cluster == unpack_crr->cluster);
 
-	/* when given a NULL pointer, the pack funciton sets percent_allowed to
+	/* when given a NULL pointer, the pack function sets percent_allowed to
 	 * NO_VAL16, not 0. */
 	ck_assert(NO_VAL16         == unpack_crr->percent_allowed);
 

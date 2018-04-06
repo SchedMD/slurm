@@ -1886,7 +1886,7 @@ static int _bracket_cnt(char *value)
  *
  * (Note: This is being added to a minor release. For the
  * next major release, it might be a consideration to merge
- * this funcitonality with that of load_env_cache and update
+ * this functionality with that of load_env_cache and update
  * env_cache_builder to use the NULL character.)
  */
 char **env_array_from_file(const char *fname)
