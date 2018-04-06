@@ -817,7 +817,7 @@ static void _setup_env_working_cluster(void)
 		*port_ptr++ = '\0';
 		*rpc_ptr++  = '\0';
 
-		if (strcmp(slurmctld_conf.cluster_name, working_env)) {
+		if (xstrcmp(slurmctld_conf.cluster_name, working_env)) {
 			working_cluster_rec =
 				xmalloc(sizeof(slurmdb_cluster_rec_t));
 			slurmdb_init_cluster_rec(working_cluster_rec, false);
