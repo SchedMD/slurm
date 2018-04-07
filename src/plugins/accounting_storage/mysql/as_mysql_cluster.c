@@ -1501,8 +1501,7 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (!last_affected_rows(mysql_conn)
-	    || (slurmdbd_conf && !slurmdbd_conf->track_ctld))
+	if (!last_affected_rows(mysql_conn) || !slurmdbd_conf->track_ctld)
 		return rc;
 
 	/* If tres is NULL we can get the current number of tres by
