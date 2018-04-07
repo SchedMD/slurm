@@ -166,8 +166,6 @@ static List _get_cluster_names(mysql_conn_t *mysql_conn, bool with_deleted)
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	List ret_list = NULL;
-	char *cluster_name = NULL;
-	bool found = 0;
 
 	char *query = xstrdup_printf("select name from %s", cluster_table);
 
@@ -176,38 +174,18 @@ static List _get_cluster_names(mysql_conn_t *mysql_conn, bool with_deleted)
 
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
-		return ret_list;
+		return NULL;
 	}
 	xfree(query);
 
-	if (!slurmdbd_conf) {
-		/* If not running with the slurmdbd we need to make
-		   the correct tables for this cluster.  (Since it
-		   doesn't have to be added like usual.)
-		*/
-		cluster_name = slurm_get_cluster_name();
-		if (!cluster_name)
-			fatal("No cluster name defined in slurm.conf");
-	} else
-		found = 1;
-
 	ret_list = list_create(slurm_destroy_char);
 	while ((row = mysql_fetch_row(result))) {
-		if (row[0] && row[0][0]) {
-			if (cluster_name && !xstrcmp(cluster_name, row[0]))
-				found = 1;
+		if (row[0] && row[0][0])
 			list_append(ret_list, xstrdup(row[0]));
-		}
 	}
 	mysql_free_result(result);
 
-	if (cluster_name && !found)
-		list_append(ret_list, cluster_name);
-	else if (cluster_name)
-		xfree(cluster_name);
-
 	return ret_list;
-
 }
 
 static int _set_qos_cnt(mysql_conn_t *mysql_conn)
