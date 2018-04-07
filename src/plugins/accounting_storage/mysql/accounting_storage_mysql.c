@@ -2399,16 +2399,8 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
  */
 extern int init(void)
 {
-	static int first = 1;
 	int rc = SLURM_SUCCESS;
 	mysql_conn_t *mysql_conn = NULL;
-
-	/* since this can be loaded from many different places
-	   only tell us once. */
-	if (!first)
-		return SLURM_SUCCESS;
-
-	first = 0;
 
 	debug_flags = slurm_get_debug_flags();
 
@@ -2506,9 +2498,6 @@ extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
                                            char *cluster_name)
 {
 	mysql_conn_t *mysql_conn = NULL;
-
-	if (!mysql_db_info)
-		init();
 
 	debug2("acct_storage_p_get_connection: request new connection %d",
 	       rollback);
