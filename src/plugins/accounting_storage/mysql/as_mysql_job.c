@@ -325,16 +325,14 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 			      struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	char *nodes = NULL, *jname = NULL, *node_inx = NULL;
+	char *nodes = NULL, *jname = NULL;
 	int track_steps = 0;
-	char *block_id = NULL, *partition = NULL;
-	char temp_bit[BUF_SIZE];
+	char *partition = NULL;
 	char *query = NULL;
 	int reinit = 0;
 	time_t begin_time, check_time, start_time, submit_time;
 	uint32_t wckeyid = 0;
 	uint32_t job_state;
-	int node_cnt = 0;
 	uint32_t array_task_id =
 		(job_ptr->array_job_id) ? job_ptr->array_task_id : NO_VAL;
 	uint64_t job_db_inx = job_ptr->db_index;
@@ -500,27 +498,6 @@ no_rollup_change:
 	if (job_ptr->batch_flag)
 		track_steps = 1;
 
-	if (slurmdbd_conf) {
-		block_id = xstrdup(job_ptr->comment);
-		node_cnt = job_ptr->total_nodes;
-		node_inx = job_ptr->network;
-	} else {
-		if (job_ptr->node_bitmap) {
-			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
-					   job_ptr->node_bitmap);
-		}
-#ifdef HAVE_BG
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_BLOCK_ID,
-					    &block_id);
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &node_cnt);
-#else
-		node_cnt = job_ptr->total_nodes;
-#endif
-	}
-
 	/* Grab the wckey once to make sure it is placed. */
 	if (job_ptr->assoc_id && (!job_ptr->db_index || job_ptr->wckey))
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
@@ -571,11 +548,11 @@ no_rollup_change:
 			xstrcat(query, ", account");
 		if (partition)
 			xstrcat(query, ", `partition`");
-		if (block_id)
+		if (job_ptr->comment)
 			xstrcat(query, ", id_block");
 		if (job_ptr->wckey)
 			xstrcat(query, ", wckey");
-		if (node_inx)
+		if (job_ptr->network)
 			xstrcat(query, ", node_inx");
 		if (job_ptr->gres_req)
 			xstrcat(query, ", gres_req");
@@ -608,7 +585,7 @@ no_rollup_change:
 			   begin_time, submit_time, start_time,
 			   jname, track_steps, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   node_cnt,
+			   job_ptr->total_nodes,
 			   job_ptr->details->pn_min_memory);
 
 		if (wckeyid)
@@ -619,12 +596,12 @@ no_rollup_change:
 			xstrfmtcat(query, ", '%s'", job_ptr->account);
 		if (partition)
 			xstrfmtcat(query, ", '%s'", partition);
-		if (block_id)
-			xstrfmtcat(query, ", '%s'", block_id);
+		if (job_ptr->comment) /* overloaded with block_id */
+			xstrfmtcat(query, ", '%s'", job_ptr->comment);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, ", '%s'", job_ptr->wckey);
-		if (node_inx)
-			xstrfmtcat(query, ", '%s'", node_inx);
+		if (job_ptr->network)
+			xstrfmtcat(query, ", '%s'", job_ptr->network);
 		if (job_ptr->gres_req)
 			xstrfmtcat(query, ", '%s'", job_ptr->gres_req);
 		if (job_ptr->gres_alloc)
@@ -665,7 +642,7 @@ no_rollup_change:
 			   submit_time, begin_time, start_time,
 			   jname, track_steps, job_ptr->qos_id, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   node_cnt,
+			   job_ptr->total_nodes,
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->array_job_id, array_task_id,
 			   job_ptr->pack_job_id, job_ptr->pack_job_offset);
@@ -679,12 +656,12 @@ no_rollup_change:
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
 		if (partition)
 			xstrfmtcat(query, ", `partition`='%s'", partition);
-		if (block_id)
-			xstrfmtcat(query, ", id_block='%s'", block_id);
+		if (job_ptr->comment) /* overloaded with block_id */
+			xstrfmtcat(query, ", id_block='%s'", job_ptr->comment);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, ", wckey='%s'", job_ptr->wckey);
-		if (node_inx)
-			xstrfmtcat(query, ", node_inx='%s'", node_inx);
+		if (job_ptr->network)
+			xstrfmtcat(query, ", node_inx='%s'", job_ptr->network);
 		if (job_ptr->gres_req)
 			xstrfmtcat(query, ", gres_req='%s'", job_ptr->gres_req);
 		if (job_ptr->gres_alloc)
@@ -741,12 +718,12 @@ no_rollup_change:
 			xstrfmtcat(query, "account='%s', ", job_ptr->account);
 		if (partition)
 			xstrfmtcat(query, "`partition`='%s', ", partition);
-		if (block_id)
-			xstrfmtcat(query, "id_block='%s', ", block_id);
+		if (job_ptr->comment)
+			xstrfmtcat(query, "id_block='%s', ", job_ptr->comment);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
-		if (node_inx)
-			xstrfmtcat(query, "node_inx='%s', ", node_inx);
+		if (job_ptr->network)
+			xstrfmtcat(query, "node_inx='%s', ", job_ptr->network);
 		if (job_ptr->gres_req)
 			xstrfmtcat(query, "gres_req='%s', ",
 				   job_ptr->gres_req);
@@ -786,7 +763,7 @@ no_rollup_change:
 			   "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
 			   "where job_db_inx=%"PRIu64,
 			   start_time, jname, job_state,
-			   node_cnt, job_ptr->qos_id,
+			   job_ptr->total_nodes, job_ptr->qos_id,
 			   job_ptr->assoc_id,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->details->pn_min_memory,
@@ -807,7 +784,6 @@ no_rollup_change:
 	}
 end_it:
 	xfree(tres_alloc_str);
-	xfree(block_id);
 	xfree(query);
 
 	return rc;
