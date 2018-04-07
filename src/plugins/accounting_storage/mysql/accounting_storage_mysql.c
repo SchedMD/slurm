@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Copyright (C) 2011 SchedMD LLC.
+ *  Copyright (C) 2011-2018 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@schedmd.com, da@llnl.gov>
  *
@@ -2397,7 +2397,7 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init(void)
 {
 	static int first = 1;
 	int rc = SLURM_SUCCESS;
@@ -2412,13 +2412,7 @@ extern int init ( void )
 
 	debug_flags = slurm_get_debug_flags();
 
-	if (!slurmdbd_conf) {
-		char *cluster_name = NULL;
-		if (!(cluster_name = slurm_get_cluster_name()))
-			fatal("%s requires ClusterName in slurm.conf",
-			      plugin_name);
-		xfree(cluster_name);
-	} else if (slurmdbd_conf && slurmdbd_conf->dbd_backup) {
+	if (slurmdbd_conf->dbd_backup) {
 		char node_name_short[128];
 		char node_name_long[128];
 		if (gethostname(node_name_long, sizeof(node_name_long)))
