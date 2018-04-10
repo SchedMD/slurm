@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test for the qsub -V and -v options 
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR

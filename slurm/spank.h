@@ -6,11 +6,11 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,19 +26,19 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #ifndef SPANK_H
 #define SPANK_H
 
-/*  SPANK handle. Plug-in's context for running SLURM job
+/*  SPANK handle. Plug-in's context for running Slurm job
  */
 typedef struct spank_handle * spank_t;
 
@@ -132,8 +132,8 @@ extern spank_f slurm_spank_exit;
 enum spank_item {
     S_JOB_UID,               /* User id (uid_t *)                            */
     S_JOB_GID,               /* Primary group id (gid_t *)                   */
-    S_JOB_ID,                /* SLURM job id (uint32_t *)                    */
-    S_JOB_STEPID,            /* SLURM job step id (uint32_t *)               */
+    S_JOB_ID,                /* Slurm job id (uint32_t *)                    */
+    S_JOB_STEPID,            /* Slurm job step id (uint32_t *)               */
     S_JOB_NNODES,            /* Total number of nodes in job (uint32_t *)    */
     S_JOB_NODEID,            /* Relative id of this node (uint32_t *)        */
     S_JOB_LOCAL_TASK_COUNT,  /* Number of local tasks (uint32_t *)           */
@@ -150,10 +150,10 @@ enum spank_item {
     S_JOB_LOCAL_TO_GLOBAL_ID,/* local id to global id (uint32_t, uint32_t *) */
     S_JOB_GLOBAL_TO_LOCAL_ID,/* global id to local id (uint32_t, uint32_t *) */
     S_JOB_SUPPLEMENTARY_GIDS,/* Array of suppl. gids (gid_t **, int *)       */
-    S_SLURM_VERSION,         /* Current SLURM version (char **)              */
-    S_SLURM_VERSION_MAJOR,   /* SLURM version major release (char **)        */
-    S_SLURM_VERSION_MINOR,   /* SLURM version minor release (char **)        */
-    S_SLURM_VERSION_MICRO,   /* SLURM version micro release (char **)        */
+    S_SLURM_VERSION,         /* Current Slurm version (char **)              */
+    S_SLURM_VERSION_MAJOR,   /* Slurm version major release (char **)        */
+    S_SLURM_VERSION_MINOR,   /* Slurm version minor release (char **)        */
+    S_SLURM_VERSION_MICRO,   /* Slurm version micro release (char **)        */
     S_STEP_CPUS_PER_TASK,    /* CPUs allocated per task (=1 if --overcommit
                               * option is used, uint32_t *)                  */
     S_JOB_ALLOC_CORES,       /* Job allocated cores in list format (char **) */
@@ -369,7 +369,7 @@ spank_err_t spank_unsetenv (spank_t spank, const char *var);
 /*
  *  Set an environment variable "name" to "value" in the "job control"
  *   environment, which is an extra set of environment variables
- *   included in the environment of the SLURM prolog and epilog
+ *   included in the environment of the Slurm prolog and epilog
  *   programs. Environment variables set via this function will
  *   be prepended with SPANK_ to differentiate them from other env
  *   vars, and to avoid security issues.
@@ -404,7 +404,7 @@ spank_err_t spank_job_control_getenv (spank_t sp, const char *name,
 spank_err_t spank_job_control_unsetenv (spank_t sp, const char *name);
 
 /*
- *  SLURM logging functions which are exported to plugins.
+ *  Slurm logging functions which are exported to plugins.
  */
 extern void slurm_info (const char *format, ...)
   __attribute__ ((format (printf, 1, 2)));
@@ -424,7 +424,7 @@ extern void slurm_debug3 (const char *format, ...)
 #endif
 
 /*
- *  All spank plugins must issue the following for the SLURM plugin
+ *  All spank plugins must issue the following for the Slurm plugin
  *   loader.
  */
 #define SPANK_PLUGIN(__name, __ver) \

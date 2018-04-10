@@ -109,7 +109,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 	/*
 	 * When obtaining the initial configuration, we can not allow ALPS to
 	 * fail. If there is a problem at this stage it is better to restart
-	 * SLURM completely, after investigating (and/or fixing) the cause.
+	 * Slurm completely, after investigating (and/or fixing) the cause.
 	 */
 	inv = get_full_inventory(version);
 	if (inv == NULL)
@@ -138,7 +138,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 		char tmp[50];
 
 		/* This will ignore interactive nodes when iterating through
-		 * the apbasil inventory.  If we don't do this, SLURM is
+		 * the apbasil inventory.  If we don't do this, Slurm is
 		 * unable to resolve the ID to a nidXXX name since it's not in
 		 * the slurm.conf file.  (Chris North)
 		 */
@@ -168,7 +168,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 		} else {
 			node_ptr->node_rank = inv->nodes_total - rank_count++;
 			/*
-			 * Convention: since we are using SLURM in
+			 * Convention: since we are using Slurm in
 			 *             frontend-mode, we use
 			 *             NodeHostName as follows.
 			 *
@@ -261,7 +261,7 @@ extern int basil_inventory(void)
 		char *reason = NULL;
 
 		/* This will ignore interactive nodes when iterating through
-		 * the apbasil inventory.  If we don't do this, SLURM is
+		 * the apbasil inventory.  If we don't do this, Slurm is
 		 * unable to resolve the ID to a nidXXX name since it's not in
 		 * the slurm.conf file.  (Chris North)
 		 */
@@ -279,15 +279,15 @@ extern int basil_inventory(void)
 
 		if (node_is_allocated(node) && !IS_NODE_ALLOCATED(node_ptr)) {
 			/*
-			 * ALPS still hangs on to the node while SLURM considers
+			 * ALPS still hangs on to the node while Slurm considers
 			 * it already unallocated. Possible causes are partition
 			 * cleanup taking too long (can be 10sec ... minutes),
 			 * and orphaned ALPS reservations (caught below).
 			 *
-			 * The converse case (SLURM hanging on to the node while
+			 * The converse case (Slurm hanging on to the node while
 			 * ALPS has already freed it) happens frequently during
 			 * job completion: select_g_job_fini() is called before
-			 * make_node_comp(). Rely on SLURM logic for this case.
+			 * make_node_comp(). Rely on Slurm logic for this case.
 			 */
 			slurm_alps_mismatch++;
 		}
@@ -360,7 +360,7 @@ extern int basil_inventory(void)
 		debug("ALPS: %d node(s) still held", slurm_alps_mismatch);
 
 	/*
-	 * Check that each ALPS reservation corresponds to a SLURM job.
+	 * Check that each ALPS reservation corresponds to a Slurm job.
 	 * Purge orphaned reservations, which may result from stale or
 	 * messed up system state, or are indicative of ALPS problems
 	 * (stuck in pending cancel calls).
@@ -401,7 +401,7 @@ extern int basil_inventory(void)
 	free_inv(inv);
 
 	if (slurm_alps_mismatch) {
-		/* If SLURM and ALPS state are not in synchronization,
+		/* If Slurm and ALPS state are not in synchronization,
 		 * do not schedule any more jobs until waiting at least
 		 * SyncTimeout seconds. */
 		if (slurm_alps_mismatch_time == 0)
@@ -413,7 +413,7 @@ extern int basil_inventory(void)
 		     cray_conf->sync_timeout)) {
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		} else if (!logged_sync_timeout) {
-			error("Could not synchronize SLURM with ALPS for %u "
+			error("Could not synchronize Slurm with ALPS for %u "
 			      "seconds, proceeding with job scheduling",
 			      cray_conf->sync_timeout);
 			logged_sync_timeout = true;
@@ -583,7 +583,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		}
 
 		/*
-		 * Convention: since we are using SLURM in frontend-mode,
+		 * Convention: since we are using Slurm in frontend-mode,
 		 *             we use NodeAddr as follows.
 		 *
 		 * NodeAddr:      <X><Y><Z> coordinates in base-36 encoding

@@ -8,11 +8,11 @@
  *  Written by Danny Auble <da@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -316,7 +316,7 @@ sacct [<OPTION>]                                                            \n \
 	           is a '|'. This options is ignored if -p or -P options    \n\
 	           are not specified.                                       \n\
      -D, --duplicates:                                                      \n\
-	           If SLURM job ids are reset, some job numbers may         \n\
+	           If Slurm job ids are reset, some job numbers may         \n\
 	           appear more than once referring to different jobs.       \n\
 	           Without this option only the most recent jobs will be    \n\
                    displayed.                                               \n\
@@ -329,7 +329,7 @@ sacct [<OPTION>]                                                            \n \
                    this period.                                             \n\
          --federation: Report jobs from federation if a member of a one.    \n\
      -f, --file=file:                                                       \n\
-	           Read data from the specified file, rather than SLURM's   \n\
+	           Read data from the specified file, rather than Slurm's   \n\
                    current accounting log file. (Only appliciable when      \n\
                    running the filetxt plugin.)                             \n\
      -g, --gid, --group:                                                    \n\
@@ -1017,21 +1017,21 @@ extern void parse_command_line(int argc, char **argv)
 		acct_type = slurm_get_jobcomp_type();
 		if ((xstrcmp(acct_type, "jobcomp/none") == 0)
 		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
-			fprintf(stderr, "SLURM job completion is disabled\n");
+			fprintf(stderr, "Slurm job completion is disabled\n");
 			exit(1);
 		}
 		xfree(acct_type);
 	} else {
 		if (slurm_acct_storage_init(params.opt_filein) !=
 		    SLURM_SUCCESS) {
-			fprintf(stderr, "SLURM unable to initialize storage plugin\n");
+			fprintf(stderr, "Slurm unable to initialize storage plugin\n");
 			exit(1);
 		}
 		acct_type = slurm_get_accounting_storage_type();
 		if ((xstrcmp(acct_type, "accounting_storage/none") == 0)
 		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
 			fprintf(stderr,
-				"SLURM accounting storage is disabled\n");
+				"Slurm accounting storage is disabled\n");
 			exit(1);
 		}
 		xfree(acct_type);

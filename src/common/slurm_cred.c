@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/common/slurm_cred.c - SLURM job and sbcast credential functions
+ *  src/common/slurm_cred.c - Slurm job and sbcast credential functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -8,11 +8,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -91,8 +91,8 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 typedef struct {
 	time_t   ctime;		/* Time that the cred was created	*/
 	time_t   expiration;    /* Time at which cred is no longer good	*/
-	uint32_t jobid;		/* SLURM job id for this credential	*/
-	uint32_t stepid;	/* SLURM step id for this credential	*/
+	uint32_t jobid;		/* Slurm job id for this credential	*/
+	uint32_t stepid;	/* Slurm step id for this credential	*/
 } cred_state_t;
 
 /*
@@ -103,7 +103,7 @@ typedef struct {
 typedef struct {
 	time_t   ctime;         /* Time that this entry was created         */
 	time_t   expiration;    /* Time at which credentials can be purged  */
-	uint32_t jobid;         /* SLURM job id for this credential	*/
+	uint32_t jobid;         /* Slurm job id for this credential	*/
 	time_t   revoked;       /* Time at which credentials were revoked   */
 } job_state_t;
 
@@ -123,7 +123,7 @@ enum ctx_type {
 struct sbcast_cred {
 	time_t ctime;		/* Time that the cred was created	*/
 	time_t expiration;	/* Time at which cred is no longer good	*/
-	uint32_t jobid;		/* SLURM job id for this credential	*/
+	uint32_t jobid;		/* Slurm job id for this credential	*/
 	uint32_t uid;		/* user for which this cred is valid	*/
 	uint32_t gid;		/* user's primary group id 		*/
 	char *user_name;	/* user_name as a string		*/
@@ -238,7 +238,7 @@ static const char *syms[] = {
 
 struct sbcast_cache {
 	time_t       expire;	/* Time that the cred was created	*/
-	uint32_t     value;	/* SLURM job id for this credential	*/
+	uint32_t     value;	/* Slurm job id for this credential	*/
 };
 
 static slurm_crypto_ops_t ops;

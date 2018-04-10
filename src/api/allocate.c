@@ -7,11 +7,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -1010,11 +1010,11 @@ _handle_rc_msg(slurm_msg_t *msg)
 }
 
 /*
- * Read a SLURM hostfile specified by "filename".  "filename" must contain
- * a list of SLURM NodeNames, one per line.  Reads up to "n" number of hostnames
+ * Read a Slurm hostfile specified by "filename".  "filename" must contain
+ * a list of Slurm NodeNames, one per line.  Reads up to "n" number of hostnames
  * from the file. Returns a string representing a hostlist ranged string of
  * the contents of the file.  This is a helper function, it does not
- * contact any SLURM daemons.
+ * contact any Slurm daemons.
  *
  * Returns a string representing the hostlist.  Returns NULL if there are fewer
  * than "n" hostnames in the file, or if an error occurs.  If "n" ==
@@ -1153,7 +1153,7 @@ char *slurm_read_hostfile(char *filename, int n)
 		goto cleanup_hostfile;
 	}
 	if (hostlist_count(hostlist) < n) {
-		error("Too few NodeNames in SLURM Hostfile");
+		error("Too few NodeNames in Slurm Hostfile");
 		goto cleanup_hostfile;
 	}
 

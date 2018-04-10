@@ -59,7 +59,7 @@ extern int          MPIR_being_debugged; /* Cause extra info on internal state
 #define MPIR_DEBUG_SPAWNED   1
 #define MPIR_DEBUG_ABORTING  2
 
-/* SLURM specific declarations */
+/* Slurm specific declarations */
 extern int MPIR_i_am_starter;
 extern int MPIR_acquired_pre_main;
 

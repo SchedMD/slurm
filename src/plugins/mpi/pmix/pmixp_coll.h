@@ -5,11 +5,11 @@
  *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
 
@@ -227,7 +227,7 @@ static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq)
 		/* accept this message */
 		return PMIXP_COLL_REQ_PROGRESS;
 	} else if ((coll->seq+1) == seq) {
-		/* practice shows that because of SLURM communication
+		/* practice shows that because of Slurm communication
 		 * infrastructure our child can switch to the next Fence
 		 * and send us the message before the current fan-out message
 		 * arrived. This is accounted in current state machine, so we
@@ -235,7 +235,7 @@ static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq)
 		return PMIXP_COLL_REQ_PROGRESS;
 	} else if ((coll->seq - 1) == seq) {
 		/* his may be our child OR root of the tree that
-		 * had false negatives from SLURM protocol.
+		 * had false negatives from Slurm protocol.
 		 * It's normal situation, return error because we
 		 * want to discard this message */
 		return PMIXP_COLL_REQ_SKIP;

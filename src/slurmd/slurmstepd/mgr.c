@@ -9,11 +9,11 @@
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -1251,7 +1251,7 @@ job_manager(stepd_step_rec_t *job)
 	 * will then set the frontend node to DRAIN.
 	 *
 	 * ALso note that we do not check the reservation for batch jobs with
-	 * a reservation ID of zero and no CPUs. These are SLURM job
+	 * a reservation ID of zero and no CPUs. These are Slurm job
 	 * allocations containing no compute nodes and thus have no ALPS
 	 * reservation.
 	 */
@@ -1260,7 +1260,7 @@ job_manager(stepd_step_rec_t *job)
 		if (rc != SLURM_SUCCESS) {
 			/*
 			 * Transient error: slurmctld knows this condition to
-			 * mean that the ALPS (not the SLURM) reservation
+			 * mean that the ALPS (not the Slurm) reservation
 			 * failed and tries again.
 			 */
 			if (rc == READY_JOB_ERROR)

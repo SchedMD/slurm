@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm.h - Definitions for all of the SLURM RPCs
+ *  slurm.h - Definitions for all of the Slurm RPCs
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -10,11 +10,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -30,13 +30,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -130,7 +130,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 /*****************************************************************************\
  *      DEFINITIONS FOR VERSION MANAGEMENT
 \*****************************************************************************/
-/* Define SLURM version number.
+/* Define Slurm version number.
  * High-order byte is major version.
  * Middle byte     is minor version.
  * Low-order byte  is micro version (NOTE: excludes "-pre#" component
@@ -1471,7 +1471,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t group_id;	/* group to assume, if run as root. */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
-	uint32_t job_id;	/* job ID, default set by SLURM */
+	uint32_t job_id;	/* job ID, default set by Slurm */
 	char * job_id_str;      /* string representation of the jobid */
 	uint16_t kill_on_node_fail; /* 1 if node failure to kill job,
 				     * 0 otherwise,default=1 */
@@ -1495,7 +1495,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint8_t overcommit;	/* over subscribe resources, for batch only */
 	uint32_t pack_job_offset; /* pack job index */
 	char *partition;	/* name of requested partition,
-				 * default in SLURM config */
+				 * default in Slurm config */
 	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 	uint8_t power_flags;	/* power management flags,
@@ -1590,7 +1590,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 /* End of Blue Gene specific values */
 	uint32_t req_switch;    /* Minimum number of switches */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
-					   * SLURM internal use only */
+					   * Slurm internal use only */
 	char *std_err;		/* pathname of stderr */
 	char *std_in;		/* pathname of stdin */
 	char *std_out;		/* pathname of stdout */
@@ -2201,9 +2201,9 @@ typedef struct node_info_msg {
 	uint32_t node_scaling;          /* the amount of nodes per
 					   each record used for
 					   systems like bluegene
-					   where SLURM handles a
+					   where Slurm handles a
 					   bluegene midplane as a
-					   single SLURM node. */
+					   single Slurm node. */
 	uint32_t record_count;		/* number of records */
 	node_info_t *node_array;	/* the node records */
 } node_info_msg_t;
@@ -3337,14 +3337,14 @@ extern int slurm_allocation_lookup(uint32_t job_id,
 extern int slurm_pack_job_lookup(uint32_t jobid, List *resp);
 
 /*
- * slurm_read_hostfile - Read a SLURM hostfile specified by "filename".
- *	"filename" must contain a list of SLURM NodeNames, one per line.
+ * slurm_read_hostfile - Read a Slurm hostfile specified by "filename".
+ *	"filename" must contain a list of Slurm NodeNames, one per line.
  *	Reads up to "n" number of hostnames from the file. Returns a
  *	string representing a hostlist ranged string of the contents of
  *	the file.  This is a helper function, it does not contact any
- *	SLURM daemons.
+ *	Slurm daemons.
  *
- * IN filename - name of SLURM Hostlist file to be read.
+ * IN filename - name of Slurm Hostlist file to be read.
  * IN n - number of NodeNames required
  * RET - a string representing the hostlist.  Returns NULL if there are
  *	fewer than "n" hostnames in the file, or if an error occurs.
@@ -3744,7 +3744,7 @@ extern void slurm_step_launch_fwd_wake(slurm_step_ctx_t *ctx);
 
 /*
  * Specify the plugin name to be used. This may be needed to specify the
- * non-default MPI plugin when using SLURM API to launch tasks.
+ * non-default MPI plugin when using Slurm API to launch tasks.
  * IN plugin name - "none", "pmi2", etc.
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
@@ -3755,7 +3755,7 @@ extern int slurm_mpi_plugin_init(char *plugin_name);
 \*****************************************************************************/
 
 /*
- * slurm_api_version - Return a single number reflecting the SLURM API's
+ * slurm_api_version - Return a single number reflecting the Slurm API's
  *	version number. Use the macros SLURM_VERSION_NUM, SLURM_VERSION_MAJOR,
  *	SLURM_VERSION_MINOR, and SLURM_VERSION_MICRO to work with this value
  * RET API's version number

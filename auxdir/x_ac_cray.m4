@@ -34,13 +34,13 @@ AC_DEFUN([X_AC_CRAY],
 
   AC_ARG_WITH(
     [alps-emulation],
-    AS_HELP_STRING(--with-alps-emulation,Run SLURM against an emulated ALPS system - requires option cray.conf @<:@default=no@:>@),
+    AS_HELP_STRING(--with-alps-emulation,Run Slurm against an emulated ALPS system - requires option cray.conf @<:@default=no@:>@),
     [test "$withval" = no || ac_have_alps_emulation=yes],
     [ac_have_alps_emulation=no])
 
   AC_ARG_ENABLE(
     [cray-emulation],
-    AS_HELP_STRING(--enable-alps-cray-emulation,Run SLURM in an emulated Cray mode),
+    AS_HELP_STRING(--enable-alps-cray-emulation,Run Slurm in an emulated Cray mode),
       [ case "$enableval" in
 	yes) ac_have_alps_cray_emulation="yes" ac_have_native_cray="no" ;;
 	 no) ac_have_alps_cray_emulation="no"  ;;
@@ -60,7 +60,7 @@ AC_DEFUN([X_AC_CRAY],
 
   AC_ARG_ENABLE(
     [cray-network],
-    AS_HELP_STRING(--enable-cray-network,Run SLURM on a non-Cray system with a Cray network),
+    AS_HELP_STRING(--enable-cray-network,Run Slurm on a non-Cray system with a Cray network),
       [ case "$enableval" in
 	yes) ac_have_cray_network="yes" ac_have_native_cray="no" ;;
 	 no) ac_have_cray_network="no"  ;;

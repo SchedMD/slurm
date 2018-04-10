@@ -6,11 +6,11 @@
  *  Written by Donna Mecozzi <dmecozzi@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in 
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -73,7 +73,7 @@ pam_setup (char *user, char *host)
 	/*
 	 * Any application using PAM must provide a conversation function, which
 	 * is used for direct communication between a loaded module and the
-	 * application. In this case, SLURM does not need a communication mechanism,
+	 * application. In this case, Slurm does not need a communication mechanism,
 	 * so the default (or null) conversation function may be used.
 	 */
 	struct pam_conv conv = {misc_conv, NULL};
@@ -82,7 +82,7 @@ pam_setup (char *user, char *host)
 	if (!conf->use_pam)
 		return SLURM_SUCCESS;
 	/*
-	 * SLURM uses PAM to obtain resource limits established by the system
+	 * Slurm uses PAM to obtain resource limits established by the system
 	 * administrator. PAM's session management library is responsible for
 	 * handling resource limits. When a PAM session is opened on behalf of
 	 * a user, the limits imposed by the sys admin are picked up. Opening
@@ -145,7 +145,7 @@ pam_finish ()
 
         if (pam_h != NULL) {
 		/*
-		 * Log any errors, but there's no need to return a SLURM error.
+		 * Log any errors, but there's no need to return a Slurm error.
 		 */
                 if ((rc = pam_close_session (pam_h, 0)) != PAM_SUCCESS) {
                         error("pam_close_session: %s", pam_strerror(pam_h, rc));

@@ -7,11 +7,11 @@
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -67,14 +67,14 @@
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "auth" for SLURM authentication) and <method> is a
- * description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "auth" for Slurm authentication) and <method> is a
+ * description of how this plugin satisfies that application.  Slurm will
  * only load authentication plugins if the plugin_type string has a prefix
  * of "auth/".
  *
@@ -331,7 +331,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 
 
 	if ((uid != slurm_user) && (uid != 0)) {
-		error("crypto/munge: Unexpected uid (%d) != SLURM uid (%d)",
+		error("crypto/munge: Unexpected uid (%d) != Slurm uid (%d)",
 		      (int) uid, (int) slurm_user);
 		rc = ESIG_BAD_USERID;
 	}

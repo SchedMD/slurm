@@ -8,11 +8,11 @@
  *  Written by Danny Auble <da@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -315,7 +315,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
 	add_display_treestore_line_with_font(
 		update, treestore, &iter,
-		"SLURM Configuration data as of", tmp_str, "bold");
+		"Slurm Configuration data as of", tmp_str, "bold");
 
 	add_display_treestore_line(update, treestore, &iter,
 				   "AccountingStorageBackupHost",
@@ -386,7 +386,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 extern void create_config_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
-		"SLURM Config Info",
+		"Slurm Config Info",
 		GTK_WINDOW(user_data),
 		GTK_DIALOG_DESTROY_WITH_PARENT,
 		GTK_STOCK_CLOSE,
@@ -415,7 +415,7 @@ extern void create_dbconfig_popup(GtkAction *action, gpointer user_data)
 {
 	List dbd_config_list = NULL;
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
-		"SLURM Database Config Info",
+		"Slurm Database Config Info",
 		GTK_WINDOW(user_data),
 		GTK_DIALOG_DESTROY_WITH_PARENT,
 		GTK_STOCK_CLOSE,
@@ -443,7 +443,7 @@ extern void create_dbconfig_popup(GtkAction *action, gpointer user_data)
 extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
-		"SLURM Daemons running",
+		"Slurm Daemons running",
 		GTK_WINDOW(user_data),
 		GTK_DIALOG_DESTROY_WITH_PARENT,
 		GTK_STOCK_CLOSE,
@@ -1052,7 +1052,7 @@ extern void about_popup(GtkAction *action, gpointer user_data)
 		NULL);
 	char *version = NULL;
 
-	version = xstrdup_printf("SLURM Version: %s", SLURM_VERSION_STRING);
+	version = xstrdup_printf("Slurm Version: %s", SLURM_VERSION_STRING);
 
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_OK, GTK_RESPONSE_OK);
@@ -1094,7 +1094,7 @@ extern void usage_popup(GtkAction *action, gpointer user_data)
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		NULL);
 	char *help_msg =
-		"sview can be used to view and modify many of SLURM's\n"
+		"sview can be used to view and modify many of Slurm's\n"
 		"records.\n\n"
 		"Tabs are used to select the data type to work with.\n"
 		"Right click on the tab to select it. Left click on\n"

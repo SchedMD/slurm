@@ -8,11 +8,11 @@
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -855,7 +855,7 @@ struct	depend_spec {
 	uint32_t	array_task_id;	/* INFINITE for all array tasks */
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
 	uint16_t	depend_flags;	/* SLURM_FLAGS_* type */
-	uint32_t	job_id;		/* SLURM job_id */
+	uint32_t	job_id;		/* Slurm job_id */
 	struct job_record *job_ptr;	/* pointer to this job */
 };
 
@@ -1393,7 +1393,7 @@ extern void job_fini (void);
  * job_fail - terminate a job due to initiation failure
  * IN job_id - id of the job to be killed
  * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
- * RET 0 on success, otherwise ESLURM error code
+ * RET 0 on success, otherwise ESlurm error code
  */
 extern int job_fail(uint32_t job_id, uint32_t job_state);
 
@@ -1413,7 +1413,7 @@ extern bool job_hold_requeue(struct job_record *job_ptr);
  * determine if job is ready to execute per the node select plugin
  * IN job_id - job to test
  * OUT ready - 1 if job is ready to execute 0 otherwise
- * RET SLURM error code
+ * RET Slurm error code
  */
 extern int job_node_ready(uint32_t job_id, int *ready);
 
@@ -2508,7 +2508,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
  * IN reg_msg - node registration message
  * IN protocol_version - Version of Slurm on this node
  * OUT newly_up - set if node newly brought into service
- * RET 0 if no error, SLURM error code otherwise
+ * RET 0 if no error, Slurm error code otherwise
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_nodes_via_front_end(

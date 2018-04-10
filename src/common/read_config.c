@@ -13,11 +13,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -33,13 +33,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -502,11 +502,11 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 
 #ifndef HAVE_FRONT_END
 	if (local_test_config) {
-		error("Use of FrontendName in slurm.conf without SLURM being "
+		error("Use of FrontendName in slurm.conf without Slurm being "
 		      "configured/built with the --enable-front-end option");
 		local_test_config = 1;
 	} else {
-		fatal("Use of FrontendName in slurm.conf without SLURM being "
+		fatal("Use of FrontendName in slurm.conf without Slurm being "
 		      "configured/built with the --enable-front-end option");
 	}
 #endif
@@ -1035,7 +1035,7 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 		 * NodeHostName from the first node's record and use that to
 		 * build an equivalent structure to that constructed when
 		 * FrontendName is configured. This is intended for backward
-		 * compatibility with SLURM version 2.2. */
+		 * compatibility with Slurm version 2.2. */
 		static slurm_conf_frontend_t local_front_end;
 		static slurm_conf_frontend_t *local_front_end_array[2] =
 			{NULL, NULL};

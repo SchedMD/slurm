@@ -6,11 +6,11 @@
  *  Written by Jay Windley <jwindley@lnxi.com>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -56,7 +56,7 @@ plugrack_t plugrack_create( void );
  * Destroy a plugin rack.  All the associated plugins are unloaded and
  * all associated memory is deallocated.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 int plugrack_destroy( plugrack_t rack );
 
@@ -67,7 +67,7 @@ int plugrack_destroy( plugrack_t rack );
  * Pass NULL to disable typing in plugins handled by this rack.
  * This is the default.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 int plugrack_set_major_type( plugrack_t rack, const char *type );
 
@@ -104,7 +104,7 @@ int plugrack_set_major_type( plugrack_t rack, const char *type );
  * directory where it resides.  If no ownership checking is requested,
  * this parameter is ignored.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 int plugrack_set_paranoia( plugrack_t rack,
 			   const uint32_t paranoia_flags,
@@ -117,7 +117,7 @@ int plugrack_set_paranoia( plugrack_t rack,
  * have been set, they are applied to files considered candidates for
  * plugins.  Plugins that fail the paranoid examination are not loaded.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 int plugrack_read_dir( plugrack_t rack,
 		       const char *dir );
@@ -135,14 +135,14 @@ int plugrack_read_cache( plugrack_t rack,
  * Remove from memory all plugins that are not currently in use by the
  * program.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 int plugrack_purge_idle( plugrack_t rack );
 
 /*
  * Load into memory all plugins which are currently unloaded.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 int plugrack_load_all( plugrack_t rack );
 
@@ -150,7 +150,7 @@ int plugrack_load_all( plugrack_t rack );
  * Write the current contents of the plugin rack to a file
  * in cache format, suitable to be read later using plugrack_read_cache().
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 int plugrack_write_cache( plugrack_t rack, const char *cache );
 
@@ -168,14 +168,14 @@ plugin_handle_t plugrack_use_by_type( plugrack_t rack,
  * Indicate that a plugin is no longer needed.  Whether the plugin
  * is actually unloaded depends on the rack's disposal policy.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 int plugrack_finished_with_plugin( plugrack_t rack, plugin_handle_t plug );
 
 /*
  * print all plugins in rack
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 int plugrack_print_all_plugin( plugrack_t rack);
 

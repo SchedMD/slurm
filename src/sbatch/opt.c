@@ -8,11 +8,11 @@
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -2725,7 +2725,7 @@ static void _parse_pbs_resource_list(char *rl)
 #if defined(HAVE_ALPS_CRAY) || defined(HAVE_NATIVE_CRAY)
 			/*
 			 * NB: no "mppmem" here since it specifies per-PE memory units,
-			 *     whereas SLURM uses per-node and per-CPU memory units.
+			 *     whereas Slurm uses per-node and per-CPU memory units.
 			 */
 		} else if (!xstrncmp(rl + i, "mppdepth=", 9)) {
 			/* Cray: number of CPUs (threads) per processing element */
@@ -3038,7 +3038,7 @@ static bool _opt_verify(void)
 	 * cases.
 	 * The limitations of the plane distribution in the cons_res
 	 * environment are more extensive and are documented in the
-	 * SLURM reference guide.  */
+	 * Slurm reference guide.  */
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE &&
 	    opt.plane_size) {
 		if ((opt.min_nodes <= 0) ||

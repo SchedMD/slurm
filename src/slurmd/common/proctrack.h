@@ -6,11 +6,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -47,14 +47,14 @@
 /*
  * Initialize the process tracking plugin.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int slurm_proctrack_init(void);
 
 /*
  * Terminate the process tracking plugin, free memory.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int slurm_proctrack_fini(void);
 
@@ -70,7 +70,7 @@ extern int slurm_proctrack_fini(void);
  * job->cont_id OUT - Plugin must fill in job->cont_id either here
  *                    or in proctrack_g_add()
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int proctrack_g_create(stepd_step_rec_t *job);
 
@@ -81,7 +81,7 @@ extern int proctrack_g_create(stepd_step_rec_t *job);
  * job->cont_id OUT - Plugin must fill in job->cont_id either here
  *                    or in proctrack_g_create()
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int proctrack_g_add(stepd_step_rec_t *job, pid_t pid);
 
@@ -91,7 +91,7 @@ extern int proctrack_g_add(stepd_step_rec_t *job, pid_t pid);
  * signal IN  - signal to send, if zero then perform error checking
  *              but do not send signal
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int proctrack_g_signal(uint64_t cont_id, int signal);
 
@@ -101,7 +101,7 @@ extern int proctrack_g_signal(uint64_t cont_id, int signal);
  *	any processes within the container are not affected
  * cont_id IN - container ID as returned by proctrack_g_create()
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int proctrack_g_destroy(uint64_t cont_id);
 

@@ -10,7 +10,7 @@
  *
  *  Written by Chris Dunlap <cdunlap@llnl.gov>
  *         and Jim Garlick  <garlick@llnl.gov>
- *         modified for SLURM by Moe Jette <jette@llnl.gov>.
+ *         modified for Slurm by Moe Jette <jette@llnl.gov>.
  *
  *  This file is part of pam_slurm, a PAM module for restricting access to
  *  the compute nodes within a cluster based on information obtained from

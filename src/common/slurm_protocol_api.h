@@ -9,11 +9,11 @@
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -1172,7 +1172,7 @@ extern int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address);
  * OUT slurm_address	- slurm_addr_t to pack
  * IN size_val  	- how many to pack
  * IN/OUT buffer	- buffer to pack the slurm_addr_t from
- * returns		- SLURM error code
+ * returns		- Slurm error code
  */
 extern void slurm_pack_slurm_addr_array(slurm_addr_t * slurm_address,
 					uint32_t size_val, Buf buffer);
@@ -1181,7 +1181,7 @@ extern void slurm_pack_slurm_addr_array(slurm_addr_t * slurm_address,
  * OUT slurm_address	- slurm_addr_t to unpack to
  * IN size_val  	- how many to unpack
  * IN/OUT buffer	- buffer to upack the slurm_addr_t from
- * returns		- SLURM error code
+ * returns		- Slurm error code
  */
 extern int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
 					 uint32_t * size_val, Buf buffer);

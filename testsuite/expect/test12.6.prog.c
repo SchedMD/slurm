@@ -111,7 +111,7 @@ int main (int argc, char **argv)
 	}
 	if ((env_str = getenv("SLURM_JOB_ID")) == NULL) {
 		fprintf(stderr, "info: getenv(SLURM_JOB_ID) failed. "
-				"(Not running SLURM?)\n");
+				"(Not running Slurm?)\n");
 	} else {
 		job_id = atoi(env_str);
 		if ((env_str = getenv("SLURM_STEPID")) != NULL) {

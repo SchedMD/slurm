@@ -7,26 +7,26 @@
 # Additions by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the supplied file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
-This directory contains a battery of SLURM regression tests. The tests make
+This directory contains a battery of Slurm regression tests. The tests make
 use of the "expect" scripting language. You can create "globals.local" and
 identify locations of files to be used in testing, especially the variable
 "slurm_dir". These tests expect single node jobs submitted to the default
@@ -75,9 +75,9 @@ that some of the tests are architecture or configuration specific.  Also
 note that most tests are designed to be run as a normal user. Tests 3.#
 are designed to be run as user root or SlurmUser, but will be skipped
 when the full test suite is executed as an unprivileged user. The full
-test suite is typically executed many times by the SLURM developers on a
-variety of systems before a SLURM release is made. This has resulted in
-high system reliability. When SLURM bugs are found or features added,
+test suite is typically executed many times by the Slurm developers on a
+variety of systems before a Slurm release is made. This has resulted in
+high system reliability. When Slurm bugs are found or features added,
 this test suite is expanded.
 
 A summary of each test is shown below.
@@ -127,7 +127,7 @@ test1.27   Verify the appropriate job environment variables are set.
 test1.28   Verify that user environment variables are propagated to the job.
 test1.29   Verify that user user limits are propagated to the job.
 test1.30   Test of increasing job sizes.
-test1.31   Verify that SLURM directed environment variables are processed:
+test1.31   Verify that Slurm directed environment variables are processed:
 	   SLURM_DEBUG, SLURM_NNODES, SLURM_NPROCS, SLURM_OVERCOMMIT,
 	   SLURM_STDOUTMODE.
 test1.32   Test of srun signal forwarding
@@ -140,7 +140,7 @@ test1.38   Test srun handling of SIGINT to get task status or kill the job
 	   (--quit-on-interrupt option).
 test1.39   Test of linux light-weight core files.
 test1.40   Test of job account (--account option).
-test1.41   Validate SLURM debugger infrastructure (--debugger-test option).
+test1.41   Validate Slurm debugger infrastructure (--debugger-test option).
 test1.42   Test of job dependencies (--dependency option).
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.
@@ -356,7 +356,7 @@ test7.7    (removed)
 test7.8    Test configuration file test logic ("slurmctld -t").
 test7.9    Test that no files are open in spawned tasks (except stdin,
 	   stdout, and stderr) to ensure successful checkpoint/restart.
-test7.10   Test if we can trick SLURM into using the wrong user ID
+test7.10   Test if we can trick Slurm into using the wrong user ID
 	   through an LD_PRELOAD option.
 test7.11   Test of SPANK plugin.
 test7.12   Test of slurm_job_step_stat() and slurm_load_job() API calls.
@@ -465,7 +465,7 @@ test15.12  Verify node configuration specification (--constraint option).
 test15.13  Verify the appropriate job environment variables are set
 test15.14  Test of job dependencies (--dependency option).
 test15.15  Test of user signal upon allocation (--bell and --no-bell options)
-test15.16  Verify that SLURM directed environment variables are processed:
+test15.16  Verify that Slurm directed environment variables are processed:
 	   SALLOC_BELL and SALLOC_NO_BELL (can't really confirm from Expect)
 test15.18  Test of running non-existent job, confirm timely termination.
 test15.19  Confirm that a job executes with the proper node count
@@ -535,7 +535,7 @@ test17.18  Test of job dependencies and deferred begin time (--dependency
 	   and --begin options).
 test17.19  Test of job submit to multiple partitions (--partition).
 test17.20  Test of mail options (--mail-type and --mail-user options)
-test17.21  Tests #SLURM entry functionality in a batch script
+test17.21  Tests #Slurm entry functionality in a batch script
 test17.22  Test of running non-existent job, confirm timely termination.
 test17.23  Test of nice value specification (--nice option).
 test17.24  Test of --partition and --verbose options.

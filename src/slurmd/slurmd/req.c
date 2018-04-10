@@ -9,11 +9,11 @@
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -2513,7 +2513,7 @@ _rpc_job_notify(slurm_msg_t *msg)
 		goto no_job;
 
 	/*
-	 * check that requesting user ID is the SLURM UID or root
+	 * check that requesting user ID is the Slurm UID or root
 	 */
 	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
 		error("Security violation: job_notify(%u) from uid %d",
@@ -3595,7 +3595,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	}
 
 	/*
-	 * check that requesting user ID is the SLURM UID or root
+	 * check that requesting user ID is the Slurm UID or root
 	 */
 	if ((req_uid != uid) && (!_slurm_authorized_user(req_uid))) {
 		error("stat_jobacct from uid %ld for job %u "
@@ -3760,7 +3760,7 @@ _rpc_list_pids(slurm_msg_t *msg)
 	}
 
 	/*
-	 * check that requesting user ID is the SLURM UID or root
+	 * check that requesting user ID is the Slurm UID or root
 	 */
 	if ((req_uid != job_uid)
 	    && (!_slurm_authorized_user(req_uid))) {
@@ -4845,7 +4845,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	}
 
 	/*
-	 * check that requesting user ID is the SLURM UID or root
+	 * check that requesting user ID is the Slurm UID or root
 	 */
 	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation: suspend_job(%u) from uid %d",
@@ -5033,7 +5033,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	debug("_rpc_abort_job, uid = %d", uid);
 	/*
-	 * check that requesting user ID is the SLURM UID
+	 * check that requesting user ID is the Slurm UID
 	 */
 	if (!_slurm_authorized_user(uid)) {
 		error("Security violation: abort_job(%u) from uid %d",
@@ -5338,7 +5338,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 
 	debug("_rpc_terminate_job, uid = %d", uid);
 	/*
-	 * check that requesting user ID is the SLURM UID
+	 * check that requesting user ID is the Slurm UID
 	 */
 	if (!_slurm_authorized_user(uid)) {
 		error("Security violation: kill_job(%u) from uid %d",

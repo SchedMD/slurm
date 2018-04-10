@@ -4,11 +4,11 @@
  *  Copyright (C) 2012 SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com> et. al.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -734,7 +734,7 @@ bad_line:
 }
 
 /*
- * Read a line from SLURM MPMD command file or write the equivalent POE line.
+ * Read a line from Slurm MPMD command file or write the equivalent POE line.
  * line IN/OUT - line to read or write
  * length IN - size of line in bytes
  * step_id IN - -1 if input line, otherwise the step ID to output
@@ -795,7 +795,7 @@ static bool _multi_prog_parse(char *line, int length, int step_id, int task_id)
 	}
 }
 
-/* Convert a SLURM format MPMD file into a POE MPMD command file */
+/* Convert a Slurm format MPMD file into a POE MPMD command file */
 static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
 			      uint32_t step_id, int task_cnt)
 {
@@ -813,7 +813,7 @@ static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
 		return;
 	}
 
-	/* Read and parse SLURM MPMD format file here */
+	/* Read and parse Slurm MPMD format file here */
 	while (fgets(in_line, sizeof(in_line), fp))
 		_multi_prog_parse(in_line, 512, -1, task_cnt);
 	fclose(fp);
@@ -931,7 +931,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		return -1;
 	}
 
-	/* translate the ip to a node list which SLURM uses to send
+	/* translate the ip to a node list which Slurm uses to send
 	   messages instead of IP addresses (at this point anyway)
 	*/
 	for (i=0; i<connect_param->machine_count; i++) {
@@ -1495,7 +1495,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	if (geteuid() == 0)
 		error("POE will not run as user root");
 
-	/* SLURM was originally written against 1300, so we will
+	/* Slurm was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
 	 */
 	*rmapi_version = 1300;
@@ -1852,7 +1852,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		/* We don't handle files */
 		*error_msg = malloc(sizeof(char) * err_msg_len);
 		snprintf(*error_msg, err_msg_len,
-			 "pe_rm_submit_job: SLURM doesn't handle files "
+			 "pe_rm_submit_job: Slurm doesn't handle files "
 			 "to submit_job");
 		error("%s", *error_msg);
 		return -1;

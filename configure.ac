@@ -355,7 +355,7 @@ dnl
 X_AC_SYSTEMD
 
 dnl
-dnl Check for compilation of SLURM auth modules:
+dnl Check for compilation of Slurm auth modules:
 dnl
 X_AC_MUNGE
 
@@ -394,12 +394,12 @@ AC_SUBST(UTIL_LIBS)
 LIBS="$savedLIBS"
 
 dnl
-dnl Check for compilation of SLURM with BLCR support:
+dnl Check for compilation of Slurm with BLCR support:
 dnl
 X_AC_BLCR
 
 dnl
-dnl Check for compilation of SLURM with CURL support:
+dnl Check for compilation of Slurm with CURL support:
 dnl
 LIBCURL_CHECK_CONFIG
 

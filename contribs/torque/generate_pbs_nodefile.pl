@@ -6,7 +6,7 @@
 # Licensed under the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option) any later version.
 #
-# Uses SLURM environment variables to produce a $PBS_NODEFILE -style
+# Uses Slurm environment variables to produce a $PBS_NODEFILE -style
 #   output file.  The output goes in a temporary file and the name of
 #   the file is printed on stdout.  Intended usage is:
 #   export PBS_NODEFILE=`generate_pbs_nodefile`

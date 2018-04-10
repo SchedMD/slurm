@@ -5,11 +5,11 @@
  *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
 
@@ -322,7 +322,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
 
 		/*
 		 * setup root id's
-		 * (we need this for the SLURM API communication case)
+		 * (we need this for the Slurm API communication case)
 		 */
 		p = hostlist_nth(hl, 0);
 		coll->root_host = xstrdup(p);
@@ -580,7 +580,7 @@ static int _progress_collect(pmixp_coll_t *coll)
 		 * message back to our children */
 		coll->state = PMIXP_COLL_UPFWD;
 	} else {
-		/* If we use SLURM API (SAPI) - intermediate nodes
+		/* If we use Slurm API (SAPI) - intermediate nodes
 		 * don't need to forward data as the root will do
 		 * SAPI broadcast.
 		 * So, only root has to go through the full UPFWD
@@ -1247,7 +1247,7 @@ int pmixp_coll_contrib_parent(pmixp_coll_t *coll, uint32_t peerid,
 	case PMIXP_COLL_UPFWD_WSC:{
 		/* we are not actually ready to receive this contribution as
 		 * the upward portion of the collective wasn't received yet.
-		 * This should not happen as SAPI (SLURM API) is blocking and
+		 * This should not happen as SAPI (Slurm API) is blocking and
 		 * we chould transit to PMIXP_COLL_UPFWD_WPC immediately */
 		/* FATAL: should not happen in normal workflow */
 		char *nodename = pmixp_info_job_host(peerid);

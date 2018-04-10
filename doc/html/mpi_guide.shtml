@@ -302,7 +302,7 @@ PMIx plugin:
 directories.
 <li><i>SLURM_PMIX_DIRECT_CONN</i> (default - yes) enables (1/yes/true) or
 disables (0/no/false) controls wheter direct connections between slurmstepd's
-are astablished or SLURM RPCs are used for data exchange. Direct connection
+are astablished or Slurm RPCs are used for data exchange. Direct connection
 shows better performanse for fully-packed nodes when PMIx is running in the
 direct-modex mode.
 </ul>

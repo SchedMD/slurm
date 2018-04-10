@@ -5,11 +5,11 @@
  *  Supported by the Oak Ridge National Laboratory Extreme Scale Systems Center
  *  Written by Danny Auble <da@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -57,7 +57,7 @@
 #define DEFAULT_CRAY_SDB_PORT     0
 /* If NULL, use value from my.cnf */
 #define DEFAULT_CRAY_SDB_USER     NULL
-/* Default maximum delay for ALPS and SLURM to synchronize. Do not schedule
+/* Default maximum delay for ALPS and Slurm to synchronize. Do not schedule
  * jobs while out of sync until this time is reached (seconds) */
 #define DEFAULT_CRAY_SYNC_TIMEOUT 3600
 
@@ -75,7 +75,7 @@
  * @sub_alloc:  Only allocate requested node resources instead of the
  *              whole node.  In both cases the user will be charged
  *              for the entire node.  This is the Slurm <=2.5 behavior.
- * @sync_timeout: seconds to wait for ALPS and SLURM to sync without scheduling
+ * @sync_timeout: seconds to wait for ALPS and Slurm to sync without scheduling
  *                jobs
  */
 typedef struct {

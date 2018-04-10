@@ -15,7 +15,7 @@ extern int errno;
 
 #include "fileops.h"
 
-/* SLURM portability */
+/* Slurm portability */
 #define SLURM_SUCCESS 0
 #define SLURM_ERROR 1
 /* TODO: fix */

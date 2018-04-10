@@ -6,11 +6,11 @@
  *  Written by Chris Holmes
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -1062,7 +1062,7 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 	return j_ptr->sig_state;
 }
 
-/* ensure that all jobs running in SLURM are accounted for.
+/* ensure that all jobs running in Slurm are accounted for.
  * this procedure assumes that the gs data has already been
  * locked by the caller!
  */
@@ -1133,7 +1133,7 @@ static void _scan_slurm_job_list(void)
 
 
 /****************************
- * SLURM Timeslicer Hooks
+ * Slurm Timeslicer Hooks
  *
  * Here is a summary of the primary activities that occur
  * within this plugin:
@@ -1418,7 +1418,7 @@ extern void gs_reconfig(void)
 		for (i = 0; i < p_ptr->num_jobs; i++) {
 			job_ptr = find_job_record(p_ptr->job_list[i]->job_id);
 			if (job_ptr == NULL) {
-				/* job no longer exists in SLURM, so drop it */
+				/* job no longer exists in Slurm, so drop it */
 				continue;
 			}
 			if (IS_JOB_SUSPENDED(job_ptr) &&

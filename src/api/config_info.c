@@ -8,11 +8,11 @@
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -63,7 +63,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs);
 static void _print_config_plugin_params_list(FILE* out, List l, char *title);
 
 /*
- * slurm_api_version - Return a single number reflecting the SLURM API's
+ * slurm_api_version - Return a single number reflecting the Slurm API's
  *      version number. Use the macros SLURM_VERSION_NUM, SLURM_VERSION_MAJOR,
  *      SLURM_VERSION_MINOR, and SLURM_VERSION_MICRO to work with this value
  * RET API's version number
@@ -150,7 +150,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	fprintf(fp,
 		"########################################################\n");
 	fprintf(fp,
-		"#  Configuration file for SLURM - %s  #\n", time_str);
+		"#  Configuration file for Slurm - %s  #\n", time_str);
 	fprintf(fp,
 		"########################################################\n");
 	fprintf(fp, "#\n#\n");

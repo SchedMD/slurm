@@ -75,7 +75,7 @@ struct core_format_info core_types[] = {
 };
 
 /*
- * All spank plugins must define this macro for the SLURM plugin loader.
+ * All spank plugins must define this macro for the Slurm plugin loader.
  */
 SPANK_PLUGIN(core, 1)
 

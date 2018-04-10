@@ -7,11 +7,11 @@
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -57,14 +57,14 @@
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "auth" for SLURM authentication) and <method> is a
- * description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "auth" for Slurm authentication) and <method> is a
+ * description of how this plugin satisfies that application.  Slurm will
  * only load authentication plugins if the plugin_type string has a prefix
  * of "auth/".
  *
@@ -95,7 +95,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  * random memory.
  *
  * A word about thread safety.  The authentication plugin API specifies
- * that SLURM will exercise the plugin sanely.  That is, the authenticity
+ * that Slurm will exercise the plugin sanely.  That is, the authenticity
  * of a credential which has not been activated should not be tested.
  * However, the credential should be thread-safe.  This does not mean
  * necessarily that a plugin must recognize when an inconsistent sequence
@@ -140,7 +140,7 @@ extern int fini ( void )
 }
 
 /*
- * The remainder of this file implements the standard SLURM authentication
+ * The remainder of this file implements the standard Slurm authentication
  * API.
  */
 
@@ -216,7 +216,7 @@ slurm_auth_get_gid( slurm_auth_credential_t *cred, char *auth_info )
 
 /*
  * Marshall a credential for transmission over the network, according to
- * SLURM's marshalling protocol.
+ * Slurm's marshalling protocol.
  */
 int
 slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
@@ -243,7 +243,7 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 
 /*
  * Unmarshall a credential after transmission over the network according
- * to SLURM's marshalling protocol.
+ * to Slurm's marshalling protocol.
  */
 slurm_auth_credential_t *
 slurm_auth_unpack( Buf buf )
@@ -337,7 +337,7 @@ slurm_auth_errno( slurm_auth_credential_t *cred )
 
 /*
  * Return a string corresponding to an error.  We are responsible only for
- * the errors we define here in the plugin.  The SLURM plugin wrappers
+ * the errors we define here in the plugin.  The Slurm plugin wrappers
  * take care of the API-mandated errors.
  */
 const char *

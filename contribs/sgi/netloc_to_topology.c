@@ -705,7 +705,7 @@ int save_topology_data_to_file()
 	
 	// print hypercube topology configuration information for reference
 	fprintf(f,"#############################################################"
-		"#####\n# SLURM's network topology configuration file for use with the"
+		"#####\n# Slurm's network topology configuration file for use with the"
 		" topology/hypercube plugin\n#########################################"
 		"#########################\n# Hypcube topology information:\n# Maximum "
 		"Number of Dimensions: %d \n# Maximum Number of Nodes per Switch: %d\n"

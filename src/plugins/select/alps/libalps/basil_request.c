@@ -19,7 +19,7 @@ pthread_mutex_t timer_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * Function: _write_xml
- * Purpose:  Intercepts SLURM's ALPS BASIL XML requests so that it can
+ * Purpose:  Intercepts Slurm's ALPS BASIL XML requests so that it can
  *           logged it as well as pass to ALPS BASIL.
  * Use:  Logging is controlled by environmental variables:
  *       0) XML_LOG set to enable logging

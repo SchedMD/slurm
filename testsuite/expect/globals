@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Establish global state information for SLURM test suite
+# Purpose: Establish global state information for Slurm test suite
 #
 # To define site-specific state information, set the values in a file
 # named 'globals.local'. Those values will override any specified here.
@@ -26,22 +26,22 @@
 # Additions by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the supplied file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
@@ -281,7 +281,7 @@ proc print_time { } {
 #
 # Returns: A non-zero return code indicates a failure.
 #
-# Input: job_id  -- The SLURM job id of a job we want to cancel.
+# Input: job_id  -- The Slurm job id of a job we want to cancel.
 #
 ################################################################
 proc cancel_job { job_id } {
@@ -548,7 +548,7 @@ proc kill_srun {  } {
 #
 # Purpose:  Print header with test ID
 #
-# Input: job_id   -- The SLURM job id of a job we want to cancel.
+# Input: job_id   -- The Slurm job id of a job we want to cancel.
 #
 ################################################################
 
@@ -606,12 +606,12 @@ proc wait_for_file { file_name } {
 #
 # Proc: wait_for_job
 #
-# Purpose:  Wait for a previously submitted SLURM job to reach
+# Purpose:  Wait for a previously submitted Slurm job to reach
 # the desired state, exponential back-off 1 to 10 seconds
 #
 # Returns: A non-zero return code indicates a failure.
 #
-# Input: job_id   -- The SLURM job id of a job we want to
+# Input: job_id   -- The Slurm job id of a job we want to
 #                    wait for.
 #        desired_state -- The state you want the job to attain before
 #                         returning.  Currently supports:
@@ -732,7 +732,7 @@ proc wait_for_job { job_id desired_state } {
 #
 # Returns: A non-zero return code indicates a failure.
 #
-# Input: step_id   -- The SLURM step id of a job we want to
+# Input: step_id   -- The Slurm step id of a job we want to
 #                     wait for.
 #
 ################################################################
@@ -770,7 +770,7 @@ proc wait_for_step { step_id } {
 #
 # Proc: wait_for_all_jobs
 #
-# Purpose:  Wait for previously submitted SLURM jobs to finish of a
+# Purpose:  Wait for previously submitted Slurm jobs to finish of a
 # certain name, if incr_sleep is set exponential back-off 1 to 10 seconds
 #
 # Returns: A non-zero return code indicates a failure.
@@ -2133,7 +2133,7 @@ proc test_aix {} {
 #
 # Proc: test_super_user
 #
-# Purpose: Determine if user is a SLURM super user (i.e. user
+# Purpose: Determine if user is a Slurm super user (i.e. user
 # root or configured SlurmUser)
 #
 ################################################################
@@ -2890,7 +2890,7 @@ proc get_idle_node_in_part { partition } {
 #
 # Purpose:  Print failure with test ID
 #
-# Input: test_id   -- The SLURM regression test ID.
+# Input: test_id   -- The Slurm regression test ID.
 #
 ################################################################
 
@@ -2906,7 +2906,7 @@ proc print_failure { test_id } {
 #
 # Purpose:  Print success with test ID
 #
-# Input: test_id   -- The SLURM regression test ID.
+# Input: test_id   -- The Slurm regression test ID.
 #
 ################################################################
 

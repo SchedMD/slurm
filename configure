@@ -1723,9 +1723,9 @@ Optional Features:
   --disable-glibtest      do not try to compile and run a test GLIB program
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-alps-cray-emulation
-                          Run SLURM in an emulated Cray mode
+                          Run Slurm in an emulated Cray mode
   --disable-native-cray   Use ALPS instead of run Slurm natively on a Cray
-  --enable-cray-network   Run SLURM on a non-Cray system with a Cray network
+  --enable-cray-network   Run Slurm on a non-Cray system with a Cray network
   --enable-really-no-cray Disable cray support for eslogin machines
   --disable-optimizations disable optimizations (sets -O0)
   --enable-developer      enable developer options (asserts, -Werror - also
@@ -1786,7 +1786,7 @@ Optional Packages:
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-ucx=PATH         Build with Unified Communication X library support
   --with-libssh2=PATH     Specify path to ssh2 installation
-  --with-alps-emulation   Run SLURM against an emulated ALPS system - requires
+  --with-alps-emulation   Run Slurm against an emulated ALPS system - requires
                           option cray.conf [default=no]
   --with-cray_dir=PATH    Specify path to Cray file installation - /opt/cray
                           by default

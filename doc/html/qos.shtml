@@ -27,7 +27,7 @@ utility.
 <P> Job scheduling priority is made up of a number of factors as
 described in the <a
 href="priority_multifactor.html">priority/multifactor</a> plugin.  One
-of the factors is the QOS priority.  Each QOS is defined in the SLURM
+of the factors is the QOS priority.  Each QOS is defined in the Slurm
 database and includes an associated priority.  Jobs that request and
 are permitted a QOS will incorporate the priority associated with that
 QOS in the job's <a
@@ -58,7 +58,7 @@ whether it can preempt a running job.
 
 <P> The QOS can be assigned (using <i>sacctmgr</i>) a list of other
 QOS's that it can preempt.  When there is a queued job with a QOS that
-is allowed to preempt a running job of another QOS, the SLURM
+is allowed to preempt a running job of another QOS, the Slurm
 scheduler will preempt the running job.</P>
 
 <!-------------------------------------------------------------------------->
@@ -67,7 +67,7 @@ scheduler will preempt the running job.</P>
 
 <P> Each QOS is assigned a set of limits which will be applied to the
 job.  The limits mirror the limits imposed by the
-user/account/cluster/partition association defined in the SLURM
+user/account/cluster/partition association defined in the Slurm
 database and described in the <a href="resource_limits.html"> Resource
 Limits section</a>.  When limits for a QOS have been defined, they
 will take precedence over the association's limits.
