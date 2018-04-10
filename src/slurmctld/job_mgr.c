@@ -9319,16 +9319,16 @@ static void _pack_job(struct job_record *job_ptr,
 {
 	xassert (job_ptr->magic == JOB_MAGIC);
 
+	if ((pack_info->filter_uid != NO_VAL) &&
+	    (pack_info->filter_uid != job_ptr->user_id))
+		return;
+
 	if (((pack_info->show_flags & SHOW_ALL) == 0) &&
 	    (pack_info->uid != 0) &&
 	    _all_parts_hidden(job_ptr, pack_info->uid))
 		return;
 
 	if (_hide_job(job_ptr, pack_info->uid, pack_info->show_flags))
-		return;
-
-	if ((pack_info->filter_uid != NO_VAL) &&
-	    (pack_info->filter_uid != job_ptr->user_id))
 		return;
 
 	pack_job(job_ptr, pack_info->show_flags, pack_info->buffer,
