@@ -5665,7 +5665,8 @@ extern void job_resv_check(void)
 			continue;
 		}
 		_advance_resv_time(resv_ptr);
-		if ((resv_ptr->job_run_cnt    == 0) &&
+		if ((!resv_ptr->job_run_cnt ||
+		     (resv_ptr->flags & RESERVE_FLAG_FLEX)) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_DAILY )  == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_WEEKDAY) == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_WEEKEND) == 0) &&

@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- In configurator.html web pages change default configuration from
     task/none to task/affinity plugin and from select/linear plugin to
     select/cons_res plus CR_Core.
+ -- Allow jobs to run beyond a FLEX reservation end time.
 
 * Changes in Slurm 17.11.5
 ==========================
