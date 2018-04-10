@@ -306,8 +306,10 @@ registered with Slurm. \fBspank_opt_cb_f\fR is typedef'd in
 .fi
 Where \fIval\fR is the value of the \fIval\fR field in the \fBspank_option\fR
 struct, \fIoptarg\fR is the supplied argument if applicable, and \fIremote\fR
-is 0 if the function is being called from the "local" host
-(e.g. \fBsrun\fR) or 1 from the "remote" host (\fBslurmd\fR).
+is 0 if the function is being called from the "local" host (e.g. host where
+\fBsrun\fR or \fBsbatch/salloc\fR are invoked) or 1 from the "remote" host
+(host where slurmd/slurmstepd run) but only executed by \fBslurmstepd\fR
+(remote context) if the option was registered for such context.
 .LP
 Plugin options may be registered with Slurm using
 the \fBspank_option_register\fR function. This function is only valid
