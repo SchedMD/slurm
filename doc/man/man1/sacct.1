@@ -345,13 +345,16 @@ The job may or may not have been initiated.
 Job has terminated all processes on all nodes with an exit code of zero.
 .TP
 \f3DL  DEADLINE\fP
-Job missed its deadline.
+Job terminated on deadline.
 .TP
 \f3F   FAILED\fP
 Job terminated with non\-zero exit code or other failure condition.
 .TP
 \f3NF  NODE_FAIL\fP
 Job terminated due to failure of one or more allocated nodes.
+.TP
+\f3OOM OUT_OF_MEMORY\fP
+Job experienced out of memory error.
 .TP
 \f3PD  PENDING\fP
 Job is awaiting resource allocation. Note for a job to be selected in this state
@@ -366,11 +369,18 @@ Job terminated due to preemption.
 \f3R   RUNNING\fP
 Job currently has an allocation.
 .TP
+\f3RQ  REQUEUED\fP
+Job was requeued.
+.TP
 \f3RS  RESIZING\fP
 Job is about to change size.
 .TP
+\f3RV  REVOKED\fP
+Sibling was removed from cluster due to other cluster starting the job.
+.TP
 \f3S   SUSPENDED\fP
-Job has an allocation, but execution has been suspended.
+Job has an allocation, but execution has been suspended and CPUs have been
+released for other jobs.
 .TP
 \f3TO  TIMEOUT\fP
 Job terminated upon reaching its time limit.
