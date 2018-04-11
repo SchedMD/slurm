@@ -277,6 +277,9 @@ exit code from any task in the job array.</p>
 The <i>after</i> clause is satisfied after all tasks in the job array start.<br>
 The <i>afterany</i> clause is satisfied after all tasks in the job array
 complete.<br>
+The <i>aftercorr</i> clause is satisfied after the corresponding task ID in the
+specified job has completed successfully (ran to completion with an exit code of
+zero).<br>
 The <i>afterok</i> clause is satisfied after all tasks in the job array
 complete successfully.<br>
 The <i>afternotok</i> clause is satisfied after all tasks in the job array
@@ -290,6 +293,9 @@ sbatch --depend=afterok:123_4:123_8 my.job2
 
 # Wait for entire job array to complete
 sbatch --depend=afterany:123 my.job
+
+# Wait for corresponding job array elements
+sbatch --depend=aftercorr:123 my.job
 
 # Wait for entire job array to complete successfully
 sbatch --depend=afterok:123 my.job
