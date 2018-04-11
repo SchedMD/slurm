@@ -57,6 +57,19 @@
 
 #include "common_jag.h"
 
+/* These are defined here so when we link with something other than
+ * the slurmstepd we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmstepd.
+ */
+#if defined (__APPLE__)
+uint32_t g_tres_count __attribute__((weak_import));
+char **assoc_mgr_tres_name_array __attribute__((weak_import));
+#else
+uint32_t g_tres_count;
+char **assoc_mgr_tres_name_array;
+#endif
+
+
 static int cpunfo_frequency = 0;
 static long hertz = 0;
 
