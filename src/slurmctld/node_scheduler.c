@@ -3417,7 +3417,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		if (job_ptr->resv_ptr &&
 		    (job_ptr->resv_ptr->flags & RESERVE_FLAG_FLEX) &&
 		    job_ptr->resv_ptr->node_bitmap &&
-		    !bit_super_set(node_set_ptr[node_set_inx-1].my_bitmap,
+		    !bit_super_set(prev_node_set_ptr->my_bitmap,
 				   job_ptr->resv_ptr->node_bitmap)) {
 			/* Avoid nodes outside of job's FLEX reservation */
 			avoid_node_map =
@@ -3434,7 +3434,13 @@ static int _build_node_list(struct job_record *job_ptr,
 			avoid_weight = INFINITE - 1;
 		}
 
-		if (bit_equal(prev_node_set_ptr->my_bitmap, avoid_node_map)) {
+		if (!bit_overlap(prev_node_set_ptr->my_bitmap, avoid_node_map)){
+			/* No nodes in set to avoid */
+			FREE_NULL_BITMAP(avoid_node_map);
+			continue;
+		}
+		if (bit_super_set(prev_node_set_ptr->my_bitmap,
+				  avoid_node_map)) {
 			/*
 			 * All nodes in this set should be avoided. Either they
 			 * require a reboot or are outside of a FLEX
