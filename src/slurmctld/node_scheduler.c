@@ -3607,7 +3607,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		    (job_ptr->resv_ptr->flags & RESERVE_FLAG_FLEX) &&
 		    job_ptr->resv_ptr->node_bitmap &&
 		    !bit_super_set(prev_node_set_ptr->my_bitmap,
-				  job_ptr->resv_ptr->node_bitmap)) {
+				   job_ptr->resv_ptr->node_bitmap)) {
 			/* Avoid nodes outside of job's FLEX reservation */
 			avoid_node_map =
 				bit_copy(job_ptr->resv_ptr->node_bitmap);
