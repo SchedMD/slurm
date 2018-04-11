@@ -380,19 +380,13 @@ Actual or expected start time of the job or job step.
 (Valid for jobs and job steps)
 .TP
 \fB%t\fR
-Job state, compact form:
-PD (pending), R (running), CA (cancelled), CF(configuring),
-CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure), RV (revoked) and SE
-(special exit state).
-See the \fBJOB STATE CODES\fR section below for more information.
+Job state in compact form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
 .TP
 \fB%T\fR
-Job state, extended form:
-PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING,
-FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
-See the \fBJOB STATE CODES\fR section below for more information.
+Job state in extended form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
 .TP
 \fB%u\fR
@@ -882,18 +876,13 @@ Actual or expected start time of the job or job step.
 (Valid for jobs and job steps)
 .TP
 \fBstate\fR
-Job state, extended form:
-PENDING, RUNNING, STOPPED, SUSPENDED, CANCELLED, COMPLETING, COMPLETED,
-CONFIGURING, FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
-See the \fBJOB STATE CODES\fR section below for more information.
+Job state in extended form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
 .TP
 \fBstatecompact\fR
-Job state, compact form:
-PD (pending), R (running), CA (cancelled), CF(configuring),
-CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure), RV (revoked) and SE (special exit state).
-See the \fBJOB STATE CODES\fR section below for more information.
+Job state in compact form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
 .TP
 \fBstderr\fR
@@ -1048,14 +1037,10 @@ Slurm is configured to use the backfill scheduling plugin.
 Specify the states of jobs to view.  Accepts a comma separated list of
 state names or "all". If "all" is specified then jobs of all states will be
 reported. If no state is specified then pending, running, and completing
-jobs are reported. Valid states (in both extended and compact form) include:
-PENDING (PD), RUNNING (R), SUSPENDED (S), STOPPED (ST),
-COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
-FAILED (F), TIMEOUT (TO), PREEMPTED (PR), BOOT_FAIL (BF) , NODE_FAIL (NF),
-REVOKED (RV), and SPECIAL_EXIT (SE).
+jobs are reported. See the \fBJOB STATE CODES\fR section below for a list of
+valid states. Both extended and compact forms are valid.
 Note the \fB<state_list>\fR supplied is case insensitive ("pd" and "PD" are
 equivalent).
-See the \fBJOB STATE CODES\fR section below for more information.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
