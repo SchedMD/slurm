@@ -327,69 +327,19 @@ current time when the \f3\-\-state\fP option is specified and
 only currently running jobs can be displayed.
 A start and/or end time must be specified to view information about
 jobs not currently running.
-The following state designators are valid and multiple state names
-may be specified using comma separators. Either the short or long form of
-the state name may be used (e.g. \f3CA\fP or \f3CANCELLED\fP) and the
-name is case insensitive (e.g. \f3ca\fP and \f3CA\fP both work).
-.RS
-.TP "20"
-\fBBF  BOOT_FAIL\fR
-Job terminated due to launch failure, typically due to a hardware failure
-(e.g. unable to boot the node or block and the job can not be requeued).
-.TP
-\f3CA  CANCELLED\fP
-Job was explicitly cancelled by the user or system administrator.
-The job may or may not have been initiated.
-.TP
-\f3CD  COMPLETED\fP
-Job has terminated all processes on all nodes with an exit code of zero.
-.TP
-\f3CF  CONFIGURING\fP
-Job has been allocated resources, but are waiting for them to become ready for use
-(e.g. booting).
-.TP
-\f3CG  COMPLETING\fP
-Job is in the process of completing. Some processes on some nodes may still be active.
-.TP
-\f3DL  DEADLINE\fP
-Job missed its deadline.
-.TP
-\f3F   FAILED\fP
-Job terminated with non\-zero exit code or other failure condition.
-.TP
-\f3NF  NODE_FAIL\fP
-Job terminated due to failure of one or more allocated nodes.
-.TP
-\f3PD  PENDING\fP
-Job is awaiting resource allocation. Note for a job to be selected in this state
-it must have "EligibleTime" in the requested time interval or different
-from "Unknown". The "EligibleTime" is displayed by the "scontrol show job" command.
-For example jobs submitted with the "\-\-hold" option will have "EligibleTime=Unknown"
-as they are pending indefinitely.
-.TP
-\fBPR  PREEMPTED\fR
-Job terminated due to preemption.
-.TP
-\f3R   RUNNING\fP
-Job currently has an allocation.
-.TP
-\f3RS  RESIZING\fP
-Job is about to change size.
-.TP
-\f3S   SUSPENDED\fP
-Job has an allocation, but execution has been suspended.
-.TP
-\f3TO  TIMEOUT\fP
-Job terminated upon reaching its time limit.
-.RE
-.IP
-The \f2state_list\fP operand is a comma\-separated list of these state
-designators.  Space characters are not allowed in the
-\f2state_list\fP\c
+See the \fBJOB STATE CODES\fR section below for a list of state designators.
+Multiple state names may be specified using comma separators. Either the short
+or long form of the state name may be used (e.g. \f3CA\fP or \f3CANCELLED\fP)
+and the name is case insensitive (e.g. \f3ca\fP and \f3CA\fP both work).
+
+NOTE: Note for a job to be selected in the PENDING state it must have
+"EligibleTime" in the requested time interval or different from "Unknown". The
+"EligibleTime" is displayed by the "scontrol show job" command.  For example
+jobs submitted with the "\-\-hold" option will have "EligibleTime=Unknown" as
+they are pending indefinitely.
 
 NOTE: When specifying states and no start time is given the default
 starttime is 'now'.
-\&.
 
 .TP
 \f3\-S\fP\f3,\fP \f3\-\-starttime\fP
@@ -798,9 +748,8 @@ Initiation time of the job in the same format as \f3End\fP.
 .TP
 \f3State\fP
 Displays the job status, or state.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
 
-Output can be RUNNING, RESIZING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
-TIMEOUT, PREEMPTED, BOOT_FAIL, DEADLINE or NODE_FAIL.
 If more information is available on the job state
 than will fit into the current field width (for example, the uid that CANCELLED
 a job) the state will be followed by a "+".  You can increase the size of
@@ -874,6 +823,59 @@ Workload  Characterization  Key.   Arbitrary  string for grouping orthogonal acc
 .TP
 \f3WCKeyID\fP
 Reference to the wckey.
+
+
+.SH "JOB STATE CODES"
+
+.TP 20
+\f3BF  BOOT_FAIL\fR
+Job terminated due to launch failure, typically due to a hardware failure
+(e.g. unable to boot the node or block and the job can not be requeued).
+.TP
+\f3CA  CANCELLED\fP
+Job was explicitly cancelled by the user or system administrator.
+The job may or may not have been initiated.
+.TP
+\f3CD  COMPLETED\fP
+Job has terminated all processes on all nodes with an exit code of zero.
+.TP
+\f3DL  DEADLINE\fP
+Job terminated on deadline.
+.TP
+\f3F   FAILED\fP
+Job terminated with non\-zero exit code or other failure condition.
+.TP
+\f3NF  NODE_FAIL\fP
+Job terminated due to failure of one or more allocated nodes.
+.TP
+\f3OOM OUT_OF_MEMORY\fP
+Job experienced out of memory error.
+.TP
+\f3PD  PENDING\fP
+Job is awaiting resource allocation.
+.TP
+\f3PR  PREEMPTED\fP
+Job terminated due to preemption.
+.TP
+\f3R   RUNNING\fP
+Job currently has an allocation.
+.TP
+\f3RQ  REQUEUED\fP
+Job was requeued.
+.TP
+\f3RS  RESIZING\fP
+Job is about to change size.
+.TP
+\f3RV  REVOKED\fP
+Sibling was removed from cluster due to other cluster starting the job.
+.TP
+\f3S   SUSPENDED\fP
+Job has an allocation, but execution has been suspended and CPUs have been
+released for other jobs.
+.TP
+\f3TO  TIMEOUT\fP
+Job terminated upon reaching its time limit.
+
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
