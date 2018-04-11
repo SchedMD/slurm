@@ -3434,6 +3434,8 @@ static int _build_node_list(struct job_record *job_ptr,
 			avoid_weight = INFINITE - 1;
 		}
 
+		if (!avoid_node_map)
+			continue;
 		if (!bit_overlap(prev_node_set_ptr->my_bitmap, avoid_node_map)){
 			/* No nodes in set to avoid */
 			FREE_NULL_BITMAP(avoid_node_map);
