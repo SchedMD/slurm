@@ -1280,13 +1280,13 @@ Job is about to change size.
 \fBRV  REVOKED\fR
 Sibling was removed from cluster due to other cluster starting the job.
 .TP
+\fBSI  SIGNALING\fR
+Job is being signaled.
+.TP
 \fBSE  SPECIAL_EXIT\fR
 The job was requeued in a special state. This state can be set by
 users, typically in EpilogSlurmctld, if the job has terminated with
 a particular exit value.
-.TP
-\fBSI  SIGNALING\fR
-Job is being signaled.
 .TP
 \fBST  STOPPED\fR
 Job has an allocation, but execution has been stopped with SIGSTOP signal.
