@@ -8837,8 +8837,8 @@ void job_time_limit(void)
 		}
 
 		if (job_ptr->resv_ptr &&
-		    (job_ptr->resv_ptr->end_time + resv_over_run)
-		     < time(NULL)) {
+		    !(job_ptr->resv_ptr->flags & RESERVE_FLAG_FLEX) &&
+		    (job_ptr->resv_ptr->end_time + resv_over_run) < time(NULL)){
 			last_job_update = now;
 			info("Reservation ended for JobId=%u",
 			     job_ptr->job_id);
