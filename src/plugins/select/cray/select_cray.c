@@ -2029,6 +2029,13 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	} else if (IS_CLEANING_COMPLETE(jobinfo)) {
 		error("%s: Cleaned flag already set for job %u, "
 		      "this should never happen", __func__, job_ptr->job_id);
+	} else if (!job_ptr->nodes) {
+		/*
+		 * Job with no compute resource allocation,
+		 * only burst buffer operations
+		 */
+		debug3("No blade allocation for job %u", job_ptr->job_id);
+		other_job_fini(job_ptr);
 	} else {
 		jobinfo->cleaning |= CLEANING_STARTED;
 		slurm_thread_create_detached(NULL, _job_fini, job_ptr);
