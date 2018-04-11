@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix security issue in accounting_storage/mysql plugin by always escaping
     strings within the slurmdbd. CVE-2018-7033.
  -- Soften messages about best_fit topology to debug2 to avoid alarm.
+ -- Fix issue in sreport reservation utilization report to handle more
+    allocated time than 100% (Flex reservations).
 
 * Changes in Slurm 17.11.4
 ==========================

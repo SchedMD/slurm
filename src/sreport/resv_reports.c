@@ -417,7 +417,13 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *tot_resv,
 
 	tres_alloc_cnt  = resv_tres->count;
 	total_reported  = (uint64_t)(total_time * tres_alloc_cnt);
-	idle_secs       = total_reported - tres_alloc_secs;
+
+	/*
+	 * With Flex reservations you can have more time that possible in the
+	 * allocation.
+	 */
+	if (total_reported > tres_alloc_secs)
+		idle_secs = total_reported - tres_alloc_secs;
 
 	field_count = list_count(print_fields_list);
 	iter = list_iterator_create(print_fields_list);
