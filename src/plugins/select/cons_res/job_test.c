@@ -2246,8 +2246,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 	if (best_fit_inx == -1) {
-		debug("job %u: best_fit topology failure: no switch currently "
-		      "has sufficient resource to satisfy the request",
+		debug2("job %u: best_fit topology failure: no switch currently has sufficient resource to satisfy the request",
 		      job_ptr->job_id);
 		rc = SLURM_ERROR;
 		goto fini;
@@ -2697,8 +2696,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 	if (best_fit_inx == -1) {
-		debug("job %u: best_fit topology failure: no switch currently "
-		      "has sufficient resource to satisfy the request",
+		debug2("job %u: best_fit topology failure: no switch currently has sufficient resource to satisfy the request",
 		      job_ptr->job_id);
 		rc = SLURM_ERROR;
 		goto fini;

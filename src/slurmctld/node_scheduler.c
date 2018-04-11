@@ -3432,7 +3432,8 @@ static int _build_node_list(struct job_record *job_ptr,
 	int check_node_config;
 	struct job_details *detail_ptr = job_ptr->details;
 	bitstr_t *usable_node_mask = NULL;
-	bitstr_t *inactive_bitmap = NULL;
+	bitstr_t *avoid_node_map = NULL;
+	uint32_t avoid_weight = 0;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
 	bool has_xor = false;
@@ -3504,7 +3505,6 @@ static int _build_node_list(struct job_record *job_ptr,
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
-	(void) _match_feature(job_ptr->details->feature_list, &inactive_bitmap);
 	node_set_inx = 0;
 	node_set_len = list_count(config_list) * 4 + 1;
 	node_set_ptr = (struct node_set *)
@@ -3602,20 +3602,52 @@ static int _build_node_list(struct job_record *job_ptr,
 			error("%s: node_set buffer filled", __func__);
 			break;
 		}
-		if (test_only || !can_reboot)
-			continue;
 
-		if (!inactive_bitmap)	/* All features active */
+		if (job_ptr->resv_ptr &&
+		    (job_ptr->resv_ptr->flags & RESERVE_FLAG_FLEX) &&
+		    job_ptr->resv_ptr->node_bitmap &&
+		    !bit_super_set(prev_node_set_ptr->my_bitmap,
+				  job_ptr->resv_ptr->node_bitmap)) {
+			/* Avoid nodes outside of job's FLEX reservation */
+			avoid_node_map =
+				bit_copy(job_ptr->resv_ptr->node_bitmap);
+			bit_not(avoid_node_map);
+			avoid_weight = INFINITE;
+		} else {
+			/* Avoid nodes requiring reboot for active features */
+			if (test_only || !can_reboot)
+				continue;
+			(void) _match_feature(job_ptr->details->feature_list,
+					      &avoid_node_map);
+			avoid_weight = INFINITE - 1;
+		}
+
+		if (!avoid_node_map)
 			continue;
+		if (!bit_overlap(prev_node_set_ptr->my_bitmap, avoid_node_map)){
+			/* No nodes in set to avoid */
+			FREE_NULL_BITMAP(avoid_node_map);
+			continue;
+		}
 		if (bit_super_set(prev_node_set_ptr->my_bitmap,
-				  inactive_bitmap)) {
-			/* All nodes require reboot, just change weight */
-			prev_node_set_ptr->weight = INFINITE;
+				  avoid_node_map)) {
+			/*
+			 * All nodes in this set should be avoided. Either they
+			 * require a reboot or are outside of a FLEX
+			 * reservation so change the weigh of all these nodes
+			 */
+			prev_node_set_ptr->weight = avoid_weight;
+			FREE_NULL_BITMAP(avoid_node_map);
 			continue;
 		}
 		/*
 		 * Split the node set record in two:
-		 * one set to reboot, one set available now
+		 * one set of nodes to avoid if possible
+		 * one set of nodes available now
+		 *
+		 * FIXME: We really want 4 different weights (not 2):
+		 * Inside and outside of FLEX reservation plus
+		 * Need to reboot or not for node features
 		 */
 		node_set_ptr[node_set_inx].cpus_per_node = config_ptr->cpus;
 		node_set_ptr[node_set_inx].features =
@@ -3623,16 +3655,17 @@ static int _build_node_list(struct job_record *job_ptr,
 		node_set_ptr[node_set_inx].feature_bits = bit_copy(tmp_feature);
 		node_set_ptr[node_set_inx].my_bitmap =
 			bit_copy(node_set_ptr[node_set_inx-1].my_bitmap);
-		bit_and(node_set_ptr[node_set_inx].my_bitmap, inactive_bitmap);
+		bit_and(node_set_ptr[node_set_inx].my_bitmap, avoid_node_map);
 		node_set_ptr[node_set_inx].nodes = bit_set_count(
 			node_set_ptr[node_set_inx].my_bitmap);
 		node_set_ptr[node_set_inx].real_memory =
 			config_ptr->real_memory;
-		node_set_ptr[node_set_inx].weight = INFINITE;
+		node_set_ptr[node_set_inx].weight = avoid_weight;
 		bit_and_not(node_set_ptr[node_set_inx-1].my_bitmap,
-			    inactive_bitmap);
+			    avoid_node_map);
 		node_set_ptr[node_set_inx-1].nodes -= bit_set_count(
 			node_set_ptr[node_set_inx-1].my_bitmap);
+		FREE_NULL_BITMAP(avoid_node_map);
 		node_set_inx++;
 		if (node_set_inx >= node_set_len) {
 			error("%s: node_set buffer filled", __func__);
@@ -3640,7 +3673,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		}
 	}
 	list_iterator_destroy(config_iterator);
-	FREE_NULL_BITMAP(inactive_bitmap);
+	FREE_NULL_BITMAP(avoid_node_map);
 	/* eliminate any incomplete node_set record */
 	xfree(node_set_ptr[node_set_inx].features);
 	FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
