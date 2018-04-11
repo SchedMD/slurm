@@ -507,10 +507,12 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 		 * and destroy_persistent functions are directly supported by
 		 * dw_wlm_cli. Support "#BB" format for backward compatibility.
 		 */
-		if (bb_flag == BB_FLAG_BB_OP) {
+		if (bb_flag != 0) {
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
+		}
+		if (bb_flag == BB_FLAG_BB_OP) {
 			if (!xstrncmp(tok, "create_persistent", 17)) {
 				have_bb = true;
 				bb_access = NULL;
@@ -2623,6 +2625,9 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 			}
 		}
 		if (bb_flag == BB_FLAG_DW_OP) {
+			tok += 3;
+			while (isspace(tok[0]))
+				tok++;
 			if (!xstrncmp(tok, "jobdw", 5) &&
 			    (capacity = strstr(tok, "capacity="))) {
 				bb_pool = NULL;
