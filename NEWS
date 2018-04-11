@@ -32,6 +32,10 @@ documents those changes that are of interest to users and administrators.
  -- When a process is core dumping, avoid terminating other processes in that
     task group. This fixes a problem with writing out incomplete OpenMP core
     files.
+ -- CPU frequency management enhancements: If scaling_available_frequencies
+    file is not available, then derive values from scaling_min_freq and
+    scaling_max_freq values. If cpuinfo_cur_freq file is not available then
+    try to use scaling_cur_freq.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

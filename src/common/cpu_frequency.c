@@ -95,8 +95,11 @@ static int      _cpu_freq_cpu_avail(int cpx);
 static int      _cpu_freq_current_state(int cpx);
 static uint16_t	_cpu_freq_next_cpu(char **core_range, uint16_t *cpx,
 				   uint16_t *start, uint16_t *end);
+static uint32_t	_cpu_freq_get_scaling_freq(int cpuidx, char* option);
 static void     _cpu_freq_init_data(int cpx);
 static void     _cpu_freq_setup_data(stepd_step_rec_t *job, int cpx);
+static bool	_cpu_freq_test_scaling_freq(int cpuidx, char *option);
+static int	_derive_avail_freq(int cpuidx);
 static int	_fd_lock_retry(int fd);
 
 static int _fd_lock_retry(int fd)
@@ -196,6 +199,29 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 }
 
 /*
+ * Try do build a table of available frequencies based upon the min/max values
+ */
+static int _derive_avail_freq(int cpuidx)
+{
+	uint32_t min_freq, max_freq, delta_freq;
+	int i;
+
+	min_freq = _cpu_freq_get_scaling_freq(cpuidx, "scaling_min_freq");
+	if (min_freq == 0)
+		return SLURM_FAILURE;
+	max_freq = _cpu_freq_get_scaling_freq(cpuidx, "scaling_max_freq");
+	if (max_freq == 0)
+		return SLURM_FAILURE;
+	delta_freq = (max_freq - min_freq) / (FREQ_LIST_MAX - 1);
+	for (i = 0; i < (FREQ_LIST_MAX - 1); i++)
+		cpufreq[cpuidx].avail_freq[i] = min_freq + (delta_freq * i);
+	cpufreq[cpuidx].avail_freq[FREQ_LIST_MAX - 1] = max_freq;
+	cpufreq[cpuidx].nfreq = FREQ_LIST_MAX;
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * Find available frequencies on this cpu
  * IN      cpuidx     - cpu to query
  * Return: SLURM_SUCCESS or SLURM_FAILURE
@@ -213,10 +239,12 @@ _cpu_freq_cpu_avail(int cpuidx)
 	snprintf(path, sizeof(path),  PATH_TO_CPU
 		 "cpu%u/cpufreq/scaling_available_frequencies", cpuidx);
 	if ( ( fp = fopen(path, "r") ) == NULL ) {
-		/* Don't log an error here,
-		 * scaling_available_frequencies does not exist when
-		 * using the intel_pstate driver.  */
-		return SLURM_FAILURE;
+		/*
+		 * Don't log an error here, scaling_available_frequencies
+		 * does not exist when using the intel_pstate driver.
+		 * Derive values from min/max values
+		 */
+		return _derive_avail_freq(cpuidx);
 	}
 	for (i = 0; i < (FREQ_LIST_MAX-1); i++) {
 		if ( fscanf(fp, "%u", &freq) == EOF) {
@@ -737,6 +765,25 @@ _cpu_freq_get_scaling_freq(int cpuidx, char* option)
 }
 
 /*
+ * test for existance of cpufreq file
+ *
+ * Return: true if file found
+ */
+static bool
+_cpu_freq_test_scaling_freq(int cpuidx, char *option)
+{
+	char path[PATH_MAX];
+	struct stat stat_buf;
+
+	/* get the value from 'option' */
+	snprintf(path, sizeof(path), PATH_TO_CPU
+		"cpu%u/cpufreq/%s", cpuidx, option);
+	if (stat(path, &stat_buf) == 0)
+		return true;
+	return false;
+}
+
+/*
  * set one of scalling_min_freq, scaling_max_freq, scaling_setspeed
  * -- assume governor already set to userspace ---
  *
@@ -785,6 +832,7 @@ _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 static int
 _cpu_freq_current_state(int cpuidx)
 {
+	static int freq_file = -1;
 	uint32_t freq;
 
 	if (cpufreq[cpuidx].org_set) {
@@ -807,7 +855,16 @@ _cpu_freq_current_state(int cpuidx)
 	 * since the intel_pstate driver doesn't necessarily create
 	 * the scaling_cur_freq file.
 	 */
-	freq = _cpu_freq_get_scaling_freq(cpuidx, "cpuinfo_cur_freq");
+	if (freq_file == -1) {
+		if (_cpu_freq_test_scaling_freq(cpuidx, "cpuinfo_cur_freq"))
+			freq_file = 0;
+		else				/* Use "scaling_cur_freq" */
+			freq_file = 1;
+	}
+	if (freq_file == 0)
+		freq = _cpu_freq_get_scaling_freq(cpuidx, "cpuinfo_cur_freq");
+	else
+		freq = _cpu_freq_get_scaling_freq(cpuidx, "scaling_cur_freq");
 	if (freq == 0)
 		return SLURM_FAILURE;
 	cpufreq[cpuidx].org_frequency = freq;
