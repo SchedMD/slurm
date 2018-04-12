@@ -85,8 +85,9 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack32(slurmctld_diag_stats.jobs_canceled, buffer);
 			pack32(slurmctld_diag_stats.jobs_failed, buffer);
 
-			pack32(slurmctld_running_job_count, buffer);
-			pack_time(slurmctld_running_job_count_ts, buffer);
+			pack32(slurmctld_diag_stats.jobs_pending, buffer);
+			pack32(slurmctld_diag_stats.jobs_running, buffer);
+			pack_time(slurmctld_diag_stats.job_states_ts, buffer);
 
 			pack32(slurmctld_diag_stats.schedule_cycle_max,
 			       buffer);
@@ -145,8 +146,8 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack32(slurmctld_diag_stats.jobs_canceled, buffer);
 			pack32(slurmctld_diag_stats.jobs_failed, buffer);
 
-			pack32(slurmctld_running_job_count, buffer);
-			pack_time(slurmctld_running_job_count_ts, buffer);
+			pack32(slurmctld_diag_stats.jobs_running, buffer);
+			pack_time(slurmctld_diag_stats.job_states_ts, buffer);
 
 			pack32(slurmctld_diag_stats.schedule_cycle_max,
 			       buffer);

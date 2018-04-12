@@ -14561,8 +14561,9 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack32(&msg->jobs_canceled,	buffer);
 			safe_unpack32(&msg->jobs_failed,	buffer);
 
+			safe_unpack32(&msg->jobs_pending,	buffer);
 			safe_unpack32(&msg->jobs_running,	buffer);
-			safe_unpack_time(&msg->jobs_running_ts,	buffer);
+			safe_unpack_time(&msg->job_states_ts,	buffer);
 
 			safe_unpack32(&msg->schedule_cycle_max,	buffer);
 			safe_unpack32(&msg->schedule_cycle_last,buffer);
@@ -14614,7 +14615,7 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack32(&msg->jobs_failed,	buffer);
 
 			safe_unpack32(&msg->jobs_running,	buffer);
-			safe_unpack_time(&msg->jobs_running_ts,	buffer);
+			safe_unpack_time(&msg->job_states_ts,	buffer);
 
 			safe_unpack32(&msg->schedule_cycle_max,	buffer);
 			safe_unpack32(&msg->schedule_cycle_last,buffer);

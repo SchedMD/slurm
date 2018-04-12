@@ -181,8 +181,6 @@ int	slurmctld_primary = 1;
 bool	want_nodes_reboot = true;
 int   slurmctld_tres_cnt = 0;
 slurmdb_cluster_rec_t *response_cluster_rec = NULL;
-int     slurmctld_running_job_count    = 0;
-time_t  slurmctld_running_job_count_ts = 0;
 bool    test_config = false;
 int     test_config_rc = 0;
 
@@ -239,7 +237,6 @@ static int          _init_tres(void);
 static void         _update_cluster_tres(void);
 
 inline static int   _report_locks_set(void);
-static int          _running_jobs_count();
 static void *       _service_connection(void *arg);
 static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
@@ -248,6 +245,7 @@ static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
 static void         _test_thread_limit(void);
 inline static void  _update_cred_key(void);
+static void         _update_diag_job_state_counts();
 static bool	    _verify_clustername(void);
 static void	    _create_clustername_file(void);
 static void *       _purge_files_thread(void *no_data);
@@ -2201,12 +2199,10 @@ static void *_slurmctld_background(void *no_data)
 			_accounting_cluster_ready();
 		}
 
-		if (difftime(now, slurmctld_running_job_count_ts) >=
+		if (difftime(now, slurmctld_diag_stats.job_states_ts) >=
 		    JOB_COUNT_INTERVAL) {
-			now = time(NULL);
 			lock_slurmctld(job_read_lock);
-			slurmctld_running_job_count_ts = now;
-			slurmctld_running_job_count    = _running_jobs_count();
+			_update_diag_job_state_counts();
 			unlock_slurmctld(job_read_lock);
 		}
 
@@ -3513,20 +3509,24 @@ static void _get_fed_updates()
 static int _foreach_job_running(void *object, void *arg)
 {
 	struct job_record *job_ptr = (struct job_record *)object;
-	int *count = (int *)arg;
 
+	if (IS_JOB_PENDING(job_ptr)) {
+		int job_cnt = (job_ptr->array_recs &&
+			       job_ptr->array_recs->task_cnt) ?
+			job_ptr->array_recs->task_cnt : 1;
+		slurmctld_diag_stats.jobs_pending += job_cnt;
+	}
 	if (IS_JOB_RUNNING(job_ptr))
-		(*count)++;
+		slurmctld_diag_stats.jobs_running++;
 
 	return SLURM_SUCCESS;
 }
 
-static int _running_jobs_count()
+static void _update_diag_job_state_counts()
 {
-	int count = 0;
-
-	list_for_each(job_list, _foreach_job_running, &count);
-
-	return count;
+	slurmctld_diag_stats.jobs_running = 0;
+	slurmctld_diag_stats.jobs_pending = 0;
+	slurmctld_diag_stats.job_states_ts = time(NULL);
+	list_for_each(job_list, _foreach_job_running, NULL);
 }
 
