@@ -77,7 +77,7 @@ configuration file, commands, and daemons.<br>
 <h2>Source Code</h2>
 
 <p>Functions are divided into several categories, each in its own subdirectory.
-The details of each directory's contents are proved below. The directories are
+The details of each directory's contents are provided below. The directories are
 as follows: </p>
 
 <p style="margin-left:.2in">
