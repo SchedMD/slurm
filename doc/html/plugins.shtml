@@ -116,12 +116,12 @@ for an example of how to do this.</p>
 </p>
 <p>
   The following advice indicates which structures have arrays with associated
-  counters that must be mantained when modifying data, plus other possible
+  counters that must be maintained when modifying data, plus other possible
   important information to take in consideration when manipulating these
   structures.
   This list is not fully exhaustive due to constant modifications in code,
   but it is a first start point and basic guideline for most common situations.
-  Complete structure inforation can be seen in the <i>slurm/slurm.h.in</i>
+  Complete structure information can be seen in the <i>slurm/slurm.h.in</i>
   file.
 </p>
 

@@ -42,7 +42,7 @@ in other Slurm functions used by the plugin.</p>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/accounting_storage/mysql</span>
 for a sample implementation of a Slurm Accounting Storage plugin.
-<p> The Accounting Storage plugin was written to be a interface
+<p>The Accounting Storage plugin was written to be an interface
 to storage data collected by the Job Accounting Gather plugin.  When
 adding a new database you may want to add common functions in a common
 file in the src/database dir.  Refer to src/database/mysql_common.c|.h for an
@@ -89,7 +89,7 @@ acct_storage_p_get_connection() is called to get a connection to the
   free the pointer returned by this function.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">make_agent</span> (input) to make an agent
-thread of not.  This is primarily used in the slurmdbd plugin.<br>
+thread or not.  This is primarily used in the slurmdbd plugin.<br>
 <span class="commandline">conn_num</span> (input) connection number to
 the plugin.  In many cases you should plan on multiple simultaneous
 connections to the plugin.  This number is useful since the debug
@@ -99,17 +99,17 @@ is from.<br>
 happen or not (in use with databases that support rollback).<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">void *</span> which is an opaque structure
-used inside the plugin to connection to the storage type on success, or<br>
+used inside the plugin to connect to the storage type on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">int acct_storage_p_close_connection(void **db_conn)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 acct_storage_p_close_connection() is called at the end of the program that has
-called acct_storage_p_get_connection this function closes the connection to
+called acct_storage_p_get_connection(). This function closes the connection to
 the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input/output) connection to
-the storage type, all memory will be freed inside this function and
+the storage type; all memory will be freed inside this function and
 set to NULL.
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
@@ -118,7 +118,7 @@ set to NULL.
 <p class="commandline">int acct_storage_p_commit(void *db_conn, bool commit)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 acct_storage_p_commit() is called at a point where you would either
-  want changes to storage be committed or rolled back.  This function
+  want changes to storage to be committed or rolled back.  This function
   should also send appropriate update messages to the various slurmctlds.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
@@ -206,7 +206,7 @@ associations to add. <br>
 <p class="commandline">
 int acct_storage_p_add_qos(void *db_conn, uint32_t uid, List qos_list)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-Called to add QOS' to the storage type.
+Called to add QOS's to the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
