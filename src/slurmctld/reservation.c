@@ -5313,7 +5313,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				     "will not share nodes",
 				     resv_ptr->name, job_ptr->job_id);
 #endif
-				*resv_overlap = true;
 				bit_and_not(*node_bitmap, resv_ptr->node_bitmap);
 			} else {
 #if _DEBUG
@@ -5324,16 +5323,20 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 					;
 				} else if (exc_core_bitmap == NULL) {
 					error("job_test_resv: exc_core_bitmap is NULL");
-					*resv_overlap = true;
 				} else if (*exc_core_bitmap == NULL) {
 					*exc_core_bitmap =
 						bit_copy(resv_ptr->core_bitmap);
-					*resv_overlap = true;
 				} else {
 					bit_or(*exc_core_bitmap,
 					       resv_ptr->core_bitmap);
-					*resv_overlap = true;
 				}
+			}
+
+			if(!job_ptr->part_ptr ||
+			    bit_overlap(job_ptr->part_ptr->node_bitmap,
+					resv_ptr->node_bitmap)) {
+				*resv_overlap = true;
+				continue;
 			}
 		}
 		list_iterator_destroy(iter);
