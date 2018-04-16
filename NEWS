@@ -145,6 +145,9 @@ documents those changes that are of interest to users and administrators.
     task/none to task/affinity plugin and from select/linear plugin to
     select/cons_res plus CR_Core.
  -- Allow jobs to run beyond a FLEX reservation end time.
+ -- Fix problem with wrongly set as Reservation job state_reason.
+ -- Prevent bit_ffs() from returnig value out of bitmap range.
+ -- Improve performance of 'squeue -u' when PrivateData=jobs is enabled.
 
 * Changes in Slurm 17.11.5
 ==========================

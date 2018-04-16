@@ -495,7 +495,10 @@ bit_ffs(bitstr_t *b)
 		}
 #endif
 	}
-	return value;
+	if (value < _bitstr_bits(b))
+		return value;
+	else
+		return -1;
 }
 
 /*
