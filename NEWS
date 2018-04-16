@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow jobs to run beyond a FLEX reservation end time.
  -- Fix problem with wrongly set as Reservation job state_reason.
  -- Prevent bit_ffs() from returnig value out of bitmap range.
+ -- Improve performance of 'squeue -u' when PrivateData=jobs is enabled.
 
 * Changes in Slurm 17.11.5
 ==========================
