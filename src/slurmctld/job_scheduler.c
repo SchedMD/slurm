@@ -1230,7 +1230,7 @@ static int _schedule(uint32_t job_limit)
 	static int def_job_limit = 100;
 	static int max_jobs_per_part = 0;
 	static int defer_rpc_cnt = 0;
-	static bool reduce_completing_frag = 0;
+	static bool reduce_completing_frag = false;
 	time_t now, last_job_sched_start, sched_start;
 	uint32_t reject_array_job_id = 0;
 	struct part_record *reject_array_part = NULL;
