@@ -1079,6 +1079,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	int error_code = SLURM_SUCCESS, i;
 	bitstr_t *feature_bitmap, *accumulate_bitmap = NULL;
 	bitstr_t *save_avail_node_bitmap = NULL, *resv_bitmap = NULL;
+	bitstr_t *save_share_node_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
 	List preemptee_candidates = NULL;
 	bool has_xand = false;
@@ -1136,6 +1137,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	bit_and_not(avail_node_bitmap, booting_node_bitmap);
 	filter_by_node_owner(job_ptr, avail_node_bitmap);
+	save_share_node_bitmap = bit_copy(share_node_bitmap);
+	filter_by_node_owner(job_ptr, share_node_bitmap);
+
 	if (can_reboot && !test_only)
 		_filter_by_node_feature(job_ptr, node_set_ptr, node_set_size);
 
@@ -1617,6 +1621,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (save_avail_node_bitmap) {
 		FREE_NULL_BITMAP(avail_node_bitmap);
 		avail_node_bitmap = save_avail_node_bitmap;
+	}
+	if (save_share_node_bitmap) {
+		FREE_NULL_BITMAP(share_node_bitmap);
+		share_node_bitmap = save_share_node_bitmap;
 	}
 	FREE_NULL_BITMAP(exc_core_bitmap);
 
@@ -2611,12 +2619,13 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
 			unavail_bitmap = bit_copy(avail_node_bitmap);
+			filter_by_node_owner(job_ptr, unavail_bitmap);
 			bit_not(unavail_bitmap);
 			bit_and_not(unavail_bitmap, future_node_bitmap);
 			if (job_ptr->details  &&
 			    job_ptr->details->req_node_bitmap &&
 			    bit_overlap(unavail_bitmap,
-				   job_ptr->details->req_node_bitmap)) {
+					job_ptr->details->req_node_bitmap)) {
 				bit_and(unavail_bitmap,
 					job_ptr->details->req_node_bitmap);
 			}
