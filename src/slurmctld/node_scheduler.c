@@ -2173,7 +2173,6 @@ static bool _first_array_task(struct job_record *job_ptr)
  * IN select_node_bitmap - bitmap of nodes to be used for the
  *	job's resource allocation (not returned if NULL), caller
  *	must free
- * IN unavail_node_str - Nodes which are currently unavailable.
  * OUT err_msg - if not NULL set to error message for job, caller must xfree
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
@@ -2188,8 +2187,7 @@ static bool _first_array_task(struct job_record *job_ptr)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
-			bitstr_t **select_node_bitmap, char *unavail_node_str,
-			char **err_msg)
+			bitstr_t **select_node_bitmap, char **err_msg)
 {
 	int bb, error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
@@ -2428,31 +2426,26 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		} else if (error_code == ESLURM_NODE_NOT_AVAIL) {
 			/* Required nodes are down or drained */
 			char *node_str = NULL, *unavail_node = NULL;
+			bitstr_t *unavail_bitmap;
 			debug3("JobId=%u required nodes not avail",
 			       job_ptr->job_id);
 			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
-			if (unavail_node_str) {	/* Set in few cases */
-				node_str = unavail_node_str;
-			} else {
-				bitstr_t *unavail_bitmap;
-				unavail_bitmap = bit_copy(avail_node_bitmap);
-				bit_not(unavail_bitmap);
-				if (job_ptr->details  &&
-				    job_ptr->details->req_node_bitmap &&
-				    bit_overlap(unavail_bitmap,
-					   job_ptr->details->req_node_bitmap)) {
-					bit_and(unavail_bitmap,
-						job_ptr->details->
-						req_node_bitmap);
-				}
-				if (bit_ffs(unavail_bitmap) != -1) {
-					unavail_node = bitmap2node_name(
-								unavail_bitmap);
-					node_str = unavail_node;
-				}
-				FREE_NULL_BITMAP(unavail_bitmap);
+			unavail_bitmap = bit_copy(avail_node_bitmap);
+			filter_by_node_owner(job_ptr, unavail_bitmap);
+			bit_not(unavail_bitmap);
+			if (job_ptr->details  &&
+			    job_ptr->details->req_node_bitmap &&
+			    bit_overlap(unavail_bitmap,
+					job_ptr->details->req_node_bitmap)) {
+				bit_and(unavail_bitmap,
+					job_ptr->details->req_node_bitmap);
 			}
+			if (bit_ffs(unavail_bitmap) != -1) {
+				unavail_node = bitmap2node_name(unavail_bitmap);
+				node_str = unavail_node;
+			}
+			FREE_NULL_BITMAP(unavail_bitmap);
 			if (node_str) {
 				xstrfmtcat(job_ptr->state_desc,
 					   "ReqNodeNotAvail, "

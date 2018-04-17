@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix problem with wrongly set as Reservation job state_reason.
  -- Prevent bit_ffs() from returnig value out of bitmap range.
  -- Improve performance of 'squeue -u' when PrivateData=jobs is enabled.
+ -- Make UnavailableNodes value in job reason be correct for each job.
 
 * Changes in Slurm 17.11.5
 ==========================
