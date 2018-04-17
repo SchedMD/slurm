@@ -2887,13 +2887,15 @@ held state. By specifying this parameter the job will be requeued but not
 held so that the scheduler can dispatch it to another host.
 .TP
 \fBreduce_completing_frag\fR
-Setting this option will attempt to avoid completing jobs nodes when scheduling
-thus reducing potential fragmentation. This option is to be used in
-conjunction with \fBCompleteWait\fR. By default if a job is found
-completing then no jobs are scheduled. If this parameter is used the node in
-a completing job are taken out of consideration.
-NOTE: With this set there may be a slight performance penalty in scheduling
-depending on queue depth.
+This option is used to control how scheduling of resources is performed when
+jobs are in completing state, which influences potential fragmentation.
+If the option is not set then no jobs will be started in any partition when
+any job is in completing state.
+If the option is set then no jobs will be started in any individual partition
+that has a job in completing state.
+In addition, no jobs will be started in any partition with nodes that overlap
+with any nodes in the partition of the completing job.
+This option is to be used in conjunction with \fBCompleteWait\fR.
 NOTE: \fBCompleteWait\fR must be set for this to work.
 .TP
 \fBrequeue_setup_env_fail\fR
