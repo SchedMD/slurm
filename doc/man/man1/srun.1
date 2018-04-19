@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "December 2017" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "April 2018" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -876,7 +876,7 @@ NOTE: For job allocations, this is only valid for users root and SlurmUser.
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR[=0|1]
-Controls whether or not to terminate a job if any task exits with a non\-zero
+Controls whether or not to terminate a step if any task exits with a non\-zero
 exit code. If this option is not specified, the default action will be based
 upon the Slurm configuration parameter of \fBKillOnBadExit\fR. If this option
 is specified, it will take precedence over \fBKillOnBadExit\fR. An option
@@ -886,8 +886,7 @@ Note: This option takes precedence over the \fB\-W\fR, \fB\-\-wait\fR option
 to terminate the job immediately if a task exits with a non\-zero exit code.
 Since this option's argument is optional, for proper parsing the
 single letter option must be followed immediately with the value and
-not include a space between them. For example "\-K1" and not "\-K 1". This
-option applies to job allocations.
+not include a space between them. For example "\-K1" and not "\-K 1".
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
