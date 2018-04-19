@@ -2395,16 +2395,6 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg);
 extern int update_job_str(slurm_msg_t *msg, uid_t uid);
 
 /*
- * Modify the account associated with a pending job
- * IN module - where this is called from
- * IN job_ptr - pointer to job which should be modified
- * IN new_account - desired account name
- * RET SLURM_SUCCESS or error code
- */
-extern int update_job_account(char *module, struct job_record *job_ptr,
-			      char *new_account);
-
-/*
  * Modify the wckey associated with a pending job
  * IN module - where this is called from
  * IN job_ptr - pointer to job which should be modified

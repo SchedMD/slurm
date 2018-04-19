@@ -249,7 +249,7 @@ static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static bool _top_priority(struct job_record *job_ptr, uint32_t pack_job_offset);
 static int  _valid_job_part(job_desc_msg_t * job_desc,
 			    uid_t submit_uid, bitstr_t *req_bitmap,
-			    struct part_record **part_pptr,
+			    struct part_record *part_ptr,
 			    List part_ptr_list,
 			    slurmdb_assoc_rec_t *assoc_ptr,
 			    slurmdb_qos_rec_t *qos_ptr);
@@ -4914,7 +4914,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	* Moved this (_create_job_array) here to handle when a job
 	* array is submitted since we
 	* want to know the array task count when we check the job against
-	* QoS/Assoc limits
+	* QOS/Assoc limits
 	*/
 	_create_job_array(job_ptr, job_specs);
 
@@ -6005,7 +6005,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	int rc = SLURM_SUCCESS;
 
 	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
-	    (!job_desc->reservation || !strlen(job_desc->reservation))) {
+	    (!job_desc->reservation || job_desc->reservation[0] == '\0')) {
 		debug2("%s: uid %u access to partition %s "
 		     "denied, requires reservation", __func__,
 		     (unsigned int) submit_uid, part_ptr->name);
@@ -6244,21 +6244,25 @@ static int _get_job_parts(job_desc_msg_t * job_desc,
 	}
 
 	*part_pptr = part_ptr;
-	*part_pptr_list = part_ptr_list;
-	part_ptr_list = NULL;
+	if (part_pptr_list) {
+		*part_pptr_list = part_ptr_list;
+		part_ptr_list = NULL;
+	} else
+		FREE_NULL_LIST(part_ptr_list);
+
 fini:
 	return rc;
 }
 
 static int _valid_job_part(job_desc_msg_t * job_desc,
 			   uid_t submit_uid, bitstr_t *req_bitmap,
-			   struct part_record **part_pptr,
+			   struct part_record *part_ptr,
 			   List part_ptr_list,
 			   slurmdb_assoc_rec_t *assoc_ptr,
 			   slurmdb_qos_rec_t *qos_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	struct part_record *part_ptr = *part_pptr, *part_ptr_tmp;
+	struct part_record *part_ptr_tmp;
 	slurmdb_assoc_rec_t assoc_rec;
 	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
 	uint32_t max_time = 0;
@@ -6810,7 +6814,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	error_code = _valid_job_part(job_desc, submit_uid, req_bitmap,
-				     &part_ptr, part_ptr_list,
+				     part_ptr, part_ptr_list,
 				     assoc_ptr, qos_ptr);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
@@ -11563,28 +11567,98 @@ static void _release_job(struct job_record *job_ptr, uid_t uid)
 	_release_job_rec(job_ptr, uid);
 }
 
+/*
+ * Gets a new association giving priority to the given parameters in job_desc,
+ * and if not possible using the job_ptr ones.
+ * IN job_desc: The new job description to use for getting the assoc_ptr.
+ * IN job_ptr: The original job_ptr to use when parameters are not in job_desc.
+ * RET assoc_rec, the new association combining the most updated information
+ * from job_desc.
+ */
+static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
+						struct job_record *job_ptr)
+{
+	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
+
+	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+
+	if (job_desc->partition) {
+		struct part_record *part_ptr = NULL;
+		int error_code =
+			_get_job_parts(job_desc, &part_ptr, NULL, NULL);
+		/* We don't need this we only care about part_ptr */
+		if (error_code != SLURM_SUCCESS) {
+			errno = error_code;
+			return NULL;
+		} else if (!(part_ptr->state_up & PARTITION_SUBMIT)) {
+			errno = ESLURM_PARTITION_NOT_AVAIL;
+			return NULL;
+		}
+
+		assoc_rec.partition = part_ptr->name;
+	} else if (job_ptr->part_ptr)
+		assoc_rec.partition = job_ptr->part_ptr->name;
+
+	if (job_desc->account)
+		assoc_rec.acct = job_desc->account;
+	else
+		assoc_rec.acct = job_ptr->account;
+
+	assoc_rec.uid = job_ptr->user_id;
+
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+				    accounting_enforce,
+				    &assoc_ptr, false)) {
+		info("%s: invalid account %s for job_id %u",
+		     __func__, assoc_rec.acct, job_ptr->job_id);
+		errno = ESLURM_INVALID_ACCOUNT;
+		return NULL;
+	} else if (association_based_accounting &&
+		   !assoc_ptr &&
+		   !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
+		   assoc_rec.acct) {
+		/* if not enforcing associations we want to look for
+		 * the default account and use it to avoid getting
+		 * trash in the accounting records.
+		 */
+		assoc_rec.acct = NULL;
+		(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+					       accounting_enforce,
+					       &assoc_ptr, false);
+	}
+
+	return assoc_ptr;
+}
+
 static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		       uid_t uid)
 {
 	int error_code = SLURM_SUCCESS;
 	enum job_state_reason fail_reason;
 	bool operator = false;
+	bool is_coord_oldacc = false, is_coord_newacc = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
 	struct job_details *detail_ptr;
-	struct part_record *tmp_part_ptr;
-	bitstr_t *exc_bitmap = NULL, *req_bitmap = NULL;
+	struct part_record *new_part_ptr = NULL, *use_part_ptr = NULL;
+	bitstr_t *exc_bitmap = NULL, *new_req_bitmap = NULL;
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
-	bool update_accounting = false;
+	bool update_accounting = false, new_req_bitmap_given = false;
 	acct_policy_limit_set_t acct_policy_limit_set;
 	uint16_t tres[slurmctld_tres_cnt];
-	bool acct_limit_already_set;
+	bool acct_limit_already_exceeded;
 	bool tres_changed = false;
 	int tres_pos;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	List gres_list = NULL;
 	List license_list = NULL;
+	List part_ptr_list = NULL;
+	uint32_t orig_time_limit;
+	slurmdb_assoc_rec_t *new_assoc_ptr = NULL, *use_assoc_ptr = NULL;
+	slurmdb_qos_rec_t *new_qos_ptr = NULL, *use_qos_ptr = NULL;
+	slurmctld_resv_t *new_resv_ptr = NULL;
+
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
@@ -11662,12 +11736,23 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	} else
 		memset(tres, 0, sizeof(tres));
 
-	if ((job_ptr->user_id != uid) && !operator &&
-	    !assoc_mgr_is_user_acct_coord(
-		    acct_db_conn, uid, job_ptr->account)) {
-		error("Security violation, JOB_UPDATE RPC from uid %d",
-		      uid);
-		return ESLURM_USER_ID_MISSING;
+	/* Check authorization for modifying this job */
+	is_coord_oldacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+							     job_ptr->account);
+	is_coord_newacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+							   job_specs->account);	
+	if ((job_ptr->user_id != uid) && !operator) {
+		/*
+		 * Fail if we are not coordinators of the current account or
+		 * if we are changing an account and  we are not coordinators
+		 * of both src and dest accounts.
+		 */
+		if (!is_coord_oldacc ||
+		    (!is_coord_newacc && job_specs->account)) {
+			error("Security violation, JOB_UPDATE RPC from uid %d",
+			      uid);
+			return ESLURM_USER_ID_MISSING;
+		}
 	}
 
 	detail_ptr = job_ptr->details;
@@ -11676,119 +11761,251 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	last_job_update = now;
 
 	/*
-	 * Check partition here just in case the min_nodes is changed based on
-	 * the partition
+	 * Check to see if the new requested job_specs exceeds any
+	 * existing limit. If it passes, cool, we will check the new
+	 * association/qos/part later in the code and fail if it is wrong.
+	 *
+	 * If it doesn't pass this mean some limit was exceededed before the
+	 * update request so let's keep the user continue screwing up herself
+	 * with the limit if it is what she wants. We do this by not exiting
+	 * on the later call to acct_policy_validate() if it fails.
+	 *
+	 * We will also prevent the update to return an error code that is
+	 * confusing since many things could successfully update and we are now
+	 * just already violating a limit. The job won't be allowed to run,
+	 * but it will allow the update to happen which is most likely what
+	 * was desired.
+	 *
+	 * Changes in between this check and the next acct_policy_validate()
+	 * will not be constrained to accounting enforce limits.
+	 */
+	orig_time_limit = job_specs->time_limit;
+
+	memcpy(tres_req_cnt, job_ptr->tres_req_cnt, sizeof(tres_req_cnt));
+	job_specs->tres_req_cnt = tres_req_cnt;
+
+	acct_limit_already_exceeded = false;
+
+	if (!operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
+					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
+					  NULL, &acct_policy_limit_set,
+					  true)) {
+			debug("%s: already exceeded association's cpu, node, "
+			      "memory or time limit for user %u",
+			      __func__, job_specs->user_id);
+			acct_limit_already_exceeded = true;
+		}
+		job_specs->time_limit = orig_time_limit;
+	}
+
+	/*
+	 * The partition, assoc, qos, reservation, and req_node_bitmap all have
+	 * to be set before checking later.  So here we set them into temporary
+	 * variables set in the job way later.
 	 */
 	if (job_specs->partition &&
 	    !xstrcmp(job_specs->partition, job_ptr->partition)) {
 		debug("sched: update_job: new partition identical to "
 		      "old partition %u", job_ptr->job_id);
 	} else if (job_specs->partition) {
-		List part_ptr_list = NULL;
-		bool resv_reset = false;
-		char *resv_orig = NULL;
-
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		}
 
-		if (job_specs->min_nodes == NO_VAL) {
-#ifdef HAVE_BG
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_NODE_CNT,
-				&job_specs->min_nodes);
-#else
-			job_specs->min_nodes = detail_ptr->min_nodes;
-#endif
-		}
-		if ((job_specs->max_nodes == NO_VAL) &&
-		    (detail_ptr->max_nodes != 0)) {
-#ifdef HAVE_BG
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_NODE_CNT,
-				&job_specs->max_nodes);
-#else
-			job_specs->max_nodes = detail_ptr->max_nodes;
-#endif
-		}
-
-		if ((job_specs->time_min == NO_VAL) &&
-		    (job_ptr->time_min != 0))
-			job_specs->time_min = job_ptr->time_min;
-		if (job_specs->time_limit == NO_VAL)
-			job_specs->time_limit = job_ptr->time_limit;
-		if (!job_specs->reservation
-		    || job_specs->reservation[0] == '\0') {
-			resv_reset = true;
-			resv_orig = job_specs->reservation;
-			job_specs->reservation = job_ptr->resv_name;
-		}
-
 		error_code = _get_job_parts(job_specs,
-					    &tmp_part_ptr,
+					    &new_part_ptr,
 					    &part_ptr_list, NULL);
 
 		if (error_code != SLURM_SUCCESS)
 			;
-		else if ((tmp_part_ptr->state_up & PARTITION_SUBMIT) == 0)
+		else if ((new_part_ptr->state_up & PARTITION_SUBMIT) == 0)
 			error_code = ESLURM_PARTITION_NOT_AVAIL;
-		else {
-			slurmdb_assoc_rec_t assoc_rec;
-			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_assoc_rec_t));
-			assoc_rec.acct      = job_ptr->account;
-			assoc_rec.partition = tmp_part_ptr->name;
-			assoc_rec.uid       = job_ptr->user_id;
-			if (assoc_mgr_fill_in_assoc(
-				    acct_db_conn, &assoc_rec,
-				    accounting_enforce,
-				    &job_ptr->assoc_ptr, false)) {
-				info("job_update: invalid account %s "
-				     "for job %u",
-				     job_specs->account, job_ptr->job_id);
-				error_code = ESLURM_INVALID_ACCOUNT;
-				/* Let update proceed. Note there is an invalid
-				 * association ID for accounting purposes */
-			} else
-				job_ptr->assoc_id = assoc_rec.id;
-
-			error_code = _valid_job_part(
-				job_specs, uid,
-				job_ptr->details->req_node_bitmap,
-				&tmp_part_ptr, part_ptr_list,
-				job_ptr->assoc_ptr, job_ptr->qos_ptr);
-			if (!error_code) {
-				acct_policy_remove_job_submit(job_ptr);
-				xfree(job_ptr->partition);
-				job_ptr->partition =
-					xstrdup(job_specs->partition);
-				job_ptr->part_ptr = tmp_part_ptr;
-				xfree(job_ptr->priority_array);	/* Rebuilt in
-								   plugin */
-				FREE_NULL_LIST(job_ptr->part_ptr_list);
-				job_ptr->part_ptr_list = part_ptr_list;
-				part_ptr_list = NULL;	/* nothing to free */
-				info("update_job: setting partition to %s for "
-				     "job_id %u", job_specs->partition,
-				     job_ptr->job_id);
-				update_accounting = true;
-				acct_policy_add_job_submit(job_ptr);
-			}
-		}
-		FREE_NULL_LIST(part_ptr_list);	/* error clean-up */
-
-		if (resv_reset)
-			job_specs->reservation = resv_orig;
+		else if (new_part_ptr == job_ptr->part_ptr)
+			new_part_ptr = NULL;
 
 		if (error_code != SLURM_SUCCESS)
 			goto fini;
 	}
 
-	memset(tres_req_cnt, 0, sizeof(tres_req_cnt));
-	job_specs->tres_req_cnt = tres_req_cnt;
+	use_part_ptr = new_part_ptr ? new_part_ptr : job_ptr->part_ptr;
+
+	/* Check the account and the partition as both affect the association */
+	if (job_specs->account || job_specs->partition) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else {
+			new_assoc_ptr = _retrieve_new_assoc(job_specs, job_ptr);
+
+			if (!new_assoc_ptr)
+				error_code = errno;
+			else if (new_assoc_ptr == job_ptr->assoc_ptr) {
+				new_assoc_ptr = NULL;
+				debug("sched: update_job: new association identical to old association %u",
+				      job_ptr->job_id);
+			}
+
+			/*
+			 * Clear errno that may have been set by
+			 * _retrieve_new_assoc.
+			 */
+			errno = 0;
+		}
+
+		if (error_code != SLURM_SUCCESS)
+			goto fini;
+	}
+
+	use_assoc_ptr = new_assoc_ptr ?	new_assoc_ptr : job_ptr->assoc_ptr;
+
+	if (job_specs->qos) {
+		slurmdb_qos_rec_t qos_rec;
+		char *resv_name;
+
+		if (job_specs->reservation
+		    && job_specs->reservation[0] != '\0')
+			resv_name = job_specs->reservation;
+		else
+			resv_name = job_ptr->resv_name;
+
+		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+
+		/* If the qos is blank that means we want the default */
+		if (job_specs->qos[0])
+			qos_rec.name = job_specs->qos;
+
+		new_qos_ptr = _determine_and_validate_qos(
+			resv_name, use_assoc_ptr,
+			operator, &qos_rec, &error_code, false);
+		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
+			if (job_ptr->qos_ptr == new_qos_ptr) {
+				debug("sched: update_job: new QOS identical "
+				      "to old QOS %u", job_ptr->job_id);
+				new_qos_ptr = NULL;
+			} else if (!IS_JOB_PENDING(job_ptr)) {
+				error_code = ESLURM_JOB_NOT_PENDING;
+				new_qos_ptr = NULL;
+			}
+		}
+
+		if (error_code != SLURM_SUCCESS)
+			goto fini;
+	}
+
+	use_qos_ptr = new_qos_ptr ? new_qos_ptr : job_ptr->qos_ptr;
+
+	/*
+	 * Must check req_nodes to set the job_ptr->details->req_node_bitmap
+	 * before we validate it later.
+	 */
+#ifndef HAVE_BG
+	if (job_specs->req_nodes &&
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+		/* Use req_nodes to change the nodes associated with a running
+		 * for lack of other field in the job request to use */
+		if ((job_specs->req_nodes[0] == '\0') ||
+		    node_name2bitmap(job_specs->req_nodes,
+				     false, &new_req_bitmap) ||
+		    !bit_super_set(new_req_bitmap, job_ptr->node_bitmap) ||
+		    (job_ptr->details && job_ptr->details->expanding_jobid)) {
+			info("sched: Invalid node list (%s) for job %u update",
+			     job_specs->req_nodes, job_ptr->job_id);
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto fini;
+		} else if (new_req_bitmap) {
+			int i, i_first, i_last;
+			struct node_record *node_ptr;
+			info("sched: update_job: setting nodes to %s for "
+			     "job_id %u",
+			     job_specs->req_nodes, job_ptr->job_id);
+			job_pre_resize_acctg(job_ptr);
+			i_first = bit_ffs(job_ptr->node_bitmap);
+			i_last  = bit_fls(job_ptr->node_bitmap);
+			for (i=i_first; i<=i_last; i++) {
+				if (bit_test(new_req_bitmap, i) ||
+				    !bit_test(job_ptr->node_bitmap, i))
+					continue;
+				node_ptr = node_record_table_ptr + i;
+				kill_step_on_node(job_ptr, node_ptr, false);
+				excise_node_from_job(job_ptr, node_ptr);
+			}
+			(void) gs_job_start(job_ptr);
+			_clear_job_gres_details(job_ptr);
+			job_post_resize_acctg(job_ptr);
+			/* Since job_post_resize_acctg will restart
+			 * things, don't do it again. */
+			update_accounting = false;
+		} else {
+			update_accounting = true;
+		}
+		FREE_NULL_BITMAP(new_req_bitmap);
+	} else	/* NOTE: continues to "if" logic below */
+#endif
+
+	if (job_specs->req_nodes) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (job_specs->req_nodes[0] == '\0')
+			new_req_bitmap_given = true;
+		else {
+			if (node_name2bitmap(job_specs->req_nodes, false,
+					     &new_req_bitmap)) {
+				info("sched: Invalid node list for job_update: %s",
+				     job_specs->req_nodes);
+				FREE_NULL_BITMAP(new_req_bitmap);
+				error_code = ESLURM_INVALID_NODE_NAME;
+			} else
+				new_req_bitmap_given = true;
+		}
+	}
+
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	/* this needs to be after partition and QOS checks */
+	if (job_specs->reservation
+	    && !xstrcmp(job_specs->reservation, job_ptr->resv_name)) {
+		debug("sched: update_job: new reservation identical to old reservation %u", job_ptr->job_id);
+	} else if (job_specs->reservation) {
+		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
+			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
+		} else {
+			struct job_record tmp_job_rec;
+
+			memcpy(&tmp_job_rec,
+			       job_ptr, sizeof(struct job_record));
+			tmp_job_rec.resv_name = xstrdup(job_specs->reservation);
+			tmp_job_rec.resv_ptr = NULL;
+			tmp_job_rec.part_ptr = use_part_ptr;
+			tmp_job_rec.qos_ptr = use_qos_ptr;
+			tmp_job_rec.assoc_ptr = use_assoc_ptr;
+
+			error_code = validate_job_resv(&tmp_job_rec);
+
+			/*
+			 * It doesn't matter what this is, just set it as
+			 * failure will be NULL.
+			 */
+			new_resv_ptr = tmp_job_rec.resv_ptr;
+
+			/* Make sure this job isn't using a partition or QOS
+			 * that requires it to be in a reservation. */
+			if ((error_code == SLURM_SUCCESS) && !new_resv_ptr) {
+				if (use_part_ptr
+				    && use_part_ptr->flags & PART_FLAG_REQ_RESV)
+					error_code = ESLURM_ACCESS_DENIED;
+
+				if (use_qos_ptr
+				    && use_qos_ptr->flags & QOS_FLAG_REQ_RESV)
+					error_code = ESLURM_INVALID_QOS;
+			}
+
+			xfree(tmp_job_rec.resv_name);
+		}
+		if (error_code != SLURM_SUCCESS)
+			goto fini;
+	}
 
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (job_specs->min_nodes != INFINITE)) {
@@ -11896,7 +12113,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		bool valid, pending = IS_JOB_PENDING(job_ptr);
 		license_list = license_validate(job_specs->licenses,
 						pending ?
-						tres_req_cnt : NULL,
+						job_specs->tres_req_cnt : NULL,
 						&valid);
 
 		if (!valid) {
@@ -11906,58 +12123,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 	}
 
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-
-
-	/* Check to see if the requested job_specs exceeds any
-	 * existing limit.  If it passes cool, we will check the new
-	 * association/qos later in the code.  This will prevent the
-	 * update returning an error code that is confusing since many
-	 * things could successfully update and we are now just
-	 * violating a limit.  The job won't be allowed to run, but it
-	 * will allow the update to happen which is most likely what
-	 * was desired.
-	 *
-	 * FIXME: Should we really be looking at the potentially old
-	 * part, assoc, and qos pointer?  This patch is from bug 1381
-	 * for future reference.
-	 */
-
-	acct_limit_already_set = false;
-	if (!operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
-		uint32_t acct_reason = 0;
-		uint32_t orig_time_limit = job_specs->time_limit;
-		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
-					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
-					  &acct_reason, &acct_policy_limit_set,
-					  1)) {
-			debug("%s: exceeded association/QOS limit for user %u: %s",
-			      __func__, job_specs->user_id,
-			      job_reason_string(acct_reason));
-			acct_limit_already_set = true;
-		}
-		if ((orig_time_limit == NO_VAL) &&
-		    (job_ptr->time_limit < job_specs->time_limit))
-			job_specs->time_limit = NO_VAL;
-	}
-
-	if (job_specs->account
-	    && !xstrcmp(job_specs->account, job_ptr->account)) {
-		debug("sched: update_job: new account identical to "
-		      "old account %u", job_ptr->job_id);
-	} else if (job_specs->account) {
-		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_JOB_NOT_PENDING;
-		else {
-			int rc = update_job_account("update_job", job_ptr,
-						    job_specs->account);
-			if (rc != SLURM_SUCCESS)
-				error_code = rc;
-			else
-				update_accounting = true;
-		}
-	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
@@ -11984,78 +12149,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				detail_ptr->exc_node_bitmap = exc_bitmap;
 				info("sched: update_job: setting exc_nodes to "
 				     "%s for job_id %u", job_specs->exc_nodes,
-				     job_ptr->job_id);
-			}
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-
-#ifndef HAVE_BG
-	if (job_specs->req_nodes &&
-	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
-		/* Use req_nodes to change the nodes associated with a running
-		 * for lack of other field in the job request to use */
-		if ((job_specs->req_nodes[0] == '\0') ||
-		    node_name2bitmap(job_specs->req_nodes,false, &req_bitmap) ||
-		    !bit_super_set(req_bitmap, job_ptr->node_bitmap) ||
-		    (job_ptr->details && job_ptr->details->expanding_jobid)) {
-			info("sched: Invalid node list (%s) for job %u update",
-			     job_specs->req_nodes, job_ptr->job_id);
-			error_code = ESLURM_INVALID_NODE_NAME;
-			goto fini;
-		} else if (req_bitmap) {
-			int i, i_first, i_last;
-			struct node_record *node_ptr;
-			info("sched: update_job: setting nodes to %s for "
-			     "job_id %u",
-			     job_specs->req_nodes, job_ptr->job_id);
-			job_pre_resize_acctg(job_ptr);
-			i_first = bit_ffs(job_ptr->node_bitmap);
-			i_last  = bit_fls(job_ptr->node_bitmap);
-			for (i=i_first; i<=i_last; i++) {
-				if (bit_test(req_bitmap, i) ||
-				    !bit_test(job_ptr->node_bitmap, i))
-					continue;
-				node_ptr = node_record_table_ptr + i;
-				kill_step_on_node(job_ptr, node_ptr, false);
-				excise_node_from_job(job_ptr, node_ptr);
-			}
-			(void) gs_job_start(job_ptr);
-			_clear_job_gres_details(job_ptr);
-			job_post_resize_acctg(job_ptr);
-			/* Since job_post_resize_acctg will restart
-			 * things, don't do it again. */
-			update_accounting = false;
-		} else {
-			update_accounting = true;
-		}
-		FREE_NULL_BITMAP(req_bitmap);
-	} else	/* NOTE: continues to "if" logic below */
-#endif
-
-	if (job_specs->req_nodes) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (job_specs->req_nodes[0] == '\0') {
-			xfree(detail_ptr->req_nodes);
-			FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-		} else {
-			if (node_name2bitmap(job_specs->req_nodes, false,
-					     &req_bitmap)) {
-				info("sched: Invalid node list for "
-				     "job_update: %s", job_specs->req_nodes);
-				FREE_NULL_BITMAP(req_bitmap);
-				error_code = ESLURM_INVALID_NODE_NAME;
-			}
-			if (req_bitmap) {
-				xfree(detail_ptr->req_nodes);
-				detail_ptr->req_nodes =
-					xstrdup(job_specs->req_nodes);
-				FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-				detail_ptr->req_node_bitmap = req_bitmap;
-				info("sched: update_job: setting req_nodes to "
-				     "%s for job_id %u", job_specs->req_nodes,
 				     job_ptr->job_id);
 			}
 		}
@@ -12092,52 +12185,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		info("Change of switch wait to %u secs job %u",
 		     job_ptr->wait4switch, job_ptr->job_id);
 	}
-
-	/* NOTE: Update QOS before updating partition in order to enforce
-	 * AllowQOS and DenyQOS partition configuration options */
-	if (job_specs->qos) {
-		slurmdb_qos_rec_t qos_rec;
-		slurmdb_qos_rec_t *new_qos_ptr;
-		char *resv_name;
-
-		if (job_specs->reservation
-		    && job_specs->reservation[0] != '\0')
-			resv_name = job_specs->reservation;
-		else
-			resv_name = job_ptr->resv_name;
-
-		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
-
-		/* If the qos is blank that means we want the default */
-		if (job_specs->qos[0])
-			qos_rec.name = job_specs->qos;
-
-		new_qos_ptr = _determine_and_validate_qos(
-			resv_name, job_ptr->assoc_ptr,
-			operator, &qos_rec, &error_code, false);
-		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
-			if (job_ptr->qos_id != qos_rec.id &&
-			    IS_JOB_PENDING(job_ptr)) {
-				info("%s: setting QOS to %s for job_id %u",
-				     __func__, new_qos_ptr->name,
-				     job_ptr->job_id);
-				acct_policy_remove_job_submit(job_ptr);
-				job_ptr->qos_id = qos_rec.id;
-				job_ptr->qos_ptr = new_qos_ptr;
-				job_ptr->limit_set.qos =
-					acct_policy_limit_set.qos;
-				update_accounting = true;
-				acct_policy_add_job_submit(job_ptr);
-			} else if (job_ptr->qos_id == qos_rec.id) {
-				debug("sched: update_job: new QOS identical "
-				      "to old QOS %u", job_ptr->job_id);
-			} else {
-				error_code = ESLURM_JOB_NOT_PENDING;
-			}
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
 
 	/* Always do this last just in case the assoc_ptr changed */
 	if (job_specs->admin_comment) {
@@ -12176,34 +12223,167 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (!operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+        /*
+	 * Now that we know what the new part, qos, and association are going
+	 * to be lets check the limits.
+	 * If a limit was already exceeded before this update
+	 * request, let's assume it is expected and allow the change to happen.
+	 */
+	if ((new_qos_ptr || new_assoc_ptr || new_part_ptr) &&
+	    !operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		uint32_t acct_reason = 0;
-		uint32_t orig_time_limit = job_specs->time_limit;
-		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
-					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
+		char *resv_orig = NULL;
+		bool resv_reset = false, min_reset = false, max_reset = false,
+		time_min_reset = false;
+		if (!acct_policy_validate(job_specs, use_part_ptr,
+					  use_assoc_ptr, use_qos_ptr,
 					  &acct_reason, &acct_policy_limit_set,
-					  1)
-		    && acct_limit_already_set == false) {
+					  true)
+		    && !acct_limit_already_exceeded) {
 			info("%s: exceeded association/QOS limit for user %u: %s",
 			     __func__, job_specs->user_id,
 			     job_reason_string(acct_reason));
 			error_code = ESLURM_ACCOUNTING_POLICY;
 			goto fini;
 		}
-		if ((orig_time_limit == NO_VAL) &&
-		    (job_ptr->time_limit < job_specs->time_limit))
-			job_specs->time_limit = NO_VAL;
-
-		/* Perhaps the limit was removed, so we will remove it
-		 * since it was imposed previously.
-		 *
-		 * acct_policy_validate will only set the time limit
-		 * so don't worry about any of the others
+		/*
+		 * We need to set the various parts of job_specs below to
+		 * something since _valid_job_part() will validate them.  Note
+		 * the reservation part is validated in the sub call to
+		 * _part_access_check().
 		 */
-		if (job_ptr->limit_set.time != ADMIN_SET_LIMIT)
-			job_ptr->limit_set.time = acct_policy_limit_set.time;
+		if (job_specs->min_nodes == NO_VAL) {
+#ifdef HAVE_BG
+			select_g_select_jobinfo_get(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_NODE_CNT,
+				&job_specs->min_nodes);
+#else
+			job_specs->min_nodes = detail_ptr->min_nodes;
+#endif
+			min_reset = true;
+		}
+		if ((job_specs->max_nodes == NO_VAL) &&
+		    (detail_ptr->max_nodes != 0)) {
+#ifdef HAVE_BG
+			select_g_select_jobinfo_get(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_NODE_CNT,
+				&job_specs->max_nodes);
+#else
+			job_specs->max_nodes = detail_ptr->max_nodes;
+#endif
+			max_reset = true;
+		}
+
+		if ((job_specs->time_min == NO_VAL) &&
+		    (job_ptr->time_min != 0)) {
+			job_specs->time_min = job_ptr->time_min;
+			time_min_reset = true;
+		}
+
+		/* This always gets reset, so don't worry about tracking it. */
+		if (job_specs->time_limit == NO_VAL)
+			job_specs->time_limit = job_ptr->time_limit;
+
+		if (!job_specs->reservation
+		    || job_specs->reservation[0] == '\0') {
+			resv_reset = true;
+			resv_orig = job_specs->reservation;
+			job_specs->reservation = job_ptr->resv_name;
+		}
+
+		if ((error_code = _valid_job_part(
+			     job_specs, uid,
+			     new_req_bitmap_given ?
+			     new_req_bitmap : job_ptr->details->req_node_bitmap,
+			     use_part_ptr,
+			     part_ptr_list ?
+			     part_ptr_list : job_ptr->part_ptr_list,
+			     use_assoc_ptr, use_qos_ptr)))
+			goto fini;
+
+		if (min_reset)
+			job_specs->min_nodes = NO_VAL;
+		if (max_reset)
+			job_specs->max_nodes = NO_VAL;
+		if (time_min_reset)
+			job_specs->time_min = NO_VAL;
+		if (resv_reset)
+			job_specs->reservation = resv_orig;
+
+		job_specs->time_limit = orig_time_limit;
+
+		/*
+		 * Since we are succeful to this point remove the job from the
+		 * old qos/assoc's
+		 */
+		acct_policy_remove_job_submit(job_ptr);
 	}
 
+	if (new_qos_ptr) {
+		/* Change QOS */
+		job_ptr->qos_id = new_qos_ptr->id;
+		job_ptr->qos_ptr = new_qos_ptr;
+		job_ptr->limit_set.qos = acct_policy_limit_set.qos;
+
+		info("%s: setting QOS to %s for job_id %u",
+		     __func__, new_qos_ptr->name, job_ptr->job_id);
+	}
+
+	if (new_assoc_ptr) {
+		/* Change account/association */
+		xfree(job_ptr->account);
+		job_ptr->account = xstrdup(new_assoc_ptr->acct);
+		job_ptr->assoc_id = new_assoc_ptr->id;
+		job_ptr->assoc_ptr = new_assoc_ptr;
+
+		info("%s: setting account to %s for job_id %u",
+		     __func__, job_ptr->account, job_ptr->job_id);
+	}
+
+	if (new_part_ptr) {
+		/* Change partition */
+		xfree(job_ptr->partition);
+		job_ptr->partition = xstrdup(new_part_ptr->name);
+		job_ptr->part_ptr = new_part_ptr;
+
+		xfree(job_ptr->priority_array);	/* Rebuilt in plugin */
+
+		FREE_NULL_LIST(job_ptr->part_ptr_list);
+		job_ptr->part_ptr_list = part_ptr_list;
+		part_ptr_list = NULL;	/* nothing to free */
+
+		info("%s: setting partition to %s for job_id %u",
+		     __func__, job_specs->partition, job_ptr->job_id);
+	}
+
+	/* Now add the job to the new qos/assoc's */
+	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
+		update_accounting = true;
+		acct_policy_add_job_submit(job_ptr);
+	}
+
+	if (new_req_bitmap_given) {
+		xfree(detail_ptr->req_nodes);
+		if (job_specs->req_nodes[0] != '\0')
+			detail_ptr->req_nodes =	xstrdup(job_specs->req_nodes);
+		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+		detail_ptr->req_node_bitmap = new_req_bitmap;
+		new_req_bitmap = NULL;
+		info("sched: update_job: setting req_nodes to %s for job_id %u",
+		     job_specs->req_nodes,
+		     job_ptr->job_id);
+	}
+
+	if (new_resv_ptr) {
+		job_ptr->resv_name = xstrdup(new_resv_ptr->name);
+		job_ptr->resv_ptr = new_resv_ptr;
+		info("sched: update_job: setting reservation to %s for job_id %u",
+		     job_ptr->resv_name,
+		     job_ptr->job_id);
+		update_accounting = true;
+	}
 
 	/* This needs to be done after the association acct policy check since
 	 * it looks at unaltered nodes for bluegene systems
@@ -12541,55 +12721,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		info("sched: update_job: setting delay_boot to %u for job_id %u",
 		     job_specs->delay_boot, job_ptr->job_id);
 	}
-
-	/* this needs to be after partition and QOS checks */
-	if (job_specs->reservation
-	    && !xstrcmp(job_specs->reservation, job_ptr->resv_name)) {
-		debug("sched: update_job: new reservation identical to "
-		      "old reservation %u", job_ptr->job_id);
-	} else if (job_specs->reservation) {
-		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
-			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
-		} else {
-			int rc;
-			char *save_resv_name = job_ptr->resv_name;
-			slurmctld_resv_t *save_resv_ptr = job_ptr->resv_ptr;
-
-			job_ptr->resv_name = xstrdup(job_specs->reservation);
-			rc = validate_job_resv(job_ptr);
-			/* Make sure this job isn't using a partition or QOS
-			 * that requires it to be in a reservation. */
-			if (rc == SLURM_SUCCESS && !job_ptr->resv_name) {
-				struct part_record *part_ptr =
-					job_ptr->part_ptr;
-				slurmdb_qos_rec_t *qos_ptr =
-					job_ptr->qos_ptr;
-
-				if (part_ptr
-				    && part_ptr->flags & PART_FLAG_REQ_RESV)
-					rc = ESLURM_ACCESS_DENIED;
-
-				if (qos_ptr
-				    && qos_ptr->flags & QOS_FLAG_REQ_RESV)
-					rc = ESLURM_INVALID_QOS;
-			}
-
-			if (rc == SLURM_SUCCESS) {
-				info("sched: update_job: setting reservation "
-				     "to %s for job_id %u", job_ptr->resv_name,
-				     job_ptr->job_id);
-				xfree(save_resv_name);
-				update_accounting = true;
-			} else {
-				/* Restore reservation info */
-				job_ptr->resv_name = save_resv_name;
-				job_ptr->resv_ptr = save_resv_ptr;
-				error_code = rc;
-			}
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
 
 	if ((job_specs->requeue != NO_VAL16) && detail_ptr) {
 		detail_ptr->requeue = MIN(job_specs->requeue, 1);
@@ -13614,6 +13745,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 fini:
+	FREE_NULL_BITMAP(new_req_bitmap);
+	FREE_NULL_LIST(part_ptr_list);
+
 	if (error_code == SLURM_SUCCESS) {
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
 			if (!tres_req_cnt[tres_pos] ||
@@ -16584,7 +16718,7 @@ static int _set_top(List top_job_list, uid_t uid)
 		if (job_ptr->bit_flags & TOP_PRIO_TMP) {
 			/* Duplicate job ID */
 			list_remove(iter);
-			continue;		
+			continue;
 		}
 		if (!first_job_ptr)
 			first_job_ptr = job_ptr;
@@ -16655,7 +16789,6 @@ static int _set_top(List top_job_list, uid_t uid)
 			if (next_prio >= last_prio) {
 				next_prio = last_prio - 1;
 				delta_prio = job_ptr->priority - next_prio;
-			
 			}
 			delta_nice = delta_prio;
 			job_ptr->priority = next_prio;
@@ -16931,77 +17064,6 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);
 	return cnt;
-}
-
-/*
- * Modify the account associated with a pending job
- * IN module - where this is called from
- * IN job_ptr - pointer to job which should be modified
- * IN new_account - desired account name
- * RET SLURM_SUCCESS or error code
- */
-extern int update_job_account(char *module, struct job_record *job_ptr,
-			      char *new_account)
-{
-	slurmdb_assoc_rec_t assoc_rec;
-
-	if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL)) {
-		info("%s: attempt to modify account for non-pending "
-		     "job_id %u", module, job_ptr->job_id);
-		return ESLURM_JOB_NOT_PENDING;
-	}
-
-
-	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
-	assoc_rec.acct      = new_account;
-	if (job_ptr->part_ptr)
-		assoc_rec.partition = job_ptr->part_ptr->name;
-	assoc_rec.uid       = job_ptr->user_id;
-	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				    accounting_enforce,
-				    &job_ptr->assoc_ptr, false)) {
-		info("%s: invalid account %s for job_id %u",
-		     module, new_account, job_ptr->job_id);
-		return ESLURM_INVALID_ACCOUNT;
-	} else if (association_based_accounting &&
-		   !job_ptr->assoc_ptr          &&
-		   !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
-		/* if not enforcing associations we want to look for
-		 * the default account and use it to avoid getting
-		 * trash in the accounting records.
-		 */
-		assoc_rec.acct = NULL;
-		(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					       accounting_enforce,
-					       &job_ptr->assoc_ptr, false);
-		if (!job_ptr->assoc_ptr) {
-			debug("%s: we didn't have an association for account "
-			      "'%s' and user '%u', and we can't seem to find "
-			      "a default one either.  Keeping new account "
-			      "'%s'.  This will produce trash in accounting.  "
-			      "If this is not what you desire please put "
-			      "AccountStorageEnforce=associations "
-			      "in your slurm.conf "
-			      "file.", module, new_account,
-			      job_ptr->user_id, new_account);
-			assoc_rec.acct = new_account;
-		}
-	}
-
-	xfree(job_ptr->account);
-	if (assoc_rec.acct && assoc_rec.acct[0] != '\0') {
-		job_ptr->account = xstrdup(assoc_rec.acct);
-		info("%s: setting account to %s for job_id %u",
-		     module, assoc_rec.acct, job_ptr->job_id);
-	} else {
-		info("%s: cleared account for job_id %u",
-		     module, job_ptr->job_id);
-	}
-	job_ptr->assoc_id = assoc_rec.id;
-
-	last_job_update = time(NULL);
-
-	return SLURM_SUCCESS;
 }
 
 /*

@@ -37,6 +37,10 @@ documents those changes that are of interest to users and administrators.
     scaling_max_freq values. If cpuinfo_cur_freq file is not available then
     try to use scaling_cur_freq.
  -- Add pending jobs count to sdiag output.
+ -- Fix update job function. There were some incosistencies on the behavior
+    that caused time limits to be modified when swapping QOS, bad permissions
+    check for a coordinator and AllowQOS and DenyQOS were not enforced on
+    job update.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
