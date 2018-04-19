@@ -66,6 +66,8 @@
 <li><a href="#x11">Can Slurm export an X11 display on an allocated compute node?</a></li>
 <li><a href="#unbuffered_cr">Why is the srun --u/--unbuffered option adding
    a carriage return to my output?</a></li>
+<li><a href="#sview_colors">Why is sview not coloring/highlighting nodes
+    properly?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -1021,6 +1023,12 @@ Removing the carriage return character would result in desired formatting
 in some instances, while causing bad formatting in other cases.
 In any case, Slurm is not adding the carriage return character, but displaying
 the actual program's output.</p>
+
+<p><a name="sview_colors"<b>35. Why is sview not coloring/highlighting nodes
+    properly?</b></a><br>
+sview color-coding is affected by the GTK theme. The node status grid
+is made up of button widgets and certain GTK themes don't show the color
+setting as desired. Changing GTK themes can restore proper color-coding.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -2263,6 +2271,6 @@ accessed files within jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 March 2018</p>
+<p style="text-align:center;">Last modified 19 April 2018</p>
 
 <!--#include virtual="footer.txt"-->
