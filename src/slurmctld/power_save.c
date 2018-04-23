@@ -401,6 +401,7 @@ static void _do_power_work(time_t now)
 			bit_set(sleep_node_bitmap,   i);
 			bit_set(suspend_node_bitmap, i);
 			last_suspend = now;
+			node_ptr->last_idle = 0;
 		}
 
 		/*
