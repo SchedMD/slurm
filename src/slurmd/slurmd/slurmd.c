@@ -641,6 +641,10 @@ send_registration_msg(uint32_t status, bool startup)
 		slurm_free_node_registration_status_msg(msg);
 
 		_handle_node_reg_resp(&resp_msg);
+		if (resp_msg.msg_type != RESPONSE_SLURM_RC) {
+			/* RESPONSE_SLURM_RC freed by _handle_node_reg_resp() */
+			slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
+		}
 		if (errno) {
 			ret_val = errno;
 			errno = 0;
