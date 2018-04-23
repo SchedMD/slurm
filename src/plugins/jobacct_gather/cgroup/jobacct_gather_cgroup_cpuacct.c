@@ -288,7 +288,7 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 	if (xcgroup_instantiate(&user_cpuacct_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuacct_cg);
-		error("jobacct_gather/cgroup: unable to instanciate user %u "
+		error("jobacct_gather/cgroup: unable to instantiate user %u "
 		      "cpuacct cgroup", uid);
 		fstatus = SLURM_ERROR;
 		goto error;
@@ -310,7 +310,7 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 	if (xcgroup_instantiate(&job_cpuacct_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuacct_cg);
 		xcgroup_destroy(&job_cpuacct_cg);
-		error("jobacct_gather/cgroup: unable to instanciate job %u "
+		error("jobacct_gather/cgroup: unable to instantiate job %u "
 		      "cpuacct cgroup", jobid);
 		fstatus = SLURM_ERROR;
 		goto error;
