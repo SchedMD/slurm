@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "March 2018" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "April 2018" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1237,10 +1237,11 @@ The value may not exceed 65533.
 
 .TP
 \fBKillOnBadExit\fR
-If set to 1, the job will be terminated immediately when one of the
-processes is crashed or aborted. With the default value of 0, if one of
-the processes is crashed or aborted the other processes will continue
-to run. The user can override this configuration parameter by using srun's
+If set to 1, a step will be terminated immediately if any task is
+crashed or aborted, as indicated by a non-zero exit code.
+With the default value of 0, if one of the processes is crashed or aborted
+the other processes will continue to run while the crashed or aborted process
+waits. The user can override this configuration parameter by using srun's
 \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR.
 
 .TP

@@ -21324,8 +21324,8 @@ then
       LZ4_LDFLAGS="-L${LZ4_HOME}/lib"
       LZ4_LIBS="-llz4"
 
-      LDFLAGS="$LDFLAGS -L${LZ4_LDFLAGS}"
-      CPPFLAGS="$CPPFLAGS -I${LZ4_CPPFLAGS}"
+      LDFLAGS="$LDFLAGS ${LZ4_LDFLAGS}"
+      CPPFLAGS="$CPPFLAGS ${LZ4_CPPFLAGS}"
   fi
 
   ac_ext=c

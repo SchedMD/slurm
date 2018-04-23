@@ -5562,6 +5562,9 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		}
 		if (signal == SIGKILL) {
 			uint32_t orig_task_cnt, new_task_count;
+			/* task_id_bitmap changes, so we need a copy of it */
+			bitstr_t *task_id_bitmap_orig =
+				bit_copy(job_ptr->array_recs->task_id_bitmap);
 			bit_and_not(job_ptr->array_recs->task_id_bitmap,
 				array_bitmap);
 			xfree(job_ptr->array_recs->task_id_str);
@@ -5593,8 +5596,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			 * limit for submitted jobs correctly.
 			 */
 			job_ptr->array_recs->task_cnt = new_task_count;
-			bit_and_not(array_bitmap,
-				    job_ptr->array_recs->task_id_bitmap);
+			bit_and_not(array_bitmap, task_id_bitmap_orig);
+			FREE_NULL_BITMAP(task_id_bitmap_orig);
 		} else {
 			bit_and_not(array_bitmap,
 				    job_ptr->array_recs->task_id_bitmap);
