@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect error thrown when cancelling part of a job array.
  -- Fix error code and scheduling problem for --exclusive=[user|mcs].
  -- Fix build when lz4 is in a non-standard location.
+ -- Be able to force power_down of cloud node even if in power_save state.
 
 * Changes in Slurm 17.11.5
 ==========================

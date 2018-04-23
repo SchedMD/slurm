@@ -1606,8 +1606,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("powering down node %s",
 					     this_node_name);
 				}
-				if (node_ptr->last_idle > 0)
-					node_ptr->last_idle = 1;
+				node_ptr->last_idle = 1;
 				free(this_node_name);
 				continue;
 			} else if (state_val == NODE_STATE_POWER_UP) {
