@@ -1070,7 +1070,6 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (!save_avail_node_bitmap)
 		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	bit_and_not(avail_node_bitmap, booting_node_bitmap);
-	filter_by_node_owner(job_ptr, avail_node_bitmap);
 	save_share_node_bitmap = bit_copy(share_node_bitmap);
 	filter_by_node_owner(job_ptr, share_node_bitmap);
 
@@ -1079,7 +1078,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	/* get mcs_select */
 	mcs_select = slurm_mcs_get_select(job_ptr);
-	filter_by_node_mcs(job_ptr, mcs_select, avail_node_bitmap);
+	filter_by_node_mcs(job_ptr, mcs_select, share_node_bitmap);
 
 	/* save job and request state */
 	saved_min_nodes = min_nodes;

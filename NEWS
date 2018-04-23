@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Make UnavailableNodes value in job reason be correct for each job.
  -- Fix 'squeue -o %s' on Cray systems.
  -- Fix incorrect error thrown when cancelling part of a job array.
+ -- Fix error code and scheduling problem for --exclusive=[user|mcs].
 
 * Changes in Slurm 17.11.5
 ==========================
