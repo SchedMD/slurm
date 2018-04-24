@@ -258,6 +258,7 @@ static bool         _wait_for_server_thread(void);
 int main(int argc, char **argv)
 {
 	int cnt, error_code, i;
+	struct timeval start, now;
 	struct stat stat_buf;
 	struct rlimit rlim;
 	/* Locks: Write configuration, job, node, and partition */
@@ -290,6 +291,24 @@ int main(int argc, char **argv)
 	slurm_conf_reinit(slurm_conf_filename);
 
 	update_logging();
+
+	/*
+	 * Calculate speed of gettimeofday() for sdiag.
+	 * Large delays indicate the Linux vDSO is not in use, which
+	 * will lead to significant scheduler performance issues.
+	 */
+	gettimeofday(&start, NULL);
+
+	for (i=0; i < 1000; i++) {
+		gettimeofday(&now, NULL);
+	}
+
+	slurmctld_diag_stats.latency  = (now.tv_sec  - start.tv_sec) * 1000000;
+	slurmctld_diag_stats.latency +=  now.tv_usec - start.tv_usec;
+
+	if (slurmctld_diag_stats.latency > 200)
+		error("High latency for gettimeofday(): %d nanoseconds",
+		      slurmctld_diag_stats.latency);
 
 	/*
 	 * Verify clustername from conf matches value in spool dir
