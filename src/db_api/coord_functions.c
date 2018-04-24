@@ -74,4 +74,3 @@ extern List slurmdb_coord_remove(void *db_conn, List acct_list,
 	return acct_storage_g_remove_coord(db_conn, db_api_uid,
 					   acct_list, user_cond);
 }
-

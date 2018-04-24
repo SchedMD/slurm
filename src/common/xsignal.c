@@ -145,4 +145,3 @@ xsignal_unblock(int sigarray[])
 
 	return _sigmask(SIG_UNBLOCK, &set, NULL);
 }
-

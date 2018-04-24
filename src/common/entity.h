@@ -259,4 +259,3 @@ void entity_nodes_walk(entity_t* entity,
 const char* entity_hashable_identify(void* item);
 
 #endif /* end of include guard: __ENTITY_GDBZJYZL_INC__ */
-

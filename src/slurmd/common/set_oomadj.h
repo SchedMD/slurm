@@ -41,4 +41,3 @@
 extern int set_oom_adj(int adj);
 
 #endif /* _SET_OOMADJ_H */
-

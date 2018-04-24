@@ -1029,4 +1029,3 @@ extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char **argv)
 {
 	return _run_report(GROUPED_TOP_ACCT_AND_WCKEY, argc, argv);
 }
-

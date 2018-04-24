@@ -101,4 +101,3 @@ extern List slurmdb_accounts_remove(void *db_conn,
 
 	return acct_storage_g_remove_accounts(db_conn, db_api_uid, acct_cond);
 }
-

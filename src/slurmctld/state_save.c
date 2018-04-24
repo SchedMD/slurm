@@ -276,4 +276,3 @@ extern void *slurmctld_state_save(void *no_data)
 			(void)trigger_state_save();
 	}
 }
-

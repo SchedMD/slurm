@@ -45,4 +45,3 @@ void pmixp_dconn_ucx_stop();
 void pmixp_dconn_ucx_finalize();
 
 #endif
-

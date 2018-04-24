@@ -855,4 +855,3 @@ extern void slurm_job_step_stat_response_msg_free(void *object)
 		xfree(step_stat_msg);
 	}
 }
-

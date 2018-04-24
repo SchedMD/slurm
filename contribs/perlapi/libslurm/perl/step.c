@@ -319,4 +319,3 @@ job_step_stat_response_msg_to_hv(job_step_stat_response_msg_t *stat_msg, HV *hv)
 
 	return 0;
 }
-

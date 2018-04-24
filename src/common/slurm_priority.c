@@ -171,4 +171,3 @@ extern void priority_g_job_end(struct job_record *job_ptr)
 
 	(*(ops.job_end))(job_ptr);
 }
-

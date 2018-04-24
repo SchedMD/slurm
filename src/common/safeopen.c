@@ -85,4 +85,3 @@ FILE * safeopen(const char *path, const char *mode, int flags)
 	return fdopen(fd, mode);
 
 }
-

@@ -685,4 +685,3 @@ extern bool acct_gather_profile_test(void)
 	slurm_mutex_unlock(&profile_running_mutex);
 	return rc;
 }
-

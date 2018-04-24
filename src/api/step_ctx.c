@@ -660,4 +660,3 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 		ptr->job_id = NO_VAL;
 	}
 }
-

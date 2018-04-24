@@ -45,4 +45,3 @@ extern void scontrol_print_federation(void)
 		slurm_destroy_federation_rec(fed);
 	}
 }
-

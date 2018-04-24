@@ -130,4 +130,3 @@ extern int checkpoint_tasks (uint32_t job_id, uint32_t step_id,
 			     time_t begin_time, char *image_dir,
 			     uint16_t wait, char *nodelist);
 #endif /*_HAVE_SLURM_CHECKPOINT_H__*/
-

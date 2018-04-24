@@ -102,4 +102,3 @@ extern List slurmdb_associations_remove(
 
 	return acct_storage_g_remove_assocs(db_conn, db_api_uid, assoc_cond);
 }
-

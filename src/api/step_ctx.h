@@ -53,4 +53,3 @@ struct slurm_step_ctx_struct {
 };
 
 #endif /* _STEP_CTX_H */
-

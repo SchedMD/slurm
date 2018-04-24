@@ -246,4 +246,3 @@ static int _call_external_program(stepd_step_rec_t *job)
 
 	/* NOTREACHED */
 }
-

@@ -53,4 +53,3 @@ extern void acct_gather_interconnect_p_conf_set(s_p_hashtbl_t *tbl);
 extern List acct_gather_interconnect_p_get_config(void);
 
 #endif
-

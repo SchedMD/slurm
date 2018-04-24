@@ -532,4 +532,3 @@ int _print_tres_weighted(priority_factors_object_t * job, int width,
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
-

@@ -363,4 +363,3 @@ extern char* jobacct_cgroup_create_slurm_cg(xcgroup_ns_t* ns)
 
 	return pre;
 }
-

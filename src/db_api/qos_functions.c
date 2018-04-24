@@ -100,4 +100,3 @@ extern List slurmdb_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond)
 
 	return acct_storage_g_remove_qos(db_conn, db_api_uid, qos_cond);
 }
-

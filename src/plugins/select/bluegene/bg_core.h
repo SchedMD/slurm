@@ -84,4 +84,3 @@ extern int node_already_down(char *node_name);
 extern const char *bg_err_str(int inx);
 
 #endif /* _BG_CORE_H_ */
-

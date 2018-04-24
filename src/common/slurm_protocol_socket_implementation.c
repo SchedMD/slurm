@@ -788,4 +788,3 @@ extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
     unpack_error:
 	return SLURM_ERROR;
 }
-

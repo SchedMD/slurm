@@ -85,4 +85,3 @@ extern int acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl);
 extern int acct_gather_interconnect_g_conf_values(void *data);
 
 #endif /*__SLURM_ACCT_GATHER_INTERCONNECT_H__*/
-

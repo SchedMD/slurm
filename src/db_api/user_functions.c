@@ -103,5 +103,3 @@ extern List slurmdb_users_remove(void *db_conn,
 
 	return acct_storage_g_remove_users(db_conn, db_api_uid, user_cond);
 }
-
-

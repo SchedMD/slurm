@@ -2124,4 +2124,3 @@ static void _set_block_avail(bg_record_t *bg_record)
 		bg_record->avail_job_end = 0;
 	}
 }
-

@@ -121,5 +121,3 @@ int fini ( void )
 {
 	return SLURM_SUCCESS;
 }
-
-

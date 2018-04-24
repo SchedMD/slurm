@@ -230,4 +230,3 @@ int run_script(const char *name, const char *pattern, uint32_t job_id,
 
 	return rc;
 }
-

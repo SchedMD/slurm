@@ -1151,4 +1151,3 @@ extern uint32_t stepd_get_nodeid(int fd, uint16_t protocol_version)
 rwfail:
 	return NO_VAL;
 }
-

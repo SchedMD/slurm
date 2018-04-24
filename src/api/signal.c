@@ -384,4 +384,3 @@ extern int slurm_notify_job (uint32_t job_id, char *message)
 
 	return SLURM_SUCCESS;
 }
-

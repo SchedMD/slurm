@@ -177,4 +177,3 @@ extern bool acct_gather_profile_p_is_active(uint32_t type)
 {
 	return false;
 }
-

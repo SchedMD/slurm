@@ -2424,4 +2424,3 @@ static ba_geo_table_t *_find_geo_table(uint32_t orig_node_count,
 
 	return geo_table;
 }
-

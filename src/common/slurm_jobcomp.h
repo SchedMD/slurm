@@ -106,4 +106,3 @@ extern List g_slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond);
 extern int g_slurm_jobcomp_archive(slurmdb_archive_cond_t *arch_cond);
 
 #endif /*__SLURM_JOBCOMP_H__*/
-

@@ -103,4 +103,3 @@ extern List slurmdb_clusters_remove(void *db_conn,
 	return acct_storage_g_remove_clusters(
 		db_conn, db_api_uid, cluster_cond);
 }
-

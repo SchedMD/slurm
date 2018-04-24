@@ -157,4 +157,3 @@ extern slurm_addr_t* route_p_next_collector_backup ( void )
 	 */
 	return NULL;
 }
-

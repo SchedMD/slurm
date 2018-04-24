@@ -61,5 +61,3 @@ void MPIR_Breakpoint(void)
 	 */
 	debug("In MPIR_Breakpoint");
 }
-
-

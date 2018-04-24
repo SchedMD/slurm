@@ -54,4 +54,3 @@ void fname_destroy(fname_t *fname);
 char * fname_remote_string (fname_t *fname);
 
 #endif /* !_FNAME_H */
-

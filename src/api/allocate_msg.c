@@ -275,4 +275,3 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 	}
 	return;
 }
-

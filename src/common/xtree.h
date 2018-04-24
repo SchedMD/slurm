@@ -321,4 +321,3 @@ xtree_node_t** xtree_get_leaves(xtree_t* tree,
 				uint32_t* size);
 
 #endif
-

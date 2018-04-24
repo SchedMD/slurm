@@ -5412,4 +5412,3 @@ extern void print_multi_line_string(char *user_msg, int inx)
 	}
 	xfree(buf);
 }
-

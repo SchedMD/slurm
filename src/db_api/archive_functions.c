@@ -60,4 +60,3 @@ extern int slurmdb_archive_load(void *db_conn,
 {
 	return jobacct_storage_g_archive_load(db_conn, arch_rec);
 }
-

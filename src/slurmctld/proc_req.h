@@ -89,4 +89,3 @@ extern int slurm_fail_job(uint32_t job_id, uint32_t job_state);
 extern char **xduparray(uint32_t size, char ** array);
 
 #endif /* !_HAVE_PROC_REQ_H */
-

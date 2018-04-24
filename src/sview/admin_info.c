@@ -114,4 +114,3 @@ extern void row_clicked_admin(GtkTreeView *tree_view,
 	gtk_widget_show(popup);
 
 }
-

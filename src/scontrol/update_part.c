@@ -513,11 +513,3 @@ scontrol_create_part (int argc, char **argv)
 	} else
 		return 0;
 }
-
-
-
-
-
-
-
-

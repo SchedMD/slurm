@@ -261,5 +261,3 @@ static void _print_text_resv(reserve_info_t * resv_ptr)
 
 	}
 }
-
-

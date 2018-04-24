@@ -123,20 +123,3 @@ scontrol_print_res (char *reservation_name)
 			printf ("No reservations in the system\n");
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

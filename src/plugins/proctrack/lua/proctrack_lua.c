@@ -618,4 +618,3 @@ out:
 	slurm_mutex_unlock (&lua_lock);
 	return rc;
 }
-

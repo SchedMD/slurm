@@ -744,4 +744,3 @@ extern const char *bg_err_str(int inx)
 	snprintf(tmp_char, sizeof(tmp_char), "unknown %u?", inx);
 	return tmp_char;
 }
-

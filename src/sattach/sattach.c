@@ -649,4 +649,3 @@ _mpir_dump_proctable()
 		     i, tv->host_name, tv->pid, tv->executable_name);
 	}
 }
-

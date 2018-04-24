@@ -175,4 +175,3 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
 extern void jobacct_common_free_jobacct(void *object);
 
 #endif /*__SLURM_JOBACCT_GATHER_H__*/
-

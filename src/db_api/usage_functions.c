@@ -78,4 +78,3 @@ extern int slurmdb_usage_roll(void *db_conn, time_t sent_start,
 	return acct_storage_g_roll_usage(db_conn, sent_start,
 					 sent_end, archive_data, rollup_stats);
 }
-

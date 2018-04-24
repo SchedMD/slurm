@@ -64,4 +64,3 @@ extern int  mpir_set_multi_name(int ntasks, const char *config_fname,
 extern int verify_multi_name(char *config_fname, slurm_opt_t *opt_local);
 
 #endif
-

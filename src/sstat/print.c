@@ -602,4 +602,3 @@ void print_fields(slurmdb_step_rec_t *step)
 	}
 	printf("\n");
 }
-

@@ -598,4 +598,3 @@ bool eio_remove_obj(eio_obj_t *obj, List objs)
 	list_iterator_destroy(i);
 	return ret;
 }
-

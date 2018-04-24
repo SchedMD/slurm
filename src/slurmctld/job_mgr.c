@@ -18507,4 +18507,3 @@ extern void update_job_limit_set_tres(uint16_t **limits_pptr)
 		memcpy(limits_ptr, tmp_tres, new_size);
 	}
 }
-

@@ -178,4 +178,3 @@ extern void jobacct_gather_p_2_stats(slurmdb_stats_t *stats,
 {
 	return;
 }
-

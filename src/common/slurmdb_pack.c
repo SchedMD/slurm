@@ -9485,4 +9485,3 @@ unpack_error:
 	*object = NULL;
 	return SLURM_ERROR;
 }
-

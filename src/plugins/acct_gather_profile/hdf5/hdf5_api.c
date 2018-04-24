@@ -205,5 +205,3 @@ extern void put_int_attribute(hid_t parent, char *name, int value)
 
 	return;
 }
-
-

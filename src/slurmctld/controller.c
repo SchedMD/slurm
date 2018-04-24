@@ -3529,4 +3529,3 @@ static void _update_diag_job_state_counts()
 	slurmctld_diag_stats.job_states_ts = time(NULL);
 	list_for_each(job_list, _foreach_job_running, NULL);
 }
-

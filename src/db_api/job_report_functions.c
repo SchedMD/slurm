@@ -550,4 +550,3 @@ extern List slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
 	return _process_grouped_report(
 		db_conn, job_cond, grouping_list, flat_view, 0, 1);
 }
-

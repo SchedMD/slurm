@@ -533,4 +533,3 @@ extern void attach_system_cgroup_pid(pid_t pid)
 	free_slurm_cgroup_conf(&slurm_cgroup_conf);
 	return;
 }
-

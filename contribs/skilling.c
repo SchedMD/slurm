@@ -122,4 +122,3 @@ main(int argc, char **argv)
 	printf("Axis coordinates = %d %d %d\n", X[0], X[1], X[2]);
 #endif
 }
-

@@ -130,4 +130,3 @@ void xhash_clear(xhash_t* table);
 void xhash_free_ptr(xhash_t** table);
 
 #endif
-

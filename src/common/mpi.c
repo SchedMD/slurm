@@ -329,5 +329,3 @@ int mpi_fini (void)
 	rc = plugin_context_destroy(g_context);
 	return rc;
 }
-
-

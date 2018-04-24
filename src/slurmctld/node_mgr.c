@@ -3984,4 +3984,3 @@ extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
 		error("reset_node_free_mem unable to find node %s", node_name);
 #endif
 }
-

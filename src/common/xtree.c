@@ -577,4 +577,3 @@ xtree_node_t** xtree_get_leaves(xtree_t* tree,
 	*size = st.list_count;
 	return st.list;
 }
-

@@ -659,4 +659,3 @@ extern bool acct_gather_profile_p_is_active(uint32_t type)
 	return (type == ACCT_GATHER_PROFILE_NOT_SET)
 		|| (g_profile_running & type);
 }
-

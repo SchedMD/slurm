@@ -84,4 +84,3 @@ extern int acct_gather_filesystem_g_conf_set(s_p_hashtbl_t *tbl);
 extern int acct_gather_filesystem_g_conf_values(void *data);
 
 #endif /*__SLURM_ACCT_GATHER_FILESYSTEM_H__*/
-

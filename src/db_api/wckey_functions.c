@@ -103,4 +103,3 @@ extern List slurmdb_wckeys_remove(void *db_conn,
 
 	return acct_storage_g_remove_wckeys(db_conn, db_api_uid, wckey_cond);
 }
-
