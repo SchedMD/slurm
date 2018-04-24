@@ -5027,7 +5027,7 @@ extern int get_convert_unit_val(int base_unit, char convert_to)
 {
 	int conv_unit = 0, conv_value = 0;
 
-	if (!(conv_unit = get_unit_type(convert_to)))
+	if ((conv_unit = get_unit_type(convert_to)) == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	while (base_unit++ < conv_unit) {
