@@ -132,7 +132,7 @@ static void _hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
 
 	if (!obj)
 		return;
-	hwloc_obj_snprintf(string, sizeof(string), topology, obj, "#", 0);
+	hwloc_obj_type_snprintf(string, sizeof(string), obj, 0);
 	debug("%*s%s", 2 * depth, "", string);
 	for (i = 0; i < obj->arity; i++) {
 		_hwloc_children(topology, obj->children[i], depth + 1);
