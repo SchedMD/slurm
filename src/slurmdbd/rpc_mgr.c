@@ -58,14 +58,6 @@
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/slurmdbd.h"
 
-#define MAX_THREAD_COUNT 100
-
-/*
- *  Maximum message size. Messages larger than this value (in bytes)
- *  will not be received.
- */
-#define MAX_MSG_SIZE     (16*1024*1024)
-
 /* Local functions */
 static void _connection_fini_callback(void *arg);
 
