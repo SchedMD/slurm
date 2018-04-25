@@ -41,6 +41,9 @@ documents those changes that are of interest to users and administrators.
     that caused time limits to be modified when swapping QOS, bad permissions
     check for a coordinator and AllowQOS and DenyQOS were not enforced on
     job update.
+ -- Add configuration paramerers SlurmctldPrimaryOnProg and
+    SlurmctldPrimaryOffProg, which define programs to execute when a slurmctld
+    daemon becomes the primary server or goes from primary to backup mode.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

@@ -3297,6 +3297,21 @@ Configure SlurmctldPort to use a port outside of the configured SrunPortRange
 and RSIP's port range.
 
 .TP
+\fBSlurmctldPrimaryOffProg\fR
+This program is executed when a slurmctld daemon running as the primary server
+becomes a backup server. By default no program is executed.
+See also the related "SlurmctldPrimaryOnProg" parameter.
+
+.TP
+\fBSlurmctldPrimaryOnProg\fR
+This program is executed when a slurmctld daemon running as a backup server
+becomes the primary server. By default no program is executed.
+When using virtual IP addresses to manage High Available Slurm services,
+this program can be used to add the IP address to an interface (and optionally
+try to kill the unresponsive  slurmctld daemon and flush the ARP caches on
+nodes on the local ethernet fabric).
+See also the related "SlurmctldPrimaryOffProg" parameter.
+.TP
 \fBSlurmctldSyslogDebug\fR
 The slurmctld daemon will log events to the syslog file at the specified
 level of detail (the \fBSlurmctldLogFile\fR file will include log messages

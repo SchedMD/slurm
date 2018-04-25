@@ -349,6 +349,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmctldPidFile", S_P_STRING},
 	{"SlurmctldPlugstack", S_P_STRING},
 	{"SlurmctldPort", S_P_STRING},
+	{"SlurmctldPrimaryOffProg", S_P_STRING},
+	{"SlurmctldPrimaryOnProg", S_P_STRING},
 	{"SlurmctldSyslogDebug", S_P_STRING},
 	{"SlurmctldTimeout", S_P_UINT16},
 	{"SlurmdDebug", S_P_STRING},
@@ -2776,6 +2778,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->slurmctld_logfile);
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	xfree (ctl_conf_ptr->slurmctld_plugstack);
+	xfree (ctl_conf_ptr->slurmctld_primary_off_prog);
+	xfree (ctl_conf_ptr->slurmctld_primary_on_prog);
 	xfree (ctl_conf_ptr->slurmd_logfile);
 	xfree (ctl_conf_ptr->slurmd_params);
 	xfree (ctl_conf_ptr->slurmd_pidfile);
@@ -2954,6 +2958,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmctld_plugstack);
 	ctl_conf_ptr->slurmctld_port		= NO_VAL;
 	ctl_conf_ptr->slurmctld_port_count	= 1;
+	xfree (ctl_conf_ptr->slurmctld_primary_off_prog);
+	xfree (ctl_conf_ptr->slurmctld_primary_on_prog);
 	ctl_conf_ptr->slurmctld_timeout		= NO_VAL16;
 	ctl_conf_ptr->slurmd_debug		= NO_VAL16;
 	xfree (ctl_conf_ptr->slurmd_logfile);
@@ -4556,6 +4562,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->slurmctld_port = SLURMCTLD_PORT;
 		conf->slurmctld_port_count = SLURMCTLD_PORT_COUNT;
 	}
+
+	(void) s_p_get_string(&conf->slurmctld_primary_off_prog,
+			      "SlurmctldPrimaryOffProg", hashtbl);
+	(void) s_p_get_string(&conf->slurmctld_primary_on_prog,
+			      "SlurmctldPrimaryOnProg", hashtbl);
 
 	if (!s_p_get_uint16(&conf->slurmctld_timeout,
 			    "SlurmctldTimeout", hashtbl))

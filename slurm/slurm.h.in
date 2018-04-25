@@ -2963,6 +2963,8 @@ typedef struct slurm_ctl_conf {
 	void *slurmctld_plugstack_conf ;/* generic slurmctld plugins configs */
 	uint32_t slurmctld_port;  /* default communications port to slurmctld */
 	uint16_t slurmctld_port_count; /* number of slurmctld comm ports */
+	char *slurmctld_primary_off_prog; /* Run when becomes slurmctld backup */
+	char *slurmctld_primary_on_prog;  /* Run when becomes slurmctld primary */
 	uint16_t slurmctld_syslog_debug; /* slurmctld output to
 					  * local logfile and syslog*/
 	uint16_t slurmctld_timeout;/* seconds that backup controller waits

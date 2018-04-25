@@ -217,26 +217,30 @@ static int controller_sigarray[] = {
 	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
 };
 
+typedef struct primary_thread_arg {
+	pid_t cpid;
+	char *prog_type;
+} primary_thread_arg_t;
+
 static int          _accounting_cluster_ready();
 static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
 static int          _backup_index(void);
 static void         _become_slurm_user(void);
+static void         _create_clustername_file(void);
 static void         _default_sigaction(int sig);
 static void         _get_fed_updates();
 static void         _init_config(void);
 static void         _init_pidfile(void);
+static int          _init_tres(void);
 static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char **argv);
 inline static int   _ping_backup_controller(void);
+static void *       _purge_files_thread(void *no_data);
 static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
-static void         _update_assoc(slurmdb_assoc_rec_t *rec);
-static void         _update_qos(slurmdb_qos_rec_t *rec);
-static int          _init_tres(void);
-static void         _update_cluster_tres(void);
-
 inline static int   _report_locks_set(void);
+static void         _run_primary_prog(bool primary_on);
 static void *       _service_connection(void *arg);
 static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
@@ -244,15 +248,17 @@ static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
 static void         _test_thread_limit(void);
+static void         _update_assoc(slurmdb_assoc_rec_t *rec);
 inline static void  _update_cred_key(void);
-static void         _update_diag_job_state_counts();
-static bool	    _verify_clustername(void);
-static void	    _create_clustername_file(void);
-static void *       _purge_files_thread(void *no_data);
+static void         _update_diag_job_state_counts(void);
+static void         _update_cluster_tres(void);
 static void         _update_nice(void);
+static void         _update_qos(slurmdb_qos_rec_t *rec);
 inline static void  _usage(char *prog_name);
 static bool         _valid_controller(void);
+static bool         _verify_clustername(void);
 static bool         _wait_for_server_thread(void);
+static void *       _wait_primary_prog(void *arg);
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
@@ -604,6 +610,7 @@ int main(int argc, char **argv)
 		/* start in primary or backup mode */
 		if (!slurmctld_primary) {
 			slurm_sched_fini();	/* make sure shutdown */
+			_run_primary_prog(false);
 			run_backup(&callbacks);
 			agent_init();	/* Killed at any previous shutdown */
 			(void) _shutdown_backup_controller();
@@ -707,6 +714,7 @@ int main(int argc, char **argv)
 		}
 
 		info("Running as primary controller");
+		_run_primary_prog(true);
 		control_time = time(NULL);
 		heartbeat_start();
 		if ((slurmctld_config.resume_backup == false) &&
@@ -3502,7 +3510,7 @@ static void *_purge_files_thread(void *no_data)
 	return NULL;
 }
 
-static void _get_fed_updates()
+static void _get_fed_updates(void)
 {
 	List fed_list = NULL;
 	slurmdb_update_object_t update = {0};
@@ -3541,10 +3549,77 @@ static int _foreach_job_running(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _update_diag_job_state_counts()
+static void _update_diag_job_state_counts(void)
 {
 	slurmctld_diag_stats.jobs_running = 0;
 	slurmctld_diag_stats.jobs_pending = 0;
 	slurmctld_diag_stats.job_states_ts = time(NULL);
 	list_for_each(job_list, _foreach_job_running, NULL);
+}
+
+static void *_wait_primary_prog(void *arg)
+{
+	primary_thread_arg_t *wait_arg = (primary_thread_arg_t *) arg;
+	int status = 0;
+
+	waitpid(wait_arg->cpid, &status, 0);
+	if (status != 0) {
+		error("%s: %s exit status %u:%u", __func__, wait_arg->prog_type,
+		      WEXITSTATUS(status), WTERMSIG(status));
+	} else {
+		info("%s: %s completed successfully", __func__,
+		     wait_arg->prog_type);
+	}
+	xfree(wait_arg->prog_type);
+	xfree(wait_arg);
+	return (void *) NULL;
+}
+
+static void _run_primary_prog(bool primary_on)
+{
+	primary_thread_arg_t *wait_arg;
+	char *prog_name, *prog_type;
+	char *argv[2], *sep;
+	pid_t cpid;
+	int i;
+
+	if (primary_on) {
+		prog_name = slurmctld_conf.slurmctld_primary_on_prog;
+		prog_type = "SlurmctldPrimaryOnProg";
+	} else {
+		prog_name = slurmctld_conf.slurmctld_primary_off_prog;
+		prog_type = "SlurmctldPrimaryOffProg";
+	}
+
+	if ((prog_name == NULL) || (prog_name[0] == '\0'))
+		return;
+
+	if (access(prog_name, X_OK) < 0) {
+		error("%s: Invalid %s: %m", __func__, prog_type);
+		return;
+	}
+
+	sep = strrchr(prog_name, '/');
+	if (sep)
+		argv[0] = sep + 1;
+	else
+		argv[0] = prog_name;
+	argv[1] = NULL;
+	if ((cpid = fork()) < 0) {	/* Error */
+		error("%s fork error: %m", __func__);
+		return;
+	}
+	if (cpid == 0) {		/* Child */
+		for (i = 0; i < 1024; i++)
+			(void) close(i);
+		setpgid(0, 0);
+		execv(prog_name, argv);
+		exit(127);
+	}
+
+	/* Create thread to wait for and log program completion */
+	wait_arg = xmalloc(sizeof(primary_thread_arg_t));
+	wait_arg->cpid = cpid;
+	wait_arg->prog_type = xstrdup(prog_type);
+	slurm_thread_create_detached(NULL, _wait_primary_prog, wait_arg);
 }
