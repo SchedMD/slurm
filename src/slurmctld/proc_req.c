@@ -890,6 +890,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->select_type_param   = conf->select_type_param;
 	conf_ptr->slurm_user_id       = conf->slurm_user_id;
 	conf_ptr->slurm_user_name     = xstrdup(conf->slurm_user_name);
+	conf_ptr->slurmctld_addr      = xstrdup(conf->slurmctld_addr);
 	conf_ptr->slurmctld_debug     = conf->slurmctld_debug;
 	conf_ptr->slurmctld_logfile   = xstrdup(conf->slurmctld_logfile);
 	conf_ptr->slurmctld_pidfile   = xstrdup(conf->slurmctld_pidfile);

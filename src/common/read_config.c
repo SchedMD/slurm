@@ -344,6 +344,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SelectTypeParameters", S_P_STRING},
 	{"SlurmUser", S_P_STRING},
 	{"SlurmdUser", S_P_STRING},
+	{"SlurmctldAddr", S_P_STRING},
 	{"SlurmctldDebug", S_P_STRING},
 	{"SlurmctldLogFile", S_P_STRING},
 	{"SlurmctldPidFile", S_P_STRING},
@@ -2775,6 +2776,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	FREE_NULL_LIST(ctl_conf_ptr->select_conf_key_pairs);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
+	xfree (ctl_conf_ptr->slurmctld_addr);
 	xfree (ctl_conf_ptr->slurmctld_logfile);
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	xfree (ctl_conf_ptr->slurmctld_plugstack);
@@ -2954,6 +2956,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->slurmctld_syslog_debug    = NO_VAL16;
 	xfree (ctl_conf_ptr->sched_logfile);
 	ctl_conf_ptr->sched_log_level		= NO_VAL16;
+	xfree (ctl_conf_ptr->slurmctld_addr);
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	xfree (ctl_conf_ptr->slurmctld_plugstack);
 	ctl_conf_ptr->slurmctld_port		= NO_VAL;
@@ -4484,6 +4487,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->slurmd_user_id = my_uid;
 		}
 	}
+
+	(void) s_p_get_string(&conf->slurmctld_addr, "SlurmctldAddr",
+			      hashtbl);
 
 	if (s_p_get_string(&temp_str, "SlurmctldDebug", hashtbl)) {
 		conf->slurmctld_debug = log_string2num(temp_str);

@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Add configuration paramerers SlurmctldPrimaryOnProg and
     SlurmctldPrimaryOffProg, which define programs to execute when a slurmctld
     daemon becomes the primary server or goes from primary to backup mode.
+ -- Add configuration paramerers SlurmctldAddr for use with virtual IP to manage
+    backup slurmctld daemons.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

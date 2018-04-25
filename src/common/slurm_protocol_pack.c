@@ -6824,6 +6824,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->slurmd_user_id, buffer);
 		packstr(build_ptr->slurmd_user_name, buffer);
 
+		packstr(build_ptr->slurmctld_addr, buffer);
 		pack16(build_ptr->slurmctld_debug, buffer);
 		packstr(build_ptr->slurmctld_logfile, buffer);
 		packstr(build_ptr->slurmctld_pidfile, buffer);
@@ -7703,6 +7704,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->slurmd_user_name,
 				       &uint32_tmp, buffer);
 
+		safe_unpackstr_xmalloc(&build_ptr->slurmctld_addr,
+				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->slurmctld_debug, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmctld_logfile,
 				       &uint32_tmp, buffer);

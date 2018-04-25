@@ -1458,6 +1458,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	snprintf(tmp_str, sizeof(tmp_str), "%s",
+		 slurm_ctl_conf_ptr->slurmctld_addr);
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SlurmctldAddr");
+	key_pair->value = xstrdup(tmp_str);
+	list_append(ret_list, key_pair);
+
+	snprintf(tmp_str, sizeof(tmp_str), "%s",
 		 log_num2string(slurm_ctl_conf_ptr->slurmctld_debug));
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmctldDebug");

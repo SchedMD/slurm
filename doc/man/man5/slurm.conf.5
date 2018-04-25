@@ -3208,6 +3208,22 @@ of communications between Slurm components.
 The default value is "root".
 
 .TP
+\fBSlurmctldAddr\fR
+An optional address to be used for communications to the currently active
+slurmctld daemon, normally used with Virtual IP addressing of the currently
+active server.
+If this parameter is not specified then each primary and backup server will
+have its own unique address used for communications as specified in the
+\fBSlurmctldHost\fR parameter.
+If this parameter is specified then the \fBSlurmctldHost\fR parameter will
+still be used for communications to specific slurmctld primary or backup
+servers, for example to cause all of them to read the current configuration
+files or shutdown.
+Also see the \fBSlurmctldPrimaryOffProg\fR and \fBSlurmctldPrimaryOnProg\fR
+configuration parameters to configure programs to manipulate virtual IP
+address manipulation.
+
+.TP
 \fBSlurmctldDebug\fR
 The level of detail to provide \fBslurmctld\fR daemon's logs.
 The default value is \fBinfo\fR.

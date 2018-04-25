@@ -344,7 +344,7 @@ char *getenvp(char **env, const char *name)
 int setup_env(env_t *env, bool preserve_env)
 {
 	int rc = SLURM_SUCCESS;
-	char *dist = NULL, *lllp_dist = NULL;
+	char *addr, *dist = NULL, *lllp_dist = NULL;
 	char addrbuf[INET_ADDRSTRLEN];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
@@ -856,10 +856,13 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
+	if (slurmctld_conf.slurmctld_addr)
+		addr = slurmctld_conf.slurmctld_addr;
+	else
+		addr = slurmctld_conf.control_addr[0];
 	setenvf(&env->env, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
-		slurmctld_conf.cluster_name, slurmctld_conf.control_addr,
-		slurmctld_conf.slurmctld_port,
-		SLURM_PROTOCOL_VERSION);
+		slurmctld_conf.cluster_name, addr,
+		slurmctld_conf.slurmctld_port, SLURM_PROTOCOL_VERSION);
 
 	return rc;
 }

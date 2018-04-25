@@ -169,6 +169,12 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 		}
 	}
 
+	if (conf->slurmctld_addr) {
+		proto_conf->vip_addr_set = true;
+		slurm_set_addr(&proto_conf->vip_addr, conf->slurmctld_port,
+			       conf->slurmctld_addr);
+	}
+
 cleanup:
 	slurm_conf_unlock();
 	return proto_conf;
@@ -3086,6 +3092,12 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 			proto_conf->controller_addr[i].sin_port =
 					proto_conf->controller_addr[0].sin_port;
 		}
+		if (proto_conf->vip_addr_set) {
+			proto_conf->vip_addr.sin_port =
+					htons(slurmctld_conf.slurmctld_port +
+					(((time(NULL) + getpid()) %
+					slurmctld_conf.slurmctld_port_count)));
+		}
 	}
 
 #ifdef HAVE_NATIVE_CRAY
@@ -3106,6 +3118,11 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 			addr = &comm_cluster_rec->control_addr;
 
 			fd = slurm_open_msg_conn(addr);
+			if (fd >= 0)
+				goto end_it;
+			debug("Failed to contact controller: %m");
+		} else if (proto_conf->vip_addr_set) {
+			fd = slurm_open_msg_conn(&proto_conf->vip_addr);
 			if (fd >= 0)
 				goto end_it;
 			debug("Failed to contact controller: %m");

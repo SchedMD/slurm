@@ -152,7 +152,11 @@ static void _set_collectors(char *this_node_name)
 	nodes = _get_all_nodes();
 	backup_cnt = conf->control_cnt;
 	backup = xmalloc(sizeof(char *) * backup_cnt);
-	parent = strdup(conf->control_addr[0]);
+	if (conf->slurmctld_addr) {
+		parent = strdup(conf->slurmctld_addr);
+		backup_cnt = 1;
+	} else
+		parent = strdup(conf->control_addr[0]);
 	for (i = 0; i < backup_cnt; i++) {
 		if (conf->control_addr[i])
 			backup[i] = xstrdup(conf->control_addr[i]);

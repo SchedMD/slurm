@@ -2956,6 +2956,8 @@ typedef struct slurm_ctl_conf {
 	char *slurm_user_name;	/* user that slurmctld runs as */
 	uint32_t slurmd_user_id;/* uid of slurmd_user_name */
 	char *slurmd_user_name;	/* user that slurmd runs as */
+	char *slurmctld_addr;	/* Address used for communications to the
+				 * currently active slurmctld daemon */
 	uint16_t slurmctld_debug; /* slurmctld logging level */
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	char *slurmctld_pidfile;/* where to put slurmctld pidfile         */

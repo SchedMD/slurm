@@ -18316,8 +18316,13 @@ set_remote_working_response(resource_allocation_response_msg_t *resp,
 					xmalloc(sizeof(slurmdb_cluster_rec_t));
 				response_cluster_rec->name =
 					xstrdup(slurmctld_conf.cluster_name);
-				response_cluster_rec->control_host =
-					slurmctld_conf.control_addr[0];
+				if (slurmctld_conf.slurmctld_addr) {
+					response_cluster_rec->control_host =
+						slurmctld_conf.slurmctld_addr;
+				} else {
+					response_cluster_rec->control_host =
+						slurmctld_conf.control_addr[0];
+				}
 				response_cluster_rec->control_port =
 					slurmctld_conf.slurmctld_port;
 				response_cluster_rec->rpc_version =
