@@ -190,4 +190,7 @@ int save_cred_state(slurm_cred_ctx_t vctx);
 /* Run the health check program if configured */
 int run_script_health_check(void);
 
+/* Handler for SIGTERM; can also be called to shutdown the slurmd. */
+void slurmd_shutdown(int signum);
+
 #endif /* !_SLURMD_H */

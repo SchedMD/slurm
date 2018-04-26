@@ -2735,6 +2735,14 @@ _rpc_reboot(slurm_msg_t *msg)
 				      exit_code);
 			xfree(sp);
 			xfree(cmd);
+
+			/*
+			 * Explicitly shutdown the slurmd. This is usually
+			 * taken care of by calling reboot_program, but in
+			 * case that fails to shut things down this will at
+			 * least offline this node until someone intervenes.
+			 */
+			slurmd_shutdown(SIGTERM);
 		} else
 			error("RebootProgram isn't defined in config");
 		slurm_conf_unlock();

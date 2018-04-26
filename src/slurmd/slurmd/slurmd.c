@@ -205,7 +205,6 @@ static int       _set_slurmd_spooldir(void);
 static int       _set_topo_info(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
-static void      _term_handler(int);
 static void      _update_logging(void);
 static void      _update_nice(void);
 static void      _usage(void);
@@ -289,8 +288,8 @@ main (int argc, char **argv)
 	}
 	init_setproctitle(argc, argv);
 
-	xsignal(SIGTERM, &_term_handler);
-	xsignal(SIGINT,  &_term_handler);
+	xsignal(SIGTERM, slurmd_shutdown);
+	xsignal(SIGINT,  slurmd_shutdown);
 	xsignal(SIGHUP,  &_hup_handler );
 	xsignal(SIGUSR2, &_usr_handler );
 	xsignal_block(blocked_signals);
@@ -1789,8 +1788,7 @@ static int _drain_node(char *reason)
 	return SLURM_SUCCESS;
 }
 
-static void
-_term_handler(int signum)
+extern void slurmd_shutdown(int signum)
 {
 	if (signum == SIGTERM || signum == SIGINT) {
 		_shutdown = 1;

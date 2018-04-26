@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     daemon becomes the primary server or goes from primary to backup mode.
  -- Add configuration paramerers SlurmctldAddr for use with virtual IP to manage
     backup slurmctld daemons.
+ -- Explicitly shutdown the slurmd process when instructed to reboot.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
