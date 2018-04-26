@@ -290,8 +290,8 @@ main (int argc, char **argv)
 
 	xsignal(SIGTERM, slurmd_shutdown);
 	xsignal(SIGINT,  slurmd_shutdown);
-	xsignal(SIGHUP,  &_hup_handler );
-	xsignal(SIGUSR2, &_usr_handler );
+	xsignal(SIGHUP,  _hup_handler);
+	xsignal(SIGUSR2, _usr_handler);
 	xsignal_block(blocked_signals);
 
 	debug3("slurmd initialization successful");
