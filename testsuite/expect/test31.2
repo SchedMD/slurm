@@ -227,11 +227,16 @@ if {$exit_code} {
 # Wait a bit for the pending reason to be set
 sleep 10
 
-# Check that the job is held due to the failed prolog
+# Check that the job is held due to the failed prolog or JobHeldAdmin
+# Either state is possible due to race conditions
 set match 0
 spawn $squeue -h -j$job_id -o%t|%r
 expect {
 	-re "PD.launch failed requeued held" {
+		set match 1
+		exp_continue
+	}
+	-re "PD.JobHeldAdmin" {
 		set match 1
 		exp_continue
 	}
@@ -247,7 +252,7 @@ expect {
 if {$match == 0} {
 	send_user "\nFAILURE: job $job_id is not in the correct state. "
 	send_user "Job $job_id should be Pending and have reason: "
-	send_user "launch failed requeued held\n"
+	send_user "\"launch failed requeued held\" or \"JobHeldAdmin\"\n"
 	set exit_code 1
 }
 
