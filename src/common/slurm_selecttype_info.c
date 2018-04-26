@@ -83,6 +83,8 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 			param_cnt++;
 		} else if (!xstrcasecmp(str_parameters, "other_cons_res")) {
 			*param |= CR_OTHER_CONS_RES;
+		} else if (!xstrcasecmp(str_parameters, "other_cons_tres")) {
+			*param |= CR_OTHER_CONS_TRES;
 		} else if (!xstrcasecmp(str_parameters,
 				       "CR_ALLOCATE_FULL_SOCKET")) {
 			verbose("CR_ALLOCATE_FULL_SOCKET is deprecated.  "
@@ -161,6 +163,11 @@ extern char *select_type_param_string(uint16_t select_type_param)
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "OTHER_CONS_RES");
+	}
+	if (select_type_param & CR_OTHER_CONS_TRES) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "OTHER_CONS_TRES");
 	}
 	if (select_type_param & CR_NHC_ABSOLUTELY_NO) {
 		if (select_str[0])

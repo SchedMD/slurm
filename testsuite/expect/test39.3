@@ -1,0 +1,132 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test full set of srun --gpu options and scontrol show step.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "39.2"
+set exit_code   0
+set file_in     "test$test_id.input"
+
+print_header $test_id
+
+set gpu_cnt [get_gpu_count]
+if {$gpu_cnt < 1} {
+	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
+	exit 0
+}
+send_user "\nGPU count is $gpu_cnt\n"
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+
+set cpus_per_gpu 1
+set gpu_bind "closest"
+set gpu_freq "medium"
+set tot_gpus $gpu_cnt
+if {$nb_nodes > 1} {
+	incr tot_gpus $gpu_cnt
+}
+set gpus_per_node $gpu_cnt
+if {$gpus_per_node > 1} {
+	set gpus_per_socket [expr $gpus_per_node / 2]
+} else {
+	set gpus_per_socket $gpus_per_node
+}
+if {$gpus_per_socket > 1} {
+	set gpus_per_task [expr $gpus_per_socket / 2]
+} else {
+	set gpus_per_task $gpus_per_socket
+}
+set mem_per_gpu 10
+
+#
+# Build input script file
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "$scontrol show step \$SLURM_JOB_ID.\$SLURM_STEP_ID
+exit 0"
+
+#
+# Spawn srun job with various --gpu options
+#
+set match 0
+set timeout $max_job_delay
+spawn $srun --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu -t1 ./$file_in
+expect {
+	-re "CpusPerTres=gpu:$cpus_per_gpu" {
+		incr match
+		exp_continue
+	}
+	-re "MemPerTres=gpu:$mem_per_gpu" {
+		incr match
+		exp_continue
+	}
+	-re "TresBind=gpu:$gpu_bind" {
+		incr match
+		exp_continue
+	}
+	-re "TresFreq=gpu:$gpu_freq" {
+		incr match
+		exp_continue
+	}
+	-re "TresPerJob=gpu:$tot_gpus" {
+		incr match
+		exp_continue
+	}
+	-re "TresPerNode=gpu:$gpus_per_node" {
+		incr match
+		exp_continue
+	}
+	-re "TresPerSocket=gpu:$gpus_per_socket" {
+		incr match
+		exp_continue
+	}
+	-re "TresPerTask=gpu:$gpus_per_task" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 8} {
+	send_user "\nFAILURE: srun gpu options not fully processed ($match != 8)\n"
+	set exit_code 1
+
+}
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

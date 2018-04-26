@@ -1235,8 +1235,10 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 		goto fini;
 	}
 
-	/* Create a job with replacement resources,
-	 * which will later be merged into the original job */
+	/*
+	 * Create a job with replacement resources,
+	 * which will later be merged into the original job
+	 */
 	slurm_init_job_desc_msg(&job_alloc_req);
 	job_alloc_req.account = xstrdup(job_ptr->account);
 	xstrfmtcat(job_alloc_req.dependency, "expand:%u", job_ptr->job_id);
@@ -1255,9 +1257,14 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	job_alloc_req.priority	= NO_VAL - 1;
 	if (job_ptr->qos_ptr)
 		job_alloc_req.qos = xstrdup(job_ptr->qos_ptr->name);
+	job_alloc_req.tres_per_node   = xstrdup(job_ptr->tres_per_node);
+	job_alloc_req.tres_per_socket = xstrdup(job_ptr->tres_per_socket);
+	job_alloc_req.tres_per_task   = xstrdup(job_ptr->tres_per_task);
 
-	/* Without unlock, the job_begin_callback() function will deadlock.
-	 * Not a great solution, but perhaps the least bad solution. */
+	/*
+	 * Without unlock, the job_begin_callback() function will deadlock.
+	 * Not a great solution, but perhaps the least bad solution.
+	 */
 	slurm_mutex_unlock(&job_fail_mutex);
 
 	job_alloc_req.user_id	= job_ptr->user_id;
@@ -1346,6 +1353,9 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	xfree(job_alloc_req.network);
 	xfree(job_alloc_req.partition);
 	xfree(job_alloc_req.qos);
+	xfree(job_alloc_req.tres_per_node);
+	xfree(job_alloc_req.tres_per_socket);
+	xfree(job_alloc_req.tres_per_task);
 	xfree(job_alloc_req.wckey);
 
 	slurm_mutex_lock(&job_fail_mutex);	/* Resume lock */

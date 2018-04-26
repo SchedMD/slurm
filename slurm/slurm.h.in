@@ -575,15 +575,17 @@ enum node_use_type {
 
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
-	SELECT_PLUGIN_BLUEGENE      = 100, /* Bluegene all variants */
-	SELECT_PLUGIN_CONS_RES      = 101, /* Cons Res on a normal system */
-	SELECT_PLUGIN_LINEAR        = 102, /* Linear on a normal system */
-	/* 103 unused */
-	SELECT_PLUGIN_ALPS          = 104, /* Alps using Linear (only option) */
+	SELECT_PLUGIN_BLUEGENE       = 100, /* Bluegene all variants */
+	SELECT_PLUGIN_CONS_RES       = 101, /* Cons Res on a normal system */
+	SELECT_PLUGIN_LINEAR         = 102, /* Linear on a normal system */
+	/* 103 unused (originally used for BGQ) */
+	SELECT_PLUGIN_ALPS           = 104, /* Alps using Linear (only option) */
 	/* 105 unused (originally was for ALPS cons_res which won't happen) */
-	SELECT_PLUGIN_SERIAL        = 106, /* Serial */
-	SELECT_PLUGIN_CRAY_LINEAR   = 107, /* Linear on a Native Cray */
-	SELECT_PLUGIN_CRAY_CONS_RES = 108  /* Cons Res on a Native Cray */
+	SELECT_PLUGIN_SERIAL         = 106, /* Serial */
+	SELECT_PLUGIN_CRAY_LINEAR    = 107, /* Linear on a Native Cray */
+	SELECT_PLUGIN_CRAY_CONS_RES  = 108, /* Cons Res on a Native Cray */
+	SELECT_PLUGIN_CONS_TRES      = 109, /* Cons TRES on a normal system */
+	SELECT_PLUGIN_CRAY_CONS_TRES = 110  /* Cons TRES on a Native Cray */
 };
 
 /* switch plugin (id) in use by cluster */
@@ -983,10 +985,11 @@ enum ctx_keys {
 #define CR_PACK_NODES  0x0200
 
 #define CR_NHC_ABSOLUTELY_NO 0x0400 /* Completely disable NHC on Native Cray */
-
+#define CR_OTHER_CONS_TRES   0x0800 /* if layering select plugins use
+				     * cons_tres instead of linear (default)
+				     */
 /* By default, distribute cores using a block approach inside the nodes */
 #define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
-
 #define CR_LLN		0x4000  /* Select nodes by "least loaded." */
 
 #define MEM_PER_CPU  0x8000000000000000

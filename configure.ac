@@ -608,6 +608,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/bluegene/bl_bgq/Makefile
 		 src/plugins/select/bluegene/sfree/Makefile
 		 src/plugins/select/cons_res/Makefile
+		 src/plugins/select/cons_tres/Makefile
 		 src/plugins/select/cray/Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/select/other/Makefile

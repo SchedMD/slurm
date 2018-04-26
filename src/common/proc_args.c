@@ -1877,7 +1877,7 @@ extern int validate_acctg_freq(char *acctg_freq)
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		valid = false;
-		for (i=0; i < PROFILE_CNT; i++)
+		for (i = 0; i < PROFILE_CNT; i++)
 			if (acct_gather_parse_freq(i, tok) != -1) {
 				valid = true;
 				break;
@@ -1892,4 +1892,27 @@ extern int validate_acctg_freq(char *acctg_freq)
 	xfree(tmp);
 
 	return rc;
+}
+
+/*
+ * Format a tres_per_* argument
+ * dest OUT - resulting string
+ * prefix IN - TRES type (e.g. "gpu")
+ * src IN - user input, can include multiple comma-separated specifications
+ */
+extern void xfmt_tres(char **dest, char *prefix, char *src)
+{
+	char *result = NULL, *save_ptr = NULL, *sep = "", *tmp, *tok;
+
+	if (!src || (src[0] == '\0'))
+		return;
+	tmp = xstrdup(src);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		xstrfmtcat(result, "%s%s:%s", sep, prefix, tok);
+		sep = ",";
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+	*dest = result;
 }

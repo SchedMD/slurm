@@ -808,10 +808,10 @@ struct job_record {
 					 * for accounting */
 	char *tres_bind;		/* Task to TRES binding directives */
 	char *tres_freq;		/* TRES frequency directives */
-	char *tres_per_job;		/* semicolon delimited list of TRES=# values */
-	char *tres_per_node;		/* semicolon delimited list of TRES=# values */
-	char *tres_per_socket;		/* semicolon delimited list of TRES=# values */
-	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_job;		/* comma delimited list of TRES values */
+	char *tres_per_node;		/* comma delimited list of TRES values */
+	char *tres_per_socket;		/* comma delimited list of TRES values */
+	char *tres_per_task;		/* comma delimited list of TRES values */
 	uint64_t *tres_req_cnt;         /* array of tres counts requested
 					 * based off g_tres_count in
 					 * assoc_mgr */
@@ -949,7 +949,7 @@ extern List purge_files_list;		/* list of job ids to purge files of */
  * useful when updating other types of consumable resources as well
 */
 enum select_plugindata_info {
-	SELECT_CR_PLUGIN,    /* data-> uint32 1 if CR plugin */
+	SELECT_CR_PLUGIN,    /* data-> uint32 See SELECT_TYPE_* below */
 	SELECT_BITMAP,       /* Unused since version 2.0 */
 	SELECT_ALLOC_CPUS,   /* data-> uint16 alloc cpus (CR support) */
 	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
@@ -958,7 +958,9 @@ enum select_plugindata_info {
 			      * BlueGene support */
 	SELECT_CONFIG_INFO   /* data-> List get .conf info from select
 			      * plugin */
-} ;
+};
+#define SELECT_TYPE_CONS_RES	1
+#define SELECT_TYPE_CONS_TRES	2
 
 /*****************************************************************************\
  *  Global slurmctld functions

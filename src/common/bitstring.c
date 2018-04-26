@@ -1028,7 +1028,7 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
  */
 char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 {
-	int32_t count = 0, ret, word;
+	int32_t count = 0, ret, size, word;
 	bitoff_t start, bit;
 
 	_assert_bitstr_valid(b);
@@ -1048,15 +1048,15 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 				bit++;
 				count++;
 			}
-			if (bit == start)	/* add single bit position */
-				ret = snprintf(str+strlen(str),
-				               len-strlen(str),
+			size = strlen(str);
+			if (bit == start) {	/* add single bit position */
+				ret = snprintf(str + size, len - size,
 				               "%"BITSTR_FMT",", start);
-			else 			/* add bit position range */
-				ret = snprintf(str+strlen(str),
-				               len-strlen(str),
+			} else { 		/* add bit position range */
+				ret = snprintf(str + size, len - size,
 				               "%"BITSTR_FMT"-%"BITSTR_FMT",",
 					       start, bit);
+			}
 			assert(ret != -1);
 		}
 		bit++;

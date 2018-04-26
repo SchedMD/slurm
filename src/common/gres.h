@@ -129,16 +129,26 @@ typedef struct gres_node_state {
 typedef struct gres_job_state {
 	char *type_model;		/* Type of this gres (e.g. model name) */
 
-	/* Count of resources needed per node */
-	uint64_t gres_cnt_alloc;
+	/* Count of required GRES resources plus associated CPUs and memory */
+	uint16_t cpus_per_gres;
+	uint64_t gres_per_job;
+	uint64_t gres_per_node;
+	uint64_t gres_per_socket;
+	uint64_t gres_per_task;
+	uint64_t mem_per_gres;
 
-	/* Resources currently allocated to job on each node */
+	/* Allocated resources details */
+	uint64_t total_gres;		/* allocated GRES for this job */
+	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
+					 * Used without GRES files */
 	uint32_t node_cnt;		/* 0 if no_consume */
 	bitstr_t **gres_bit_alloc;
 
-	/* Resources currently allocated to job steps on each node.
+	/*
+	 * Resources currently allocated to job steps on each node.
 	 * This will be a subset of resources allocated to the job.
-	 * gres_bit_step_alloc is a subset of gres_bit_alloc */
+	 * gres_bit_step_alloc is a subset of gres_bit_alloc
+	 */
 	bitstr_t **gres_bit_step_alloc;
 	uint64_t  *gres_cnt_step_alloc;
 
@@ -150,18 +160,28 @@ typedef struct gres_job_state {
 typedef struct gres_step_state {
 	char *type_model;		/* Type of this gres (e.g. model name) */
 
-	/* Count of resources needed per node */
-	uint64_t gres_cnt_alloc;
+	/* Count of required GRES resources plus associated CPUs and memory */
+	uint16_t cpus_per_gres;
+	uint64_t gres_per_job;
+	uint64_t gres_per_node;
+	uint64_t gres_per_socket;
+	uint64_t gres_per_task;
+	uint64_t mem_per_gres;
 
-	/* Resources currently allocated to the job step on each node
+	/*
+	 * Allocated resources details
 	 *
 	 * NOTE: node_cnt and the size of node_in_use and gres_bit_alloc are
 	 * identical to that of the job for simplicity. Bits in node_in_use
 	 * are set for those node of the job that are used by this step and
-	 * gres_bit_alloc are also set if the job's gres_bit_alloc is set */
+	 * gres_bit_alloc are also set if the job's gres_bit_alloc is set
+	 */
+	uint64_t total_gres;		/* allocated GRES for this step */
+	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
+					 * Used without GRES files */
 	uint32_t node_cnt;
 	bitstr_t *node_in_use;
-	bitstr_t **gres_bit_alloc;
+	bitstr_t **gres_bit_alloc;	/* Used with GRES files */
 } gres_step_state_t;
 
 typedef enum {
@@ -403,7 +423,8 @@ extern int gres_plugin_node_count(List gres_list, int arr_len,
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_count(List gres_list, int arr_len,
-				 int *gres_count_ids, int *gres_count_vals);
+				 uint32_t *gres_count_ids,
+				 uint64_t *gres_count_vals);
 
 /*
  * Given a job's requested gres configuration, validate it and build a gres list
@@ -412,6 +433,26 @@ extern int gres_plugin_job_count(List gres_list, int arr_len,
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
 extern int gres_plugin_job_state_validate(char **req_config, List *gres_list);
+
+/*
+ * Given a job's requested gres configuration, validate it and build a gres list
+ * IN *tres* - job request's gres input string
+ * IN num_tasks - requested task count
+ * IN min_nodes - requested minimum node count
+ * IN max_nodes - requested maximum node count
+ * OUT gres_list - List of GRES records for this job to track usage
+ * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
+ */
+extern int gres_plugin_job_state_validate2(char *cpus_per_tres,
+					   char *tres_per_job,
+					   char *tres_per_node,
+					   char *tres_per_socket,
+					   char *tres_per_task,
+					   char *mem_per_tres,
+					   uint32_t num_tasks,
+					   uint32_t min_nodes,
+					   uint32_t max_nodes,
+					   List *gres_list);
 
 /*
  * Create a (partial) copy of a job's gres state for job binding
@@ -707,15 +748,16 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 				   int gres_name_len);
 
 /*
- * Determine how many GRES of a given type are allocated to a job
+ * Determine total count GRES of a given type are allocated to a job across
+ * all nodes
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN gres_name - name of a GRES type
  * RET count of this GRES allocated to this job
  */
-extern uint64_t gres_get_value_by_type(List job_gres_list, char* gres_name);
+extern uint64_t gres_get_value_by_type(List job_gres_list, char *gres_name);
 
 enum gres_job_data_type {
-	GRES_JOB_DATA_COUNT,	/* data-> uint32_t  */
+	GRES_JOB_DATA_COUNT,	/* data-> uint64_t  */
 	GRES_JOB_DATA_BITMAP,	/* data-> bitstr_t* */
 };
 
@@ -744,7 +786,7 @@ extern void gres_build_job_details(List job_gres_list,
 				   char ***gres_detail_str);
 
 enum gres_step_data_type {
-	GRES_STEP_DATA_COUNT,	/* data-> uint32_t  */
+	GRES_STEP_DATA_COUNT,	/* data-> uint64_t  */
 	GRES_STEP_DATA_BITMAP,	/* data-> bitstr_t* */
 };
 

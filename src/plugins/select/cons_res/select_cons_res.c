@@ -2860,7 +2860,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 
 	switch (info) {
 	case SELECT_CR_PLUGIN:
-		*tmp_32 = 1;
+		*tmp_32 = SELECT_TYPE_CONS_RES;
 		break;
 	case SELECT_CONFIG_INFO:
 		*tmp_list = NULL;

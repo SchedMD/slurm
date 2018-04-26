@@ -199,4 +199,12 @@ extern uint16_t parse_compress_type(const char *arg);
 
 extern int validate_acctg_freq(char *acctg_freq);
 
+/*
+ * Format a tres_per_* argument
+ * dest OUT - resulting string
+ * prefix IN - TRES type (e.g. "gpu")
+ * src IN - user input, can include multiple comma-separated specifications
+ */
+extern void xfmt_tres(char **dest, char *prefix, char *src);
+
 #endif /* !_PROC_ARGS_H */

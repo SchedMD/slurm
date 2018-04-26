@@ -307,35 +307,35 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job->ctx_params.features = opt_local->constraints;
 
 	if (opt_local->cpus_per_gpu) {
-		xstrfmtcat(job->ctx_params.cpus_per_tres, "gpu=%d",
+		xstrfmtcat(job->ctx_params.cpus_per_tres, "gpu:%d",
 			   opt_local->cpus_per_gpu);
 	}
 	if (opt_local->gpu_bind) {
-		xstrfmtcat(job->ctx_params.tres_bind, "gpu=%s",
+		xstrfmtcat(job->ctx_params.tres_bind, "gpu:%s",
 			   opt_local->gpu_bind);
 	}
 	if (opt_local->gpu_freq) {
-		xstrfmtcat(job->ctx_params.tres_freq, "gpu=%s",
+		xstrfmtcat(job->ctx_params.tres_freq, "gpu:%s",
 			   opt_local->gpu_freq);
 	}
 	if (opt_local->gpus) {
-		xstrfmtcat(job->ctx_params.tres_per_job, "gpu=%s",
+		xstrfmtcat(job->ctx_params.tres_per_job, "gpu:%s",
 			   opt_local->gpus);
 	}
 	if (opt_local->gpus_per_node) {
-		xstrfmtcat(job->ctx_params.tres_per_node, "gpu=%s",
+		xstrfmtcat(job->ctx_params.tres_per_node, "gpu:%s",
 			   opt_local->gpus_per_node);
 	}
 	if (opt_local->gpus_per_socket) {
-		xstrfmtcat(job->ctx_params.tres_per_socket, "gpu=%s",
+		xstrfmtcat(job->ctx_params.tres_per_socket, "gpu:%s",
 			   opt_local->gpus_per_socket);
 	}
 	if (opt_local->gpus_per_task) {
-		xstrfmtcat(job->ctx_params.tres_per_task, "gpu=%s",
+		xstrfmtcat(job->ctx_params.tres_per_task, "gpu:%s",
 			   opt_local->gpus_per_task);
 	}
 	if (opt_local->mem_per_gpu) {
-		xstrfmtcat(job->ctx_params.mem_per_tres, "gpu=%"PRIi64,
+		xstrfmtcat(job->ctx_params.mem_per_tres, "gpu:%"PRIi64,
 			   opt.mem_per_gpu);
 	}
 

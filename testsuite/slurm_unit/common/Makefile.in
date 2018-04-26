@@ -89,8 +89,8 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_2)
-TESTS = pack-test$(EXEEXT) log-test$(EXEEXT) bitstring-test$(EXEEXT) \
-	$(am__EXEEXT_1)
+TESTS = bitstring-test$(EXEEXT) job-resources-test$(EXEEXT) \
+	log-test$(EXEEXT) pack-test$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@am__append_1 = xtree-test \
 @HAVE_CHECK_TRUE@	 xhash-test
 
@@ -153,8 +153,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xtree-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xhash-test$(EXEEXT)
-am__EXEEXT_2 = pack-test$(EXEEXT) log-test$(EXEEXT) \
-	bitstring-test$(EXEEXT) $(am__EXEEXT_1)
+am__EXEEXT_2 = bitstring-test$(EXEEXT) job-resources-test$(EXEEXT) \
+	log-test$(EXEEXT) pack-test$(EXEEXT) $(am__EXEEXT_1)
 bitstring_test_SOURCES = bitstring-test.c
 bitstring_test_OBJECTS = bitstring-test.$(OBJEXT)
 bitstring_test_LDADD = $(LDADD)
@@ -165,6 +165,11 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+job_resources_test_SOURCES = job-resources-test.c
+job_resources_test_OBJECTS = job-resources-test.$(OBJEXT)
+job_resources_test_LDADD = $(LDADD)
+job_resources_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
 log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
@@ -223,10 +228,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = bitstring-test.c log-test.c pack-test.c xhash-test.c \
-	xtree-test.c
-DIST_SOURCES = bitstring-test.c log-test.c pack-test.c xhash-test.c \
-	xtree-test.c
+SOURCES = bitstring-test.c job-resources-test.c log-test.c pack-test.c \
+	xhash-test.c xtree-test.c
+DIST_SOURCES = bitstring-test.c job-resources-test.c log-test.c \
+	pack-test.c xhash-test.c xtree-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -817,6 +822,10 @@ bitstring-test$(EXEEXT): $(bitstring_test_OBJECTS) $(bitstring_test_DEPENDENCIES
 	@rm -f bitstring-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(bitstring_test_OBJECTS) $(bitstring_test_LDADD) $(LIBS)
 
+job-resources-test$(EXEEXT): $(job_resources_test_OBJECTS) $(job_resources_test_DEPENDENCIES) $(EXTRA_job_resources_test_DEPENDENCIES) 
+	@rm -f job-resources-test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(job_resources_test_OBJECTS) $(job_resources_test_LDADD) $(LIBS)
+
 log-test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test_DEPENDENCIES) 
 	@rm -f log-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(log_test_OBJECTS) $(log_test_LDADD) $(LIBS)
@@ -840,6 +849,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job-resources-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash_test-xhash-test.Po@am__quote@
@@ -1140,9 +1150,16 @@ recheck: all $(check_PROGRAMS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
-pack-test.log: pack-test$(EXEEXT)
-	@p='pack-test$(EXEEXT)'; \
-	b='pack-test'; \
+bitstring-test.log: bitstring-test$(EXEEXT)
+	@p='bitstring-test$(EXEEXT)'; \
+	b='bitstring-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+job-resources-test.log: job-resources-test$(EXEEXT)
+	@p='job-resources-test$(EXEEXT)'; \
+	b='job-resources-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1154,9 +1171,9 @@ log-test.log: log-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-bitstring-test.log: bitstring-test$(EXEEXT)
-	@p='bitstring-test$(EXEEXT)'; \
-	b='bitstring-test'; \
+pack-test.log: pack-test$(EXEEXT)
+	@p='pack-test$(EXEEXT)'; \
+	b='pack-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
