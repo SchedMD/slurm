@@ -39,6 +39,14 @@ set not_support 0
 
 print_header $test_id
 
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+
 ################################################################
 #
 # Proc: sacct
