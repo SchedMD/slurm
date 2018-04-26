@@ -340,7 +340,7 @@ static void _poll_data(bool profile)
 static void _task_sleep(int rem)
 {
 	while (rem)
-		rem = sleep(rem);	/* subject to interupt */
+		rem = sleep(rem);	/* subject to interrupt */
 }
 
 static bool _init_run_test(void)

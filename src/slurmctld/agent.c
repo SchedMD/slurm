@@ -1180,7 +1180,7 @@ cleanup:
 
 /*
  * Signal handler.  We are really interested in interrupting hung communictions
- * and causing them to return EINTR. Multiple interupts might be required.
+ * and causing them to return EINTR. Multiple interrupts might be required.
  */
 static void _sig_handler(int dummy)
 {

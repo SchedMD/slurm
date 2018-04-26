@@ -194,7 +194,7 @@ static bool _run_in_daemon(void)
 static void _task_sleep(int rem)
 {
 	while (rem)
-		rem = sleep(rem);	// subject to interupt
+		rem = sleep(rem);	// subject to interrupt
 }
 
 static int _running_profile(void)

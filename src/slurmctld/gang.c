@@ -1259,8 +1259,9 @@ extern void gs_job_start(struct job_record *job_ptr)
 	slurm_mutex_unlock(&data_mutex);
 
 	if (!p_ptr) {
-		/* No partition was found for this job, so let it run
-		 * uninterupted (what else can we do?)
+		/*
+		 * No partition was found for this job, so let it run
+		 * uninterrupted (what else can we do?)
 		 */
 		error("gang: could not find partition %s for job %u",
 		      part_name, job_ptr->job_id);
