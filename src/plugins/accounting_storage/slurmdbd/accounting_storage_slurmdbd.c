@@ -2845,7 +2845,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 }
 
 /*
- * load into the storage a suspention of a job
+ * load into the storage a suspension of a job
  */
 extern int jobacct_storage_p_suspend(void *db_conn,
 				     struct job_record *job_ptr)

@@ -619,7 +619,7 @@ extern int jobacct_storage_g_step_complete(void *db_conn,
 					   struct step_record *step_ptr);
 
 /*
- * load into the storage a suspention of a job
+ * load into the storage a suspension of a job
  */
 extern int jobacct_storage_g_job_suspend(void *db_conn,
 					 struct job_record *job_ptr);
