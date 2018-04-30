@@ -725,12 +725,13 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 {
 	if (!plugin_polling || _jobacct_shutdown_test())
 		return NULL;
-	else if (pid) {
+
+	_poll_data(0);
+
+	if (pid) {
 		struct jobacctinfo *jobacct = NULL;
 		struct jobacctinfo *ret_jobacct = NULL;
 		ListIterator itr = NULL;
-
-		_poll_data(0);
 
 		slurm_mutex_lock(&task_list_lock);
 		if (!task_list) {
@@ -752,10 +753,9 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 	error:
 		slurm_mutex_unlock(&task_list_lock);
 		return ret_jobacct;
-	} else {
-		_poll_data(0);
-		return NULL;
 	}
+
+	return NULL;
 }
 
 extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
