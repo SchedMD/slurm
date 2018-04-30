@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Explicitly shutdown the slurmd process when instructed to reboot.
  -- Add ability to create/update partition with TRESBillingWeights through
     scontrol.
+ -- Calcuate TRES billing values at submission so that billing limits can be
+    enforced at submission with QOS DenyOnLimit.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

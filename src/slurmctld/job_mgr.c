@@ -6860,6 +6860,15 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			      job_desc->tres_req_cnt,
 			      false);
 
+	/*
+	 * Do this last,after other TRES' have been set as it uses the other
+	 * values to calcuate the billing value.
+	 */
+	job_desc->tres_req_cnt[TRES_ARRAY_BILLING] =
+		assoc_mgr_tres_weighted(job_desc->tres_req_cnt,
+					part_ptr->billing_weights,
+					slurmctld_conf.priority_flags, false);
+
 	if ((error_code = bb_g_job_validate(job_desc, submit_uid))
 	    != SLURM_SUCCESS)
 		goto cleanup_fail;
@@ -8976,6 +8985,13 @@ extern void job_set_req_tres(
 	bb_g_job_set_tres_cnt(job_ptr,
 			      job_ptr->tres_req_cnt,
 			      true);
+
+	/* Do this last as it calculates off of everything else.
+	 * Don't use calc_job_billable_tres() as it relies on allocated tres */
+	job_ptr->tres_req_cnt[TRES_ARRAY_BILLING] =
+		assoc_mgr_tres_weighted(job_ptr->tres_req_cnt,
+					job_ptr->part_ptr->billing_weights,
+					slurmctld_conf.priority_flags, true);
 
 	/* now that the array is filled lets make the string from it */
 	set_job_tres_req_str(job_ptr, true);
@@ -13771,6 +13787,12 @@ fini:
 			tres_changed = true;
 		}
 		if (tres_changed) {
+			job_ptr->tres_req_cnt[TRES_ARRAY_BILLING] =
+				assoc_mgr_tres_weighted(
+					job_ptr->tres_req_cnt,
+					job_ptr->part_ptr->billing_weights,
+					slurmctld_conf.priority_flags,
+					false);
 			set_job_tres_req_str(job_ptr, false);
 			update_accounting = true;
 		}
