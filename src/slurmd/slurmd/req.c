@@ -5725,6 +5725,7 @@ _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 	int sec = 0;
 	int pause = 1;
 	bool rc = false;
+	int count = 0;
 
 	while ((sec < max_time) || (max_time == 0)) {
 		rc = _job_still_running (job_id);
@@ -5740,8 +5741,27 @@ _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 			else
 				pause = 10;
 		}
-		sleep(pause);
-		sec += pause;
+
+		/*
+		 * The job will usually finish up within the first .02 sec.  If
+		 * not gradually increase the sleep until we get to a second.
+		 */
+		if (count == 0) {
+			usleep(20000);
+			count++;
+		} else if (count == 1) {
+			usleep(50000);
+			count++;
+		} else if (count == 2) {
+			usleep(100000);
+			count++;
+		} else if (count == 3) {
+			usleep(500000);
+			sec = 1;
+		} else {
+			sleep(pause);
+			sec += pause;
+		}
 	}
 
 	/*
