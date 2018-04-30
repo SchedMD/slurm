@@ -366,11 +366,13 @@ main (int argc, char **argv)
 	record_launched_jobs();
 
 	run_script_health_check();
-	slurm_thread_create_detached(NULL, _registration_engine, NULL);
 
 	msg_aggr_sender_init(conf->hostname, conf->port,
 			     conf->msg_aggr_window_time,
 			     conf->msg_aggr_window_msgs);
+
+	slurm_thread_create_detached(NULL, _registration_engine, NULL);
+
 	_msg_engine();
 
 	/*

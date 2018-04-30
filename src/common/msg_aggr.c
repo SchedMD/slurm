@@ -195,8 +195,6 @@ static void * _msg_aggregation_sender(void *arg)
 	slurm_msg_t msg;
 	composite_msg_t cmp;
 
-	msg_collection.running = 1;
-
 	slurm_mutex_lock(&msg_collection.mutex);
 
 	while (msg_collection.running) {
@@ -263,6 +261,8 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 		return;
 
 	memset(&msg_collection, 0, sizeof(msg_collection_type_t));
+
+	msg_collection.running = 1;
 
 	slurm_mutex_init(&msg_collection.aggr_mutex);
 	slurm_mutex_init(&msg_collection.mutex);
