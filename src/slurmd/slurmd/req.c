@@ -491,9 +491,13 @@ _send_slurmstepd_init(int fd, int type, void *req,
 
 	slurm_msg_t_init(&msg);
 
+	/* send conf over to slurmstepd */
+	if (_send_slurmd_conf_lite(fd, conf) < 0)
+		goto rwfail;
+
 	/*
-	 * Send first! We don't care about the assoc/qos locks
-	 * assoc_mgr_post_tres_list is requesting as those lists
+	 * Send over right after the slurmd_conf_lite! We don't care about the
+	 * assoc/qos locks assoc_mgr_post_tres_list is requesting as those lists
 	 * don't exist here.
 	 */
 	assoc_mgr_lock(&locks);
@@ -596,10 +600,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	safe_write(fd, &depth, sizeof(int));
 	safe_write(fd, &max_depth, sizeof(int));
 	safe_write(fd, &parent_addr, sizeof(slurm_addr_t));
-
-	/* send conf over to slurmstepd */
-	if (_send_slurmd_conf_lite(fd, conf) < 0)
-		goto rwfail;
 
 	/* send cli address over to slurmstepd */
 	buffer = init_buf(0);

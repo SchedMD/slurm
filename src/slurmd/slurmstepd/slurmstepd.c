@@ -477,6 +477,19 @@ _init_from_slurmd(int sock, char **argv,
 
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
+	/* receive conf from slurmd */
+	if (!(conf = read_slurmd_conf_lite(sock)))
+		fatal("Failed to read conf from slurmd");
+
+	/*
+	 * LOGGING BEFORE THIS WILL NOT WORK!  Only afterwards will it show
+	 * up in the log.
+	 */
+	log_alter(conf->log_opts, 0, conf->logfile);
+	log_set_timefmt(conf->log_fmt);
+
+	debug2("debug level is %d.", conf->debug_level);
+
 	/* Receive TRES information for slurmd */
 	safe_read(sock, &len, sizeof(int));
 	if (len > 0) {
@@ -517,19 +530,6 @@ _init_from_slurmd(int sock, char **argv,
 	step_complete.bits = bit_alloc(step_complete.children);
 	step_complete.jobacct = jobacctinfo_create(NULL);
 	slurm_mutex_unlock(&step_complete.lock);
-
-	/* receive conf from slurmd */
-	if ((conf = read_slurmd_conf_lite (sock)) == NULL)
-		fatal("Failed to read conf from slurmd");
-
-	/*
-	 * LOGGING BEFORE THIS WILL NOT WORK!  Only afterwards will it show
-	 * up in the log.
-	 */
-	log_alter(conf->log_opts, 0, conf->logfile);
-	log_set_timefmt(conf->log_fmt);
-
-	debug2("debug level is %d.", conf->debug_level);
 
 	switch_g_slurmd_step_init();
 
