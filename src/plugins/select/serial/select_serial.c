@@ -795,6 +795,11 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		}
 	}
 
+	if (action != 2) {
+		gres_build_job_details(job_ptr->gres_list,
+				       &job_ptr->gres_detail_cnt,
+				       &job_ptr->gres_detail_str);
+	}
 	/* add cores */
 	if (action != 1) {
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
