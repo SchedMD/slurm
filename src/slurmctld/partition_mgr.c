@@ -1782,6 +1782,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->nodes != NULL) {
+		assoc_mgr_lock_t assoc_tres_read_lock = { NO_LOCK, NO_LOCK,
+			NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 		char *backup_node_list = part_ptr->nodes;
 
 		if (part_desc->nodes[0] == '\0')
@@ -1805,6 +1807,10 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			xfree(backup_node_list);
 		}
 		update_part_nodes_in_resv(part_ptr);
+
+		assoc_mgr_lock(&assoc_tres_read_lock);
+		_calc_part_tres(part_ptr, NULL);
+		assoc_mgr_unlock(&assoc_tres_read_lock);
 	} else if (part_ptr->node_bitmap == NULL) {
 		/* Newly created partition needs a bitmap, even if empty */
 		part_ptr->node_bitmap = bit_alloc(node_record_count);
