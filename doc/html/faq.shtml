@@ -746,7 +746,7 @@ $ scontrol update jobid=$SLURM_JOB_ID NumNodes=ALL
 To reset Slurm environment variables, execute
   For bash or sh shells:  . ./slurm_job_65542_resize.sh
   For csh shells:         source ./slurm_job_65542_resize.csh
-$ . ./slurm_job_$SLURM_JOB_ID_resize.sh
+$ . ./slurm_job_${SLURM_JOB_ID}_resize.sh
 
 $ srun hostname
 icrm1
