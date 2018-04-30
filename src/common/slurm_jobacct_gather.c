@@ -128,6 +128,8 @@ static uint32_t jobacct_job_id     = 0;
 static uint32_t jobacct_step_id    = 0;
 static uint64_t jobacct_mem_limit  = 0;
 static uint64_t jobacct_vmem_limit = 0;
+static acct_gather_profile_timer_t *profile_timer =
+	&acct_gather_profile_timer[PROFILE_TASK];
 
 static void _init_tres_usage(struct jobacctinfo *jobacct,
 			     jobacct_id_t *jobacct_id,
@@ -337,12 +339,6 @@ static void _poll_data(bool profile)
 	slurm_mutex_unlock(&task_list_lock);
 }
 
-static void _task_sleep(int rem)
-{
-	while (rem)
-		rem = sleep(rem);	/* subject to interrupt */
-}
-
 static bool _init_run_test(void)
 {
 	bool rc;
@@ -357,32 +353,24 @@ static bool _init_run_test(void)
 
 static void *_watch_tasks(void *arg)
 {
-	int type = PROFILE_TASK;
-
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "acctg", NULL, NULL, NULL) < 0) {
 		error("%s: cannot set my name to %s %m", __func__, "acctg");
 	}
 #endif
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	/* Give chance for processes to spawn before starting
-	 * the polling. This should largely eliminate the
-	 * the chance of having /proc open when the tasks are
-	 * spawned, which would prevent a valid checkpoint/restart
-	 * with some systems */
-	_task_sleep(1);
 	while (_init_run_test() && !_jobacct_shutdown_test() &&
 	       acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
-		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
-		slurm_cond_wait(
-			&acct_gather_profile_timer[type].notify,
-			&acct_gather_profile_timer[type].notify_mutex);
-		slurm_mutex_unlock(&acct_gather_profile_timer[type].
-				   notify_mutex);
+		slurm_mutex_lock(&profile_timer->notify_mutex);
+		slurm_cond_wait(&profile_timer->notify,
+				&profile_timer->notify_mutex);
+		slurm_mutex_unlock(&profile_timer->notify_mutex);
+
+		/* shutting down, woken by jobacct_gather_fini() */
+		if (!_init_run_test())
+			break;
+
 		slurm_mutex_lock(&g_context_lock);
 		/* The initial poll is done after the last task is added */
 		_poll_data(1);
@@ -623,7 +611,7 @@ extern int jobacct_gather_fini(void)
 		slurm_mutex_unlock(&init_run_mutex);
 
 		if (watch_tasks_thread_id) {
-			pthread_cancel(watch_tasks_thread_id);
+			slurm_cond_signal(&profile_timer->notify);
 			pthread_join(watch_tasks_thread_id, NULL);
 		}
 
@@ -765,14 +753,6 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 		slurm_mutex_unlock(&task_list_lock);
 		return ret_jobacct;
 	} else {
-		/* In this situation, we are just trying to get a
-		 * basis of information since we are not pollng.  So
-		 * we will give a chance for processes to spawn before we
-		 * gather information. This should largely eliminate the
-		 * the chance of having /proc open when the tasks are
-		 * spawned, which would prevent a valid checkpoint/restart
-		 * with some systems */
-		_task_sleep(1);
 		_poll_data(0);
 		return NULL;
 	}

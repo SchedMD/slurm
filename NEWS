@@ -167,6 +167,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow cloud nodes to be recognized in Slurm when booted out of band.
  -- Fixes race condition in _pack_job_gres() when is called multiple times.
  -- Increase duration of "sleep" command used to keep extern step alive.
+ -- Remove unsafe usage of pthread_cancel in slurmstepd that can lead to
+    to deadlock in glibc.
 
 * Changes in Slurm 17.11.5
 ==========================

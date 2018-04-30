@@ -91,11 +91,12 @@ static bool init_run = false;
 static bool acct_shutdown = true;
 static int freq = 0;
 static pthread_t watch_node_thread_id = 0;
+static acct_gather_profile_timer_t *profile_timer =
+	&acct_gather_profile_timer[PROFILE_ENERGY];
 
 static void *_watch_node(void *arg)
 {
-	int type = PROFILE_ENERGY;
-	int delta = acct_gather_profile_timer[type].freq - 1;
+	int delta = profile_timer->freq - 1;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "acctg_energy", NULL, NULL, NULL) < 0) {
@@ -103,8 +104,6 @@ static void *_watch_node(void *arg)
 		      __func__, "acctg_energy");
 	}
 #endif
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	while (init_run && acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
@@ -112,12 +111,10 @@ static void *_watch_node(void *arg)
 		(*(ops.set_data))(ENERGY_DATA_PROFILE, &delta);
 		slurm_mutex_unlock(&g_context_lock);
 
-		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
-		slurm_cond_wait(
-			&acct_gather_profile_timer[type].notify,
-			&acct_gather_profile_timer[type].notify_mutex);
-		slurm_mutex_unlock(&acct_gather_profile_timer[type].
-				   notify_mutex);
+		slurm_mutex_lock(&profile_timer->notify_mutex);
+		slurm_cond_wait(&profile_timer->notify,
+				&profile_timer->notify_mutex);
+		slurm_mutex_unlock(&profile_timer->notify_mutex);
 	}
 
 	return NULL;
@@ -170,7 +167,7 @@ extern int acct_gather_energy_fini(void)
 		init_run = false;
 
 		if (watch_node_thread_id) {
-			pthread_cancel(watch_node_thread_id);
+			slurm_cond_signal(&profile_timer->notify);
 			pthread_join(watch_node_thread_id, NULL);
 		}
 
