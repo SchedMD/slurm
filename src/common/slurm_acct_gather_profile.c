@@ -116,6 +116,8 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t profile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t timer_thread_id = 0;
+static pthread_mutex_t timer_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t timer_thread_cond = PTHREAD_COND_INITIALIZER;
 static bool init_run = false;
 
 static void _set_freq(int type, char *freq, char *freq_def)
@@ -127,9 +129,16 @@ static void _set_freq(int type, char *freq, char *freq_def)
 			acct_gather_profile_timer[type].freq = 0;
 }
 
+/*
+ * This thread wakes up other profiling threads in the jobacct plugins,
+ * and operates on a 1-second granularity.
+ */
+
 static void *_timer_thread(void *args)
 {
 	int i, now, diff;
+	struct timeval tvnow;
+	struct timespec abs;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "acctg_prof", NULL, NULL, NULL) < 0) {
@@ -138,13 +147,13 @@ static void *_timer_thread(void *args)
 	}
 #endif
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	/* setup timer */
+	gettimeofday(&tvnow, NULL);
+	abs.tv_sec = tvnow.tv_sec;
+	abs.tv_nsec = tvnow.tv_usec * 1000;
 
-	DEF_TIMERS;
 	while (init_run && acct_gather_profile_test()) {
 		slurm_mutex_lock(&g_context_lock);
-		START_TIMER;
 		now = time(NULL);
 
 		for (i=0; i<PROFILE_CNT; i++) {
@@ -183,10 +192,18 @@ static void *_timer_thread(void *args)
 					   notify_mutex);
 			acct_gather_profile_timer[i].last_notify = now;
 		}
-		END_TIMER;
 		slurm_mutex_unlock(&g_context_lock);
 
-		usleep(USLEEP_TIME - DELTA_TIMER);
+		/*
+		 * Sleep until the next second interval, or until signaled
+		 * to shutdown by acct_gather_profile_fini().
+		 */
+
+		abs.tv_sec += 1;
+		slurm_mutex_lock(&timer_thread_mutex);
+		slurm_cond_timedwait(&timer_thread_cond, &timer_thread_mutex,
+				     &abs);
+		slurm_mutex_unlock(&timer_thread_mutex);
 	}
 
 	return NULL;
@@ -265,7 +282,7 @@ extern int acct_gather_profile_fini(void)
 	}
 
 	if (timer_thread_id) {
-		pthread_cancel(timer_thread_id);
+		slurm_cond_signal(&timer_thread_cond);
 		pthread_join(timer_thread_id, NULL);
 	}
 

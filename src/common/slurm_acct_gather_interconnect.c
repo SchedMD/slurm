@@ -96,9 +96,6 @@ static void *_watch_node(void *arg)
 	}
 #endif
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
 	while (init_run && acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
 		slurm_mutex_lock(&g_context_lock);
@@ -183,7 +180,7 @@ extern int acct_gather_interconnect_fini(void)
 	init_run = false;
 
 	if (watch_node_thread_id) {
-		pthread_cancel(watch_node_thread_id);
+		slurm_cond_signal(&profile_timer->notify);
 		pthread_join(watch_node_thread_id, NULL);
 	}
 

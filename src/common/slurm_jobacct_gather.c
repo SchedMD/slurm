@@ -226,9 +226,6 @@ static void *_watch_tasks(void *arg)
 	}
 #endif
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
 	/* Give chance for processes to spawn before starting
 	 * the polling. This should largely eliminate the
 	 * the chance of having /proc open when the tasks are
@@ -242,6 +239,11 @@ static void *_watch_tasks(void *arg)
 		slurm_cond_wait(&profile_timer->notify,
 				&profile_timer->notify_mutex);
 		slurm_mutex_unlock(&profile_timer->notify_mutex);
+
+		/* shutting down, woken by jobacct_gather_fini() */
+		if (!_init_run_test())
+			break;
+
 		slurm_mutex_lock(&g_context_lock);
 		/* The initial poll is done after the last task is added */
 		_poll_data(1);
@@ -326,7 +328,7 @@ extern int jobacct_gather_fini(void)
 		slurm_mutex_unlock(&init_run_mutex);
 
 		if (watch_tasks_thread_id) {
-			pthread_cancel(watch_tasks_thread_id);
+			slurm_cond_signal(&profile_timer->notify);
 			pthread_join(watch_tasks_thread_id, NULL);
 		}
 
