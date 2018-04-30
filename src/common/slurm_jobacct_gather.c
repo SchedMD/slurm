@@ -200,12 +200,6 @@ static void _poll_data(bool profile)
 	slurm_mutex_unlock(&task_list_lock);
 }
 
-static void _task_sleep(int rem)
-{
-	while (rem)
-		rem = sleep(rem);	/* subject to interupt */
-}
-
 static bool _init_run_test(void)
 {
 	bool rc;
@@ -226,12 +220,6 @@ static void *_watch_tasks(void *arg)
 	}
 #endif
 
-	/* Give chance for processes to spawn before starting
-	 * the polling. This should largely eliminate the
-	 * the chance of having /proc open when the tasks are
-	 * spawned, which would prevent a valid checkpoint/restart
-	 * with some systems */
-	_task_sleep(1);
 	while (_init_run_test() && !_jobacct_shutdown_test() &&
 	       acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
@@ -470,14 +458,6 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 		slurm_mutex_unlock(&task_list_lock);
 		return ret_jobacct;
 	} else {
-		/* In this situation, we are just trying to get a
-		 * basis of information since we are not pollng.  So
-		 * we will give a chance for processes to spawn before we
-		 * gather information. This should largely eliminate the
-		 * the chance of having /proc open when the tasks are
-		 * spawned, which would prevent a valid checkpoint/restart
-		 * with some systems */
-		_task_sleep(1);
 		_poll_data(0);
 		return NULL;
 	}
