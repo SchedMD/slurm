@@ -328,9 +328,9 @@ rwfail:
 
 void _direct_init_sent_buf_cb(int rc, pmixp_p2p_ctx_t ctx, void *data)
 {
-    Buf buf = (Buf)data;
-    FREE_NULL_BUFFER(buf);
-    return;
+	Buf buf = (Buf) data;
+	FREE_NULL_BUFFER(buf);
+	return;
 }
 
 int pmixp_agent_start(void)
