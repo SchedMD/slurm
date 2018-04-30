@@ -127,6 +127,8 @@ static uint32_t jobacct_job_id     = 0;
 static uint32_t jobacct_step_id    = 0;
 static uint64_t jobacct_mem_limit  = 0;
 static uint64_t jobacct_vmem_limit = 0;
+static acct_gather_profile_timer_t *profile_timer =
+	&acct_gather_profile_timer[PROFILE_TASK];
 
 /* _acct_kill_step() issue RPC to kill a slurm job step */
 static void _acct_kill_step(void)
@@ -218,8 +220,6 @@ static bool _init_run_test(void)
 
 static void *_watch_tasks(void *arg)
 {
-	int type = PROFILE_TASK;
-
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "acctg", NULL, NULL, NULL) < 0) {
 		error("%s: cannot set my name to %s %m", __func__, "acctg");
@@ -238,12 +238,10 @@ static void *_watch_tasks(void *arg)
 	while (_init_run_test() && !_jobacct_shutdown_test() &&
 	       acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
-		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
-		slurm_cond_wait(
-			&acct_gather_profile_timer[type].notify,
-			&acct_gather_profile_timer[type].notify_mutex);
-		slurm_mutex_unlock(&acct_gather_profile_timer[type].
-				   notify_mutex);
+		slurm_mutex_lock(&profile_timer->notify_mutex);
+		slurm_cond_wait(&profile_timer->notify,
+				&profile_timer->notify_mutex);
+		slurm_mutex_unlock(&profile_timer->notify_mutex);
 		slurm_mutex_lock(&g_context_lock);
 		/* The initial poll is done after the last task is added */
 		_poll_data(1);
