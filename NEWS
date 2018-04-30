@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Be able to force power_down of cloud node even if in power_save state.
  -- Allow cloud nodes to be recognized in Slurm when booted out of band.
  -- Fixes race condition in _pack_job_gres() when is called multiple times.
+ -- Increase duration of "sleep" command used to keep extern step alive.
 
 * Changes in Slurm 17.11.5
 ==========================

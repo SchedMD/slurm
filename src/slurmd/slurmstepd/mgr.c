@@ -1037,7 +1037,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 			 * work, it will not keep a process named "slurmstepd"
 			 */
 
-			execl(SLEEP_CMD, "sleep", "1000000", NULL);
+			execl(SLEEP_CMD, "sleep", "100000000", NULL);
 			error("execl: %m");
 			sleep(1);
 			exit(0);
