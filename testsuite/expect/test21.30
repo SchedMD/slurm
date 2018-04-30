@@ -93,7 +93,9 @@ set maxjobs     MaxJobs
 set maxjobs_num 2
 set maxjobsub   MaxSubmitJobs
 set maxjobsub_num 2
+set save_billing_weights ""
 set time_spacing 1
+set tres_cpu_mult 2
 
 # cr_core = 1 / cr_cpu = 0
 set selectparam  0
@@ -117,6 +119,13 @@ array set mod_qos_vals {
 	MaxWall         -1
 	MaxCpusPerUser  -1
 	MaxNode         -1
+
+	GrpTRES=billing             -1
+	GrpTRESMins=billing         -1
+	GrpTRESRunMins=billing      -1
+	MaxTRESPerJob=billing       -1
+	MaxTRESMinsPerJob=billing   -1
+	MaxTRESPerUser=billing      -1
 }
 
 print_header $test_id
@@ -132,6 +141,10 @@ expect {
 	}
 	-re "TotalNodes=($number)" {
 		set tmpn [expr $expect_out(1,string) - 1]
+		exp_continue
+	}
+	-re "TRESBillingWeights=(\\S+)" {
+		set save_billing_weights $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -249,6 +262,7 @@ if {$num_nodes == 0} {
 
 proc endit { } {
 	global sacctmgr qostest acct test_id exit_code
+	global scontrol save_billing_weights
 	# delete qos
 	spawn $sacctmgr -i delete qos $qostest
 	expect {
@@ -282,6 +296,23 @@ proc endit { } {
 		}
 		eof {
 			wait
+		}
+	}
+
+	if {$save_billing_weights ne ""} {
+		spawn $scontrol update partitionname=[default_partition] TRESBillingWeights=$save_billing_weights
+		expect {
+			-re "error" {
+				send_user "\nFAILURE: failed to reset TRESBillingWeights\n"
+				set exit_code 1
+			}
+			timeout {
+				send_user "\nFAILURE: scontrol is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
 	}
 
@@ -656,5 +687,133 @@ if {$exit_code != 0 } {
 	endit
 }
 set mod_qos_vals(MaxWall) "-1"
+
+
+# TRESBillingWeights
+
+spawn $scontrol update partitionname=[default_partition] tresbillingweights=cpu=$tres_cpu_mult
+expect {
+	-re "error" {
+		send_user "\nFAILURE: failed to set TRESBillingWeights\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code != 0} {
+	endit
+}
+
+#
+# Test GrpTRES=billing
+#
+set mod_qos_vals(GrpTRES=billing) [expr $grcpu_num * $tres_cpu_mult]
+mod_qos $qostest [array get mod_qos_vals]
+sleep $time_spacing
+
+if { $one_task_pc } {
+	set grcpu_num [expr $grcpu_num / $nthreads]
+}
+
+inc21_30_2
+if {$exit_code != 0} {
+	endit
+}
+set mod_qos_vals(GrpTRES=billing) "-1"
+
+
+#
+# Test GrpTRESMins=billing
+#
+set mod_qos_vals(GrpTRESMins=billing) [expr $grpcpumin_num * $tres_cpu_mult]
+mod_qos $qostest [array get mod_qos_vals]
+sleep $time_spacing
+if { $one_task_pc } {
+	set grpcpumin_num [expr $grpcpumin_num / $nthreads]
+}
+inc21_30_9
+if {$exit_code != 0 } {
+	endit
+}
+set mod_qos_vals(GrpTRESMins=billing) "-1"
+
+
+#
+# Test GroupTRESRunMins=billing
+# Requires priority/multifactor to properly handle decay well
+#
+if { $prio_multifactor != 0 } {
+	set mod_qos_vals(GrpTRESRunMins=billing) [expr $grpcpurunmin_num * $tres_cpu_mult]
+	mod_qos $qostest [array get mod_qos_vals]
+	sleep $time_spacing
+	if { $one_task_pc } {
+		set grpcpurunmin_num [expr $grpcpurunmin_num / $nthreads]
+	}
+	inc21_30_10
+	if {$exit_code != 0 } {
+		endit
+	}
+	set mod_qos_vals(GrpTRESRunMins=billing) "-1"
+}
+
+
+#
+# Test GrpTRES=billing limits
+#
+set mod_qos_vals(MaxTRESPerJob=billing) [expr $maxcpu_num * $tres_cpu_mult]
+mod_qos $qostest [array get mod_qos_vals]
+sleep $time_spacing
+
+if { $one_task_pc } {
+	set maxcpu_num [expr $maxcpu_num / $nthreads]
+}
+
+inc21_30_5
+if {$exit_code != 0} {
+	endit
+}
+set mod_qos_vals(MaxTRESPerJob=billing) "-1"
+
+#
+# Test MaxTRESMinsPerJob=billing
+#
+set mod_qos_vals(MaxTRESMinsPerJob=billing) [expr $maxcpumin_num * $tres_cpu_mult]
+mod_qos $qostest [array get mod_qos_vals]
+sleep $time_spacing
+if { $one_task_pc } {
+	set maxcpumin_num [expr $maxcpumin_num / $nthreads]
+}
+inc21_30_13
+if {$exit_code != 0 } {
+	endit
+}
+set mod_qos_vals(MaxTRESMinsPerJob=billing) "-1"
+
+#
+# Test Max CPUs Per User
+#
+
+# If CR_CORE set maxcpuspu a multiple number of threads
+if {$selectparam} {
+	set maxcpuspu_num [expr $maxcpuspu_num * $nthreads]
+}
+
+set mod_qos_vals(MaxTRESPerUser=billing) [expr $maxcpuspu_num * $tres_cpu_mult]
+mod_qos $qostest [array get mod_qos_vals]
+sleep $time_spacing
+if { $one_task_pc } {
+	set maxcpuspu_num [expr $maxcpuspu_num / $nthreads]
+}
+inc21_30_15
+if {$exit_code != 0 } {
+	endit
+}
+set mod_qos_vals(MaxTRESPerUser=billing) "-1"
+
 
 endit
