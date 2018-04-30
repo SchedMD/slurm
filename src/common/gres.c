@@ -6384,11 +6384,14 @@ extern void gres_build_job_details(List job_gres_list,
 	char *sep1, *sep2, tmp_str[128], *type, **my_gres_details = NULL;
 	uint32_t my_gres_cnt = 0;
 
-	if (job_gres_list == NULL) {	/* No GRES allocated */
-		*gres_detail_cnt = 0;
-		*gres_detail_str = NULL;
+	/* Release any vestigial data (e.g. from job requeue) */
+	for (i = 0; i < *gres_detail_cnt; i++)
+		xfree(gres_detail_str[0][i]);
+	xfree(*gres_detail_str);
+	*gres_detail_cnt = 0;
+
+	if (job_gres_list == NULL)	/* No GRES allocated */
 		return;
-	}
 
 	(void) gres_plugin_init();
 
