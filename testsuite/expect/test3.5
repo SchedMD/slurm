@@ -272,6 +272,127 @@ if {$found != 1} {
 	set exit_code 1
 }
 
+
+#
+# Test modification of TRESBillingWeights
+#
+set tres_line "cPu=1,mem=0.5G"
+spawn $scontrol update partitionname=$part_name TRESBillingWeights=$tres_line
+expect {
+	-re "error" {
+		send_user "\nFAILURE: failed to reset TRESBillingWeights\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+set found 0
+spawn $scontrol show part $part_name
+expect {
+	-re "TRESBillingWeights=$tres_line" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 1} {
+	send_user "\nFAILURE: TRESBillingWeights not set\n"
+	set exit_code 1
+}
+
+
+# Attempt invalid weights
+set found 0
+spawn $scontrol update partitionname=$part_name TRESBillingWeights=cpu=abc
+expect {
+	-re "error" {
+		set found 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 1} {
+	send_user "\nFAILURE: didn't fail to set TRESBillingWeights\n"
+	set exit_code 1
+}
+
+
+# The original weights should be intact after the previous invalid attempt.
+set found 0
+spawn $scontrol show part $part_name
+expect {
+	-re "TRESBillingWeights=$tres_line" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 1} {
+	send_user "\nFAILURE: TRESBillingWeights not set\n"
+	set exit_code 1
+}
+
+# Clear
+set found 0
+spawn $scontrol update partitionname=$part_name TRESBillingWeights=
+expect {
+	-re "error" {
+		send_user "\nFAILURE: failed to reset TRESBillingWeights\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+set found 0
+spawn $scontrol show part $part_name
+expect {
+	-re "TRESBillingWeights" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found} {
+	send_user "\nFAILURE: found TRESBillingWeights when they should have been removed.\n"
+	set exit_code 1
+}
+
+
 #
 # Now delete the partition
 #
