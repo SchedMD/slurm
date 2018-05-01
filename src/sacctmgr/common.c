@@ -753,7 +753,8 @@ static print_field_t *_get_print_field(char *object)
 
 extern void notice_thread_init()
 {
-	slurm_thread_create(&lock_warning_thread, _print_lock_warn, NULL);
+	slurm_thread_create_detached(&lock_warning_thread,
+				     _print_lock_warn, NULL);
 }
 
 extern void notice_thread_fini()
