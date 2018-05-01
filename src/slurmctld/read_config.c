@@ -1301,6 +1301,14 @@ int read_slurm_conf(int recover, bool reconfig)
 	else
 		build_feature_list_ne();
 
+	/*
+	 * Must be at after nodes and partitons (e.g.
+	 * _build_bitmaps_pre_select()) have been created and before
+	 * _sync_nodes_to_comp_job().
+	 */
+	if (!test_config)
+		set_cluster_tres(false);
+
 	_validate_pack_jobs();
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
@@ -2490,12 +2498,6 @@ static int _sync_nodes_to_comp_job(void)
 				continue;
 
 			update_cnt++;
-			/* This needs to be set up for the priority
-			   plugin and this happens before it is
-			   normally set up so do it now.
-			*/
-			set_cluster_tres(false);
-
 			info("%s: Job %u in completing state",
 			     __func__, job_ptr->job_id);
 			if (!job_ptr->node_bitmap_cg)
