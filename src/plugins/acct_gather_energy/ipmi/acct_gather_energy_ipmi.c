@@ -161,7 +161,9 @@ static bool flag_energy_accounting_shutdown = false;
 static bool flag_thread_started = false;
 static bool flag_init = false;
 static pthread_mutex_t ipmi_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_t cleanup_handler_thread = 0;
+static pthread_cond_t ipmi_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t launch_cond = PTHREAD_COND_INITIALIZER;
 pthread_t thread_ipmi_id_launcher = 0;
 pthread_t thread_ipmi_id_run = 0;
 
@@ -189,12 +191,6 @@ static bool _run_in_daemon(void)
 	}
 
 	return run;
-}
-
-static void _task_sleep(int rem)
-{
-	while (rem)
-		rem = sleep(rem);	// subject to interrupt
 }
 
 static int _running_profile(void)
@@ -720,35 +716,49 @@ static int _ipmi_send_profile(void)
 static void *_thread_ipmi_run(void *no_data)
 {
 // need input (attr)
-	int time_lost;
-
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	struct timeval tvnow;
+	struct timespec abs;
 
 	flag_energy_accounting_shutdown = false;
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread: launched");
+
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	slurm_mutex_lock(&ipmi_mutex);
 	if (_thread_init() != SLURM_SUCCESS) {
 		if (debug_flags & DEBUG_FLAG_ENERGY)
 			info("ipmi-thread: aborted");
 		slurm_mutex_unlock(&ipmi_mutex);
+
+		slurm_cond_signal(&launch_cond);
+
 		return NULL;
 	}
-	slurm_mutex_unlock(&ipmi_mutex);
 
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
+	slurm_mutex_unlock(&ipmi_mutex);
 	flag_thread_started = true;
+
+	slurm_cond_signal(&launch_cond);
+
+	/* setup timer */
+	gettimeofday(&tvnow, NULL);
+	abs.tv_sec = tvnow.tv_sec;
+	abs.tv_nsec = tvnow.tv_usec * 1000;
 
 	//loop until slurm stop
 	while (!flag_energy_accounting_shutdown) {
-		time_lost = (int)(time(NULL) - last_update_time);
-		if (time_lost <= slurm_ipmi_conf.freq)
-			_task_sleep(slurm_ipmi_conf.freq - time_lost);
-		else
-			_task_sleep(1);
 		slurm_mutex_lock(&ipmi_mutex);
+
 		_thread_update_node_energy();
+
+		/* Sleep until the next time. */
+		abs.tv_sec += slurm_ipmi_conf.freq;
+		slurm_cond_timedwait(&ipmi_cond, &ipmi_mutex, &abs);
+
 		slurm_mutex_unlock(&ipmi_mutex);
 	}
 
@@ -758,54 +768,40 @@ static void *_thread_ipmi_run(void *no_data)
 	return NULL;
 }
 
-static void *_cleanup_thread(void *no_data)
-{
-	if (thread_ipmi_id_run)
-		pthread_join(thread_ipmi_id_run, NULL);
-
-	if (ipmi_ctx)
-		ipmi_monitoring_ctx_destroy(ipmi_ctx);
-	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
-
-	return NULL;
-}
-
 static void *_thread_launcher(void *no_data)
 {
 	//what arg would countain? frequency, socket?
-	time_t begin_time;
-	int rc = SLURM_SUCCESS;
+	struct timeval tvnow;
+	struct timespec abs;
 
 	slurm_thread_create(&thread_ipmi_id_run, _thread_ipmi_run, NULL);
 
-	begin_time = time(NULL);
-	while (rc == SLURM_SUCCESS) {
-		if (time(NULL) - begin_time > slurm_ipmi_conf.timeout) {
-			error("ipmi thread init timeout");
-			rc = SLURM_ERROR;
-			break;
-		}
-		if (flag_thread_started)
-			break;
-		_task_sleep(1);
-	}
+	/* setup timer */
+	gettimeofday(&tvnow, NULL);
+	abs.tv_sec = tvnow.tv_sec + slurm_ipmi_conf.timeout;
+	abs.tv_nsec = tvnow.tv_usec * 1000;
 
-	if (rc != SLURM_SUCCESS) {
+	slurm_mutex_lock(&launch_mutex);
+	slurm_cond_timedwait(&launch_cond, &launch_mutex, &abs);
+	slurm_mutex_unlock(&launch_mutex);
+
+	if (!flag_thread_started) {
 		error("%s threads failed to start in a timely manner",
 		     plugin_name);
 
-		if (thread_ipmi_id_run) {
-			pthread_cancel(thread_ipmi_id_run);
-			pthread_join(thread_ipmi_id_run, NULL);
-		}
-
 		flag_energy_accounting_shutdown = true;
-	} else {
-		/* This is here to join the decay thread so we don't core
-		 * dump if in the sleep, since there is no other place to join
-		 * we have to create another thread to do it. */
-		slurm_thread_create(&cleanup_handler_thread,
-				    _cleanup_thread, NULL);
+
+		/*
+		 * It is a known thing we can hang up on IPMI calls cancel if
+		 * we must.
+		 */
+		pthread_cancel(thread_ipmi_id_run);
+
+		/*
+		 * Unlock just to make sure since we could have canceled the
+		 * thread while in the lock.
+		 */
+		slurm_mutex_unlock(&ipmi_mutex);
 	}
 
 	return NULL;
@@ -938,12 +934,25 @@ extern int fini(void)
 
 	flag_energy_accounting_shutdown = true;
 
+	/* clean up the launch thread */
+	slurm_cond_signal(&launch_cond);
+
+	if (thread_ipmi_id_launcher)
+		pthread_join(thread_ipmi_id_launcher, NULL);
+
+	/* clean up the run thread */
+	slurm_cond_signal(&ipmi_cond);
+
 	slurm_mutex_lock(&ipmi_mutex);
-	if (thread_ipmi_id_run)
-		pthread_cancel(thread_ipmi_id_run);
-	if (cleanup_handler_thread)
-		pthread_join(cleanup_handler_thread, NULL);
+
+	if (ipmi_ctx)
+		ipmi_monitoring_ctx_destroy(ipmi_ctx);
+	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
+
 	slurm_mutex_unlock(&ipmi_mutex);
+
+	if (thread_ipmi_id_run)
+		pthread_join(thread_ipmi_id_run, NULL);
 
 	xfree(sensors);
 	xfree(start_current_energies);
