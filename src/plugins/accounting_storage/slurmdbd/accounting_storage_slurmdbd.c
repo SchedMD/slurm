@@ -102,10 +102,11 @@ const char plugin_type[] = "accounting_storage/slurmdbd";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static pthread_t db_inx_handler_thread;
-static pthread_t cleanup_handler_thread;
 static pthread_mutex_t db_inx_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t db_inx_cond = PTHREAD_COND_INITIALIZER;
 static bool running_db_inx = 0;
 static int first = 1;
+static time_t plugin_shutdown = 0;
 
 extern int jobacct_storage_p_job_start(void *db_conn,
 				       struct job_record *job_ptr);
@@ -244,6 +245,9 @@ static void *_set_db_inx_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
 	ListIterator itr;
+	struct timeval tvnow;
+	struct timespec abs;
+
 	/* Read lock on jobs */
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -260,7 +264,7 @@ static void *_set_db_inx_thread(void *no_data)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	while (1) {
+	while (!plugin_shutdown) {
 		List local_job_list = NULL;
 		/* START_TIMER; */
 		/* info("starting db_thread"); */
@@ -425,7 +429,7 @@ static void *_set_db_inx_thread(void *no_data)
 		}
 	end_it:
 		running_db_inx = 0;
-		slurm_mutex_unlock(&db_inx_lock);
+
 		/* END_TIMER; */
 		/* info("set all db_inx's in %s", TIME_STR); */
 
@@ -434,15 +438,16 @@ static void *_set_db_inx_thread(void *no_data)
 		   it doesn't have to find db_indexs of jobs that
 		   haven't had the start rpc come through.
 		*/
-		sleep(5);
+
+		gettimeofday(&tvnow, NULL);
+		abs.tv_sec = tvnow.tv_sec + 5;
+		abs.tv_nsec = tvnow.tv_usec * 1000;
+
+		slurm_cond_timedwait(&db_inx_cond, &db_inx_lock, &abs);
+
+		slurm_mutex_unlock(&db_inx_lock);
 	}
 
-	return NULL;
-}
-
-static void *_cleanup_thread(void *no_data)
-{
-	pthread_join(db_inx_handler_thread, NULL);
 	return NULL;
 }
 
@@ -473,14 +478,6 @@ extern int init ( void )
 			 * (in the slurmctld) */
 			slurm_thread_create(&db_inx_handler_thread,
 					    _set_db_inx_thread, NULL);
-
-			/* This is here to join the db inx thread so
-			   we don't core dump if in the sleep, since
-			   there is no other place to join we have to
-			   create another thread to do it.
-			*/
-			slurm_thread_create(&cleanup_handler_thread,
-					    _cleanup_thread, NULL);
 		}
 		first = 0;
 	} else {
@@ -492,17 +489,22 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	slurm_mutex_lock(&db_inx_lock);
+	plugin_shutdown = time(NULL);
+
 	if (running_db_inx)
 		debug("Waiting for db_inx thread to finish.");
 
-	/* cancel the db_inx thread and then join the cleanup thread */
+	slurm_mutex_lock(&db_inx_lock);
+
+	/* signal the db_inx thread */
 	if (db_inx_handler_thread)
-		pthread_cancel(db_inx_handler_thread);
-	if (cleanup_handler_thread)
-		pthread_join(cleanup_handler_thread, NULL);
+		slurm_cond_signal(&db_inx_cond);
 
 	slurm_mutex_unlock(&db_inx_lock);
+
+	/* Now join outside the lock */
+	if (db_inx_handler_thread)
+		pthread_join(db_inx_handler_thread, NULL);
 
 	first = 1;
 	slurmdbd_defs_fini();
