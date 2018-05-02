@@ -126,11 +126,12 @@ const char plugin_type[]	= "priority/multifactor";
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 static pthread_t decay_handler_thread;
-static pthread_t cleanup_handler_thread;
 static pthread_mutex_t decay_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t decay_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t decay_init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t decay_init_cond = PTHREAD_COND_INITIALIZER;
 static bool running_decay = 0, reconfig = 0, calc_fairshare = 1;
+static time_t plugin_shutdown = 0;
 static bool favor_small; /* favor small jobs over large */
 static uint16_t damp_factor = 1;  /* weight for age factor */
 static uint32_t max_age; /* time when not to add any more
@@ -1153,7 +1154,8 @@ static void *_decay_thread(void *no_data)
 
 	time_t now;
 	double run_delta = 0.0, real_decay = 0.0;
-	double elapsed;
+	struct timeval tvnow;
+	struct timespec abs;
 
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
@@ -1205,8 +1207,10 @@ static void *_decay_thread(void *no_data)
 	if (decay_hl > 0)
 		decay_factor = 1 - (0.693 / decay_hl);
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	/* setup timer */
+	gettimeofday(&tvnow, NULL);
+	abs.tv_sec = tvnow.tv_sec;
+	abs.tv_nsec = tvnow.tv_usec * 1000;
 
 	_read_last_decay_ran(&g_last_ran, &last_reset);
 	if (last_reset == 0)
@@ -1217,7 +1221,7 @@ static void *_decay_thread(void *no_data)
 
 	_init_grp_used_cpu_run_secs(g_last_ran);
 
-	while (1) {
+	while (!plugin_shutdown) {
 		now = start_time;
 
 		slurm_mutex_lock(&decay_lock);
@@ -1324,16 +1328,13 @@ static void *_decay_thread(void *no_data)
 		_write_last_decay_ran(g_last_ran, last_reset);
 
 		running_decay = 0;
-		slurm_mutex_unlock(&decay_lock);
 
 		/* Sleep until the next time. */
-		now = time(NULL);
-		elapsed = difftime(now, start_time);
-		if (elapsed < calc_period) {
-			sleep(calc_period - elapsed);
-			start_time = time(NULL);
-		} else
-			start_time = now;
+		abs.tv_sec += calc_period;
+		slurm_cond_timedwait(&decay_cond, &decay_lock, &abs);
+		slurm_mutex_unlock(&decay_lock);
+
+		start_time = time(NULL);
 		/* repeat ;) */
 	}
 	return NULL;
@@ -1446,12 +1447,6 @@ static void _filter_job(struct job_record *job_ptr,
 		inx++;
 	}
 	list_iterator_destroy(job_iter);
-}
-
-static void *_cleanup_thread(void *no_data)
-{
-	pthread_join(decay_handler_thread, NULL);
-	return NULL;
 }
 
 static void _internal_setup(void)
@@ -1709,12 +1704,6 @@ int init ( void )
 
 		slurm_cond_wait(&decay_init_cond, &decay_init_mutex);
 		slurm_mutex_unlock(&decay_init_mutex);
-
-		/* This is here to join the decay thread so we don't core
-		 * dump if in the sleep, since there is no other place to join
-		 * we have to create another thread to do it. */
-		slurm_thread_create(&cleanup_handler_thread,
-				    _cleanup_thread, NULL);
 	} else {
 		if (weight_fs) {
 			fatal("It appears you don't have any association "
@@ -1734,20 +1723,25 @@ int init ( void )
 
 int fini ( void )
 {
-	/* Daemon termination handled here */
-	slurm_mutex_lock(&decay_lock);
-	if (running_decay)
-		debug("Waiting for decay thread to finish.");
+	plugin_shutdown = time(NULL);
 
-	/* cancel the decay thread and then join the cleanup thread */
+	/* Daemon termination handled here */
+	if (running_decay)
+		debug("Waiting for priority decay thread to finish.");
+
+	slurm_mutex_lock(&decay_lock);
+
+	/* signal the decay thread to end */
 	if (decay_handler_thread)
-		pthread_cancel(decay_handler_thread);
-	if (cleanup_handler_thread)
-		pthread_join(cleanup_handler_thread, NULL);
+		slurm_cond_signal(&decay_cond);
 
 	xfree(weight_tres);
 
 	slurm_mutex_unlock(&decay_lock);
+
+	/* Now join outside the lock */
+	if (decay_handler_thread)
+		pthread_join(decay_handler_thread, NULL);
 
 	return SLURM_SUCCESS;
 }
