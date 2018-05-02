@@ -130,6 +130,15 @@ static int _calc_part_tres(void *x, void *arg)
 			tres_cnt[i] = tres_rec->count;
 	}
 
+	/*
+	 * Now figure out the total billing of the partition as the node_ptrs
+	 * are configured with the max of all partitions they are in instead of
+	 * what is configured on this partition.
+	 */
+	tres_cnt[TRES_ARRAY_BILLING] = assoc_mgr_tres_weighted(
+		tres_cnt, part_ptr->billing_weights,
+		slurmctld_conf.priority_flags, true);
+
 	part_ptr->tres_fmt_str =
 		assoc_mgr_make_tres_str_from_array(part_ptr->tres_cnt,
 						   TRES_STR_CONVERT_UNITS,

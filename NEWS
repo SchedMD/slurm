@@ -169,6 +169,11 @@ documents those changes that are of interest to users and administrators.
  -- Increase duration of "sleep" command used to keep extern step alive.
  -- Remove unsafe usage of pthread_cancel in slurmstepd that can lead to
     to deadlock in glibc.
+ -- Fix total TRES Billing on partitions.
+ -- Don't tear down a BB if a node fails and --no-kill or resize of a job
+    happens.
+ -- Remove unsafe usage of pthread_cancel in pmix plugin that can lead to
+    to deadlock in glibc.
 
 * Changes in Slurm 17.11.5
 ==========================
