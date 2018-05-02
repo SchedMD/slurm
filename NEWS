@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove unsafe usage of pthread_cancel in slurmstepd that can lead to
     to deadlock in glibc.
  -- Fix total TRES Billing on partitions.
+ -- Don't tear down a BB if a node fails and --no-kill or resize of a job
+    happens.
 
 * Changes in Slurm 17.11.5
 ==========================
