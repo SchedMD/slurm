@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
     happens.
  -- Remove unsafe usage of pthread_cancel in pmix plugin that can lead to
     to deadlock in glibc.
+ -- Fix fatal in controller when loading completed trigger
 
 * Changes in Slurm 17.11.5
 ==========================
