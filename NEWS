@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
     to deadlock in glibc.
  -- Fix fatal in controller when loading completed trigger
  -- Ignore reservation overlap at submission time.
+ -- GRES type model and QOS limits documentation added
 
 * Changes in Slurm 17.11.5
 ==========================

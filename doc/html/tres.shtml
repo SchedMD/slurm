@@ -50,6 +50,14 @@ Current TRES Types are:
   the burst buffer plugin being used. In the above example we are using the
   <i>Cray</i> burst buffer plugin.
 </p>
+
+<p> When including a specific GRES with a subtype, it is also recommended to
+include its generic type, otherwise a request with only the generic one won't
+be accounted for. For example, if we want to account for gres/gpu:tesla,
+we would also include gres/gpu for accounting gpus in requests like
+<i>srun --gres=gpu:1</i>.
+</p>
+<pre>AccountingStorageTRES=gres/gpu,gres/gpu:tesla</pre>
 </li>
 
 <li><b>PriorityWeightTRES</b>
@@ -157,6 +165,6 @@ more information.
   If TRESBillingWeights is not defined on any partition for a node then the
   Billing TRES will be equal to the number of CPUs on the node.
 </p>
-<p style="text-align:center;">Last modified 7 November 2017</p>
+<p style="text-align:center;">Last modified 1 May 2018</p>
 
 <!--#include virtual="footer.txt"-->
