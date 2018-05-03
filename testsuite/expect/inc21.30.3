@@ -102,7 +102,7 @@ proc inc21_30_3 {} {
 
 	# Checks the job state
 	if [info exists job_id($check_num)] {
-		check_state $job_id($check_num)
+		check_job_state $job_id($check_num) PENDING
 	} else {
 		send_user "\nFAILURE: didn't attempt to start enough jobs. (Within: inc21.30.3)\n"
 		set exit_code 1

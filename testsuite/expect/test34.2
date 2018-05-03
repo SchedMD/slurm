@@ -226,35 +226,6 @@ proc clean_up { rc } {
 	}
 }
 
-proc check_state { exp_state job_id } {
-
-	global scontrol exit_code
-
-	# Wait awhile for the jobs to change states
-	sleep 2
-
-	set state 0
-	spawn $scontrol show job $job_id
-	expect {
-		-re "JobState=$exp_state" {
-			set state 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $state != 1 } {
-		send_user "\nFAILURE: job $job_id is not in the correct state\n"
-		set exit_code 1
-	}
-}
-
 make_bash_script $file_in "sleep 30"
 
 set user [get_my_user_name]
@@ -278,7 +249,8 @@ if { [wait_for_job $qos_2_id RUNNING] != 0} {
 	clean_up 1
 }
 
-check_state PREEMPTED $qos_1_id
+sleep 2
+check_job_state $qos_1_id PREEMPTED
 
 cancel_job $qos_1_id
 cancel_job $qos_2_id
@@ -300,12 +272,15 @@ if { [wait_for_job $qos_2_id RUNNING] != 0} {
 	clean_up 1
 }
 
-check_state PENDING $qos_1_id
+sleep 2
+check_job_state $qos_1_id PENDING
 
 # Wait for requeued job to restart
 wait_for_job $qos_2_id DONE
 wait_for_job $qos_1_id RUNNING
-check_state RUNNING $qos_1_id
+
+sleep 2
+check_job_state $qos_1_id RUNNING
 
 cancel_job $qos_1_id
 cancel_job $qos_2_id

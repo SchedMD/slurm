@@ -55,13 +55,13 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 		error("scontrol_parse_part_options internal error, "
 		      "update_cnt_ptr == NULL");
 		exit_code = 1;
-		return -1;
+		return SLURM_ERROR;
 	}
 	if (!part_msg_ptr) {
 		error("scontrol_parse_part_options internal error, "
 		      "part_msg_ptr == NULL");
 		exit_code = 1;
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	for (i = 0; i < argc; i++) {
@@ -74,7 +74,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 		} else {
 			exit_code = 1;
 			error("Invalid input: %s  Request aborted", argv[i]);
-			return -1;
+			return SLURM_ERROR;
 		}
 
 		if (xstrncasecmp(tag, "PartitionName", MAX(taglen, 2)) == 0) {
@@ -85,7 +85,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			if ((max_time < 0) && (max_time != INFINITE)) {
 				exit_code = 1;
 				error("Invalid input %s", argv[i]);
-				return -1;
+				return SLURM_ERROR;
 			}
 			part_msg_ptr->max_time = max_time;
 			(*update_cnt_ptr)++;
@@ -95,7 +95,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			    SLURM_SUCCESS) {
 				exit_code = 1;
 				error("Invalid input %s", argv[i]);
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -104,7 +104,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			if ((default_time < 0) && (default_time != INFINITE)) {
 				exit_code = 1;
 				error("Invalid input %s", argv[i]);
-				return -1;
+				return SLURM_ERROR;
 			}
 			part_msg_ptr->default_time = default_time;
 			(*update_cnt_ptr)++;
@@ -117,7 +117,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			} else if (parse_uint32(val, &part_msg_ptr->
 						      max_cpus_per_node)) {
 				error("Invalid MaxCPUsPerNode value: %s", val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -149,7 +149,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable Default values "
 					"are YES and NO");
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -163,7 +163,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable DisableRootJobs values "
 					"are YES and NO");
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -177,7 +177,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable ExclusiveUser values "
 					"are YES and NO");
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -191,7 +191,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable Hidden values "
 					"are YES and NO");
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -205,7 +205,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable LLN values "
 					"are YES and NO");
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -219,7 +219,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable RootOnly values "
 					"are YES and NO");
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -233,7 +233,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable ReqResv values "
 					"are YES and NO");
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -276,7 +276,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable OverSubscribe values are "
 					"NO, EXCLUSIVE, YES:#, and FORCE:#");
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -289,7 +289,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			} else if (parse_uint16(val, &part_msg_ptr->
 						      over_time_limit)) {
 				error("Invalid OverTimeLimit value: %s", val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -299,14 +299,14 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				part_msg_ptr->preempt_mode = new_mode;
 			else {
 				error("Invalid input: %s", argv[i]);
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "Priority", MAX(taglen, 3))) {
 			if (parse_uint16(val, &part_msg_ptr->priority_tier)) {
 				error("Invalid Priority value: %s", val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			part_msg_ptr->priority_job_factor =
 				part_msg_ptr->priority_tier;
@@ -317,14 +317,14 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 					 &part_msg_ptr->priority_job_factor)) {
 				error("Invalid PriorityJobFactor value: %s",
 				      val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "PriorityTier", MAX(taglen, 3))) {
 			if (parse_uint16(val, &part_msg_ptr->priority_tier)) {
 				error("Invalid PriorityTier value: %s", val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -342,7 +342,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable State values "
 					"are UP, DOWN, DRAIN and INACTIVE");
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -381,14 +381,14 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 		else if (!xstrncasecmp(tag, "GraceTime", MAX(taglen, 5))) {
 			if (parse_uint32(val, &part_msg_ptr->grace_time)) {
 				error ("Invalid GraceTime value: %s", val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "DefMemPerCPU", MAX(taglen, 10))) {
 			if (parse_uint64(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerCPU value: %s", val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			part_msg_ptr->def_mem_per_cpu |= MEM_PER_CPU;
 			(*update_cnt_ptr)++;
@@ -396,14 +396,14 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 		else if (!xstrncasecmp(tag, "DefMemPerNode", MAX(taglen, 10))) {
 			if (parse_uint64(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerNode value: %s", val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "MaxMemPerCPU", MAX(taglen, 10))) {
 			if (parse_uint64(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerCPU value: %s", val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			part_msg_ptr->max_mem_per_cpu |= MEM_PER_CPU;
 			(*update_cnt_ptr)++;
@@ -411,7 +411,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 		else if (!xstrncasecmp(tag, "MaxMemPerNode", MAX(taglen, 10))) {
 			if (parse_uint64(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerNode value: %s", val);
-				return -1;
+				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
 		}
@@ -423,15 +423,20 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			part_msg_ptr->job_defaults_str = val;
 			(*update_cnt_ptr)++;
 		}
+		else if (!xstrncasecmp(tag, "TresBillingWeights",
+				       MAX(taglen, 1))) {
+			part_msg_ptr->billing_weights_str = val;
+			(*update_cnt_ptr)++;
+		}
 		else {
 			exit_code = 1;
 			error("Update of this parameter is not "
 			      "supported: %s\n", argv[i]);
 			error("Request aborted");
-			return -1;
+			return SLURM_ERROR;
 		}
 	}
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 
@@ -441,34 +446,37 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
  *	supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise. parsing error prints
- *			error message and returns 0
+ * RET SLURM_SUCCESS if no slurm error, errno otherwise. parsing error prints
+ *			error message and returns SLURM_SUCCESS
  */
 extern int
 scontrol_update_part (int argc, char **argv)
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;
+	int err;
 
 	slurm_init_part_desc_msg ( &part_msg );
-	scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
+	err = scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
+	if (err)
+		return err;
 
 	if (part_msg.name == NULL) {
 		exit_code = 1;
 		error("PartitionName must be given.");
-		return 0;
+		return SLURM_SUCCESS;
 	}
 	if (update_cnt <= 1) {
 		exit_code = 1;
 		error("No changes specified");
-		return 0;
+		return SLURM_SUCCESS;
 	}
 
 	if (slurm_update_partition(&part_msg)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
-		return 0;
+		return SLURM_SUCCESS;
 }
 
 
@@ -478,32 +486,35 @@ scontrol_update_part (int argc, char **argv)
  *	supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise. parsing error prints
- *			error message and returns 0
+ * RET SLURM_SUCCESS if no slurm error, errno otherwise. parsing error prints
+ *			error message and returns SLURM_SUCCESS
  */
 extern int
 scontrol_create_part (int argc, char **argv)
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;
+	int err;
 
 	slurm_init_part_desc_msg ( &part_msg );
-	scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
+	err = scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
+	if (err)
+		return err;
 
 	if (part_msg.name == NULL) {
 		exit_code = 1;
 		error("PartitionName must be given.");
-		return 0;
+		return SLURM_SUCCESS;
 	} else if (xstrcasecmp(part_msg.name, "default") == 0) {
 		exit_code = 1;
 		error("PartitionName cannot be \"DEFAULT\".");
-		return 0;
+		return SLURM_SUCCESS;
 	}
 
 	if (update_cnt == 0) {
 		exit_code = 1;
 		error("No parameters specified");
-		return 0;
+		return SLURM_SUCCESS;
 	}
 
 	if (slurm_create_partition(&part_msg)) {
@@ -511,5 +522,5 @@ scontrol_create_part (int argc, char **argv)
 		slurm_perror("Error creating the partition");
 		return slurm_get_errno ();
 	} else
-		return 0;
+		return SLURM_SUCCESS;
 }

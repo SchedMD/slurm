@@ -24,11 +24,10 @@ Current TRES Types are:
 </ul>
 
 <p>
-  The Billing TRES is calculated from a partition's TRESBillingWeights. It is
-  temporarily calculated during scheduling for each partition to enforce billing
-  TRES limits. The final Billing TRES is calculated after the job has been
-  allocated resources. The final number can be seen in <i>scontrol show jobs</i>
-  and <i>sacct</i> output.
+  The Billing TRES is calculated from a partition's TRESBillingWeights. Though
+  TRES weights on a partition may be defined as doubles, the Billing TRES values
+  for a job are stored as integers. This is not the case when calcuating a job's
+  fairshare where the value is treated as a double.
 </p>
 
 <p>

@@ -1469,7 +1469,8 @@ static void _internal_setup(void)
 	xfree(weight_tres);
 	if ((tres_weights_str = slurm_get_priority_weight_tres())) {
 		weight_tres = slurm_get_tres_weight_array(tres_weights_str,
-							  slurmctld_tres_cnt);
+							  slurmctld_tres_cnt,
+							  true);
 	}
 	xfree(tres_weights_str);
 	flags = slurm_get_priority_flags();

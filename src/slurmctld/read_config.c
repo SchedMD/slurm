@@ -711,14 +711,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->cr_type        = part->cr_type;
 
 	if (part->billing_weights_str) {
-		xfree(part_ptr->billing_weights_str);
-		xfree(part_ptr->billing_weights);
-		part_ptr->billing_weights_str =
-			xstrdup(part->billing_weights_str);
-		part_ptr->billing_weights =
-			slurm_get_tres_weight_array(
-					part_ptr->billing_weights_str,
-					slurmctld_tres_cnt);
+		set_partition_billing_weights(part->billing_weights_str,
+					      part_ptr, true);
 	}
 
 	if (part->allow_accounts) {
@@ -1306,6 +1300,14 @@ int read_slurm_conf(int recover, bool reconfig)
 		build_feature_list_eq();
 	else
 		build_feature_list_ne();
+
+	/*
+	 * Must be at after nodes and partitons (e.g.
+	 * _build_bitmaps_pre_select()) have been created and before
+	 * _sync_nodes_to_comp_job().
+	 */
+	if (!test_config)
+		set_cluster_tres(false);
 
 	_validate_pack_jobs();
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
@@ -2496,12 +2498,6 @@ static int _sync_nodes_to_comp_job(void)
 				continue;
 
 			update_cnt++;
-			/* This needs to be set up for the priority
-			   plugin and this happens before it is
-			   normally set up so do it now.
-			*/
-			set_cluster_tres(false);
-
 			info("%s: Job %u in completing state",
 			     __func__, job_ptr->job_id);
 			if (!job_ptr->node_bitmap_cg)

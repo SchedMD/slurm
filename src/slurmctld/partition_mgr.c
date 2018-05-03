@@ -1292,6 +1292,39 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 	}
 }
 
+/*
+ * Process string and set partition fields to appropriate values if valid
+ *
+ * IN billing_weights_str - suggested billing weights
+ * IN part_ptr - pointer to partition
+ * IN fail - whether the inner function should fatal if the string is invalid.
+ * RET return SLURM_ERROR on error, SLURM_SUCESS otherwise.
+ */
+extern int set_partition_billing_weights(char *billing_weights_str,
+					 struct part_record *part_ptr,
+					 bool fail)
+{
+	double *tmp = NULL;
+
+	if (!billing_weights_str || *billing_weights_str == '\0') {
+		/* Clear the weights */
+		xfree(part_ptr->billing_weights_str);
+		xfree(part_ptr->billing_weights);
+	} else {
+		if (!(tmp = slurm_get_tres_weight_array(billing_weights_str,
+							slurmctld_tres_cnt,
+							fail)))
+		    return SLURM_ERROR;
+
+		xfree(part_ptr->billing_weights_str);
+		xfree(part_ptr->billing_weights);
+		part_ptr->billing_weights_str =
+			xstrdup(billing_weights_str);
+		part_ptr->billing_weights = tmp;
+	}
+
+	return SLURM_SUCCESS;
+}
 
 /*
  * update_part - create or update a partition's configuration data
@@ -1335,6 +1368,16 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	last_part_update = time(NULL);
+
+	if (part_desc->billing_weights_str &&
+	    set_partition_billing_weights(part_desc->billing_weights_str,
+					  part_ptr, false)) {
+
+		if (create_flag)
+			_delete_part_record(part_ptr->name);
+
+		return ESLURM_INVALID_TRES_BILLING_WEIGHTS;
+	}
 
 	if (part_desc->cpu_bind) {
 		char tmp_str[128];
@@ -1739,6 +1782,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->nodes != NULL) {
+		assoc_mgr_lock_t assoc_tres_read_lock = { NO_LOCK, NO_LOCK,
+			NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 		char *backup_node_list = part_ptr->nodes;
 
 		if (part_desc->nodes[0] == '\0')
@@ -1762,6 +1807,10 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			xfree(backup_node_list);
 		}
 		update_part_nodes_in_resv(part_ptr);
+
+		assoc_mgr_lock(&assoc_tres_read_lock);
+		_calc_part_tres(part_ptr, NULL);
+		assoc_mgr_unlock(&assoc_tres_read_lock);
 	} else if (part_ptr->node_bitmap == NULL) {
 		/* Newly created partition needs a bitmap, even if empty */
 		part_ptr->node_bitmap = bit_alloc(node_record_count);

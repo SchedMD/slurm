@@ -4147,6 +4147,7 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		packstr(msg->allow_groups, buffer);
 		packstr(msg->allow_qos,    buffer);
 		packstr(msg->alternate,    buffer);
+		packstr(msg->billing_weights_str,  buffer);
 
 		pack32(msg->cpu_bind, buffer);
 		pack64(msg-> def_mem_per_cpu, buffer);
@@ -4231,6 +4232,8 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->alternate, &uint32_tmp,
 				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->billing_weights_str,
+				       &uint32_tmp, buffer);
 
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
 		safe_unpack64(&tmp_ptr->def_mem_per_cpu, buffer);

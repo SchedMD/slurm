@@ -270,9 +270,6 @@ int main(int argc, char **argv)
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	/* Locks: Write node and partition */
-	slurmctld_lock_t node_part_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	slurm_trigger_callbacks_t callbacks;
 	bool create_clustername_file;
 
@@ -677,14 +674,6 @@ int main(int argc, char **argv)
 
 			if (recover == 0) {
 				slurmctld_init_db = 1;
-				/*
-				 * This needs to be set up the nodes
-				 * going down and this happens before it is
-				 * normally set up so do it now.
-				 */
-				lock_slurmctld(node_part_write_lock);
-				set_cluster_tres(false);
-				unlock_slurmctld(node_part_write_lock);
 				_accounting_mark_all_nodes_down("cold-start");
 			}
 		} else {
@@ -1401,8 +1390,6 @@ static int _accounting_cluster_ready(void)
 	FREE_NULL_BITMAP(total_node_bitmap);
 
 	assoc_mgr_lock(&locks);
-
-	set_cluster_tres(true);
 
 	cluster_tres_str = slurmdb_make_tres_string(
 		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);

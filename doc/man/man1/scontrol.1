@@ -1407,6 +1407,15 @@ See also the "Alternate" partition specification.
 .RE
 
 .TP
+\fITRESBillingWeights\fP=<TRES Billing Weights>
+TRESBillingWeights is used to define the billing weights of each TRES type that
+will be used in calculating the usage of a job. The calculated usage is used
+when calculating fairshare and when enforcing the TRES billing limit on jobs.
+Updates affect new jobs and not existing jobs.
+See the slurm.conf man page for more information.
+
+
+.TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, POWERCAP\fR
 
 .TP

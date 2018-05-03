@@ -48,32 +48,6 @@ exec $bin_rm -f $script
 
 make_bash_script $script "$bin_sleep 20"
 
-proc check_state { id } {
-
-	global scontrol exit_code
-
-	set chk_state 0
-	spawn $scontrol show job $id
-	expect {
-		-re "JobState=SPECIAL_EXIT" {
-			set chk_state 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol is nor responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $chk_state != 1 } {
-		send_user "\nFAILURE: Job $id state was not set to SPECIAL_EXIT\n"
-		set exit_code
-	}
-}
-
 proc check_release { job } {
 
 	global scontrol number exit_code
@@ -134,7 +108,7 @@ expect {
 	}
 }
 
-check_state $job_id
+check_job_state $job_id SPECIAL_EXIT
 
 spawn $scontrol release $job_id
 expect {

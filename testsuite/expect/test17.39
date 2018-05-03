@@ -54,32 +54,6 @@ if {![string compare $select_type "linear"]} {
 	}
 }
 
-proc check_state {id state} {
-	global squeue exit_code
-
-	set match 0
-	spawn $squeue --job=$id -o"%T" --noheader
-	expect {
-		-re "$state" {
-			incr match 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: squeue is not reponding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$match == 0} {
-		send_user "\nFAILURE: job $id is in the wrong state should be "
-		send_user "$state\n"
-		set exit_code 1
-	}
-}
-
 # Submit job 1 of 3
 spawn $sbatch -t3 -o /dev/null --wrap "sleep 120"
 expect {
@@ -175,10 +149,10 @@ if {[wait_for_job $dep_id RUNNING]} {
 	set exit_code 1
 }
 
-check_state $dep_id RUNNING
+check_job_state $dep_id RUNNING
 
 # Slow job should still be running
-check_state $slow_id RUNNING
+check_job_state $slow_id RUNNING
 
 # Cancel leftover jobs
 cancel_job $fast_id
