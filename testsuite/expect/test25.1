@@ -568,7 +568,7 @@ proc sprio_args { soption sargs jobid} {
 				incr matches
 				exp_continue
 			}
-			-re "$jobid\\s+\\S+\\s+$sargs" {
+			-re "$jobid\\s+\\S+\\s+[string range $sargs 0 7]" {
 				if {$debug} {send_user "\nmatch22\n"}
 				incr matches
 				exp_continue
