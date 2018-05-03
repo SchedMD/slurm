@@ -346,7 +346,7 @@ int pmixp_stepd_send(const char *nodelist, const char *address,
 
 	while (1) {
 		if (!silent && retry >= 1) {
-			PMIXP_ERROR("send failed, rc=%d, try #%d", rc, retry);
+			PMIXP_DEBUG("send failed, rc=%d, try #%d", rc, retry);
 		}
 
 		rc = slurm_forward_data(&copy_of_nodelist, (char *)address,
@@ -356,8 +356,10 @@ int pmixp_stepd_send(const char *nodelist, const char *address,
 			break;
 
 		retry++;
-		if (retry >= retry_cnt)
+		if (retry >= retry_cnt) {
+			PMIXP_ERROR("send failed, rc=%d, exceeded the retry limit", rc);
 			break;
+		}
 
 		/* wait with constantly increasing delay */
 		struct timespec ts =
@@ -442,7 +444,7 @@ int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 
 	while (1) {
 		if (!silent && retry >= 1) {
-			PMIXP_ERROR("send failed, rc=%d, try #%d", rc, retry);
+			PMIXP_DEBUG("send failed, rc=%d, try #%d", rc, retry);
 		}
 
 		rc = _pmix_p2p_send_core(nodename, address, data, len);
@@ -451,8 +453,10 @@ int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 			break;
 
 		retry++;
-		if (retry >= retry_cnt)
+		if (retry >= retry_cnt) {
+			PMIXP_ERROR("send failed, rc=%d, exceeded the retry limit", rc);
 			break;
+		}
 
 		/* wait with constantly increasing delay */
 		struct timespec ts =

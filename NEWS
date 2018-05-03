@@ -178,6 +178,12 @@ documents those changes that are of interest to users and administrators.
     happens.
  -- Remove unsafe usage of pthread_cancel in pmix plugin that can lead to
     to deadlock in glibc.
+ -- Fix fatal in controller when loading completed trigger
+ -- Ignore reservation overlap at submission time.
+ -- GRES type model and QOS limits documentation added
+ -- slurmd - fix ABRT on SIGINT after reconfigure with MemSpecLimit set.
+ -- PMIx - move two error messages on retry to debug level, and only display
+    the error after the retry count has been exceeded.
 
 * Changes in Slurm 17.11.5
 ==========================

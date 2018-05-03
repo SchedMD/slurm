@@ -261,7 +261,7 @@ extern int init_system_memory_cgroup(void)
          *  FYI, setting "export SLURMSTEPD_OOM_ADJ=-1000"
          *  in /etc/sysconfig/slurm would be the same
          */
-        setenvfs("SLURMSTEPD_OOM_ADJ=%d", -1000);
+	 setenv("SLURMSTEPD_OOM_ADJ", "-1000", 0);
 
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = _system_cgroup_create_slurm_cg(&memory_ns);

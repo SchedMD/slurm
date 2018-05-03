@@ -765,7 +765,8 @@ static int _load_trigger_state(Buf buffer, uint16_t protocol_version)
 		trig_ptr->job_ptr = find_job_record(trig_ptr->job_id);
 		if ((trig_ptr->job_id == 0)     ||
 		    (trig_ptr->job_ptr == NULL) ||
-		    (IS_JOB_COMPLETED(trig_ptr->job_ptr)))
+		    (IS_JOB_COMPLETED(trig_ptr->job_ptr) &&
+		     trig_ptr->state != 2))
 			goto unpack_error;
 	} else if (trig_ptr->res_type == TRIGGER_RES_TYPE_NODE) {
 		trig_ptr->job_id = 0;

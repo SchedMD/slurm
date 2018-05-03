@@ -124,6 +124,7 @@ extern void re_kill_job(struct job_record *job_ptr);
  * IN select_node_bitmap - bitmap of nodes to be used for the
  *	job's resource allocation (not returned if NULL), caller
  *	must free
+ * IN submission - if set ignore reservations
  * OUT err_msg - if not NULL set to error message for job, caller must xfree
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
@@ -138,7 +139,8 @@ extern void re_kill_job(struct job_record *job_ptr);
  *	3) Call allocate_nodes() to perform the actual allocation
  */
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
-			bitstr_t **select_node_bitmap, char **err_msg);
+			bitstr_t **select_node_bitmap, char **err_msg,
+			bool submission);
 
 /*
  * get_node_cnts - determine the number of nodes for the requested job.

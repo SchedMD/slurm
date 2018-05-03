@@ -304,6 +304,56 @@ data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<p style="text-align: center;">Last modified 6 April 2017</p>
+<h3>QOS specific limits over GRES</h3>
+<p> When a GRES has a type associated with it and a QOS limits is applied
+  over this specific type, i.e. <i>MaxTRESPerUser=gres/gpu:tesla=1</i>, if a
+  user requests a generic gres, the type's limit will not be enforced. In this
+  situation an additional lua job submit plugin to check the user request may
+  become useful. For example, if one requests <i>--gres=gpu:2</i> having a
+  limit set of <i>MaxTRESPerUser=gres/gpu:tesla=1</i>, the limit won't be
+  enforced so it will still be possible to get two teslas.
+</p>
+<p>
+  This is due to a design limitation. The only way to enforce such a limit
+  is to combine the specification of the limit with a job submit plugin that
+  forces the user to always request a specific type model.
+</p>
+<p>
+  An example of basic lua job submit plugin function could be:
+</p>
+<pre>
+function slurm_job_submit(job_desc, part_list, submit_uid)
+   if (job_desc.gres ~= nil)
+   then
+      for g in job_desc.gres:gmatch("[^,]+")
+      do
+	 bad = string.match(g,'^gpu[:]*[0-9]*$')
+	 if (bad ~= nil)
+	 then
+	    slurm.log_info("User specified gpu GRES without type: %s", bad)
+	    slurm.user_msg("You must always specify a type when requesting gpu GRES")
+	    return slurm.ERROR
+	 end
+      end
+   end
+end
+</pre>
+<p> Having this script and the limit in place will force the users to always
+  specify a gpu with its type, thus enforcing the limits for each specific
+  model.
+</p>
+<p>It is also advisable to set <b>AccountingStorageTRES</b> for both generic
+  and specific gres types, otherwise requests that ask for generic only gpus
+  won't be accounted for. Set this for example to:
+<p/>
+<p>
+  <i>AccountingStorageTRES=gres/gpu,gres/gpu:tesla</i>
+<p/>
+
+<p>
+  See <a href="tres.html">Trackable Resources TRES</a> for details.
+</p>
+
+<p style="text-align: center;">Last modified 1 May 2018</p>
 
 </ul></body></html>

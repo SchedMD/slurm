@@ -1067,7 +1067,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		  bitstr_t **select_bitmap, struct job_record *job_ptr,
 		  struct part_record *part_ptr,
 		  uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
-		  bool test_only, List *preemptee_job_list, bool can_reboot)
+		  bool test_only, List *preemptee_job_list, bool can_reboot,
+		  bool submission)
 {
 	uint32_t saved_min_nodes, saved_job_min_nodes, saved_job_num_tasks;
 	bitstr_t *saved_req_node_bitmap = NULL;
@@ -1132,6 +1133,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				     &exc_core_bitmap, &resv_overlap, true);
 		FREE_NULL_BITMAP(resv_bitmap);
 	}
+
+	if (submission)
+		resv_overlap = false;
 
 	if (!save_avail_node_bitmap)
 		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
@@ -2357,6 +2361,7 @@ static void _end_null_job(struct job_record *job_ptr)
  * IN select_node_bitmap - bitmap of nodes to be used for the
  *	job's resource allocation (not returned if NULL), caller
  *	must free
+ * IN submission - if set ignore reservations
  * OUT err_msg - if not NULL set to error message for job, caller must xfree
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
@@ -2371,7 +2376,8 @@ static void _end_null_job(struct job_record *job_ptr)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
-			bitstr_t **select_node_bitmap, char **err_msg)
+			bitstr_t **select_node_bitmap, char **err_msg,
+			bool submission)
 {
 	int bb, error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
@@ -2506,7 +2512,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 					       &select_bitmap, job_ptr,
 					       part_ptr, min_nodes, max_nodes,
 					       req_nodes, test_only,
-					       &preemptee_job_list, can_reboot);
+					       &preemptee_job_list, can_reboot,
+					       submission);
 	}
 
 	/* Set this guess here to give the user tools an idea

@@ -4641,10 +4641,12 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 
 			if (part_limits_rc == WAIT_NO_REASON) {
 				rc = select_nodes(job_ptr, test_only,
-						  select_node_bitmap, err_msg);
+						  select_node_bitmap, err_msg,
+						  true);
 			} else {
 				rc = select_nodes(job_ptr, true,
-						  select_node_bitmap, err_msg);
+						  select_node_bitmap, err_msg,
+						  true);
 				if ((rc == SLURM_SUCCESS) &&
 				    (part_limits_rc == WAIT_PART_DOWN))
 					rc = ESLURM_PARTITION_DOWN;
@@ -4696,10 +4698,10 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		part_limits_rc = job_limits_check(&job_ptr, false);
 		if (part_limits_rc == WAIT_NO_REASON) {
 			rc = select_nodes(job_ptr, test_only,
-					  select_node_bitmap, err_msg);
+					  select_node_bitmap, err_msg, true);
 		} else if (part_limits_rc == WAIT_PART_DOWN) {
 			rc = select_nodes(job_ptr, true,
-					  select_node_bitmap, err_msg);
+					  select_node_bitmap, err_msg, true);
 			if (rc == SLURM_SUCCESS)
 				rc = ESLURM_PARTITION_DOWN;
 		}
@@ -12132,7 +12134,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->licenses) {
+	if (job_specs->licenses && !xstrcmp(job_specs->licenses,
+					    job_ptr->licenses)) {
+		debug("sched: update_job: new licenses identical to old licenses \"%s\"",
+		      job_ptr->licenses);
+	} else if (job_specs->licenses) {
 		bool valid, pending = IS_JOB_PENDING(job_ptr);
 		license_list = license_validate(job_specs->licenses,
 						pending ?
@@ -12149,7 +12155,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->exc_nodes) {
+	if (job_specs->exc_nodes && detail_ptr &&
+	    !xstrcmp(job_specs->exc_nodes, detail_ptr->exc_nodes)) {
+		debug("sched: update_job: new exc_nodes identical to old exc_nodes %s",
+		      job_specs->exc_nodes);
+	} else if (job_specs->exc_nodes) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->exc_nodes[0] == '\0') {
@@ -13038,7 +13048,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->features) {
+	if (job_specs->features && detail_ptr &&
+	    !xstrcmp(job_specs->features, detail_ptr->features)) {
+		debug("sched: update_job: new features identical to old features %s",
+		      job_specs->features);
+	} else if (job_specs->features) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->features[0] != '\0') {
@@ -13114,7 +13128,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 	}
 
-	if (job_specs->std_out) {
+	if (job_specs->std_out && detail_ptr &&
+	    !xstrcmp(job_specs->std_out, detail_ptr->std_out)) {
+		debug("sched: update_job: new std_out identical to old std_out %s",
+		      job_specs->std_out);
+	} else if (job_specs->std_out) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (detail_ptr) {
@@ -13605,7 +13623,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 #endif
 
-	if (job_specs->network) {
+	if (job_specs->network && !xstrcmp(job_specs->network,
+					   job_ptr->network)) {
+		debug("sched: update_job: new network identical to old network %s",
+		      job_ptr->network);
+	} else if (job_specs->network) {
 		xfree(job_ptr->network);
 		if (!strlen(job_specs->network)
 		    || !xstrcmp(job_specs->network, "none")) {
