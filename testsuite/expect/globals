@@ -4145,6 +4145,7 @@ proc check_job_state { job state } {
 		send_user "\nFAILURE job should be in $state state, but is not\n"
 		set exit_code 1
 	}
+}
 
 ################################################################
 #
