@@ -239,13 +239,14 @@ _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 			break;
 
 		if (!max_retry)
-			max_retry = (nnodes / 1024) + 1;
+			max_retry = (nnodes / 1024) + 5;
 
-		if (retry > max_retry)
+		debug("%s: %d/%d failed to send msg type %u: %m",
+		      __func__, retry, max_retry, resp_msg->msg_type);
+
+		if (retry >= max_retry)
 			break;
 
-		debug3("%s: failed to send msg type %u: %m",
-			__func__, resp_msg->msg_type);
 		usleep(delay);
 		if (delay < 800000)
 			delay *= 2;

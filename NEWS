@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmd - fix ABRT on SIGINT after reconfigure with MemSpecLimit set.
  -- PMIx - move two error messages on retry to debug level, and only display
     the error after the retry count has been exceeded.
+ -- Increase number of tries when sending responses to srun.
 
 * Changes in Slurm 17.11.5
 ==========================
