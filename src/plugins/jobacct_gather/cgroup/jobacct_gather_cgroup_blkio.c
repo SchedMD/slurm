@@ -189,7 +189,7 @@
 /* 	 * setting it up. As soon as the step cgroup is created, we can release */
 /* 	 * the lock. */
 /* 	 * Indeed, consecutive slurm steps could result in cg being removed */
-/* 	 * between the next EEXIST instanciation and the first addition of */
+/* 	 * between the next EEXIST instantiation and the first addition of */
 /* 	 * a task. The release_agent will have to lock the root blkio cgroup */
 /* 	 * to avoid this scenario. */
 /* 	 *\/ */

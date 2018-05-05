@@ -151,7 +151,7 @@ int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg,
 void xcgroup_destroy(xcgroup_t* cg);
 
 /*
- * lock a cgroup (must have been instanciated)
+ * lock a cgroup (must have been instantiated)
  * (system level using flock)
  *
  * returned values:
@@ -170,7 +170,7 @@ int xcgroup_lock(xcgroup_t* cg);
 int xcgroup_unlock(xcgroup_t* cg);
 
 /*
- * instanciate a cgroup in a cgroup namespace (mkdir)
+ * instantiate a cgroup in a cgroup namespace (mkdir)
  *
  * returned values:
  *  - XCGROUP_ERROR

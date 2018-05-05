@@ -268,7 +268,7 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 	 * setting it up. As soon as the step cgroup is created, we can release
 	 * the lock.
 	 * Indeed, consecutive slurm steps could result in cg being removed
-	 * between the next EEXIST instanciation and the first addition of
+	 * between the next EEXIST instantiation and the first addition of
 	 * a task. The release_agent will have to lock the root memory cgroup
 	 * to avoid this scenario.
 	 */
@@ -302,7 +302,7 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 	if (xcgroup_instantiate(&user_memory_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_memory_cg);
-		error("jobacct_gather/cgroup: unable to instanciate user %u "
+		error("jobacct_gather/cgroup: unable to instantiate user %u "
 		      "memory cgroup", uid);
 		fstatus = SLURM_ERROR;
 		goto error;
@@ -324,7 +324,7 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 	if (xcgroup_instantiate(&job_memory_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_memory_cg);
 		xcgroup_destroy(&job_memory_cg);
-		error("jobacct_gather/cgroup: unable to instanciate job %u "
+		error("jobacct_gather/cgroup: unable to instantiate job %u "
 		      "memory cgroup", jobid);
 		fstatus = SLURM_ERROR;
 		goto error;
