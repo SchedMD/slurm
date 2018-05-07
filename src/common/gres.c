@@ -3043,6 +3043,31 @@ static int _clear_mem_per_gres(void *x, void *arg)
 }
 
 /*
+ * Insure tres_per_job >= tres_per_node >= tres_per_socket
+ * RET -1 on failure, 0 on success
+ */
+static int _test_gres_cnt(void *x, void *arg)
+{
+	gres_state_t *gres_ptr = (gres_state_t *) x;
+	gres_job_state_t *job_gres_data;
+	job_gres_data = (gres_job_state_t *) gres_ptr->gres_data;
+
+	if (job_gres_data->gres_per_job &&
+	    ((job_gres_data->gres_per_node &&
+	      (job_gres_data->gres_per_node > job_gres_data->gres_per_job)) ||
+	     (job_gres_data->gres_per_socket &&
+	      (job_gres_data->gres_per_socket > job_gres_data->gres_per_job))))
+		return -1;
+
+	if (job_gres_data->gres_per_node &&
+	    (job_gres_data->gres_per_socket &&
+	     (job_gres_data->gres_per_socket > job_gres_data->gres_per_node)))
+		return -1;
+
+	return 0;
+}
+
+/*
  * Reentrant TRES specification parse logic
  * in_val IN - initial input string
  * cnt OUT - count of values
@@ -3341,21 +3366,10 @@ extern int gres_plugin_job_state_validate2(char *cpus_per_tres,
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
-	if ((rc == SLURM_SUCCESS) && job_gres_data) {
-		/* Insure tres_per_job >= tres_per_node >= tres_per_socket */
-		if (job_gres_data->gres_per_job &&
-		    ((job_gres_data->gres_per_node &&
-		      (job_gres_data->gres_per_node >
-		       job_gres_data->gres_per_job)) ||
-		     (job_gres_data->gres_per_socket &&
-		      (job_gres_data->gres_per_socket >
-		       job_gres_data->gres_per_job))))
-			rc = ESLURM_INVALID_GRES;
-		if (job_gres_data->gres_per_node &&
-		    (job_gres_data->gres_per_socket &&
-		     (job_gres_data->gres_per_socket >
-		      job_gres_data->gres_per_node)))
-			rc = ESLURM_INVALID_GRES;
+	/* Insure tres_per_job >= tres_per_node >= tres_per_socket */
+	if ((rc == SLURM_SUCCESS) &&
+	    (list_for_each(*gres_list, _test_gres_cnt, NULL) < 0)) {
+		rc = ESLURM_INVALID_GRES;
 	}
 
 	return rc;
