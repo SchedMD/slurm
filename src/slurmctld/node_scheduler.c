@@ -159,7 +159,8 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 	int                 i, rv;
 	int                 node_cnt;
 	int                 gres_type_count;
-	int                 *gres_count_ids, *gres_count_vals;
+	uint32_t            *gres_count_ids;
+	uint64_t            *gres_count_vals;
 
 	xstrcat(job_ptr->gres_alloc, "");
 	if (!job_ptr->node_bitmap || !job_ptr->gres_list)
@@ -167,8 +168,8 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 
 	node_cnt = bit_set_count(job_ptr->node_bitmap);
 	gres_type_count = list_count(job_ptr->gres_list);
-	gres_count_ids  = xmalloc(sizeof(int) * gres_type_count);
-	gres_count_vals = xmalloc(sizeof(int) * gres_type_count);
+	gres_count_ids  = xmalloc(sizeof(uint32_t) * gres_type_count);
+	gres_count_vals = xmalloc(sizeof(uint64_t) * gres_type_count);
 	rv = gres_plugin_job_count(job_ptr->gres_list, gres_type_count,
 				   gres_count_ids, gres_count_vals);
 	if (rv == SLURM_SUCCESS) {
@@ -176,10 +177,10 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 			if (!gres_count_ids[i])
 				break;
 			gres_count_vals[i] *= node_cnt;
-			/* Map the GRES type id back to a GRES type name. */
+			/* Map the GRES type ID back to a GRES type name. */
 			gres_gresid_to_gresname(gres_count_ids[i], gres_name,
 						sizeof(gres_name));
-			sprintf(buf,"%s%s:%d", prefix, gres_name,
+			sprintf(buf,"%s%s:%"PRIu64, prefix, gres_name,
 				gres_count_vals[i]);
 			xstrcat(job_ptr->gres_alloc, buf);
 			if (prefix[0] == '\0')
@@ -187,8 +188,8 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 
 			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
 				debug("(%s:%d) job id: %u -- gres_alloc "
-				      "substring=(%s)",
-				      THIS_FILE, __LINE__, job_ptr->job_id, buf);
+				      "substring=(%s)", THIS_FILE,
+				      __LINE__, job_ptr->job_id, buf);
 			}
 		}
 	}
@@ -870,7 +871,7 @@ extern bitstr_t *build_active_feature_bitmap2(char *reboot_features)
  * IN user_flag - may be 0 (do not share nodes), 1 (node sharing allowed),
  *                or any other number means "don't care"
  * IN part_max_share - current partition's node sharing policy
- * IN cons_res_flag - 1 if the consumable resources flag is enable, 0 otherwise
+ * IN cons_res_flag - 1:select/cons_res, 2:select/cons_tres, 0:otherwise
  *
  *
  * The followed table details the node SHARED state for the various scenarios
@@ -911,7 +912,7 @@ extern bitstr_t *build_active_feature_bitmap2(char *reboot_features)
  */
 static int
 _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
-		       int cons_res_flag)
+		       uint32_t cons_res_flag)
 {
 #ifndef HAVE_BG
 	if (job_ptr->reboot)
@@ -3129,14 +3130,15 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 		if (job_ptr->gres_req == NULL)
 			xstrcat(job_ptr->gres_req, "");
 
-	} else if (job_ptr->node_cnt > 0
-		   && job_ptr->gres_req == NULL) {
+	} else if ((job_ptr->node_cnt > 0) &&
+		   (job_ptr->gres_req == NULL)) {
 		/* job_ptr->gres_req is rebuilt/replaced here */
 		tmp_str = xstrdup(req_config);
 
 		tok = strtok_r(tmp_str, ",", &last);
 		while (tok) {
-			/* Tokenize tok so that we discard the colon and
+			/*
+			 * Tokenize tok so that we discard the colon and
 			 * everything after it. Then use gres_get_value_by_type
 			 * to find the associated count.
 			 */
@@ -3146,7 +3148,8 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			ngres_req = gres_get_value_by_type(job_ptr->gres_list,
 							   subtok);
 
-			/* In the event that we somehow have a valid
+			/*
+			 * In the event that we somehow have a valid
 			 * GRES type but don't find a quantity for it,
 			 * we simply write ":0" for the quantity.
 			 */

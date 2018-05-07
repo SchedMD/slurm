@@ -2415,7 +2415,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				xstrcat(reason_down, ", ");
 			xstrcat(reason_down, "Low socket*core*thread count");
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
-			   ((cr_flag == 1) || gang_flag) && (cores1 < cores2)) {
+			   ((cr_flag == SELECT_TYPE_CONS_RES) || gang_flag) &&
+			    (cores1 < cores2)) {
 			error("Node %s has low socket*core count (%d < %d)",
 			      reg_msg->node_name, cores1, cores2);
 			error_code = EINVAL;
@@ -2423,7 +2424,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				xstrcat(reason_down, ", ");
 			xstrcat(reason_down, "Low socket*core count");
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
-			   ((cr_flag == 1) || gang_flag) &&
+			   ((cr_flag == SELECT_TYPE_CONS_RES) || gang_flag) &&
 			   ((validate_socket_cnt && (sockets1 > sockets2)) ||
 			    (cores1 > cores2) || (threads1 > threads2))) {
 			error("Node %s has high socket,core,thread count "
@@ -2432,9 +2433,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			      reg_msg->cores, reg_msg->threads,
 			      config_ptr->sockets, config_ptr->cores,
 			      config_ptr->threads);
-			/* Preserve configured values as we can't change the
+			/*
+			 * Preserve configured values as we can't change the
 			 * total core count on the node without the core_bitmaps
-			 * in select/cons_res or gang scheduler being rebuilt */
+			 * in select/cons_res or gang scheduler being rebuilt
+			 */
 			reg_msg->boards  = config_ptr->boards;
 			reg_msg->sockets = config_ptr->sockets;
 			reg_msg->cores   = config_ptr->cores;
@@ -2450,7 +2453,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				xstrcat(reason_down, ", ");
 			xstrcat(reason_down, "Low CPUs");
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
-			   ((cr_flag == 1) || gang_flag) &&
+			   ((cr_flag == SELECT_TYPE_CONS_RES) || gang_flag) &&
 			   (reg_msg->cpus > config_ptr->cpus)) {
 			error("Node %s has high CPU count (%u > %u), "
 			      "extra resources ignored",
@@ -2458,7 +2461,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			      config_ptr->cpus);
 			reg_msg->cpus    = config_ptr->cpus;
 		}
-		if ((error_code == SLURM_SUCCESS) && (cr_flag == 1) &&
+		if ((error_code == SLURM_SUCCESS) &&
+		    (cr_flag == SELECT_TYPE_CONS_RES) &&
 		    (reg_msg->sockets != config_ptr->sockets) &&
 		    (reg_msg->cores   != config_ptr->cores) &&
 		    ((reg_msg->sockets * reg_msg->cores) ==

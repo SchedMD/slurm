@@ -9,9 +9,10 @@ check_PROGRAMS = \
 	$(TESTS)
 
 TESTS = \
-	pack-test \
-        log-test \
-	bitstring-test
+	bitstring-test \
+	job-resources-test \
+	log-test \
+	pack-test
 
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall -ansi -pedantic -std=c99

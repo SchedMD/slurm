@@ -3956,11 +3956,17 @@ static int _have_xor_feature(void *x, void *key)
 	return 0;
 }
 
-/* Given a reservation create request, select appropriate nodes for use */
+/*
+ * Given a reservation create request, select appropriate nodes for use
+ * resv_desc_ptr IN - Reservation request, node_list field set on exit
+ * part_ptr IN/OUT - Desired partion, if points to NULL then set to default part
+ * resv_bitmap IN/OUT - nodes to use, if points to NULL then used nodes in
+ *		specified partition. Set to selected nodes on output.
+ * core_bitmap OUT - cores allocated to reservation
+ */
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
-			  bitstr_t **resv_bitmap,
-			  bitstr_t **core_bitmap)
+			  bitstr_t **resv_bitmap, bitstr_t **core_bitmap)
 {
 	slurmctld_resv_t *resv_ptr;
 	bitstr_t *node_bitmap;
@@ -5295,8 +5301,10 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			}
 			if ((resv_ptr->node_cnt == 0) &&
 			    (!(resv_ptr->flags & RESERVE_FLAG_ANY_NODES))) {
-				/* empty reservation treated like it will
-				 * start later */
+				/*
+				 * empty reservation treated like it will
+				 * start later
+				 */
 				*when = now + 600;
 				return ESLURM_INVALID_TIME_VALUE;
 			}
@@ -5325,8 +5333,10 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			}
 		}
 
-		/* if there are any overlapping reservations, we need to
-		 * prevent the job from using those nodes (e.g. MAINT nodes) */
+		/*
+		 * if there are any overlapping reservations, we need to
+		 * prevent the job from using those nodes (e.g. MAINT nodes)
+		 */
 		iter = list_iterator_create(resv_list);
 		while ((res2_ptr = (slurmctld_resv_t *) list_next(iter))) {
 			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
@@ -5347,13 +5357,15 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(*node_bitmap);
-			info("job_test_resv: job:%u reservation:%s nodes:%s",
+			info("%s: job:%u reservation:%s nodes:%s", __func__,
 			     job_ptr->job_id, job_ptr->resv_name, nodes);
 			xfree(nodes);
 		}
 
-		/* if reservation is using just partial nodes, this returns
-		 * coremap to exclude */
+		/*
+		 * if reservation is using just partial nodes, this returns
+		 * coremap to exclude
+		 */
 		if (resv_ptr->core_bitmap && exc_core_bitmap) {
 			*exc_core_bitmap = bit_copy(resv_ptr->core_bitmap);
 			bit_not(*exc_core_bitmap);
@@ -5368,16 +5380,18 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;
 #ifdef HAVE_BG
-	/* Since on a bluegene we track cnodes instead of cpus do the
-	 * adjustment since accounting is expecting cpus here. */
+	/*
+	 * Since on a bluegene we track cnodes instead of cpus do the
+	 * adjustment since accounting is expecting cpus here.
+	 */
 	if (!cpus_per_mp) {
 		(void) select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT,
 					       &cpus_per_mp);
 	}
 
-	/* If the job is looking for whole mp blocks we need to tell
-	 * the reservations about it so it sends the plugin the correct
-	 * thing.
+	/*
+	 * If the job is looking for whole mp blocks we need to tell the
+	 * the reservations about it so it sends the plugin the correct thing.
 	 */
 	if (job_ptr->details->max_cpus < cpus_per_mp)
 		job_ptr->details->whole_node = 0;
@@ -5385,8 +5399,10 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		job_ptr->details->whole_node = 1;
 #endif
 
-	/* Job has no reservation, try to find time when this can
-	 * run and get it's required nodes (if any) */
+	/*
+	 * Job has no reservation, try to find time when this can
+	 * run and get it's required nodes (if any)
+	 */
 	for (i = 0; ; i++) {
 		lic_resv_time = (time_t) 0;
 
@@ -5435,9 +5451,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				rc = ESLURM_NODES_BUSY;
 				break;
 			}
-			/* FIXME: This only tracks when ANY licenses required
+			/*
+			 * FIXME: This only tracks when ANY licenses required
 			 * by the job are freed by any reservation without
-			 * counting them, so the results are not accurate. */
+			 * counting them, so the results are not accurate.
+			 */
 			if (license_list_overlap(job_ptr->license_list,
 						 resv_ptr->license_list)) {
 				if ((lic_resv_time == (time_t) 0) ||
@@ -5455,13 +5473,14 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				bit_and_not(*node_bitmap, resv_ptr->node_bitmap);
 			} else {
 #if _DEBUG
-				info("job_test_resv: reservation %s uses "
-				     "partial nodes", resv_ptr->name);
+				info("%s: reservation %s uses partial nodes",
+				     __func__, resv_ptr->name);
 #endif
 				if (resv_ptr->core_bitmap == NULL) {
 					;
 				} else if (exc_core_bitmap == NULL) {
-					error("job_test_resv: exc_core_bitmap is NULL");
+					error("%s: exc_core_bitmap is NULL",
+					      __func__);
 				} else if (*exc_core_bitmap == NULL) {
 					*exc_core_bitmap =
 						bit_copy(resv_ptr->core_bitmap);
@@ -5483,9 +5502,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		if ((rc == SLURM_SUCCESS) && move_time) {
 			if (license_job_test(job_ptr, job_start_time, reboot)
 			    == EAGAIN) {
-				/* Need to postpone for licenses. Time returned
+				/*
+				 * Need to postpone for licenses. Time returned
 				 * is best case; first reservation with those
-				 * licenses ends. */
+				 * licenses ends.
+				 */
 				rc = ESLURM_NODES_BUSY;
 				*when = lic_resv_time;
 			}
@@ -5830,8 +5851,8 @@ extern void job_resv_check(void)
 	list_iterator_destroy(iter);
 }
 
-/* send all reservations to accounting.  Only needed at
- * first registration
+/*
+ * Send all reservations to accounting.  Only needed at first registration
  */
 extern int send_resvs_to_accounting(int db_rc)
 {
@@ -5868,7 +5889,8 @@ extern int send_resvs_to_accounting(int db_rc)
 	return SLURM_SUCCESS;
 }
 
-/* Set or clear NODE_STATE_MAINT for node_state as needed
+/*
+ * Set or clear NODE_STATE_MAINT for node_state as needed
  * IN reset_all - if true, then re-initialize all node information for all
  *	reservations, but do not run any prologs or epilogs or count started
  *	reservations

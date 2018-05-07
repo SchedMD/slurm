@@ -431,7 +431,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	alpsc_peInfo_t alpsc_pe_info = {-1, -1, -1, -1, NULL, NULL, NULL};
 	int cmd_index = 0;
 #ifdef HAVE_NATIVE_CRAY
-	int gpu_cnt = 0;
+	uint64_t gpu_cnt = 0;
 	int control_nid = 0, num_branches = 0;
 	struct sockaddr_in control_soc;
 	alpsc_branchInfo_t alpsc_branch_info;
@@ -651,7 +651,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 
 	rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
 				GRES_STEP_DATA_COUNT, &gpu_cnt);
-	CRAY_INFO("gres_cnt: %d %u", rc, gpu_cnt);
+	CRAY_INFO("gres_cnt: %d %"PRIu64, rc, gpu_cnt);
 	if (gpu_cnt > 0)
 		setup_gpu(job);
 
@@ -748,7 +748,7 @@ extern int switch_p_job_postfini(stepd_step_rec_t *job)
 	char *err_msg = NULL;
 	uid_t pgid = job->jmgr_pid;
 #ifdef HAVE_NATIVE_CRAY
-        int gpu_cnt = 0;
+        uint64_t gpu_cnt = 0;
 #endif
 	DEF_TIMERS;
 

@@ -21,6 +21,7 @@
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Portions Copyright (C) 2010-2018 SchedMD LLC.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # Additions by Joseph Donaghy <donaghy1@llnl.gov>
@@ -3694,7 +3695,6 @@ proc get_partition_default_time_limit {partition} {
 # Returns: node cores if retrieved, -1 otherwise
 #
 #####################################################################
-
 proc get_node_cores {node} {
 
 	global sinfo number
@@ -3866,8 +3866,6 @@ proc check_hosts_contiguous {part check_hosts_list} {
 # Returns: uid if not root user, exits otherwise
 #
 #####################################################################
-
-
 proc stop_root_user {} {
 
 	global bin_id number
@@ -4097,6 +4095,14 @@ proc log_info {msg} {
 	send_user "INFO:    $msg\n"
 }
 
+################################################################
+#
+# Proc: in_fed
+#
+# Returns 1 if this cluster is in a federation
+#	  0 otherwise
+#
+################################################################
 proc in_fed {} {
 	global scontrol
 
@@ -4140,4 +4146,47 @@ proc check_job_state { job state } {
 		set exit_code 1
 	}
 
+################################################################
+#
+# Proc: get_gpu_count
+#
+# Returns number of GPUs in the default partition
+#
+################################################################
+proc get_gpu_count {} {
+	global number sbatch scancel
+	set count 0
+	set fini 0
+	log_user 0
+	for {set inx 0} {$fini == 0} {incr inx} {
+		set job_id 0
+		spawn $sbatch --gres=gpu:$inx --output=/dev/null --wrap "exit 0"
+		expect {
+			-re "Invalid generic resource" {
+				set fini 1
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				set fini 1
+				exp_continue
+			}
+			-re "Submitted batch job ($number)" {
+				set job_id $expect_out(1,string)
+				set count $inx
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sbatch not responding\n"
+				set fini 1
+			}
+			eof {
+				wait
+			}
+		}
+		if {$job_id != 0} {
+			exec $scancel -Q $job_id
+		}
+	}
+	log_user 1
+	return $count
 }
