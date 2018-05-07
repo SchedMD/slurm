@@ -1128,8 +1128,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		}
 	} else {
 		time_t start_res = time(NULL);
-		/* We do not care about return value.
-		 * We are just interested in exc_core_bitmap creation */
+		/*
+		 * We do not care about return value.
+		 * We are just interested in exc_core_bitmap creation
+		 */
 		(void) job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
 				     &exc_core_bitmap, &resv_overlap, true);
 		FREE_NULL_BITMAP(resv_bitmap);
@@ -2853,7 +2855,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	    (!IS_JOB_CONFIGURING(job_ptr)))
 		launch_prolog(job_ptr);
 
-      cleanup:
+cleanup:
 	if (job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap &&
 	    !IS_JOB_STARTED(job_ptr) &&
 	    (bit_ffs(job_ptr->array_recs->task_id_bitmap) != -1)) {
