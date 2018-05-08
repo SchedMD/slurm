@@ -110,7 +110,7 @@ expect {
 		send "\r"
 		exp_continue
 	}
-	"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj" {
+	-re "(qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj|40m\u001b\\(B)" {
 		# This is the bottom line of the smap box I know it
 		# looks wierd, but this is  what expect sees it as.
 #		exec sleep 1

@@ -9047,8 +9047,12 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 	xfree(job_ptr->tres_alloc_cnt);
 	xfree(job_ptr->tres_fmt_alloc_str);
 
-	/* We only need to do this on non-pending jobs */
-	if (IS_JOB_PENDING(job_ptr))
+	/*
+	 * We only need to do this on non-pending jobs.
+	 * Requeued jobs are marked as PENDING|COMPLETING until the epilog is
+	 * finished so we still need the alloc tres until then.
+	 */
+	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_COMPLETING(job_ptr))
 		return;
 
 	if (!assoc_mgr_locked)

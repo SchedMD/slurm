@@ -481,7 +481,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	Buf buffer = NULL;
 	slurm_msg_t msg;
 
-	int rank;
+	int rank, proto;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	slurm_addr_t parent_addr = {0};
@@ -651,8 +651,14 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	pack_msg(&msg, buffer);
 	len = get_buf_offset(buffer);
 
-	/* this is the protocol version for the client srun only */
-	safe_write(fd, &protocol_version, sizeof(int));
+	/*
+	 * This is the protocol version for the client srun only.
+	 * Must store into an int before writing, as the argument
+	 * is a uint16_t not an int, and will result in a corrupted
+	 * version being received by the slurmstepd.
+	 */
+	proto = protocol_version;
+	safe_write(fd, &proto, sizeof(int));
 
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
