@@ -782,7 +782,7 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
 		new_row[i].num_jobs = orig_row[i].num_jobs;
 		new_row[i].job_list_size = orig_row[i].job_list_size;
 		if (orig_row[i].row_bitmap) {
-			new_row[i].row_bitmap = xmalloc(sizeof(bitstr_t) *
+			new_row[i].row_bitmap = xmalloc(sizeof(bitstr_t *) *
 							select_node_cnt);
 			for (n = 0; n < select_node_cnt; n++) {
 				if (!orig_row[i].row_bitmap[n])
