@@ -93,6 +93,7 @@ documents those changes that are of interest to users and administrators.
     performance.
  -- SlurmDBD - Print warning if MySQL/MariaDB internal tuning is not at least
     half of the recommended values.
+ -- Move libpmi from src/api to contribs/pmi.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

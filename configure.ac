@@ -414,6 +414,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/sgather/Makefile
 		 contribs/sgi/Makefile
 		 contribs/sjobexit/Makefile
+		 contribs/pmi/Makefile
 		 contribs/pmi2/Makefile
 		 doc/Makefile
 		 doc/man/Makefile

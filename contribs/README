@@ -80,6 +80,10 @@ of the Slurm contribs distribution follows:
      API to Slurm using perl.  Making available all Slurm command that exist
      in the Slurm proper API.
 
+  pmi/               [ PMI client library ]
+     User applications can link with this library to use Slurm's mpi/pmi
+     plugin.
+
   pmi2/              [ PMI2 client library ]
      User applications can link with this library to use Slurm's mpi/pmi2
      plugin.

@@ -1,4 +1,4 @@
-SUBDIRS = cray lua mic openlava pam pam_slurm_adopt perlapi pmi2 seff sgather sgi sjobexit torque
+SUBDIRS = cray lua mic openlava pam pam_slurm_adopt perlapi pmi pmi2 seff sgather sgi sjobexit torque
 
 EXTRA_DIST = \
 	gcp			\
