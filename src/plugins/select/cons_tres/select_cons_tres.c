@@ -1600,7 +1600,8 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	 * FIXME: core_bitmap is a full-system core bitmap to be replaced
 	 * with a set of per-node bitmaps in a future release of Slurm
 	 */
-	exc_cores = _core_bitmap_to_array(*core_bitmap);
+	if (core_bitmap)
+		exc_cores = _core_bitmap_to_array(*core_bitmap);
 
 	core_cnt = resv_desc_ptr->core_cnt;
 	flags = resv_desc_ptr->flags;
