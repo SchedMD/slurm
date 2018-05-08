@@ -188,6 +188,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix checkpointing requeued/completing jobs in a bad state which caused a
     segfault on restart.
  -- Fix srun on ppc64 platforms.
+ -- Prevent slurmd from starting steps if the Prolog returns an error when using
+    PrologFlags=alloc.
 
 * Changes in Slurm 17.11.5
 ==========================
