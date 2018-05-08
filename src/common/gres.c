@@ -3171,7 +3171,7 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 		*cnt = 1;
 	} else if ((sep[0] >= '0') && (sep[0] <= '9')) {
 		value = strtoull(sep, &end_ptr, 10);
-		if ((value < 0) || (value == ULLONG_MAX)) {
+		if (value == ULLONG_MAX) {
 			my_rc = ESLURM_INVALID_GRES;
 			goto fini;
 		}
