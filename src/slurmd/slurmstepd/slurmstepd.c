@@ -574,7 +574,7 @@ _init_from_slurmd(int sock, char **argv,
 	cpu_freq_recv_info(sock);
 
 	/* get the protocol version of the srun */
-	safe_read(sock, &proto, sizeof(int));
+	safe_read(sock, &proto, sizeof(uint16_t));
 
 	/* receive req from slurmd */
 	safe_read(sock, &len, sizeof(int));
