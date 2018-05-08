@@ -1631,6 +1631,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	}
 
 //FIXME: Add topology support logic here
+	free_core_array(&exc_cores);
 
 	return picked_nodes;
 }
