@@ -951,12 +951,19 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 
 			buffer = init_buf(0);
 
-			assoc_mgr_lock(&locks);
-			jobacct->tres_list = assoc_mgr_tres_list;
+			if (jobacct) {
+				assoc_mgr_lock(&locks);
+				jobacct->tres_list = assoc_mgr_tres_list;
+			}
+
 			jobacctinfo_pack(jobacct, protocol_version,
 					 PROTOCOL_TYPE_SLURM, buffer);
-			assoc_mgr_unlock(&locks);
-			jobacct->tres_list = NULL;
+
+			if (jobacct) {
+				assoc_mgr_unlock(&locks);
+				jobacct->tres_list = NULL;
+			}
+
 			len = get_buf_offset(buffer);
 			safe_write(*fd, &len, sizeof(int));
 			safe_write(*fd, get_buf_data(buffer), len);
