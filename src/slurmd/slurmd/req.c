@@ -1483,18 +1483,20 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			errnum = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
-		/* Since the job could have been killed while the prolog was
-		 * running, test if the credential has since been revoked
-		 * and exit as needed. */
-		if (slurm_cred_revoked(conf->vctx, req->cred)) {
-			info("Job %u already killed, do not launch step %u.%u",
-			     req->job_id, req->job_id, req->job_step_id);
-			errnum = ESLURMD_CREDENTIAL_REVOKED;
-			goto done;
-		}
 	} else {
 		slurm_mutex_unlock(&prolog_mutex);
 		_wait_for_job_running_prolog(req->job_id);
+	}
+
+	/*
+	 * Since the job could have been killed while the prolog was running,
+	 * test if the credential has since been revoked and exit as needed.
+	 */
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+		info("Job %u already killed, do not launch step %u.%u",
+		     req->job_id, req->job_id, req->job_step_id);
+		errnum = ESLURMD_CREDENTIAL_REVOKED;
+		goto done;
 	}
 #endif
 
@@ -2209,6 +2211,16 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if ((rc == SLURM_SUCCESS) &&
 		    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
 			rc = _spawn_prolog_stepd(msg);
+
+		/*
+		 * Revoke cred so that the slurmd won't launch tasks if the
+		 * prolog failed. The slurmd waits for the prolog to finish but
+		 * can't check the return code.
+		 */
+		if (rc)
+			slurm_cred_revoke(conf->vctx, req->job_id, time(NULL),
+					  time(NULL));
+
 		_remove_job_running_prolog(req->job_id);
 	} else
 		slurm_mutex_unlock(&prolog_mutex);
