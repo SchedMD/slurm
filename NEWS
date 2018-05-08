@@ -56,6 +56,8 @@ documents those changes that are of interest to users and administrators.
  -- PMIx - move two error messages on retry to debug level, and only display
     the error after the retry count has been exceeded.
  -- Increase number of tries when sending responses to srun.
+ -- Fix checkpointing requeued/completing jobs in a bad state which caused a
+    segfault on restart.
 
 * Changes in Slurm 17.11.5
 ==========================
