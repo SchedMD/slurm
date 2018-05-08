@@ -1386,6 +1386,15 @@ static void _filter_job(struct job_record *job_ptr,
 			return;
 	}
 
+	/*
+	 * Job is not in any partition, so there is nothing to return.
+	 * This can happen if the Partition was deleted, CALCULATE_RUNNING
+	 * is enabled, and this job is still waiting out MinJobAge before
+	 * being removed from the system.
+	 */
+	if (!job_ptr->part_ptr && !job_ptr->part_ptr_list)
+		return;
+
 	/* Filter by partition, job in one partition */
 	if (!job_ptr->part_ptr_list || !job_ptr->priority_array) {
 		job_part_ptr =  job_ptr->part_ptr;
