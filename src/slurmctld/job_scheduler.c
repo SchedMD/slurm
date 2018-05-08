@@ -4949,6 +4949,13 @@ cleanup_completing(struct job_record *job_ptr)
 	job_ptr->job_state &= (~JOB_COMPLETING);
 	job_hold_requeue(job_ptr);
 
+	/*
+	 * Clear alloc tres fields after a requeue. job_set_alloc_tres will
+	 * clear the fields when the job is pending and not completing.
+	 */
+	if (IS_JOB_PENDING(job_ptr))
+		job_set_alloc_tres(job_ptr, false);
+
 	/* Job could be pending if the job was requeued due to a node failure */
 	if (IS_JOB_COMPLETED(job_ptr))
 		fed_mgr_job_complete(job_ptr, job_ptr->exit_code,
