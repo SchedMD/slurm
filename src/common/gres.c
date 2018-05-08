@@ -3137,6 +3137,7 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 			prev_save_ptr++;
 		if (prev_save_ptr[0] == '\0')
 			goto fini;
+		xfree(name);
 		goto next;
 	}
 	if (i >= gres_context_cnt) {
