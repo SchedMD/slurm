@@ -1047,8 +1047,7 @@ extern int build_part_bitmap(struct part_record *part_ptr);
 extern int job_limits_check(struct job_record **job_pptr, bool check_min_time);
 
 /*
- * delete_partition - delete the specified partition (actually leave
- *	the entry, just flag it as defunct)
+ * delete_partition - delete the specified partition
  * IN job_specs - job specification from RPC
  * RET 0 on success, errno otherwise
  */
