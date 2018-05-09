@@ -1454,6 +1454,8 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "SUCCESS");
 	lua_pushnumber (L, ESLURM_INVALID_LICENSES);
 	lua_setfield (L, -2, "ESLURM_INVALID_LICENSES");
+	lua_pushnumber (L, ESLURM_INVALID_TIME_LIMIT);
+	lua_setfield (L, -2, "ESLURM_INVALID_TIME_LIMIT");
 
 	/*
 	 * Other definitions needed to interpret data
@@ -1800,6 +1802,11 @@ extern int job_modify(struct job_descriptor *job_desc,
 		lua_pop(L, 1);
 	}
 	_stack_dump("job_modify, after lua_pcall", L);
+	if (user_msg) {
+		error("Use of log.user() in job_modify is not supported. "
+		      "Message discarded: (\"%s\")", user_msg);
+		xfree(user_msg);
+	}
 
 out:	slurm_mutex_unlock (&lua_lock);
 	return rc;
