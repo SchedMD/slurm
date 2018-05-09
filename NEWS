@@ -66,6 +66,7 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - add ESLURM_INVALID_TIME_LIMIT return code value.
  -- job_submit/lua - print an error if the script calls log.user in
     job_modify() instead of returning it to the next submitted job erroneously.
+ -- select/backfill - handle job resize correctly.
 
 * Changes in Slurm 17.11.5
 ==========================
@@ -98,7 +99,6 @@ documents those changes that are of interest to users and administrators.
     allocated time than 100% (Flex reservations).
  -- When a job is requesting a Flex reservation prefer the reservation's nodes
     over any other nodes.
- -- select/backfill - handle job resize correctly.
 
 * Changes in Slurm 17.11.4
 ==========================
