@@ -54,11 +54,20 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 	Buf buffer;
 	int parts_packed;
 	int agent_queue_size;
+	int slurmdbd_queue_size;
 	time_t now = time(NULL);
 	uint32_t uint32_tmp;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
+
+	if (resp) {
+		if (acct_storage_g_get_data(acct_db_conn,
+					    ACCT_STORAGE_INFO_AGENT_COUNT,
+					    &slurmdbd_queue_size)
+		    != SLURM_SUCCESS)
+			slurmdbd_queue_size = 0;
+	}
 
 	buffer = init_buf(BUF_SIZE);
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
@@ -77,7 +86,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 
 			agent_queue_size = retry_list_size();
 			pack32(agent_queue_size, buffer);
-			pack32(slurmdbd_agent_queue_count(), buffer);
+			pack32(slurmdbd_queue_size, buffer);
 			pack32(slurmctld_diag_stats.latency, buffer);
 
 			pack32(slurmctld_diag_stats.jobs_submitted, buffer);
@@ -139,7 +148,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 
 			agent_queue_size = retry_list_size();
 			pack32(agent_queue_size, buffer);
-			pack32(slurmdbd_agent_queue_count(), buffer);
+			pack32(slurmdbd_queue_size, buffer);
 
 			pack32(slurmctld_diag_stats.jobs_submitted, buffer);
 			pack32(slurmctld_diag_stats.jobs_started, buffer);

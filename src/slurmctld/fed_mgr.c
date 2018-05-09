@@ -3757,6 +3757,17 @@ next_lock:
 	return SLURM_FAILURE;
 }
 
+static int _slurmdbd_conn_active()
+{
+	int active = 0;
+
+	if (acct_storage_g_get_data(acct_db_conn, ACCT_STORAGE_INFO_CONN_ACTIVE,
+				    &active) != SLURM_SUCCESS)
+		active = 0;
+
+	return active;
+}
+
 /*
  * Attempt to grab the job's federation cluster lock so that the requesting
  * cluster can attempt to start to the job.
@@ -3791,7 +3802,7 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr)
 				       origin_cluster->fed.send;
 
 		/* Check dbd is up to make sure ctld isn't on an island. */
-		if (acct_db_conn && slurmdbd_conn_active() &&
+		if (acct_db_conn && _slurmdbd_conn_active() &&
 		    (!origin_conn || (origin_conn->fd < 0))) {
 			rc = _job_lock_all_sibs(job_ptr);
 		} else if (origin_cluster) {

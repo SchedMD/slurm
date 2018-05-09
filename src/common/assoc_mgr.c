@@ -47,6 +47,7 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_priority.h"
+#include "src/common/slurmdbd_pack.h"
 #include "src/slurmdbd/read_config.h"
 
 #define ASSOC_HASH_SIZE 1000
@@ -77,6 +78,14 @@ static int *assoc_mgr_tres_old_pos = NULL;
 
 static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
+
+static bool _running_cache(void)
+{
+	if (init_setup.running_cache && *init_setup.running_cache)
+		return true;
+
+	return false;
+}
 
 static int _get_str_inx(char *name)
 {
@@ -1425,7 +1434,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 
 	assoc_mgr_unlock(&locks);
 
-	if (!running_cache && changed && init_setup.update_cluster_tres) {
+	if (changed && !_running_cache() && init_setup.update_cluster_tres) {
 		/* update jobs here, this needs to be outside of the
 		 * assoc_mgr locks */
 		init_setup.update_cluster_tres();
@@ -1979,7 +1988,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 	if (args)
 		memcpy(&init_setup, args, sizeof(assoc_init_args_t));
 
-	if (running_cache) {
+	if (_running_cache()) {
 		debug4("No need to run assoc_mgr_init, "
 		       "we probably don't have a connection.  "
 		       "If we do use assoc_mgr_refresh_lists instead.");
@@ -2095,7 +2104,9 @@ extern int assoc_mgr_fini(bool save_state)
 	assoc_mgr_wckey_list = NULL;
 
 	assoc_mgr_root_assoc = NULL;
-	running_cache = 0;
+
+	if (_running_cache())
+		*init_setup.running_cache = 0;
 
 	xfree(assoc_hash_id);
 	xfree(assoc_hash);
@@ -6018,8 +6029,10 @@ extern int load_assoc_mgr_state(bool only_tres)
 		if (only_tres)
 			break;
 	}
-	if (!only_tres)
-		running_cache = 1;
+
+	if (!only_tres && init_setup.running_cache)
+		*init_setup.running_cache = 1;
+
 	free_buf(buffer);
 	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
@@ -6077,8 +6090,8 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if (!partial_list)
-		running_cache = 0;
+	if (!partial_list && _running_cache())
+		*init_setup.running_cache = 0;
 
 	return SLURM_SUCCESS;
 }

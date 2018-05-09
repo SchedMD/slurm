@@ -183,6 +183,9 @@ int   slurmctld_tres_cnt = 0;
 slurmdb_cluster_rec_t *response_cluster_rec = NULL;
 bool    test_config = false;
 int     test_config_rc = 0;
+uint16_t running_cache = 0;
+pthread_mutex_t assoc_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t assoc_cache_cond = PTHREAD_COND_INITIALIZER;
 
 /* Local variables */
 static pthread_t assoc_cache_thread = (pthread_t) 0;
@@ -2291,6 +2294,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
+	assoc_init_arg.running_cache = &running_cache;
 	assoc_init_arg.add_license_notify = license_add_remote;
 	assoc_init_arg.resize_qos_notify = _resize_qos;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;

@@ -1102,6 +1102,12 @@ extern int acct_storage_p_clear_stats(void *db_conn, bool dbd)
 	return SLURM_SUCCESS;
 }
 
+extern int acct_storage_p_get_data(void *db_conn, acct_storage_info_t dinfo,
+				   void *data)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int acct_storage_p_shutdown(void *db_conn, bool dbd)
 {
 	return SLURM_SUCCESS;

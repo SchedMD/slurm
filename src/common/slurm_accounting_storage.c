@@ -212,6 +212,8 @@ typedef struct slurm_acct_storage_ops {
 				    List cluster_list);
 	int (*get_stats)           (void *db_conn, slurmdb_stats_rec_t **stats);
 	int (*clear_stats)         (void *db_conn);
+	int (*get_data)            (void *db_conn, acct_storage_info_t dinfo,
+				    void *data);
 	int (*shutdown)            (void *db_conn);
 } slurm_acct_storage_ops_t;
 /*
@@ -289,6 +291,7 @@ static const char *syms[] = {
 	"acct_storage_p_reset_lft_rgt",
 	"acct_storage_p_get_stats",
 	"acct_storage_p_clear_stats",
+	"acct_storage_p_get_data",
 	"acct_storage_p_shutdown",
 };
 
@@ -1129,6 +1132,19 @@ extern int acct_storage_g_clear_stats(void *db_conn)
 		return SLURM_ERROR;
 	return (*(ops.clear_stats))(db_conn);
 }
+
+/*
+ * Get generic data.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_get_data(void *db_conn, acct_storage_info_t dinfo,
+				    void *data)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.get_data))(db_conn, dinfo, data);
+}
+
 
 /*
  * Shutdown database server.

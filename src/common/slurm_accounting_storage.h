@@ -50,6 +50,11 @@
 #include <sys/types.h>
 #include <pwd.h>
 
+typedef enum {
+	ACCT_STORAGE_INFO_CONN_ACTIVE,
+	ACCT_STORAGE_INFO_AGENT_COUNT
+} acct_storage_info_t;
+
 extern int with_slurmdbd;
 extern uid_t db_api_uid;
 
@@ -552,6 +557,13 @@ extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_get_stats(void *db_conn, slurmdb_stats_rec_t **stats);
+
+/*
+ * Get generic data.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_get_data(void *db_conn,  acct_storage_info_t dinfo,
+				    void *data);
 
 /*
  * Clear performance statistics.

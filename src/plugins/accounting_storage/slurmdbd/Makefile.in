@@ -179,7 +179,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 accounting_storage_slurmdbd_la_LIBADD =
 am_accounting_storage_slurmdbd_la_OBJECTS =  \
-	accounting_storage_slurmdbd.lo
+	accounting_storage_slurmdbd.lo slurmdbd_agent.lo
 accounting_storage_slurmdbd_la_OBJECTS =  \
 	$(am_accounting_storage_slurmdbd_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -518,7 +518,9 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = accounting_storage_slurmdbd.la
 
 # Null job completion logging plugin.
-accounting_storage_slurmdbd_la_SOURCES = accounting_storage_slurmdbd.c
+accounting_storage_slurmdbd_la_SOURCES = accounting_storage_slurmdbd.c \
+	slurmdbd_agent.c slurmdbd_agent.h
+
 accounting_storage_slurmdbd_la_LDFLAGS = $(PLUGIN_FLAGS)
 all: all-am
 
@@ -599,6 +601,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_slurmdbd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_agent.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

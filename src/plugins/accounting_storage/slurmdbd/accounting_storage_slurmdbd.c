@@ -58,6 +58,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/locks.h"
 
+#include "slurmdbd_agent.h"
+
 #define BUFFER_SIZE 4096
 
 /* These are defined here so when we link with something other than
@@ -67,9 +69,15 @@
 #if defined(__APPLE__)
 slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 List job_list __attribute__((weak_import)) = NULL;
+uint16_t running_cache __attribute__((weak_import)) = 0;
+pthread_mutex_t assoc_cache_mutex __attribute__((weak_import));
+pthread_cond_t assoc_cache_cond __attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
 List job_list = NULL;
+uint16_t running_cache = 0;
+pthread_mutex_t assoc_cache_mutex;
+pthread_cond_t assoc_cache_cond;
 #endif
 
 /*
@@ -458,7 +466,7 @@ static void *_set_db_inx_thread(void *no_data)
 extern int init ( void )
 {
 	if (first) {
-		char *cluster_name = NULL, *auth_info;
+		char *cluster_name = NULL;
 		/* since this can be loaded from many different places
 		   only tell us once. */
 		if (!(cluster_name = slurm_get_cluster_name()))
@@ -466,12 +474,8 @@ extern int init ( void )
 			      plugin_name);
 		xfree(cluster_name);
 
-		auth_info = slurm_get_accounting_storage_pass();
-		verbose("%s loaded with AuthInfo=%s",
-			plugin_name, auth_info);
+		verbose("%s loaded", plugin_name);
 
-		slurmdbd_defs_init(auth_info);
-		xfree(auth_info);
 		if (job_list && !(slurm_get_accounting_storage_enforce() &
 				  ACCOUNTING_ENFORCE_NO_JOBS)) {
 			/* only do this when job_list is defined
@@ -507,7 +511,6 @@ extern int fini ( void )
 		pthread_join(db_inx_handler_thread, NULL);
 
 	first = 1;
-	slurmdbd_defs_fini();
 
 	return SLURM_SUCCESS;
 }
@@ -3099,6 +3102,27 @@ extern int acct_storage_p_clear_stats(void *db_conn)
 	msg.msg_type = DBD_CLEAR_STATS;
 	slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
 
+	return rc;
+}
+
+extern int acct_storage_p_get_data(void *db_conn, acct_storage_info_t dinfo,
+				   void *data)
+{
+	int *int_data = (int *) data;
+	int rc = SLURM_SUCCESS;
+
+	switch (dinfo) {
+	case ACCT_STORAGE_INFO_CONN_ACTIVE:
+		*int_data = slurmdbd_conn_active();
+		break;
+	case ACCT_STORAGE_INFO_AGENT_COUNT:
+		*int_data = slurmdbd_agent_queue_count();
+		break;
+	default:
+		error("%s: data request %d invalid", __func__, dinfo);
+		rc = SLURM_ERROR;
+		break;
+	}
 	return rc;
 }
 

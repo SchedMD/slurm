@@ -79,6 +79,7 @@ libcommon_la_SOURCES = 			\
 	slurmdb_defs.c slurmdb_defs.h   \
 	slurmdb_pack.c slurmdb_pack.h   \
 	slurmdbd_defs.c slurmdbd_defs.h	\
+	slurmdbd_pack.c slurmdbd_pack.h	\
 	working_cluster.c working_cluster.h   \
 	uid.c uid.h			\
 	util-net.c util-net.h		\

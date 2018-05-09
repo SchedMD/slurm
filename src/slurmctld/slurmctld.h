@@ -962,6 +962,19 @@ enum select_plugindata_info {
 #define SELECT_TYPE_CONS_RES	1
 #define SELECT_TYPE_CONS_TRES	2
 
+
+/*****************************************************************************\
+ *  Global assoc_cache variables
+\*****************************************************************************/
+
+/* flag to let us know if we are running on cache or from the actual
+ * database */
+extern uint16_t running_cache;
+/* mutex and signal to let us know if associations have been reset so we need to
+ * redo all the pointers to the associations */
+extern pthread_mutex_t assoc_cache_mutex; /* assoc cache mutex */
+extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
+
 /*****************************************************************************\
  *  Global slurmctld functions
 \*****************************************************************************/

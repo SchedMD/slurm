@@ -50,6 +50,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurmdbd_pack.h"
 #include "src/common/xsignal.h"
 #include "slurm_persist_conn.h"
 
