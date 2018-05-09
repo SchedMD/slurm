@@ -93,7 +93,6 @@ static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 static slurm_persist_conn_t *slurmdbd_conn = NULL;
 static bool      slurmdbd_defs_inited = false;
-static char *    slurmdbd_auth_info  = NULL;
 static char *    slurmdbd_cluster    = NULL;
 static bool      halt_agent          = 0;
 static time_t    slurmdbd_shutdown   = 0;
@@ -401,9 +400,6 @@ extern void slurmdbd_defs_init(char *auth_info)
 
 	slurmdbd_defs_inited = true;
 
-	xfree(slurmdbd_auth_info);
-	slurmdbd_auth_info = xstrdup(auth_info);
-
 	xfree(slurmdbd_cluster);
 	slurmdbd_cluster = slurm_get_cluster_name();
 
@@ -419,7 +415,6 @@ extern void slurmdbd_defs_fini(void)
 	}
 
 	slurmdbd_defs_inited = false;
-	xfree(slurmdbd_auth_info);
 	xfree(slurmdbd_cluster);
 	slurm_mutex_unlock(&slurmdbd_lock);
 }
