@@ -39,8 +39,10 @@ control flag):</p>
 account    sufficient    pam_slurm_adopt.so
 </pre>
 
-<p> pam_slurm_adopt.so should be the last PAM module in the account stack; it
-can be safely put at the very end of the file.
+<p> The order of plugins is very important. pam_slurm_adopt.so should be the
+last PAM module in the account stack. Included files such as common-account
+should normally be included before pam_slurm_adopt.
+
 You might have the following account stack in sshd:</p>
 
 <pre>
