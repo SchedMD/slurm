@@ -13,7 +13,7 @@ Slurm support such as:
 These newer checkpoint systems do not require direct integration with Slurm,
 and provide additional capabilities not present in BLCR. While they
 do require the job to directly opt-in to their usage, in our experience
-BLRC does not deliver on the promise of an application-agnostic checkpoint,
+BLCR does not deliver on the promise of an application-agnostic checkpoint,
 and as such direct integration to the job scheduler is unnecessary and
 leads to further confusion.
 </p>
