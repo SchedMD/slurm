@@ -1747,9 +1747,7 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	List current_qos = NULL;
-	ListIterator itr;
 	uid_t uid = getuid();
-	slurmdb_qos_rec_t *curr_qos = NULL, *qos_rec = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -1765,19 +1763,22 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 	assoc_mgr_lock(&locks);
 
 	/* move usage from old list over to the new one */
-	itr = list_iterator_create(current_qos);
-	while ((curr_qos = list_next(itr))) {
-		if (!(qos_rec = list_find_first(assoc_mgr_qos_list,
-						slurmdb_find_qos_in_list,
-						&curr_qos->id)))
-			continue;
-		slurmdb_destroy_qos_usage(curr_qos->usage);
-		curr_qos->usage = qos_rec->usage;
-		qos_rec->usage = NULL;
-	}
-	list_iterator_destroy(itr);
+	if (assoc_mgr_qos_list) {
+		slurmdb_qos_rec_t *curr_qos = NULL, *qos_rec = NULL;
+		ListIterator itr = list_iterator_create(current_qos);
 
-	FREE_NULL_LIST(assoc_mgr_qos_list);
+		while ((curr_qos = list_next(itr))) {
+			if (!(qos_rec = list_find_first(assoc_mgr_qos_list,
+							slurmdb_find_qos_in_list,
+							&curr_qos->id)))
+				continue;
+			slurmdb_destroy_qos_usage(curr_qos->usage);
+			curr_qos->usage = qos_rec->usage;
+			qos_rec->usage = NULL;
+		}
+		list_iterator_destroy(itr);
+		FREE_NULL_LIST(assoc_mgr_qos_list);
+	}
 
 	assoc_mgr_qos_list = current_qos;
 
