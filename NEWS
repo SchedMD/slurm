@@ -190,6 +190,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun on ppc64 platforms.
  -- Prevent slurmd from starting steps if the Prolog returns an error when using
     PrologFlags=alloc.
+ -- priority/multifactor - prevent segfault running sprio if a partition has
+    just been deleted and PriorityFlags=CALCULATE_RUNNING is turned on.
+
 
 * Changes in Slurm 17.11.5
 ==========================
