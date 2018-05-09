@@ -1373,6 +1373,8 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "SUCCESS");
 	lua_pushnumber (L, ESLURM_INVALID_LICENSES);
 	lua_setfield (L, -2, "ESLURM_INVALID_LICENSES");
+	lua_pushnumber (L, ESLURM_INVALID_TIME_LIMIT);
+	lua_setfield (L, -2, "ESLURM_INVALID_TIME_LIMIT");
 
 	/*
 	 * Other definitions needed to interpret data

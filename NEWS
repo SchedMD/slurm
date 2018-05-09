@@ -63,7 +63,7 @@ documents those changes that are of interest to users and administrators.
     PrologFlags=alloc.
  -- priority/multifactor - prevent segfault running sprio if a partition has
     just been deleted and PriorityFlags=CALCULATE_RUNNING is turned on.
-
+ -- job_submit/lua - add ESLURM_INVALID_TIME_LIMIT return code value.
 
 * Changes in Slurm 17.11.5
 ==========================
