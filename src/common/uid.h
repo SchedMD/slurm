@@ -115,21 +115,4 @@ char *gid_to_string (gid_t gid);
 int
 slurm_find_group_user(struct passwd *pwd, gid_t gid);
 
-/* slurm_valid_uid_gid()
- *
- * IN - uid - User id to verify
- * IN/OUT - gid - Group id to verify or set
- * IN/OUT - user_name - User name for the uid, this will be set if not
- *                      already set.
- * IN - name_already_verfied - If set we will only validate the
- *                             *user_name exists and return 1, else we
- *                             will validate uid and fill in *user_name.
- * IN - validate_gid - If set we will validate the gid as well as the
- *                     uid.  Set gid with correct gid if root launched job.
- * RET - returns 0 if invalid uid/gid, otherwise returns 1
- */
-extern int slurm_valid_uid_gid(uid_t uid, gid_t *gid, char **user_name,
-			       bool name_already_verified,
-			       bool validate_gid);
-
 #endif /*__SLURM_UID_UTILITY_H__*/
