@@ -3093,7 +3093,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	while (running_cache == 1) {
 		slurm_mutex_lock(&assoc_cache_mutex);
@@ -3226,6 +3226,9 @@ handle_parts:
 	list_iterator_destroy(itr);
 
 end_it:
+
+	set_cluster_tres(true);
+
 	assoc_mgr_unlock(&locks);
 	/* issuing a reconfig will reset the pointers on the burst
 	   buffers */
