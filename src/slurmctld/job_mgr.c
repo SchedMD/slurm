@@ -9022,12 +9022,19 @@ extern void job_set_req_tres(
 			      job_ptr->tres_req_cnt,
 			      true);
 
-	/* Do this last as it calculates off of everything else.
-	 * Don't use calc_job_billable_tres() as it relies on allocated tres */
-	job_ptr->tres_req_cnt[TRES_ARRAY_BILLING] =
-		assoc_mgr_tres_weighted(job_ptr->tres_req_cnt,
-					job_ptr->part_ptr->billing_weights,
-					slurmctld_conf.priority_flags, true);
+	/*
+	 * Do this last as it calculates off of everything else.
+	 * Don't use calc_job_billable_tres() as it relies on allocated tres
+	 * If the partition was destroyed the part_ptr will be NULL.  As this
+	 * could be run on already finished jobs running in the assoc mgr
+	 * cache.
+	 */
+	if (job_ptr->part_ptr)
+		job_ptr->tres_req_cnt[TRES_ARRAY_BILLING] =
+			assoc_mgr_tres_weighted(
+				job_ptr->tres_req_cnt,
+				job_ptr->part_ptr->billing_weights,
+				slurmctld_conf.priority_flags, true);
 
 	/* now that the array is filled lets make the string from it */
 	set_job_tres_req_str(job_ptr, true);
