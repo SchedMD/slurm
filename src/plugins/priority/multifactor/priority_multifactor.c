@@ -1396,7 +1396,7 @@ static void _filter_job(struct job_record *job_ptr,
 		return;
 
 	/* Filter by partition, job in one partition */
-	if (!job_ptr->part_ptr_list || !job_ptr->priority_array) {
+	if (!job_ptr->part_ptr_list) {
 		job_part_ptr =  job_ptr->part_ptr;
 		filter = 0;
 		if (part_ptr_list) {
