@@ -871,10 +871,16 @@ extern int slurm_close_slurmdbd_conn(void)
 	/* NOTE: agent_lock not needed for _shutdown_agent() */
 	_shutdown_agent();
 
-	if (_send_fini_msg() != SLURM_SUCCESS)
-		error("slurmdbd: Sending fini msg: %m");
-	else
-		debug("slurmdbd: Sent fini msg");
+	/*
+	 * Only send the FINI message if we haven't shutdown
+	 * (i.e. not slurmctld)
+	 */
+	if (!slurmdbd_shutdown) {
+		if (_send_fini_msg() != SLURM_SUCCESS)
+			error("slurmdbd: Sending fini msg: %m");
+		else
+			debug("slurmdbd: Sent fini msg");
+	}
 
 	slurm_mutex_lock(&slurmdbd_lock);
 	slurm_persist_conn_destroy(slurmdbd_conn);
