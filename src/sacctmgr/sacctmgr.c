@@ -1074,7 +1074,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        Association        - Account, Cluster, DefaultQOS, Fairshare,       \n\
                             GrpTRESMins, GrpTRESRunMins, GrpTRES, GrpJobs, \n\
                             GrpMemory, GrpNodes, GrpSubmitJob, GrpWall,    \n\
-                            ID, LFT, MaxTRESMins, MaxTRES,                  \n\
+                            ID, LFT, MaxTRESMins, MaxTRES,                 \n\
                             MaxJobs, MaxNodes, MaxSubmitJobs, MaxWall, QOS,\n\
                             ParentID, ParentName, Partition, RGT,          \n\
                             User, WithRawQOS                               \n\
