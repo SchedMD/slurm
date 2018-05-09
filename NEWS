@@ -195,6 +195,8 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - add ESLURM_INVALID_TIME_LIMIT return code value.
  -- job_submit/lua - print an error if the script calls log.user in
     job_modify() instead of returning it to the next submitted job erroneously.
+ -- select/linear - handle job resize correctly.
+ -- select/cons_res - improve handling of --cores-per-socket requests.
 
 * Changes in Slurm 17.11.5
 ==========================

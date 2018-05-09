@@ -356,22 +356,54 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			used_cpu_count += used_cores[i] * threads_per_core;
 	}
 
-	/* Ignore resources that would push a job allocation over the
-	 * partition CPU limit (if any) */
+	/*
+	 * Ignore resources that would push a job allocation over the
+	 * partition CPU limit (if any). Remove cores from consideration by
+	 * taking them from the sockets with the lowest free_cores count.
+	 * This will tend to satisfy a job's --cores-per-socket specification.
+	 */
 	if ((job_ptr->part_ptr->max_cpus_per_node != INFINITE) &&
 	    (free_cpu_count + used_cpu_count >
 	     job_ptr->part_ptr->max_cpus_per_node)) {
 		int excess = free_cpu_count + used_cpu_count -
 			     job_ptr->part_ptr->max_cpus_per_node;
-		for (c = core_begin; c < core_end; c++) {
-			i = (uint16_t) (c - core_begin) / cores_per_socket;
-			if (free_cores[i] > 0) {
-				free_core_count--;
-				free_cores[i]--;
-				excess -= threads_per_core;
-				if (excess <= 0)
-					break;
+		int min_excess_cores = min_cores;
+		int found_cores;
+		excess = (excess + threads_per_core - 1) / threads_per_core;
+		while (excess > 0) {
+			int min_free_inx = -1;
+			for (i = 0; i < sockets; i++) {
+				if (free_cores[i] == 0)
+					continue;
+				if (((min_excess_cores > 1) ||
+				     (min_sockets > 1)) &&
+				    (free_cores[i] <= min_excess_cores))
+					continue;
+				if ((min_free_inx == -1) ||
+				    (free_cores[i] < free_cores[min_free_inx]))
+					min_free_inx = i;
 			}
+			if (min_free_inx == -1) {
+				if (min_excess_cores) {
+					min_excess_cores = 0;
+					continue;
+				}
+				break;
+			}
+			if (free_cores[min_free_inx] < excess)
+				found_cores = free_cores[min_free_inx];
+			else
+				found_cores = excess;
+			if (min_excess_cores  > 1 &&
+			    ((free_cores[min_free_inx] - found_cores) <
+			     min_excess_cores)) {
+				found_cores = free_cores[min_free_inx] -
+					      min_excess_cores;
+			}
+			free_core_count -= found_cores;
+			free_cpu_count -= (found_cores * threads_per_core);
+			free_cores[min_free_inx] -= found_cores;
+			excess -= found_cores;
 		}
 	}
 

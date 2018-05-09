@@ -2737,8 +2737,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		      node_ptr->name, job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	job_resrcs_ptr->cpus[node_offset] = 0;
-	build_job_resources_cpu_array(job_resrcs_ptr);
+
+	extract_job_resources_node(job_resrcs_ptr, node_offset);
 
 	if (select_fast_schedule)
 		cpu_cnt = node_ptr->config_ptr->cpus;
