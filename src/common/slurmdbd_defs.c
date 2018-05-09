@@ -96,8 +96,6 @@ static bool      slurmdbd_defs_inited = false;
 static char *    slurmdbd_auth_info  = NULL;
 static char *    slurmdbd_cluster    = NULL;
 static bool      halt_agent          = 0;
-static bool      from_ctld           = 0;
-static bool      need_to_register    = 0;
 static time_t    slurmdbd_shutdown   = 0;
 
 
@@ -247,8 +245,7 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 					      msg->ret_info, 1),
 				      msg->ret_info, msg->rc,
 				      comment);
-		} else if (msg->ret_info == DBD_REGISTER_CTLD)
-			need_to_register = 0;
+		}
 		slurm_persist_free_rc_msg(msg);
 	}
 
@@ -485,8 +482,6 @@ again:
 		/* set the timeout to the timeout to be used for all other
 		 * messages */
 		slurmdbd_conn->timeout = SLURMDBD_TIMEOUT * 1000;
-		if (from_ctld)
-			need_to_register = 1;
 		if (slurmdbd_conn->trigger_callbacks.dbd_resumed)
 			(slurmdbd_conn->trigger_callbacks.dbd_resumed)();
 		if (slurmdbd_conn->trigger_callbacks.db_resumed)
@@ -668,8 +663,6 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 					     buffer);
 		break;
 	case DBD_REGISTER_CTLD:
-		from_ctld = 1;
-		need_to_register = 0;
 		slurmdbd_pack_register_ctld_msg(
 			(dbd_register_ctld_msg_t *)req->data, rpc_version,
 			buffer);
@@ -1752,8 +1745,8 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 					      msg->ret_info, 1),
 				      msg->ret_info,
 				      msg->comment);
-		} else if (msg->ret_info == DBD_REGISTER_CTLD)
-			need_to_register = 0;
+		}
+
 		slurm_persist_free_rc_msg(msg);
 		break;
 	default:
@@ -1865,8 +1858,7 @@ static int _handle_mult_rc_ret(void)
 						      msg->ret_info, 1),
 					      msg->ret_info,
 					      msg->comment);
-			} else if (msg->ret_info == DBD_REGISTER_CTLD)
-				need_to_register = 0;
+			}
 
 			slurm_persist_free_rc_msg(msg);
 		} else
@@ -2087,15 +2079,6 @@ static void *_agent(void *x)
 		slurm_mutex_unlock(&agent_lock);
 		/* END_TIMER; */
 		/* info("at the end with %s", TIME_STR); */
-		if (need_to_register) {
-			need_to_register = 0;
-			/*
-			 * This is going to be always using the SlurmDBD plugin
-			 * so sending NULL as the connection should be ok.
-			 */
-			clusteracct_storage_g_register_ctld(
-				NULL, slurmctld_conf.slurmctld_port);
-		}
 	}
 
 	slurm_mutex_lock(&agent_lock);
