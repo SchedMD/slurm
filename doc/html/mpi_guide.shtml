@@ -278,12 +278,18 @@ user@testbox:~/t$
 It relies upon Slurm managing reservations of communication ports for use by
 the Open MPI version 1.5.</p>
 
-<p>If OpenMPI is configured with <i>--with-pmi</i> either pmi or pmi2
+<p>If OpenMPI is configured with <i>--with-pmi</i> either pmi or pmi2,
 the OMPI jobs can be launched directly using the srun command. This is
-the preferred way. If the pmi2 support is enabled then the command line
-options '--mpi=pmi2' has to be specified on the srun command line.
+the preferred mode of operation. If the pmi2 support is enabled, the option
+'--mpi=pmi2' or '--mpi=pmi2_v2' must be specified on the srun command line.
+Alternately configure 'DefaultMpi=pmi' or 'DefaultMpi=pmi_v2' in slurm.conf.</p>
 
-<p>Starting from Open MPI version 2.0 PMIx is natively supported. To launch
+<p>Starting with Open MPI version 3.1, PMIx version 2 is natively supported.
+To launch Open MPI application using PMIx version 2 the '--mpi=pmix_v2' option
+must be specified on the srun command line or 'DefaultMpi=pmi_v2' configured
+in slurm.conf.</p>
+
+<p>Starting from Open MPI version 2.0, PMIx is natively supported. To launch
 Open MPI application using PMIx the '--mpi=pmix' option has to be
 specified on the srun command line. It is also possible to build OpenMPI using
 an external PMIx installation. That option can take one of three values:
@@ -297,7 +303,7 @@ OpenMPI using an external PMIx installation, both OpenMPI and PMIx need to be
 built against the same libevent/hwloc installations, otherwise a warning is
 shown. OpenMPI configure script provides the options <b>--with-libevent=PATH</b>
  and/or <b>--with-hwloc=PATH</b> to make OpenMPI match what PMIx was built
-against.
+against.</p>
 
 <p>A set of environment variables are available to control the behavior of Slurm
 PMIx plugin:
@@ -571,6 +577,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 23 April 2018</p>
+<p style="text-align:center;">Last modified 9 May 2018</p>
 
 <!--#include virtual="footer.txt"-->
