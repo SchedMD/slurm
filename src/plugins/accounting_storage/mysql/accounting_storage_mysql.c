@@ -612,6 +612,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"begin "
 		"set @par_id = NULL; "
 		"set @mj = NULL; "
+		"set @mjp = NULL; "
+		"set @mpt = NULL; "
 		"set @msj = NULL; "
 		"set @mwpj = NULL; "
 		"set @mtpj = ''; "
@@ -636,6 +638,12 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"end if; "
 		"if @mj is NULL then set @s = CONCAT("
 		"@s, '@mj := max_jobs, '); "
+		"end if; "
+		"if @mjp is NULL then set @s = CONCAT("
+		"@s, '@mjp := max_jobs_prio, '); "
+		"end if; "
+		"if @mpt is NULL then set @s = CONCAT("
+		"@s, '@mpt := max_prio_thresh, '); "
 		"end if; "
 		"if @msj is NULL then set @s = CONCAT("
 		"@s, '@msj := max_submit_jobs, '); "
@@ -1163,6 +1171,8 @@ extern int create_cluster_assoc_table(
 		{ "rgt", "int not null" },
 		{ "shares", "int default 1 not null" },
 		{ "max_jobs", "int default NULL" },
+		{ "max_jobs_prio", "int default NULL" },
+		{ "max_prio_thresh", "int default NULL" },
 		{ "max_submit_jobs", "int default NULL" },
 		{ "max_tres_pj", "text not null default ''" },
 		{ "max_tres_pn", "text not null default ''" },
@@ -1627,6 +1637,10 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			assoc->grp_wall = INFINITE;
 		if (assoc->max_jobs == NO_VAL)
 			assoc->max_jobs = INFINITE;
+		if (assoc->max_jobs_prio == NO_VAL)
+			assoc->max_jobs_prio = INFINITE;
+		if (assoc->max_prio_thresh == NO_VAL)
+			assoc->max_prio_thresh = INFINITE;
 		if (assoc->max_submit_jobs == NO_VAL)
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
@@ -1700,6 +1714,28 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", max_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
 		xstrfmtcat(*extra, ", max_jobs=%u", assoc->max_jobs);
+	}
+
+	if (assoc->max_jobs_prio == INFINITE) {
+		xstrcat(*cols, ", max_jobs_prio");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_jobs_prio=NULL");
+	} else if ((assoc->max_jobs_prio != NO_VAL)
+		   && ((int32_t)assoc->max_jobs_prio >= 0)) {
+		xstrcat(*cols, ", max_jobs_prio");
+		xstrfmtcat(*vals, ", %u", assoc->max_jobs_prio);
+		xstrfmtcat(*extra, ", max_jobs_prio=%u", assoc->max_jobs_prio);
+	}
+
+	if (assoc->max_prio_thresh == INFINITE) {
+		xstrcat(*cols, ", max_prio_thresh");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_prio_thresh=NULL");
+	} else if ((assoc->max_prio_thresh != NO_VAL)
+		   && ((int32_t)assoc->max_prio_thresh >= 0)) {
+		xstrcat(*cols, ", max_prio_thresh");
+		xstrfmtcat(*vals, ", %u", assoc->max_prio_thresh);
+		xstrfmtcat(*extra, ", max_prio_thresh=%u", assoc->max_prio_thresh);
 	}
 
 	if (assoc->max_submit_jobs == INFINITE) {
@@ -2312,6 +2348,7 @@ just_update:
 	query = xstrdup_printf("update \"%s_%s\" as t1 set "
 			       "mod_time=%ld, deleted=1, def_qos_id=DEFAULT, "
 			       "shares=DEFAULT, max_jobs=DEFAULT, "
+			       "mas_jobs_prio=DEFAULT, max_prio_thres=DEFAULT, "
 			       "max_submit_jobs=DEFAULT, "
 			       "max_wall_pj=DEFAULT, "
 			       "max_tres_pj=DEFAULT, "
