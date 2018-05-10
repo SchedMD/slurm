@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.7
 ==========================
  -- Fix for possible slurmctld daemon abort with NULL pointer.
+ -- Fix different issues when requesting memory per cpu/node.
 
 * Changes in Slurm 17.11.6
 ==========================

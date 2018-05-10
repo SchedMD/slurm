@@ -502,11 +502,13 @@ struct job_details {
 	char *features;			/* required features */
 	uint32_t magic;			/* magic cookie for data integrity */
 	uint32_t max_cpus;		/* maximum number of cpus */
+	uint32_t orig_max_cpus;		/* requested value of max_cpus */
 	uint32_t max_nodes;		/* maximum number of nodes */
 	multi_core_data_t *mc_ptr;	/* multi-core specific data */
 	char *mem_bind;			/* binding map for map/mask_cpu */
 	uint16_t mem_bind_type;		/* see mem_bind_type_t */
 	uint32_t min_cpus;		/* minimum number of cpus */
+	uint32_t orig_min_cpus;		/* requested value of min_cpus */
 	uint32_t min_nodes;		/* minimum number of nodes */
 	uint32_t nice;			/* requested priority change,
 					 * NICE_OFFSET == no change */
@@ -521,6 +523,7 @@ struct job_details {
 	uint64_t pn_min_memory;		/* minimum memory per node (MB) OR
 					 * memory per allocated
 					 * CPU | MEM_PER_CPU */
+	uint64_t orig_pn_min_memory;	/* requested value of pn_min_memory */
 	uint32_t pn_min_tmp_disk;	/* minimum tempdisk per node, MB */
 	uint8_t prolog_running;		/* set while prolog_slurmctld is
 					 * running */
