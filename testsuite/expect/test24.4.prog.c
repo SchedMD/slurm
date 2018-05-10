@@ -54,6 +54,7 @@ uint16_t part_max_priority = 1;
 sshare_time_format_t time_format = SSHARE_TIME_MINS;
 char *time_format_string = "Minutes";
 time_t last_job_update = (time_t) 0;
+uint16_t running_cache = 0;
 
 List   job_list = NULL;		/* job_record list */
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -71,6 +72,7 @@ int _setup_assoc_list(void)
 	slurmdb_update_object_t update;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_tres_rec_t *tres = NULL;
+	assoc_init_args_t assoc_init_arg;
 
 	/* make the main list */
 	assoc_mgr_assoc_list =
@@ -82,8 +84,10 @@ int _setup_assoc_list(void)
 
 	/* we just want make it so we setup_children so just pretend
 	 * we are running off cache */
+	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
+	assoc_init_arg.running_cache = &running_cache;
 	running_cache = 1;
-	assoc_mgr_init(NULL, NULL, SLURM_SUCCESS);
+	assoc_mgr_init(NULL, &assoc_init_arg, SLURM_SUCCESS);
 
 	/* Here we make the tres we want to add to the system.
 	 * We do this as an update to avoid having to do setup. */
