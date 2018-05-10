@@ -79,10 +79,6 @@ if {[test_front_end] != 0} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit 0
 }
-if {[test_aix] == 1} {
-	send_user "WARNING: Test is incompatible with AIX\n"
-	exit 0
-}
 
 #
 # Put desired Slurm install directory at head of search path for bulk launch

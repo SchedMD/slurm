@@ -2111,27 +2111,6 @@ proc test_select_type_params { type } {
 
 ################################################################
 #
-# Proc: test_aix
-#
-# Purpose: Determine if the system is AIX
-#
-# Returns 1 if the system is AIX, 0 otherwise
-#
-################################################################
-
-proc test_aix {} {
-	set fd [open "|uname"]
-	gets $fd line
-	close $fd
-	if {[string compare $line AIX] == 0} {
-		return 1
-	} else {
-		return 0
-	}
-}
-
-################################################################
-#
 # Proc: test_super_user
 #
 # Purpose: Determine if user is a Slurm super user (i.e. user

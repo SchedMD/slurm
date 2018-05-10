@@ -183,9 +183,6 @@ while { 1 } {
 	}
 	exec $bin_sleep 3
 }
-if {[test_aix]} {
-	sleep 5
-}
 
 log_user 1
 if {$step_count < $desired_tasks} {

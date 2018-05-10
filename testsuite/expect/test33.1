@@ -87,10 +87,7 @@ proc run_config { test_config } {
 #
 file delete $test_prog
 
-if {[test_aix]} {
-	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o  -ldl\n"
-	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o  -ldl
-} elseif [file exists ${slurm_dir}/lib64/libslurm.so] {
+if [file exists ${slurm_dir}/lib64/libslurm.so] {
 	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o  -ldl\n"
 	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o  -ldl
 } else {

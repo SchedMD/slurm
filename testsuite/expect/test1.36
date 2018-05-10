@@ -50,10 +50,7 @@ if {[test_alps]} {
 #
 set mult         4
 set task_output  0
-if {[test_aix]} {
-	set task_cnt 3
-	set node_cnt 1-4
-} elseif {[test_serial]} {
+if {[test_serial]} {
 	set task_cnt 1
 	set node_cnt 1-1
 } else {
