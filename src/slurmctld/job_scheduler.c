@@ -1711,6 +1711,11 @@ next_task:
 			break;
 		}
 
+		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON) {
+			/* should never happen */
+			continue;
+		}
+
 		slurmctld_diag_stats.schedule_cycle_depth++;
 
 		if (job_ptr->resv_name) {
