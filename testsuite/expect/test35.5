@@ -64,6 +64,31 @@ expect {
 	}
 }
 if {$fail == 1} {
+	set default_state_loc 0
+	set default_status_loc 0
+	send_user "\n\n"
+	spawn $scontrol show burst
+	expect {
+		-re "GetSysState=/opt/cray/dws/default" {
+			set default_state_loc 1
+			exp_continue
+		}
+		-re "GetSysStatus=/opt/cray/dws/default" {
+			set default_status_loc 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$default_state_loc == 0 && $default_status_loc == 1} {
+		send_user "\nWARNING: 'dwstat' is not configured properly\n"
+		exit 0
+	}
 	send_user "\nFAILURE: 'dwstat' is not configured properly\n"
 	exit 1
 }
