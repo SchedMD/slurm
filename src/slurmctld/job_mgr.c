@@ -8382,7 +8382,7 @@ static bool _valid_pn_min_mem(struct job_record *job_ptr,
 
 		if ((job_ptr->details->min_cpus != NO_VAL16) &&
 		    (job_ptr->details->min_cpus > job_cpus_per_node))
-			job_cpus_per_node = job_ptr->details->pn_min_cpus;
+			job_cpus_per_node = job_ptr->details->min_cpus;
 
 		job_mem &= (~MEM_PER_CPU);
 		job_mem *= MIN(job_cpus_per_node, avail_cpus_per_node);
