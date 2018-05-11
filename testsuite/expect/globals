@@ -3994,9 +3994,26 @@ proc test_pack_step { } {
 	}
 	if {$version_major >= 18} {
 		set pack_step 1
+		spawn $scontrol show config
+		expect {
+			-re "select/cray" {
+				set pack_step 0
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: scontrol not responding\n"
+			}
+			eof {
+				wait
+			}
+		}
 	} elseif {$version_major == 17 && $version_minor == 11} {
 		spawn $scontrol show config
 		expect {
+			-re "select/cray" {
+				set pack_step 0
+				exp_continue
+			}
 			-re "disable_hetero_steps" {
 				set pack_step 0
 				exp_continue
