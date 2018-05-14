@@ -62,7 +62,7 @@ make_bash_script $file_in "
    env | grep SLURMD_NODENAME
 "
 set timeout $max_job_delay
-set srun_pid [spawn $srun --exclusive -N1 $file_in]
+set srun_pid [spawn $srun -t1 --exclusive -N1 $file_in]
 expect {
 	-re "SLURMD_NODENAME=($alpha_numeric)" {
 		set node_name $expect_out(1,string)
@@ -149,7 +149,7 @@ set_node_feature $node_name $new_avail_node_feat $new_active_node_feat
 
 # Now run a job with that constraint and make sure it runs on the same node
 set match 0
-set srun_pid [spawn $srun -C $feature -N1 $file_in]
+set srun_pid [spawn $srun -t1 -C $feature -N1 $file_in]
 expect {
 	-re "SLURMD_NODENAME=$node_name" {
 		set match 1
@@ -187,7 +187,7 @@ expect {
 
 # Now run a job with that constraint and make sure it fails
 set match 0
-set srun_pid [spawn $srun -C $feature -N1 $file_in]
+set srun_pid [spawn $srun -t1 -C $feature -N1 $file_in]
 expect {
 	-re "Invalid feature" {
 		send_user "This error was expected, no worries\n"

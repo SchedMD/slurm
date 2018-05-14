@@ -101,7 +101,7 @@ if {$match != 1} {
 #
 # Use a node from the reservation, so it gets replaced
 #
-spawn $srun -n1 --reservation=$resv_name $bin_hostname
+spawn $srun -t1 -n1 --reservation=$resv_name $bin_hostname
 expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"

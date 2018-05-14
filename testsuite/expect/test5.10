@@ -179,7 +179,7 @@ if {[string length $def_part] == 0} {
 
 # Get a list of nodes
 set timeout $max_job_delay
-spawn $bin_bash -c "exec $srun -N[available_nodes $def_part idle] $bin_printenv | $bin_grep NODE"
+spawn $bin_bash -c "exec $srun -t1 -N[available_nodes $def_part idle] $bin_printenv | $bin_grep NODE"
 expect {
 	-re "SLURM_NODELIST=($alpha_numeric_nodelist)" {
 		set nodes $expect_out(1,string)
