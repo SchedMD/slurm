@@ -168,6 +168,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	int i, j, rc;
 	unsigned long step_wait = 0;
 	uint16_t base_dist, slurmctld_timeout;
+	char *add_tres;
 	xassert(srun_opt);
 
 	if (!job) {
@@ -214,10 +215,6 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 						MEM_PER_CPU;
 	else if (opt_local->pn_min_memory != NO_VAL64)
 		job->ctx_params.pn_min_memory = opt_local->pn_min_memory;
-	if (opt_local->gres)
-		job->ctx_params.gres = opt_local->gres;
-	else
-		job->ctx_params.gres = getenv("SLURM_STEP_GRES");
 
 	if (opt_local->overcommit) {
 		if (use_all_cpus)	/* job allocation created by srun */
@@ -319,12 +316,23 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			   opt_local->gpu_freq);
 	}
 	if (opt_local->gpus) {
-		xstrfmtcat(job->ctx_params.tres_per_job, "gpu:%s",
+		xstrfmtcat(job->ctx_params.tres_per_step, "gpu:%s",
 			   opt_local->gpus);
 	}
 	if (opt_local->gpus_per_node) {
 		xstrfmtcat(job->ctx_params.tres_per_node, "gpu:%s",
 			   opt_local->gpus_per_node);
+	}
+	if (opt_local->gres)
+		add_tres = opt_local->gres;
+	else
+		add_tres = getenv("SLURM_STEP_GRES");
+	if (add_tres) {
+		if (job->ctx_params.tres_per_node) {
+			xstrfmtcat(job->ctx_params.tres_per_node, ",%s",
+				   add_tres);
+		} else
+			job->ctx_params.tres_per_node = xstrdup(add_tres);
 	}
 	if (opt_local->gpus_per_socket) {
 		xstrfmtcat(job->ctx_params.tres_per_socket, "gpu:%s",

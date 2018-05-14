@@ -734,7 +734,6 @@ typedef struct job_step_specs {
 	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	char *features;		/* required node features, default NONE */
-	char *gres;		/* generic resources required */
 	char *host;		/* host to contact initiating srun */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
@@ -766,7 +765,7 @@ typedef struct job_step_specs {
 				 * partition limit */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_job;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_step;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */

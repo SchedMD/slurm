@@ -1088,10 +1088,11 @@ extern int parse_long_format( char* format_long )
 							  field_size,
 							  right_justify,
 							  suffix );
-			else if (!xstrcasecmp(token, "tres-per-job"))
-				step_format_add_tres_per_job(params.format_list,
+			else if (!xstrcasecmp(token, "tres-per-job") ||
+				 !xstrcasecmp(token, "tres-per-step"))
+				step_format_add_tres_per_step(params.format_list,
 							     field_size,
-							    right_justify,
+							     right_justify,
 							      suffix );
 			else if (!xstrcasecmp(token, "tres-per-node"))
 				step_format_add_tres_per_node(

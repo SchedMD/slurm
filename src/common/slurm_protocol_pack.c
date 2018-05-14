@@ -4724,7 +4724,6 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		packstr(msg->node_list, buffer);
 		packstr(msg->ckpt_dir, buffer);
 		packstr(msg->features, buffer);
-		packstr(msg->gres, buffer);
 
 		pack8(msg->no_kill, buffer);
 		pack8(msg->overcommit, buffer);
@@ -4733,7 +4732,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		packstr(msg->mem_per_tres, buffer);
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
-		packstr(msg->tres_per_job, buffer);
+		packstr(msg->tres_per_step, buffer);
 		packstr(msg->tres_per_node, buffer);
 		packstr(msg->tres_per_socket, buffer);
 		packstr(msg->tres_per_task, buffer);
@@ -4767,7 +4766,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		packstr(msg->node_list, buffer);
 		packstr(msg->ckpt_dir, buffer);
 		packstr(msg->features, buffer);
-		packstr(msg->gres, buffer);
+		packstr(msg->tres_per_node, buffer);
 
 		pack8(msg->no_kill, buffer);
 		pack8(msg->overcommit, buffer);
@@ -4802,7 +4801,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		packstr(msg->node_list, buffer);
 		packstr(msg->ckpt_dir, buffer);
 		packstr(msg->features, buffer);
-		packstr(msg->gres, buffer);
+		packstr(msg->tres_per_node, buffer);
 
 		pack8(msg->no_kill, buffer);
 		pack8(msg->overcommit, buffer);
@@ -4859,7 +4858,6 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->gres, &uint32_tmp, buffer);
 
 		safe_unpack8(&tmp_ptr->no_kill, buffer);
 		safe_unpack8(&tmp_ptr->overcommit, buffer);
@@ -4872,7 +4870,7 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_freq, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_job, &uint32_tmp,
+		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_step, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_node, &uint32_tmp,
 				       buffer);
@@ -4914,7 +4912,8 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_node, &uint32_tmp,
+				       buffer);
 
 		safe_unpack8(&tmp_ptr->no_kill, buffer);
 		safe_unpack8(&tmp_ptr->overcommit, buffer);
@@ -4954,7 +4953,8 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_node, &uint32_tmp,
+				       buffer);
 
 		safe_unpack8(&tmp_ptr->no_kill, buffer);
 		safe_unpack8(&tmp_ptr->overcommit, buffer);
@@ -5782,7 +5782,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->tres_freq,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_per_job,
+		safe_unpackstr_xmalloc(&step->tres_per_step,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->tres_per_node,
 				       &uint32_tmp, buffer);

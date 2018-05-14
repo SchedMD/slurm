@@ -932,7 +932,7 @@ struct 	step_record {
 	char *tres_bind;		/* Task to TRES binding directives */
 	char *tres_fmt_alloc_str;       /* formatted tres string for step */
 	char *tres_freq;		/* TRES frequency directives */
-	char *tres_per_job;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_step;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_node;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;		/* semicolon delimited list of TRES=# values */

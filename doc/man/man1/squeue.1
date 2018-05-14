@@ -566,7 +566,7 @@ Prints the number of CPUs per tasks allocated to the job.
 (Valid for jobs only)
 .TP
 \fBcpus\-per\-tres\fR
-Print the memory required per trackable resources allocated to the job.
+Print the memory required per trackable resources allocated to the job or job step.
 .TP
 \fBdeadline\fR
 Prints the deadline affected to the job
@@ -648,7 +648,8 @@ Prints the MCS_label of the job.
 (Valid for jobs only)
 .TP
 \fBmem\-per-tres\fR
-Print the memory (in MB) required per trackable resources allocated to the job.
+Print the memory (in MB) required per trackable resources allocated to the job
+or job step.
 .TP
 \fBminmemory\fR
 Minimum size of memory (in MB) requested by the job.
@@ -956,22 +957,25 @@ Print the trackable resources allocated to the job if running.
 If not running, then print the trackable resources requested by the job.
 .TP
 \fBtres\-bind\fR
-Print the trackable resources task binding requested by the job.
+Print the trackable resources task binding requested by the job or job step.
 .TP
 \fBtres\-freq\fR
-Print the trackable resources frequencies requested by the job.
+Print the trackable resources frequencies requested by the job or job step.
 .TP
 \fBtres\-per\-job\fR
 Print the trackable resources requested by the job.
 .TP
 \fBtres\-per\-node\fR
-Print the trackable resources per node requested by the job.
+Print the trackable resources per node requested by the job or job step.
 .TP
 \fBtres\-per\-socket\fR
-Print the trackable resources per socket requested by the job.
+Print the trackable resources per socket requested by the job or job step.
+.TP
+\fBtres\-per\-step\fR
+Print the trackable resources requested by the job step.
 .TP
 \fBtres\-per\-task\fR
-Print the trackable resources per task requested by the job.
+Print the trackable resources per task requested by the job or job step.
 .TP
 \fBuserid\fR
 User ID for a job or job step.

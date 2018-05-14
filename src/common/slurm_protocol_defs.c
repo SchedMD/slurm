@@ -1203,7 +1203,6 @@ extern void slurm_free_job_step_create_request_msg(
 		xfree(msg->ckpt_dir);
 		xfree(msg->cpus_per_tres);
 		xfree(msg->features);
-		xfree(msg->gres);
 		xfree(msg->host);
 		xfree(msg->mem_per_tres);
 		xfree(msg->name);
@@ -1211,7 +1210,7 @@ extern void slurm_free_job_step_create_request_msg(
 		xfree(msg->node_list);
 		xfree(msg->tres_bind);
 		xfree(msg->tres_freq);
-		xfree(msg->tres_per_job);
+		xfree(msg->tres_per_step);
 		xfree(msg->tres_per_node);
 		xfree(msg->tres_per_socket);
 		xfree(msg->tres_per_task);

@@ -70,7 +70,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 
 	/* environment, env_size */
 	if ((svp = hv_fetch(hv, "environment", 11, FALSE))) {
-		if(SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {
+		if (SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {
 			environ_hv = (HV*)SvRV(*svp);
 			num_keys = HvKEYS(environ_hv);
 			job_desc->env_size = num_keys;
@@ -78,21 +78,23 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 
 			hv_iterinit(environ_hv);
 			i = 0;
-			while((val = hv_iternextsv(environ_hv, &env_key, &klen))) {
+			while ((val = hv_iternextsv(environ_hv, &env_key, &klen))) {
 				env_val = SvPV(val, vlen);
 				Newz(0, (*(job_desc->environment + i)), klen + vlen + 2, char);
 				sprintf(*(job_desc->environment + i), "%s=%s", env_key, env_val);
 				i ++;
 			}
-		}
-		else {
+		} else {
 			Perl_warn(aTHX_ "`environment' of job descriptor is not a hash reference, ignored");
 		}
 	}
 
 	FETCH_FIELD(hv, job_desc, exc_nodes, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, features, charp, FALSE);
+	FETCH_FIELD(hv, job_desc, tres_per_job, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, tres_per_node, charp, FALSE);
+	FETCH_FIELD(hv, job_desc, tres_per_socket, charp, FALSE);
+	FETCH_FIELD(hv, job_desc, tres_per_task, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, group_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, immediate, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, job_id, uint32_t, FALSE);

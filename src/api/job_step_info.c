@@ -321,9 +321,9 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	}
 
 	/****** Line (optional) ******/
-	if (job_step_ptr->tres_per_job) {
+	if (job_step_ptr->tres_per_step) {
 		xstrcat(out, line_end);
-		xstrfmtcat(out, "TresPerJob=%s", job_step_ptr->tres_per_job);
+		xstrfmtcat(out, "TresPerStep=%s", job_step_ptr->tres_per_step);
 	}
 
 	/****** Line (optional) ******/

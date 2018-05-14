@@ -2820,13 +2820,13 @@ int _print_step_tres_freq(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-int _print_step_tres_per_job(job_step_info_t * step, int width, bool right,
-			     char* suffix)
+int _print_step_tres_per_step(job_step_info_t * step, int width, bool right,
+			      char* suffix)
 {
 	if (step == NULL)
-		_print_str("TRES_PER_JOB", width, right, true);
+		_print_str("TRES_PER_STEP", width, right, true);
 	else
-		_print_str(step->tres_per_job, width, right, true);
+		_print_str(step->tres_per_step, width, right, true);
 
 	if (suffix)
 		printf("%s", suffix);

@@ -639,8 +639,8 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_tres_bind)
 #define step_format_add_tres_freq(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_tres_freq)
-#define step_format_add_tres_per_job(list,wid,right,suffix) \
-	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_job)
+#define step_format_add_tres_per_step(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_step)
 #define step_format_add_tres_per_node(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_node)
 #define step_format_add_tres_per_socket(list,wid,right,suffix) \
@@ -709,8 +709,8 @@ int _print_step_tres_bind(job_step_info_t * step, int width, bool right,
 			  char* suffix);
 int _print_step_tres_freq(job_step_info_t * step, int width, bool right,
 			  char* suffix);
-int _print_step_tres_per_job(job_step_info_t * step, int width, bool right,
-			     char* suffix);
+int _print_step_tres_per_step(job_step_info_t * step, int width, bool right,
+			      char* suffix);
 int _print_step_tres_per_node(job_step_info_t * step, int width, bool right,
 			      char* suffix);
 int _print_step_tres_per_socket(job_step_info_t * step, int width, bool right,

@@ -130,7 +130,6 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->exclusive  = step_params->exclusive;
 	step_req->features = xstrdup(step_params->features);
 	step_req->immediate  = step_params->immediate;
-	step_req->gres = xstrdup(step_params->gres);
 	step_req->job_id = step_params->job_id;
 	step_req->max_nodes = step_params->max_nodes;
 	step_req->mem_per_tres = xstrdup(step_params->mem_per_tres);
@@ -150,7 +149,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->task_dist = step_params->task_dist;
 	step_req->tres_bind = xstrdup(step_params->tres_bind);
 	step_req->tres_freq = xstrdup(step_params->tres_freq);
-	step_req->tres_per_job = xstrdup(step_params->tres_per_job);
+	step_req->tres_per_step = xstrdup(step_params->tres_per_step);
 	step_req->tres_per_node = xstrdup(step_params->tres_per_node);
 	step_req->tres_per_socket = xstrdup(step_params->tres_per_socket);
 	step_req->tres_per_task = xstrdup(step_params->tres_per_task);

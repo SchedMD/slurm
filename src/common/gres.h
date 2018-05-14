@@ -151,9 +151,6 @@ typedef struct gres_job_state {
 	 */
 	bitstr_t **gres_bit_step_alloc;
 	uint64_t  *gres_cnt_step_alloc;
-
-	/* key for searches with name and type */
-	uint32_t gres_name_type_id;
 } gres_job_state_t;
 
 /* Gres job step state as used by slurmctld daemon */
@@ -162,7 +159,7 @@ typedef struct gres_step_state {
 
 	/* Count of required GRES resources plus associated CPUs and memory */
 	uint16_t cpus_per_gres;
-	uint64_t gres_per_job;
+	uint64_t gres_per_step;
 	uint64_t gres_per_node;
 	uint64_t gres_per_socket;
 	uint64_t gres_per_task;
@@ -609,13 +606,18 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id);
 
 /*
  * Given a step's requested gres configuration, validate it and build gres list
- * IN req_config - step request's gres input string
+ * IN *tres* - step;s request's gres input string
  * OUT step_gres_list - List of Gres records for this step to track usage
  * IN job_gres_list - List of Gres records for this job
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
-extern int gres_plugin_step_state_validate(char *req_config,
+extern int gres_plugin_step_state_validate(char *cpus_per_tres,
+					   char *tres_per_step,
+					   char *tres_per_node,
+					   char *tres_per_socket,
+					   char *tres_per_task,
+					   char *mem_per_tres,
 					   List *step_gres_list,
 					   List job_gres_list, uint32_t job_id,
 					   uint32_t step_id);

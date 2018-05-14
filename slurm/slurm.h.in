@@ -1469,8 +1469,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default NONE */
 	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
 	uint64_t fed_siblings_viable; /* Bitmap of viable fed sibling ids */
-//	char *gres;		/* comma separated list of required generic
-//				 * resources, default NONE */
 	uint32_t group_id;	/* group to assume, if run as root. */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
@@ -1939,7 +1937,6 @@ typedef struct {
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (use job limit) */
 	char *ckpt_dir;		/* directory to store checkpoint image files */
-	char *gres;		/* generic resources needed */
 	char *name;		/* name of the job step */
 	char *network;		/* network use spec */
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
@@ -1965,7 +1962,7 @@ typedef struct {
 	uint32_t time_limit;	/* step time limit */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_job;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_step;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
@@ -2108,7 +2105,7 @@ typedef struct {
 	char *tres_alloc_str;   /* tres used in the job */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_job;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_step;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */

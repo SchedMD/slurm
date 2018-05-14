@@ -4261,7 +4261,8 @@ extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks)
 
 	slurmdb_tres_list_from_string(&tres_list, tres_string, flags);
 	if (!tres_list) {
-		error("%s: couldn't make tres_list", __func__);
+		error("%s: couldn't make tres_list from \'%s\'", __func__,
+		      tres_string);
 		return ret_tres_str;
 	}
 
