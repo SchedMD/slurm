@@ -1244,7 +1244,6 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	xstrfmtcat(job_alloc_req.dependency, "expand:%u", job_ptr->job_id);
 	job_alloc_req.exc_nodes = xstrdup(job_ptr->nodes);
 	job_alloc_req.features  = _job_node_features(job_ptr, node_ptr);
-	job_alloc_req.gres	= xstrdup(job_ptr->gres);
 	job_alloc_req.group_id	= job_ptr->group_id;
 	job_alloc_req.immediate	= 1;
 	job_alloc_req.max_cpus	= cpu_cnt;
@@ -1257,6 +1256,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	job_alloc_req.priority	= NO_VAL - 1;
 	if (job_ptr->qos_ptr)
 		job_alloc_req.qos = xstrdup(job_ptr->qos_ptr->name);
+	job_alloc_req.tres_per_job    = xstrdup(job_ptr->tres_per_job);
 	job_alloc_req.tres_per_node   = xstrdup(job_ptr->tres_per_node);
 	job_alloc_req.tres_per_socket = xstrdup(job_ptr->tres_per_socket);
 	job_alloc_req.tres_per_task   = xstrdup(job_ptr->tres_per_task);
@@ -1348,7 +1348,6 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	xfree(job_alloc_req.dependency);
 	xfree(job_alloc_req.exc_nodes);
 	xfree(job_alloc_req.features);
-	xfree(job_alloc_req.gres);
 	xfree(job_alloc_req.name);
 	xfree(job_alloc_req.network);
 	xfree(job_alloc_req.partition);

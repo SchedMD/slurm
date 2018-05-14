@@ -777,7 +777,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 	} else if (!xstrcmp(name, "features")) {
 		lua_pushstring (L, job_desc->features);
 	} else if (!xstrcmp(name, "gres")) {
-		lua_pushstring (L, job_desc->gres);
+		/* "gres" replaced by "tres_per_node" in v18.08 */
+		lua_pushstring (L, job_desc->tres_per_node);
 	} else if (!xstrcmp(name, "group_id")) {
 		lua_pushnumber (L, job_desc->group_id);
 	} else if (!xstrcmp(name, "immediate")) {
@@ -1037,10 +1038,11 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->features = xstrdup(value_str);
 	} else if (!xstrcmp(name, "gres")) {
+		/* "gres" replaced by "tres_per_node" in v18.08 */
 		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->gres);
+		xfree(job_desc->tres_per_node);
 		if (strlen(value_str))
-			job_desc->gres = xstrdup(value_str);
+			job_desc->tres_per_node = xstrdup(value_str);
 	} else if (!xstrcmp(name, "immediate")) {
 		job_desc->immediate = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "licenses")) {

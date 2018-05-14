@@ -1156,7 +1156,11 @@ extern int scontrol_update_job(int argc, char **argv)
 			update_cnt++;
 		}
 		else if (!xstrncasecmp(tag, "TresPerNode", MAX(taglen, 8))) {
-			job_msg.tres_per_node = val;
+			/* "gres" replaced by "tres_per_node" in v18.08 */
+			if (job_msg.tres_per_node)
+				xstrfmtcat(job_msg.tres_per_node, ",%s", val);
+			else
+				job_msg.tres_per_node = xstrdup(val);
 			update_cnt++;
 		}
 		else if (!xstrncasecmp(tag, "TresPerSocket", MAX(taglen, 8))) {
@@ -1182,11 +1186,14 @@ extern int scontrol_update_job(int argc, char **argv)
 			update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "Gres", MAX(taglen, 2)) == 0) {
+			/* "gres" replaced by "tres_per_node" in v18.08 */
 			if (!xstrcasecmp(val, "help") ||
 			    !xstrcasecmp(val, "list")) {
 				print_gres_help();
+			} else if (job_msg.tres_per_node) {
+				xstrfmtcat(job_msg.tres_per_node, ",%s", val);
 			} else {
-				job_msg.gres = val;
+				job_msg.tres_per_node = xstrdup(val);
 				update_cnt++;
 			}
 		}
@@ -1230,6 +1237,7 @@ extern int scontrol_update_job(int argc, char **argv)
 			if (token != NULL) {
 				error("too many dimensions in Geometry");
 				rc = -1;
+				break;
 			}
 
 			if (original_ptr)

@@ -368,8 +368,9 @@ static display_data_t display_data_job[] = {
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_FED_VIABLE_SIBS, "FedViableSiblings",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	/* "gres" replaced by "tres_per_node" in v18.08 */
 	{G_TYPE_STRING, SORTID_GRES, "Gres",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_LAST_SCHED_EVAL, "Last Sched Eval",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_LICENSES, "Licenses",
@@ -393,9 +394,9 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS_PER_TRES, "CPUs per TRES",  false,
-	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MEM_PER_TRES, "Mem per TRES", false,
-	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TRES_ALLOC, "TRES Alloc", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TRES_BIND, "TRES Bind", false,
@@ -403,13 +404,13 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_TRES_FREQ, "TRES Freq", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TRES_PER_JOB, "TRES Per Job", false,
-	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TRES_PER_NODE, "TRES Per Node", false,
-	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TRES_PER_SOCKET, "TRES Per Socket", false,
-	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TRES_PER_TASK, "TRES Per Task", false,
-	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, false, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
@@ -951,9 +952,29 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->features = xstrdup(new_text);
 		type = "features";
 		break;
-	case SORTID_GRES:
-		job_msg->gres = xstrdup(new_text);
-		type = "gres";
+	case SORTID_CPUS_PER_TRES:
+		job_msg->cpus_per_tres = xstrdup(new_text);
+		type = "cpus_per_tres";
+		break;
+	case SORTID_MEM_PER_TRES:
+		job_msg->mem_per_tres = xstrdup(new_text);
+		type = "mem_per_tres";
+		break;
+	case SORTID_TRES_PER_JOB:
+		job_msg->tres_per_job = xstrdup(new_text);
+		type = "tres_per_job";
+		break;
+	case SORTID_TRES_PER_NODE:
+		job_msg->tres_per_node = xstrdup(new_text);
+		type = "tres_per_node";
+		break;
+	case SORTID_TRES_PER_SOCKET:
+		job_msg->tres_per_socket = xstrdup(new_text);
+		type = "tres_per_socket";
+		break;
+	case SORTID_TRES_PER_TASK:
+		job_msg->tres_per_task = xstrdup(new_text);
+		type = "tres_per_task";
 		break;
 	case SORTID_LICENSES:
 		job_msg->licenses = xstrdup(new_text);
@@ -1426,10 +1447,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_FED_VIABLE_SIBS),
 				   job_ptr->fed_siblings_viable_str);
 
+	/* "gres" replaced by "tres_per_node" in v18.08 */
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_GRES),
-				   job_ptr->gres);
+				   job_ptr->tres_per_node);
 
 	group_info = getgrgid((gid_t)job_ptr->group_id);
 	if (group_info && group_info->gr_name[0])
@@ -2268,7 +2290,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_FED_ORIGIN,   job_ptr->fed_origin_str,
 				   SORTID_FED_VIABLE_SIBS,
 				   job_ptr->fed_siblings_viable_str,
-				   SORTID_GRES,         job_ptr->gres,
 				   SORTID_GROUP_ID,     tmp_group_id,
 				   SORTID_JOBID,        tmp_job_id,
 				   SORTID_JOBID_FORMATTED, tmp_job_id,

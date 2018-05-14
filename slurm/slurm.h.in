@@ -1469,8 +1469,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default NONE */
 	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
 	uint64_t fed_siblings_viable; /* Bitmap of viable fed sibling ids */
-	char *gres;		/* comma separated list of required generic
-				 * resources, default NONE */
+//	char *gres;		/* comma separated list of required generic
+//				 * resources, default NONE */
 	uint32_t group_id;	/* group to assume, if run as root. */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */

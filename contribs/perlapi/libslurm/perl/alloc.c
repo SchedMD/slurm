@@ -69,7 +69,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	FETCH_FIELD(hv, job_desc, end_time, time_t, FALSE);
 
 	/* environment, env_size */
-	if((svp = hv_fetch(hv, "environment", 11, FALSE))) {
+	if ((svp = hv_fetch(hv, "environment", 11, FALSE))) {
 		if(SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {
 			environ_hv = (HV*)SvRV(*svp);
 			num_keys = HvKEYS(environ_hv);
@@ -92,7 +92,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 
 	FETCH_FIELD(hv, job_desc, exc_nodes, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, features, charp, FALSE);
-	FETCH_FIELD(hv, job_desc, gres, charp, FALSE);
+	FETCH_FIELD(hv, job_desc, tres_per_node, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, group_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, immediate, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, job_id, uint32_t, FALSE);

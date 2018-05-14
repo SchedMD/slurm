@@ -800,7 +800,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->extra = xstrdup(opt.extra);
 	desc->features = xstrdup(opt.constraints);
 	desc->cluster_features = xstrdup(opt.c_constraints);
-	desc->gres = xstrdup(opt.gres);
 	if (opt.immediate == 1)
 		desc->immediate = 1;
 	if (saopt.default_job_name)
@@ -983,6 +982,12 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		xstrfmtcat(desc->tres_freq, "gpu:%s", opt.gpu_freq);
 	xfmt_tres(&desc->tres_per_job,    "gpu", opt.gpus);
 	xfmt_tres(&desc->tres_per_node,   "gpu", opt.gpus_per_node);
+	if (opt.gres) {
+		if (desc->tres_per_node)
+			xstrfmtcat(desc->tres_per_node, ",%s", opt.gres);
+		else
+			desc->tres_per_node = xstrdup(opt.gres);
+	}
 	xfmt_tres(&desc->tres_per_socket, "gpu", opt.gpus_per_socket);
 	xfmt_tres(&desc->tres_per_task,   "gpu", opt.gpus_per_task);
 	if (opt.mem_per_gpu)

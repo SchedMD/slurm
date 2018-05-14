@@ -830,7 +830,6 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->features);
 		xfree(msg->cluster_features);
 		xfree(msg->job_id_str);
-		xfree(msg->gres);
 		xfree(msg->licenses);
 		xfree(msg->linuximage);
 		xfree(msg->mail_user);

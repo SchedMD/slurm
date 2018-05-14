@@ -428,14 +428,6 @@ extern int gres_plugin_job_count(List gres_list, int arr_len,
 
 /*
  * Given a job's requested gres configuration, validate it and build a gres list
- * IN req_config - job request's gres input string
- * OUT gres_list - List of Gres records for this job to track usage
- * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
- */
-extern int gres_plugin_job_state_validate(char **req_config, List *gres_list);
-
-/*
- * Given a job's requested gres configuration, validate it and build a gres list
  * IN *tres* - job request's gres input string
  * IN num_tasks - requested task count
  * IN min_nodes - requested minimum node count
@@ -443,16 +435,16 @@ extern int gres_plugin_job_state_validate(char **req_config, List *gres_list);
  * OUT gres_list - List of GRES records for this job to track usage
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
-extern int gres_plugin_job_state_validate2(char *cpus_per_tres,
-					   char *tres_per_job,
-					   char *tres_per_node,
-					   char *tres_per_socket,
-					   char *tres_per_task,
-					   char *mem_per_tres,
-					   uint32_t num_tasks,
-					   uint32_t min_nodes,
-					   uint32_t max_nodes,
-					   List *gres_list);
+extern int gres_plugin_job_state_validate(char *cpus_per_tres,
+					  char *tres_per_job,
+					  char *tres_per_node,
+					  char *tres_per_socket,
+					  char *tres_per_task,
+					  char *mem_per_tres,
+					  uint32_t num_tasks,
+					  uint32_t min_nodes,
+					  uint32_t max_nodes,
+					  List *gres_list);
 
 /*
  * Create a (partial) copy of a job's gres state for job binding
