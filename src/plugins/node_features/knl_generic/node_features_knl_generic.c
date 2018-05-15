@@ -171,6 +171,7 @@ static bool debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *mc_path = NULL;
+static uint32_t node_reboot_weight = (INFINITE - 1);
 static char *numa_cpu_bind = NULL;
 static uint32_t syscfg_timeout = 0;
 static bool reconfig = false;
@@ -199,6 +200,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"Force", S_P_UINT32},
 	{"LogFile", S_P_STRING},
 	{"McPath", S_P_STRING},
+	{"NodeRebootWeight", S_P_UINT32},
 	{"NumaCpuBind", S_P_STRING},
 	{"SyscfgPath", S_P_STRING},
 	{"SyscfgTimeout", S_P_UINT32},
@@ -880,6 +882,8 @@ extern int init(void)
 		}
 		(void) s_p_get_uint32(&force_load, "Force", tbl);
 		(void) s_p_get_string(&mc_path, "McPath", tbl);
+		(void) s_p_get_uint32(&node_reboot_weight, "NodeRebootWeight",
+				      tbl);
 		if (s_p_get_string(&numa_cpu_bind, "NumaCpuBind", tbl))
 			_update_cpu_bind();
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
@@ -944,6 +948,7 @@ extern int init(void)
 		     default_mcdram_str, default_numa_str);
 		info("Force=%u", force_load);
 		info("McPath=%s", mc_path);
+		info("NodeRebootWeight=%u", node_reboot_weight);
 		info("NumaCpuBind=%s", numa_cpu_bind);
 		info("SyscfgPath=%s (Found=%d)", syscfg_path, syscfg_found);
 		info("SyscfgTimeout=%u msec", syscfg_timeout);
@@ -2091,6 +2096,10 @@ extern void node_features_p_get_config(config_plugin_params_t *p)
 	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("NodeRebootWeight");
+	key_pair->value = xstrdup_printf("%u", node_reboot_weight);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SyscfgPath");
 	key_pair->value = xstrdup(syscfg_path);
 	list_append(data, key_pair);
@@ -2113,4 +2122,12 @@ extern void node_features_p_get_config(config_plugin_params_t *p)
 	list_sort(data, (ListCmpF) sort_key_pairs);
 
 	return;
+}
+
+/*
+ * Return node "weight" field if reboot required to change mode
+ */
+extern uint32_t node_features_p_reboot_weight(void)
+{
+	return node_reboot_weight;
 }
