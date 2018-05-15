@@ -3444,6 +3444,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			    int *node_set_size, char **err_msg, bool test_only,
 			    bool can_reboot)
 {
+	static uint32_t reboot_weight = 0;
 	int adj_cpus, i, node_set_inx, node_set_len, power_cnt, rc;
 	struct node_set *node_set_ptr, *prev_node_set_ptr;
 	struct config_record *config_ptr;
@@ -3459,6 +3460,8 @@ static int _build_node_list(struct job_record *job_ptr,
 	bool has_xor = false;
 	bool resv_overlap = false;
 
+	if (reboot_weight == 0)
+		reboot_weight = node_features_g_reboot_weight();
 	if (job_ptr->resv_name) {
 		/*
 		 * Limit node selection to those in selected reservation.
@@ -3639,7 +3642,7 @@ static int _build_node_list(struct job_record *job_ptr,
 				continue;
 			(void) _match_feature(job_ptr->details->feature_list,
 					      &avoid_node_map);
-			avoid_weight = INFINITE - 1;
+			avoid_weight = reboot_weight;
 		}
 
 		if (!avoid_node_map)

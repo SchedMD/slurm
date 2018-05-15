@@ -51,6 +51,10 @@ documents those changes that are of interest to users and administrators.
     scontrol.
  -- Calcuate TRES billing values at submission so that billing limits can be
     enforced at submission with QOS DenyOnLimit.
+ -- Add node_features plugin function "node_features_p_reboot_weight()" to
+    return the node weight to be used for a compute node that requires reboot
+    for use (e.g. to change the NUMA mode of a KNL node).
+ -- Add NodeRebootWeight parameter to knl.conf configuration file.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
