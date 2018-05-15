@@ -21518,7 +21518,7 @@ $as_echo "#define HAVE_HWLOC 1" >>confdefs.h
 if test "${with_pmix+set}" = set; then :
   withval=$with_pmix; if test "x$with_pmix" != xno; then :
   with_pmix=`echo $with_pmix | sed "s/:/ /"`
-      _x_ac_pmix_dirs="$with_pmix $_x_ac_pmix_dirs"
+      _x_ac_pmix_dirs="$with_pmix"
 fi
 fi
 
