@@ -60,14 +60,38 @@ proc mod_state { state reason } {
 
 	global scontrol node
 
+	set bad_state 0
 	spawn $scontrol update nodename=$node state=$state reason=$reason
 	expect {
+		-re "Invalid node state specified" {
+			set bad_state 1
+			exp_continue
+		}
 		timeout {
 			endit 1 "FAILURE: scontrol is not responding"
 		}
 		eof {
 			wait
 		}
+	}
+
+	if {$bad_state == 1 && ![string compare $state "resume"]} {
+		log_user 0
+		spawn $scontrol show config
+		expect {
+			-re "ReturnToService *= 2" {
+				send_user "WARNING: This error is expected, no worries\n"
+				set bad_state 0
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+		log_user 1
+	}
+	if {$bad_state == 1} {
+		endit 1 "FAILURE: problem changing node state"
 	}
 }
 
