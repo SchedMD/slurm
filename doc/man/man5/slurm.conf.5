@@ -5628,7 +5628,6 @@ See the \fBlogrotate\fR man page for more details.
 	compress
 	missingok
 	nocopytruncate
-	nocreate
 	nodelaycompress
 	nomail
 	notifempty
@@ -5645,6 +5644,10 @@ See the \fBlogrotate\fR man page for more details.
 	endscript
 }
 .fi
+.LP
+NOTE: slurmdbd daemon isn't listed in the output of 'scontrol show daemons', so
+a separate logrotate config should be used to send a SIGUSR2 signal to it.
+.LP
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
