@@ -2098,6 +2098,7 @@ extern void node_features_p_get_config(config_plugin_params_t *p)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("NodeRebootWeight");
 	key_pair->value = xstrdup_printf("%u", node_reboot_weight);
+	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SyscfgPath");
