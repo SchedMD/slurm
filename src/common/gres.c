@@ -849,7 +849,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			local_cpus = xstrdup(p->cpus);
 		if ((bit_size(p->cpus_bitmap) == 0) ||
 		    bit_unfmt(p->cpus_bitmap, local_cpus) != 0) {
-			fatal("Invalid gres data for %s, Cores=%s (only %u Cores  are available)",
+			fatal("Invalid gres data for %s, Cores=%s (only %u Cores are available)",
 			      p->name, p->cpus, gres_cpu_cnt);
 		}
 		xfree(local_cpus);
@@ -2888,7 +2888,7 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 					    int *rc)
 {
 	static char *prev_save_ptr = NULL;
-	char *end_ptr = NULL, *comma, *sep, *sep2, *name = NULL, *type;
+	char *end_ptr = NULL, *comma, *sep, *sep2, *name = NULL, *type = NULL;
 	int context_inx, i, my_rc = SLURM_SUCCESS, offset = 0;
 	unsigned long long int value;
 	gres_job_state_t *job_gres_data = NULL;
@@ -3105,7 +3105,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		char *in_val = cpus_per_tres, *save_ptr = NULL;
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
-							    &save_ptr, &rc))) {
+							   &save_ptr, &rc))) {
 			job_gres_data->cpus_per_gres = cnt;
 			in_val = NULL;
 		}
@@ -3114,7 +3114,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		char *in_val = tres_per_job, *save_ptr = NULL;
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
-							    &save_ptr, &rc))) {
+							   &save_ptr, &rc))) {
 			job_gres_data->gres_per_job = cnt;
 			in_val = NULL;
 		}
@@ -3123,7 +3123,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		char *in_val = tres_per_node, *save_ptr = NULL;
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
-							    &save_ptr, &rc))) {
+							   &save_ptr, &rc))) {
 			job_gres_data->gres_per_node = cnt;
 			in_val = NULL;
 		}
@@ -3132,7 +3132,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		char *in_val = tres_per_socket, *save_ptr = NULL;
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
-							    &save_ptr, &rc))) {
+							   &save_ptr, &rc))) {
 			job_gres_data->gres_per_socket = cnt;
 			in_val = NULL;
 		}
@@ -3141,7 +3141,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		char *in_val = tres_per_task, *save_ptr = NULL;
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
-							    &save_ptr, &rc))) {
+							   &save_ptr, &rc))) {
 			job_gres_data->gres_per_task = cnt;
 			in_val = NULL;
 		}
@@ -3150,7 +3150,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		char *in_val = mem_per_tres, *save_ptr = NULL;
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
-							    &save_ptr, &rc))) {
+							   &save_ptr, &rc))) {
 			job_gres_data->mem_per_gres = cnt;
 			in_val = NULL;
 		}
@@ -3159,7 +3159,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		char *in_val = tres_per_socket, *save_ptr = NULL;
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
-							    &save_ptr, &rc))) {
+							   &save_ptr, &rc))) {
 			job_gres_data->gres_per_socket = cnt;
 			in_val = NULL;
 		}

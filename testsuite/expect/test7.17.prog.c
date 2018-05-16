@@ -145,6 +145,7 @@ int main(int argc, char *argv[])
 					    1,		/* max_nodes */
 					    &job_gres_list);
 	if (rc != SLURM_SUCCESS) {
+		slurm_seterrno(rc);
 		slurm_perror("failure: gres_plugin_job_state_validate");
 		exit(1);
 	}
