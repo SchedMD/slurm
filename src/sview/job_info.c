@@ -2465,8 +2465,36 @@ static void _layout_step_record(GtkTreeView *treeview,
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
-						 SORTID_GRES),
-				   step_ptr->gres);
+						 SORTID_CPUS_PER_TRES),
+				   step_ptr->cpus_per_tres);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_MEM_PER_TRES),
+				   step_ptr->mem_per_tres);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_BIND),
+				   step_ptr->tres_bind);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_FREQ),
+				   step_ptr->tres_freq);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_PER_JOB),
+				   step_ptr->tres_per_step);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_PER_NODE),
+				   step_ptr->tres_per_node);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_PER_SOCKET),
+				   step_ptr->tres_per_socket);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES_PER_TASK),
+				   step_ptr->tres_per_task);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2617,9 +2645,10 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_COLOR,	sview_colors[color_inx],
 			   SORTID_COLOR_INX,    color_inx,
 			   SORTID_CPUS,         tmp_cpu_min,
-			   SORTID_GRES,         step_ptr->gres,
+			   SORTID_CPUS_PER_TRES, step_ptr->cpus_per_tres,
 			   SORTID_JOBID,        tmp_step_id,
 			   SORTID_JOBID_FORMATTED, tmp_job_id,
+			   SORTID_MEM_PER_TRES,	step_ptr->mem_per_tres,
 			   SORTID_NAME,         step_ptr->name,
 			   SORTID_NODE_INX,     step_ptr->node_inx,
 			   SORTID_NODELIST,     tmp_nodes,
@@ -2631,6 +2660,12 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_TIME_START,   tmp_time_start,
 			   SORTID_TIMELIMIT,    tmp_time_limit,
 			   SORTID_TRES_ALLOC,   step_ptr->tres_alloc_str,
+			   SORTID_TRES_BIND,	step_ptr->tres_bind,
+			   SORTID_TRES_FREQ,	step_ptr->tres_freq,
+			   SORTID_TRES_PER_JOB,	step_ptr->tres_per_step,
+			   SORTID_TRES_PER_NODE, step_ptr->tres_per_node,
+			   SORTID_TRES_PER_SOCKET, step_ptr->tres_per_socket,
+			   SORTID_TRES_PER_TASK, step_ptr->tres_per_task,
 			   SORTID_UPDATED,      1,
 			   SORTID_USER_ID,      tmp_uname,
 			   -1);

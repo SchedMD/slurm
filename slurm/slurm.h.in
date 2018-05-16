@@ -2073,10 +2073,9 @@ typedef struct {
 	uint32_t cpu_freq_min;	/* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
-	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
-	char *gres;		/* generic resources required */
+	char *cpus_per_tres;	/* comma delimited list of TRES=# values */
 	uint32_t job_id;	/* job ID */
-	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
+	char *mem_per_tres;	/* comma delimited list of TRES=# values */
 	char *name;		/* name of job step */
 	char *network;		/* network specs for job step */
 	char *nodes;		/* list of nodes allocated to job_step */
@@ -2105,10 +2104,10 @@ typedef struct {
 	char *tres_alloc_str;   /* tres used in the job */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_step;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_step;	/* comma delimited list of TRES=# values */
+	char *tres_per_node;	/* comma delimited list of TRES=# values */
+	char *tres_per_socket;	/* comma delimited list of TRES=# values */
+	char *tres_per_task;	/* comma delimited list of TRES=# values */
 	uint32_t user_id;	/* user the job runs as */
 } job_step_info_t;
 

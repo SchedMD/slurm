@@ -2588,19 +2588,6 @@ int _print_step_num_tasks(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-int _print_step_gres(job_step_info_t * step, int width, bool right,
-		     char* suffix)
-{
-	if (step == NULL)	/* Print the Header instead */
-		_print_str("GRES", width, right, true);
-	else
-		_print_str(step->gres, width, right, true);
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
 int _print_step_array_job_id(job_step_info_t * step, int width, bool right,
 			     char* suffix)
 {

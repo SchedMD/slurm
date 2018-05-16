@@ -55,6 +55,8 @@ documents those changes that are of interest to users and administrators.
     return the node weight to be used for a compute node that requires reboot
     for use (e.g. to change the NUMA mode of a KNL node).
  -- Add NodeRebootWeight parameter to knl.conf configuration file.
+ -- Completely remove "gres" field from step record. Use "tres_per_node",
+    "tres_per_socket", etc.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

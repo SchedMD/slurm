@@ -371,10 +371,11 @@ extern void step_list_purge(struct job_record *job_ptr)
 /* _free_step_rec - delete a step record's data structures */
 static void _free_step_rec(struct step_record *step_ptr)
 {
-/* FIXME: If job step record is preserved after completion,
+/*
+ * FIXME: If job step record is preserved after completion,
  * the switch_g_job_step_complete() must be called upon completion
- * and not upon record purging. Presently both events occur
- * simultaneously. */
+ * and not upon record purging. Presently both events occur simultaneously.
+ */
 	if (step_ptr->switch_job) {
 		if (step_ptr->step_layout)
 			switch_g_job_step_complete(
@@ -396,7 +397,6 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->resv_ports);
 	xfree(step_ptr->network);
 	xfree(step_ptr->ckpt_dir);
-	xfree(step_ptr->gres);
 	FREE_NULL_LIST(step_ptr->gres_list);
 	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
 	xfree(step_ptr->tres_alloc_str);
@@ -3154,7 +3154,6 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
 		packstr(step_ptr->ckpt_dir, buffer);
-		packstr(step_ptr->gres, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
@@ -3211,7 +3210,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
 		packstr(step_ptr->ckpt_dir, buffer);
-		packstr(step_ptr->gres, buffer);
+		packstr(step_ptr->tres_per_node, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
@@ -3258,7 +3257,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
 		packstr(step_ptr->ckpt_dir, buffer);
-		packstr(step_ptr->gres, buffer);
+		packstr(step_ptr->tres_per_node, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
@@ -3266,8 +3265,8 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 	} else {
-		error("_pack_ctld_job_step_info: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 	}
 }
 
@@ -4010,7 +4009,6 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->network, buffer);
 	packstr(step_ptr->ckpt_dir, buffer);
 
-	packstr(step_ptr->gres, buffer);
 	(void) gres_plugin_step_state_pack(step_ptr->gres_list, buffer,
 					   step_ptr->job_ptr->job_id,
 					   step_ptr->step_id,
@@ -4062,7 +4060,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
-	char *gres = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 	char *cpus_per_tres = NULL, *mem_per_tres = NULL, *tres_bind = NULL;
 	char *tres_freq = NULL, *tres_per_step = NULL, *tres_per_node = NULL;
@@ -4110,7 +4107,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
 
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
 		if (gres_plugin_step_state_unpack(&gres_list, buffer,
 						  job_ptr->job_id, step_id,
 						  protocol_version)
@@ -4182,7 +4178,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
 
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_node, &name_len, buffer);
 		if (gres_plugin_step_state_unpack(&gres_list, buffer,
 						  job_ptr->job_id, step_id,
 						  protocol_version)
@@ -4243,7 +4239,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->network      = network;
 	step_ptr->no_kill      = no_kill;
 	step_ptr->ckpt_dir     = ckpt_dir;
-	step_ptr->gres         = gres;
 	step_ptr->gres_list    = gres_list;
 	step_ptr->srun_pid     = srun_pid;
 	step_ptr->port         = port;
@@ -4341,7 +4336,6 @@ unpack_error:
 	xfree(name);
 	xfree(network);
 	xfree(ckpt_dir);
-	xfree(gres);
 	FREE_NULL_LIST(gres_list);
 	bit_free(exit_node_bitmap);
 	bit_free(core_bitmap_job);

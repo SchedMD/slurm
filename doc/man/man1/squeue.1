@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "February 2018" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "May 2018" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -167,10 +167,6 @@ This reports the value of the \fBsrun \-\-ntasks\fR option.
 Job id.
 This will have a unique value for each element of job arrays.
 (Valid for jobs only)
-.TP
-\fB%b\fR
-Generic resources (gres) required by the job or step.
-(Valid for jobs and job steps)
 .TP
 \fB%B\fR
 Executing (batch) host. For an allocated session, this is the host on which
@@ -603,10 +599,6 @@ The exit code for the job.
 \fBfeature\fR
 Features required by the job.
 (Valid for jobs only)
-.TP
-\fBgres\fR
-Generic resources (gres) required by the job or step.
-(Valid for jobs and job steps)
 .TP
 \fBgroupid\fR
 Group ID of the job.

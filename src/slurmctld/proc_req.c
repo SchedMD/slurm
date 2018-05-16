@@ -2485,11 +2485,15 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 #ifdef HAVE_FRONT_END
 		nodes = job_ptr->nodes;
 #endif
-		batch_step.gres = nodes;
-		if (node_name2bitmap(batch_step.gres, false,
+		/*
+		 * We overload tres_per_node with the node name of where the
+		 * script was running.
+		 */
+		batch_step.tres_per_node = nodes;
+		if (node_name2bitmap(nodes, false,
 				     &batch_step.step_node_bitmap) != 0) {
-			error("%s: job %u has invalide node list (%s)",
-			      __func__, job_ptr->job_id, batch_step.gres);
+			error("%s: job %u has invalid node list (%s)",
+			      __func__, job_ptr->job_id, nodes);
 		}
 		batch_step.requid = -1;
 		batch_step.start_time = job_ptr->start_time;

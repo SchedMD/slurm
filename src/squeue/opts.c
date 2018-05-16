@@ -588,9 +588,11 @@ extern int parse_format( char* format )
 							   right_justify,
 							   suffix );
 			else if (field[0] == 'b')
-				step_format_add_gres( params.format_list,
-						      field_size,
-						      right_justify, suffix );
+				/* Vestigial option */
+				step_format_add_tres_per_node(
+							params.format_list,
+						  	field_size,
+						  	right_justify, suffix );
 			else if (field[0] == 'i')
 				step_format_add_id( params.format_list,
 						    field_size,
@@ -968,9 +970,11 @@ extern int parse_long_format( char* format_long )
 							   right_justify,
 							   suffix );
 			else if (!xstrcasecmp(token, "gres"))
-				step_format_add_gres( params.format_list,
-						      field_size,
-						      right_justify, suffix );
+				/* Vestigial option */
+				step_format_add_tres_per_node(
+							params.format_list,
+							field_size,
+							right_justify, suffix );
 			else if (!xstrcasecmp(token, "stepid"))
 				step_format_add_id( params.format_list,
 						    field_size,

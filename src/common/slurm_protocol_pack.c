@@ -5765,7 +5765,6 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
 		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
 		safe_unpackstr_xmalloc(&step->ckpt_dir, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->gres, &uint32_tmp, buffer);
 
 		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
 						   buffer, protocol_version))
@@ -5819,7 +5818,8 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
 		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
 		safe_unpackstr_xmalloc(&step->ckpt_dir, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_node, &uint32_tmp,
+				       buffer);
 
 		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
 						   buffer, protocol_version))
@@ -5856,7 +5856,8 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
 		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
 		safe_unpackstr_xmalloc(&step->ckpt_dir, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_node, &uint32_tmp,
+				       buffer);
 
 		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
 						   buffer, protocol_version))

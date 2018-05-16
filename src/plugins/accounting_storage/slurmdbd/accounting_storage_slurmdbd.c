@@ -2719,10 +2719,11 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		snprintf(node_list, BUFFER_SIZE, "%s", temp_nodes);
 
 	if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
-		/* We overload gres with the node name of where the
-		   script was running.
-		*/
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->gres);
+		/*
+		 * We overload tres_per_node with the node name of where the
+		 * script was running.
+		 */
+		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->tres_per_node);
 		nodes = tasks = 1;
 	}
 

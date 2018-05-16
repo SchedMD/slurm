@@ -224,22 +224,19 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 					    &io_nodes);
 		if (io_nodes) {
 			snprintf(tmp_line, sizeof(tmp_line),
-				 "Partition=%s MidplaneList=%s[%s] Gres=%s",
+				 "Partition=%s MidplaneList=%s[%s]",
 				 job_step_ptr->partition,
-				 job_step_ptr->nodes, io_nodes,
-				 job_step_ptr->gres);
+				 job_step_ptr->nodes, io_nodes);
 			xfree(io_nodes);
 		} else
 			snprintf(tmp_line, sizeof(tmp_line),
-				 "Partition=%s MidplaneList=%s Gres=%s",
+				 "Partition=%s MidplaneList=%s",
 				 job_step_ptr->partition,
-				 job_step_ptr->nodes,
-				 job_step_ptr->gres);
+				 job_step_ptr->nodes);
 	} else {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"Partition=%s NodeList=%s Gres=%s",
-			job_step_ptr->partition, job_step_ptr->nodes,
-			job_step_ptr->gres);
+			"Partition=%s NodeList=%s",
+			job_step_ptr->partition, job_step_ptr->nodes);
 	}
 	xstrcat(out, tmp_line);
 

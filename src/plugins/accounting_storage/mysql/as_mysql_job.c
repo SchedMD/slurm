@@ -1116,10 +1116,11 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					   step_ptr->step_node_bitmap);
 		}
-		/* We overload gres with the node name of where the
-		   script was running.
-		*/
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->gres);
+		/*
+		 * We overload tres_per_node with the node name of where the
+		 * script was running.
+		 */
+		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->tres_per_node);
 		nodes = tasks = 1;
 		if (!step_ptr->tres_alloc_str)
 			xstrfmtcat(step_ptr->tres_alloc_str,
