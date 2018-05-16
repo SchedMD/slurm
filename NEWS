@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
     PriorityFlags=ACCRUE_ALWAYS is set.
  -- Make sure locks are always in place when calling _post_qos_list().
  -- Notify srun and ctld when unkillable stepd exits.
+ -- Fix slurmstepd deadlock in stepd cleanup caused by race condition in
+    the jobacct_gather fini() interfaces introduced in 17.11.6.
 
 * Changes in Slurm 17.11.6
 ==========================

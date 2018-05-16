@@ -180,8 +180,10 @@ extern int acct_gather_interconnect_fini(void)
 	init_run = false;
 
 	if (watch_node_thread_id) {
+		slurm_mutex_unlock(&g_context_lock);
 		slurm_cond_signal(&profile_timer->notify);
 		pthread_join(watch_node_thread_id, NULL);
+		slurm_mutex_lock(&g_context_lock);
 	}
 
 	for (i = 0; i < g_context_num; i++) {

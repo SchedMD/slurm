@@ -152,8 +152,10 @@ extern int acct_gather_filesystem_fini(void)
 		init_run = false;
 
 		if (watch_node_thread_id) {
+			slurm_mutex_unlock(&g_context_lock);
 			slurm_cond_signal(&profile_timer->notify);
 			pthread_join(watch_node_thread_id, NULL);
+			slurm_mutex_lock(&g_context_lock);
 		}
 
 		rc = plugin_context_destroy(g_context);

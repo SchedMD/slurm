@@ -316,8 +316,10 @@ extern int jobacct_gather_fini(void)
 		slurm_mutex_unlock(&init_run_mutex);
 
 		if (watch_tasks_thread_id) {
+			slurm_mutex_unlock(&g_context_lock);
 			slurm_cond_signal(&profile_timer->notify);
 			pthread_join(watch_tasks_thread_id, NULL);
+			slurm_mutex_lock(&g_context_lock);
 		}
 
 		rc = plugin_context_destroy(g_context);
