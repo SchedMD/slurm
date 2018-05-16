@@ -4256,7 +4256,7 @@ extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks)
 	uint32_t flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REPLACE;
 	char *ret_tres_str = NULL;
 
-	if (!tres_string)
+	if (!tres_string || (tres_string[0] == '\0'))
 		return NULL;
 
 	slurmdb_tres_list_from_string(&tres_list, tres_string, flags);
