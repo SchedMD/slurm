@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Have sprio display jobs before eligible time when
     PriorityFlags=ACCRUE_ALWAYS is set.
  -- Make sure locks are always in place when calling _post_qos_list().
+ -- Notify srun and ctld when unkillable stepd exits.
 
 * Changes in Slurm 17.11.6
 ==========================

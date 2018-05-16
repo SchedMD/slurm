@@ -152,6 +152,23 @@ static void *_monitor(void *arg)
 			rc = ESLURMD_KILL_TASK_FAILED;
 		}
 
+		stepd_drain_node(slurm_strerror(rc));
+
+		if (!job->batch) {
+			/* Notify waiting sruns */
+			if (job->stepid != SLURM_EXTERN_CONT)
+				while (stepd_send_pending_exit_msgs(job)) {;}
+
+			if ((step_complete.rank > -1)) {
+				if (job->aborted)
+					info("unkillable stepd exiting with aborted job");
+				else
+					stepd_wait_for_children_slurmstepd(job);
+			}
+			/* Notify parent stepd or ctld directly */
+			stepd_send_step_complete_msgs(job);
+		}
+
 	        exit(stepd_cleanup(NULL, job, NULL, NULL, rc, 0));
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");
