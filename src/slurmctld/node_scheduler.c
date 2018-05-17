@@ -237,8 +237,10 @@ static int _get_gres_config(struct job_record *job_ptr)
 	gres_count_ids  = xmalloc(sizeof(int) * gres_type_count);
 	gres_count_vals = xmalloc(sizeof(int) * gres_type_count);
 
-	/* Loop through each node allocated to the job tallying all GRES
-	 * types found. */
+	/*
+	 * Loop through each node allocated to the job tallying all GRES
+	 * types found.
+	 */
 	for (ix = i_first; ix <= i_last; ix++) {
 		if (!bit_test(node_bitmap, ix))
 			continue;
@@ -255,8 +257,10 @@ static int _get_gres_config(struct job_record *job_ptr)
 			      "GRES types in the gres_list is: %d",
 			      THIS_FILE, __LINE__, job_ptr->job_id, count);
 
-		/* Only reallocate when there is an increase in size of the
-		 * local arrays. */
+		/*
+		 * Only reallocate when there is an increase in size of the
+		 * local arrays.
+		 */
 		if (count > oldcount) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
 				debug("(%s:%d) job id: %u -- Old GRES "
@@ -264,7 +268,8 @@ static int _get_gres_config(struct job_record *job_ptr)
 				      THIS_FILE, __LINE__, job_ptr->job_id,
 				      oldcount, count);
 
-			/* Allocate arrays to hold each GRES type and its
+			/*
+			 * Allocate arrays to hold each GRES type and its
 			 * associated value found on this node.
 			 */
 			oldcount = count;
@@ -299,11 +304,15 @@ static int _get_gres_config(struct job_record *job_ptr)
 				break;
 			}
 
-			/* If the local GRES type doesn't already appear in the
-			 * list then add it. */
+			/*
+			 * If the local GRES type doesn't already appear in the
+			 * list then add it.
+			 */
 			if (!found) {
-				/* If necessary, expand the array of GRES types
-				 * being reported. */
+				/*
+				 * If necessary, expand the array of GRES types
+				 * being reported.
+				 */
 				if (kx >= gres_type_count) {
 					gres_type_count *= 2;
 					i = gres_type_count * sizeof(int);
@@ -325,7 +334,7 @@ static int _get_gres_config(struct job_record *job_ptr)
 		if (!gres_count_ids[jx])
 			break;
 
-		/* Map the GRES type id back to a GRES type name. */
+		/* Map the GRES type ID back to a GRES type name. */
 		gres_gresid_to_gresname(gres_count_ids[jx], gres_name,
 					sizeof(gres_name));
 
@@ -334,9 +343,10 @@ static int _get_gres_config(struct job_record *job_ptr)
 		if (prefix[0] == '\0')
 			prefix = ",";
 
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
 			debug("(%s:%d) job id: %u -- gres_alloc substring=(%s)",
 			      THIS_FILE, __LINE__, job_ptr->job_id, buf);
+		}
 	}
 	xfree(gres_count_ids);
 	xfree(gres_count_vals);
@@ -354,20 +364,18 @@ static int _get_gres_config(struct job_record *job_ptr)
  */
 static int _build_gres_alloc_string(struct job_record *job_ptr)
 {
-	static int          val_type = -1;
+	static uint32_t cr_enabled = NO_VAL;
+	int error_code;
 
-	if (val_type == -1) {
-		char *select_type = slurm_get_select_type();
-		/* Find out which select type plugin we have so we can decide
-		 * what value to look for. */
-		if (!xstrcmp(select_type, "select/cray"))
-			val_type = GRES_VAL_TYPE_CONFIG;
-		else
-			val_type = GRES_VAL_TYPE_ALLOC;
-		xfree(select_type);
+	if (cr_enabled == NO_VAL) {
+		cr_enabled = 0; /* select/linear and bluegene are no-ops */
+		error_code = select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+							   NULL, &cr_enabled);
+		if (error_code != SLURM_SUCCESS)
+			cr_enabled = NO_VAL;
 	}
 
-	if (val_type == GRES_VAL_TYPE_CONFIG)
+	if (cr_enabled == 0)	/* Whole node allocations */
 		return _get_gres_config(job_ptr);
 	else
 		return _get_gres_alloc(job_ptr);
@@ -2357,6 +2365,39 @@ static void _end_null_job(struct job_record *job_ptr)
 }
 
 /*
+ * Convert a job's TRES_PER_* specifications into a string
+ * xfree return value
+ */
+static char *_build_tres_str(struct job_record *job_ptr)
+{
+	char *sep = "", *tres_str = NULL;
+
+	if (job_ptr->tres_per_job) {
+		xstrfmtcat(tres_str, "PER_JOB:%s", job_ptr->tres_per_job);
+		sep = " ";
+	}
+	if (job_ptr->tres_per_node) {
+		xstrfmtcat(tres_str, "%sPER_NODE:%s", sep,
+			   job_ptr->tres_per_node);
+		sep = " ";
+	}
+	if (job_ptr->tres_per_socket) {
+		xstrfmtcat(tres_str, "%sPER_SOCKET:%s", sep,
+			   job_ptr->tres_per_socket);
+		sep = " ";
+	}
+	if (job_ptr->tres_per_task) {
+		xstrfmtcat(tres_str, "%sPER_TASK:%s", sep,
+			   job_ptr->tres_per_task);
+		sep = " ";
+	}
+	if (!tres_str)
+		tres_str = xstrdup("NONE");
+
+	return tres_str;
+}
+
+/*
  * select_nodes - select and allocate nodes to a specific job
  * IN job_ptr - pointer to the job record
  * IN test_only - if set do not allocate nodes, just confirm they
@@ -2817,20 +2858,24 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	job_claim_resv(job_ptr);
 
-	/* Update the job_record's gres and gres_alloc fields with
-	 * strings representing the amount of each GRES type requested
-	 *  and allocated. */
+	/*
+	 * Update the job_record's gres and gres_alloc fields with strings
+	 * representing the amount of each GRES type requested and allocated.
+	 */
 	_fill_in_gres_fields(job_ptr);
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
-		debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
-		      "job_record->gres_alloc: (%s)",
-		      THIS_FILE, __LINE__, job_ptr->job_id,
-		      job_ptr->gres, job_ptr->gres_alloc);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
+		char *tmp = _build_tres_str(job_ptr);
+		info("(%s:%d) job:%u gres:%s gres_alloc:%s",
+		     THIS_FILE, __LINE__, job_ptr->job_id, tmp,
+		     job_ptr->gres_alloc);
+		xfree(tmp);
+	}
 
-	/* If ran with slurmdbd this is handled out of band in the
+	/*
+	 * If ran with slurmdbd this is handled out of band in the
 	 * job if happening right away.  If the job has already
-	 * become eligible and registered in the db then the start
-	 * message. */
+	 * become eligible and registered in the db then the start message.
+	 */
 	jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 
 	prolog_slurmctld(job_ptr);
@@ -2846,11 +2891,13 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->job_state |= JOB_CONFIGURING;
 	}
 
-	/* Request asynchronous launch of a prolog for a
+	/*
+	 * Request asynchronous launch of a prolog for a
 	 * non-batch job as long as the node is not configuring for
 	 * a reboot first.  Job state could be changed above so we need to
 	 * recheck its state to see if it's currently configuring.
-	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC. */
+	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC.
+	 */
 	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
 	    (!IS_JOB_CONFIGURING(job_ptr)))
 		launch_prolog(job_ptr);
@@ -3110,83 +3157,32 @@ extern void launch_prolog(struct job_record *job_ptr)
  * RET an integer representing any potential errors--
  *     currently not used.
  */
-
 static int _fill_in_gres_fields(struct job_record *job_ptr)
 {
-	char buf[128];
-	char *   tok, *   last = NULL, *prefix = "";
-	char *subtok, *sublast = NULL;
-	char *req_config  = job_ptr->gres;
-	char *tmp_str;
-	uint64_t ngres_req;
 	int      rv = SLURM_SUCCESS;
 
 	/* First build the GRES requested field. */
-	if ((req_config == NULL) || (req_config[0] == '\0')) {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
-			debug("(%s:%d) job id: %u -- job_record->gres "
-			      "is empty or NULL; this is OK if no GRES "
-			      "was requested",
+	if (!job_ptr->gres_list || (list_count(job_ptr->gres_list) == 0)) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
+			debug("(%s:%d) job:%u GRES list is empty or NULL; this is OK if no GRES  requested",
 			      THIS_FILE, __LINE__, job_ptr->job_id);
-
+		}
 		if (job_ptr->gres_req == NULL)
 			xstrcat(job_ptr->gres_req, "");
-
-	} else if ((job_ptr->node_cnt > 0) &&
-		   (job_ptr->gres_req == NULL)) {
-		/* job_ptr->gres_req is rebuilt/replaced here */
-		tmp_str = xstrdup(req_config);
-
-		tok = strtok_r(tmp_str, ",", &last);
-		while (tok) {
-			/*
-			 * Tokenize tok so that we discard the colon and
-			 * everything after it. Then use gres_get_value_by_type
-			 * to find the associated count.
-			 */
-			subtok = strtok_r(tok, ":", &sublast);
-
-			/* Retrieve the number of GRES requested/required. */
-			ngres_req = gres_get_value_by_type(job_ptr->gres_list,
-							   subtok);
-
-			/*
-			 * In the event that we somehow have a valid
-			 * GRES type but don't find a quantity for it,
-			 * we simply write ":0" for the quantity.
-			 */
-			if (ngres_req == NO_VAL64)
-				ngres_req = 0;
-
-			/* Append value to the gres string. */
-			snprintf(buf, sizeof(buf), "%s%s:%"PRIu64,
-				 prefix, subtok,
-				 ngres_req * job_ptr->node_cnt);
-
-			xstrcat(job_ptr->gres_req, buf);
-
-			if (prefix[0] == '\0')
-				prefix = ",";
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
-				debug("(%s:%d) job id:%u -- ngres_req:"
-				      "%"PRIu64", gres_req substring = (%s)",
-				      THIS_FILE, __LINE__,
-				      job_ptr->job_id, ngres_req, buf);
-			}
-
-			tok = strtok_r(NULL, ",", &last);
-		}
-		xfree(tmp_str);
+	} else if ((job_ptr->node_cnt > 0) && !job_ptr->gres_req) {
+		job_ptr->gres_req =
+			gres_plugin_job_alloc_count(job_ptr->gres_list);
 	}
 
-	if ( !job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {
+	if (!job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {
 		/* Now build the GRES allocated field. */
 		rv = _build_gres_alloc_string(job_ptr);
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
-			debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
-			      "job_record->gres_alloc: (%s)",
-			      THIS_FILE, __LINE__, job_ptr->job_id,
-			      job_ptr->gres, job_ptr->gres_alloc);
+			char *tmp = _build_tres_str(job_ptr);
+			info("(%s:%d) job:%u gres_req:%s gres_alloc:%s",
+			     THIS_FILE, __LINE__, job_ptr->job_id,
+			     tmp, job_ptr->gres_alloc);
+			xfree(tmp);
 		}
 	}
 

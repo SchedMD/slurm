@@ -1300,7 +1300,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->admin_comment, buffer);
 	packstr(dump_job_ptr->comment, buffer);
-	packstr(dump_job_ptr->gres, buffer);
 	packstr(dump_job_ptr->gres_alloc, buffer);
 	packstr(dump_job_ptr->gres_req, buffer);
 	packstr(dump_job_ptr->gres_used, buffer);
@@ -1396,7 +1395,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
-	char *resv_name = NULL, *gres = NULL, *batch_host = NULL;
+	char *resv_name = NULL, *batch_host = NULL;
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
 	char *burst_buffer = NULL, *burst_buffer_state = NULL;
 	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
@@ -1560,7 +1559,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
@@ -1785,7 +1783,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_per_node, &name_len,
+				       buffer);
 		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
@@ -1986,7 +1985,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_per_node, &name_len,
+				       buffer);
 		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
@@ -2153,9 +2153,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->comment      = comment;
 	comment               = NULL;  /* reused, nothing left to free */
 	job_ptr->billable_tres = billable_tres;
-	xfree(job_ptr->gres);
-	job_ptr->gres         = gres;
-	gres                  = NULL;  /* reused, nothing left to free */
 	xfree(job_ptr->gres_alloc);
 	job_ptr->gres_alloc   = gres_alloc;
 	gres_alloc            = NULL;  /* reused, nothing left to free */
@@ -2302,10 +2299,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->req_switch      = req_switch;
 	job_ptr->wait4switch     = wait4switch;
 	job_ptr->profile         = profile;
-	/* This needs to always to initialized to "true".  The select
-	   plugin will deal with it every time it goes through the
-	   logic if req_switch or wait4switch are set.
-	*/
+	/*
+	 * This needs to always to initialized to "true".  The select
+	 * plugin will deal with it every time it goes through the
+	 * logic if req_switch or wait4switch are set.
+	 */
 	job_ptr->best_switch     = true;
 	job_ptr->start_protocol_ver = start_protocol_ver;
 
@@ -2419,7 +2417,6 @@ unpack_error:
 	xfree(burst_buffer);
 	xfree(clusters);
 	xfree(comment);
-	xfree(gres);
 	xfree(gres_alloc);
 	xfree(gres_req);
 	xfree(gres_used);
@@ -2456,7 +2453,7 @@ unpack_error:
 			job_ptr->job_id = NO_VAL;
 		purge_job_record(job_ptr->job_id);
 	}
-	for (i=0; i<pelog_env_size; i++)
+	for (i = 0; i < pelog_env_size; i++)
 		xfree(pelog_env[i]);
 	xfree(pelog_env);
 	return SLURM_FAILURE;
@@ -4391,7 +4388,6 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 
 	job_ptr_pend->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
-	job_ptr_pend->gres = xstrdup(job_ptr->gres);
 	if (job_ptr->gres_list) {
 		job_ptr_pend->gres_list =
 			gres_plugin_job_state_dup(job_ptr->gres_list);
@@ -7985,8 +7981,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->name = xstrdup(job_desc->name);
 	job_ptr->wckey = xstrdup(job_desc->wckey);
 
-	/* Since this is only used in the slurmctld copy it now.
-	 */
+	/* Since this is only used in the slurmctld, copy it now. */
 	job_ptr->tres_req_cnt = job_desc->tres_req_cnt;
 	job_desc->tres_req_cnt = NULL;
 	set_job_tres_req_str(job_ptr, false);
@@ -8008,8 +8003,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->account    = xstrdup(job_desc->account);
 	job_ptr->batch_features = xstrdup(job_desc->batch_features);
 	job_ptr->burst_buffer = xstrdup(job_desc->burst_buffer);
-//FIXME: Remove job_ptr->gres
-	job_ptr->gres       = xstrdup(job_desc->tres_per_node);
 	job_ptr->network    = xstrdup(job_desc->network);
 	job_ptr->resv_name  = xstrdup(job_desc->reservation);
 	job_ptr->restart_cnt = job_desc->restart_cnt;
@@ -8184,7 +8177,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	job_ptr->clusters = xstrdup(job_desc->clusters);
 
-	/* The priority needs to be set after this since we don't have
+	/*
+	 * The priority needs to be set after this since we don't have
 	 * an association rec yet
 	 */
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);
@@ -9465,7 +9459,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->cpus_per_tres);
 	free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
-	xfree(job_ptr->gres);
 	xfree(job_ptr->gres_alloc);
 	_clear_job_gres_details(job_ptr);
 	xfree(job_ptr->gres_req);
@@ -13238,11 +13231,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_specs->tres_per_job = NULL;
 		}
 		if (job_specs->tres_per_node) {
-//FIXME: Remove job_ptr->gres
 			xstrfmtcat(tmp, "tres_per_node:%s ",
 				   job_specs->tres_per_node);
-			xfree(job_ptr->gres);
-			job_ptr->gres = xstrdup(job_specs->tres_per_node);
 			xfree(job_ptr->tres_per_node);
 			job_ptr->tres_per_node = job_specs->tres_per_node;
 			job_specs->tres_per_node = NULL;

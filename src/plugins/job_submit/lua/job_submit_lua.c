@@ -319,7 +319,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		else
 			lua_pushnil (L);
 	} else if (!xstrcmp(name, "gres")) {
-		lua_pushstring (L, job_ptr->gres);
+		/* "gres" replaced by "tres_per_node" in v18.08 */
+		lua_pushstring (L, job_ptr->tres_per_node);
 	} else if (!xstrcmp(name, "job_id")) {
 		lua_pushnumber (L, job_ptr->job_id);
 	} else if (!xstrcmp(name, "job_state")) {

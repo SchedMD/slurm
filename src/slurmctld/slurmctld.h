@@ -676,7 +676,6 @@ struct job_record {
 					 * do not pack. this is here to cache
 					 * the record, and may not be set
 					 * depending on configuration */
-	char *gres;			/* generic resources requested by job */
 	List gres_list;			/* generic resource allocation detail */
 	char *gres_alloc;		/* Allocated GRES added over all nodes
 					 * to be passed to slurmdbd */

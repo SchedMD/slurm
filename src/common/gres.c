@@ -6860,6 +6860,56 @@ extern int gres_plugin_job_count(List gres_list, int arr_len,
 }
 
 /*
+ * Build a string identifying total GRES counts of each type
+ * IN gres_list - a List of GRES types allocated to a job.
+ * RET string containing comma-separated list of gres type:model:count
+ *     must release memory using xfree()
+ */
+extern char *gres_plugin_job_alloc_count(List gres_list)
+{
+	ListIterator  job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	void         *job_gres_data;
+	char         *gres_alloc = NULL, *gres_name, *sep = "";
+	int           i;
+
+	(void) gres_plugin_init();
+	slurm_mutex_lock(&gres_context_lock);
+
+	job_gres_iter = list_iterator_create(gres_list);
+	while ((job_gres_ptr = (gres_state_t*) list_next(job_gres_iter))) {
+		gres_job_state_t *job_gres_state_ptr;
+		job_gres_data = job_gres_ptr->gres_data;
+		job_gres_state_ptr = (gres_job_state_t *) job_gres_data;
+		if (!job_gres_state_ptr) {
+			error("%s: job gres_data is NULL", __func__);
+			continue;
+		}
+		gres_name = "UNKNOWN";
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (gres_context[i].plugin_id !=
+			    job_gres_ptr->plugin_id)
+				continue;
+			gres_name = gres_context[i].gres_name;
+		}
+
+		if (job_gres_state_ptr->type_model) {
+			xstrfmtcat(gres_alloc, "%s%s:%s:%"PRIu64, sep,
+				   gres_name, job_gres_state_ptr->type_model,
+				   job_gres_state_ptr->total_gres);
+		} else {
+			xstrfmtcat(gres_alloc, "%s%s:%"PRIu64, sep, gres_name,
+				   job_gres_state_ptr->total_gres);
+		}
+		sep = ",";
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return gres_alloc;
+}
+/*
  * Fill in an array of GRES type ids contained within the given node gres_list
  *		and an array of corresponding counts of those GRES types.
  * IN gres_list - a List of GRES types found on a node.

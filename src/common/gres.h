@@ -424,6 +424,14 @@ extern int gres_plugin_job_count(List gres_list, int arr_len,
 				 uint64_t *gres_count_vals);
 
 /*
+ * Build a string identifying total GRES counts of each type
+ * IN gres_list - a List of GRES types allocated to a job.
+ * RET string containing comma-separated list of gres type:model:count
+ *     must release memory using xfree()
+ */
+extern char *gres_plugin_job_alloc_count(List gres_list);
+
+/*
  * Given a job's requested gres configuration, validate it and build a gres list
  * IN *tres* - job request's gres input string
  * IN num_tasks - requested task count
