@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix for possible slurmctld daemon abort with NULL pointer.
  -- Fix different issues when requesting memory per cpu/node.
  -- PMIx - override default paths at configure time if --with-pmix is used.
+ -- Have sprio display jobs before eligible time when
+    PriorityFlags=ACCRUE_ALWAYS is set.
 
 * Changes in Slurm 17.11.6
 ==========================
