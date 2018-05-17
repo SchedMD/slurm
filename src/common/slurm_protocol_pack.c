@@ -6138,7 +6138,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->admin_comment, &uint32_tmp,buffer);
 		safe_unpackstr_xmalloc(&job->network, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_features, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
@@ -6263,9 +6262,11 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
-		/* The array_task_str value is stored in slurmctld and passed
+		/*
+		 * The array_task_str value is stored in slurmctld and passed
 		 * here in hex format for best scalability. Its format needs
-		 * to be converted to human readable form by the client. */
+		 * to be converted to human readable form by the client.
+		 */
 		safe_unpackstr_xmalloc(&job->array_task_str, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&job->array_max_tasks, buffer);
@@ -6316,7 +6317,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->admin_comment, &uint32_tmp,buffer);
 		safe_unpackstr_xmalloc(&job->network, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->tres_per_node, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->burst_buffer, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->burst_buffer_state, &uint32_tmp,
@@ -6420,9 +6422,11 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
-		/* The array_task_str value is stored in slurmctld and passed
+		/*
+		 * The array_task_str value is stored in slurmctld and passed
 		 * here in hex format for best scalability. Its format needs
-		 * to be converted to human readable form by the client. */
+		 * to be converted to human readable form by the client.
+		 */
 		safe_unpackstr_xmalloc(&job->array_task_str, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&job->array_max_tasks, buffer);
@@ -6467,7 +6471,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->admin_comment, &uint32_tmp,buffer);
 		safe_unpackstr_xmalloc(&job->network, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->tres_per_node, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_str, &uint32_tmp, buffer);
 		xfree(tmp_str); /* was batch_script */

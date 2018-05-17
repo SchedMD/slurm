@@ -10092,7 +10092,6 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
-		packstr(dump_job_ptr->gres, buffer);
 		packstr(dump_job_ptr->batch_features, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
 		packstr(dump_job_ptr->burst_buffer, buffer);
@@ -10294,7 +10293,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
-		packstr(dump_job_ptr->gres, buffer);
+		packstr(dump_job_ptr->tres_per_node, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
 		packstr(dump_job_ptr->burst_buffer, buffer);
 		packstr(dump_job_ptr->burst_buffer_state, buffer);
@@ -10480,7 +10479,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
-		packstr(dump_job_ptr->gres, buffer);
+		packstr(dump_job_ptr->tres_per_node, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
 		packnull(buffer); /* was batch_script */
 		packstr(dump_job_ptr->burst_buffer, buffer);

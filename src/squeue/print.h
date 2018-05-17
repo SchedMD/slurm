@@ -374,8 +374,6 @@ int _print_job_user_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_user_name(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_gres(job_info_t * job, int width, bool right_justify,
-			char* suffix);
 int _print_job_group_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_group_name(job_info_t * job, int width, bool right_justify,

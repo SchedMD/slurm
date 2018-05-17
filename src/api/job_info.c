@@ -895,10 +895,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, line_end);
 	}
 
-	/****** Line ******/
-	xstrfmtcat(out, "Gres=%s Reservation=%s",
-		   job_ptr->gres, job_ptr->resv_name);
-	xstrcat(out, line_end);
+	/****** Line (optional) ******/
+	if (job_ptr->resv_name) {
+		xstrfmtcat(out, "Reservation=%s", job_ptr->resv_name);
+		xstrcat(out, line_end);
+	}
 
 	/****** Line 20 ******/
 	xstrfmtcat(out, "OverSubscribe=%s Contiguous=%d Licenses=%s Network=%s",

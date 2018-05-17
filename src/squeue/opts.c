@@ -664,9 +664,11 @@ extern int parse_format( char* format )
 						       right_justify,
 						       suffix);
 			else if (field[0] == 'b')
-				job_format_add_gres( params.format_list,
-						     field_size, right_justify,
-						     suffix );
+				/* Vestigial option */
+				job_format_add_tres_per_node(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix );
 			else if (field[0] == 'B')
 				job_format_add_batch_host( params.format_list,
 							   field_size,
@@ -1139,9 +1141,11 @@ extern int parse_long_format( char* format_long )
 						       right_justify,
 						       suffix );
 			else if (!xstrcasecmp(token, "gres"))
-				job_format_add_gres(params.format_list,
-						    field_size, right_justify,
-						    suffix );
+				/* Vestigial option */
+				job_format_add_tres_per_node(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix );
 			else if (!xstrcasecmp(token,"batchhost"))
 				job_format_add_batch_host(params.format_list,
 							  field_size,
