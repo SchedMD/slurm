@@ -304,8 +304,8 @@ data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<h3>QOS specific limits over GRES</h3>
-<p> When a GRES has a type associated with it and a QOS limits is applied
+<h3>Specific limits over GRES</h3>
+<p> When a GRES has a type associated with it and a limit is applied
   over this specific type, i.e. <i>MaxTRESPerUser=gres/gpu:tesla=1</i>, if a
   user requests a generic gres, the type's limit will not be enforced. In this
   situation an additional lua job submit plugin to check the user request may
