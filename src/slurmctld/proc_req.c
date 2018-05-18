@@ -676,7 +676,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	uint32_t next_job_id;
 	int i;
 
-	/* Do before config lock */
 	licenses_used = get_licenses_used();
 
 	next_job_id   = get_next_job_id(true);
