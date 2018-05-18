@@ -539,7 +539,7 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 			error("If munged is up, restart with --num-threads=10");
 #ifdef MULTIPLE_SLURMD
 		/*
-		 * In multple slurmd mode this will happen all the time since
+		 * In multiple slurmd mode this will happen all the time since
 		 * we are authenticating with the same munged. It can also
 		 * happen if slurmctld and slurmd are on the same node and
 		 * message aggregation is configured (error is recoverable).

@@ -2497,7 +2497,7 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
 
 /*
  * Set some pack job environment variables. This will include information
- * about multple job components (i.e. different slurmctld job records).
+ * about multiple job components (i.e. different slurmctld job records).
  */
 static void _set_pack_env(struct job_record *pack_leader,
 			  batch_job_launch_msg_t *launch_msg_ptr)
