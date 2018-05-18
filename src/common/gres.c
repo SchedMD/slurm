@@ -3265,6 +3265,10 @@ extern int gres_plugin_job_state_validate2(char *cpus_per_tres,
 	gres_job_state_t *job_gres_data;
 	uint64_t cnt = 0;
 
+	if (!cpus_per_tres && !tres_per_job && !tres_per_node &&
+	    !tres_per_socket && !tres_per_task && !mem_per_tres)
+		return SLURM_SUCCESS;
+
 	if ((rc = gres_plugin_init()) != SLURM_SUCCESS)
 		return rc;
 
