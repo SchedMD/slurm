@@ -53,6 +53,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_submit.h"
+#include "src/slurmctld/locks.h"
 
 typedef struct slurm_submit_ops {
 	int		(*submit)	( struct job_descriptor *job_desc,
@@ -218,6 +219,11 @@ extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
 	DEF_TIMERS;
 	int i, rc;
 
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
 	START_TIMER;
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&g_context_lock);
@@ -244,6 +250,11 @@ extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
 {
 	DEF_TIMERS;
 	int i, rc;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	START_TIMER;
 	rc = job_submit_plugin_init();

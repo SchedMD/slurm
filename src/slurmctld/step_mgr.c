@@ -3714,7 +3714,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 /*
  * step_set_alloc_tres - set the tres up when allocating the step.
  * Only set when job is running.
- * NOTE: job write lock must be locked before calling this */
+ */
 extern void step_set_alloc_tres(
 	struct step_record *step_ptr, uint32_t node_count,
 	bool assoc_mgr_locked, bool make_formatted)
@@ -3723,6 +3723,7 @@ extern void step_set_alloc_tres(
 	char *tmp_tres_str = NULL;
 
 	xassert(step_ptr);
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);

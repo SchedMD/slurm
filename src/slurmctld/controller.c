@@ -2447,10 +2447,6 @@ static void _set_node_billing_tres(struct node_record *node_ptr,
 	node_ptr->tres_cnt[TRES_ARRAY_BILLING] = max_billing;
 }
 
-/*
- * A slurmctld lock needs to at least have a node and partition write lock set
- * before this is called
- */
 extern void set_cluster_tres(bool assoc_mgr_locked)
 {
 	struct node_record *node_ptr;
@@ -2460,6 +2456,9 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	char *unique_tres = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
@@ -2854,10 +2853,11 @@ static int _shutdown_backup_controller(void)
 	return bu_rc;
 }
 
-/* Reset the job credential key based upon configuration parameters
- * NOTE: READ lock_slurmctld config before entry */
+/* Reset the job credential key based upon configuration parameters */
 static void _update_cred_key(void)
 {
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+
 	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx,
 				  slurmctld_conf.job_credential_private_key);
 }
