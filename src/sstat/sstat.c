@@ -179,10 +179,8 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 			if (step_stat->jobacct) {
 				if (!assoc_mgr_tres_list &&
 				    step_stat->jobacct->tres_list) {
-					assoc_mgr_lock_t locks = {
-						NO_LOCK, NO_LOCK, NO_LOCK,
-						NO_LOCK, WRITE_LOCK, NO_LOCK,
-						NO_LOCK };
+					assoc_mgr_lock_t locks =
+						{ .tres = WRITE_LOCK };
 					assoc_mgr_lock(&locks);
 					assoc_mgr_post_tres_list(
 						step_stat->jobacct->tres_list);

@@ -1380,8 +1380,7 @@ static int _accounting_cluster_ready(void)
 	char *cluster_nodes = NULL, *cluster_tres_str;
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 
 	lock_slurmctld(node_write_lock);
 	/* Now get the names of all the nodes on the cluster at this
@@ -1595,8 +1594,7 @@ static int _init_tres(void)
 	List add_list = NULL;
 	slurmdb_tres_rec_t *tres_rec;
 	slurmdb_update_object_t update_object;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if (!temp_char) {
 		error("No tres defined, this should never happen");
@@ -1773,8 +1771,7 @@ static void _update_cluster_tres(void)
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if (!job_list)
 		return;
@@ -2454,8 +2451,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	int i;
 	uint64_t cluster_billing = 0;
 	char *unique_tres = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
@@ -3096,8 +3092,8 @@ static void *_assoc_cache_mgr(void *no_data)
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = WRITE_LOCK };
 
 	while (running_cache == 1) {
 		slurm_mutex_lock(&assoc_cache_mutex);

@@ -847,8 +847,7 @@ static int _open_job_state_file(char **state_file)
 extern void set_job_tres_req_str(struct job_record *job_ptr,
 				 bool assoc_mgr_locked)
 {
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 	xassert(job_ptr);
 
 	if (!assoc_mgr_locked)
@@ -869,8 +868,8 @@ extern void set_job_tres_req_str(struct job_record *job_ptr,
 extern void set_job_tres_alloc_str(struct job_record *job_ptr,
 				   bool assoc_mgr_locked)
 {
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
 	xassert(job_ptr);
 
 	if (!assoc_mgr_locked)
@@ -970,8 +969,7 @@ extern int load_all_job_state(void)
 	char *ver_str = NULL;
 	uint32_t ver_str_len;
 	uint16_t protocol_version = NO_VAL16;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .tres = READ_LOCK };
 
 	/* read the file */
 	lock_state_files();
@@ -9099,8 +9097,7 @@ extern void job_set_req_tres(
 {
 	uint32_t cpu_cnt = 0, node_cnt = 0;
 	uint64_t mem_cnt = 0;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
@@ -9178,8 +9175,7 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 			       bool assoc_mgr_locked)
 {
 	uint32_t alloc_nodes = 0;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	xfree(job_ptr->tres_alloc_str);
 	xfree(job_ptr->tres_alloc_cnt);
@@ -9981,8 +9977,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	time_t begin_time = 0, start_time = 0, end_time = 0;
 	uint32_t time_limit;
 	char *nodelist = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
@@ -11810,8 +11805,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	slurmdb_qos_rec_t *new_qos_ptr = NULL, *use_qos_ptr = NULL;
 	slurmctld_resv_t *new_resv_ptr = NULL;
 
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 #ifdef HAVE_BG
 	uint16_t conn_type[SYSTEM_DIMENSIONS] = {NO_VAL16};

@@ -836,9 +836,8 @@ next_part:		part_ptr = (struct part_record *)
 			}
 		}
 		if (job_ptr->qos_id) {
-			assoc_mgr_lock_t locks = {
-				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				NO_LOCK, NO_LOCK, NO_LOCK };
+			assoc_mgr_lock_t locks =
+				{ .assoc = READ_LOCK, .qos = READ_LOCK };
 
 			assoc_mgr_lock(&locks);
 			if (job_ptr->assoc_ptr &&
@@ -1775,9 +1774,8 @@ next_task:
 			}
 		}
 		if (job_ptr->qos_id) {
-			assoc_mgr_lock_t locks = {
-				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				NO_LOCK, NO_LOCK, NO_LOCK };
+			assoc_mgr_lock_t locks =
+				{ .assoc = READ_LOCK, .qos = READ_LOCK };
 
 			assoc_mgr_lock(&locks);
 			if (job_ptr->assoc_ptr
@@ -3423,9 +3421,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				break;
 			}
 			if (depend_type == SLURM_DEPEND_EXPAND) {
-				assoc_mgr_lock_t locks = {
-					NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-					READ_LOCK, NO_LOCK, NO_LOCK };
+				assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 				job_ptr->details->expanding_jobid = job_id;
 				/* GRES configuration of this job must match

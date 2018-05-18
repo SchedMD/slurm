@@ -689,8 +689,8 @@ static int _find_qos_part(void *x, void *key)
 static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 {
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = WRITE_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	uint64_t used_tres_run_secs[slurmctld_tres_cnt];
 	int i;
 	uint32_t job_cnt = 1;
@@ -2544,8 +2544,8 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 {
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = WRITE_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	uint64_t used_tres_run_secs[slurmctld_tres_cnt];
 	uint64_t new_used_tres_run_secs[slurmctld_tres_cnt];
 	uint64_t time_limit_secs, new_time_limit_secs;
@@ -2623,8 +2623,8 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 	int parent = 0, job_cnt = 1;
 	char *user_name = NULL;
 	bool rc = true;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 	bool strict_checking;
 
 	xassert(acct_policy_limit_set);
@@ -2967,8 +2967,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	slurmdb_qos_rec_t *qos_ptr_1 = NULL, *qos_ptr_2 = NULL;
 	struct job_record job_rec;
 	bool rc;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 
 	assoc_mgr_lock(&locks);
 	job_rec.qos_ptr = qos_ptr;
@@ -3010,8 +3010,8 @@ static void _pack_list_del(void *x)
  */
 extern bool acct_policy_validate_pack(List submit_job_list)
 {
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 	List pack_limit_list;
 	ListIterator iter1, iter2;
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
@@ -3141,8 +3141,8 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 
 	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)
@@ -3364,8 +3364,8 @@ extern bool acct_policy_job_runnable_post_select(
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 
 	xassert(job_ptr);
 	xassert(job_ptr->part_ptr);
@@ -3746,8 +3746,7 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 {
 	uint64_t max_nodes_limit = INFINITE64, qos_max_p_limit = INFINITE64,
 		grp_nodes = INFINITE64;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .qos = READ_LOCK };
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 	bool parent = 0; /* flag to tell us if we are looking at the
@@ -3951,8 +3950,8 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc = NULL;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 	time_t now;
 	int i, tres_pos = 0;
 	acct_policy_tres_usage_t tres_usage;

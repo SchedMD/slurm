@@ -2394,12 +2394,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	bool can_reboot;
 	uint32_t qos_flags = 0;
-	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock =
-		{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-		  NO_LOCK, NO_LOCK, NO_LOCK };
-	assoc_mgr_lock_t job_read_locks = { READ_LOCK, NO_LOCK, READ_LOCK,
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{ .assoc = READ_LOCK, .qos = READ_LOCK };
+	assoc_mgr_lock_t job_read_locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);

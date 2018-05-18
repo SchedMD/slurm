@@ -575,8 +575,7 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
 	bitstr_t *tmp_qos_bitstr;
 	int rc;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 
 	if (!qos) {
 		FREE_NULL_BITMAP(*qos_bits);
@@ -2630,8 +2629,7 @@ static int _restore_job_dependencies(void)
 	char *new_depend;
 	bool valid = true;
 	List license_list;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 	assoc_mgr_lock(&locks);
 
 	assoc_mgr_clear_used_info();

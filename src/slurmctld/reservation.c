@@ -658,8 +658,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	int rc = SLURM_SUCCESS, i = 0, j = 0;
 	List assoc_list_allow = NULL, assoc_list_deny = NULL, assoc_list;
 	slurmdb_assoc_rec_t assoc, *assoc_ptr = NULL;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
 
 
 	/* no need to do this if we can't ;) */
@@ -1962,8 +1961,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	struct node_record *node_ptr = node_record_table_ptr;
 	char start_time[32], end_time[32];
 	char *name1, *name2, *val1, *val2;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if (resv_ptr->full_nodes && resv_ptr->node_bitmap) {
 		resv_ptr->core_cnt = 0;
@@ -3154,8 +3152,7 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 	time_t now = time(NULL);
 	List assoc_list = NULL;
 	bool check_permissions = false;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
 
 	DEF_TIMERS;
 

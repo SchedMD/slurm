@@ -485,9 +485,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	slurm_addr_t parent_addr = {0};
-	assoc_mgr_lock_t locks = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-		READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	slurm_msg_t_init(&msg);
 

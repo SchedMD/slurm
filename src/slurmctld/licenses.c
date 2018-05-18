@@ -868,8 +868,7 @@ extern char *licenses_2_tres_str(List license_list)
 	char *tres_str = NULL;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_req;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if (!license_list)
 		return NULL;
@@ -911,8 +910,7 @@ extern void license_set_job_tres_cnt(List license_list,
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_rec;
 	int tres_pos;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	/* we only need to init this once */
 	if (first_run) {

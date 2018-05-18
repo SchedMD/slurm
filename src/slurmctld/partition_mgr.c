@@ -1786,8 +1786,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->nodes != NULL) {
-		assoc_mgr_lock_t assoc_tres_read_lock = { NO_LOCK, NO_LOCK,
-			NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		assoc_mgr_lock_t assoc_tres_read_lock = { .tres = READ_LOCK };
 		char *backup_node_list = part_ptr->nodes;
 
 		if (part_desc->nodes[0] == '\0')

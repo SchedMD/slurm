@@ -10046,8 +10046,7 @@ static void _pack_node_reg_resp(
 	Buf buffer, uint16_t protocol_version)
 {
 	List pack_list;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		if (msg && msg->tres_list)

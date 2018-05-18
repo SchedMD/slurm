@@ -475,9 +475,7 @@ _init_from_slurmd(int sock, char **argv,
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	uint32_t jobid = 0, stepid = 0;
 	List tmp_list = NULL;
-	assoc_mgr_lock_t locks = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-		WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 

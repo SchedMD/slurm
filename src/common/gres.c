@@ -7231,8 +7231,7 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 	char *tres_str = NULL;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_req;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	/* we only need to init this once */
 	if (first_run) {
@@ -7334,8 +7333,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 	char *col_name = NULL;
 	uint64_t count;
 	int i, tres_pos;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	/* we only need to init this once */
 	if (first_run) {

@@ -383,9 +383,7 @@ static void *_watch_tasks(void *arg)
 static void _jobacctinfo_create_tres_usage(jobacct_id_t *jobacct_id,
 					   struct jobacctinfo *jobacct)
 {
-	assoc_mgr_lock_t locks = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-		READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	assoc_mgr_lock(&locks);
 	_init_tres_usage(jobacct, jobacct_id, g_tres_count);
@@ -497,9 +495,7 @@ static void _jobacctinfo_aggregate_tres_usage(jobacctinfo_t *dest,
 static void _jobacctinfo_2_stats_tres_usage(slurmdb_stats_t *stats,
 					    jobacctinfo_t *jobacct)
 {
-	assoc_mgr_lock_t locks = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-		READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 	uint32_t flags = TRES_STR_FLAG_ALLOW_REAL | TRES_STR_FLAG_SIMPLE;
 	assoc_mgr_lock(&locks);
 
@@ -947,9 +943,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	case JOBACCT_DATA_PIPE:
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			int len;
-			assoc_mgr_lock_t locks = {
-				NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				READ_LOCK, NO_LOCK, NO_LOCK };
+			assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 			buffer = init_buf(0);
 

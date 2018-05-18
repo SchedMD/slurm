@@ -3773,8 +3773,7 @@ extern void step_set_alloc_tres(
 	}
 
 	if (make_formatted) {
-		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-					   READ_LOCK, NO_LOCK, NO_LOCK };
+		assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 		if (!assoc_mgr_locked)
 			assoc_mgr_lock(&locks);
 
