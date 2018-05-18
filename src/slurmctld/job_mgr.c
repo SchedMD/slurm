@@ -11364,7 +11364,8 @@ extern uint32_t get_next_job_id(bool test_only)
 	int i;
 	uint32_t new_id, max_jobs, tmp_id_sequence;
 
-	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(test_only || verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	max_jobs = slurmctld_conf.max_job_id - slurmctld_conf.first_job_id;
