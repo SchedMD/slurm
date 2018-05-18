@@ -8825,7 +8825,6 @@ static bool _pack_configuring_test(struct job_record *job_ptr)
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
- * NOTE: Job Write lock_slurmctld config before entry
  */
 void job_time_limit(void)
 {
@@ -8838,6 +8837,8 @@ void job_time_limit(void)
 	uint16_t over_time_limit;
 	int job_test_count = 0;
 	uint32_t resv_over_run = slurmctld_conf.resv_over_run;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	if (resv_over_run == INFINITE16)
 		resv_over_run = YEAR_SECONDS;
@@ -11354,8 +11355,6 @@ void reset_first_job_id(void)
 /*
  * Return the next available job_id to be used.
  *
- * Must have job_write and fed_read locks when grabbing a job_id
- *
  * IN test_only - if true, doesn't advance the job_id sequence, just returns
  * 	what the next job id will be.
  * RET a valid job_id or SLURM_ERROR if all job_ids are exhausted.
@@ -11364,6 +11363,9 @@ extern uint32_t get_next_job_id(bool test_only)
 {
 	int i;
 	uint32_t new_id, max_jobs, tmp_id_sequence;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	max_jobs = slurmctld_conf.max_job_id - slurmctld_conf.first_job_id;
 	tmp_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
@@ -17188,12 +17190,13 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	return SLURM_SUCCESS;
 }
 
-/* Reset nodes_completing field for all jobs.
- * Job write lock must be set before calling. */
+/* Reset nodes_completing field for all jobs. */
 extern void update_job_nodes_completing(void)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	if (!job_list)
 		return;
