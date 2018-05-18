@@ -666,8 +666,6 @@ static void _throttle_fini(int *active_rpc_cnt)
  * _fill_ctld_conf - make a copy of current slurm configuration
  *	this is done with locks set so the data can change at other times
  * OUT conf_ptr - place to copy configuration to
- *
- * NOTE: Read config, job, partition, fed needs to be locked before hand
  */
 static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
@@ -675,6 +673,11 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	char *licenses_used;
 	uint32_t next_job_id;
 	int i;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	licenses_used = get_licenses_used();
 
