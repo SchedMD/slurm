@@ -40,6 +40,7 @@ set file_err    "test$test_id.error"
 set file_in     "test$test_id.input"
 set file_out    "$cwd/test$test_id.output"
 set tmp_dir     "[exec $bin_printenv HOME]"
+set tmp_dir     "[exec readlink -f $tmp_dir]"
 
 print_header $test_id
 
