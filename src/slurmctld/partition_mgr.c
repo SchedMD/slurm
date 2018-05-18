@@ -147,12 +147,13 @@ static int _calc_part_tres(void *x, void *arg)
 }
 
 /*
- * Calcuate and populate the number of tres' for all
- * partitions. Partition write and Node read lock should be set before
- * calling this.
+ * Calculate and populate the number of tres' for all partitions.
  */
 extern void set_partition_tres()
 {
+	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+
 	list_for_each(part_list, _calc_part_tres, NULL);
 }
 
@@ -590,7 +591,6 @@ static int _open_part_state_file(char **state_file)
  * load_all_part_state - load the partition state from file, recover on
  *	slurmctld restart. execute this after loading the configuration
  *	file data.
- * NOTE: READ lock_slurmctld config before entry
  */
 int load_all_part_state(void)
 {
@@ -613,6 +613,8 @@ int load_all_part_state(void)
 	char* allow_alloc_nodes = NULL;
 	uint16_t protocol_version = NO_VAL16;
 	char* alternate = NULL;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
 	/* read the file */
 	lock_state_files();
@@ -1117,9 +1119,11 @@ static int _match_part_ptr(void *part_ptr, void *key)
 	return 0;
 }
 
-/* partition is visible to the user. must had part read lock before calling */
+/* partition is visible to the user */
 extern bool part_is_visible(struct part_record *part_ptr, uid_t uid)
 {
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
 	if (validate_slurm_user(uid))
 		return true;
 	if (part_ptr->flags & PART_FLAG_HIDDEN)

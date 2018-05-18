@@ -2597,7 +2597,7 @@ int
 waitpid_timeout(const char *, pid_t, int *, int);
 
 /*
- * Calcuate and populate the number of tres' for all partitions.
+ * Calculate and populate the number of tres' for all partitions.
  */
 extern void set_partition_tres();
 
