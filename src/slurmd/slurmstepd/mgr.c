@@ -87,6 +87,7 @@
 #include "src/common/slurm_mpi.h"
 #include "src/common/strlcpy.h"
 #include "src/common/switch.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -1424,14 +1425,18 @@ fail2:
 	task_g_post_step(job);
 
 	/*
-	 * Reset cpu frequency if it was changed
+	 * Reset CPU and TRES frequencies if changed
 	 */
-	if (job->cpu_freq_min != NO_VAL || job->cpu_freq_max != NO_VAL ||
-	    job->cpu_freq_gov != NO_VAL)
+	if ((job->cpu_freq_min != NO_VAL) || (job->cpu_freq_max != NO_VAL) ||
+	    (job->cpu_freq_gov != NO_VAL))
 		cpu_freq_reset(job);
+	if (job->tres_freq)
+		tres_freq_reset(job);
 
-	/* Notify srun of completion AFTER frequency reset to avoid race
-	 * condition starting another job on these CPUs. */
+	/*
+	 * Notify srun of completion AFTER frequency reset to avoid race
+	 * condition starting another job on these CPUs.
+	 */
 	while (_send_pending_exit_msgs(job)) {;}
 
 	/*

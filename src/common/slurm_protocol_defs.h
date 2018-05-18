@@ -833,6 +833,8 @@ typedef struct launch_tasks_request_msg {
 	uint16_t mem_bind_type;	/* --mem-bind=                    */
 	char     *mem_bind;	/* binding map for tasks to memory        */
 	uint16_t accel_bind_type; /* --accel-bind= */
+	char     *tres_bind;	/* task binding to TRES (e.g. GPUs) */
+	char     *tres_freq;	/* frequency/power for TRES (e.g. GPUs) */
 	uint16_t  num_resp_port;
 	uint16_t  *resp_port;   /* array of available response ports      */
 
@@ -1019,8 +1021,13 @@ typedef struct prolog_launch_msg {
 
 typedef struct batch_job_launch_msg {
 	char *account;          /* account under which the job is running */
+	char *acctg_freq;	/* accounting polling intervals	*/
+	char *alias_list;	/* node name/address/hostnamne aliases */
 	uint32_t array_job_id;	/* job array master job ID */
 	uint32_t array_task_id;	/* job array ID or NO_VAL */
+	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
+	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
+	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t job_id;
 	uint32_t step_id;
 	uint32_t uid;
@@ -1044,7 +1051,6 @@ typedef struct batch_job_launch_msg {
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint16_t cpus_per_task;	/* number of CPUs requested per task */
 	uint16_t job_core_spec;	/* Count of specialized cores */
-	char *alias_list;	/* node name/address/hostnamne aliases */
 	char *nodes;		/* list of nodes allocated to job_step */
 	uint32_t profile;       /* what to profile for the batch step */
 	char *script;		/* the actual job script, default NONE */
@@ -1068,15 +1074,14 @@ typedef struct batch_job_launch_msg {
 	uint64_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,
 				  * default=0 (no limit) */
-	char *acctg_freq;	/* accounting polling intervals	*/
-	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
-	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
-	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint64_t job_mem;	/* memory limit for job		*/
 	uint16_t restart_cnt;	/* batch job restart count	*/
+	char *resv_name;        /* job's reservation */
 	char **spank_job_env;	/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
-	char *resv_name;        /* job's reservation */
+	char *tres_bind;	/* task binding to TRES (e.g. GPUs),
+				 * included for possible future use */
+	char *tres_freq;	/* frequency/power for TRES (e.g. GPUs) */
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {

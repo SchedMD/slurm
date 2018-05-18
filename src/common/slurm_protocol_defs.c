@@ -963,6 +963,8 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->std_err);
 		xfree(msg->std_in);
 		xfree(msg->std_out);
+		xfree(msg->tres_bind);
+		xfree(msg->tres_freq);
 		xfree(msg->user_name);
 		xfree(msg->work_dir);
 		xfree(msg);
@@ -1342,6 +1344,8 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	if (msg->select_jobinfo)
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 
+	xfree(msg->tres_bind);
+	xfree(msg->tres_freq);
 	xfree(msg->x11_magic_cookie);
 	xfree(msg->x11_target_host);
 

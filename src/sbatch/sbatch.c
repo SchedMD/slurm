@@ -56,6 +56,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
@@ -763,6 +764,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		xstrfmtcat(desc->tres_bind, "gpu:%s", opt.gpu_bind);
 	if (opt.gpu_freq)
 		xstrfmtcat(desc->tres_freq, "gpu:%s", opt.gpu_freq);
+	if (tres_freq_verify_cmdline(desc->tres_freq)) {
+		error("Invalid --tres-freq argument: %s. Ignored",
+		      desc->tres_freq);
+		xfree(desc->tres_freq);
+	}
 	xfmt_tres(&desc->tres_per_job,    "gpu", opt.gpus);
 	xfmt_tres(&desc->tres_per_node,   "gpu", opt.gpus_per_node);
 	if (opt.gres) {

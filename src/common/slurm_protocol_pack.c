@@ -10557,7 +10557,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 
 		select_g_select_jobinfo_pack(msg->select_jobinfo,
 					     buffer, protocol_version);
-
+		packstr(msg->tres_bind, buffer);
+		packstr(msg->tres_freq, buffer);
 		pack16(msg->x11, buffer);
 		packstr(msg->x11_magic_cookie, buffer);
 		packstr(msg->x11_target_host, buffer);
@@ -10873,6 +10874,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 						   buffer, protocol_version)) {
 			goto unpack_error;
 		}
+		safe_unpackstr_xmalloc(&msg->tres_bind, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->tres_freq, &uint32_tmp, buffer);
 		safe_unpack16(&msg->x11, buffer);
 		safe_unpackstr_xmalloc(&msg->x11_magic_cookie, &uint32_tmp,
 				       buffer);
@@ -12929,6 +12932,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		packstr(msg->qos, buffer);
 		packstr(msg->resv_name, buffer);
 		pack32(msg->profile, buffer);
+		packstr(msg->tres_bind, buffer);
+		packstr(msg->tres_freq, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
@@ -13059,8 +13064,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		packstr(resv_ports, buffer);
 		pack32((uint32_t) 0, buffer);
 	} else {
-		error("_pack_batch_job_launch_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 	}
 }
 
@@ -13169,6 +13174,10 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 				       &uint32_tmp,
 				       buffer);
 		safe_unpack32(&launch_msg_ptr->profile, buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->tres_bind, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->tres_freq, &uint32_tmp,
+				       buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->step_id, buffer);
@@ -13368,8 +13377,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 		xfree(resv_ports);
 		safe_unpack32(&uint32_tmp, buffer);
 	} else {
-		error("_unpack_batch_job_launch_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 		goto unpack_error;
 	}
 

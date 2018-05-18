@@ -45,6 +45,7 @@
 #include "src/common/xstring.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/xsignal.h"
 
 typedef struct {
@@ -314,6 +315,14 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (opt_local->gpu_freq) {
 		xstrfmtcat(job->ctx_params.tres_freq, "gpu:%s",
 			   opt_local->gpu_freq);
+	}
+	if (tres_freq_verify_cmdline(job->ctx_params.tres_freq)) {
+		if (tres_freq_err_log) {	/* Log once */
+			error("Invalid --tres-freq argument: %s. Ignored",
+			      job->ctx_params.tres_freq);
+			tres_freq_err_log = false;
+		}
+		xfree(job->ctx_params.tres_freq);
 	}
 	if (opt_local->gpus) {
 		xstrfmtcat(job->ctx_params.tres_per_step, "gpu:%s",

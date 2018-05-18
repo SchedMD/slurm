@@ -59,6 +59,7 @@
 #include "src/common/strlcpy.h"
 #include "src/common/switch.h"
 #include "src/common/timers.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -1466,11 +1467,15 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 	}
 	if (!job->batch && switch_g_job_step_post_resume(job))
 		error("switch_g_job_step_post_resume: %m");
-	/* set the cpu frequencies if cpu_freq option used */
-	if (job->cpu_freq_min != NO_VAL || job->cpu_freq_max != NO_VAL ||
-	    job->cpu_freq_gov != NO_VAL) {
+
+	/*
+	 * Reset CPU and TRES frequencies if changed
+	 */
+	if ((job->cpu_freq_min != NO_VAL) || (job->cpu_freq_max != NO_VAL) ||
+	    (job->cpu_freq_gov != NO_VAL))
 		cpu_freq_set(job);
-	}
+	if (job->tres_freq)
+		tres_freq_set(job);
 
 	slurm_mutex_unlock(&suspend_mutex);
 

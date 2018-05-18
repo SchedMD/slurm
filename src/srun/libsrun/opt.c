@@ -231,6 +231,7 @@ srun_opt_t sropt;
 List 	opt_list = NULL;
 int	pass_number = 0;
 time_t	srun_begin_time = 0;
+bool	tres_freq_err_log = true;
 int	_verbose = 0;
 
 /*---- forward declarations of static variables and functions  ----*/
