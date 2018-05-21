@@ -102,11 +102,11 @@ typedef enum {
 
 /* slurmctld specific data structures to lock via APIs */
 typedef struct {
-	lock_level_t	config;
-	lock_level_t	job;
-	lock_level_t	node;
-	lock_level_t	partition;
-	lock_level_t	federation;
+	lock_level_t conf;
+	lock_level_t job;
+	lock_level_t node;
+	lock_level_t part;
+	lock_level_t fed;
 }	slurmctld_lock_t;
 
 /* Interval lock structure
