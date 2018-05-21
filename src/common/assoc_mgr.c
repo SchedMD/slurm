@@ -1402,8 +1402,8 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 	List new_list = NULL;
 	char *tres_req_str;
 	int changed;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks =
+		{ .assoc = WRITE_LOCK, .qos = WRITE_LOCK, .tres= WRITE_LOCK };
 
 	memset(&tres_q, 0, sizeof(slurmdb_tres_cond_t));
 
@@ -1448,8 +1448,8 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
 	slurmdb_assoc_cond_t assoc_q;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   READ_LOCK, WRITE_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = READ_LOCK,
+				   .tres = READ_LOCK, .user = WRITE_LOCK };
 
 //	DEF_TIMERS;
 	assoc_mgr_lock(&locks);
@@ -1500,8 +1500,7 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 {
 	slurmdb_res_cond_t res_q;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
 	assoc_mgr_lock(&locks);
 	FREE_NULL_LIST(assoc_mgr_res_list);
@@ -1542,8 +1541,7 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	uid_t uid = getuid();
 	List new_list = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .qos = WRITE_LOCK };
 
 	new_list = acct_storage_g_get_qos(db_conn, uid, NULL);
 
@@ -1573,8 +1571,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 {
 	slurmdb_user_cond_t user_q;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .user = WRITE_LOCK };
 
 	memset(&user_q, 0, sizeof(slurmdb_user_cond_t));
 	user_q.with_coords = 1;
@@ -1605,8 +1602,7 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 {
 	slurmdb_wckey_cond_t wckey_q;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
+	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 //	DEF_TIMERS;
 	assoc_mgr_lock(&locks);
@@ -1670,8 +1666,8 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	uid_t uid = getuid();
 	ListIterator curr_itr = NULL;
 	slurmdb_assoc_rec_t *curr_assoc = NULL, *assoc = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   READ_LOCK, WRITE_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = READ_LOCK,
+				   .tres = READ_LOCK, .user = WRITE_LOCK };
 //	DEF_TIMERS;
 
 	memset(&assoc_q, 0, sizeof(slurmdb_assoc_cond_t));
@@ -1747,8 +1743,7 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 	slurmdb_res_cond_t res_q;
 	List current_res = NULL;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
 	slurmdb_init_res_cond(&res_q, 0);
 	if (assoc_mgr_cluster_name) {
@@ -1791,8 +1786,7 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	List current_qos = NULL;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .qos = WRITE_LOCK };
 
 	current_qos = acct_storage_g_get_qos(db_conn, uid, NULL);
 
@@ -1839,8 +1833,7 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 	List current_users = NULL;
 	slurmdb_user_cond_t user_q;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .user = WRITE_LOCK };
 
 	memset(&user_q, 0, sizeof(slurmdb_user_cond_t));
 	user_q.with_coords = 1;
@@ -1873,8 +1866,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 	slurmdb_wckey_cond_t wckey_q;
 	List current_wckeys = NULL;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
+	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
 	if (assoc_mgr_cluster_name) {
@@ -2076,9 +2068,9 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 
 extern int assoc_mgr_fini(bool save_state)
 {
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK,
-				   WRITE_LOCK, WRITE_LOCK, WRITE_LOCK,
-				   WRITE_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK,
+				   .res = WRITE_LOCK, .tres = WRITE_LOCK,
+				   .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 	if (save_state)
 		dump_assoc_mgr_state();
@@ -2256,8 +2248,7 @@ extern int assoc_mgr_fill_in_tres(void *db_conn,
 {
 	ListIterator itr;
 	slurmdb_tres_rec_t *found_tres = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if (tres_pptr)
 		*tres_pptr = NULL;
@@ -2361,8 +2352,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 				   bool locked)
 {
 	slurmdb_assoc_rec_t * ret_assoc = NULL;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
 
 	if (assoc_pptr)
 		*assoc_pptr = NULL;
@@ -2563,8 +2553,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 {
 	ListIterator itr = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, READ_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .user = READ_LOCK };
 
 	if (user_pptr)
 		*user_pptr = NULL;
@@ -2633,8 +2622,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 {
 	ListIterator itr = NULL;
 	slurmdb_qos_rec_t * found_qos = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 
 	if (qos_pptr)
 		*qos_pptr = NULL;
@@ -2776,8 +2764,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 	ListIterator itr = NULL;
 	slurmdb_wckey_rec_t * found_wckey = NULL;
 	slurmdb_wckey_rec_t * ret_wckey = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, READ_LOCK };
+	assoc_mgr_lock_t locks = { .wckey = READ_LOCK };
 
 	if (wckey_pptr)
 		*wckey_pptr = NULL;
@@ -2940,8 +2927,7 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 {
 	ListIterator itr = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, READ_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .user = READ_LOCK };
 
 	if (!assoc_mgr_user_list)
 		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
@@ -2974,8 +2960,7 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 	ListIterator itr = NULL;
 	slurmdb_coord_rec_t *acct = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, READ_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .user = READ_LOCK };
 
 	if (!acct_name)
 		return false;
@@ -3031,8 +3016,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	slurmdb_user_rec_t user;
 	int is_admin=1;
 	uint16_t private_data = slurm_get_private_data();
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .tres = READ_LOCK };
 
 	xassert(resp_msg);
 
@@ -3232,8 +3216,8 @@ extern void assoc_mgr_info_get_pack_msg(
 	uint32_t flags = 0;
 
 	uint16_t private_data = slurm_get_private_data();
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK,
-				   READ_LOCK, READ_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .res = READ_LOCK,
+				   .tres = READ_LOCK, .user = READ_LOCK };
 	Buf buffer;
 
 	buffer_ptr[0] = NULL;
@@ -3596,8 +3580,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	int resort = 0;
 	List remove_list = NULL;
 	List update_list = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   READ_LOCK, WRITE_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK,
+				   .tres = READ_LOCK, .user = WRITE_LOCK };
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
@@ -4045,8 +4029,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
+	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
@@ -4169,8 +4152,8 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .user = WRITE_LOCK,
+				   .wckey = WRITE_LOCK };
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
@@ -4295,8 +4278,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 	int redo_priority = 0;
 	List remove_list = NULL;
 	List update_list = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
@@ -4717,8 +4699,7 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
@@ -4869,8 +4850,8 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 	List tmp_list;
 	bool changed = false, freeit = false;
 	int rc = SLURM_SUCCESS;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK,
+				   .tres = WRITE_LOCK };
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
@@ -4936,8 +4917,7 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 				       int enforce)
 {
 	slurmdb_assoc_rec_t * found_assoc = NULL;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
 
 	/* Call assoc_mgr_refresh_lists instead of just getting the
 	   association list because we need qos and user lists before
@@ -4969,8 +4949,7 @@ extern void assoc_mgr_clear_used_info(void)
 	ListIterator itr = NULL;
 	slurmdb_assoc_rec_t * found_assoc = NULL;
 	slurmdb_qos_rec_t * found_qos = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
 
 	assoc_mgr_lock(&locks);
 	if (assoc_mgr_assoc_list) {
@@ -5168,8 +5147,10 @@ extern int dump_assoc_mgr_state(void)
 		*tmp_char = NULL;
 	dbd_list_msg_t msg;
 	Buf buffer = NULL;
-	assoc_mgr_lock_t locks = { READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK,
-				   READ_LOCK, READ_LOCK, READ_LOCK};
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .file = WRITE_LOCK,
+				   .qos = READ_LOCK, .res = READ_LOCK,
+				   .tres = READ_LOCK, .user = READ_LOCK,
+				   .wckey = READ_LOCK};
 	DEF_TIMERS;
 
 	xassert(init_setup.state_save_location &&
@@ -5491,8 +5472,7 @@ extern int load_assoc_usage(void)
 	char *data = NULL, *state_file, *tmp_str = NULL;
 	Buf buffer = NULL;
 	time_t buf_time;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .file = READ_LOCK };
 
 	if (!assoc_mgr_assoc_list)
 		return SLURM_SUCCESS;
@@ -5622,8 +5602,7 @@ extern int load_qos_usage(void)
 	Buf buffer = NULL;
 	time_t buf_time;
 	ListIterator itr = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, READ_LOCK, WRITE_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .file = READ_LOCK, .qos = WRITE_LOCK };
 
 	if (!assoc_mgr_qos_list)
 		return SLURM_SUCCESS;
@@ -5743,8 +5722,7 @@ extern int load_assoc_mgr_last_tres(void)
 	Buf buffer = NULL;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 
 	xassert(init_setup.state_save_location &&
 		*init_setup.state_save_location);
@@ -5842,9 +5820,10 @@ extern int load_assoc_mgr_state(bool only_tres)
 	Buf buffer = NULL;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK,
-				   WRITE_LOCK, WRITE_LOCK, WRITE_LOCK,
-				   WRITE_LOCK, WRITE_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .file = READ_LOCK,
+				   .qos = WRITE_LOCK, .res = WRITE_LOCK,
+				   .tres = WRITE_LOCK, .user = WRITE_LOCK,
+				   .wckey = WRITE_LOCK };
 
 	xassert(init_setup.state_save_location &&
 		*init_setup.state_save_location);
@@ -6103,9 +6082,8 @@ extern int assoc_mgr_set_missing_uids()
 {
 	uid_t pw_uid;
 	ListIterator itr = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK,
-				   WRITE_LOCK, WRITE_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .user = WRITE_LOCK,
+				   .wckey = WRITE_LOCK };
 
 	assoc_mgr_lock(&locks);
 	if (assoc_mgr_assoc_list) {
@@ -6189,8 +6167,7 @@ extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc)
 extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 {
 	int i, tres_pos = -1;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if (!tres_rec->id && !tres_rec->type)
 		return tres_pos;
@@ -6351,8 +6328,7 @@ extern char *assoc_mgr_make_tres_str_from_array(
 {
 	int i;
 	char *tres_str = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if (!tres_cnt)
 		return NULL;
@@ -6463,8 +6439,7 @@ extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 	double to_bill_node   = 0.0;
 	double to_bill_global = 0.0;
 	double billable_tres  = 0.0;
-	assoc_mgr_lock_t tres_read_lock = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-		READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t tres_read_lock = { .tres = READ_LOCK };
 
 	/* We don't have any resources allocated, just return 0. */
 	if (!tres_cnt)
