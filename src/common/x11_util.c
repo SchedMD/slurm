@@ -5,11 +5,11 @@
  *  Copyright (C) 2017 SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -124,7 +124,20 @@ extern char *x11_get_xauth(void)
 	regex_t reg;
 	regmatch_t regmatch[2];
 	char *result, *cookie;
-	static char *cookie_pattern = "^[[:alnum:]-]+/unix:[[:digit:]]+"
+	/*
+	 * Two real-world examples:
+	 * "zoidberg/unix:10  MIT-MAGIC-COOKIE-1  abcdef0123456789"
+	 * "zoidberg:10  MIT-MAGIC-COOKIE-1  abcdef0123456789"
+	 *
+	 * The "/unix" bit is optional, and captured in "[[:alnum:].-/]+:".
+	 * '.' and '-' are also allowed in the hostname portion, so match them
+	 * in addition to '/'.
+	 *
+	 * Warning: the '-' must be either first or last in the [] brackets,
+	 * otherwise it will be interpreted as a range instead of the literal
+	 * character.
+	 */
+	static char *cookie_pattern = "^[[:alnum:]./-]+:[[:digit:]]+"
 				      "[[:space:]]+MIT-MAGIC-COOKIE-1"
 				      "[[:space:]]+([[:xdigit:]]+)\n$";
 
@@ -161,7 +174,8 @@ extern char *x11_get_xauth(void)
 	return cookie;
 }
 
-extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display)
+extern int x11_set_xauth(char *xauthority, char *cookie,
+			 char *host, uint16_t display)
 {
 	int i=0, status;
 	char *result;
@@ -173,7 +187,7 @@ extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display)
 	xauth_argv[i++] = xstrdup("-f");
 	xauth_argv[i++] = xstrdup(xauthority);
 	xauth_argv[i++] = xstrdup("add");
-	xauth_argv[i++] = xstrdup_printf("localhost:%u", display);
+	xauth_argv[i++] = xstrdup_printf("%s/unix:%u", host, display);
 	xauth_argv[i++] = xstrdup("MIT-MAGIC-COOKIE-1");
 	xauth_argv[i++] = xstrdup(cookie);
 	xauth_argv[i++] = NULL;
@@ -189,7 +203,7 @@ extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display)
 	return status;
 }
 
-extern int x11_delete_xauth(char *xauthority, uint16_t display)
+extern int x11_delete_xauth(char *xauthority, char *host, uint16_t display)
 {
 	int i=0, status;
 	char *result;
@@ -201,7 +215,7 @@ extern int x11_delete_xauth(char *xauthority, uint16_t display)
 	xauth_argv[i++] = xstrdup("-f");
 	xauth_argv[i++] = xstrdup(xauthority);
 	xauth_argv[i++] = xstrdup("remove");
-	xauth_argv[i++] = xstrdup_printf("localhost:%u", display);
+	xauth_argv[i++] = xstrdup_printf("%s/unix:%u", host, display);
 	xauth_argv[i++] = NULL;
 	xassert(i < 10);
 

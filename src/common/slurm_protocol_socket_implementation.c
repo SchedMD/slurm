@@ -8,11 +8,11 @@
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -62,6 +62,7 @@
 #include "src/common/fd.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
 
@@ -461,6 +462,42 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	uint16_t port;
 	char ip[32];
 
+#ifdef HAVE_NATIVE_CRAY
+	static int check_quiesce = -1;
+	if (check_quiesce == -1) {
+		char *comm_params = slurm_get_comm_parameters();
+		if (xstrcasestr(comm_params, "CheckGhalQuiesce"))
+			check_quiesce = 1;
+		else
+			check_quiesce = 0;
+		xfree(comm_params);
+	}
+
+	if (check_quiesce) {
+		char buffer[20];
+		char *quiesce_status = "/sys/class/gni/ghal0/quiesce_status";
+		int max_retry = 300;
+		int quiesce_fd = open(quiesce_status, O_RDONLY);
+
+		retry_cnt = 0;
+		while (quiesce_fd >= 0 && retry_cnt < max_retry) {
+			if (read(quiesce_fd, buffer, sizeof(buffer)) > 0) {
+				if (buffer[0] == '0')
+					break;
+			}
+			usleep(500000);
+			if (retry_cnt % 10 == 0)
+				debug3("WARNING: ghal0 quiesce status: %c, retry count %d",
+				       buffer[0], retry_cnt);
+			retry_cnt++;
+			close(quiesce_fd);
+			quiesce_fd = open(quiesce_status, O_RDONLY);
+		}
+		if (quiesce_fd >= 0)
+			close(quiesce_fd);
+	}
+#endif
+
 	if ( (addr->sin_family == 0) || (addr->sin_port  == 0) ) {
 		error("Error connecting, bad data: family = %u, port = %u",
 			addr->sin_family, addr->sin_port);
@@ -751,4 +788,3 @@ extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
     unpack_error:
 	return SLURM_ERROR;
 }
-

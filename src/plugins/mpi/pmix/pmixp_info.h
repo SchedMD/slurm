@@ -5,11 +5,11 @@
  *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
 
@@ -50,7 +50,7 @@ typedef struct {
 	int magic;
 #endif
 	char nspace[PMIXP_MAX_NSLEN];
-	uint32_t jobid; /* Current SLURM job id */
+	uint32_t jobid; /* Current Slurm job id */
 	uint32_t stepid; /* Current step id (or NO_VAL) */
 	uint32_t nnodes; /* number of nodes in current step */
 	uint32_t nnodes_job; /* number of nodes in current job */
@@ -59,7 +59,7 @@ typedef struct {
 	uint32_t ncpus_job; /* total possible number of cpus in job */
 	uint32_t *task_cnts; /* Number of tasks on each node in this step */
 	int node_id; /* relative position of this node in this step */
-	int node_id_job; /* relative position of this node in SLURM job */
+	int node_id_job; /* relative position of this node in Slurm job */
 	hostlist_t job_hl;
 	hostlist_t step_hl;
 	char *hostname;
@@ -231,7 +231,7 @@ static inline uint32_t pmixp_info_taskid(uint32_t localid)
 }
 
 /*
- * Since tasks array in SLURM job structure is uint16_t
+ * Since tasks array in Slurm job structure is uint16_t
  * task local id can't be grater than 2^16. So we can
  * safely return int here. We need (-1) for the not-found case
  */

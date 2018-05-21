@@ -9,11 +9,11 @@
  *             Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
 
@@ -54,6 +54,11 @@
 #include "src/common/pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
+#include "src/slurmdbd/read_config.h"
+
+#define MAX_ARRAY_LEN_SMALL	10000
+#define MAX_ARRAY_LEN_MEDIUM	1000000
+#define MAX_ARRAY_LEN_LARGE	10000000
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -87,6 +92,8 @@ strong_alias(unpackmem,		slurm_unpackmem);
 strong_alias(unpackmem_ptr,	slurm_unpackmem_ptr);
 strong_alias(unpackmem_xmalloc,	slurm_unpackmem_xmalloc);
 strong_alias(unpackmem_malloc,	slurm_unpackmem_malloc);
+strong_alias(unpackstr_xmalloc_escaped, slurm_unpackstr_xmalloc_escaped);
+strong_alias(unpackstr_xmalloc_chooser, slurm_unpackstr_xmalloc_chooser);
 strong_alias(packstr_array,	slurm_packstr_array);
 strong_alias(unpackstr_array,	slurm_unpackstr_array);
 strong_alias(packmem_array,	slurm_packmem_array);
@@ -220,8 +227,10 @@ void 	packdouble(double val, Buf buffer)
 		uint64_t u;
 	} uval;
 
-	 /* The 0.5 is here to round off.  We have found on systems going out
-	  * more than 15 decimals will mess things up, but this corrects it. */
+	/*
+	 * The 0.5 is here to round off.  We have found on systems going out
+	 * more than 15 decimals will mess things up, but rounding corrects it.
+	 */
 	uval.d =  (val * FLOAT_MULT);
 	nl =  HTON_uint64(uval.u);
 	if (remaining_buf(buffer) < sizeof(nl)) {
@@ -375,7 +384,9 @@ int unpack32(uint32_t * valp, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-/* Given a *uint16_t, it will pack an array of size_val */
+/*
+ * Given a *uint16_t, it will pack an array of size_val
+ */
 void pack16_array(uint16_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
@@ -389,7 +400,8 @@ void pack16_array(uint16_t * valp, uint32_t size_val, Buf buffer)
 	}
 }
 
-/* Given a int ptr, it will unpack an array of size_val
+/*
+ * Given a int ptr, it will unpack an array of size_val
  */
 int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
 {
@@ -397,7 +409,7 @@ int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL32)
+	if ((*size_val) > MAX_ARRAY_LEN_MEDIUM)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(uint16_t));
@@ -408,7 +420,9 @@ int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-/* Given a *uint32_t, it will pack an array of size_val */
+/*
+ * Given a *uint32_t, it will pack an array of size_val
+ */
 void pack32_array(uint32_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
@@ -422,7 +436,8 @@ void pack32_array(uint32_t * valp, uint32_t size_val, Buf buffer)
 	}
 }
 
-/* Given a int ptr, it will unpack an array of size_val
+/*
+ * Given a int ptr, it will unpack an array of size_val
  */
 int unpack32_array(uint32_t ** valp, uint32_t * size_val, Buf buffer)
 {
@@ -430,7 +445,7 @@ int unpack32_array(uint32_t ** valp, uint32_t * size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL32)
+	if ((*size_val) > MAX_ARRAY_LEN_LARGE)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(uint32_t));
@@ -441,7 +456,9 @@ int unpack32_array(uint32_t ** valp, uint32_t * size_val, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-/* Given a *uint64_t, it will pack an array of size_val */
+/*
+ * Given a *uint64_t, it will pack an array of size_val
+ */
 void pack64_array(uint64_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
@@ -455,8 +472,10 @@ void pack64_array(uint64_t * valp, uint32_t size_val, Buf buffer)
 	}
 }
 
-/* Pack an array of 64bit values as if they were 32bit
- * Used for backwards compatibility */
+/*
+ * Pack an array of 64b-it values as if they were 32-bit
+ * Used for backwards compatibility
+ */
 void pack64_array_as_32(uint64_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
@@ -478,7 +497,7 @@ int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL32)
+	if ((*size_val) > MAX_ARRAY_LEN_MEDIUM)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(uint64_t));
@@ -489,15 +508,17 @@ int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-/* Unpack an array of 64bit values as if they were 32bit
- * Used for backwards compatibility */
+/*
+ * Unpack an array of 64bit values as if they were 32bit
+ * Used for backwards compatibility
+ */
 int unpack64_array_from_32(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 {
 	uint32_t i = 0, val32;
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL32)
+	if ((*size_val) > MAX_ARRAY_LEN_MEDIUM)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(uint64_t));
@@ -528,7 +549,7 @@ int unpackdouble_array(double **valp, uint32_t* size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL32)
+	if ((*size_val) > MAX_ARRAY_LEN_SMALL)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(double));
@@ -558,7 +579,7 @@ int unpacklongdouble_array(long double **valp, uint32_t* size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-	if ((*size_val) > NO_VAL32)
+	if ((*size_val) > MAX_ARRAY_LEN_SMALL)
 		return SLURM_ERROR;
 
 	*valp = xmalloc_nz((*size_val) * sizeof(long double));
@@ -700,9 +721,9 @@ int unpackmem_ptr(char **valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > MAX_PACK_MEM_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_LARGE) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_LARGE);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
@@ -735,9 +756,9 @@ int unpackmem(char *valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > MAX_PACK_MEM_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_LARGE) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_LARGE);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
@@ -770,9 +791,9 @@ int unpackmem_xmalloc(char **valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > MAX_PACK_MEM_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_LARGE) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_LARGE);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
@@ -806,9 +827,9 @@ int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
-	if (*size_valp > MAX_PACK_MEM_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_SMALL) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_SMALL);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
@@ -826,6 +847,79 @@ int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 		*valp = NULL;
 	return SLURM_SUCCESS;
 }
+
+/*
+ * Given a buffer containing a network byte order 16-bit integer,
+ * and an arbitrary char string, copy the data string into the location
+ * specified by valp and escape ' and \ to be database safe.
+ * Also return the sizes of 'valp' in bytes.
+ * Adjust buffer counters.
+ * NOTE: valp is set to point into a newly created buffer,
+ *	the caller is responsible for calling xfree() on *valp
+ *	if non-NULL (set to NULL on zero size buffer value)
+ * NOTE: size_valp may not match how much data was processed from buffer, but
+ *       will match the length of the returned 'valp'.
+ * WARNING: These escapes are sufficient to protect MariaDB/MySQL, but
+ *          may not be sufficient if databases are added in the future.
+ */
+int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, Buf buffer)
+{
+	uint32_t ns;
+
+	if (remaining_buf(buffer) < sizeof(ns))
+		return SLURM_ERROR;
+
+	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
+	*size_valp = ntohl(ns);
+	buffer->processed += sizeof(ns);
+
+	if (*size_valp > MAX_PACK_MEM_LEN) {
+		error("%s: Buffer to be unpacked is too large (%u > %u)",
+		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		return SLURM_ERROR;
+	} else if (*size_valp > 0) {
+		uint32_t cnt = *size_valp;
+
+		if (remaining_buf(buffer) < cnt)
+			return SLURM_ERROR;
+
+		/* make a buffer 2 times the size just to be safe */
+		*valp = xmalloc_nz((cnt * 2) + 1);
+		if (*valp) {
+			char *copy = NULL, *str, tmp;
+			uint32_t i;
+			copy = *valp;
+			str = &buffer->head[buffer->processed];
+
+			for (i = 0; i < cnt && *str; i++) {
+				tmp = *str++;
+				if ((tmp == '\\') || (tmp == '\'')) {
+					*copy++ = '\\';
+					(*size_valp)++;
+				}
+
+				*copy++ = tmp;
+			}
+
+			/* Since we used xmalloc_nz, terminate the string. */
+			*copy++ = '\0';
+		}
+
+		/* add the original value since that is what we processed */
+		buffer->processed += cnt;
+	} else
+		*valp = NULL;
+	return SLURM_SUCCESS;
+}
+
+int unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp, Buf buf)
+{
+	if (slurmdbd_conf)
+		return unpackstr_xmalloc_escaped(valp, size_valp, buf);
+	else
+		return unpackmem_xmalloc(valp, size_valp, buf);
+}
+
 
 /*
  * Given a pointer to array of char * (char ** or char *[] ) and a size
@@ -878,9 +972,9 @@ int unpackstr_array(char ***valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > MAX_PACK_ARRAY_LEN) {
+	if (*size_valp > MAX_ARRAY_LEN_MEDIUM) {
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_ARRAY_LEN);
+		      __func__, *size_valp, MAX_ARRAY_LEN_MEDIUM);
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
@@ -889,8 +983,10 @@ int unpackstr_array(char ***valp, uint32_t * size_valp, Buf buffer)
 			if (unpackmem_xmalloc(&(*valp)[i], &uint32_tmp, buffer))
 				return SLURM_ERROR;
 		}
-		(*valp)[i] = NULL;	/* NULL terminated array so that execle */
-		/*    can detect end of array */
+		/*
+		 * NULL terminate array so execle() can detect end of array
+		 */
+		(*valp)[i] = NULL;
 	} else
 		*valp = NULL;
 	return SLURM_SUCCESS;

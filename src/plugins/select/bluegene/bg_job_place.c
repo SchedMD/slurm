@@ -8,11 +8,11 @@
  *  Written by Dan Phung <phung4@llnl.gov> and Morris Jette <jette1@llnl.gov>
  *             and Danny Auble <da@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -496,7 +496,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		 * the set of nodes which the job can use.
 		 * Nodes not available for the job could be down,
 		 * drained, allocated to some other job, or in some
-		 * SLURM block not available to this job.
+		 * Slurm block not available to this job.
 		 */
 		if (!bit_super_set(bg_record->mp_bitmap, slurm_block_bitmap)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
@@ -651,7 +651,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
-		if ((request->geometry[0] != (uint16_t)NO_VAL)
+		if ((request->geometry[0] != NO_VAL16)
 		    && (!_check_rotate_geo(bg_record->geo, request->geometry,
 					   request->rotate)))
 			continue;
@@ -1257,7 +1257,7 @@ static int _find_best_block_match(List block_list,
 			   SELECT_JOBDATA_CONN_TYPE, &request.conn_type);
 
 	if (req_procs <= bg_conf->cpus_per_mp)
-		req_geometry[0] = (uint16_t)NO_VAL;
+		req_geometry[0] = NO_VAL16;
 	else
 		get_select_jobinfo(job_ptr->select_jobinfo->data,
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
@@ -1268,7 +1268,7 @@ static int _find_best_block_match(List block_list,
 	if ((rc = _check_images(job_ptr, &request)) == SLURM_ERROR)
 		goto end_it;
 
-	if (req_geometry[0] != 0 && req_geometry[0] != (uint16_t)NO_VAL) {
+	if (req_geometry[0] != 0 && req_geometry[0] != NO_VAL16) {
 		char tmp_geo[SYSTEM_DIMENSIONS+1];
 
 		target_size = 1;
@@ -1289,7 +1289,7 @@ static int _find_best_block_match(List block_list,
 			/* min_nodes = target_size; */
 		}
 	} else {
-		req_geometry[0] = (uint16_t)NO_VAL;
+		req_geometry[0] = NO_VAL16;
 		target_size = min_nodes;
 	}
 
@@ -1298,7 +1298,7 @@ static int _find_best_block_match(List block_list,
 
 	memcpy(request.geometry, req_geometry, sizeof(req_geometry));
 
-	request.deny_pass = (uint16_t)NO_VAL;
+	request.deny_pass = NO_VAL16;
 	request.save_name = NULL;
 	request.size = target_size;
 	request.procs = req_procs;
@@ -1317,7 +1317,7 @@ static int _find_best_block_match(List block_list,
 	/* since we only look at procs after this and not nodes we
 	 *  need to set a max_cpus if given
 	 */
-	if (max_cpus == (uint32_t)NO_VAL)
+	if (max_cpus == NO_VAL)
 		max_cpus = max_nodes * bg_conf->cpus_per_mp;
 
 	while (1) {
@@ -1822,10 +1822,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	if (!job_ptr->details)
 		return EINVAL;
 
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->core_spec != NO_VAL16) {
 		verbose("select/bluegene: job %u core_spec(%u) not supported",
 			job_ptr->job_id, job_ptr->details->core_spec);
-		job_ptr->details->core_spec = (uint16_t) NO_VAL;
+		job_ptr->details->core_spec = NO_VAL16;
 	}
 
 	if (preemptee_candidates && preemptee_job_list

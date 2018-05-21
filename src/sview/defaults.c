@@ -7,11 +7,11 @@
  *  Written by Danny Auble <da@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -196,8 +196,6 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 			sview_config->default_page = PART_PAGE;
 		else if (!xstrcasecmp(new_text, "res"))
 			sview_config->default_page = RESV_PAGE;
-		else if (!xstrcasecmp(new_text, "block"))
-			sview_config->default_page = BLOCK_PAGE;
 		else if (!xstrcasecmp(new_text, "node"))
 			sview_config->default_page = NODE_PAGE;
 		else if (!xstrcasecmp(new_text, "frontend"))
@@ -620,8 +618,6 @@ extern int load_defaults(void)
 			default_sview_config.default_page = PART_PAGE;
 		else if (xstrcasestr(tmp_str, "res"))
 			default_sview_config.default_page = RESV_PAGE;
-		else if (xstrcasestr(tmp_str, "block"))
-			default_sview_config.default_page = BLOCK_PAGE;
 		else if (xstrcasestr(tmp_str, "node"))
 			default_sview_config.default_page = NODE_PAGE;
 		else if (xstrcasestr(tmp_str, "frontend"))
@@ -681,8 +677,6 @@ extern int load_defaults(void)
 			default_sview_config.page_visible[PART_PAGE] = 1;
 		if (xstrcasestr(tmp_str, "res"))
 			default_sview_config.page_visible[RESV_PAGE] = 1;
-		if (xstrcasestr(tmp_str, "block"))
-			default_sview_config.page_visible[BLOCK_PAGE] = 1;
 		if (xstrcasestr(tmp_str, "node"))
 			default_sview_config.page_visible[NODE_PAGE] = 1;
 		if (xstrcasestr(tmp_str, "frontend"))
@@ -1129,7 +1123,6 @@ extern int configure_defaults(void)
 			if (tmp_config.ruled_treeview
 			    != working_sview_config.ruled_treeview) {
 				/* get rid of each existing table */
-				cluster_change_block();
 				cluster_change_resv();
 				cluster_change_part();
 				cluster_change_job();

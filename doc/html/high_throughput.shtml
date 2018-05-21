@@ -86,13 +86,10 @@ options that you may want to consider for higher throughput.</p>
 
 <ul>
 <li><b>AccountingStorageType</b>:
-Disabling accounting will improve job throughput. Disable storing of
-accounting by using the <i>accounting_storage/none</i> plugin.
-Starting in Slurm 14.11 there was work done to improve the speedup
-of the database which makes turning accounting off a minimal
-improvement in performance.  If using the SlurmDBD even greater
-speedup can be achieved by setting the CommitDelay option in the
-<a href=slurmdbd.conf.html>slurmdbd.conf</a></li>
+Disabling storing of accounting by using the <i>accounting_storage/none</i>
+plugin. Turning accounting off provides minimal improvement in performance.
+If using the SlurmDBD increased speedup can be achieved by setting the
+CommitDelay option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a></li>
 <li><b>JobAcctGatherType</b>:
 Disabling the collection of job accounting information will improve job
 throughput. Disable collection of accounting by using the
@@ -122,7 +119,7 @@ the slurmctld daemon.</li>
 The <i>priority/builtin</i> is considerably faster than other options, but
 schedules jobs only on a First In First Out (FIFO) basis.</li>
 <li><b>SchedulerParameters</b>:
-Several scheduling parameters are available.
+Many scheduling parameters are available.
 <ul>
 <li>Setting option <b>batch_sched_delay</b> will control how long the
 scheduling of batch jobs can be delayed. This effects only batch jobs.
@@ -140,8 +137,8 @@ how frequently the scheduling logic runs. It can still be triggered on each
 job submit, job terminiation, or other state change which could permit a new
 job to be started. However that triggering does not cause the scheduling logic
 to be started immediately, but only within the configured <b>sched_interval</b>.
-For example, if sched_min_interval=2 (seconds) and 100 jobs are submitted within
-a 2 second time window, then the scheduling logic will be executed one time
+For example, if sched_min_interval=2000000 (microseconds) and 100 jobs are submitted
+within a 2 second time window, then the scheduling logic will be executed one time
 rather than 100 times if sched_min_interval was set to 0 (no delay).</li>
 <li>Besides controlling how frequently the scheduling logic is executed, the
 <b>default_queue_depth</b> configuration parameter controls how many jobs are
@@ -154,6 +151,22 @@ overhead of backfill scheduling (NOTE: the default values are fine for both
 of these parameters). Other backfill options available for tuning backfill 
 scheduling include <b>bf_max_job_user</b>, <b>bf_resolution</b> and
 <b>bf_window</b>. See the slurm.conf man page for details.</li>
+<li>A set of scheduling parameters currently used for running hundreds of jobs
+per second on a sustained basis on one cluster follows. Note that every
+environment is different and this set of parameters will not work well
+in every case, but it may serve as a good starting point.</li>
+<ul>
+<li>assoc_limit_continue</li>
+<li>batch_sched_delay=20</li>
+<li>bf_continue</li>
+<li>bf_interval=300</li>
+<li>bf_min_age_reserve=10800</li>
+<li>bf_resolution=600</li>
+<li>bf_yield_interval=1000000</li>
+<li>partition_job_depth=500</li>
+<li>sched_max_job_start=200</li>
+<li>sched_min_interval=2000000</li>
+</ul>
 </ul></li>
 <li><b>SchedulerType</b>:
 If most jobs are short lived then use of the <i>sched/builtin</i> plugin is
@@ -198,11 +211,9 @@ appropriate for your environment.</li>
 
 <h2>SlurmDBD Configuration</h2>
 
-<p>Starting in Slurm 14.11 there was work done to improve the speedup
-of the database which makes turning accounting off a minimal
-improvement in performance.  If using the SlurmDBD even greater
-speedup can be achieved by setting the CommitDelay option in the
-<a href=slurmdbd.conf.html>slurmdbd.conf</a></p>
+<p>Turning accounting off provides a minimal improvement in performance.
+  If using SlurmDBD increased speedup can be achieved by setting the CommitDelay
+  option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a></p>
 
 <p>You might also consider setting the '<i>Purge*</i>' options in your
   slurmdbd.conf to clear out old Data.  A Typical configuration would
@@ -218,6 +229,6 @@ speedup can be achieved by setting the CommitDelay option in the
 
 </ul>
 
-<p style="text-align:center;">Last modified 5 September 2017</p>
+<p style="text-align:center;">Last modified 19 March 2018</p>
 
 <!--#include virtual="footer.txt"-->

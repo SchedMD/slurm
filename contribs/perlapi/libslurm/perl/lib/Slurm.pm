@@ -56,6 +56,7 @@ sub IS_JOB_STARTED     { (($_[0]->{job_state} & JOB_STATE_BASE) >  JOB_PENDING) 
 sub IS_JOB_FINISHED    { (($_[0]->{job_state} & JOB_STATE_BASE) >  JOB_SUSPENDED) }
 sub IS_JOB_COMPLETED   { (IS_JOB_FINISHED($_[0]) && (($_[0]->{job_state} & JOB_COMPLETING) == 0)) }
 sub IS_JOB_RESIZING    { ($_[0]->{job_state} & JOB_RESIZING) }
+sub IS_JOB_SIGNALING   { ($_[0]->{job_state} & JOB_SIGNALING) }
 # /* Defined node states */
 sub IS_NODE_UNKNOWN    { (($_[0]->{node_state} & NODE_STATE_BASE) == NODE_STATE_UNKNOWN) }
 sub IS_NODE_DOWN       { (($_[0]->{node_state} & NODE_STATE_BASE) == NODE_STATE_DOWN) }

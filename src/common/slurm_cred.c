@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/common/slurm_cred.c - SLURM job and sbcast credential functions
+ *  src/common/slurm_cred.c - Slurm job and sbcast credential functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -8,11 +8,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -91,8 +91,8 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 typedef struct {
 	time_t   ctime;		/* Time that the cred was created	*/
 	time_t   expiration;    /* Time at which cred is no longer good	*/
-	uint32_t jobid;		/* SLURM job id for this credential	*/
-	uint32_t stepid;	/* SLURM step id for this credential	*/
+	uint32_t jobid;		/* Slurm job id for this credential	*/
+	uint32_t stepid;	/* Slurm step id for this credential	*/
 } cred_state_t;
 
 /*
@@ -103,7 +103,7 @@ typedef struct {
 typedef struct {
 	time_t   ctime;         /* Time that this entry was created         */
 	time_t   expiration;    /* Time at which credentials can be purged  */
-	uint32_t jobid;         /* SLURM job id for this credential	*/
+	uint32_t jobid;         /* Slurm job id for this credential	*/
 	time_t   revoked;       /* Time at which credentials were revoked   */
 } job_state_t;
 
@@ -123,7 +123,7 @@ enum ctx_type {
 struct sbcast_cred {
 	time_t ctime;		/* Time that the cred was created	*/
 	time_t expiration;	/* Time at which cred is no longer good	*/
-	uint32_t jobid;		/* SLURM job id for this credential	*/
+	uint32_t jobid;		/* Slurm job id for this credential	*/
 	uint32_t uid;		/* user for which this cred is valid	*/
 	uint32_t gid;		/* user's primary group id 		*/
 	char *user_name;	/* user_name as a string		*/
@@ -238,7 +238,7 @@ static const char *syms[] = {
 
 struct sbcast_cache {
 	time_t       expire;	/* Time that the cred was created	*/
-	uint32_t     value;	/* SLURM job id for this credential	*/
+	uint32_t     value;	/* Slurm job id for this credential	*/
 };
 
 static slurm_crypto_ops_t ops;
@@ -365,7 +365,6 @@ static int _slurm_crypto_fini(void)
 
 	init_run = false;
 	FREE_NULL_LIST(sbcast_cache_list);
-	sbcast_cache_list = NULL;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;
@@ -1523,7 +1522,7 @@ slurm_cred_print(slurm_cred_t *cred)
 
 	xassert(cred->magic == CRED_MAGIC);
 
-	if (cred->job_core_spec == (uint16_t) NO_VAL) {
+	if (cred->job_core_spec == NO_VAL16) {
 		spec_type  = "Cores";
 		spec_count = 0;
 	} else if (cred->job_core_spec & CORE_SPEC_THREAD) {
@@ -1988,8 +1987,14 @@ _find_cred_state(cred_state_t *c, slurm_cred_t *cred)
 static job_state_t *
 _insert_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 {
-	job_state_t *j = _job_state_create(jobid);
-	list_append(ctx->job_list, j);
+	job_state_t *j = list_find_first(
+		ctx->job_list, _list_find_job_state, &jobid);;
+	if (!j) {
+		j = _job_state_create(jobid);
+		list_append(ctx->job_list, j);
+	} else
+		debug2("%s: we already have a job state for job %u.  No big deal, just an FYI.",
+		       __func__, jobid);
 	return j;
 }
 
@@ -2049,7 +2054,7 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 		debug3("state for jobid %u: ctime:%"PRIu64" revoked:%"PRIu64" "
 		       "expires:%"PRIu64"",
 		       j->jobid, (uint64_t)j->ctime, (uint64_t)j->revoked,
-		       (uint64_t)j->revoked);
+		       (uint64_t)j->expiration);
 #endif
 		if (j->revoked && (now > j->expiration)) {
 			list_delete_item(i);
@@ -2212,7 +2217,7 @@ _cred_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 	cred_state_t *s   = NULL;
 
 	safe_unpack32(&n, buffer);
-	if (n > NO_VAL32)
+	if (n > NO_VAL)
 		goto unpack_error;
 	for (i = 0; i < n; i++) {
 		if (!(s = _cred_state_unpack_one(buffer)))
@@ -2257,7 +2262,7 @@ _job_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 	job_state_t *j   = NULL;
 
 	safe_unpack32(&n, buffer);
-	if (n > NO_VAL32)
+	if (n > NO_VAL)
 		goto unpack_error;
 	for (i = 0; i < n; i++) {
 		if (!(j = _job_state_unpack_one(buffer)))

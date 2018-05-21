@@ -1,0 +1,117 @@
+---
+
+# Slurm ansible playbook for Cray systems
+# Copyright 2017 Cray Inc. All Rights Reserved.
+#
+# Licensed under the GPL. See 'LICENSE.OpenSSL'.
+
+- hosts: localhost
+
+  vars:
+    run_after:
+      - common
+      - compute_node
+      - node_health
+      - persistent_data
+      - simple_sync
+
+    atp_spank_plugin:       /opt/cray/pe/atp/libAtpSLaunch.so
+    mcgroup_hierarchy_file: /sys/fs/cgroup/memory/memory.use_hierarchy
+    slurm_default_dir:      /opt/slurm/default
+    slurmctld_spooldir:     /var/spool/slurm
+    slurmd_spooldir:        /var/spool/slurmd
+    slurm_sysconfdir:       /etc/opt/slurm
+
+  handlers:
+    - name: Run ldconfig
+      command: /sbin/ldconfig
+
+  tasks:
+    - name: Determine scontrol path
+      shell: source /opt/modules/default/init/sh; module load slurm; which scontrol
+      register: scontrol
+      ignore_errors: true
+
+    - name: Determine Slurm prefix
+      shell: dirname $(dirname {{ scontrol.stdout }})
+      register: prefix
+      when: scontrol.rc == 0 and scontrol.stdout != ''
+
+    # Some Cray software depends on the link
+    # /opt/slurm/default -> Slurm prefix
+    - name: Create /opt/slurm directory
+      file: path=/opt/slurm owner=root group=root mode=0755 state=directory
+
+    - name: Link Slurm default directory
+      file: path={{ slurm_default_dir }} src={{ prefix.stdout }} state=link
+      when: prefix.stdout is defined and prefix.stdout != ''
+
+    - name: Add Slurm library directories to ld cache
+      lineinfile:
+        dest=/etc/ld.so.conf.d/slurm.conf
+        line="{{ item }}"
+        create=yes backup=yes owner=root mode=0644
+      with_items:
+        - "{{ slurm_default_dir }}/lib64"
+        - "{{ slurm_default_dir }}/lib64/slurm"
+      notify:
+        - Run ldconfig
+
+    - name: Determine Slurm daemons to run on this node
+      command: "{{ scontrol.stdout }} show daemons"
+      register: slurm_daemons
+      ignore_errors: true
+      when: scontrol.rc == 0 and scontrol.stdout != ''
+
+    # Set hierarchical cgroups to silence console warning
+    - name: Determine memory cgroup hierarchy availability
+      stat: path={{ mcgroup_hierarchy_file }}
+      register: hierarchy
+
+    - name: Set memory control group hierarchy option
+      shell: echo 1 >{{ mcgroup_hierarchy_file }}
+      when: slurm_daemons.stdout is defined
+        and "slurmd" in slurm_daemons.stdout
+        and hierarchy.stat.exists
+
+    - name: Create slurmd spool directory
+      file: name={{ slurmd_spooldir }} state=directory owner=root mode=0755
+      when: slurm_daemons.stdout is defined
+        and "slurmd" in slurm_daemons.stdout
+
+    - name: Create slurmctld spool directory
+      file: path={{ slurmctld_spooldir }} state=directory owner=root mode=0755
+      when: slurm_daemons.stdout is defined
+        and "slurmctld" in slurm_daemons.stdout
+
+    - name: Determine sysconfdir availability
+      stat: path={{ slurm_sysconfdir }}
+      register: sysconfdir
+
+    # Remove this task if Cray PE is not installed on the system
+    - name: Configure ATP SPANK plugin
+      lineinfile:
+        dest={{ slurm_sysconfdir }}/plugstack.conf
+        line="optional {{ atp_spank_plugin }}"
+        regexp={{ atp_spank_plugin }}
+        create=yes backup=yes owner=root mode=0644
+      when: sysconfdir.stat.exists and sysconfdir.stat.isdir
+
+    # Disable Slurm so it's started by cray-ansible, not systemd
+    - name: Disable Slurm systemd startup
+      file: path={{ item }} state=absent
+      with_items:
+        - /usr/lib/systemd/system/multi-user.target.wants/slurmd.service
+        - /usr/lib/systemd/system/multi-user.target.wants/slurmctld.service
+
+    - name: Start slurmctld
+      service: name=slurmctld state=started
+      when: slurm_daemons.stdout is defined
+        and "slurmctld" in slurm_daemons.stdout
+        and not ansible_local.cray_system.in_init
+
+    - name: Start slurmd
+      service: name=slurmd state=started
+      when: slurm_daemons.stdout is defined
+        and "slurmd" in slurm_daemons.stdout
+        and not ansible_local.cray_system.in_init

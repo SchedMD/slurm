@@ -2,29 +2,208 @@
 
 <h1>What's New</h1>
 
-<h2>Major Updates in Slurm Version 17.02</h2>
-<p>Slurm version 17.02 was released in February 2017.
+<h2>Major Updates in Slurm Version 17.11</h2>
+<p>Slurm version 17.11 was released in November 2017.
 See the RELEASE_NOTES and NEWS files included with the distribution for a more
 complete description of changes.
-Highlights of that release include:</p>
-<ul>
-<li>All memory values (in MB) are now 64 bit. Previously, nodes with more than
-    2 TB of memory would not schedule or enforce memory limits correctly.</li>
-<li>Automatically clean up task/cgroup cpuset and devices cgroups after steps
-    are completed.</li>
-<li>Added new sacctmgr commands: "shutdown" (shutdown the server), "list stats"
-    (get server statistics) "clear stats" (clear server statistics).</li>
-<li>Added burst buffer support for job arrays. Added new SchedulerParameters
-    configuration parameter of bb_array_stage_cnt=# to indicate how many pending
-    tasks of a job array should be made available for burst buffer resource
-    allocation.</li>
-<li>Added PrologFlags=Serial to disable concurrent execution of prolog/epilog
-    scripts.</li>
-<li>Added "MailDomain" configuration parameter to qualify email addresses.</li>
-<li>Added infrastructure for managing workload across a federation of clusters.
-    (partial functionality in version 17.02, fully operational in November 2017)</li>
-</ul>
+</p>
 
-<p style="text-align:center;">Last modified 28 March 2017</p>
+<p>
+<h3><b>Upgrade Notes:</b></h3>
+<ul>
+	<li>
+<b>NOTE FOR THOSE RUNNING 17.11.[0|1]:</b> It was found a seeded MySQL
+auto_increment value would be lost eventually if used.  This was found in the
+tres_table which tracks static TRES under 1001.  This was fixed in MariaDB
+>=10.2.4, but at the time of writing this was still around in MySQL.  Regardless
+if you are tracking licenses or GRES in the database (i.e.
+AccountingStorageTRES=gres/gpu) you might have this this issue.  This would mean
+the id for gres/gpu could have been issued 5 instead of 1001.  This is fine
+uptil 17.11 where a new static TRES was added taking up the id of 5.  If you are
+already running 17.11 you can easily check to see if you hit this problem by
+running 'sacctmgr list tres'.  If you see any Name for the Type 'billing' TRES
+(id=5) you are unfortunately hit with the bug. The fix for this issue requires
+manual intervention with the database.  Most likely if you started a slurmctld
+up against the slurmdbd the overwritten TRES is now at a different id.  You can
+fix the double issue by altering all the tables with the new TRES id back to 5,
+remove that entry in the tres_table, and then change the Type of billing back to
+the original Type and restart the slurmdbd which should finish the conversion.
+SchedMD can assist with this.  Supported sites please open a ticket at
+https://bugs.schedmd.com/.  Non-supported sites please contact SchedMD at
+sales@schedmd.com if you would like to discuss commercial support options.
+	</li>
+	<li>
+<b>NOTE:</b> The slurm.spec file used to build RPM packages has been
+aggressively refactored, and some package names may now be different. Notably,
+the three daemons (slurmctld, slurmd/slurmstepd, slurmdbd) each have their own
+separate package with the binary and the appropriate systemd service file, which
+will be installed automatically (but not enabled).  The slurm-plugins,
+slurm-munge, and slurm-lua package has been removed, and the contents moved in
+to the main slurm package.  The slurm-sql package has been removed, and merged
+in with the slurm (job_comp_mysql.so) and slurm-slurmdbd
+(accounting_storage_mysql) packages.  The example configuration files have been
+moved to slurm-example-configs.
+	</li>
+	<li>
+<b>NOTE:</b> The refactored slurm.spec file now requires systemd to build. When
+building on older distributions, you must use the older variant which has been
+preserved as contribs/slurm.spec-legacy.
+	</li>
+	<li>
+<b>NOTE:</b> The slurmctld is now set to fatal if there are any problems with
+any state files.  To avoid this use the new '-i' flag.
+	</li>
+	<li>
+<b>NOTE:</b> systemd services files are installed automatically, but not
+enabled.  You will need to manually enable them on the appropriate systems:
+<ul>
+      <li>
+Controller: systemctl enable slurmctld
+      </li>
+      <li>
+Database: systemctl enable slurmdbd
+      </li>
+      <li>
+Compute Nodes: systemctl enable slurmd
+      </li>
+</ul>
+	</li>
+	<li>
+<b>NOTE:</b> If you are not using Munge, but are using the "service" scripts to
+start Slurm daemons, then you will need to remove this check from the
+etc/slurm*service scripts.
+	</li>
+	<li>
+<b>NOTE:</b> If you are upgrading with any jobs from 14.03 or earlier (i.e.
+quick upgrade from 14.03 -> 15.08 -> 17.02) you will need to wait until after
+those jobs are gone before you upgrade to 17.02 or 17.11.
+	</li>
+	<li>
+<b>NOTE:</b> If you interact with any memory values in a job_submit plugin, you
+will need to test against NO_VAL64 instead of NO_VAL, and change your printf
+format as well.
+	</li>
+	<li>
+<b>NOTE:</b> The SLURM_ID_HASH used for Cray systems has changed to fully use
+the entire 64 bits of the hash.  Previously the stepid was multiplied by
+10,000,000,000 to make it easy to read both the jobid as well as the stepid in
+the hash separated by at least a couple of zeros, but this lead to overflow on
+the hash with steps like the batch and extern step where they used all 32 bits
+to represent the step.  While the new method ruins the easy readability it fixes
+the more important overflow issue.  This most likely will go unnoticed by most,
+just a note of the change.
+	</li>
+	<li>
+<b>NOTE:</b> Starting in 17.11 the slurm commands and daemons dynamically link
+to libslurmfull.so instead of statically linking.  This dramatically reduces the
+footprint of Slurm.  If for some reason this creates issues with your build you
+can configure slurm with --without-shared-libslurm.
+	</li>
+	<li>
+<b>NOTE:</b> Spank options handled in local and allocator contexts should be
+able to handle being called multiple times. An option could be set multiple
+times through environment variables and command line options. Environment
+variables are processed first.
+	</li>
+	<li>
+<b>NOTE:</b> IBM BlueGene/Q and Cray/ALPS modes are deprecated and will be
+removed in an upcoming release. You must add the --enable-deprecated option to
+configure to build these targets.
+	</li>
+	<li>
+<b>NOTE:</b> Built-in BLCR support is deprecated, no longer built automatically,
+and will be removed in an upcoming release. You must add --with-blcr and
+--enable-deprecated options to configure to build this plugin.
+	</li>
+	<li>
+<b>NOTE:</b> srun will now only read in the environment variables
+SLURM_JOB_NODES and SLURM_JOB_NODELIST instead of SLURM_NNODES and
+SLURM_NODELIST.  These latter variables have been obsolete for some time please
+update any scripts still using them.
+	</li>
+</ul>
+</p>
+
+<p>
+<h3><b>Highlights:</b></h3>
+<ul>
+	<li>
+Support for federated clusters to manage a single work-flow across a set of
+clusters.
+	</li>
+	<li>
+Support for heterogeneous job allocations (various processor types, memory
+sizes, etc. by job component). Support for heterogeneous job steps within a
+single MPI_COMM_WORLD is not yet supported for most configurations.
+	</li>
+	<li>
+X11 support is now fully integrated with the main Slurm code.  Remove any X11
+plugin configured in your plugstack.conf file to avoid errors being logged about
+conflicting options.
+	</li>
+	<li>
+Added new advanced reservation flag of "flex", which permits jobs requesting the
+reservation to begin prior to the reservation's start time and use resources
+inside or outside of the reservation. A typical use case is to prevent jobs not
+explicitly requesting the reservation from using those reserved resources rather
+than forcing jobs requesting the reservation to use those resources in the time
+frame reserved.
+	</li>
+	<li>
+The sprio command has been modified to report a job's priority information for
+every partition the job has been submitted to.
+	</li>
+	<li>
+Group ID lookup performed at job submit time to avoid lookup on all compute
+nodes. Enable with PrologFlags=SendGIDs configuration parameter.
+	</li>
+	<li>
+Slurm commands and daemons dynamically link to libslurmfull.so instead of
+statically linking.  This dramatically reduces the footprint of Slurm.  If for
+some reason this creates issues with your build you can configure slurm with
+--without-shared-libslurm.
+	</li>
+	<li>
+In switch plugin, added plugin_id symbol to plugins and wrapped switch_jobinfo_t
+with dynamic_plugin_data_t in interface calls in order to pass switch
+information between clusters with different switch types.
+	</li>
+	<li>
+Changed default ProctrackType to cgroup.
+	</li>
+	<li>
+Changed default sched_min_interval from 0 to 2 microseconds.
+	</li>
+	<li>
+CRAY: --enable-native-cray is no longer an option and is on by default. If you
+want to run with ALPS please configure with --disable-native-cray.
+	</li>
+	<li>
+Added new 'scontrol write batch_script <jobid>' command to fetch a job's batch
+script. Removed the ability to see the script as part of the 'scontrol -dd show
+job' command.
+	</li>
+	<li>
+Add new "billing" TRES which allows jobs to be limited based on the job's
+billable TRES calculated by the job's partition's TRESBillingWeights.
+	</li>
+	<li>
+Regular user use of "scontrol top" command is now disabled. Use the
+configuration parameter "SchedulerParameters=enable_user_top" to enable that
+functionality. The configuration parameter
+"SchedulerParameters=disable_user_top" will be silently ignored.
+	</li>
+	<li>
+Change default to let pending jobs run outside of reservation after reservation
+is gone to put jobs in held state. Added NO_HOLD_JOBS_AFTER_END reservation flag
+to use old default.
+	</li>
+	<li>
+Support for PMIx v2.0 as well as UCX support.
+	</li>
+</ul>
+</p>
+
+<p style="text-align:center;">Last modified 22 January 2018</p>
 
 <!--#include virtual="footer.txt"-->

@@ -6,11 +6,11 @@
  *  Portions copyright (C) 2012,2015 Bull/Atos
  *  Written by Martin Perry <martin.perry@atos.net>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -502,6 +502,11 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	bool core_cyclic, core_fcyclic, sock_fcyclic;
 	bool hwloc_success = true;
 
+	/*
+	 * We can't trust the slurmd_conf_t *conf here as we need actual
+	 * hardware instead of whatever is possibly configured.  So we need to
+	 * look it up again.
+	 */
 	if (get_cpuinfo(&npus, &nboards, &nsockets, &ncores, &nthreads,
 			NULL, NULL, NULL) != SLURM_SUCCESS) {
 		/*
@@ -517,6 +522,11 @@ static int _task_cgroup_cpuset_dist_cyclic(
 							HWLOC_OBJ_PU);
 		npus = (uint16_t) hwloc_get_nbobjs_by_type(topology,
 							   HWLOC_OBJ_PU);
+	} else {
+		/* Translate cores-per-socket to total core count, etc. */
+		nsockets *= nboards;
+		ncores *= nsockets;
+		nthreads *= ncores;
 	}
 
 	if ((nsockets == 0) || (ncores == 0))
@@ -550,7 +560,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		ntskip = taskid;
 		npdist = 1;
 	}
-	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((job->job_core_spec != NO_VAL16) &&
 	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (job->job_core_spec != CORE_SPEC_THREAD)) {
 		/* Skip specialized threads as needed */
@@ -795,7 +805,7 @@ static int _task_cgroup_cpuset_dist_block(
 	}
 
 	hwdepth = hwloc_get_type_depth(topology, hwtype);
-	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((job->job_core_spec != NO_VAL16) &&
 	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (job->job_core_spec != CORE_SPEC_THREAD)  &&
 	    (nsockets != 0)) {
@@ -1078,7 +1088,7 @@ again:
 	 * setting it up. As soon as the step cgroup is created, we can release
 	 * the lock.
 	 * Indeed, consecutive slurm steps could result in cg being removed
-	 * between the next EEXIST instanciation and the first addition of
+	 * between the next EEXIST instantiation and the first addition of
 	 * a task. The release_agent will have to lock the root cpuset cgroup
 	 * to avoid this scenario.
 	 */
@@ -1373,7 +1383,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 
 	hwtype = HWLOC_OBJ_MACHINE;
 	nobj = 1;
-	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((job->job_core_spec != NO_VAL16) &&
 	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (job->job_core_spec != CORE_SPEC_THREAD)) {
 		spec_threads = job->job_core_spec & (~CORE_SPEC_THREAD);

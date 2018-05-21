@@ -8,11 +8,11 @@
  *
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,17 +28,15 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#include "config.h"
 
 #include "src/smap/smap.h"
 
@@ -86,38 +84,6 @@ extern int *get_cluster_dims(node_info_msg_t *node_info_ptr)
 	return dim_size;
 }
 
-#ifdef HAVE_BG
-static void _internal_setup_grid(int level, uint16_t *coords)
-{
-	ba_mp_t *ba_mp;
-	smap_node_t *smap_node;
-
-	if (level > params.cluster_dims)
-		return;
-
-	if (level < params.cluster_dims) {
-		for (coords[level] = 0;
-		     coords[level] < dim_size[level];
-		     coords[level]++) {
-			/* handle the outer dims here */
-			_internal_setup_grid(level+1, coords);
-		}
-		return;
-	}
-	ba_mp = bg_configure_coord2ba_mp(coords);
-
-	if (!ba_mp || ba_mp->index > smap_system_ptr->node_cnt)
-		return;
-	smap_node = xmalloc(sizeof(smap_node_t));
-	smap_node->coord = xmalloc(sizeof(uint16_t) * params.cluster_dims);
-
-	memcpy(smap_node->coord, coords,
-	       sizeof(uint16_t) * params.cluster_dims);
-	smap_node->index = ba_mp->index;
-	smap_system_ptr->grid[smap_node->index] = smap_node;
-}
-#endif
-
 extern void set_grid_inx(int start, int end, int count)
 {
 	int i;
@@ -140,35 +106,6 @@ extern void set_grid_inx(int start, int end, int count)
 	}
 }
 
-/* This function is only called when HAVE_BG is set */
-extern int set_grid_bg(int *start, int *end, int count, int set)
-{
-	int node_cnt = 0, i, j;
-
-	if (!smap_system_ptr || !smap_system_ptr->grid)
-		return 0;
-
-	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
-		if (!smap_system_ptr->grid[i])		/* Null node name */
-			continue;
-		for (j = 0; j < params.cluster_dims; j++) {
-			if ((smap_system_ptr->grid[i]->coord[j] < start[j]) ||
-			    (smap_system_ptr->grid[i]->coord[j] > end[j]))
-				break;
-		}
-		if (j < params.cluster_dims)
-			continue;	/* outside of boundary */
-		if (set ||
-		    ((smap_system_ptr->grid[i]->letter == '.') &&
-		     (smap_system_ptr->grid[i]->letter != '#'))) {
-			smap_system_ptr->grid[i]->letter = letters[count%62];
-			smap_system_ptr->grid[i]->color  = colors[count%6];
-		}
-		node_cnt++;
-	}
-	return node_cnt;
-}
-
 /* Build the smap_system_ptr structure from the node records */
 extern void init_grid(node_info_msg_t *node_info_ptr, int cols)
 {
@@ -179,23 +116,7 @@ extern void init_grid(node_info_msg_t *node_info_ptr, int cols)
 	smap_system_ptr = xmalloc(sizeof(smap_system_t));
 
 	if (!node_info_ptr) {
-		if (params.display != COMMANDS)
-			return;
-#ifdef HAVE_BG
-		uint16_t coords[params.cluster_dims];
-
-		smap_system_ptr->node_cnt = 1;
-		for (i=0; i<params.cluster_dims; i++)
-			smap_system_ptr->node_cnt *= dim_size[i];
-		smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
-						smap_system_ptr->node_cnt);
-		/* We need to make sure we set up the wires if we
-		   don't have a node_info_ptr.
-		*/
-		bg_configure_ba_setup_wires();
-
-		_internal_setup_grid(0, coords);
-#endif
+		return;
 	} else {
 		smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
 						node_info_ptr->record_count);

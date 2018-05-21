@@ -6,10 +6,10 @@
 <i>
 "With Oxford providing HPC not just to researchers within the
 University, but to local businesses and in collaborative projects,
-such as the T2K and NQIT projects, the SLURM scheduler really was the
+such as the T2K and NQIT projects, the Slurm scheduler really was the
 best option to ensure different service level agreements can be
 supported. If you look at the Top500 list of the World's fastest
-supercomputers, they're now starting to move to SLURM. The scheduler
+supercomputers, they're now starting to move to Slurm. The scheduler
 was specifically requested by the University to support GPUs and the
 heterogeneous estate of different CPUs, which the previous TORQUE
 scheduler couldn't, so this forms quite an important part of the
@@ -59,7 +59,7 @@ Aaron Knister, Environmental Protection Agency
 
 <i>
 "Today our largest IBM computers, BlueGene/L and Purple, ranked #1 and #3
-respectively on the November 2005 Top500 list, use SLURM.
+respectively on the November 2005 Top500 list, use Slurm.
 This decision reduces large job launch times from tens of minutes to seconds.
 This effectively provides
 us with millions of dollars with of additional compute resources without

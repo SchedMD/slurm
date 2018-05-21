@@ -6,11 +6,11 @@
  *  Written by Danny Auble da@llnl.gov, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -44,6 +44,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/xmalloc.h"
@@ -574,12 +575,11 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 	memset(&job->stats, 0, sizeof(slurmdb_stats_t));
 	job->array_task_id = NO_VAL;
 	job->derived_ec = NO_VAL;
-	job->stats.cpu_min = NO_VAL;
 	job->state = JOB_PENDING;
 	job->steps = list_create(slurmdb_destroy_step_rec);
 	job->requid = -1;
-	job->lft = (uint32_t)NO_VAL;
-	job->resvid = (uint32_t)NO_VAL;
+	job->lft = NO_VAL;
+	job->resvid = NO_VAL;
 
       	return job;
 }
@@ -588,12 +588,12 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec()
 {
 	slurmdb_step_rec_t *step = xmalloc(sizeof(slurmdb_step_rec_t));
 	memset(&step->stats, 0, sizeof(slurmdb_stats_t));
-	step->stepid = (uint32_t)NO_VAL;
+	step->stepid = NO_VAL;
 	step->state = NO_VAL;
 	step->exitcode = NO_VAL;
-	step->elapsed = (uint32_t)NO_VAL;
-	step->tot_cpu_sec = (uint32_t)NO_VAL;
-	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->elapsed = NO_VAL;
+	step->tot_cpu_sec = NO_VAL;
+	step->tot_cpu_usec = NO_VAL;
 	step->requid = -1;
 
 	return step;
@@ -849,11 +849,14 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->nodes);
 		xfree(job->req_gres);
 		xfree(job->resv_name);
+		slurmdb_free_slurmdb_stats_members(&job->stats);
 		FREE_NULL_LIST(job->steps);
+		xfree(job->system_comment);
 		xfree(job->tres_alloc_str);
 		xfree(job->tres_req_str);
 		xfree(job->user);
 		xfree(job->wckey);
+		xfree(job->work_dir);
 		xfree(job);
 	}
 }
@@ -921,6 +924,7 @@ extern void slurmdb_destroy_step_rec(void *object)
 	if (step) {
 		xfree(step->nodes);
 		xfree(step->pid_str);
+		slurmdb_free_slurmdb_stats_members(&step->stats);
 		xfree(step->stepname);
 		xfree(step->tres_alloc_str);
 		xfree(step);
@@ -1342,7 +1346,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	ListIterator itr, itr2;
 	bool all_clusters = 0;
 
-	if (cluster_names && !xstrcmp(cluster_names, "all"))
+	if (cluster_names && !xstrcasecmp(cluster_names, "all"))
 		all_clusters = 1;
 
 	cluster_name = slurm_get_cluster_name();
@@ -1414,7 +1418,7 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	memset(assoc, 0, sizeof(slurmdb_assoc_rec_t));
 
 	assoc->def_qos_id = NO_VAL;
-	assoc->is_def = (uint16_t)NO_VAL;
+	assoc->is_def = NO_VAL16;
 
 	/* assoc->grp_tres_mins = NULL; */
 	/* assoc->grp_tres_run_mins = NULL; */
@@ -1451,7 +1455,7 @@ extern void slurmdb_init_clus_res_rec(slurmdb_clus_res_rec_t *clus_res,
 	if (free_it)
 		_free_clus_res_rec_members(clus_res);
 	memset(clus_res, 0, sizeof(slurmdb_clus_res_rec_t));
-	clus_res->percent_allowed = (uint16_t)NO_VAL;
+	clus_res->percent_allowed = NO_VAL16;
 }
 
 extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
@@ -1533,7 +1537,7 @@ extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
 	res->count = NO_VAL;
 	res->flags = SLURMDB_RES_FLAG_NOTSET;
 	res->id = NO_VAL;
-	res->percent_used = (uint16_t)NO_VAL;
+	res->percent_used = NO_VAL16;
 	res->type = SLURMDB_RESOURCE_NOTSET;
 }
 
@@ -1545,7 +1549,7 @@ extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
 	if (free_it)
 		_free_wckey_rec_members(wckey);
 	memset(wckey, 0, sizeof(slurmdb_wckey_rec_t));
-	wckey->is_def = (uint16_t)NO_VAL;
+	wckey->is_def = NO_VAL16;
 }
 
 extern void slurmdb_init_tres_cond(slurmdb_tres_cond_t *tres,
@@ -2891,10 +2895,11 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 	for (i = 0; i < 4; i++) {
 		/* Retry if the slurmctld can connect, but is not responding */
 		rc = slurm_send_recv_node_msg(&req, &resp, 0);
-		if ((rc == 0) || (errno != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
+		if ((rc == SLURM_SUCCESS) ||
+		    (errno != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
 			break;
 	}
-	if ((rc != 0) || ! resp.auth_cred) {
+	if ((rc != SLURM_SUCCESS) || !resp.auth_cred) {
 		error("update cluster: %m to %s at %s(%hu)",
 		      cluster, host, port);
 		rc = SLURM_ERROR;
@@ -3468,6 +3473,10 @@ extern char *slurmdb_make_tres_string(List tres, uint32_t flags)
 
 	itr = list_iterator_create(tres);
 	while ((tres_rec = list_next(itr))) {
+		if ((flags & TRES_STR_FLAG_REMOVE) &&
+		    (tres_rec->count == INFINITE64))
+			continue;
+
 		if ((flags & TRES_STR_FLAG_SIMPLE) || !tres_rec->type)
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 				   (tres_str ||
@@ -3512,13 +3521,15 @@ extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
 
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list, int spec_unit,
-	uint32_t convert_flags)
+	uint32_t convert_flags, uint32_t tres_str_flags, char *nodes)
 {
 	char *tres_str = NULL;
 	char *tmp_str = tres_in;
 	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
+	char *node_name = NULL;
+	List char_list = NULL;
 
 	if (!full_tres_list || !tmp_str || !tmp_str[0]
 	    || tmp_str[0] < '0' || tmp_str[0] > '9')
@@ -3546,6 +3557,9 @@ extern char *slurmdb_make_tres_string_from_simple(
 		}
 		count = slurm_atoull(++tmp_str);
 
+		if (count == NO_VAL64)
+			goto get_next;
+
 		if (tres_str)
 			xstrcat(tres_str, ",");
 		if (!tres_rec->type)
@@ -3557,9 +3571,26 @@ extern char *slurmdb_make_tres_string_from_simple(
 				   tres_rec->name ? "/" : "",
 				   tres_rec->name ? tres_rec->name : "");
 		if (count != INFINITE64) {
-			if ((tres_rec->id == TRES_MEM) ||
-			    (tres_rec->type &&
-			     !xstrcasecmp(tres_rec->type, "bb"))) {
+			if (nodes) {
+				node_name = find_hostname(count, nodes);
+				xstrfmtcat(tres_str, "%s", node_name);
+				xfree(node_name);
+			} else if (tres_str_flags & TRES_STR_FLAG_BYTES) {
+				/* This mean usage */
+				char outbuf[FORMAT_STRING_SIZE];
+				if (tres_rec->id == TRES_CPU) {
+					count /= CPU_TIME_ADJ;
+					secs2time_str((time_t)count, outbuf,
+						      FORMAT_STRING_SIZE);
+				} else
+					convert_num_unit((double)count, outbuf,
+							 sizeof(outbuf),
+							 UNIT_NONE,
+							 spec_unit,
+							 convert_flags);
+				xstrfmtcat(tres_str, "%s", outbuf);
+			} else if ((tres_rec->id == TRES_MEM) ||
+				   !xstrcasecmp(tres_rec->type, "bb")) {
 				char outbuf[FORMAT_STRING_SIZE];
 				convert_num_unit((double)count, outbuf,
 						 sizeof(outbuf), UNIT_MEGA,
@@ -3571,11 +3602,21 @@ extern char *slurmdb_make_tres_string_from_simple(
 		} else
 			xstrfmtcat(tres_str, "NONE");
 
-
+		if (!(tres_str_flags & TRES_STR_FLAG_SORT_ID)) {
+			if (!char_list)
+				char_list = list_create(slurm_destroy_char);
+			list_append(char_list, tres_str);
+			tres_str = NULL;
+		}
 	get_next:
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
 		tmp_str++;
+	}
+
+	if (char_list) {
+		tres_str = slurm_char_list_to_xstr(char_list);
+		FREE_NULL_LIST(char_list);
 	}
 
 	return tres_str;
@@ -3759,6 +3800,29 @@ extern void slurmdb_tres_list_from_string(
 			       "replacing with %"PRIu64,
 			      tres_rec->id, tres_rec->count, count);
 			tres_rec->count = count;
+		} else if (flags & TRES_STR_FLAG_SUM) {
+			if (count != INFINITE64) {
+				if (tres_rec->count == INFINITE64)
+					tres_rec->count = count;
+				else
+					tres_rec->count += count;
+			}
+		} else if (flags & TRES_STR_FLAG_MAX) {
+			if (count != INFINITE64) {
+				if (tres_rec->count == INFINITE64)
+					tres_rec->count = count;
+				else
+					tres_rec->count =
+						MAX(tres_rec->count, count);
+			}
+		} else if (flags & TRES_STR_FLAG_MIN) {
+			if (count != INFINITE64) {
+				if (tres_rec->count == INFINITE64)
+					tres_rec->count = count;
+				else
+					tres_rec->count =
+						MIN(tres_rec->count, count);
+			}
 		}
 
 		if (!(tmp_str = strchr(tmp_str, ',')))
@@ -3887,6 +3951,17 @@ extern int slurmdb_find_qos_in_list_by_name(void *x, void *key)
 	char *name = (char *)key;
 
 	if (!xstrcmp(qos_rec->name, name))
+		return 1;
+
+	return 0;
+}
+
+extern int slurmdb_find_qos_in_list(void *x, void *key)
+{
+	slurmdb_qos_rec_t *qos_rec = (slurmdb_qos_rec_t *)x;
+	uint32_t qos_id = *(uint32_t *)key;
+
+	if (qos_rec->id == qos_id)
 		return 1;
 
 	return 0;
@@ -4162,30 +4237,6 @@ extern void slurmdb_transfer_tres_time(
 	FREE_NULL_LIST(job_tres_list);
 }
 
-extern int slurmdb_get_old_tres_pos(slurmdb_tres_rec_t **new_array,
-				    slurmdb_tres_rec_t **old_array,
-				    int cur_pos, int old_cnt)
-{
-	int j, pos = NO_VAL;
-
-	/* This means the tres didn't change order */
-	if ((cur_pos < old_cnt) &&
-	    (new_array[cur_pos]->id == old_array[cur_pos]->id))
-		pos = cur_pos;
-	else {
-		/* This means we might of changed the location or it
-		 * wasn't there before so break
-		 */
-		for (j=0; j<old_cnt; j++)
-			if (new_array[cur_pos]->id == old_array[j]->id) {
-				pos = j;
-				break;
-			}
-	}
-
-	return pos;
-}
-
 extern int slurmdb_get_tres_base_unit(char *tres_type)
 {
 	int ret_unit = UNIT_NONE;
@@ -4195,6 +4246,34 @@ extern int slurmdb_get_tres_base_unit(char *tres_type)
 	}
 
 	return ret_unit;
+}
+
+extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks)
+{
+	List tres_list = NULL;
+	ListIterator itr;
+	slurmdb_tres_rec_t *tres_rec = NULL;
+	uint32_t flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REPLACE;
+	char *ret_tres_str = NULL;
+
+	if (!tres_string || (tres_string[0] == '\0'))
+		return NULL;
+
+	slurmdb_tres_list_from_string(&tres_list, tres_string, flags);
+	if (!tres_list) {
+		error("%s: couldn't make tres_list", __func__);
+		return ret_tres_str;
+	}
+
+	itr = list_iterator_create(tres_list);
+	while ((tres_rec = list_next(itr)))
+		tres_rec->count /= (uint64_t)tasks;
+	list_iterator_destroy(itr);
+
+	ret_tres_str = slurmdb_make_tres_string(tres_list, flags);
+	FREE_NULL_LIST(tres_list);
+
+	return ret_tres_str;
 }
 
 extern void slurmdb_destroy_stats_rec(void *object)
@@ -4214,4 +4293,32 @@ extern void slurmdb_destroy_stats_rec(void *object)
 		xfree(rpc_stats->rpc_user_time);
 		xfree(object);
 	}
+}
+
+extern void slurmdb_free_slurmdb_stats_members(slurmdb_stats_t *stats)
+{
+	if (stats) {
+		xfree(stats->tres_usage_in_ave);
+		xfree(stats->tres_usage_in_max);
+		xfree(stats->tres_usage_in_max_nodeid);
+		xfree(stats->tres_usage_in_max_taskid);
+		xfree(stats->tres_usage_in_min);
+		xfree(stats->tres_usage_in_min_nodeid);
+		xfree(stats->tres_usage_in_min_taskid);
+		xfree(stats->tres_usage_in_tot);
+		xfree(stats->tres_usage_out_ave);
+		xfree(stats->tres_usage_out_max);
+		xfree(stats->tres_usage_out_max_nodeid);
+		xfree(stats->tres_usage_out_max_taskid);
+		xfree(stats->tres_usage_out_min);
+		xfree(stats->tres_usage_out_min_nodeid);
+		xfree(stats->tres_usage_out_min_taskid);
+		xfree(stats->tres_usage_out_tot);
+	}
+}
+
+extern void slurmdb_destroy_slurmdb_stats(slurmdb_stats_t *stats)
+{
+	slurmdb_free_slurmdb_stats_members(stats);
+	xfree(stats);
 }

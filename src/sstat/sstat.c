@@ -1,16 +1,16 @@
 /*****************************************************************************\
- *  sstat.c - job accounting reports for SLURM's slurmdb/log plugin
+ *  sstat.c - job accounting reports for Slurm's slurmdb/log plugin
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -86,6 +86,22 @@ print_field_t fields[] = {
 	{13, "ReqCPUFreqMin", print_fields_str, PRINT_REQ_CPUFREQ_MIN},
 	{13, "ReqCPUFreqMax", print_fields_str, PRINT_REQ_CPUFREQ_MAX},
 	{13, "ReqCPUFreqGov", print_fields_str, PRINT_REQ_CPUFREQ_GOV},
+	{14, "TRESUsageInAve", print_fields_str, PRINT_TRESUIA},
+	{14, "TRESUsageInMax", print_fields_str, PRINT_TRESUIM},
+	{18, "TRESUsageInMaxNode", print_fields_str, PRINT_TRESUIMN},
+	{18, "TRESUsageInMaxTask", print_fields_str, PRINT_TRESUIMT},
+	{14, "TRESUsageInMin", print_fields_str, PRINT_TRESUIMI},
+	{18, "TRESUsageInMinNode", print_fields_str, PRINT_TRESUIMIN},
+	{18, "TRESUsageInMinTask", print_fields_str, PRINT_TRESUIMIT},
+	{14, "TRESUsageInTot", print_fields_str, PRINT_TRESUIT},
+	{15, "TRESUsageOutAve", print_fields_str, PRINT_TRESUOA},
+	{15, "TRESUsageOutMax", print_fields_str, PRINT_TRESUOM},
+	{19, "TRESUsageOutMaxNode", print_fields_str, PRINT_TRESUOMN},
+	{19, "TRESUsageOutMaxTask", print_fields_str, PRINT_TRESUOMT},
+	{15, "TRESUsageOutMin", print_fields_str, PRINT_TRESUOMI},
+	{19, "TRESUsageOutMinNode", print_fields_str, PRINT_TRESUOMIN},
+	{19, "TRESUsageOutMinTask", print_fields_str, PRINT_TRESUOMIT},
+	{15, "TRESUsageOutTot", print_fields_str, PRINT_TRESUOT},
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;
@@ -102,11 +118,12 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
 	ListIterator itr;
-	slurmdb_stats_t temp_stats;
+	jobacctinfo_t *total_jobacct = NULL;
 	job_step_stat_t *step_stat = NULL;
 	int ntasks = 0;
 	int tot_tasks = 0;
 	hostlist_t hl = NULL;
+	char *ave_usage_tmp = NULL;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
 	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist, use_protocol_ver,
@@ -127,10 +144,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 
 	memset(&step, 0, sizeof(slurmdb_step_rec_t));
 
-	memset(&temp_stats, 0, sizeof(slurmdb_stats_t));
-	temp_stats.cpu_min = NO_VAL;
 	memset(&step.stats, 0, sizeof(slurmdb_stats_t));
-	step.stats.cpu_min = NO_VAL;
 
 	step.job_ptr = &job;
 	step.stepid = stepid;
@@ -140,7 +154,6 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	step.req_cpufreq_gov = req_cpufreq_gov;
 	step.stepname = NULL;
 	step.state = JOB_RUNNING;
-
 	hl = hostlist_create(NULL);
 	itr = list_iterator_create(step_stat_response->stats_list);
 	while ((step_stat = list_next(itr))) {
@@ -164,17 +177,47 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 			hostlist_push_host(hl, step_stat->step_pids->node_name);
 			ntasks += step_stat->num_tasks;
 			if (step_stat->jobacct) {
-				jobacctinfo_2_stats(&temp_stats,
-						    step_stat->jobacct);
-				aggregate_stats(&step.stats, &temp_stats);
+				if (!assoc_mgr_tres_list &&
+				    step_stat->jobacct->tres_list) {
+					assoc_mgr_lock_t locks = {
+						NO_LOCK, NO_LOCK, NO_LOCK,
+						NO_LOCK, WRITE_LOCK, NO_LOCK,
+						NO_LOCK };
+					assoc_mgr_lock(&locks);
+					assoc_mgr_post_tres_list(
+						step_stat->jobacct->tres_list);
+					assoc_mgr_unlock(&locks);
+					/*
+					 * assoc_mgr_post_tres_list destroys the
+					 * input list
+					 */
+					step_stat->jobacct->tres_list = NULL;
+				}
+
+				/*
+				 * total_jobacct has to be created after
+				 * assoc_mgr is set up.
+				 */
+				if (!total_jobacct)
+					total_jobacct =
+						jobacctinfo_create(NULL);
+
+				jobacctinfo_aggregate(total_jobacct,
+						      step_stat->jobacct);
 			}
 		}
 	}
 	list_iterator_destroy(itr);
+
+	if (total_jobacct) {
+		jobacctinfo_2_stats(&step.stats, total_jobacct);
+		jobacctinfo_destroy(total_jobacct);
+	}
+
 	slurm_job_step_pids_response_msg_free(step_stat_response);
 	/* we printed it out already */
 	if (params.pid_format)
-		return rc;
+		goto getout;
 
 	hostlist_sort(hl);
 	hostlist_ranged_string(hl, BUF_SIZE, step.nodes);
@@ -182,17 +225,32 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	tot_tasks += ntasks;
 
 	if (tot_tasks) {
-		step.stats.cpu_ave /= (double)tot_tasks;
-		step.stats.rss_ave /= (double)tot_tasks;
-		step.stats.vsize_ave /= (double)tot_tasks;
-		step.stats.pages_ave /= (double)tot_tasks;
-		step.stats.disk_read_ave /= (double)tot_tasks;
-		step.stats.disk_write_ave /= (double)tot_tasks;
 		step.stats.act_cpufreq /= (double)tot_tasks;
+
+		ave_usage_tmp = step.stats.tres_usage_in_ave;
+		step.stats.tres_usage_in_ave = slurmdb_ave_tres_usage(
+			ave_usage_tmp, tot_tasks);
+		xfree(ave_usage_tmp);
+		ave_usage_tmp = step.stats.tres_usage_out_ave;
+		step.stats.tres_usage_out_ave = slurmdb_ave_tres_usage(
+			ave_usage_tmp, tot_tasks);
+		xfree(ave_usage_tmp);
+
 		step.ntasks = tot_tasks;
 	}
 
 	print_fields(&step);
+
+getout:
+
+	xfree(step.stats.tres_usage_in_max);
+	xfree(step.stats.tres_usage_out_max);
+	xfree(step.stats.tres_usage_in_max_taskid);
+	xfree(step.stats.tres_usage_out_max_taskid);
+	xfree(step.stats.tres_usage_in_max_nodeid);
+	xfree(step.stats.tres_usage_out_max_nodeid);
+	xfree(step.stats.tres_usage_in_ave);
+	xfree(step.stats.tres_usage_out_ave);
 
 	return rc;
 }
@@ -208,10 +266,6 @@ int main(int argc, char **argv)
 
 #ifdef HAVE_ALPS_CRAY
 	error("The sstat command is not supported on Cray systems");
-	return 1;
-#endif
-#ifdef HAVE_BG
-	error("The sstat command is not supported on IBM BlueGene systems");
 	return 1;
 #endif
 
@@ -230,7 +284,7 @@ int main(int argc, char **argv)
 	while ((selected_step = list_next(itr))) {
 		char *nodelist = NULL;
 		bool free_nodelist = false;
-		uint16_t use_protocol_ver = (uint16_t)NO_VAL;
+		uint16_t use_protocol_ver = NO_VAL16;
 		if (selected_step->stepid == SSTAT_BATCH_STEP) {
 			/* get the batch step info */
 			job_info_msg_t *job_ptr = NULL;
@@ -341,5 +395,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-
-

@@ -7,11 +7,11 @@
  *
  *  Written by Rod Schultz <rod.schultz@bull.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -53,6 +53,7 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_acct_gather_filesystem.h"
 #include "src/common/slurm_acct_gather_interconnect.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_acct_gather_energy.h"
@@ -77,8 +78,8 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*node_step_end)    (void);
 	int (*task_start)       (uint32_t);
 	int (*task_end)         (pid_t);
-	int (*create_group)     (const char*);
-	int (*create_dataset)   (const char*, int,
+	int64_t (*create_group)(const char*);
+	int (*create_dataset)   (const char*, int64_t,
 				 acct_gather_profile_dataset_t *);
 	int (*add_sample_data)  (uint32_t, void*, time_t);
 	void (*conf_values)     (List *data);
@@ -116,6 +117,8 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t profile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t timer_thread_id = 0;
+static pthread_mutex_t timer_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t timer_thread_cond = PTHREAD_COND_INITIALIZER;
 static bool init_run = false;
 
 static void _set_freq(int type, char *freq, char *freq_def)
@@ -127,9 +130,16 @@ static void _set_freq(int type, char *freq, char *freq_def)
 			acct_gather_profile_timer[type].freq = 0;
 }
 
+/*
+ * This thread wakes up other profiling threads in the jobacct plugins,
+ * and operates on a 1-second granularity.
+ */
+
 static void *_timer_thread(void *args)
 {
 	int i, now, diff;
+	struct timeval tvnow;
+	struct timespec abs;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "acctg_prof", NULL, NULL, NULL) < 0) {
@@ -138,13 +148,13 @@ static void *_timer_thread(void *args)
 	}
 #endif
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	/* setup timer */
+	gettimeofday(&tvnow, NULL);
+	abs.tv_sec = tvnow.tv_sec;
+	abs.tv_nsec = tvnow.tv_usec * 1000;
 
-	DEF_TIMERS;
 	while (init_run && acct_gather_profile_test()) {
 		slurm_mutex_lock(&g_context_lock);
-		START_TIMER;
 		now = time(NULL);
 
 		for (i=0; i<PROFILE_CNT; i++) {
@@ -183,10 +193,18 @@ static void *_timer_thread(void *args)
 					   notify_mutex);
 			acct_gather_profile_timer[i].last_notify = now;
 		}
-		END_TIMER;
 		slurm_mutex_unlock(&g_context_lock);
 
-		usleep(USLEEP_TIME - DELTA_TIMER);
+		/*
+		 * Sleep until the next second interval, or until signaled
+		 * to shutdown by acct_gather_profile_fini().
+		 */
+
+		abs.tv_sec += 1;
+		slurm_mutex_lock(&timer_thread_mutex);
+		slurm_cond_timedwait(&timer_thread_cond, &timer_thread_mutex,
+				     &abs);
+		slurm_mutex_unlock(&timer_thread_mutex);
 	}
 
 	return NULL;
@@ -220,9 +238,11 @@ extern int acct_gather_profile_init(void)
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
-	xfree(type);
 	if (retval == SLURM_SUCCESS)
 		retval = acct_gather_conf_init();
+	if (retval != SLURM_SUCCESS)
+		fatal("can not open the %s plugin", type);
+	xfree(type);
 
 	return retval;
 }
@@ -263,7 +283,7 @@ extern int acct_gather_profile_fini(void)
 	}
 
 	if (timer_thread_id) {
-		pthread_cancel(timer_thread_id);
+		slurm_cond_signal(&timer_thread_cond);
 		pthread_join(timer_thread_id, NULL);
 	}
 
@@ -535,40 +555,42 @@ extern void acct_gather_profile_endpoll(void)
 	}
 }
 
-extern void acct_gather_profile_g_child_forked(void)
+extern int acct_gather_profile_g_child_forked(void)
 {
 	if (acct_gather_profile_init() < 0)
-		return;
+		return SLURM_ERROR;
+
 	(*(ops.child_forked))();
-	return;
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
+extern int acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 					       int *full_options_cnt)
 {
 	if (acct_gather_profile_init() < 0)
-		return;
+		return SLURM_ERROR;
+
 	(*(ops.conf_options))(full_options, full_options_cnt);
-	return;
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
+extern int acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
 {
 	if (acct_gather_profile_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	(*(ops.conf_set))(tbl);
-	return;
+	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
+extern int acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 				      void *data)
 {
 	if (acct_gather_profile_init() < 0)
-		return;
+		return SLURM_ERROR;
 
 	(*(ops.get))(info_type, data);
-	return;
+	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_profile_g_node_step_start(stepd_step_rec_t* job)
@@ -614,9 +636,9 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid)
 	return retval;
 }
 
-extern int acct_gather_profile_g_create_group(const char *name)
+extern int64_t acct_gather_profile_g_create_group(const char *name)
 {
-	int retval = SLURM_ERROR;
+	int64_t retval = SLURM_ERROR;
 
 	if (acct_gather_profile_init() < 0)
 		return retval;
@@ -628,7 +650,7 @@ extern int acct_gather_profile_g_create_group(const char *name)
 }
 
 extern int acct_gather_profile_g_create_dataset(
-	const char *name, int parent,
+	const char *name, int64_t parent,
 	acct_gather_profile_dataset_t *dataset)
 {
 	int retval = SLURM_ERROR;
@@ -680,4 +702,3 @@ extern bool acct_gather_profile_test(void)
 	slurm_mutex_unlock(&profile_running_mutex);
 	return rc;
 }
-

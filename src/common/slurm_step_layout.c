@@ -6,22 +6,22 @@
  *  from other parts of SLURM.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  *
  *  This file is patterned after hostlist.c, written by Mark Grondona and
@@ -379,7 +379,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 	}
 
 	if (((int)step_layout_req->cpus_per_task[0] < 1) ||
-	    (step_layout_req->cpus_per_task[0] == (uint16_t)NO_VAL)) {
+	    (step_layout_req->cpus_per_task[0] == NO_VAL16)) {
 		step_layout_req->cpus_per_task[0] = 1;
 		step_layout_req->cpus_task_reps[0] = step_layout_req->num_hosts;
 	}
@@ -427,7 +427,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 		}
 
 		if (step_layout->plane_size &&
-		    (step_layout->plane_size != (uint16_t)NO_VAL) &&
+		    (step_layout->plane_size != NO_VAL16) &&
 		    ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
 		     != SLURM_DIST_PLANE)) {
 			/* plane_size when dist != plane is used to
@@ -576,11 +576,11 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 
 static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 {
-	static uint16_t select_params = (uint16_t) NO_VAL;
+	static uint16_t select_params = NO_VAL16;
 	int i, j, task_id = 0;
 	bool pack_nodes;
 
-	if (select_params == (uint16_t) NO_VAL)
+	if (select_params == NO_VAL16)
 		select_params = slurm_get_select_type_param();
 	if (step_layout->task_dist & SLURM_DIST_PACK_NODES)
 		pack_nodes = true;

@@ -1613,6 +1613,36 @@ slurm_load_node(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 	OUTPUT:
 		RETVAL
 
+HV *
+slurm_load_single_node(slurm_t self, char *node_name, uint16_t show_flags=0)
+	PREINIT:
+		node_info_msg_t *ni_msg = NULL;
+		int rc;
+	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
+		rc = slurm_load_node_single(&ni_msg, node_name, show_flags | SHOW_MIXED);
+
+		if (rc == SLURM_SUCCESS) {
+			RETVAL = newHV();
+			sv_2mortal((SV*)RETVAL);
+			/* RETVAL holds ni_msg->select_nodeinfo, so delay free-ing the msg */
+			rc = node_info_msg_to_hv(ni_msg, RETVAL);
+			if (rc >= 0) {
+				rc = hv_store_ptr(RETVAL, "node_info_msg", ni_msg, "Slurm::node_info_msg_t");
+			}
+			if (rc < 0) {
+				XSRETURN_UNDEF;
+			}
+		} else {
+			XSRETURN_UNDEF;
+		}
+	OUTPUT:
+		RETVAL
+
 void
 slurm_print_node_info_msg(slurm_t self, FILE *out, HV *node_info_msg, int one_liner=0)
 	PREINIT:
@@ -2209,7 +2239,7 @@ slurm_shutdown(slurm_t self, uint16_t options=0)
 		options
 
 int
-slurm_takeover(slurm_t self)
+slurm_takeover(slurm_t self, int backup_inx=1)
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -2217,6 +2247,7 @@ slurm_takeover(slurm_t self)
 			      only Slurm::
 			    */
 	C_ARGS:
+		backup_inx
 
 int
 slurm_set_debug_level(slurm_t self, uint32_t debug_level)

@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Validate that DenyOnLimit is enforced on QoS and
 #          Association limits.
 #
@@ -11,22 +11,22 @@
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -40,8 +40,12 @@ set max_wall_val 2
 set job_id       0
 set exit_code    0
 
+set save_billing_weights ""
+set tres_cpu_mult 2
+
 # mod qos
 array set max_tres_type {
+	billing   2
 	cpu       2
 	node      1
 }
@@ -64,6 +68,9 @@ array set reset_qos_val {
 	MaxCpusPerUser  -1
 	MaxNode         -1
 	MaxNodesPerUser -1
+	MaxTRESMinsPerJob=billing -1
+	MaxTRESPerJob=billing     -1
+	MaxTRESPerUser=billing    -1
 }
 
 # Reset Associtions
@@ -75,6 +82,9 @@ array set reset_assoc_val {
 	MaxCpuMin       -1
 	MaxWall         -1
 	MaxNode         -1
+
+	MaxTRESMinsPerJob=billing -1
+	MaxTRESPerJob=billing     -1
 }
 
 print_header $test_id
@@ -83,11 +93,15 @@ proc check_limit { type name } {
 
 	global sacctmgr sbatch lim_type_type i option max_tres_type
 	global job_id test_qos test_acct reset_qos_val reset_assoc_val
-	global file_in number exit_code
+	global file_in number exit_code tres_cpu_mult
 
 	set flag ""
 	set modified 0
-	spawn $sacctmgr -i mod $type $name set $lim_type_type($i)=$option=$max_tres_type($option)
+	set type_value $max_tres_type($option)
+	if { ![string compare $option "billing"] } {
+		set type_value [expr $type_value * $tres_cpu_mult]
+	}
+	spawn $sacctmgr -i mod $type $name set $lim_type_type($i)=$option=$type_value
 	expect {
 		-re "Modified" {
 			set modified 1
@@ -107,12 +121,11 @@ proc check_limit { type name } {
 		set exit_code 1
 	}
 
-	if { ![string compare $option "cpu"] } {
-		set tmp [expr  $max_tres_type($option) + 1]
-		set flag "-n$tmp"
-	} elseif { ![string compare $option "node"] } {
-		set tmp [expr  $max_tres_type($option) + 1]
+	set tmp [expr  $max_tres_type($option) + 1]
+	if { ![string compare $option "node"] } {
 		set flag "-N$tmp"
+	} else {
+		set flag "-n$tmp"
 	}
 
 	set match 0
@@ -141,9 +154,9 @@ proc check_limit { type name } {
 	}
 
 	if {$match != 1 || $job_id} {
-		send_user "\nFAILURE: job should have been killed upon submittion\n"
-		#cleanup
+		send_user "\nFAILURE: job should have been killed upon submission\n"
 		cancel_job $job_id
+		cleanup
 		exit 1
 	}
 
@@ -157,6 +170,7 @@ proc check_limit { type name } {
 proc cleanup { } {
 
 	global sacctmgr file_in bin_rm test_acct test_qos exit_code
+	global save_billing_weights scontrol
 
 	# Delete test account and qos
 	spawn $sacctmgr -i delete account $test_acct
@@ -178,6 +192,23 @@ proc cleanup { } {
 		}
 		eof {
 			wait
+		}
+	}
+
+	if {$save_billing_weights ne ""} {
+		spawn $scontrol update partitionname=[default_partition] TRESBillingWeights=$save_billing_weights
+		expect {
+			-re "error" {
+				send_user "\nFAILURE: failed to reset TRESBillingWeights\n"
+				set exit_code 1
+			}
+			timeout {
+				send_user "\nFAILURE: scontrol is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
 	}
 
@@ -227,6 +258,7 @@ expect {
 
 if {$added != 1} {
 	send_user "\nFAILURE: test QoS $test_qos was not created\n"
+	cleanup
 	exit 1
 }
 
@@ -248,6 +280,7 @@ expect {
 
 if {$match != 1} {
 	send_user "\nFAILURE: test account $test_acct was not created\n"
+	cleanup
 	exit 1
 }
 
@@ -271,13 +304,48 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFIALURE: sacctmgr is not responding\n"
+		send_user "\nFAILURE: sacctmgr is not responding\n"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
+
+spawn $scontrol show part [default_partition]
+expect {
+	-re "TRESBillingWeights=(\\S+)" {
+		set save_billing_weights $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $scontrol update partitionname=[default_partition] tresbillingweights=cpu=$tres_cpu_mult
+expect {
+	-re "error" {
+		send_user "\nFAILURE: failed to set TRESBillingWeights\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code != 0} {
+	cleanup
+	exit 1
+}
+
 
 for {set i 0} {$i < 3} {incr i} {
 

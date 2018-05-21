@@ -8,11 +8,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -121,15 +121,15 @@ extern void slurm_init_update_step_msg (step_update_request_msg_t * step_msg)
 void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 {
 	memset(update_part_msg, 0, sizeof(update_part_msg_t));
-	update_part_msg->default_time   = NO_VAL32;
+	update_part_msg->default_time   = NO_VAL;
 	update_part_msg->def_mem_per_cpu = NO_VAL64;
-	update_part_msg->grace_time     = NO_VAL32;
+	update_part_msg->grace_time     = NO_VAL;
 	update_part_msg->max_cpus_per_node = NO_VAL;
 	update_part_msg->max_mem_per_cpu = NO_VAL64;
 	update_part_msg->max_nodes 	= NO_VAL;
 	update_part_msg->max_share 	= NO_VAL16;
 	update_part_msg->min_nodes 	= NO_VAL;
-	update_part_msg->max_time 	= NO_VAL32;
+	update_part_msg->max_time 	= NO_VAL;
 	update_part_msg->over_time_limit = NO_VAL16;
 	update_part_msg->preempt_mode 	= NO_VAL16;
 	update_part_msg->priority_job_factor = NO_VAL16;
@@ -159,8 +159,8 @@ void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
 void slurm_init_update_node_msg (update_node_msg_t * update_node_msg)
 {
 	memset(update_node_msg, 0, sizeof(update_node_msg_t));
-	update_node_msg->node_state = NO_VAL32;
-	update_node_msg->weight = NO_VAL32;
+	update_node_msg->node_state = NO_VAL;
+	update_node_msg->weight = NO_VAL;
 }
 
 /*
@@ -171,7 +171,7 @@ void slurm_init_update_front_end_msg (update_front_end_msg_t *
 				      update_front_end_msg)
 {
 	memset(update_front_end_msg, 0, sizeof(update_front_end_msg_t));
-	update_front_end_msg->node_state = NO_VAL32;
+	update_front_end_msg->node_state = NO_VAL;
 }
 
 /*

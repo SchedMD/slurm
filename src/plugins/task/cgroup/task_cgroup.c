@@ -5,11 +5,11 @@
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -67,14 +67,14 @@
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
  * the plugin (e.g., "task" for task control) and <method> is a description
- * of how this plugin satisfies that application.  SLURM will only load
+ * of how this plugin satisfies that application.  Slurm will only load
  * a task plugin if the plugin_type string has a prefix of "task/".
  *
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
@@ -162,8 +162,7 @@ extern int fini (void)
 /*
  * task_p_slurmd_batch_request()
  */
-extern int task_p_slurmd_batch_request (uint32_t job_id,
-					batch_job_launch_msg_t *req)
+extern int task_p_slurmd_batch_request (batch_job_launch_msg_t *req)
 {
 	return SLURM_SUCCESS;
 }
@@ -171,8 +170,7 @@ extern int task_p_slurmd_batch_request (uint32_t job_id,
 /*
  * task_p_slurmd_launch_request()
  */
-extern int task_p_slurmd_launch_request (uint32_t job_id,
-					 launch_tasks_request_msg_t *req,
+extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 					 uint32_t node_id)
 {
 	return SLURM_SUCCESS;
@@ -181,8 +179,7 @@ extern int task_p_slurmd_launch_request (uint32_t job_id,
 /*
  * task_p_slurmd_reserve_resources()
  */
-extern int task_p_slurmd_reserve_resources (uint32_t job_id,
-					    launch_tasks_request_msg_t *req,
+extern int task_p_slurmd_reserve_resources (launch_tasks_request_msg_t *req,
 					    uint32_t node_id)
 {
 	return SLURM_SUCCESS;

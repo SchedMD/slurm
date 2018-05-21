@@ -7,11 +7,11 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -41,6 +41,7 @@
 #include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
@@ -48,6 +49,26 @@
 #include "src/common/slurm_time.h"
 
 #define BUFFER_SIZE 4096
+
+static char *_average_tres_usage(uint32_t *tres_ids, uint64_t *tres_cnts,
+				 int tres_cnt, int tasks)
+{
+	char *ret_str = NULL;
+	int i;
+
+	if (!tasks)
+		return ret_str;
+
+	for (i = 0; i < tres_cnt; i++) {
+		if (tres_cnts[i] == INFINITE64)
+			continue;
+		xstrfmtcat(ret_str, "%s%u=%"PRIu64,
+			   ret_str ? "," : "",
+			   tres_ids[i], tres_cnts[i] / (uint64_t)tasks);
+	}
+
+	return ret_str;
+}
 
 /* Used in job functions for getting the database index based off the
  * submit time and job.  0 is returned if none is found
@@ -304,17 +325,14 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 			      struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	char *nodes = NULL, *jname = NULL, *node_inx = NULL;
+	char *nodes = NULL, *jname = NULL;
 	int track_steps = 0;
-	char *block_id = NULL, *partition = NULL;
-	char *gres_req = NULL, *gres_alloc = NULL, *mcs_label = NULL;
-	char temp_bit[BUF_SIZE];
+	char *partition = NULL;
 	char *query = NULL;
 	int reinit = 0;
 	time_t begin_time, check_time, start_time, submit_time;
 	uint32_t wckeyid = 0;
 	uint32_t job_state;
-	int node_cnt = 0;
 	uint32_t array_task_id =
 		(job_ptr->array_job_id) ? job_ptr->array_task_id : NO_VAL;
 	uint64_t job_db_inx = job_ptr->db_index;
@@ -466,9 +484,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 no_rollup_change:
 
 	if (job_ptr->name && job_ptr->name[0])
-		jname = slurm_add_slash_to_quotes(job_ptr->name);
+		jname = job_ptr->name;
 	else {
-		jname = xstrdup("allocation");
+		jname = "allocation";
 		track_steps = 1;
 	}
 
@@ -480,27 +498,6 @@ no_rollup_change:
 	if (job_ptr->batch_flag)
 		track_steps = 1;
 
-	if (slurmdbd_conf) {
-		block_id = xstrdup(job_ptr->comment);
-		node_cnt = job_ptr->total_nodes;
-		node_inx = job_ptr->network;
-	} else {
-		if (job_ptr->node_bitmap) {
-			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
-					   job_ptr->node_bitmap);
-		}
-#ifdef HAVE_BG
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_BLOCK_ID,
-					    &block_id);
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &node_cnt);
-#else
-		node_cnt = job_ptr->total_nodes;
-#endif
-	}
-
 	/* Grab the wckey once to make sure it is placed. */
 	if (job_ptr->assoc_id && (!job_ptr->db_index || job_ptr->wckey))
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
@@ -509,17 +506,9 @@ no_rollup_change:
 				       job_ptr->assoc_id);
 
 	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
-		partition = slurm_add_slash_to_quotes(job_ptr->part_ptr->name);
+		partition = job_ptr->part_ptr->name;
 	else if (job_ptr->partition)
-		partition = slurm_add_slash_to_quotes(job_ptr->partition);
-
-	if (job_ptr->gres_req)
-		gres_req = slurm_add_slash_to_quotes(job_ptr->gres_req);
-
-	if (job_ptr->gres_alloc)
-		gres_alloc = slurm_add_slash_to_quotes(job_ptr->gres_alloc);
-	if (job_ptr->mcs_label)
-		mcs_label = slurm_add_slash_to_quotes(job_ptr->mcs_label);
+		partition = job_ptr->partition;
 
 	if (!job_ptr->db_index) {
 		if (start_time && (job_state >= JOB_COMPLETE) &&
@@ -559,15 +548,15 @@ no_rollup_change:
 			xstrcat(query, ", account");
 		if (partition)
 			xstrcat(query, ", `partition`");
-		if (block_id)
+		if (job_ptr->comment)
 			xstrcat(query, ", id_block");
 		if (job_ptr->wckey)
 			xstrcat(query, ", wckey");
-		if (node_inx)
+		if (job_ptr->network)
 			xstrcat(query, ", node_inx");
-		if (gres_req)
+		if (job_ptr->gres_req)
 			xstrcat(query, ", gres_req");
-		if (gres_alloc)
+		if (job_ptr->gres_alloc)
 			xstrcat(query, ", gres_alloc");
 		if (array_recs && array_recs->task_id_str)
 			xstrcat(query, ", array_task_str, array_max_tasks, "
@@ -596,27 +585,27 @@ no_rollup_change:
 			   begin_time, submit_time, start_time,
 			   jname, track_steps, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   node_cnt,
+			   job_ptr->total_nodes,
 			   job_ptr->details->pn_min_memory);
 
 		if (wckeyid)
 			xstrfmtcat(query, ", %u", wckeyid);
-		if (mcs_label)
-			xstrfmtcat(query, ", '%s'", mcs_label);
+		if (job_ptr->mcs_label)
+			xstrfmtcat(query, ", '%s'", job_ptr->mcs_label);
 		if (job_ptr->account)
 			xstrfmtcat(query, ", '%s'", job_ptr->account);
 		if (partition)
 			xstrfmtcat(query, ", '%s'", partition);
-		if (block_id)
-			xstrfmtcat(query, ", '%s'", block_id);
+		if (job_ptr->comment) /* overloaded with block_id */
+			xstrfmtcat(query, ", '%s'", job_ptr->comment);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, ", '%s'", job_ptr->wckey);
-		if (node_inx)
-			xstrfmtcat(query, ", '%s'", node_inx);
-		if (gres_req)
-			xstrfmtcat(query, ", '%s'", gres_req);
-		if (gres_alloc)
-			xstrfmtcat(query, ", '%s'", gres_alloc);
+		if (job_ptr->network)
+			xstrfmtcat(query, ", '%s'", job_ptr->network);
+		if (job_ptr->gres_req)
+			xstrfmtcat(query, ", '%s'", job_ptr->gres_req);
+		if (job_ptr->gres_alloc)
+			xstrfmtcat(query, ", '%s'", job_ptr->gres_alloc);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcat(query, ", '%s', %u, %u",
 				   array_recs->task_id_str,
@@ -632,7 +621,8 @@ no_rollup_change:
 		if (job_ptr->tres_req_str)
 			xstrfmtcat(query, ", '%s'", job_ptr->tres_req_str);
 		if (job_ptr->details->work_dir)
-			xstrfmtcat(query, ", '%s'", job_ptr->details->work_dir);
+			xstrfmtcat(query, ", '%s'",
+				   job_ptr->details->work_dir);
 
 		xstrfmtcat(query,
 			   ") on duplicate key update "
@@ -652,7 +642,7 @@ no_rollup_change:
 			   submit_time, begin_time, start_time,
 			   jname, track_steps, job_ptr->qos_id, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   node_cnt,
+			   job_ptr->total_nodes,
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->array_job_id, array_task_id,
 			   job_ptr->pack_job_id, job_ptr->pack_job_offset);
@@ -660,21 +650,23 @@ no_rollup_change:
 		if (wckeyid)
 			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
 		if (job_ptr->mcs_label)
-			xstrfmtcat(query, ", mcs_label='%s'", mcs_label);
+			xstrfmtcat(query, ", mcs_label='%s'",
+				   job_ptr->mcs_label);
 		if (job_ptr->account)
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
 		if (partition)
 			xstrfmtcat(query, ", `partition`='%s'", partition);
-		if (block_id)
-			xstrfmtcat(query, ", id_block='%s'", block_id);
+		if (job_ptr->comment) /* overloaded with block_id */
+			xstrfmtcat(query, ", id_block='%s'", job_ptr->comment);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, ", wckey='%s'", job_ptr->wckey);
-		if (node_inx)
-			xstrfmtcat(query, ", node_inx='%s'", node_inx);
-		if (gres_req)
-			xstrfmtcat(query, ", gres_req='%s'", gres_req);
-		if (gres_alloc)
-			xstrfmtcat(query, ", gres_alloc='%s'", gres_alloc);
+		if (job_ptr->network)
+			xstrfmtcat(query, ", node_inx='%s'", job_ptr->network);
+		if (job_ptr->gres_req)
+			xstrfmtcat(query, ", gres_req='%s'", job_ptr->gres_req);
+		if (job_ptr->gres_alloc)
+			xstrfmtcat(query, ", gres_alloc='%s'",
+				   job_ptr->gres_alloc);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcat(query, ", array_task_str='%s', "
 				   "array_max_tasks=%u, array_task_pending=%u",
@@ -720,21 +712,24 @@ no_rollup_change:
 		if (wckeyid)
 			xstrfmtcat(query, "id_wckey=%u, ", wckeyid);
 		if (job_ptr->mcs_label)
-			xstrfmtcat(query, "mcs_label='%s', ", mcs_label);
+			xstrfmtcat(query, "mcs_label='%s', ",
+				   job_ptr->mcs_label);
 		if (job_ptr->account)
 			xstrfmtcat(query, "account='%s', ", job_ptr->account);
 		if (partition)
 			xstrfmtcat(query, "`partition`='%s', ", partition);
-		if (block_id)
-			xstrfmtcat(query, "id_block='%s', ", block_id);
+		if (job_ptr->comment)
+			xstrfmtcat(query, "id_block='%s', ", job_ptr->comment);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
-		if (node_inx)
-			xstrfmtcat(query, "node_inx='%s', ", node_inx);
-		if (gres_req)
-			xstrfmtcat(query, "gres_req='%s', ", gres_req);
-		if (gres_alloc)
-			xstrfmtcat(query, "gres_alloc='%s', ", gres_alloc);
+		if (job_ptr->network)
+			xstrfmtcat(query, "node_inx='%s', ", job_ptr->network);
+		if (job_ptr->gres_req)
+			xstrfmtcat(query, "gres_req='%s', ",
+				   job_ptr->gres_req);
+		if (job_ptr->gres_alloc)
+			xstrfmtcat(query, "gres_alloc='%s', ",
+				   job_ptr->gres_alloc);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcat(query, "array_task_str='%s', "
 				   "array_max_tasks=%u, "
@@ -758,7 +753,8 @@ no_rollup_change:
 			xstrfmtcat(query, "work_dir='%s', ",
 				   job_ptr->details->work_dir);
 
-		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
+		xstrfmtcat(query, "time_start=%ld, job_name='%s', "
+			   "state=greatest(state, %u), "
 			   "nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_resv=%u, "
 			   "timelimit=%u, mem_req=%"PRIu64", "
@@ -767,7 +763,7 @@ no_rollup_change:
 			   "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
 			   "where job_db_inx=%"PRIu64,
 			   start_time, jname, job_state,
-			   node_cnt, job_ptr->qos_id,
+			   job_ptr->total_nodes, job_ptr->qos_id,
 			   job_ptr->assoc_id,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->details->pn_min_memory,
@@ -788,13 +784,7 @@ no_rollup_change:
 	}
 end_it:
 	xfree(tres_alloc_str);
-	xfree(block_id);
-	xfree(partition);
-	xfree(gres_req);
-	xfree(gres_alloc);
-	xfree(jname);
 	xfree(query);
-	xfree(mcs_label);
 
 	return rc;
 }
@@ -829,25 +819,32 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (job->derived_ec != NO_VAL)
 		xstrfmtcat(vals, ", derived_ec=%u", job->derived_ec);
 
-	if (job->derived_es) {
-		char *derived_es = slurm_add_slash_to_quotes(job->derived_es);
-		xstrfmtcat(vals, ", derived_es='%s'", derived_es);
-		xfree(derived_es);
-	}
+	if (job->derived_es)
+		xstrfmtcat(vals, ", derived_es='%s'", job->derived_es);
+
+	if (job->system_comment)
+		xstrfmtcat(vals, ", system_comment='%s'",
+			   job->system_comment);
+
 	if (!vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("No change specified for job modification");
 		return NULL;
 	}
 
+	if (job_cond->submit_time)
+		xstrfmtcat(cond_char, "&& time_submit=%d ",
+			   (int)job_cond->submit_time);
+
 	/* Here we want to get the last job submitted here */
 	query = xstrdup_printf("select job_db_inx, id_job, time_submit, "
 			       "id_user "
 			       "from \"%s_%s\" where deleted=0 "
-			       "&& id_job=%u "
+			       "&& id_job=%u %s"
 			       "order by time_submit desc limit 1;",
 			       job_cond->cluster, job_table,
-			       job_cond->job_id);
+			       job_cond->job_id, cond_char ? cond_char : "");
+	xfree(cond_char);
 
 	if (debug_flags & DEBUG_FLAG_DB_JOB)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -1037,16 +1034,17 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	else if (job_ptr->tres_alloc_str)
 		xstrfmtcat(query, ", tres_alloc='%s'", job_ptr->tres_alloc_str);
 
-	if (job_ptr->comment) {
-		char *comment = slurm_add_slash_to_quotes(job_ptr->comment);
-		xstrfmtcat(query, ", derived_es='%s'", comment);
-		xfree(comment);
-	}
+	if (job_ptr->comment)
+		xstrfmtcat(query, ", derived_es='%s'", job_ptr->comment);
 
-	if (job_ptr->admin_comment) {
+	if (job_ptr->admin_comment)
+		xstrfmtcat(query, ", admin_comment='%s'",
+			   job_ptr->admin_comment);
+
+	if (job_ptr->system_comment) {
 		char *comment = slurm_add_slash_to_quotes(
-			job_ptr->admin_comment);
-		xstrfmtcat(query, ", admin_comment='%s'", comment);
+			job_ptr->system_comment);
+		xstrfmtcat(query, ", system_comment='%s'", comment);
 		xfree(comment);
 	}
 
@@ -1079,7 +1077,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char temp_bit[BUF_SIZE];
 	char node_list[BUFFER_SIZE];
-	char *node_inx = NULL, *step_name = NULL;
+	char *node_inx = NULL;
 	time_t start_time, submit_time;
 	char *query = NULL;
 
@@ -1198,8 +1196,6 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	step_name = slurm_add_slash_to_quotes(step_ptr->name);
-
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
 	/* The stepid could be -2 so use %d not %u */
@@ -1218,7 +1214,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		mysql_conn->cluster_name, step_table,
 		step_ptr->job_ptr->db_index,
 		step_ptr->step_id,
-		(int)start_time, step_name,
+		(int)start_time, step_ptr->name,
 		JOB_RUNNING, step_ptr->tres_alloc_str,
 		nodes, tasks, node_list, node_inx, task_dist,
 		step_ptr->cpu_freq_max, step_ptr->cpu_freq_min,
@@ -1230,7 +1226,6 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
-	xfree(step_name);
 
 	return rc;
 }
@@ -1340,42 +1335,106 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 
 
 	if (jobacct) {
-		double ave_vsize = NO_VAL, ave_rss = NO_VAL, ave_pages = NO_VAL;
-		double ave_disk_read =  (double)NO_VAL;
-		double ave_disk_write = (double)NO_VAL;
-		double ave_cpu = (double)NO_VAL;
+		slurmdb_stats_t stats;
+
+		memset(&stats, 0, sizeof(slurmdb_stats_t));
+
 		/* figure out the ave of the totals sent */
 		if (tasks > 0) {
-			ave_vsize = (double)jobacct->tot_vsize;
-			ave_vsize /= (double)tasks;
-			ave_rss = (double)jobacct->tot_rss;
-			ave_rss /= (double)tasks;
-			ave_pages = (double)jobacct->tot_pages;
-			ave_pages /= (double)tasks;
-			ave_cpu = (double)jobacct->tot_cpu;
-			ave_cpu /= (double)tasks;
-			ave_disk_read = (double)jobacct->tot_disk_read;
-			ave_disk_read /= (double)tasks;
-			ave_disk_write = (double)jobacct->tot_disk_write;
-			ave_disk_write /= (double)tasks;
+			stats.tres_usage_in_ave =
+				_average_tres_usage(jobacct->tres_ids,
+						    jobacct->tres_usage_in_tot,
+						    jobacct->tres_count,
+						    tasks);
+			stats.tres_usage_out_ave =
+				_average_tres_usage(jobacct->tres_ids,
+						    jobacct->tres_usage_out_tot,
+						    jobacct->tres_count,
+						    tasks);
 		}
+
+		/*
+		 * We can't trust the assoc_mgr here as the tres may have
+		 * changed, we have to go off what was sent us.  We can just use
+		 * the _average_tres_usage to do this by dividing by 1.
+		 */
+		stats.tres_usage_in_max = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_max,
+			jobacct->tres_count, 1);
+		stats.tres_usage_in_max_nodeid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_max_nodeid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_in_max_taskid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_max_taskid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_in_min = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_min,
+			jobacct->tres_count, 1);
+		stats.tres_usage_in_min_nodeid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_min_nodeid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_in_min_taskid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_min_taskid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_in_tot = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_in_tot,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_max = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_max,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_max_nodeid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_max_nodeid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_max_taskid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_max_taskid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_min = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_min,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_min_nodeid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_min_nodeid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_min_taskid = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_min_taskid,
+			jobacct->tres_count, 1);
+		stats.tres_usage_out_tot = _average_tres_usage(
+			jobacct->tres_ids,
+			jobacct->tres_usage_out_tot,
+			jobacct->tres_count, 1);
 
 		xstrfmtcat(query,
 			   ", user_sec=%u, user_usec=%u, "
 			   "sys_sec=%u, sys_usec=%u, "
-			   "max_disk_read=%f, max_disk_read_task=%u, "
-			   "max_disk_read_node=%u, ave_disk_read=%f, "
-			   "max_disk_write=%f, max_disk_write_task=%u, "
-			   "max_disk_write_node=%u, ave_disk_write=%f, "
-			   "max_vsize=%"PRIu64", max_vsize_task=%u, "
-			   "max_vsize_node=%u, ave_vsize=%f, "
-			   "max_rss=%"PRIu64", max_rss_task=%u, "
-			   "max_rss_node=%u, ave_rss=%f, "
-			   "max_pages=%"PRIu64", max_pages_task=%u, "
-			   "max_pages_node=%u, ave_pages=%f, "
-			   "min_cpu=%u, min_cpu_task=%u, "
-			   "min_cpu_node=%u, ave_cpu=%f, "
-			   "act_cpufreq=%u, consumed_energy=%"PRIu64"",
+			   "act_cpufreq=%u, consumed_energy=%"PRIu64", "
+			   "tres_usage_in_ave='%s', "
+			   "tres_usage_out_ave='%s', "
+			   "tres_usage_in_max='%s', "
+			   "tres_usage_in_max_taskid='%s', "
+			   "tres_usage_in_max_nodeid='%s', "
+			   "tres_usage_in_min='%s', "
+			   "tres_usage_in_min_taskid='%s', "
+			   "tres_usage_in_min_nodeid='%s', "
+			   "tres_usage_in_tot='%s', "
+			   "tres_usage_out_max='%s', "
+			   "tres_usage_out_max_taskid='%s', "
+			   "tres_usage_out_max_nodeid='%s', "
+			   "tres_usage_out_min='%s', "
+			   "tres_usage_out_min_taskid='%s', "
+			   "tres_usage_out_min_nodeid='%s', "
+			   "tres_usage_out_tot='%s'",
 			   /* user seconds */
 			   jobacct->user_cpu_sec,
 			   /* user microseconds */
@@ -1384,40 +1443,26 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			   jobacct->sys_cpu_sec,
 			   /* system microsecs */
 			   jobacct->sys_cpu_usec,
-			   /* max disk_read */
-			   jobacct->max_disk_read,
-			   /* max disk_read task */
-			   jobacct->max_disk_read_id.taskid,
-			   /* max disk_read node */
-			   jobacct->max_disk_read_id.nodeid,
-			   /* ave disk_read */
-			   ave_disk_read,
-			   /* max disk_write */
-			   jobacct->max_disk_write,
-			   /* max disk_write task */
-			   jobacct->max_disk_write_id.taskid,
-			   /* max disk_write node */
-			   jobacct->max_disk_write_id.nodeid,
-			   /* ave disk_write */
-			   ave_disk_write,
-			   jobacct->max_vsize,	/* max vsize */
-			   jobacct->max_vsize_id.taskid, /* max vsize task */
-			   jobacct->max_vsize_id.nodeid, /* max vsize node */
-			   ave_vsize,	/* ave vsize */
-			   jobacct->max_rss,	/* max vsize */
-			   jobacct->max_rss_id.taskid,	/* max rss task */
-			   jobacct->max_rss_id.nodeid,	/* max rss node */
-			   ave_rss,	/* ave rss */
-			   jobacct->max_pages,	/* max pages */
-			   jobacct->max_pages_id.taskid, /* max pages task */
-			   jobacct->max_pages_id.nodeid, /* max pages node */
-			   ave_pages,	/* ave pages */
-			   jobacct->min_cpu,	/* min cpu */
-			   jobacct->min_cpu_id.taskid,	/* min cpu task */
-			   jobacct->min_cpu_id.nodeid,	/* min cpu node */
-			   ave_cpu,	/* ave cpu */
 			   jobacct->act_cpufreq,
-			   jobacct->energy.consumed_energy);
+			   jobacct->energy.consumed_energy,
+			   stats.tres_usage_in_ave,
+			   stats.tres_usage_out_ave,
+			   stats.tres_usage_in_max,
+			   stats.tres_usage_in_max_taskid,
+			   stats.tres_usage_in_max_nodeid,
+			   stats.tres_usage_in_min,
+			   stats.tres_usage_in_min_taskid,
+			   stats.tres_usage_in_min_nodeid,
+			   stats.tres_usage_in_tot,
+			   stats.tres_usage_out_max,
+			   stats.tres_usage_out_max_taskid,
+			   stats.tres_usage_out_max_nodeid,
+			   stats.tres_usage_out_min,
+			   stats.tres_usage_out_min_taskid,
+			   stats.tres_usage_out_min_nodeid,
+			   stats.tres_usage_out_tot);
+
+		slurmdb_free_slurmdb_stats_members(&stats);
 	}
 
 	/* id_step has to be %d here to handle the -2 -1 for the batch and

@@ -104,4 +104,3 @@ hv_to_topo_info_response_msg(HV *hv, topo_info_response_msg_t *topo_info_msg)
 	}
 	return 0;
 }
-

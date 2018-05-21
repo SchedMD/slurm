@@ -514,8 +514,10 @@ when using the WithCoordinator option.)
 .P
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the account may have on all the
-clusters in the system.  The Association format fields are described
-in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+clusters in the system. The association information can be filtered.
+Note that all the accounts in the database will always be shown as filter only
+takes effect over the association data. The Association format fields are
+described in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 
 .SH "SPECIFICATIONS FOR ASSOCIATIONS"
@@ -684,8 +686,16 @@ The account name of the parent of this association.
 The name of a partition in the association.
 
 .TP
-\fIRawQOS\fP
-The numeric values of valid QOS\' for this association.
+\fIWithRawQOSLevel\fP
+Display QosLevel in an unevaluated raw format, consisting of a comma
+separated list of QOS names prepended with '' (nothing), '+' or '-' for
+the association. QOS names without +/- prepended were assigned (ie,
+sacctmgr modify ... set QosLevel=qos_name) for the entity listed or
+on one of its parents in the hierarchy. QOS names with +/- prepended
+indicate the QOS was added/filtered (ie, sacctmgr modify ... set
+QosLevel=[+-]qos_name) for the entity listed or on one of its parents
+in the hierarchy. Including WOPLimits will show exactly where each QOS
+was assigned, added or filtered in the hierarchy.
 
 .TP
 \fIRGT\fP
@@ -1741,7 +1751,7 @@ Display information with previously deleted data.
 .P
 NOTE: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
-this account may have.  These extra options can be found in the
+this user may have.  These extra options can be found in the
 \fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
 general specifications list above in the \fIGENERAL SPECIFICATIONS FOR
 ASSOCIATION BASED ENTITIES\fP section.
@@ -1768,8 +1778,10 @@ The name of a user.
 .P
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the user may have on all the
-clusters in the system.  The Association format fields are described
-in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+clusters in the system. The association information can be filtered.
+Note that all the users in the database will always be shown as filter only
+takes effect over the association data. The Association format fields are
+described in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 
 .SH "LIST/SHOW WCKey"

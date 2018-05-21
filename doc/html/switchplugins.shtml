@@ -4,7 +4,7 @@
 
 <h2> Overview</h2>
 <p> This document describe. Slurm switch (interconnect) plugins and the API that defines
-them. It is intended as a resource to programmers wishing to write their own SLURM
+them. It is intended as a resource to programmers wishing to write their own Slurm
 switch plugins.
 Note that many of the API functions are used only by one of the daemons. For
 example the slurmctld daemon builds a job step's switch credential
@@ -91,8 +91,8 @@ be stubbed.</p>
 <p><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
-The system <span class="commandline">_init()</span> is called before the SLURM
-<span class="commandline">init()</span>, and the SLURM
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 

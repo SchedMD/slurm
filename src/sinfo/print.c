@@ -9,11 +9,11 @@
  *  Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -250,7 +250,7 @@ _build_min_max_16_string(char *buffer, int buf_size, uint16_t min, uint16_t max,
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
 	else if (range) {
-		if (max == (uint16_t) INFINITE)
+		if (max == INFINITE16)
 			return snprintf(buffer, buf_size, "%s-infinite",
 					tmp_min);
 		else
@@ -951,7 +951,7 @@ int _print_preempt_mode(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		uint16_t preempt_mode = sinfo_data->part_info->preempt_mode;
-		if (preempt_mode == (uint16_t) NO_VAL)
+		if (preempt_mode == NO_VAL16)
 			preempt_mode =  slurm_get_preempt_mode();
 		_print_str(preempt_mode_string(preempt_mode),
 			   width, right_justify, true);

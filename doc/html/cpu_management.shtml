@@ -1295,13 +1295,13 @@ SLURM_JOB_CPUS_PER_NODE<br>
 SLURM_CPUS_PER_TASK<br>
 SLURM_CPU_BIND<br>
 SLURM_DISTRIBUTION<br>
-SLURM_NODELIST<br>
+SLURM_JOB_NODELIST<br>
 SLURM_TASKS_PER_NODE<br>
 SLURM_STEP_NODELIST<br>
 SLURM_STEP_NUM_NODES<br>
 SLURM_STEP_NUM_TASKS<br>
 SLURM_STEP_TASKS_PER_NODE<br>
-SLURM_NNODES<br>
+SLURM_JOB_NODES<br>
 SLURM_NTASKS<br>
 SLURM_NPROCS<br>
 SLURM_CPUS_ON_NODE<br>
@@ -1358,9 +1358,7 @@ provided by <font face="Courier New, monospace">--cpu-bind=verbose</font>, but i
 <h3>A Note on CPU Numbering</h3>
 <p>The number and layout of logical CPUs known to Slurm is described in the node definitions in slurm.conf. This may
 differ from the physical CPU layout on the actual hardware.  For this reason, Slurm generates its own internal, or
-"abstract", CPU numbers.  These numbers may not match the physical, or "machine", CPU numbers known to Linux.
-A utility to convert between Slurm abstract CPU numbers and physical machine CPU numbers is provided by Slurm.  See
-module src/slurmd/slurmd/get_mach_stat.c for details.</p>
+"abstract", CPU numbers.  These numbers may not match the physical, or "machine", CPU numbers known to Linux.</p>
 <br>
 <a name="Section3"></a>
 <h2>CPU Management and Slurm Accounting</h2>
@@ -3536,6 +3534,6 @@ and binding for this job. For example, task id 2 is bound to CPU id 2.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 October 2017</p>
+<p style="text-align:center;">Last modified 20 December 2017</p>
 
 <!--#include virtual="footer.txt"-->

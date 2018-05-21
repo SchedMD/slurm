@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Confirm that sbatch sets appropriate time limit (--time
 #          option)
 #
@@ -13,22 +13,22 @@
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -40,6 +40,44 @@ set time_set    13
 set time_get    0
 
 print_header $test_id
+
+#
+# We must be SlurmUser or root in order to change the partition MaxTime limit,
+# otherwise this test may fail.
+#
+if {[test_super_user] == 0} {
+	log_warn "You must be SlurmUser or root to run this test."
+	exit 0
+}
+
+set default_part [default_partition]
+if { $default_part == "" } {
+	log_error "Unable to get the default partition."
+	exit 1
+}
+
+#
+# Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
+# time limits greater than MaxTime.
+#
+spawn $scontrol update partitionname=$default_part MaxTime=-1
+expect {
+	timeout {
+		log_error "scontrol not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if { $exit_code == 1 } {
+	exit $exit_code
+}
+set maxtime [get_partition_maximum_time_limit $default_part]
+if { $maxtime != -1 } {
+	log_error "Unable to update partition MaxTime"
+	exit 1
+}
 
 #
 # Delete left-over stdin/out/err files
@@ -183,6 +221,12 @@ if {$time_get != 1500} {
 	set exit_code 1
 }
 cancel_job $job_id
+
+#
+# Restore partition MaxTime.
+# reconfigure will set exit_code and log any errors if it fails.
+#
+reconfigure
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in

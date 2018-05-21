@@ -4,11 +4,11 @@
  *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -104,9 +104,57 @@ static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 }
 
 /*
+ * slurm_load_burst_buffer_stat - issue RPC to get burst buffer status
+ * IN argc - count of status request options
+ * IN argv - status request options
+ * OUT status_resp - status response, memory must be released using xfree()
+ * RET 0 or a slurm error code
+ */
+extern int slurm_load_burst_buffer_stat(int argc, char **argv,
+					char **status_resp)
+{
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	bb_status_req_msg_t status_req_msg;
+	bb_status_resp_msg_t *status_resp_msg;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+	status_req_msg.argc = argc;
+	status_req_msg.argv = argv;
+	req_msg.msg_type = REQUEST_BURST_BUFFER_STATUS;
+	req_msg.data     = &status_req_msg;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_BURST_BUFFER_STATUS:
+		status_resp_msg = (bb_status_resp_msg_t *) resp_msg.data;
+		*status_resp = status_resp_msg->status_resp;
+		status_resp_msg->status_resp = NULL;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
+			slurm_seterrno_ret(rc);
+		*status_resp = NULL;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
  * slurm_load_burst_buffer_info - issue RPC to get slurm all burst buffer plugin
  *	information
- * IN burst_buffer_info_msg_pptr - place to store a burst buffer configuration
+ * OUT burst_buffer_info_msg_pptr - place to store a burst buffer configuration
  *	pointer
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_burst_buffer_info_msg
@@ -372,6 +420,13 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	/****** Line ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"  GetSysState=%s", burst_buffer_ptr->get_sys_state);
+	xstrcat(out_buf, tmp_line);
+	if (!one_liner)
+		xstrcat(out_buf, "\n");
+
+	/****** Line ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"  GetSysStatus=%s", burst_buffer_ptr->get_sys_status);
 	xstrcat(out_buf, tmp_line);
 	if (!one_liner)
 		xstrcat(out_buf, "\n");

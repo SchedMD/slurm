@@ -4,11 +4,11 @@
  *  Copyright (C) 2015, Brigham Young University
  *  Author:  Ryan Cox <ryan_cox@byu.edu>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -358,7 +358,7 @@ static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
 		      req.port_src,
 		      user_name);
 		return SLURM_FAILURE;
-	} else if (*job_id == (uint32_t)NO_VAL) {
+	} else if (*job_id == NO_VAL) {
 		debug("From %s port %d as %s: job indeterminate",
 		      ip_src_str,
 		      req.port_src,
@@ -468,8 +468,6 @@ log_level_t _parse_log_level(pam_handle_t *pamh, const char *log_level_str)
 			u = LOG_LEVEL_DEBUG4;
 		else if(!strcasecmp(log_level_str, "debug5"))
 			u = LOG_LEVEL_DEBUG5;
-		else if(!strcasecmp(log_level_str, "sched"))
-			u = LOG_LEVEL_SCHED;
 		else {
 			pam_syslog(pamh,
 				   LOG_ERR,

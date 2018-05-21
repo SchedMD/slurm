@@ -6,11 +6,11 @@
  *  Written by Morris Jette <jette@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,18 +26,17 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
 #include <stdio.h>
-#include <unistd.h>
 #include <sys/time.h>
 #include "src/common/log.h"
 #include "src/common/slurm_time.h"
@@ -111,24 +110,5 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 				      (int)(tv1->tv_usec / 1000));
 			}
 		}
-	}
-}
-
-/* block_daemon()
- *
- * This function allows to block any daemon
- * in a specific function. Once the daemon
- * is block gdb can be attached and by resetting
- * the block variable restored to normal operation.
- */
-extern void
-block_daemon(void)
-{
-	int block;
-
-	block = 1;
-	while (block == 1) {
-		info("%s: attachme, attachme...", __func__);
-		sleep(2);
 	}
 }

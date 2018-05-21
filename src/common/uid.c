@@ -7,11 +7,11 @@
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,19 +27,17 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include <stdlib.h>
 #include <pwd.h>
@@ -341,89 +339,6 @@ slurm_find_group_user(struct passwd *pwd, gid_t gid)
 		}
 	}
 	endgrent();
-
-	return 0;
-}
-
-/* slurm_valid_uid_gid()
- *
- * IN - uid - User id to verify
- * IN/OUT - gid - Group id to verify or set
- * IN/OUT - user_name - User name for the uid, this will be set if not
- *                      already set.
- * IN - name_already_verfied - If set we will only validate the
- *                             *user_name exists and return 1, else we
- *                             will validate uid and fill in *user_name.
- * IN - validate_gid - If set we will validate the gid as well as the
- *                     uid.  Set gid with correct gid if root launched job.
- * RET - returns 0 if invalid uid/gid, otherwise returns 1
- */
-extern int slurm_valid_uid_gid(uid_t uid, gid_t *gid, char **user_name,
-			       bool name_already_verified,
-			       bool validate_gid)
-{
-	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
-	int rc;
-	struct group *grp;
-	int i;
-
-	/* already verified */
-	if (name_already_verified && *user_name)
-		return 1;
-
-	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-
-	if (!result || rc) {
-		error("uid %ld not found on system", (long)uid);
-		slurm_seterrno(ESLURMD_UID_NOT_FOUND);
-		return 0;
-	}
-
-	if (!*user_name)
-		*user_name = xstrdup(result->pw_name);
-
-	if (!validate_gid)
-		return 1;
-
-	if (result->pw_gid == *gid)
-		return 1;
-
-	if (!(grp = getgrgid(*gid))) {
-		error("gid %ld not found on system", (long)(*gid));
-		slurm_seterrno(ESLURMD_GID_NOT_FOUND);
-		return 0;
-	}
-
-	/* Allow user root to use any valid gid */
-	if (result->pw_uid == 0) {
-		result->pw_gid = *gid;
-		return 1;
-	}
-
-	for (i = 0; grp->gr_mem[i]; i++) {
-		if (!xstrcmp(result->pw_name, grp->gr_mem[i])) {
-			result->pw_gid = *gid;
-			return 1;
-		}
-	}
-	if (*gid != 0) {
-		if (slurm_find_group_user(result, *gid))
-			return 1;
-	}
-
-	/* root user may have launched this job for this user, but
-	 * root did not explicitly set the gid. This would set the
-	 * gid to 0. In this case we should set the appropriate
-	 * default gid for the user (from the passwd struct).
-	 */
-	if (*gid == 0) {
-		*gid = result->pw_gid;
-		return 1;
-	}
-	error("uid %ld is not a member of gid %ld",
-		(long)result->pw_uid, (long)(*gid));
-	slurm_seterrno(ESLURMD_GID_NOT_FOUND);
 
 	return 0;
 }

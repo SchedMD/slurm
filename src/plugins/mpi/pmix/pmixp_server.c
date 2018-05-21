@@ -5,11 +5,11 @@
  *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
 
@@ -48,6 +48,8 @@
 #include "pmixp_dmdx.h"
 #include "pmixp_conn.h"
 #include "pmixp_dconn.h"
+
+#include "src/common/slurm_auth.h"
 
 #define PMIXP_DEBUG_SERVER 1
 
@@ -73,7 +75,7 @@ typedef struct {
 #define PMIXP_SERVER_BUFFER_OFFS (PMIXP_BASE_HDR_MAX + sizeof(uint32_t))
 
 typedef struct {
-	uint32_t size;		/* Has to be first (appended by SLURM API) */
+	uint32_t size;		/* Has to be first (appended by Slurm API) */
 	pmixp_base_hdr_t shdr;
 } pmixp_slurm_rhdr_t;
 #define PMIXP_SAPI_RECV_HDR_SIZE (sizeof(uint32_t) + PMIXP_BASE_HDR_SIZE)
@@ -182,10 +184,10 @@ static void _base_hdr_pack_full(Buf packbuf, pmixp_base_hdr_t *hdr)
 	pack32(hdr->msgsize, packbuf);
 	pack8(hdr->ext_flag, packbuf);
 	if (hdr->ext_flag) {
-		uint32_t expected_size = PMIXP_BASE_HDR_SIZE +
-				PMIXP_BASE_HDR_EXT_SIZE(pmixp_dconn_ep_len());
 		packmem(pmixp_dconn_ep_data(), pmixp_dconn_ep_len(), packbuf);
-		xassert(get_buf_offset(packbuf) == expected_size);
+		xassert(get_buf_offset(packbuf) ==
+			(PMIXP_BASE_HDR_SIZE +
+			 PMIXP_BASE_HDR_EXT_SIZE(pmixp_dconn_ep_len())));
 	}
 }
 
@@ -292,7 +294,7 @@ static int _sapi_rhdr_unpack_fixed(Buf packbuf, pmixp_slurm_rhdr_t *hdr)
 	return 0;
 }
 
-/* SLURM protocol I/O header */
+/* Slurm protocol I/O header */
 static uint32_t _slurm_proto_msize(void *buf);
 static int _slurm_pack_hdr(pmixp_base_hdr_t *hdr, void *net);
 static int _slurm_proto_unpack_hdr(void *net, void *host);
@@ -489,6 +491,59 @@ void pmixp_server_cleanup(void)
 }
 
 /*
+ * --------------------- Authentication functionality -------------------
+ */
+
+static int _auth_cred_create(Buf buf)
+{
+	void *auth_cred = NULL;
+	char *auth_info = slurm_get_auth_info();
+	int rc = SLURM_SUCCESS;
+
+	auth_cred = g_slurm_auth_create(auth_info);
+	xfree(auth_info);
+	if (!auth_cred) {
+		rc = g_slurm_auth_errno(NULL);
+		PMIXP_ERROR("Creating authentication credential: %s",
+			    g_slurm_auth_errstr(rc));
+		return rc;
+	}
+
+	rc = g_slurm_auth_pack(auth_cred, buf);
+	if (rc)
+		PMIXP_ERROR("Packing authentication credential: %s",
+			    g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+
+	g_slurm_auth_destroy(auth_cred);
+
+	return rc;
+}
+
+static int _auth_cred_verify(Buf buf)
+{
+	void *auth_cred = NULL;
+	char *auth_info = NULL;
+	int rc = SLURM_SUCCESS;
+
+	auth_cred = g_slurm_auth_unpack(buf);
+	if (!auth_cred) {
+		PMIXP_ERROR("Unpacking authentication credential: %s",
+			    g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		return SLURM_FAILURE;
+	}
+
+	auth_info = slurm_get_auth_info();
+	rc = g_slurm_auth_verify(auth_cred, auth_info);
+	xfree(auth_info);
+
+	if (rc)
+		PMIXP_ERROR("Verifying authentication credential: %s",
+			    g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+	g_slurm_auth_destroy(auth_cred);
+	return rc;
+}
+
+/*
  * --------------------- Generic I/O functionality -------------------
  */
 
@@ -651,6 +706,12 @@ static int _process_extended_hdr(pmixp_base_hdr_t *hdr, Buf buf)
 		pmixp_base_hdr_t bhdr;
 		init_msg = xmalloc(sizeof(*init_msg));
 
+		rc = _auth_cred_create(buf_init);
+		if (rc) {
+			free_buf(init_msg->buf_ptr);
+			xfree(init_msg);
+			goto unlock;
+		}
 		PMIXP_BASE_HDR_SETUP(bhdr, PMIXP_MSG_INIT_DIRECT, 0, buf_init);
 		bhdr.ext_flag = 1;
 		hsize = _direct_hdr_pack(&bhdr, nhdr);
@@ -843,7 +904,7 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 	PMIXP_BASE_HDR_SETUP(bhdr, type, seq, buf);
 
 	/* if direct connection is not enabled
-	 * always use SLURM protocol
+	 * always use Slurm protocol
 	 */
 	if (!pmixp_info_srv_direct_conn()) {
 		goto send_slurm;
@@ -1032,9 +1093,45 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 	pmixp_dconn_t *dconn = NULL;
 	pmixp_conn_t *new_conn;
 	eio_obj_t *obj;
-	int fd;
+	int fd = pmixp_io_detach(eng);
+	char *ep_data = NULL;
+	uint32_t ep_len = 0;
+	Buf buf_msg;
+	int rc;
+	char *nodename = NULL;
 
-	fd = pmixp_io_detach(eng);
+	if (!hdr->ext_flag) {
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Connection failed from %u(%s)",
+			    hdr->nodeid, nodename);
+		xfree(nodename);
+		close(fd);
+		return;
+	}
+
+	buf_msg = create_buf(msg, hdr->msgsize);
+	/* Retrieve endpoint information */
+	rc = _base_hdr_unpack_ext(buf_msg, &ep_data, &ep_len);
+	if (rc) {
+		free_buf(buf_msg);
+		close(fd);
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Failed to unpack the direct connection message from %u(%s)",
+			    hdr->nodeid, nodename);
+		xfree(nodename);
+		return;
+	}
+	/* Unpack and verify the auth credential */
+	rc = _auth_cred_verify(buf_msg);
+	free_buf(buf_msg);
+	if (rc) {
+		close(fd);
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Connection reject from %u(%s)",
+			    hdr->nodeid, nodename);
+		xfree(nodename);
+		return;
+	}
 
 	dconn = pmixp_dconn_accept(hdr->nodeid, fd);
 	if (!dconn) {
@@ -1042,10 +1139,10 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 		 * have established connection
 		 * It seems that some sort of race condition occured
 		 */
-		char *nodename = pmixp_info_job_host(hdr->nodeid);
 		close(fd);
-		PMIXP_ERROR("Failed to accept direct connection from %s",
-			    nodename);
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Failed to accept direct connection from %u(%s)",
+			    hdr->nodeid, nodename);
 		xfree(nodename);
 		return;
 	}
@@ -1118,7 +1215,7 @@ _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 }
 
 /*
- * ------------------- SLURM communication protocol -----------------------
+ * ------------------- Slurm communication protocol -----------------------
  */
 
 /*
@@ -1189,7 +1286,7 @@ static uint32_t _slurm_proto_msize(void *buf)
 /*
  * Pack message header.
  * Returns packed size
- * Note: asymmetric to _recv_unpack_hdr because of additional SLURM header
+ * Note: asymmetric to _recv_unpack_hdr because of additional Slurm header
  */
 static int _slurm_pack_hdr(pmixp_base_hdr_t *hdr, void *net)
 {
@@ -1207,7 +1304,7 @@ static int _slurm_pack_hdr(pmixp_base_hdr_t *hdr, void *net)
 /*
  * Unpack message header.
  * Returns 0 on success and -errno on failure
- * Note: asymmetric to _send_pack_hdr because of additional SLURM header
+ * Note: asymmetric to _send_pack_hdr because of additional Slurm header
  */
 static int _slurm_proto_unpack_hdr(void *net, void *host)
 {
@@ -1281,10 +1378,13 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 
 static pthread_mutex_t _pmixp_pp_lock;
 
+#define PMIXP_PP_PWR2_MIN 0
+#define PMIXP_PP_PWR2_MAX 24
+
 static bool _pmixp_pp_on = false;
 static bool _pmixp_pp_same_thr = false;
-static int _pmixp_pp_low = 0;
-static int _pmixp_pp_up = 24;
+static int _pmixp_pp_low = PMIXP_PP_PWR2_MIN;
+static int _pmixp_pp_up = PMIXP_PP_PWR2_MAX;
 static int _pmixp_pp_bound = 10;
 static int _pmixp_pp_siter = 1000;
 static int _pmixp_pp_liter = 100;
@@ -1354,6 +1454,7 @@ static bool _consists_from_digits(char *s)
 void pmixp_server_init_pp(char ***env)
 {
 	char *env_ptr = NULL;
+	int tmp_int;
 
 	slurm_mutex_init(&_pmixp_pp_lock);
 
@@ -1373,13 +1474,17 @@ void pmixp_server_init_pp(char ***env)
 
 	if ((env_ptr = getenvp(*env, PMIXP_PP_LOW))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_pp_low = atoi(env_ptr);
+			tmp_int = atoi(env_ptr);
+			_pmixp_pp_low = tmp_int < PMIXP_PP_PWR2_MAX ?
+				tmp_int : PMIXP_PP_PWR2_MAX;
 		}
 	}
 
 	if ((env_ptr = getenvp(*env, PMIXP_PP_UP))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_pp_up = atoi(env_ptr);
+			tmp_int = atoi(env_ptr);
+			_pmixp_pp_up = tmp_int < PMIXP_PP_PWR2_MAX ?
+				tmp_int : PMIXP_PP_PWR2_MAX;
 		}
 	}
 
@@ -1410,7 +1515,7 @@ bool pmixp_server_want_pp(void)
 /*
  * For this to work the following conditions supposed to be
  * satisfied:
- * - SLURM has to be configured with `--enable-debug` option
+ * - Slurm has to be configured with `--enable-debug` option
  * - jobstep needs to have at least two nodes
  * In this case communication exchange will be done between
  * the first two nodes.
@@ -1527,9 +1632,12 @@ int pmixp_server_pp_send(int nodeid, int size)
 
 static pthread_mutex_t _pmixp_pp_lock;
 
+#define PMIXP_CPERF_PWR2_MIN 0
+#define PMIXP_CPERF_PWR2_MAX 20
+
 static bool _pmixp_cperf_on = false;
-static int _pmixp_cperf_low = 0;
-static int _pmixp_cperf_up = 24;
+static int _pmixp_cperf_low = PMIXP_CPERF_PWR2_MIN;
+static int _pmixp_cperf_up = PMIXP_CPERF_PWR2_MAX;
 static int _pmixp_cperf_bound = 10;
 static int _pmixp_cperf_siter = 1000;
 static int _pmixp_cperf_liter = 100;
@@ -1549,6 +1657,7 @@ static void _pmixp_server_cperf_inc()
 void pmixp_server_init_cperf(char ***env)
 {
 	char *env_ptr = NULL;
+	int tmp_int;
 
 	slurm_mutex_init(&_pmixp_pp_lock);
 
@@ -1562,13 +1671,17 @@ void pmixp_server_init_cperf(char ***env)
 
 	if ((env_ptr = getenvp(*env, PMIXP_CPERF_LOW))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_cperf_low = atoi(env_ptr);
+			tmp_int = atoi(env_ptr);
+			_pmixp_cperf_low = tmp_int < PMIXP_CPERF_PWR2_MAX ?
+				tmp_int : PMIXP_CPERF_PWR2_MAX;
 		}
 	}
 
 	if ((env_ptr = getenvp(*env, PMIXP_CPERF_UP))) {
 		if (_consists_from_digits(env_ptr)) {
-			_pmixp_cperf_up = atoi(env_ptr);
+			tmp_int = atoi(env_ptr);
+			_pmixp_cperf_up = tmp_int < PMIXP_CPERF_PWR2_MAX ?
+				tmp_int : PMIXP_CPERF_PWR2_MAX;
 		}
 	}
 
@@ -1648,7 +1761,7 @@ static int _pmixp_server_cperf_iter(char *data, int ndata)
 /*
  * For this to work the following conditions supposed to be
  * satisfied:
- * - SLURM has to be configured with `--enable-debug` option
+ * - Slurm has to be configured with `--enable-debug` option
  * - jobstep needs to have at least two nodes
  * In this case communication exchange will be done between
  * the first two nodes.

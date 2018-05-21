@@ -9,11 +9,11 @@
  *  Written by Jim Garlick <garlick@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -481,7 +481,9 @@ bit_ffs(bitstr_t *b)
 			bit += sizeof(bitstr_t)*8;
 			continue;
 		}
-#if HAVE___BUILTIN_CTZLL
+#if HAVE___BUILTIN_CLZLL && (defined SLURM_BIGENDIAN)
+		value = bit + __builtin_clzll(b[word]);
+#elif HAVE___BUILTIN_CTZLL && (!defined SLURM_BIGENDIAN)
 		value = bit + __builtin_ctzll(b[word]);
 #else
 		while (bit < _bitstr_bits(b) && _bit_word(bit) == word) {
@@ -493,7 +495,10 @@ bit_ffs(bitstr_t *b)
 		}
 #endif
 	}
-	return value;
+	if (value < _bitstr_bits(b))
+		return value;
+	else
+		return -1;
 }
 
 /*
@@ -528,7 +533,9 @@ bit_fls(bitstr_t *b)
 			bit -= sizeof(bitstr_t) * 8;
 			continue;
 		}
-#if HAVE___BUILTIN_CLZLL
+#if HAVE___BUILTIN_CTZLL && (defined SLURM_BIGENDIAN)
+		value = bit - __builtin_ctzll(b[word]);
+#elif HAVE___BUILTIN_CLZLL && (!defined SLURM_BIGENDIAN)
 		value = bit - __builtin_clzll(b[word]);
 #else
 		while (bit >= 0) {
@@ -677,7 +684,22 @@ bit_or(bitstr_t *b1, bitstr_t *b2)
 		b1[_bit_word(bit)] |= b2[_bit_word(bit)];
 }
 
+/*
+ * b1 |= ~b2
+ * b1 (IN/OUT)
+ * b2 (IN)
+ */
+void bit_or_not(bitstr_t *b1, bitstr_t *b2)
+{
+	bitoff_t bit;
 
+	_assert_bitstr_valid(b1);
+	_assert_bitstr_valid(b2);
+	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
+
+	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8)
+		b1[_bit_word(bit)] |= ~b2[_bit_word(bit)];
+}
 
 /*
  * return a copy of the supplied bitmap
@@ -1006,7 +1028,7 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
  */
 char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 {
-	int32_t count = 0, ret, word;
+	int32_t count = 0, ret, size, word;
 	bitoff_t start, bit;
 
 	_assert_bitstr_valid(b);
@@ -1026,15 +1048,15 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 				bit++;
 				count++;
 			}
-			if (bit == start)	/* add single bit position */
-				ret = snprintf(str+strlen(str),
-				               len-strlen(str),
+			size = strlen(str);
+			if (bit == start) {	/* add single bit position */
+				ret = snprintf(str + size, len - size,
 				               "%"BITSTR_FMT",", start);
-			else 			/* add bit position range */
-				ret = snprintf(str+strlen(str),
-				               len-strlen(str),
+			} else { 		/* add bit position range */
+				ret = snprintf(str + size, len - size,
 				               "%"BITSTR_FMT"-%"BITSTR_FMT",",
 					       start, bit);
+			}
 			assert(ret != -1);
 		}
 		bit++;

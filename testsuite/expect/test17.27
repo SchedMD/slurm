@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test that a job executes with the specified nodes, requires multiple
 #          nodes (--nodes, --nodelist and --exclude options).
 #
@@ -14,22 +14,22 @@
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -48,9 +48,6 @@ if {[test_alps]} {
 } elseif {[test_serial]} {
 	send_user "\nWARNING: This test is incompatible with serial systems\n"
 	exit $exit_code
-} elseif { [test_xcpu] } {
-	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
-	exit $exit_code
 }
 
 #
@@ -60,12 +57,7 @@ set host_0      ""
 set host_1      ""
 set host_2      ""
 set host_3      ""
-
-if { [test_bluegene] } {
-	set node_cnt 1536
-} else {
-	set node_cnt 3
-}
+set node_cnt 3
 
 set available [available_nodes $partition ""]
 if {$available < $node_cnt} {
@@ -158,7 +150,6 @@ if {[string compare $host_2 ""] == 0} {
 }
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
-#	On blue gene we could get extra tasks
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in $file_out
 	}

@@ -3,11 +3,11 @@
 *  Copyright (C) 2012 SchedMD LLC
 *  Written by Danny Auble <da@schedmd.com>
 *
-*  This file is part of SLURM, a resource management program.
+*  This file is part of Slurm, a resource management program.
 *  For details, see <https://slurm.schedmd.com/>.
 *  Please also read the included file: DISCLAIMER.
 *
-*  SLURM is free software; you can redistribute it and/or modify it under
+*  Slurm is free software; you can redistribute it and/or modify it under
 *  the terms of the GNU General Public License as published by the Free
 *  Software Foundation; either version 2 of the License, or (at your option)
 *  any later version.
@@ -23,13 +23,13 @@
 *  version.  If you delete this exception statement from all source files in
 *  the program, then also delete it here.
 *
-*  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+*  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 *  details.
 *
 *  You should have received a copy of the GNU General Public License along
-*  with SLURM; if not, write to the Free Software Foundation, Inc.,
+*  with Slurm; if not, write to the Free Software Foundation, Inc.,
 *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -297,9 +297,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	}
 	job->ctx_params.overcommit = opt_local->overcommit ? 1 : 0;
-
 	job->ctx_params.node_list = opt_local->nodelist;
-
 	job->ctx_params.network = opt_local->network;
 	job->ctx_params.no_kill = opt_local->no_kill;
 	if (srun_opt->job_name_set_cmd && opt_local->job_name)
@@ -307,6 +305,39 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	else
 		job->ctx_params.name = srun_opt->cmd_name;
 	job->ctx_params.features = opt_local->constraints;
+
+	if (opt_local->cpus_per_gpu) {
+		xstrfmtcat(job->ctx_params.cpus_per_tres, "gpu:%d",
+			   opt_local->cpus_per_gpu);
+	}
+	if (opt_local->gpu_bind) {
+		xstrfmtcat(job->ctx_params.tres_bind, "gpu:%s",
+			   opt_local->gpu_bind);
+	}
+	if (opt_local->gpu_freq) {
+		xstrfmtcat(job->ctx_params.tres_freq, "gpu:%s",
+			   opt_local->gpu_freq);
+	}
+	if (opt_local->gpus) {
+		xstrfmtcat(job->ctx_params.tres_per_job, "gpu:%s",
+			   opt_local->gpus);
+	}
+	if (opt_local->gpus_per_node) {
+		xstrfmtcat(job->ctx_params.tres_per_node, "gpu:%s",
+			   opt_local->gpus_per_node);
+	}
+	if (opt_local->gpus_per_socket) {
+		xstrfmtcat(job->ctx_params.tres_per_socket, "gpu:%s",
+			   opt_local->gpus_per_socket);
+	}
+	if (opt_local->gpus_per_task) {
+		xstrfmtcat(job->ctx_params.tres_per_task, "gpu:%s",
+			   opt_local->gpus_per_task);
+	}
+	if (opt_local->mem_per_gpu) {
+		xstrfmtcat(job->ctx_params.mem_per_tres, "gpu:%"PRIi64,
+			   opt.mem_per_gpu);
+	}
 
 	debug("requesting job %u, user %u, nodes %u including (%s)",
 	      job->ctx_params.job_id, job->ctx_params.uid,
@@ -347,11 +378,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		     ((opt_local->immediate == 1) ||
 		      (difftime(time(NULL), srun_begin_time) >=
 		       opt_local->immediate))) ||
-		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
-		     (rc != ESLURM_PROLOG_RUNNING) &&
-		     (rc != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT) &&
-		     (rc != ESLURM_INTERCONNECT_BUSY) &&
-		     (rc != ESLURM_DISABLED))) {
+		    ((rc != ESLURM_PROLOG_RUNNING) &&
+		     !slurm_step_retry_errno(rc))) {
 			error("Unable to create step for job %u: %m",
 			      job->ctx_params.job_id);
 			return SLURM_ERROR;

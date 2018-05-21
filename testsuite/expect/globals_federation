@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Establish global state information for SLURM federation tests
+# Purpose: Establish global state information for Slurm federation tests
 #
 # To define site-specific state information, set the values in a file
 # named 'globals.local'. Those values will override any specified here.
@@ -18,12 +18,12 @@
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the supplied file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
@@ -403,12 +403,12 @@ proc modify_federation_flags {fed_name mode flags} {
 #
 # Proc: wait_for_fed_job
 #
-# Purpose:  Wait for a previously submitted SLURM job to reach
+# Purpose:  Wait for a previously submitted Slurm job to reach
 # the desired state, exponential back-off 1 to 10 seconds
 #
 # Returns: A non-zero return code indicates a failure.
 #
-# Input: job_id   -- The SLURM job id of a job we want to
+# Input: job_id   -- The Slurm job id of a job we want to
 #                    wait for.
 #        desired_state -- The state you want the job to attain before
 #                         returning.  Currently supports:

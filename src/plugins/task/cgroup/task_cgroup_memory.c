@@ -4,11 +4,11 @@
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,19 +24,23 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE		/* For POLLRDHUP */
 #include <limits.h>
+#include <poll.h>
+#include <signal.h>
 #include <stdlib.h>		/* getenv */
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 #include "slurm/slurm.h"
@@ -46,6 +50,12 @@
 #include "src/common/xstring.h"
 
 #include "task_cgroup.h"
+
+#if defined(__FreeBSD__) || defined(__NetBSD__)
+#define POLLRDHUP POLLHUP
+#else
+#include <sys/eventfd.h>
+#endif
 
 extern slurmd_conf_t *conf;
 
@@ -74,6 +84,33 @@ static uint64_t max_swap;       /* Upper bound for swap                   */
 static uint64_t totalram;       /* Total real memory available on node    */
 static uint64_t min_ram_space;  /* Don't constrain RAM below this value   */
 static uint64_t min_kmem_space; /* Don't constrain Kernel mem below       */
+
+/*
+ * Cgroup v1 control files to detect OOM events.
+ * https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt
+ */
+#define OOM_CONTROL "memory.oom_control"
+#define EVENT_CONTROL "cgroup.event_control"
+#define STOP_OOM 0x987987987
+
+/*
+ * If we plan to support cgroup v2, we should monitor 'memory.events' file
+ * modified events. That would mean that any of the available entries changed
+ * its value upon notification. Entries include: low, high, max, oom, oom_kill.
+ * https://www.kernel.org/doc/Documentation/cgroup-v2.txt
+ */
+
+typedef struct {
+	int cfd;	/* control file fd. */
+	int efd;	/* event file fd. */
+	int event_fd;	/* eventfd fd. */
+} oom_event_args_t;
+
+static bool oom_thread_created = false;
+static uint64_t oom_kill_count = 0;
+static int oom_pipe[2] = { -1, -1 };
+static pthread_t oom_thread;
+static pthread_mutex_t oom_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static uint64_t percent_in_bytes (uint64_t mb, float percent)
 {
@@ -109,7 +146,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	}
 	xcgroup_set_param(&memory_cg, "memory.use_hierarchy","1");
 
-	set_swappiness = (slurm_cgroup_conf->memory_swappiness == NO_VAL64);
+	set_swappiness = (slurm_cgroup_conf->memory_swappiness != NO_VAL64);
 	if (set_swappiness)
 		xcgroup_set_uint64_param(&memory_cg, "memory.swappiness",
 					 slurm_cgroup_conf->memory_swappiness);
@@ -254,7 +291,7 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 static uint64_t mem_limit_in_bytes (uint64_t mem, bool with_allowed)
 {
 	/*
-	 *  If mem == 0 then assume there was no SLURM limit imposed
+	 *  If mem == 0 then assume there was no Slurm limit imposed
 	 *   on the amount of memory for job or step. Use the total
 	 *   amount of available RAM instead.
 	 */
@@ -372,6 +409,251 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	return 0;
 }
 
+#if defined(__FreeBSD__) || defined(__NetBSD__)
+
+static int _register_oom_notifications(char *ignored)
+{
+	error("OOM notification does not work on FreeBSD or NetBSD");
+
+	return SLURM_ERROR;
+}
+
+#else
+
+static int _read_fd(int fd, uint64_t *buf)
+{
+	int rc = SLURM_ERROR;
+	size_t len = sizeof(uint64_t);
+	uint64_t *buf_ptr = buf;
+	ssize_t nread;
+
+	while (len > 0 && (nread = read(fd, buf_ptr, len)) != 0) {
+		if (nread == -1) {
+			if (errno == EINTR)
+				continue;
+			error("%s: read(): %m", __func__);
+			break;
+		}
+		len -= nread;
+		buf_ptr += nread;
+	}
+
+	if (len == 0)
+		rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+static void *_oom_event_monitor(void *x)
+{
+	oom_event_args_t *args = (oom_event_args_t *) x;
+	int ret = -1;
+	uint64_t res;
+	struct pollfd fds[2];
+
+	debug("%s: started.", __func__);
+
+	/*
+	 * POLLPRI should only meaningful for event_fd, since according to the
+	 * poll() man page it may indicate "cgroup.events" file modified.
+	 *
+	 * POLLRDHUP should only be meaningful for oom_pipe[0], since it refers
+	 * to stream socket peer closed connection.
+	 *
+	 * POLLHUP is ignored in events member, and should be set by the Kernel
+	 * in revents even if not defined in events.
+	 *
+	 */
+	fds[0].fd = args->event_fd;
+	fds[0].events = POLLIN | POLLPRI;
+
+	fds[1].fd = oom_pipe[0];
+	fds[1].events = POLLIN | POLLRDHUP;
+
+	/*
+	 * Poll event_fd for oom_kill events plus oom_pipe[0] for stop msg.
+	 * Specifying a negative value in timeout means an infinite timeout.
+	 */
+	while (1) {
+		ret = poll(fds, 2, -1);
+
+		if (ret == -1) {
+			/* Error. */
+			if (errno == EINTR)
+				continue;
+
+			error("%s: poll(): %m", __func__);
+			break;
+		} else if (ret == 0) {
+			/* Should not happen since infinite timeout. */
+			error("%s: poll() timeout.", __func__);
+			break;
+		} else if (ret > 0) {
+			if (fds[0].revents & (POLLIN | POLLPRI)) {
+				/* event_fd readable. */
+				res = 0;
+				ret = _read_fd(args->event_fd, &res);
+				if (ret == SLURM_SUCCESS) {
+					slurm_mutex_lock(&oom_mutex);
+					debug3("%s: res: %"PRIu64"", __func__,
+					       res);
+					oom_kill_count += res;
+					info("%s: oom-kill event count: %"PRIu64"",
+					     __func__, oom_kill_count);
+					slurm_mutex_unlock(&oom_mutex);
+				} else
+					error("%s: cannot read oom-kill counts.",
+					      __func__);
+			} else if (fds[0].revents & (POLLRDHUP | POLLERR |
+						     POLLHUP | POLLNVAL)) {
+				error("%s: problem with event_fd", __func__);
+				break;
+			}
+
+			if (fds[1].revents & POLLIN) {
+				/* oom_pipe[0] readable. */
+				res = 0;
+				ret = _read_fd(oom_pipe[0], &res);
+				if (ret == SLURM_SUCCESS && res == STOP_OOM) {
+					/* Read stop msg. */
+					debug2("%s: stop msg read.", __func__);
+					break;
+				}
+			} else if (fds[1].revents &
+				   (POLLRDHUP | POLLERR | POLLHUP | POLLNVAL)) {
+				error("%s: problem with oom_pipe[0]", __func__);
+				break;
+			}
+		}
+	}
+
+	slurm_mutex_lock(&oom_mutex);
+	if (!oom_kill_count)
+		debug("%s: No oom events detected.", __func__);
+	slurm_mutex_unlock(&oom_mutex);
+
+	if ((args->event_fd != -1) && (close(args->event_fd) == -1))
+		error("%s: close(event_fd): %m", __func__);
+	if ((args->efd != -1) && (close(args->efd) == -1))
+		error("%s: close(efd): %m", __func__);
+	if ((args->cfd != -1) && (close(args->cfd) == -1))
+		error("%s: close(cfd): %m", __func__);
+	if ((oom_pipe[0] >= 0) && (close(oom_pipe[0]) == -1))
+		error("%s: close(oom_pipe[0]): %m", __func__);
+	xfree(args);
+
+	debug("%s: stopping.", __func__);
+
+	pthread_exit((void *) 0);
+}
+
+/*
+ * Code based on linux tools/cgroup/cgroup_event_listener.c with adapted
+ * modifications for Slurm logic and needs.
+ */
+static int _register_oom_notifications(char * cgpath)
+{
+	char *control_file = NULL, *event_file = NULL, *line = NULL;
+	int rc = SLURM_SUCCESS, event_fd = -1, cfd = -1, efd = -1;
+	size_t ret;
+	oom_event_args_t *event_args;
+
+	if ((cgpath == NULL) || (cgpath[0] == '\0')) {
+		error("%s: cgroup path is NULL or empty.", __func__);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	ret = xstrfmtcat(control_file, "%s/%s", cgpath, OOM_CONTROL);
+
+	if (ret >= PATH_MAX) {
+		error("%s: path to %s is too long.", __func__, OOM_CONTROL);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	if ((cfd = open(control_file, O_RDONLY)) == -1) {
+		error("%s: Cannot open %s: %m", __func__, control_file);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	ret = xstrfmtcat(event_file, "%s/%s", cgpath, EVENT_CONTROL);
+
+	if (ret >= PATH_MAX) {
+		error("%s: path to %s is too long.", __func__, EVENT_CONTROL);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	if ((efd = open(event_file, O_WRONLY)) == -1) {
+		error("%s: Cannot open %s: %m", __func__, event_file);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	if ((event_fd = eventfd(0, 0)) == -1) {
+		error("%s: eventfd: %m", __func__);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	ret = xstrfmtcat(line, "%d %d", event_fd, cfd);
+
+	if (ret >= LINE_MAX) {
+		error("%s: line is too long: %s", __func__, line);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	oom_kill_count = 0;
+
+	if (write(efd, line, ret + 1) == -1) {
+		error("%s: Cannot write to %s", __func__, event_file);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	if (pipe(oom_pipe) == -1) {
+		error("%s: pipe(): %m", __func__);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	/*
+	 * Monitoring thread should be responsible for closing the fd's and
+	 * freeing the oom_event_args_t struct and members.
+	 */
+	event_args = xmalloc(sizeof(oom_event_args_t));
+	event_args->cfd = cfd;
+	event_args->efd = efd;
+	event_args->event_fd = event_fd;
+
+	slurm_mutex_init(&oom_mutex);
+	slurm_thread_create(&oom_thread, _oom_event_monitor, event_args);
+	oom_thread_created = true;
+
+fini:
+	xfree(line);
+	if (!oom_thread_created) {
+		if ((event_fd != -1) && (close(event_fd) == -1))
+			error("%s: close: %m", __func__);
+		if ((efd != -1) && (close(efd) == -1))
+			error("%s: close: %m", __func__);
+		if ((cfd != -1) && (close(cfd) == -1))
+			error("%s: close: %m", __func__);
+		if ((oom_pipe[0] != -1) && (close(oom_pipe[0]) == -1))
+			error("%s: close oom_pipe[0]: %m", __func__);
+		if ((oom_pipe[1] != -1) && (close(oom_pipe[1]) == -1))
+			error("%s: close oom_pipe[1]: %m", __func__);
+	}
+	xfree(event_file);
+	xfree(control_file);
+
+	return rc;
+}
+#endif
+
 extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 {
 	int fstatus = SLURM_ERROR;
@@ -439,7 +721,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	 * setting it up. As soon as the step cgroup is created, we can release
 	 * the lock.
 	 * Indeed, consecutive slurm steps could result in cg being removed
-	 * between the next EEXIST instanciation and the first addition of
+	 * between the next EEXIST instantiation and the first addition of
 	 * a task. The release_agent will have to lock the root memory cgroup
 	 * to avoid this scenario.
 	 */
@@ -501,6 +783,11 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 		goto error;
 	}
 
+	if (_register_oom_notifications(step_memory_cg.path) == SLURM_ERROR) {
+		error("%s: Unable to register OOM notifications for %s",
+		      __func__, step_memory_cg.path);
+	}
+
 	fstatus = SLURM_SUCCESS;
 error:
 	xcgroup_unlock(&memory_cg);
@@ -543,51 +830,108 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 {
 	xcgroup_t memory_cg;
 	int rc = SLURM_SUCCESS;
+	char step_str[20];
+	uint64_t stop_msg;
+	ssize_t ret;
 
 	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
-	    == XCGROUP_SUCCESS) {
-		if (xcgroup_lock(&memory_cg) == XCGROUP_SUCCESS) {
-			/* for some reason the job cgroup limit is hit
-			 * for a step and vice versa...
-			 * can't tell which is which so we'll treat
-			 * them the same */
-			if (failcnt_non_zero(&step_memory_cg,
-					     "memory.memsw.failcnt")) {
-				/* reports the number of times that the
-				 * memory plus swap space limit has
-				 * reached the value set in
-				 * memory.memsw.limit_in_bytes.
-				 */
-				error("Exceeded step memory limit at some point.");
-				rc = ENOMEM;
-			} else if (failcnt_non_zero(&step_memory_cg,
-						    "memory.failcnt")) {
-				/* reports the number of times that the
-				 * memory limit has reached the value set
-				 * in memory.limit_in_bytes.
-				 */
-				error("Exceeded step memory limit at some point.");
-				rc = ENOMEM;
-			}
-			if (failcnt_non_zero(&job_memory_cg,
-					     "memory.memsw.failcnt")) {
-				error("Exceeded job memory limit at some point.");
-				rc = ENOMEM;
-			} else if (failcnt_non_zero(&job_memory_cg,
-						    "memory.failcnt")) {
-				error("Exceeded job memory limit at some point.");
-				rc = ENOMEM;
-			}
-			xcgroup_unlock(&memory_cg);
-		} else {
-			error("task/cgroup task_cgroup_memory_check_oom: "
-			      "task_cgroup_memory_check_oom: unable to lock "
-			      "root memcg : %m");
-		}
-		xcgroup_destroy(&memory_cg);
-	} else
-		error("task/cgroup task_cgroup_memory_check_oom: "
-		      "unable to create root memcg : %m");
+	    != XCGROUP_SUCCESS) {
+		error("task/cgroup task_cgroup_memory_check_oom: unable to create root memcg : %m");
+		goto fail_xcgroup_create;
+	}
+
+	if (xcgroup_lock(&memory_cg) != XCGROUP_SUCCESS) {
+		error("task/cgroup task_cgroup_memory_check_oom: task_cgroup_memory_check_oom: unable to lock root memcg : %m");
+		goto fail_xcgroup_lock;
+	}
+
+	if (job->stepid == SLURM_BATCH_SCRIPT)
+		snprintf(step_str, sizeof(step_str), "%u.batch",
+			 job->jobid);
+	else if (job->stepid == SLURM_EXTERN_CONT)
+		snprintf(step_str, sizeof(step_str), "%u.extern",
+			 job->jobid);
+	else
+		snprintf(step_str, sizeof(step_str), "%u.%u",
+			 job->jobid, job->stepid);
+
+	if (failcnt_non_zero(&step_memory_cg, "memory.memsw.failcnt")) {
+		/*
+		 * reports the number of times that the memory plus swap space
+		 * limit has reached the value in memory.memsw.limit_in_bytes.
+		 */
+		info("Step %s hit memory+swap limit at least once during execution. This may or may not result in some failure.",
+		     step_str);
+	} else if (failcnt_non_zero(&step_memory_cg, "memory.failcnt")) {
+		/*
+		 * reports the number of times that the memory limit has reached
+		 * the value set in memory.limit_in_bytes.
+		 */
+		info("Step %s hit memory limit at least once during execution. This may or may not result in some failure.",
+		     step_str);
+	}
+
+	if (failcnt_non_zero(&job_memory_cg, "memory.memsw.failcnt")) {
+		info("Job %u hit memory+swap limit at least once during execution. This may or may not result in some failure.",
+		     job->jobid);
+	} else if (failcnt_non_zero(&job_memory_cg, "memory.failcnt")) {
+		info("Job %u hit memory limit at least once during execution. This may or may not result in some failure.",
+		     job->jobid);
+	}
+
+	if (!oom_thread_created) {
+		debug("%s: OOM events were not monitored for %s", __func__,
+		      step_str);
+		goto fail_oom_results;
+	}
+
+	/*
+	 * oom_thread created, but could have finished before we attempt
+	 * to send the stop msg. If it finished, oom_thread should had
+	 * closed the read endpoint of oom_pipe.
+	 */
+	stop_msg = STOP_OOM;
+	while (1) {
+		ret = write(oom_pipe[1], &stop_msg, sizeof(stop_msg));
+		if (ret == -1) {
+			if (errno == EINTR)
+				continue;
+			debug("%s: oom stop msg write() failed: %m", __func__);
+		} else if (ret == 0)
+			debug("%s: oom stop msg nothing written: %m", __func__);
+		else if (ret == sizeof(stop_msg))
+			debug2("%s: oom stop msg write success.", __func__);
+		else
+			debug("%s: oom stop msg not fully written.", __func__);
+		break;
+	}
+
+	debug2("%s: attempt to join oom_thread.", __func__);
+	if (oom_thread && pthread_join(oom_thread, NULL) != 0)
+		error("%s: pthread_join(): %m", __func__);
+
+	slurm_mutex_lock(&oom_mutex);
+	if (oom_kill_count) {
+		error("Detected %"PRIu64" oom-kill event(s) in step %s cgroup.",
+		      oom_kill_count, step_str);
+		rc = ENOMEM;
+	}
+	slurm_mutex_unlock(&oom_mutex);
+
+fail_oom_results:
+	if ((oom_pipe[1] != -1) && (close(oom_pipe[1]) == -1)) {
+		error("%s: close() failed on oom_pipe[1] fd, step %s: %m",
+		      __func__, step_str);
+	}
+
+	slurm_mutex_destroy(&oom_mutex);
+
+	xcgroup_unlock(&memory_cg);
+
+fail_xcgroup_lock:
+	xcgroup_destroy(&memory_cg);
+
+fail_xcgroup_create:
 
 	return rc;
 }

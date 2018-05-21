@@ -7,11 +7,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #ifndef _SSTAT_H
@@ -53,18 +53,18 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/print_fields.h"
 
 #define ERROR 2
 
-#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite"
+#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,tresusageinave,tresusageinmax,tresusageinmaxn,tresusageinmaxt,tresusageinmin,tresusageinminn,tresusageinmint,tresusageintot,tresusageoutave,tresusageoutmax,tresusageoutmaxn,tresusageoutmaxt,tresusageoutmin,tresusageoutminn,tresusageoutmint,tresusageouttot"
 
 #define STAT_FIELDS_PID "jobid,nodelist,pids"
 
@@ -114,6 +114,22 @@ typedef enum {
 		PRINT_REQ_CPUFREQ_MIN,
 		PRINT_REQ_CPUFREQ_MAX,
 		PRINT_REQ_CPUFREQ_GOV,
+		PRINT_TRESUIA,
+		PRINT_TRESUIM,
+		PRINT_TRESUIMN,
+		PRINT_TRESUIMT,
+		PRINT_TRESUIMI,
+		PRINT_TRESUIMIN,
+		PRINT_TRESUIMIT,
+		PRINT_TRESUIT,
+		PRINT_TRESUOA,
+		PRINT_TRESUOM,
+		PRINT_TRESUOMN,
+		PRINT_TRESUOMT,
+		PRINT_TRESUOMI,
+		PRINT_TRESUOMIN,
+		PRINT_TRESUOMIT,
+		PRINT_TRESUOT,
 } sstat_print_types_t;
 
 
@@ -126,6 +142,7 @@ typedef struct {
 	int opt_verbose;	/* --verbose */
 	bool pid_format;
 	uint32_t convert_flags;
+	int units;		/* --units*/
 } sstat_parameters_t;
 
 extern List print_fields_list;
@@ -140,7 +157,6 @@ extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 	nprintfields;
 
 /* process.c */
-char *find_hostname(uint32_t pos, char *hosts);
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
 
 /* print.c */

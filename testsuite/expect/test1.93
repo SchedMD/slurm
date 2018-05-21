@@ -1,0 +1,207 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of default CPU binding support.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+############################################################################
+source ./globals
+
+set test_id     "1.93"
+set exit_code   0
+set file_prog   "test$test_id.prog"
+
+proc get_cpu_bind { type name } {
+	global alpha exit_code scontrol
+
+	set cpu_bind "off"
+	spawn $scontrol show $type $name
+	expect {
+		-re "CpuBind=($alpha)" {
+			set cpu_bind $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $cpu_bind
+}
+
+proc set_cpu_bind { type name cpu_bind } {
+	global exit_code scontrol
+
+	spawn $scontrol update ${type}Name=$name CpuBind=$cpu_bind
+	expect {
+		-re "error" {
+			send_user "\nFAILURE: scontrol error setting CpuBind on node $node_name\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $cpu_bind
+}
+
+proc run_prog { node_name cpu_bind } {
+	global exit_code srun def_part_name bin_printenv number alpha
+
+	set matches 0
+	set found_cpu_bind ""
+	set srun_pid [spawn $srun -p $def_part_name -w $node_name -v -t1 $bin_printenv SLURMD_NODENAME]
+	expect {
+		-re "CpuBindType=($alpha)" {
+			set found_cpu_bind $expect_out(1,string)
+			if {[string first $cpu_bind $found_cpu_bind] != -1} {
+				set matches 1
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: Node $node_name should have CpuBind of $cpu_bind rather than $found_cpu_bind\n"
+		set exit_code 1
+	}
+}
+
+proc end_test { } {
+	global exit_code scontrol
+	global node_0 node_cpu_bind_0 node_1 node_cpu_bind_1
+	global partition_cpu_bind def_part_name
+
+	set_cpu_bind "node" $node_0 $node_cpu_bind_0
+	set_cpu_bind "node" $node_1 $node_cpu_bind_1
+	set_cpu_bind "partition" $def_part_name $partition_cpu_bind
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	}
+	exit $exit_code
+}
+
+print_header $test_id
+
+if {[test_serial]} {
+	send_user "\nWARNING: This test is incompatible with select/serial systems\n"
+	exit 0
+}
+
+if {![test_super_user]} {
+	send_user "\nWARNING: This test is only suitable for a super user (to restore down nodes).\n"
+	exit 0
+}
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes < 2} {
+	send_user "\nWARNING: Need 2 or more nodes in default partition\n"
+	exit $exit_code
+}
+
+#
+# Test if CPU affinity support is supported.
+#
+if {![test_cpu_affinity]} {
+	send_user "\nWARNING: CPU affinity not supported on this system\n"
+	exit $exit_code
+}
+send_user "\ntask affinity plugin installed\n"
+
+#
+# Identify some nodes to use
+#
+set timeout $max_job_delay
+set node_0 ""
+set node_1 ""
+set node_cnt 0
+set srun_pid [spawn $srun -p $def_part_name -l -N2 -t1 $bin_printenv SLURMD_NODENAME]
+expect {
+	-re "($number): ($controlmachine_regex)" {
+		if {$expect_out(1,string) == 0} {
+			set node_0 $expect_out(2,string)
+			incr node_cnt
+		}
+		if {$expect_out(1,string) == 1} {
+			set node_1 $expect_out(2,string)
+			incr node_cnt
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$node_cnt != 2} {
+	send_user "\FAILURE: Unexpected resource count ($node_cnt != 2)\n"
+	exit 1
+}
+
+send_user "\nDetermine the node and partition current CpuBind configuration\n"
+set partition_cpu_bind [get_cpu_bind "partition" $def_part_name]
+set node_cpu_bind_0 [get_cpu_bind "node" $node_0]
+set node_cpu_bind_1 [get_cpu_bind "node" $node_1]
+if {$exit_code != 0} {
+	exit $exit_code
+}
+
+set_cpu_bind "node" $node_0 "core"
+set_cpu_bind "node" $node_1 "thread"
+set_cpu_bind "partition" $def_part_name "socket"
+if {$exit_code != 0} {
+	end_test
+}
+
+run_prog $node_0 "core"
+run_prog $node_1 "thread"
+
+set nodes_both ""
+append nodes_both $node_0 "," $node_1
+run_prog $nodes_both "socket"
+
+end_test

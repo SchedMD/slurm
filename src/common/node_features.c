@@ -5,11 +5,11 @@
  *  Copyright (C) 2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -57,10 +57,11 @@
  */
 typedef struct node_features_ops {
 	uint32_t(*boot_time)	(void);
-	bool    (*changible_feature) (char *feature);
+	bool    (*changeable_feature) (char *feature);
 	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
+	bitstr_t * (*get_node_bitmap) (void);
 	bool	(*node_power)	(void);
 	int	(*node_set)	(char *active_features);
 	void	(*node_state)	(char **avail_modes, char **current_mode);
@@ -68,11 +69,13 @@ typedef struct node_features_ops {
 	bool	(*node_update_valid) (void *node_ptr,
 				      update_node_msg_t *update_node_msg);
 	char *	(*node_xlate)	(char *new_features, char *orig_features,
-				 char *avail_features);
+				 char *avail_features, int node_inx);
 	char *	(*node_xlate2)	(char *new_features);
 	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
+	uint32_t(*reboot_weight)(void);
 	int	(*reconfig)	(void);
 	bool	(*user_update)	(uid_t uid);
+	void	(*get_config)	(config_plugin_params_t *p);
 } node_features_ops_t;
 
 /*
@@ -81,10 +84,11 @@ typedef struct node_features_ops {
  */
 static const char *syms[] = {
 	"node_features_p_boot_time",
-	"node_features_p_changible_feature",
+	"node_features_p_changeable_feature",
 	"node_features_p_get_node",
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
+	"node_features_p_get_node_bitmap",
 	"node_features_p_node_power",
 	"node_features_p_node_set",
 	"node_features_p_node_state",
@@ -93,8 +97,10 @@ static const char *syms[] = {
 	"node_features_p_node_xlate",
 	"node_features_p_node_xlate2",
 	"node_features_p_step_config",
+	"node_features_p_reboot_weight",
 	"node_features_p_reconfig",
-	"node_features_p_user_update"
+	"node_features_p_user_update",
+	"node_features_p_get_config"
 };
 
 static int g_context_cnt = -1;
@@ -235,21 +241,21 @@ extern int node_features_g_reconfig(void)
 }
 
 /* Return TRUE if this (one) feature name is under this plugin's control */
-extern bool node_features_g_changible_feature(char *feature)
+extern bool node_features_g_changeable_feature(char *feature)
 {
 	DEF_TIMERS;
 	int i;
-	bool changible = false;
+	bool changeable = false;
 
 	START_TIMER;
 	(void) node_features_g_init();
 	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && !changible); i++)
-		changible = (*(ops[i].changible_feature))(feature);
+	for (i = 0; ((i < g_context_cnt) && !changeable); i++)
+		changeable = (*(ops[i].changeable_feature))(feature);
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2("node_features_g_reconfig");
 
-	return changible;
+	return changeable;
 }
 
 /* Update active and available features on specified nodes, sets features on
@@ -287,8 +293,12 @@ extern int node_features_g_job_valid(char *job_features)
 	return rc;
 }
 
-/* Translate a job's feature specification to node boot options
- * RET node boot options, must be xfreed */
+/*
+ * Translate a job's feature request to the node features needed at boot time.
+ *	If multiple MCDRAM or NUMA values are ORed, pick the first ones.
+ * IN job_features - job's --constraint specification
+ * RET features required on node reboot. Must xfree to release memory
+ */
 extern char *node_features_g_job_xlate(char *job_features)
 {
 	DEF_TIMERS;
@@ -313,6 +323,27 @@ extern char *node_features_g_job_xlate(char *job_features)
 	END_TIMER2("node_features_g_job_xlate");
 
 	return node_features;
+}
+
+/* Return bitmap of KNL nodes, NULL if none identified */
+extern bitstr_t *node_features_g_get_node_bitmap(void)
+{
+	DEF_TIMERS;
+	bitstr_t *node_bitmap = NULL;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		node_bitmap = (*(ops[i].get_node_bitmap))();
+		if (node_bitmap)
+			break;
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_get_node_bitmap");
+
+	return node_bitmap;
 }
 
 /* Return true if the plugin requires PowerSave mode for booting nodes */
@@ -376,7 +407,7 @@ extern void node_features_g_node_state(char **avail_modes, char **current_mode)
 }
 
 /* Note the active features associated with a set of nodes have been updated.
- * Specifically update the node's "hbm" GRES value as needed.
+ * Specifically update the node's "hbm" GRES and "CpuBind" values as needed.
  * IN active_features - New active features
  * IN node_bitmap - bitmap of nodes changed
  * RET error code */
@@ -435,10 +466,11 @@ extern bool node_features_g_node_update_valid(void *node_ptr,
  * IN new_features - newly active features
  * IN orig_features - original active features
  * IN avail_features - original available features
+ * IN node_inx - index of node in node table
  * RET node's new merged features, must be xfreed
  */
 extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
-					char *avail_features)
+					char *avail_features, int node_inx)
 {
 	DEF_TIMERS;
 	char *new_value = NULL, *tmp_str;
@@ -447,6 +479,10 @@ extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 	START_TIMER;
 	(void) node_features_g_init();
 	slurm_mutex_lock(&g_context_lock);
+
+	if (!g_context_cnt)
+		new_value = xstrdup(new_features);
+
 	for (i = 0; i < g_context_cnt; i++) {
 		if (new_value)
 			tmp_str = new_value;
@@ -455,7 +491,7 @@ extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 		else
 			tmp_str = NULL;
 		new_value = (*(ops[i].node_xlate))(new_features, tmp_str,
-						   avail_features);
+						   avail_features, node_inx);
 		xfree(tmp_str);
 
 	}
@@ -532,4 +568,56 @@ extern uint32_t node_features_g_boot_time(void)
 	END_TIMER2("node_features_g_user_update");
 
 	return boot_time;
+}
+
+/* Get node features plugin configuration */
+extern List node_features_g_get_config(void)
+{
+	DEF_TIMERS;
+	int i, rc;
+	List conf_list = NULL;
+	config_plugin_params_t *p;
+
+	START_TIMER;
+	rc = node_features_g_init();
+
+	if (g_context_cnt > 0)
+		conf_list = list_create(destroy_config_plugin_params);
+
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		p = xmalloc(sizeof(config_plugin_params_t));
+		p->key_pairs = list_create(destroy_config_key_pair);
+
+		(*(ops[i].get_config))(p);
+
+		if (!p->name)
+			destroy_config_plugin_params(p);
+		else
+			list_append(conf_list, p);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+
+	END_TIMER2("node_features_g_get_config");
+
+	return conf_list;
+}
+
+/*
+ * Return node "weight" field if reboot required to change mode
+ */
+extern uint32_t node_features_g_reboot_weight(void)
+{
+	DEF_TIMERS;
+	int weight = INFINITE - 1;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	if (g_context_cnt > 0)
+		weight = (*(ops[0].reboot_weight))();
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_reboot_weight");
+
+	return weight;
 }

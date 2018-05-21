@@ -6,11 +6,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -43,11 +43,10 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/pack.h"
 #include "src/common/list.h"
 #include "src/common/slurm_accounting_storage.h"
 
-/* SLURM DBD message types */
+/* Slurm DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
 typedef enum {
 	DBD_INIT = 1400,	/* Connection initialization		*/
@@ -245,6 +244,7 @@ typedef struct dbd_job_comp_msg {
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time needed to find job
 				 * record in db */
+	char *	 system_comment;/* job system comment field */
 	char    *tres_alloc_str;/* Simple comma separated list of TRES */
 } dbd_job_comp_msg_t;
 
@@ -389,70 +389,19 @@ typedef struct dbd_step_start_msg {
 	char *tres_alloc_str;   /* Simple comma separated list of TRES */
 } dbd_step_start_msg_t;
 
-/* flag to let us know if we are running on cache or from the actual
- * database */
-extern uint16_t running_cache;
-/* mutex and signal to let us know if associations have been reset so we need to
- * redo all the pointers to the associations */
-extern pthread_mutex_t assoc_cache_mutex; /* assoc cache mutex */
-extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
-
 /*****************************************************************************\
  * Slurm DBD message processing functions
 \*****************************************************************************/
-
-extern void slurmdbd_defs_init(char *auth_info);
-extern void slurmdbd_defs_fini(void);
-
-/* Open a socket connection to SlurmDbd
- * auth_info IN - alternate authentication key
- * make_agent IN - make agent to process RPCs if set
- * rollback IN - keep journal and permit rollback if set
- * Returns SLURM_SUCCESS or an error code */
-extern int slurm_open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks);
-
-/* Close the SlurmDBD socket connection */
-extern int slurm_close_slurmdbd_conn(void);
-
-/* Return true if connection to slurmdbd is active, false otherwise. */
-extern bool slurmdbd_conn_active(void);
-
-/* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
- * will be queued and processed later if the SlurmDBD is not responding.
- * NOTE: slurm_open_slurmdbd_conn() must have been called with make_agent set
- *
- * Returns SLURM_SUCCESS or an error code */
-extern int slurm_send_slurmdbd_msg(uint16_t rpc_version,
-				   slurmdbd_msg_t *req);
-
-/* Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
- * The RPC will not be queued if an error occurs.
- * The "resp" message must be freed by the caller.
- * Returns SLURM_SUCCESS or an error code */
-extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
-					slurmdbd_msg_t *req,
-					slurmdbd_msg_t *resp);
-
-/* Send an RPC to the SlurmDBD and wait for the return code reply.
- * The RPC will not be queued if an error occurs.
- * Returns SLURM_SUCCESS or an error code */
-extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
-					   slurmdbd_msg_t *req,
-					   int *rc);
-
-extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version);
-extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
-			       uint16_t rpc_version, Buf buffer);
 
 extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type);
 extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type,
 				     int get_enum);
 
-extern void slurmdbd_free_buffer(void *x);
-
 /*****************************************************************************\
  * Free various SlurmDBD message structures
 \*****************************************************************************/
+extern void slurmdbd_free_buffer(void *x);
+
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg);
 extern void slurmdbd_free_msg(slurmdbd_msg_t *msg);
@@ -476,129 +425,4 @@ extern void slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg);
 extern void slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
 				    slurmdbd_msg_type_t type);
 
-/*****************************************************************************\
- * Pack various SlurmDBD message structures into a buffer
-\*****************************************************************************/
-extern void slurmdbd_pack_acct_coord_msg(dbd_acct_coord_msg_t *msg,
-					 uint16_t rpc_version,
-					 Buf buffer);
-extern void slurmdbd_pack_cluster_tres_msg(dbd_cluster_tres_msg_t *msg,
-					     uint16_t rpc_version,
-					     Buf buffer);
-extern void slurmdbd_pack_rec_msg(dbd_rec_msg_t *msg,
-				  uint16_t rpc_version,
-				  slurmdbd_msg_type_t type, Buf buffer);
-extern void slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
-				   uint16_t rpc_version,
-				   slurmdbd_msg_type_t type, Buf buffer);
-extern void slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version,
-				   Buf buffer);
-extern void slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg,
-				   uint16_t rpc_version, Buf buffer);
-extern void slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
-					   uint16_t rpc_version,
-					   Buf buffer);
-extern void slurmdbd_pack_job_start_msg(void *in,
-					uint16_t rpc_version,
-					Buf buffer);
-extern void slurmdbd_pack_id_rc_msg(void *in,
-				    uint16_t rpc_version,
-				    Buf buffer);
-extern void slurmdbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg,
-					  uint16_t rpc_version,
-					  Buf buffer);
-extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
-				   uint16_t rpc_version,
-				   slurmdbd_msg_type_t type,
-				   Buf buffer);
-extern void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
-				     uint16_t rpc_version,
-				     slurmdbd_msg_type_t type,
-				     Buf buffer);
-extern void slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
-					 uint16_t rpc_version,
-					 Buf buffer);
-extern void slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
-					    uint16_t rpc_version,
-					    Buf buffer);
-extern void slurmdbd_pack_roll_usage_msg(dbd_roll_usage_msg_t *msg,
-					 uint16_t rpc_version, Buf buffer);
-extern void slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
-					    uint16_t rpc_version,
-					    Buf buffer);
-extern void slurmdbd_pack_step_start_msg(dbd_step_start_msg_t *msg,
-					 uint16_t rpc_version,
-					 Buf buffer);
-extern void slurmdbd_pack_usage_msg(dbd_usage_msg_t *msg,
-				    uint16_t rpc_version,
-				    slurmdbd_msg_type_t type,
-				    Buf buffer);
-extern void slurmdbd_pack_buffer(void *in,
-				 uint16_t rpc_version,
-				 Buf buffer);
-
-/*****************************************************************************\
- * Unpack various SlurmDBD message structures from a buffer
-\*****************************************************************************/
-extern int slurmdbd_unpack_acct_coord_msg(dbd_acct_coord_msg_t **msg,
-					  uint16_t rpc_version,
-					  Buf buffer);
-extern int slurmdbd_unpack_cluster_tres_msg(dbd_cluster_tres_msg_t **msg,
-					      uint16_t rpc_version,
-					      Buf buffer);
-extern int slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
-				   uint16_t rpc_version,
-				   slurmdbd_msg_type_t type,
-				   Buf buffer);
-extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
-				    uint16_t rpc_version,
-				    slurmdbd_msg_type_t type, Buf buffer);
-extern int slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
-				    uint16_t rpc_version, Buf buffer);
-extern int slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg,
-				    uint16_t rpc_version, Buf buffer);
-extern int slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
-					    uint16_t rpc_version,
-					    Buf buffer);
-extern int slurmdbd_unpack_job_start_msg(void **msg,
-					 uint16_t rpc_version,
-					 Buf buffer);
-extern int slurmdbd_unpack_id_rc_msg(void **msg,
-				     uint16_t rpc_version,
-				     Buf buffer);
-extern int slurmdbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg,
-					   uint16_t rpc_version,
-					   Buf buffer);
-extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg,
-				    uint16_t rpc_version,
-				    slurmdbd_msg_type_t type,
-				    Buf buffer);
-extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
-				      uint16_t rpc_version,
-				      slurmdbd_msg_type_t type,
-				      Buf buffer);
-extern int slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
-					  uint16_t rpc_version,
-					  Buf buffer);
-extern int slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
-					     uint16_t rpc_version,
-					     Buf buffer);
-extern int slurmdbd_unpack_roll_usage_msg(dbd_roll_usage_msg_t **msg,
-					  uint16_t rpc_version,
-					  Buf buffer);
-extern int slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
-					     uint16_t rpc_version,
-					     Buf buffer);
-extern int slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
-					  uint16_t rpc_version,
-					  Buf buffer);
-extern int slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
-				     uint16_t rpc_version,
-				     slurmdbd_msg_type_t type,
-				     Buf buffer);
-extern int slurmdbd_unpack_buffer(void **in,
-				  uint16_t rpc_version,
-				  Buf buffer);
-
-extern int slurmdbd_agent_queue_count();
 #endif	/* !_SLURMDBD_DEFS_H */

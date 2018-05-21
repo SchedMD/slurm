@@ -47,22 +47,31 @@ in other Slurm functions used by the plugin.</p>
   Called when the plugin is removed. Clear any allocated storage here.
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
 
+<p class="commandline"> List slurmctld_plugstack_p_get_config (void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when there's a REQUEST_BUILD_INFO RPC call. It must fill a List with
+  config_key_pair_t elements that represents the configurable parameters of
+  the plugin.
+  Normally used when for scontrol and sview to dump the configuration.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  List of keyword - value pairs.
+
 <p><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
-The system <span class="commandline">_init()</span> is called before the SLURM
-<span class="commandline">init()</span>, and the SLURM
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p>Only the init and fini functions of the plugin will be called.
-The init function will be called when the slurmctld daemon begins accepting RPCs.
+<p>The init function will be called when the slurmctld daemon begins accepting RPCs.
 The fini function will be called when the slurmctld daemon stops accepting RPCs.
+Other functions can be called at any time.
 In the case of the backup slurmctld daemon, the init and fini functions may
 be called multiple times (when it assumes control functions and then when it
 reliquishes them to the primary slurmctld daemon).</p>
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 24 January 2018</p>
 <!--#include virtual="footer.txt"-->

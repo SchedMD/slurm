@@ -9,11 +9,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -57,6 +57,7 @@ char *command_name;
 List clusters = NULL;
 int all_flag = 0;	/* display even hidden partitions */
 int detail_flag = 0;	/* display additional details */
+int future_flag = 0;	/* display future nodes */
 int exit_code = 0;	/* scontrol's exit code, =1 on any error at any time */
 int exit_flag = 0;	/* program to terminate if =1 */
 int federation_flag = 0;/* show federated jobs */
@@ -82,8 +83,7 @@ static void	_create_it(int argc, char **argv);
 static void	_delete_it(int argc, char **argv);
 static void     _show_it(int argc, char **argv);
 static int	_get_command(int *argc, char **argv);
-static void     _ping_slurmctld(char *control_machine,
-				char *backup_controller);
+static void     _ping_slurmctld(uint32_t control_cnt, char **control_machine);
 static void	_print_config(char *config_param);
 static void     _print_daemons(void);
 static void     _print_aliases(char* node_hostname);
@@ -111,6 +111,7 @@ int main(int argc, char **argv)
 		{"clusters", 1, 0, 'M'},
 		{"details",  0, 0, 'd'},
 		{"federation",0, 0, OPT_LONG_FEDR},
+		{"future",   0, 0, 'F'},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"local",    0, 0, OPT_LONG_LOCAL},
@@ -144,6 +145,8 @@ int main(int argc, char **argv)
 	}
 	if (getenv("SCONTROL_FEDERATION"))
 		federation_flag = 1;
+	if (getenv("SCONTROL_FUTURE"))
+		future_flag = 1;
 	if (getenv("SCONTROL_LOCAL"))
 		local_flag = 1;
 	if (getenv("SCONTROL_SIB") || getenv("SCONTROL_SIBLING"))
@@ -153,7 +156,7 @@ int main(int argc, char **argv)
 		if ((optind < argc) &&
 		    !xstrncasecmp(argv[optind], "setdebugflags", 8))
 			break;	/* avoid parsing "-<flagname>" as option */
-		if ((opt_char = getopt_long(argc, argv, "adhM:oQu:vV",
+		if ((opt_char = getopt_long(argc, argv, "adhM:FoQu:vV",
 					    long_options, &option_index)) == -1)
 			break;
 		switch (opt_char) {
@@ -167,6 +170,9 @@ int main(int argc, char **argv)
 			break;
 		case (int)'d':
 			detail_flag++;
+			break;
+		case (int)'F':
+			future_flag = 1;
 			break;
 		case (int)'h':
 			_usage ();
@@ -497,9 +503,10 @@ _print_config (char *config_param)
 		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
 		fprintf(stdout, "\n");
 	}
-	if (slurm_ctl_conf_ptr)
-		_ping_slurmctld (slurm_ctl_conf_ptr->control_machine,
-				 slurm_ctl_conf_ptr->backup_controller);
+	if (slurm_ctl_conf_ptr) {
+		_ping_slurmctld(slurm_ctl_conf_ptr->control_cnt,
+				slurm_ctl_conf_ptr->control_machine);
+	}
 }
 
 /* Print slurmd status on localhost.
@@ -523,51 +530,49 @@ static void
 _print_ping (void)
 {
 	slurm_ctl_conf_info_msg_t *conf;
-	char *primary, *secondary;
+	uint32_t control_cnt, i;
+	char **control_machine;
 
 	slurm_conf_init(NULL);
 
 	conf = slurm_conf_lock();
-	primary = xstrdup(conf->control_machine);
-	secondary = xstrdup(conf->backup_controller);
+	control_cnt = conf->control_cnt;
+	control_machine = xmalloc(sizeof(char *) * control_cnt);
+	for (i = 0; i < control_cnt; i++)
+		control_machine[i] = xstrdup(conf->control_machine[i]);
 	slurm_conf_unlock();
 
-	_ping_slurmctld (primary, secondary);
+	_ping_slurmctld(control_cnt, control_machine);
 
-	xfree(primary);
-	xfree(secondary);
+	for (i = 0; i < control_cnt; i++)
+		xfree(control_machine[i]);
+	xfree(control_machine);
 }
 
 /* Report if slurmctld daemons are responding */
 static void
-_ping_slurmctld(char *control_machine, char *backup_controller)
+_ping_slurmctld(uint32_t control_cnt, char **control_machine)
 {
-	static char *state[2] = { "UP", "DOWN" };
-	int primary = 1, secondary = 1;
-	int down_msg = 0;
+	static char *state[2] = { "DOWN", "UP" };
+	char mode[64];
+	bool down_msg = false;
+	int i;
 
-	if (slurm_ping(1) == SLURM_SUCCESS)
-		primary = 0;
-	if (slurm_ping(2) == SLURM_SUCCESS)
-		secondary = 0;
-	fprintf(stdout, "Slurmctld(primary/backup) ");
-	if (control_machine || backup_controller) {
-		fprintf(stdout, "at ");
-		if (control_machine) {
-			fprintf(stdout, "%s/", control_machine);
-			if (primary)
-				down_msg = 1;
-		} else
-			fprintf(stdout, "(NULL)/");
-		if (backup_controller) {
-			fprintf(stdout, "%s ", backup_controller);
-			if (secondary)
-				down_msg = 1;
-		} else
-			fprintf(stdout, "(NULL) ");
+	for (i = 0; i < control_cnt; i++) {
+		int status = 0;
+		if (slurm_ping(i) == SLURM_SUCCESS)
+			status = 1;
+		else
+			down_msg = true;
+		if (i == 0)
+			snprintf(mode, sizeof(mode), "primary");
+		else if ((i == 1) && (control_cnt == 2))
+			snprintf(mode, sizeof(mode), "backup");
+		else
+			snprintf(mode, sizeof(mode), "backup%d", i);
+		fprintf(stdout, "Slurmctld(%s) at %s is %s\n",
+			mode, control_machine[i], state[status]);
 	}
-	fprintf(stdout, "are %s/%s\n",
-		state[primary], state[secondary]);
 
 	if (down_msg && (getuid() == 0)) {
 		fprintf(stdout, "*****************************************\n");
@@ -585,8 +590,8 @@ _print_daemons (void)
 	slurm_ctl_conf_info_msg_t *conf;
 	char node_name_short[MAX_SLURM_NAME];
 	char node_name_long[MAX_SLURM_NAME];
-	char *b, *c, *n, *token, *save_ptr = NULL;
-	int actld = 0, ctld = 0, d = 0;
+	char *c, *n, *token, *save_ptr = NULL;
+	int actld = 0, ctld = 0, d = 0, i;
 	char daemon_list[] = "slurmctld slurmd";
 
 	slurm_conf_init(NULL);
@@ -594,26 +599,24 @@ _print_daemons (void)
 
 	gethostname_short(node_name_short, MAX_SLURM_NAME);
 	gethostname(node_name_long, MAX_SLURM_NAME);
-	if ((b = conf->backup_controller)) {
-		if ((xstrcmp(b, node_name_short) == 0) ||
-		    (xstrcmp(b, node_name_long)  == 0) ||
-		    (xstrcasecmp(b, "localhost") == 0))
-			ctld = 1;
-	}
-	if (conf->control_machine) {
+	for (i = 0; i < conf->control_cnt; i++) {
+		if (!conf->control_machine[i])
+			break;
 		actld = 1;
-		c = xstrdup(conf->control_machine);
+		c = xstrdup(conf->control_machine[i]);
 		token = strtok_r(c, ",", &save_ptr);
 		while (token) {
-			if ((xstrcmp(token, node_name_short) == 0) ||
-			    (xstrcmp(token, node_name_long)  == 0) ||
-			    (xstrcasecmp(token, "localhost") == 0)) {
+			if (!xstrcmp(token, node_name_short) ||
+			    !xstrcmp(token, node_name_long)  ||
+			    !xstrcasecmp(token, "localhost")) {
 				ctld = 1;
 				break;
 			}
 			token = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(c);
+		if (ctld)
+			break;
 	}
 	slurm_conf_unlock();
 
@@ -1319,25 +1322,41 @@ static int _process_command (int argc, char **argv)
 		}
 	}
 	else if (xstrncasecmp(tag, "takeover", MAX(tag_len, 8)) == 0) {
-		char *secondary = NULL;
+		int backup_inx = 1, control_cnt;
 		slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
 		slurm_ctl_conf_ptr = slurm_conf_lock();
-		secondary = xstrdup(slurm_ctl_conf_ptr->backup_controller);
+		control_cnt = slurm_ctl_conf_ptr->control_cnt;
 		slurm_conf_unlock();
+		if (argc > 2) {
+			exit_code = 1;
+			fprintf(stderr, "%s: too many arguments\n",
+				tag);
+			backup_inx = -1;
+		} else if (argc == 2) {
+			backup_inx = atoi(argv[1]);
+			if ((backup_inx < 1) || (backup_inx >= control_cnt)) {
+				exit_code = 1;
+				fprintf(stderr,
+					"%s: invalid backup controller index (%d)\n",
+					tag, backup_inx);
+				backup_inx = -1;
+			}
+		} else if (control_cnt < 1) {
+			exit_code = 1;
+			fprintf(stderr, "%s: no backup controller defined\n",
+				tag);
+			backup_inx = -1;
+		}
 
-		if ( secondary && secondary[0] != '\0' ) {
-			error_code = slurm_takeover();
+		if (backup_inx != -1) {
+			error_code = slurm_takeover(backup_inx);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
 					slurm_perror("slurm_takeover error");
 			}
-		} else {
-			fprintf(stderr, "slurm_takeover error: no backup "
-				"controller defined\n");
 		}
-		xfree(secondary);
 	}
 	else if (xstrncasecmp(tag, "shutdown", MAX(tag_len, 8)) == 0) {
 		/* require full command name */
@@ -1578,11 +1597,13 @@ static void _show_it(int argc, char **argv)
 		return;
 	}
 
-	if (xstrncasecmp(argv[1], "layouts", MAX(tag_len, 2)) == 0 ||
-	    xstrncasecmp(argv[1], "assoc_mgr", MAX(tag_len, 2)) == 0)
+	if (!xstrncasecmp(argv[1], "assoc_mgr", MAX(tag_len, 2)) ||
+	    !xstrncasecmp(argv[1], "bbstat",    MAX(tag_len, 2)) ||
+	    !xstrncasecmp(argv[1], "dwstat",    MAX(tag_len, 2)) ||
+	    !xstrncasecmp(argv[1], "layouts",   MAX(tag_len, 2)))
 		allow_opt = true;
 
-	if (argc > 3 && !allow_opt) {
+	if ((argc > 3) && !allow_opt) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			fprintf(stderr,
@@ -1608,6 +1629,9 @@ static void _show_it(int argc, char **argv)
 			_print_aliases (val);
 		else
 			_print_aliases (NULL);
+	} else if (!xstrncasecmp(tag, "bbstat", MAX(tag_len, 2)) ||
+		   !xstrncasecmp(tag, "dwstat", MAX(tag_len, 2))) {
+		scontrol_print_bbstat(argc - 2, argv + 2);
 	} else if (xstrncasecmp(tag, "blocks", MAX(tag_len, 2)) == 0) {
 		scontrol_print_block (val);
 	} else if (xstrncasecmp(tag, "burstbuffer", MAX(tag_len, 2)) == 0) {
@@ -1871,7 +1895,7 @@ static int _update_bluegene_block(int argc, char **argv)
 	if (!block_msg.bg_block_id) {
 		error("You didn't supply a block name.");
 		return 0;
-	} else if (block_msg.state == (uint16_t)NO_VAL) {
+	} else if (block_msg.state == NO_VAL16) {
 		error("You didn't give me a state to set %s to "
 		      "(i.e. FREE, ERROR).", block_msg.mp_str);
 		return 0;
@@ -1949,7 +1973,7 @@ static int _update_bluegene_submp(int argc, char **argv)
 	if (!block_msg.mp_str) {
 		error("You didn't supply an ionode list.");
 		return 0;
-	} else if (block_msg.state == (uint16_t)NO_VAL) {
+	} else if (block_msg.state == NO_VAL16) {
 		error("You didn't give me a state to set %s to "
 		      "(i.e. FREE, ERROR).", block_msg.mp_str);
 		return 0;
@@ -1995,23 +2019,23 @@ void _usage(void)
 	printf ("\
 scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
-     -a or --all: equivalent to \"all\" command                            \n\
-     -d or --details: equivalent to \"details\" command                    \n\
-           --federation: Report federated job information if a member of a \n\
-	     one.                                                          \n\
-     -h or --help: equivalent to \"help\" command                          \n\
-           --hide: equivalent to \"hide\" command                          \n\
-           --local: Report information only about jobs on the local cluster.\n\
-	     Overrides --federation.                                       \n\
-     -M or --cluster: equivalent to \"cluster\" command. Implies --local.  \n\
-             NOTE: SlurmDBD must be up.                                    \n\
-     -o or --oneliner: equivalent to \"oneliner\" command                  \n\
-     -Q or --quiet: equivalent to \"quiet\" command                        \n\
-           --sibling: Report information about all sibling jobs on a       \n\
-	     federated cluster. Implies --federation.                      \n\
-     -u or --uid: Update job as user <uid> instead of the invoking user id.\n\
-     -v or --verbose: equivalent to \"verbose\" command                    \n\
-     -V or --version: equivalent to \"version\" command                    \n\
+     -a, --all      Equivalent to \"all\" command                          \n\
+     -d, --details  Equivalent to \"details\" command                      \n\
+     --federation   Report federated job information if a member of a  one \n\
+     -F, --future   Report information about nodes in \"FUTURE\" state.    \n\
+     -h, --help     Equivalent to \"help\" command                         \n\
+     --hide         Equivalent to \"hide\" command                         \n\
+     --local        Report information only about jobs on the local cluster.\n\
+	            Overrides --federation.                                \n\
+     -M, --cluster  Equivalent to \"cluster\" command. Implies --local.    \n\
+                    NOTE: SlurmDBD must be up.                             \n\
+     -o, --oneliner Equivalent to \"oneliner\" command                     \n\
+     -Q, --quiet    Equivalent to \"quiet\" command                        \n\
+     --sibling      Report information about all sibling jobs on a         \n\
+	            federated cluster. Implies --federation option.        \n\
+     -u,--uid       Update job as user \"uid\" instead of the invoking user.\n\
+     -v, --verbose  Equivalent to \"verbose\" command                      \n\
+     -V, --version  Equivalent to \"version\" command                      \n\
 									   \n\
   <keyword> may be omitted from the execute line and scontrol will execute \n\
   in interactive mode. It will process commands as entered until explicitly\n\
@@ -2051,7 +2075,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      all jobs if no id is given (This will only   \n\
 			      display the processes on the node which the  \n\
 			      scontrol is ran on, and only for those       \n\
-			      processes spawned by SLURM and their         \n\
+			      processes spawned by Slurm and their         \n\
 			      descendants)                                 \n\
      notify <job_id> msg      send message to specified job                \n\
      oneliner                 report output one record per line.           \n\
@@ -2090,8 +2114,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      write config             Write config to slurm.conf.<datetime>        \n\
      !!                       Repeat the last command entered.             \n\
 									   \n\
-  <ENTITY> may be \"aliases\", \"assoc_mgr\" \"burstBuffer\",              \n\
-       \"config\", \"daemons\", \"federation\", \"frontend\",              \n\
+  <ENTITY> may be \"aliases\", \"assoc_mgr\", \"bbstat\", \"burstBuffer\", \n\
+       \"config\", \"daemons\", \"dwstat\", \"federation\", \"frontend\",  \n\
        \"hostlist\", \"hostlistsorted\", \"hostnames\",                    \n\
        \"job\", \"layouts\", \"node\", \"partition\", \"reservation\",     \n\
        \"slurmd\", \"step\", or \"topology\"                               \n\

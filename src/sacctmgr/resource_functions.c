@@ -7,11 +7,11 @@
  *
  *  Written by Bill Brophy <bill.brophy@bull.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
 
@@ -48,7 +48,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 	slurmdb_clus_res_rec_t *clus_res = NULL;
 	char *cluster;
 
-	if (res->percent_used == (uint16_t)NO_VAL)
+	if (res->percent_used == NO_VAL16)
 		return;
 
 	/* Don't use the global g_res_list since we are going to
@@ -907,7 +907,7 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 		fprintf(stderr, "Can't change \"count\" on a cluster-based "
 			"resource. Remove cluster selection.\n");
 		return SLURM_ERROR;
-	} else if (res->percent_used != (uint16_t)NO_VAL &&
+	} else if (res->percent_used != NO_VAL16 &&
 			!res_cond->cluster_list) {
 		fprintf(stderr, "Can't change \"percentallowed\" without "
 			"specifying a cluster.\n");

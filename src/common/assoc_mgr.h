@@ -7,11 +7,11 @@
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  *****************************************************************************
  * NOTE: When using lock_slurmctld() and assoc_mgr_lock(), always call
@@ -96,11 +96,13 @@ typedef struct {
 typedef struct {
  	uint16_t cache_level;
 	uint16_t enforce;
+	uint16_t *running_cache;
 	void (*add_license_notify) (slurmdb_res_rec_t *rec);
 	void (*resize_qos_notify) (void);
 	void (*remove_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*remove_license_notify) (slurmdb_res_rec_t *rec);
 	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
+	char **state_save_location;
 	void (*sync_license_notify) (List clus_res_list);
 	void (*update_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*update_cluster_tres) (void);
@@ -129,9 +131,12 @@ extern uint32_t g_tres_count; /* Number of TRES from the database
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 			  int db_conn_errno);
-extern int assoc_mgr_fini(char *state_save_location);
+extern int assoc_mgr_fini(bool save_state);
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);
+
+/* ran after a new tres_list is given */
+extern int assoc_mgr_post_tres_list(List new_list);
 
 /*
  * get info from the storage
@@ -394,23 +399,28 @@ extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos);
  * Dump the state information of the association mgr just in case the
  * database isn't up next time we run.
  */
-extern int dump_assoc_mgr_state(char *state_save_location);
+extern int dump_assoc_mgr_state(void);
 
 /*
  * Read in the past usage for associations.
  */
-extern int load_assoc_usage(char *state_save_location);
+extern int load_assoc_usage(void);
 
 /*
  * Read in the past usage for qos.
  */
-extern int load_qos_usage(char *state_save_location);
+extern int load_qos_usage(void);
+
+/*
+ * Read in the past tres list.
+ */
+extern int load_assoc_mgr_last_tres(void);
 
 /*
  * Read in the information of the association mgr if the database
  * isn't up when starting.
  */
-extern int load_assoc_mgr_state(char *state_save_location);
+extern int load_assoc_mgr_state(bool only_tres);
 
 /*
  * Refresh the lists if when running_cache is set this will load new
@@ -489,4 +499,15 @@ extern void assoc_mgr_get_default_qos_info(
  */
 extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 				      uint16_t flags, bool locked);
+
+/* Get TRES's old position.
+ * IN: cur_pos - the current position in the tres array.
+ */
+extern int assoc_mgr_get_old_tres_pos(int cur_pos);
+
+/* Test whether the tres positions have changed since last reading the tres
+ * list.
+ */
+extern int assoc_mgr_tres_pos_changed();
+
 #endif /* _SLURM_ASSOC_MGR_H */

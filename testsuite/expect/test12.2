@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test sacct functionality and accuracy.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -12,22 +12,22 @@
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -41,13 +41,13 @@ set file_prog   "test$test_id.prog"
 set file_name   "/tmp/test$test_id.filename"
 set job_id      0
 set matches     0
-set aix         0
 
 # job parameters
-set mem_size    1024000
+set mem_size    1048576
 set sleep_time  32
 set ret_code    42
 set file_size   10485760
+set num_tasks   3
 print_header $test_id
 
 if {[test_front_end]} {
@@ -74,24 +74,22 @@ if {[test_launch_poe]} {
 }
 
 proc _get_mem {prog} {
-	global float number mem_size job_id step_id max_mem_error
+	global float number mem_size job_id step_id max_mem_error num_tasks
 
 	set mem_used -1
 	set mem_task -1
 	set ave_used -1
 	set exit_code 0
 
-	spawn $prog --noheader -p --job=$job_id.$step_id --format maxrss,maxrsstask,averss
+	spawn $prog --noheader -p --job=$job_id.$step_id --format maxrss,maxrsstask,averss --noconvert
 	expect {
-		-re "($float)(\[KMG\]*).($number).($float)(\[KMG\]*)" {
+		-re "($number).($number).($number)" {
 			set mem_used  $expect_out(1,string)
-			set scale1    $expect_out(2,string)
-			set mem_task  $expect_out(3,string)
-			set ave_used  $expect_out(4,string)
-			set scale2    $expect_out(5,string)
+			set mem_task  $expect_out(2,string)
+			set ave_used  $expect_out(3,string)
 
-			set mem_used [scale_to_ks $mem_used $scale1]
-			set ave_used [scale_to_ks $ave_used $scale2]
+			set mem_used [scale_to_ks $mem_used ""]
+			set ave_used [scale_to_ks $ave_used ""]
 
 			exp_continue
 		}
@@ -111,11 +109,11 @@ proc _get_mem {prog} {
 	if { $mem_used == -1 } {
 		send_user "\nFAILURE: $prog stat memory not found\n"
 		return 1
-	} elseif { $mem_task == -1 } {
-		send_user "\nFAILURE: $prog stat memory task not found\n"
+	} elseif { $mem_task != 0 } {
+		send_user "\nFAILURE: $prog stat memory task not zero\n"
 		return 1
-	} elseif { $ave_used != $mem_used } {
-		send_user "\nFAILURE: $prog stat memory task not equal to ave memory\n"
+	} elseif { ($ave_used * $num_tasks) < $mem_used } {
+		send_user "\nFAILURE: $prog stat ave memory not believable against max memory\n"
 		return 1
 	}
 	# Compute error in KB
@@ -140,9 +138,9 @@ proc _get_file_size {prog} {
 	set max_disk_read   -1
 	set ave_disk_read   -1
 
-	spawn $prog --noheader -p --job=$job_id.$step_id --format MaxDiskWrite,AveDiskWrite,MaxDiskRead,AveDiskRead
+	spawn $prog --noheader -p --job=$job_id.$step_id --format MaxDiskWrite,AveDiskWrite,MaxDiskRead,AveDiskRead,MaxDiskWriteTask,MaxDiskReadTask --noconvert
 	expect {
-		-re  "($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*)" {
+		-re  "($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($number).($number)" {
 			set max_disk_write    $expect_out(1,string)
 			set scale1            $expect_out(2,string)
 			set ave_disk_write    $expect_out(3,string)
@@ -151,6 +149,8 @@ proc _get_file_size {prog} {
 			set scale3            $expect_out(6,string)
 			set ave_disk_read     $expect_out(7,string)
 			set scale4            $expect_out(8,string)
+			set w_task            $expect_out(9,string)
+			set r_task            $expect_out(10,string)
 
 			set max_disk_write [scale_to_megs $max_disk_write $scale1]
 			set ave_disk_write [scale_to_megs $ave_disk_write $scale2]
@@ -183,6 +183,15 @@ proc _get_file_size {prog} {
 		send_user "\nFAILURE: AveDiskRead not reported\n"
 		return 1
 	}
+	if { $w_task != 1 } {
+		send_user "\nFAILURE: MaxDiskWriteTask not 1\n"
+		return 1
+	}
+	if { $r_task != 2 } {
+		send_user "\nFAILURE: MaxDiskReadTask not 2\n"
+		return 1
+	}
+
 	# Compute error in MB
 	set diff_io [expr $max_disk_write - $max_disk_read]
 	set error_io [expr abs($diff_io)]
@@ -195,7 +204,7 @@ proc _get_file_size {prog} {
 	}
 
 	set diff_io [expr $ave_disk_write - $ave_disk_read]
-	set error_io [expr abs($diff_io)] 
+	set error_io [expr abs($diff_io)]
 	if { $error_io > 0.3 } {
 		send_user "\nFAILURE: average written file size "
 		send_user "does not match average read size "
@@ -232,16 +241,6 @@ expect {
 		set supported_gather 1
 		exp_continue
 	}
-	-re "JobAcctGatherType *= jobacct_gather/aix" {
-		set supported_gather 1
-		set aix 1
-		send_user "AIX doesn't do a great job tracking memory usage,\n"
-		send_user "as long as some memory number was\n"
-		send_user "returned we are ok since users are looking for\n"
-		send_user "mostly abnormalities between tasks instead\n"
-		send_user "of actual memory usuage.\n"
-		exp_continue
-	}
 	eof {
 		wait
 	}
@@ -276,7 +275,7 @@ make_bash_script $file_in "
 set config_prob 0
 set timeout [expr $max_job_delay + $sleep_time]
 set job_mem_limit [expr ($mem_size + $max_mem_error)  / 1024 + 10]
-set sbatch_pid [spawn $sbatch --mem-per-cpu=$job_mem_limit --output=$file_out --error=$file_err -t2 $file_in]
+set sbatch_pid [spawn $sbatch -n$num_tasks --mem-per-cpu=$job_mem_limit --output=$file_out --error=$file_err -t2 $file_in]
 expect {
 	-re "Requested node configuration is not available" {
 		set config_prob 1
@@ -421,15 +420,6 @@ if {[_get_mem $sacct] != 0} {
 
 if {[_get_file_size $sacct] != 0} {
 	set exit_code 1
-}
-
-if {$aix == 1 && $exit_code == 1} {
-	send_user "\nIf there were failures in the memory parts of this\n"
-	send_user "test, they are expected.  AIX doesn't do a great job\n"
-	send_user "tracking memory usage, as long as some memory number was\n"
-	send_user "returned we are ok since users are looking for\n"
-	send_user "mostly abnormalities between tasks instead of actual\n"
-	send_user "memory usuage.\n"
 }
 
 if {$exit_code == 0} {

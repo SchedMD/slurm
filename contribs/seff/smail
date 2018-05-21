@@ -31,7 +31,7 @@ IFS=" "
 
 # Get the ClusterName
 ClusterName=`@bindir@/scontrol show config | grep ClusterName | awk '{printf("[%s]", $3)}'`
-subject="$ClusterName $@"
+subject="$ClusterName $2"
 recipient=$3
 
 # If we decide later to seff based on specific status codes, 

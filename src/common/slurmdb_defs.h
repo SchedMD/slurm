@@ -6,11 +6,11 @@
  *  Written by Danny Auble da@llnl.gov, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #ifndef _SLURMDB_DEFS_H
@@ -63,6 +63,9 @@ typedef enum {
 	TRES_ENERGY,
 	TRES_NODE,
 	TRES_BILLING,
+	TRES_FS_DISK,
+	TRES_VMEM,
+	TRES_PAGES,
 	TRES_STATIC_CNT
 } tres_types_t;
 
@@ -94,6 +97,15 @@ typedef enum {
 #define TRES_STR_FLAG_NO_NULL     0x00000040 /* return blank string
 					      * instead of NULL */
 #define TRES_STR_CONVERT_UNITS    0x00000080 /* Convert number units */
+#define TRES_STR_FLAG_SUM         0x00000100 /* Sum entries of the same type
+					      * ignoring -1 */
+#define TRES_STR_FLAG_MAX         0x00000200 /* Set Max value from entries of
+					      * the same type ignoring -1 */
+#define TRES_STR_FLAG_MIN         0x00000400 /* Set Min value from entries of
+					      * the same type ignoring -1 */
+#define TRES_STR_FLAG_ALLOW_REAL  0x00000800 /* Allow all counts (even zero)
+					      * unless INFINITE64 or NO_VAL64 */
+#define TRES_STR_FLAG_BYTES       0x00000800 /* Convertable Usage in Bytes */
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
@@ -224,7 +236,8 @@ extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
 
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list, int spec_unit,
-	uint32_t convert_flags);
+	uint32_t convert_flags, uint32_t tres_str_flags, char *nodes);
+
 /* Used to combine 2 different TRES strings together
  *
  * IN/OUT: tres_str_old - original simple tres string
@@ -245,6 +258,7 @@ extern slurmdb_tres_rec_t *slurmdb_find_tres_in_string(
 	char *tres_str_in, int id);
 extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id);
 extern int slurmdb_find_qos_in_list_by_name(void *x, void *key);
+extern int slurmdb_find_qos_in_list(void *x, void *key);
 extern int slurmdb_find_selected_step_in_list(void *x, void *key);
 extern int slurmdb_find_assoc_in_list(void *x, void *key);
 extern int slurmdb_find_update_object_in_list(void *x, void *key);
@@ -269,14 +283,8 @@ extern void slurmdb_transfer_acct_list_2_tres(
 extern void slurmdb_transfer_tres_time(
 	List *tres_list_out, char *tres_str, int elapsed);
 
-/* Given the cur_pos of a tres in new_array return the old position of
- * the same tres in the old_array.
- */
-extern int slurmdb_get_old_tres_pos(slurmdb_tres_rec_t **new_array,
-				    slurmdb_tres_rec_t **old_array,
-				    int cur_pos, int old_cnt);
-
 extern int slurmdb_get_tres_base_unit(char *tres_type);
+extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks);
 
 /* Setup cluster rec with plugin_id that indexes into select list */
 extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec);

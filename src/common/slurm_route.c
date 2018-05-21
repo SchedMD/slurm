@@ -6,11 +6,11 @@
  *
  *  Written by Rod Schultz <rod.schultz@bull.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -87,9 +87,9 @@ static uint16_t g_tree_width;
 static bool this_is_collector = false; /* this node is a collector node */
 static slurm_addr_t *msg_collect_node = NULL; /* address of node to aggregate
 						 messages from this node */
-static slurm_addr_t *msg_collect_backup = NULL; /* address of backup node to
-						   aggregate messages from this node */
-
+/* addresses of backup nodes to aggregate messages from this node */
+static uint32_t msg_backup_cnt = 0;
+static slurm_addr_t **msg_collect_backup  = NULL;
 
 /* _get_all_nodes creates a hostlist containing all the nodes in the
  * node_record_table.
@@ -124,14 +124,16 @@ static void _set_collectors(char *this_node_name)
 {
 	slurm_ctl_conf_t *conf;
 	hostlist_t  nodes;
-	hostlist_t* hll = NULL;
-	char *parent = NULL, *backup = NULL;
+	hostlist_t *hll = NULL;
+	uint32_t backup_cnt;
+	char *parent = NULL, **backup;
 	char addrbuf[32];
 	int i, j, f = -1;
 	int hl_count = 0;
 	uint16_t parent_port;
 	uint16_t backup_port;
 	bool ctldparent = true;
+	char *tmp = NULL;
 
 #ifdef HAVE_FRONT_END
 	return; /* on a FrontEnd system this would never be useful. */
@@ -140,16 +142,29 @@ static void _set_collectors(char *this_node_name)
 	if (!run_in_daemon("slurmd"))
 		return; /* Only compute nodes have collectors */
 
-	/* Set the initial iteration, collector is controller,
-	 * full list is split */
+	/*
+	 * Set the initial iteration, collector is controller,
+	 * full list is split
+	 */
 	xassert(this_node_name);
 
 	conf = slurm_conf_lock();
 	nodes = _get_all_nodes();
-	parent = strdup(conf->control_addr);
-	if (conf->backup_addr) {
-		backup = strdup(conf->backup_addr);
+	backup_cnt = conf->control_cnt;
+	backup = xmalloc(sizeof(char *) * backup_cnt);
+	if (conf->slurmctld_addr) {
+		parent = strdup(conf->slurmctld_addr);
+		backup_cnt = 1;
+	} else
+		parent = strdup(conf->control_addr[0]);
+	for (i = 0; i < backup_cnt; i++) {
+		if (conf->control_addr[i])
+			backup[i] = xstrdup(conf->control_addr[i]);
+		else
+			backup[i] = NULL;
 	}
+	msg_backup_cnt = backup_cnt + 2;
+	msg_collect_backup = xmalloc(sizeof(slurm_addr_t *) * msg_backup_cnt);
 	parent_port = conf->slurmctld_port;
 	backup_port = parent_port;
 	slurm_conf_unlock();
@@ -159,7 +174,7 @@ static void _set_collectors(char *this_node_name)
 			goto clean; /* collector addrs remains null */
 		}
 		/* Find which hostlist contains this node */
-		for (i=0; i < hl_count; i++) {
+		for (i = 0; i < hl_count; i++) {
 			f = hostlist_find(hll[i], this_node_name);
 			if (f != -1)
 				break;
@@ -169,101 +184,119 @@ static void _set_collectors(char *this_node_name)
 			      this_node_name);
 		}
 		if (f == 0) {
-			/* we are a forwarded to node,
-			 * so our parent is parent */
+			/*
+			 * we are a forwarded to node,
+			 * so our parent is "parent"
+			 */
 			if (hostlist_count(hll[i]) > 1)
 				this_is_collector = true;
 			xfree(msg_collect_node);
 			msg_collect_node = xmalloc(sizeof(slurm_addr_t));
-			if (ctldparent)
+			if (ctldparent) {
 				slurm_set_addr(msg_collect_node, parent_port,
 					       parent);
-			else {
+			} else {
 				slurm_conf_get_addr(parent, msg_collect_node);
 				msg_collect_node->sin_port = htons(parent_port);
 			}
 			if (debug_flags & DEBUG_FLAG_ROUTE) {
 				slurm_print_slurm_addr(msg_collect_node,
 						       addrbuf, 32);
-				info("ROUTE -- message collector address is %s",
-				     addrbuf);
+				info("ROUTE -- message collector (%s) address is %s",
+				     parent, addrbuf);
 			}
-			xfree(msg_collect_backup);
-			if (backup) {
-				msg_collect_backup =
+			msg_backup_cnt = 0;
+			xfree(msg_collect_backup[0]);
+			for (i = 1; (i < backup_cnt) && backup[i]; i++) {
+				msg_backup_cnt = i;
+				msg_collect_backup[i-1] =
 					xmalloc(sizeof(slurm_addr_t));
 				if (ctldparent) {
-					slurm_set_addr(msg_collect_backup,
-						       backup_port, backup);
+					slurm_set_addr(msg_collect_backup[i-1],
+						       backup_port, backup[i]);
 				} else {
-					slurm_conf_get_addr(backup,
-							    msg_collect_backup);
-					msg_collect_backup->sin_port =
+					slurm_conf_get_addr(backup[i],
+						msg_collect_backup[i-1]);
+					msg_collect_backup[i-1]->sin_port =
 						htons(backup_port);
 				}
 				if (debug_flags & DEBUG_FLAG_ROUTE) {
 					slurm_print_slurm_addr(
-						msg_collect_backup,
+						msg_collect_backup[i-1],
 						addrbuf, 32);
-					info("ROUTE -- message collector backup"
-					     " address is %s", addrbuf);
+					info("ROUTE -- message collector backup[%d] (%s) "
+					     "address is %s",
+					     i, backup[i], addrbuf);
 				}
-			} else if (debug_flags & DEBUG_FLAG_ROUTE) {
-				info("ROUTE -- no message collector backup");
 			}
+			if ((i == 1) && (debug_flags & DEBUG_FLAG_ROUTE))
+				info("ROUTE -- no message collector backup");
 			goto clean;
 		}
 
-		/* We are not a forwarding node, the first node in this list
+		/*
+		 * We are not a forwarding node, the first node in this list
 		 * will split the forward_list.
 		 * We also know that the forwarding node is not a controller.
 		 *
-		 * clean up parent context */
+		 * clean up parent context
+		 */
 		ctldparent = false;
 		hostlist_destroy(nodes);
-		if (parent)
-			free(parent);
-		if (backup)
-			free(backup);
 		nodes = hostlist_copy(hll[i]);
-		for (j=0; j < hl_count; j++) {
+		for (j = 0; j < hl_count; j++) {
 			hostlist_destroy(hll[j]);
 		}
 		xfree(hll);
 
 		/* set our parent, backup, and continue search */
+		for (i = 0; i < backup_cnt; i++)
+			xfree(backup[i]);
+		if (parent)
+			free(parent);
 		parent = hostlist_shift(nodes);
-		backup = hostlist_nth(nodes, 0);
-		if (xstrcmp(backup, this_node_name) == 0) {
-			free(backup);
-			backup = NULL;
-			if (hostlist_count(nodes) > 1)
-				backup = hostlist_nth(nodes, 1);
+		tmp = hostlist_nth(nodes, 0);
+		backup[0] = xstrdup(tmp);
+		free(tmp);
+		tmp = NULL;
+		if (xstrcmp(backup[0], this_node_name) == 0) {
+			xfree(backup[0]);
+			if (hostlist_count(nodes) > 1) {
+				tmp = hostlist_nth(nodes, 1);
+				backup[0] = xstrdup(tmp);
+				free(tmp);
+				tmp = NULL;
+			}
 		}
 		parent_port =  slurm_conf_get_port(parent);
-		if (backup) {
-			backup_port = slurm_conf_get_port(backup);
-		} else
+		if (backup[0])
+			backup_port = slurm_conf_get_port(backup[0]);
+		else
 			backup_port = 0;
 	}
 clean:
 	if (debug_flags & DEBUG_FLAG_ROUTE) {
-		char addrbuf2[32];
-		slurm_print_slurm_addr(msg_collect_node,
-				       addrbuf, 32);
-		slurm_print_slurm_addr(msg_collect_backup,
-				       addrbuf2, 32);
-		info("ROUTE -- %s is a %s node (parent: %s, backup: %s)",
-		     this_node_name, this_is_collector ? "collector" : "leaf",
-		     addrbuf, addrbuf2);
+		slurm_print_slurm_addr(msg_collect_node, addrbuf, 32);
+		xstrfmtcat(tmp, "ROUTE -- %s is a %s node (parent:%s",
+			   this_node_name,
+			   this_is_collector ? "collector" : "leaf", addrbuf);
+		for (i = 0; (i < backup_cnt) && msg_collect_backup[i]; 
+		     i++) {
+			slurm_print_slurm_addr(msg_collect_backup[i],
+					       addrbuf, 32);
+			xstrfmtcat(tmp, " backup[%d]:%s", i, addrbuf);
+		}
+		info("%s)", tmp);
+		xfree(tmp);
 	}
 
 	hostlist_destroy(nodes);
 	if (parent)
 		free(parent);
-	if (backup)
-		free(backup);
-	for (i=0; i < hl_count; i++) {
+	for (i = 0; i < backup_cnt; i++)
+		xfree(backup[i]);
+	xfree(backup);
+	for (i = 0; i < hl_count; i++) {
 		hostlist_destroy(hll[i]);
 	}
 	xfree(hll);
@@ -308,7 +341,7 @@ done:
 
 extern int route_fini(void)
 {
-	int rc;
+	int i, rc;
 
 	if (!g_context)
 		return SLURM_SUCCESS;
@@ -318,7 +351,10 @@ extern int route_fini(void)
 	g_context = NULL;
 
 	xfree(msg_collect_node);
+	for (i = 0; i < msg_backup_cnt; i++)
+		xfree(msg_collect_backup[i]);
 	xfree(msg_collect_backup);
+	msg_backup_cnt = 0;
 
 	return rc;
 }
@@ -497,13 +533,15 @@ extern slurm_addr_t* route_next_collector(bool *is_collector)
 	return msg_collect_node;
 }
 
-
 /*
- * route_next_collector_backup - get collector backup address based
+ * route_next_collector_backup - get collector backup address based on offset
  *
+ * backup_inx IN - Backup server index (between 1 and msg_backup_cnt-1)
  * RET: slurm_addr_t* - address of backup node to send messages to be aggregated
  */
-extern slurm_addr_t* route_next_collector_backup(void)
+extern slurm_addr_t* route_next_collector_backup(int backup_inx)
 {
-	return msg_collect_backup;
+	if ((backup_inx <= 0) || (backup_inx >= msg_backup_cnt))
+		return NULL;
+	return msg_collect_backup[backup_inx];
 }

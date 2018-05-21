@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Establish global state information for SLURM accounting tests
+# Purpose: Establish global state information for Slurm accounting tests
 #
 # To define site-specific state information, set the values in a file
 # named 'globals.local'. Those values will override any specified here.
@@ -24,12 +24,12 @@
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the supplied file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.

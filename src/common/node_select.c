@@ -15,11 +15,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -35,13 +35,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -330,7 +330,7 @@ done:
 			uint16_t cr_type = slurm_get_select_type_param();
 			if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
 				fatal("Invalid SelectTypeParameters for "
-				      "%s: %s (%u), it's can't contain "
+				      "%s: %s (%u), it can't contain "
 				      "CR_(CPU|CORE|SOCKET).",
 				      select_type,
 				      select_type_param_string(cr_type),
@@ -367,20 +367,80 @@ fini:	slurm_mutex_unlock(&select_context_lock);
 	return rc;
 }
 
-/* Get this plugin's sequence number in SLURM's internal tables */
+/* Get this plugin's sequence number in Slurm's internal tables */
 extern int select_get_plugin_id_pos(uint32_t plugin_id)
 {
 	int i;
+	static bool cray_other_cons_res = false;
 
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
-
-	for (i=0; i<select_context_cnt; i++) {
+again:
+	for (i = 0; i < select_context_cnt; i++) {
 		if (*(ops[i].plugin_id) == plugin_id)
 			break;
 	}
-	if (i >= select_context_cnt)
+	if (i >= select_context_cnt) {
+		/*
+		 * Put on the extra Cray select plugins that do not get
+		 * generated automatically.
+		 */
+		if (!cray_other_cons_res &&
+		    ((plugin_id == SELECT_PLUGIN_CRAY_CONS_RES)  ||
+		     (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) ||
+		     (plugin_id == SELECT_PLUGIN_CRAY_LINEAR))) {
+			char *type = "select", *name = "select/cray";
+			uint16_t save_params = slurm_get_select_type_param();
+			uint16_t params[2];
+			int cray_plugin_id[2], cray_offset;
+
+			cray_other_cons_res = true;
+
+			if (plugin_id == SELECT_PLUGIN_CRAY_LINEAR) {
+				params[0] = save_params & ~CR_OTHER_CONS_RES;
+				cray_plugin_id[0] = SELECT_PLUGIN_CRAY_CONS_RES;
+				params[1] = save_params & ~CR_OTHER_CONS_TRES;
+				cray_plugin_id[1] = SELECT_PLUGIN_CRAY_CONS_TRES;
+			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
+				params[0] = save_params | CR_OTHER_CONS_RES;
+				cray_plugin_id[0] = SELECT_PLUGIN_CRAY_LINEAR;
+				params[1] = save_params & ~CR_OTHER_CONS_RES;
+				cray_plugin_id[1] = SELECT_PLUGIN_CRAY_CONS_TRES;
+			} else {	/* SELECT_PLUGIN_CRAY_CONS_TRES */
+				params[0] = save_params | CR_OTHER_CONS_TRES;
+				cray_plugin_id[0] = SELECT_PLUGIN_CRAY_LINEAR;
+				params[1] = save_params & ~CR_OTHER_CONS_RES;
+				cray_plugin_id[1] = SELECT_PLUGIN_CRAY_CONS_RES;
+			}
+
+			for (cray_offset = 0; cray_offset < 2; cray_offset++) {
+				for (i = 0; i < select_context_cnt; i++) {
+					if (*(ops[i].plugin_id) ==
+					    cray_plugin_id[cray_offset])
+						break;
+				}
+				if (i < select_context_cnt)
+					break;	/* Found match */
+			}
+			if (i >= select_context_cnt)
+				goto end_it;	/* No match */
+
+			slurm_mutex_lock(&select_context_lock);
+			slurm_set_select_type_param(params[cray_offset]);
+			plugin_context_destroy(select_context[i]);
+			select_context[i] =
+				plugin_context_create(type, name,
+						      (void **)&ops[i],
+						      node_select_syms,
+						      sizeof(node_select_syms));
+			slurm_set_select_type_param(save_params);
+			slurm_mutex_unlock(&select_context_lock);
+			goto again;
+		}
+
+	end_it:
 		return SLURM_ERROR;
+	}
 	return i;
 }
 

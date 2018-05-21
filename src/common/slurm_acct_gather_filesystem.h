@@ -5,11 +5,11 @@
  *  Copyright (C) 2013 Bull
  *  Written by Yiannis Georgiou <yiannis.georgiou@bull.net>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -52,18 +52,13 @@
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
 #include "src/common/slurm_acct_gather.h"
-
-typedef struct acct_filesystem_data {
-	uint64_t	reads;
-	uint64_t	writes;
-	double		read_size;        // currently in megabytes
-	double		write_size;       // currently in megabytes
-} acct_filesystem_data_t;
+#include "src/common/slurm_jobacct_gather.h"
 
 extern int acct_gather_filesystem_init(void); /* load the plugin */
 extern int acct_gather_filesystem_fini(void); /* unload the plugin */
 extern int acct_gather_filesystem_startpoll(uint32_t);
 extern int acct_gather_filesystem_g_node_update(void);
+extern int acct_gather_filesystem_g_get_data(acct_gather_data_t *data);
 /*
  * Define plugin local conf for acct_gather.conf
  *
@@ -72,7 +67,7 @@ extern int acct_gather_filesystem_g_node_update(void);
  *                      definitions
  *      full_options_cnt -- count of plugin local definitions
  */
-extern void acct_gather_filesystem_g_conf_options(s_p_options_t **full_options,
+extern int acct_gather_filesystem_g_conf_options(s_p_options_t **full_options,
 						  int *full_options_cnt);
 /*
  * set plugin local conf from acct_gather.conf into its structure
@@ -80,13 +75,12 @@ extern void acct_gather_filesystem_g_conf_options(s_p_options_t **full_options,
  * Parameters
  *      tbl - hash table of acct_gather.conf key-values.
  */
-extern void acct_gather_filesystem_g_conf_set(s_p_hashtbl_t *tbl);
+extern int acct_gather_filesystem_g_conf_set(s_p_hashtbl_t *tbl);
 
 /* Get the values from the plugin that are setup in the .conf
  * file. This function should most likely only be called from
  * src/common/slurm_acct_gather.c (acct_gather_get_values())
  */
-extern void acct_gather_filesystem_g_conf_values(void *data);
+extern int acct_gather_filesystem_g_conf_values(void *data);
 
 #endif /*__SLURM_ACCT_GATHER_FILESYSTEM_H__*/
-

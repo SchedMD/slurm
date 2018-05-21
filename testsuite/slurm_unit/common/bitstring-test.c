@@ -115,7 +115,6 @@ main(int argc, char *argv[])
 		bit_set(bs1, 100);
 		bit_fill_gaps(bs1);
 		bs2 = bit_pick_cnt(bs1,20);
-
 		if (bs2) {
 			TEST(bit_set_count(bs2) == 20, "pick");
 			TEST(bit_ffs(bs2) == 21, "pick");
@@ -124,7 +123,13 @@ main(int argc, char *argv[])
 		}
 		else
 			TEST(0, "alloc fail");
+		bit_free(bs1);
 
+		bs1 = bit_alloc(11);
+		bit_nset(bs1, 0, 10);
+		bit_not(bs1);
+		TEST(bit_ffs(bs1) == -1, "pick");
+		TEST(bit_fls(bs1) == -1, "pick");
 		bit_free(bs1);
 	}
 	note("Testing realloc");

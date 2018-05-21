@@ -8,11 +8,11 @@
  *  Written by Kevin Tew <tew1@llnl.gov>, Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
 
@@ -51,7 +51,7 @@
 #define BUF_MAGIC 0x42554545
 #define BUF_SIZE (16 * 1024)
 #define MAX_BUF_SIZE ((uint32_t) 0xffff0000)	/* avoid going over 32-bits */
-#define REASONABLE_BUF_SIZE ((uint32_t) 0xbfff000) /* three-quarters of max */
+#define REASONABLE_BUF_SIZE ((uint32_t) 0xbfff4000) /* three-quarters of max */
 #define FLOAT_MULT 1000000
 
 /* If we unpack a buffer that contains bad data, we want to avoid a memory
@@ -125,6 +125,9 @@ int	unpackmem(char *valp, uint32_t *size_valp, Buf buffer);
 int	unpackmem_ptr(char **valp, uint32_t *size_valp, Buf buffer);
 int	unpackmem_xmalloc(char **valp, uint32_t *size_valp, Buf buffer);
 int	unpackmem_malloc(char **valp, uint32_t *size_valp, Buf buffer);
+
+int	unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, Buf buffer);
+int	unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp, Buf buffer);
 
 void	packstr_array(char **valp, uint32_t size_val, Buf buffer);
 int	unpackstr_array(char ***valp, uint32_t* size_val, Buf buffer);
@@ -334,8 +337,12 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 #define safe_unpackstr_malloc	                        \
         safe_unpackmem_malloc
 
-#define safe_unpackstr_xmalloc	                        \
-        safe_unpackmem_xmalloc
+#define safe_unpackstr_xmalloc(valp, size_valp, buf) do {	\
+	assert(sizeof(*size_valp) == sizeof(uint32_t));        	\
+	assert(buf->magic == BUF_MAGIC);		        \
+	if (unpackstr_xmalloc_chooser(valp, size_valp, buf))    \
+		goto unpack_error;		       		\
+} while (0)
 
 #define safe_unpackstr_array(valp,size_valp,buf) do {	\
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \

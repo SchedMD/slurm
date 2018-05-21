@@ -9,11 +9,11 @@
  *  Written by Martin Perry <martin.perry@bull.com>
  *             Danny Auble <da@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -125,8 +125,7 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 	slurm_addr_t *next_dest = NULL;
 
 	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
-		info("_send_to_backup_collector: primary %s, "
-		     "getting backup",
+		info("%s: primary %s, getting backup", __func__,
 		     rc ? "can't be reached" : "is null");
 	}
 
@@ -134,8 +133,7 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
 			char addrbuf[100];
 			slurm_print_slurm_addr(next_dest, addrbuf, 32);
-			info("_send_to_backup_collector: *next_dest is "
-			     "%s", addrbuf);
+			info("%s: *next_dest is %s", __func__, addrbuf);
 		}
 		memcpy(&msg->address, next_dest, sizeof(slurm_addr_t));
 		rc = slurm_send_only_node_msg(msg);
@@ -143,9 +141,8 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 
 	if (!next_dest ||  (rc != SLURM_SUCCESS)) {
 		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-			info("_send_to_backup_collector: backup %s, "
-			     "sending msg to controller",
-			     rc ? "can't be reached" : "is null");
+			info("%s: backup %s, sending msg to controller",
+			     __func__, rc ? "can't be reached" : "is null");
 		rc = slurm_send_only_controller_msg(msg, working_cluster_rec);
 	}
 
@@ -197,8 +194,6 @@ static void * _msg_aggregation_sender(void *arg)
 	struct timespec timeout;
 	slurm_msg_t msg;
 	composite_msg_t cmp;
-
-	msg_collection.running = 1;
 
 	slurm_mutex_lock(&msg_collection.mutex);
 
@@ -266,6 +261,8 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 		return;
 
 	memset(&msg_collection, 0, sizeof(msg_collection_type_t));
+
+	msg_collection.running = 1;
 
 	slurm_mutex_init(&msg_collection.aggr_mutex);
 	slurm_mutex_init(&msg_collection.mutex);
@@ -426,6 +423,7 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 		info("msg_aggr_resp: processing composite msg_list...");
 	while ((next_msg = list_next(itr))) {
 		switch (next_msg->msg_type) {
+		case RESPONSE_NODE_REGISTRATION:
 		case REQUEST_BATCH_JOB_LAUNCH:
 		case RESPONSE_SLURM_RC:
 			/* signal sending thread that slurmctld received this

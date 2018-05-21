@@ -62,7 +62,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline"> bool node_features_p_changible_feature(char *feature)
+<p class="commandline"> bool node_features_p_changeable_feature(char *feature)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Determine if this (one) specified node feature is under the control of this plugin.
   The feature must be in a node's available features in order for the node to be
@@ -131,6 +131,16 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   A string with it's memory allocated by xmalloc (i.e. the return value
   must be released using Slurm's xfree function).</p>
 
+<p class="commandline"> bitstr_t *node_features_g_get_node_bitmap(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Return a bitmap of the nodes under this plugin's control. This may be a subset
+  of the nodes on a cluster of heterogeneous nodes (e.g. some KNL and some
+  Haswell nodes on the same cluster).
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  Bitmap of the nodes under this plugin's control.
+  If no NodeFeatures plugins configured this may be NULL.
+  Use FREE_NULL_BITMAP() function to release returned memory.
+
 <p class="commandline"> bool node_features_p_node_power(void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Report if the PowerSave mode is required to boot nodes.
@@ -163,7 +173,14 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   True if the update request is valid, otherwise false.</p>
 
-<p class="commandline"> char *node_features_p_node_xlate(char *new_features, char *orig_features, char *avail_features)
+
+<p class="commandline"> uint32_t node_features_g_reboot_weight(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Return the node "weight" field if reboot required to change mode.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  Node "weight" field if reboot required to change mode.</p>
+
+<p class="commandline"> char *node_features_p_node_xlate(char *new_features, char *orig_features, char *avail_features, int node_inx)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Translate a node's new active feature specification as needed to preserve any
   original features (i.e. features outside of the domain of this plugin).
@@ -180,6 +197,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   <span class="commandline"> new_features:</span> Node's new active features.<br>
   <span class="commandline"> orig_features:</span> Node's previous active feature state.<br>
   <span class="commandline"> avail_features:</span> Node's available features.<br>
+  <span class="commandline"> node_inx:</span> Node's index in the slurmctld daemon's node record table.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   Node's currently active features, validate and sorted.
   A string with it's memory allocated by xmalloc (i.e. the return value
@@ -218,6 +236,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 31 October 2017</p>
+<p style="text-align:center;">Last modified 15 May 2018</p>
 
 <!--#include virtual="footer.txt"-->

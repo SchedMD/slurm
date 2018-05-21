@@ -10,11 +10,11 @@
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -30,13 +30,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  *****************************************************************************
  *  Theory of operation:
@@ -172,6 +172,7 @@ typedef struct mail_info {
 
 static void _agent_retry(int min_wait, bool wait_too);
 static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
+static int  _signal_defer(queued_request_t *queued_req_ptr);
 static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
@@ -700,7 +701,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	int is_ret_list = 1;
 	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t node_write_lock =
-	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	int i;
 
@@ -865,7 +866,7 @@ static void *_thread_per_group_rpc(void *args)
 	int sig_array[2] = {SIGUSR1, 0};
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	/* Lock: Read node */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
@@ -906,7 +907,8 @@ static void *_thread_per_group_rpc(void *args)
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 #if 0
- 	info("sending message type %u to %s", msg_type, thread_ptr->nodelist);
+	info("%s: sending %s to %s", __func__, rpc_num2string(msg_type),
+	     thread_ptr->nodelist);
 #endif
 	if (task_ptr->get_reply) {
 		if (thread_ptr->addr) {
@@ -914,18 +916,14 @@ static void *_thread_per_group_rpc(void *args)
 
 			if (!(ret_list = slurm_send_addr_recv_msgs(
 				     &msg, thread_ptr->nodelist, 0))) {
-				error("_thread_per_group_rpc: "
-				      "no ret_list given");
+				error("%s: no ret_list given", __func__);
 				goto cleanup;
 			}
-
-
 		} else {
 			if (!(ret_list = slurm_send_recv_msgs(
 				     thread_ptr->nodelist,
 				     &msg, 0, true))) {
-				error("_thread_per_group_rpc: "
-				      "no ret_list given");
+				error("%s: no ret_list given", __func__);
 				goto cleanup;
 			}
 		}
@@ -937,10 +935,8 @@ static void *_thread_per_group_rpc(void *args)
 			//info("no address given");
 			if (slurm_conf_get_addr(thread_ptr->nodelist,
 					       &msg.address) == SLURM_ERROR) {
-				error("_thread_per_group_rpc: "
-				      "can't find address for host %s, "
-				      "check slurm.conf",
-				      thread_ptr->nodelist);
+				error("%s: can't find address for host %s, check slurm.conf",
+				      __func__, thread_ptr->nodelist);
 				goto cleanup;
 			}
 		}
@@ -983,9 +979,7 @@ static void *_thread_per_group_rpc(void *args)
 			rc = SLURM_SUCCESS;
 			lock_slurmctld(job_write_lock);
 			if (job_epilog_complete(kill_job->job_id,
-						ret_data_info->
-						node_name,
-						rc))
+						ret_data_info->node_name, rc))
 				run_scheduler = true;
 			unlock_slurmctld(job_write_lock);
 		}
@@ -1006,7 +1000,7 @@ static void *_thread_per_group_rpc(void *args)
 		    (ret_data_info->type != RESPONSE_FORWARD_FAILED)) {
 			batch_job_launch_msg_t *launch_msg_ptr =
 				task_ptr->msg_args_ptr;
-			uint32_t job_id = launch_msg_ptr->job_id;
+			job_id = launch_msg_ptr->job_id;
 			info("Killing non-startable batch job %u: %s",
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_DONE;
@@ -1052,6 +1046,36 @@ static void *_thread_per_group_rpc(void *args)
 				     false, false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
+		}
+
+		if (msg_type == REQUEST_SIGNAL_TASKS) {
+			struct job_record *job_ptr;
+			signal_tasks_msg_t *msg_ptr =
+				task_ptr->msg_args_ptr;
+
+			if ((msg_ptr->signal == SIGCONT) ||
+			    (msg_ptr->signal == SIGSTOP)) {
+				job_id = msg_ptr->job_id;
+				lock_slurmctld(job_write_lock);
+				job_ptr = find_job_record(job_id);
+				if (job_ptr == NULL) {
+					info("%s: invalid JobId=%u", __func__,
+					     job_id);
+				} else if (rc == SLURM_SUCCESS) {
+					if (msg_ptr->signal == SIGSTOP) {
+						job_ptr->job_state |=
+							JOB_STOPPED;
+					} else { // SIGCONT
+						job_ptr->job_state &=
+							~JOB_STOPPED;
+					}
+				}
+
+				if (job_ptr)
+					job_ptr->job_state &= ~JOB_SIGNALING;
+
+				unlock_slurmctld(job_write_lock);
+			}
 		}
 
 		if (((msg_type == REQUEST_SIGNAL_TASKS) ||
@@ -1126,7 +1150,20 @@ static void *_thread_per_group_rpc(void *args)
 
 cleanup:
 	xfree(args);
-
+	if (!ret_list && (msg_type == REQUEST_SIGNAL_TASKS)) {
+		struct job_record *job_ptr;
+		signal_tasks_msg_t *msg_ptr =
+			task_ptr->msg_args_ptr;
+		if ((msg_ptr->signal == SIGCONT) ||
+		    (msg_ptr->signal == SIGSTOP)) {
+			job_id = msg_ptr->job_id;
+			lock_slurmctld(job_write_lock);
+			job_ptr = find_job_record(job_id);
+			if (job_ptr)
+				job_ptr->job_state &= ~JOB_SIGNALING;
+			unlock_slurmctld(job_write_lock);
+		}
+	}
 	/* handled at end of thread just in case resend is needed */
 	destroy_forward(&msg.forward);
 	slurm_mutex_lock(thread_mutex_ptr);
@@ -1143,7 +1180,7 @@ cleanup:
 
 /*
  * Signal handler.  We are really interested in interrupting hung communictions
- * and causing them to return EINTR. Multiple interupts might be required.
+ * and causing them to return EINTR. Multiple interrupts might be required.
  */
 static void _sig_handler(int dummy)
 {
@@ -1342,6 +1379,7 @@ extern void agent_init(void)
 	}
 
 	slurm_thread_create_detached(NULL, _agent_init, NULL);
+	pending_thread_running = true;
 	slurm_mutex_unlock(&pending_mutex);
 }
 
@@ -1368,7 +1406,7 @@ extern void agent_trigger(int min_wait, bool mail_too)
  * This is a separate thread so the job records can be locked */
 static void _agent_retry(int min_wait, bool mail_too)
 {
-	int rc;
+	int rc1, rc2;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
@@ -1421,15 +1459,16 @@ static void _agent_retry(int min_wait, bool mail_too)
 		retry_iter = list_iterator_create(retry_list);
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
-			rc = _batch_launch_defer(queued_req_ptr);
-			if (rc == -1) {		/* abort request */
+			rc1 = _batch_launch_defer(queued_req_ptr);
+			rc2 = _signal_defer(queued_req_ptr);
+			if (rc1 == -1 || rc2  == -1) {		/* abort request */
 				_purge_agent_args(queued_req_ptr->
 						  agent_arg_ptr);
 				xfree(queued_req_ptr);
 				list_remove(retry_iter);
 				continue;
 			}
-			if (rc > 0)
+			if (rc1 > 0 || rc2 > 0)
 				continue;
  			if (queued_req_ptr->last_attempt == 0) {
 				list_remove(retry_iter);
@@ -1448,15 +1487,16 @@ static void _agent_retry(int min_wait, bool mail_too)
 		/* next try to find an older record to retry */
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
-			rc = _batch_launch_defer(queued_req_ptr);
-			if (rc == -1) { 	/* abort request */
+			rc1 = _batch_launch_defer(queued_req_ptr);
+			rc2 = _signal_defer(queued_req_ptr);
+			if (rc1 == -1 || rc2 == -1) { 	/* abort request */
 				_purge_agent_args(queued_req_ptr->
 						  agent_arg_ptr);
 				xfree(queued_req_ptr);
 				list_remove(retry_iter);
 				continue;
 			}
-			if (rc > 0)
+			if (rc1 > 0 || rc2 > 0)
 				continue;
 			age = difftime(now, queued_req_ptr->last_attempt);
 			if (age > min_wait) {
@@ -1752,7 +1792,9 @@ static void _set_job_term_info(struct job_record *job_ptr, uint16_t mail_type,
 		int exit_code_min, exit_code_max;
 
 		base_state = job_ptr->job_state & JOB_STATE_BASE;
-		if (job_ptr->array_recs) {
+		if (job_ptr->array_recs &&
+		    !(job_ptr->mail_type & MAIL_ARRAY_TASKS)) {
+			/* Summarize array tasks. */
 			exit_status_min = job_ptr->array_recs->min_exit_code;
 			exit_status_max = job_ptr->array_recs->max_exit_code;
 			if (WIFEXITED(exit_status_min) &&
@@ -1838,14 +1880,14 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time));
 	_set_job_term_info(job_ptr, mail_type, term_msg, sizeof(term_msg));
 	if (job_ptr->array_recs && !(job_ptr->mail_type & MAIL_ARRAY_TASKS)) {
-		mi->message = xstrdup_printf("SLURM Job_id=%u_* (%u) Name=%s "
-					     "%s%s%s",
+		mi->message = xstrdup_printf("Slurm Array Summary Job_id=%u_* (%u) Name=%s "
+					     "%s%s",
 					     job_ptr->array_job_id,
 					     job_ptr->job_id, job_ptr->name,
 					     _mail_type_str(mail_type),
-					     job_time, term_msg);
+					     term_msg);
 	} else if (job_ptr->array_task_id != NO_VAL) {
-		mi->message = xstrdup_printf("SLURM Job_id=%u_%u (%u) Name=%s "
+		mi->message = xstrdup_printf("Slurm Array Task Job_id=%u_%u (%u) Name=%s "
 					     "%s%s%s",
 					     job_ptr->array_job_id,
 					     job_ptr->array_task_id,
@@ -1853,7 +1895,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 					     _mail_type_str(mail_type),
 					     job_time, term_msg);
 	} else {
-		mi->message = xstrdup_printf("SLURM Job_id=%u Name=%s %s%s%s",
+		mi->message = xstrdup_printf("Slurm Job_id=%u Name=%s %s%s%s",
 					     job_ptr->job_id, job_ptr->name,
 					     _mail_type_str(mail_type),
 					     job_time, term_msg);
@@ -1960,6 +2002,47 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	queued_req_ptr->last_attempt  = now;
+	return 1;
+}
+
+/* Test if a job signal request should be defered
+ * RET -1: abort the request
+ *      0: execute the request now
+ *      1: defer the request
+ */
+static int _signal_defer(queued_request_t *queued_req_ptr)
+{
+	agent_arg_t *agent_arg_ptr;
+	signal_tasks_msg_t *signal_msg_ptr;
+	time_t now = time(NULL);
+	struct job_record *job_ptr;
+
+	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+	if (agent_arg_ptr->msg_type != REQUEST_SIGNAL_TASKS)
+		return 0;
+
+
+	signal_msg_ptr = (signal_tasks_msg_t *)agent_arg_ptr->msg_args;
+	job_ptr = find_job_record(signal_msg_ptr->job_id);
+
+	if (job_ptr == NULL) {
+		info("agent(signal_task): removed pending request for cancelled job %u",
+		     signal_msg_ptr->job_id);
+		return -1;	/* job cancelled while waiting */
+	}
+
+	if (job_ptr->state_reason != WAIT_PROLOG)
+		return 0;
+
+	if (queued_req_ptr->first_attempt == 0) {
+		queued_req_ptr->first_attempt = now;
+	} else if (difftime(now, queued_req_ptr->first_attempt) >=
+				 2 * slurm_get_batch_start_timeout()) {
+		error("agent waited too long for nodes to respond, abort signal of job %u",
+		      job_ptr->job_id);
+		return -1;
+	}
+
 	return 1;
 }
 

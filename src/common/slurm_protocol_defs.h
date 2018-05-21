@@ -8,11 +8,11 @@
  *  Written by Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -106,6 +106,10 @@
 	(_X->job_state & JOB_UPDATE_DB)
 #define IS_JOB_REVOKED(_X)		\
 	(_X->job_state & JOB_REVOKED)
+#define IS_JOB_SIGNALING(_X)		\
+	(_X->job_state & JOB_SIGNALING)
+#define IS_JOB_STAGE_OUT(_X)		\
+	(_X->job_state & JOB_STAGE_OUT)
 
 /* Defined node states */
 #define IS_NODE_UNKNOWN(_X)		\
@@ -155,6 +159,9 @@
 #define YEAR_MINUTES (365 * 24 * 60)
 #define YEAR_SECONDS (365 * 24 * 60 * 60)
 
+#define SLURMD_REG_FLAG_STARTUP  0x0001
+#define SLURMD_REG_FLAG_RESP     0x0002
+
 /* These defines have to be here to avoid circular dependancy with
  * switch.h
  */
@@ -168,7 +175,7 @@
 #endif
 
 /*
- * SLURM Message types
+ * Slurm Message types
  *
  * IMPORTANT: ADD NEW MESSAGE TYPES TO THE *END* OF ONE OF THESE NUMBERED
  * SECTIONS. ADDING ONE ELSEWHERE WOULD SHIFT THE VALUES OF EXISTING MESSAGE
@@ -198,6 +205,8 @@ typedef enum {
 	REQUEST_LICENSE_INFO,
 	RESPONSE_LICENSE_INFO,
 	REQUEST_SET_FS_DAMPENING_FACTOR,
+	RESPONSE_NODE_REGISTRATION,
+
 	DBD_MESSAGES_START = 1400, /* We can't replace this with
 				    * REQUEST_PERSIST_INIT since DBD_INIT is
 				    * packed in a way we can't tell the
@@ -208,7 +217,8 @@ typedef enum {
 	PERSIST_RC = 1433, /* To mirror the DBD_RC this is replacing */
 	/* Don't make any messages in this range as this is what the DBD uses
 	 * unless mirroring */
-	DBD_MESSAGES_END   = 2000,
+	DBD_MESSAGES_END	= 2000,
+
 	REQUEST_BUILD_INFO	= 2001,
 	RESPONSE_BUILD_INFO,
 	REQUEST_JOB_INFO,
@@ -261,6 +271,10 @@ typedef enum {
 	RESPONSE_FED_INFO,		/* 2050 */
 	REQUEST_BATCH_SCRIPT,
 	RESPONSE_BATCH_SCRIPT,
+	REQUEST_CONTROL_STATUS,
+	RESPONSE_CONTROL_STATUS,
+	REQUEST_BURST_BUFFER_STATUS,
+	RESPONSE_BURST_BUFFER_STATUS,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -452,8 +466,10 @@ typedef struct forward_message {
 } forward_msg_t;
 
 typedef struct slurm_protocol_config {
-	slurm_addr_t primary_controller;
-	slurm_addr_t secondary_controller;
+	uint32_t control_cnt;
+	slurm_addr_t *controller_addr;
+	bool vip_addr_set;
+	slurm_addr_t vip_addr;
 } slurm_protocol_config_t;
 
 typedef struct slurm_msg {
@@ -715,6 +731,7 @@ typedef struct job_step_specs {
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
+	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	char *features;		/* required node features, default NONE */
 	char *gres;		/* generic resources required */
@@ -731,6 +748,7 @@ typedef struct job_step_specs {
 				 * default=0 */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job,
 				 * default=0 */
+	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
 	uint8_t no_kill;	/* 1 if no kill on node failure */
 	char *node_list;	/* list of required nodes */
 	uint32_t num_tasks;	/* number of tasks required */
@@ -746,10 +764,17 @@ typedef struct job_step_specs {
 	uint32_t task_dist;	/* see enum task_dist_state in slurm.h */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */
+	char *tres_bind;	/* Task to TRES binding directives */
+	char *tres_freq;	/* TRES frequency directives */
+	char *tres_per_job;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
 	uint32_t user_id;	/* user the job runs as */
 } job_step_create_request_msg_t;
 
 typedef struct job_step_create_response_msg {
+	uint32_t def_cpu_bind_type;	/* Default CPU bind type */
 	uint32_t job_step_id;		/* assigned job step id */
 	char *resv_ports;		/* reserved ports */
 	slurm_step_layout_t *step_layout; /* information about how the
@@ -900,13 +925,21 @@ typedef struct set_fs_dampening_factor_msg {
 	uint16_t dampening_factor;
 } set_fs_dampening_factor_msg_t;
 
-/* Note: We include the node list here for reliable cleanup on XCPU systems.
+typedef struct control_status_msg {
+	uint16_t backup_inx;	/* Our BackupController# index,
+				 * between 0 and (MAX_CONTROLLERS-1) */
+	time_t control_time;	/* Time we became primary slurmctld (or 0) */
+} control_status_msg_t;
+
+/*
+ * Note: We include the node list here for reliable cleanup on XCPU systems.
  *
  * Note: We include select_jobinfo here in addition to the job launch
  * RPC in order to ensure reliable clean-up of a BlueGene partition in
  * the event of some launch failure or race condition preventing slurmd
  * from getting the MPIRUN_PARTITION at that time. It is needed for
- * the job epilog. */
+ * the job epilog.
+ */
 
 #define SIG_OOM		253	/* Dummy signal value for out of memory
 				 * (OOM) notification. Exist status reported as
@@ -1171,6 +1204,15 @@ typedef struct license_info_request_msg {
 	uint16_t show_flags;
 } license_info_request_msg_t;
 
+typedef struct bb_status_req_msg {
+	uint32_t argc;
+	char **argv;
+} bb_status_req_msg_t;
+
+typedef struct bb_status_resp_msg {
+	char *status_resp;
+} bb_status_resp_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1179,6 +1221,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint16_t cores;
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
+	uint16_t flags;	        /* Flags from the slurmd SLURMD_REG_FLAG_* */
 	uint64_t free_mem;	/* Free memory in MiB */
 	char *cpu_spec_list;	/* list of specialized CPUs */
 	acct_gather_energy_t *energy;
@@ -1195,7 +1238,6 @@ typedef struct slurm_node_registration_status_msg {
 	uint64_t real_memory;
 	time_t slurmd_start_time;
 	uint32_t status;	/* node status code, same as return codes */
-	uint16_t startup;	/* slurmd just restarted */
 	uint32_t *step_id;	/* IDs of running job steps (if any) */
 	uint16_t sockets;
 	switch_node_info_t *switch_nodeinfo;	/* set only if startup != 0 */
@@ -1205,6 +1247,10 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t up_time;	/* seconds since reboot */
 	char *version;
 } slurm_node_registration_status_msg_t;
+
+typedef struct slurm_node_reg_resp_msg {
+	List tres_list;
+} slurm_node_reg_resp_msg_t;
 
 typedef struct requeue_msg {
 	uint32_t job_id;	/* slurm job ID (number) */
@@ -1345,6 +1391,8 @@ extern void slurm_free_event_log_msg(slurm_event_log_msg_t * msg);
 extern void
 slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
 					msg);
+extern void slurm_free_node_reg_resp_msg(
+	slurm_node_reg_resp_msg_t *msg);
 
 extern void slurm_free_job_info(job_info_t * job);
 extern void slurm_free_job_info_members(job_info_t * job);
@@ -1464,6 +1512,10 @@ extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg);
 extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp);
 extern void slurm_free_set_fs_dampening_factor_msg(
 	set_fs_dampening_factor_msg_t *msg);
+extern void slurm_free_control_status_msg(control_status_msg_t *msg);
+
+extern void slurm_free_bb_status_req_msg(bb_status_req_msg_t *msg);
+extern void slurm_free_bb_status_resp_msg(bb_status_resp_msg_t *msg);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);
@@ -1485,6 +1537,8 @@ extern bool job_state_qos_grp_limit(enum job_state_reason state_reason);
 extern char *job_share_string(uint16_t shared);
 extern char *job_state_string(uint32_t inx);
 extern char *job_state_string_compact(uint32_t inx);
+/* Caller must xfree() the return value */
+extern char *job_state_string_complete(uint32_t state);
 extern uint32_t job_state_num(const char *state_name);
 extern char *node_state_string(uint32_t inx);
 extern char *node_state_string_compact(uint32_t inx);
@@ -1521,7 +1575,7 @@ extern char *trigger_type(uint32_t trig_type);
 extern char *priority_flags_string(uint16_t priority_flags);
 
 /* user needs to xfree return value */
-extern char *reservation_flags_string(uint32_t flags);
+extern char *reservation_flags_string(uint64_t flags);
 
 /* Functions to convert burst buffer flags between strings and numbers */
 extern char *   slurm_bb_flags2str(uint32_t bb_flags);
@@ -1537,6 +1591,14 @@ extern bool cluster_in_federation(void *ptr, char *cluster_name);
 /* Find where cluster_name nodes start in the node_array */
 extern int get_cluster_node_offset(char *cluster_name,
 				   node_info_msg_t *node_info_ptr);
+
+/*
+ * Print the char* given.
+ *
+ * Each \n will result in a new line.
+ * If inx is != -1 it is prepended to the string.
+ */
+extern void print_multi_line_string(char *user_msg, int inx);
 
 /* Given a protocol opcode return its string
  * description mapping the slurm_msg_type_t

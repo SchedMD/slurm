@@ -1,14 +1,14 @@
 /*****************************************************************************\
- *  slurm_xlator.h - Definitions required to translate SLURM function names
+ *  slurm_xlator.h - Definitions required to translate Slurm function names
  *  to aliases containing  a prefix of "slurm_".
  *
- *  This is required because some SLURM functions have common names
+ *  This is required because some Slurm functions have common names
  *  (e.g. "debug" and "info"). If a user application defines these functions
- *  and uses SLURM APIs, they could link to the user function rather than
- *  the SLURM function. By renaming the functions, inappropriate linking
+ *  and uses Slurm APIs, they could link to the user function rather than
+ *  the Slurm function. By renaming the functions, inappropriate linking
  *  should be avoided.
  *
- *  All SLURM functions referenced from the switch, auth, and mpi plugins should
+ *  All Slurm functions referenced from the switch, auth, and mpi plugins should
  *  have aliases established. Functions not referenced from the plugins
  *  need not be aliased.
  *
@@ -33,11 +33,11 @@
  *             Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -53,13 +53,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -161,6 +161,22 @@
 #define	hostset_shift_range	slurm_hostset_shift_range
 #define	hostset_within		slurm_hostset_within
 
+/* gres.[ch] functions */
+#define gres_gresid_to_gresname	slurm_gres_gresid_to_gresname
+#define gres_get_node_used	slurm_gres_get_node_used
+#define gres_get_system_cnt	slurm_gres_get_system_cnt
+#define gres_get_value_by_type	slurm_gres_get_value_by_type
+#define gres_get_job_info	slurm_gres_get_job_info
+#define gres_build_job_details	slurm_gres_build_job_details
+#define gres_get_step_info	slurm_gres_get_step_info
+#define gres_get_step_state	slurm_gres_get_step_state
+#define gres_get_job_state	slurm_gres_get_job_state
+#define gres_2_tres_str		slurm_gres_2_tres_str
+#define gres_set_job_tres_cnt	slurm_gres_set_job_tres_cnt
+#define gres_set_node_tres_cnt	slurm_gres_set_node_tres_cnt
+#define gres_device_major	slurm_gres_device_major
+#define destroy_gres_device	slurm_destroy_gres_device
+
 /* list.[ch] functions */
 #define	list_create		slurm_list_create
 #define	list_destroy		slurm_list_destroy
@@ -197,6 +213,7 @@
 #define	log_fp			slurm_log_fp
 #define	log_has_data		slurm_log_has_data
 #define	log_flush		slurm_log_flush
+#define	fatal_abort		slurm_fatal_abort
 #define	fatal			slurm_fatal
 #define	error			slurm_error
 #define	info			slurm_info
@@ -242,6 +259,8 @@
 #define	unpackmem_ptr		slurm_unpackmem_ptr
 #define	unpackmem_xmalloc	slurm_unpackmem_xmalloc
 #define	unpackmem_malloc	slurm_unpackmem_malloc
+#define	unpackstr_xmalloc_escaped slurm_unpackstr_xmalloc_escaped
+#define	unpackstr_xmalloc_chooser slurm_unpackstr_xmalloc_chooser
 #define	packstr_array		slurm_packstr_array
 #define	unpackstr_array		slurm_unpackstr_array
 #define	packmem_array		slurm_packmem_array
@@ -301,7 +320,6 @@
 #define	_xstrcat		slurm_xstrcat
 #define	_xstrncat		slurm_xstrncat
 #define	_xstrcatchar		slurm_xstrcatchar
-#define	_xslurm_strerrorcat	slurm_xslurm_strerrorcat
 #define	_xstrftimecat		slurm_xstrftimecat
 #define	_xiso8601timecat	slurm_xiso8601timecat
 #define	_xrfc5424timecat	slurm_xrfc5424timecat
@@ -311,7 +329,6 @@
 #define	xstrdup_printf		slurm_xstrdup_printf
 #define	xbasename		slurm_xbasename
 #define	_xstrsubstitute		slurm_xstrsubstitute
-#define	xstrstrip		slurm_xstrstrip
 #define	xshort_hostname		slurm_xshort_hostname
 #define xstring_is_whitespace   slurm_xstring_is_whitespace
 #define	xstrtolower		slurm_xstrtolower
@@ -345,6 +362,7 @@
 #define node_use_string		slurm_node_use_string
 #define bg_block_state_string	slurm_bg_block_state_string
 #define reservation_flags_string slurm_reservation_flags_string
+#define print_multi_line_string slurm_print_multi_line_string
 
 /* slurmdbd_defs.[ch] functions */
 #define slurmdbd_defs_init      slurm_slurmdbd_defs_init

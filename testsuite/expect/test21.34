@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test that partition and job qos limits are enforced when using
 #          the OverPartQos flag for the job's qos
 #
@@ -11,22 +11,22 @@
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -81,6 +81,7 @@ set maxjobs_num      2
 set maxjobsub        MaxSubmitJobs
 set maxjobsub_num    2
 set time_spacing     1
+set tres_cpu_mult    2
 
 # cr_core = 1 / cr_cpu = 0
 set selectparam      0
@@ -105,6 +106,13 @@ array set mod_job_qos {
 	MaxCpusPerUser  -1
 	MaxNode         -1
 	MaxNodesPerUser -1
+
+	GrpTRES=billing             -1
+	GrpTRESMins=billing         -1
+	GrpTRESRunMins=billing      -1
+	MaxTRESPerJob=billing       -1
+	MaxTRESMinsPerJob=billing   -1
+	MaxTRESPerUser=billing      -1
 }
 
 array set mod_part_qos {
@@ -125,6 +133,13 @@ array set mod_part_qos {
 	MaxCpusPerUser  -1
 	MaxNode         -1
 	MaxNodesPerUser -1
+
+	GrpTRES=billing             -1
+	GrpTRESMins=billing         -1
+	GrpTRESRunMins=billing      -1
+	MaxTRESPerJob=billing       -1
+	MaxTRESMinsPerJob=billing   -1
+	MaxTRESPerUser=billing      -1
 }
 
 print_header $test_id
@@ -193,33 +208,6 @@ proc cleanup { } {
 			}
 		}
 	}
-}
-
-# Checks the state of the job
-proc check_state { job } {
-
-	global scontrol job_id exit_code
-
-	set state_match 0
-	spawn $scontrol show job $job
-	expect {
-		"JobState=PENDING" {
-			incr state_match
-		}
-		timeout {
-			send_user "\nFAILURE scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$state_match != 1} {
-		send_user "\nFAILURE job should be pending, but is not\n"
-		set exit_code 1
-	}
-
 }
 
 if { [test_account_storage] == 0 } {
@@ -305,7 +293,7 @@ add_qos $part_qos ""
 add_qos $job_qos ""
 
 # create a tmp partition to use for testing
-spawn $scontrol create partitionname=$test_part qos=$part_qos default=yes \
+spawn $scontrol create partitionname=$test_part qos=$part_qos tresbillingweights=cpu=$tres_cpu_mult default=yes \
     nodes=[available_nodes_hostnames $def_part]
 expect {
 	timeout {

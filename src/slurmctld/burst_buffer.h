@@ -4,11 +4,11 @@
  *  Copyright (C) 2014 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -44,14 +44,14 @@
 /*
  * Initialize the burst buffer infrastructure.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_init(void);
 
 /*
  * Terminate the burst buffer infrastructure. Free memory.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_fini(void);
 
@@ -68,22 +68,30 @@ extern int bb_g_fini(void);
  * etc.)
  *
  * init_config IN - true if called as part of slurmctld initialization
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_load_state(bool init_config);
+
+/*
+ * Return string containing current burst buffer status
+ * argc IN - count of status command arguments
+ * argv IN - status command arguments
+ * RET status string, release memory using xfree()
+ */
+extern char *bb_g_get_status(uint32_t argc, char **argv);
 
 /*
  * Pack current burst buffer state information for network transmission to
  * user (e.g. "scontrol show burst")
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version);
 
 /*
  * Note configuration may have changed. Handle changes in BurstBufferParameters.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_reconfig(void);
 
@@ -100,7 +108,7 @@ extern uint64_t bb_g_get_system_size(char *name);
  *
  * job_desc IN - Job submission request
  * submit_uid IN - ID of the user submitting the job.
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid);
@@ -109,7 +117,7 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
  * Secondary validation of a job submit request with respect to burst buffer
  * options. Performed after establishing job ID and creating script file.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg);
 
@@ -142,7 +150,7 @@ extern time_t bb_g_job_get_est_start(struct job_record *job_ptr);
  * Allocate burst buffers to jobs expected to start soonest
  * Job records must be read locked
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_job_try_stage_in(void);
 
@@ -161,7 +169,7 @@ extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only);
  * At this time, bb_g_job_test_stage_in() should have been run sucessfully AND
  * the compute nodes selected for the job.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_job_begin(struct job_record *job_ptr);
 
@@ -169,14 +177,14 @@ extern int bb_g_job_begin(struct job_record *job_ptr);
  * Executed after bb_g_job_begin() if there was an allocation failure.
  * Does not release previously allocated resources.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_job_revoke_alloc(struct job_record *job_ptr);
 
 /*
  * Trigger a job's burst buffer stage-out to begin
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_job_start_stage_out(struct job_record *job_ptr);
 
@@ -201,7 +209,7 @@ extern int bb_g_job_test_stage_out(struct job_record *job_ptr);
 /*
  * Terminate any file staging and completely release burst buffer resources
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_g_job_cancel(struct job_record *job_ptr);
 

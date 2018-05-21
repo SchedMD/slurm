@@ -64,6 +64,7 @@ generated_html = \
 	news.html \
 	node_features_plugins.html \
 	overview.html \
+	pam_slurm_adopt.html \
 	platforms.html \
 	plugins.html \
 	power_mgmt.html \
@@ -82,6 +83,7 @@ generated_html = \
 	quickstart_admin.html \
 	quickstart.html \
 	reservations.html \
+	resource_binding.html \
 	resource_limits.html \
 	rosetta.html \
 	route_plugin.html \

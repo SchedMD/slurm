@@ -8,12 +8,14 @@ Group:		System Environment/Base
 License:	GPLv2+
 URL:		https://slurm.schedmd.com/
 
-# when the rel number is one, the tarball filename does not include it
+# when the rel number is one, the directory name does not include it
 %if "%{rel}" == "1"
-Source:		%{name}-%{version}.tar.bz2
+%global slurm_source_dir %{name}-%{version}
 %else
-Source:		%{name}-%{version}-%{rel}.tar.bz2
+%global slurm_source_dir %{name}-%{version}-%{rel}
 %endif
+
+Source:		%{slurm_source_dir}.tar.bz2
 
 # build options		.rpmmacros options	change to default action
 # ====================  ====================	========================
@@ -22,8 +24,10 @@ Source:		%{name}-%{version}-%{rel}.tar.bz2
 # --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
 # --without debug	%_without_debug 1	don't compile with debugging symbols
 # --with hdf5		%_with_hdf5 path	require hdf5 support
+# --with hwloc		%_with_hwloc 1		require hwloc support
 # --with lua		%_with_lua path		build Slurm lua bindings
 # --with mysql		%_with_mysql 1		require mysql/mariadb support
+# --with numa		%_with_numa 1		require NUMA support
 # --with openssl	%_with_openssl 1	require openssl RPM to be installed
 #						ensures auth/openssl and crypto/openssl are built
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
@@ -35,10 +39,11 @@ Source:		%{name}-%{version}-%{rel}.tar.bz2
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
+%bcond_with hwloc
 %bcond_with mysql
 %bcond_with hdf5
 %bcond_with lua
-%bcond_with openssl
+%bcond_with numa
 
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
 %bcond_without openssl
@@ -103,10 +108,18 @@ BuildRequires: pkgconfig
 BuildRequires: perl(ExtUtils::MakeMaker)
 
 %if %{with lua}
+BuildRequires: pkgconfig(lua) >= 5.1.0
+%endif
+
+%if %{with hwloc}
+BuildRequires: hwloc-devel
+%endif
+
+%if %{with numa}
 %if %{defined suse_version}
-BuildRequires: lua51-devel
+BuildRequires: libnuma-devel
 %else
-BuildRequires: lua-devel
+BuildRequires: numactl-devel
 %endif
 %endif
 
@@ -138,6 +151,10 @@ BuildRequires: lua-devel
 # Uncomment if needed again.
 #%define _unpackaged_files_terminate_build      0
 
+# Slurm may intentionally include empty manifest files, which will
+# cause errors with rpm 4.13 and on. Turn that check off.
+%define _empty_manifest_terminate_build 0
+
 # First we remove $prefix/local and then just prefix to make
 # sure we get the correct installdir
 %define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
@@ -159,7 +176,7 @@ job management, scheduling and accounting modules
 %package perlapi
 Summary: Perl API to Slurm
 Group: Development/System
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description perlapi
 Perl API package for Slurm.  This package includes the perl API to provide a
 helpful interface to Slurm through Perl
@@ -167,7 +184,7 @@ helpful interface to Slurm through Perl
 %package devel
 Summary: Development package for Slurm
 Group: Development/System
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description devel
 Development package for Slurm.  This package includes the header files
 and static libraries for the Slurm API
@@ -179,9 +196,9 @@ Group: Development/System
 Example configuration files for Slurm.
 
 %package slurmctld
-Summary: Slurm compute node daemon
+Summary: Slurm controller daemon
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description slurmctld
 Slurm controller daemon. Used to manage the job queue, schedule jobs,
 and dispatch RPC messages to the slurmd processon the compute nodes
@@ -190,28 +207,37 @@ to launch jobs.
 %package slurmd
 Summary: Slurm compute node daemon
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 %description slurmd
 Slurm compute node daemon. Used to launch jobs on compute nodes
 
 %package slurmdbd
 Summary: Slurm database daemon
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 Obsoletes: slurm-sql
 %description slurmdbd
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
 
+%package libpmi
+Summary: Slurm\'s implementation of the pmi libraries
+Group: System Environment/Base
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Conflicts: pmix-libpmi
+%description libpmi
+Slurm\'s version of libpmi. For systems using Slurm, this version
+is preferred over the compatibility libraries shipped by the PMIx project.
+
 %package torque
-Summary: Torque/PBS wrappers for transitition from Torque/PBS to Slurm
+Summary: Torque/PBS wrappers for transition from Torque/PBS to Slurm
 Group: Development/System
 Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm
 
 %package openlava
-Summary: openlava/LSF wrappers for transitition from OpenLava/LSF to Slurm
+Summary: openlava/LSF wrappers for transition from OpenLava/LSF to Slurm
 Group: Development/System
 Requires: slurm-perlapi
 %description openlava
@@ -220,7 +246,7 @@ OpenLava wrapper scripts used for helping migrate from OpenLava/LSF to Slurm
 %package contribs
 Summary: Perl tool to print Slurm job state information
 Group: Development/System
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 Obsoletes: slurm-sjobexit slurm-sjstat slurm-seff
 %description contribs
 seff is a mail program used directly by the Slurm daemons. On completion of a
@@ -238,7 +264,7 @@ utilities will provide more information and greater depth of understanding.
 %package pam_slurm
 Summary: PAM module for restricting access to compute nodes via Slurm
 Group: System Environment/Base
-Requires: slurm
+Requires: %{name}%{?_isa} = %{version}-%{release}
 BuildRequires: pam-devel
 Obsoletes: pam_slurm
 %description pam_slurm
@@ -248,30 +274,36 @@ running on the node, or any user who has allocated resources on the node
 according to the Slurm
 %endif
 
+%if %{with cray}
+%package slurmsmwd
+Summary: support daemons and software for the Cray SMW
+Group: System Environment/Base
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Obsoletes: craysmw
+%description slurmsmwd
+support daeamons and software for the Cray SMW.  Includes slurmsmwd which
+notifies slurm about failed nodes.
+%endif
+
 #############################################################################
 
 %prep
 # when the rel number is one, the tarball filename does not include it
-%if "%{rel}" == "1"
-%setup -n %{name}-%{version}
-%else
-%setup -n %{name}-%{version}-%{rel}
-%endif
+%setup -n %{slurm_source_dir}
 
 %build
 %configure \
-	%{!?_with_debug:--disable-debug} \
+	%{?_without_debug:--disable-debug} \
 	%{?_with_pam_dir} \
 	%{?_with_cpusetdir} \
 	%{?_with_mysql_config} \
 	%{?_with_ssl} \
-	%{?_with_cray:--enable-native-cray}\
+	%{?_without_cray:--disable-native-cray}\
 	%{?_with_cray_network:--enable-cray-network}\
 	%{?_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?_with_pmix} \
 	%{?_with_freeipmi} \
 	%{?_with_hdf5} \
-	%{?_with_lua} \
 	%{?_with_shared_libslurm} \
 	%{?_with_cflags}
 
@@ -296,23 +328,28 @@ install -D -m644 etc/slurmctld.service %{buildroot}/%{_unitdir}/slurmctld.servic
 install -D -m644 etc/slurmd.service    %{buildroot}/%{_unitdir}/slurmd.service
 install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
 
-# Do not package Slurm's version of libpmi on Cray systems.
-# Cray's version of libpmi should be used.
+# Do not package Slurm's version of libpmi on Cray systems in the usual location.
+# Cray's version of libpmi should be used. Move it elsewhere if the site still
+# wants to use it with other MPI stacks.
 %if %{with cray}
-   rm -f %{buildroot}/%{_libdir}/libpmi*
-   %if %{with cray}
-      install -D -m644 contribs/cray/plugstack.conf.template %{buildroot}/%{_sysconfdir}/plugstack.conf.template
-      install -D -m644 contribs/cray/slurm.conf.template %{buildroot}/%{_sysconfdir}/slurm.conf.template
-   %endif
-   install -D -m644 contribs/cray/opt_modulefiles_slurm %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel}
+   mkdir %{buildroot}/%{_libdir}/slurmpmi
+   mv %{buildroot}/%{_libdir}/libpmi* %{buildroot}/%{_libdir}/slurmpmi
+   install -D -m644 contribs/cray/plugstack.conf.template %{buildroot}/%{_sysconfdir}/plugstack.conf.template
+   install -D -m644 contribs/cray/slurm.conf.template %{buildroot}/%{_sysconfdir}/slurm.conf.template
+   mkdir -p %{buildroot}/opt/modulefiles/slurm
+   test -f contribs/cray/opt_modulefiles_slurm &&
+      install -D -m644 contribs/cray/opt_modulefiles_slurm %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel}
+   install -D -m644 contribs/cray/slurmsmwd/slurmsmwd.service %{buildroot}/%{_unitdir}/slurmsmwd.service
    echo -e '#%Module\nset ModulesVersion "%{version}-%{rel}"' > %{buildroot}/opt/modulefiles/slurm/.version
 %else
    rm -f contribs/cray/opt_modulefiles_slurm
+   rm -f contribs/cray/slurmsmwd/slurmsmwd.service
    rm -f %{buildroot}/%{_sysconfdir}/plugstack.conf.template
    rm -f %{buildroot}/%{_sysconfdir}/slurm.conf.template
    rm -f %{buildroot}/%{_sbindir}/capmc_suspend
    rm -f %{buildroot}/%{_sbindir}/capmc_resume
    rm -f %{buildroot}/%{_sbindir}/slurmconfgen.py
+   rm -f %{buildroot}/%{_sbindir}/slurmsmwd
 %endif
 
 install -D -m644 etc/cgroup.conf.example %{buildroot}/%{_sysconfdir}/cgroup.conf.example
@@ -378,11 +415,13 @@ test -f %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel} &&
 test -f %{buildroot}/opt/modulefiles/slurm/.version &&
   echo /opt/modulefiles/slurm/.version >> $LIST
 
-# Make ld.so.conf.d file
-mkdir -p %{buildroot}/etc/ld.so.conf.d
-echo '%{_libdir}
-%{_libdir}/slurm' > %{buildroot}/etc/ld.so.conf.d/slurm.conf
-chmod 644 %{buildroot}/etc/ld.so.conf.d/slurm.conf
+
+LIST=./example.configs
+touch $LIST
+%if %{with cray}
+   test -f %{buildroot}/%{_sbindir}/slurmconfgen.py	&&
+	echo %{_sbindir}/slurmconfgen.py		>>$LIST
+%endif
 
 # Make pkg-config file
 mkdir -p %{buildroot}/%{_libdir}/pkgconfig
@@ -432,6 +471,7 @@ rm -rf %{buildroot}
 %exclude %{_bindir}/sjobexitmod
 %exclude %{_bindir}/sjstat
 %exclude %{_bindir}/smail
+%exclude %{_libdir}/libpmi*
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_libdir}/slurm/*.so
@@ -442,18 +482,17 @@ rm -rf %{buildroot}
 %exclude %{_mandir}/man1/sjobexit*
 %exclude %{_mandir}/man1/sjstat*
 %dir %{_libdir}/slurm/src
-%dir %{_sysconfdir}
-%dir /etc/ld.so.conf.d
-/etc/ld.so.conf.d/slurm.conf
+%if %{with cray}
+%dir /opt/modulefiles/slurm
+%endif
 #############################################################################
 
-%files example-configs
+%files -f example.configs example-configs
 %defattr(-,root,root,0755)
+%dir %{_sysconfdir}
 %if %{with cray}
 %config %{_sysconfdir}/plugstack.conf.template
 %config %{_sysconfdir}/slurm.conf.template
-%dir /opt/modulefiles/slurm
-%{_sbindir}/slurmconfgen.py
 %endif
 %config %{_sysconfdir}/cgroup.conf.example
 %config %{_sysconfdir}/cgroup_allowed_devices_file.conf.example
@@ -509,6 +548,15 @@ rm -rf %{buildroot}
 %{_unitdir}/slurmdbd.service
 #############################################################################
 
+%files libpmi
+%defattr(-,root,root)
+%if %{with cray}
+%{_libdir}/slurmpmi/*
+%else
+%{_libdir}/libpmi*
+%endif
+#############################################################################
+
 %files torque
 %defattr(-,root,root)
 %{_bindir}/pbsnodes
@@ -549,6 +597,13 @@ rm -rf %{buildroot}
 %endif
 #############################################################################
 
+%if %{with cray}
+%files slurmsmwd
+%{_sbindir}/slurmsmwd
+%{_unitdir}/slurmsmwd.service
+%endif
+#############################################################################
+
 %pre
 
 %post
@@ -564,18 +619,18 @@ rm -rf %{buildroot}
 %preun slurmctld
 %systemd_preun slurmctld.service
 %postun slurmctld
-%systemd_preun_with_restart slurmctld.service
+%systemd_postun_with_restart slurmctld.service
 
 %post slurmd
 %systemd_post slurmd.service
 %preun slurmd
 %systemd_preun slurmd.service
 %postun slurmd
-%systemd_preun_with_restart slurmd.service
+%systemd_postun_with_restart slurmd.service
 
 %post slurmdbd
 %systemd_post slurmdbd.service
 %preun slurmdbd
 %systemd_preun slurmdbd.service
 %postun slurmdbd
-%systemd_preun_with_restart slurmdbd.service
+%systemd_postun_with_restart slurmdbd.service

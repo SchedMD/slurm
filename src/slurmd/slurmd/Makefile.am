@@ -5,16 +5,23 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmd
 
-AM_CPPFLAGS = -DLIBSLURM_SO=\"$(libdir)/libslurm.so\" \
-	-I$(top_srcdir) $(HWLOC_CPPFLAGS)
-
 depend_libs = $(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/bcast/libfile_bcast.la \
 	../common/libslurmd_common.o ../common/libslurmd_reverse_tree_math.la
 
-slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(HWLOC_LIBS) $(DL_LIBS)
+# These 2 depend_* should look the same in ../slurmstepd/Makefile.am
+depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
+depend_ldflags = $(HWLOC_LDFLAGS) $(SSH2_LDFLAGS)
 
-slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS) $(NUMA_LIBS)
+# This is needed to actually link to the libs that it doesn't use.
+depend_ldflags += -Wl,--no-as-needed
+
+AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
+
+slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(NUMA_LIBS) \
+	$(depend_ldadd)
+
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
 
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \

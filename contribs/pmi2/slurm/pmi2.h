@@ -449,7 +449,7 @@ int PMI2_Job_Disconnect(const char jobid[]);
   behavior holds when the function is called in singleton mode.
 
 @*/
-#define HAVE_PMIX_RING 1 /* so one can conditionally compile with this funciton */
+#define HAVE_PMIX_RING 1 /* so one can conditionally compile with this function */
 int PMIX_Ring(const char value[], int *rank, int *ranks, char left[], char right[], int maxvalue);
 
 /*@

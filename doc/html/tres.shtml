@@ -10,21 +10,34 @@ Current TRES Types are:
 </p>
 <ul>
 <li>BB (burst buffers)</li>
+<li>Billing</li>
 <li>CPU</li>
 <li>Energy</li>
+<li>FS (filesystem)</li>
 <li>GRES</li>
+<li>IC (interconnect)</li>
 <li>License</li>
 <li>Mem (Memory)</li>
 <li>Node</li>
-<li>Billing</li>
+<li>Pages</li>
+<li>VMem (Virtual Memory/Size)</li>
 </ul>
 
 <p>
-  The Billing TRES is calculated from a partition's TRESBillingWeights. It is
-  temporarily calculated during scheduling for each partition to enforce billing
-  TRES limits. The final Billing TRES is calculated after the job has been
-  allocated resources. The final number can be seen in <i>scontrol show jobs</i>
-  and <i>sacct</i> output.
+  The Billing TRES is calculated from a partition's TRESBillingWeights. Though
+  TRES weights on a partition may be defined as doubles, the Billing TRES values
+  for a job are stored as integers. This is not the case when calcuating a job's
+  fairshare where the value is treated as a double.
+</p>
+
+<p>
+  Valid 'FS' TRES are 'disk' (local disk) and 'lustre'.  These are primarily
+  there for reporting usage, not limiting access.
+</p>
+
+<p>
+  Valid 'IC' TRES is 'ofed'.  These are primarily there for reporting usage, not
+  limiting access.
 </p>
 
 <h2>slurm.conf settings</h2>
@@ -50,6 +63,14 @@ Current TRES Types are:
   the burst buffer plugin being used. In the above example we are using the
   <i>Cray</i> burst buffer plugin.
 </p>
+
+<p> When including a specific GRES with a subtype, it is also recommended to
+include its generic type, otherwise a request with only the generic one won't
+be accounted for. For example, if we want to account for gres/gpu:tesla,
+we would also include gres/gpu for accounting gpus in requests like
+<i>srun --gres=gpu:1</i>.
+</p>
+<pre>AccountingStorageTRES=gres/gpu,gres/gpu:tesla</pre>
 </li>
 
 <li><b>PriorityWeightTRES</b>
@@ -144,8 +165,7 @@ more information.
 </p>
 
 <h2>sreport</h2>
-<p>Before 15.08, sreport would only report on CPU usage.  It will now
-  work on different TRES.  Simply using the comma separated input
+<p>sreport reports on different TRES. Simply using the comma separated input
   option <i>--tres=</i> will have sreport generate reports available
   for the requested TRES types.  More information about these reports
   can be found on the <a href="sreport.html">sreport manpage</a>.
@@ -158,6 +178,6 @@ more information.
   If TRESBillingWeights is not defined on any partition for a node then the
   Billing TRES will be equal to the number of CPUs on the node.
 </p>
-<p style="text-align:center;">Last modified 19 October 2015</p>
+<p style="text-align:center;">Last modified 1 May 2018</p>
 
 <!--#include virtual="footer.txt"-->

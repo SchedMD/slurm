@@ -7,11 +7,11 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -508,7 +508,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	cluster_cond->with_deleted = 0;
 	_setup_cluster_cond_limits(cluster_cond, &extra);
 
-	/* Needed if talking to older SLURM versions < 2.2 */
+	/* Needed if talking to older Slurm versions < 2.2 */
 	if (!mysql_conn->cluster_name && cluster_cond->cluster_list
 	    && list_count(cluster_cond->cluster_list))
 		mysql_conn->cluster_name =
@@ -1382,9 +1382,9 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 
 	if (reason)
-		my_reason = slurm_add_slash_to_quotes(reason);
+		my_reason = reason;
 	else
-		my_reason = slurm_add_slash_to_quotes(node_ptr->reason);
+		my_reason = node_ptr->reason;
 
 	row = mysql_fetch_row(result);
 	if (row && (node_ptr->node_state == slurm_atoul(row[0])) &&
@@ -1396,7 +1396,6 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 				 node_ptr->name, mysql_conn->cluster_name,
 				 node_ptr->node_state, row[0],
 				 my_reason, row[1]);
-		xfree(my_reason);
 		mysql_free_result(result);
 		return SLURM_SUCCESS;
 	}
@@ -1434,7 +1433,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
-	xfree(my_reason);
+
 	return rc;
 }
 
@@ -1465,64 +1464,11 @@ extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
+/* This function is not used in the slurmdbd. */
 extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 				  char *cluster, uint16_t port)
 {
-	char *query = NULL;
-	char *address = NULL;
-	char hostname[255];
-	time_t now = time(NULL);
-	uint32_t flags = slurmdb_setup_cluster_flags();
-	int rc = SLURM_SUCCESS;
-
-	if (slurmdbd_conf)
-		fatal("clusteracct_storage_g_register_ctld "
-		      "should never be called from the slurmdbd.");
-
-	if (check_connection(mysql_conn) != SLURM_SUCCESS)
-		return ESLURM_DB_CONNECTION;
-
-	if (!mysql_conn->cluster_name) {
-		error("%s:%d no cluster name", THIS_FILE, __LINE__);
-		return SLURM_ERROR;
-	}
-
-	if (!mysql_conn->cluster_name)
-		mysql_conn->cluster_name = xstrdup(cluster);
-
-	info("Registering slurmctld for cluster %s at port %u in database.",
-	     cluster, port);
-	gethostname(hostname, sizeof(hostname));
-
-	/* check if we are running on the backup controller */
-	if (slurmctld_conf.backup_controller
-	    && !xstrcmp(slurmctld_conf.backup_controller, hostname)) {
-		address = slurmctld_conf.backup_addr;
-	} else
-		address = slurmctld_conf.control_addr;
-
-	query = xstrdup_printf(
-		"update %s set deleted=0, mod_time=%ld, "
-		"control_host='%s', control_port=%u, last_port=%u, "
-		"rpc_version=%d, dimensions=%d, flags=%u, "
-		"plugin_id_select=%d where name='%s';",
-		cluster_table, now, address, port, port, SLURM_PROTOCOL_VERSION,
-		SYSTEM_DIMENSIONS, flags, select_get_plugin_id(), cluster);
-	xstrfmtcat(query,
-		   "insert into %s "
-		   "(timestamp, action, name, actor, info) "
-		   "values (%ld, %d, '%s', '%s', '%s %u %u %u %u');",
-		   txn_table,
-		   now, DBD_MODIFY_CLUSTERS, cluster,
-		   slurmctld_conf.slurm_user_name, address, port,
-		   SYSTEM_DIMENSIONS, flags, select_get_plugin_id());
-
-	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-
-	rc = mysql_db_query(mysql_conn, query);
-	xfree(query);
-	return rc;
+	return SLURM_ERROR;
 }
 
 extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
@@ -1555,8 +1501,7 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (!last_affected_rows(mysql_conn)
-	    || (slurmdbd_conf && !slurmdbd_conf->track_ctld))
+	if (!last_affected_rows(mysql_conn) || !slurmdbd_conf->track_ctld)
 		return rc;
 
 	/* If tres is NULL we can get the current number of tres by

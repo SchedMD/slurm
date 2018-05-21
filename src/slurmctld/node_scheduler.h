@@ -7,11 +7,11 @@
  *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -59,6 +59,9 @@ extern void allocate_nodes(struct job_record *job_ptr);
 extern void build_active_feature_bitmap(struct job_record *job_ptr,
 					bitstr_t *avail_bitmap,
 					bitstr_t **active_bitmap);
+
+/* Return bitmap of nodes with all specified features currently active */
+extern bitstr_t *build_active_feature_bitmap2(char *reboot_features);
 
 /*
  * build_node_details - sets addresses for allocated nodes
@@ -98,6 +101,13 @@ extern void filter_by_node_owner(struct job_record *job_ptr,
 				 bitstr_t *usable_node_mask);
 
 /*
+ * For every element in the feature_list, identify the nodes with that feature
+ * either active or available and set the feature_list's node_bitmap_active and
+ * node_bitmap_avail fields accordingly.
+ */
+extern void find_feature_nodes(List feature_list, bool can_reboot);
+
+/*
  * re_kill_job - for a given job, deallocate its nodes for a second time,
  *	basically a cleanup for failed deallocate() calls
  * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
@@ -114,7 +124,7 @@ extern void re_kill_job(struct job_record *job_ptr);
  * IN select_node_bitmap - bitmap of nodes to be used for the
  *	job's resource allocation (not returned if NULL), caller
  *	must free
- * IN unavail_node_str - Nodes which are currently unavailable.
+ * IN submission - if set ignore reservations
  * OUT err_msg - if not NULL set to error message for job, caller must xfree
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
@@ -129,8 +139,8 @@ extern void re_kill_job(struct job_record *job_ptr);
  *	3) Call allocate_nodes() to perform the actual allocation
  */
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
-			bitstr_t **select_node_bitmap, char *unavail_node_str,
-			char **err_msg);
+			bitstr_t **select_node_bitmap, char **err_msg,
+			bool submission);
 
 /*
  * get_node_cnts - determine the number of nodes for the requested job.
@@ -153,5 +163,18 @@ extern int get_node_cnts(struct job_record *job_ptr,
  * IN job_ptr - pointer to the job record
  */
 extern void launch_prolog(struct job_record *job_ptr);
+
+/*
+ * valid_feature_counts - validate a job's features can be satisfied
+ *	by the selected nodes (NOTE: does not process XOR or XAND operators)
+ * IN job_ptr - job to operate on
+ * IN use_active - if set, then only consider nodes with the identified features
+ *	active, otherwise use available features
+ * IN/OUT node_bitmap - nodes available for use, clear if unusable
+ * OUT has_xor - set if XOR/XAND found in feature expresion
+ * RET true if valid, false otherwise
+ */
+extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
+				 bitstr_t *node_bitmap, bool *has_xor);
 
 #endif /* !_HAVE_NODE_SCHEDULER_H */

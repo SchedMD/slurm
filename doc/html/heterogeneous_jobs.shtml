@@ -69,7 +69,6 @@ A list of propagated options follows.</p>
 <li>--job-name</li>
 <li>--kill-on-bad-exit  (option available only in srun)</li>
 <li>--label             (option available only in srun)</li>
-<li>--max-exit-timeout  (option available only in srun)</li>
 <li>--mcs-label</li>
 <li>--msg-timeout       (option available only in srun)</li>
 <li>--no-allocate       (option available only in srun)</li>
@@ -239,7 +238,7 @@ unique <i>job_id</i>.</li>
 <li><i>pack_job_id</i>: This identification number applies to all components
 of the heterogeneous job. All components of the same job will have the same
 <i>pack_job_id</i> value and it will be equal to the <i>job_id</i> of the
-first component. We refer to this as the "pack leader".</li>
+first component. We refer to this as the "heterogeneous job leader".</li>
 <li><i>pack_job_id_set</i>: Regular expression identifying all <i>job_id</i>
 values associated with the job.</li>
 <li><i>pack_job_offset</i>: A unique sequence number applied to each component
@@ -270,8 +269,8 @@ For example "123+4" would represent heterogeneous job id 123 and it's fifth
 component (note: the first component has a <i>pack_job_offset</i> value of 0).</p>
 
 <p>A request for a specific job ID that identifies a ID of the first component
-of a heterogeneous job (i.e. the "pack leader" will return information about
-all components of that job. For example:</p>
+of a heterogeneous job (i.e. the "heterogeneous job leader") will return
+information about all components of that job. For example:</p>
 <pre>
 $ squeue --job=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
@@ -280,9 +279,9 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
  93+2     debug  bash  adam  R 18:18      1 nid00021
 </pre>
 
-<p>A request to cancel or otherwise signal a pack leader will be applied to
-all components of that pack job. A request to cancel a specific component of
-the pack job using the "#+#" notation will apply on to that specific component.
+<p>A request to cancel or otherwise signal a heterogeneous job leader will be applied to
+all components of that heterogeneous job. A request to cancel a specific component of
+the heterogeneous job using the "#+#" notation will apply only to that specific component.
 For example:</p>
 <pre>
 $ squeue --job=93
@@ -307,8 +306,9 @@ pending state will return an error.
 After the job has begun execution, the individual component can be cancelled.</p>
 
 <p>Email notification for job state changes (the <i>--mail-type</i> option)
-is only supported for a pack leader. Requests for email notifications for other
-components of a heterogeneous job will be silently ignored.</p>
+is only supported for a heterogeneous job leader. Requests for email
+notifications for other components of a heterogeneous job will be silently
+ignored.</p>
 
 <p>Requests to modify an individual component of a job using the scontrol
 command must specify the job ID with the "#+#" notation.
@@ -324,9 +324,9 @@ $ scontrol update jobid=123 timelimit=60
 </pre>
 
 <p>Requests to perform the following operations a job can only be requested for
-a pack leader and will be applied to all components of that heterogeneous job.
-Requests to operate on individual components of the heterogeneous will return
-an error.</p>
+a heterogeneous job leader and will be applied to all components of that
+heterogeneous job. Requests to operate on individual components of the
+heterogeneous will return an error.</p>
 <ul>
 <li>requeue</li>
 <li>resume</li>
@@ -344,6 +344,29 @@ $ sbcast --jobid=123.1 app1 /tmp/app1
 
 <p>The srun commands --bcast option will transfer files to the nodes associated
 with the application to be launched as specified by the --pack-group option.</p>
+
+<p>Slurm has a configuration option to control behavior of some commands with
+respect to heterogeneous jobs.
+By default a request to cancel, hold or release a job ID that is not the
+pack_job_id, but that of a job component will only operate that one component
+of the heterogeneous job.
+If SchedulerParameters configuration parameter includes the option "whole_pack"
+then the operation would apply to all components of the job if any job component
+is specified to be operated upon. In the below example, the scancel command will
+either cancel all components of job 93 if SchedulingParameters=whole_pack is
+configured, otherwise only job 93+1 will be cancelled.
+If a specific heterogeneous job component is specified (e.g. "scancel 93+1"),
+then only that one component will be effected.</p>
+<pre>
+$ squeue --job=93
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
+ 93+0     debug  bash  adam  R 19:18      1 nid00001
+ 93+1     debug  bash  adam  R 19:18      1 nid00011
+ 93+2     debug  bash  adam  R 19:18      1 nid00021
+$ scancel 94 (where job ID 94 is equivalent to 93+1)
+# Cancel 93+0, 93+1 and 93+2 if SchedulerParameters includes "whole_pack"
+# Cancel only 93+1 if SchedulerParameters does not include "whole_pack"
+</pre>
 
 <h3>Accounting</h3>
 
@@ -388,12 +411,10 @@ component number zero. Some examples follow:</p>
 </ul>
 
 <p><b>IMPORTANT:</b> The ability to execute a single application across more
-than one job allocation does not work in Slurm version 17.11 except in the
-case of OpenMPI with Slurm's mpi/pmi2 plugin or a non-MPI job with Slurm's
-mpi/none. We expect support for other MPI implementations in a future release
-of Slurm. Until that time, an appropriate error message will be reported unless
-Slurm's SchedulerParameters configuration parameter includes the option
-"enable_hetero_steps".</p>
+than one job allocation does not work with all MPI implementations or Slurm MPI
+plugins. Slurm's ability to execute such an application can be disabled on the
+entire cluster by adding "disable_hetero_steps" to Slurm's SchedulerParameters
+configuration parameter.</p>
 
 <p>By default, the applications launched by a single execution of the srun
 command (even for different components of the heterogeneous job) are combined
@@ -434,13 +455,13 @@ $ salloc -n1 : -n2 beta bash
 salloc: Pending job allocation 1721
 salloc: Granted job allocation 1721
 $ srun --pack-group=0,1 true   # Launches steps 1721.0 and 1722.0
-$ srun --pack-group=0 t  rue   # Launches step  1721.1, no 1722.1
+$ srun --pack-group=0   true   # Launches step  1721.1, no 1722.1
 $ srun --pack-group=0,1 true   # Launches steps 1721.2 and 1722.2
 </pre>
 
-<p>The maximum pack group specified in a job step allocation (either explicitly
-specified or implied by the ":" separator) must not exceed the number of pack
-groups in the job allocation. For example</p>
+<p>The maximum pack-group specified in a job step allocation (either explicitly
+specified or implied by the ":" separator) must not exceed the number of
+components in the heterogeneous job allocation. For example</p>
 <pre>
 $ salloc -n1 -C alpha : -n2 -C beta bash
 salloc: Pending job allocation 1728
@@ -450,7 +471,7 @@ nid00001
 nid00008
 nid00008
 $ srun hostname : date : id
-error: Attempt to run a job step with pack group value of 2,
+error: Attempt to run a job step with pack-group value of 2,
        but the job allocation has maximum value of 1
 </pre>
 
@@ -459,8 +480,8 @@ error: Attempt to run a job step with pack group value of 2,
 <p>Slurm environment variables will be set independently for each component of
 the job by appending "_PACK_GROUP_" and a sequence number the the usual name.
 In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
-of the pack leader and "SLURM_PACK_SIZE" will contain the number of components
-in the job. For example:</p>
+of the heterogeneous job leader and "SLURM_PACK_SIZE" will contain the number of
+components in the job. For example:</p>
 <pre>
 $ salloc -N1 : -N2 bash
 salloc: Pending job allocation 11741
@@ -471,8 +492,8 @@ SLURM_JOB_ID=11741
 SLURM_PACK_SIZE=2
 SLURM_JOB_ID_PACK_GROUP_0=11741
 SLURM_JOB_ID_PACK_GROUP_1=11742
-SLURM_NNODES_PACK_GROUP_0=1
-SLURM_NNODES_PACK_GROUP_1=2
+SLURM_JOB_NODES_PACK_GROUP_0=1
+SLURM_JOB_NODES_PACK_GROUP_1=2
 SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
 SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
 ...
@@ -578,6 +599,18 @@ components of a heterogeneous job.</p>
 <p>The srun --multi-prog option can not be used to span more than one
 heterogeneous job component.</p>
 
+<p>The srun --open-mode option is by default set to "append".</p>
+
+<p>Ancient versions of OpenMPI and their derivatives (i.e. Cray MPI) are
+dependent upon communication ports being assigned to them by Slurm. Such MPI
+jobs will experience step launch failure if <u>any</u> component of a
+heterogeneous job step is unable to acquire the allocated ports.
+Non-heterogeneous job steps will retry step launch using a new set of
+communication ports (no change in Slurm behavior).</p>
+<!-- NOTE: Correcting this would necessitate assigning the same set of ports
+to all components of the heterogeneous job (not possible today) plus changes to
+srun in order to better synchronize the step startup and error handling. -->
+
 <h2><a name="sys_admin">System Administrator Information</a></h2>
 
 <p>The job submit plugin is invoked independently for each component of a
@@ -654,6 +687,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 September 2017</p>
+<p style="text-align:center;">Last modified 15 February 2018</p>
 
 <!--#include virtual="footer.txt"-->

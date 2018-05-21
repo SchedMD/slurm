@@ -141,16 +141,14 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
 
     job_cond->cpus_max = 0;
     job_cond->cpus_min = 0;
-    job_cond->duplicates = 0;
+    job_cond->flags = 0;
     job_cond->nodes_max = 0;
     job_cond->nodes_min = 0;
     job_cond->used_nodes = NULL;
-    job_cond->without_steps = 0;
-    job_cond->without_usage_truncation = 0;
 
     FETCH_FIELD(hv, job_cond, cpus_max,                 uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, cpus_min,                 uint32_t, FALSE);
-    FETCH_FIELD(hv, job_cond, duplicates,               uint16_t, FALSE);
+    FETCH_FIELD(hv, job_cond, flags,                    uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, exitcode,                 int32_t, FALSE);
     FETCH_FIELD(hv, job_cond, nodes_max,                uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, nodes_min,                uint32_t, FALSE);
@@ -159,8 +157,6 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
     FETCH_FIELD(hv, job_cond, usage_end,                time_t, FALSE);
     FETCH_FIELD(hv, job_cond, usage_start,              time_t, FALSE);
     FETCH_FIELD(hv, job_cond, used_nodes,               charp, FALSE);
-    FETCH_FIELD(hv, job_cond, without_steps,            uint16_t, FALSE);
-    FETCH_FIELD(hv, job_cond, without_usage_truncation, uint16_t, FALSE);
 
     FETCH_LIST_FIELD(hv, job_cond, acct_list);
     FETCH_LIST_FIELD(hv, job_cond, associd_list);
@@ -643,31 +639,15 @@ int
 stats_to_hv(slurmdb_stats_t *stats, HV* hv)
 {
     STORE_FIELD(hv, stats, act_cpufreq,           double);
-    STORE_FIELD(hv, stats, cpu_ave,               double);
     STORE_FIELD(hv, stats, consumed_energy,       uint64_t);
-    STORE_FIELD(hv, stats, cpu_min,               uint32_t);
-    STORE_FIELD(hv, stats, cpu_min_nodeid,        uint32_t);
-    STORE_FIELD(hv, stats, cpu_min_taskid,        uint32_t);
-    STORE_FIELD(hv, stats, disk_read_ave,         double);
-    STORE_FIELD(hv, stats, disk_read_max,         double);
-    STORE_FIELD(hv, stats, disk_read_max_nodeid,  uint32_t);
-    STORE_FIELD(hv, stats, disk_read_max_taskid,  uint32_t);
-    STORE_FIELD(hv, stats, disk_write_ave,        double);
-    STORE_FIELD(hv, stats, disk_write_max,        double);
-    STORE_FIELD(hv, stats, disk_write_max_nodeid, uint32_t);
-    STORE_FIELD(hv, stats, disk_write_max_taskid, uint32_t);
-    STORE_FIELD(hv, stats, pages_ave,             double);
-    STORE_FIELD(hv, stats, pages_max,             uint64_t);
-    STORE_FIELD(hv, stats, pages_max_nodeid,      uint32_t);
-    STORE_FIELD(hv, stats, pages_max_taskid,      uint32_t);
-    STORE_FIELD(hv, stats, rss_ave,               double);
-    STORE_FIELD(hv, stats, rss_max,               uint64_t);
-    STORE_FIELD(hv, stats, rss_max_nodeid,        uint32_t);
-    STORE_FIELD(hv, stats, rss_max_taskid,        uint32_t);
-    STORE_FIELD(hv, stats, vsize_ave,             double);
-    STORE_FIELD(hv, stats, vsize_max,             uint64_t);
-    STORE_FIELD(hv, stats, vsize_max_nodeid,      uint32_t);
-    STORE_FIELD(hv, stats, vsize_max_taskid,      uint32_t);
+    STORE_FIELD(hv, stats, tres_usage_in_ave,     charp);
+    STORE_FIELD(hv, stats, tres_usage_in_max,     charp);
+    STORE_FIELD(hv, stats, tres_usage_in_max_nodeid, charp);
+    STORE_FIELD(hv, stats, tres_usage_in_max_taskid, charp);
+    STORE_FIELD(hv, stats, tres_usage_out_ave,    charp);
+    STORE_FIELD(hv, stats, tres_usage_out_max,    charp);
+    STORE_FIELD(hv, stats, tres_usage_out_max_nodeid, charp);
+    STORE_FIELD(hv, stats, tres_usage_out_max_taskid, charp);
 
     return 0;
 }

@@ -7,11 +7,11 @@
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -151,7 +151,7 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 
 /*
  * Specify the plugin name to be used. This may be needed to specify the
- * non-default MPI plugin when using SLURM API to launch tasks.
+ * non-default MPI plugin when using Slurm API to launch tasks.
  * IN plugin name - "none", "pmi2", etc.
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
@@ -243,6 +243,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	if (params->pack_jobid && (params->pack_jobid != NO_VAL))
 		_rebuild_mpi_layout(ctx, params);
 
+	mpi_env = xmalloc(sizeof(char *));  /* Needed for setenvf used by MPI */
 	if ((ctx->launch_state->mpi_state =
 	     mpi_hook_client_prelaunch(ctx->launch_state->mpi_info, &mpi_env))
 	    == NULL) {
@@ -784,7 +785,8 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	}
 
 	/* Then shutdown the message handler thread */
-	eio_signal_shutdown(sls->msg_handle);
+	if (sls->msg_handle)
+		eio_signal_shutdown(sls->msg_handle);
 
 	slurm_mutex_unlock(&sls->lock);
 	if (sls->msg_thread)
@@ -933,12 +935,13 @@ RESEND:	slurm_msg_t_init(&req);
 		 */
 		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID) &&
 		    (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH) &&
-		    (rc != EAGAIN)) {
+		    (rc != EAGAIN) &&
+		    (rc != ESLURM_TRANSITION_STATE_NO_UPDATE)) {
 			error("Failure sending signal %d to step %u.%u on node %s: %s",
 			      signo, ctx->job_id, ctx->step_resp->job_step_id,
 			      ret_data_info->node_name, slurm_strerror(rc));
 		}
-		if (rc == EAGAIN)
+		if ((rc == EAGAIN) || (rc == ESLURM_TRANSITION_STATE_NO_UPDATE))
 			retry = true;
 	}
 	list_iterator_destroy(itr);
@@ -1421,6 +1424,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	slurm_mutex_lock(&sls->lock);
 
 	if (!sls->io_timeout_thread_created) {
+		sls->io_timeout_thread_created = true;
 		slurm_thread_create(&sls->io_timeout_thread,
 				    _check_io_timeout, sls);
 	}

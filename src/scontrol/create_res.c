@@ -6,11 +6,11 @@
  *  Written by David Bremer <dbremer@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -127,6 +127,12 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 		val++;
 
 		if (!xstrncasecmp(tag, "Accounts", MAX(taglen, 1))) {
+			if (resv_msg_ptr->accounts) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
 			if (plus_minus) {
 				resv_msg_ptr->accounts =
 					_process_plus_minus(plus_minus, val);
@@ -137,7 +143,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 
 		} else if (!xstrncasecmp(tag, "Flags", MAX(taglen, 2))) {
-			uint32_t f;
+			uint64_t f;
 			if (plus_minus) {
 				char *tmp =
 					_process_plus_minus(plus_minus, val);
@@ -154,6 +160,12 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			else
 				resv_msg_ptr->flags |= f;
 		} else if (!xstrncasecmp(tag, "Users", MAX(taglen, 1))) {
+			if (resv_msg_ptr->users) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
 			if (plus_minus) {
 				resv_msg_ptr->users =
 					_process_plus_minus(plus_minus, val);
@@ -389,13 +401,13 @@ scontrol_create_res(int argc, char **argv)
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.end_time == (time_t)NO_VAL &&
-	    resv_msg.duration == (uint32_t)NO_VAL) {
+	    resv_msg.duration == NO_VAL) {
 		exit_code = 1;
 		error("An end time or duration must be given.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.end_time != (time_t)NO_VAL &&
-	    resv_msg.duration != (uint32_t)NO_VAL &&
+	    resv_msg.duration != NO_VAL &&
 	    resv_msg.start_time + resv_msg.duration*60 != resv_msg.end_time) {
 		exit_code = 1;
 		error("StartTime + Duration does not equal EndTime.  No reservation created.");
@@ -449,7 +461,7 @@ scontrol_create_res(int argc, char **argv)
 			error("CoreCnt, Nodes, NodeCnt, BurstBuffer, Licenses or Watts must be specified.  No reservation created.");
 			goto SCONTROL_CREATE_RES_CLEANUP;
 		}
-		if (resv_msg.flags == (uint16_t) NO_VAL)
+		if (resv_msg.flags == NO_VAL16)
 			resv_msg.flags = RESERVE_FLAG_PART_NODES;
 		else
 			resv_msg.flags |= RESERVE_FLAG_PART_NODES;

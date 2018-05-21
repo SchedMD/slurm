@@ -1,27 +1,27 @@
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          to be called from test21.34
 #          Tests partition and job qos limits
 ############################################################################
 # Copyright (C) 2015 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./inc21.30.1
@@ -55,6 +55,7 @@ proc part_test { } {
 	global maxwall_num maxcpuspu_num maxnodespu_num
 	global exit_code part_qos mod_job_qos time_spacing selectparam
 	global nthreads job_qos mod_part_qos prio_multifactor
+	global tres_cpu_mult
 
 	# We will set qostest with the qos that we will test since the some of
 	# the 21.30 inc test require the qostest variable
@@ -345,6 +346,115 @@ proc part_test { } {
 	set mod_job_qos(MaxWall) "-1"
 	set mod_part_qos(MaxWall) "-1"
 
+
+	# TRESBillingWeight TESTS
+
+	#
+	# Test GrpTRES=billing
+	#
+	set mod_job_qos(GrpTRES=billing) 1
+	set mod_part_qos(GrpTRES=billing) [expr $grcpu_num * $tres_cpu_mult]
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_2
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpTRES=billing) "-1"
+	set mod_part_qos(GrpTRES=billing) "-1"
+
+
+	#
+	# Test GrpTRESMins=billing
+	#
+	set mod_job_qos(GrpTRESMins=billing) 1
+	set mod_part_qos(GrpTRESMins=billing) [expr $grpcpumin_num * $tres_cpu_mult]
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_34_1 $part_qos
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpTRESMins=billing) "-1"
+	set mod_part_qos(GrpTRESMins=billing) "-1"
+
+
+	#
+	# Test GrpTRESRunMins=billing
+	# Requires priority/multifactor to properly handle decay well
+	#
+	if { $prio_multifactor != 0 } {
+		set mod_job_qos(GrpTRESRunMins=billing) 1
+		set mod_part_qos(GrpTRESRunMins=billing) [expr $grpcpurunmin_num * $tres_cpu_mult]
+		mod_qos $part_qos [array get mod_part_qos]
+		mod_qos $job_qos [array get mod_job_qos]
+		sleep $time_spacing
+		inc21_30_10
+		if {$exit_code != 0 } {
+			cleanup
+			exit 1
+		}
+		set mod_job_qos(GrpTRESRunMins=billing) "-1"
+		set mod_part_qos(GrpTRESRunMins=billing) "-1"
+	}
+
+
+	#
+	# Test MaxTRESPerJob=billing
+	#
+	set mod_job_qos(MaxTRESPerJob=billing) 1
+	set mod_part_qos(MaxTRESPerJob=billing) [expr $maxcpu_num * $tres_cpu_mult]
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_5
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxTRESPerJob=billing) "-1"
+	set mod_part_qos(MaxTRESPerJob=billing) "-1"
+
+	#
+	# Test MaxTRESMinsPerJob=billing
+	#
+	set mod_job_qos(MaxTRESMinsPerJob=billing) 1
+	set mod_part_qos(MaxTRESMinsPerJob=billing) [expr $maxcpumin_num * $tres_cpu_mult]
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_13
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxTRESMinsPerJob=billing) "-1"
+	set mod_part_qos(MaxTRESMinsPerJob=billing) "-1"
+
+	#
+	# Test MaxTRESPerUser=billing
+	#
+	# If CR_CORE set billing a multiple number of threads
+	if {$selectparam} {
+		set maxcpuspu_num [expr $maxcpuspu_num * $nthreads]
+	}
+	set mod_job_qos(MaxTRESPerUser=billing) 1
+	set mod_part_qos(MaxTRESPerUser=billing) [expr $maxcpuspu_num * $tres_cpu_mult]
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_15
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+
+	}
+	set mod_job_qos(MaxTRESPerUser=billing) "-1"
+	set mod_part_qos(MaxTRESPerUser=billing) "-1"
 }
 
 ##########################################################
@@ -362,6 +472,7 @@ proc qos_test { } {
 	global maxwall_num maxcpuspu_num maxnodespu_num
 	global exit_code job_qos mod_job_qos time_spacing selectparam
 	global nthreads part_qos mod_part_qos prio_multifactor
+	global tres_cpu_mult
 
 	# We will set qostest with the qos that we will test since the some of
 	# the 21.30 inc test require the qostest variable
@@ -653,4 +764,113 @@ proc qos_test { } {
 	set mod_job_qos(MaxWall) "-1"
 	set mod_part_qos(MaxWall) "-1"
 
+
+	# TRESBillingWeight TESTS
+
+	#
+	# Test GrpTRES=billing
+	#
+	set mod_job_qos(GrpTRES=billing) [expr $grcpu_num * $tres_cpu_mult]
+	set mod_part_qos(GrpTRES=billing) [expr $grcpu_num * $tres_cpu_mult]
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_2
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpTRES=billing) "-1"
+	set mod_part_qos(GrpTRES=billing) "-1"
+
+
+	#
+	# Test GrpTRESMins=billing
+	#
+	set mod_job_qos(GrpTRESMins=billing) [expr $grpcpumin_num * $tres_cpu_mult]
+	set mod_part_qos(GrpTRESMins=billing) 1
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_34_1 $job_qos
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpTRESMins=billing) "-1"
+	set mod_part_qos(GrpTRESMins=billing) "-1"
+
+
+	#
+	# Test GrpTRESRunMins=billing
+	# Requires priority/multifactor to properly handle decay well
+	#
+	if { $prio_multifactor != 0 } {
+		set mod_job_qos(GrpTRESRunMins=billing) [expr $grpcpurunmin_num * $tres_cpu_mult]
+		set mod_part_qos(GrpTRESRunMins=billing) 1
+		mod_qos $part_qos [array get mod_part_qos]
+		mod_qos $job_qos [array get mod_job_qos]
+		sleep $time_spacing
+		inc21_30_10
+		if {$exit_code != 0 } {
+			cleanup
+			exit 1
+		}
+		set mod_job_qos(GrpTRESRunMins=billing) "-1"
+		set mod_part_qos(GrpTRESRunMins=billing) "-1"
+	}
+
+
+	#
+	# Test MaxTRESPerJob=billing
+	#
+	set mod_job_qos(MaxTRESPerJob=billing) [expr $maxcpu_num * $tres_cpu_mult]
+	set mod_part_qos(MaxTRESPerJob=billing) 1
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_5
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxTRESPerJob=billing) "-1"
+	set mod_part_qos(MaxTRESPerJob=billing) "-1"
+
+	#
+	# Test MaxTRESMinsPerJob=billing
+	#
+	set mod_job_qos(MaxTRESMinsPerJob=billing) [expr $maxcpumin_num * $tres_cpu_mult]
+	set mod_part_qos(MaxTRESMinsPerJob=billing) 1
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_13
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxTRESMinsPerJob=billing) "-1"
+	set mod_part_qos(MaxTRESMinsPerJob=billing) "-1"
+
+	#
+	# Test MaxTRESPerUser=billing
+	#
+	# If CR_CORE set billing a multiple number of threads
+	if {$selectparam} {
+		set maxcpuspu_num [expr $maxcpuspu_num * $nthreads]
+	}
+	set mod_job_qos(MaxTRESPerUser=billing) [expr $maxcpuspu_num * $tres_cpu_mult]
+	set mod_part_qos(MaxTRESPerUser=billing) 1
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_15
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+
+	}
+	set mod_job_qos(MaxTRESPerUser=billing) "-1"
+	set mod_part_qos(MaxTRESPerUser=billing) "-1"
 }

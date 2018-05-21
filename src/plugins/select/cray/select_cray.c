@@ -5,11 +5,11 @@
  *  Copyright 2013 Cray Inc. All Rights Reserved.
  *  Written by Danny Auble <da@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -75,6 +75,7 @@ struct select_jobinfo {
 	bitstr_t               *blade_map;
 	bool                    killing; /* (NO NEED TO PACK) used on
 					    a step to signify it being killed */
+	uint16_t                released;
 	uint16_t                cleaning;
 	uint16_t		magic;
 	uint8_t                 npc;
@@ -223,14 +224,14 @@ static uint64_t debug_flags = 0;
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "select" for SLURM node selection) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "select" for Slurm node selection) and <method>
+ * is a description of how this plugin satisfies that application.  Slurm will
  * only load select plugins if the plugin_type string has a
  * prefix of "select/".
  *
@@ -1063,9 +1064,11 @@ static void *_job_fini(void *args)
 	if (job_ptr->magic == JOB_MAGIC) {
 		select_jobinfo_t *jobinfo = NULL;
 
-		other_job_fini(job_ptr);
-
 		jobinfo = job_ptr->select_jobinfo->data;
+
+		/* free resources on the job if not released before */
+		if (jobinfo->released == 0)
+			other_job_fini(job_ptr);
 
 		_remove_job_from_blades(jobinfo);
 		jobinfo->cleaning |= CLEANING_COMPLETE;
@@ -1242,12 +1245,19 @@ extern int init ( void )
 	char *err_msg = NULL;
 #endif
 
-	/* We must call the api here since we call this from other
+	/*
+	 * We must call the API here since we call this from other
 	 * things other than the slurmctld.
 	 */
-	uint16_t select_type_param = slurm_get_select_type_param();
-	if (select_type_param & CR_OTHER_CONS_RES)
+	other_select_type_param = slurm_get_select_type_param();
+
+	if (other_select_type_param & CR_OTHER_CONS_RES)
 		plugin_id = SELECT_PLUGIN_CRAY_CONS_RES;
+	else if (other_select_type_param & CR_OTHER_CONS_TRES)
+		plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
+	else
+		plugin_id = SELECT_PLUGIN_CRAY_LINEAR;
+
 	debug_flags = slurm_get_debug_flags();
 
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
@@ -1399,7 +1409,7 @@ extern int select_p_state_restore(char *dir_name)
 	char *data = NULL;
 	int data_size = 0;
 	int data_allocated, data_read = 0;
-	uint16_t protocol_version = (uint16_t)NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	uint32_t record_count;
 
 	if (scheduling_disabled)
@@ -1448,7 +1458,7 @@ extern int select_p_state_restore(char *dir_name)
 	safe_unpack16(&protocol_version, buffer);
 	debug3("Version in blade_state header is %u", protocol_version);
 
-	if (protocol_version == (uint16_t)NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can not recover blade state, data version incompatible, start with '-i' to ignore this");
 		error("***********************************************");
@@ -1899,6 +1909,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 
 	jobinfo = job_ptr->select_jobinfo->data;
 	jobinfo->cleaning = CLEANING_INIT;	/* Reset needed if requeued */
+	jobinfo->released = 0;
 
 	slurm_mutex_lock(&blade_mutex);
 
@@ -2021,6 +2032,13 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	} else if (IS_CLEANING_COMPLETE(jobinfo)) {
 		error("%s: Cleaned flag already set for job %u, "
 		      "this should never happen", __func__, job_ptr->job_id);
+	} else if (!job_ptr->nodes) {
+		/*
+		 * Job with no compute resource allocation,
+		 * only burst buffer operations
+		 */
+		debug3("No blade allocation for job %u", job_ptr->job_id);
+		other_job_fini(job_ptr);
 	} else {
 		jobinfo->cleaning |= CLEANING_STARTED;
 		slurm_thread_create_detached(NULL, _job_fini, job_ptr);
@@ -2408,6 +2426,9 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 	case SELECT_JOBDATA_CLEANING:
 		jobinfo->cleaning = *uint16;
 		break;
+	case SELECT_JOBDATA_RELEASED:
+		jobinfo->released = *uint16;
+		break;
 	case SELECT_JOBDATA_NETWORK:
 		if (!in_char || !strlen(in_char)
 		    || !xstrcmp(in_char, "none"))
@@ -2559,37 +2580,15 @@ unpack_error:
 extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 					    char *buf, size_t size, int mode)
 {
-
-	if (buf == NULL) {
-		error("select/cray jobinfo_sprint: buf is null");
-		return NULL;
-	}
-
-	if ((mode != SELECT_PRINT_DATA)
-	    && jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
-		error("select/cray jobinfo_sprint: jobinfo magic bad");
-		return NULL;
-	}
-
-	if (jobinfo == NULL) {
-		if (mode != SELECT_PRINT_HEAD) {
-			error("select/cray jobinfo_sprint: jobinfo bad");
-			return NULL;
-		}
-		/* FIXME: in the future print out the header here (if needed) */
-		/* snprintf(buf, size, "%s", header); */
-
+	/*
+	 * Skip call to other_select_jobinfo_sprint, all of the other select
+	 * plugins we can layer on top of do this same thing anyways:
+	 */
+	if (buf && size) {
+		buf[0] = '\0';
 		return buf;
-	}
-
-	switch (mode) {
-	default:
-		other_select_jobinfo_sprint(jobinfo->other_jobinfo, buf,
-					    size, mode);
-		break;
-	}
-
-	return buf;
+	} else
+		return NULL;
 }
 
 extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,

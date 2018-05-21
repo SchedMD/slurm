@@ -7,11 +7,11 @@
  *  Written by Mark Grondona <mgrondona@llnl.gov>, Danny Auble <da@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -60,6 +60,7 @@
 #include "src/common/macros.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_step_layout.h"
@@ -139,7 +140,7 @@ static int _setup_particulars(uint32_t cluster_flags,
 		if (resv_id) {
 			setenvf(dest, "BASIL_RESERVATION_ID", "%u", resv_id);
 		} else {
-			/* This is not an error for a SLURM job allocation with
+			/* This is not an error for a Slurm job allocation with
 			 * no compute nodes and no BASIL reservation */
 			verbose("Can't set BASIL_RESERVATION_ID "
 			        "environment variable");
@@ -221,7 +222,7 @@ int
 envcount (char **env)
 {
 	int envc = 0;
-	while (env[envc] != NULL)
+	while (env && env[envc])
 		envc++;
 	return (envc);
 }
@@ -268,6 +269,9 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 	va_list ap;
 	int size, rc;
 
+	if (!name)
+		return EINVAL;
+
 	value = xmalloc(ENV_BUFSIZE);
 	va_start(ap, fmt);
 	vsnprintf(value, ENV_BUFSIZE, fmt, ap);
@@ -279,7 +283,7 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		return ENOMEM;
 	}
 
-	if (envp) {
+	if (envp && *envp) {
 		if (env_array_overwrite(envp, name, value) == 1)
 			rc = 0;
 		else
@@ -322,12 +326,13 @@ void unsetenvp(char **env, const char *name)
 
 char *getenvp(char **env, const char *name)
 {
-	size_t len = strlen(name);
+	size_t len;
 	char **ep;
 
-	if ((env == NULL) || (env[0] == NULL))
+	if (!name || !env || !env[0])
 		return (NULL);
 
+	len = strlen(name);
 	ep = _find_name_in_env (env, name);
 
 	if (*ep != NULL)
@@ -339,7 +344,7 @@ char *getenvp(char **env, const char *name)
 int setup_env(env_t *env, bool preserve_env)
 {
 	int rc = SLURM_SUCCESS;
-	char *dist = NULL, *lllp_dist = NULL;
+	char *addr, *dist = NULL, *lllp_dist = NULL;
 	char addrbuf[INET_ADDRSTRLEN];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
@@ -851,10 +856,13 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
+	if (slurmctld_conf.slurmctld_addr)
+		addr = slurmctld_conf.slurmctld_addr;
+	else
+		addr = slurmctld_conf.control_addr[0];
 	setenvf(&env->env, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
-		slurmctld_conf.cluster_name, slurmctld_conf.control_addr,
-		slurmctld_conf.slurmctld_port,
-		SLURM_PROTOCOL_VERSION);
+		slurmctld_conf.cluster_name, addr,
+		slurmctld_conf.slurmctld_port, SLURM_PROTOCOL_VERSION);
 
 	return rc;
 }
@@ -908,7 +916,7 @@ extern char *uint16_array_to_str(int array_len, const uint16_t *array)
 
 
 /*
- * The cpus-per-node representation in SLURM (and perhaps tasks-per-node
+ * The cpus-per-node representation in Slurm (and perhaps tasks-per-node
  * in the future) is stored in a compressed format comprised of two
  * equal-length arrays, and an integer holding the array length.  In one
  * array an element represents a count (number of cpus, number of tasks,
@@ -927,6 +935,9 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
 	char *sep = ","; /* seperator */
 	char *str = xstrdup("");
 
+	if (!array || !array_reps)
+		return str;
+
 	for (i = 0; i < array_len; i++) {
 		if (i == array_len-1) /* last time through loop */
 			sep = "";
@@ -942,7 +953,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
 }
 
 /*
- * Set in "dest" the environment variables relevant to a SLURM job
+ * Set in "dest" the environment variables relevant to a Slurm job
  * allocation, overwriting any environment variables of the same name.
  * If the address pointed to by "dest" is NULL, memory will automatically be
  * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
@@ -982,6 +993,9 @@ extern int env_array_for_job(char ***dest,
 	slurm_step_layout_req_t step_layout_req;
 	uint16_t cpus_per_task_array[1];
 	uint32_t cpus_task_reps[1];
+
+	if (!alloc || !desc)
+		return SLURM_ERROR;
 
 	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
 	step_layout_req.num_tasks = desc->num_tasks;
@@ -1073,7 +1087,7 @@ extern int env_array_for_job(char ***dest,
 				* alloc->cpus_per_node[i];
 		}
 		if ((int)desc->cpus_per_task > 1
-		   && desc->cpus_per_task != (uint16_t)NO_VAL)
+		   && desc->cpus_per_task != NO_VAL16)
 			step_layout_req.num_tasks /= desc->cpus_per_task;
 		//num_tasks = desc->min_cpus;
 	}
@@ -1167,7 +1181,7 @@ extern int env_array_for_job(char ***dest,
 }
 
 /*
- * Set in "dest" the environment variables strings relevant to a SLURM batch
+ * Set in "dest" the environment variables strings relevant to a Slurm batch
  * job allocation, overwriting any environment variables of the same name.
  * If the address pointed to by "dest" is NULL, memory will automatically be
  * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
@@ -1204,6 +1218,9 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	slurm_step_layout_req_t step_layout_req;
 	uint16_t cpus_per_task_array[1];
 	uint32_t cpus_task_reps[1];
+
+	if (!batch)
+		return SLURM_ERROR;
 
 	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
 	step_layout_req.num_tasks = batch->ntasks;
@@ -1347,7 +1364,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 }
 
 /*
- * Set in "dest" the environment variables relevant to a SLURM job step,
+ * Set in "dest" the environment variables relevant to a Slurm job step,
  * overwriting any environment variables of the same name.  If the address
  * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
  * The array is terminated by a NULL pointer, and thus is suitable for
@@ -1383,9 +1400,13 @@ env_array_for_step(char ***dest,
 		   bool preserve_env)
 {
 	char *tmp, *tpn;
-	uint32_t node_cnt = step->step_layout->node_cnt, task_cnt;
+	uint32_t node_cnt, task_cnt;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
+	if (!step || !launch)
+		return;
+
+	node_cnt = step->step_layout->node_cnt;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
 
 	if (launch->pack_node_list) {
@@ -1869,7 +1890,7 @@ static int _bracket_cnt(char *value)
  *
  * (Note: This is being added to a minor release. For the
  * next major release, it might be a consideration to merge
- * this funcitonality with that of load_env_cache and update
+ * this functionality with that of load_env_cache and update
  * env_cache_builder to use the NULL character.)
  */
 char **env_array_from_file(const char *fname)
@@ -1882,6 +1903,9 @@ char **env_array_from_file(const char *fname)
 	int file_size = 0, tmp_size;
 	int separator = '\0';
 	int fd;
+
+	if (!fname)
+		return NULL;
 
 	/*
 	 * If file name is a numeric value, then it is assumed to be a
@@ -2251,4 +2275,57 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	}
 
 	return env;
+}
+
+/*
+ * Set TRES related env vars. Set here rather than env_array_for_job() since
+ * we don't have array of opt values and the raw values are not stored in the
+ * job_desc_msg_t structure (only the strings with possibly combined TRES)
+ *
+ * opt IN - options set by command parsing
+ * dest IN/OUT - location to write environment variables
+ * pack_offset IN - component offset into pack job, -1 if not pack job
+ */
+extern void set_env_from_opts(slurm_opt_t *opt, char ***dest, int pack_offset)
+{
+	if (opt->cpus_per_gpu) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_CPUS_PER_GPU",
+					     pack_offset, "%d",
+					     opt->cpus_per_gpu);
+	}
+	if (opt->gpus) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS",
+					     pack_offset, "%s",
+					     opt->gpus);
+	}
+	if (opt->gpu_bind) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPU_BIND",
+					     pack_offset, "%s",
+					     opt->gpu_bind);
+	}
+	if (opt->gpu_freq) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPU_FREQ",
+					     pack_offset, "%s",
+					     opt->gpu_freq);
+	}
+	if (opt->gpus_per_node) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS_PER_NODE",
+					     pack_offset, "%s",
+					     opt->gpus_per_node);
+	}
+	if (opt->gpus_per_socket) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS_PER_SOCKET",
+					     pack_offset, "%s",
+					     opt->gpus_per_socket);
+	}
+	if (opt->gpus_per_task) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_GPUS_PER_TASK",
+					     pack_offset, "%s",
+					     opt->gpus_per_task);
+	}
+	if (opt->mem_per_gpu) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_MEM_PER_GPU",
+					     pack_offset, "%"PRIi64,
+					     opt->mem_per_gpu);
+	}
 }

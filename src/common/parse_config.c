@@ -9,11 +9,11 @@
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -97,6 +97,7 @@ static char *keyvalue_pattern =
 					    * or unquoted and no whitespace */
 	"([[:space:]]|$)";
 static bool keyvalue_initialized = false;
+static bool pthread_atfork_set = false;
 
 /* The following mutex and atfork() handler protect against receiving
  * a corrupted keyvalue_re state in a forked() child. While regexec() itself
@@ -111,6 +112,7 @@ static void _s_p_atfork_child(void)
 {
 	slurm_mutex_init(&s_p_lock);
 	keyvalue_initialized = false;
+	pthread_atfork_set = false;
 }
 
 struct s_p_values {
@@ -312,8 +314,11 @@ static void _keyvalue_regex_init(void)
 			/* FIXME - should be fatal? */
 			error("keyvalue regex compilation failed");
 		}
-		pthread_atfork(NULL, NULL, _s_p_atfork_child);
 		keyvalue_initialized = true;
+	}
+	if (!pthread_atfork_set) {
+		pthread_atfork(NULL, NULL, _s_p_atfork_child);
+		pthread_atfork_set = true;
 	}
 	slurm_mutex_unlock(&s_p_lock);
 }
@@ -573,8 +578,9 @@ static int _handle_common(s_p_values_t *v,
 			  void* (*convert)(const char* key, const char* value))
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once, latest value used",
-		      v->key);
+		if (run_in_daemon("slurmctld,slurmd,slurmdbd"))
+			error("%s 1 specified more than once, latest value used",
+			      v->key);
 		xfree(v->data);
 		v->data_count = 0;
 	}
@@ -678,8 +684,9 @@ static int _handle_pointer(s_p_values_t *v, const char *value,
 			return rc == 0 ? 0 : -1;
 	} else {
 		if (v->data_count != 0) {
-			error("%s specified more than once, "
-			      "latest value used", v->key);
+			if (run_in_daemon("slurmctld,slurmd,slurmdbd"))
+				error("%s 2 specified more than once, latest value used",
+				      v->key);
 			xfree(v->data);
 			v->data_count = 0;
 		}
@@ -1018,6 +1025,7 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover)
 			error("Parsing error at unrecognized key: %s", key);
 			xfree(key);
 			xfree(value);
+			slurm_seterrno(EINVAL);
 			return 0;
 		}
 		xfree(key);
@@ -1057,6 +1065,7 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 			xfree(key);
 			xfree(value);
 			*leftover = (char *)line;
+			slurm_seterrno(EINVAL);
 			return 0;
 		}
 		xfree(key);
@@ -1788,10 +1797,12 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 	if ((p = _conf_hashtbl_lookup(hashtbl, key)) == NULL) {
 		error("%s: Parsing error at unrecognized key: %s",
 		      __func__, key);
+		slurm_seterrno(EINVAL);
 		return 0;
 	}
 	if (!value) {
 		error("%s: Value pointer is NULL for key %s", __func__, key);
+		slurm_seterrno(EINVAL);
 		return 0;
 	}
 	p-> operator = opt;
@@ -1803,6 +1814,7 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 		leftover = strchr(v, '"');
 		if (leftover == NULL) {
 			error("Parse error in data for key %s: %s", key, value);
+			slurm_seterrno(EINVAL);
 			return 0;
 		}
 	} else { /* unqouted value */

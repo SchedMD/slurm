@@ -1,0 +1,145 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Cray dwstat command testing
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette(at)schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "35.5"
+set exit_code   0
+
+print_header $test_id
+
+set bb_types [get_bb_types]
+if {[string first "cray" $bb_types] == -1} {
+	send_user "\nWARNING: This test can only be run with the burst_buffer/cray plugin\n"
+	exit 0
+}
+
+set matches 0
+set fail 0
+spawn $scontrol show dwstat
+expect {
+	-re "Error running dwstat" {
+		set fail 1
+		exp_continue
+	}
+	-re "pool *units *quantity *free *gran" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$fail == 1} {
+	set default_state_loc 0
+	set default_status_loc 0
+	send_user "\n\n"
+	spawn $scontrol show burst
+	expect {
+		-re "GetSysState=/opt/cray/dws/default" {
+			set default_state_loc 1
+			exp_continue
+		}
+		-re "GetSysStatus=/opt/cray/dws/default" {
+			set default_status_loc 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$default_state_loc == 0 && $default_status_loc == 1} {
+		send_user "\nWARNING: 'dwstat' is not configured properly\n"
+		exit 0
+	}
+	send_user "\nFAILURE: 'dwstat' is not configured properly\n"
+	exit 1
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: 'dwstat' output does not match expected form\n"
+	set exit_code 1
+}
+send_user "\n\n"
+
+set matches 0
+spawn $scontrol show dwstat configurations
+expect {
+	-re "conf *state *inst *type *access_type activs" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: 'dwstat configurations' output does not match expected form\n"
+	set exit_code 1
+}
+send_user "\n\n"
+
+set matches 0
+spawn $scontrol show dwstat sessions
+expect {
+	-re "sess *state *token *creator *owner *created *expiration *nodes" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: 'dwstat sessions' output does not match expected form\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

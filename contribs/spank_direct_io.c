@@ -39,7 +39,7 @@
 #include <slurm/spank.h>
 
 /*
- * All spank plugins must define this macro for the SLURM plugin loader.
+ * All spank plugins must define this macro for the Slurm plugin loader.
  */
 SPANK_PLUGIN(direct-io, 1)
 

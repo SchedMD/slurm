@@ -1,0 +1,222 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of node feature changes with reconfiguration.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#	  "FAILURE: ..." otherwise with an explanation of the failure, OR
+#	  anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "3.17"
+set exit_code   0
+set feature	"test$test_id"
+set file_in     "test$test_id.input"
+
+print_header $test_id
+
+if { ![test_super_user] } {
+	send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
+	exit 0
+}
+
+proc set_node_feature {node_name new_avail_feature new_active_feature} {
+	global scontrol exit_code
+
+	spawn $scontrol update node=$node_name AvailableFeatures=$new_avail_feature ActiveFeatures=$new_active_feature
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+# Identify a node to use
+set match 0
+exec $bin_rm -f $file_in
+make_bash_script $file_in "
+   env | grep SLURMD_NODENAME
+"
+set timeout $max_job_delay
+set srun_pid [spawn $srun --exclusive -N1 $file_in]
+expect {
+	-re "SLURMD_NODENAME=($alpha_numeric)" {
+		set node_name $expect_out(1,string)
+		set match 1
+		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: Slurm appears to be down\n"
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match == 0} {
+	send_user "\nFAILURE: Could not run job in exclusive node\n"
+	exit 1
+}
+
+# Save the node's current features
+set match 0
+spawn $scontrol show node $node_name
+expect {
+	-re "AvailableFeatures=($alpha_numeric_comma)" {
+		if {![string compare orig_avail_node_feat "(null)"]} {
+			set orig_avail_node_feat ""
+		} else {
+			set orig_avail_node_feat $expect_out(1,string)
+		}
+		incr match
+		exp_continue
+	}
+	-re "AvailableFeatures=" {
+		set orig_avail_node_feat ""
+		incr match
+		exp_continue
+	}
+	-re "ActiveFeatures=($alpha_numeric_comma)" {
+		if {![string compare orig_avail_node_feat "(null)"]} {
+			set orig_active_node_feat ""
+		} else {
+			set orig_active_node_feat $expect_out(1,string)
+		}
+		incr match
+		exp_continue
+	}
+	-re "ActiveFeatures=" {
+		set orig_active_node_feat ""
+		incr match
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 2} {
+	send_user "\nFAILURE: Could not determine current features for node $node_name\n"
+	exit 1
+}
+
+# Set new feature names to use
+if {[string length $orig_active_node_feat] == 0} {
+	set new_active_node_feat $feature
+} else {
+	set new_active_node_feat $orig_active_node_feat
+	append new_active_node_feat "," $feature
+}
+if {[string length $orig_avail_node_feat] == 0} {
+	set new_avail_node_feat $feature
+} else {
+	set new_avail_node_feat $orig_active_node_feat
+	append new_avail_node_feat "," $feature
+}
+set_node_feature $node_name $new_avail_node_feat $new_active_node_feat
+
+# Now run a job with that constraint and make sure it runs on the same node
+set match 0
+set srun_pid [spawn $srun -C $feature -N1 $file_in]
+expect {
+	-re "SLURMD_NODENAME=$node_name" {
+		set match 1
+		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: Slurm appears to be down\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match == 0} {
+	send_user "\nFAILURE: Could not run job with constraint\n"
+	set exit_code 1
+}
+
+# Run "scontrol reconfig" to restore proper features on the node
+spawn $scontrol reconfig
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Now run a job with that constraint and make sure it fails
+set match 0
+set srun_pid [spawn $srun -C $feature -N1 $file_in]
+expect {
+	-re "Invalid feature" {
+		send_user "This error was expected, no worries\n"
+		set match 1
+		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: Slurm appears to be down\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	send_user "\nFAILURE: Ran job with what should be invalid constraint\n"
+	set exit_code 1
+}
+
+# Explicitly reset features, just to be safe
+set_node_feature $node_name $orig_avail_node_feat $orig_active_node_feat
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

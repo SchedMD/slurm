@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  salloc.c - Request a SLURM job allocation and
+ *  salloc.c - Request a Slurm job allocation and
  *             launch a user-specified command.
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
@@ -8,11 +8,11 @@
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -191,7 +191,6 @@ int main(int argc, char **argv)
 	bool pack_fini = false;
 	int pack_argc, pack_inx, pack_argc_off;
 	char **pack_argv;
-	char *line = NULL, *buf = NULL, *ptrptr = NULL;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
 	ListIterator iter_req, iter_resp;
@@ -285,6 +284,10 @@ int main(int argc, char **argv)
 		slurm_init_job_desc_msg(desc);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
+		if (pack_inx || !pack_fini)
+			set_env_from_opts(&opt, &env, pack_inx);
+		else
+			set_env_from_opts(&opt, &env, -1);
 		if (job_req_list)
 			list_append(job_req_list, desc);
 		if (!first_job)
@@ -471,16 +474,9 @@ int main(int argc, char **argv)
 		/* Allocation granted to regular job */
 		my_job_id = alloc->job_id;
 
-		if (alloc && alloc->job_submit_user_msg) {
-			buf = xstrdup(alloc->job_submit_user_msg);
-			line = strtok_r(buf, "\n", &ptrptr);
-			while (line) {
-				info("%s", line);
-				line = strtok_r(NULL, "\n", &ptrptr);
-			}
-			xfree(buf);
-		}
-
+		if (alloc)
+			print_multi_line_string(
+				alloc->job_submit_user_msg, -1);
 		info("Granted job allocation %u", my_job_id);
 
 		if (_proc_alloc(alloc) != SLURM_SUCCESS)
@@ -868,8 +864,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->begin_time = opt.begin;
 	if (opt.deadline)
 		desc->deadline = opt.deadline;
-	if (saopt.burst_buffer)
-		desc->burst_buffer = saopt.burst_buffer;
+	if (opt.burst_buffer)
+		desc->burst_buffer = opt.burst_buffer;
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
 	if (opt.acctg_freq)
@@ -978,6 +974,19 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->bitflags |= JOB_NTASKS_SET;
 
 	desc->clusters = xstrdup(opt.clusters);
+
+	if (opt.cpus_per_gpu)
+		xstrfmtcat(desc->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
+	if (opt.gpu_bind)
+		xstrfmtcat(desc->tres_bind, "gpu:%s", opt.gpu_bind);
+	if (opt.gpu_freq)
+		xstrfmtcat(desc->tres_freq, "gpu:%s", opt.gpu_freq);
+	xfmt_tres(&desc->tres_per_job,    "gpu", opt.gpus);
+	xfmt_tres(&desc->tres_per_node,   "gpu", opt.gpus_per_node);
+	xfmt_tres(&desc->tres_per_socket, "gpu", opt.gpus_per_socket);
+	xfmt_tres(&desc->tres_per_task,   "gpu", opt.gpus_per_task);
+	if (opt.mem_per_gpu)
+		xstrfmtcat(desc->mem_per_tres, "gpu:%"PRIi64, opt.mem_per_gpu);
 
 	return 0;
 }
@@ -1319,7 +1328,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 
 	if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD"))
 		saopt.wait_all_nodes = 1;	/* Wait for boot & addresses */
-	if (saopt.wait_all_nodes == (uint16_t) NO_VAL)
+	if (saopt.wait_all_nodes == NO_VAL16)
 		saopt.wait_all_nodes = 0;
 
 	for (i = 0; (cur_delay < max_delay); i++) {

@@ -7,11 +7,11 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -83,6 +83,11 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 
 	xassert(preempt_bitstr);
 
+	if (bit_test(preempt_bitstr, begin_qosid)) {
+		error("QOS ID %d has an internal loop", begin_qosid);
+		return 1;
+	}
+
 	/* check in the preempt list for all qos's preempted */
 	for (i = 0; i < bit_size(preempt_bitstr); i++) {
 		if (!bit_test(preempt_bitstr, i))
@@ -102,7 +107,8 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 		 * if so we have a loop
 		 */
 		if (qos_rec.preempt_bitstr
-		    && bit_test(qos_rec.preempt_bitstr, begin_qosid)) {
+		    && (bit_test(qos_rec.preempt_bitstr, begin_qosid) ||
+			bit_test(qos_rec.preempt_bitstr, i))) {
 			error("QOS ID %d has a loop at QOS %s",
 			      begin_qosid, qos_rec.name);
 			rc = 1;
@@ -158,7 +164,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
 			qos->max_wall_pj = INFINITE;
-		if (qos->preempt_mode == (uint16_t)NO_VAL)
+		if (qos->preempt_mode == NO_VAL16)
 			qos->preempt_mode = 0;
 		if (qos->priority == NO_VAL)
 			qos->priority = 0;
@@ -357,7 +363,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xfree(preempt_val);
 	}
 
-	if ((qos->preempt_mode != (uint16_t)NO_VAL)
+	if ((qos->preempt_mode != NO_VAL16)
 	    && ((int16_t)qos->preempt_mode >= 0)) {
 		qos->preempt_mode &= (~PREEMPT_MODE_GANG);
 		xstrcat(*cols, ", preempt_mode");

@@ -10,11 +10,11 @@
  *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -30,13 +30,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -73,6 +73,7 @@ typedef struct bb_config {
 	char    *destroy_buffer;
 	uint32_t flags;			/* See BB_FLAG_* in slurm.h */
 	char    *get_sys_state;
+	char    *get_sys_status;
 	uint64_t granularity;		/* space allocation granularity,
 					 * units are GB */
 	uint32_t pool_cnt;		/* Count of records in pool_ptr */
@@ -126,9 +127,13 @@ typedef struct bb_user {
 	uint32_t user_id;
 } bb_user_t;
 
+#define BB_FLAG_BB_OP		1	/* Requested using #BB prefix */
+#define BB_FLAG_DW_OP		2	/* Requested using #DW prefix */
+
 /* Burst buffer creation records with state */
 typedef struct {
 	char    *access;	/* Buffer access */
+	uint32_t flags;		/* See BB_FLAG_* above */
 	bool     create;	/* Set if buffer create requested */
 	bool     destroy;	/* Set if buffer destroy requested */
 	bool     hurry;		/* Fast buffer destroy */
@@ -164,6 +169,8 @@ typedef struct bb_job {
 	uint64_t   total_size;	/* Total bytes required for job (excludes
 				 * persistent buffers, rounded up from
 				 * req_size) */
+	bool       use_job_buf;	/* True if uses job buffer,
+				 * false if uses persistent buffer only */
 	uint32_t   user_id;	/* user the job runs as */
 } bb_job_t;
 

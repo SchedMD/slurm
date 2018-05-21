@@ -7,11 +7,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -252,7 +252,7 @@ extern int read_slurmdbd_conf(void)
 
 		if (s_p_get_string(&temp_str, "DebugLevel", tbl)) {
 			slurmdbd_conf->debug_level = log_string2num(temp_str);
-			if (slurmdbd_conf->debug_level == (uint16_t) NO_VAL)
+			if (slurmdbd_conf->debug_level == NO_VAL16)
 				fatal("Invalid DebugLevel %s", temp_str);
 			xfree(temp_str);
 		}
@@ -296,7 +296,7 @@ extern int read_slurmdbd_conf(void)
 			slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
 
 		if (s_p_get_string(&temp_str, "MaxQueryTimeRange", tbl)) {
-			slurmdbd_conf->max_time_range = time_str2mins(temp_str);
+			slurmdbd_conf->max_time_range = time_str2secs(temp_str);
 			xfree(temp_str);
 		} else {
 			slurmdbd_conf->max_time_range = INFINITE;
@@ -723,6 +723,7 @@ extern void slurmdbd_conf_unlock(void)
 extern List dump_config(void)
 {
 	config_key_pair_t *key_pair;
+	char time_str[32];
 	List my_list = list_create(destroy_config_key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -848,6 +849,13 @@ extern List dump_config(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("LogFile");
 	key_pair->value = xstrdup(slurmdbd_conf->log_file);
+	list_append(my_list, key_pair);
+
+	secs2time_str(slurmdbd_conf->max_time_range, time_str,
+		      sizeof(time_str));
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MaxQueryTimeRange");
+	key_pair->value = xstrdup_printf("%s", time_str);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

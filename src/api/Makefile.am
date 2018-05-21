@@ -61,7 +61,12 @@ libpmi_current = 0
 libpmi_age     = 0
 libpmi_rev     = 0
 
-lib_LTLIBRARIES = libslurm.la libslurmfull.la libpmi.la
+lib_LTLIBRARIES = libslurm.la libpmi.la
+
+# The ABI of libslurmfull can easily change from 1 micro version to another.
+# To avoid issue we will install this lib alongside the plugins to protect
+# from version issues.
+pkglib_LTLIBRARIES = libslurmfull.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.  For instance, this takes care
@@ -151,7 +156,7 @@ libslurmfull_la_SOURCES =
 libslurmfull_la_LIBADD = $(convenience_libs)
 libslurmfull_la_LDFLAGS        = \
         $(LIB_LDFLAGS) \
-        -version-info $(current):$(rev):$(age) \
+	-avoid-version \
         $(FULL_OTHER_FLAGS)
 #
 # The libpmi_la_LIBADD specification below causes libpmi.la to relink

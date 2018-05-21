@@ -2,11 +2,11 @@
  *  select_serial.c - resource selection plugin supporting serial (since CPU)
  *  job allocations.
  *****************************************************************************
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -22,13 +22,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -89,14 +89,14 @@ int slurmctld_tres_cnt = 0;
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "select" for SLURM node selection) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "select" for Slurm node selection) and <method>
+ * is a description of how this plugin satisfies that application.  Slurm will
  * only load select plugins if the plugin_type string has a
  * prefix of "select/".
  *
@@ -795,6 +795,11 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		}
 	}
 
+	if (action != 2) {
+		gres_build_job_details(job_ptr->gres_list,
+				       &job_ptr->gres_detail_cnt,
+				       &job_ptr->gres_detail_str);
+	}
 	/* add cores */
 	if (action != 1) {
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
@@ -1206,9 +1211,30 @@ top:	orig_map = bit_copy(save_bitmap);
 	return rc;
 }
 
-/* _will_run_test - determine when and where a pending job can start, removes
- *	jobs from node table at termination time and run _test_job() after
- *	each one. Used by SLURM's sched/backfill plugin and Moab. */
+/*
+ * Return true if job is in the processing of cleaning up.
+ * This is used for Cray systems to indicate the Node Health Check (NHC)
+ * is still running. Until NHC completes, the job's resource use persists
+ * the select/cons_res plugin data structures.
+ */
+static bool _job_cleaning(struct job_record *job_ptr)
+{
+	uint16_t cleaning = 0;
+
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING,
+				    &cleaning);
+	if (cleaning)
+		return true;
+	return false;
+}
+
+/*
+ * Determine where and when the job at job_ptr can begin execution by updating
+ * a scratch cr_record structure to reflect each job terminating at the
+ * end of its time limit and use this to show where and when the job at job_ptr
+ * will begin execution. Used by Slurm's sched/backfill plugin.
+ */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint16_t job_node_share,
 			  List preemptee_candidates, List *preemptee_job_list)
@@ -1253,14 +1279,36 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	cr_job_list = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool cleaning = _job_cleaning(tmp_job_ptr);
+		if (!cleaning && IS_JOB_COMPLETING(tmp_job_ptr))
+			cleaning = true;
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
-		    !IS_JOB_SUSPENDED(tmp_job_ptr))
+		    !IS_JOB_SUSPENDED(tmp_job_ptr) &&
+		    !cleaning)
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
-			error("Job %u has zero end_time", tmp_job_ptr->job_id);
+			if (!cleaning) {
+				error("%s: Active job %u has zero end_time",
+				      __func__, tmp_job_ptr->job_id);
+			}
 			continue;
 		}
-		if (_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+		if (tmp_job_ptr->node_bitmap == NULL) {
+			/*
+			 * This should indicate a requeued job was cancelled
+			 * while NHC was running
+			 */
+			if (!cleaning) {
+				error("%s: Job %u has NULL node_bitmap",
+				      __func__, tmp_job_ptr->job_id);
+			}
+			continue;
+		}
+		if (cleaning ||
+		    !_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+			/* Queue job for later removal from data structures */
+			list_append(cr_job_list, tmp_job_ptr);
+		} else {
 			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
 			if (mode == PREEMPT_MODE_OFF)
 				continue;
@@ -1271,8 +1319,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* Remove preemptable job now */
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, action);
-		} else
-			list_append(cr_job_list, tmp_job_ptr);
+		}
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -1513,7 +1560,7 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 			job_ptr->details->whole_node = 0;
 		}
 		if ((details_ptr->cpus_per_task > 1) &&
-		    (details_ptr->cpus_per_task != (uint16_t) NO_VAL))
+		    (details_ptr->cpus_per_task != NO_VAL16))
 			return false;
 		if ((details_ptr->min_cpus > 1) &&
 		    (details_ptr->min_cpus != NO_VAL))
@@ -1523,7 +1570,7 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 			return false;
 		details_ptr->max_nodes = 1;
 		if ((details_ptr->ntasks_per_node > 1) &&
-		    (details_ptr->ntasks_per_node != (uint16_t) NO_VAL))
+		    (details_ptr->ntasks_per_node != NO_VAL16))
 			return false;
 		if ((details_ptr->num_tasks > 1) &&
 		    (details_ptr->num_tasks != NO_VAL))
@@ -1538,19 +1585,19 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 
 	if (mc_ptr) {
 		/* If data structure exists then heck once and destroy it */
-		if ((mc_ptr->cores_per_socket != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->cores_per_socket != NO_VAL16) &&
 		    (mc_ptr->cores_per_socket > 1))
 			return false;
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core > 1))
 			return false;
-		if ((mc_ptr->ntasks_per_socket != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_socket != INFINITE16) &&
 		    (mc_ptr->ntasks_per_socket > 1))
 			return false;
-		if ((mc_ptr->sockets_per_node != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->sockets_per_node != NO_VAL16) &&
 		    (mc_ptr->sockets_per_node > 1))
 			return false;
-		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->threads_per_core != NO_VAL16) &&
 		    (mc_ptr->threads_per_core > 1))
 			return false;
 		xfree(job_ptr->details->mc_ptr);
@@ -1615,10 +1662,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		return SLURM_ERROR;
 	}
 
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->core_spec != NO_VAL16) {
 		verbose("select/serial: job %u core_spec(%u) not supported",
 			job_ptr->job_id, job_ptr->details->core_spec);
-		job_ptr->details->core_spec = (uint16_t) NO_VAL;
+		job_ptr->details->core_spec = NO_VAL16;
 	}
 
 	job_node_share = _get_job_node_share(job_ptr);

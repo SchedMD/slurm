@@ -6,11 +6,11 @@
  *  Written by Chris Holmes
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -575,7 +575,7 @@ static int _suspend_job(uint32_t job_id)
 	msg.job_id = job_id;
 	msg.job_id_str = NULL;
 	msg.op = SUSPEND_JOB;
-	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
+	rc = job_suspend(&msg, 0, -1, false, NO_VAL16);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
 	if (rc == SLURM_SUCCESS) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
@@ -597,7 +597,7 @@ static void _resume_job(uint32_t job_id)
 	msg.job_id = job_id;
 	msg.job_id_str = NULL;
 	msg.op = RESUME_JOB;
-	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
+	rc = job_suspend(&msg, 0, -1, false, NO_VAL16);
 	if (rc == SLURM_SUCCESS) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 			info("gang: resuming JobID=%u", job_id);
@@ -654,14 +654,12 @@ static void _preempt_job_dequeue(void)
 			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
 			ckpt_msg.op	   = CHECK_REQUEUE;
 			ckpt_msg.job_id    = job_ptr->job_id;
-			rc = job_checkpoint(&ckpt_msg, 0, -1,
-					    (uint16_t)NO_VAL);
+			rc = job_checkpoint(&ckpt_msg, 0, -1, NO_VAL16);
 			if (rc == ESLURM_NOT_SUPPORTED) {
 				memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
 				ckpt_msg.op	   = CHECK_VACATE;
 				ckpt_msg.job_id    = job_ptr->job_id;
-				rc = job_checkpoint(&ckpt_msg, 0, -1,
-						    (uint16_t)NO_VAL);
+				rc = job_checkpoint(&ckpt_msg, 0, -1, NO_VAL16);
 			}
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been checkpointed",
@@ -1064,7 +1062,7 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 	return j_ptr->sig_state;
 }
 
-/* ensure that all jobs running in SLURM are accounted for.
+/* ensure that all jobs running in Slurm are accounted for.
  * this procedure assumes that the gs data has already been
  * locked by the caller!
  */
@@ -1135,7 +1133,7 @@ static void _scan_slurm_job_list(void)
 
 
 /****************************
- * SLURM Timeslicer Hooks
+ * Slurm Timeslicer Hooks
  *
  * Here is a summary of the primary activities that occur
  * within this plugin:
@@ -1261,8 +1259,9 @@ extern void gs_job_start(struct job_record *job_ptr)
 	slurm_mutex_unlock(&data_mutex);
 
 	if (!p_ptr) {
-		/* No partition was found for this job, so let it run
-		 * uninterupted (what else can we do?)
+		/*
+		 * No partition was found for this job, so let it run
+		 * uninterrupted (what else can we do?)
 		 */
 		error("gang: could not find partition %s for job %u",
 		      part_name, job_ptr->job_id);
@@ -1420,7 +1419,7 @@ extern void gs_reconfig(void)
 		for (i = 0; i < p_ptr->num_jobs; i++) {
 			job_ptr = find_job_record(p_ptr->job_list[i]->job_id);
 			if (job_ptr == NULL) {
-				/* job no longer exists in SLURM, so drop it */
+				/* job no longer exists in Slurm, so drop it */
 				continue;
 			}
 			if (IS_JOB_SUSPENDED(job_ptr) &&

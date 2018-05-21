@@ -10,11 +10,11 @@
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -30,13 +30,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -66,6 +66,7 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
@@ -126,6 +127,7 @@
 
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
+bool get_reg_resp = 1;
 slurmd_conf_t * conf = NULL;
 int fini_job_cnt = 0;
 uint32_t *fini_job_id = NULL;
@@ -203,7 +205,6 @@ static int       _set_slurmd_spooldir(void);
 static int       _set_topo_info(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
-static void      _term_handler(int);
 static void      _update_logging(void);
 static void      _update_nice(void);
 static void      _usage(void);
@@ -287,10 +288,10 @@ main (int argc, char **argv)
 	}
 	init_setproctitle(argc, argv);
 
-	xsignal(SIGTERM, &_term_handler);
-	xsignal(SIGINT,  &_term_handler);
-	xsignal(SIGHUP,  &_hup_handler );
-	xsignal(SIGUSR2, &_usr_handler );
+	xsignal(SIGTERM, slurmd_shutdown);
+	xsignal(SIGINT,  slurmd_shutdown);
+	xsignal(SIGHUP,  _hup_handler);
+	xsignal(SIGUSR2, _usr_handler);
 	xsignal_block(blocked_signals);
 
 	debug3("slurmd initialization successful");
@@ -344,8 +345,8 @@ main (int argc, char **argv)
 		fatal("Unable to initialize core specialization plugin.");
 	if (switch_g_node_init() < 0)
 		fatal("Unable to initialize interconnect.");
-	if (node_features_g_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize node_features plugin");	
+	if (node_features_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize node_features plugin");
 	if (conf->cleanstart && switch_g_clear_node_state())
 		fatal("Unable to clear interconnect state.");
 	switch_g_slurmd_init();
@@ -365,11 +366,13 @@ main (int argc, char **argv)
 	record_launched_jobs();
 
 	run_script_health_check();
-	slurm_thread_create_detached(NULL, _registration_engine, NULL);
 
 	msg_aggr_sender_init(conf->hostname, conf->port,
 			     conf->msg_aggr_window_time,
 			     conf->msg_aggr_window_msgs);
+
+	slurm_thread_create_detached(NULL, _registration_engine, NULL);
+
 	_msg_engine();
 
 	/*
@@ -554,14 +557,61 @@ cleanup:
 	return NULL;
 }
 
+static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
+{
+	int rc;
+	slurm_node_reg_resp_msg_t *resp = NULL;
+
+	switch (resp_msg->msg_type) {
+	case RESPONSE_NODE_REGISTRATION:
+		resp = (slurm_node_reg_resp_msg_t *) resp_msg->data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg->data)->return_code;
+		slurm_free_return_code_msg(resp_msg->data);
+		if (rc)
+			slurm_seterrno(rc);
+		resp = NULL;
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+
+	if (resp) {
+		assoc_mgr_lock_t locks = {
+			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+			WRITE_LOCK, NO_LOCK, NO_LOCK };
+		/*
+		 * We don't care about the assoc/qos locks
+		 * assoc_mgr_post_tres_list is requesting as those lists
+		 * don't exist here.
+		 */
+		assoc_mgr_lock(&locks);
+		assoc_mgr_post_tres_list(resp->tres_list);
+		debug2("%s: slurmctld sent back %u TRES.",
+		       __func__, g_tres_count);
+		assoc_mgr_unlock(&locks);
+		/* assoc_mgr_post_tres_list will destroy the list */
+		resp->tres_list = NULL;
+	}
+}
+
 extern int
 send_registration_msg(uint32_t status, bool startup)
 {
-	int rc, ret_val = SLURM_SUCCESS;
+	int ret_val = SLURM_SUCCESS;
 	slurm_node_registration_status_msg_t *msg =
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
 
-	msg->startup = (uint16_t) startup;
+	if (startup)
+		msg->flags |= SLURMD_REG_FLAG_STARTUP;
+	if (get_reg_resp) {
+		msg->flags |= SLURMD_REG_FLAG_RESP;
+		get_reg_resp = false;
+	}
+
 	_fill_registration_msg(msg);
 	msg->status  = status;
 
@@ -572,24 +622,40 @@ send_registration_msg(uint32_t status, bool startup)
 		req->msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 		req->data     = msg;
 
-		msg_aggr_add_msg(req, 1, NULL);
+		msg_aggr_add_msg(req, 1, _handle_node_reg_resp);
 	} else {
 		slurm_msg_t req;
+		slurm_msg_t resp_msg;
+
 		slurm_msg_t_init(&req);
+		slurm_msg_t_init(&resp_msg);
+
 		req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 		req.data     = msg;
 
-		if (slurm_send_recv_controller_rc_msg(&req, &rc,
-						working_cluster_rec) < 0) {
+		if (slurm_send_recv_controller_msg(&req, &resp_msg,
+						   working_cluster_rec) < 0) {
 			error("Unable to register: %m");
 			ret_val = SLURM_FAILURE;
+			goto fail;
 		}
 		slurm_free_node_registration_status_msg(msg);
+
+		_handle_node_reg_resp(&resp_msg);
+		if (resp_msg.msg_type != RESPONSE_SLURM_RC) {
+			/* RESPONSE_SLURM_RC freed by _handle_node_reg_resp() */
+			slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
+		}
+		if (errno) {
+			ret_val = errno;
+			errno = 0;
+		}
+
 	}
 
 	if (ret_val == SLURM_SUCCESS)
 		sent_reg_time = time(NULL);
-
+fail:
 	return ret_val;
 }
 
@@ -668,7 +734,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			   buf.sysname, buf.release, buf.version);
 	}
 
-	if (msg->startup) {
+	if (msg->flags & SLURMD_REG_FLAG_STARTUP) {
 		if (switch_g_alloc_node_info(&msg->switch_nodeinfo))
 			error("switch_g_alloc_node_info: %m");
 		if (switch_g_build_node_info(msg->switch_nodeinfo))
@@ -761,9 +827,6 @@ _read_config(void)
 	xfree(conf->auth_info);
 	conf->auth_info = xstrdup(cf->authinfo);
 
-	xfree(conf->chos_loc);
-	conf->chos_loc = xstrdup(cf->chos_loc);
-
 	conf->last_update = time(NULL);
 
 	if (conf->conffile == NULL)
@@ -828,6 +891,14 @@ _read_config(void)
 	/* store hardware properties in slurmd_config */
 	xfree(conf->block_map);
 	xfree(conf->block_map_inv);
+
+	/*
+	 * This must be reset before _update_logging(), otherwise the
+	 * slurmstepd processes will not get the reconfigure request,
+	 * and logs may be lost if the path changed or the log was rotated.
+	 */
+	_free_and_set(conf->spooldir, xstrdup(cf->slurmd_spooldir));
+	_massage_pathname(&conf->spooldir);
 
 	_update_logging();
 	_update_nice();
@@ -895,15 +966,15 @@ _read_config(void)
 	    (conf->cores   != conf->actual_cores)   ||
 	    (conf->threads != conf->actual_threads)) {
 		if (cf->fast_schedule) {
-			info("Node configuration differs from hardware: "
-			     "CPUs=%u:%u(hw) Boards=%u:%u(hw) "
-			     "SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw) "
-			     "ThreadsPerCore=%u:%u(hw)",
-			     conf->cpus,    conf->actual_cpus,
-			     conf->boards,  conf->actual_boards,
-			     conf->sockets, conf->actual_sockets,
-			     conf->cores,   conf->actual_cores,
-			     conf->threads, conf->actual_threads);
+			error("Node configuration differs from hardware: "
+			      "Procs=%u:%u(hw) Boards=%u:%u(hw) "
+			      "SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw) "
+			      "ThreadsPerCore=%u:%u(hw)",
+			      conf->cpus,    conf->actual_cpus,
+			      conf->boards,  conf->actual_boards,
+			      conf->sockets, conf->actual_sockets,
+			      conf->cores,   conf->actual_cores,
+			      conf->threads, conf->actual_threads);
 		} else if ((cf->fast_schedule == 0) && (cr_flag || gang_flag)) {
 			error("You are using cons_res or gang scheduling with "
 			      "Fastschedule=0 and node configuration differs "
@@ -934,8 +1005,6 @@ _read_config(void)
 	_free_and_set(conf->tmpfs,    xstrdup(cf->tmp_fs));
 	_free_and_set(conf->health_check_program,
 		      xstrdup(cf->health_check_program));
-	_free_and_set(conf->spooldir, xstrdup(cf->slurmd_spooldir));
-	_massage_pathname(&conf->spooldir);
 	_free_and_set(conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
 	_free_and_set(conf->plugstack,   xstrdup(cf->plugstack));
@@ -951,7 +1020,7 @@ _read_config(void)
 	_free_and_set(conf->job_acct_gather_freq,
 		      xstrdup(cf->job_acct_gather_freq));
 
-	conf->acct_freq_task = (uint16_t)NO_VAL;
+	conf->acct_freq_task = NO_VAL16;
 	cc = acct_gather_parse_freq(PROFILE_TASK,
 				    conf->job_acct_gather_freq);
 	if (cc != -1)
@@ -1056,8 +1125,11 @@ static void
 _print_conf(void)
 {
 	slurm_ctl_conf_t *cf;
-	char *str, time_str[32];
+	char *str = NULL, time_str[32];
 	int i;
+
+	if (conf->log_opts.stderr_level < LOG_LEVEL_DEBUG3)
+		return;
 
 	cf = slurm_conf_lock();
 	debug3("NodeName    = %s",       conf->node_name);
@@ -1090,24 +1162,17 @@ _print_conf(void)
 	secs2time_str((time_t)conf->up_time, time_str, sizeof(time_str));
 	debug3("UpTime      = %u = %s", conf->up_time, time_str);
 
-	str = xmalloc(conf->block_map_size*5);
-	str[0] = '\0';
-	for (i = 0; i < conf->block_map_size; i++) {
-		char id[10];
-		sprintf(id, "%u,", conf->block_map[i]);
-		strcat(str, id);
-	}
-	str[strlen(str)-1] = '\0';		/* trim trailing "," */
+	for (i = 0; i < conf->block_map_size; i++)
+		xstrfmtcat(str, "%s%u", (str ? "," : ""),
+			   conf->block_map[i]);
 	debug3("Block Map   = %s", str);
-	str[0] = '\0';
-	for (i = 0; i < conf->block_map_size; i++) {
-		char id[10];
-		sprintf(id, "%u,", conf->block_map_inv[i]);
-		strcat(str, id);
-	}
-	str[strlen(str)-1] = '\0';		/* trim trailing "," */
+	xfree(str);
+	for (i = 0; i < conf->block_map_size; i++)
+		xstrfmtcat(str, "%s%u", (str ? "," : ""),
+			   conf->block_map_inv[i]);
 	debug3("Inverse Map = %s", str);
 	xfree(str);
+
 	debug3("RealMemory  = %"PRIu64"",conf->real_memory_size);
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     conf->epilog);
@@ -1119,7 +1184,6 @@ _print_conf(void)
 	debug3("Prolog      = `%s'",     conf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);
 	debug3("Public Cert = `%s'",     conf->pubkey);
-	debug3("ChosLoc     = `%s'",     conf->chos_loc);
 	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Syslog Debug  = %d",     cf->slurmd_syslog_debug);
@@ -1172,7 +1236,6 @@ _destroy_conf(void)
 		xfree(conf->auth_info);
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
-		xfree(conf->chos_loc);
 		xfree(conf->cluster_name);
 		xfree(conf->conffile);
 		xfree(conf->cpu_spec_list);
@@ -1547,11 +1610,7 @@ _slurmd_init(void)
 		}
 	}
 
-#ifdef O_CLOEXEC
 	if ((devnull = open("/dev/null", O_RDWR | O_CLOEXEC)) < 0) {
-#else
-	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
-#endif
 		error("Unable to open /dev/null: %m");
 		return SLURM_FAILURE;
 	}
@@ -1561,8 +1620,6 @@ _slurmd_init(void)
 		fatal("Unable to find slurmstepd file at %s", conf->stepd_loc);
 	if (!S_ISREG(stat_buf.st_mode))
 		fatal("slurmstepd not a file at %s", conf->stepd_loc);
-	if (conf->chos_loc && (access(conf->chos_loc, X_OK) != 0))
-		error("Unable to execute ChosLoc at %s: %m", conf->chos_loc);
 
 	return SLURM_SUCCESS;
 }
@@ -1733,8 +1790,7 @@ static int _drain_node(char *reason)
 	return SLURM_SUCCESS;
 }
 
-static void
-_term_handler(int signum)
+extern void slurmd_shutdown(int signum)
 {
 	if (signum == SIGTERM || signum == SIGINT) {
 		_shutdown = 1;
@@ -1845,7 +1901,7 @@ static void _update_logging(void)
 	_update_log = 0;
 	/* Preserve execute line verbose arguments (if any) */
 	cf = slurm_conf_lock();
-	if (!conf->debug_level_set && (cf->slurmd_debug != (uint16_t) NO_VAL))
+	if (!conf->debug_level_set && (cf->slurmd_debug != NO_VAL16))
 		conf->debug_level = cf->slurmd_debug;
 	conf->syslog_debug = cf->slurmd_syslog_debug;
 	conf->log_fmt = cf->log_fmt;

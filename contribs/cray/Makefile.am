@@ -2,7 +2,7 @@
 # Makefile for cray tools
 #
 
-SUBDIRS = csm
+SUBDIRS = csm slurmsmwd
 
 AUTOMAKE_OPTIONS = foreign
 

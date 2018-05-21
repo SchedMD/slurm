@@ -6,11 +6,11 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -58,6 +58,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/locks.h"
 
+#include "slurmdbd_agent.h"
+
 #define BUFFER_SIZE 4096
 
 /* These are defined here so when we link with something other than
@@ -67,9 +69,15 @@
 #if defined(__APPLE__)
 slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 List job_list __attribute__((weak_import)) = NULL;
+uint16_t running_cache __attribute__((weak_import)) = 0;
+pthread_mutex_t assoc_cache_mutex __attribute__((weak_import));
+pthread_cond_t assoc_cache_cond __attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
 List job_list = NULL;
+uint16_t running_cache = 0;
+pthread_mutex_t assoc_cache_mutex;
+pthread_cond_t assoc_cache_cond;
 #endif
 
 /*
@@ -83,14 +91,14 @@ List job_list = NULL;
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "jobacct" for SLURM job completion logging) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "jobacct" for Slurm job completion logging) and <method>
+ * is a description of how this plugin satisfies that application.  Slurm will
  * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobacct/".
  *
@@ -102,10 +110,11 @@ const char plugin_type[] = "accounting_storage/slurmdbd";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static pthread_t db_inx_handler_thread;
-static pthread_t cleanup_handler_thread;
 static pthread_mutex_t db_inx_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t db_inx_cond = PTHREAD_COND_INITIALIZER;
 static bool running_db_inx = 0;
 static int first = 1;
+static time_t plugin_shutdown = 0;
 
 extern int jobacct_storage_p_job_start(void *db_conn,
 				       struct job_record *job_ptr);
@@ -244,6 +253,9 @@ static void *_set_db_inx_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
 	ListIterator itr;
+	struct timeval tvnow;
+	struct timespec abs;
+
 	/* Read lock on jobs */
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -260,7 +272,7 @@ static void *_set_db_inx_thread(void *no_data)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	while (1) {
+	while (!plugin_shutdown) {
 		List local_job_list = NULL;
 		/* START_TIMER; */
 		/* info("starting db_thread"); */
@@ -425,7 +437,7 @@ static void *_set_db_inx_thread(void *no_data)
 		}
 	end_it:
 		running_db_inx = 0;
-		slurm_mutex_unlock(&db_inx_lock);
+
 		/* END_TIMER; */
 		/* info("set all db_inx's in %s", TIME_STR); */
 
@@ -434,15 +446,16 @@ static void *_set_db_inx_thread(void *no_data)
 		   it doesn't have to find db_indexs of jobs that
 		   haven't had the start rpc come through.
 		*/
-		sleep(5);
+
+		gettimeofday(&tvnow, NULL);
+		abs.tv_sec = tvnow.tv_sec + 5;
+		abs.tv_nsec = tvnow.tv_usec * 1000;
+
+		slurm_cond_timedwait(&db_inx_cond, &db_inx_lock, &abs);
+
+		slurm_mutex_unlock(&db_inx_lock);
 	}
 
-	return NULL;
-}
-
-static void *_cleanup_thread(void *no_data)
-{
-	pthread_join(db_inx_handler_thread, NULL);
 	return NULL;
 }
 
@@ -453,7 +466,7 @@ static void *_cleanup_thread(void *no_data)
 extern int init ( void )
 {
 	if (first) {
-		char *cluster_name = NULL, *auth_info;
+		char *cluster_name = NULL;
 		/* since this can be loaded from many different places
 		   only tell us once. */
 		if (!(cluster_name = slurm_get_cluster_name()))
@@ -461,26 +474,14 @@ extern int init ( void )
 			      plugin_name);
 		xfree(cluster_name);
 
-		auth_info = slurm_get_accounting_storage_pass();
-		verbose("%s loaded with AuthInfo=%s",
-			plugin_name, auth_info);
+		verbose("%s loaded", plugin_name);
 
-		slurmdbd_defs_init(auth_info);
-		xfree(auth_info);
 		if (job_list && !(slurm_get_accounting_storage_enforce() &
 				  ACCOUNTING_ENFORCE_NO_JOBS)) {
 			/* only do this when job_list is defined
 			 * (in the slurmctld) */
 			slurm_thread_create(&db_inx_handler_thread,
 					    _set_db_inx_thread, NULL);
-
-			/* This is here to join the db inx thread so
-			   we don't core dump if in the sleep, since
-			   there is no other place to join we have to
-			   create another thread to do it.
-			*/
-			slurm_thread_create(&cleanup_handler_thread,
-					    _cleanup_thread, NULL);
 		}
 		first = 0;
 	} else {
@@ -492,20 +493,24 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	slurm_mutex_lock(&db_inx_lock);
+	plugin_shutdown = time(NULL);
+
 	if (running_db_inx)
 		debug("Waiting for db_inx thread to finish.");
 
-	/* cancel the db_inx thread and then join the cleanup thread */
+	slurm_mutex_lock(&db_inx_lock);
+
+	/* signal the db_inx thread */
 	if (db_inx_handler_thread)
-		pthread_cancel(db_inx_handler_thread);
-	if (cleanup_handler_thread)
-		pthread_join(cleanup_handler_thread, NULL);
+		slurm_cond_signal(&db_inx_cond);
 
 	slurm_mutex_unlock(&db_inx_lock);
 
+	/* Now join outside the lock */
+	if (db_inx_handler_thread)
+		pthread_join(db_inx_handler_thread, NULL);
+
 	first = 1;
-	slurmdbd_defs_fini();
 
 	return SLURM_SUCCESS;
 }
@@ -1047,6 +1052,16 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 
 	req.msg_type = DBD_MODIFY_JOB;
 	req.data = &get_msg;
+
+	/*
+	 * Just put it on the list and go, usually means we are coming from the
+	 * slurmctld.
+	 */
+	if (job_cond && (job_cond->flags & SLURMDB_MODIFY_NO_WAIT)) {
+		slurm_send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req);
+		goto end_it;
+	}
+
 	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
@@ -1070,7 +1085,7 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 		got_msg->my_list = NULL;
 		slurmdbd_free_list_msg(got_msg);
 	}
-
+end_it:
 	return ret_list;
 }
 
@@ -2551,10 +2566,11 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	msg.msg_type      = DBD_JOB_START;
 	msg.data          = &req;
 
-	/* if we already have the db_index don't wait around for it
-	 * again just send the message.  This also applies when the
-	 * slurmdbd is down and we are about to remove the job from
-	 * the system.
+	/* If we already have the db_index don't wait around for it
+	 * again just send the message when not resizing.  This also applies
+	 * when the slurmdbd is down and we are about to remove the job from
+	 * the system.  We don't want to wait for the db_index in that situation
+	 * either.
 	 */
 	if ((req.db_index && !IS_JOB_RESIZING(job_ptr))
 	    || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
@@ -2834,7 +2850,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 }
 
 /*
- * load into the storage a suspention of a job
+ * load into the storage a suspension of a job
  */
 extern int jobacct_storage_p_suspend(void *db_conn,
 				     struct job_record *job_ptr)
@@ -3086,6 +3102,27 @@ extern int acct_storage_p_clear_stats(void *db_conn)
 	msg.msg_type = DBD_CLEAR_STATS;
 	slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
 
+	return rc;
+}
+
+extern int acct_storage_p_get_data(void *db_conn, acct_storage_info_t dinfo,
+				   void *data)
+{
+	int *int_data = (int *) data;
+	int rc = SLURM_SUCCESS;
+
+	switch (dinfo) {
+	case ACCT_STORAGE_INFO_CONN_ACTIVE:
+		*int_data = slurmdbd_conn_active();
+		break;
+	case ACCT_STORAGE_INFO_AGENT_COUNT:
+		*int_data = slurmdbd_agent_queue_count();
+		break;
+	default:
+		error("%s: data request %d invalid", __func__, dinfo);
+		rc = SLURM_ERROR;
+		break;
+	}
 	return rc;
 }
 

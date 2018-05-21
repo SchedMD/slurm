@@ -5,11 +5,11 @@
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -46,9 +46,38 @@ void slurm_print_mem_bind_help(void);
 void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type);
 void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type);
 
-int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
-			  cpu_bind_type_t *flags);
+/*
+ * verify cpu_bind arguments, set default values as needed
+ *
+ * we support different launch policy names
+ * we also allow a verbose setting to be specified
+ *     --cpu-bind=threads
+ *     --cpu-bind=cores
+ *     --cpu-bind=sockets
+ *     --cpu-bind=v
+ *     --cpu-bind=rank,v
+ *     --cpu-bind=rank
+ *     --cpu-bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
+ *
+ * arg IN - user task binding option
+ * cpu_bind OUT - task binding string
+ * flags OUT OUT - task binding flags
+ * default_cpu_bind IN - default task binding (based upon Slurm configuration)
+ * RET SLURM_SUCCESS, SLURM_ERROR (-1) on failure, 1 for return for "help" arg
+ */
+extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
+				 cpu_bind_type_t *flags,
+				 uint32_t default_cpu_bind);
+
 int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 			  mem_bind_type_t *flags);
+
+/*
+ * Translate a CPU bind string to its equivalent numeric value
+ * cpu_bind_str IN - string to translate
+ * flags OUT - equlvalent numeric value
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+extern int xlate_cpu_bind_str(char *cpu_bind_str, uint32_t *flags);
 
 #endif /* !_RES_INFO_H */

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  sbatch.c - Submit a SLURM batch script.$
+ *  sbatch.c - Submit a Slurm batch script.$
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -8,11 +8,11 @@
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -80,11 +80,10 @@ static int   _set_umask_env(void);
 int main(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	job_desc_msg_t *desc = NULL;
+	job_desc_msg_t *desc = NULL, *first_desc = NULL;
 	submit_response_msg_t *resp = NULL;
 	char *script_name;
 	char *script_body;
-	char *line = NULL, *buf = NULL, *ptrptr = NULL;
 	char **pack_argv;
 	int script_size = 0, pack_argc, pack_argc_off = 0, pack_inx;
 	int i, rc = SLURM_SUCCESS, retries = 0;
@@ -187,6 +186,13 @@ int main(int argc, char **argv)
 		slurm_init_job_desc_msg(desc);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
+		if (!first_desc)
+			first_desc = desc;
+		if (pack_inx || !pack_fini) {
+			set_env_from_opts(&opt, &first_desc->environment,
+					  pack_inx);
+		} else
+			set_env_from_opts(&opt, &first_desc->environment, -1);
 		if (!job_req_list) {
 			desc->script = (char *) script_body;
 		} else {
@@ -286,15 +292,7 @@ int main(int argc, char **argv)
 		exit(error_exit);
 	}
 
-	if (resp->job_submit_user_msg) {
-		buf = xstrdup(resp->job_submit_user_msg);
-		line = strtok_r(buf, "\n", &ptrptr);
-		while (line) {
-			info("%s", line);
-			line = strtok_r(NULL, "\n", &ptrptr);
-		}
-		xfree(buf);
-	}
+	print_multi_line_string(resp->job_submit_user_msg, -1);
 
 	if (!sbopt.parsable) {
 		printf("Submitted batch job %u", resp->job_id);
@@ -507,20 +505,20 @@ static int _check_cluster_specific_settings(job_desc_msg_t *req)
 		/*
 		 * Fix options and inform user, but do not abort submission.
 		 */
-		if (req->shared && (req->shared != (uint16_t)NO_VAL)) {
+		if (req->shared && (req->shared != NO_VAL16)) {
 			info("--share is not supported on Cray/ALPS systems.");
-			req->shared = (uint16_t)NO_VAL;
+			req->shared = NO_VAL16;
 		}
-		if (req->overcommit && (req->overcommit != (uint8_t)NO_VAL)) {
+		if (req->overcommit && (req->overcommit != NO_VAL8)) {
 			info("--overcommit is not supported on Cray/ALPS "
 			     "systems.");
 			req->overcommit = false;
 		}
 		if (req->wait_all_nodes &&
-		    (req->wait_all_nodes != (uint16_t)NO_VAL)) {
+		    (req->wait_all_nodes != NO_VAL16)) {
 			info("--wait-all-nodes is handled automatically on "
 			     "Cray/ALPS systems.");
-			req->wait_all_nodes = (uint16_t)NO_VAL;
+			req->wait_all_nodes = NO_VAL16;
 		}
 	}
 	return rc;
@@ -539,7 +537,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->core_spec = opt.core_spec;
 	desc->features = xstrdup(opt.constraints);
 	desc->cluster_features = xstrdup(opt.c_constraints);
-	desc->immediate = opt.immediate;
 	desc->gres = xstrdup(opt.gres);
 	if (opt.job_name)
 		desc->name = xstrdup(opt.job_name);
@@ -575,6 +572,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (sbopt.array_inx)
 		desc->array_inx = xstrdup(sbopt.array_inx);
+	if (sbopt.batch_features)
+		desc->batch_features = xstrdup(sbopt.batch_features);
 	if (opt.mem_bind)
 		desc->mem_bind       = xstrdup(opt.mem_bind);
 	if (opt.mem_bind_type)
@@ -600,6 +599,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->delay_boot = opt.delay_boot;
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
+	if (opt.burst_buffer)
+		desc->burst_buffer = opt.burst_buffer;
 	if (opt.comment)
 		desc->comment = xstrdup(opt.comment);
 	if (opt.qos)
@@ -608,7 +609,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.hold)
 		desc->priority     = 0;
 
-	if (opt.geometry[0] != (uint16_t) NO_VAL) {
+	if (opt.geometry[0] != NO_VAL16) {
 		int dims = slurmdb_setup_cluster_dims();
 
 		for (i = 0; i < dims; i++)
@@ -756,6 +757,19 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->bitflags = opt.job_flags;
 	if (opt.mcs_label)
 		desc->mcs_label = xstrdup(opt.mcs_label);
+
+	if (opt.cpus_per_gpu)
+		xstrfmtcat(desc->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
+	if (opt.gpu_bind)
+		xstrfmtcat(desc->tres_bind, "gpu:%s", opt.gpu_bind);
+	if (opt.gpu_freq)
+		xstrfmtcat(desc->tres_freq, "gpu:%s", opt.gpu_freq);
+	xfmt_tres(&desc->tres_per_job,    "gpu", opt.gpus);
+	xfmt_tres(&desc->tres_per_node,   "gpu", opt.gpus_per_node);
+	xfmt_tres(&desc->tres_per_socket, "gpu", opt.gpus_per_socket);
+	xfmt_tres(&desc->tres_per_task,   "gpu", opt.gpus_per_task);
+	if (opt.mem_per_gpu)
+		xstrfmtcat(desc->mem_per_tres, "gpu:%"PRIi64, opt.mem_per_gpu);
 
 	desc->clusters = xstrdup(opt.clusters);
 
@@ -971,7 +985,7 @@ static void *_get_script_buffer(const char *filename, int *size)
 		error("For instance: #!/bin/sh");
 		goto fail;
 	} else if (contains_null_char(buf, script_size)) {
-		error("The SLURM controller does not allow scripts that");
+		error("The Slurm controller does not allow scripts that");
 		error("contain a NULL character '\\0'.");
 		goto fail;
 	} else if (contains_dos_linebreak(buf, script_size)) {

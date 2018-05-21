@@ -9,11 +9,11 @@
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -60,6 +60,7 @@
 #  include <sys/prctl.h>
 #endif
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/plugin.h"
@@ -127,6 +128,157 @@ static uint32_t jobacct_job_id     = 0;
 static uint32_t jobacct_step_id    = 0;
 static uint64_t jobacct_mem_limit  = 0;
 static uint64_t jobacct_vmem_limit = 0;
+static acct_gather_profile_timer_t *profile_timer =
+	&acct_gather_profile_timer[PROFILE_TASK];
+
+static void _init_tres_usage(struct jobacctinfo *jobacct,
+			     jobacct_id_t *jobacct_id,
+			     uint32_t tres_cnt)
+{
+	int alloc_size, i;
+
+	jobacct->tres_count = tres_cnt;
+
+	jobacct->tres_ids = xmalloc(tres_cnt * sizeof(uint32_t));
+
+	alloc_size = tres_cnt * sizeof(uint64_t);
+
+	jobacct->tres_usage_in_max = xmalloc(alloc_size);
+	jobacct->tres_usage_in_max_nodeid = xmalloc(alloc_size);
+	jobacct->tres_usage_in_max_taskid = xmalloc(alloc_size);
+	jobacct->tres_usage_in_min = xmalloc(alloc_size);
+	jobacct->tres_usage_in_min_nodeid = xmalloc(alloc_size);
+	jobacct->tres_usage_in_min_taskid = xmalloc(alloc_size);
+	jobacct->tres_usage_in_tot = xmalloc(alloc_size);
+	jobacct->tres_usage_out_max = xmalloc(alloc_size);
+	jobacct->tres_usage_out_max_nodeid = xmalloc(alloc_size);
+	jobacct->tres_usage_out_max_taskid = xmalloc(alloc_size);
+	jobacct->tres_usage_out_min = xmalloc(alloc_size);
+	jobacct->tres_usage_out_min_nodeid = xmalloc(alloc_size);
+	jobacct->tres_usage_out_min_taskid = xmalloc(alloc_size);
+	jobacct->tres_usage_out_tot = xmalloc(alloc_size);
+
+	for (i = 0; i < jobacct->tres_count; i++) {
+		jobacct->tres_ids[i] =
+			assoc_mgr_tres_array ? assoc_mgr_tres_array[i]->id : i;
+
+		jobacct->tres_usage_in_min[i] = INFINITE64;
+		jobacct->tres_usage_in_max[i] = INFINITE64;
+		jobacct->tres_usage_in_tot[i] = INFINITE64;
+		jobacct->tres_usage_out_max[i] = INFINITE64;
+		jobacct->tres_usage_out_min[i] = INFINITE64;
+		jobacct->tres_usage_out_tot[i] = INFINITE64;
+
+		if (jobacct_id && jobacct_id->taskid != NO_VAL16) {
+			jobacct->tres_usage_in_max_taskid[i] =
+				(uint64_t) jobacct_id->taskid;
+			jobacct->tres_usage_in_min_taskid[i] =
+				(uint64_t) jobacct_id->taskid;
+			jobacct->tres_usage_out_max_taskid[i] =
+				(uint64_t) jobacct_id->taskid;
+			jobacct->tres_usage_out_min_taskid[i] =
+				(uint64_t) jobacct_id->taskid;
+		} else {
+			jobacct->tres_usage_in_max_taskid[i] = INFINITE64;
+			jobacct->tres_usage_in_min_taskid[i] = INFINITE64;
+			jobacct->tres_usage_out_max_taskid[i] = INFINITE64;
+			jobacct->tres_usage_out_min_taskid[i] = INFINITE64;
+		}
+
+		if (jobacct_id && jobacct_id->nodeid != NO_VAL) {
+			jobacct->tres_usage_in_max_nodeid[i] =
+				(uint64_t) jobacct_id->nodeid;
+			jobacct->tres_usage_in_min_nodeid[i] =
+				(uint64_t) jobacct_id->nodeid;
+			jobacct->tres_usage_out_max_nodeid[i] =
+				(uint64_t) jobacct_id->nodeid;
+			jobacct->tres_usage_out_min_nodeid[i] =
+				(uint64_t) jobacct_id->nodeid;
+		} else {
+			jobacct->tres_usage_in_max_nodeid[i] = INFINITE64;
+			jobacct->tres_usage_in_min_nodeid[i] = INFINITE64;
+			jobacct->tres_usage_out_max_nodeid[i] = INFINITE64;
+			jobacct->tres_usage_out_min_nodeid[i] = INFINITE64;
+		}
+	}
+}
+
+static void _free_tres_usage(struct jobacctinfo *jobacct)
+{
+
+	if (jobacct) {
+		xfree(jobacct->tres_ids);
+
+		if (jobacct->tres_list &&
+		    (jobacct->tres_list != assoc_mgr_tres_list))
+			FREE_NULL_LIST(jobacct->tres_list);
+
+		xfree(jobacct->tres_usage_in_max);
+		xfree(jobacct->tres_usage_in_max_nodeid);
+		xfree(jobacct->tres_usage_in_max_taskid);
+		xfree(jobacct->tres_usage_in_min);
+		xfree(jobacct->tres_usage_in_min_nodeid);
+		xfree(jobacct->tres_usage_in_min_taskid);
+		xfree(jobacct->tres_usage_in_tot);
+		xfree(jobacct->tres_usage_out_max);
+		xfree(jobacct->tres_usage_out_max_nodeid);
+		xfree(jobacct->tres_usage_out_max_taskid);
+		xfree(jobacct->tres_usage_out_min);
+		xfree(jobacct->tres_usage_out_min_nodeid);
+		xfree(jobacct->tres_usage_out_min_taskid);
+		xfree(jobacct->tres_usage_out_tot);
+	}
+}
+
+static void _copy_tres_usage(jobacctinfo_t **dest_jobacct,
+			     jobacctinfo_t *source_jobacct)
+{
+	uint32_t i=0;
+
+	xassert(dest_jobacct);
+
+	if (!*dest_jobacct)
+		*dest_jobacct = xmalloc(sizeof(jobacctinfo_t));
+	else
+		_free_tres_usage(*dest_jobacct);
+
+	memcpy(*dest_jobacct, source_jobacct, sizeof(jobacctinfo_t));
+
+	_init_tres_usage(*dest_jobacct, NULL, source_jobacct->tres_count);
+
+	for (i = 0; i < source_jobacct->tres_count; i++) {
+		(*dest_jobacct)->tres_usage_in_max[i] =
+			source_jobacct->tres_usage_in_max[i];
+		(*dest_jobacct)->tres_usage_in_max_nodeid[i] =
+			source_jobacct->tres_usage_in_max_nodeid[i];
+		(*dest_jobacct)->tres_usage_in_max_taskid[i] =
+			source_jobacct->tres_usage_in_max_taskid[i];
+		(*dest_jobacct)->tres_usage_in_min[i] =
+			source_jobacct->tres_usage_in_min[i];
+		(*dest_jobacct)->tres_usage_in_min_nodeid[i] =
+			source_jobacct->tres_usage_in_min_nodeid[i];
+		(*dest_jobacct)->tres_usage_in_min_taskid[i] =
+			source_jobacct->tres_usage_in_min_taskid[i];
+		(*dest_jobacct)->tres_usage_in_tot[i] =
+			source_jobacct->tres_usage_in_tot[i];
+		(*dest_jobacct)->tres_usage_out_max[i] =
+			source_jobacct->tres_usage_out_max[i];
+		(*dest_jobacct)->tres_usage_out_max_nodeid[i] =
+			source_jobacct->tres_usage_out_max_nodeid[i];
+		(*dest_jobacct)->tres_usage_out_max_taskid[i] =
+			source_jobacct->tres_usage_out_max_taskid[i];
+		(*dest_jobacct)->tres_usage_out_min[i] =
+			source_jobacct->tres_usage_out_min[i];
+		(*dest_jobacct)->tres_usage_out_min_nodeid[i] =
+			source_jobacct->tres_usage_out_min_nodeid[i];
+		(*dest_jobacct)->tres_usage_out_min_taskid[i] =
+			source_jobacct->tres_usage_out_min_taskid[i];
+		(*dest_jobacct)->tres_usage_out_tot[i] =
+			source_jobacct->tres_usage_out_tot[i];
+	}
+
+	return;
+}
 
 /* _acct_kill_step() issue RPC to kill a slurm job step */
 static void _acct_kill_step(void)
@@ -164,20 +316,9 @@ static void _pack_jobacct_id(jobacct_id_t *jobacct_id,
 		pack32((uint32_t) jobacct_id->nodeid, buffer);
 		pack16((uint16_t) jobacct_id->taskid, buffer);
 	} else {
-		pack32((uint32_t) NO_VAL, buffer);
-		pack16((uint16_t) NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
+		pack16(NO_VAL16, buffer);
 	}
-}
-
-static int _unpack_jobacct_id(jobacct_id_t *jobacct_id,
-			      uint16_t rpc_version, Buf buffer)
-{
-	safe_unpack32(&jobacct_id->nodeid, buffer);
-	safe_unpack16(&jobacct_id->taskid, buffer);
-
-	return SLURM_SUCCESS;
-unpack_error:
-	return SLURM_ERROR;
 }
 
 static bool _jobacct_shutdown_test(void)
@@ -198,12 +339,6 @@ static void _poll_data(bool profile)
 	slurm_mutex_unlock(&task_list_lock);
 }
 
-static void _task_sleep(int rem)
-{
-	while (rem)
-		rem = sleep(rem);	/* subject to interupt */
-}
-
 static bool _init_run_test(void)
 {
 	bool rc;
@@ -218,32 +353,24 @@ static bool _init_run_test(void)
 
 static void *_watch_tasks(void *arg)
 {
-	int type = PROFILE_TASK;
-
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "acctg", NULL, NULL, NULL) < 0) {
 		error("%s: cannot set my name to %s %m", __func__, "acctg");
 	}
 #endif
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	/* Give chance for processes to spawn before starting
-	 * the polling. This should largely eliminate the
-	 * the chance of having /proc open when the tasks are
-	 * spawned, which would prevent a valid checkpoint/restart
-	 * with some systems */
-	_task_sleep(1);
 	while (_init_run_test() && !_jobacct_shutdown_test() &&
 	       acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
-		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
-		slurm_cond_wait(
-			&acct_gather_profile_timer[type].notify,
-			&acct_gather_profile_timer[type].notify_mutex);
-		slurm_mutex_unlock(&acct_gather_profile_timer[type].
-				   notify_mutex);
+		slurm_mutex_lock(&profile_timer->notify_mutex);
+		slurm_cond_wait(&profile_timer->notify,
+				&profile_timer->notify_mutex);
+		slurm_mutex_unlock(&profile_timer->notify_mutex);
+
+		/* shutting down, woken by jobacct_gather_fini() */
+		if (!_init_run_test())
+			break;
+
 		slurm_mutex_lock(&g_context_lock);
 		/* The initial poll is done after the last task is added */
 		_poll_data(1);
@@ -251,6 +378,162 @@ static void *_watch_tasks(void *arg)
 
 	}
 	return NULL;
+}
+
+static void _jobacctinfo_create_tres_usage(jobacct_id_t *jobacct_id,
+					   struct jobacctinfo *jobacct)
+{
+	assoc_mgr_lock_t locks = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+		READ_LOCK, NO_LOCK, NO_LOCK };
+
+	assoc_mgr_lock(&locks);
+	_init_tres_usage(jobacct, jobacct_id, g_tres_count);
+	assoc_mgr_unlock(&locks);
+}
+
+static void _jobacctinfo_aggregate_tres_usage(jobacctinfo_t *dest,
+					      jobacctinfo_t *from)
+{
+	uint32_t i = 0;
+
+	for (i = 0; i < dest->tres_count; i++) {
+		if (from->tres_usage_in_max[i] != INFINITE64) {
+			if ((dest->tres_usage_in_max[i] == INFINITE64) ||
+			    (dest->tres_usage_in_max[i] <
+			     from->tres_usage_in_max[i])) {
+				dest->tres_usage_in_max[i] =
+					from->tres_usage_in_max[i];
+				/*
+				 * At the time of writing Energy was only on a
+				 * per node basis.
+				 */
+				if (i != TRES_ARRAY_ENERGY)
+					dest->tres_usage_in_max_taskid[i] =
+						from->
+						tres_usage_in_max_taskid[i];
+				dest->tres_usage_in_max_nodeid[i] =
+					from->tres_usage_in_max_nodeid[i];
+			}
+		}
+
+		if (from->tres_usage_in_min[i] != INFINITE64) {
+			if ((dest->tres_usage_in_min[i] == INFINITE64) ||
+			    (dest->tres_usage_in_min[i] >
+			     from->tres_usage_in_min[i])) {
+				dest->tres_usage_in_min[i] =
+					from->tres_usage_in_min[i];
+				/*
+				 * At the time of writing Energy was only on a
+				 * per node basis.
+				 */
+				if (i != TRES_ARRAY_ENERGY)
+					dest->tres_usage_in_min_taskid[i] =
+						from->
+						tres_usage_in_min_taskid[i];
+				dest->tres_usage_in_min_nodeid[i] =
+					from->tres_usage_in_min_nodeid[i];
+			}
+		}
+
+		if (from->tres_usage_in_tot[i] != INFINITE64) {
+			if (dest->tres_usage_in_tot[i] == INFINITE64)
+				dest->tres_usage_in_tot[i] =
+					from->tres_usage_in_tot[i];
+			else
+				dest->tres_usage_in_tot[i] +=
+					from->tres_usage_in_tot[i];
+		}
+
+		if (from->tres_usage_out_max[i] != INFINITE64) {
+			if ((dest->tres_usage_out_max[i] == INFINITE64) ||
+			    (dest->tres_usage_out_max[i] <
+			     from->tres_usage_out_max[i])) {
+				dest->tres_usage_out_max[i] =
+					from->tres_usage_out_max[i];
+				/*
+				 * At the time of writing Energy was only on a
+				 * per node basis.
+				 */
+				if (i != TRES_ARRAY_ENERGY)
+					dest->tres_usage_out_max_taskid[i] =
+						from->
+						tres_usage_out_max_taskid[i];
+				dest->tres_usage_out_max_nodeid[i] =
+					from->tres_usage_out_max_nodeid[i];
+			}
+		}
+
+		if (from->tres_usage_out_min[i] != INFINITE64) {
+			if ((dest->tres_usage_out_min[i] == INFINITE64) ||
+			    (dest->tres_usage_out_min[i] >
+			     from->tres_usage_out_min[i])) {
+				dest->tres_usage_out_min[i] =
+					from->tres_usage_out_min[i];
+				/*
+				 * At the time of writing Energy was only on a
+				 * per node basis.
+				 */
+				if (i != TRES_ARRAY_ENERGY)
+					dest->tres_usage_out_min_taskid[i] =
+						from->
+						tres_usage_out_min_taskid[i];
+				dest->tres_usage_out_min_nodeid[i] =
+					from->tres_usage_out_min_nodeid[i];
+			}
+		}
+
+		if (from->tres_usage_out_tot[i] != INFINITE64) {
+			if (dest->tres_usage_out_tot[i] == INFINITE64)
+				dest->tres_usage_out_tot[i] =
+					from->tres_usage_out_tot[i];
+			else
+				dest->tres_usage_out_tot[i] +=
+					from->tres_usage_out_tot[i];
+		}
+	}
+}
+
+static void _jobacctinfo_2_stats_tres_usage(slurmdb_stats_t *stats,
+					    jobacctinfo_t *jobacct)
+{
+	assoc_mgr_lock_t locks = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+		READ_LOCK, NO_LOCK, NO_LOCK };
+	uint32_t flags = TRES_STR_FLAG_ALLOW_REAL | TRES_STR_FLAG_SIMPLE;
+	assoc_mgr_lock(&locks);
+
+	stats->tres_usage_in_ave = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_in_tot, flags, true);
+	stats->tres_usage_in_tot = xstrdup(stats->tres_usage_in_ave);
+	stats->tres_usage_in_max = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_in_max, flags, true);
+	stats->tres_usage_in_max_nodeid = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_in_max_nodeid, flags, true);
+	stats->tres_usage_in_max_taskid = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_in_max_taskid, flags, true);
+	stats->tres_usage_in_min = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_in_min, flags, true);
+	stats->tres_usage_in_min_nodeid = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_in_min_nodeid, flags, true);
+	stats->tres_usage_in_min_taskid = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_in_min_taskid, flags, true);
+	stats->tres_usage_out_ave = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_out_tot, flags, true);
+	stats->tres_usage_out_tot = xstrdup(stats->tres_usage_out_ave);
+	stats->tres_usage_out_max = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_out_max, flags, true);
+	stats->tres_usage_out_max_taskid = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_out_max_taskid, flags, true);
+	stats->tres_usage_out_max_nodeid = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_out_max_nodeid, flags, true);
+	stats->tres_usage_out_min = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_out_min, flags, true);
+	stats->tres_usage_out_min_nodeid = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_out_min_nodeid, flags, true);
+	stats->tres_usage_out_min_taskid = assoc_mgr_make_tres_str_from_array(
+		jobacct->tres_usage_out_min_taskid, flags, true);
+	assoc_mgr_unlock(&locks);
 }
 
 extern int jobacct_gather_init(void)
@@ -328,7 +611,7 @@ extern int jobacct_gather_fini(void)
 		slurm_mutex_unlock(&init_run_mutex);
 
 		if (watch_tasks_thread_id) {
-			pthread_cancel(watch_tasks_thread_id);
+			slurm_cond_signal(&profile_timer->notify);
 			pthread_join(watch_tasks_thread_id, NULL);
 		}
 
@@ -421,7 +704,6 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 
 	jobacct->pid = pid;
 	memcpy(&jobacct->id, jobacct_id, sizeof(jobacct_id_t));
-	jobacct->min_cpu = 0;
 	debug2("adding task %u pid %d on node %u to jobacct",
 	       jobacct_id->taskid, pid, jobacct_id->nodeid);
 	list_push(task_list, jobacct);
@@ -443,12 +725,13 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 {
 	if (!plugin_polling || _jobacct_shutdown_test())
 		return NULL;
-	else if (pid) {
+
+	_poll_data(0);
+
+	if (pid) {
 		struct jobacctinfo *jobacct = NULL;
 		struct jobacctinfo *ret_jobacct = NULL;
 		ListIterator itr = NULL;
-
-		_poll_data(0);
 
 		slurm_mutex_lock(&task_list_lock);
 		if (!task_list) {
@@ -464,23 +747,15 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 		list_iterator_destroy(itr);
 		if (jobacct == NULL)
 			goto error;
-		ret_jobacct = xmalloc(sizeof(struct jobacctinfo));
-		memcpy(ret_jobacct, jobacct, sizeof(struct jobacctinfo));
+
+		_copy_tres_usage(&ret_jobacct, jobacct);
+
 	error:
 		slurm_mutex_unlock(&task_list_lock);
 		return ret_jobacct;
-	} else {
-		/* In this situation, we are just trying to get a
-		 * basis of information since we are not pollng.  So
-		 * we will give a chance for processes to spawn before we
-		 * gather information. This should largely eliminate the
-		 * the chance of having /proc open when the tasks are
-		 * spawned, which would prevent a valid checkpoint/restart
-		 * with some systems */
-		_task_sleep(1);
-		_poll_data(0);
-		return NULL;
 	}
+
+	return NULL;
 }
 
 extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
@@ -514,7 +789,7 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 	list_iterator_destroy(itr);
 	if (jobacct) {
 		debug2("removing task %u pid %d from jobacct",
-		       jobacct->max_vsize_id.taskid, jobacct->pid);
+		       jobacct->id.taskid, jobacct->pid);
 	} else {
 		debug2("pid(%d) not being watched in jobacct!", pid);
 	}
@@ -558,7 +833,7 @@ extern int jobacct_gather_set_mem_limit(uint32_t job_id,
 
 	jobacct_job_id      = job_id;
 	jobacct_step_id     = step_id;
-	jobacct_mem_limit   = mem_limit * 1024; /* MB to KB */
+	jobacct_mem_limit   = mem_limit * 1048576; /* MB to B */
 	jobacct_vmem_limit  = jobacct_mem_limit;
 	jobacct_vmem_limit *= (slurm_get_vsize_factor() / 100.0);
 	return SLURM_SUCCESS;
@@ -626,44 +901,26 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct = xmalloc(sizeof(struct jobacctinfo));
 
 	if (!jobacct_id) {
-		temp_id.taskid = (uint16_t)NO_VAL;
-		temp_id.nodeid = (uint32_t)NO_VAL;
+		temp_id.taskid = NO_VAL16;
+		temp_id.nodeid = NO_VAL;
 		jobacct_id = &temp_id;
 	}
-	memset(jobacct, 0, sizeof(struct jobacctinfo));
+
 	jobacct->dataset_id = -1;
 	jobacct->sys_cpu_sec = 0;
 	jobacct->sys_cpu_usec = 0;
 	jobacct->user_cpu_sec = 0;
 	jobacct->user_cpu_usec = 0;
 
-	jobacct->max_vsize = 0;
-	memcpy(&jobacct->max_vsize_id, jobacct_id, sizeof(jobacct_id_t));
-	jobacct->tot_vsize = 0;
-	jobacct->max_rss = 0;
-	memcpy(&jobacct->max_rss_id, jobacct_id, sizeof(jobacct_id_t));
-	jobacct->tot_rss = 0;
-	jobacct->max_pages = 0;
-	memcpy(&jobacct->max_pages_id, jobacct_id, sizeof(jobacct_id_t));
-	jobacct->tot_pages = 0;
-	jobacct->min_cpu = (uint32_t)NO_VAL;
-	memcpy(&jobacct->min_cpu_id, jobacct_id, sizeof(jobacct_id_t));
-	jobacct->tot_cpu = 0;
-	jobacct->act_cpufreq = 0;
-	memset(&jobacct->energy, 0, sizeof(acct_gather_energy_t));
-	jobacct->max_disk_read = 0;
-	memcpy(&jobacct->max_disk_read_id, jobacct_id, sizeof(jobacct_id_t));
-	jobacct->tot_disk_read = 0;
-	jobacct->max_disk_write = 0;
-	memcpy(&jobacct->max_disk_write_id, jobacct_id, sizeof(jobacct_id_t));
-	jobacct->tot_disk_write = 0;
-
+	_jobacctinfo_create_tres_usage(jobacct_id, jobacct);
 	return jobacct;
 }
 
 extern void jobacctinfo_destroy(void *object)
 {
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)object;
+
+	_free_tres_usage(jobacct);
 	xfree(jobacct);
 }
 
@@ -674,25 +931,39 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
 	struct rusage *rusage = (struct rusage *)data;
-	uint32_t *uint32 = (uint32_t *) data;
 	uint64_t *uint64 = (uint64_t *) data;
-	double *dub = (double *) data;
-	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 	Buf buffer = NULL;
+
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
 	switch (type) {
 	case JOBACCT_DATA_TOTAL:
-		memcpy(jobacct, send, sizeof(struct jobacctinfo));
+		_copy_tres_usage(&jobacct, send);
 		break;
 	case JOBACCT_DATA_PIPE:
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			int len;
+			assoc_mgr_lock_t locks = {
+				NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				READ_LOCK, NO_LOCK, NO_LOCK };
+
 			buffer = init_buf(0);
+
+			if (jobacct) {
+				assoc_mgr_lock(&locks);
+				jobacct->tres_list = assoc_mgr_tres_list;
+			}
+
 			jobacctinfo_pack(jobacct, protocol_version,
 					 PROTOCOL_TYPE_SLURM, buffer);
+
+			if (jobacct) {
+				assoc_mgr_unlock(&locks);
+				jobacct->tres_list = NULL;
+			}
+
 			len = get_buf_offset(buffer);
 			safe_write(*fd, &len, sizeof(int));
 			safe_write(*fd, get_buf_data(buffer), len);
@@ -708,65 +979,11 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 			jobacct->sys_cpu_sec = rusage->ru_stime.tv_sec;
 		jobacct->sys_cpu_usec = rusage->ru_stime.tv_usec;
 		break;
-	case JOBACCT_DATA_MAX_RSS:
-		jobacct->max_rss = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_RSS_ID:
-		jobacct->max_rss_id = *jobacct_id;
-		break;
 	case JOBACCT_DATA_TOT_RSS:
-		jobacct->tot_rss = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_VSIZE:
-		jobacct->max_vsize = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_VSIZE_ID:
-		jobacct->max_vsize_id = *jobacct_id;
+		jobacct->tres_usage_in_tot[TRES_ARRAY_MEM] = *uint64;
 		break;
 	case JOBACCT_DATA_TOT_VSIZE:
-		jobacct->tot_vsize = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_PAGES:
-		jobacct->max_pages = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_PAGES_ID:
-		jobacct->max_pages_id = *jobacct_id;
-		break;
-	case JOBACCT_DATA_TOT_PAGES:
-		jobacct->tot_pages = *uint64;
-		break;
-	case JOBACCT_DATA_MIN_CPU:
-		jobacct->min_cpu = *uint32;
-		break;
-	case JOBACCT_DATA_MIN_CPU_ID:
-		jobacct->min_cpu_id = *jobacct_id;
-		break;
-	case JOBACCT_DATA_TOT_CPU:
-		jobacct->tot_cpu = *dub;
-		break;
-	case JOBACCT_DATA_ACT_CPUFREQ:
-		jobacct->act_cpufreq = *uint32;
-		break;
-	case JOBACCT_DATA_CONSUMED_ENERGY:
-		jobacct->energy.consumed_energy = *uint64;
-		break;
-	case JOBACCT_DATA_MAX_DISK_READ:
-		jobacct->max_disk_read = *dub;
-		break;
-	case JOBACCT_DATA_MAX_DISK_READ_ID:
-		jobacct->max_disk_read_id = *jobacct_id;
-		break;
-	case JOBACCT_DATA_TOT_DISK_READ:
-		jobacct->tot_disk_read = *dub;
-		break;
-	case JOBACCT_DATA_MAX_DISK_WRITE:
-		jobacct->max_disk_write = *dub;
-		break;
-	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
-		jobacct->max_disk_write_id = *jobacct_id;
-		break;
-	case JOBACCT_DATA_TOT_DISK_WRITE:
-		jobacct->tot_disk_write = *dub;
+		jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM] = *uint64;
 		break;
 	default:
 		debug("jobacct_g_set_setinfo data_type %d invalid", type);
@@ -785,10 +1002,7 @@ extern int jobacctinfo_getinfo(
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
-	uint32_t *uint32 = (uint32_t *) data;
 	uint64_t *uint64 = (uint64_t *) data;
-	double *dub = (double *) data;
-	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct rusage *rusage = (struct rusage *)data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 	char *buf = NULL;
@@ -801,7 +1015,7 @@ extern int jobacctinfo_getinfo(
 
 	switch (type) {
 	case JOBACCT_DATA_TOTAL:
-		memcpy(send, jobacct, sizeof(struct jobacctinfo));
+		_copy_tres_usage(&send, jobacct);
 		break;
 	case JOBACCT_DATA_PIPE:
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -825,65 +1039,11 @@ extern int jobacctinfo_getinfo(
 		rusage->ru_stime.tv_sec = jobacct->sys_cpu_sec;
 		rusage->ru_stime.tv_usec = jobacct->sys_cpu_usec;
 		break;
-	case JOBACCT_DATA_MAX_RSS:
-		*uint64 = jobacct->max_rss;
-		break;
-	case JOBACCT_DATA_MAX_RSS_ID:
-		*jobacct_id = jobacct->max_rss_id;
-		break;
 	case JOBACCT_DATA_TOT_RSS:
-		*uint64 = jobacct->tot_rss;
-		break;
-	case JOBACCT_DATA_MAX_VSIZE:
-		*uint64 = jobacct->max_vsize;
-		break;
-	case JOBACCT_DATA_MAX_VSIZE_ID:
-		*jobacct_id = jobacct->max_vsize_id;
+		*uint64 = jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
 		break;
 	case JOBACCT_DATA_TOT_VSIZE:
-		*uint64 = jobacct->tot_vsize;
-		break;
-	case JOBACCT_DATA_MAX_PAGES:
-		*uint64 = jobacct->max_pages;
-		break;
-	case JOBACCT_DATA_MAX_PAGES_ID:
-		*jobacct_id = jobacct->max_pages_id;
-		break;
-	case JOBACCT_DATA_TOT_PAGES:
-		*uint64 = jobacct->tot_pages;
-		break;
-	case JOBACCT_DATA_MIN_CPU:
-		*uint32 = jobacct->min_cpu;
-		break;
-	case JOBACCT_DATA_MIN_CPU_ID:
-		*jobacct_id = jobacct->min_cpu_id;
-		break;
-	case JOBACCT_DATA_TOT_CPU:
-		*dub = jobacct->tot_cpu;
-		break;
-	case JOBACCT_DATA_ACT_CPUFREQ:
-		*uint32 = jobacct->act_cpufreq;
-		break;
-	case JOBACCT_DATA_CONSUMED_ENERGY:
-		*uint64 = jobacct->energy.consumed_energy;
-		break;
-	case JOBACCT_DATA_MAX_DISK_READ:
-		*dub = jobacct->max_disk_read;
-		break;
-	case JOBACCT_DATA_MAX_DISK_READ_ID:
-		*jobacct_id = jobacct->max_disk_read_id;
-		break;
-	case JOBACCT_DATA_TOT_DISK_READ:
-		*dub = jobacct->tot_disk_read;
-		break;
-	case JOBACCT_DATA_MAX_DISK_WRITE:
-		*dub = jobacct->max_disk_write;
-		break;
-	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
-		*jobacct_id = jobacct->max_disk_write_id;
-		break;
-	case JOBACCT_DATA_TOT_DISK_WRITE:
-		*dub = jobacct->tot_disk_write;
+		*uint64 = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
 		break;
 	default:
 		debug("jobacct_g_set_getinfo data_type %d invalid", type);
@@ -903,40 +1063,118 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 
 	no_pack = (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD));
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!jobacct || no_pack) {
-			pack8((uint8_t) 0, buffer);
-			return;
-		}
-		pack8((uint8_t) 1, buffer);
+	if (!jobacct || no_pack) {
+		pack8((uint8_t) 0, buffer);
+		return;
+	}
 
+	pack8((uint8_t) 1, buffer);
+
+	if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
 		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
 		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
 		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
-		pack64(jobacct->max_vsize, buffer);
-		pack64(jobacct->tot_vsize, buffer);
-		pack64(jobacct->max_rss, buffer);
-		pack64(jobacct->tot_rss, buffer);
-		pack64(jobacct->max_pages, buffer);
-		pack64(jobacct->tot_pages, buffer);
-		pack32((uint32_t)jobacct->min_cpu, buffer);
-		packdouble(jobacct->tot_cpu, buffer);
 		pack32((uint32_t)jobacct->act_cpufreq, buffer);
 		pack64((uint64_t)jobacct->energy.consumed_energy, buffer);
 
-		packdouble((double)jobacct->max_disk_read, buffer);
-		packdouble((double)jobacct->tot_disk_read, buffer);
-		packdouble((double)jobacct->max_disk_write, buffer);
-		packdouble((double)jobacct->tot_disk_write, buffer);
+		pack32_array(jobacct->tres_ids, jobacct->tres_count, buffer);
 
-		_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_disk_read_id, rpc_version,
+		slurm_pack_list(jobacct->tres_list,
+				slurmdb_pack_tres_rec, buffer,
+				SLURM_PROTOCOL_VERSION);
+
+		pack64_array(jobacct->tres_usage_in_max,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_in_max_nodeid,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_in_max_taskid,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_in_min,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_in_min_nodeid,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_in_min_taskid,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_in_tot,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_out_max,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_out_max_nodeid,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_out_max_taskid,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_out_min,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_out_min_nodeid,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_out_min_taskid,
+			     jobacct->tres_count, buffer);
+		pack64_array(jobacct->tres_usage_out_tot,
+			     jobacct->tres_count, buffer);
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		jobacct_id_t jobacct_id;
+		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
+		pack64(jobacct->tres_usage_in_max[TRES_ARRAY_VMEM], buffer);
+		pack64(jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM], buffer);
+		pack64(jobacct->tres_usage_in_max[TRES_ARRAY_MEM], buffer);
+		pack64(jobacct->tres_usage_in_tot[TRES_ARRAY_MEM], buffer);
+		pack64(jobacct->tres_usage_in_max[TRES_ARRAY_PAGES], buffer);
+		pack64(jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES], buffer);
+		pack32((uint32_t)jobacct->tres_usage_in_min[TRES_ARRAY_CPU],
+		       buffer);
+		packdouble((double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU],
+			   buffer);
+		pack32((uint32_t)jobacct->act_cpufreq, buffer);
+		pack64((uint64_t)jobacct->energy.consumed_energy, buffer);
+
+		packdouble((double)jobacct->tres_usage_in_max[
+				   TRES_ARRAY_FS_DISK], buffer);
+		packdouble((double)jobacct->tres_usage_in_tot[
+				   TRES_ARRAY_FS_DISK], buffer);
+		packdouble((double)jobacct->tres_usage_out_max[
+				   TRES_ARRAY_FS_DISK], buffer);
+		packdouble((double)jobacct->tres_usage_out_tot[
+				   TRES_ARRAY_FS_DISK], buffer);
+		jobacct_id.nodeid =
+			jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_VMEM];
+		jobacct_id.taskid =
+			jobacct->tres_usage_in_max_taskid[TRES_ARRAY_VMEM];
+		_pack_jobacct_id(&jobacct_id, rpc_version, buffer);
+
+		jobacct_id.nodeid =
+			jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_MEM];
+		jobacct_id.taskid =
+			jobacct->tres_usage_in_max_taskid[TRES_ARRAY_MEM];
+		_pack_jobacct_id(&jobacct_id, rpc_version, buffer);
+
+		jobacct_id.nodeid =
+			jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_PAGES];
+		jobacct_id.taskid =
+			jobacct->tres_usage_in_max_taskid[TRES_ARRAY_PAGES];
+		_pack_jobacct_id(&jobacct_id, rpc_version, buffer);
+
+		jobacct_id.nodeid =
+			jobacct->tres_usage_in_min_nodeid[TRES_ARRAY_CPU];
+		jobacct_id.taskid =
+			jobacct->tres_usage_in_min_taskid[TRES_ARRAY_CPU];
+		_pack_jobacct_id(&jobacct_id, rpc_version, buffer);
+
+		jobacct_id.nodeid =
+			jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_FS_DISK];
+		jobacct_id.taskid =
+			jobacct->tres_usage_in_max_taskid[TRES_ARRAY_FS_DISK];
+		_pack_jobacct_id(&jobacct_id, rpc_version,
 			buffer);
-		_pack_jobacct_id(&jobacct->max_disk_write_id, rpc_version,
+
+		jobacct_id.nodeid =
+			jobacct->tres_usage_out_max_nodeid[TRES_ARRAY_FS_DISK];
+		jobacct_id.taskid =
+			jobacct->tres_usage_out_max_taskid[TRES_ARRAY_FS_DISK];
+		_pack_jobacct_id(&jobacct_id, rpc_version,
 			buffer);
 	} else {
 		info("jobacctinfo_pack version %u not supported", rpc_version);
@@ -954,12 +1192,20 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	if (jobacct_gather_init() < 0)
 		return SLURM_ERROR;
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp == (uint8_t) 0)
-			return SLURM_SUCCESS;
-		if (alloc)
-			*jobacct = xmalloc(sizeof(struct jobacctinfo));
+	safe_unpack8(&uint8_tmp, buffer);
+	if (uint8_tmp == (uint8_t) 0)
+		return SLURM_SUCCESS;
+
+	xassert(jobacct);
+
+	if (alloc)
+		*jobacct = xmalloc(sizeof(struct jobacctinfo));
+	else {
+		xassert(*jobacct);
+		_free_tres_usage(*jobacct);
+	}
+
+	if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -968,40 +1214,132 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		(*jobacct)->sys_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->sys_cpu_usec = uint32_tmp;
-		safe_unpack64(&(*jobacct)->max_vsize, buffer);
-		safe_unpack64(&(*jobacct)->tot_vsize, buffer);
-		safe_unpack64(&(*jobacct)->max_rss, buffer);
-		safe_unpack64(&(*jobacct)->tot_rss, buffer);
-		safe_unpack64(&(*jobacct)->max_pages, buffer);
-		safe_unpack64(&(*jobacct)->tot_pages, buffer);
-		safe_unpack32(&(*jobacct)->min_cpu, buffer);
-		safe_unpackdouble(&(*jobacct)->tot_cpu, buffer);
+
 		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
 		safe_unpack64(&(*jobacct)->energy.consumed_energy, buffer);
 
-		safe_unpackdouble(&(*jobacct)->max_disk_read, buffer);
-		safe_unpackdouble(&(*jobacct)->tot_disk_read, buffer);
-		safe_unpackdouble(&(*jobacct)->max_disk_write, buffer);
-		safe_unpackdouble(&(*jobacct)->tot_disk_write, buffer);
+		safe_unpack32_array(&(*jobacct)->tres_ids,
+				    &(*jobacct)->tres_count, buffer);
+		slurm_unpack_list(&(*jobacct)->tres_list,
+				  slurmdb_unpack_tres_rec,
+				  slurmdb_destroy_tres_rec,
+				  buffer, rpc_version);
+		safe_unpack64_array(&(*jobacct)->tres_usage_in_max,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_in_max_nodeid,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_in_max_taskid,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_in_min,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_in_min_nodeid,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_in_min_taskid,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_in_tot,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_out_max,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_out_max_nodeid,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_out_max_taskid,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_out_min,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_out_min_nodeid,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_out_min_taskid,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&(*jobacct)->tres_usage_out_tot,
+				    &uint32_tmp, buffer);
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		double tmp_double;
+		uint32_t tmp_uint32;
+		uint16_t tmp_uint16;
 
-		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_disk_read_id,
-			rpc_version, buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_disk_write_id,
-			rpc_version, buffer) != SLURM_SUCCESS)
-			goto unpack_error;
+		_init_tres_usage(*jobacct, NULL, TRES_ARRAY_TOTAL_CNT);
+
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_usec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_usec = uint32_tmp;
+
+		safe_unpack64(&(*jobacct)->tres_usage_in_max[TRES_ARRAY_VMEM],
+			      buffer);
+		safe_unpack64(&(*jobacct)->tres_usage_in_tot[TRES_ARRAY_VMEM],
+			      buffer);
+		safe_unpack64(&(*jobacct)->tres_usage_in_max[TRES_ARRAY_MEM],
+			      buffer);
+		safe_unpack64(&(*jobacct)->tres_usage_in_tot[TRES_ARRAY_MEM],
+			      buffer);
+		safe_unpack64(&(*jobacct)->tres_usage_in_max[TRES_ARRAY_PAGES],
+			      buffer);
+		safe_unpack64(&(*jobacct)->tres_usage_in_tot[TRES_ARRAY_PAGES],
+			      buffer);
+
+		safe_unpack32(&tmp_uint32, buffer);
+		(*jobacct)->tres_usage_in_min[TRES_ARRAY_CPU] = tmp_uint32;
+		safe_unpackdouble(&tmp_double, buffer);
+		(*jobacct)->tres_usage_in_tot[TRES_ARRAY_CPU] = tmp_double;
+
+		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
+		safe_unpack64(&(*jobacct)->energy.consumed_energy, buffer);
+
+		safe_unpackdouble(&tmp_double, buffer);
+		(*jobacct)->tres_usage_in_max[TRES_ARRAY_FS_DISK] =
+			tmp_double * 1024 * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		(*jobacct)->tres_usage_in_tot[TRES_ARRAY_FS_DISK] =
+			tmp_double * 1024 * 1024;
+
+		safe_unpackdouble(&tmp_double, buffer);
+		(*jobacct)->tres_usage_out_tot[TRES_ARRAY_FS_DISK] =
+			tmp_double * 1024 * 1024;
+		safe_unpackdouble(&tmp_double, buffer);
+		(*jobacct)->tres_usage_out_tot[TRES_ARRAY_FS_DISK] =
+			tmp_double * 1024 * 1024;
+
+		safe_unpack32(&tmp_uint32, buffer);
+		(*jobacct)->tres_usage_in_max_nodeid[TRES_ARRAY_VMEM] =
+			tmp_uint32;
+		safe_unpack16(&tmp_uint16, buffer);
+		(*jobacct)->tres_usage_in_max_taskid[TRES_ARRAY_VMEM] =
+			tmp_uint16;
+		safe_unpack32(&tmp_uint32, buffer);
+		(*jobacct)->tres_usage_in_max_nodeid[TRES_ARRAY_MEM] =
+			tmp_uint32;
+		safe_unpack16(&tmp_uint16, buffer);
+		(*jobacct)->tres_usage_in_max_taskid[TRES_ARRAY_MEM] =
+			tmp_uint16;
+		safe_unpack32(&tmp_uint32, buffer);
+		(*jobacct)->tres_usage_in_max_nodeid[TRES_ARRAY_PAGES] =
+			tmp_uint32;
+		safe_unpack16(&tmp_uint16, buffer);
+		(*jobacct)->tres_usage_in_max_taskid[TRES_ARRAY_PAGES] =
+			tmp_uint16;
+		safe_unpack32(&tmp_uint32, buffer);
+		(*jobacct)->tres_usage_in_min_nodeid[TRES_ARRAY_CPU] =
+			tmp_uint32;
+		safe_unpack16(&tmp_uint16, buffer);
+		(*jobacct)->tres_usage_in_min_taskid[TRES_ARRAY_CPU] =
+			tmp_uint16;
+		safe_unpack32(&tmp_uint32, buffer);
+		(*jobacct)->tres_usage_in_max_nodeid[TRES_ARRAY_FS_DISK] =
+			tmp_uint32;
+		safe_unpack16(&tmp_uint16, buffer);
+		(*jobacct)->tres_usage_in_max_taskid[TRES_ARRAY_FS_DISK] =
+			tmp_uint16;
+
+		safe_unpack32(&tmp_uint32, buffer);
+		(*jobacct)->tres_usage_out_max_nodeid[TRES_ARRAY_FS_DISK] =
+			tmp_uint32;
+		safe_unpack16(&tmp_uint16, buffer);
+		(*jobacct)->tres_usage_out_max_taskid[TRES_ARRAY_FS_DISK] =
+			tmp_uint16;
 	} else {
 		info("jobacctinfo_unpack version %u not supported",
 		     rpc_version);
@@ -1014,7 +1352,8 @@ unpack_error:
 	debug2("jobacctinfo_unpack: unpack_error: size_buf(buffer) %u",
 	       size_buf(buffer));
 	if (alloc)
-		xfree(*jobacct);
+		jobacctinfo_destroy(*jobacct);
+
        	return SLURM_ERROR;
 }
 
@@ -1025,47 +1364,8 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 
 	xassert(dest);
 
-	if (!from || (from->min_cpu == (uint32_t)NO_VAL))
+	if (!from)
 		return;
-
-	if (dest->max_vsize < from->max_vsize) {
-		dest->max_vsize = from->max_vsize;
-		dest->max_vsize_id = from->max_vsize_id;
-	}
-	dest->tot_vsize += from->tot_vsize;
-
-	if (dest->max_rss < from->max_rss) {
-		dest->max_rss = from->max_rss;
-		dest->max_rss_id = from->max_rss_id;
-	}
-	dest->tot_rss += from->tot_rss;
-
-	if (dest->max_pages < from->max_pages) {
-		dest->max_pages = from->max_pages;
-		dest->max_pages_id = from->max_pages_id;
-	}
-	dest->tot_pages += from->tot_pages;
-
-	if ((dest->min_cpu > from->min_cpu)
-	    || (dest->min_cpu == (uint32_t)NO_VAL)) {
-		if (from->min_cpu == (uint32_t)NO_VAL)
-			from->min_cpu = 0;
-		dest->min_cpu = from->min_cpu;
-		dest->min_cpu_id = from->min_cpu_id;
-	}
-	dest->tot_cpu += from->tot_cpu;
-
-	if (dest->max_vsize_id.taskid == (uint16_t)NO_VAL)
-		dest->max_vsize_id = from->max_vsize_id;
-
-	if (dest->max_rss_id.taskid == (uint16_t)NO_VAL)
-		dest->max_rss_id = from->max_rss_id;
-
-	if (dest->max_pages_id.taskid == (uint16_t)NO_VAL)
-		dest->max_pages_id = from->max_pages_id;
-
-	if (dest->min_cpu_id.taskid == (uint16_t)NO_VAL)
-		dest->min_cpu_id = from->min_cpu_id;
 
 	dest->user_cpu_sec	+= from->user_cpu_sec;
 	dest->user_cpu_usec	+= from->user_cpu_usec;
@@ -1088,17 +1388,7 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 					from->energy.consumed_energy;
 	}
 
-	if (dest->max_disk_read < from->max_disk_read) {
-		dest->max_disk_read = from->max_disk_read;
-		dest->max_disk_read_id = from->max_disk_read_id;
-	}
-	dest->tot_disk_read += from->tot_disk_read;
-
-	if (dest->max_disk_write < from->max_disk_write) {
-		dest->max_disk_write = from->max_disk_write;
-		dest->max_disk_write_id = from->max_disk_write_id;
-	}
-	dest->tot_disk_write += from->tot_disk_write;
+	_jobacctinfo_aggregate_tres_usage(dest, from);
 }
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
@@ -1106,34 +1396,13 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	xassert(jobacct);
 	xassert(stats);
 
-	stats->vsize_max = jobacct->max_vsize;
-	stats->vsize_max_nodeid = jobacct->max_vsize_id.nodeid;
-	stats->vsize_max_taskid = jobacct->max_vsize_id.taskid;
-	stats->vsize_ave = (double)jobacct->tot_vsize;
-	stats->rss_max = jobacct->max_rss;
-	stats->rss_max_nodeid = jobacct->max_rss_id.nodeid;
-	stats->rss_max_taskid = jobacct->max_rss_id.taskid;
-	stats->rss_ave = (double)jobacct->tot_rss;
-	stats->pages_max = jobacct->max_pages;
-	stats->pages_max_nodeid = jobacct->max_pages_id.nodeid;
-	stats->pages_max_taskid = jobacct->max_pages_id.taskid;
-	stats->pages_ave = (double)jobacct->tot_pages;
-	stats->cpu_min = jobacct->min_cpu;
-	stats->cpu_min_nodeid = jobacct->min_cpu_id.nodeid;
-	stats->cpu_min_taskid = jobacct->min_cpu_id.taskid;
-	stats->cpu_ave = jobacct->tot_cpu;
 	stats->act_cpufreq = (double)jobacct->act_cpufreq;
+
 	if (jobacct->energy.consumed_energy == NO_VAL64)
 		stats->consumed_energy = NO_VAL64;
 	else
 		stats->consumed_energy =
 			(double)jobacct->energy.consumed_energy;
-	stats->disk_read_max = jobacct->max_disk_read;
-	stats->disk_read_max_nodeid = jobacct->max_disk_read_id.nodeid;
-	stats->disk_read_max_taskid = jobacct->max_disk_read_id.taskid;
-	stats->disk_read_ave = jobacct->tot_disk_read;
-	stats->disk_write_max = jobacct->max_disk_write;
-	stats->disk_write_max_nodeid = jobacct->max_disk_write_id.nodeid;
-	stats->disk_write_max_taskid = jobacct->max_disk_write_id.taskid;
-	stats->disk_write_ave = jobacct->tot_disk_write;
+
+	_jobacctinfo_2_stats_tres_usage(stats, jobacct);
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test of batch job with multiple concurrent job steps
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -12,22 +12,22 @@
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -43,10 +43,6 @@ set steps_started        30
 
 print_header $test_id
 
-if {[test_bluegene]} {
-	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
-	exit $exit_code
-}
 if {[test_alps]} {
 	send_user "\nWARNING: This test is incompatible with Cray/ALPS systems\n"
 	exit $exit_code
@@ -92,12 +88,8 @@ make_bash_script $file_in "
 #
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
+set node_cnt 1-4
 set timeout $max_job_delay
-if { [test_xcpu] } {
-	set node_cnt 1-1
-} else {
-	set node_cnt 1-4
-}
 
 set srun_pid [eval spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 --gres=craynetwork:0 $job_mem_opt $file_in]
 expect {

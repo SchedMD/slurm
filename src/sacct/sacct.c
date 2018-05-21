@@ -1,15 +1,15 @@
 /*****************************************************************************\
- *  sacct.c - job accounting reports for SLURM's jobacct/log plugin
+ *  sacct.c - job accounting reports for Slurm's jobacct/log plugin
  *****************************************************************************
  *
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -96,7 +96,7 @@ print_field_t fields[] = {
 	{10, "MinCPUNode", print_fields_str, PRINT_MINCPUNODE},
 	{10, "MinCPUTask", print_fields_uint, PRINT_MINCPUTASK},
 	{10, "NCPUS", print_fields_uint, PRINT_ALLOC_CPUS},
-	{8,  "NNodes", print_fields_str, PRINT_NNODES},
+	{8,  "NNodes", print_fields_uint, PRINT_NNODES},
 	{15, "NodeList", print_fields_str, PRINT_NODELIST},
 	{8,  "NTasks", print_fields_uint, PRINT_NTASKS},
 	{10, "Priority", print_fields_uint, PRINT_PRIO},
@@ -122,8 +122,25 @@ print_field_t fields[] = {
 	{19, "Submit", print_fields_date, PRINT_SUBMIT},
 	{10, "Suspended", print_fields_time_from_secs, PRINT_SUSPENDED},
 	{10, "SystemCPU", print_fields_str, PRINT_SYSTEMCPU},
+	{15, "SystemComment", print_fields_str, PRINT_SYSTEM_COMMENT},
 	{10, "Timelimit", print_fields_str, PRINT_TIMELIMIT},
 	{10, "TotalCPU", print_fields_str, PRINT_TOTALCPU},
+	{14, "TRESUsageInAve", print_fields_str, PRINT_TRESUIA},
+	{14, "TRESUsageInMax", print_fields_str, PRINT_TRESUIM},
+	{18, "TRESUsageInMaxNode", print_fields_str, PRINT_TRESUIMN},
+	{18, "TRESUsageInMaxTask", print_fields_str, PRINT_TRESUIMT},
+	{14, "TRESUsageInMin", print_fields_str, PRINT_TRESUIMI},
+	{18, "TRESUsageInMinNode", print_fields_str, PRINT_TRESUIMIN},
+	{18, "TRESUsageInMinTask", print_fields_str, PRINT_TRESUIMIT},
+	{14, "TRESUsageInTot", print_fields_str, PRINT_TRESUIT},
+	{15, "TRESUsageOutAve", print_fields_str, PRINT_TRESUOA},
+	{15, "TRESUsageOutMax", print_fields_str, PRINT_TRESUOM},
+	{19, "TRESUsageOutMaxNode", print_fields_str, PRINT_TRESUOMN},
+	{19, "TRESUsageOutMaxTask", print_fields_str, PRINT_TRESUOMT},
+	{15, "TRESUsageOutMin", print_fields_str, PRINT_TRESUOMI},
+	{19, "TRESUsageOutMinNode", print_fields_str, PRINT_TRESUOMIN},
+	{19, "TRESUsageOutMinTask", print_fields_str, PRINT_TRESUOMIT},
+	{15, "TRESUsageOutTot", print_fields_str, PRINT_TRESUOT},
 	{6,  "UID", print_fields_uint, PRINT_UID},
 	{9,  "User", print_fields_str, PRINT_USER},
 	{10, "UserCPU", print_fields_str, PRINT_USERCPU},

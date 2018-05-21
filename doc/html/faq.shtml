@@ -31,7 +31,8 @@
   name for a batch job?</a></li>
 <li><a href="#parallel_make">Can the <i>make</i> command utilize the resources
   allocated to a Slurm job?</a></li>
-<li><a href="#terminal">Can tasks be launched with a remote terminal?</a></li>
+<li><a href="#terminal">Can tasks be launched with a remote (pseudo)
+  terminal?</a></li>
 <li><a href="#force">What does &quot;srun: Force Terminated job&quot;
   indicate?</a></li>
 <li><a href="#early_exit">What does this mean: &quot;srun: First task exited
@@ -63,6 +64,10 @@
   and srun commands?</a></li>
 <li><a href="#squeue_color">Can squeue output be color coded?</a></li>
 <li><a href="#x11">Can Slurm export an X11 display on an allocated compute node?</a></li>
+<li><a href="#unbuffered_cr">Why is the srun --u/--unbuffered option adding
+   a carriage return to my output?</a></li>
+<li><a href="#sview_colors">Why is sview not coloring/highlighting nodes
+    properly?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -100,8 +105,6 @@
 <li><a href="#large_time">What does
   &quot;Warning: Note very large processing time&quot;
   in the <i>SlurmctldLogFile</i> indicate?</a></li>
-<li><a href="#lightweight_core">How can I add support for lightweight
-  core files?</a></li>
 <li><a href="#limit_propagation">Is resource limit propagation
   useful on a homogeneous cluster?</a></li>
 <li><a href="#clock">Do I need to maintain synchronized clocks
@@ -188,6 +191,10 @@ script for Slurm?</a></li>
     of the jobs belonging to a speciic user, partition, etc?</a></li>
 <li><a href="#changed_uid">I had to change a user's UID and now they cannot submit
     jobs. How do I get the new UID to take effect?</a></li>
+<li><a href="#mysql_duplicate">Slurmdbd is failing to start with a 'Duplicate entry'
+    error in the database. How do I fix that?</a></li>
+<li><a href="#cray_sigbus">Why are applications on my Cray system failing
+    with SIGBUS (bus error)?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -464,105 +471,9 @@ overhead of Slurm's task launch. Use with make's <i>-j</i> option within an
 existing Slurm allocation. Outside of a Slurm allocation, make's behavior
 will be unchanged.</p>
 
-<p><a name="terminal"><b>15. Can tasks be launched with a remote
+<p><a name="terminal"><b>15. Can tasks be launched with a remote (pseudo)
 terminal?</b></a><br>
-In Slurm version 1.3 or higher, use srun's <i>--pty</i> option.
-Until then, you can accomplish this by starting an appropriate program
-or script. In the simplest case (X11 over TCP with the DISPLAY
-environment already set), executing <i>srun xterm</i> may suffice.
-In the more general case, the following scripts should work.
-<b>NOTE: The pathname to the additional scripts are included in the
-variables BS and IS of the first script. You must change this in the
-first script.</b>
-Execute the script with the sbatch options desired.
-For example, <i>interactive -N2 -pdebug</i>.
-
-<pre>
-#!/bin/bash
-# -*- coding: utf-8 -*-
-# Author: P&auml;r Andersson (National Supercomputer Centre, Sweden)
-# Version: 0.3 2007-07-30
-#
-# This will submit a batch script that starts screen on a node.
-# Then ssh is used to connect to the node and attach the screen.
-# The result is very similar to an interactive shell in PBS
-# (qsub -I)
-
-# Batch Script that starts SCREEN
-BS=/INSTALL_DIRECTORY/_interactive
-# Interactive screen script
-IS=/INSTALL_DIRECTORY/_interactive_screen
-
-# Submit the job and get the job id
-JOB=`sbatch --output=/dev/null --error=/dev/null $@ $BS 2>&1 \
-    | egrep -o -e "\b[0-9]+$"`
-
-# Make sure the job is always canceled
-trap "{ /usr/bin/scancel -q $JOB; exit; }" SIGINT SIGTERM EXIT
-
-echo "Waiting for JOBID $JOB to start"
-while true;do
-    sleep 5s
-
-    # Check job status
-    STATUS=`squeue -j $JOB -t PD,R -h -o %t`
-
-    if [ "$STATUS" = "R" ];then
-	# Job is running, break the while loop
-	break
-    elif [ "$STATUS" != "PD" ];then
-	echo "Job is not Running or Pending. Aborting"
-	scancel $JOB
-	exit 1
-    fi
-
-    echo -n "."
-
-done
-
-# Determine the first node in the job:
-NODE=`srun --jobid=$JOB -N1 hostname`
-
-# SSH to the node and attach the screen
-sleep 1s
-ssh -X -t $NODE $IS slurm$JOB
-# The trap will now cancel the job before exiting.
-</pre>
-
-<p>NOTE: The above script executes the script below,
-named <i>_interactive</i>.</p>
-<pre>
-#!/bin/sh
-# -*- coding: utf-8 -*-
-# Author: P&auml;r Andersson  (National Supercomputer Centre, Sweden)
-# Version: 0.2 2007-07-30
-#
-# Simple batch script that starts SCREEN.
-
-exec screen -Dm -S slurm$SLURM_JOB_ID
-</pre>
-
-<p>The following script named <i>_interactive_screen</i> is also used.</p>
-<pre>
-#!/bin/sh
-# -*- coding: utf-8 -*-
-# Author: P&auml;r Andersson  (National Supercomputer Centre, Sweden)
-# Version: 0.3 2007-07-30
-#
-
-SCREENSESSION=$1
-
-# If DISPLAY is set then set that in the screen, then create a new
-# window with that environment and kill the old one.
-if [ "$DISPLAY" != "" ];then
-    screen -S $SCREENSESSION -X unsetenv DISPLAY
-    screen -p0 -S $SCREENSESSION -X setenv DISPLAY $DISPLAY
-    screen -p0 -S $SCREENSESSION -X screen
-    screen -p0 -S $SCREENSESSION -X kill
-fi
-
-exec screen -S $SCREENSESSION -rd
-</pre>
+Use srun's <i>--pty</i> option.
 
 <p><a name="force"><b>16. What does &quot;srun: Force Terminated job&quot;
 indicate?</b></a><br>
@@ -647,18 +558,18 @@ One of the distribution methods for srun '<b>-m</b>
 or <b>--distribution</b>' is 'arbitrary'.  This means you can tell Slurm to
 layout your tasks in any fashion you want.  For instance if I had an
 allocation of 2 nodes and wanted to run 4 tasks on the first node and
-1 task on the second and my nodes allocated from SLURM_NODELIST
+1 task on the second and my nodes allocated from SLURM_JOB_NODELIST
 where tux[0-1] my srun line would look like this:<br><br>
 <i>srun -n5 -m arbitrary -w tux[0,0,0,0,1] hostname</i><br><br>
 If I wanted something similar but wanted the third task to be on tux 1
 I could run this:<br><br>
 <i>srun -n5 -m arbitrary -w tux[0,0,1,0,0] hostname</i><br><br>
 Here is a simple perl script named arbitrary.pl that can be ran to easily lay
-out tasks on nodes as they are in SLURM_NODELIST.</p>
+out tasks on nodes as they are in SLURM_JOB_NODELIST.</p>
 <pre>
 #!/usr/bin/perl
 my @tasks = split(',', $ARGV[0]);
-my @nodes = `scontrol show hostnames $SLURM_NODELIST`;
+my @nodes = `scontrol show hostnames $SLURM_JOB_NODELIST`;
 my $node_cnt = $#nodes + 1;
 my $task_cnt = $#tasks + 1;
 
@@ -718,7 +629,7 @@ While the size of a pending job may be changed with few restrictions, several
 significant restrictions apply to changing the size of a running job as noted
 below:
 <ol>
-<li>Support is not available on BlueGene or Cray system due to limitations
+<li>Support is not available on BlueGene or Cray ALPS system due to limitations
 in the software underlying Slurm.</li>
 <li>Job(s) changing size must not be in a suspended state, including jobs
 suspended for gang scheduling. The jobs must be in a state of pending or
@@ -734,8 +645,8 @@ Any job steps running on the nodes which are relinquished by the job will be
 killed unless initiated with the <i>--no-kill</i> option.
 After the job size is changed, some environment variables created by Slurm
 containing information about the job's environment will no longer be valid and
-should either be removed or altered (e.g. SLURM_NNODES, SLURM_NODELIST and
-SLURM_NPROCS).
+should either be removed or altered (e.g. SLURM_JOB_NODES, SLURM_JOB_NODELIST and
+SLURM_NTASKS).
 The <i>scontrol</i> command will generate a script that can be executed to
 reset local environment variables.
 You must retain the SLURM_JOB_ID environment variable in order for the
@@ -835,7 +746,7 @@ $ scontrol update jobid=$SLURM_JOB_ID NumNodes=ALL
 To reset Slurm environment variables, execute
   For bash or sh shells:  . ./slurm_job_65542_resize.sh
   For csh shells:         source ./slurm_job_65542_resize.csh
-$ . ./slurm_job_$SLURM_JOB_ID_resize.sh
+$ . ./slurm_job_${SLURM_JOB_ID}_resize.sh
 
 $ srun hostname
 icrm1
@@ -1098,6 +1009,25 @@ $ srun -n1 --pty --x11 xclock
 adam@node1's password:
 </pre>
 
+<p><a name="unbuffered_cr"><b>34. Why is the srun --u/--unbuffered option adding
+   a carriage character return to my output?</b></a><br>
+The libc library used by many programs internally buffers output rather than
+writing it immediately. This is done for performance reasons.
+The only way to disable this internal buffering is to configure the program to
+write to a pseudo terminal (PTY) rather than to a regular file.
+This configuration causes <u>some</u> implementations of libc to prepend the
+carriage return character before all line feed characters.
+Removing the carriage return character would result in desired formatting
+in some instances, while causing bad formatting in other cases.
+In any case, Slurm is not adding the carriage return character, but displaying
+the actual program's output.</p>
+
+<p><a name="sview_colors"<b>35. Why is sview not coloring/highlighting nodes
+    properly?</b></a><br>
+sview color-coding is affected by the GTK theme. The node status grid
+is made up of button widgets and certain GTK themes don't show the color
+setting as desired. Changing GTK themes can restore proper color-coding.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 
@@ -1235,12 +1165,10 @@ Create a resource reservation as described b. Slurm's
 
 <p><a name="pam"><b>9. How can PAM be used to control a user's limits on
 or access to compute nodes?</b></a><br>
-You will need to build and install Slurm including it's PAM module
-(a <i>slurm_pam</i> package is provided, the code is located in the
-<i>contribs/pam</i> directory).
-First, enable Slurm's use of PAM by setting <i>UsePAM=1</i> in
-<i>slurm.conf</i>.<br>
-Second, establish PAM configuration file(s) for Slurm in <i>/etc/pam.conf</i>
+To control a user's limits on a compute node:<br>
+<p>First, enable Slurm's use of PAM by setting <i>UsePAM=1</i> in
+<i>slurm.conf</i>.</p>
+<p>Second, establish PAM configuration file(s) for Slurm in <i>/etc/pam.conf</i>
 or the appropriate files in the <i>/etc/pam.d</i> directory (e.g.
 <i>/etc/pam.d/sshd</i> by adding the line "account required pam_slurm.so".
 A basic configuration you might use is:</p>
@@ -1262,16 +1190,21 @@ all resource limits are propagated from that session. For example, adding
 the following line to <i>slurm.conf</i> will prevent the locked memory
 limit from being propagated:<i>PropagateResourceLimitsExcept=MEMLOCK</i>.</p>
 
-<p>We also have a PAM module for Slurm that prevents users from
+<p>To control a user's access to a compute node:</p>
+<p>The pam_slurm_adopt and pam_slurm modules prevent users from
 logging into nodes that they have not been allocated (except for user
-root, which can always login.
-This pam_slurm module is included with the Slurm distribution.
-The module is built by default, but can be disabled using the
-.rpmmacros option "%_without_pam 1" or by entering the command line
+root, which can always login).
+They are both included with the Slurm distribution.
+<p>The pam_slurm_adopt module is highly recommended for most installations,
+and is documented in its <a href="pam_slurm_adopt.shtml">own guide</a>.</p>
+<p>pam_slurm is older and less functional.
+These modules are built by default for RPM packages, but can be disabled using
+the .rpmmacros option "%_without_pam 1" or by entering the command line
 option "--without pam" when the configure program is executed.
-It's source code is in the directory "contribs/pam".
-The use of pam_slurm does not require <i>UsePAM</i> being set. The
-two uses of PAM are independent.
+Their source code is in the "contribs/pam" and "contribs/pam_slurm_adopt"
+directories respectively.</p>
+<p>The use of either pam_slurm_adopt or pam_slurm does not require
+<i>UsePAM</i> being set. The two uses of PAM are independent.</p>
 
 <p><a name="time"><b>10. Why are jobs allocated nodes and then unable
 to initiate programs on some nodes?</b></a><br>
@@ -1300,8 +1233,7 @@ will be out of service for an extended period of time, it may be desirable
 to relocate them. In order to do so, follow this procedure:</p>
 <ol>
 <li>Stop all Slurm daemons</li>
-<li>Modify the <i>ControlMachine</i>, <i>ControlAddr</i>,
-<i>BackupController</i>, and/or <i>BackupAddr</i> in the <i>slurm.conf</i> file</li>
+<li>Modify the <i>SlurmctldHost</i> values in the <i>slurm.conf</i> file</li>
 <li>Distribute the updated <i>slurm.conf</i> file to all nodes</li>
 <li>Copy the <i>StateSaveLocation</i> directory to the new host and
 make sure the permissions allow the <i>SlurmUser</i> to read and write it.
@@ -1311,11 +1243,10 @@ make sure the permissions allow the <i>SlurmUser</i> to read and write it.
 any nodes added to the cluster have a current <i>slurm.conf</i> file
 installed.
 <b>CAUTION:</b> If two nodes are simultaneously configured as the primary
-controller (two nodes on which <i>ControlMachine</i> specify the local host
+controller (two nodes on which <i>SlurmctldHost</i> specify the local host
 and the <i>slurmctld</i> daemon is executing on each), system behavior will be
-destructive. If a compute node has an incorrect <i>ControlMachine</i> or
-<i>BackupController</i> parameter, that node may be rendered unusable, but no
-other harm will result.
+destructive. If a compute node has an incorrect <i>SlurmctldHost</i> parameter,
+that node may be rendered unusable, but no other harm will result.
 
 <p><a name="multi_slurm"><b>13. Can multiple Slurm systems be run in
 parallel for testing purposes?</b></a><br>
@@ -1367,9 +1298,7 @@ NodeName=dummy26[1-100] NodeHostName=achille Port=[6001-6100] NodeAddr=127.0.0.1
 PartitionName=mira Default=yes Nodes=dummy26[1-100]
 </pre>
 
-<p>It is strongly recommended that Slurm version 1.2 or higher be used
-for this due to its improved support for multiple slurmd daemons.
-See the
+<p>See the
 <a href="programmer_guide.html#multiple_slurmd_support">Programmers Guide</a>
 for more details about configuring multiple slurmd support.</p>
 
@@ -1428,8 +1357,7 @@ $ squeue
 
 <p><a name="extra_procs"><b>15. Can Slurm emulate nodes with more
 resources than physically exist on the node?</b></a><br>
-Yes in Slurm version 1.2 or higher.
-In the <i>slurm.conf</i> file, set <i>FastSchedule=2</i> and specify
+Yes. In the slurm.conf file, configure <i>FastSchedule=2</i> and specify
 any desired node resource specifications (<i>CPUs</i>, <i>Sockets</i>,
 <i>CoresPerSocket</i>, <i>ThreadsPerCore</i>, and/or <i>TmpDisk</i>).
 Slurm will use the resource specification for each node that is
@@ -1458,11 +1386,8 @@ including
 <li>Very slow Network Information Service (NIS)</li>
 <li>The <i>Prolog</i> script taking a long time to complete</li>
 </ul>
-<p>In Slurm version 1.2, this can be addressed with the
-<i>MessageTimeout</i> configuration parameter by setting a
-value higher than the default 5 seconds.
-In earlier versions of Slurm, the <i>--msg-timeout</i> option
-of <i>srun</i> serves a similar purpose.
+<p>Configure <i>MessageTimeout</i> in slurm.conf to a value higher than the
+default 5 seconds.</p>
 
 <p><a name="large_time"><b>17. What does
 &quot;Warning: Note very large processing time&quot;
@@ -1478,20 +1403,7 @@ Another possibility is that the node on which the slurmctld
 daemon executes has exhausted memory and is paging.
 Try running the program <i>top</i> to check for this possibility.
 
-<p><a name="lightweight_core"><b>18. How can I add support for
-lightweight core files?</b></a><br>
-Slurm supports lightweight core files by setting environment variables
-based upon the <i>srun --core</i> option. Of particular note, it
-sets the <i>LD_PRELOAD</i> environment variable to load new functions
-used to process a core dump.
-First you will need to acquire and install a shared object
-library with the appropriate functions.
-Then edit the Slurm code in <i>src/srun/core-format.c</i> to
-specify a name for the core file type,
-add a test for the existence of the library,
-and set environment variables appropriately when it is used.
-
-<p><a name="limit_propagation"><b>19. Is resource limit propagation
+<p><a name="limit_propagation"><b>18. Is resource limit propagation
 useful on a homogeneous cluster?</b></a><br>
 Resource limit propagation permits a user to modify resource limits
 and submit a job with those limits.
@@ -1506,7 +1418,7 @@ option.
 See <i>"man slurm.conf"</i> and <i>"man srun"</i> for more information
 about these options.
 
-<p><a name="clock"><b>20. Do I need to maintain synchronized
+<p><a name="clock"><b>19. Do I need to maintain synchronized
 clocks on the cluster?</b></a><br>
 In general, yes. Having inconsistent clocks may cause nodes to
 be unusable. Slurm log files should contain references to
@@ -1517,14 +1429,14 @@ ENCODED: Wed May 12 12:34:56 2008
 DECODED: Wed May 12 12:01:12 2008
 </pre>
 
-<p><a name="cred_invalid"><b>21. Why are &quot;Invalid job credential&quot;
+<p><a name="cred_invalid"><b>20. Why are &quot;Invalid job credential&quot;
 errors generated?</b></a><br>
 This error is indicative of Slurm's job credential files being inconsistent across
 the cluster. All nodes in the cluster must have the matching public and private
 keys as defined by <b>JobCredPrivateKey</b> and <b>JobCredPublicKey</b> in the
 slurm configuration file <b>slurm.conf</b>.
 
-<p><a name="cred_replay"><b>22. Why are
+<p><a name="cred_replay"><b>21. Why are
 &quot;Task launch failed on node ... Job credential replayed&quot;
 errors generated?</b></a><br>
 This error indicates that a job credential generated by the slurmctld daemon
@@ -1545,21 +1457,21 @@ for jobs that it considers terminated.
 This solution to this problem is to cold-start all slurmd daemons whenever
 the slurmctld daemon is cold-started.
 
-<p><a name="globus"><b>23. Can Slurm be used with Globus?</b></a><br>
+<p><a name="globus"><b>22. Can Slurm be used with Globus?</b></a><br>
 Yes. Build and install Slurm's Torque/PBS command wrappers along with
 the Perl APIs from Slurm's <i>contribs</i> directory and configure
 <a href="http://www-unix.globus.org/">Globus</a> to use those PBS commands.
 Note there are RPMs available for both of these packages, named
 <i>torque</i> and <i>perlapi</i> respectively.
 
-<p><a name="file_limit"><b>24. What causes the error
+<p><a name="file_limit"><b>23. What causes the error
 &quot;Unable to accept new connection: Too many open files&quot;?</b></a><br>
 The srun command automatically increases its open file limit to
 the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.
 
-<p><a name="slurmd_log"><b>25. Why does the setting of <i>SlurmdDebug</i>
+<p><a name="slurmd_log"><b>24. Why does the setting of <i>SlurmdDebug</i>
 fail to log job step information at the appropriate level?</b></a><br>
 There are two programs involved here. One is <b>slurmd</b>, which is
 a persistent daemon running at the desired debug level. The second
@@ -1569,7 +1481,7 @@ an option of <i>--debug=#</i> will result in the desired level of
 detail being logged in the <i>SlurmdLogFile</i> plus the output
 of the program.
 
-<p><a name="rpm"><b>26. Why isn't the auth_none.so (or other file) in a
+<p><a name="rpm"><b>25. Why isn't the auth_none.so (or other file) in a
 Slurm RPM?</b></a><br>
 The auth_none plugin is in a separate RPM and not built by default.
 Using the auth_none plugin means that Slurm communications are not
@@ -1579,7 +1491,7 @@ add <i>--with auth_none</i> on the rpmbuild command line or add
 <i>%_with_auth_none</i> to your ~/rpmmacros file. See the file slurm.spec
 in the Slurm distribution for a list of other options.
 
-<p><a name="slurmdbd"><b>27. Why should I use the slurmdbd instead of the
+<p><a name="slurmdbd"><b>26. Why should I use the slurmdbd instead of the
 regular database plugins?</b></a><br>
 While the normal storage plugins will work fine without the added
 layer of the slurmdbd there are some great benefits to using the
@@ -1598,13 +1510,13 @@ slurmdbd you can also query any cluster using the slurmdbd from any
 other cluster's nodes.</li>
 </ol>
 
-<p><a name="debug"><b>28. How can I build Slurm with debugging symbols?</b></a></br>
+<p><a name="debug"><b>27. How can I build Slurm with debugging symbols?</b></a></br>
 Set your CFLAGS environment variable before building.
 You want the "-g" option to produce debugging information and
 "-O0" to set the optimization level to zero (off). For example:<br>
 CFLAGS="-g -O0" ./configure ...
 
-<p><a name="state_preserve"><b>29. How can I easily preserve drained node
+<p><a name="state_preserve"><b>28. How can I easily preserve drained node
 information between major Slurm updates?</b></a><br>
 Major Slurm updates generally have changes in the state save files and
 communication protocols, so a cold-start (without state) is generally
@@ -1617,7 +1529,7 @@ in a form that can be executed later to restore state.
 sinfo -t drain -h -o "scontrol update nodename='%N' state=drain reason='%E'"
 </pre>
 
-<p><a name="health_check"><b>30. Why doesn't the <i>HealthCheckProgram</i>
+<p><a name="health_check"><b>29. Why doesn't the <i>HealthCheckProgram</i>
 execute on DOWN nodes?</a></b><br>
 Hierarchical communications are used for sending this message. If there
 are DOWN nodes in the communications hierarchy, messages will need to
@@ -1645,7 +1557,7 @@ Index: src/slurmctld/ping_nodes.c
 			continue;
 </pre>
 
-<p><a name="batch_lost"><b>31. What is the meaning of the error
+<p><a name="batch_lost"><b>30. What is the meaning of the error
 &quot;Batch JobId=# missing from master node, killing it&quot;?</b></a><br>
 A shell is launched on node zero of a job's allocation to execute
 the submitted program. The <i>slurmd</i> daemon executing on each compute
@@ -1658,14 +1570,14 @@ failure that cannot be recovered from. The equivalent message in
 earlier releases of Slurm is
 &quot;Master node lost JobId=#, killing it&quot;.
 
-<p><a name="accept_again"><b>32. What does the message
+<p><a name="accept_again"><b>31. What does the message
 &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
 indicate?</b></a><br>
 This has been reported on some larger clusters running SUSE Linux when
 a user's resource limits are reached. You may need to increase limits
 for locked memory and stack size to resolve this problem.
 
-<p><a name="task_prolog"><b>33. How could I automatically print a job's
+<p><a name="task_prolog"><b>32. How could I automatically print a job's
 Slurm job ID to its standard output?</b></a></br>
 The configured <i>TaskProlog</i> is the only thing that can write to
 the job's standard output or set extra environment variables for a job
@@ -1685,12 +1597,12 @@ if [ X"$SLURM_STEP_ID" = "X" -a X"$SLURM_PROCID" = "X"0 ]
 then
   echo "print =========================================="
   echo "print SLURM_JOB_ID = $SLURM_JOB_ID"
-  echo "print SLURM_NODELIST = $SLURM_NODELIST"
+  echo "print SLURM_JOB_NODELIST = $SLURM_JOB_NODELIST"
   echo "print =========================================="
 fi
 </pre>
 
-<p><a name="orphan_procs"><b>34. Why are user processes and <i>srun</i>
+<p><a name="orphan_procs"><b>33. Why are user processes and <i>srun</i>
 running even though the job is supposed to be completed?</b></a></br>
 Slurm relies upon a configurable process tracking plugin to determine
 when all of the processes associated with a job or job step have completed.
@@ -1699,7 +1611,7 @@ Those plugins dependent upon process group IDs or parent process IDs are not
 reliable. See the <i>ProctrackType</i> description in the <i>slurm.conf</i>
 man page for details. We rely upon the sgi_job for most systems.</p>
 
-<p><a name="slurmd_oom"><b>35. How can I prevent the <i>slurmd</i> and
+<p><a name="slurmd_oom"><b>34. How can I prevent the <i>slurmd</i> and
 <i>slurmstepd</i> daemons from being killed when a node's memory
 is exhausted?</b></a></br>
 You can set the value in the <i>/proc/self/oom_adj</i> for
@@ -1708,7 +1620,7 @@ daemon with the <i>SLURMD_OOM_ADJ</i> and/or <i>SLURMSTEPD_OOM_ADJ</i>
 environment variables set to the desired values.
 A value of -17 typically will disable killing.</p>
 
-<p><a name="ubuntu"><b>36. I see my host of my calling node as 127.0.1.1
+<p><a name="ubuntu"><b>35. I see my host of my calling node as 127.0.1.1
     instead of the correct IB address.  Why is that?</b></a></br>
 Some systems by default will put your host in the /etc/hosts file as
 something like</p>
@@ -1720,13 +1632,13 @@ instead of the correct address and prevent communications between nodes.
 The solution is to either remove this line or configure a different NodeAddr
 that is known by your other nodes.</p>
 
-<p>The TopologyParam=NoInAddrAny configuration parameter is subject to this
-same problem, which can also be addressed by removing actual node
+<p>The CommunicationParameters=NoInAddrAny configuration parameter is subject to
+this same problem, which can also be addressed by removing actual node
 name from the "127.0.1.1" as well as the "127.0.0.1"
 addresses in the /etc/hosts file.  It is ok if they point to
 localhost, but not the actual name of the node.</p>
 
-<p><a name="stop_sched"><b>37. How can I stop Slurm from scheduling jobs?</b></a></br>
+<p><a name="stop_sched"><b>36. How can I stop Slurm from scheduling jobs?</b></a></br>
 You can stop Slurm from scheduling jobs on a per partition basis by setting
 that partition's state to DOWN. Set its state UP to resume scheduling.
 For example:
@@ -1735,7 +1647,7 @@ $ scontrol update PartitionName=foo State=DOWN
 $ scontrol update PartitionName=bar State=UP
 </pre></p>
 
-<p><a name="scontrol_multi_jobs"><b>38. Can I update multiple jobs with a
+<p><a name="scontrol_multi_jobs"><b>37. Can I update multiple jobs with a
 single <i>scontrol</i> command?</b></a></br>
 No, but you can probably use <i>squeue</i> to build the script taking
 advantage of its filtering and formatting options. For example:
@@ -1743,7 +1655,7 @@ advantage of its filtering and formatting options. For example:
 $ squeue -tpd -h -o "scontrol update jobid=%i priority=1000" >my.script
 </pre></p>
 
-<p><a name="amazon_ec2"><b>39. Can Slurm be used to run jobs on
+<p><a name="amazon_ec2"><b>38. Can Slurm be used to run jobs on
 Amazon's EC2?</b></a></br>
 <p>Yes, here is a description of use Slurm use with
 <a href="http://aws.amazon.com/ec2/">Amazon's EC2</a> courtesy of
@@ -1767,7 +1679,7 @@ which I then copy over the /usr/local on the first instance and NFS export to
 all other instances.  This way I have persistent home directories and a very
 simple first-login script that configures the virtual cluster for me.</p>
 
-<p><a name="core_dump"><b>40. If a Slurm daemon core dumps, where can I find the
+<p><a name="core_dump"><b>39. If a Slurm daemon core dumps, where can I find the
 core file?</b></a></br>
 <p>For <i>slurmctld</i>, the core file will be in the same directory as its
 log files (<i>SlurmctldLogFile</i>) if configured using an fully qualified
@@ -1805,7 +1717,7 @@ Oct 15 11:31:20 knc abrtd: Directory 'ccpp-2015-10-15-11:31:20-21477' creation d
 in the core_pattern. For example:<br>
 sysctl kernel.core_pattern=/tmp/core.%e.%p</p>
 
-<p><a name="totalview"><b>41. How can TotalView be configured to operate with
+<p><a name="totalview"><b>40. How can TotalView be configured to operate with
   Slurm?</b></a></br>
 <p>The following lines should also be added to the global <i>.tvdrc</i> file
 for TotalView to operate with Slurm:
@@ -1840,7 +1752,7 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p><a name="git_patch"><b>42. How can a patch file be generated from a Slurm
+<p><a name="git_patch"><b>41. How can a patch file be generated from a Slurm
 commit in github?</b></a></br>
 <p>Find and open the commit in github then append ".patch" to the URL and save
 the resulting file. For an example, see:
@@ -1848,7 +1760,7 @@ the resulting file. For an example, see:
 https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch</a>
 </p>
 
-<p><a name="enforce_limits"><b>43. Why are the resource limits set in the
+<p><a name="enforce_limits"><b>42. Why are the resource limits set in the
 database not being enforced?</b></a></br>
 In order to enforce resource limits, set the value of
 <b>AccountingStorageEnforce</b> in each cluster's slurm.conf configuration
@@ -1856,7 +1768,7 @@ file appropriately. If <b>AccountingStorageEnforce</b> does not contains
 an option of "limits", then resource limits will not be enforced on that cluster.
 See <a href="resource_limits.html">Resource Limits</a> for more information.</p>
 
-<p><a name="restore_priority"><b>44. After manually setting a job priority
+<p><a name="restore_priority"><b>43. After manually setting a job priority
 value, how can it's priority value be returned to being managed by the
 priority/multifactor plugin?</b></a></br>
 Hold and then release the job as shown below.</p>
@@ -1865,14 +1777,14 @@ $ scontrol hold &lt;jobid&gt;
 $ scontrol release &lt;jobid&gt;
 </pre>
 
-<p><a name="health_check_example"><b>45. Does any one have an example node
+<p><a name="health_check_example"><b>44. Does any one have an example node
 health check script for Slurm?</b></a></br>
 Probably the most comprehensive and lightweight health check tool out
 there is
 <a href="https://github.com/mej/nhc">Node Health Check</a>.
 It has integration with Slurm as well as Torque resource managers.</p>
 
-<p><a name="add_nodes"><b>46. What process should I follow to add nodes to Slurm?</b></a></br>
+<p><a name="add_nodes"><b>45. What process should I follow to add nodes to Slurm?</b></a></br>
 The slurmctld daemon has a multitude of bitmaps to track state of nodes and cores
 in the system. Adding nodes to a running system would require the slurmctld daemon
 to rebuild all of those bitmaps, which the developers feel would be safer to do by
@@ -1893,7 +1805,7 @@ NOTE: Jobs submitted with srun, and that are waiting for an allocation,
 prior to new nodes being added to the slurm.conf can fail if the job is
 allocated one of the new nodes.
 
-<p><a name="licenses"><b>47. Can Slurm be configured to manage licenses?</b></a></br>
+<p><a name="licenses"><b>46. Can Slurm be configured to manage licenses?</b></a></br>
 Slurm is not currently integrated with FlexLM, but it does provide for the
 allocation of global resources called licenses. Use the Licenses configuration
 parameter in your slurm.conf file (e.g. "Licenses=foo:10,bar:20").
@@ -1904,7 +1816,7 @@ without restarting the slurmctld daemon, but it is possible to dynamically
 reserve licenses and remove them from being available to jobs on the system
 (e.g. "scontrol update reservation=licenses_held licenses=foo:5,bar:2").</p>
 
-<p><a name="salloc_default_command"><b>48. Can the salloc command be configured to
+<p><a name="salloc_default_command"><b>47. Can the salloc command be configured to
 launch a shell on a node in the job's allocation?</b></a></br>
 Yes, just use the SallocDefaultCommand configuration parameter in your
 slurm.conf file as shown below.</p>
@@ -1919,11 +1831,11 @@ SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --gres=craynetwork:0 --pty --
 </pre>
 </p>
 
-<p><a name="upgrade"><b>49. What should I be aware of when upgrading Slurm?</b></a></br>
+<p><a name="upgrade"><b>48. What should I be aware of when upgrading Slurm?</b></a></br>
 See the Quick Start Administrator Guide <a href="quickstart_admin.html#upgrade">Upgrade</a>
 section for details.</p>
 
-<p><a name="torque"><b>50. How easy is it to switch from PBS or Torque to Slurm?</b></a></br>
+<p><a name="torque"><b>49. How easy is it to switch from PBS or Torque to Slurm?</b></a></br>
 A lot of users don't even notice the difference.
 Slurm has wrappers available for the mpiexec, pbsnodes, qdel, qhold, qrls,
 qstat, and qsub commands (see contribs/torque in the distribution and the
@@ -1944,23 +1856,21 @@ The plugin will be installed in<br>
 &lt;install_directory&gt;/lib/slurm/spank_pbs.so<br>
 See the SPANK man page for configuration details.</p>
 
-<p><a name="sssd"><b>51. I am having trouble using SSSD with Slurm.</b></a></br>
+<p><a name="sssd"><b>50. I am having trouble using SSSD with Slurm.</b></a></br>
 SSSD or System Security Services Deamon does not allow enumeration of
 group members by default. Note that enabling enumeration in large
-environments might not be feasible. However, as of version 16.05 slurm
-does not need enumeration, except for some specific quirky
-configurations (multiple groups with the same GID), so probably it's
-perfectly safe to leave enumeration disabled.  SSSD is also case
-sensitive by default for some configurations, which could possibly
-raise other issues.  Add the following lines
-to <i>/etc/sssd/sssd.conf</i> on your head node to address these
-issues:</p>
+environments might not be feasible. However, Slurm does not need enumeration
+except for some specific quirky configurations (multiple groups with the same
+GID), so probably it's perfectly safe to leave enumeration disabled.
+SSSD is also case sensitive by default for some configurations, which could
+possibly raise other issues. Add the following lines
+to <i>/etc/sssd/sssd.conf</i> on your head node to address these issues:</p>
 <pre>
 enumerate = True
 case_sensitive = False
 </pre>
 
-<p><a name="ha_db"><b>52. How critical is configuring high availability for my
+<p><a name="ha_db"><b>51. How critical is configuring high availability for my
 database?</b></a></br>
 <ul>
 <li>Consider if you really need mysql failover. Short outage of slurmdbd is not
@@ -1979,7 +1889,7 @@ IP between master/backup mysql servers and:</li>
 </ul>
 </ul>
 
-<p><a name="sql"><b>53.How can I use double quotes in MySQL queries?</b></a></br>
+<p><a name="sql"><b>52.How can I use double quotes in MySQL queries?</b></a></br>
 Execute:
 <pre>
 SET session sql_mode='ANSI_QUOTES';
@@ -1989,7 +1899,7 @@ SET session sql_mode='ANSI_QUOTES';
 show columns from "tux_assoc_table" where Field='is_def';
 </pre>
 
-<p><a name="reboot"><b>54. Why is a compute node down with the reason set to
+<p><a name="reboot"><b>53. Why is a compute node down with the reason set to
 "Node unexpectedly rebooted"?</b></a></br>
 This is indicative of the slurmctld daemon running on the cluster's head node
 as well as the slurmd daemon on the compute node when the compute node reboots.
@@ -1997,7 +1907,7 @@ If you want to prevent this condition from setting the node into a DOWN state
 then configure ReturnToService to 2. See the slurm.conf man page for details.
 Otherwise use the scontrol or sview to manually return the node to service.</p>
 
-<p><a name="reqspec"><b>55. How can a job which has exited with a specific exit
+<p><a name="reqspec"><b>54. How can a job which has exited with a specific exit
   code be requeued?</b></a></br>
 Slurm supports requeue in hold with a <b>SPECIAL_EXIT</b> state using the
 command:</p>
@@ -2073,7 +1983,7 @@ we touch the file /tmp/myfile, then release the job which will finish
 in COMPLETE state.
 </p>
 
-<p><a name="user_account"><b>56. Can a user's account be changed in the database?</b></a></br>
+<p><a name="user_account"><b>55. Can a user's account be changed in the database?</b></a></br>
 A user's account can not be changed directly. A new association needs to be
 created for the user with the new account. Then the association with the old
 account can be deleted.</p>
@@ -2083,13 +1993,13 @@ sacctmgr create user name=adam cluster=tux account=physics
 sacctmgr delete user name=adam cluster=tux account=chemistry
 </pre>
 
-<p><a name="mpi_perf"><b>57. What might account for MPI performance being below
+<p><a name="mpi_perf"><b>56. What might account for MPI performance being below
   the expected level?</b></a><br>
 Starting the slurmd daemons with limited locked memory can account for this.
 Adding the line "ulimit -l unlimited" to <i>/etc/sysconfig/slurm</i> file can
 fix this.</p>
 
-<p><a name="state_info"><b>58. How could some jobs submitted immediately before
+<p><a name="state_info"><b>57. How could some jobs submitted immediately before
    the slurmctld daemon crashed be lost?</b></a><br>
 Any time the slurmctld daemon or hardware fails before state information reaches
 disk can result in lost state.
@@ -2101,7 +2011,7 @@ information is cached in memory rather than written to disk when the node fails.
 The interval between state saves being written to disk can be configured at
 build time by defining SAVE_MAX_WAIT to a different value than five.</p>
 
-<p><a name="delete_partition"><b>59. How do I safely remove partitions?
+<p><a name="delete_partition"><b>58. How do I safely remove partitions?
 </b></a><br>
 Partitions should be removed using the
 "scontrol delete PartitionName=&lt;partition&gt;" command. This is because
@@ -2114,7 +2024,7 @@ Removing a partition from the slurm.conf and restarting will cancel any existing
 jobs that reference the removed partitions.
 </p>
 
-<p><a name="cpu_freq"><b>60. Why is Slurm unable to set the CPU frequency for
+<p><a name="cpu_freq"><b>59. Why is Slurm unable to set the CPU frequency for
    jobs?</b></a><br>
 First check that Slurm is configured to bind jobs to specific CPUs by
 making sure that TaskPlugin is configured to either affinity or cgroup.
@@ -2132,7 +2042,7 @@ https://bugzilla.kernel.org/show_bug.cgi?id=57141</a> and<br>
 <a href="http://unix.stackexchange.com/questions/121410/setting-cpu-governor-to-on-demand-or-conservative">
 http://unix.stackexchange.com/questions/121410/setting-cpu-governor-to-on-demand-or-conservative</a>.</p>
 
-<p><a name="mic_config"><b>61. How can Slurm be configured to support Intel
+<p><a name="mic_config"><b>60. How can Slurm be configured to support Intel
    Xeon Phi (MIC)?</b></a><br>
 Users should see the <a href="#mic">Xeon Phi use information</a> above.
 Slurm configuration details for Xeon Phi offload support are available
@@ -2159,14 +2069,14 @@ install the latest MPSS and Slurm packages from yum/zypper,
 add new MICs (via console utility or GUI),
 add MICs to Slurm queues if necessary, restart the host, use MICs via Slurm.</p>
 
-<p><a name="cluster_acct"><b>62. When adding a new cluster, how can the Slurm cluster
+<p><a name="cluster_acct"><b>61. When adding a new cluster, how can the Slurm cluster
     configuration be copied from an existing cluster to the new cluster?</b></a><br>
 Accounts need to be configured the cluster. An easy way to copy information from
 an existing cluster is to use the sacctmgr command to dump that cluster's information,
 modify it using some editor, the load the new information using the sacctmgr
 command. See the sacctmgr man page for details, including an example.</p>
 
-<p><a name="cray_dvs"><b>63. How can I update Slurm on a Cray DVS file system
+<p><a name="cray_dvs"><b>62. How can I update Slurm on a Cray DVS file system
    without rebooting the nodes?</b></a><br>
 The problem with DVS caching is related to the fact that the dereferenced value
 of /opt/slurm/default symlink is cached in the DVS attribute cache, and that
@@ -2193,7 +2103,7 @@ before starting the slurmds again.</p>
 <p>(Information courtesy of Douglas Jacobsen, NERSC,
 Lawrence Berkeley National Laboratory)</p>
 
-<p><a name="dbd_rebuild"><b>64. How can I rebuild the database hierarchy?</b></a><br>
+<p><a name="dbd_rebuild"><b>63. How can I rebuild the database hierarchy?</b></a><br>
 If you see errors of this sort:</p>
 <pre>
 error: Can't find parent id 3358 for assoc 1504, this should never happen.
@@ -2204,7 +2114,7 @@ administrator error in directly modifying the database. In order to rebuild
 the database information, start the slurmdbd daemon with the "-R" option
 followed by an optional comma separated list of cluster names to operate on.</p>
 
-<p><a name="routing queue"><b>65. How can a routing queue be configured?</b></a><br>
+<p><a name="routing queue"><b>64. How can a routing queue be configured?</b></a><br>
 A job submit plugin is designed to have access to a job request from a user,
 plus information about all of the available system partitions/queue.
 An administrator can write a C plugin or LUA script to set an incoming job's
@@ -2214,27 +2124,136 @@ guide for more information.
 Also see the available job submit plugins distributed with Slurm for examples
 (look in the "src/plugins/job_submit" directory).</p>
 
-<p><a name="squeue_script"><b>66. How can I suspend, resume, hold or release all
+<p><a name="squeue_script"><b>65. How can I suspend, resume, hold or release all
     of the jobs belonging to a speciic user, partition, etc?</b></a><br>
 There isn't any filtering by user, partition, etc. available in the scontrol
 command; however the squeue command can be used to perform the filtering and
 build a script which you can then execute. For example:
 <pre>
-> squeue -u adam -h -o "scontrol hold %i" &gt;hold_script
+$ squeue -u adam -h -o "scontrol hold %i" &gt;hold_script
 </pre>
 
-<p><a name="changed_uid"><b>67. I had to change a user's UID and now they cannot submit
+<p><a name="changed_uid"><b>66. I had to change a user's UID and now they cannot submit
     jobs. How do I get the new UID to take effect?</b></a><br>
 When changing UIDs, you will also need to restart the slurmctld for the changes to
 take effect. Normally, when adding a new user to the system, the UID is filled in
 automatically and immediately. If the user isn't known on the system yet, there is a
 thread that runs every hour that fills in those UIDs when they become known, but it
 doesn't recognize UID changes of preexisting users. But you can simply restart the
-slurmctld for those changes to be recognized.
-</li>
+slurmctld for those changes to be recognized.</p>
+
+<p><a name="mysql_duplicate"><b>67. Slurmdbd is failing to start with a 'Duplicate entry'
+    error in the database. How do I fix that?</b></a><br>
+This problem has been rarely observed with MySQL, but not MariaDB.
+The root cause of the failure seems to be reaching the upper limit on the auto increment field.
+Upgrading to MariaDB is recommended.
+If that is not possible then: backup the database, remove the duplicate record(s),
+and restart the slurmdbd daemon as shown below.</p>
+<pre>
+$ slurmdbd -Dvv
+...
+slurmdbd: debug:  Table "cray_job_table" has changed.  Updating...
+slurmdbd: error: mysql_query failed: 1062 Duplicate entry '2711-1478734628' for key 'id_job'
+...
+
+$ mysqldump -u&lt;user&gt; -p&lt;user&gt; slurm_acct_db &gt;/tmp/slurm_db_backup.sql
+
+$ mysql
+mysql> use slurm_acct_db;
+mysql> delete from cray_job_table where id_job='2711-1478734628';
+mysql> quit;
+Bye
+</pre>
+
+<p>If necessary, you can edit the database dump and recreate the database as
+shown below.</p>
+<pre>
+$ mysql
+mysql> drop database slurm_acct_db;
+mysql> create database slurm_acct_db;
+mysql> quit;
+Bye
+
+$ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
+</pre>
+
+<p><a name="cray_sigbus"<b>68. Why are applications on my Cray system failing
+    with SIGBUS (bus error)?</b></a><br>
+By default, Slurm flushes Lustre file system and kernel caches upon completion
+of each job step. If multiple applications are run simultaneously on compute
+nodes (either multiple applications from a single Slurm job or multiple jobs)
+the result can be significant performance degredation and even bus errors.
+Failures occur more requently when more applications are executed at the same
+time on individual compute nodes.
+Failures are also more common when Lustre file systems are used.</p>
+
+<p>Two approaches exist to address this issue.
+One is to disable the flushing of caches, which can be accomplished by adding
+"LaunchParameters=lustre_no_flush" to your Slurm configuration file
+"slurm.conf".
+A second approach is to modify Cray file system as described below in order to
+prevent Slurm specific files needing to be re-resolved over DFS.
+This second approach does not address files used by applications, only those
+used directly by Slurm.</p>
+
+<p>On Cray CLE6.0, by default, nodes get the operating system, including the
+Slurm installation and all of its plugin, via a DVS mount of "/".
+Really "/" is an overlay filesystem where the lower portion is a loop-mounted
+squashfs layer and the upper layer is tmpfs.
+When buffer caches are flushed during a dlopen (used by Slurm to load its
+plugins), a timeout may result from waiting to re-resolve a Slurm plugin over
+DVS.</p>
+
+<p>The NERSC solution is to localize all files related to Slurm or involved in
+slurmstepd launch into that tmpfs layer at boot time.
+This is possible by creating a new netroot preload file:</p>
+
+<pre>
+# cat compute-preload.nersc
+/usr/lib64/libslurm*so*
+/usr/lib64/slurm/*.so
+/usr/sbin/slurmd
+/usr/sbin/slurmstepd
+/usr/bin/sbatch
+/usr/bin/srun
+/usr/bin/sbcast
+/usr/bin/numactl
+/usr/lib64/libnuma*so*
+/lib64/ast/libast.so*
+/lib64/ast/libcmd.so*
+/lib64/ast/libdll.so*
+/lib64/ast/libshell.so*
+/lib64/libacl.so*
+/lib64/libattr.so*
+/lib64/libc.so*
+/lib64/libcap.so*
+/lib64/libdl.so*
+/lib64/libgcc_s.so*
+...
+</pre>
+
+<p>NERSC generates its preload file by including everything installed by Slurm
+RPMs plus files identified as being used by Slurm's slurmd daemon on the compute
+node by running the "strace -f" command while the slurmd daemon is launching
+a job step.</p>
+
+<p>Once the netroot preload file is generated, it needs to then be included in the
+cray_netroot_preload_worksheet CLE configuration. For example:</p>
+
+<pre>
+cray_netroot_preload.settings.load.data.label.compute: null
+cray_netroot_preload.settings.load.data.compute.targets: []
+cray_netroot_preload.settings.load.data.compute.content_lists:
+- dist/compute-preload.cray
+- dist/compute-preload.nersc
+cray_netroot_preload.settings.load.data.compute.size_limit: 0
+</pre>
+
+<p>This is a generally useful technique for preventing remote lookups of commonly
+accessed files within jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 June 2017</p>
+<p style="text-align:center;">Last modified 24 April 2018</p>
 
 <!--#include virtual="footer.txt"-->

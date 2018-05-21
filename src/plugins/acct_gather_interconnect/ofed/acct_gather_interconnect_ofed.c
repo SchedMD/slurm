@@ -4,11 +4,11 @@
  *  Copyright (C) 2013
  *  Written by Bull- Yiannis Georgiou
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  *
  *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
@@ -47,6 +47,7 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_acct_gather_interconnect.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -84,14 +85,14 @@
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "jobacct" for SLURM job completion logging) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "jobacct" for Slurm job completion logging) and <method>
+ * is a description of how this plugin satisfies that application.  Slurm will
  * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobacct/".
  *
@@ -135,6 +136,7 @@ static uint64_t debug_flags = 0;
 static pthread_mutex_t ofed_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int dataset_id = -1; /* id of the dataset for profile data */
+static int tres_pos = -1;
 
 static uint8_t *_slurm_pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
 				     unsigned timeout, unsigned id,
@@ -184,8 +186,8 @@ static int _read_ofed_values(void)
 				       IB_SA_CLASS, IB_PERFORMANCE_CLASS};
 		srcport = mad_rpc_open_port(ibd_ca, ofed_conf.port,
 					    mgmt_classes, 4);
-		if (!srcport){
-			error("Failed to open '%s' port '%d'", ibd_ca,
+		if (!srcport) {
+			debug("Failed to open '%s' port '%d'", ibd_ca,
 			      ofed_conf.port);
 			debug("OFED: failed");
 			return SLURM_ERROR;
@@ -341,7 +343,17 @@ static bool _run_in_daemon(void)
  */
 extern int init(void)
 {
+	slurmdb_tres_rec_t tres_rec;
+
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
+
 	debug_flags = slurm_get_debug_flags();
+
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+	tres_rec.type = "ic";
+	tres_rec.name = "ofed";
+	tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 
 	return SLURM_SUCCESS;
 }
@@ -351,8 +363,10 @@ extern int fini(void)
 	if (!_run_in_daemon())
 		return SLURM_SUCCESS;
 
-	if (srcport) {
+	if ((srcport) && (!(dataset_id < 0))) {
 		_update_node_interconnect();
+		mad_rpc_close_port(srcport);
+	} else if (srcport) {
 		mad_rpc_close_port(srcport);
 	}
 
@@ -427,4 +441,31 @@ extern void acct_gather_interconnect_p_conf_values(List *data)
 	list_append(*data, key_pair);
 
 	return;
+}
+
+extern int acct_gather_interconnect_p_get_data(acct_gather_data_t *data)
+{
+	int retval = SLURM_SUCCESS;
+
+	if ((tres_pos == -1) || !data) {
+		debug2("%s: We are not tracking TRES ic/ofed", __func__);
+		return SLURM_SUCCESS;
+	}
+
+	slurm_mutex_lock(&ofed_lock);
+
+	if (_read_ofed_values() != SLURM_SUCCESS) {
+		debug2("%s: Cannot retrieve ofed counters", __func__);
+		slurm_mutex_unlock(&ofed_lock);
+		return SLURM_FAILURE;
+	}
+
+	data[tres_pos].num_reads = ofed_sens.total_rcvpkts;
+	data[tres_pos].num_writes = ofed_sens.total_xmtpkts;
+	data[tres_pos].size_read = ofed_sens.total_rcvdata;
+	data[tres_pos].size_write = ofed_sens.total_xmtdata;
+
+	slurm_mutex_unlock(&ofed_lock);
+
+	return retval;
 }

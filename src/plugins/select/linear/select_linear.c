@@ -11,11 +11,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -31,13 +31,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -201,14 +201,14 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "select" for SLURM node selection) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "select" for Slurm node selection) and <method>
+ * is a description of how this plugin satisfies that application.  Slurm will
  * only load select plugins if the plugin_type string has a
  * prefix of "select/".
  *
@@ -2321,7 +2321,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
 		node_offset++;
-		if (!bit_test(job_ptr->node_bitmap, i))
+		if (!job_ptr->node_bitmap || !bit_test(job_ptr->node_bitmap, i))
 			continue;
 
 		node_ptr = node_record_table_ptr + i;
@@ -2737,8 +2737,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		      node_ptr->name, job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	job_resrcs_ptr->cpus[node_offset] = 0;
-	build_job_resources_cpu_array(job_resrcs_ptr);
+
+	extract_job_resources_node(job_resrcs_ptr, node_offset);
 
 	if (select_fast_schedule)
 		cpu_cnt = node_ptr->config_ptr->cpus;
@@ -2870,6 +2870,11 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 		}
 	}
 
+	if (alloc_all) {
+		gres_build_job_details(job_ptr->gres_list,
+				        &job_ptr->gres_detail_cnt,
+				       &job_ptr->gres_detail_str);
+	}
 	return rc;
 }
 
@@ -3347,10 +3352,30 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 	return rc;
 }
 
-/* Determine where and when the job at job_ptr can begin execution by updating
+/*
+ * Return true if job is in the processing of cleaning up.
+ * This is used for Cray systems to indicate the Node Health Check (NHC)
+ * is still running. Until NHC completes, the job's resource use persists
+ * the select/cons_res plugin data structures.
+ */
+static bool _job_cleaning(struct job_record *job_ptr)
+{
+	uint16_t cleaning = 0;
+
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING,
+				    &cleaning);
+	if (cleaning)
+		return true;
+	return false;
+}
+
+/*
+ * Determine where and when the job at job_ptr can begin execution by updating
  * a scratch cr_record structure to reflect each job terminating at the
  * end of its time limit and use this to show where and when the job at job_ptr
- * will begin execution. Used by Slurm's sched/backfill plugin. */
+ * will begin execution. Used by Slurm's sched/backfill plugin.
+ */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  int max_share, uint32_t req_nodes,
@@ -3394,14 +3419,36 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	cr_job_list = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool cleaning = _job_cleaning(tmp_job_ptr);
+		if (!cleaning && IS_JOB_COMPLETING(tmp_job_ptr))
+			cleaning = true;
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
-		    !IS_JOB_SUSPENDED(tmp_job_ptr))
+		    !IS_JOB_SUSPENDED(tmp_job_ptr) &&
+		    !cleaning)
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
-			error("Job %u has zero end_time", tmp_job_ptr->job_id);
+			if (!cleaning) {
+				error("%s: Active job %u has zero end_time",
+				      __func__, tmp_job_ptr->job_id);
+			}
 			continue;
 		}
-		if (_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+		if (tmp_job_ptr->node_bitmap == NULL) {
+			/*
+			 * This should indicate a requeued job was cancelled
+			 * while NHC was running
+			 */
+			if (!cleaning) {
+				error("%s: Job %u has NULL node_bitmap",
+				      __func__, tmp_job_ptr->job_id);
+			}
+			continue;
+		}
+		if (cleaning ||
+		    !_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+			/* Queue job for later removal from data structures */
+			list_append(cr_job_list, tmp_job_ptr);
+		} else {
 			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
 			bool remove_all = false;
 			if ((mode == PREEMPT_MODE_REQUEUE)    ||
@@ -3411,9 +3458,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* Remove preemptable job now */
 			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
 					   "_will_run_test", remove_all);
-		} else
-			list_append(cr_job_list, tmp_job_ptr);
-
+		}
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -3656,15 +3701,15 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		return EINVAL;
 	}
 
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->core_spec != NO_VAL16) {
 		verbose("select/linear: job %u core_spec(%u) not supported",
 			job_ptr->job_id, job_ptr->details->core_spec);
-		job_ptr->details->core_spec = (uint16_t) NO_VAL;
+		job_ptr->details->core_spec = NO_VAL16;
 	}
 
 	if (job_ptr->details->share_res)
 		max_share = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
-	else	/* ((shared == 0) || (shared == (uint16_t) NO_VAL)) */
+	else	/* ((shared == 0) || (shared == NO_VAL16)) */
 		max_share = 1;
 
 	if (mode == SELECT_MODE_WILL_RUN) {
@@ -3704,6 +3749,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 		_init_node_cr();
 	if (rc == SLURM_SUCCESS)
 		rc = _add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_begin", 1);
+
 	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;

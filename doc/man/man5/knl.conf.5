@@ -1,4 +1,4 @@
-.TH "knl.conf" "5" "Slurm Configuration File" "May 2016" "Slurm Configuration File"
+.TH "knl.conf" "5" "Slurm Configuration File" "May 2018" "Slurm Configuration File"
 
 .SH "NAME"
 knl.conf \- Slurm configuration file for Intel Knights Landing processor.
@@ -49,7 +49,7 @@ This may be a subset of NUMA modes supported by the node.
 If not specified, all NUMA modes supported by the node are available for use.
 The comma separated list of allowed NUMA modes may include any of the modes
 listed below.
-Note that Slurm version 16.05 and earlier can only support homogeneous nodes
+Note that Slurm can only support homogeneous nodes
 (e.g. the same number of cores per NUMA node).
 KNL scn4 and quad modes are not homogeneous, but each each NUMA mode will have
 either 16 or 18 cores.
@@ -136,6 +136,12 @@ The value can include one of the possible values identified with the
 The default value is "a2a".
 
 .TP
+\fBForce\fR
+If set to a non\-zero value then load the node_features/generic plugin even
+on non\-KNL nodes.
+Used primarily for testing purposes.
+
+.TP
 \fBLogFile\fR
 Fully qualified path to a log file.
 The default value is SlurmctldLogFile from the slurm.conf configuration file.
@@ -154,6 +160,25 @@ The default value is "/sys/devices/system/edac/mc".
 See also \fBUmeCheckInterval\fR.
 
 .TP
+\fBNodeRebootWeight\fR
+If a compute node requires reboot to be usable for a pending job, then reset the
+node's weight to the specified value.
+The default value is 4,294,967,294 (0xfffffffe).
+See also "Weight" in the node configuration specification of slurm.conf.
+
+.TP
+\fBNumaCpuBind\fR
+Contains pairs of NUMA modes and the CpuBind mode to set a node to for that mode.
+Any compute node found with or set to the specified NUMA mode will have that
+node's CpuBind field set to the configured value.
+The NUMA node will be followed by an equal sign the the desired CpuBind mode for
+that NUMA mode. Multiple NUMA mode and CpuBind modes should be in a semicolon
+separated list.
+By default changes to a node's NUMA mode will not effect that node's CpuBind
+mode.
+See the example below.
+
+.TP
 \fBSyscfgPath\fR
 Fully qualified path to Intel's \fBsyscfg\fR program, which identifies current
 KNL configuration by viewing BIOS settings.
@@ -165,6 +190,8 @@ This parameter is used only by the "knl_generic" plugin.
 \fBSyscfgTimeout\fR
 Timeout for \fBsyscfg\fR program in milliseconds.
 Default value is 1000 milliseconds.
+For Dell KNL systems, experience has shown that a higher value of 10000
+milliseconds is more appropriate.
 
 .TP
 \fBSystemType\fR
@@ -180,6 +207,14 @@ If such errors are detected, the node will be set to a DOWN state and the
 slurmd daemon will shutdown.
 The default value is 0 (disabled).
 See also \fBMcPath\fR.
+
+.TP
+\fBValidateMode\fR
+If set to 1 then validate, but do not modify the node's configured MCDRAM and
+NUMA modes from the slurm.conf file. If the actual modes do not match configured
+values the node will be set to a DOWN state. Every KNL nodes MCDRAM and NUMA
+states must both be listed in the slurm.conf file.
+This parameter is used only by the "knl_cray" plugin.
 
 .SH "EXAMPLE"
 .LP
@@ -200,12 +235,14 @@ DefaultMCDRAM=flat
 .br
 DefaultNUMA=a2a
 .br
+NumaCpuBind=a2a=core;snc2=thread;snc4=thread
+.br
 LogFile=/var/tmp/slurm_node_feature.log
 .br
 SyscfgPath=/usr/sbin/syscfg
 
 .SH "COPYING"
-Copyright (C) 2015-2016 SchedMD LLC.
+Copyright (C) 2015-2017 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

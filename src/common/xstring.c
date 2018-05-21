@@ -9,11 +9,11 @@
  *
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -73,7 +73,6 @@ static char *_xstrdup_vprintf(const char *_fmt, va_list _ap);
 strong_alias(_xstrcat,		slurm_xstrcat);
 strong_alias(_xstrncat,		slurm_xstrncat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
-strong_alias(_xslurm_strerrorcat, slurm_xslurm_strerrorcat);
 strong_alias(_xstrftimecat,	slurm_xstrftimecat);
 strong_alias(_xstrfmtcat,	slurm_xstrfmtcat);
 strong_alias(_xmemcat,		slurm_xmemcat);
@@ -82,7 +81,6 @@ strong_alias(xstrdup_printf,	slurm_xstrdup_printf);
 strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
 strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
-strong_alias(xstrstrip,         slurm_xstrstrip);
 strong_alias(xshort_hostname,   slurm_xshort_hostname);
 strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
 strong_alias(xstrtolower,       slurm_xstrtolower);
@@ -171,19 +169,6 @@ void _xstrcatchar(char **str, char c)
 {
 	makespace(str, 1);
 	strcatchar(*str, c);
-}
-
-
-/*
- * concatenate slurm_strerror(errno) onto string in buf, expand buf as needed
- *
- */
-void _xslurm_strerrorcat(char **buf)
-{
-
-	char *err = slurm_strerror(errno);
-
-	xstrcat(*buf, err);
 }
 
 /*
@@ -454,47 +439,6 @@ bool _xstrsubstitute(char **str, const char *pattern, const char *replacement)
 	return 1;
 }
 
-/*
- * Remove first instance of quotes that surround a string in "str",
- *   and return the result without the quotes
- *   str (IN)	        target string (pointer to in case of expansion)
- *   increased (IN/OUT)	current position in "str"
- *   RET char *         str returned without quotes in it. needs to be xfreed
- */
-char *xstrstrip(char *str)
-{
-	int i=0, start=0, found = 0;
-	char *meat = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-
-	if (!str)
-		return NULL;
-
-	/* first strip off the ("|')'s */
-	if (str[i] == '\"' || str[i] == '\'') {
-		quote_c = str[i];
-		quote = 1;
-		i++;
-	}
-	start = i;
-
-	while(str[i]) {
-		if (quote && str[i] == quote_c) {
-			found = 1;
-			break;
-		}
-		i++;
-	}
-	if (found) {
-		meat = xmalloc((i-start)+1);
-		memcpy(meat, str+start, (i-start));
-	} else
-		meat = xstrdup(str);
-	return meat;
-}
-
-
 /* xshort_hostname
  *   Returns an xmalloc'd string containing the hostname
  *   of the local machine.  The hostname contains only
@@ -543,7 +487,7 @@ char *xstrtolower(char *str)
 {
 	if (str) {
 		int j = 0;
-		while(str[j]) {
+		while (str[j]) {
 			str[j] = tolower((int)str[j]);
 			j++;
 		}

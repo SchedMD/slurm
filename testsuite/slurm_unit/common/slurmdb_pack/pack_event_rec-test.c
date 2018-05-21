@@ -66,7 +66,7 @@ START_TEST(pack_1702_null_event_rec)
 	ck_assert(pack_er.period_start  == unpack_er->period_start);
 	ck_assert(pack_er.reason        == unpack_er->reason);
 	ck_assert(NO_VAL                == unpack_er->reason_uid);
-	ck_assert((uint16_t)NO_VAL       == unpack_er->state);
+	ck_assert(NO_VAL16              == unpack_er->state);
 	ck_assert(pack_er.tres_str      == unpack_er->tres_str);
 
 	free_buf(buf);
@@ -149,4 +149,3 @@ int main(void)
 
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-

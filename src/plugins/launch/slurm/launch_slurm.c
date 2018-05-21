@@ -4,11 +4,11 @@
  *  Copyright (C) 2012-2017 SchedMD LLC
  *  Written by Danny Auble <da@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -45,6 +45,7 @@
 
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/api/pmi_server.h"
 #include "src/srun/libsrun/allocate.h"
 #include "src/srun/libsrun/fname.h"
@@ -73,24 +74,23 @@
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
  * the plugin (e.g., "task" for task control) and <method> is a description
- * of how this plugin satisfies that application.  SLURM will only load
+ * of how this plugin satisfies that application.  Slurm will only load
  * a task plugin if the plugin_type string has a prefix of "task/".
  *
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]        = "launch SLURM plugin";
+const char plugin_name[]        = "launch Slurm plugin";
 const char plugin_type[]        = "launch/slurm";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-static srun_job_t *local_srun_job = NULL;
 static List local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
 static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -555,10 +555,7 @@ extern int launch_p_handle_multi_prog_verify(int command_pos,
 			exit(error_exit);
 		}
 		_load_multi(&srun_opt->argc, srun_opt->argv);
-		if (verify_multi_name(srun_opt->argv[command_pos],
-				      &opt_local->ntasks,
-				      &opt_local->ntasks_set,
-				      &srun_opt->multi_prog_cmds))
+		if (verify_multi_name(srun_opt->argv[command_pos], opt_local))
 			exit(error_exit);
 		return 1;
 	} else
@@ -567,7 +564,8 @@ extern int launch_p_handle_multi_prog_verify(int command_pos,
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, slurm_opt_t *opt_local)
+				    sig_atomic_t *destroy_job,
+				    slurm_opt_t *opt_local)
 {
 	if (launch_common_create_job_step(job, use_all_cpus,
 					  signal_function, destroy_job,
@@ -575,10 +573,10 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		return SLURM_ERROR;
 
 	/* set the jobid for totalview */
-	totalview_jobid = NULL;
-	xstrfmtcat(totalview_jobid, "%u", job->jobid);
-	totalview_stepid = NULL;
-	xstrfmtcat(totalview_stepid, "%u", job->stepid);
+	if (!totalview_jobid) {
+		xstrfmtcat(totalview_jobid,  "%u", job->jobid);
+		xstrfmtcat(totalview_stepid, "%u", job->stepid);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -672,12 +670,15 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				slurm_step_launch_callbacks_t *step_callbacks,
 				slurm_opt_t *opt_local)
 {
+	srun_job_t *local_srun_job;
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
 	int rc = SLURM_SUCCESS;
 	task_state_t task_state;
 	bool first_launch = false;
+	uint32_t def_cpu_bind_type = 0;
+	char tmp_str[128];
 	xassert(srun_opt);
 
 	slurm_step_launch_params_t_init(&launch_params);
@@ -731,8 +732,19 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.profile = opt_local->profile;
 	launch_params.task_prolog = srun_opt->task_prolog;
 	launch_params.task_epilog = srun_opt->task_epilog;
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_DEF_CPU_BIND_TYPE,
+			   &def_cpu_bind_type);
+	if (slurm_verify_cpu_bind(NULL, &srun_opt->cpu_bind,
+				  &srun_opt->cpu_bind_type,
+				  def_cpu_bind_type)) {
+		return SLURM_ERROR;
+	}
+	slurm_sprint_cpu_bind_type(tmp_str, srun_opt->cpu_bind_type);
+	verbose("CpuBindType=%s", tmp_str);
 	launch_params.cpu_bind = srun_opt->cpu_bind;
 	launch_params.cpu_bind_type = srun_opt->cpu_bind_type;
+
 	launch_params.mem_bind = opt_local->mem_bind;
 	launch_params.mem_bind_type = opt_local->mem_bind_type;
 	launch_params.accel_bind_type = srun_opt->accel_bind_type;
@@ -786,7 +798,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		slurm_mutex_lock(&launch_lock);
 		if (!opt_save) {
 			/*
-			 * Save opt_local paramters since _task_finish()
+			 * Save opt_local parameters since _task_finish()
 			 * will lack the values
 			 */
 			opt_save = xmalloc(sizeof(slurm_opt_t));
@@ -833,7 +845,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		 */
 		if (srun_opt->multi_prog) {
 			mpir_set_multi_name(job->ntasks,
-					    launch_params.argv[0]);
+					    launch_params.argv[0],
+					    launch_params.cwd);
 		} else {
 			mpir_set_executable_names(launch_params.argv[0],
 						  job->pack_task_offset,
@@ -855,13 +868,15 @@ cleanup:
 	return rc;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, slurm_opt_t *opt_local)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc,
+			      slurm_opt_t *opt_local)
 {
 	int rc = 0;
 
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
-	    (retry_step_cnt < MAX_STEP_RETRIES)) {
+	    (retry_step_cnt < MAX_STEP_RETRIES) &&
+	     (job->pack_jobid == NO_VAL)) {	/* Not pack step */
 		retry_step_begin = false;
 		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) 

@@ -33,6 +33,33 @@ of Slurm will result in loss of state information.
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
+NOTE FOR THOSE UPGRADING SLURMDBD: The database conversion process from
+      SlurmDBD 16.05 or 17.02 may not work properly with MySQL 5.1 (as was the
+      default version for RHEL 6).  Upgrading to a newer version of MariaDB or
+      MySQL is strongly encouraged to prevent this problem.
+
+NOTE FOR THOSE RUNNING 17.11.[0|1]: It was found a seeded MySQL auto_increment
+      value would be lost eventually if used.  This was found in the tres_table
+      which tracks static TRES under 1001.  This was fixed in MariaDB >=10.2.4,
+      but at the time of writing this was still around in MySQL.  Regardless if
+      you are tracking licenses or GRES in the database
+      (i.e. AccountingStorageTRES=gres/gpu) you might have this this issue.
+      This would mean the id for gres/gpu could have been issued 5 instead of
+      1001.  This is fine uptil 17.11 where a new static TRES was added taking
+      up the id of 5.  If you are already running 17.11 you can easily check to
+      see if you hit this problem by running 'sacctmgr list tres'.  If you see
+      any entry in the Name column for the Type 'billing' TRES (id=5) you are
+      unfortunately hit with the bug. The fix for this issue requires manual
+      intervention with the database.  Most likely if you started a slurmctld
+      up against the slurmdbd the overwritten TRES is now at a different id.
+      You can fix the double issue by altering all the tables with the new TRES
+      id back to 5, remove that entry in the tres_table, and then change the
+      Type of billing back to the original Type and restart the slurmdbd which
+      should finish the conversion.  SchedMD can assist with this. Supported
+      sites please open a ticket at https://bugs.schedmd.com/.  Non-supported
+      sites please contact SchedMD at sales@schedmd.com if you would like to
+      discuss commercial support options.
+
 NOTE: The slurm.spec file used to build RPM packages has been aggressively
       refactored, and some package names may now be different. Notably,
       the three daemons (slurmctld, slurmd/slurmstepd, slurmdbd) each
@@ -45,6 +72,10 @@ NOTE: The slurm.spec file used to build RPM packages has been aggressively
       (job_comp_mysql.so) and slurm-slurmdbd (accounting_storage_mysql)
       packages.
       The example configuration files have been moved to slurm-example-configs.
+
+NOTE: The refactored slurm.spec file now requires systemd to build. When
+      building on older distributions, you must use the older variant which
+      has been preserved as contribs/slurm.spec-legacy.
 
 NOTE: The slurmctld is now set to fatal if there are any problems with
       any state files.  To avoid this use the new '-i' flag.
@@ -78,7 +109,7 @@ NOTE: The SLURM_ID_HASH used for Cray systems has changed to fully use the
       This most likely will go unnoticed by most, just a note of the change.
 
 NOTE: Starting in 17.11 the slurm commands and daemons dynamically link to
-      libslurm.so instead of statically linking.  This dramatically reduces
+      libslurmfull.so instead of statically linking.  This dramatically reduces
       the footprint of Slurm.  If for some reason this creates issues with
       your build you can configure slurm with --without-shared-libslurm.
 
@@ -95,17 +126,57 @@ NOTE: Built-in BLCR support is deprecated, no longer built automatically, and
       will be removed in an upcoming release. You must add --with-blcr and
       --enable-deprecated options to configure to build this plugin.
 
+NOTE: srun will now only read in the environment variables SLURM_JOB_NODES and
+      SLURM_JOB_NODELIST instead of SLURM_NNODES and SLURM_NODELIST.  These
+      latter variables have been obsolete for some time please update any
+      scripts still using them.
+
+NOTE: squeue will now print "UID" as the header for the User ID field;
+      corresponding to the %U type specification.
+
 HIGHLIGHTS
 ==========
+ -- Add support for parenthesis in a job's constraint specification to group
+    like options together. For example
+    --constraint="[(knl&snc4&flat)*4&haswell*1]" might be used to specify that
+    four nodes with the features "knl", "snc4" and "flat" plus one node with
+    the feature "haswell" are required.
+ -- Enable jobs with zero node count for creation and/or deletion of persistent
+    burst buffers.
+ -- Add "scontrol show dwstat" command to display Cray burst buffer status.
+ -- Heterogeneous job steps allocations supported with
+    * Open MPI (with Slurm's PMI2 and PMIx plugins) and
+    * Intel MPI (with Slurm's PMI2 plugin)
+    * No support for Cray systems at this time.
+ -- Add Slurm configuration file check logic using "slurmctld -t" command.
+ -- Disable local PTY output processing when using 'srun --unbuffered'. This
+    prevents the PTY subsystem from inserting extraneous \r characters into
+    the output stream.
 
 RPMBUILD CHANGES
 ================
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- Configuration parameters "ControlMachine", "ControlAddr", "BackupController"
+    and "BackupAddr" replaced by an ordered list of "SlurmctldHost" records
+    with the optional address appended to the name enclosed in parenthesis.
+    For example: "SlurmctldHost=head(12.34.56.78)". An arbitrary number of
+    backup servers can be configured.
+ -- Add "GetSysStatus" option to burst_buffer.conf file. For burst_buffer/cray
+    this would indicate the location of the "dwstat" command.
+ -- Add node and partition configuration options of "CpuBind" to control default
+    task binding. Modify the scontrol to report and modify these parameters.
+ -- Add "NumaCpuBind" option to knl.conf file to automatically change a node's
+    CpuBind parameter based upon changes to a node's NUMA mode.
+ -- Remove support for "ChosLoc" configuration parameter.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- Add sbatch "--batch" option to identify features required on batch node.
+    For example "sbatch --batch=haswell ...".
+ -- Report cgroup and NodeFeatures plugin configuration with scontrol and
+    sview commands.
 
 OTHER CHANGES
 =============
@@ -136,3 +207,5 @@ Changed the following API's
 
 Removed the following API's
 ===========================
+ -- Removed slurm_xslurm_strerrorcat() function.
+ -- Removed slurm_xstrstrip() function.

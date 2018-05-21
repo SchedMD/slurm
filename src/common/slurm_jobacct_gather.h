@@ -9,11 +9,11 @@
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -63,18 +63,14 @@
 #include "src/common/pack.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
+#include "src/common/slurm_acct_gather.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define PROTOCOL_TYPE_SLURM 0
 #define PROTOCOL_TYPE_DBD 1
 
-struct lustre_data {
-	uint64_t	reads;
-	uint64_t	writes;
-	double		read_size;      // currently in megabytes
-	double		write_size;     // currently in megabytes
-};
+#define CPU_TIME_ADJ 1000
 
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
@@ -88,39 +84,36 @@ struct jobacctinfo {
 	uint32_t sys_cpu_usec;
 	uint32_t user_cpu_sec;
 	uint32_t user_cpu_usec;
-	uint64_t max_vsize; /* max size of virtual memory */
-	jobacct_id_t max_vsize_id; /* contains which task number it was on */
-	uint64_t tot_vsize; /* total virtual memory
-			       (used to figure out ave later) */
-	uint64_t max_rss; /* max Resident Set Size */
-	jobacct_id_t max_rss_id; /* contains which task it was on */
-	uint64_t tot_rss; /* total rss
-			     (used to figure out ave later) */
-	uint64_t max_pages; /* max pages */
-	jobacct_id_t max_pages_id; /* contains which task it was on */
-	uint64_t tot_pages; /* total pages
-			     (used to figure out ave later) */
-	uint32_t min_cpu; /* min cpu time */
-	jobacct_id_t min_cpu_id; /* contains which task it was on */
-	double tot_cpu; /* total cpu time(used to figure out ave later) */
 	uint32_t act_cpufreq; /* actual cpu frequency */
 	acct_gather_energy_t energy;
 	double last_total_cputime;
 	double this_sampled_cputime;
 	uint32_t current_weighted_freq;
 	uint32_t current_weighted_power;
-	double max_disk_read; /* max disk read data */
-	jobacct_id_t max_disk_read_id; /* max disk read data task id */
-	double tot_disk_read; /* total local disk read in megabytes */
-	double max_disk_write; /* max disk write data */
-	jobacct_id_t max_disk_write_id; /* max disk write data task id */
-	double tot_disk_write; /* total local disk writes in megabytes */
+	uint32_t tres_count; /* count of tres in the usage array's */
+	uint32_t *tres_ids; /* array of tres_count of the tres id's */
+	List tres_list; /* list of tres we are dealing with */
+	uint64_t *tres_usage_in_max; /* tres max usage in data */
+	uint64_t *tres_usage_in_max_nodeid; /* tres max usage in data node id */
+	uint64_t *tres_usage_in_max_taskid; /* tres max usage in data task id */
+	uint64_t *tres_usage_in_min; /* tres min usage in data */
+	uint64_t *tres_usage_in_min_nodeid; /* tres min usage in data node id */
+	uint64_t *tres_usage_in_min_taskid; /* tres min usage in data task id */
+	uint64_t *tres_usage_in_tot; /* total usage in, in megabytes */
+	uint64_t *tres_usage_out_max; /* tres max usage out data */
+	uint64_t *tres_usage_out_max_nodeid; /* tres max usage data node id */
+	uint64_t *tres_usage_out_max_taskid; /* tres max usage data task id */
+	uint64_t *tres_usage_out_min; /* tres min usage out data */
+	uint64_t *tres_usage_out_min_nodeid; /* tres min usage data node id */
+	uint64_t *tres_usage_out_min_taskid; /* tres min usage data task id */
+	uint64_t *tres_usage_out_tot; /* total usage out, in megabytes */
 
 	jobacct_id_t id;
 	int dataset_id; /* dataset associated to this task when profiling */
 
-	double last_tot_disk_read;
-	double last_tot_disk_write;
+	/* FIXME: these need to be arrays like above */
+	double last_tres_usage_in_tot;
+	double last_tres_usage_out_tot;
 	time_t cur_time;
 	time_t last_time;
 };
@@ -130,6 +123,13 @@ struct jobacctinfo {
 #  define  __jobacctinfo_t_defined
    typedef struct jobacctinfo jobacctinfo_t;     /* opaque data type */
 #endif
+
+/*
+ * FIXME: hopefully this will not exist and we can use
+ * slurmdb_make_tres_string_from_arrays instead.  Not sure why this is here in
+ * the first place as tres_usage_types_t is defined in slurmdb_defs.h.
+ */
+extern char *make_tres_usage_str_from_array(uint64_t *tres_cnt);
 
 extern int jobacct_gather_init(void); /* load the plugin */
 extern int jobacct_gather_fini(void); /* unload the plugin */
@@ -175,4 +175,3 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
 extern void jobacct_common_free_jobacct(void *object);
 
 #endif /*__SLURM_JOBACCT_GATHER_H__*/
-

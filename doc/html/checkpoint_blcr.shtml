@@ -4,9 +4,18 @@
 
 <p><b>Support for the BLCR plugin is deprecated as of the 17.11 release.</b>
 Please consider other checkpoint systems that do not require direct
-Slurm support such as
-<a href="http://dmtcp.sourceforge.net/">DMTCP</a>, or
-<a href="https://computation.llnl.gov/projects/scalable-checkpoint-restart-for-mpi">SCR</a>.
+Slurm support such as:
+<ul>
+<li><a href="https://criu.org">CRIU</a>,</li>
+<li><a href="http://dmtcp.sourceforge.net/">DMTCP</a>, or</li>
+<li><a href="https://computation.llnl.gov/projects/scalable-checkpoint-restart-for-mpi">SCR</a>.</li>
+</ul>
+These newer checkpoint systems do not require direct integration with Slurm,
+and provide additional capabilities not present in BLCR. While they
+do require the job to directly opt-in to their usage, in our experience
+BLCR does not deliver on the promise of an application-agnostic checkpoint,
+and as such direct integration to the job scheduler is unnecessary and
+leads to further confusion.
 </p>
 
 <h2>Overview</h2>

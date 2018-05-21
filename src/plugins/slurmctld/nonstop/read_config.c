@@ -4,11 +4,11 @@
  *  Copyright (C) 2013 SchedMD LLC
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -139,7 +139,7 @@ static void _print_config(void)
 		xfree(tmp_str);
 	}
 	info("ReadTimeout=%u",	read_timeout);
-	info("WriteTimeout=%u",	read_timeout);
+	info("WriteTimeout=%u",	write_timeout);
 }
 
 static spare_node_resv_t *_xlate_hot_spares(char *spare_str, int *spare_cnt)
@@ -385,4 +385,116 @@ extern void create_hot_spare_resv(void)
 	}
 	list_iterator_destroy(part_iterator);
 	unlock_slurmctld(part_read_lock);
+}
+
+extern void nonstop_read_config_list(List data)
+{
+	config_key_pair_t *key_pair;
+	char *tmp_str = NULL;
+	int i;
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BackupAddr");
+	key_pair->value = xstrdup(nonstop_backup_addr);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ControlAddr");
+	key_pair->value = xstrdup(nonstop_control_addr);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("Debug");
+	key_pair->value = xstrdup_printf("%hu",nonstop_debug);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("HotSpareCount");
+	if ((nonstop_debug > 1) && hot_spare_info_cnt) {
+		for (i = 0; i < hot_spare_info_cnt; i++) {
+			if (i)
+				xstrcat(tmp_str, ",");
+			xstrfmtcat(tmp_str, "%s:%u",
+				   hot_spare_info[i].partition,
+				   hot_spare_info[i].node_cnt);
+		}
+		key_pair->value = xstrdup(tmp_str);
+		xfree(tmp_str);
+	} else {
+		key_pair->value = xstrdup(hot_spare_count_str);
+	}
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MaxSpareNodeCount");
+	key_pair->value = xstrdup_printf("%u", max_spare_node_count);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("Port");
+	key_pair->value = xstrdup_printf("%hu", nonstop_comm_port);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ReadTimeout");
+	key_pair->value = xstrdup_printf("%u", read_timeout);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("TimeLimitDelay");
+	key_pair->value = xstrdup_printf("%hu", time_limit_delay);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("TimeLimitDrop");
+	key_pair->value = xstrdup_printf("%hu", time_limit_drop);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("TimeLimitExtend");
+	key_pair->value = xstrdup_printf("%hu", time_limit_extend);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("UserDrainAllow");
+	key_pair->value = xstrdup(user_drain_allow_str);
+	list_append(data, key_pair);
+
+	if ((nonstop_debug > 1) && user_drain_allow_cnt) {
+		for (i = 0; i < user_drain_allow_cnt; i++) {
+			if (i)
+				xstrcat(tmp_str, ",");
+			xstrfmtcat(tmp_str, "%u",(uint32_t)user_drain_allow[i]);
+		}
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("UserDrainAllow(UIDs)");
+		key_pair->value = xstrdup(tmp_str);
+		list_append(data, key_pair);
+		xfree(tmp_str);
+	}
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("UserDrainDeny");
+	key_pair->value = xstrdup(user_drain_deny_str);
+	list_append(data, key_pair);
+
+	if ((nonstop_debug > 1) && user_drain_deny_cnt) {
+		for (i = 0; i < user_drain_deny_cnt; i++) {
+			if (i)
+				xstrcat(tmp_str, ",");
+			xstrfmtcat(tmp_str, "%u", (uint32_t)user_drain_deny[i]);
+		}
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("UserDrainDeny(UIDs)");
+		key_pair->value = xstrdup(tmp_str);
+		list_append(data, key_pair);
+		xfree(tmp_str);
+	}
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("WriteTimeout");
+	key_pair->value = xstrdup_printf("%u", write_timeout);
+	list_append(data, key_pair);
+
+	return;
 }

@@ -7,11 +7,11 @@
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -485,7 +485,7 @@ extern resource_allocation_response_msg_t *
 	job_desc_msg_t *j;
 	slurm_allocation_callbacks_t callbacks;
 	int i;
-	char *line = NULL, *buf = NULL, *ptrptr = NULL;
+
 	xassert(srun_opt);
 
 	if (srun_opt->relative_set && srun_opt->relative)
@@ -507,7 +507,7 @@ extern resource_allocation_response_msg_t *
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
 	if ((j->job_id != NO_VAL) && !opt_local->jobid_set) {
-		info("WARNING: Creating SLURM job allocation from within "
+		info("WARNING: Creating Slurm job allocation from within "
 		     "another allocation");
 		info("WARNING: You are attempting to initiate a second job");
 		if (!opt_local->jobid_set)	/* Let slurmctld set jobid */
@@ -543,15 +543,8 @@ extern resource_allocation_response_msg_t *
 		}
 	}
 
-	if (resp && resp->job_submit_user_msg) {
-		buf = xstrdup(resp->job_submit_user_msg);
-		line = strtok_r(buf, "\n", &ptrptr);
-		while (line) {
-			info("%s", line);
-			line = strtok_r(NULL, "\n", &ptrptr);
-		}
-		xfree(buf);
-	}
+	if (resp)
+		print_multi_line_string(resp->job_submit_user_msg, -1);
 
 	if (resp && !destroy_job) {
 		/*
@@ -668,7 +661,7 @@ List allocate_pack_nodes(bool handle_signals)
 		if ((j->job_id != NO_VAL) && !opt_local->jobid_set) {
 			if (jobid_log) {
 				jobid_log = false;	/* log once */
-				info("WARNING: Creating SLURM job allocation from within "
+				info("WARNING: Creating Slurm job allocation from within "
 				     "another allocation");
 				info("WARNING: You are attempting to initiate a second job");
 			}
@@ -843,7 +836,7 @@ extern List existing_allocation(void)
 		if (opt.srun_opt->parallel_debug || opt.jobid_set)
 			return NULL;    /* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE)
-			error("SLURM job %u has expired", old_job_id);
+			error("Slurm job %u has expired", old_job_id);
 		else
 			error("Unable to confirm allocation for job %u: %m",
 			      old_job_id);
@@ -1021,8 +1014,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 
 	if (opt_local->mail_user)
 		j->mail_user = opt_local->mail_user;
-	if (srun_opt->burst_buffer)
-		j->burst_buffer = srun_opt->burst_buffer;
+	if (opt_local->burst_buffer)
+		j->burst_buffer = opt_local->burst_buffer;
 	if (opt_local->begin)
 		j->begin_time = opt_local->begin;
 	if (opt_local->deadline)
@@ -1146,6 +1139,19 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
 	j->clusters = xstrdup(opt_local->clusters);
+
+	if (opt.cpus_per_gpu)
+		xstrfmtcat(j->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
+	if (opt.gpu_bind)
+		xstrfmtcat(j->tres_bind, "gpu:%s", opt.gpu_bind);
+	if (opt.gpu_freq)
+		xstrfmtcat(j->tres_freq, "gpu:%s", opt.gpu_freq);
+	xfmt_tres(&j->tres_per_job,    "gpu", opt.gpus);
+	xfmt_tres(&j->tres_per_node,   "gpu", opt.gpus_per_node);
+	xfmt_tres(&j->tres_per_socket, "gpu", opt.gpus_per_socket);
+	xfmt_tres(&j->tres_per_task,   "gpu", opt.gpus_per_task);
+	if (opt.mem_per_gpu)
+		xstrfmtcat(j->mem_per_tres, "gpu:%"PRIi64, opt.mem_per_gpu);
 
 	return j;
 }

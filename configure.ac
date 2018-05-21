@@ -355,7 +355,7 @@ dnl
 X_AC_SYSTEMD
 
 dnl
-dnl Check for compilation of SLURM auth modules:
+dnl Check for compilation of Slurm auth modules:
 dnl
 X_AC_MUNGE
 
@@ -394,12 +394,12 @@ AC_SUBST(UTIL_LIBS)
 LIBS="$savedLIBS"
 
 dnl
-dnl Check for compilation of SLURM with BLCR support:
+dnl Check for compilation of Slurm with BLCR support:
 dnl
 X_AC_BLCR
 
 dnl
-dnl Check for compilation of SLURM with CURL support:
+dnl Check for compilation of Slurm with CURL support:
 dnl
 LIBCURL_CHECK_CONFIG
 
@@ -422,6 +422,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/Makefile
 		 contribs/cray/Makefile
 		 contribs/cray/csm/Makefile
+		 contribs/cray/slurmsmwd/Makefile
 		 contribs/lua/Makefile
 		 contribs/mic/Makefile
 		 contribs/pam/Makefile
@@ -475,7 +476,6 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmd/slurmstepd/Makefile
 		 src/slurmdbd/Makefile
 		 src/smap/Makefile
-		 src/smd/Makefile
 		 src/sprio/Makefile
 		 src/squeue/Makefile
 		 src/srun/Makefile
@@ -507,6 +507,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_profile/Makefile
 		 src/plugins/acct_gather_profile/hdf5/Makefile
 		 src/plugins/acct_gather_profile/hdf5/sh5util/Makefile
+		 src/plugins/acct_gather_profile/influxdb/Makefile
 		 src/plugins/acct_gather_profile/none/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/auth/munge/Makefile
@@ -607,6 +608,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/bluegene/bl_bgq/Makefile
 		 src/plugins/select/bluegene/sfree/Makefile
 		 src/plugins/select/cons_res/Makefile
+		 src/plugins/select/cons_tres/Makefile
 		 src/plugins/select/cray/Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/select/other/Makefile

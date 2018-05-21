@@ -7,11 +7,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,18 +27,24 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
 #ifndef _SLURMD_TASK_PLUGIN_H_
 #define _SLURMD_TASK_PLUGIN_H_
+
+#ifdef __FreeBSD__
+#include <sys/param.h>
+#include <sys/cpuset.h>
+typedef cpuset_t cpu_set_t;
+#endif
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -67,26 +73,23 @@ extern int slurmd_task_fini(void);
  *
  * RET - slurm error code
  */
-extern int task_g_slurmd_batch_request(uint32_t job_id,
-				       batch_job_launch_msg_t *req);
+extern int task_g_slurmd_batch_request(batch_job_launch_msg_t *req);
 
 /*
  * Slurmd has received a launch request.
  *
  * RET - slurm error code
  */
-extern int task_g_slurmd_launch_request(uint32_t job_id,
-				 launch_tasks_request_msg_t *req,
-				 uint32_t node_id );
+extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
+					uint32_t node_id);
 
 /*
  * Slurmd is reserving resources for the task.
  *
  * RET - slurm error code
  */
-extern int task_g_slurmd_reserve_resources(uint32_t job_id,
-				    launch_tasks_request_msg_t *req,
-				    uint32_t node_id );
+extern int task_g_slurmd_reserve_resources(launch_tasks_request_msg_t *req,
+					   uint32_t node_id );
 
 /*
  * Slurmd is suspending a job.

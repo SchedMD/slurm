@@ -5,11 +5,11 @@
  *  Portions (hwloc) copyright (C) 2012 Bull, <rod.schultz@bull.com>
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -122,18 +122,6 @@ get_procs(uint16_t *procs)
 	return 0;
 }
 
-/*
- * get_cpuinfo - Return detailed cpuinfo on this system
- * Output: p_cpus - number of processors on the system
- *         p_boards - number of baseboards (containing sockets)
- *         p_sockets - number of physical processor sockets
- *         p_cores - total number of physical CPU cores
- *         p_threads - total number of hardware execution threads
- *         block_map - asbtract->physical block distribution map
- *         block_map_inv - physical->abstract block distribution map (inverse)
- *         return code - 0 if no error, otherwise errno
- * NOTE: User must xfree block_map and block_map_inv
- */
 #ifdef HAVE_HWLOC
 #if _DEBUG
 static void _hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
@@ -144,7 +132,7 @@ static void _hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
 
 	if (!obj)
 		return;
-	hwloc_obj_snprintf(string, sizeof(string), topology, obj, "#", 0);
+	hwloc_obj_type_snprintf(string, sizeof(string), obj, 0);
 	debug("%*s%s", 2 * depth, "", string);
 	for (i = 0; i < obj->arity; i++) {
 		_hwloc_children(topology, obj->children[i], depth + 1);
@@ -165,6 +153,18 @@ static int _core_child_count(hwloc_topology_t topology, hwloc_obj_t obj)
 	return count;
 }
 
+/*
+ * get_cpuinfo - Return detailed cpuinfo on this system
+ * Output: p_cpus - number of processors on the system
+ *         p_boards - number of baseboards (containing sockets)
+ *         p_sockets - number of physical processor sockets
+ *         p_cores - total number of physical CPU cores
+ *         p_threads - total number of hardware execution threads
+ *         block_map - asbtract->physical block distribution map
+ *         block_map_inv - physical->abstract block distribution map (inverse)
+ *         return code - 0 if no error, otherwise errno
+ * NOTE: User must xfree block_map and block_map_inv
+ */
 extern int
 get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	    uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,

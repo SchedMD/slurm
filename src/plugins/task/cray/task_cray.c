@@ -5,11 +5,11 @@
  *  Copyright (C) 2013 SchedMD LLC
  *  Copyright 2013 Cray Inc. All Rights Reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -76,14 +76,14 @@ static uint64_t debug_flags = 0;
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
  * the plugin (e.g., "task" for task control) and <method> is a description
- * of how this plugin satisfies that application.  SLURM will only load
+ * of how this plugin satisfies that application.  Slurm will only load
  * a task plugin if the plugin_type string has a prefix of "task/".
  *
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
@@ -164,9 +164,10 @@ extern int init (void)
 	char *task_cgroup = strstr(task_plugin, "cgroup");
 	char *task_cray = strstr(task_plugin, "cray");
 
-	if (!task_cgroup || !task_cray || task_cgroup < task_cray)
+	if (!task_cgroup || !task_cray || (task_cgroup < task_cray)) {
 		fatal("task/cgroup must be used with, and listed after, "
 		      "task/cray in TaskPlugin");
+	}
 
 	xfree(task_plugin);
 
@@ -179,7 +180,7 @@ extern int init (void)
 	// Create the run directory
 	errno = 0;
 	rc = mkdir(TASK_CRAY_RUN_DIR, 0755);
-	if (rc == -1 &&	errno != EEXIST) {
+	if ((rc == -1) && (errno != EEXIST)) {
 		CRAY_ERR("Couldn't create %s: %m", TASK_CRAY_RUN_DIR);
 		return SLURM_ERROR;
 	}
@@ -210,33 +211,28 @@ extern int fini (void)
 /*
  * task_p_slurmd_batch_request()
  */
-extern int task_p_slurmd_batch_request (uint32_t job_id,
-					batch_job_launch_msg_t *req)
+extern int task_p_slurmd_batch_request (batch_job_launch_msg_t *req)
 {
-	debug("task_p_slurmd_batch_request: %u", job_id);
+	debug("%s: %u", __func__, req->job_id);
 	return SLURM_SUCCESS;
 }
 
 /*
  * task_p_slurmd_launch_request()
  */
-extern int task_p_slurmd_launch_request (uint32_t job_id,
-					 launch_tasks_request_msg_t *req,
+extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 					 uint32_t node_id)
 {
-	debug("task_p_slurmd_launch_request: %u.%u %u",
-	      job_id, req->job_step_id, node_id);
 	return SLURM_SUCCESS;
 }
 
 /*
  * task_p_slurmd_reserve_resources()
  */
-extern int task_p_slurmd_reserve_resources (uint32_t job_id,
-					    launch_tasks_request_msg_t *req,
+extern int task_p_slurmd_reserve_resources (launch_tasks_request_msg_t *req,
 					    uint32_t node_id)
 {
-	debug("task_p_slurmd_reserve_resources: %u %u", job_id, node_id);
+	debug("%s: %u %u", __func__, req->job_id, node_id);
 	return SLURM_SUCCESS;
 }
 
@@ -451,7 +447,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		// Unlink the file
 		errno = 0;
 		rc = unlink(llifile);
-		if (rc == -1 && errno != ENOENT) {
+		if ((rc == -1) && (errno != ENOENT)) {
 			CRAY_ERR("unlink(%s) failed: %m", llifile);
 		} else if (rc == 0) {
 			debug("Unlinked %s", llifile);
@@ -462,7 +458,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 			snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
 				 SLURM_ID_HASH_LEGACY(apid));
 			rc = unlink(llifile);
-			if (rc == -1 && errno != ENOENT) {
+			if ((rc == -1) && (errno != ENOENT)) {
 				CRAY_ERR("unlink(%s) failed: %m", llifile);
 			} else if (rc == 0) {
 				debug("Unlinked %s", llifile);

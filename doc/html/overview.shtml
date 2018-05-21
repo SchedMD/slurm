@@ -197,8 +197,8 @@ of fast bit map manipulations. A sample (partial. Slurm configuration file follo
 #
 # Sample /etc/slurm.conf
 #
-ControlMachine=linux0001
-BackupController=linux0002
+SlurmctldHost=linux0001  # Primary server
+SlurmctldHost=linux0002  # Backup server
 #
 AuthType=auth/munge
 Epilog=/usr/local/slurm/sbin/epilog

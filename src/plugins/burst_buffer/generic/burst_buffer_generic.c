@@ -4,11 +4,11 @@
  *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -64,14 +64,14 @@
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "burst_buffer" for SLURM burst_buffer) and <method> is a
- * description of how this plugin satisfies that application.  SLURM will only
+ * the plugin (e.g., "burst_buffer" for Slurm burst_buffer) and <method> is a
+ * description of how this plugin satisfies that application.  Slurm will only
  * load a burst_buffer plugin if the plugin_type string has a prefix of
  * "burst_buffer/".
  *
@@ -115,7 +115,7 @@ extern uint64_t bb_p_get_system_size(void)
  * etc.)
  *
  * init_config IN - true if called as part of slurmctld initialization
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_p_load_state(bool init_config)
 {
@@ -123,9 +123,20 @@ extern int bb_p_load_state(bool init_config)
 }
 
 /*
+ * Return string containing current burst buffer status
+ * argc IN - count of status command arguments
+ * argv IN - status command arguments
+ * RET status string, release memory using xfree()
+ */
+extern char *bb_p_get_status(uint32_t argc, char **argv)
+{
+	return NULL;
+}
+
+/*
  * Note configuration may have changed. Handle changes in BurstBufferParameters.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_p_reconfig(void)
 {
@@ -136,7 +147,7 @@ extern int bb_p_reconfig(void)
  * Pack current burst buffer state information for network transmission to
  * user (e.g. "scontrol show burst")
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 {
@@ -148,7 +159,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
  * options. Performed after setting default account + qos, but prior to
  * establishing job ID or creating script file.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
@@ -160,7 +171,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
  * Secondary validation of a job submit request with respect to burst buffer
  * options. Performed after establishing job ID and creating script file.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 {
@@ -215,7 +226,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
  * At this time, bb_g_job_test_stage_in() should have been run sucessfully AND
  * the compute nodes selected for the job.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_p_job_begin(struct job_record *job_ptr)
 {
@@ -226,7 +237,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
  * Executed after bb_p_job_begin() if there was an allocation failure.
  * Does not release previously allocated resources.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_p_job_revoke_alloc(struct job_record *job_ptr)
 {
@@ -236,7 +247,7 @@ extern int bb_p_job_revoke_alloc(struct job_record *job_ptr)
 /*
  * Trigger a job's burst buffer stage-out to begin
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 {
@@ -270,7 +281,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 /*
  * Terminate any file staging and completely release burst buffer resources
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int bb_p_job_cancel(struct job_record *job_ptr)
 {

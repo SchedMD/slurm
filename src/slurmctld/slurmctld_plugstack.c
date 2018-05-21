@@ -4,11 +4,11 @@
  *  Copyright (C) 2012 SchedMD LLC
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -46,6 +46,7 @@
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -54,14 +55,14 @@
 slurm_nonstop_ops_t nonstop_ops = { NULL, NULL, NULL };
 
 typedef struct slurmctld_plugstack_ops {
-	/* NO FUNCTIONS */
+	void	(*get_config)	(config_plugin_params_t *p);
 } slurmctld_plugstack_ops_t;
 
 /*
  * Must be synchronized with slurmctld_plugstack_t above.
  */
 static const char *syms[] = {
-	/* NO FUNCTIONS */
+	"slurmctld_plugstack_p_get_config"
 };
 
 static int g_context_cnt = -1;
@@ -74,7 +75,7 @@ static bool init_run = false;
 /*
  * Initialize the slurmctld plugstack plugin.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int slurmctld_plugstack_init(void)
 {
@@ -134,7 +135,7 @@ fini:
 /*
  * Terminate the slurmctld plugstack plugin. Free memory.
  *
- * Returns a SLURM errno.
+ * Returns a Slurm errno.
  */
 extern int slurmctld_plugstack_fini(void)
 {
@@ -159,4 +160,43 @@ extern int slurmctld_plugstack_fini(void)
 
 fini:	slurm_mutex_unlock(&g_context_lock);
 	return rc;
+}
+
+/*
+ * Gets the configuration for all slurmctld plugins in a List of
+ * config_plugin_params_t elements. For each plugin this consists on:
+ * - Plugin name
+ * - List of key,pairs
+ * Returns List or NULL.
+ */
+extern List slurmctld_plugstack_g_get_config(void)
+{
+	DEF_TIMERS;
+	int i, rc;
+	List conf_list = NULL;
+	config_plugin_params_t *p;
+
+	START_TIMER;
+	rc = slurmctld_plugstack_init();
+
+	if (g_context_cnt > 0)
+		conf_list = list_create(destroy_config_plugin_params);
+
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		p = xmalloc(sizeof(config_plugin_params_t));
+		p->key_pairs = list_create(destroy_config_key_pair);
+
+		(*(ops[i].get_config))(p);
+
+		if (!p->name)
+			destroy_config_plugin_params(p);
+		else
+			list_append(conf_list, p);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+
+	END_TIMER2("slurmctld_plugstack_g_get_config");
+
+	return conf_list;
 }

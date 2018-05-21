@@ -13,11 +13,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -33,13 +33,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -58,6 +58,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/proc_args.h"
 
 #include "debugger.h"
 #include "multi_prog.h"
@@ -66,7 +67,7 @@
 /* Given a program name, translate it to a fully qualified pathname
  * as needed based upon the PATH environment variable */
 static char *
-_build_path(char* fname)
+_build_path(const char * cwd, char* fname)
 {
 	int i;
 	char *path_env = NULL, *dir = NULL, *ptrptr = NULL;
@@ -87,6 +88,12 @@ _build_path(char* fname)
 	/* check if already absolute path */
 	if ((file_name[0] == '/') || (file_name[0] == '.'))
 		return file_name;
+
+	/* search for the file using cwd*/
+	snprintf(file_path, sizeof(file_path), "%s/%s", cwd, file_name);
+	if ((stat(file_path, &buf) == 0)
+	    && (! S_ISDIR(buf.st_mode)))
+		return file_path;
 
 	/* search for the file using PATH environment variable */
 	dir = getenv("PATH");
@@ -134,12 +141,12 @@ _set_range(int low_num, int high_num, char *exec_name, bool ignore_duplicates)
 }
 
 static void
-_set_exec_names(char *ranks, char *exec_name, int ntasks)
+_set_exec_names(char *ranks, const char *cwd, char *exec_name, int ntasks)
 {
 	char *ptrptr = NULL, *exec_path = NULL;
 	int low_num, high_num, num, i;
 
-	exec_path = _build_path(exec_name);
+	exec_path = _build_path(cwd, exec_name);
 	if ((ranks[0] == '*') && (ranks[1] == '\0')) {
 		low_num = 0;
 		high_num = ntasks - 1;
@@ -179,7 +186,7 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 }
 
 extern int
-mpir_set_multi_name(int ntasks, const char *config_fname)
+mpir_set_multi_name(int ntasks, const char *config_fname, const char * cwd)
 {
 	FILE *config_fd;
 	char line[BUF_SIZE];
@@ -244,7 +251,7 @@ mpir_set_multi_name(int ntasks, const char *config_fname)
 			fclose(config_fd);
 			return -1;
 		}
-		_set_exec_names(ranks, exec_name, ntasks);
+		_set_exec_names(ranks, cwd, exec_name, ntasks);
 	}
 	fclose(config_fd);
 	return 0;
@@ -322,7 +329,7 @@ mpir_dump_proctable(void)
 }
 
 static int
-_update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
+_update_task_mask(int low_num, int high_num, slurm_opt_t *opt_local,
 		  bitstr_t **task_mask, bool ignore_duplicates)
 {
 	int i;
@@ -335,16 +342,17 @@ _update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
 		error("Invalid task id, %d < 0", low_num);
 		return -1;
 	}
-	if (high_num >= *ntasks) {
+	if (high_num >= opt_local->ntasks) {
 		static bool i_set_ntasks = false;
-		if (*ntasks_set && !i_set_ntasks) {
+		if (opt_local->ntasks_set && !i_set_ntasks) {
 			error("Invalid task id, %d >= ntasks", high_num);
 			return -1;
 		} else {
-			*ntasks = high_num + 1;
-			*ntasks_set = true;
+			opt_local->ntasks = high_num + 1;
+			opt_local->ntasks_set = true;
 			i_set_ntasks = true;
-			(*task_mask) = bit_realloc((*task_mask), *ntasks);
+			(*task_mask) = bit_realloc((*task_mask),
+						   opt_local->ntasks);
 		}
 	}
 	for (i=low_num; i<=high_num; i++) {
@@ -360,8 +368,7 @@ _update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
 }
 
 static int
-_validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
-		bitstr_t **task_mask)
+_validate_ranks(char *ranks, slurm_opt_t *opt_local, bitstr_t **task_mask)
 {
 	static bool has_asterisk = false;
 	char *range = NULL, *p = NULL;
@@ -370,11 +377,11 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
 
 	if (ranks[0] == '*' && ranks[1] == '\0') {
 		low_num = 0;
-		high_num = *ntasks - 1;
-		*ntasks_set = true;	/* do not allow to change later */
+		high_num = opt_local->ntasks - 1;
+		opt_local->ntasks_set = true; /* do not allow to change later */
 		has_asterisk = true;	/* must be last MPMD spec line */
-		(*ncmds)++;
-		return _update_task_mask(low_num, high_num, ntasks, ntasks_set,
+		opt_local->srun_opt->multi_prog_cmds++;
+		return _update_task_mask(low_num, high_num, opt_local,
 					 task_mask, true);
 	}
 
@@ -384,7 +391,7 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
 		 * Non-contiguous tasks are split into multiple commands
 		 * in the mpmd_set so count each token separately
 		 */
-		(*ncmds)++;
+		opt_local->srun_opt->multi_prog_cmds++;
 		p = range;
 		while (*p != '\0' && isdigit (*p))
 			p ++;
@@ -412,7 +419,7 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
 			return -1;
 		}
 
-		if (_update_task_mask(low_num, high_num, ntasks, ntasks_set,
+		if (_update_task_mask(low_num, high_num, opt_local,
 				      task_mask, false))
 			return -1;
 	}
@@ -423,29 +430,26 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
  * Verify that we have a valid executable program specified for each task
  *	when the --multi-prog option is used.
  * IN config_name - MPMD configuration file name
- * IN/OUT ntasks - number of tasks to launch
- * IN/OUT ntasks_set - true if task count explicitly set by user
- * OUT ncmds - number of commands
+ * IN/OUT opt_local - slurm options
  * RET 0 on success, -1 otherwise
  */
 extern int
-verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
-		  int32_t *ncmds)
+verify_multi_name(char *config_fname, slurm_opt_t *opt_local)
 {
 	FILE *config_fd;
 	char line[BUF_SIZE];
-	char *ranks, *exec_name, *p, *ptrptr;
+	char *ranks, *exec_name, *p, *ptrptr, *fullpath = NULL;
 	int line_num = 0, i, rc = 0;
 	bool last_line_break = false, line_break = false;
 	int line_len;
 	bitstr_t *task_mask;
 
-	if (*ntasks <= 0) {
-		error("Invalid task count %d", *ntasks);
+	if (opt_local->ntasks <= 0) {
+		error("Invalid task count %d", opt_local->ntasks);
 		return -1;
 	}
 
-	*ncmds = 0;
+	opt_local->srun_opt->multi_prog_cmds = 0;
 
 	config_fd = fopen(config_fname, "r");
 	if (config_fd == NULL) {
@@ -453,7 +457,7 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
 		return -1;
 	}
 
-	task_mask = bit_alloc(*ntasks);
+	task_mask = bit_alloc(opt_local->ntasks);
 	while (fgets(line, sizeof(line), config_fd)) {
 		line_num++;
 		line_len = strlen(line);
@@ -492,16 +496,24 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
 			rc = -1;
 			goto fini;
 		}
-		if (_validate_ranks(ranks, ntasks, ntasks_set, ncmds,
-				    &task_mask)) {
+		if (_validate_ranks(ranks, opt_local, &task_mask)) {
 			error("Line %d of configuration file %s invalid",
 				line_num, config_fname);
 			rc = -1;
 			goto fini;
 		}
+		if (opt_local->srun_opt->test_exec &&
+		    !(fullpath = search_path(
+			      opt_local->cwd, exec_name, true, X_OK, true))) {
+			error("Line %d of configuration file %s, program %s not executable",
+			      line_num, config_fname, exec_name);
+			rc = -1;
+			goto fini;
+		}
+		xfree(fullpath);
 	}
 
-	for (i = 0; i < *ntasks; i++) {
+	for (i = 0; i < opt_local->ntasks; i++) {
 		if (!bit_test(task_mask, i)) {
 			error("Configuration file %s invalid, "
 				"no record for task id %d",

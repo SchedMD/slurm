@@ -1,0 +1,120 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test for multiple, out of order srun --pack-group options
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+
+set test_id      "38.17"
+set exit_code    0
+set file_in1     "test$test_id.in1"
+set file_in2     "test$test_id.in2"
+set file_in3     "test$test_id.in3"
+set job_id       0
+set matches      0
+
+proc end_it { exit_code } {
+	global job_id scancel bin_rm file_in1 file_in2 file_in3 test_id
+	if {$job_id != 0} {
+		exec $scancel $job_id
+	}
+	exec $bin_rm -f $file_in1 $file_in2 $file_in3
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+print_header $test_id
+
+# find out if we have enough nodes to test functionality
+set partition [default_partition]
+set node_count [get_node_cnt_in_part $partition]
+if { $node_count < 3 } {
+	send_user "WARNING: Insufficient nodes in default partition ($node_count < 3)\n"
+	exit $exit_code
+}
+
+if {[test_front_end]} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit $exit_code
+}
+if {[test_pack_step] == 0} {
+	send_user "\nWARNING: Heterogeneous steps not currently supported\n"
+	exit $exit_code
+}
+
+make_bash_script $file_in1 "$srun -l --mpi=none --pack-group=0,2 ./$file_in2 : --pack-group=1 ./$file_in3"
+make_bash_script $file_in2 "$bin_echo FILE2"
+make_bash_script $file_in3 "$bin_echo FILE3"
+
+set timeout $max_job_delay
+spawn $salloc -t1 -N1 : -N1 : -N1 ./$file_in1
+expect {
+	-re "Job submit/allocate failed" {
+		log_warn "Unable to execute test due to system configuration"
+		end_it 0
+	}
+	-re "Granted job allocation ($number)" {
+		incr matches
+		set job_id $expect_out(1,string)
+		if {$job_id == 0} {
+			set job_id $expect_out(1,string)
+		}
+		exp_continue
+	}
+	-re "($number): FILE($number)" {
+		if {$expect_out(1,string) == 0 && $expect_out(2,string) == 2} {
+			incr matches
+		} elseif {$expect_out(1,string) == 1 && $expect_out(2,string) == 3} {
+			incr matches
+		} elseif {$expect_out(1,string) == 2 && $expect_out(2,string) == 2} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: Invalid output ($expect_out(1,string): FILE$expect_out(2,string))\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	timeout {
+		log_error "salloc not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: error submitting job\n"
+	end_it 1
+}
+if {$matches != 4} {
+	send_user "\nFAILURE: Invalid output ($matches != 4)\n"
+	end_it 1
+}
+end_it $exit_code

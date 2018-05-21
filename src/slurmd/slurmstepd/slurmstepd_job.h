@@ -8,11 +8,11 @@
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -126,17 +126,17 @@ typedef struct {
 	slurmstepd_state_t state;	/* Job state			*/
 	pthread_cond_t state_cond;	/* Job state conditional	*/
 	pthread_mutex_t state_mutex;	/* Job state mutex		*/
-	uint32_t       jobid;  /* Current SLURM job id                      */
+	uint32_t       jobid;  /* Current Slurm job id                      */
 	uint32_t       stepid; /* Current step id (or NO_VAL)               */
 	uint32_t       array_job_id;  /* job array master job ID            */
 	uint32_t       array_task_id; /* job array ID                       */
 	uint32_t       nnodes; /* number of nodes in current job            */
 	uint32_t       ntasks; /* total number of tasks in current job      */
 	uint32_t       nodeid; /* relative position of this node in job     */
-	uint32_t       node_offset; 	/* pack job node offset or NO_VAL   */
-	uint32_t       node_tasks; /* number of tasks on *this* node        */
+	uint32_t       node_offset;	/* pack job node offset or NO_VAL   */
+	uint32_t       node_tasks;	/* number of tasks on *this* node   */
 	uint32_t       pack_jobid;	/* pack job ID or NO_VAL */
-	uint32_t       pack_nnodes;	/* total task count for entire pack job */
+	uint32_t       pack_nnodes;	/* total node count for entire pack job */
 	char          *pack_node_list;	/* pack step node list */
 	uint32_t       pack_ntasks;	/* total task count for entire pack job */
 	uint32_t       pack_offset; 	/* pack job offset or NO_VAL        */

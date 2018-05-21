@@ -6,11 +6,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -895,10 +895,12 @@ static void _set_time_limit(uint32_t *time_limit, uint32_t part_max_time,
 			    uint32_t limit_max_time, uint16_t *limit_set_time)
 {
 	if ((*time_limit) == NO_VAL) {
-		if (part_max_time == INFINITE)
+		if (limit_max_time)
 			(*time_limit) = limit_max_time;
+		else if (part_max_time != INFINITE)
+			(*time_limit) = part_max_time;
 		else
-			(*time_limit) = MIN(limit_max_time, part_max_time);
+			(*time_limit) = INFINITE;
 
 		if (limit_set_time)
 			(*limit_set_time) = 1;
@@ -1098,8 +1100,9 @@ static bool _validate_time_limit(uint32_t *time_limit_in,
 	uint64_t out_max_64 = *(uint64_t *)out_max_limit;
 	uint32_t out_max_32 = *(uint32_t *)out_max_limit;
 
-	if (!tres_req_cnt ||
-	    !strict_checking || (*limit_set_time) == ADMIN_SET_LIMIT)
+	if (((*time_limit_in) != NO_VAL) &&
+	    (!tres_req_cnt || !strict_checking ||
+	     (*limit_set_time) == ADMIN_SET_LIMIT))
 		return true;
 
 	if (is64) {
@@ -1472,12 +1475,11 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		    > qos_ptr->grp_submit_jobs) {
 			if (reason)
 				*reason = WAIT_QOS_GRP_SUB_JOB;
-			debug2("job submit for user %s(%u): "
-			       "group max submit job limit exceeded %u "
-			       "for qos '%s'",
+			debug2("job submit for user %s(%u): group max submit job limit exceeded %u (used:%u + requested:%d) for qos '%s'",
 			       user_name,
 			       job_desc->user_id,
 			       qos_ptr->grp_submit_jobs,
+			       qos_ptr->usage->grp_used_submit_jobs, job_cnt,
 			       qos_ptr->name);
 			rc = false;
 			goto end_it;
@@ -1689,10 +1691,11 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		    qos_ptr->max_submit_jobs_pa) {
 			if (reason)
 				*reason = WAIT_QOS_MAX_SUB_JOB_PER_ACCT;
-			debug2("job submit for account %s: "
-			       "qos max submit job limit exceeded %u",
+			debug2("job submit for account %s: qos max submit job limit exceeded %u (used:%u + requested:%d) for qos '%s'",
 			       assoc_ptr->acct,
-			       qos_ptr->max_submit_jobs_pa);
+			       qos_ptr->max_submit_jobs_pa,
+			       used_limits->submit_jobs, job_cnt,
+			       qos_ptr->name);
 			rc = false;
 			goto end_it;
 		}
@@ -1711,11 +1714,12 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		     qos_ptr->max_submit_jobs_pu) {
 			if (reason)
 				*reason = WAIT_QOS_MAX_SUB_JOB;
-			debug2("job submit for user %s(%u): "
-			       "qos max submit job limit exceeded %u",
+			debug2("job submit for user %s(%u): qos max submit job limit exceeded %u (used:%u + requested:%d) for qos '%s'",
 			       user_name,
 			       job_desc->user_id,
-			       qos_ptr->max_submit_jobs_pu);
+			       qos_ptr->max_submit_jobs_pu,
+			       used_limits->submit_jobs, job_cnt,
+			       qos_ptr->name);
 			rc = false;
 			goto end_it;
 		}
@@ -2641,8 +2645,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
 	if (qos_ptr_1) {
-		strict_checking =
-			(reason || (qos_ptr_1->flags & QOS_FLAG_DENY_LIMIT));
+		strict_checking = (qos_ptr_1->flags & QOS_FLAG_DENY_LIMIT);
 		if (qos_ptr_2 && !strict_checking)
 			strict_checking =
 				qos_ptr_2->flags & QOS_FLAG_DENY_LIMIT;
@@ -2660,8 +2663,11 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 			      user_name, job_cnt, strict_checking)))
 			goto end_it;
 
-	} else
-		strict_checking = reason ? true : false;
+	} else /*
+		* We don't have a QOS to determine if we should fail or not, so
+		* we will go with strict_checking by default.
+		*/
+		strict_checking = true;
 
 	while (assoc_ptr) {
 		int tres_pos = 0;
@@ -2699,12 +2705,11 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 		     > assoc_ptr->grp_submit_jobs)) {
 			if (reason)
 				*reason = WAIT_ASSOC_GRP_SUB_JOB;
-			debug2("job submit for user %s(%u): "
-			       "group max submit job limit exceeded %u "
-			       "for account '%s'",
+			debug2("job submit for user %s(%u): group max submit job limit exceeded %u (used:%u + requested:%d) for account '%s'",
 			       user_name,
 			       job_desc->user_id,
 			       assoc_ptr->grp_submit_jobs,
+			       assoc_ptr->usage->used_submit_jobs, job_cnt,
 			       assoc_ptr->acct);
 			rc = false;
 			break;
@@ -2868,11 +2873,12 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 		     > assoc_ptr->max_submit_jobs)) {
 			if (reason)
 				*reason = WAIT_ASSOC_MAX_SUB_JOB;
-			debug2("job submit for user %s(%u): "
-			       "account max submit job limit exceeded %u",
+			debug2("job submit for user %s(%u): account max submit job limit exceeded %u (used:%u + requested:%d) for account '%s'",
 			       user_name,
 			       job_desc->user_id,
-			       assoc_ptr->max_submit_jobs);
+			       assoc_ptr->max_submit_jobs,
+			       assoc_ptr->usage->used_submit_jobs, job_cnt,
+			       assoc_ptr->acct);
 			rc = false;
 			break;
 		}

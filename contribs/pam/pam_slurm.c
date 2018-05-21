@@ -8,7 +8,7 @@
  *
  *  Written by Chris Dunlap <cdunlap@llnl.gov>
  *         and Jim Garlick  <garlick@llnl.gov>
- *         modified for SLURM by Moe Jette <jette@llnl.gov>.
+ *         modified for Slurm by Moe Jette <jette@llnl.gov>.
  *
  *  This file is part of pam_slurm, a PAM module for restricting access to
  *  the compute nodes within a cluster based on information obtained from
@@ -230,7 +230,7 @@ _parse_args(struct _options *opts, int argc, const char **argv)
 
 /*
  *  Return 1 if 'hostname' is a member of 'str', a SLURM-style host list as
- *  returned by SLURM database queries, else 0.  The 'str' argument is
+ *  returned by Slurm database queries, else 0.  The 'str' argument is
  *  truncated to the base prefix as a side-effect.
  */
 static int
@@ -288,7 +288,7 @@ _gethostname_short (char *name, size_t len)
 
 
 /*
- *  Query the SLURM database to find out if 'uid' has been allocated
+ *  Query the Slurm database to find out if 'uid' has been allocated
  *  this node. If so, return 1 indicating that 'uid' is authorized to
  *  this node else return 0.
  */

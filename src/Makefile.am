@@ -20,7 +20,6 @@ SUBDIRS =		\
 	slurmd		\
 	slurmdbd	\
 	smap		\
-	smd		\
 	sprio		\
 	squeue		\
 	sreport		\

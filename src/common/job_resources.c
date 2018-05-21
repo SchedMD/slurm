@@ -6,11 +6,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -861,6 +861,312 @@ extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
 				new_bit_inx+i);
 		}
 	}
+
+	return rc;
+}
+
+/*
+ * AND two job_resources structures.
+ * Every node/core set in job_resrcs1_ptr and job_resrcs2_ptr is set in the
+ * resulting job_resrcs1_ptr data structure
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int job_resources_and(job_resources_t *job_resrcs1_ptr,
+			     job_resources_t *job_resrcs2_ptr)
+{
+	int i, i_first, i_last, j;
+	int node_cnt, node_inx1 = -1, node_inx2 = -1;
+	int sock_core_cnt1 = 0, sock_core_cnt2 = 0;
+	int so_co_off1 = 0, so_co_off2 = 0;
+	int core_cnt, core_cnt1, core_cnt2;;
+	int core_off1 = 0, core_off2 = 0;
+	int rc = SLURM_SUCCESS;
+
+	xassert(job_resrcs1_ptr);
+	xassert(job_resrcs2_ptr);
+	xassert(job_resrcs1_ptr->core_bitmap);
+	xassert(job_resrcs2_ptr->core_bitmap);
+	xassert(job_resrcs1_ptr->node_bitmap);
+	xassert(job_resrcs2_ptr->node_bitmap);
+
+	/* Allocate space for merged arrays */
+	node_cnt = bit_size(job_resrcs1_ptr->node_bitmap);
+	i = bit_size(job_resrcs2_ptr->node_bitmap);
+	if (node_cnt != i) {
+		error("%s: node_bitmap sizes differ (%d != %d)", __func__,
+		      node_cnt, i);
+		rc = SLURM_ERROR;
+		node_cnt = MIN(node_cnt, i);
+	}
+
+	/* Set the values in data structure used for merging */
+	i_first = bit_ffs(job_resrcs1_ptr->node_bitmap);
+	i = bit_ffs(job_resrcs2_ptr->node_bitmap);
+	if ((i != -1) && (i < i_first))
+		i_first = i;
+	i_last = bit_fls(job_resrcs1_ptr->node_bitmap);
+	i = bit_fls(job_resrcs2_ptr->node_bitmap);
+	if ((i != -1) && (i > i_last))
+		i_last = i;
+	if (i_last >= node_cnt)
+		i_last = node_cnt - 1;
+	if (i_last == -1)	/* node_bitmap empty in both inputs */
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
+		bool match1 = false, match2 = false;
+		if (bit_test(job_resrcs1_ptr->node_bitmap, i)) {
+			node_inx1++;
+			match1 = true;
+		}
+		if (bit_test(job_resrcs2_ptr->node_bitmap, i)) {
+			node_inx2++;
+			match2 = true;
+		}
+		if (!match1 && !match2)	/* Unused node */
+			continue;
+		if (match1 && match2) {	/* Merge (AND) core_bitmaps */
+			if (++sock_core_cnt1 >
+			    job_resrcs1_ptr->sock_core_rep_count[so_co_off1]) {
+				sock_core_cnt1 = 0;
+				so_co_off1++;
+			}
+			if (++sock_core_cnt2 >
+			   job_resrcs2_ptr->sock_core_rep_count[so_co_off2]) {
+				sock_core_cnt2 = 0;
+				so_co_off2++;
+			}
+
+			core_cnt1 =
+				job_resrcs1_ptr->cores_per_socket[so_co_off1] *
+				job_resrcs1_ptr->sockets_per_node[so_co_off1];
+			core_cnt2 =
+				job_resrcs2_ptr->cores_per_socket[so_co_off2] *
+				job_resrcs2_ptr->sockets_per_node[so_co_off2];
+			if (core_cnt1 != core_cnt2) {
+				error("%s: Inconsistent socket/core count for node_inx %d (%d != %d)",
+				      __func__, i, core_cnt1, core_cnt2);
+				rc = SLURM_ERROR;
+			}
+			core_cnt = MIN(core_cnt1, core_cnt2);
+			for (j = 0; j < core_cnt; j++) {
+				if (bit_test(job_resrcs1_ptr->core_bitmap,
+					     core_off1 + j) &&
+				    !bit_test(job_resrcs2_ptr->core_bitmap,
+					      core_off2 + j)) {
+					bit_clear(job_resrcs1_ptr->core_bitmap,
+						  core_off1 + j);
+				}
+			}
+			core_off1 += core_cnt1;
+			core_off2 += core_cnt2;
+		} else if (match1) {
+			if (++sock_core_cnt1 >
+			    job_resrcs1_ptr->sock_core_rep_count[so_co_off1]) {
+				sock_core_cnt1 = 0;
+				so_co_off1++;
+			}
+			core_cnt1 =
+				job_resrcs1_ptr->cores_per_socket[so_co_off1] *
+				job_resrcs1_ptr->sockets_per_node[so_co_off1];
+			for (j = 0; j < core_cnt1; j++) {
+				bit_clear(job_resrcs1_ptr->core_bitmap,
+					  core_off1 + j);
+			}
+			core_off1 += core_cnt1;
+		} else { /* match2 only */
+			if (++sock_core_cnt2 >
+			    job_resrcs2_ptr->sock_core_rep_count[so_co_off2]) {
+				sock_core_cnt2 = 0;
+				so_co_off2++;
+			}
+			core_cnt2 =
+				job_resrcs2_ptr->cores_per_socket[so_co_off2] *
+				job_resrcs2_ptr->sockets_per_node[so_co_off2];
+			core_off2 += core_cnt2;
+		}
+	}
+
+	return rc;
+}
+
+/*
+ * OR two job_resources structures.
+ * Every node/core set in job_resrcs1_ptr or job_resrcs2_ptr is set in the
+ * resulting job_resrcs1_ptr data structure.
+ * NOTE: Only these job_resources_t fields in job_resrcs1_ptr are changed:
+ *	core_bitmap, node_bitmap
+ *	cores_per_socket, sockets_per_node, sock_core_rep_count, nhosts
+ * RET SLURM_SUCCESS or an error code, best effort operation happens on error
+ */
+extern int job_resources_or(job_resources_t *job_resrcs1_ptr,
+			    job_resources_t *job_resrcs2_ptr)
+{
+	job_resources_t *job_resrcs_new;
+	int i, i_first, i_last, j;
+	int node_cnt, node_inx = -1, node_inx1 = -1, node_inx2 = -1;
+	int sock_core_cnt1 = 0, sock_core_cnt2 = 0;
+	int so_co_off1 = 0, so_co_off2 = 0;
+	int core_cnt, core_cnt1, core_cnt2;
+	int core_off = 0, core_off1 = 0, core_off2 = 0;
+	int rc = SLURM_SUCCESS;
+
+	xassert(job_resrcs1_ptr);
+	xassert(job_resrcs2_ptr);
+	xassert(job_resrcs1_ptr->core_bitmap);
+	xassert(job_resrcs2_ptr->core_bitmap);
+	xassert(job_resrcs1_ptr->node_bitmap);
+	xassert(job_resrcs2_ptr->node_bitmap);
+
+	/* Allocate space for merged arrays */
+	job_resrcs_new = xmalloc(sizeof(job_resources_t));
+	node_cnt = bit_size(job_resrcs1_ptr->node_bitmap);
+	i = bit_size(job_resrcs2_ptr->node_bitmap);
+	if (node_cnt != i) {
+		error("%s: node_bitmap sizes differ (%d != %d)", __func__,
+		      node_cnt, i);
+		rc = SLURM_ERROR;
+		node_cnt = MIN(node_cnt, i);
+	}
+	job_resrcs_new->node_bitmap = bit_alloc(node_cnt);
+	i = bit_set_count(job_resrcs1_ptr->node_bitmap) +
+	    bit_set_count(job_resrcs2_ptr->node_bitmap);
+	job_resrcs_new->cores_per_socket    = xmalloc(sizeof(uint32_t) * i);
+	job_resrcs_new->sockets_per_node    = xmalloc(sizeof(uint32_t) * i);
+	job_resrcs_new->sock_core_rep_count = xmalloc(sizeof(uint32_t) * i);
+	i = bit_size(job_resrcs1_ptr->core_bitmap) +
+	    bit_size(job_resrcs2_ptr->core_bitmap);
+	job_resrcs_new->core_bitmap = bit_alloc(i);	/* May be over-sized */
+
+	/* Set the values in data structure used for merging */
+	i_first = bit_ffs(job_resrcs1_ptr->node_bitmap);
+	i = bit_ffs(job_resrcs2_ptr->node_bitmap);
+	if ((i != -1) && (i < i_first))
+		i_first = i;
+	i_last = bit_fls(job_resrcs1_ptr->node_bitmap);
+	i = bit_fls(job_resrcs2_ptr->node_bitmap);
+	if ((i != -1) && (i > i_last))
+		i_last = i;
+	if (i_last >= node_cnt)
+		i_last = node_cnt - 1;
+	if (i_last == -1)	/* node_bitmap empty in both inputs */
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
+		bool match1 = false, match2 = false;
+		if (bit_test(job_resrcs1_ptr->node_bitmap, i)) {
+			node_inx1++;
+			match1 = true;
+		}
+		if (bit_test(job_resrcs2_ptr->node_bitmap, i)) {
+			node_inx2++;
+			match2 = true;
+		}
+		if (!match1 && !match2)	/* Unused node */
+			continue;
+		bit_set(job_resrcs_new->node_bitmap, i);
+		node_inx++;
+		if (match1 && match2) {	/* Merge (OR) core_bitmaps */
+			if (++sock_core_cnt1 >
+			    job_resrcs1_ptr->sock_core_rep_count[so_co_off1]) {
+				sock_core_cnt1 = 0;
+				so_co_off1++;
+			}
+			if (++sock_core_cnt2 >
+			   job_resrcs2_ptr->sock_core_rep_count[so_co_off2]) {
+				sock_core_cnt2 = 0;
+				so_co_off2++;
+			}
+
+			job_resrcs_new->cores_per_socket[node_inx] =
+				job_resrcs1_ptr->cores_per_socket[so_co_off1];
+			job_resrcs_new->sockets_per_node[node_inx] =
+				job_resrcs1_ptr->sockets_per_node[so_co_off1];
+
+			core_cnt1 =
+				job_resrcs1_ptr->cores_per_socket[so_co_off1] *
+				job_resrcs1_ptr->sockets_per_node[so_co_off1];
+			core_cnt2 =
+				job_resrcs2_ptr->cores_per_socket[so_co_off2] *
+				job_resrcs2_ptr->sockets_per_node[so_co_off2];
+			if (core_cnt1 != core_cnt2) {
+				error("%s: Inconsistent socket/core count for node_inx %d (%d != %d)",
+				      __func__, i, core_cnt1, core_cnt2);
+				rc = SLURM_ERROR;
+			}
+			core_cnt = MIN(core_cnt1, core_cnt2);
+			for (j = 0; j < core_cnt; j++) {
+				if (bit_test(job_resrcs1_ptr->core_bitmap,
+					     core_off1 + j) ||
+				    bit_test(job_resrcs2_ptr->core_bitmap,
+					     core_off2 + j)) {
+					bit_set(job_resrcs_new->core_bitmap,
+						core_off + j);
+				}
+			}
+			core_off  += core_cnt;
+			core_off1 += core_cnt1;
+			core_off2 += core_cnt2;
+		} else if (match1) {		/* Copy core bitmap */
+			if (++sock_core_cnt1 >
+			    job_resrcs1_ptr->sock_core_rep_count[so_co_off1]) {
+				sock_core_cnt1 = 0;
+				so_co_off1++;
+			}
+			job_resrcs_new->cores_per_socket[node_inx] =
+				job_resrcs1_ptr->cores_per_socket[so_co_off1];
+			job_resrcs_new->sockets_per_node[node_inx] =
+				job_resrcs1_ptr->sockets_per_node[so_co_off1];
+			core_cnt1 = job_resrcs_new->cores_per_socket[node_inx] *
+				    job_resrcs_new->sockets_per_node[node_inx];
+			for (j = 0; j < core_cnt1; j++) {
+				if (bit_test(job_resrcs1_ptr->core_bitmap,
+					     core_off1 + j)) {
+					bit_set(job_resrcs_new->core_bitmap,
+						core_off + j);
+				}
+			}
+
+			core_off  += core_cnt1;
+			core_off1 += core_cnt1;
+		} else { /* match2 only */	/* Copy core bitmap */
+			if (++sock_core_cnt2 >
+			    job_resrcs2_ptr->sock_core_rep_count[so_co_off2]) {
+				sock_core_cnt2 = 0;
+				so_co_off2++;
+			}
+			job_resrcs_new->cores_per_socket[node_inx] =
+				job_resrcs2_ptr->cores_per_socket[so_co_off2];
+			job_resrcs_new->sockets_per_node[node_inx] =
+				job_resrcs2_ptr->sockets_per_node[so_co_off2];
+			core_cnt2 = job_resrcs_new->cores_per_socket[node_inx] *
+				    job_resrcs_new->sockets_per_node[node_inx];
+			for (j = 0; j < core_cnt2; j++) {
+				if (bit_test(job_resrcs2_ptr->core_bitmap,
+					     core_off2 + j)) {
+					bit_set(job_resrcs_new->core_bitmap,
+						core_off + j);
+				}
+			}
+
+			core_off += core_cnt2;
+			core_off2 += core_cnt2;
+		}
+		job_resrcs_new->sock_core_rep_count[node_inx] = 1;
+	}
+
+	/* Update data structure fields as needed */
+	job_resrcs1_ptr->nhosts = node_inx + 1;
+	bit_free(job_resrcs1_ptr->core_bitmap);
+	job_resrcs1_ptr->core_bitmap = job_resrcs_new->core_bitmap;
+	bit_free(job_resrcs1_ptr->node_bitmap);
+	job_resrcs1_ptr->node_bitmap = job_resrcs_new->node_bitmap;
+	xfree(job_resrcs1_ptr->cores_per_socket);
+	job_resrcs1_ptr->cores_per_socket = job_resrcs_new->cores_per_socket;
+	xfree(job_resrcs1_ptr->sock_core_rep_count);
+	job_resrcs1_ptr->sock_core_rep_count =
+		job_resrcs_new->sock_core_rep_count;
+	xfree(job_resrcs1_ptr->sockets_per_node);
+	job_resrcs1_ptr->sockets_per_node = job_resrcs_new->sockets_per_node;
+	xfree(job_resrcs_new);
 
 	return rc;
 }

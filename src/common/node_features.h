@@ -5,11 +5,11 @@
  *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -54,7 +54,7 @@ extern int node_features_g_count(void);
 extern int node_features_g_reconfig(void);
 
 /* Return TRUE if this (one) feature name is under this plugin's control */
-extern bool node_features_g_changible_feature(char *feature);
+extern bool node_features_g_changeable_feature(char *feature);
 
 /* Update active and available features on specified nodes, sets features on
  * all nodes is node_list is NULL */
@@ -63,9 +63,16 @@ extern int node_features_g_get_node(char *node_list);
 /* Test if a job's feature specification is valid */
 extern int node_features_g_job_valid(char *job_features);
 
-/* Translate a job's feature specification to node boot options
- * RET node boot options, must be xfreed */
+/*
+ * Translate a job's feature request to the node features needed at boot time.
+ *	If multiple MCDRAM or NUMA values are ORed, pick the first ones.
+ * IN job_features - job's --constraint specification
+ * RET features required on node reboot. Must xfree to release memory
+ */
 extern char *node_features_g_job_xlate(char *job_features);
+
+/* Return bitmap of KNL nodes, NULL if none identified */
+extern bitstr_t *node_features_g_get_node_bitmap(void);
 
 /* Return true if the plugin requires PowerSave mode for booting nodes */
 extern bool node_features_g_node_power(void);
@@ -82,7 +89,7 @@ extern int node_features_g_node_set(char *active_features);
 extern void node_features_g_node_state(char **avail_modes, char **current_mode);
 
 /* Note the active features associated with a set of nodes have been updated.
- * Specifically update the node's "hbm" GRES value as needed.
+ * Specifically update the node's "hbm" GRES and "CpuBind" values as needed.
  * IN active_features - New active features
  * IN node_bitmap - bitmap of nodes changed
  * RET error code */
@@ -106,10 +113,11 @@ extern bool node_features_g_node_update_valid(void *node_ptr,
  * IN new_features - newly active features
  * IN orig_features - original active features
  * IN avail_features - original available features
+ * IN node_inx - index of node in node table
  * RET node's new merged features, must be xfreed
  */
 extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
-					char *avail_features);
+					char *avail_features, int node_inx);
 
 /* Translate a node's new feature specification into a "standard" ordering
  * RET node's new merged features, must be xfreed */
@@ -126,5 +134,13 @@ extern bool node_features_g_user_update(uid_t uid);
 
 /* Return estimated reboot time, in seconds */
 extern uint32_t node_features_g_boot_time(void);
+
+/*
+ * Return node "weight" field if reboot required to change mode
+ */
+extern uint32_t node_features_g_reboot_weight(void);
+
+/* Get node features plugin configuration */
+extern List node_features_g_get_config(void);
 
 #endif /* !_NODE_FEATURES_H */

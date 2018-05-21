@@ -8,11 +8,11 @@
  *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,19 +28,17 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include <dirent.h>
 #include <inttypes.h>
@@ -414,39 +412,22 @@ stepd_checkpoint(int fd, uint16_t protocol_version,
 }
 
 /*
- * Send a signal to a single task in a job step.
- */
-int
-stepd_signal_task_local(int fd, uint16_t protocol_version,
-			int signal, int ltaskid)
-{
-	int req = REQUEST_SIGNAL_TASK_LOCAL;
-	int rc;
-
-	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &signal, sizeof(int));
-	safe_write(fd, &ltaskid, sizeof(int));
-
-	/* Receive the return code */
-	safe_read(fd, &rc, sizeof(int));
-
-	return rc;
-rwfail:
-	return -1;
-}
-
-/*
  * Send a signal to the proctrack container of a job step.
  */
 int
-stepd_signal_container(int fd, uint16_t protocol_version, int signal, int flags)
+stepd_signal_container(int fd, uint16_t protocol_version, int signal, int flags,
+		       uid_t req_uid)
 {
 	int req = REQUEST_SIGNAL_CONTAINER;
 	int rc;
 	int errnum = 0;
 
 	safe_write(fd, &req, sizeof(int));
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_write(fd, &signal, sizeof(int));
+		safe_write(fd, &flags, sizeof(int));
+		safe_write(fd, &req_uid, sizeof(uid_t));
+	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_write(fd, &signal, sizeof(int));
 		safe_write(fd, &flags, sizeof(int));
 	} else {
@@ -700,7 +681,8 @@ stepd_cleanup_sockets(const char *directory, const char *nodename)
 				debug("Unable to connect to socket %s", path);
 			} else {
 				if (stepd_signal_container(
-					    fd, protocol_version, SIGKILL, 0)
+					    fd, protocol_version, SIGKILL, 0,
+					    getuid())
 				    == -1) {
 					debug("Error sending SIGKILL to job step %u.%u",
 					      jobid, stepid);
@@ -956,7 +938,7 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 		len = get_buf_offset(buffer);
 		safe_write(fd, &len, sizeof(int));
 		safe_write(fd, get_buf_data(buffer), len);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 
 		/* Receive the return code and errno */
 		safe_read(fd, &rc, sizeof(int));
@@ -1019,7 +1001,7 @@ rwfail:
 }
 
 /*
- * List all of task process IDs and their local and global SLURM IDs.
+ * List all of task process IDs and their local and global Slurm IDs.
  *
  * Returns SLURM_SUCCESS on success.  On error returns SLURM_ERROR
  * and sets errno.
@@ -1169,4 +1151,3 @@ extern uint32_t stepd_get_nodeid(int fd, uint16_t protocol_version)
 rwfail:
 	return NO_VAL;
 }
-

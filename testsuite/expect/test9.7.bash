@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ############################################################################
-# Simple SLURM stress test
+# Simple Slurm stress test
 # Usage: <prog> <exec1> <exec2> <exec3> <sleep_time> <iterations>
 # Default is sinfo, srun, squeue, 1 second sleep and 3 iterations
 ############################################################################
@@ -9,22 +9,22 @@
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the supplied file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 if [ $# -gt 0 ]; then
@@ -54,13 +54,6 @@ else
 	iterations=3
 fi
 
-bluegene=0
-if [ $# -gt 5 ]; then
-	if  [ $5 ]; then
-		bluegene=1
-	fi
-fi
-
 exit_code=0
 inx=1
 log="test9.7.$$.output"
@@ -75,11 +68,7 @@ do
 		exit_code=$rc
 	fi
 	sleep $sleep_time
-	if [ $bluegene ]; then
-		$exec2 --job-name=test9.7 -N1-512 -n1 -s -l -t1 hostname         >>$log 2>&1
-	else
-		$exec2 --job-name=test9.7 -N1-$inx -n$inx -O -s -l -t1 hostname  >>$log 2>&1
-	fi
+	$exec2 --job-name=test9.7 -N1-$inx -n$inx -O -s -l -t1 hostname  >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
 		echo "exec2 rc=$rc" >> $log

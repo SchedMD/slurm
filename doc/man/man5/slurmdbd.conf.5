@@ -135,8 +135,8 @@ communication messages is not verified.
 This may be fine for testing purposes, but
 \fBdo not use "auth/none" if you desire any security\fR.
 "auth/munge" indicates that LLNL's Munge system is to be used
-(this is the best supported authentication mechanism for Slurm,
-see "https://code.google.com/p/munge/" for more information).
+(this is the supported authentication mechanism for Slurm;
+see "https://dun.github.io/munge/" for more information).
 SlurmDBD must be terminated prior to changing the value of \fBAuthType\fR
 and later restarted.
 
@@ -342,10 +342,11 @@ in the C standard ctime() function form without the year but
 including the microseconds, the daemon's process ID and the current thread ID.
 
 .TP
-\fBMaxQueryTimeLimit\fR
+\fBMaxQueryTimeRange\fR
 Return an error if a query is against too large of a time span, to prevent
 ill-formed queries from causing performance problems within SlurmDBD.
 Default value is INFINITE which allows any queries to proceed.
+Accepted time formats are the same as the MaxTime option in slurm.conf.
 User \fBSlurmUser\fR and \fBroot\fR are exempt from this restriction.
 Note that queries which attempt to return over 3GB of data will still
 fail to complete with ESLURM_RESULT_TOO_LARGE.

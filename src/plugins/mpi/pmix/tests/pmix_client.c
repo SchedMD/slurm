@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 		TEST_ERROR(("rank %d: PMIx_Get universe size returned NULL value", rank));
 		exit(0);
 	}
-	/* TODO: Guess number of processes from the SLURM environment! */
+	/* TODO: Guess number of processes from the Slurm environment! */
 	if (val->type != PMIX_UINT32 || val->data.uint32 != nprocs) {
 		TEST_ERROR(("rank %d: Universe size value or type mismatch,"
 			    " want %d(%d) get %d(%d)",
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 	}
 	TEST_OUTPUT(("rank %d: Universe size check: PASSED", rank));
 
-	/* Guess the namespace from SLURM environment
+	/* Guess the namespace from Slurm environment
     if (0 != xstrcmp(nspace, TEST_NAMESPACE)) {
 	TEST_ERROR(("rank %d: Bad nspace!", rank));
 	exit(0);

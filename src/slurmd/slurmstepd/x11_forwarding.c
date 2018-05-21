@@ -4,11 +4,11 @@
  *  Copyright (C) 2017 SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -160,7 +160,7 @@ static void _shutdown_x11(int signal)
 	libssh2_exit();
 
 	if (xauthority) {
-		x11_delete_xauth(xauthority, x11_display);
+		x11_delete_xauth(xauthority, conf->hostname, x11_display);
 		xfree(xauthority);
 	}
 
@@ -293,13 +293,23 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	}
 
 	x11_display = port - X11_TCP_PORT_OFFSET;
-	if (x11_set_xauth(xauthority, job->x11_magic_cookie, x11_display)) {
+	if (x11_set_xauth(xauthority, job->x11_magic_cookie,
+			  conf->hostname, x11_display)) {
 		error("%s: failed to run xauth", __func__);
 		goto shutdown;
 	}
 
-	info("X11 forwarding established on DISPLAY=localhost:%d.0",
-	     x11_display);
+	info("X11 forwarding established on DISPLAY=%s:%d.0",
+	     conf->hostname, x11_display);
+
+	/*
+	 * Send keepalives every 60 seconds, and have the server
+	 * send a reply as well. Since we're running async, a separate
+	 * thread will need to handle sending these periodically per
+	 * the libssh2 documentation, as the library itself won't manage
+	 * this for us.
+	 */
+	libssh2_keepalive_config(session, 1, 60);
 
 	slurm_thread_create_detached(NULL, _keepalive_engine, NULL);
 	slurm_thread_create_detached(NULL, _accept_engine, NULL);
@@ -333,7 +343,7 @@ void *_keepalive_engine(void *x)
 		slurm_mutex_lock(&ssh_lock);
 		libssh2_keepalive_send(session, &delay);
 		slurm_mutex_unlock(&ssh_lock);
-		sleep(60);
+		sleep(delay);
 	}
 
 	debug2("exiting %s", __func__);

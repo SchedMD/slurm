@@ -4,11 +4,11 @@
  *  Copyright (C) 2011 BULL
  *  Written by Yiannis Georgiou <yiannis.georgiou@bull.fr>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -283,7 +283,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	 * setting it up. As soon as the step cgroup is created, we can release
 	 * the lock.
 	 * Indeed, consecutive slurm steps could result in cgroup being removed
-	 * between the next EEXIST instanciation and the first addition of
+	 * between the next EEXIST instantiation and the first addition of
 	 * a task. The release_agent will have to lock the root devices cgroup
 	 * to avoid this scenario.
 	 */
@@ -362,17 +362,17 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		itr = list_iterator_create(device_list);
 		while ((gres_device = list_next(itr))) {
 			if (gres_device->alloc) {
-				debug("Allowing access to device %s for job",
-				      gres_device->path);
+				debug("Allowing access to device %s(%s) for job",
+				      gres_device->major, gres_device->path);
 				xcgroup_set_param(&job_devices_cg,
 						  "devices.allow",
-						  gres_device->path);
+						  gres_device->major);
 			} else {
-				debug("Not allowing access to device %s for job",
-				       gres_device->path);
+				debug("Not allowing access to device %s(%s) for job",
+				       gres_device->major, gres_device->path);
 				xcgroup_set_param(&job_devices_cg,
 						  "devices.deny",
-						  gres_device->path);
+						  gres_device->major);
 			}
 		}
 		list_iterator_destroy(itr);
@@ -425,17 +425,19 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 			itr = list_iterator_create(device_list);
 			while ((gres_device = list_next(itr))) {
 				if (gres_device->alloc) {
-					debug("Allowing access to device %s for step",
+					debug("Allowing access to device %s(%s) for step",
+					      gres_device->major,
 					      gres_device->path);
 					xcgroup_set_param(&step_devices_cg,
 							  "devices.allow",
-							  gres_device->path);
+							  gres_device->major);
 				} else {
-					debug("Not allowing access to device %s for step",
+					debug("Not allowing access to device %s(%s) for step",
+					      gres_device->major,
 					      gres_device->path);
 					xcgroup_set_param(&step_devices_cg,
 							  "devices.deny",
-							  gres_device->path);
+							  gres_device->major);
 				}
 			}
 			list_iterator_destroy(itr);

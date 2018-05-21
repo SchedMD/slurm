@@ -200,12 +200,12 @@ the nodes (execute "<i>sinfo -V</i>" or "<i>rpm -qa | grep slurm</i>").
 The Slurm version numbers contain three digits which represent the major
 and micro release numbers. The combination of the first and second digits in
 the version designate the major release. The third digit in the
-version designates the micro release (e.g. 16.05.3 is major=16.05, micro=3).
+version designates the micro release (e.g. 17.02.9 is major=17.02, micro=9).
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes.
 Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 17.02.x SlurmDBD will support slurmctld daemons and
-commands with a version of 16.05.x or 15.08.x).</li>
+releases (e.g. a version 17.11.x SlurmDBD will support slurmctld daemons and
+commands with a version of 17.11.x, 17.02.x or 16.05.x).</li>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 

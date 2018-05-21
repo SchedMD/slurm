@@ -9,11 +9,11 @@
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -65,6 +65,7 @@ struct config_record {
 	uint16_t sockets;	/* number of sockets per node */
 	uint16_t cores;		/* number of cores per CPU */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
+	uint32_t cpu_bind;	/* default CPU binding type */
 	uint16_t threads;	/* number of threads per core */
 	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	uint64_t real_memory;	/* MB real memory on the node */
@@ -94,6 +95,7 @@ struct node_record {
 	time_t boot_req_time;		/* Time of node boot request */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
+	uint32_t cpu_bind;		/* default CPU binding type */
 	time_t slurmd_start_time;	/* Time of slurmd startup */
 	time_t last_response;		/* last response from the node */
 	time_t last_idle;		/* time node last become idle */
@@ -336,5 +338,15 @@ extern bitstr_t *cr_create_cluster_core_bitmap(int core_mult);
  */
 extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads,
 			     int cpus);
+
+/*
+ * find_hostname - Given a position and a string of hosts, return the hostname
+ *                 from that position.
+ * IN pos - position in hosts you want returned.
+ * IN hosts - string representing a hostlist of hosts.
+ * RET - hostname or NULL on error.
+ * NOTE: caller must xfree result.
+ */
+extern char *find_hostname(uint32_t pos, char *hosts);
 
 #endif /* !_HAVE_NODE_CONF_H */

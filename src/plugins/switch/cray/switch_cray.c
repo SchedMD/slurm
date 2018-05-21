@@ -5,11 +5,11 @@
  *  Copyright 2013 Cray Inc. All Rights Reserved.
  *  Written by Danny Auble <da@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -69,6 +69,10 @@
 
 uint64_t debug_flags = 0;
 
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
+static bool lustre_no_flush = false;
+#endif
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -80,14 +84,14 @@ uint64_t debug_flags = 0;
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "switch" for SLURM switch) and <method> is a description
- * of how this plugin satisfies that application.  SLURM will only load
+ * the plugin (e.g., "switch" for Slurm switch) and <method> is a description
+ * of how this plugin satisfies that application.  Slurm will only load
  * a switch plugin if the plugin_type string has a prefix of "switch/".
  *
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
@@ -427,7 +431,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	alpsc_peInfo_t alpsc_pe_info = {-1, -1, -1, -1, NULL, NULL, NULL};
 	int cmd_index = 0;
 #ifdef HAVE_NATIVE_CRAY
-	int gpu_cnt = 0;
+	uint64_t gpu_cnt = 0;
 	int control_nid = 0, num_branches = 0;
 	struct sockaddr_in control_soc;
 	alpsc_branchInfo_t alpsc_branch_info;
@@ -504,6 +508,10 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		 * than globally across the cluster.
 		 */
 		exclusive = 1;
+	}
+	if (launch_params && strstr(launch_params, "lustre_no_flush")) {
+		/* Lustre cache flush can cause job bus errors, see bug 4309 */
+		lustre_no_flush = true;
 	}
 	xfree(launch_params);
 
@@ -643,7 +651,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 
 	rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
 				GRES_STEP_DATA_COUNT, &gpu_cnt);
-	CRAY_INFO("gres_cnt: %d %u", rc, gpu_cnt);
+	CRAY_INFO("gres_cnt: %d %"PRIu64, rc, gpu_cnt);
 	if (gpu_cnt > 0)
 		setup_gpu(job);
 
@@ -740,7 +748,7 @@ extern int switch_p_job_postfini(stepd_step_rec_t *job)
 	char *err_msg = NULL;
 	uid_t pgid = job->jmgr_pid;
 #ifdef HAVE_NATIVE_CRAY
-        int gpu_cnt = 0;
+        uint64_t gpu_cnt = 0;
 #endif
 	DEF_TIMERS;
 
@@ -776,21 +784,23 @@ extern int switch_p_job_postfini(stepd_step_rec_t *job)
 		reset_gpu(job);
 	}
 #endif
-	// Flush Lustre Cache
-	rc = alpsc_flush_lustre(&err_msg);
-	ALPSC_CN_DEBUG("alpsc_flush_lustre");
-	if (rc != 1) {
-		return SLURM_ERROR;
-	}
+	if (!lustre_no_flush) {
+		// Flush Lustre Cache
+		rc = alpsc_flush_lustre(&err_msg);
+		ALPSC_CN_DEBUG("alpsc_flush_lustre");
+		if (rc != 1) {
+			return SLURM_ERROR;
+		}
 
-	// Flush virtual memory
-	rc = system("echo 3 > /proc/sys/vm/drop_caches");
-	if (rc != -1) {
-		rc = WEXITSTATUS(rc);
-	}
-	if (rc) {
-		CRAY_ERR("Flushing virtual memory failed. Return code: %d",
-			 rc);
+		// Flush virtual memory
+		rc = system("echo 3 > /proc/sys/vm/drop_caches");
+		if (rc != -1) {
+			rc = WEXITSTATUS(rc);
+		}
+		if (rc) {
+			CRAY_ERR("Flushing virtual memory failed. Return code: %d",
+				 rc);
+		}
 	}
 
 	END_TIMER;

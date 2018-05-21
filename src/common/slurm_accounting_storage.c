@@ -7,11 +7,11 @@
  *  Written by Danny Auble <da@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -212,6 +212,8 @@ typedef struct slurm_acct_storage_ops {
 				    List cluster_list);
 	int (*get_stats)           (void *db_conn, slurmdb_stats_rec_t **stats);
 	int (*clear_stats)         (void *db_conn);
+	int (*get_data)            (void *db_conn, acct_storage_info_t dinfo,
+				    void *data);
 	int (*shutdown)            (void *db_conn);
 } slurm_acct_storage_ops_t;
 /*
@@ -289,6 +291,7 @@ static const char *syms[] = {
 	"acct_storage_p_reset_lft_rgt",
 	"acct_storage_p_get_stats",
 	"acct_storage_p_clear_stats",
+	"acct_storage_p_get_data",
 	"acct_storage_p_shutdown",
 };
 
@@ -925,8 +928,12 @@ extern int jobacct_storage_g_job_start(void *db_conn,
 	/* A pending job's start_time is it's expected initiation time
 	 * (changed in slurm v2.1). Rather than changing a bunch of code
 	 * in the accounting_storage plugins and SlurmDBD, just clear
-	 * start_time before accounting and restore it later. */
-	if (IS_JOB_PENDING(job_ptr)) {
+	 * start_time before accounting and restore it later.
+	 * If an update for a job that is being requeued[hold] happens,
+	 * we don't want to modify the start_time of the old record.
+	 * Pending + Completing is equivalent to Requeue.
+	 */
+	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_COMPLETING(job_ptr)) {
 		int rc;
 		time_t orig_start_time = job_ptr->start_time;
 		job_ptr->start_time = (time_t) 0;
@@ -978,7 +985,7 @@ extern int jobacct_storage_g_step_complete(void *db_conn,
 }
 
 /*
- * load into the storage a suspention of a job
+ * load into the storage a suspension of a job
  */
 extern int jobacct_storage_g_job_suspend(void *db_conn,
 					 struct job_record *job_ptr)
@@ -1125,6 +1132,19 @@ extern int acct_storage_g_clear_stats(void *db_conn)
 		return SLURM_ERROR;
 	return (*(ops.clear_stats))(db_conn);
 }
+
+/*
+ * Get generic data.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_get_data(void *db_conn, acct_storage_info_t dinfo,
+				    void *data)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.get_data))(db_conn, dinfo, data);
+}
+
 
 /*
  * Shutdown database server.

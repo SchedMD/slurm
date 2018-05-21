@@ -5,11 +5,11 @@
  *  Copyright (C) 2013 SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -41,10 +41,15 @@
 #include <inttypes.h>
 
 #include "read_config.h"
-#include "slurm_acct_gather_energy.h"
+
 #include "slurm_acct_gather_profile.h"
-#include "slurm_acct_gather_interconnect.h"
-#include "slurm_acct_gather_filesystem.h"
+
+typedef struct acct_gather_data {
+	uint64_t	num_reads;  /* count of reads */
+	uint64_t	num_writes; /* count of writes */
+	uint64_t	size_read;  /* raw amount read (in) */
+	uint64_t	size_write; /* raw amount written (out) */
+} acct_gather_data_t;
 
 extern int acct_gather_conf_init(void);
 extern int acct_gather_conf_destroy(void);

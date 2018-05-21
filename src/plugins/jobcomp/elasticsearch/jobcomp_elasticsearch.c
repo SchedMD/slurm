@@ -6,11 +6,11 @@
  *  Written by Alejandro Sanchez Graells <alejandro.sanchezgraells@bsc.es>,
  *  <asanchez1987@gmail.com>, who borrowed heavily from jobcomp/filetxt
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -77,21 +77,21 @@
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything. SLURM uses the higher-level plugin
+ * unimportant and may be anything. Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "jobcomp" for SLURM job completion logging) and <method>
- * is a description of how this plugin satisfies that application. SLURM will
+ * the plugin (e.g., "jobcomp" for Slurm job completion logging) and <method>
+ * is a description of how this plugin satisfies that application. Slurm will
  * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobcomp/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
  * of the plugin. If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000. Various SLURM versions will likely require a certain
+ * as 100 or 1000. Various Slurm versions will likely require a certain
  * minimum version for their plugins as the job completion logging API
  * matures.
  */
@@ -336,6 +336,7 @@ static int _index_job(const char *jobcomp)
 	CURL *curl_handle = NULL;
 	CURLcode res;
 	struct http_response chunk;
+	struct curl_slist *slist = NULL;
 	int rc = SLURM_SUCCESS;
 	char *token = NULL;
 
@@ -354,6 +355,14 @@ static int _index_job(const char *jobcomp)
 		goto cleanup_easy_init;
 	}
 
+	slist = curl_slist_append(slist, "Content-Type: application/json");
+
+	if (slist == NULL) {
+		error("%s: curl_slist_append: %m", plugin_type);
+		rc = SLURM_ERROR;
+		goto cleanup_easy_init;
+	}
+
 	chunk.message = xmalloc(1);
 	chunk.size = 0;
 
@@ -361,6 +370,7 @@ static int _index_job(const char *jobcomp)
 	curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
 	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, jobcomp);
 	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, strlen(jobcomp));
+	curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, slist);
 	curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, _write_callback);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
@@ -370,7 +380,7 @@ static int _index_job(const char *jobcomp)
 			info("%s: Could not connect to: %s , reason: %s"
 			     ,plugin_type, log_url, curl_easy_strerror(res));
 		rc = SLURM_ERROR;
-		goto cleanup_chunk;
+		goto cleanup;
 	}
 
 	token = strtok(chunk.message, " ");
@@ -378,7 +388,7 @@ static int _index_job(const char *jobcomp)
 		error("%s: Could not receive the HTTP response status code from %s",
 		      plugin_type, log_url);
 		rc = SLURM_ERROR;
-		goto cleanup_chunk;
+		goto cleanup;
 	}
 	token = strtok(NULL, " ");
 
@@ -409,7 +419,8 @@ static int _index_job(const char *jobcomp)
 			     plugin_type, token);
 	}
 
-cleanup_chunk:
+cleanup:
+	curl_slist_free_all(slist);
 	xfree(chunk.message);
 cleanup_easy_init:
 	curl_easy_cleanup(curl_handle);
@@ -765,14 +776,14 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->ntasks_per_node != (uint16_t) NO_VAL)) {
+	    && (job_ptr->details->ntasks_per_node != NO_VAL16)) {
 		ntasks_per_node = job_ptr->details->ntasks_per_node;
 		xstrfmtcat(json_str, ",\"ntasks_per_node\":%hu",
 			   ntasks_per_node);
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->cpus_per_task != (uint16_t) NO_VAL)) {
+	    && (job_ptr->details->cpus_per_task != NO_VAL16)) {
 		xstrfmtcat(json_str, ",\"cpus_per_task\":%hu",
 			   job_ptr->details->cpus_per_task);
 	}
@@ -948,7 +959,7 @@ extern int fini(void)
 }
 
 /*
- * The remainder of this file implements the standard SLURM job completion
+ * The remainder of this file implements the standard Slurm job completion
  * logging API.
  */
 extern int slurm_jobcomp_set_location(char *location)

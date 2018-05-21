@@ -130,8 +130,7 @@ special node configuration parameters in
 <h2>Organization of Slurm Cgroups</h2>
 <p>Slurm cgroups are organized as follows.  A base directory (mount point) is
 created at /sys/fs/cgroup, or as configured by the <i>CgroupMountpoint</I> option in
-<a href="cgroup.conf.html">cgroup.conf</a>. (Note: Prior to 16.05 the default
-path was /cgroup rather than /sys/fs/cgroup/.) All cgroup
+<a href="cgroup.conf.html">cgroup.conf</a>. All cgroup
 hierarchies are created below this base directory. A separate hierarchy is
 created for each cgroup subsystem in use. The name of the root cgroup in each
 hierarchy is the subsystem name. A cgroup named <i>slurm</i> is created below
@@ -152,6 +151,6 @@ use more than one node will have a cgroup structure on each node.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 July 2017</p>
+<p style="text-align:center;">Last modified 7 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

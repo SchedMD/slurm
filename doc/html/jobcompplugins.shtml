@@ -4,9 +4,9 @@
 
 <h2> Overview</h2>
 <p>This document describes Slurm job completion logging plugins and the API that defines
-them. It is intended as a resource to programmers wishing to write their own SLURM
+them. It is intended as a resource to programmers wishing to write their own Slurm
 job completion logging plugins.</p>
-<p>Slurm job completion logging plugins are Slurm plugins that implement the SLURM
+<p>Slurm job completion logging plugins are Slurm plugins that implement the Slurm
 API for logging job information upon their completion. This may be used to log job information
 to a text file, database, etc. The plugins must conform to the Slurm Plugin API with the following
 specifications:</p>
@@ -79,8 +79,8 @@ SLURM_SUCCESS. </p>
 <p><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
-The system <span class="commandline">_init()</span> is called before the SLURM
-<span class="commandline">init()</span>, and the SLURM
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 

@@ -4,13 +4,13 @@
  *  Copyright (C) 2007 Hewlett-Packard Development Company, L.P.
  *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>.
  *  Written by Christopher Holmes <cholmes@hp.com>, who borrowed heavily
- *  from existing SLURM source code, particularly src/srun/opt.c
+ *  from existing Slurm source code, particularly src/srun/opt.c
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -42,9 +42,7 @@
 #define __USE_ISOC99
 #endif
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #ifndef SYSTEM_DIMENSIONS
 #  define SYSTEM_DIMENSIONS 1
@@ -69,11 +67,12 @@
 #include "src/common/log.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 
-/* print this version of SLURM */
+/* print this version of Slurm */
 void print_slurm_version(void)
 {
 	printf("%s %s\n", PACKAGE_NAME, SLURM_VERSION_STRING);
@@ -462,7 +461,7 @@ static uint16_t _get_conn_type(char *arg, bool bgp)
 	if (!len) {
 		/* no input given */
 		error("no conn-type argument given.");
-		return (uint16_t)NO_VAL;
+		return NO_VAL16;
 	} else if (!xstrncasecmp(arg, "MESH", len))
 		return SELECT_MESH;
 	else if (!xstrncasecmp(arg, "TORUS", len))
@@ -484,7 +483,7 @@ static uint16_t _get_conn_type(char *arg, bool bgp)
 	}
 
 	error("invalid conn-type argument '%s' ignored.", arg);
-	return (uint16_t)NO_VAL;
+	return NO_VAL16;
 }
 
 /*
@@ -522,7 +521,7 @@ extern void verify_conn_type(const char *arg, uint16_t *conn_type)
 	 * instead of highest_dims since that is the size of the
 	 * array. */
 	for ( ; inx < HIGHEST_DIMENSIONS; inx++) {
-		conn_type[inx] = (uint16_t)NO_VAL;
+		conn_type[inx] = NO_VAL16;
 	}
 
 	xfree(arg_tmp);
@@ -548,7 +547,7 @@ int verify_geometry(const char *arg, uint16_t *geometry)
 			break;
 		}
 		geometry[i] = (uint16_t)atoi(token);
-		if (geometry[i] == 0 || geometry[i] == (uint16_t)NO_VAL) {
+		if (geometry[i] == 0 || geometry[i] == NO_VAL16) {
 			error("invalid --geometry argument");
 			rc = -1;
 			break;
@@ -655,7 +654,7 @@ _str_to_nodes(const char *num_str, char **leftover)
 	num = strtol(num_str, &endptr, 10);
 	if (endptr == num_str) { /* no valid digits */
 		*leftover = (char *)num_str;
-		return 0;
+		return -1;
 	}
 	if (*endptr != '\0' && (*endptr == 'k' || *endptr == 'K')) {
 		num *= 1024;
@@ -680,8 +679,10 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 	char *ptr, *min_str, *max_str;
 	char *leftover;
 
-	/* Does the string contain a "-" character?  If so, treat as a range.
-	 * otherwise treat as an absolute node count. */
+	/*
+	 * Does the string contain a "-" character?  If so, treat as a range.
+	 * otherwise treat as an absolute node count.
+	 */
 	if ((ptr = xstrchr(arg, '-')) != NULL) {
 		min_str = xstrndup(arg, ptr-arg);
 		*min_nodes = _str_to_nodes(min_str, &leftover);
@@ -691,13 +692,8 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			return false;
 		}
 		xfree(min_str);
-#ifdef HAVE_ALPS_CRAY
-		if (*min_nodes < 0) {
-#else
-		if (*min_nodes == 0) {
-#endif
+		if (*min_nodes < 0)
 			*min_nodes = 1;
-		}
 
 		max_str = xstrndup(ptr+1, strlen(arg)-((ptr+1)-arg));
 		*max_nodes = _str_to_nodes(max_str, &leftover);
@@ -713,20 +709,14 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}
-#ifdef HAVE_ALPS_CRAY
 		if (*min_nodes < 0) {
-#else
-		if (*min_nodes == 0) {
-#endif
-			/* whitespace does not a valid node count make */
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}
 	}
 
 	if ((*max_nodes != 0) && (*max_nodes < *min_nodes)) {
-		error("Maximum node count %d is less than"
-		      " minimum node count %d",
+		error("Maximum node count %d is less than minimum node count %d",
 		      *max_nodes, *min_nodes);
 		return false;
 	}
@@ -802,7 +792,7 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 		p++;
 	}
 
-	if (((*p != '\0') && (*p != '-')) || (result <= 0L)) {
+	if (((*p != '\0') && (*p != '-')) || (result < 0L)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
 		if (isFatal)
 			exit(1);
@@ -1001,7 +991,7 @@ uint16_t parse_mail_type(const char *arg)
 	bool none_set = false;
 
 	if (!arg)
-		return (uint16_t)INFINITE;
+		return INFINITE16;
 
 	buf = xstrdup(arg);
 	tok = strtok_r(buf, ",", &save_ptr);
@@ -1038,7 +1028,7 @@ uint16_t parse_mail_type(const char *arg)
 	}
 	xfree(buf);
 	if (!rc && !none_set)
-		rc = (uint16_t)INFINITE;
+		rc = INFINITE16;
 
 	return rc;
 }
@@ -1162,25 +1152,40 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 	char *path, *fullpath = NULL;
 
 #if defined HAVE_BG
-	/* BGQ's runjob command required a fully qualified path */
-	if (((cmd[0] == '.') || (cmd[0] == '/')) &&
-	    (access(cmd, access_mode) == 0)) {
-		if (cmd[0] == '.')
-			xstrfmtcat(fullpath, "%s/", cwd);
-		xstrcat(fullpath, cmd);
+	/* BGQ's runjob command requires always a fully qualified path */
+	/* Relative path */
+	if (cmd[0] == '.') {
+		char *cmd1 = xstrdup_printf("%s/%s", cwd, cmd);
+		if (access(cmd1, access_mode) == 0)
+			xstrcat(fullpath, cmd1);
+		xfree(cmd1);
+		goto done;
+	}
+	/* Absolute path */
+	if (cmd[0] == '/') {
+		if (access(cmd, access_mode) == 0)
+			xstrcat(fullpath, cmd);
 		goto done;
 	}
 #else
-	if ((cmd[0] == '.') || (cmd[0] == '/')) {
-		if (test_exec && (access(cmd, access_mode) == 0)) {
-			if (cmd[0] == '.')
-				xstrfmtcat(fullpath, "%s/", cwd);
-			xstrcat(fullpath, cmd);
+	/* Relative path */
+	if (cmd[0] == '.') {
+		if (test_exec) {
+			char *cmd1 = xstrdup_printf("%s/%s", cwd, cmd);
+			if (access(cmd1, access_mode) == 0)
+				xstrcat(fullpath, cmd1);
+			xfree(cmd1);
 		}
 		goto done;
 	}
+	/* Absolute path */
+	if (cmd[0] == '/') {
+		if (test_exec && (access(cmd, access_mode) == 0))
+			xstrcat(fullpath, cmd);
+		goto done;
+	}
 #endif
-
+	/* Otherwise search in PATH */
 	l = _create_path_list();
 	if (l == NULL)
 		return NULL;
@@ -1190,7 +1195,10 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 
 	i = list_iterator_create(l);
 	while ((path = list_next(i))) {
-		xstrfmtcat(fullpath, "%s/%s", path, cmd);
+		if (path[0] == '.')
+			xstrfmtcat(fullpath, "%s/%s/%s", cwd, path, cmd);
+		else
+			xstrfmtcat(fullpath, "%s/%s", path, cmd);
 
 		if (access(fullpath, access_mode) == 0)
 			goto done;
@@ -1225,7 +1233,7 @@ char *print_geometry(const uint16_t *geometry)
 	int dims = slurmdb_setup_cluster_dims();
 
 	if ((dims == 0) || !geometry[0]
-	    ||  (geometry[0] == (uint16_t)NO_VAL))
+	    ||  (geometry[0] == NO_VAL16))
 		return NULL;
 
 	for (i=0; i<dims; i++) {
@@ -1349,11 +1357,11 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 	/*
 	 * First,  convert the ascii value it to a
 	 * long long int. If the result is greater then
-	 * or equal to 0 and less than (uint16_t) NO_VAL
+	 * or equal to 0 and less than NO_VAL16
 	 * set the value and return. Otherwise
 	 * return an error.
 	 */
-	uint16_t max16uint = (uint16_t) NO_VAL;
+	uint16_t max16uint = NO_VAL16;
 	long long tval;
 	char *p;
 
@@ -1385,7 +1393,7 @@ extern int parse_uint32(char *aval, uint32_t *ival)
 	 * set the value and return. Otherwise return
 	 * an error.
 	 */
-	uint32_t max32uint = (uint32_t) NO_VAL;
+	uint32_t max32uint = NO_VAL;
 	long long tval;
 	char *p;
 
@@ -1687,13 +1695,19 @@ extern void bg_figure_nodes_tasks(int *min_nodes, int *max_nodes,
 
 }
 
-/* parse_resv_flags()
+/*
+ * parse_resv_flags() used to parse the Flags= option.  It handles
+ * daily, weekly, static_alloc, part_nodes, and maint, optionally
+ * preceded by + or -, separated by a comma but no spaces.
+ *
+ * flagstr IN - reservation flag string
+ * msg IN - string to append to error message (e.g. function name)
+ * RET equivalent reservation flag bits
  */
-uint32_t
-parse_resv_flags(const char *flagstr, const char *msg)
+extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
 {
 	int flip;
-	uint32_t outflags = 0;
+	uint64_t outflags = 0;
 	const char *curr = flagstr;
 	int taglen = 0;
 
@@ -1719,9 +1733,11 @@ parse_resv_flags(const char *flagstr, const char *msg)
 			    == 0) && (!flip)) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_OVERLAP;
-			/* "-OVERLAP" is not supported since that's the
+			/*
+			 * "-OVERLAP" is not supported since that's the
 			 * default behavior and the option only applies
-			 * for reservation creation, not updates */
+			 * for reservation creation, not updates
+			 */
 		} else if (xstrncasecmp(curr, "Flex", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
@@ -1783,7 +1799,10 @@ parse_resv_flags(const char *flagstr, const char *msg)
 		} else if (xstrncasecmp(curr, "PURGE_COMP", MAX(taglen, 2))
 			   == 0) {
 			curr += taglen;
-			outflags |= RESERVE_FLAG_PURGE_COMP;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_PURGE_COMP;
+			else
+				outflags |= RESERVE_FLAG_PURGE_COMP;
 		} else if (!xstrncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
 			   !flip) {
 			curr += taglen;
@@ -1792,10 +1811,14 @@ parse_resv_flags(const char *flagstr, const char *msg)
 			   !flip) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_TIME_FLOAT;
-		} else if (!xstrncasecmp(curr, "Replace", MAX(taglen,1)) &&
+		} else if (!xstrncasecmp(curr, "Replace", MAX(taglen, 1)) &&
 			   !flip) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_REPLACE;
+		} else if (!xstrncasecmp(curr, "Replace_Down", MAX(taglen, 8))
+			   && !flip) {
+			curr += taglen;
+			outflags |= RESERVE_FLAG_REPLACE_DOWN;
 		} else if (!xstrncasecmp(curr, "NO_HOLD_JOBS_AFTER_END",
 					 MAX(taglen, 1)) && !flip) {
 			curr += taglen;
@@ -1838,4 +1861,58 @@ uint16_t parse_compress_type(const char *arg)
 	error("Compression type '%s' unknown, disabling compression support.",
 	      arg);
 	return COMPRESS_OFF;
+}
+
+extern int validate_acctg_freq(char *acctg_freq)
+{
+	int i;
+	char *save_ptr = NULL, *tok, *tmp;
+	bool valid;
+	int rc = SLURM_SUCCESS;
+
+	if (!optarg)
+		return rc;
+
+	tmp = xstrdup(optarg);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		valid = false;
+		for (i = 0; i < PROFILE_CNT; i++)
+			if (acct_gather_parse_freq(i, tok) != -1) {
+				valid = true;
+				break;
+			}
+
+		if (!valid) {
+			error("Invalid --acctg-freq specification: %s", tok);
+			rc = SLURM_ERROR;
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+
+	return rc;
+}
+
+/*
+ * Format a tres_per_* argument
+ * dest OUT - resulting string
+ * prefix IN - TRES type (e.g. "gpu")
+ * src IN - user input, can include multiple comma-separated specifications
+ */
+extern void xfmt_tres(char **dest, char *prefix, char *src)
+{
+	char *result = NULL, *save_ptr = NULL, *sep = "", *tmp, *tok;
+
+	if (!src || (src[0] == '\0'))
+		return;
+	tmp = xstrdup(src);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		xstrfmtcat(result, "%s%s:%s", sep, prefix, tok);
+		sep = ",";
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+	*dest = result;
 }

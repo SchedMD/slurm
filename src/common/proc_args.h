@@ -3,13 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2007 Hewlett-Packard Development Company, L.P.
  *  Written by Christopher Holmes <cholmes@hp.com>, who borrowed heavily
- *  from existing SLURM source code, particularly src/srun/opt.c
+ *  from existing Slurm source code, particularly src/srun/opt.c
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -47,7 +47,7 @@
 /* convert task state ID to equivalent string */
 extern char *format_task_dist_states(task_dist_states_t t);
 
-/* print this version of SLURM */
+/* print this version of Slurm */
 void print_slurm_version(void);
 
 /* print the available gres options */
@@ -185,13 +185,26 @@ extern void bg_figure_nodes_tasks(int *min_nodes, int *max_nodes,
 				  bool set_tasks);
 
 /*
- *  _parse_flags  is used to parse the Flags= option.  It handles
- *  daily, weekly, static_alloc, part_nodes, and maint, optionally
- *  preceded by + or -, separated by a comma but no spaces.
+ * parse_resv_flags() used to parse the Flags= option.  It handles
+ * daily, weekly, static_alloc, part_nodes, and maint, optionally
+ * preceded by + or -, separated by a comma but no spaces.
+ *
+ * flagstr IN - reservation flag string
+ * msg IN - string to append to error message (e.g. function name)
+ * RET equivalent reservation flag bits
  */
-
-extern uint32_t parse_resv_flags(const char *flagstr, const char *msg);
+extern uint64_t parse_resv_flags(const char *flagstr, const char *msg);
 
 extern uint16_t parse_compress_type(const char *arg);
+
+extern int validate_acctg_freq(char *acctg_freq);
+
+/*
+ * Format a tres_per_* argument
+ * dest OUT - resulting string
+ * prefix IN - TRES type (e.g. "gpu")
+ * src IN - user input, can include multiple comma-separated specifications
+ */
+extern void xfmt_tres(char **dest, char *prefix, char *src);
 
 #endif /* !_PROC_ARGS_H */

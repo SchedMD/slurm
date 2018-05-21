@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "November 2017" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "January 2018" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -38,6 +38,9 @@ Causes the \fIshow\fR command to provide additional details where available.
 .TP
 \fB\-\-federation\fR
 Report jobs from from federation if a member of one.
+.TP
+\fB\-F\fR, \fB\-\-future\fR
+Report nodes in FUTURE state.
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of scontrol.
@@ -334,14 +337,19 @@ or
 .TP
 \fBshow\fP \fIENTITY\fP=\fIID\fP
 Display the state of the specified entity with the specified identification.
-\fIENTITY\fP may be \fIaliases\fP, \fIassoc_mgr\fP, \fIburstbuffer\fP,
-\fIconfig\fP, \fIdaemons\fP, \fIfederation\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
+\fIENTITY\fP may be \fIaliases\fP, \fIassoc_mgr\fP, \fIbbstat\fP,
+\fIburstbuffer\fP, \fIconfig\fP, \fIdaemons\fP, \fIdwstat\fP,
+\fIfederation\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
 \fIpartition\fP, \fIpowercap\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
 \fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or \fIhostnames\fP
 (also \fIblock\fP or \fIsubmp\fP on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified
 entity: job ID, node name, partition name, reservation name, or job step ID for
 \fIjob\fP, \fInode\fP, \fIpartition\fP, or \fIstep\fP respectively.
+For an \fIENTITY\fP of \fIbbstat\fP or \fIdwstat\fP (they are equivalent)
+optional arguments are the options of the local status command.
+The status commands will be executed by the slurmctld daemon and its response
+returned to the user.
 For an \fIENTITY\fP of \fItopology\fP, the \fIID\fP may be a node or switch name.
 If one node name is specified, all switches connected to that node (and
 their parent switches) will be shown.
@@ -363,7 +371,7 @@ only (e.g. SLURM_VERSION).
 \fIhostnames\fP takes an optional hostlist expression as input and
 writes a list of individual host names to standard output (one per
 line). If no hostlist expression is supplied, the contents of the
-SLURM_NODELIST environment variable is used. For example "tux[1\-3]"
+SLURM_JOB_NODELIST environment variable is used. For example "tux[1\-3]"
 is mapped to "tux1","tux2" and "tux3" (one hostname per line).
 \fIhostlist\fP takes a list of host names and prints the hostlist
 expression for them (the inverse of \fIhostnames\fP).
@@ -464,8 +472,9 @@ automatically as needed.
 
 .TP
 \fBwrite batch_script\fP \fIjob_id optional_filename\fP
-Write the batch script for a given job_id to a file. The file will default to
-\fIslurm-\<job_id\>.sh\fP if the optional filename argument is not given.
+Write the batch script for a given job_id to a file or to stdout. The file will
+default to \fIslurm-\<job_id\>.sh\fP if the optional filename argument is not
+given. The script will be written to stdout if - is given instead of a filename.
 The batch script can only be retrieved by an admin or operator, or by the
 owner of the job.
 
@@ -658,6 +667,10 @@ A request can also specify the number of nodes needed with some feature
 by appending an asterisk and count after the feature name.
 For example "\fBFeatures=graphics*4"\fR
 indicates that at least four allocated nodes must have the feature "graphics."
+Parenthesis are also supported for features to be ANDed together.
+For example "\fBFeatures=[(knl&a2a&flat)*4&haswell*2]"\fR indicates the
+resource allocation should include 4 nodes with ALL of the features "knl",
+"a2a", and "flat" plus 2 nodes with the feature "haswell".
 Constraints with node counts may only be combined with AND operators.
 Value may be cleared with blank data value, for example "Features=".
 
@@ -715,7 +728,7 @@ When used to identify jobs to be modified, all jobs belonging to all users
 are modified unless the \fIUserID\fP option is used to identify a specific user.
 Either \fIJobId\fP or \fIJobName\fP is required.
 .TP
-\fB\-\-nice\fR[=\fIadjustment\fR]
+\fINice\fP[=<adjustment>]
 Update the job with an adjusted scheduling priority within Slurm. With no
 adjustment value the scheduling priority is decreased by 100. A negative nice
 value increases the priority, otherwise decreases it. The adjustment range is
@@ -1058,6 +1071,12 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 Also see \fIActiveFeatures\fP.
 
 .TP
+\fICpuBind\fP=<node>
+Specify the task binding mode to be used by default for this node.
+Supported options include: "none", "board", "socket", "ldom" (NUMA), "core",
+"thread" and "off" (remove previous binding mode).
+
+.TP
 \fIGres\fP=<gres>
 Identify generic resources to be associated with the specified node.  Any
 previously defined generic resources will be overwritten with the new value.
@@ -1106,8 +1125,13 @@ node to be terminated.
 "POWER_DOWN" and "POWER_UP" will use the configured \fISuspendProg\fR and
 \fIResumeProg\fR programs to explicitly place a node in or out of a power
 saving mode. If a node is already in the process of being powered up or down,
-the command will have no effect until the configured ResumeTimeout or
-SuspendTimeout is reached.
+the command will only change the state of the node but won't have any
+effect until the configured ResumeTimeout or SuspendTimeout is reached.
+Use of this command can be useful in situations
+where a \fIResumeProg\fR like \fIcapmc\fR in Cray machines is stalled and one
+wants to restore the node to "IDLE" manually, in this case rebooting the node
+and setting the state to "POWER_DOWN" will cancel the previous "POWER_UP"
+state and the node will become "IDLE".
 The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
 While all of the above states are valid, some of them are not valid new
@@ -1182,6 +1206,12 @@ Alternate partition to be used if the state of this partition is "DRAIN" or
 "INACTIVE."  The value "NONE" will clear a previously set alternate partition.
 
 .TP
+\fICpuBind\fP=<node>
+Specify the task binding mode to be used by default for this partition.
+Supported options include: "none", "board", "socket", "ldom" (NUMA), "core",
+"thread" and "off" (remove previous binding mode).
+
+.TP
 \fIDefault\fP=<yes|no>
 Specify if this partition is to be used by jobs which do not explicitly
 identify a partition to use.
@@ -1225,6 +1255,19 @@ Hidden partitions will by default not be reported by Slurm APIs
 or commands.
 Possible values are "YES" and "NO".
 
+.\ .TP
+.\ \fIJobDefaults\fP=<specs>
+.\ Specify job default values using a comma delimited list of "key=value" pairs.
+.\ Supported keys include
+.\ .RS
+.\ .TP 14
+.\ \fIDefCpuPerGPU\fP
+.\ Default number of CPUs per allocated GPU.
+.\ .TP
+.\ \fIDefMemPerGPU\fP
+.\ Default memory limit (in megabytes) per allocated GPU.
+.\ .RE
+.\ 
 .TP
 \fIMaxMemPerCPU\fP=<MB>
 Set the maximum memory to be allocated per CPU for jobs in this partition.
@@ -1363,6 +1406,15 @@ Designates that no new jobs may be queued on the partition,
 and jobs already queued may not be allocated nodes and run.
 See also the "Alternate" partition specification.
 .RE
+
+.TP
+\fITRESBillingWeights\fP=<TRES Billing Weights>
+TRESBillingWeights is used to define the billing weights of each TRES type that
+will be used in calculating the usage of a job. The calculated usage is used
+when calculating fairshare and when enforcing the TRES billing limit on jobs.
+Updates affect new jobs and not existing jobs.
+See the slurm.conf man page for more information.
+
 
 .TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, POWERCAP\fR
@@ -1534,8 +1586,9 @@ Repeat the reservation at the same time every day.
 .TP
 \fIFLEX\fR
 Permit jobs requesting the reservation to begin prior to the reservation's
-start time and use resources inside or outside of the reservation. A typical
-use case is to prevent jobs not explicitlg requesting the reservation from using
+start time, end after the reservation's end time, and use resources inside
+and/or outside of the reservation. A typical
+use case is to prevent jobs not explicitly requesting the reservation from using
 those reserved resources rather than forcing jobs requesting the reservation to
 use those resources in the time frame reserved.
 .TP
@@ -1570,14 +1623,23 @@ This flag can be used to reserve all nodes within the specified
 partition.  PartitionName and Nodes=ALL must be specified or
 this option is ignored.
 .TP
-\fRPURGE_COMP\fR
+\fIPURGE_COMP\fR
 Purge the reservation once the last associated job has completed.
 Once the reservation has been created, it must be populated within 5 minutes
 of its start time or it will be purged before any jobs have been run.
 .TP
-\fRREPLACE\fR
-Resources allocated to jobs as automatically replenished using idle resources.
+\fIREPLACE\fR
+Nodes which are DOWN, DRAINED, or allocated to jobs as automatically
+replenished using idle resources.
 This option can be used to maintain a constant number of idle resources
+available for pending jobs (subject to availability of idle resources).
+This should be used with the \fINodeCnt\fP reservation option; do not identify
+specific nodes to be included in the reservation.
+This option is not supported on IBM Bluegene systems.
+.TP
+\fIREPLACE_DOWN\fR
+Nodes which are DOWN or DRAINED are automatically replenished using idle resources.
+This option can be used to maintain a constant sized pool of resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.
@@ -1613,6 +1675,12 @@ Repeat the reservation at the same time every week.
 Set the reservation's required node features. Multiple values
 may be "&" separated if all features are required (AND operation) or
 separated by "|" if any of the specified features are required (OR operation).
+Parenthesis are also supported for features to be ANDed together with counts
+of nodes having the specified features.
+For example "\fBFeatures=[(knl&a2a&flat)*4&haswell*2]"\fR indicates the
+advanced reservation should include 4 nodes with ALL of the features "knl",
+"a2a", and "flat" plus 2 nodes with the feature "haswell".
+
 Value may be cleared with blank data value, "Features=".
 
 .TP
@@ -1826,6 +1894,9 @@ Commandline options will always override these settings.)
 .TP
 \fBSCONTROL_FEDERATION\fR
 \fB\-\-federation\fR
+.TP
+\fBSCONTROL_FUTURE\fR
+\fB\-F, \-\-future\fR
 .TP
 \fBSCONTROL_LOCAL\fR
 \fB\-\-local\fR

@@ -8,11 +8,11 @@
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -365,49 +365,6 @@ extern int sort_assoc_dec(void *v1, void *v2)
 	else if (diff < 0)
 		return -1;
 
-
-	return 0;
-}
-
-/*
- * Comparator used for sorting resvs largest cpu to smallest cpu
- *
- * returns: 1: resv_a > resv_b   0: resv_a == resv_b   -1: resv_a < resv_b
- *
- */
-extern int sort_reservations_dec(void *v1, void *v2)
-{
-	int diff;
-	slurmdb_reservation_rec_t *resv_a;
-	slurmdb_reservation_rec_t *resv_b;
-
-	resv_a = *(slurmdb_reservation_rec_t **)v1;
-	resv_b = *(slurmdb_reservation_rec_t **)v2;
-
-	if (!resv_a->cluster || !resv_b->cluster)
-		return 0;
-
-	diff = xstrcmp(resv_a->cluster, resv_b->cluster);
-
-	if (diff > 0)
-		return 1;
-	else if (diff < 0)
-		return -1;
-
-	if (!resv_a->name || !resv_b->name)
-		return 0;
-
-	diff = xstrcmp(resv_a->name, resv_b->name);
-
-	if (diff > 0)
-		return 1;
-	else if (diff < 0)
-		return -1;
-
-	if (resv_a->time_start < resv_b->time_start)
-		return 1;
-	else if (resv_a->time_start > resv_b->time_start)
-		return -1;
 
 	return 0;
 }

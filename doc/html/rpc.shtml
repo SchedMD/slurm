@@ -15,8 +15,8 @@ The reason for format changes is typically new fields being added for new
 Slurm capabilities.
 Slurm communications support the most current release plus the two previous
 major releases.
-For example, Slurm version 17.02.x daemons can communicate with Slurm commands
-from version 17.02.x, 16.05.x and 15.08.x.
+For example, Slurm version 17.11.x daemons can communicate with Slurm commands
+from version 17.11.x, 17.02.x and 16.05.x.
 The same is true for state save files.
 Slurm can be upgraded through two major releases without loss of data
 since the older state files are still recognized.
@@ -51,8 +51,10 @@ Be sure to pack and unpack data in the identical order.
 It is also important to keep in mind that when adding support for new fields
 in an RPC protocol, that logic may need to be added to the older protocols
 setting the new field values to a reasonable default value (e.g. NULL, 0).
-For example, if a job is submitted using an old version of sbatch to a newer
-slurmctld daemon, job specifications that are unknown to the old sbatch
+Slurm supports RPCs up to two newer major versions, so a 16.05 version will
+be able to communicate with a 16.05, 17.02 and 17.11 versions, but not with
+a 18.x. For example, if a job is submitted using an old version of sbatch to a
+newer slurmctld daemon, job specifications that are unknown to the old sbatch
 should be set by the slurmctld daemon to reasonable values.
 An example of the changes required are shown below.
 In this trivial example, we want to add a new "max_nodes" field to the
@@ -98,6 +100,6 @@ if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 }
 </pre>
 
-<p style="text-align:center;">Last modified 05 May 2016</p>
+<p style="text-align:center;">Last modified 7 November 2017</p>
 
 <!--#include virtual="footer.txt"-->

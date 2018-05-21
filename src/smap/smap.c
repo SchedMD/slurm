@@ -9,11 +9,11 @@
  *
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -105,13 +105,8 @@ int main(int argc, char **argv)
 	} else if (params.cluster_dims == 3)
 		min_screen_width = 92;
 
-	/* no need for this if you are resolving */
 	while (slurm_load_node((time_t) NULL,
 			       &new_node_ptr, SHOW_ALL)) {
-		if (params.resolve || (params.display == COMMANDS)) {
-			new_node_ptr = NULL;
-			break;		/* just continue */
-		}
 		error_code = slurm_get_errno();
 		printf("slurm_load_node: %s\n",
 		       slurm_strerror(error_code));
@@ -120,8 +115,6 @@ int main(int argc, char **argv)
 		sleep(10);	/* keep trying to reconnect */
 	}
 
-	select_g_ba_init(new_node_ptr, 0);
-
 	if (dim_size == NULL) {
 		dim_size = get_cluster_dims(new_node_ptr);
 		if ((dim_size == NULL) || (dim_size[0] < 1))
@@ -129,14 +122,6 @@ int main(int argc, char **argv)
 	}
 	_init_colors();
 
-	if (params.resolve) {
-		char *ret_str = resolve_mp(params.resolve, new_node_ptr);
-		if (ret_str) {
-			printf("%s", ret_str);
-			xfree(ret_str);
-		}
-		_smap_exit(0);	/* Calls exit(), no return */
-	}
 	if (!params.commandline) {
 		int check_width = min_screen_width;
 
@@ -222,31 +207,8 @@ redraw:
 		case RESERVATIONS:
 			get_reservation();
 			break;
-		case SLURMPART:
+		case PARTITION:
 			get_slurm_part();
-			break;
-		case COMMANDS:
-#ifdef HAVE_BG
-			wclear(text_win);
-			get_command();
-#else
-			error("Must be on a real BG SYSTEM to "
-			      "run this command");
-			if (!params.commandline)
-				endwin();
-			_smap_exit(1);	/* Calls exit(), no return */
-#endif
-			break;
-		case BGPART:
-			if (params.cluster_flags & CLUSTER_FLAG_BG)
-				get_bg_part();
-			else {
-				error("Must be on a BG SYSTEM to "
-				      "run this command");
-				if (!params.commandline)
-					endwin();
-				_smap_exit(1);	/* Calls exit(), no return */
-			}
 			break;
 		}
 
@@ -355,10 +317,6 @@ static void _smap_exit(int rc)
 	uid_cache_clear();
 	free_grid();
 
-#ifdef HAVE_BG
-	bg_configure_ba_fini();
-#endif
-
 #endif
 	if (!params.commandline)
 		curs_set(1);
@@ -393,12 +351,12 @@ static int _get_option(void)
 			params.all_flag = 0;
 		else
 			params.all_flag = 1;
-	return 1;
+		return 1;
 		break;
 	case 's':
 		text_line_cnt = 0;
 		grid_line_cnt = 0;
-		params.display = SLURMPART;
+		params.display = PARTITION;
 		return 1;
 		break;
 	case 'j':
@@ -413,47 +371,12 @@ static int _get_option(void)
 		params.display = RESERVATIONS;
 		return 1;
 		break;
-	case 'b':
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
-			text_line_cnt = 0;
-			grid_line_cnt = 0;
-			params.display = BGPART;
-			return 1;
-		}
-		break;
-	case 'c':
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
-			params.display = COMMANDS;
-			return 1;
-		}
-		break;
-	case 'u':
-	case KEY_UP:
-		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
-			grid_line_cnt--;
-			if (grid_line_cnt<0) {
-				grid_line_cnt = 0;
-				return 0;
-			}
-			return 1;
-		}
-	break;
-	case 'd':
-	case KEY_DOWN:
-		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
-			grid_line_cnt++;
-			if ((((grid_line_cnt - 2) * (getmaxx(grid_win) - 2)) +
-			    max_display) > dim_size[0]) {
-				grid_line_cnt--;
-				return 0;
-			}
-			return 1;
-		}
-		break;
 	case 'q':
 	case '\n':
 		endwin();
 		_smap_exit(0);	/* Calls exit(), no return */
+		break;
+	default:
 		break;
 	}
 	return 0;
@@ -525,17 +448,8 @@ static void *_resize_handler(int sig)
 	case RESERVATIONS:
 		get_reservation();
 		break;
-	case SLURMPART:
+	case PARTITION:
 		get_slurm_part();
-		break;
-	case COMMANDS:
-#ifdef HAVE_BG
-		get_command();
-#endif
-		break;
-	case BGPART:
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			get_bg_part();
 		break;
 	}
 

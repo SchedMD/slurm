@@ -7,11 +7,11 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -98,11 +98,9 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 	}
 
 	if (resv->name) {
-		char *tmp_char = slurm_add_slash_to_quotes(resv->name);
 		xstrcat(*cols, ", resv_name");
-		xstrfmtcat(*vals, ", '%s'", tmp_char);
-		xstrfmtcat(*extra, ", resv_name='%s'", tmp_char);
-		xfree(tmp_char);
+		xstrfmtcat(*vals, ", '%s'", resv->name);
+		xstrfmtcat(*extra, ", resv_name='%s'", resv->name);
 	}
 
 	if (resv->nodes) {
@@ -666,7 +664,7 @@ empty:
 		resv->time_end = slurm_atoul(row[RESV_REQ_END]);
 		resv->flags = slurm_atoul(row[RESV_REQ_FLAGS]);
 		resv->tres_str = xstrdup(row[RESV_REQ_TRES]);
-		resv->unused_wall = slurm_atoul(row[RESV_REQ_UNUSED]);
+		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
 	}
 
 	FREE_NULL_LIST(local_cluster_list);

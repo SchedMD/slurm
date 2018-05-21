@@ -8,22 +8,22 @@
  *  Written by Morris Jette <jette@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -849,7 +849,6 @@ display_it:
 		front_end_ptr = sview_front_end_info_ptr->front_end_ptr;
 		switch (spec_info->type) {
 		case PART_PAGE:
-		case BLOCK_PAGE:
 		case NODE_PAGE:
 			break;
 		case JOB_PAGE:
@@ -1038,7 +1037,7 @@ extern void select_admin_front_end(GtkTreeModel *model, GtkTreeIter *iter,
 static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 			     char *node_list)
 {
-	uint16_t state = (uint16_t) NO_VAL;
+	uint16_t state = NO_VAL16;
 	update_front_end_msg_t front_end_update_msg;
 	char *new_type = NULL, *reason = NULL;
 	char tmp_char[100];
@@ -1147,32 +1146,5 @@ end_it:
 
 extern void cluster_change_front_end(void)
 {
-	display_data_t *display_data = display_data_front_end;
-
-	display_data = options_data_front_end;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch (display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = "Blocks";
-				break;
-			case NODE_PAGE:
-				display_data->name = "Midplanes";
-				break;
-			}
-		} else {
-			switch (display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = NULL;
-				break;
-			case NODE_PAGE:
-				display_data->name = "Nodes";
-				break;
-			}
-		}
-	}
 	get_info_front_end(NULL, NULL);
 }

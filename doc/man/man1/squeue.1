@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "April 2016" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "February 2018" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -262,8 +262,8 @@ In the case of job arrays, the job ID format will be of the form
 By default, the job array index field size will be limited to 64 bytes.
 Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
 (Valid for jobs and job steps)
-In the case of heterogeneous (pack) job allocations, the job ID format will be
-of the form "#+#" where the first number is the "pack job leader" and the
+In the case of heterogeneous job allocations, the job ID format will be of the
+form "#+#" where the first number is the "heterogeneous job leader" and the
 second number the zero origin offset for each component of the job.
 .TP
 \fB%I\fR
@@ -380,19 +380,13 @@ Actual or expected start time of the job or job step.
 (Valid for jobs and job steps)
 .TP
 \fB%t\fR
-Job state, compact form:
-PD (pending), R (running), CA (cancelled), CF(configuring),
-CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure), RV (revoked) and SE
-(special exit state).
-See the \fBJOB STATE CODES\fR section below for more information.
+Job state in compact form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
 .TP
 \fB%T\fR
-Job state, extended form:
-PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING,
-FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
-See the \fBJOB STATE CODES\fR section below for more information.
+Job state in extended form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
 .TP
 \fB%u\fR
@@ -567,9 +561,12 @@ Count of cores reserved on each node for system use (core specialization).
 Prints the frequency of the allocated CPUs.
 (Valid for job steps only)
 .TP
-\fBcpuspertask\fR
+\fBcpus\-per\-task\fR
 Prints the number of CPUs per tasks allocated to the job.
 (Valid for jobs only)
+.TP
+\fBcpus\-per\-tres\fR
+Print the memory required per trackable resources allocated to the job.
 .TP
 \fBdeadline\fR
 Prints the deadline affected to the job
@@ -627,7 +624,7 @@ For non\-array jobs, this is the job ID.
 \fBjobid\fR
 Job id.
 This will have a unique value for each element of job arrays and each
-component of pack jobs.
+component of heterogeneous jobs.
 (Valid for jobs only)
 .TP
 \fBlastschedeval\fR
@@ -649,6 +646,9 @@ Prints the max number of nodes allocated to the job.
 \fBmcslabel\fR
 Prints the MCS_label of the job.
 (Valid for jobs only)
+.TP
+\fBmem\-per-tres\fR
+Print the memory (in MB) required per trackable resources allocated to the job.
 .TP
 \fBminmemory\fR
 Minimum size of memory (in MB) requested by the job.
@@ -882,18 +882,13 @@ Actual or expected start time of the job or job step.
 (Valid for jobs and job steps)
 .TP
 \fBstate\fR
-Job state, extended form:
-PENDING, RUNNING, STOPPED, SUSPENDED, CANCELLED, COMPLETING, COMPLETED,
-CONFIGURING, FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
-See the \fBJOB STATE CODES\fR section below for more information.
+Job state in extended form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
 .TP
 \fBstatecompact\fR
-Job state, compact form:
-PD (pending), R (running), CA (cancelled), CF(configuring),
-CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure), RV (revoked) and SE (special exit state).
-See the \fBJOB STATE CODES\fR section below for more information.
+Job state in compact form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
 (Valid for jobs only)
 .TP
 \fBstderr\fR
@@ -926,6 +921,10 @@ The state of the job step.
 The time that the job was submitted at.
 (Valid for jobs only)
 .TP
+\fBsystem_comment\fR
+System comment associated with the job.
+(Valid for jobs only)
+.TP
 \fBthreads\fR
 Number of threads per core requested by the job.
 This reports the value of the \fBsrun \-\-threads\-per\-core\fR option.
@@ -952,8 +951,27 @@ Clock skew between nodes in the cluster will cause the time to be inaccurate.
 If the time is obviously wrong (e.g. negative), it displays as "INVALID".
 (Valid for jobs and job steps)
 .TP
-\fBtres\fR
-Print the trackable resources allocated to the job.
+\fBtres\-alloc\fR
+Print the trackable resources allocated to the job if running.
+If not running, then print the trackable resources requested by the job.
+.TP
+\fBtres\-bind\fR
+Print the trackable resources task binding requested by the job.
+.TP
+\fBtres\-freq\fR
+Print the trackable resources frequencies requested by the job.
+.TP
+\fBtres\-per\-job\fR
+Print the trackable resources requested by the job.
+.TP
+\fBtres\-per\-node\fR
+Print the trackable resources per node requested by the job.
+.TP
+\fBtres\-per\-socket\fR
+Print the trackable resources per socket requested by the job.
+.TP
+\fBtres\-per\-task\fR
+Print the trackable resources per task requested by the job.
 .TP
 \fBuserid\fR
 User ID for a job or job step.
@@ -1048,14 +1066,10 @@ Slurm is configured to use the backfill scheduling plugin.
 Specify the states of jobs to view.  Accepts a comma separated list of
 state names or "all". If "all" is specified then jobs of all states will be
 reported. If no state is specified then pending, running, and completing
-jobs are reported. Valid states (in both extended and compact form) include:
-PENDING (PD), RUNNING (R), SUSPENDED (S), STOPPED (ST),
-COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
-FAILED (F), TIMEOUT (TO), PREEMPTED (PR), BOOT_FAIL (BF) , NODE_FAIL (NF),
-REVOKED (RV), and SPECIAL_EXIT (SE).
+jobs are reported. See the \fBJOB STATE CODES\fR section below for a list of
+valid states. Both extended and compact forms are valid.
 Note the \fB<state_list>\fR supplied is case insensitive ("pd" and "PD" are
 equivalent).
-See the \fBJOB STATE CODES\fR section below for more information.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
@@ -1227,11 +1241,17 @@ Job has been allocated resources, but are waiting for them to become ready for u
 \fBCG  COMPLETING\fR
 Job is in the process of completing. Some processes on some nodes may still be active.
 .TP
+\fBDL  DEADLINE\fR
+Job terminated on deadline.
+.TP
 \fBF   FAILED\fR
 Job terminated with non\-zero exit code or other failure condition.
 .TP
 \fBNF  NODE_FAIL\fR
 Job terminated due to failure of one or more allocated nodes.
+.TP
+\fBOOM OUT_OF_MEMORY\fR
+Job experienced out of memory error.
 .TP
 \fBPD  PENDING\fR
 Job is awaiting resource allocation.
@@ -1239,16 +1259,37 @@ Job is awaiting resource allocation.
 \fBPR  PREEMPTED\fR
 Job terminated due to preemption.
 .TP
-\fBR   REVOKED\fR
-Sibling was removed from cluster due to other cluster starting the job.
-.TP
 \fBR   RUNNING\fR
 Job currently has an allocation.
+.TP
+\fBRD  RESV_DEL_HOLD\fR
+Job is held.
+.TP
+\fBRF  REQUEUE_FED\fR
+Job is being requeued by a federation.
+.TP
+\fBRH  REQUEUE_HOLD\fR
+Held job is being requeued.
+.TP
+\fBRQ  REQUEUED\fR
+Completing job is being requeued.
+.TP
+\fBRS  RESIZING\fR
+Job is about to change size.
+.TP
+\fBRV  REVOKED\fR
+Sibling was removed from cluster due to other cluster starting the job.
+.TP
+\fBSI  SIGNALING\fR
+Job is being signaled.
 .TP
 \fBSE  SPECIAL_EXIT\fR
 The job was requeued in a special state. This state can be set by
 users, typically in EpilogSlurmctld, if the job has terminated with
 a particular exit value.
+.TP
+\fBSO  STAGE_OUT\fR
+Job is staging out files.
 .TP
 \fBST  STOPPED\fR
 Job has an allocation, but execution has been stopped with SIGSTOP signal.

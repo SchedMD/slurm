@@ -8,11 +8,11 @@
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -59,17 +59,6 @@ enum {
 
 
 static List print_fields_list = NULL; /* types are of print_field_t */
-
-static int _find_resv(void *x, void *key)
-{
-	slurmdb_reservation_rec_t *rec = (slurmdb_reservation_rec_t *)x;
-	uint32_t id = *(uint32_t *)key;
-
-	if (rec->id == id)
-		return 1;
-
-	return 0;
-}
 
 static int _set_resv_cond(int *start, int argc, char **argv,
 			  slurmdb_reservation_cond_t *resv_cond,
@@ -383,7 +372,7 @@ static List _get_resv_list(int argc, char **argv,
 	return resv_list;
 }
 
-static void _resv_tres_report(slurmdb_reservation_rec_t *tot_resv,
+static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 			      slurmdb_tres_rec_t *resv_tres)
 {
 	uint64_t idle_secs = 0, total_reported = 0;
@@ -396,20 +385,20 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *tot_resv,
 	ListIterator iter = NULL;
 	int32_t total_time = 0;
 
-	total_time = tot_resv->time_end - tot_resv->time_start;
+	total_time = resv_ptr->time_end - resv_ptr->time_start;
 	if (total_time <= 0)
 		return;
 
 	/*
 	 * Need to get allocated from reservation which is in
-	 * tres_str/resv_tres. tot_resv->tres_list contains the accumulated
+	 * tres_str/resv_tres. resv_ptr->tres_list contains the accumulated
 	 * tres seconds that were used by jobs that ran in the reservation. The
 	 * tres_list will have more tres types than exist in the reservations
 	 * tres because only cpu, licenses and bb are supported tres types than
 	 * can be reserved.
 	 */
-	if (tot_resv->tres_list &&
-	    (tres_rec = list_find_first(tot_resv->tres_list,
+	if (resv_ptr->tres_list &&
+	    (tres_rec = list_find_first(resv_ptr->tres_list,
 					slurmdb_find_tres_in_list,
 					&resv_tres->id))) {
 		tres_alloc_secs = tres_rec->alloc_secs;
@@ -417,18 +406,24 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *tot_resv,
 
 	tres_alloc_cnt  = resv_tres->count;
 	total_reported  = (uint64_t)(total_time * tres_alloc_cnt);
-	idle_secs       = total_reported - tres_alloc_secs;
+
+	/*
+	 * With Flex reservations you can have more time that possible in the
+	 * allocation.
+	 */
+	if (total_reported > tres_alloc_secs)
+		idle_secs = total_reported - tres_alloc_secs;
 
 	field_count = list_count(print_fields_list);
 	iter = list_iterator_create(print_fields_list);
 	while ((field = list_next(iter))) {
 		switch (field->type) {
 		case PRINT_RESV_NAME:
-			field->print_routine(field, tot_resv->name,
+			field->print_routine(field, resv_ptr->name,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_CLUSTER:
-			field->print_routine(field, tot_resv->cluster,
+			field->print_routine(field, resv_ptr->cluster,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TRES_CNT:
@@ -436,7 +431,7 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *tot_resv,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_ID:
-			field->print_routine(field, tot_resv->id,
+			field->print_routine(field, resv_ptr->id,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TRES_ALLOC:
@@ -449,23 +444,23 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *tot_resv,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_NODES:
-			field->print_routine(field, tot_resv->nodes,
+			field->print_routine(field, resv_ptr->nodes,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_ASSOCS:
-			field->print_routine(field, tot_resv->assocs,
+			field->print_routine(field, resv_ptr->assocs,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_START:
-			field->print_routine(field, tot_resv->time_start,
+			field->print_routine(field, resv_ptr->time_start,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_END:
-			field->print_routine(field, tot_resv->time_end,
+			field->print_routine(field, resv_ptr->time_end,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_FLAGS:
-			temp_char = reservation_flags_string(tot_resv->flags);
+			temp_char = reservation_flags_string(resv_ptr->flags);
 			field->print_routine(field, temp_char,
 					     (curr_inx == field_count));
 			break;
@@ -502,12 +497,9 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *tot_resv,
 extern int resv_utilization(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator itr = NULL;
-	ListIterator tot_itr = NULL;
-	slurmdb_reservation_rec_t *resv = NULL;
-	slurmdb_reservation_rec_t *tot_resv = NULL;
+	ListIterator resv_itr = NULL;
+	slurmdb_reservation_rec_t *resv_ptr = NULL;
 	List resv_list = NULL;
-	List tot_resv_list = NULL;
 	List req_tres_list = tres_list;
 
 	List format_list = list_create(slurm_destroy_char);
@@ -527,58 +519,12 @@ extern int resv_utilization(int argc, char **argv)
 	_setup_print_fields_list(format_list);
 	FREE_NULL_LIST(format_list);
 
-	/* we will just use the pointers returned from the
-	 * get_resv_list here, so don't remove them */
-	tot_resv_list = list_create(NULL);
-
 	print_fields_header(print_fields_list);
 
-	/* Compress duplicate reservations into a single record. Reservations
-	 * can have multiple entries if there are changes after starting (e.g.
-	 * changing node count). Compressed reservations will have their
-	 * resource usage averaged. */
-	itr = list_iterator_create(resv_list);
-	while ((resv = list_next(itr))) {
-		if (!(tot_resv = list_find_first(
-			      tot_resv_list, _find_resv, &resv->id))) {
-			list_append(tot_resv_list, resv);
-			continue;
-		}
-
-		if (resv->tres_list && list_count(resv->tres_list)) {
-			if (!tot_resv->tres_list) {
-				tot_resv->tres_list = slurmdb_copy_tres_list(
-					resv->tres_list);
-			} else {
-				slurmdb_tres_rec_t *tres_rec, *loc_tres_rec;
-				ListIterator tres_itr = list_iterator_create(
-					resv->tres_list);
-				while ((tres_rec = list_next(tres_itr))) {
-					if (!(loc_tres_rec = list_find_first(
-						      tot_resv->tres_list,
-						      slurmdb_find_tres_in_list,
-						      &tres_rec->id))) {
-						loc_tres_rec =
-							slurmdb_copy_tres_rec(
-								tres_rec);
-						list_append(tot_resv->tres_list,
-							    loc_tres_rec);
-						continue;
-					}
-					loc_tres_rec->count += tres_rec->count;
-					loc_tres_rec->count /= 2;
-					loc_tres_rec->alloc_secs +=
-						tres_rec->alloc_secs;
-				}
-				list_iterator_destroy(tres_itr);
-			}
-		}
-		if (resv->time_start < tot_resv->time_start)
-			tot_resv->time_start = resv->time_start;
-		if (resv->time_end > tot_resv->time_end)
-			tot_resv->time_end = resv->time_end;
-	}
-	list_iterator_destroy(itr);
+	/*
+	 * Don't compress duplicate reservations into a single record.
+	 * If a reservation is updated, it needs to be shown as its own record.
+	 */
 
 	if (!tres_str) {
 		/*
@@ -589,15 +535,14 @@ extern int resv_utilization(int argc, char **argv)
 		req_tres_list = g_tres_list;
 	}
 
-	list_sort(tot_resv_list, (ListCmpF)sort_reservations_dec);
-	tot_itr = list_iterator_create(tot_resv_list);
-	while ((tot_resv = list_next(tot_itr))) {
+	resv_itr = list_iterator_create(resv_list);
+	while ((resv_ptr = list_next(resv_itr))) {
 		List resv_tres_list = NULL;
 		ListIterator tres_itr;
 		slurmdb_tres_rec_t *resv_tres, *req_tres;
 
 		slurmdb_tres_list_from_string(&resv_tres_list,
-					      tot_resv->tres_str,
+					      resv_ptr->tres_str,
 					      TRES_STR_FLAG_NONE);
 		if (!resv_tres_list)
 			continue;
@@ -623,16 +568,15 @@ extern int resv_utilization(int argc, char **argv)
 			resv_tres->type = xstrdup(req_tres->type);
 			resv_tres->name = xstrdup(req_tres->name);
 
-			_resv_tres_report(tot_resv, resv_tres);
+			_resv_tres_report(resv_ptr, resv_tres);
 		}
 		list_iterator_destroy(tres_itr);
 		FREE_NULL_LIST(resv_tres_list);
 	}
-	list_iterator_destroy(tot_itr);
+	list_iterator_destroy(resv_itr);
 
 end_it:
 	FREE_NULL_LIST(resv_list);
-	FREE_NULL_LIST(tot_resv_list);
 	FREE_NULL_LIST(print_fields_list);
 
 	return rc;

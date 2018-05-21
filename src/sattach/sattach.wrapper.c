@@ -1,6 +1,6 @@
 /*
  * sattach.wrapper.c - sattach command wrapper for use with debuggers
- *	sattach is a SLURM command that can be used to attach to an
+ *	sattach is a Slurm command that can be used to attach to an
  *	active parallel job
  *
  * For TotalView, a parallel job debugger from

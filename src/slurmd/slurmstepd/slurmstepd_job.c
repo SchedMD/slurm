@@ -8,11 +8,11 @@
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -425,7 +425,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 #ifdef HAVE_ALPS_CRAY
 	/* This is only used for Cray emulation mode where slurmd is used to
 	 * launch job steps. On a real Cray system, ALPS is used to launch
-	 * the tasks instead of SLURM. SLURM's task launch RPC does NOT
+	 * the tasks instead of SLURM. Slurm's task launch RPC does NOT
 	 * contain the reservation ID, so just use some non-zero value here
 	 * for testing purposes. */
 	job->resv_id = 1;
@@ -549,7 +549,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	get_cred_gres(msg->cred, conf->node_name,
 		      &job->job_gres_list, &job->step_gres_list);
 
-	srun = srun_info_create(NULL, NULL, NULL, (uint16_t)NO_VAL);
+	srun = srun_info_create(NULL, NULL, NULL, NO_VAL16);
 
 	list_append(job->sruns, (void *) srun);
 
@@ -640,7 +640,7 @@ srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr,
 	srun_key_t       *key  = xmalloc(sizeof(srun_key_t));
 
 	srun->key    = key;
-	if (!protocol_version || (protocol_version == (uint16_t)NO_VAL))
+	if (!protocol_version || (protocol_version == NO_VAL16))
 		protocol_version = SLURM_PROTOCOL_VERSION;
 	srun->protocol_version = protocol_version;
 	/*

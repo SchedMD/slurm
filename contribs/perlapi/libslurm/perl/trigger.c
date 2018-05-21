@@ -70,4 +70,3 @@ trigger_info_msg_to_hv(trigger_info_msg_t *trigger_info_msg, HV *hv)
 	hv_store_sv(hv, "trigger_array", newRV_noinc((SV*)av));
 	return 0;
 }
-

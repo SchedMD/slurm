@@ -1,16 +1,16 @@
 /*****************************************************************************\
- *  proctrack_cray.c - process tracking via SGI's "job" module.
+ *  proctrack_cray.c - process tracking via Cray's APIs.
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC
  *  Written by Danny Auble <da@schedmd.com> who borrowed heavily from
  *  the proctrack/sgi_job plugin
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -88,17 +88,20 @@ static void *_create_container_thread(void *args)
 	/* We need to signal failure or not */
 	slurm_cond_signal(&notify);
 
-	/* Don't unlock the notify_mutex here, wait, it is not needed
-	 * and can cause deadlock if done. */
+	/*
+	 * Don't unlock the notify_mutex here, wait, it is not needed
+	 * and can cause deadlock if done.
+	 */
 
-	if (job->cont_id == (jid_t)-1)
+	if (job->cont_id == (jid_t)-1) {
 		error("Failed to create job container: %m");
-	else
-		/* Wait around for something else to be added and then exit
-		   when that takes place.
-		*/
+	} else {
+		/*
+		 * Wait around for something else to be added and then exit
+		 * when that takes place.
+		 */
 		slurm_cond_wait(&notify, &notify_mutex);
-
+	}
 	slurm_mutex_unlock(&notify_mutex);
 
 	return NULL;
@@ -152,19 +155,18 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 		init();
 
 	if (!job->cont_id) {
-		/* Since the cray job lib will create the container
-		   off the process calling job_create we don't want to
-		   call it from the main process since it will include
-		   all the threads the main process spawns and there
-		   is no way to safely track which pids need to be
-		   removed when removing the parent.  It turns out
-		   spawning a thread will make the job_create create
-		   the container off that process instead of the main
-		   process.  Once we have added a process we can end
-		   the thread which will remove the pid from the
-		   container automatically.  Empty containers are not
-		   valid.
-		*/
+		/*
+		 * Since the cray job lib will create the container off the
+		 * process calling job_create we don't want to call it from
+		 * the main process since it will include all the threads
+		 * the main process spawns and there is no way to safely track
+		 * which pids need to be removed when removing the parent.
+		 * It turns out spawning a thread will make the job_create
+		 * create the container off that process instead of the main
+		 * process.  Once we have added a process we can end the
+		 * thread which will remove the pid from the container
+		 * automatically.  Empty containers are not valid.
+		 */
 		slurm_mutex_lock(&thread_mutex);
 		if (threadid) {
 			debug("Had a thread already 0x%08lx", threadid);
@@ -173,19 +175,19 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 			slurm_mutex_unlock(&notify_mutex);
 			debug("Last thread done 0x%08lx", threadid);
 		}
-		/* We have to lock the notify_mutex here since the
-		   thread could possibly signal things before we
-		   started waiting for it.
 
-		*/
+		/*
+		 * We have to lock the notify_mutex here since the
+		 * thread could possibly signal things before we
+		 * started waiting for it.
+		 */
 		slurm_mutex_lock(&notify_mutex);
 		slurm_thread_create(&threadid, _create_container_thread, job);
 		slurm_cond_wait(&notify, &notify_mutex);
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
 		if (job->cont_id != (jid_t)-1)
-			debug("proctrack_p_create: created jid "
-			      "0x%08lx thread 0x%08lx",
+			debug("proctrack_p_create: created jid 0x%08lx thread 0x%08lx",
 			      job->cont_id, threadid);
 	} else
 		error("proctrack_p_create: already have a cont_id");
@@ -197,11 +199,13 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-/* NOTE: This function is called after slurmstepd spawns all user tasks.
+/*
+ * NOTE: This function is called after slurmstepd spawns all user tasks.
  * Since the slurmstepd was placed in the job container when the container
  * was created and all of it's spawned tasks are placed into the container
  * when forked, all we need to do is remove the slurmstepd from the container
- * (once) at this time. */
+ * (once) at this time.
+ */
 int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 {
 #ifdef HAVE_NATIVE_CRAY
@@ -244,7 +248,7 @@ try_again:
 
 #ifdef HAVE_NATIVE_CRAY
 	// Set apid for this pid
-	if (job_setapid(pid, SLURM_ID_HASH(job->jobid, job->stepid)) == -1) {
+	if (job_setapid(pid, SLURM_ID_HASH(job->jobid, job->stepid)) == -1) {	//
 		error("Failed to set pid %d apid: %m", pid);
 		return SLURM_ERROR;
 	}
@@ -301,8 +305,9 @@ int proctrack_p_destroy(uint64_t id)
 	if (!threadid)
 		job_waitjid((jid_t) id, &status, 0);
 
-	/*  Assume any error means job doesn't exist. Therefore,
-	 *   return SUCCESS to slurmd so it doesn't retry continuously
+	/*
+	 * Assume any error means job doesn't exist. Therefore,
+	 * return SUCCESS to slurmd so it doesn't retry continuously
 	 */
 	END_TIMER;
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
@@ -366,11 +371,12 @@ int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		pidcnt = job_getpidlist((jid_t)cont_id, p, bufsize);
 		if (pidcnt == -1) {
 			int rc = SLURM_SUCCESS;
-			/* There is a possiblity for a race condition
-			   where if the last task in the job exits
-			   between job_getpidcnt and job_getpidlist.
-			   That is ok, so just return SUCCESS;
-			*/
+			/*
+			 * There is a possiblity for a race condition
+			 * where if the last task in the job exits
+			 * between job_getpidcnt and job_getpidlist.
+			 * That is ok, so just return SUCCESS;
+			 */
 			if (errno != ENODATA) {
 				rc = SLURM_ERROR;
 				error("job_getpidlist() failed: %m");

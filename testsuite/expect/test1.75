@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Validate --cpu-freq is enforced when using non-numeric values
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -10,22 +10,22 @@
 # Copyright (C) 2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.
+# with Slurm; if not, write to the Free Software Foundation, Inc.
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -90,7 +90,7 @@ proc sub_job { freq } {
 	foreach option [array names this_freq] {
 		send_user "\n======= TESTING FREQUENCY/GOVERNOR $option =======\n"
 		set job_id 0
-		set srun_pid [spawn $srun -t1 --cpu-freq=$option -n$threads -w$node $file_id]
+		set srun_pid [spawn $srun -t1 --cpu-freq=$option -n$threads -w$node ./$file_id]
 		expect {
 			-re "not allowed" {
 				if {[string first $option $avail_governors] == -1} {
@@ -151,7 +151,7 @@ make_bash_script $file_id "echo SLURM_JOB_ID=\$SLURM_JOB_ID; $bin_sleep 30"
 make_bash_script $file_in "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
 
 # Identify a node that we can use and available governors
-spawn $sbatch -N1 -t1 -o/dev/null --exclusive -o $file_out $file_in
+spawn $sbatch -N1 -t1 -o/dev/null --exclusive -o $file_out ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

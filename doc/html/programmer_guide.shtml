@@ -2,6 +2,21 @@
 
 <h1><a name="top">Slurm Programmer's Guide</a></h1>
 
+<h2>Contents</h2>
+<a href="#Overview">Overview</a><br>
+<a href="#Plugins">Plugins</a><br>
+<a href="#Directory-Structure">Directory Structure</a><br>
+<a href="#Documentation">Documentation</a><br>
+<a href="#Source-Code">Source Code</a><br>
+<a href="#Source-Code-Management">Source Code Management</a><br>
+<a href="#Adding-New-Modules">Adding New Modules</a><br>
+<a href="#Compiling">Compiling</a><br>
+<a href="#Configuration">Configuration</a><br>
+<a href="#Test-Suite">Test Suite</a><br>
+<a href="#Adding-Files-and-Directories">Adding Files and Directories</a><br>
+<a href="#Tricks-of-the-Trade">Tricks of the Trade</a><br>
+
+<a id="Overview"></a>
 <h2>Overview</h2>
 
 <p>Slurm is an open source, fault-tolerant,
@@ -16,7 +31,9 @@ be easy porting targets. Code should adhere to the <a href="coding_style.pdf">
 Linux kernel coding style</a>. <i>(Some components of Slurm have been taken from
 various sources. Some of these components do not conform to the Linux kernel
 coding style. However, new code written for Slurm should follow these standards.)</i>
+<p class="footer"><a href="#top">top</a></p>
 
+<a id="Plugins"></a>
 <h2>Plugins</h2>
 
 <p>To make the use of different infrastructures possible, Slurm uses a general
@@ -34,6 +51,7 @@ types also have their own documentation available, such as
 
 <p class="footer"><a href="#top">top</a></p>
 
+<a id="Directory-Structure"></a>
 <h2>Directory Structure</h2>
 
 <p>The contents of the Slurm directory structure will be described below in increasing
@@ -65,6 +83,7 @@ are here.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
+<a id="Documentation"></a>
 <h2>Documentation</h2>
 <p>All of the documentation is in the subdirectory <b>doc</b>.
 Two directories are of particular interest:</p>
@@ -73,11 +92,13 @@ Two directories are of particular interest:</p>
 <b>doc/man</b> &mdash; contains the man pages for the APIs,
 configuration file, commands, and daemons.<br>
 <b>doc/html</b> &mdash; contains the web pages.</p>
+<p class="footer"><a href="#top">top</a></p>
 
+<a id="Source-Code"></a>
 <h2>Source Code</h2>
 
 <p>Functions are divided into several categories, each in its own subdirectory.
-The details of each directory's contents are proved below. The directories are
+The details of each directory's contents are provided below. The directories are
 as follows: </p>
 
 <p style="margin-left:.2in">
@@ -146,12 +167,15 @@ job state information.<br>
 
 <p class="footer"><a href="#top">top</a></p>
 
+<a id="Source-Code-Management"></a>
 <h2>Source Code Management</h2>
 <p>The latest code is in github:
 <a href="https://github.com/SchedMD/slurm">https://github.com/SchedMD/slurm</a>.
 Creating your own branch will make it easier to keep it synchronized
 with our work.</p>
+<p class="footer"><a href="#top">top</a></p>
 
+<a id="Adding-New-Modules"></a>
 <h2>Adding New Modules</h2>
 <p>Add the new file name to the Makefile.am file in the appropriate directory.
 Then execute autogen.sh (at the top level of the Slurm source directory).
@@ -164,12 +188,16 @@ the RPM in which the new files should be placed</p>
 to the Makefile to be built in the new directory. In summary:<br>
 <u>autogen.sh</u> translates <u>.am</u> files into <u>.in</u> files<br>
 <u>configure</u> tranlates <u>.in</u> files, adding paths and version numbers.</p>
+<p class="footer"><a href="#top">top</a></p>
 
+<a id="Compiling"></a>
 <h2>Compiling</h2>
 <p>Sending the standard output of "make" to a file makes it easier to see any
 warning or error messages:<br>
 <i>"make -j install &gt;make.out"</i></p>
+<p class="footer"><a href="#top">top</a></p>
 
+<a id="Configuration"></a>
 <h2>Configuration</h2>
 <p>Sample configuration files are included in the <b>etc</b> subdirectory.
 The <b>slurm.conf</b> can be built using a <a href="configurator.html">configuration tool</a>.
@@ -178,7 +206,9 @@ for more details.
 <b>init.d.slurm</b> is a script that determines which
 Slurm daemon(s) should execute on any node based upon the configuration file contents.
 It will also manage these daemons: starting, signaling, restarting, and stopping them.</p>
+<p class="footer"><a href="#top">top</a></p>
 
+<a id="Test-Suite"></a>
 <h2>Test Suite</h2>
 <p>The <b>testsuite</b> files use a DejaGnu framework for testing. These tests
 are very limited in scope.</p>
@@ -197,14 +227,17 @@ starting these tests.  Tests may be executed individually by name
 (e.g.  <i>test1.1</i>)
 or the full test suite may be executed with the single command <i>regression</i>.
 See <b>testsuite/expect/README</b> for more information.</p>
+<p class="footer"><a href="#top">top</a></p>
 
-
+<a id="Adding-Files-and-Directories"></a>
 <h2>Adding Files and Directories</h2>
 <p>If you are adding files and directories to Slurm, it will be necessary to
 re-build configuration files before executing the <b>configure</b> command.
 Update <b>Makefile.am</b> files as needed then execute
 <b>autogen.sh</b> before executing <b>configure</b>.
+<p class="footer"><a href="#top">top</a></p>
 
+<a id="Tricks-of-the-Trade"></a>
 <h2>Tricks of the Trade</h2>
 <h3>HAVE_FRONT_END</h3>
 <p>You can make a single node appear to Slurm as a Linux cluster by running

@@ -46,9 +46,7 @@
 /*
 ** MT safe
 */
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include "config.h"
 
@@ -101,6 +99,7 @@ strong_alias(log_oom,		slurm_log_oom);
 strong_alias(log_has_data,	slurm_log_has_data);
 strong_alias(log_flush,		slurm_log_flush);
 strong_alias(fatal,		slurm_fatal);
+strong_alias(fatal_abort,	slurm_fatal_abort);
 strong_alias(error,		slurm_error);
 strong_alias(info,		slurm_info);
 strong_alias(verbose,		slurm_verbose);
@@ -326,12 +325,10 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
 
 		if (!fp) {
-			char *errmsg = NULL;
-			xslurm_strerrorcat(errmsg);
+			char *errmsg = slurm_strerror(errno);
 			fprintf(stderr,
 				"%s: log_init(): Unable to open logfile"
 			        "`%s': %s\n", prog, logfile, errmsg);
-			xfree(errmsg);
 			rc = errno;
 			goto out;
 		}
@@ -669,7 +666,8 @@ set_idbuf(char *idbuf)
 		(void *)pthread_self());
 }
 
-/* return a heap allocated string formed from fmt and ap arglist
+/*
+ * return a heap allocated string formed from fmt and ap arglist
  * returned string is allocated with xmalloc, so must free with xfree.
  *
  * args are like printf, with the addition of the following format chars:
@@ -678,342 +676,217 @@ set_idbuf(char *idbuf)
  * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
  * - %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  *
- * simple format specifiers are handled explicitly to avoid calls to
- * vsnprintf and allow dynamic sizing of the message buffer. If a call
- * is made to vsnprintf, however, the message will be limited to 1024 bytes.
- * (inc. newline)
- *
+ * these formats are expanded first, leaving all others to be passed to
+ * vsnprintf() to complete the expansion using the ap arglist.
  */
 static char *vxstrfmt(const char *fmt, va_list ap)
 {
-	char        *buf = NULL;
-	char        *p   = NULL;
-	int         long_long = 0;
-
-	/* Growable temp buffer that starts on the stack: */
-	size_t      tmp_len = LINEBUFSIZE;
-	char        tmp_stack[tmp_len];
-	char        *tmp = tmp_stack;
+	char	*intermediate_fmt = NULL;
+	char	*out_string = NULL;
+	char	*p;
+	int	found_other_formats = 0;
 
 	while (*fmt != '\0') {
-		if ((p = (char *)strchr(fmt, '%')) == NULL) {
+		int is_our_format = 0;
+		p = (char *)strchr(fmt, '%');
+		if (p == NULL) {
 			/*
-			 * no more format sequences, append the rest of fmt and
-			 * exit the loop
+			 * no more format sequences, append the rest of
+			 * fmt and exit the loop:
 			 */
-			xstrcat(buf, fmt);
+			xstrcat(intermediate_fmt, fmt);
 			break;
-		} else {	/* *p == '%' */
-			int was_handled = 1;
+		}
+
+		/*
+		 * make sure it's one of our format specifiers, skipping
+		 * any that aren't:
+		 */
+		do {
+			switch (*(p + 1)) {
+				case 'm':
+				case 't':
+				case 'T':
+				case 'M':
+					is_our_format = 1;
+					break;
+				default:
+					found_other_formats = 1;
+					break;
+			}
+		} while (!is_our_format &&
+			 (p = (char *)strchr(p + 1, '%')));
+
+		if (is_our_format) {
+			char	*substitute = NULL;
+			char	substitute_on_stack[256];
+			int	should_xfree = 1;
 
 			/*
-			 * append from fmt to p (not including p) into buf if
-			 * there's anythere there:
+			 * p points to the leading % of one of our formats;
+			 * append anything from fmt up to p to the intermediate
+			 * format string:
 			 */
-			if (p > fmt)
-				xstrncat(buf, fmt, p - fmt);
+			xstrncat(intermediate_fmt, fmt, p - fmt);
+			fmt = p + 1;
 
-			switch (*(++p)) {
-		        case '%':	/* "%%" => "%" */
-				xstrcatchar(buf, '%');
-				break;
+			/*
+			 * fill the substitute buffer with whatever text we want
+			 * to substitute for the format sequence in question:
+			 */
+			switch (*fmt) {
 			case 'm':	/* "%m" => strerror(errno) */
-				xslurm_strerrorcat(buf);
+				substitute = slurm_strerror(errno);
+				should_xfree = 0;
 				break;
 			case 't': 	/* "%t" => locally preferred date/time*/
-				xstrftimecat(buf, "%x %X");
+				xstrftimecat(substitute,
+					     "%x %X");
 				break;
 			case 'T': 	/* "%T" => "dd, Mon yyyy hh:mm:ss off" */
-				xstrftimecat(buf, "%a, %d %b %Y %H:%M:%S %z");
+				xstrftimecat(substitute,
+					     "%a, %d %b %Y %H:%M:%S %z");
 				break;
 			case 'M':
-				if (!log)
-					xiso8601timecat(buf, true);
-				else {
-					switch (log->fmt) {
-					case LOG_FMT_ISO8601_MS:
-						/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
-						xiso8601timecat(buf, true);
-						break;
-					case LOG_FMT_ISO8601:
-						/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
-						xiso8601timecat(buf, false);
-						break;
-					case LOG_FMT_RFC5424_MS:
-						/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-						xrfc5424timecat(buf, true);
-						break;
-					case LOG_FMT_RFC5424:
-						/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-						xrfc5424timecat(buf, false);
-						break;
-					case LOG_FMT_CLOCK:
-						/* "%M" => "usec" */
+				if (!log) {
+					xiso8601timecat(substitute, true);
+					break;
+				}
+				switch (log->fmt) {
+				case LOG_FMT_ISO8601_MS:
+					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
+					xiso8601timecat(substitute, true);
+					break;
+				case LOG_FMT_ISO8601:
+					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
+					xiso8601timecat(substitute, false);
+					break;
+				case LOG_FMT_RFC5424_MS:
+					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
+					xrfc5424timecat(substitute, true);
+					break;
+				case LOG_FMT_RFC5424:
+					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
+					xrfc5424timecat(substitute, false);
+					break;
+				case LOG_FMT_CLOCK:
+					/* "%M" => "usec" */
 #if defined(__FreeBSD__)
-						snprintf(tmp, tmp_len, "%d",
-							 clock());
+					snprintf(substitute_on_stack,
+						 sizeof(substitute_on_stack),
+						 "%d", clock());
 #else
-						snprintf(tmp, tmp_len, "%ld",
-							 clock());
+					snprintf(substitute_on_stack,
+						 sizeof(substitute_on_stack),
+						 "%ld", clock());
 #endif
-						xstrcat(buf, tmp);
-						break;
-					case LOG_FMT_SHORT:
-						/* "%M" => "Mon DD hh:mm:ss" */
-						xstrftimecat(buf, "%b %d %T");
-						break;
-					case LOG_FMT_THREAD_ID:
-						set_idbuf(tmp);
-						xstrcat(buf, tmp);
-						break;
-					}
-				}
-				break;
-			case 's':	/* "%s" => append string */
-				xstrcat(buf, va_arg(ap, char *));
-				break;
-			case 'f': 	/* "%f" => append double */
-				snprintf(tmp, tmp_len, "%f",
-					va_arg(ap, double));
-				xstrcat(buf, tmp);
-				break;
-			case 'd': 	/* "%d" => append int */
-				snprintf(tmp, tmp_len, "%d",
-					va_arg(ap, int));
-				xstrcat(buf, tmp);
-				break;
-			case 'u': 	/* "%u" => append unsigned int */
-				snprintf(tmp, tmp_len, "%u",
-					va_arg(ap, unsigned));
-				xstrcat(buf, tmp);
-				break;
-			case 'l':  /* "%l.." => append with long modifier */
-				if (*(p+1) == 'l') {
-					long_long = 1;
-					p++;
-				}
-				switch (*(p + 1)) {
-				case 'u':
-					if (long_long) {
-						/* "%llu" => append long long unsigned */
-						snprintf(tmp, tmp_len,
-							"%llu",
-							va_arg(ap,
-							       long long unsigned));
-						long_long = 0;
-					} else {
-						/* "%lu" => append long unsigned */
-						snprintf(tmp, tmp_len,
-							"%lu",
-							va_arg(ap,
-							       long unsigned));
-					}
+					substitute = substitute_on_stack;
+					should_xfree = 0;
 					break;
-				case 'd':
-					if (long_long) {
-						/* "%lld" => append long long int */
-						snprintf(tmp, tmp_len,
-							"%lld",
-							va_arg(ap,
-							long long int));
-						long_long = 0;
-					} else {
-						/* "%ld" => append long int */
-						snprintf(tmp, tmp_len,
-							"%ld",
-							va_arg(ap, long int));
-					}
+				case LOG_FMT_SHORT:
+					/* "%M" => "Mon DD hh:mm:ss" */
+					xstrftimecat(substitute, "%b %d %T");
 					break;
-
-				case 'f':
-					if (long_long) {
-						/* "%llf" behavior iffy, let vsnprintf() do it */
-						was_handled = 0;
-						long_long = 0;
-					} else {
-						/* "%lf" => append double */
-						snprintf(tmp, tmp_len,
-							"%lf",
-							va_arg(ap, double));
-					}
-					break;
-				case 'x':
-					if (long_long) {
-						/* "%llx" => append long long int (hexadecimal) */
-						snprintf(tmp, tmp_len,
-							"%llx",
-							va_arg(ap,
-							long long int));
-						long_long = 0;
-					} else {
-						/* "%lx" => append long int (hexadecimal) */
-						snprintf(tmp, tmp_len,
-						"%lx",
-						va_arg(ap, long int));
-					}
-					break;
-
-				default:
-					/* "%l..." isn't one we know, let vsnprintf() do it */
-					was_handled = 0;
+				case LOG_FMT_THREAD_ID:
+					set_idbuf(substitute_on_stack);
+					substitute = substitute_on_stack;
+					should_xfree = 0;
 					break;
 				}
-				if ( was_handled ) {
-					/*
-					 * One of the shortcuts above took care
-					 * of this, so append its output to
-					 * buf and move along:
-					 */
-					xstrcat(buf, tmp);
-					p++;
-				}  else if (long_long)
-					p--;
-				break;
-			case 'L':
-				if (*(p+1)=='f') {
-					snprintf(tmp, tmp_len, "%Lf",
-						va_arg(ap, long double));
-					xstrcat(buf, tmp);
-					p++;
-				} else {
-					was_handled = 0;
-				}
-				break;
-			default:
-				was_handled = 0;
 				break;
 			}
-			if (!was_handled) {
-				/*
-				 * Anything we don't explicitly process should
-				 * be passed to vsnprintf() to be handled now.
-				 */
-				va_list       ap_local;
-				char          *p_end = strchr(p, '%');
-				char          *fmt_local;
-				int        output_len;
+			fmt++;
 
-				va_copy(ap_local, ap);
-				if (!p_end) {
-					fmt_local = p - 1;
-				} else {
-					fmt_local = xstrndup(p - 1, p_end - p + 1);
-					if (fmt_local == NULL) {
-						/*
-						 * We must be outta memory...
-						 * guess we're all done.
-						 */
-						break;
-					}
+			if (substitute) {
+				char *s = substitute;
+
+				while (*s && (p = (char *)strchr(s, '%'))) {
+					/* append up through the '%' */
+					xstrncat(intermediate_fmt, s, p - s);
+					xstrcat(intermediate_fmt, "%%");
+					s = p + 1;
+				}
+				if (*s) {
+					/* append whatever's left of the substitution: */
+					xstrcat(intermediate_fmt, s);
 				}
 
-				/*
-				 * Given our current tmp buffer, try the
-				 * vsnprintf().  Use ap so that we've advanced
-				 * it beyond these arguments no matter what.
-				 */
-				output_len = vsnprintf(tmp, tmp_len, fmt_local, ap);
-				if ((output_len > -1) &&
-				    (output_len < tmp_len)) {
-					/* We had enough space, hurray! */
-				} else if (output_len >= tmp_len) {
-					/*
-					 * If we're lucky enough to be using a C
-					 * library that returns a target length
-					 * for the vsnprintf(), then allocate
-					 * that much space and get out quickly.
-					 *
-					 * glibc >= 2.1 has this behavior,
-					 * previous versions do not
-					 */
-					char      *tmp_new = NULL;
-					size_t    tmp_new_len = output_len + 1;
-
-					/* Match tmp_new_len to a multiple of LINEBUFSIZE */
-					tmp_new_len = (tmp_new_len / LINEBUFSIZE) +
-						      ((tmp_new_len % LINEBUFSIZE) ? 1 : 0);
-					tmp_new_len *= LINEBUFSIZE;
-
-					if (tmp != tmp_stack) {
-						tmp_new = xrealloc(tmp,
-								   tmp_new_len);
-					} else {
-						tmp_new = xmalloc(tmp_new_len);
-					}
-					if (tmp_new) {
-						tmp = tmp_new;
-						tmp_len = tmp_new_len;
-					}
-					vsnprintf(tmp, tmp_len, fmt_local,
-						  ap_local);
-				} else {
-					/*
-					 * We'll need to iteratively increase
-					 * the size of the tmp buffer until
-					 * vsnprintf() succeeds.
-					 */
-					int done = 0;
-					do {
-						va_list   ap_copy;
-						size_t    tmp_new_len;
-						char      *tmp_new;
-
-						tmp_new_len = tmp_len +
-							      LINEBUFSIZE;
-						if (tmp != tmp_stack) {
-							tmp_new = xrealloc(tmp,
-								tmp_new_len);
-						} else {
-							tmp_new = xmalloc(tmp_new_len);
-						}
-						if (tmp_new) {
-							tmp = tmp_new;
-							tmp_len = tmp_new_len;
-						} else {
-							done = 1;
-						}
-						va_copy(ap_copy, ap_local);
-						output_len = vsnprintf(tmp,
-								tmp_len,
-								fmt_local,
-								ap_copy);
-						va_end(ap_copy);
-
-						if ((output_len > -1) &&
-						    (output_len < tmp_len))
-							done = 1;
-					} while (!done);
+				/* deallocate substitute if necessary: */
+				if (should_xfree) {
+					xfree(substitute);
 				}
-				/*
-				 * Whatever was produced in tmp,
-				 * add it to our output string:
-				 */
-				xstrcat(buf, tmp);
-				/* Dealloc any local copy of the format substring: */
-				if (fmt_local != p - 1)
-					xfree(fmt_local);
-				/* Cleanup our stashed var arg state copy: */
-				va_end(ap_local);
-				if (!p_end) {
-					/* All done, exit the loop: */
-					break;
-				}
-
-				/*
-				 * Start next iteration on the next format
-				 * sequence we already found:
-				 */
-				fmt = p_end;
-				continue;
 			}
+		} else {
+			/*
+			 * no more format sequences for us, append the rest of
+			 * fmt and exit the loop:
+			 */
+			xstrcat(intermediate_fmt, fmt);
+			break;
 		}
-		fmt = p + 1;
 	}
 
-	/* Did we end up allocating tmp on the heap? */
-	if (tmp != tmp_stack)
-		xfree(tmp);
-	return buf;
+	if (intermediate_fmt && found_other_formats) {
+		char	tmp[LINEBUFSIZE];
+		int	actual_len;
+		va_list	ap_copy;
+
+		va_copy(ap_copy, ap);
+		actual_len = vsnprintf(tmp, sizeof(tmp),
+				       intermediate_fmt, ap_copy);
+		va_end(ap_copy);
+
+		if (actual_len >= 0) {
+			if (actual_len < sizeof(tmp)) {
+				out_string = xstrdup(tmp);
+			} else {
+				/*
+				 * our C library's vsnprintf() was nice enough
+				 * to return the necessary size of the buffer!
+				 */
+				out_string = xmalloc(actual_len + 1);
+				if (out_string) {
+					va_copy(ap_copy, ap);
+					vsnprintf(out_string, actual_len + 1,
+						  intermediate_fmt, ap_copy);
+					va_end(ap_copy);
+				}
+			}
+		} else {
+			size_t	growable_tmp_size = LINEBUFSIZE;
+			char	*growable_tmp = NULL;
+
+			/*
+			 * our C library's vsnprintf() doesn't return the
+			 * necessary buffer size on overflow, it considers that
+			 * an error condition.  So we need to iteratively grow
+			 * a buffer until it accommodates the vsnprintf() call
+			 */
+			do {
+				growable_tmp_size += LINEBUFSIZE;
+				growable_tmp = xrealloc(growable_tmp,
+							growable_tmp_size);
+				if (!growable_tmp)
+					break;
+				va_copy(ap_copy, ap);
+				actual_len = vsnprintf(growable_tmp,
+						       growable_tmp_size,
+						       intermediate_fmt,
+						       ap_copy);
+				va_end(ap_copy);
+			} while (actual_len < 0);
+			out_string = growable_tmp;
+		}
+		xfree(intermediate_fmt);
+	} else if (intermediate_fmt) {
+		/*
+		 * no additional format sequences, so we can just return the
+		 * intermediate_fmt string
+		 */
+		out_string = intermediate_fmt;
+	}
+
+	return out_string;
 }
 
 /*
@@ -1117,7 +990,6 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 			pfx = "error: ";
 			break;
 
-		case LOG_LEVEL_SCHED:
 		case LOG_LEVEL_INFO:
 		case LOG_LEVEL_VERBOSE:
 			priority = LOG_INFO;
@@ -1188,10 +1060,13 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 	if (level <=  log->opt.syslog_level) {
 
+		/* Avoid changing errno if syslog fails */
+		int orig_errno = slurm_get_errno();
 		xlogfmtcat(&msgbuf, "%s%s", pfx, buf);
 		openlog(log->argv0, LOG_PID, log->facility);
 		syslog(priority, "%.500s", msgbuf);
 		closelog();
+		slurm_seterrno(orig_errno);
 
 		xfree(msgbuf);
 	}
@@ -1245,6 +1120,21 @@ void fatal(const char *fmt, ...)
 	log_flush();
 
 	exit(1);
+}
+
+/*
+ * attempt to log message and exit()
+ */
+void fatal_abort(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	log_msg(LOG_LEVEL_FATAL, fmt, ap);
+	va_end(ap);
+	log_flush();
+
+	abort();
 }
 
 int error(const char *fmt, ...)
@@ -1326,15 +1216,6 @@ void debug5(const char *fmt, ...)
 
 	va_start(ap, fmt);
 	log_msg(LOG_LEVEL_DEBUG5, fmt, ap);
-	va_end(ap);
-}
-
-void schedlog(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_SCHED, fmt, ap);
 	va_end(ap);
 }
 

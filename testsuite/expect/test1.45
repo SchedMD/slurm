@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test that a job correctly uses the -E or --preserve-env flag.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -13,22 +13,22 @@
 # Written by Dave Bremer <dbremer@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -50,9 +50,6 @@ print_header $test_id
 
 if {[test_alps]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-} elseif { [test_xcpu] } {
-	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit $exit_code
 } elseif {[test_serial]} {
 	set min_nodes	1
@@ -119,7 +116,7 @@ if {[wait_for_file $file_out] != 0} {
 set index 0
 spawn $bin_cat $file_out
 expect {
-	-re "($number)\r\n" {
+	-re "^($number)\r\n" {
 		incr index
 		if {$index == 1} {set num_nodes_test1 $expect_out(1,string)}
 		if {$index == 2} {set num_nodes_test2 $expect_out(1,string)}
@@ -129,12 +126,17 @@ expect {
 		if {$index == 6} {set num_procs_test3 $expect_out(1,string)}
 		exp_continue
 	}
+	# If the step creation was delayed this message is listed.
+	# Checking for it here will skip over the warning so we can get the
+	# real value.  I would say this is a bug in expect, but without this
+	# check we don't always get what we need.
+	-re "Step created for job $number\r\n" {
+		exp_continue
+	}
 	eof {
 		wait
 	}
 }
-
-
 
 if {$num_nodes_test1 != $num_nodes_test2} {
 	send_user "\nFAILURE: SLURM_NNODES was not preserved ($num_nodes_test1 != $num_nodes_test2)\n"
@@ -147,12 +149,8 @@ if {$num_procs_test1 != $num_procs_test2} {
 }
 
 if {$num_nodes_test3 != 1} {
-	if { [test_bluegene] } {
-		send_user "\nWARNING: Can not confirm SLURM_NNODES value, likely expanded to smallest block size\n"
-	} else {
-		send_user "\nFAILURE: SLURM_NNODES should be 1 ($num_nodes_test3 != 1)\n"
-		set exit_code 1
-	}
+	send_user "\nFAILURE: SLURM_NNODES should be 1 ($num_nodes_test3 != 1)\n"
+	set exit_code 1
 }
 
 if {$num_procs_test3 != 1} {

@@ -7,11 +7,11 @@
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -216,6 +216,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_select_jobinfo)
 #define job_format_add_admin_comment(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_admin_comment)
+#define job_format_add_system_comment(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_system_comment)
 #define job_format_add_comment(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_comment)
 #define job_format_add_reservation(list,wid,right,suffix) \
@@ -311,8 +313,24 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_min_time)
 #define job_format_add_wait4switch(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_wait4switch)
-#define job_format_add_tres(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_tres)
+#define job_format_add_cpus_per_tres(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_cpus_per_tres)
+#define job_format_add_mem_per_tres(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_mem_per_tres)
+#define job_format_add_tres_alloc(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_alloc)
+#define job_format_add_tres_bind(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_bind)
+#define job_format_add_tres_freq(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_freq)
+#define job_format_add_tres_per_job(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_per_job)
+#define job_format_add_tres_per_node(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_per_node)
+#define job_format_add_tres_per_socket(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_per_socket)
+#define job_format_add_tres_per_task(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres_per_task)
 #define job_format_add_mcs_label(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_mcs_label)
 
@@ -439,6 +457,8 @@ int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 			      char* suffix);
 int _print_job_admin_comment(job_info_t * job, int width, bool right_justify,
 			     char* suffix);
+int _print_job_system_comment(job_info_t * job, int width, bool right_justify,
+			      char* suffix);
 int _print_job_comment(job_info_t * job, int width, bool right_justify,
 		       char* suffix);
 int _print_job_reservation(job_info_t * job, int width, bool right_justify,
@@ -523,8 +543,24 @@ int _print_job_min_time(job_info_t * job, int width,
 			bool right_justify, char* suffix);
 int _print_job_wait4switch(job_info_t * job, int width,
 			   bool right_justify, char* suffix);
-int _print_job_tres(job_info_t * job, int width,
-		    bool right_justify, char *suffix);
+int _print_job_cpus_per_tres(job_info_t * job, int width,
+			     bool right_justify, char *suffix);
+int _print_job_mem_per_tres(job_info_t * job, int width,
+			    bool right_justify, char *suffix);
+int _print_job_tres_alloc(job_info_t * job, int width,
+			  bool right_justify, char *suffix);
+int _print_job_tres_bind(job_info_t * job, int width,
+			 bool right_justify, char *suffix);
+int _print_job_tres_freq(job_info_t * job, int width,
+			 bool right_justify, char *suffix);
+int _print_job_tres_per_job(job_info_t * job, int width,
+			    bool right_justify, char *suffix);
+int _print_job_tres_per_node(job_info_t * job, int width,
+			     bool right_justify, char *suffix);
+int _print_job_tres_per_socket(job_info_t * job, int width,
+			       bool right_justify, char *suffix);
+int _print_job_tres_per_task(job_info_t * job, int width,
+			     bool right_justify, char *suffix);
 int _print_job_mcs_label(job_info_t * job, int width,
 			 bool right_justify, char* suffix);
 int _print_job_pack_job_id(job_info_t * job, int width,
@@ -571,9 +607,6 @@ int step_format_add_function(List list, int width, bool right_justify,
 #define step_format_add_invalid(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,	\
 				 (void*)_print_com_invalid)
-
-
-
 #define step_format_add_array_job_id(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_array_job_id)
 #define step_format_add_array_task_id(list,wid,right,suffix) \
@@ -598,8 +631,22 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_resv_ports)
 #define step_format_add_step_state(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_state)
-
-
+#define step_format_add_cpus_per_tres(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_cpus_per_tres)
+#define step_format_add_mem_per_tres(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_mem_per_tres)
+#define step_format_add_tres_bind(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_bind)
+#define step_format_add_tres_freq(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_freq)
+#define step_format_add_tres_per_job(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_job)
+#define step_format_add_tres_per_node(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_node)
+#define step_format_add_tres_per_socket(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_socket)
+#define step_format_add_tres_per_task(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_task)
 
 // finish adding macros and function headers in the .h file.
 
@@ -654,6 +701,22 @@ int _print_step_resv_ports(job_step_info_t * step, int width, bool right,
 			   char* suffix);
 int _print_step_state(job_step_info_t * step, int width, bool right,
 		      char* suffix);
+int _print_step_cpus_per_tres(job_step_info_t * step, int width, bool right,
+			      char* suffix);
+int _print_step_mem_per_tres(job_step_info_t * step, int width, bool right,
+			     char* suffix);
+int _print_step_tres_bind(job_step_info_t * step, int width, bool right,
+			  char* suffix);
+int _print_step_tres_freq(job_step_info_t * step, int width, bool right,
+			  char* suffix);
+int _print_step_tres_per_job(job_step_info_t * step, int width, bool right,
+			     char* suffix);
+int _print_step_tres_per_node(job_step_info_t * step, int width, bool right,
+			      char* suffix);
+int _print_step_tres_per_socket(job_step_info_t * step, int width, bool right,
+				char* suffix);
+int _print_step_tres_per_task(job_step_info_t * step, int width, bool right,
+			      char* suffix);
 
 /*****************************************************************************
  * Common Line Print Functions

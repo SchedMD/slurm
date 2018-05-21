@@ -8,22 +8,22 @@
  *  Written by Morris Jette <jette@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -98,27 +98,12 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACTION, "Action", false, EDIT_MODEL,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_CNT,
-#ifdef HAVE_BG
-	 "Midplane Count",
-#else
-	 "Node Count",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_CORE_CNT,
-#ifdef HAVE_BG
-	 "Cnode Count",
-#else
-	 "Core Count",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODELIST,
-#ifdef HAVE_BG
-	 "MidplaneList",
-#else
-	 "Node List",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODE_CNT, "Node Count", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_CORE_CNT, "Core Count", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODELIST, "Node List", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_END, "Time End", false, EDIT_TEXTBOX,
@@ -157,30 +142,13 @@ static display_data_t create_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NAME, "Name", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_CNT,
-#ifdef HAVE_BG
-	 "Midplane_Count",
-#else
-	 "Node_Count",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_CORE_CNT,
-#ifdef HAVE_BG
-	 "Cnode_Count",
-#else
-	 "Core_Count",
-#endif
-	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODELIST,
-#ifdef HAVE_BG
-	 "Midplane_List",
-#else
-	 "Node_List",
-#endif
-	 false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_NODE_CNT, "Node_Count", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TIME_START, "Time_Start",
-	 false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_CORE_CNT, "Core_Count", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODELIST, "Node_List", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TIME_START, "Time_Start", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_END, "Time_End", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -212,16 +180,9 @@ static display_data_t options_data_resv[] = {
 	{G_TYPE_STRING, RESV_PAGE, "Edit Reservation", true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", true, RESV_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partitions", true, RESV_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", true, RESV_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Midplanes", true, RESV_PAGE},
-#else
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, RESV_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, RESV_PAGE},
-#endif
 	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
-
 
 static display_data_t *local_display_data = NULL;
 static char *got_edit_signal = NULL;
@@ -260,7 +221,6 @@ end_it:
 
 }
 
-
 /* don't free this char */
 static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 				 const char *new_text,
@@ -273,7 +233,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	int free_tres_corecnt = 0;
 	int free_tres_nodecnt = 0;
 	int temp_int = 0;
-	uint32_t f;
+	uint64_t f;
 
 	/* need to clear global_edit_error here (just in case) */
 	global_edit_error = 0;
@@ -298,10 +258,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "burst_buffer";
 		break;
 	case SORTID_CORE_CNT:
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			type = "Cnode Count";
-		else
-			type = "Core Count";
+		type = "Core Count";
 		if (state_control_corecnt_supported() != SLURM_SUCCESS) {
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
@@ -336,7 +293,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	case SORTID_FLAGS:
 		f = parse_resv_flags(new_text, __func__);
 		type = "flags";
-		if (f == (uint32_t)NO_VAL)
+		if (f == NO_VAL)
 			goto return_error;
 		resv_msg->flags = f;
 		break;
@@ -349,10 +306,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "name";
 		break;
 	case SORTID_NODE_CNT:
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			type = "Midplane Count";
-		else
-			type = "Node Count";
+		type = "Node Count";
 		if (parse_resv_nodecnt(resv_msg, (char *)new_text,
 				       &free_tres_nodecnt, false,
 				       &err_msg) == SLURM_ERROR) {
@@ -365,10 +319,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		break;
 	case SORTID_NODELIST:
 		resv_msg->node_list = xstrdup(new_text);
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			type = "Midplane List";
-		else
-			type = "Node List";
+		type = "Node List";
 		break;
 	case SORTID_PARTITION:
 		resv_msg->partition = xstrdup(new_text);
@@ -1374,7 +1325,6 @@ display_it:
 		resv_ptr = sview_resv_info_ptr->resv_ptr;
 		switch(spec_info->type) {
 		case PART_PAGE:
-		case BLOCK_PAGE:
 		case NODE_PAGE:
 			if (!resv_ptr->node_list)
 				continue;
@@ -1493,16 +1443,7 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		snprintf(title, 100, "Job(s) in reservation %s", name);
 		break;
 	case NODE_PAGE:
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			snprintf(title, 100,
-				 "Midplane(s) in reservation %s",
-				 name);
-		else
-			snprintf(title, 100, "Node(s) in reservation %s ",
-				 name);
-		break;
-	case BLOCK_PAGE:
-		snprintf(title, 100, "Block(s) in reservation %s", name);
+		snprintf(title, 100, "Node(s) in reservation %s ", name);
 		break;
 	case SUBMIT_PAGE:
 		snprintf(title, 100, "Submit job in reservation %s", name);
@@ -1547,7 +1488,6 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		popup_win->spec_info->search_info->gchar_data = name;
 		//specific_info_job(popup_win);
 		break;
-	case BLOCK_PAGE:
 	case NODE_PAGE:
 	case PART_PAGE:
 		g_free(name);
@@ -1730,52 +1670,5 @@ end_it:
 
 extern void cluster_change_resv(void)
 {
-	display_data_t *display_data = display_data_resv;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
-			case SORTID_NODELIST:
-				display_data->name = "MidplaneList";
-				break;
-			default:
-				break;
-			}
-		} else {
-			switch(display_data->id) {
-			case SORTID_NODELIST:
-				display_data->name = "NodeList";
-				break;
-			default:
-				break;
-			}
-		}
-	}
-	display_data = options_data_resv;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = "Blocks";
-				break;
-			case NODE_PAGE:
-				display_data->name = "Midplanes";
-				break;
-			}
-		} else {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = NULL;
-				break;
-			case NODE_PAGE:
-				display_data->name = "Nodes";
-				break;
-			}
-		}
-	}
 	get_info_resv(NULL, NULL);
 }

@@ -1,40 +1,41 @@
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          to be called from test21.30
 #          Tests if the GrpJob limit is enforced
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
 # Test GrpJob limits
 proc inc21_30_3 {} {
 
-	global salloc srun acct bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grjobs_num
+	global salloc scontrol srun acct alpha bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grjobs_num
 
 	send_user "\nStarting GrpJob limit test (Within: inc21.30.3)\n\n"
 	set check_num $grjobs_num
 
 	set jobmatch 0
 	for {set inx 0} {$inx <= $check_num} {incr inx} {
+		set test_reason 0
 		spawn $salloc --account=$acct -n1 -t1 $srun $bin_sleep 60
 		expect {
 			-re "Granted job allocation ($number)" {
@@ -53,8 +54,7 @@ proc inc21_30_3 {} {
 					send_user "\nJob $inx $job_id($inx) is waiting for resources. This is expected. (Within: inc21.30.3)\n"
 					incr jobmatch
 				} else {
-					send_user "\nFAILURE: Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num? (Within: inc21.30.3)\n"
-					set exit_code 1
+					set test_reason 1
 				}
 			}
 			-re "error" {
@@ -69,6 +69,29 @@ proc inc21_30_3 {} {
 				wait
 			}
 		}
+
+#		Job is waiting, check if the reason is the limit we are testing for
+		if {$test_reason != 0 && $job_id($inx) != 0} {
+			spawn $scontrol show job $job_id($inx)
+			expect {
+				-re "Reason=($alpha)" {
+					if {[string compare $expect_out(1,string) "QOSGrpJobsLimit"]} {
+						send_user "\nFAILURE: Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num? (Within: inc21.30.3)\n"
+						set exit_code 1
+					} else {
+						incr jobmatch
+					}
+					exp_continue
+				}
+				timeout {
+					send_user "\nFAILURE: scontrol is not responding. (Within: inc21.30.3)\n"
+					set exit_code 1
+				}
+				eof {
+					wait
+				}
+			}
+		}
 	}
 
 	set target_jobs [expr $check_num + 1]
@@ -79,7 +102,7 @@ proc inc21_30_3 {} {
 
 	# Checks the job state
 	if [info exists job_id($check_num)] {
-		check_state $job_id($check_num)
+		check_job_state $job_id($check_num) PENDING
 	} else {
 		send_user "\nFAILURE: didn't attempt to start enough jobs. (Within: inc21.30.3)\n"
 		set exit_code 1

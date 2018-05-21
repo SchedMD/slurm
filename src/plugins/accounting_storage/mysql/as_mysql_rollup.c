@@ -8,11 +8,11 @@
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -87,7 +87,7 @@ typedef struct {
 	List loc_tres;
 	time_t orig_start;
 	time_t start;
-	int unused_wall;
+	double unused_wall;
 } local_resv_usage_t;
 
 static void _destroy_local_tres_usage(void *object)
@@ -240,6 +240,55 @@ static void _add_time_tres_list(List tres_list_out, List tres_list_in, int type,
 	list_iterator_destroy(itr);
 }
 
+/*
+ * Job usage is a ratio of its tres to the reservation's tres:
+ * Unused wall = unused wall - job_seconds * job_tres / resv_tres
+ */
+static int _update_unused_wall(local_resv_usage_t *r_usage, List job_tres,
+			       int job_seconds)
+{
+	ListIterator resv_itr;
+	local_tres_usage_t *loc_tres;
+	uint32_t resv_tres_id;
+	uint64_t resv_tres_count;
+	double tres_ratio = 0.0;
+
+	/* Get TRES counts. Make sure the TRES types match. */
+	resv_itr = list_iterator_create(r_usage->loc_tres);
+	while ((loc_tres = list_next(resv_itr))) {
+		/* Avoid dividing by zero. */
+		if (!loc_tres->count)
+			continue;
+		resv_tres_id = loc_tres->id;
+		resv_tres_count = loc_tres->count;
+		if ((loc_tres = list_find_first(job_tres,
+						_find_loc_tres,
+						&resv_tres_id))) {
+			tres_ratio = (double)loc_tres->count /
+				(double)resv_tres_count;
+			break;
+		}
+	}
+	list_iterator_destroy(resv_itr);
+
+	/*
+	 * Here we are converting TRES seconds to wall seconds.  This is needed
+	 * to determine how much time is actually idle in the reservation.
+	 */
+	r_usage->unused_wall -=	(double)job_seconds * tres_ratio;
+
+	if (r_usage->unused_wall < 0) {
+		/*
+		 * With a Flex reservation you can easily have more time than is
+		 * possible.  Just print this debug3 warning if it happens.
+		 */
+		debug3("WARNING: Unused wall is less than zero; this should never happen outside a Flex reservation. Setting it to zero for resv id = %d, start = %ld.",
+		       r_usage->id, r_usage->orig_start);
+		r_usage->unused_wall = 0;
+	}
+	return SLURM_SUCCESS;
+}
+
 static void _add_job_alloc_time_to_cluster(List c_tres_list, List j_tres)
 {
 	ListIterator c_itr = list_iterator_create(c_tres_list);
@@ -315,7 +364,7 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 /* This will destroy the *loc_tres given after it is transfered */
 static void _transfer_loc_tres(List *loc_tres, local_id_usage_t *usage)
 {
-	if (!usage || !*loc_tres || !list_count(*loc_tres)) {
+	if (!usage || !*loc_tres) {
 		FREE_NULL_LIST(*loc_tres);
 		return;
 	}
@@ -1378,13 +1427,12 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 							r_usage->loc_tres,
 							loc_tres, TIME_ALLOC,
 							loc_seconds, 1);
-						if (r_usage->unused_wall >=
-						    loc_seconds)
-							r_usage->unused_wall -=
-								loc_seconds;
-						else
-							r_usage->unused_wall =
-								0;
+						if ((rc = _update_unused_wall(
+							     r_usage,
+							     loc_tres,
+							     loc_seconds))
+						    != SLURM_SUCCESS)
+							goto end_it;
 					}
 				}
 
@@ -1475,7 +1523,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			ListIterator t_itr;
 			local_tres_usage_t *loc_tres;
 
-			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%u where id_resv=%u and time_start=%ld;",
+			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%f where id_resv=%u and time_start=%ld;",
 				   cluster_name, resv_table,
 				   r_usage->unused_wall, r_usage->id,
 				   r_usage->orig_start);

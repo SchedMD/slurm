@@ -7,11 +7,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -269,6 +269,10 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			if (resp->error_code != SLURM_SUCCESS)
 				info("%s", slurm_strerror(resp->error_code));
 			/* no, we need to wait for a response */
+
+			/* print out any user messages before we wait. */
+			print_multi_line_string(resp->job_submit_user_msg, -1);
+
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
 			if (pending_callback != NULL)
@@ -334,11 +338,21 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	will_run_response_msg_t *earliest_resp = NULL;
 	load_willrun_resp_struct_t *tmp_resp;
 	slurmdb_cluster_rec_t *cluster;
+	List req_clusters = NULL;
 
 	xassert(req);
 	xassert(will_run_resp);
 
 	*will_run_resp = NULL;
+
+	/*
+	 * If a subset of clusters was specified then only do a will_run to
+	 * those clusters, otherwise check all clusters in the federation.
+	 */
+	if (req->clusters && xstrcasecmp(req->clusters, "all")) {
+		req_clusters = list_create(slurm_destroy_char);
+		slurm_addto_char_list(req_clusters, req->clusters);
+	}
 
 	/* Spawn one pthread per cluster to collect job information */
 	resp_msg_list = list_create(NULL);
@@ -350,6 +364,11 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 		    (cluster->control_host[0] == '\0'))
 			continue;	/* Cluster down */
 
+		if (req_clusters &&
+		    !list_find_first(req_clusters, slurm_find_char_in_list,
+				     cluster->name))
+			continue;
+
 		load_args = xmalloc(sizeof(load_willrun_req_struct_t));
 		load_args->cluster       = cluster;
 		load_args->req           = req;
@@ -359,6 +378,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 		pthread_count++;
 	}
 	list_iterator_destroy(iter);
+	FREE_NULL_LIST(req_clusters);
 
 	/* Wait for all pthreads to complete */
 	for (i = 0; i < pthread_count; i++)
@@ -396,7 +416,6 @@ static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 {
 	resource_allocation_response_msg_t *alloc;
 	uint32_t inx = 0, pack_node_cnt = 0, pack_job_id = 0;
-	char *buf, *ptrptr = NULL, *line;
 	ListIterator iter;
 
 	xassert(resp);
@@ -405,15 +424,7 @@ static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 		pack_node_cnt += alloc->node_cnt;
 		if (pack_job_id == 0)
 			pack_job_id = alloc->job_id;
-		if (alloc->job_submit_user_msg) {
-			buf = xstrdup(alloc->job_submit_user_msg);
-			line = strtok_r(buf, "\n", &ptrptr);
-			while (line) {
-				info("%d: %s", inx, line);
-				line = strtok_r(NULL, "\n", &ptrptr);
-			}
-			xfree(buf);
-		}
+		print_multi_line_string(alloc->job_submit_user_msg, inx);
 		inx++;
 	}
 	list_iterator_destroy(iter);
@@ -610,16 +621,9 @@ int slurm_job_will_run(job_desc_msg_t *req)
 	else
 		rc = slurm_job_will_run2(req, &will_run_resp);
 
-	if (will_run_resp && will_run_resp->job_submit_user_msg) {
-		char *line = NULL, *buf = NULL, *ptrptr = NULL;
-		buf = xstrdup(will_run_resp->job_submit_user_msg);
-		line = strtok_r(buf, "\n", &ptrptr);
-		while (line) {
-			info("%s", line);
-			line = strtok_r(NULL, "\n", &ptrptr);
-		}
-		xfree(buf);
-	}
+	if (will_run_resp)
+		print_multi_line_string(
+			will_run_resp->job_submit_user_msg, -1);
 
 	if ((rc == 0) && will_run_resp) {
 		if (cluster_flags & CLUSTER_FLAG_BG)
@@ -691,16 +695,9 @@ extern int slurm_pack_job_will_run(List job_req_list)
 		will_run_resp = NULL;
 		rc = slurm_job_will_run2(req, &will_run_resp);
 
-		if (will_run_resp && will_run_resp->job_submit_user_msg) {
-			char *line = NULL, *buf = NULL, *ptrptr = NULL;
-			buf = xstrdup(will_run_resp->job_submit_user_msg);
-			line = strtok_r(buf, "\n", &ptrptr);
-			while (line) {
-				info("%d: %s", inx, line);
-				line = strtok_r(NULL, "\n", &ptrptr);
-			}
-			xfree(buf);
-		}
+		if (will_run_resp)
+			print_multi_line_string(
+				will_run_resp->job_submit_user_msg, inx);
 
 		if ((rc == SLURM_SUCCESS) && will_run_resp) {
 			if (first_job_id == 0)
@@ -1013,11 +1010,11 @@ _handle_rc_msg(slurm_msg_t *msg)
 }
 
 /*
- * Read a SLURM hostfile specified by "filename".  "filename" must contain
- * a list of SLURM NodeNames, one per line.  Reads up to "n" number of hostnames
+ * Read a Slurm hostfile specified by "filename".  "filename" must contain
+ * a list of Slurm NodeNames, one per line.  Reads up to "n" number of hostnames
  * from the file. Returns a string representing a hostlist ranged string of
  * the contents of the file.  This is a helper function, it does not
- * contact any SLURM daemons.
+ * contact any Slurm daemons.
  *
  * Returns a string representing the hostlist.  Returns NULL if there are fewer
  * than "n" hostnames in the file, or if an error occurs.  If "n" ==
@@ -1033,8 +1030,8 @@ char *slurm_read_hostfile(char *filename, int n)
 	int line_size;
 	int line_num = 0;
 	hostlist_t hostlist = NULL;
-	char *nodelist = NULL;
-	char *asterisk, *tmp_text, *save_ptr = NULL, *host_name;
+	char *nodelist = NULL, *end_part = NULL;
+	char *asterisk, *tmp_text = NULL, *save_ptr = NULL, *host_name;
 	int total_file_len = 0;
 
 	if (filename == NULL || strlen(filename) == 0)
@@ -1053,25 +1050,8 @@ char *slurm_read_hostfile(char *filename, int n)
 	}
 
 	while (fgets(in_line, BUFFER_SIZE, fp) != NULL) {
-		line_num++;
-		if (!isalpha(in_line[0]) && !isdigit(in_line[0])) {
-			error ("Invalid hostfile %s contents on line %d",
-			       filename, line_num);
-			fclose (fp);
-			hostlist_destroy(hostlist);
-			return NULL;
-		}
 
 		line_size = strlen(in_line);
-		total_file_len += line_size;
-		if (line_size == (BUFFER_SIZE - 1)) {
-			error ("Line %d, of hostfile %s too long",
-			       line_num, filename);
-			fclose (fp);
-			hostlist_destroy(hostlist);
-			return NULL;
-		}
-
 		for (i = 0; i < line_size; i++) {
 			if (in_line[i] == '\n') {
 				in_line[i] = '\0';
@@ -1092,12 +1072,68 @@ char *slurm_read_hostfile(char *filename, int n)
 			break;
 		}
 
-		tmp_text = xstrdup(in_line);
+		/*
+		 * Get the string length again just to incase it changed from
+		 * the above loop
+		 */
+		line_size = strlen(in_line);
+		total_file_len += line_size;
+
+		/*
+		 * If there was an end section from before set it up to be on
+		 * the front of this next chunk.
+		 */
+		if (end_part) {
+			tmp_text = end_part;
+			end_part = NULL;
+		}
+
+		if (line_size == (BUFFER_SIZE - 1)) {
+			/*
+			 * If we filled up the buffer get the end past the last
+			 * comma.  We will tack it on the next pass through.
+			 */
+			char *last_comma = strrchr(in_line, ',');
+			if (!last_comma) {
+				error("Line %d, of hostfile %s too long",
+				      line_num, filename);
+				fclose(fp);
+				hostlist_destroy(hostlist);
+				return NULL;
+			}
+			end_part = xstrdup(last_comma + 1);
+			*last_comma = '\0';
+		} else
+			line_num++;
+
+		xstrcat(tmp_text, in_line);
+
+		/* Skip this line */
+		if (tmp_text[0] == '\0')
+			continue;
+
+		if (!isalpha(tmp_text[0]) && !isdigit(tmp_text[0])) {
+			error("Invalid hostfile %s contents on line %d",
+			      filename, line_num);
+			fclose(fp);
+			hostlist_destroy(hostlist);
+			xfree(end_part);
+			xfree(tmp_text);
+			return NULL;
+		}
+
 		host_name = strtok_r(tmp_text, ",", &save_ptr);
 		while (host_name) {
 			if ((asterisk = strchr(host_name, '*')) &&
 			    (i = atoi(asterisk + 1))) {
 				asterisk[0] = '\0';
+
+				/*
+				 * Don't forget the extra space potentially
+				 * needed
+				 */
+				total_file_len += strlen(host_name) * i;
+
 				for (j = 0; j < i; j++)
 					hostlist_push_host(hostlist, host_name);
 			} else {
@@ -1117,7 +1153,7 @@ char *slurm_read_hostfile(char *filename, int n)
 		goto cleanup_hostfile;
 	}
 	if (hostlist_count(hostlist) < n) {
-		error("Too few NodeNames in SLURM Hostfile");
+		error("Too few NodeNames in Slurm Hostfile");
 		goto cleanup_hostfile;
 	}
 
@@ -1139,6 +1175,8 @@ char *slurm_read_hostfile(char *filename, int n)
 
 cleanup_hostfile:
 	hostlist_destroy(hostlist);
+	xfree(end_part);
+	xfree(tmp_text);
 
 	return nodelist;
 }

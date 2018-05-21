@@ -6,11 +6,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -48,8 +48,10 @@
 /* struct job_resources defines exactly which resources are allocated
  *	to a job, step, partition, etc.
  *
- * core_bitmap		- Bitmap of allocated cores for all nodes and sockets
- * core_bitmap_used	- Bitmap of cores allocated to job steps
+ * core_bitmap		- Bitmap of allocated cores for all nodes and sockets.
+ *			  The bitmap reflects allocated resources only on the
+ *			  allocated nodes, not the full system resources.
+ * core_bitmap_used	- Bitmap of cores allocated to job steps (see above)
  * cores_per_socket	- Count of cores per socket on this node, build by
  *			  build_job_resources() and ensures consistent
  *			  interpretation of core_bitmap
@@ -225,6 +227,24 @@ extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
 				   uint16_t new_node_offset,
 				   job_resources_t *from_job_resrcs_ptr,
 				   uint16_t from_node_offset);
+
+/*
+ * AND two job_resources structures.
+ * Every node/core set in job_resrcs1_ptr and job_resrcs2_ptr is set in the
+ * resulting job_resrcs1_ptr data structure
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int job_resources_and(job_resources_t *job_resrcs1_ptr,
+			     job_resources_t *job_resrcs2_ptr);
+
+/*
+ * OR two job_resources structures.
+ * Every node/core set in job_resrcs1_ptr or job_resrcs2_ptr is set in the
+ * resulting job_resrcs1_ptr data structure
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int job_resources_or(job_resources_t *job_resrcs1_ptr,
+			    job_resources_t *job_resrcs2_ptr);
 
 /* Get/clear/set bit value at specified location for whole node allocations
  *	get is for any socket/core on the specified node

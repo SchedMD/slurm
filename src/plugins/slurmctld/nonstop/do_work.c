@@ -4,11 +4,11 @@
  *  Copyright (C) 2013 SchedMD LLC
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -373,7 +373,7 @@ extern int restore_nonstop_state(void)
 	uint32_t data_allocated, data_size = 0;
 	uint32_t job_cnt = 0;
 	char *data;
-	uint16_t protocol_version = (uint16_t) NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	Buf buffer;
 	int error_code = SLURM_SUCCESS, i, state_fd, data_read;
 	time_t buf_time;
@@ -418,7 +418,7 @@ extern int restore_nonstop_state(void)
 	safe_unpack16(&protocol_version, buffer);
 	debug3("Version in slurmctld/nonstop header is %u", protocol_version);
 
-	if (protocol_version == (uint16_t) NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can not recover slurmctld/nonstop state, incompatible version, start with '-i' to ignore this");
 		error("*************************************************************");
@@ -1235,8 +1235,10 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 		goto fini;
 	}
 
-	/* Create a job with replacement resources,
-	 * which will later be merged into the original job */
+	/*
+	 * Create a job with replacement resources,
+	 * which will later be merged into the original job
+	 */
 	slurm_init_job_desc_msg(&job_alloc_req);
 	job_alloc_req.account = xstrdup(job_ptr->account);
 	xstrfmtcat(job_alloc_req.dependency, "expand:%u", job_ptr->job_id);
@@ -1255,9 +1257,14 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	job_alloc_req.priority	= NO_VAL - 1;
 	if (job_ptr->qos_ptr)
 		job_alloc_req.qos = xstrdup(job_ptr->qos_ptr->name);
+	job_alloc_req.tres_per_node   = xstrdup(job_ptr->tres_per_node);
+	job_alloc_req.tres_per_socket = xstrdup(job_ptr->tres_per_socket);
+	job_alloc_req.tres_per_task   = xstrdup(job_ptr->tres_per_task);
 
-	/* Without unlock, the job_begin_callback() function will deadlock.
-	 * Not a great solution, but perhaps the least bad solution. */
+	/*
+	 * Without unlock, the job_begin_callback() function will deadlock.
+	 * Not a great solution, but perhaps the least bad solution.
+	 */
 	slurm_mutex_unlock(&job_fail_mutex);
 
 	job_alloc_req.user_id	= job_ptr->user_id;
@@ -1346,6 +1353,9 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	xfree(job_alloc_req.network);
 	xfree(job_alloc_req.partition);
 	xfree(job_alloc_req.qos);
+	xfree(job_alloc_req.tres_per_node);
+	xfree(job_alloc_req.tres_per_socket);
+	xfree(job_alloc_req.tres_per_task);
 	xfree(job_alloc_req.wckey);
 
 	slurm_mutex_lock(&job_fail_mutex);	/* Resume lock */

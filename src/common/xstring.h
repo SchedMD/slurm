@@ -7,11 +7,11 @@
  *  Written by Jim Garlick <garlick@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -45,7 +45,6 @@
 #define xstrcat(__p, __q)		_xstrcat(&(__p), __q)
 #define xstrncat(__p, __q, __l)		_xstrncat(&(__p), __q, __l)
 #define xstrcatchar(__p, __c)		_xstrcatchar(&(__p), __c)
-#define xslurm_strerrorcat(__p)		_xslurm_strerrorcat(&(__p))
 #define xstrftimecat(__p, __fmt)	_xstrftimecat(&(__p), __fmt)
 #define xiso8601timecat(__p, __msec)            _xiso8601timecat(&(__p), __msec)
 #define xrfc5424timecat(__p, __msec)            _xrfc5424timecat(&(__p), __msec)
@@ -81,11 +80,6 @@ void _xstrncat(char **str1, const char *str2, size_t len);
 ** concatenate one char, `c', onto str1, expanding str1 as needed
 */
 void _xstrcatchar(char **str1, char c);
-
-/*
-** concatenate stringified errno onto str
-*/
-void _xslurm_strerrorcat(char **str);
 
 /*
 ** concatenate current time onto str, using fmt if it is non-NUL
@@ -148,14 +142,6 @@ char *xbasename(char *path);
 ** If it wasn't found returns 0, otherwise 1
 */
 bool _xstrsubstitute(char **str, const char *pattern, const char *replacement);
-
-/*
- * Remove all quotes that surround a string in the string "str",
- *   str (IN)	        target string (pointer to in case of expansion)
- *   increased (IN/OUT)	current position in "str"
- *   RET char *         str returned without quotes in it. needs to be xfreed
- */
-char *xstrstrip(char *str);
 
 /* xshort_hostname
  *   Returns an xmalloc'd string containing the hostname

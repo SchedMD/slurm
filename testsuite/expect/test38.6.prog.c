@@ -6,22 +6,22 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #include <stdio.h>
@@ -36,7 +36,7 @@
 #define SPANK_JOB_ENV_TESTS 0
 
 /*
- * All spank plugins must define this macro for the SLURM plugin loader.
+ * All spank plugins must define this macro for the Slurm plugin loader.
  */
 SPANK_PLUGIN(test_suite, 1);
 
@@ -147,16 +147,19 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 	char hostname[64] = "";
 
 	gethostname(hostname, sizeof(hostname));
-	if (opt_out_file) {
+	if (opt_out_file && (opt_arg_sbatch || opt_arg_srun)) {
 		FILE *fp = NULL;
+		usleep(getpid() % 500000);   /* Reduce NFS collisions */
 		for (i = 0; (i < 10) && !fp; i++)
 			fp = fopen(opt_out_file, "a");
-		if (!fp)
+		if (!fp) {
+			slurm_error("%s: could not open %s",
+				    __func__, opt_out_file);
 			return -1;
-		if (opt_arg_sbatch || opt_arg_srun)
-			usleep(getpid() % 500000);   /* Reduce NFS collisions */
+		}
 		fprintf(fp, "%s: opt_arg_sbatch=%d opt_arg_srun=%d hostname=%s\n",
 			__func__, opt_arg_sbatch, opt_arg_srun, hostname);
+		fflush(fp);
 		if (spank_get_item(sp, S_JOB_UID, &my_uid) == ESPANK_SUCCESS)
 			fprintf(fp, "spank_get_item: my_uid=%d\n", my_uid);
                 if (spank_get_item(sp, S_JOB_ARGV, &argc, &argv) ==
@@ -189,14 +192,16 @@ int slurm_spank_exit(spank_t sp, int ac, char **av)
 	int i;
 
 	gethostname(hostname, sizeof(hostname));
-	if (opt_out_file) {
+	if (opt_out_file && (opt_arg_sbatch || opt_arg_srun)) {
 		FILE *fp = NULL;
+		usleep(getpid() % 500000);   /* Reduce NFS collisions */
 		for (i = 0; (i < 10) && !fp; i++)
 			fp = fopen(opt_out_file, "a");
-		if (!fp)
+		if (!fp) {
+			slurm_error("%s: could not open %s",
+				    __func__, opt_out_file);
 			return -1;
-		if (opt_arg_sbatch || opt_arg_srun)
-			usleep(getpid() % 500000);   /* Reduce NFS collisions */
+		}
 		fprintf(fp, "%s: opt_arg_sbatch=%d opt_arg_srun=%d hostname=%s\n",
 			__func__, opt_arg_sbatch, opt_arg_srun, hostname);
 		fclose(fp);

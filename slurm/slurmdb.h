@@ -6,11 +6,11 @@
  *  Written by Danny Auble da@llnl.gov, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #ifndef _SLURMDB_H
@@ -148,6 +148,7 @@ typedef enum {
 #define	FEDERATION_FLAG_ADD            0x20000000
 #define	FEDERATION_FLAG_REMOVE         0x40000000
 
+#define SLURMDB_MODIFY_NO_WAIT       0x00000001
 
 /* SLURM CLUSTER FEDERATION STATES */
 enum cluster_fed_states {
@@ -166,6 +167,14 @@ enum cluster_fed_states {
 
 /* flags and types of resources */
 /* when we come up with some */
+
+/* Slurm job condition flags */
+#define JOBCOND_FLAG_DUP      0x00000001 /* Report duplicate job entries */
+#define JOBCOND_FLAG_NO_STEP  0x00000002 /* Don't report job step info */
+#define JOBCOND_FLAG_NO_TRUNC 0x00000004 /* Report info. without truncating
+					  * the time to the usage_start and
+					  * usage_end */
+#define JOBCOND_FLAG_RUNAWAY  0x00000008 /* Report runaway jobs only */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
@@ -269,8 +278,8 @@ typedef struct {
 	List cluster_list;	/* list of char * */
 	uint32_t cpus_max;      /* number of cpus high range */
 	uint32_t cpus_min;      /* number of cpus low range */
-	uint16_t duplicates;    /* report duplicate job entries */
 	int32_t exitcode;       /* exit code of job */
+	uint32_t flags;         /* Reporting flags*/
 	List format_list; 	/* list of char * */
 	List groupid_list;	/* list of char * */
 	List jobname_list;	/* list of char * */
@@ -289,11 +298,6 @@ typedef struct {
 	char *used_nodes;       /* a ranged node string where jobs ran */
 	List userid_list;	/* list of char * */
 	List wckey_list;	/* list of char * */
-	uint16_t without_steps; /* don't give me step info */
-	uint16_t without_usage_truncation; /* give me the information
-					    * without truncating the
-					    * time to the usage_start
-					    * and usage_end */
 } slurmdb_job_cond_t;
 
 /* slurmdb_stats_t needs to be defined before slurmdb_job_rec_t and
@@ -301,31 +305,23 @@ typedef struct {
  */
 typedef struct {
 	double act_cpufreq;	/* contains actual average cpu frequency */
-	double cpu_ave;
 	uint64_t consumed_energy; /* contains energy consumption in joules */
-	uint32_t cpu_min;
-	uint32_t cpu_min_nodeid; /* contains which node number it was on */
-	uint32_t cpu_min_taskid; /* contains which task number it was on */
-	double disk_read_ave; /* average amount of disk read data, in mb */
-	double disk_read_max; /* maximum amount of disk read data, in mb */
-	uint32_t disk_read_max_nodeid; /* contains  node number max was on */
-	uint32_t disk_read_max_taskid;/* contains task number max was on */
-	double disk_write_ave; /* average amount of disk write data, in mb */
-	double disk_write_max; /* maximum amount of disk write data, in mb */
-	uint32_t disk_write_max_nodeid; /* contains  node number max was on */
-	uint32_t disk_write_max_taskid;/* contains task number max was on */
-	double pages_ave;
-	uint64_t pages_max;
-	uint32_t pages_max_nodeid; /* contains which node number it was on */
-	uint32_t pages_max_taskid; /* contains which task number it was on */
-	double rss_ave;
-	uint64_t rss_max;
-	uint32_t rss_max_nodeid; /* contains which node number it was on */
-	uint32_t rss_max_taskid; /* contains which task number it was on */
-	double vsize_ave;
-	uint64_t vsize_max;
-	uint32_t vsize_max_nodeid; /* contains which node number it was on */
-	uint32_t vsize_max_taskid; /* contains which task number it was on */
+	char *tres_usage_in_ave; /* average amount of usage in data */
+	char *tres_usage_in_max; /* contains max amount of usage in data */
+	char *tres_usage_in_max_nodeid; /* contains node number max was on */
+	char *tres_usage_in_max_taskid; /* contains task number max was on */
+	char *tres_usage_in_min; /* contains min amount of usage in data */
+	char *tres_usage_in_min_nodeid; /* contains node number min was on */
+	char *tres_usage_in_min_taskid; /* contains task number min was on */
+	char *tres_usage_in_tot; /* total amount of usage in data */
+	char *tres_usage_out_ave; /* average amount of usage out data */
+	char *tres_usage_out_max; /* contains amount of max usage out data */
+	char *tres_usage_out_max_nodeid; /* contains node number max was on */
+	char *tres_usage_out_max_taskid; /* contains task number max was on */
+	char *tres_usage_out_min; /* contains amount of min usage out data */
+	char *tres_usage_out_min_nodeid; /* contains node number min was on */
+	char *tres_usage_out_min_taskid; /* contains task number min was on */
+	char *tres_usage_out_tot; /* total amount of usage out data */
 } slurmdb_stats_t;
 
 /************** alphabetical order of structures **************/
@@ -715,7 +711,9 @@ typedef struct {
 
 typedef struct {
 	char *cluster;
+	uint32_t flags;
 	uint32_t job_id;
+	time_t submit_time;
 } slurmdb_job_modify_cond_t;
 
 typedef struct {
@@ -766,6 +764,7 @@ typedef struct {
 	List    steps; /* list of slurmdb_step_rec_t *'s */
 	time_t submit;
 	uint32_t suspended;
+	char	*system_comment;
 	uint32_t sys_cpu_sec;
 	uint32_t sys_cpu_usec;
 	uint32_t timelimit;
@@ -967,8 +966,7 @@ typedef struct {
 				 * the pervious start time.  Needed
 				 * for accounting */
 	char *tres_str;
-	uint32_t unused_wall; /* amount of seconds this reservation wasn't
-			       * used */
+	double unused_wall; /* amount of seconds this reservation wasn't used */
 	List tres_list; /* list of slurmdb_tres_rec_t, only set when
 			 * job usage is requested.
 			 */
@@ -1734,6 +1732,9 @@ extern void slurmdb_destroy_report_job_grouping(void *object);
 extern void slurmdb_destroy_report_acct_grouping(void *object);
 extern void slurmdb_destroy_report_cluster_grouping(void *object);
 extern void slurmdb_destroy_stats_rec(void *object);
+
+extern void slurmdb_free_slurmdb_stats_members(slurmdb_stats_t *stats);
+extern void slurmdb_destroy_slurmdb_stats(slurmdb_stats_t *stats);
 
 extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				   bool free_it);

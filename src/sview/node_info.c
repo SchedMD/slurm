@@ -9,22 +9,22 @@
  *
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -67,7 +67,6 @@ enum {
 	SORTID_PORT,
 	SORTID_REAL_MEMORY,
 	SORTID_REASON,
-	SORTID_RACK_MP,
 	SORTID_SLURMD_START_TIME,
 	SORTID_SOCKETS,
 	SORTID_STATE,
@@ -102,13 +101,6 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR, refresh_node,
 	 create_model_node, admin_edit_node},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_RACK_MP, "RackMidplane", false, EDIT_NONE,
-	 refresh_node, create_model_node, admin_edit_node},
-#else
-	{G_TYPE_STRING, SORTID_RACK_MP, NULL, true, EDIT_NONE, refresh_node,
-	 create_model_node, admin_edit_node},
-#endif
 	{G_TYPE_STRING, SORTID_NODE_ADDR, "NodeAddr", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NODE_HOSTNAME, "NodeHostName", false, EDIT_NONE,
@@ -183,30 +175,15 @@ static display_data_t display_data_node[] = {
 static display_data_t options_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", true, NODE_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, NODE_PAGE, "Drain Midplane", true, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Undrain Midplane", true, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Resume Midplane", true, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Set Midplane Down",
-	 true, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Make Midplane Idle",
-	 true, ADMIN_PAGE},
-#else
 	{G_TYPE_STRING, NODE_PAGE, "Drain Node", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Undrain Node", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Resume Node", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Set Node(s) Down", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Make Node(s) Idle", true, ADMIN_PAGE},
-#endif
 	{G_TYPE_STRING, NODE_PAGE, "Update Active Features", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Update Available Features", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Update Gres", true, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE,  "Jobs", true, NODE_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", true, NODE_PAGE},
-#else
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, NODE_PAGE},
-#endif
 	{G_TYPE_STRING, PART_PAGE, "Partitions", true, NODE_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Reservations", true, NODE_PAGE},
 	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", false, NODE_PAGE},
@@ -246,12 +223,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   find_col_name(display_data_node,
 						 SORTID_NAME),
 				   node_ptr->name);
-
-	if (sview_node_info_ptr->rack_mp)
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_node,
-							 SORTID_RACK_MP),
-					   sview_node_info_ptr->rack_mp);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
@@ -315,14 +286,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		if (!alloc_cpus
-		    && ((node_ptr->node_state & NODE_STATE_ALLOCATED)
-			||  (node_ptr->node_state & NODE_STATE_COMPLETING)))
-			alloc_cpus = node_ptr->cpus;
-		else
-			alloc_cpus *= cpus_per_node;
-	}
 	idle_cpus -= alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_cnt,
 			 sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
@@ -336,9 +299,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &err_cpus);
-
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		err_cpus *= cpus_per_node;
 
 	idle_cpus -= err_cpus;
 	convert_num_unit((float)err_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE,
@@ -569,14 +529,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		if (!alloc_cpus &&
-		    (IS_NODE_ALLOCATED(node_ptr) ||
-		     IS_NODE_COMPLETING(node_ptr)))
-			alloc_cpus = node_ptr->cpus;
-		else
-			alloc_cpus *= cpus_per_node;
-	}
+
 	idle_cpus = node_ptr->cpus - alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
 			 sizeof(tmp_used_cpus), UNIT_NONE, NO_VAL,
@@ -596,8 +549,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &err_cpus);
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		err_cpus *= cpus_per_node;
+
 	idle_cpus -= err_cpus;
 	convert_num_unit((float)err_cpus, tmp_err_cpus, sizeof(tmp_err_cpus),
 			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
@@ -669,7 +621,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_NODE_ADDR, node_ptr->node_addr,
 			   SORTID_NODE_HOSTNAME, node_ptr->node_hostname,
 			   SORTID_OWNER,     tmp_owner,
-			   SORTID_RACK_MP,   sview_node_info_ptr->rack_mp,
 			   SORTID_REASON,    sview_node_info_ptr->reason,
 			   SORTID_SLURMD_START_TIME,
 				sview_node_info_ptr->slurmd_start_time,
@@ -806,10 +757,7 @@ need_refresh:
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
 
-			if (cluster_flags & CLUSTER_FLAG_BG)
-				temp = "MIDPLANE NOT FOUND\n";
-			else
-				temp = "NODE NOT FOUND\n";
+			temp = "NODE NOT FOUND\n";
 			/* only time this will be run so no update */
 			model = gtk_tree_view_get_model(treeview);
 			add_display_treestore_line(0,
@@ -943,10 +891,6 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 		sview_node_info_ptr->node_name = xstrdup(node_ptr->name);
 		sview_node_info_ptr->node_ptr = node_ptr;
 		sview_node_info_ptr->pos = i;
-
-		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-					  SELECT_NODEDATA_RACK_MP,
-					  0, &sview_node_info_ptr->rack_mp);
 
 		if (node_ptr->reason &&
 		    (node_ptr->reason_uid != NO_VAL) && node_ptr->reason_time) {
@@ -1082,14 +1026,6 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				SELECT_NODEDATA_SUBCNT,
 				NODE_STATE_ALLOCATED,
 				&alloc_cpus);
-			if (cluster_flags & CLUSTER_FLAG_BG) {
-				if (!alloc_cpus
-				    && (IS_NODE_ALLOCATED(node_ptr)
-					|| IS_NODE_COMPLETING(node_ptr)))
-					alloc_cpus = node_ptr->cpus;
-				else
-					alloc_cpus *= cpus_per_node;
-			}
 			idle_cpus -= alloc_cpus;
 
 			slurm_get_select_nodeinfo(
@@ -1097,8 +1033,6 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				SELECT_NODEDATA_SUBCNT,
 				NODE_STATE_ERROR,
 				&err_cpus);
-			if (cluster_flags & CLUSTER_FLAG_BG)
-				err_cpus *= cpus_per_node;
 
 			idle_cpus -= err_cpus;
 
@@ -1416,7 +1350,7 @@ end_it:
 extern int update_state_node(GtkDialog *dialog,
 			     const char *nodelist, const char *type)
 {
-	uint16_t state = (uint16_t) NO_VAL;
+	uint16_t state = NO_VAL16;
 	char *upper = NULL, *lower = NULL;
 	int i = 0;
 	int rc = SLURM_SUCCESS;
@@ -2036,34 +1970,25 @@ extern void popup_all_node_name(char *name, int id, char *cluster_name)
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
-	char *node;
-
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		node = "Midplane";
-	else
-		node = "Node";
 
 	switch(id) {
 	case JOB_PAGE:
-		snprintf(title, 100, "Job(s) with %s %s", node, name);
+		snprintf(title, 100, "Job(s) with Node %s", name);
 		break;
 	case PART_PAGE:
-		snprintf(title, 100, "Partition(s) with %s %s", node, name);
+		snprintf(title, 100, "Partition(s) with Node %s", name);
 		break;
 	case RESV_PAGE:
-		snprintf(title, 100, "Reservation(s) with %s %s", node, name);
-		break;
-	case BLOCK_PAGE:
-		snprintf(title, 100, "Blocks(s) with %s %s", node, name);
+		snprintf(title, 100, "Reservation(s) with Node %s", name);
 		break;
 	case SUBMIT_PAGE:
-		snprintf(title, 100, "Submit job on %s %s", node, name);
+		snprintf(title, 100, "Submit job on Node %s", name);
 		break;
 	case INFO_PAGE:
-		snprintf(title, 100, "Full Info for %s %s", node, name);
+		snprintf(title, 100, "Full Info for Node %s", name);
 		break;
 	default:
-		g_print("%s got %d\n", node, id);
+		g_print("Node got %d\n", id);
 	}
 
 	if (cluster_name && federation_name &&
@@ -2216,13 +2141,7 @@ extern void cluster_change_node(void)
 	while (display_data++) {
 		if (display_data->id == -1)
 			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
-			case SORTID_RACK_MP:
-				display_data->name = "RackMidplane";
-				break;
-			}
-		} else if (cluster_flags & CLUSTER_FLAG_FED) {
+		if (cluster_flags & CLUSTER_FLAG_FED) {
 			switch(display_data->id) {
 			case SORTID_CLUSTER_NAME:
 				display_data->show = true;
@@ -2233,60 +2152,9 @@ extern void cluster_change_node(void)
 			case SORTID_CLUSTER_NAME:
 				display_data->show = false;
 				break;
-			case SORTID_RACK_MP:
-				display_data->name = NULL;
-				break;
 			}
 		}
 	}
 
-	display_data = options_data_node;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = "Blocks";
-				break;
-			}
-
-			if (!display_data->name) {
-			} else if (!xstrcmp(display_data->name, "Drain Node"))
-				display_data->name = "Drain Midplane";
-			else if (!xstrcmp(display_data->name, "Undrain Node"))
-				display_data->name = "Undrain Midplane";
-			else if (!xstrcmp(display_data->name, "Resume Node"))
-				display_data->name = "Resume Midplane";
-			else if (!xstrcmp(display_data->name, "Put Node Down"))
-				display_data->name = "Put Midplane Down";
-			else if (!xstrcmp(display_data->name, "Make Node Idle"))
-				display_data->name =
-					"Make Midplane Idle";
-		} else {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->name = NULL;
-				break;
-			}
-
-			if (!display_data->name) {
-			} else if (!xstrcmp(display_data->name,
-					   "Drain Midplanes"))
-				display_data->name = "Drain Nodes";
-			else if (!xstrcmp(display_data->name,
-					   "Undrain Midplanes"))
-				display_data->name = "Undrain Nodes";
-			else if (!xstrcmp(display_data->name,
-					 "Resume Midplanes"))
-				display_data->name = "Resume Nodes";
-			else if (!xstrcmp(display_data->name,
-					 "Put Midplanes Down"))
-				display_data->name = "Put Nodes Down";
-			else if (!xstrcmp(display_data->name,
-					 "Make Midplanes Idle"))
-				display_data->name = "Make Nodes Idle";
-		}
-	}
 	get_info_node(NULL, NULL);
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Verify node configuration specification (--constraint option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -8,27 +8,27 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
+# Portions Copyright (C) 2018 SchedMD LLC.
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Morris Jette <jette1@llnl.gov>
-# CODE-OCEC-09-009. All rights reserved.
+# Written by Morris Jette
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -37,16 +37,68 @@ set test_id     "17.12"
 set exit_code   0
 set file_in     "test$test_id.input"
 set test_part   "test$test_id\_part"
-set feat1       "test$test_id\_gpu"
-set feat2       "test$test_id\_mic"
+set feat0       "test$test_id\_zero"
+set feat1       "test$test_id\_one"
+set feat2       "test$test_id\_two"
+set feat3       "test$test_id\_three"
 array set nodes {}
-array set def_node_feat {}
+array set def_active_node_feat {}
+array set def_avail_node_feat  {}
 
 print_header $test_id
 
+proc check_job_nodes {test_job node_name find_node} {
+	global exit_code sbatch test_part file_in
+	global feat0 feat1 number scontrol alpha_numeric_nodelist bin_bash
+	global bin_grep
+
+	set nodelist ""
+
+	wait_for_job $test_job "RUNNING"
+
+	# Check that job that the job used the correct nodes
+	log_user 0
+	spawn $scontrol show job $test_job
+	expect {
+		-re " NodeList=($alpha_numeric_nodelist)" {
+			set nodelist $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	set match 0
+	spawn $bin_bash -c "$scontrol show hostnames $nodelist"
+	expect {
+		-re "$node_name" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != $find_node} {
+		send_user "\nFAILURE: invalid node found\n"
+		set exit_code 1
+	}
+}
+
 proc check_job {nnode test_job} {
-	global exit_code sbatch test_part file_in bin_sleep
-	global feat1 feat2 number scontrol alpha_numeric_nodelist bin_bash
+	global exit_code sbatch test_part file_in
+	global feat0 feat1 number scontrol alpha_numeric_nodelist bin_bash
 	global bin_grep
 
 	set nodelist ""
@@ -72,7 +124,7 @@ proc check_job {nnode test_job} {
 	set node_cnt 0
 	spawn $bin_bash -c "$scontrol show node $nodelist | $bin_grep AvailableFeatures"
 	expect {
-		-re "AvailableFeatures=$feat1|$feat2" {
+		-re "AvailableFeatures=$feat0|$feat1" {
 			incr node_cnt
 			exp_continue
 		}
@@ -86,25 +138,28 @@ proc check_job {nnode test_job} {
 	}
 
 	if {$node_cnt != $nnode} {
-		send_user "\nFAILURE: sbatch constraint option failed to "
-		send_user "get the correct nodes $node_cnt != $nnode\n"
+		send_user "\nFAILURE: sbatch bad node count ($node_cnt != $nnode)\n"
 		set exit_code 1
 	}
 
 	cancel_job $test_job
 }
 
-proc sub_job_or {nnode fail_test} {
-	global exit_code sbatch test_part file_in bin_sleep
-	global feat1 feat2 number scontrol alpha_numeric_nodelist bin_bash
+proc sub_job_and {nnode fail_test} {
+	global exit_code sbatch test_part file_in nodes
+	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
 	global bin_grep
 
 	set test_job 0
 	set fail_node_config 0
 
 	if {$fail_test} {
-		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		spawn $sbatch -C "$feat1&$feat3" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
 			-re "Requested node configuration is not available" {
 				set fail_node_config 1
 				exp_continue
@@ -119,13 +174,23 @@ proc sub_job_or {nnode fail_test} {
 		}
 
 		if {$fail_node_config == $fail_test} {
-			send_user "\nThis error is expected do not worry\n"
+			send_user "\nThis error is expected, no worries\n"
+		}
+		if {$test_job != 0} {
+			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			cancel_job $test_job
+			set exit_code 1
 		}
 	} else {
-		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		spawn $sbatch -C "$feat2&$feat3" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				send_user "\nFAILURE: Unexpected job submit failure\n"
+				set exit_code 1
 				exp_continue
 			}
 			timeout {
@@ -138,23 +203,300 @@ proc sub_job_or {nnode fail_test} {
 		}
 
 		# Check that nodes have the correct features
+		if {$test_job == 0} {
+			send_user "\nFAILURE: Job submit failure\n"
+			set exit_code 1
+		} else {
+#			Make sure nodes(3) included in allocation
+			check_job_nodes $test_job $nodes(3) 1
+			check_job $nnode $test_job
+		}
+	}
+}
+
+proc sub_batch_host {nnode} {
+	global exit_code sbatch scontrol test_part file_in nodes
+	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global bin_grep
+
+	set test_job 0
+	set fail_node_config 0
+
+	spawn $sbatch -C "$feat0|$feat3" --batch=$feat3 -p$test_part -N$nnode -t1 -o /dev/null $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set test_job $expect_out(1,string)
+			exp_continue
+		}
+		-re "Requested node configuration is not available" {
+			send_user "\nFAILURE: Unexpected job submit failure\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$test_job == 0} {
+		send_user "\nFAILURE: Job submit failure\n"
+		set exit_code 1
+	} else {
+		if {[wait_for_job $test_job "RUNNING"] != 0} {
+			send_user "\nFAILURE: waiting for job to start\n"
+			set exit_code 1
+		} else {
+			set match 0
+			spawn $scontrol show job $test_job
+			expect {
+				-re "BatchHost=$nodes(3)" {
+					set match 1
+					exp_continue
+				}
+				timeout {
+					send_user "\nFAILURE: sbatch is not responding\n"
+					set exit_code 1
+				}
+				eof {
+					wait
+				}
+			}
+			if {$match != 1} {
+				send_user "\nFAILURE: Invalid BatchHost value\n"
+				set exit_code 1
+			}
+		}
+		cancel_job $test_job
+	}
+}
+
+proc sub_job_count {nnode fail_test} {
+	global exit_code sbatch test_part file_in nodes
+	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global bin_grep
+
+	set test_job 0
+	set fail_node_config 0
+
+	if {$fail_test} {
+		spawn $sbatch -C "$feat2*$nnode" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				set fail_node_config 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sbatch is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$fail_node_config == $fail_test} {
+			send_user "\nThis error is expected, no worries\n"
+		}
 		if {$test_job != 0} {
+			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			cancel_job $test_job
+			set exit_code 1
+		}
+	} else {
+		spawn $sbatch -C "$feat2*2" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				send_user "\nFAILURE: Unexpected job submit failure\n"
+				set exit_code 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sbatch is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		# Check that nodes have the correct features
+		if {$test_job == 0} {
+			send_user "\nFAILURE: Job submit failure\n"
+			set exit_code 1
+		} else {
+#			Make sure nodes(2 and 3) included in allocation
+			check_job_nodes $test_job $nodes(2) 1
+			check_job_nodes $test_job $nodes(3) 1
+			check_job $nnode $test_job
+		}
+	}
+}
+
+proc sub_job_or {nnode fail_test} {
+	global exit_code sbatch test_part file_in
+	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global bin_grep
+
+	set test_job 0
+	set fail_node_config 0
+
+	if {$fail_test} {
+		spawn $sbatch -C "$feat0|$feat1" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				set fail_node_config 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sbatch is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$fail_node_config == $fail_test} {
+			send_user "\nThis error is expected, no worries\n"
+		}
+		if {$test_job != 0} {
+			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			cancel_job $test_job
+			set exit_code 1
+		}
+	} else {
+		spawn $sbatch -C "$feat0|$feat1" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				send_user "\nFAILURE: Unexpected job submit failure\n"
+				set exit_code 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sbatch is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		# Check that nodes have the correct features
+		if {$test_job == 0} {
+			send_user "\nFAILURE: Job submit failure\n"
+			set exit_code 1
+		} else {
+			check_job $nnode $test_job
+		}
+	}
+}
+
+proc sub_job_xand {nnode fail_test} {
+	global exit_code sbatch test_part file_in nodes
+	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global bin_grep
+
+	set test_job 0
+	set fail_node_config 0
+
+	if {$fail_test} {
+		spawn $sbatch -C "\[($feat0&$feat3)*2&$feat1*2\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				set fail_node_config 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sbatch is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$fail_node_config == $fail_test} {
+			send_user "\nThis error is expected, no worries\n"
+		}
+		if {$test_job != 0} {
+			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			cancel_job $test_job
+			set exit_code 1
+		}
+	} else {
+		spawn $sbatch -C "\[($feat0&$feat2)*2&$feat1*1\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				send_user "\nFAILURE: Unexpected job submit failure\n"
+				set exit_code 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sbatch is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		# Check that nodes have the correct features
+		if {$test_job == 0} {
+			send_user "\nFAILURE: Job submit failure\n"
+			set exit_code 1
+		} else {
+#			Make sure nodes(1, 2 and 3) included in allocation
+			check_job_nodes $test_job $nodes(1) 1
+			check_job_nodes $test_job $nodes(2) 1
+			check_job_nodes $test_job $nodes(3) 1
 			check_job $nnode $test_job
 		}
 	}
 }
 
 proc sub_job_xor {nnode fail_test} {
-	global exit_code sbatch test_part file_in bin_sleep
-	global feat1 feat2 number scontrol alpha_numeric_nodelist bin_bash
+	global exit_code sbatch test_part file_in nodes
+	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
 	global bin_grep
 
 	set test_job 0
 	set fail_node_config 0
 
 	if {$fail_test} {
-		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		spawn $sbatch -C "\[$feat0|$feat1\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
 			-re "Requested node configuration is not available" {
 				set fail_node_config 1
 				exp_continue
@@ -169,13 +511,23 @@ proc sub_job_xor {nnode fail_test} {
 		}
 
 		if {$fail_node_config == $fail_test} {
-			send_user "\nThis error is expected do not worry\n"
+			send_user "\nThis error is expected, no worries\n"
+		}
+		if {$test_job != 0} {
+			send_user "\nFAILURE: Job should have been rejected, but was not\n"
+			cancel_job $test_job
+			set exit_code 1
 		}
 	} else {
-		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		spawn $sbatch -C "\[$feat0|$feat1\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				send_user "\nFAILURE: Unexpected job submit failure\n"
+				set exit_code 1
 				exp_continue
 			}
 			timeout {
@@ -188,7 +540,12 @@ proc sub_job_xor {nnode fail_test} {
 		}
 
 		# Check that nodes have the correct features
-		if {$test_job != 0} {
+		if {$test_job == 0} {
+			send_user "\nFAILURE: Job submit failure\n"
+			set exit_code 1
+		} else {
+#			Make sure nodes(1) not included in allocation
+			check_job_nodes $test_job $nodes(1) 0
 			check_job $nnode $test_job
 		}
 	}
@@ -197,7 +554,7 @@ proc sub_job_xor {nnode fail_test} {
 proc set_node_feature {node_name new_feature} {
 	global scontrol exit_code
 
-	spawn $scontrol update node=$node_name AvailableFeatures=$new_feature
+	spawn $scontrol update node=$node_name AvailableFeatures=$new_feature ActiveFeatures=$new_feature
 	expect {
 		timeout {
 			send_user "\nFAILURE: scontrol is not responding\n"
@@ -210,7 +567,7 @@ proc set_node_feature {node_name new_feature} {
 }
 
 proc clean_up {} {
-	global test_part scontrol def_node_feat nodes exit_code
+	global test_part scontrol def_active_node_feat def_avail_node_feat nodes exit_code
 
 	spawn $scontrol delete partition=$test_part
 	expect {
@@ -226,7 +583,7 @@ proc clean_up {} {
 	# Reset nodes back to normal
 	foreach option [array names nodes] {
 		set node $nodes($option)
-		spawn $scontrol update node=$node AvailableFeatures=$def_node_feat($node)
+		spawn $scontrol update node=$node AvailableFeatures=$def_avail_node_feat($node) ActiveFeatures=$def_active_node_feat($node)
 		expect {
 			timeout {
 				send_user "\nFAILURE: scontrol is not responding\n"
@@ -251,6 +608,7 @@ make_bash_script $file_in "
 #
 # Submit a job with invalid constraint requirement
 #
+send_user "\n\n==========Test invalid constraints==========\n"
 set err_msg     0
 set timeout $max_job_delay
 spawn $sbatch -N1 --constraint=invalid,constraint -t1 -o /dev/null $file_in
@@ -287,7 +645,9 @@ if {[test_super_user] == 0 || [string compare [test_node_features_plugin] ""]} {
 	exit $exit_code
 }
 
+#
 # Run job to get available nodes
+#
 log_user 0
 set job_id 0
 set srun_pid [spawn $srun -N1-4 -t1 -l printenv SLURM_JOB_ID]
@@ -356,11 +716,17 @@ foreach option [array names nodes] {
 	# Save the original features that are on the node.
 	log_user 0
 	set node $nodes($option)
-	set def_node_feat($node) ""
+	set def_active_node_feat($node) ""
+	set def_avail_node_feat($node)  ""
 	spawn $bin_bash -c "$scontrol show node $node | $bin_grep Features"
 	expect {
 		-re "AvailableFeatures=($alpha_numeric_comma)" {
-			set def_node_feat($node) $expect_out(1,string)
+			set def_avail_node_feat($node) $expect_out(1,string)
+			incr node_save
+			exp_continue
+		}
+		-re "ActiveFeatures=($alpha_numeric_comma)" {
+			set def_active_node_feat($node) $expect_out(1,string)
 			incr node_save
 			exp_continue
 		}
@@ -375,10 +741,12 @@ foreach option [array names nodes] {
 	log_user 1
 }
 
-set_node_feature $nodes(0) $feat1
-set_node_feature $nodes(1) $feat2
-set_node_feature $nodes(2) $feat1
-set_node_feature $nodes(3) $feat1
+# Set node features for testing
+send_user "\n\n==========Set node features to test-specific values for testing==========\n"
+set_node_feature $nodes(0) $feat0
+set_node_feature $nodes(1) $feat1
+set_node_feature $nodes(2) $feat0,$feat2
+set_node_feature $nodes(3) $feat0,$feat2,$feat3
 
 # Create a test partition
 spawn $scontrol create partition=$test_part \
@@ -396,6 +764,34 @@ expect {
 	}
 }
 
+# Test feature count logic with 2 nodes
+send_user "\n\n==========Test feature count 2 nodes==========\n"
+sub_job_count 2 0
+
+# Test feature count logic with 3 nodes
+send_user "\n\n==========Test feature count 3 nodes==========\n"
+sub_job_count 3 0
+
+# Test feature count logic with 3 nodes (This is expected to fail)
+send_user "\n\n==========Test feature count 3 nodes with failure==========\n"
+sub_job_count 3 1
+
+# Test AND with 1 node
+send_user "\n\n==========Test AND 1 node==========\n"
+sub_job_and 1 0
+
+# Test AND with 1 node (This is expected to fail)
+send_user "\n\n==========Test AND 1 node with failure==========\n"
+sub_job_and 1 1
+
+# Test eXclusive AND (XAND) with 3 nodes
+send_user "\n\n==========Test XAND 3 nodes==========\n"
+sub_job_xand 3 0
+
+# Test eXclusive AND (XAND) with 3 nodes (This is expected to fail)
+send_user "\n\n==========Test XAND 3 nodes with failure==========\n"
+sub_job_xand 3 1
+
 # Test eXclusive OR (XOR) with 2 nodes
 send_user "\n\n==========Test XOR 2 nodes==========\n"
 sub_job_xor 2 0
@@ -405,12 +801,16 @@ send_user "\n\n==========Test XOR 3 nodes==========\n"
 sub_job_xor 3 0
 
 # Test eXclusive OR (XOR) with 4 nodes (This is expected to fail)
-send_user "\n\n==========Test XOR 4 nodes==========\n"
+send_user "\n\n==========Test XOR 4 nodes with failure==========\n"
 sub_job_xor 4 1
 
 # Test OR with 4 nodes
 send_user "\n\n==========Test OR 4 nodes==========\n"
 sub_job_or 4 0
+
+# Test batch host
+send_user "\n\n==========Test batch host==========\n"
+sub_batch_host 3
 
 # Reset node features and remove test part
 send_user "\n\n==========Clean Up==========\n"

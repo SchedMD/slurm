@@ -3,16 +3,16 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>
+ *  Portions Copyright (C) 2010-2018 SchedMD LLC <https://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -83,6 +83,8 @@
 #include "multi_prog.h"
 #include "opt.h"
 
+//#define HAVE_GPUS 1
+
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
@@ -122,11 +124,11 @@
 #define OPT_DELAY_BOOT  0x24
 #define OPT_INT64	0x25
 #define OPT_USE_MIN_NODES 0x26
+#define OPT_MEM_PER_GPU   0x27
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
 #define LONG_OPT_USAGE       0x101
-#define LONG_OPT_XTO         0x102
 #define LONG_OPT_BCAST       0x103
 #define LONG_OPT_TIMEO       0x104
 #define LONG_OPT_JOBID       0x105
@@ -208,6 +210,14 @@
 #define LONG_OPT_CLUSTER_CONSTRAINT 0x168
 #define LONG_OPT_QUIT_ON_INTR    0x169
 #define LONG_OPT_X11             0x170
+#define LONG_OPT_CPUS_PER_GPU    0x172
+#define LONG_OPT_GPU_BIND        0x173
+#define LONG_OPT_GPU_FREQ        0x174
+#define LONG_OPT_GPUS            0x175
+#define LONG_OPT_GPUS_PER_NODE   0x176
+#define LONG_OPT_GPUS_PER_SOCKET 0x177
+#define LONG_OPT_GPUS_PER_TASK   0x178
+#define LONG_OPT_MEM_PER_GPU     0x179
 
 extern char **environ;
 
@@ -237,6 +247,7 @@ struct option long_options[] = {
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
 	{"geometry",         required_argument, 0, 'g'},
+	{"gpus",             required_argument, 0, 'G'},
 	{"hold",             no_argument,       0, 'H'},
 	{"input",            required_argument, 0, 'i'},
 	{"immediate",        optional_argument, 0, 'I'},
@@ -289,6 +300,7 @@ struct option long_options[] = {
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
+	{"cpus-per-gpu",     required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 	{"deadline",         required_argument, 0, LONG_OPT_DEADLINE},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"delay-boot",       required_argument, 0, LONG_OPT_DELAY_BOOT},
@@ -297,6 +309,11 @@ struct option long_options[] = {
 	{"export",           required_argument, 0, LONG_OPT_EXPORT},
 	{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
+	{"gpu-bind",         required_argument, 0, LONG_OPT_GPU_BIND},
+	{"gpu-freq",         required_argument, 0, LONG_OPT_GPU_FREQ},
+	{"gpus-per-node",    required_argument, 0, LONG_OPT_GPUS_PER_NODE},
+	{"gpus-per-socket",  required_argument, 0, LONG_OPT_GPUS_PER_SOCKET},
+	{"gpus-per-task",    required_argument, 0, LONG_OPT_GPUS_PER_TASK},
 	{"gres",             required_argument, 0, LONG_OPT_GRES},
 	{"gres-flags",       required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"help",             no_argument,       0, LONG_OPT_HELP},
@@ -308,10 +325,10 @@ struct option long_options[] = {
 	{"launcher-opts",    required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
 	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
-	{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
 	{"mcs-label",        required_argument, 0, LONG_OPT_MCS_LABEL},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
+	{"mem-per-gpu",      required_argument, 0, LONG_OPT_MEM_PER_GPU},
 	{"mem-bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mincores",         required_argument, 0, LONG_OPT_MINCORES},
@@ -364,7 +381,7 @@ struct option long_options[] = {
 #endif
 	{NULL,               0,                 0, 0}
 	};
-char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:M:n:N:"
+char *opt_string = "+A:B:c:C:d:D:e:Eg:G:hHi:I::jJ:kK::lL:m:M:n:N:"
 		   "o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
 
 
@@ -377,7 +394,7 @@ static int  _get_task_count(void);
 static int  _get_int(const char *arg, const char *what, bool positive);
 
 static bitstr_t *_get_pack_group(const int argc, char **argv,
-				 int default_pack_offset);
+				 int default_pack_offset, bool *opt_found);
 
 static void  _help(void);
 
@@ -557,8 +574,10 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	static bool pending_append = false;
 	bitstr_t *pack_grp_bits;
 	int i, i_first, i_last;
+	bool opt_found = false;
 
-	pack_grp_bits = _get_pack_group(argc, argv, default_pack_offset++);
+	pack_grp_bits = _get_pack_group(argc, argv, default_pack_offset++,
+					&opt_found);
 	i_first = bit_ffs(pack_grp_bits);
 	i_last  = bit_fls(pack_grp_bits);
 	for (i = i_first; i <= i_last; i++) {
@@ -574,6 +593,11 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 		/* initialize option defaults */
 		_opt_default();
+		if (opt_found || (i > 0)) {
+			xstrfmtcat(sropt.pack_group, "%d", i);
+			sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
+			bit_set(sropt.pack_grp_bits, i);
+		}
 
 		/* initialize options with env vars */
 		_opt_env(i);
@@ -615,18 +639,67 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	bit_free(pack_grp_bits);
 
 	if (opt_list && pending_append) {		/* Last record */
+		/*
+		 * Copy the last option record:
+		 * Copy strings if the original values will be preserved and
+		 *   reused for additional heterogeneous job/steps
+		 * Otherwise clear/NULL the pointer so it does not get re-used
+		 *   and freed, which will render the copied pointer bad
+		 */
 		slurm_opt_t *opt_dup;
 		opt_dup = xmalloc(sizeof(slurm_opt_t));
 		memcpy(opt_dup, &opt, sizeof(slurm_opt_t));
 		opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
 		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
+		sropt.alloc_nodelist = NULL;	/* Moved by memcpy */
+		opt_dup->srun_opt->argv = xmalloc(sizeof(char *) * sropt.argc);
+		for (i = 0; i < sropt.argc; i++)
+			opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
+		sropt.bcast_file = NULL;	/* Moved by memcpy */
+		opt.blrtsimage = NULL;		/* Moved by memcpy */
+		opt.burst_buffer = NULL;	/* Moved by memcpy */
+		opt_dup->srun_opt->ckpt_dir = xstrdup(sropt.ckpt_dir);
+		opt_dup->srun_opt->ckpt_interval_str =
+			xstrdup(sropt.ckpt_interval_str);
+		opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
+		opt.constraints = NULL;		/* Moved by memcpy */
+		sropt.cpu_bind = NULL;		/* Moved by memcpy */
+		opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
+		opt_dup->srun_opt->efname = xstrdup(sropt.efname);
+		opt_dup->srun_opt->epilog = xstrdup(sropt.epilog);
+		opt_dup->srun_opt->export_env = xstrdup(sropt.export_env);
+		opt.gres = NULL;		/* Moved by memcpy */
+		opt.hint_env = NULL;		/* Moved by memcpy */
+		sropt.hostfile = NULL;		/* Moved by memcpy */
+		opt_dup->srun_opt->ifname = xstrdup(sropt.ifname);
+		opt_dup->srun_opt->ofname = xstrdup(sropt.ofname);
+		opt_dup->srun_opt->launcher_opts = xstrdup(sropt.launcher_opts);
+		sropt.launcher_opts = NULL;	/* Moved by memcpy */
+		opt.licenses = NULL;		/* Moved by memcpy */
+		opt.linuximage = NULL;		/* Moved by memcpy */
+		opt.mail_user = NULL;		/* Moved by memcpy */
+		opt.mem_bind = NULL;		/* Moved by memcpy */
+		opt.mloaderimage = NULL;	/* Moved by memcpy */
+		opt.network = NULL;		/* Moved by memcpy */
+		opt.nodelist = NULL;		/* Moved by memcpy */
+		sropt.pack_group = NULL;	/* Moved by memcpy */
+		sropt.pack_grp_bits = NULL;	/* Moved by memcpy */
+		opt.partition = NULL;		/* Moved by memcpy */
+		opt_dup->srun_opt->prolog = xstrdup(sropt.prolog);
+		opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
+		opt.ramdiskimage = NULL;	/* Moved by memcpy */
+		sropt.restart_dir = NULL;	/* Moved by memcpy */
+		opt.spank_job_env = NULL;	/* Moved by memcpy */
+		opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
+		opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
+
 		list_append(opt_list, opt_dup);
 		pending_append = false;
 	}
 
 	return 1;
-
 }
+
 static int _get_task_count(void)
 {
 	char *cpus_per_node = NULL, *end_ptr = NULL;
@@ -739,6 +812,7 @@ static void _opt_default(void)
 		xfree(opt.clusters);
 		xfree(sropt.cmd_name);
 		xfree(opt.comment);
+		opt.cpus_per_gpu	= 0;
 		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
 			error("getcwd failed: %m");
 			exit(error_exit);
@@ -760,6 +834,12 @@ static void _opt_default(void)
 		xfree(sropt.export_env);
 		opt.euid		= (uid_t) -1;
 		opt.gid			= getgid();
+		xfree(opt.gpus);
+		xfree(opt.gpu_bind);
+		xfree(opt.gpu_freq);
+		xfree(opt.gpus_per_node);
+		xfree(opt.gpus_per_socket);
+		xfree(opt.gpus_per_task);
 		opt.hold		= false;
 		xfree(sropt.ifname);
 		opt.immediate		= 0;
@@ -770,9 +850,9 @@ static void _opt_default(void)
 		sropt.job_name_set_env	= false;
 		sropt.kill_bad_exit	= NO_VAL;
 		sropt.labelio		= false;
-		sropt.max_exit_timeout	= 60; /* Warn user 60 sec after task exit */
 		sropt.max_wait		= slurm_get_wait_time();
 		xfree(opt.mcs_label);
+		opt.mem_per_gpu		= 0;
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
 		opt.nice		= NO_VAL;
@@ -799,6 +879,7 @@ static void _opt_default(void)
 		xfree(sropt.task_epilog);
 		xfree(sropt.task_prolog);
 		sropt.test_only		= false;
+		sropt.test_exec		= false;
 		opt.time_limit		= NO_VAL;
 		xfree(opt.time_limit_str);
 		opt.time_min		= NO_VAL;
@@ -818,7 +899,8 @@ static void _opt_default(void)
 
 	/*
 	 * All other options must be specified individually for each component
-	 * of the job. Do not use xfree() as the pointers have been copied
+	 * of the job/step. Do not use xfree() as the pointers have been copied.
+	 * See initialize_and_process_args() above.
 	 */
 	sropt.alloc_nodelist		= NULL;
 	sropt.accel_bind_type		= 0;
@@ -826,13 +908,12 @@ static void _opt_default(void)
 	sropt.bcast_flag		= false;
 	sropt.accel_bind_type		= 0;
 	opt.blrtsimage			= NULL;
-	sropt.burst_buffer		= NULL;
+	opt.burst_buffer		= NULL;
 	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]	= NO_VAL16;
 		opt.geometry[i]		= 0;
 	}
 	sropt.compress			= 0;
-
 	opt.constraints			= NULL;
 	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
@@ -841,12 +922,12 @@ static void _opt_default(void)
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
 	sropt.cpu_bind_type_set		= false;
-	sropt.exclusive			= false;
 	opt.cpu_freq_min		= NO_VAL;
 	opt.cpu_freq_max		= NO_VAL;
 	opt.cpu_freq_gov		= NO_VAL;
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
+	sropt.exclusive			= false;
 	opt.extra_set			= false;
 	/* opt.geometry[i]		= 0;	See above */
 	opt.gres			= NULL;
@@ -945,7 +1026,7 @@ env_vars_t env_vars[] = {
 {"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
 {"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL             },
-{"SLURM_BURST_BUFFER",  OPT_STRING,     &sropt.burst_buffer,NULL             },
+{"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
 {"SLURM_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL             },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &sropt.ckpt_dir,    NULL             },
@@ -958,6 +1039,7 @@ env_vars_t env_vars[] = {
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
 {"SLURM_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL             },
+{"SLURM_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL             },
 {"SLURM_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL             },
 {"SLURM_DEPENDENCY",    OPT_STRING,     &opt.dependency,    NULL             },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &sropt.disable_status,NULL           },
@@ -966,6 +1048,12 @@ env_vars_t env_vars[] = {
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
 {"SLURM_EXPORT_ENV",    OPT_STRING,     &sropt.export_env,  NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
+{"SLURM_GPUS",          OPT_STRING,     &opt.gpus,          NULL             },
+{"SLURM_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL             },
+{"SLURM_GPU_FREQ",      OPT_STRING,     &opt.gpu_freq,      NULL             },
+{"SLURM_GPUS_PER_NODE", OPT_STRING,     &opt.gpus_per_node, NULL             },
+{"SLURM_GPUS_PER_SOCKET",OPT_STRING,    &opt.gpus_per_socket,NULL            },
+{"SLURM_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL             },
 {"SLURM_GRES",          OPT_STRING,     &opt.gres,          NULL             },
 {"SLURM_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL             },
 {"SLURM_HINT",          OPT_HINT,       NULL,               NULL             },
@@ -978,6 +1066,7 @@ env_vars_t env_vars[] = {
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &sropt.kill_bad_exit,NULL            },
 {"SLURM_LABELIO",       OPT_INT,        &sropt.labelio,     NULL             },
 {"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL             },
+{"SLURM_MEM_PER_GPU",   OPT_MEM_PER_GPU,&opt.mem_per_gpu,  NULL              },
 {"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL             },
 {"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
 {"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
@@ -985,8 +1074,8 @@ env_vars_t env_vars[] = {
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
 {"SLURM_NETWORK",       OPT_STRING,     &opt.network,  &sropt.network_set_env},
-{"SLURM_NNODES",        OPT_NODES,      NULL,               NULL             },
-{"SLURM_NODELIST",      OPT_STRING,     &sropt.alloc_nodelist,NULL           },
+{"SLURM_JOB_NUM_NODES", OPT_NODES,      NULL,               NULL             },
+{"SLURM_JOB_NODELIST",  OPT_STRING,     &sropt.alloc_nodelist,NULL           },
 {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL             },
 {"SLURM_NTASKS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
 {"SLURM_NPROCS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
@@ -1120,7 +1209,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_CPU_BIND:
 		xfree(sropt.cpu_bind);
 		if (slurm_verify_cpu_bind(val, &sropt.cpu_bind,
-					  &sropt.cpu_bind_type))
+					  &sropt.cpu_bind_type, 0))
 			exit(error_exit);
 		break;
 
@@ -1151,6 +1240,15 @@ _process_env_var(env_vars_t *e, const char *val)
 		} else
 			opt.nodes_set = sropt.nodes_set_env;
 		break;
+
+	case OPT_MEM_PER_GPU:
+		opt.mem_per_gpu = (int64_t) str_to_mbytes2(val);
+		if (opt.mem_per_gpu < 0) {
+			error("\"%s=%s\" -- invalid value, ignoring...",
+			      e->var, val);
+		}
+		break;
+
 
 	case OPT_OVERCOMMIT:
 		opt.overcommit = true;
@@ -1289,9 +1387,16 @@ _get_int(const char *arg, const char *what, bool positive)
 	return parse_int(what, arg, positive);
 }
 
-/* If --pack-group option found, return a bitmap representing their IDs */
+/*
+ * If --pack-group option found, return a bitmap representing their IDs
+ * argc IN - Argument count
+ * argv IN - Arguments
+ * default_pack_offset IN - Default offset
+ * opt_found OUT - Set to true if --pack-group option found
+ * RET bitmap if pack groups to run
+ */
 static bitstr_t *_get_pack_group(const int argc, char **argv,
-				 int default_pack_offset)
+				 int default_pack_offset, bool *opt_found)
 {
 	int i, opt_char, option_index = 0;
 	char *tmp = NULL;
@@ -1305,6 +1410,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		exit(error_exit);
 	}
 
+	*opt_found = false;
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
@@ -1312,11 +1418,12 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		case LONG_OPT_PACK_GROUP:
 			xfree(sropt.pack_group);
 			sropt.pack_group = xstrdup(optarg);
+			*opt_found = true;
 		}
 	}
 	spank_option_table_destroy(optz);
 
-	if (!sropt.pack_group) {
+	if (*opt_found == false) {
 		bit_set(pack_grp_bits, default_pack_offset);
 		return pack_grp_bits;
 	}
@@ -1336,7 +1443,8 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		char *end_ptr = NULL;
 		i = strtol(tmp, &end_ptr, 10);
 		if ((i < 0) || (i >= MAX_PACK_COUNT) || (end_ptr[0] != '\0')) {
-			error("Invalid --pack-group value: %s", sropt.pack_group);
+			error("Invalid --pack-group value: %s",
+			       sropt.pack_group);
 			exit(error_exit);
 		}
 		bit_set(pack_grp_bits, i);
@@ -1453,6 +1561,10 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			if (verify_geometry(optarg, opt.geometry))
 				exit(error_exit);
+			break;
+		case (int)'G':
+			xfree(opt.gpus);
+			opt.gpus = xstrdup(optarg);
 			break;
 		case (int)'H':
 			opt.hold = true;
@@ -1659,6 +1771,10 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
 			break;
+		case LONG_OPT_CPUS_PER_GPU:
+			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,
+						     true);
+			break;
 		case LONG_OPT_DEADLINE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1698,12 +1814,46 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(sropt.cpu_bind);
 			if (slurm_verify_cpu_bind(optarg, &sropt.cpu_bind,
-						  &sropt.cpu_bind_type))
+						  &sropt.cpu_bind_type, 0))
 				exit(error_exit);
 			sropt.cpu_bind_type_set = true;
 			break;
 		case LONG_OPT_LAUNCH_CMD:
 			sropt.launch_cmd = true;
+			break;
+		case LONG_OPT_GPU_BIND:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
+			xfree(opt.gpu_bind);
+			opt.gpu_bind = xstrdup(optarg);
+			break;
+		case LONG_OPT_GPU_FREQ:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
+			xfree(opt.gpu_freq);
+			opt.gpu_freq = xstrdup(optarg);
+			break;
+		case LONG_OPT_GPUS_PER_NODE:
+			xfree(opt.gpus_per_node);
+			opt.gpus_per_node = xstrdup(optarg);
+			break;
+		case LONG_OPT_GPUS_PER_SOCKET:
+			xfree(opt.gpus_per_socket);
+			opt.gpus_per_socket = xstrdup(optarg);
+			break;
+		case LONG_OPT_GPUS_PER_TASK:
+			xfree(opt.gpus_per_task);
+			opt.gpus_per_task = xstrdup(optarg);
+			break;
+		case LONG_OPT_MEM_PER_GPU:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
+			opt.mem_per_gpu = (int64_t) str_to_mbytes2(optarg);
+			if (opt.mem_per_gpu < 0) {
+				error("invalid mem-per-gpu constraint %s",
+				      optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (!optarg)
@@ -1816,12 +1966,6 @@ static void _set_options(const int argc, char **argv)
 			sropt.msg_timeout =
 				_get_int(optarg, "msg-timeout", true);
 			break;
-		case LONG_OPT_XTO:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			sropt.max_exit_timeout =
-				_get_int(optarg, "max-exit-timeout", true);
-			break;
 		case LONG_OPT_UID:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1917,14 +2061,14 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_BURST_BUFFER_SPEC:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(sropt.burst_buffer);
-			sropt.burst_buffer = xstrdup(optarg);
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(sropt.burst_buffer);
-			sropt.burst_buffer = _read_file(optarg);
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = _read_file(optarg);
 			break;
 		case LONG_OPT_BEGIN:
 			if (!optarg)
@@ -1940,7 +2084,7 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == (uint16_t)INFINITE) {
+			if (opt.mail_type == INFINITE16) {
 				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
@@ -2164,6 +2308,8 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.acctg_freq);
+			if (validate_acctg_freq(optarg))
+				exit(1);
 			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_WCKEY:
@@ -2340,7 +2486,6 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	int i, command_pos = 0, command_args = 0;
 	char **rest = NULL;
 	char *fullpath, *launch_params;
-	bool test_exec = false;
 
 	sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
 	bit_set(sropt.pack_grp_bits, pack_offset);
@@ -2440,20 +2585,57 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	sropt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (getenv("SLURM_TEST_EXEC")) {
-		test_exec = true;
+		sropt.test_exec = true;
 	} else {
 		launch_params = slurm_get_launch_params();
 		if (launch_params && strstr(launch_params, "test_exec"))
-			test_exec = true;
+			sropt.test_exec = true;
 		xfree(launch_params);
 	}
+
+	if (sropt.test_exec) {
+		/* Validate command's existence */
+		if (sropt.prolog) {
+			if ((fullpath = search_path(opt.cwd, sropt.prolog,
+						    true, R_OK|X_OK, true)))
+				sropt.prolog = fullpath;
+			else
+				error("prolog '%s' not found in PATH or CWD (%s), or wrong permissions",
+				      sropt.prolog, opt.cwd);
+		}
+		if (sropt.epilog) {
+			if ((fullpath = search_path(opt.cwd, sropt.epilog,
+						    true, R_OK|X_OK, true)))
+				sropt.epilog = fullpath;
+			else
+				error("epilog '%s' not found in PATH or CWD (%s), or wrong permissions",
+				      sropt.epilog, opt.cwd);
+		}
+		if (sropt.task_prolog) {
+			if ((fullpath = search_path(opt.cwd, sropt.task_prolog,
+						    true, R_OK|X_OK, true)))
+				sropt.task_prolog = fullpath;
+			else
+				error("task-prolog '%s' not found in PATH or CWD (%s), or wrong permissions",
+				      sropt.task_prolog, opt.cwd);
+		}
+		if (sropt.task_epilog) {
+			if ((fullpath = search_path(opt.cwd, sropt.task_epilog,
+						    true, R_OK|X_OK, true)))
+				sropt.task_epilog = fullpath;
+			else
+				error("task-epilog '%s' not found in PATH or CWD (%s), or wrong permissions",
+				      sropt.task_epilog, opt.cwd);
+		}
+	}
+
 #if defined HAVE_BG
 	/* BGQ's runjob command required a fully qualified path */
 	if (!launch_g_handle_multi_prog_verify(command_pos, &opt) &&
 	    (sropt.argc > command_pos)) {
 		if ((fullpath = search_path(opt.cwd,
 					    sropt.argv[command_pos],
-					    false, X_OK, test_exec))) {
+					    true, X_OK, sropt.test_exec))) {
 			xfree(sropt.argv[command_pos]);
 			sropt.argv[command_pos] = fullpath;
 		}
@@ -2462,9 +2644,10 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	/* may exit() if an error with the multi_prog script */
 	(void) launch_g_handle_multi_prog_verify(command_pos, &opt);
 
-	if (!sropt.multi_prog && (test_exec || sropt.bcast_flag)) {
+	if (!sropt.multi_prog && (sropt.test_exec || sropt.bcast_flag)) {
+
 		if ((fullpath = search_path(opt.cwd, sropt.argv[command_pos],
-					    false, X_OK, true))) {
+					    true, X_OK, true))) {
 			xfree(sropt.argv[command_pos]);
 			sropt.argv[command_pos] = fullpath;
 		} else {
@@ -2576,8 +2759,7 @@ static bool _opt_verify(void)
 			exit(error_exit);
 	}
 
-	/* set up the proc and node counts based on the arbitrary list
-	   of nodes */
+	/* set proc and node counts based on the arbitrary list of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	   && (!opt.nodes_set || !opt.ntasks_set)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
@@ -2594,10 +2776,12 @@ static bool _opt_verify(void)
 		hostlist_destroy(hl);
 	}
 
-	/* now if max is set make sure we have <= max_nodes in the
+	/*
+	 * now if max is set make sure we have <= max_nodes in the
 	 * nodelist but only if it isn't arbitrary since the user has
 	 * laid it out how it should be so don't mess with it print an
-	 * error later if it doesn't work the way they wanted */
+	 * error later if it doesn't work the way they wanted
+	 */
 	if (opt.max_nodes && opt.nodelist &&
 	    ((opt.distribution & SLURM_DIST_STATE_BASE)!=SLURM_DIST_ARBITRARY)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
@@ -2609,7 +2793,7 @@ static bool _opt_verify(void)
 			      "Eliminating nodes from the nodelist.",
 			      count, opt.max_nodes);
 			count -= opt.max_nodes;
-			while(i<count) {
+			while (i<count) {
 				char *name = hostlist_pop(hl);
 				if (name)
 					free(name);
@@ -2635,7 +2819,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) ||
+	if ((opt.min_nodes < 0) || (opt.max_nodes < 0) ||
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
 		error("invalid number of nodes (-N %d-%d)",
 		      opt.min_nodes, opt.max_nodes);
@@ -2780,7 +2964,7 @@ static bool _opt_verify(void)
 			}
 		}
 
-		if ((opt.ntasks_per_node != NO_VAL) &&
+		if ((opt.ntasks_per_node != NO_VAL) && opt.min_nodes &&
 		    (opt.ntasks_per_node != (opt.ntasks / opt.min_nodes))) {
 			if (opt.ntasks > opt.ntasks_per_node)
 				info("Warning: can't honor --ntasks-per-node "
@@ -2810,12 +2994,6 @@ static bool _opt_verify(void)
 		error("Thread value exceeds defined limit, reset to %d",
 		      MAX_THREADS);
 	}
-
-	/*
-	 * --wait always overrides hidden max_exit_timeout
-	 */
-	if (sropt.max_wait)
-		sropt.max_exit_timeout = sropt.max_wait;
 
 	if (opt.time_limit_str) {
 		opt.time_limit = time_str2mins(opt.time_limit_str);
@@ -2856,10 +3034,6 @@ static bool _opt_verify(void)
 
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 		opt.gid = opt.egid;
-
-	if (slurm_verify_cpu_bind(NULL, &sropt.cpu_bind,
-				  &sropt.cpu_bind_type))
-		exit(error_exit);
 
 	if (!mpi_type)
 		mpi_type = slurm_get_mpi_default();
@@ -3069,7 +3243,7 @@ static void _opt_list(void)
 	     acct_gather_profile_to_string(opt.profile));
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
-	info("burst_buffer   : `%s'", sropt.burst_buffer);
+	info("burst_buffer   : `%s'", opt.burst_buffer);
 	info("wckey          : `%s'", opt.wckey);
 	info("cpu_freq_min   : %u", opt.cpu_freq_min);
 	info("cpu_freq_max   : %u", opt.cpu_freq_max);
@@ -3121,12 +3295,12 @@ static void _opt_list(void)
 	else
 		info("bcast          : %s", tf_(sropt.bcast_flag));
 	info("qos            : %s", opt.qos);
-	if (opt.shared != (uint16_t) NO_VAL)
+	if (opt.shared != NO_VAL16)
 		info("oversubscribe  : %u", opt.shared);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	if (opt.conn_type[0] != (uint16_t) NO_VAL) {
+	if (opt.conn_type[0] != NO_VAL16) {
 		str = conn_type_string_full(opt.conn_type);
 		info("conn_type      : %s", str);
 		xfree(str);
@@ -3182,6 +3356,15 @@ static void _opt_list(void)
 	if (sropt.resv_port_cnt != NO_VAL)
 		info("resv_port_cnt     : %d", sropt.resv_port_cnt);
 	info("power             : %s", power_flags_str(opt.power_flags));
+
+	info("cpus-per-gpu      : %d", opt.cpus_per_gpu);
+	info("gpus              : %s", opt.gpus);
+	info("gpu-bind          : %s", opt.gpu_bind);
+	info("gpu-freq          : %s", opt.gpu_freq);
+	info("gpus-per-node     : %s", opt.gpus_per_node);
+	info("gpus-per-socket   : %s", opt.gpus_per_socket);
+	info("gpus-per-task     : %s", opt.gpus_per_task);
+	info("mem-per-gpu       : %"PRIi64, opt.mem_per_gpu);
 
 	str = print_commandline(sropt.argc, sropt.argv);
 	info("remote command    : `%s'", str);
@@ -3278,6 +3461,11 @@ static void _usage(void)
 "            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
 "            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
 "            [--mpi-combine=yes|no] [--pack-group=value]\n"
+#ifdef HAVE_GPUS
+"            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
+"            [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
+"            [--mem-per-gpu=MB]\n"
+#endif
 "            executable [args...]\n");
 
 }
@@ -3329,9 +3517,9 @@ static void _help(void)
 "  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
 "                              non-zero exit code\n"
 "  -l, --label                 prepend task number to lines of stdout/err\n"
-"      --launch-cmd            print external launcher command line if not SLURM\n"
+"      --launch-cmd            print external launcher command line if not Slurm\n"
 "      --launcher-opts=        options for the external launcher command if not\n"
-"                              SLURM\n"
+"                              Slurm\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "  -M, --clusters=names        Comma separated list of clusters to issue\n"
 "                              commands to.  Default is current cluster.\n"
@@ -3450,6 +3638,20 @@ static void _help(void)
 
 	spank_print_options(stdout, 6, 30);
 
+#ifdef HAVE_GPUS
+	printf("\n"
+"GPU scheduling options:\n"
+"      --cpus-per-gpu=n        number of CPUs required per allocated GPU\n"
+"  -G, --gpus=n                count of GPUs required for the job\n"
+"      --gpu-bind=...          task to gpu binding options\n"
+"      --gpu-freq=...          frequency and voltage of GPUs\n"
+"      --gpus-per-node=n       number of GPUs required per allocated node\n"
+"      --gpus-per-socket=n     number of GPUs required per allocated socket\n"
+"      --gpus-per-task=n       number of GPUs required per spawned task\n"
+"      --mem-per-gpu=n         real memory required per allocated GPU\n"
+		);
+#endif
+
 	printf("\n"
 #if defined HAVE_LIBNRT /* IBM PE specific options */
 "PE related options:\n"
@@ -3477,8 +3679,8 @@ static void _help(void)
 "      --cnload-image=path     path to compute node image for bluegene block.  Default if not set\n"
 "      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
 "      --ioload-image=path     path to ioload image for bluegene block.  Default if not set\n"
-#endif
 "\n"
+#endif
 "Help options:\n"
 "  -h, --help                  show this help message\n"
 "      --usage                 display brief usage message\n"

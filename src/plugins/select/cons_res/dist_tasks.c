@@ -8,11 +8,11 @@
  *  Portions copyright (C) 2012 Bull
  *  Written by Martin Perry <martin.perry@bull.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -372,7 +372,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 		}
@@ -736,7 +736,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	core_map = job_res->core_bitmap;
 	if (job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 		}
@@ -940,12 +940,17 @@ fini:	xfree(sock_avoid);
 }
 
 /* Remove any specialized cores from those allocated to the job */
-static void _clear_spec_cores(job_resources_t *job_res,
+static void _clear_spec_cores(struct job_record *job_ptr,
 			      bitstr_t *avail_core_bitmap)
 {
 	int first_node, last_node, i_node;
 	int first_core, last_core, i_core;
 	int alloc_node = -1, alloc_core = -1, size;
+	job_resources_t *job_res = job_ptr->job_resrcs;
+	multi_core_data_t *mc_ptr = NULL;
+
+	if (job_ptr->details && job_ptr->details->mc_ptr)
+		mc_ptr = job_ptr->details->mc_ptr;
 
 	size = bit_size(job_res->core_bitmap);
 	bit_nset(job_res->core_bitmap, 0, size - 1);
@@ -965,8 +970,13 @@ static void _clear_spec_cores(job_resources_t *job_res,
 		for (i_core = first_core; i_core <= last_core; i_core++) {
 			alloc_core++;
 			if (bit_test(avail_core_bitmap, i_core)) {
-				job_res->cpus[alloc_node] +=
-					select_node_record[i_node].vpus;
+				uint16_t tpc = select_node_record[i_node].vpus;
+				if (mc_ptr &&
+				    (mc_ptr->threads_per_core != NO_VAL16) &&
+				    (mc_ptr->threads_per_core < tpc))
+					tpc = mc_ptr->threads_per_core;
+
+				job_res->cpus[alloc_node] += tpc;
 			} else {
 				bit_clear(job_res->core_bitmap, alloc_core);
 			}
@@ -1013,7 +1023,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 {
 	int error_code, cr_cpu = 1;
 
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->core_spec != NO_VAL16) {
 		/* The job has been allocated all non-specialized cores,
 		 * so we don't need to select specific CPUs. */
 		return SLURM_SUCCESS;
@@ -1026,7 +1036,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		 * the available CPUs in the cpus array. Up to this point
 		 * we might not have the correct CPU count, but a core count
 		 * and ignoring specialized cores. Fix that too. */
-		_clear_spec_cores(job_ptr->job_resrcs, avail_core_bitmap);
+		_clear_spec_cores(job_ptr, avail_core_bitmap);
 		return SLURM_SUCCESS;
 	}
 

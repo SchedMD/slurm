@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "Slurm job initiation functions" "June 2017" "Slurm job initiation functions"
+.TH "Slurm API" "3" "Slurm job initiation functions" "February 2018" "Slurm job initiation functions"
 
 .SH "NAME"
 slurm_allocate_pack_job_blocking,
@@ -320,8 +320,8 @@ On success, zero is returned. On error, \-1 is returned, and Slurm error code is
 .LP
 \fBESLURM_NOT_TOP_PRIORITY\fR job can not be started immediately because higher priority jobs are waiting to use this partition.
 .LP
-\fBESLURM_NOT_PACK_JOB_LEADER\fR the job ID does not represent a pack job leader
-as required by the function.
+\fBESLURM_NOT_PACK_JOB_LEADER\fR the job ID does not represent a heterogeneous
+job leader as required by the function.
 .LP
 \fBESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE\fR the requested node configuration is not available (at least not in sufficient quantity) to satisfy the request.
 .LP

@@ -16,7 +16,8 @@ be profiled.)
 
 A seperate
 <a href="hdf5_profile_user_guide.html">User Guide</a> documents how to use
-the hdf5 version of the plugin.
+the hdf5 version of the plugin. An influxdb plugin is also available since
+Slurm 17.11.
 
 <p>The plugin provides an API for making calls to store data at various
 points in a step's lifecycle. It collects data periodically from potentially
@@ -29,12 +30,12 @@ avoids having to transfer files back to the controller at step end. Data is
 typically gathered at job_acct_gather interval or acct_gather_energy interval
 and the volume is not expected to be burdensome.
 
-<p>The <i>hdf5</i> implementation records I/O counts from the
-network interface (Interconnect), I/O counts from the node from the Lustre
+<p>The <i>hdf5</i> and <i>influxdb</i> implementations record I/O counts from
+the network interface (Interconnect), I/O counts from the node from the Lustre
 parallel file system, disk I/O counts, cpu and memory utilization
 for each task, and a record of energy use.
 
-<p>This implementation stores this data in a HDF5 file for each step
+<p>The <i>hdf5</i> implementation stores this data in a HDF5 file for each step
 on each node for the jobs. A separate program
 (<a href="sh5util.html">sh5util</a>) is provided to
 consolidate all the node-step files in one container for the job.
@@ -103,8 +104,8 @@ implemented must be stubbed.
 <p><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
-The system <span class="commandline">_init()</span> is called before the SLURM
-<span class="commandline">init()</span>, and the SLURM
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 

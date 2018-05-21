@@ -1,4 +1,4 @@
-.TH smap "1" "Slurm Commands" "November 2016" "Slurm Commands"
+.TH smap "1" "Slurm Commands" "March 2018" "Slurm Commands"
 
 .SH "NAME"
 smap \- graphically view information about Slurm jobs, partitions, and set
@@ -26,16 +26,8 @@ selected view and displaying a corresponding node chart.  Note that
 unallocated nodes are indicated by a '.' and nodes in the DOWN,
 DRAINED or FAIL state by a '#'.  When the \fB\-\-iterate=<seconds>\fR
 option is also selected, you can switch displays by typing a different
-letter from the list below (except 'c').
+letter from the list below.
 .RS
-.TP 15
-.I "b"
-Displays information about BlueGene partitions on the system
-.TP
-.I "c"
-Displays current BlueGene node states and allows users to configure
-the system.  Type 'quit' to end the configure mode.  Type 'exit' to
-end the configuration mode and exit smap.
 .TP
 .I "j"
 Displays information about jobs running on system.
@@ -70,35 +62,17 @@ If user is in configure mode type 'exit' to exit program, 'quit'
 to exit configure mode.
 
 .TP
-\fB\-I\fR, \fB\-\-ionodes\fR
-Only show objects with these ionodes this support is only for
-bluegene systems. This should be used inconjuction with the '\-n'
-option.  Only specify the ionode number range here.  Specify the node
-name with the '\-n' option.
-
-.TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.
 Note that the SlurmDBD must be up for this option to work properly.
 
 .TP
 \fB\-n\fR, \fB\-\-nodes\fR
-Only show objects with these nodes.  If querying to the ionode level
-use the option '\-I' in conjunction with this option.
+Only show objects with these nodes.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
 Avoid printing error messages.
-
-.TP
-\fB\-R <RACK_MIDPLANE_ID/XYZ>\fR, \fB\-\-resolve=<RACK_MIDPLANE_ID/XYZ>\fR
-Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
-
-To get the XYZ coord for a Rack/Midplane id input \-R R101 where 10 is the rack
-and 1 is the midplane.
-
-To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 with
-no leading 'R'.
 
 .TP
 \fB\-\-usage\fR
@@ -130,30 +104,20 @@ A prefix of "U:" indicates that the following user names may use this reservatio
 \fBAVAIL\fR
 Partition state: \fBup\fR or \fBdown\fR.
 .TP
-\fBBG_BLOCK\fR
-BlueGene Block Name\fR.
-.TP
-\fBCONN\fR
-Connection Type: \fBTORUS\fR or \fBMESH\fR or \fBSMALL\fR (for small blocks).
-.TP
 \fBEND_TIME\fR
 The time when an advanced reservation ended.
 .TP
 \fBID\fR
 Key to identify the nodes associated with this entity in the node chart.
 .TP
-\fBMODE\fR
-Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
-.TP
 \fBNAME\fR
 Name of the job or advanced reservation.
 .TP
-\fBNODELIST\fR or \fBBP_LIST\fR
-Names of nodes or base partitions associated with this configuration,
-partition or reservation.
+\fBNODELIST\fR
+Names of nodes associated with this configuration, partition or reservation.
 .TP
 \fBNODES\fR
-Count of nodes or base partitions with this particular configuration.
+Count of nodes with this particular configuration.
 .TP
 \fBPARTITION\fR
 Name of a partition.  Note that the suffix "*" identifies the
@@ -173,7 +137,7 @@ The time when an advanced reservation started.
 State of the nodes.
 Possible states include: allocated, completing, down,
 drained, draining, fail, failing, idle, and unknown plus
-their abbreviated forms: alloc, comp, donw, drain, drng,
+their abbreviated forms: alloc, comp, down, drain, drng,
 fail, failg, idle, and unk respectively.
 Note that the suffix "*" identifies nodes that are presently
 not responding.
@@ -193,181 +157,6 @@ On most Linux clusters this will represent a one\-dimensional
 array of nodes. Larger clusters will utilize multiple as needed
 with right side of one line being logically followed by the
 left side of the next line.
-.PP
-.nf
-On BlueGene systems, the node chart will indicate the three
-dimensional topography of the system.
-The X dimension will increase from left to right on a given line.
-The Y dimension will increase in planes from bottom to top.
-The Z dimension will increase within a plane from the back
-line to the front line of a plane.
-Note the example below:
-
-   a a a a b b d d
-  a a a a b b d d
- a a a a b b c c
-a a a a b b c c
-
-   a a a a b b d d
-  a a a a b b d d
- a a a a b b c c
-a a a a b b c c
-
-   a a a a . . d d
-  a a a a . . d d
- a a a a . . e e              Y
-a a a a . . e e               |
-                              |
-   a a a a . . d d            0\-\-\-\-X
-  a a a a . . d d            /
- a a a a . . . .            /
-a a a a . . . #            Z
-
-ID JOBID PARTITION BG_BLOCK USER   NAME ST  TIME NODES BP_LIST
-a  12345 batch     RMP0     joseph tst1 R  43:12   32k bgl[000x333]
-b  12346 debug     RMP1     chris  sim3 R  12:34    8k bgl[420x533]
-c  12350 debug     RMP2     danny  job3 R   0:12    4k bgl[622x733]
-d  12356 debug     RMP3     dan    colu R  18:05    8k bgl[600x731]
-e  12378 debug     RMP4     joseph asx4 R   0:34    2k bgl[612x713]
-
-.fi
-
-.SH "CONFIGURATION INSTRUCTIONS"
-.PP
-For Admin use. From this screen one can create a configuration
-file that is used to partition and wire the system into usable
-blocks.
-
-.TP
-\fBOUTPUT\fR
-
-.RS
-.TP
-\fBBG_BLOCK\fR
-BlueGene Block Name.
-.TP
-\fBCONN\fR
-Connection Type: \fBTORUS\fR or \fBMESH\fR or \fBSMALL\fR (for small blocks).
-.TP
-\fBID\fR
-Key to identify the nodes associated with this entity in the node chart.
-.TP
-\fBMODE\fR
-Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
-.RE
-
-.TP
-\fBINPUT COMMANDS\fR
-.RS
-.TP
-\fBresolve <RACK_MIDPLANE_ID/XYZ>\fR
-Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
-
-To get the XYZ coord for a Rack/Midplane id input \-R R101 where 10 is the rack
-and 1 is the midplane.
-
-To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 with
-no leading 'R'.
-
-.TP
-\fBload <bluegene.conf file>\fR
-Load an already existent bluegene.conf file. This will verify and mapout a
-bluegene.conf file.  After loaded the configuration may be edited and
-saved as a new file.
-
-.TP
-\fBcreate <size> <options>\fR
-Submit request for partition creation. The size may be specified either
-as a count of base partitions or specific dimensions in the X, Y and Z
-directions separated by "x", for example "2x3x4". A variety of options
-may be specified. Valid options are listed below. Note that the option
-and their values are case insensitive (e.g. "MESH" and "mesh" are equivalent).
-.TP
-\fBStart = XxYxZ\fR
-Identify where to start the partition.  This is primarily for testing
-purposes.  For convenience one can only put the X coord or XxY will also work.
-The default value is 0x0x0.
-.TP
-\fBConnection = MESH | TORUS | SMALL\fR
-Identify how the nodes should be connected in network.
-The default value is TORUS.
-.RS
-.TP
-\fBSmall\fR
-Equivalent to "Connection=Small".
-If a small connection is specified the base partition chosen will create
-smaller partitions based on options \fB32CNBlocks\fR and
-\fB128CNBlocks\fR respectively for a Bluegene L system.
-\fB16CNBlocks\fR, \fB64CNBlocks\fR, and \fB256CNBlocks\fR are also
-available for Bluegene P systems.  Keep in mind you
-must have enough ionodes to make all these configurations possible.
-  These number will be altered to take up the
-entire base partition. Size does not need to be specified with a small
-request, we will always default to 1 base partition for allocation.
-.TP
-\fBMesh\fR
-Equivalent to "Connection=Mesh".
-.TP
-\fBTorus\fR
-Equivalent to "Connection=Torus".
-.RE
-
-.TP
-\fBRotation = TRUE | FALSE\fR
-Specifies that the geometry specified in the size parameter may
-be rotated in space (e.g. the Y and Z dimensions may be switched).
-The default value is FALSE.
-.TP
-\fBRotate\fR
-Equivalent to "Rotation=true".
-.TP
-\fBElongation = TRUE | FALSE\fR
-If TRUE, permit the geometry specified in the size parameter to be altered as
-needed to fit available resources.
-For example, an allocation of "4x2x1" might be used to satisfy a size specification
-of "2x2x2".
-The default value is FALSE.
-.TP
-\fBElongate\fR
-Equivalent to "Elongation=true".
-
-.TP
-\fBcopy <id> <count>\fR
-Submit request for partition to be copied.
-You may copy a specific partition by specifying its id, by default the
-last configured partition is copied.
-You may also specify a number of copies to be made.
-By default, one copy is made.
-
-.TP
-\fBdelete <id>\fR
-Delete the specified block.
-
-.TP
-\fBdown <node_range>\fR
-Down a specific node or range of nodes.
-i.e. 000, 000\-111 [000x111]
-.TP
-\fBup <node_range>\fR
-Bring a specific node or range of nodes up.
-i.e. 000, 000\-111 [000x111]
-.TP
-\fBalldown\fR
-Set all nodes to down state.
-.TP
-\fBallup\fR
-Set all nodes to up state.
-
-.TP
-\fBsave <file_name>\fR
-Save the current configuration to a file.
-If no file_name is specified, the configuration is written to a
-file named "bluegene.conf" in the current working directory.
-
-.TP
-\fBclear\fR
-Clear all partitions created.
-.RE
 
 .SH "NODE STATE CODES"
 .PP
@@ -491,13 +280,22 @@ Job terminated with non\-zero exit code or other failure condition.
 Job terminated due to failure of one or more allocated nodes.
 .TP
 \fBPD  PENDING\fR
-Job is awaiting resource allocation.
+Sibling job (in federation) revoked.
 .TP
 \fBPR  PREEMPTED\fR
 Job terminated due to preemption.
 .TP
+\fBRV  REVOKED\fR
+Job currently has an allocation.
+.TP
 \fBR   RUNNING\fR
 Job currently has an allocation.
+.TP
+\fBSI  SIGNALING\fR
+Signal of job currently in progress.
+.TP
+\fBSO  STAGE_OUT\fR
+Staging out data after job completion.
 .TP
 \fBSE  SPECIAL_EXIT\fR
 The job was requeued in a special state. This state can be set by

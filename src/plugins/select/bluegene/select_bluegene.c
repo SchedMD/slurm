@@ -7,11 +7,11 @@
  *  Written by Dan Phung <phung4@llnl.gov> Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -101,14 +101,14 @@ bool ignore_state_errors = true;
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "select" for SLURM node selection) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "select" for Slurm node selection) and <method>
+ * is a description of how this plugin satisfies that application.  Slurm will
  * only load select plugins if the plugin_type string has a
  * prefix of "select/".
  *
@@ -612,7 +612,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	struct part_record *part_ptr = NULL;
 	bitstr_t *usable_mp_bitmap = NULL;
 	ListIterator itr = NULL;
-	uint16_t protocol_version = (uint16_t)NO_VAL;
+	uint16_t protocol_version = NO_VAL16;
 	uint32_t record_count;
 
 	xassert(curr_block_list);
@@ -655,7 +655,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	if (ver_str && !xstrcmp(ver_str, BLOCK_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
-	if (protocol_version == (uint16_t)NO_VAL) {
+	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
 			fatal("Can not recover block state, data version incompatible, start with '-i' to ignore this");
 		error("***********************************************");
@@ -969,7 +969,7 @@ static int _validate_config_blocks(List curr_block_list,
 					   parse_blockreq() function.
 					*/
 					if (bg_record->conn_type[dim] ==
-					    (uint16_t)NO_VAL) {
+					    NO_VAL16) {
 						dim = SYSTEM_DIMENSIONS;
 						break;
 					}
@@ -1633,7 +1633,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * 3) type: TORUS or MESH or NAV (torus else mesh)
 	 *
 	 * note: we don't have to worry about security at this level
-	 * as the SLURM block logic will handle access rights.
+	 * as the Slurm block logic will handle access rights.
 	 */
 
 	return submit_job(job_ptr, bitmap, min_nodes, max_nodes,
@@ -2007,7 +2007,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			char rel_str[step_jobinfo->dim_cnt+1];
 			for (dim = 0; dim < step_jobinfo->dim_cnt; dim++) {
 				if (step_jobinfo->conn_type[dim]
-				    == (uint16_t)NO_VAL)
+				    == NO_VAL16)
 					rel_str[dim] = alpha_num[0];
 				else
 					rel_str[dim] = alpha_num[
@@ -3040,7 +3040,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		}
 		break;
 	case SELECT_GET_NODE_CPU_CNT:
-		if ((*cpus) != (uint16_t)INFINITE)
+		if ((*cpus) != INFINITE16)
 			(*cpus) = bg_conf->cpu_ratio;
 		break;
 	case SELECT_GET_MP_CPU_CNT:
@@ -3089,7 +3089,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		set_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_ALTERED, &tmp);
 
-		if (job_desc->min_nodes == (uint32_t) NO_VAL)
+		if (job_desc->min_nodes == NO_VAL)
 			return SLURM_SUCCESS;
 
 #ifdef HAVE_BG_L_P
@@ -3102,7 +3102,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			 && (job_desc->min_cpus != NO_VAL)) {
 			job_desc->min_nodes = job_desc->min_cpus;
 			if (job_desc->ntasks_per_node
-			    && job_desc->ntasks_per_node != (uint16_t)NO_VAL)
+			    && job_desc->ntasks_per_node != NO_VAL16)
 				job_desc->min_nodes /=
 					job_desc->ntasks_per_node;
 		}
@@ -3112,7 +3112,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
 
 		if (req_geometry[0] != 0
-		    && req_geometry[0] != (uint16_t)NO_VAL) {
+		    && req_geometry[0] != NO_VAL16) {
 			job_desc->min_nodes = 1;
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				job_desc->min_nodes *=
@@ -3144,7 +3144,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					 * validated beforehand. */
 					if (job_desc->ntasks_per_node
 					    && (job_desc->ntasks_per_node
-						!= (uint16_t)NO_VAL))
+						!= NO_VAL16))
 						divisor = (float)job_desc->
 							ntasks_per_node
 							/ bg_conf->cpu_ratio;
@@ -3173,7 +3173,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		/* initialize min_cpus to the min_nodes */
 		job_desc->min_cpus = job_desc->min_nodes * bg_conf->cpu_ratio;
 
-		if ((job_desc->max_nodes == (uint32_t) NO_VAL)
+		if ((job_desc->max_nodes == NO_VAL)
 		    || (job_desc->max_nodes < job_desc->min_nodes))
 			job_desc->max_nodes = job_desc->min_nodes;
 
@@ -3403,7 +3403,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	}
 
 	job_rec.details->max_cpus = job_rec.details->min_cpus;
-	job_rec.details->core_spec = (uint16_t)NO_VAL;
+	job_rec.details->core_spec = NO_VAL16;
 
 	preemptee_candidates = list_create(NULL);
 

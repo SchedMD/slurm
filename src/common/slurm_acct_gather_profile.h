@@ -6,11 +6,11 @@
  *
  *  Written by Rod Schultz <rod.schultz@bull.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -115,7 +115,7 @@ extern void acct_gather_profile_endpoll(void);
 
 /* Called from slurmstepd between fork() and exec() of application.
  * Close open files */
-extern void acct_gather_profile_g_child_forked(void);
+extern int acct_gather_profile_g_child_forked(void);
 
 /*
  * Define plugin local conf for acct_gather.conf
@@ -125,7 +125,7 @@ extern void acct_gather_profile_g_child_forked(void);
  *			definitions
  *	full_options_cnt -- count of plugin local definitions
  */
-extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
+extern int acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 					       int *full_options_cnt);
 /*
  * set plugin local conf from acct_gather.conf into its structure
@@ -133,13 +133,13 @@ extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
  * Parameters
  * 	tbl - hash table of acct_gather.conf key-values.
  */
-extern void acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl);
+extern int acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl);
 
 /*
  * get info from the profile plugin
  *
  */
-extern void acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
+extern int acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 				      void *data);
 
 /*
@@ -195,7 +195,7 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid);
  * Returns -- the identifier of the group on success,
  *            a negative value on failure
  */
-extern int acct_gather_profile_g_create_group(const char* name);
+extern int64_t acct_gather_profile_g_create_group(const char* name);
 
 /*
  * Create a new dataset to record profiling data in the group "parent".
@@ -213,7 +213,8 @@ extern int acct_gather_profile_g_create_group(const char* name);
  *            a negative value on failure
  */
 extern int acct_gather_profile_g_create_dataset(
-	const char *name, int parent, acct_gather_profile_dataset_t *dataset);
+	const char *name, int64_t parent,
+	acct_gather_profile_dataset_t *dataset);
 
 /*
  * Put data at the Node Samples level. Typically called from something called

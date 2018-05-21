@@ -7,11 +7,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -913,12 +913,16 @@ extern int scontrol_update_job(int argc, char **argv)
 			job_msg.nice = NICE_OFFSET + tmp_nice;
 			update_cnt++;
 		}
-		else if (xstrncasecmp(tag, "CPUsPerTask", MAX(taglen, 6)) == 0) {
+		else if (!xstrncasecmp(tag, "CPUsPerTask", MAX(taglen, 9))) {
 			if (parse_uint16(val, &job_msg.cpus_per_task)) {
 				error("Invalid CPUsPerTask value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "CpusPerTres", MAX(taglen, 9))) {
+			job_msg.cpus_per_tres = val;
 			update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "NumCPUs", MAX(taglen, 6)) == 0) {
@@ -936,7 +940,7 @@ extern int scontrol_update_job(int argc, char **argv)
 				job_msg.max_cpus = max_cpus;
 			update_cnt++;
 		}
-		/* ReqProcs was removed in SLURM version 2.1 */
+		/* ReqProcs was removed in Slurm version 2.1 */
 		else if ((xstrncasecmp(tag, "NumTasks", MAX(taglen, 8)) == 0) ||
 			 (xstrncasecmp(tag, "ReqProcs", MAX(taglen, 8)) == 0)) {
 			if (parse_uint32(val, &job_msg.num_tasks)) {
@@ -954,7 +958,7 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			update_cnt++;
 		}
-		/* ReqNodes was replaced by NumNodes in SLURM version 2.1 */
+		/* ReqNodes was replaced by NumNodes in Slurm version 2.1 */
 		else if ((xstrncasecmp(tag, "ReqNodes", MAX(taglen, 8)) == 0) ||
 		         (xstrncasecmp(tag, "NumNodes", MAX(taglen, 8)) == 0)) {
 			int min_nodes, max_nodes, rc;
@@ -1096,7 +1100,7 @@ extern int scontrol_update_job(int argc, char **argv)
 			else if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.shared = 0;
 			else if (parse_uint16(val, &job_msg.shared)) {
-				error ("Invalid wait-for-switch value: %s", val);
+				error("Invalid OverSubscribe value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
@@ -1116,7 +1120,7 @@ extern int scontrol_update_job(int argc, char **argv)
 		}
 		else if (xstrncasecmp(tag, "CoreSpec", MAX(taglen, 4)) == 0) {
 			if (!xstrcmp(val, "-1") || !xstrcmp(val, "*"))
-				job_msg.core_spec = (uint16_t) INFINITE;
+				job_msg.core_spec = INFINITE16;
 			else if (parse_uint16(val, &job_msg.core_spec)) {
 				error ("Invalid CoreSpec value: %s", val);
 				exit_code = 1;
@@ -1124,15 +1128,43 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			update_cnt++;
 		}
+		else if (!xstrncasecmp(tag, "MemPerTres", MAX(taglen, 5))) {
+			job_msg.mem_per_tres = val;
+			update_cnt++;
+		}
 		else if (xstrncasecmp(tag, "ThreadSpec", MAX(taglen, 4)) == 0) {
 			if (!xstrcmp(val, "-1") || !xstrcmp(val, "*"))
-				job_msg.core_spec = (uint16_t) INFINITE;
+				job_msg.core_spec = INFINITE16;
 			else if (parse_uint16(val, &job_msg.core_spec)) {
 				error ("Invalid ThreadSpec value: %s", val);
 				exit_code = 1;
 				return 0;
 			} else
 				job_msg.core_spec |= CORE_SPEC_THREAD;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresBind", MAX(taglen, 5))) {
+			job_msg.tres_bind = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresFreq", MAX(taglen, 5))) {
+			job_msg.tres_freq = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresPerJob", MAX(taglen, 8))) {
+			job_msg.tres_per_job = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresPerNode", MAX(taglen, 8))) {
+			job_msg.tres_per_node = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresPerSocket", MAX(taglen, 8))) {
+			job_msg.tres_per_socket = val;
+			update_cnt++;
+		}
+		else if (!xstrncasecmp(tag, "TresPerTask", MAX(taglen, 8))) {
+			job_msg.tres_per_task = val;
 			update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "ExcNodeList", MAX(taglen, 3)) == 0){
@@ -1225,7 +1257,7 @@ extern int scontrol_update_job(int argc, char **argv)
 		}
 		else if (xstrncasecmp(tag, "Conn-Type", MAX(taglen, 2)) == 0) {
 			verify_conn_type(val, job_msg.conn_type);
-			if (job_msg.conn_type[0] != (uint16_t)NO_VAL)
+			if (job_msg.conn_type[0] != NO_VAL16)
 				update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "Licenses", MAX(taglen, 1)) == 0) {
@@ -1484,7 +1516,7 @@ static void _update_job_size(uint32_t job_id)
 		fprintf(resize_csh, "unsetenv SLURM_TASKS_PER_NODE\n");
 	}
 
-	printf("To reset SLURM environment variables, execute\n");
+	printf("To reset Slurm environment variables, execute\n");
 	printf("  For bash or sh shells:  . ./%s\n", fname_sh);
 	printf("  For csh shells:         source ./%s\n", fname_csh);
 

@@ -28,7 +28,7 @@ my %job_cond = ();
 #my @state_nums = map {$slurm->job_state_num($_)} @states;
 #$job_cond{state_list} = \@state_nums;
 #$job_cond{step_list} = "2547,2549,2550.1";
-$job_cond{'without_usage_truncation'} = 1;
+$job_cond{'flags'} = JOBCOND_FLAG_NO_TRUNC;
 
 my $jobs = Slurmdb::jobs_get($db_conn, \%job_cond);
 print Dumper($jobs);

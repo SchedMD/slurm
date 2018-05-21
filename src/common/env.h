@@ -6,22 +6,22 @@
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #ifndef _ENV_H
@@ -33,6 +33,7 @@
 
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 
 typedef struct env_options {
@@ -103,7 +104,7 @@ int	setup_env(env_t *env, bool preserve_env);
  * Newer environment variable handling scheme
  **********************************************************************/
 /*
- * Set in "dest" the environment variables relevant to a SLURM job
+ * Set in "dest" the environment variables relevant to a Slurm job
  * allocation, overwriting any environment variables of the same name.
  * If the address pointed to by "dest" is NULL, memory will automatically be
  * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
@@ -129,7 +130,7 @@ extern int env_array_for_job(char ***dest,
 			     const job_desc_msg_t *desc, int pack_offset);
 
 /*
- * Set in "dest" the environment variables relevant to a SLURM batch
+ * Set in "dest" the environment variables relevant to a Slurm batch
  * job allocation, overwriting any environment variables of the same name.
  * If the address pointed to by "dest" is NULL, memory will automatically be
  * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
@@ -156,7 +157,7 @@ extern int env_array_for_batch_job(char ***dest,
 				   const char* node_name);
 
 /*
- * Set in "dest" the environment variables relevant to a SLURM job step,
+ * Set in "dest" the environment variables relevant to a Slurm job step,
  * overwriting any environment variables of the same name.  If the address
  * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
  * The array is terminated by a NULL pointer, and thus is suitable for
@@ -334,7 +335,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 extern char *uint16_array_to_str(int array_len, const uint16_t *array);
 
 /*
- * The cpus-per-node representation in SLURM (and perhaps tasks-per-node
+ * The cpus-per-node representation in Slurm (and perhaps tasks-per-node
  * in the future) is stored in a compressed format comprised of two
  * equal-length arrays, and an integer holding the array length. In one
  * array an element represents a count (number of cpus, number of tasks,
@@ -348,5 +349,16 @@ extern char *uint16_array_to_str(int array_len, const uint16_t *array);
 char *uint32_compressed_to_str(uint32_t array_len,
 			       const uint16_t *array,
 			       const uint32_t *array_reps);
+
+/*
+ * Set TRES related env vars. Set here rather than env_array_for_job() since
+ * we don't have array of opt values and the raw values are not stored in the
+ * job_desc_msg_t structure (only the strings with possibly combined TRES)
+ *
+ * opt IN - options set by command parsing
+ * dest IN/OUT - location to write environment variables
+ * pack_offset IN - component offset into pack job, -1 if not pack job
+ */
+extern void set_env_from_opts(slurm_opt_t *opt, char ***dest, int pack_offset);
 
 #endif

@@ -3,14 +3,14 @@
  *****************************************************************************
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Andy Riebs, <andy.riebs@hp.com>, who borrowed heavily
- *  from other parts of SLURM, and Danny Auble, <da@llnl.gov>
+ *  from other parts of Slurm, and Danny Auble, <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  *
  *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
@@ -64,14 +64,14 @@
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "jobacct" for SLURM job completion logging) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "jobacct" for Slurm job completion logging) and <method>
+ * is a description of how this plugin satisfies that application.  Slurm will
  * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobacct/".
  *
@@ -107,25 +107,66 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 {
 	ListIterator itr;
 	jag_prec_t *prec = NULL;
+	int i;
 
 	itr = list_iterator_create(prec_list);
 	while((prec = list_next(itr))) {
-		if (prec->ppid == pid) {
+		if (prec->ppid != pid)
+			continue;
 #if _DEBUG
-			info("pid:%u ppid:%u rss:%d KB",
-			     prec->pid, prec->ppid, prec->rss);
+		info("pid:%u ppid:%u rss:%"PRIu64" B",
+		     prec->pid, prec->ppid,
+		     prec->tres_data[TRES_ARRAY_MEM].size_read);
 #endif
-			_get_offspring_data(prec_list, ancestor, prec->pid);
-			ancestor->usec += prec->usec;
-			ancestor->ssec += prec->ssec;
-			ancestor->pages += prec->pages;
-			ancestor->rss += prec->rss;
-			ancestor->vsize += prec->vsize;
-			ancestor->disk_read += prec->disk_read;
-			ancestor->disk_write += prec->disk_write;
+		_get_offspring_data(prec_list, ancestor, prec->pid);
+
+		ancestor->usec += prec->usec;
+		ancestor->ssec += prec->ssec;
+
+		for (i = 0; i < prec->tres_count; i++) {
+			if (prec->tres_data[i].num_reads != INFINITE64) {
+				if (ancestor->tres_data[i].num_reads ==
+				    INFINITE64)
+					ancestor->tres_data[i].num_reads =
+						prec->tres_data[i].num_reads;
+				else
+					ancestor->tres_data[i].num_reads +=
+						prec->tres_data[i].num_reads;
+			}
+
+			if (prec->tres_data[i].num_writes != INFINITE64) {
+				if (ancestor->tres_data[i].num_writes ==
+				    INFINITE64)
+					ancestor->tres_data[i].num_writes =
+						prec->tres_data[i].num_writes;
+				else
+					ancestor->tres_data[i].num_writes +=
+						prec->tres_data[i].num_writes;
+			}
+
+			if (prec->tres_data[i].size_read != INFINITE64) {
+				if (ancestor->tres_data[i].size_read ==
+				    INFINITE64)
+					ancestor->tres_data[i].size_read =
+						prec->tres_data[i].size_read;
+				else
+					ancestor->tres_data[i].size_read +=
+						prec->tres_data[i].size_read;
+			}
+
+			if (prec->tres_data[i].size_write != INFINITE64) {
+				if (ancestor->tres_data[i].size_write ==
+				    INFINITE64)
+					ancestor->tres_data[i].size_write =
+						prec->tres_data[i].size_write;
+				else
+					ancestor->tres_data[i].size_write +=
+						prec->tres_data[i].size_write;
+			}
 		}
 	}
 	list_iterator_destroy(itr);
+
 	return;
 }
 

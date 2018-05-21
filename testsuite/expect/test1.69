@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test that multiple srun programs execute simultaneously in the
 #          background.
 #
@@ -11,22 +11,22 @@
 # Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -43,10 +43,7 @@ print_header $test_id
 set select_type [test_select_type]
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-if {![string compare $select_type "bluegene"]} {
-	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
-	exit $exit_code
-} elseif {![string compare $select_type "alps"]} {
+if {![string compare $select_type "alps"]} {
 	send_user "\nWARNING: This test is incompatible with Cray/ALPS systems\n"
 	exit $exit_code
 } elseif {![string compare $select_type "linear"]} {

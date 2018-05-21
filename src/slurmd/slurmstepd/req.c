@@ -7,11 +7,11 @@
  *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -82,7 +82,6 @@ static int _handle_info(int fd, stepd_step_rec_t *job);
 static int _handle_mem_limits(int fd, stepd_step_rec_t *job);
 static int _handle_uid(int fd, stepd_step_rec_t *job);
 static int _handle_nodeid(int fd, stepd_step_rec_t *job);
-static int _handle_signal_task_local(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_checkpoint_tasks(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid);
@@ -389,7 +388,7 @@ _handle_accept(void *arg)
 	if (auth_cred == NULL) {
 		error("Unpacking authentication credential: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		goto fail;
 	}
 	auth_info = slurm_get_auth_info();
@@ -446,7 +445,7 @@ rwfail:
 int
 _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 {
-	int rc = 0;
+	int rc = SLURM_SUCCESS;
 	int req;
 
 	debug3("Entering _handle_request");
@@ -459,16 +458,10 @@ _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 		}
 	}
 	debug3("Got request %d", req);
-	rc = SLURM_SUCCESS;
 	switch (req) {
-	case REQUEST_SIGNAL_TASK_LOCAL:
-		debug("Handling REQUEST_SIGNAL_TASK_LOCAL");
-		rc = _handle_signal_task_local(fd, job, uid);
-		break;
-	case REQUEST_SIGNAL_TASK_GLOBAL:
-		debug("Handling REQUEST_SIGNAL_TASK_GLOBAL (not implemented)");
-		break;
 	case REQUEST_SIGNAL_PROCESS_GROUP:	/* Defunct */
+	case REQUEST_SIGNAL_TASK_LOCAL:		/* Defunct */
+	case REQUEST_SIGNAL_TASK_GLOBAL:	/* Defunct */
 	case REQUEST_SIGNAL_CONTAINER:
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
 		rc = _handle_signal_container(fd, job, uid);
@@ -583,7 +576,7 @@ _handle_info(int fd, stepd_step_rec_t *job)
 	safe_write(fd, &job->jobid, sizeof(uint32_t));
 	safe_write(fd, &job->stepid, sizeof(uint32_t));
 
-	/* protocol_version was added in SLURM version 2.2,
+	/* protocol_version was added in Slurm version 2.2,
 	 * so it needed to be added later in the data sent
 	 * for backward compatibility (so that it doesn't
 	 * get confused for a huge UID, job ID or step ID;
@@ -630,97 +623,27 @@ rwfail:
 }
 
 static int
-_handle_signal_task_local(int fd, stepd_step_rec_t *job, uid_t uid)
-{
-	int rc = SLURM_SUCCESS;
-	int signal;
-	int ltaskid; /* local task index */
-
-	safe_read(fd, &signal, sizeof(int));
-	safe_read(fd, &ltaskid, sizeof(int));
-	debug("_handle_signal_task_local for step=%u.%u uid=%d signal=%d",
-	      job->jobid, job->stepid, (int) uid, signal);
-
-	if (uid != job->uid && !_slurm_authorized_user(uid)) {
-		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
-		      (long)uid, job->jobid, job->stepid, (long)job->uid);
-		rc = EPERM;
-		goto done;
-	}
-
-	/*
-	 * Sanity checks
-	 */
-	if (ltaskid < 0 || ltaskid >= job->node_tasks) {
-		debug("step %u.%u invalid local task id %d",
-		      job->jobid, job->stepid, ltaskid);
-		rc = SLURM_ERROR;
-		goto done;
-	}
-	if (!job->task
-	    || !job->task[ltaskid]) {
-		debug("step %u.%u no task info for task id %d",
-		      job->jobid, job->stepid, ltaskid);
-		rc = SLURM_ERROR;
-		goto done;
-	}
-	if (job->task[ltaskid]->pid <= 1) {
-		debug("step %u.%u invalid pid %d for task %d",
-		      job->jobid, job->stepid,
-		      job->task[ltaskid]->pid, ltaskid);
-		rc = SLURM_ERROR;
-		goto done;
-	}
-
-	/*
-	 * Signal the task
-	 */
-	slurm_mutex_lock(&suspend_mutex);
-	if (suspended) {
-		rc = ESLURMD_STEP_SUSPENDED;
-		slurm_mutex_unlock(&suspend_mutex);
-		goto done;
-	}
-
-	if (kill(job->task[ltaskid]->pid, signal) == -1) {
-		rc = -1;
-		verbose("Error sending signal %d to %u.%u, pid %d: %m",
-			signal, job->jobid, job->stepid,
-			job->task[ltaskid]->pid);
-	} else {
-		verbose("Sent signal %d to %u.%u, pid %d",
-			signal, job->jobid, job->stepid,
-			job->task[ltaskid]->pid);
-	}
-	slurm_mutex_unlock(&suspend_mutex);
-
-done:
-	/* Send the return code */
-	safe_write(fd, &rc, sizeof(int));
-	return SLURM_SUCCESS;
-rwfail:
-	return SLURM_FAILURE;
-}
-
-static int
 _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 	int sig, flag;
+	uid_t req_uid;
 	static int msg_sent = 0;
 	stepd_step_task_info_t *task;
 	uint32_t i;
 
 	safe_read(fd, &sig, sizeof(int));
 	safe_read(fd, &flag, sizeof(int));
+	safe_read(fd, &req_uid, sizeof(uid_t));
 
 	debug("_handle_signal_container for step=%u.%u uid=%d signal=%d",
-	      job->jobid, job->stepid, (int) uid, sig);
+	      job->jobid, job->stepid, (int) req_uid, sig);
+	/* verify uid off uid instead of req_uid as we can trust that one */
 	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
 		error("signal container req from uid %ld for step=%u.%u "
 		      "owned by uid %ld",
-		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		      (long)req_uid, job->jobid, job->stepid, (long)job->uid);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
@@ -1113,7 +1036,7 @@ _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 	safe_read(fd, &srun->protocol_version, sizeof(int));
 
 	if (!srun->protocol_version)
-		srun->protocol_version = (uint16_t)NO_VAL;
+		srun->protocol_version = NO_VAL16;
 	/*
 	 * Check if jobstep is actually running.
 	 */
@@ -1360,14 +1283,8 @@ rwfail:
 
 static int _handle_x11_display(int fd, stepd_step_rec_t *job)
 {
-	/*
-	 * dodge a race condition in the x11 forwarding setup.
-	 * the lock is held until display setup completes
-	 */
-	slurm_mutex_lock(&x11_lock);
 	/* Send the display number. zero indicates no display setup */
 	safe_write(fd, &job->x11_display, sizeof(int));
-	slurm_mutex_unlock(&x11_lock);
 
 	debug("Leaving _handle_get_x11_display");
 	return SLURM_SUCCESS;
@@ -1404,7 +1321,7 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 	static int launch_poe = -1;
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	uint16_t job_core_spec = (uint16_t) NO_VAL;
+	uint16_t job_core_spec = NO_VAL16;
 
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
@@ -1500,7 +1417,7 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	uint16_t job_core_spec = (uint16_t) NO_VAL;
+	uint16_t job_core_spec = NO_VAL16;
 
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
@@ -1616,7 +1533,7 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	if (jobacctinfo_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
 			       PROTOCOL_TYPE_SLURM, buffer, 1) != SLURM_SUCCESS)
 		goto rwfail;
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	/*
 	 * Record the completed nodes

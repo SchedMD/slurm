@@ -8,11 +8,11 @@
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -28,13 +28,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -46,7 +46,9 @@
 #include "slurm/slurmdb.h"
 
 #include "src/common/parse_time.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_selecttype_info.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -181,6 +183,12 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, " Default=NO");
 
+	if (part_ptr->cpu_bind) {
+		char tmp_str[128];
+		slurm_sprint_cpu_bind_type(tmp_str, part_ptr->cpu_bind);
+		xstrfmtcat(out, " CpuBind=%s ", tmp_str);
+	}
+
 	if (part_ptr->qos_char)
 		xstrfmtcat(out, " QoS=%s", part_ptr->qos_char);
 	else
@@ -312,7 +320,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	/****** Line ******/
 	if (part_ptr->over_time_limit == NO_VAL16)
 		xstrfmtcat(out, "OverTimeLimit=NONE");
-	else if (part_ptr->over_time_limit == (uint16_t) INFINITE)
+	else if (part_ptr->over_time_limit == INFINITE16)
 		xstrfmtcat(out, "OverTimeLimit=UNLIMITED");
 	else
 		xstrfmtcat(out, "OverTimeLimit=%u", part_ptr->over_time_limit);
@@ -356,7 +364,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	xstrcat(out, line_end);
 
-	/****** Line 9 ******/
+	/****** Line ******/
+	value = job_defaults_str(part_ptr->job_defaults_list);
+	xstrfmtcat(out, "JobDefaults=%s", value);
+	xfree(value);
+	xstrcat(out, line_end);
+
+	/****** Line ******/
 	if (part_ptr->def_mem_per_cpu & MEM_PER_CPU) {
 		if (part_ptr->def_mem_per_cpu == MEM_PER_CPU) {
 			xstrcat(out, "DefMemPerCPU=UNLIMITED");
@@ -367,7 +381,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	} else if (part_ptr->def_mem_per_cpu == 0) {
 		xstrcat(out, "DefMemPerNode=UNLIMITED");
 	} else {
-		xstrfmtcat(out, "DefMemPerNode=%"PRIu64"", part_ptr->def_mem_per_cpu);
+		xstrfmtcat(out, "DefMemPerNode=%"PRIu64"",
+			   part_ptr->def_mem_per_cpu);
 	}
 
 	if (part_ptr->max_mem_per_cpu & MEM_PER_CPU) {
@@ -380,7 +395,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	} else if (part_ptr->max_mem_per_cpu == 0) {
 		xstrcat(out, " MaxMemPerNode=UNLIMITED");
 	} else {
-		xstrfmtcat(out, " MaxMemPerNode=%"PRIu64"", part_ptr->max_mem_per_cpu);
+		xstrfmtcat(out, " MaxMemPerNode=%"PRIu64"",
+			   part_ptr->max_mem_per_cpu);
 	}
 
 	/****** Line 10 ******/

@@ -9,11 +9,11 @@
  *    Christopher J. Morrone <morrone2@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -29,13 +29,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -64,7 +64,6 @@ typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
  */
 typedef struct salloc_opt {
 	bell_flag_t bell;		/* --bell, --no-bell		*/
-	char *burst_buffer;		/* --bb				*/
 	bool default_job_name;		/* set if no command or job name specified */
 	int kill_command_signal;	/* --kill-command		*/
 	bool kill_command_signal_set;
@@ -85,6 +84,7 @@ typedef struct sbatch_opt {
 	char *efname;			/* error file name		*/
 
 	char *array_inx;		/* --array			*/
+	char *batch_features;		/* --batch			*/
 	char *burst_buffer_file;	/* --bbf			*/
 	int ckpt_interval;		/* --checkpoint (int minutes)	*/
 	char *ckpt_interval_str;	/* --checkpoint			*/
@@ -121,7 +121,6 @@ typedef struct srun_opt {
 	char *alloc_nodelist;		/* grabbed from the environment	*/
 	char *bcast_file;		/* --bcast, copy executable to compute nodes */
 	bool bcast_flag;		/* --bcast, copy executable to compute nodes */
-	char *burst_buffer;		/* --bb				*/
 	int ckpt_interval;		/* --checkpoint, in minutes	*/
 	char *ckpt_interval_str;	/* --checkpoint			*/
 	char *ckpt_dir;			/* --checkpoint-dir		*/
@@ -145,8 +144,7 @@ typedef struct srun_opt {
 	bool launch_cmd;		/* --launch_cmd			*/
 	char *launcher_opts;		/* --launcher-opts commands to be sent
 					 * to the external launcher command if
-					 * not SLURM */
-	int max_exit_timeout;		/* undocumented			*/
+					 * not Slurm */
 	int32_t max_threads;		/* --threads			*/
 	int max_wait;			/* --wait			*/
 	int msg_timeout;		/* undocumented			*/
@@ -175,6 +173,7 @@ typedef struct srun_opt {
 	int slurmd_debug;		/* --slurmd-debug		*/
 	char *task_epilog;		/* --task-epilog		*/
 	char *task_prolog;		/* --task-prolog		*/
+	bool test_exec;			/* test_exec set		*/
 	bool test_only;			/* --test-only			*/
 	bool unbuffered;		/* --unbuffered			*/
 	bool user_managed_io;		/* 0 for "normal" IO,		*/
@@ -188,6 +187,7 @@ typedef struct slurm_options {
 
 	char *progname;			/* argv[0] of this program or	*/
 
+	char *burst_buffer;		/* --bb				*/
 	char *clusters;			/* cluster to run this on. */
 	char *user;			/* local username		*/
 	uid_t uid;			/* local uid			*/
@@ -253,8 +253,16 @@ typedef struct slurm_options {
 	int verbose;
 
 	/* constraint options */
+	int cpus_per_gpu;		/* --cpus-per-gpu		*/
+	char *gpus;			/* --gpus			*/
+	char *gpu_bind;			/* --gpu_bind			*/
+	char *gpu_freq;			/* --gpu_freq			*/
+	char *gpus_per_node;		/* --gpus_per_node		*/
+	char *gpus_per_socket;		/* --gpus_per_socket		*/
+	char *gpus_per_task;		/* --gpus_per_task		*/
 	int pn_min_cpus;		/* --mincpus			*/
 	int64_t mem_per_cpu;		/* --mem-per-cpu		*/
+	int64_t mem_per_gpu;		/* --mem-per-gpu		*/
 	int64_t pn_min_memory;		/* --mem			*/
 	long pn_min_tmp_disk;		/* --tmp			*/
 	char *constraints;		/* --constraints		*/

@@ -85,7 +85,6 @@ typedef enum {
 	LOG_LEVEL_DEBUG3,
 	LOG_LEVEL_DEBUG4,
 	LOG_LEVEL_DEBUG5,
-	LOG_LEVEL_SCHED,
 	LOG_LEVEL_END
 }	log_level_t;
 
@@ -147,9 +146,6 @@ int log_init(char *argv0, log_options_t opts,
  */
 int sched_log_init(char *argv0, log_options_t opts, log_facility_t fac,
 		   char *logfile);
-
-/* Write to scheduler log */
-void schedlog(const char *fmt, ...);
 
 /* reinitialize log module.
  * Keep same log options as previously initialized log, but reinit mutex
@@ -253,6 +249,7 @@ extern int get_log_level(void);
 /* fatal() exits program
  * error() returns SLURM_ERROR
  */
+void	fatal_abort(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	fatal(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	info(const char *, ...) __attribute__ ((format (printf, 1, 2)));

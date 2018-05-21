@@ -6,11 +6,11 @@
  *
  *  Written by Bill Brophy <bill.brophy@bull.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -26,13 +26,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -1038,6 +1038,11 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
+
 	if (check_connection(mysql_conn) != SLURM_SUCCESS) {
 		return NULL;
 	}
@@ -1047,7 +1052,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(tmp);
 
 	/* overloaded for easibility */
-	if (res->percent_used != (uint16_t)NO_VAL) {
+	if (res->percent_used != NO_VAL16) {
 		xstrfmtcat(clus_vals, ", percent_allowed=%u",
 			   res->percent_used);
 		send_update = 1;
@@ -1138,7 +1143,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			last_res = curr_res;
 
 			if (have_clusters &&
-			    (res->percent_used != (uint16_t)NO_VAL)) {
+			    (res->percent_used != NO_VAL16)) {
 				percent_used = _get_res_used(
 					mysql_conn, curr_res, clus_extra);
 
@@ -1166,7 +1171,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (have_clusters && row[3] && row[3][0]) {
 			slurmdb_res_rec_t *res_rec;
 
-			if (res->percent_used != (uint16_t)NO_VAL)
+			if (res->percent_used != NO_VAL16)
 				percent_used += res->percent_used;
 			if (percent_used > 100) {
 				if (debug_flags & DEBUG_FLAG_DB_RES)

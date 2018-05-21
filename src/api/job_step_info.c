@@ -7,11 +7,11 @@
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -163,6 +163,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	char tmp_line[128];
 	char *out = NULL;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	char *line_end = (one_liner) ? " " : "\n   ";
 
 	/****** Line 1 ******/
 	slurm_make_time_str ((time_t *)&job_step_ptr->start_time, time_str,
@@ -209,15 +210,12 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		 "UserId=%u StartTime=%s TimeLimit=%s",
 		 job_step_ptr->user_id, time_str, limit_str);
 	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
 
 	/****** Line 2 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "State=%s ",
 		 job_state_string(job_step_ptr->state));
+	xstrcat(out, line_end);
 	xstrcat(out, tmp_line);
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		char *io_nodes = NULL;
@@ -244,10 +242,6 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			job_step_ptr->gres);
 	}
 	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
 
 	/****** Line 3 ******/
 	if (cluster_flags & CLUSTER_FLAG_BGQ) {
@@ -268,20 +262,14 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		"Nodes=%s CPUs=%u Tasks=%u Name=%s Network=%s",
 		 tmp_node_cnt, job_step_ptr->num_cpus, job_step_ptr->num_tasks,
 		 job_step_ptr->name, job_step_ptr->network);
+	xstrcat(out, line_end);
 	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
 
 	/****** Line 4 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "TRES=%s",
 		 job_step_ptr->tres_alloc_str);
+	xstrcat(out, line_end);
 	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
@@ -289,12 +277,9 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		 job_step_ptr->resv_ports,
 		 job_step_ptr->ckpt_interval, job_step_ptr->ckpt_dir);
 	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
 
 	/****** Line 6 ******/
+	xstrcat(out, line_end);
 	if (cpu_freq_debug(NULL, NULL, tmp_line, sizeof(tmp_line),
 			   job_step_ptr->cpu_freq_gov,
 			   job_step_ptr->cpu_freq_min,
@@ -305,16 +290,66 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	}
 	xstrfmtcat(out, " Dist=%s",
 		   slurm_step_layout_type_name(job_step_ptr->task_dist));
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
 
 	/****** Line 7 ******/
+	xstrcat(out, line_end);
 	xstrfmtcat(out, "SrunHost:Pid=%s:%u",
 		   job_step_ptr->srun_host, job_step_ptr->srun_pid);
-	xstrcat(out, "\n\n");
 
+	/****** Line (optional) ******/
+	if (job_step_ptr->cpus_per_tres) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "CpusPerTres=%s", job_step_ptr->cpus_per_tres);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->mem_per_tres) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "MemPerTres=%s", job_step_ptr->mem_per_tres);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_bind) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresBind=%s", job_step_ptr->tres_bind);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_freq) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresFreq=%s", job_step_ptr->tres_freq);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_per_job) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresPerJob=%s", job_step_ptr->tres_per_job);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_per_node) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresPerNode=%s", job_step_ptr->tres_per_node);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_per_socket) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresPerSocket=%s",
+			   job_step_ptr->tres_per_socket);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_per_task) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresPerTask=%s", job_step_ptr->tres_per_task);
+	}
+
+	/****** END OF JOB RECORD ******/
+	if (one_liner)
+		xstrcat(out, "\n");
+	else
+		xstrcat(out, "\n\n");
 	return out;
 }
 
@@ -820,4 +855,3 @@ extern void slurm_job_step_stat_response_msg_free(void *object)
 		xfree(step_stat_msg);
 	}
 }
-

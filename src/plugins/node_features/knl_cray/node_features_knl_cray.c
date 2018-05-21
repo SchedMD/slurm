@@ -4,11 +4,11 @@
  *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -74,10 +74,12 @@
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -138,14 +140,14 @@ bitstr_t *avail_node_bitmap;
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "node_features" for SLURM node_features) and <method> is a
- * description of how this plugin satisfies that application.  SLURM will only
+ * the plugin (e.g., "node_features" for Slurm node_features) and <method> is a
+ * description of how this plugin satisfies that application.  Slurm will only
  * load a node_features plugin if the plugin_type string has a prefix of
  * "node_features/".
  *
@@ -166,7 +168,7 @@ List active_feature_list __attribute__((weak_import));
 List active_feature_list;
 #endif
 
-/* Configuration Paramters */
+/* Configuration Parameters */
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
 static uint16_t allow_numa = KNL_NUMA_FLAG;
 static uid_t *allowed_uid = NULL;
@@ -177,16 +179,20 @@ static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
 static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static char *cnselect_path = NULL;
+static uint32_t cpu_bind[KNL_NUMA_CNT];	/* Derived from numa_cpu_bind */
 static bool debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *mc_path = NULL;
+static uint32_t node_reboot_weight = (INFINITE - 1);
+static char *numa_cpu_bind = NULL;
 static char *syscfg_path = NULL;
 static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool reconfig = false;
 static uint32_t ume_check_interval = 0;
 static pthread_mutex_t ume_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t ume_thread = 0;
+static uint32_t validate_mode = 0;
 
 static bitstr_t *knl_node_bitmap = NULL;	/* KNL nodes found by capmc */
 static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -216,8 +222,11 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"DefaultNUMA", S_P_STRING},
 	{"LogFile", S_P_STRING},
 	{"McPath", S_P_STRING},
+	{"NumaCpuBind", S_P_STRING},
 	{"SyscfgPath", S_P_STRING},
+	{"NodeRebootWeight", S_P_UINT32},
 	{"UmeCheckInterval", S_P_UINT32},
+	{"ValidateMode", S_P_UINT32},
 	{NULL}
 };
 
@@ -280,6 +289,7 @@ static uint16_t _knl_mcdram_token(char *token);
 static int _knl_numa_bits_cnt(uint16_t numa_num);
 static uint16_t _knl_numa_parse(char *numa_str, char *sep);
 static char *_knl_numa_str(uint16_t numa_num);
+static int _knl_numa_inx(char *token);
 static uint16_t _knl_numa_token(char *token);
 static mcdram_cfg2_t *_load_current_mcdram(int *num);
 static numa_cfg2_t *_load_current_numa(int *num);
@@ -311,6 +321,7 @@ static void _update_all_node_features(
 				mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				numa_cap_t *numa_cap, int numa_cap_cnt,
 				numa_cfg_t *numa_cfg, int numa_cfg_cnt);
+static void _update_cpu_bind(void);
 static void _update_mcdram_pct(char *tok, int mcdram_num);
 static void _update_node_features(struct node_record *node_ptr,
 				  mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
@@ -318,6 +329,7 @@ static void _update_node_features(struct node_record *node_ptr,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static int _update_node_state(char *node_list, bool set_locks);
+static void _validate_node_features(struct node_record *node_ptr);
 
 /* Function used both internally and externally */
 extern int node_features_p_node_update(char *active_features,
@@ -530,6 +542,24 @@ static uint16_t _knl_numa_token(char *token)
 	return numa_num;
 }
 
+/*
+ * Given a KNL NUMA token, return its cpu_bind offset
+ * token IN - String to scan
+ * RET NUMA offset or -1 if not found
+ */
+static int _knl_numa_inx(char *token)
+{
+	uint16_t numa_num;
+	int i;
+
+	numa_num = _knl_numa_token(token);
+	for (i = 0; i < KNL_NUMA_CNT; i++) {
+		if ((0x01 << i) == numa_num)
+			return i;
+	}
+	return -1;
+}
+
 /* Remove all KNL feature names from the "features" string */
 static void _strip_knl_opts(char **features)
 {
@@ -577,7 +607,74 @@ static void _free_script_argv(char **script_argv)
 	xfree(script_argv);
 }
 
-/* Update our mcdram_pct array with new data.
+/*
+ * Update cpu_bind array from current numa_cpu_bind configuration parameter
+ */
+static void _update_cpu_bind(void)
+{
+	char *save_ptr = NULL, *sep, *tok, *tmp;
+	int rc = SLURM_SUCCESS;
+	int i, numa_inx, numa_def;
+	uint32_t cpu_bind_val = 0;
+
+	for (i = 0; i < KNL_NUMA_CNT; i++)
+		cpu_bind[0] = 0;
+
+	if (!numa_cpu_bind)
+		return;
+
+	tmp = xstrdup(numa_cpu_bind);
+	tok = strtok_r(tmp, ";", &save_ptr);
+	while (tok) {
+		sep = strchr(tok, '=');
+		if (!sep) {
+			rc = SLURM_ERROR;
+			break;
+		}
+		sep[0] = '\0';
+		numa_def = _knl_numa_token(tok);
+		if (numa_def == 0) {
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (xlate_cpu_bind_str(sep + 1, &cpu_bind_val) !=
+		    SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
+			break;
+		}
+		numa_inx = -1;
+		for (i = 0; i < KNL_NUMA_CNT; i++) {
+			if ((0x1 << i) == numa_def) {
+				numa_inx = i;
+				break;
+			}
+		}
+		if (numa_inx > -1)
+			cpu_bind[numa_inx] = cpu_bind_val;
+		tok = strtok_r(NULL, ";", &save_ptr);
+	}
+	xfree(tmp);
+
+	if (rc != SLURM_SUCCESS) {
+		error("%s: Invalid NumaCpuBind (%s), ignored",
+		      plugin_type, numa_cpu_bind);
+	}
+
+	if (debug_flag) {
+		for (i = 0; i < KNL_NUMA_CNT; i++) {
+			char cpu_bind_str[128], *numa_str;
+			if (cpu_bind[i] == 0)
+				continue;
+			numa_str = _knl_numa_str(0x1 << i);
+			slurm_sprint_cpu_bind_type(cpu_bind_str, cpu_bind[i]);
+			info("CpuBind[%s] = %s", numa_str, cpu_bind_str);
+			xfree(numa_str);
+		}
+	}
+}
+
+/*
+ * Update our mcdram_pct array with new data.
  * tok IN - percentage of MCDRAM to be used as cache (string form)
  * mcdram_num - MCDRAM value (bit from KNL_FLAT, etc.)
  */
@@ -1290,6 +1387,70 @@ next_tok:	tok1 = strtok_r(NULL, ",", &save_ptr1);
 	xfree(tmp_str1);
 }
 
+static void _make_node_down(struct node_record *node_ptr)
+{
+	if (!avail_node_bitmap) {
+		/*
+		 * In process of initial slurmctld startup,
+		 * node data structures not completely built yet
+		 */
+		node_ptr->node_state |= NODE_STATE_DRAIN;
+		node_ptr->reason = xstrdup("Invalid KNL modes");
+		node_ptr->reason_time = time(NULL);
+		node_ptr->reason_uid = getuid();
+	} else {
+		(void) drain_nodes(node_ptr->name, "Invalid KNL modes",
+				   getuid());
+	}
+}
+
+/*
+ * Determine that the actual KNL mode matches the available and current node
+ * features, otherwise DRAIN the node
+ */
+static void _validate_node_features(struct node_record *node_ptr)
+{
+	char *tmp_str, *tok, *save_ptr = NULL;
+	uint16_t actual_mcdram = 0, actual_numa = 0;
+	uint16_t config_mcdram = 0, config_numa = 0;
+	uint16_t count_mcdram = 0,  count_numa = 0;
+	uint16_t tmp_mcdram, tmp_numa;
+
+	if (!node_ptr->features || IS_NODE_DOWN(node_ptr))
+		return;
+
+	tmp_str = xstrdup(node_ptr->features);
+	tok = strtok_r(tmp_str, ",", &save_ptr);
+	while (tok) {
+		if ((tmp_mcdram = _knl_mcdram_token(tok))) {
+			config_mcdram |= tmp_mcdram;
+			count_mcdram++;
+		} else if ((tmp_numa = _knl_numa_token(tok))) {
+			config_numa |= tmp_numa;
+			count_numa++;
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+
+	tmp_str = xstrdup(node_ptr->features_act);
+	tok = strtok_r(tmp_str, ",", &save_ptr);
+	while (tok) {
+		if ((tmp_mcdram = _knl_mcdram_token(tok)))
+			actual_mcdram |= tmp_mcdram;
+		else if ((tmp_numa = _knl_numa_token(tok)))
+			actual_numa |= tmp_numa;
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+
+	if ((config_mcdram != actual_mcdram) || (count_mcdram != 1) ||
+	    (config_numa   != actual_numa)   || (count_numa != 1)) {
+		_make_node_down(node_ptr);
+		error("Invalid KNL modes on node %s", node_ptr->name);
+	}
+}
+
 /*
  * Remove all KNL MCDRAM and NUMA type GRES from this node (it isn't KNL),
  * returns count of KNL features found.
@@ -1334,7 +1495,7 @@ static void _update_all_node_features(
 {
 	struct node_record *node_ptr;
 	char node_name[32], *prefix;
-	int i, node_inx, width = 5;
+	int i, node_inx, numa_inx, width = 5;
 	uint64_t mcdram_size;
 
 	if ((node_record_table_ptr == NULL) ||
@@ -1362,9 +1523,11 @@ static void _update_all_node_features(
 			if (node_ptr) {
 				node_inx = node_ptr - node_record_table_ptr;
 				bit_set(knl_node_bitmap, node_inx);
-				_merge_strings(&node_ptr->features,
-					       mcdram_cap[i].mcdram_cfg,
-					       allow_mcdram);
+				if (validate_mode == 0) {
+					_merge_strings(&node_ptr->features,
+						       mcdram_cap[i].mcdram_cfg,
+						       allow_mcdram);
+				}
 			}
 		}
 	}
@@ -1390,7 +1553,7 @@ static void _update_all_node_features(
 						 &node_ptr->gres_list);
 		}
 	}
-	if (numa_cap) {
+	if (numa_cap && (validate_mode == 0)) {
 		for (i = 0; i < numa_cap_cnt; i++) {
 			snprintf(node_name, sizeof(node_name),
 				 "%s%.*d", prefix, width, numa_cap[i].nid);
@@ -1411,26 +1574,32 @@ static void _update_all_node_features(
 				_merge_strings(&node_ptr->features_act,
 					       numa_cfg[i].numa_cfg,
 					       allow_numa);
+				numa_inx = _knl_numa_inx(numa_cfg[i].numa_cfg);
+				if ((numa_inx >= 0) && cpu_bind[numa_inx])
+					node_ptr->cpu_bind = cpu_bind[numa_inx];
 			}
 		}
 	}
 
-	/* Make sure that only nodes reported by "capmc get_mcdram_capabilities"
-	 * contain KNL features */
+	/*
+	 * Make sure that only nodes reported by "capmc get_mcdram_capabilities"
+	 * contain KNL features
+	 */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		if (bit_test(knl_node_bitmap, i))
+		if (bit_test(knl_node_bitmap, i)) {
+			if (validate_mode)
+				_validate_node_features(node_ptr);
 			continue;
+		}
 		node_inx = _strip_knl_features(&node_ptr->features) +
 			   _strip_knl_features(&node_ptr->features_act);
 		if (node_inx) {
 			error("Removed KNL features from non-KNL node %s",
 			      node_ptr->name);
 		}
-		if (!node_ptr->gres) {
-			node_ptr->gres =
-				xstrdup(node_ptr->config_ptr->gres);
-		}
+		if (!node_ptr->gres)
+			node_ptr->gres = xstrdup(node_ptr->config_ptr->gres);
 		gres_plugin_node_feature(node_ptr->name, "hbm", 0,
 					 &node_ptr->gres, &node_ptr->gres_list);
 	}
@@ -1438,15 +1607,17 @@ static void _update_all_node_features(
 	xfree(prefix);
 }
 
-/* Update a specific node's features and features_act fields based upon
- * its current configuration provided by capmc */
+/*
+ * Update a specific node's features and features_act fields based upon
+ * its current configuration provided by capmc
+ */
 static void _update_node_features(struct node_record *node_ptr,
 				  mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
 				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 {
-	int i, nid, node_inx;
+	int i, nid, node_inx, numa_inx;
 	char *end_ptr = "";
 	uint64_t mcdram_size;
 	bitstr_t *node_bitmap = NULL;
@@ -1464,7 +1635,7 @@ static void _update_node_features(struct node_record *node_ptr,
 		node_ptr->features_act = xstrdup(node_ptr->features);
 	_strip_knl_opts(&node_ptr->features_act);
 
-	if (mcdram_cap) {
+	if (mcdram_cap && (validate_mode == 0)) {
 		for (i = 0; i < mcdram_cap_cnt; i++) {
 			if (nid == mcdram_cap[i].nid) {
 				_merge_strings(&node_ptr->features,
@@ -1481,8 +1652,8 @@ static void _update_node_features(struct node_record *node_ptr,
 			if (nid != mcdram_cfg[i].nid)
 				continue;
 			_merge_strings(&node_ptr->features_act,
-				       mcdram_cfg[i].mcdram_cfg,
-				       allow_mcdram);
+				       mcdram_cfg[i].mcdram_cfg, allow_mcdram);
+
 			mcdram_per_node[node_ptr - node_record_table_ptr] =
 				mcdram_cfg[i].mcdram_size;
 			mcdram_size = mcdram_cfg[i].mcdram_size *
@@ -1501,7 +1672,7 @@ static void _update_node_features(struct node_record *node_ptr,
 			break;
 		}
 	}
-	if (numa_cap) {
+	if (numa_cap && (validate_mode == 0)) {
 		for (i = 0; i < numa_cap_cnt; i++) {
 			if (nid == numa_cap[i].nid) {
 				_merge_strings(&node_ptr->features,
@@ -1517,6 +1688,9 @@ static void _update_node_features(struct node_record *node_ptr,
 				_merge_strings(&node_ptr->features_act,
 					       numa_cfg[i].numa_cfg,
 					       allow_numa);
+				numa_inx = _knl_numa_inx(numa_cfg[i].numa_cfg);
+				if ((numa_inx >= 0) && cpu_bind[numa_inx])
+					node_ptr->cpu_bind = cpu_bind[numa_inx];
 				break;
 			}
 		}
@@ -1524,7 +1698,10 @@ static void _update_node_features(struct node_record *node_ptr,
 
 	/* Make sure that only nodes reported by "capmc get_mcdram_capabilities"
 	 * contain KNL features */
-	if (!is_knl) {
+	if (is_knl) {
+		if (validate_mode)
+			_validate_node_features(node_ptr);
+	} else {
 		node_inx = _strip_knl_features(&node_ptr->features) +
 			   _strip_knl_features(&node_ptr->features_act);
 		if (node_inx) {
@@ -1680,12 +1857,21 @@ extern int init(void)
 	xfree(capmc_path);
 	capmc_poll_freq = 45;
 	capmc_timeout = DEFAULT_CAPMC_TIMEOUT;
+	for (i = 0; i < KNL_NUMA_CNT; i++)
+		cpu_bind[i] = 0;
+	xfree(cnselect_path);
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
+	xfree(mc_path);
 	for (i = 0; i < KNL_MCDRAM_CNT; i++)
 		mcdram_pct[i] = -1;
 	mcdram_set = 0;
+	xfree(numa_cpu_bind);
+	xfree(syscfg_path);
+
+	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
+		debug_flag = true;
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((stat(knl_conf_file, &stat_buf) == 0) &&
@@ -1733,9 +1919,14 @@ extern int init(void)
 			xfree(tmp_str);
 		}
 		(void) s_p_get_string(&mc_path, "McPath", tbl);
+		(void) s_p_get_uint32(&node_reboot_weight, "NodeRebootWeight",
+				      tbl);
+		if (s_p_get_string(&numa_cpu_bind, "NumaCpuBind", tbl))
+			_update_cpu_bind();
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
 		(void) s_p_get_uint32(&ume_check_interval, "UmeCheckInterval",
 				      tbl);
+		(void) s_p_get_uint32(&validate_mode, "ValidateMode", tbl);
 		s_p_hashtbl_destroy(tbl);
 	} else {
 		error("something wrong with opening/reading knl_cray.conf");
@@ -1750,9 +1941,6 @@ extern int init(void)
 		mc_path = xstrdup("/sys/devices/system/edac/mc");
 	if (!syscfg_path)
 		verbose("SyscfgPath is not configured");
-
-	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
-		debug_flag = true;
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES) {
 		allow_mcdram_str = _knl_mcdram_str(allow_mcdram);
@@ -1772,8 +1960,11 @@ extern int init(void)
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
 		info("McPath=%s", mc_path);
+		info("NodeRebootWeight=%u", node_reboot_weight);
+		info("NumaCpuBind=%s", numa_cpu_bind);
 		info("SyscfgPath=%s", syscfg_path);
 		info("UmeCheckInterval=%u", ume_check_interval);
+		info("ValidateMode=%u", validate_mode);
 		xfree(allow_mcdram_str);
 		xfree(allow_numa_str);
 		xfree(allow_user_str);
@@ -1823,6 +2014,7 @@ extern int fini(void)
 	debug_flag = false;
 	xfree(mc_path);
 	xfree(mcdram_per_node);
+	xfree(numa_cpu_bind);
 	xfree(syscfg_path);
 	FREE_NULL_BITMAP(knl_node_bitmap);
 
@@ -1991,6 +2183,7 @@ extern void *_queue_agent(void *args)
 			node_time_queue = (time_t) 0;
 			slurm_mutex_unlock(&queue_mutex);
 			(void) _update_node_state(node_list, true);
+			xfree(node_list);
 		}
 	}
 
@@ -2380,15 +2573,24 @@ static int _update_node_state(char *node_list, bool set_locks)
 		time_t now = time(NULL);
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
-			_strip_knl_opts(&node_ptr->features);
 			if (node_ptr->last_response > now) {
-				/* Reboot likely in progress.
+				/*
+				 * Reboot likely in progress.
 				 * Preserve active KNL features and merge
-				 * with configured non-KNL features */
+				 * with configured non-KNL features
+				 */
 				_merge_strings(&node_ptr->features_act,
 					       node_ptr->features, 0);
-			} else {
+				continue;
+			}
+			if (validate_mode == 0) {
+				_strip_knl_opts(&node_ptr->features);
 				xfree(node_ptr->features_act);
+				if (node_ptr->features) {
+					node_ptr->features_act =
+						xstrdup(node_ptr->features);
+				}
+			} else {
 				if (node_ptr->features) {
 					node_ptr->features_act =
 						xstrdup(node_ptr->features);
@@ -2440,43 +2642,67 @@ extern int node_features_p_job_valid(char *job_features)
 {
 	uint16_t job_mcdram, job_numa;
 	int mcdram_cnt, numa_cnt;
+	int last_mcdram_cnt = 0, last_numa_cnt = 0;
+	int rc = SLURM_SUCCESS;
+	char last_sep = '\0', *tmp, *tok, *save_ptr = NULL;
 
 	if ((job_features == NULL) || (job_features[0] == '\0'))
 		return SLURM_SUCCESS;
 
-	if (strchr(job_features, '[') ||	/* Unsupported operator */
-	    strchr(job_features, ']') ||
-	    strchr(job_features, '|') ||
-	    strchr(job_features, '*'))
-		return ESLURM_INVALID_KNL;
-	
-	job_mcdram = _knl_mcdram_parse(job_features, "&,");
-	mcdram_cnt = _knl_mcdram_bits_cnt(job_mcdram);
-	if (mcdram_cnt > 1)			/* Multiple MCDRAM options */
-		return ESLURM_INVALID_KNL;
+	tmp = xstrdup(job_features);
+	tok = strtok_r(tmp, "[]()|", &save_ptr);
+	while (tok) {
+		last_sep = tok[strlen(tok) - 1];
+		job_mcdram = _knl_mcdram_parse(tok, "&,*");
+		mcdram_cnt = _knl_mcdram_bits_cnt(job_mcdram) + last_mcdram_cnt;
+		if (mcdram_cnt > 1) {	/* Multiple ANDed MCDRAM options */
+			rc = ESLURM_INVALID_KNL;
+			break;
+		}
 
-	job_numa = _knl_numa_parse(job_features, "&,");
-	numa_cnt = _knl_numa_bits_cnt(job_numa);
-	if (numa_cnt > 1)			/* Multiple NUMA options */
-		return ESLURM_INVALID_KNL;
+		job_numa = _knl_numa_parse(tok, "&,*");
+		numa_cnt = _knl_numa_bits_cnt(job_numa) + last_numa_cnt;
+		if (numa_cnt > 1) {	/* Multiple ANDed NUMA options */
+			rc = ESLURM_INVALID_KNL;
+			break;
+		}
+		tok = strtok_r(NULL, "[]()|", &save_ptr);
+		if (tok &&
+		    ((last_sep == '&') ||	/* e.g. "equal&(flat|cache)" */
+		     (tok[0] == '&'))) {	/* e.g. "(flat|cache)&equal" */
+			last_mcdram_cnt += mcdram_cnt;
+			last_numa_cnt += numa_cnt;
+		} else {
+			last_mcdram_cnt = 0;
+			last_numa_cnt = 0;
+		}
+	}
+	xfree(tmp);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
-/* Translate a job's feature request to the node features needed at boot time */
+/*
+ * Translate a job's feature request to the node features needed at boot time.
+ *	If multiple MCDRAM or NUMA values are ORed, pick the first ones.
+ * IN job_features - job's --constraint specification
+ * RET features required on node reboot. Must xfree to release memory
+ */
 extern char *node_features_p_job_xlate(char *job_features)
 {
 	char *node_features = NULL;
-	char *tmp, *save_ptr = NULL, *sep = "", *tok;
+	char *tmp, *save_ptr = NULL, *mult, *sep = "", *tok;
 	bool has_numa = false, has_mcdram = false;
 
 	if ((job_features == NULL) || (job_features[0] ==  '\0'))
 		return node_features;
 
 	tmp = xstrdup(job_features);
-	tok = strtok_r(tmp, "&", &save_ptr);
+	tok = strtok_r(tmp, "[]()|&", &save_ptr);
 	while (tok) {
 		bool knl_opt = false;
+		if ((mult = strchr(tok, '*')))
+			mult[0] = '\0';
 		if (_knl_mcdram_token(tok)) {
 			if (!has_mcdram) {
 				has_mcdram = true;
@@ -2493,32 +2719,19 @@ extern char *node_features_p_job_xlate(char *job_features)
 			xstrfmtcat(node_features, "%s%s", sep, tok);
 			sep = ",";
 		}
-		tok = strtok_r(NULL, "&", &save_ptr);
+		tok = strtok_r(NULL, "[]()|&", &save_ptr);
 	}
 	xfree(tmp);
 
-	/*
-	 * No MCDRAM or NUMA features specified. This might be a non-KNL node.
-	 * In that case, do not set the default any MCDRAM or NUMA features.
-	 */
-	if (!has_mcdram && !has_numa)
-		return xstrdup(job_features);
-
-	/* Add default options */
-	if (!has_mcdram) {
-		tmp = _knl_mcdram_str(default_mcdram);
-		xstrfmtcat(node_features, "%s%s", sep, tmp);
-		sep = ",";
-		xfree(tmp);
-	}
-	if (!has_numa) {
-		tmp = _knl_numa_str(default_numa);
-		xstrfmtcat(node_features, "%s%s", sep, tmp);
-		// sep = ",";		Removed to avoid CLANG error
-		xfree(tmp);
-	}
-
 	return node_features;
+}
+
+/* Return bitmap of KNL nodes, NULL if none identified */
+extern bitstr_t *node_features_p_get_node_bitmap(void)
+{
+	if (knl_node_bitmap)
+		return bit_copy(knl_node_bitmap);
+	return NULL;
 }
 
 /* Return true if the plugin requires PowerSave mode for booting nodes */
@@ -2539,7 +2752,7 @@ extern int node_features_p_node_set(char *active_features)
 
 /*
  * Note the active features associated with a set of nodes have been updated.
- * Specifically update the node's "hbm" GRES value as needed.
+ * Specifically update the node's "hbm" GRES and "CpuBind" values as needed.
  * IN active_features - New active features
  * IN node_bitmap - bitmap of nodes changed
  * RET error code
@@ -2548,25 +2761,39 @@ extern int node_features_p_node_update(char *active_features,
 				       bitstr_t *node_bitmap)
 {
 	int i, i_first, i_last;
-	int rc = SLURM_SUCCESS;
-	uint16_t mcdram_inx;
+	int rc = SLURM_SUCCESS, numa_inx = -1;
+	int mcdram_inx = 0;
 	uint64_t mcdram_size;
 	struct node_record *node_ptr;
+	char *save_ptr = NULL, *tmp, *tok;
 
-	if (mcdram_per_node == NULL) {
+	if (mcdram_per_node == NULL)
 		error("%s: mcdram_per_node == NULL", __func__);
-		return SLURM_ERROR;
+
+	if (active_features) {
+		tmp = xstrdup(active_features);
+		tok = strtok_r(tmp, ",", &save_ptr);
+		while (tok) {
+			if (numa_inx == -1)
+				numa_inx = _knl_numa_inx(tok);
+			mcdram_inx |= _knl_mcdram_token(tok);
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
 	}
-	mcdram_inx = _knl_mcdram_parse(active_features, ",");
-	if (mcdram_inx == 0)
-		return rc;
-	for (i = 0; i < KNL_MCDRAM_CNT; i++) {
-		if ((KNL_CACHE << i) == mcdram_inx)
-			break;
+
+	if (mcdram_inx >= 0) {
+		for (i = 0; i < KNL_MCDRAM_CNT; i++) {
+			if ((KNL_CACHE << i) == mcdram_inx)
+				break;
+		}
+		if ((i >= KNL_MCDRAM_CNT) || (mcdram_pct[i] == -1))
+			mcdram_inx = -1;
+		else
+			mcdram_inx = i;
+	} else {
+		mcdram_inx = -1;
 	}
-	if ((i >= KNL_MCDRAM_CNT) || (mcdram_pct[i] == -1))
-		return rc;
-	mcdram_inx = i;
 
 	xassert(node_bitmap);
 	i_first = bit_ffs(node_bitmap);
@@ -2583,12 +2810,16 @@ extern int node_features_p_node_update(char *active_features,
 			rc = SLURM_ERROR;
 			break;
 		}
-		mcdram_size = mcdram_per_node[i] *
-			      (100 - mcdram_pct[mcdram_inx]) / 100;
 		node_ptr = node_record_table_ptr + i;
-		gres_plugin_node_feature(node_ptr->name, "hbm",
-					 mcdram_size, &node_ptr->gres,
-					 &node_ptr->gres_list);
+		if ((numa_inx >= 0) && cpu_bind[numa_inx])
+			node_ptr->cpu_bind = cpu_bind[numa_inx];
+		if (mcdram_per_node && (mcdram_inx >= 0)) {
+			mcdram_size = mcdram_per_node[i] *
+				      (100 - mcdram_pct[mcdram_inx]) / 100;
+			gres_plugin_node_feature(node_ptr->name, "hbm",
+						 mcdram_size, &node_ptr->gres,
+						 &node_ptr->gres_list);
+		}
 	}
 
 	return rc;
@@ -2687,9 +2918,10 @@ extern bool node_features_p_node_update_valid(void *arg,
 }
 
 /* Return TRUE if this (one) feature name is under this plugin's control */
-extern bool node_features_p_changible_feature(char *feature)
+extern bool node_features_p_changeable_feature(char *feature)
 {
-	if (_knl_mcdram_token(feature) || _knl_numa_token(feature))
+	if ((validate_mode == 0) &&
+	    (_knl_mcdram_token(feature) || _knl_numa_token(feature)))
 		return true;
 	return false;
 }
@@ -2701,10 +2933,11 @@ extern bool node_features_p_changible_feature(char *feature)
  * IN new_features - newly active features
  * IN orig_features - original active features
  * IN avail_features - original available features
+ * IN node_inx - index of node in node table
  * RET node's new merged features, must be xfreed
  */
 extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
-					char *avail_features)
+					char *avail_features, int node_inx)
 {
 	char *node_features = NULL;
 	char *tmp, *save_ptr = NULL, *sep = "", *tok;
@@ -2843,7 +3076,7 @@ extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
 	if (mem_sort && (numa_available() != -1)) {
 		struct stat sb;
 		int buf_len, fd, i, len, rc;
-		char buf[8];
+		char buf[12];
 
 		if (stat(ZONE_SORT_PATH, &sb) == -1) {
 			rc = system(MODPROBE_PATH " zonesort_module");
@@ -2896,4 +3129,102 @@ extern bool node_features_p_user_update(uid_t uid)
 extern uint32_t node_features_p_boot_time(void)
 {
 	return boot_time;
+}
+
+/* Get node features plugin configuration */
+extern void node_features_p_get_config(config_plugin_params_t *p)
+{
+	config_key_pair_t *key_pair;
+	List data;
+
+	xassert(p);
+	xstrcat(p->name, plugin_type);
+	data = p->key_pairs;
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AllowMCDRAM");
+	key_pair->value = _knl_mcdram_str(allow_mcdram);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AllowNUMA");
+	key_pair->value = _knl_numa_str(allow_numa);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AllowUserBoot");
+	key_pair->value = _make_uid_str(allowed_uid, allowed_uid_cnt);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BootTime");
+	key_pair->value = xstrdup_printf("%u", boot_time);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CapmcPath");
+	key_pair->value = xstrdup(capmc_path);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CapmcPollFreq");
+	key_pair->value = xstrdup_printf("%u", capmc_poll_freq);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CapmcRetries");
+	key_pair->value = xstrdup_printf("%u", capmc_retries);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CapmcTimeout");
+	key_pair->value = xstrdup_printf("%u", capmc_timeout);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CnselectPath");
+	key_pair->value = xstrdup(cnselect_path);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("DefaultMCDRAM");
+	key_pair->value = _knl_mcdram_str(default_mcdram);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("DefaultNUMA");
+	key_pair->value = _knl_numa_str(default_numa);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("McPath");
+	key_pair->value = xstrdup(mc_path);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("NodeRebootWeight");
+	key_pair->value = xstrdup_printf("%u", node_reboot_weight);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SyscfgPath");
+	key_pair->value = xstrdup(syscfg_path);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("UmeCheckInterval");
+	key_pair->value = xstrdup_printf("%u", ume_check_interval);
+	list_append(data, key_pair);
+
+	list_sort(data, (ListCmpF) sort_key_pairs);
+
+	return;
+}
+
+/*
+ * Return node "weight" field if reboot required to change mode
+ */
+extern uint32_t node_features_p_reboot_weight(void)
+{
+	return node_reboot_weight;
 }

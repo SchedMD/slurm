@@ -5,11 +5,11 @@
  *  Copyright (C) 2013 SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -39,6 +39,9 @@
 #include <stdlib.h>
 
 #include "src/common/slurm_acct_gather.h"
+#include "slurm_acct_gather_energy.h"
+#include "slurm_acct_gather_interconnect.h"
+#include "slurm_acct_gather_filesystem.h"
 #include "src/common/xstring.h"
 
 static bool acct_gather_suspended = false;
@@ -69,6 +72,7 @@ extern int acct_gather_conf_init(void)
 	s_p_options_t *full_options = NULL;
 	int full_options_cnt = 0, i;
 	struct stat buf;
+	int rc = SLURM_SUCCESS;
 
 	if (inited)
 		return SLURM_SUCCESS;
@@ -76,10 +80,14 @@ extern int acct_gather_conf_init(void)
 
 	/* get options from plugins using acct_gather.conf */
 
-	acct_gather_energy_g_conf_options(&full_options, &full_options_cnt);
-	acct_gather_profile_g_conf_options(&full_options, &full_options_cnt);
-	acct_gather_interconnect_g_conf_options(&full_options, &full_options_cnt);
-	acct_gather_filesystem_g_conf_options(&full_options, &full_options_cnt);
+	rc += acct_gather_energy_g_conf_options(&full_options,
+						&full_options_cnt);
+	rc += acct_gather_profile_g_conf_options(&full_options,
+						 &full_options_cnt);
+	rc += acct_gather_interconnect_g_conf_options(&full_options,
+						      &full_options_cnt);
+	rc += acct_gather_filesystem_g_conf_options(&full_options,
+						    &full_options_cnt);
 	/* ADD MORE HERE */
 
 	/* for the NULL at the end */
@@ -114,17 +122,17 @@ extern int acct_gather_conf_init(void)
 	xfree(conf_path);
 
 	/* handle acct_gather.conf in each plugin */
-	acct_gather_energy_g_conf_set(tbl);
-	acct_gather_profile_g_conf_set(tbl);
-	acct_gather_interconnect_g_conf_set(tbl);
-	acct_gather_filesystem_g_conf_set(tbl);
+	rc += acct_gather_energy_g_conf_set(tbl);
+	rc += acct_gather_profile_g_conf_set(tbl);
+	rc += acct_gather_interconnect_g_conf_set(tbl);
+	rc += acct_gather_filesystem_g_conf_set(tbl);
 	/*********************************************************************/
 	/* ADD MORE HERE AND FREE MEMORY IN acct_gather_conf_destroy() BELOW */
 	/*********************************************************************/
 
 	s_p_hashtbl_destroy(tbl);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int acct_gather_conf_destroy(void)
@@ -217,7 +225,7 @@ extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
 		   really high so we don't check this again.
 		*/
 		if (i == -1)
-			acct_freq_task = (uint16_t)NO_VAL;
+			acct_freq_task = NO_VAL16;
 		else
 			acct_freq_task = i;
 	}

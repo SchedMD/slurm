@@ -4,11 +4,11 @@
  *  Copyright (C) 2014-2015 SchedMD LLC
  *  Written by Morris Jette <jette@schemd.com>
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -65,14 +65,14 @@
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "auth" for SLURM authentication) and <method> is a
- * description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "auth" for Slurm authentication) and <method> is a
+ * description of how this plugin satisfies that application.  Slurm will
  * only load authentication plugins if the plugin_type string has a prefix
  * of "auth/".
  *
@@ -113,7 +113,7 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 #if _DEBUG
 	char *spec_type;
 	int spec_count;
-	if (core_count == (uint16_t) NO_VAL) {
+	if (core_count == NO_VAL16) {
 		spec_type  = "Cores";
 		spec_count = 0;
 	} else if (core_count & CORE_SPEC_THREAD) {
@@ -134,7 +134,7 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 	int i;
 
 	// Skip core spec setup for no specialized cores
-	if ((core_count == (uint16_t) NO_VAL) ||
+	if ((core_count == NO_VAL16) ||
 	    (core_count == CORE_SPEC_THREAD)) {
 		return SLURM_SUCCESS;
 	}
@@ -160,20 +160,18 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 		return SLURM_ERROR;
 	}
 
-	pid = getpid();
-
-	// Slurm detaches the slurmstepd from the job, so we temporarily
-	// reattach so the job_set_affinity doesn't mess up one of the
-	// task's affinity settings
-	if (job_attachpid(pid, cont_id) == (jid_t)-1) {
-		error("job_attachpid(%zu, %"PRIu64") failed: %m",
-		      (size_t)pid, cont_id);
+	// Get a pid in the job to use with job_set_affinity
+	pid = job_getprimepid(cont_id);
+	if (pid < 0) {
+		error("job_getprimepid(%"PRIu64") returned %d: %m",
+		      cont_id, (int)pid);
 		return SLURM_ERROR;
 	}
 
 	// Apply the core specialization with job_set_affinity
-	// Use NONE for the cpu list because Slurm handles its
-	// own task->cpu binding
+	// JOB_AFFINITY_NONE tells the kernel to not alter the process'
+	// affinity unless required (the process is only allowed to run
+	// on cores that will be specialized).
 	memset(&affinity_info, 0, sizeof(struct job_set_affinity_info));
 	affinity_info.cpu_list = JOB_AFFINITY_NONE;
 	rc = job_set_affinity(cont_id, pid, &affinity_info);
@@ -186,14 +184,12 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 			error("job_set_affinity(%"PRIu64", %zu) failed: %m",
 			      cont_id, (size_t)pid);
 		}
-		job_detachpid(pid);
 		return SLURM_ERROR;
 	} else if (affinity_info.message != NULL) {
 		info("job_set_affinity(%"PRIu64", %zu): %s",
 		     cont_id, (size_t)pid, affinity_info.message);
 		free(affinity_info.message);
 	}
-	job_detachpid(pid);
 #endif
 	END_TIMER;
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
@@ -229,7 +225,7 @@ extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
 #if _DEBUG
 	char *spec_type;
 	int spec_count;
-	if (core_count == (uint16_t) NO_VAL) {
+	if (core_count == NO_VAL16) {
 		spec_type  = "Cores";
 		spec_count = 0;
 	} else if (core_count & CORE_SPEC_THREAD) {
@@ -257,7 +253,7 @@ extern int core_spec_p_resume(uint64_t cont_id, uint16_t core_count)
 #if _DEBUG
 	char *spec_type;
 	int spec_count;
-	if (core_count == (uint16_t) NO_VAL) {
+	if (core_count == NO_VAL16) {
 		spec_type  = "Cores";
 		spec_count = 0;
 	} else if (core_count & CORE_SPEC_THREAD) {

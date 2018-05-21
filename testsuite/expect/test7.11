@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of SLURM functionality
+# Purpose: Test of Slurm functionality
 #          Test of SPANK plugin
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -12,22 +12,22 @@
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# This file is part of SLURM, a resource management program.
+# This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
-# SLURM is free software; you can redistribute it and/or modify it under
+# Slurm is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
@@ -48,18 +48,28 @@ if {[test_super_user] == 0} {
 	send_user "\nWARNING: This test must be run as SlurmUser\n"
 	exit 0
 }
-if {[test_aix]} {
-	send_user "WARNING: Test is incompatible with AIX\n"
-	exit 0
-}
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
 }
 
+proc reconfigure { } {
+	global scontrol
+	spawn $scontrol reconfigure
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
 proc end_it { exit_code } {
 	global test_id orig_spank_conf spank_conf_file new_spank_conf spank_out
-	global file_out spank_out bin_cp bin_rm file_in file_prog
+	global file_out spank_out bin_cp bin_rm file_in file_prog reconfigure
 	#
 	# Restore the original plugstack
 	#
@@ -68,6 +78,7 @@ proc end_it { exit_code } {
 	} else {
 		exec $bin_rm -f $spank_conf_file
 	}
+	reconfigure
 
        if {$exit_code == 0} {
 		exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
@@ -161,6 +172,7 @@ expect {
 		wait
 	}
 }
+reconfigure
 
 #
 # Test of srun help message
@@ -258,7 +270,6 @@ if {$matches != 1} {
 	send_user "\nFAILURE: spank help message not in sbatch help message ($matches != 1)\n"
 	end_it 1
 }
-exec $bin_rm -f $file_in
 
 #
 # Test of locally logged messages().
@@ -270,9 +281,23 @@ exec $bin_rm -f $file_in
 #	configuration.
 #
 send_user "\n\nTest locally logged messages..........\n\n"
+
+send_user "Checksum of local $spank_conf_file\n"
+spawn $bin_sum $spank_conf_file
+expect {
+	-re timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+send_user "\n\n"
+
 $bin_sleep 30
 make_bash_script $file_in "
-  $srun --test_suite_srun=5 $bin_uname
+  $srun --test_suite_srun=5 $bin_sum $spank_conf_file
 "
 
 set job_id 0
@@ -376,6 +401,31 @@ if {[wait_for_file $spank_out] == 0} {
 	set matches_srun   0
 	set matches_spank_exit 0
 	set matches_spank_init 0
+
+	set expected_spank_exit 2
+	set expected_spank_init 2
+	set expected_sbatch     2
+	set expected_srun       2
+	set expected_items      5
+
+	# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
+	# launched on each node, so we need to check for additional output
+	log_user 0
+	spawn $scontrol show config
+	expect {
+		-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
+			incr expected_spank_exit
+		}
+		timeout {
+			log_error "scontrol show config not responding\n"
+				end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
 	spawn $bin_sort $spank_out
 	expect {
 		-re "slurm_spank_(\\S+): opt_arg_sbatch=($number) opt_arg_srun=($number)" {
@@ -408,28 +458,35 @@ if {[wait_for_file $spank_out] == 0} {
 			wait
 		}
 	}
-	if {$matches_spank_exit != 2} {
-		send_user "\nFAILURE: remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != 2)\n"
-		end_it 1
-	} elseif {$matches_spank_init != 2} {
-		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != 2)\n"
-		end_it 1
-	} elseif {$matches_sbatch != 2} {
-		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != 2)\n"
-		end_it 1
-	} elseif {$matches_srun != 2} {
-		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != 2)\n"
-		end_it 1
-	} elseif {$matches != 4} {
-		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != 4)\n"
-		end_it 1
-	} else {
-		send_user "\n remote (slurmd) spank plugin success\n"
+
+	set fail_cnt 0
+	if {$matches_spank_exit != $expected_spank_exit} {
+		send_user "\nFAILURE: remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != $expected_spank_exit)\n"
+		set fail_cnt 1
 	}
+	if {$matches_spank_init != $expected_spank_init} {
+		send_user "\nFAILURE: remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != $expected_spank_init)\n"
+		set fail_cnt 1
+	}
+	if {$matches_sbatch != $expected_sbatch} {
+		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch != $expected_sbatch)\n"
+		set fail_cnt 1
+	}
+	if {$matches_srun != $expected_srun} {
+		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun != $expected_srun)\n"
+		set fail_cnt 1
+	}
+	if {$matches != $expected_items} {
+		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches != $expected_items)\n"
+		set fail_cnt 1
+	}
+	if {$fail_cnt != 0} {
+		send_user "\nWARNING: Check for matching checksums on the plugstack.conf file.\n"
+		send_user "         Different checksums could indicate file system delays\n"
+		end_it 1
+	}
+	send_user "\n remote (slurmd) spank plugin success\n"
 } else {
-	send_user "\nWARNING: This can be caused by the plugstack.conf file not\n"
-	send_user "      being propagated to the compute node or not being in a\n"
-	send_user "      shared file system.\n"
 	end_it 1
 }
 

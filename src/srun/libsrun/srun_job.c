@@ -7,11 +7,11 @@
  *  Written by Mark Grondona <grondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -27,13 +27,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -571,14 +571,37 @@ static void _match_job_name(List opt_list)
 	while ((opt_local = list_next(iter))) {
 		if (!opt_local->job_name)
 			opt_local->job_name = xstrdup(opt.job_name);
+		if (opt_local->srun_opt &&
+		    (opt_local->srun_opt->open_mode == 0)) {
+			opt_local->srun_opt->open_mode = OPEN_MODE_APPEND;
+		}
 	}
 	list_iterator_destroy(iter);
+}
+
+static int _sort_by_offset(void *x, void *y)
+{
+	slurm_opt_t *opt_local1 = *(slurm_opt_t **) x;
+	slurm_opt_t *opt_local2 = *(slurm_opt_t **) y;
+	int offset1 = -1, offset2 = -1;
+
+	if (opt_local1->srun_opt->pack_grp_bits)
+		offset1 = bit_ffs(opt_local1->srun_opt->pack_grp_bits);
+	if (opt_local2->srun_opt->pack_grp_bits)
+		offset2 = bit_ffs(opt_local2->srun_opt->pack_grp_bits);
+	if (offset1 < offset2)
+		return -1;
+	if (offset1 > offset2)
+		return 1;
+	return 0;
 }
 
 static void _post_opts(List opt_list)
 {
 	_pack_grp_test(opt_list);
 	_match_job_name(opt_list);
+	if (opt_list)
+		list_sort(opt_list, _sort_by_offset);
 }
 
 extern void init_srun(int argc, char **argv,
@@ -638,8 +661,9 @@ extern void init_srun(int argc, char **argv,
 			 */
 			pack_argc -= pack_argc_off;
 			pack_argv += pack_argc_off;
-		} else
+		} else {
 			pack_fini = true;
+		}
 	}
 	_post_opts(opt_list);
 	record_ppid();
@@ -713,7 +737,10 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	ListIterator opt_iter = NULL, job_iter;
 	slurm_opt_t *opt_local = &opt;
 	uint32_t node_offset = 0, pack_nnodes = 0, step_id = NO_VAL;
-	uint32_t pack_offset = 0, pack_ntasks = 0, task_offset = 0;
+	uint32_t pack_ntasks = 0, task_offset = 0;
+
+	job_step_create_response_msg_t *step_resp;
+	char *resv_ports = NULL;
 	int rc = 0;
 
 	if (srun_job_list) {
@@ -734,7 +761,6 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				opt_local = list_next(opt_iter);
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
-			job->pack_offset = pack_offset;
 			job->node_offset = node_offset;
 			job->pack_nnodes = pack_nnodes;
 			job->pack_ntasks = pack_ntasks;
@@ -746,8 +772,49 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				break;
 			if (step_id == NO_VAL)
 				step_id = job->stepid;
+
+			if ((slurm_step_ctx_get(job->step_ctx,
+						SLURM_STEP_CTX_RESP,
+						&step_resp) == SLURM_SUCCESS) &&
+			    step_resp->resv_ports &&
+			    strcmp(step_resp->resv_ports, "(null)")) {
+				if (resv_ports)
+					xstrcat(resv_ports, ",");
+				xstrcat(resv_ports, step_resp->resv_ports);
+			}
 			node_offset += job->nhosts;
 			task_offset += job->ntasks;
+		}
+
+		if (resv_ports) {
+			/*
+			 * Merge numeric values into single range
+			 * (e.g. "10-12,13-15,16-18" -> "10-18")
+			 */
+			hostset_t hs;
+			char *tmp = NULL, *sep;
+			xstrfmtcat(tmp, "[%s]", resv_ports);
+			hs = hostset_create(tmp);
+			hostset_ranged_string(hs, strlen(tmp) + 1, tmp);
+			sep = strchr(tmp, ']');
+			if (sep)
+				sep[0] = '\0';
+			xfree(resv_ports);
+			resv_ports = xstrdup(tmp + 1);
+			xfree(tmp);
+			hostset_destroy(hs);
+
+			list_iterator_reset(job_iter);
+			while ((job = (srun_job_t *) list_next(job_iter))) {
+				if (slurm_step_ctx_get(job->step_ctx,
+						SLURM_STEP_CTX_RESP,
+						&step_resp) == SLURM_SUCCESS) {
+					xfree(step_resp->resv_ports);
+					step_resp->resv_ports =
+						xstrdup(resv_ports);
+				}
+			}
+			xfree(resv_ports);
 		}
 		list_iterator_destroy(job_iter);
 		if (opt_iter)
@@ -859,7 +926,8 @@ static char *_compress_pack_nodelist(List used_resp_list)
 		}
 		pack_resp->cpu_cnt = xmalloc(sizeof(uint16_t) * resp->node_cnt);
 		pack_resp->host_list = hostlist_create(resp->node_list);
-		for (i = 0, k = 0; i < resp->num_cpu_groups; i++) {
+		for (i = 0, k = 0;
+		     (i < resp->num_cpu_groups) && (k < resp->node_cnt); i++) {
 			for (j = 0; j < resp->cpu_count_reps[i]; j++) {
 				pack_resp->cpu_cnt[k++] =
 					resp->cpus_per_node[i];
@@ -887,8 +955,8 @@ static char *_compress_pack_nodelist(List used_resp_list)
 		while ((pack_resp = (pack_resp_struct_t *)
 				    list_next(resp_iter))) {
 			j = hostlist_find(pack_resp->host_list, node_name);
-			if (j == -1)	/* node not in this pack job */
-				continue;
+			if ((j == -1) || !pack_resp->cpu_cnt)
+				continue;	/* node not in this pack job */
 			if (have_aliases) {
 				if (aliases)
 					xstrcat(aliases, ",");
@@ -1108,6 +1176,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 								 opt_local);
 				if (!job)
 					exit(error_exit);
+				if (max_pack_offset > 0)
+					job->pack_offset = pack_offset;
 				list_append(srun_job_list, job);
 			}	/* While more option structures */
 			pack_offset++;
@@ -1186,6 +1256,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					exit(error_exit);
 				}
 				job = job_create_allocation(resp, opt_local);
+				job->pack_offset = pack_offset;
 				list_append(srun_job_list, job);
 				_set_step_opts(opt_local);
 			}
@@ -1411,7 +1482,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->nodelist = xstrdup(ainfo->nodelist);
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
- 	job->pack_jobid  = NO_VAL;
+	job->pack_jobid  = NO_VAL;
 	job->pack_nnodes = NO_VAL;
 	job->pack_ntasks = NO_VAL;
  	job->pack_offset = NO_VAL;
@@ -2203,9 +2274,9 @@ static int _validate_relative(resource_allocation_response_msg_t *resp,
 			      opt_local->min_nodes,
 			      resp->node_cnt);
 		}
-		return -1;
+		return SLURM_ERROR;
 	}
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 static void _call_spank_fini(void)

@@ -4,11 +4,11 @@
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  CODE-OCEC-09-009. All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -444,7 +444,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		      "nodes:%d sockets:%d:%d cores:%d:%d threads:%d",
 		      max_tasks, whole_nodes, whole_sockets ,part_sockets,
 		      whole_cores, part_cores, whole_threads);
-		if ((req->job_core_spec != (uint16_t) NO_VAL) &&
+		if ((req->job_core_spec != NO_VAL16) &&
 		    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
 		    (req->job_core_spec != CORE_SPEC_THREAD)) {
 			spec_thread_cnt = req->job_core_spec &
@@ -675,7 +675,7 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 		(*whole_node_cnt)++;
 	FREE_NULL_BITMAP(alloc_bitmap);
 
-	if ((req->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((req->job_core_spec != NO_VAL16) &&
 	    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (req->job_core_spec != CORE_SPEC_THREAD)) {
 		int spec_thread_cnt;
@@ -788,7 +788,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		}
 	}
 
-	if ((req->job_core_spec != (uint16_t) NO_VAL) &&
+	if ((req->job_core_spec != NO_VAL16) &&
 	    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (req->job_core_spec != CORE_SPEC_THREAD)) {
 		spec_thread_cnt = req->job_core_spec & (~CORE_SPEC_THREAD);

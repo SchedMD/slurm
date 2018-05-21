@@ -61,11 +61,11 @@
  *  Written by Susanne M. Balle <susanne.balle@hp.com>, who borrowed heavily
  *  from select/linear
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -81,13 +81,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -154,14 +154,14 @@ int slurmctld_tres_cnt = 0;
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "select" for SLURM node selection) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
+ * the plugin (e.g., "select" for Slurm node selection) and <method>
+ * is a description of how this plugin satisfies that application.  Slurm will
  * only load select plugins if the plugin_type string has a
  * prefix of "select/".
  *
@@ -882,6 +882,11 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		}
 	}
 	
+	if (action != 2) {
+		gres_build_job_details(job_ptr->gres_list,
+				       &job_ptr->gres_detail_cnt,
+				       &job_ptr->gres_detail_str);
+	}
 
 	/* add cores */
 	if (action != 1) {
@@ -1160,14 +1165,14 @@ static int _job_expand(struct job_record *from_job_ptr,
 	return SLURM_SUCCESS;
 }
 
-/* deallocate resources previously allocated to the given job
+/*
+ * deallocate resources previously allocated to the given job
  * - subtract 'struct job_resources' resources from 'struct part_res_record'
  * - subtract job's memory requirements from 'struct node_res_record'
  *
  * if action = 0 then subtract cores, memory + GRES (running job was terminated)
  * if action = 1 then subtract memory + GRES (suspended job was terminated)
  * if action = 2 then only subtract cores (job is suspended)
- *
  */
 static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct node_use_record *node_usage,
@@ -1180,17 +1185,21 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 	List gres_list;
 
 	if (select_state_initializing) {
-		/* Ignore job removal until select/cons_res data structures
-		 * values are set by select_p_reconfigure() */
+		/*
+		 * Ignore job removal until select/cons_res data structures
+		 * values are set by select_p_reconfigure()
+		 */
 		return SLURM_SUCCESS;
 	}
 	if (!job || !job->core_bitmap) {
+		if (job_ptr->details && (job_ptr->details->min_nodes == 0))
+			return SLURM_SUCCESS;
 		error("%s: job %u has no job_resrcs info",
 		      __func__, job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
-	debug3("cons_res: _rm_job_from_res: job %u action %d", job_ptr->job_id,
+	debug3("cons_res: %s: job %u action %d", __func__, job_ptr->job_id,
 	       action);
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
@@ -1450,9 +1459,9 @@ static struct multi_core_data * _create_default_mc(void)
 {
 	struct multi_core_data *mc_ptr;
 	mc_ptr = xmalloc(sizeof(struct multi_core_data));
-	mc_ptr->sockets_per_node = (uint16_t) NO_VAL;
-	mc_ptr->cores_per_socket = (uint16_t) NO_VAL;
-	mc_ptr->threads_per_core = (uint16_t) NO_VAL;
+	mc_ptr->sockets_per_node = NO_VAL16;
+	mc_ptr->cores_per_socket = NO_VAL16;
+	mc_ptr->threads_per_core = NO_VAL16;
 /*	mc_ptr is initialized to zero by xmalloc*/
 /*	mc_ptr->ntasks_per_socket = 0; */
 /*	mc_ptr->ntasks_per_core   = 0; */
@@ -1558,7 +1567,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	struct node_use_record *future_usage;
 	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;
-	uint16_t mode = (uint16_t) NO_VAL;
+	uint16_t mode = NO_VAL16;
 	uint16_t tmp_cr_type = cr_type;
 	bool preempt_mode = false;
 
@@ -1750,7 +1759,7 @@ static time_t _guess_job_end(struct job_record * job_ptr, time_t now)
 	}
 	if (over_time_limit == 0) {
 		end_time = job_ptr->end_time + slurmctld_conf.kill_wait;
-	} else if (over_time_limit == (uint16_t) INFINITE) {
+	} else if (over_time_limit == INFINITE16) {
 		end_time = now + (365 * 24 * 60 * 60);	/* one year */
 	} else {
 		end_time = job_ptr->end_time + slurmctld_conf.kill_wait +
@@ -1762,10 +1771,12 @@ static time_t _guess_job_end(struct job_record * job_ptr, time_t now)
 	return end_time;
 }
 
-/* Return true if job is in the processing of cleaning up.
+/*
+ * Return true if job is in the processing of cleaning up.
  * This is used for Cray systems to indicate the Node Health Check (NHC)
  * is still running. Until NHC completes, the job's resource use persists
- * the select/cons_res plugin data structures. */
+ * the select/cons_res plugin data structures.
+ */
 static bool _job_cleaning(struct job_record *job_ptr)
 {
 	uint16_t cleaning = 0;
@@ -1778,10 +1789,12 @@ static bool _job_cleaning(struct job_record *job_ptr)
 	return false;
 }
 
-/* _will_run_test - determine when and where a pending job can start, removes
- *	jobs from node table at termination time and run _test_job() after
- *	each job (or a few jobs that end close in time). Used by SLURM's
- *	sched/backfill plugin and Moab. */
+/*
+ * Determine where and when the job at job_ptr can begin execution by updating
+ * a scratch cr_record structure to reflect each job terminating at the
+ * end of its time limit and use this to show where and when the job at job_ptr
+ * will begin execution. Used by Slurm's sched/backfill plugin.
+ */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t job_node_req,
@@ -1842,6 +1855,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool cleaning = _job_cleaning(tmp_job_ptr);
+		if (!cleaning && IS_JOB_COMPLETING(tmp_job_ptr))
+			cleaning = true;
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 		    !IS_JOB_SUSPENDED(tmp_job_ptr) &&
 		    !cleaning)
@@ -1854,15 +1869,21 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			continue;
 		}
 		if (tmp_job_ptr->node_bitmap == NULL) {
-			/* This should indicated a requeued job was cancelled
-			 * while NHC was running */
+			/*
+			 * This should indicate a requeued job was cancelled
+			 * while NHC was running
+			 */
 			if (!cleaning) {
 				error("%s: Job %u has NULL node_bitmap",
 				      __func__, tmp_job_ptr->job_id);
 			}
 			continue;
 		}
-		if (_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+		if (cleaning ||
+		    !_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+			/* Queue job for later removal from data structures */
+			list_append(cr_job_list, tmp_job_ptr);
+		} else {
 			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
 			if (mode == PREEMPT_MODE_OFF)
 				continue;
@@ -1875,8 +1896,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* Remove preemptable job now */
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, action);
-		} else
-			list_append(cr_job_list, tmp_job_ptr);
+		}
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -2286,8 +2306,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		return EINVAL;
 
 	if (slurm_get_use_spec_resources() == 0)
-		job_ptr->details->core_spec = (uint16_t) NO_VAL;
-	if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
+		job_ptr->details->core_spec = NO_VAL16;
+	if ((job_ptr->details->core_spec != NO_VAL16) &&
 	    (job_ptr->details->whole_node != 1)) {
 		info("Setting Exclusive mode for job %u with CoreSpec=%u",
 		      job_ptr->job_id, job_ptr->details->core_spec);
@@ -2845,7 +2865,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 
 	switch (info) {
 	case SELECT_CR_PLUGIN:
-		*tmp_32 = 1;
+		*tmp_32 = SELECT_TYPE_CONS_RES;
 		break;
 	case SELECT_CONFIG_INFO:
 		*tmp_list = NULL;
@@ -2944,6 +2964,11 @@ extern int select_p_reconfigure(void)
 				 * resources that are not marked as allocated
 				 * to this job without line below. */
 				//_add_job_to_res(job_ptr, 0);
+				uint16_t released = 1;
+				select_g_select_jobinfo_set(
+					               job_ptr->select_jobinfo,
+					               SELECT_JOBDATA_RELEASED,
+					               &released);
 			} else {
 				_add_job_to_res(job_ptr, 0);
 			}
@@ -3265,7 +3290,7 @@ static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **core_bitmap)
 {
 	bitstr_t *spec_core_map;
 
-	spec_core_map = make_core_bitmap(node_bitmap, (uint16_t) NO_VAL);
+	spec_core_map = make_core_bitmap(node_bitmap, NO_VAL16);
 	bit_not(spec_core_map);
 
 	xassert(core_bitmap);
@@ -3659,13 +3684,13 @@ extern int cr_cpus_per_core(struct job_details *details, int node_inx)
 
 	if (details && details->mc_ptr) {
 		multi_core_data_t *mc_ptr = details->mc_ptr;
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
 			ncpus_per_core = MIN(threads_per_core,
 					     (mc_ptr->ntasks_per_core *
 					      details->cpus_per_task));
 		}
-		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->threads_per_core != NO_VAL16) &&
 		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
 			ncpus_per_core = mc_ptr->threads_per_core;
 		}

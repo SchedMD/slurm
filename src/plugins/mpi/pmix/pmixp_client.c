@@ -5,11 +5,11 @@
  *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -25,13 +25,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
 
@@ -59,19 +59,41 @@
 #define PMIX_TDIR_RMCLEAN "pmix.tdir.rmclean"
 #endif
 
+#ifndef PMIX_VERSION_MAJOR
+#define PMIX_VERSION_MAJOR	1L
+#define PMIXP_PMIX_PRIOR_115	1
+#endif
+
+#if (HAVE_PMIX_VER == 1L)
+#if (PMIXP_PMIX_PRIOR_115 == 1)
+#define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
+	{ (kvp)->value.data.array.array = (struct pmix_info_t *)_array; }
+#else
+#define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
+	{ (kvp)->value.data.array.array = (pmix_info_t *)_array; }
+#endif
+#endif
+
+
 /* Check PMIx version */
 #if (HAVE_PMIX_VER != PMIX_VERSION_MAJOR)
 #define VALUE_TO_STRING(x) #x
 #define VALUE(x) VALUE_TO_STRING(x)
 #pragma message "PMIx version mismatch: the major version seen during configuration was " VALUE(HAVE_PMIX_VER) "L but found " VALUE(PMIX_VERSION_MAJOR) " compilation will most likely fail.  Please reconfigure against the new version."
 #endif
+
 #if (HAVE_PMIX_VER == 1)
 #define PMIXP_INFO_ARRAY_CREATE(kvp, _array, _count)		\
 {								\
 	(kvp)->value.type = PMIX_INFO_ARRAY;			\
 	(kvp)->value.data.array.size = _count;			\
-	(kvp)->value.data.array.array = (pmix_info_t *)_array;	\
+	PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array);		\
 }
+
+#define PMIXP_VAL_SET_RANK(value, rank) {			\
+	PMIX_VAL_SET(value, int, rank);				\
+}
+
 #elif (HAVE_PMIX_VER == 2)
 #define PMIXP_INFO_ARRAY_CREATE(kvp, _array, _count)			\
 {									\
@@ -82,17 +104,29 @@
 	(kvp)->value.data.darray->size = _count;			\
 	(kvp)->value.data.darray->array = (void *)_array;		\
 }
+
+#define PMIXP_VAL_SET_RANK(value, _rank) {			\
+	(value)->type = PMIX_PROC_RANK;				\
+	(value)->data.rank = _rank;				\
+}
+
 #endif
 
+static pthread_mutex_t _reg_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
 typedef struct {
+	pmix_status_t rc;
 	volatile int active;
 } register_caddy_t;
 
 static void _release_cb(pmix_status_t status, void *cbdata)
 {
-	(void)status;
+	slurm_mutex_lock(&_reg_mutex);
 	register_caddy_t *caddy = (register_caddy_t *)cbdata;
+	caddy->rc = status;
 	caddy->active = 0;
+	slurm_mutex_unlock(&_reg_mutex);
 }
 
 /*
@@ -129,7 +163,7 @@ static void _set_tmpdirs(List lresp)
 	bool rmclean = true;
 
 	/* We consider two sources of the tempdir:
-	 * - SLURM's slurm.conf TmpFS option;
+	 * - Slurm's slurm.conf TmpFS option;
 	 * - env var SLURM_PMIX_TMPDIR;
 	 * do we need to do anything else?
 	 */
@@ -180,11 +214,11 @@ static void _set_procdatas(List lresp)
 		rankinfo = list_create(pmixp_xfree_xmalloced);
 
 		PMIXP_ALLOC_KEY(kvp, PMIX_RANK);
-		PMIX_VAL_SET(&kvp->value, int, i);
+		PMIXP_VAL_SET_RANK(&kvp->value, i);
 		list_append(rankinfo, kvp);
 
 		/* TODO: always use 0 for now. This is not the general case
-		 * though (see SLURM MIMD: man srun, section MULTIPLE PROGRAM
+		 * though (see Slurm MIMD: man srun, section MULTIPLE PROGRAM
 		 * CONFIGURATION)
 		 */
 		PMIXP_ALLOC_KEY(kvp, PMIX_APPNUM);
@@ -548,12 +582,6 @@ extern int pmixp_lib_is_wildcard(uint32_t rank)
 	return (PMIX_RANK_WILDCARD == _rank);
 }
 
-extern int pmixp_lib_is_undef(uint32_t rank)
-{
-	int _rank = (int)rank;
-	return (PMIX_RANK_UNDEF == _rank);
-}
-
 extern uint32_t pmixp_lib_get_wildcard(void)
 {
 	return (uint32_t)(PMIX_RANK_WILDCARD);
@@ -571,8 +599,7 @@ extern int pmixp_libpmix_job_set(void)
 	int ninfo;
 	ListIterator it;
 	pmix_info_t *kvp;
-
-	int i, rc;
+	int i, rc, ret = SLURM_SUCCESS;
 	uid_t uid = pmixp_info_jobuid();
 	gid_t gid = pmixp_info_jobgid();
 	register_caddy_t *register_caddy;
@@ -649,18 +676,35 @@ extern int pmixp_libpmix_job_set(void)
 		ts.tv_sec = 0;
 		ts.tv_nsec = 100;
 
+		// Do a preliminary scan
 		for (i=0; i < pmixp_info_tasks_loc() + 1; i++) {
 			if (register_caddy[i].active) {
 				exit_flag = 0;
 			}
 		}
+
 		if (exit_flag) {
-			break;
+			slurm_mutex_lock(&_reg_mutex);
+			// Do a final scan with the structure locked
+			for (i=0; i < pmixp_info_tasks_loc() + 1; i++) {
+				if (register_caddy[i].active) {
+					exit_flag = 0;
+				}
+				// An error may occur during registration
+				if (PMIX_SUCCESS != register_caddy[i].rc) {
+					PMIXP_ERROR("Failed to complete registration #%d, error: %d", i, register_caddy[i].rc);
+					ret = SLURM_ERROR;
+				}
+			}
+			slurm_mutex_unlock(&_reg_mutex);
+			if (exit_flag) {
+				break;
+			}
 		}
 		nanosleep(&ts, NULL);
 	}
 	PMIX_INFO_FREE(info, ninfo);
 	xfree(register_caddy);
 
-	return SLURM_SUCCESS;
+	return ret;
 }

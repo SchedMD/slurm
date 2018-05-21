@@ -62,11 +62,11 @@
  *  Written by Susanne M. Balle <susanne.balle@hp.com>, who borrowed heavily
  *  from select/linear
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -82,13 +82,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -235,40 +235,40 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	memset(used_cpu_array, 0, sockets * sizeof(uint32_t));
 
 	if (entire_sockets_only && job_ptr->details->whole_node &&
-	    (job_ptr->details->core_spec != (uint16_t) NO_VAL)) {
+	    (job_ptr->details->core_spec != NO_VAL16)) {
 		/* Ignore specialized cores when allocating "entire" socket */
 		entire_sockets_only = false;
 	}
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		uint32_t threads_per_socket;
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-		if (mc_ptr->cores_per_socket != (uint16_t) NO_VAL) {
+		if (mc_ptr->cores_per_socket != NO_VAL16) {
 			min_cores = mc_ptr->cores_per_socket;
 		}
-		if (mc_ptr->sockets_per_node != (uint16_t) NO_VAL) {
+		if (mc_ptr->sockets_per_node != NO_VAL16) {
 			min_sockets = mc_ptr->sockets_per_node;
 		}
-		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 			ncpus_per_core = MIN(threads_per_core,
 					     (ntasks_per_core * cpus_per_task));
 		}
-		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->threads_per_core != NO_VAL16) &&
 		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
 			ncpus_per_core = mc_ptr->threads_per_core;
 		}
 		*cpu_alloc_size = MIN(*cpu_alloc_size, ncpus_per_core);
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 
-		if ((ncpus_per_core != (uint16_t) NO_VAL) &&
-		    (ncpus_per_core != (uint16_t) INFINITE) &&
+		if ((ncpus_per_core != NO_VAL16) &&
+		    (ncpus_per_core != INFINITE16) &&
 		    (ncpus_per_core > threads_per_core)) {
 			goto fini;
 		}
 		threads_per_socket = threads_per_core * cores_per_socket;
-		if ((ntasks_per_socket != (uint16_t) NO_VAL) &&
-		    (ntasks_per_socket != (uint16_t) INFINITE) &&
+		if ((ntasks_per_socket != NO_VAL16) &&
+		    (ntasks_per_socket != INFINITE16) &&
 		    (ntasks_per_socket > threads_per_socket)) {
 			goto fini;
 		}
@@ -356,22 +356,54 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			used_cpu_count += used_cores[i] * threads_per_core;
 	}
 
-	/* Ignore resources that would push a job allocation over the
-	 * partition CPU limit (if any) */
+	/*
+	 * Ignore resources that would push a job allocation over the
+	 * partition CPU limit (if any). Remove cores from consideration by
+	 * taking them from the sockets with the lowest free_cores count.
+	 * This will tend to satisfy a job's --cores-per-socket specification.
+	 */
 	if ((job_ptr->part_ptr->max_cpus_per_node != INFINITE) &&
 	    (free_cpu_count + used_cpu_count >
 	     job_ptr->part_ptr->max_cpus_per_node)) {
 		int excess = free_cpu_count + used_cpu_count -
 			     job_ptr->part_ptr->max_cpus_per_node;
-		for (c = core_begin; c < core_end; c++) {
-			i = (uint16_t) (c - core_begin) / cores_per_socket;
-			if (free_cores[i] > 0) {
-				free_core_count--;
-				free_cores[i]--;
-				excess -= threads_per_core;
-				if (excess <= 0)
-					break;
+		int min_excess_cores = min_cores;
+		int found_cores;
+		excess = (excess + threads_per_core - 1) / threads_per_core;
+		while (excess > 0) {
+			int min_free_inx = -1;
+			for (i = 0; i < sockets; i++) {
+				if (free_cores[i] == 0)
+					continue;
+				if (((min_excess_cores > 1) ||
+				     (min_sockets > 1)) &&
+				    (free_cores[i] <= min_excess_cores))
+					continue;
+				if ((min_free_inx == -1) ||
+				    (free_cores[i] < free_cores[min_free_inx]))
+					min_free_inx = i;
 			}
+			if (min_free_inx == -1) {
+				if (min_excess_cores) {
+					min_excess_cores = 0;
+					continue;
+				}
+				break;
+			}
+			if (free_cores[min_free_inx] < excess)
+				found_cores = free_cores[min_free_inx];
+			else
+				found_cores = excess;
+			if (min_excess_cores  > 1 &&
+			    ((free_cores[min_free_inx] - found_cores) <
+			     min_excess_cores)) {
+				found_cores = free_cores[min_free_inx] -
+					      min_excess_cores;
+			}
+			free_core_count -= found_cores;
+			free_cpu_count -= (found_cores * threads_per_core);
+			free_cores[min_free_inx] -= found_cores;
+			excess -= found_cores;
 		}
 	}
 
@@ -527,7 +559,7 @@ fini:
 		cpu_count = 0;
 	}
 
-	if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
+	if ((job_ptr->details->core_spec != NO_VAL16) &&
 	    (job_ptr->details->core_spec & CORE_SPEC_THREAD)   &&
 	    ((select_node_record[node_i].threads == 1) ||
 	     (select_node_record[node_i].threads ==
@@ -949,9 +981,9 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 	size = cr_get_coremap_offset(nodes);
 	bitstr_t *core_map = bit_alloc(size);
 
-	if ((core_spec != (uint16_t) NO_VAL) &&
+	if ((core_spec != NO_VAL16) &&
 	    (core_spec & CORE_SPEC_THREAD))	/* Reserving threads */
-		core_spec = (uint16_t) NO_VAL;	/* Don't remove cores */
+		core_spec = NO_VAL16;	/* Don't remove cores */
 
 	n_first = bit_ffs(node_map);
 	if (n_first == -1)
@@ -963,7 +995,7 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 			continue;
 		c    = cr_get_coremap_offset(n);
 		coff = cr_get_coremap_offset(n+1);
-		if ((core_spec != (uint16_t) NO_VAL) &&
+		if ((core_spec != NO_VAL16) &&
 		    (core_spec >= (coff - c))) {
 			bit_clear(node_map, n);
 			continue;
@@ -993,7 +1025,7 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 		/* if enough cores specialized or not necessary to
 		 * specialize some of them for the job, continue */
 		if (!use_spec_cores || (spec_cores == 0) ||
-		    (core_spec == (uint16_t) NO_VAL))
+		    (core_spec == NO_VAL16))
 			continue;
 
 		/* if more cores need to be specialized, look for
@@ -1148,8 +1180,8 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 		return (uint32_t) 1;
 
 	mc_ptr = job_ptr->details->mc_ptr;
-	if ((mc_ptr->ntasks_per_socket != (uint16_t) NO_VAL) &&
-	    (mc_ptr->ntasks_per_socket != (uint16_t) INFINITE)) {
+	if ((mc_ptr->ntasks_per_socket != NO_VAL16) &&
+	    (mc_ptr->ntasks_per_socket != INFINITE16)) {
 		tasks_per_node = job_ptr->details->num_tasks / min_nodes;
 		s_p_n = (tasks_per_node + mc_ptr->ntasks_per_socket - 1) /
 			mc_ptr->ntasks_per_socket;
@@ -2246,8 +2278,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 	if (best_fit_inx == -1) {
-		debug("job %u: best_fit topology failure: no switch currently "
-		      "has sufficient resource to satisfy the request",
+		debug2("job %u: best_fit topology failure: no switch currently has sufficient resource to satisfy the request",
 		      job_ptr->job_id);
 		rc = SLURM_ERROR;
 		goto fini;
@@ -2465,6 +2496,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t req_nodes, uint32_t cr_node_cnt,
 			uint16_t *cpu_cnt, uint16_t cr_type)
 {
+	bitstr_t  *switch_use_bitmap = NULL;	/* leaf switches used */
 	bitstr_t **switches_bitmap = NULL;	/* nodes on this switch */
 	int       *switches_cpu_cnt = NULL;	/* total CPUs on switch */
 	int       *switches_node_cnt = NULL;	/* total nodes on switch */
@@ -2517,6 +2549,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Construct a set of switch array entries,
 	 * use the same indexes as switch_record_table in slurmctld */
+	switch_use_bitmap = bit_alloc(switch_record_cnt);
 	switches_bitmap   = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
 	switches_cpu_cnt  = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
@@ -2695,8 +2728,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 	if (best_fit_inx == -1) {
-		debug("job %u: best_fit topology failure: no switch currently "
-		      "has sufficient resource to satisfy the request",
+		debug2("job %u: best_fit topology failure: no switch currently has sufficient resource to satisfy the request",
 		      job_ptr->job_id);
 		rc = SLURM_ERROR;
 		goto fini;
@@ -2739,8 +2771,9 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (best_fit_nodes == 0)
 			break;
 
-		leaf_switch_count++;
 		/* Use select nodes from this leaf */
+		bit_set(switch_use_bitmap, best_fit_location);
+		leaf_switch_count = bit_set_count(switch_use_bitmap);
 		first = bit_ffs(switches_bitmap[best_fit_location]);
 		last  = bit_fls(switches_bitmap[best_fit_location]);
 
@@ -2840,7 +2873,8 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			min_rem_nodes--;
 			max_nodes--;
 			rem_cpus -= bfsize;
-			break;
+			if (job_ptr->req_switch != 1)
+				break;
 		}		
 
 		/* free best-switch nodes available cpus array */
@@ -2860,6 +2894,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			FREE_NULL_BITMAP(switches_bitmap[i]);
 		}
 	}
+	FREE_NULL_BITMAP(switch_use_bitmap);
 	xfree(switches_bitmap);
 	xfree(switches_cpu_cnt);
 	xfree(switches_node_cnt);
@@ -3165,13 +3200,13 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	if (details_ptr->min_cpus == details_ptr->min_nodes) {
 		struct multi_core_data *mc_ptr = details_ptr->mc_ptr;
 
-		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->threads_per_core != NO_VAL16) &&
 		    (mc_ptr->threads_per_core > 1))
 			details_ptr->min_cpus *= mc_ptr->threads_per_core;
-		if ((mc_ptr->cores_per_socket != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->cores_per_socket != NO_VAL16) &&
 		    (mc_ptr->cores_per_socket > 1))
 			details_ptr->min_cpus *= mc_ptr->cores_per_socket;
-		if ((mc_ptr->sockets_per_node != (uint16_t) NO_VAL) &&
+		if ((mc_ptr->sockets_per_node != NO_VAL16) &&
 		    (mc_ptr->sockets_per_node > 1))
 			details_ptr->min_cpus *= mc_ptr->sockets_per_node;
 	}
@@ -3823,23 +3858,7 @@ alloc_job:
 		for (i = 0; i < job_res->nhosts; i++) {
 			job_res->memory_allocated[i] = save_mem;
 		}
-	} else {	/* --mem=0, allocate job all memory on node */
-		uint64_t avail_mem, lowest_mem = 0;
-		first = bit_ffs(job_res->node_bitmap);
-		if (first != -1)
-			last  = bit_fls(job_res->node_bitmap);
-		else
-			last = first - 1;
-		for (i = first, j = 0; i <= last; i++) {
-			if (!bit_test(job_res->node_bitmap, i))
-				continue;
-			avail_mem = select_node_record[i].real_memory -
-				    select_node_record[i].mem_spec_limit;
-			if ((j == 0) || (lowest_mem > avail_mem))
-				lowest_mem = avail_mem;
-			job_res->memory_allocated[j++] = avail_mem;
-		}
-		details_ptr->pn_min_memory = lowest_mem;
 	}
+
 	return error_code;
 }
