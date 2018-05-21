@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- PMIx - override default paths at configure time if --with-pmix is used.
  -- Have sprio display jobs before eligible time when
     PriorityFlags=ACCRUE_ALWAYS is set.
+ -- Make sure locks are always in place when calling _post_qos_list().
 
 * Changes in Slurm 17.11.6
 ==========================

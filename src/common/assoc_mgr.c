@@ -1005,6 +1005,7 @@ static int _post_wckey_list(List wckey_list)
 	return SLURM_SUCCESS;
 }
 
+/* NOTE QOS write lock needs to be set before calling this. */
 static int _post_qos_list(List qos_list)
 {
 	slurmdb_qos_rec_t *qos = NULL;
@@ -1758,9 +1759,10 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 		      "no new list given back keeping cached one.");
 		return SLURM_ERROR;
 	}
-	_post_qos_list(current_qos);
 
 	assoc_mgr_lock(&locks);
+
+	_post_qos_list(current_qos);
 
 	/* move usage from old list over to the new one */
 	if (assoc_mgr_qos_list) {
