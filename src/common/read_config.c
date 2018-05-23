@@ -354,6 +354,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmctldPrimaryOnProg", S_P_STRING},
 	{"SlurmctldSyslogDebug", S_P_STRING},
 	{"SlurmctldTimeout", S_P_UINT16},
+	{"SlurmctldParameters", S_P_STRING},
 	{"SlurmdDebug", S_P_STRING},
 	{"SlurmdLogFile", S_P_STRING},
 	{"SlurmdParameters", S_P_STRING},
@@ -2784,6 +2785,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->slurmctld_primary_off_prog);
 	xfree (ctl_conf_ptr->slurmctld_primary_on_prog);
 	xfree (ctl_conf_ptr->slurmd_logfile);
+	xfree (ctl_conf_ptr->slurmctld_params);
 	xfree (ctl_conf_ptr->slurmd_params);
 	xfree (ctl_conf_ptr->slurmd_pidfile);
 	xfree (ctl_conf_ptr->slurmd_spooldir);
@@ -2966,6 +2968,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmctld_primary_off_prog);
 	xfree (ctl_conf_ptr->slurmctld_primary_on_prog);
 	ctl_conf_ptr->slurmctld_timeout		= NO_VAL16;
+	xfree (ctl_conf_ptr->slurmctld_params);
 	ctl_conf_ptr->slurmd_debug		= NO_VAL16;
 	xfree (ctl_conf_ptr->slurmd_logfile);
 	xfree (ctl_conf_ptr->slurmd_params);
@@ -4580,6 +4583,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->slurmctld_timeout,
 			    "SlurmctldTimeout", hashtbl))
 		conf->slurmctld_timeout = DEFAULT_SLURMCTLD_TIMEOUT;
+
+	(void) s_p_get_string(&conf->slurmctld_params,
+			      "SlurmctldParameters", hashtbl);
 
 	if (s_p_get_string(&temp_str, "SlurmdDebug", hashtbl)) {
 		conf->slurmd_debug = log_string2num(temp_str);

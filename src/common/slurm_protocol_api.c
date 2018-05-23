@@ -2581,6 +2581,23 @@ char *slurm_get_slurmd_params(void)
 	return slurmd_params;
 }
 
+/*
+ * slurm_get_slurmctld_params
+ * RET slurmctld_params must be xfreed by caller
+ */
+char *slurm_get_slurmctld_params(void)
+{
+	char *slurmctld_params = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		slurmctld_params = xstrdup(conf->slurmctld_params);
+		slurm_conf_unlock();
+	}
+	return slurmctld_params;
+}
 
 /* slurm_get_sched_params
  * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */

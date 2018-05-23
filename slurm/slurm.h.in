@@ -2971,6 +2971,7 @@ typedef struct slurm_ctl_conf {
 					  * local logfile and syslog*/
 	uint16_t slurmctld_timeout;/* seconds that backup controller waits
 				    * on non-responding primarly controller */
+	char *slurmctld_params;	/* SlurmctldParameters */
 	uint16_t slurmd_debug;	/* slurmd logging level */
 	char *slurmd_logfile;	/* where slurmd error log gets written */
 	char *slurmd_params;	/* SlurmdParameters */
