@@ -2132,7 +2132,24 @@ extern void slurmdb_pack_assoc_usage(void *in, uint16_t protocol_version,
 	xassert(buffer);
         xassert(usage);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
+		pack64_array(usage->grp_used_tres_run_secs, usage->tres_cnt,
+			     buffer);
+		packdouble(usage->grp_used_wall, buffer);
+		packdouble(usage->fs_factor, buffer);
+		pack32(usage->level_shares, buffer);
+		packdouble(usage->shares_norm, buffer);
+		packlongdouble(usage->usage_efctv, buffer);
+		packlongdouble(usage->usage_norm, buffer);
+		packlongdouble(usage->usage_raw, buffer);
+		packlongdouble_array(usage->usage_tres_raw, usage->tres_cnt,
+				     buffer);
+		pack32(usage->used_jobs, buffer);
+		pack32(usage->used_submit_jobs, buffer);
+		packlongdouble(usage->level_fs, buffer);
+		pack_bit_str_hex(usage->valid_qos, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
 		pack64_array(usage->grp_used_tres_run_secs, usage->tres_cnt,
 			     buffer);
@@ -2163,7 +2180,26 @@ extern int slurmdb_unpack_assoc_usage(void **object, uint16_t protocol_version,
 	uint32_t tmp32;
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpack64_array(&object_ptr->grp_used_tres, &tmp32, buffer);
+		object_ptr->tres_cnt = tmp32;
+		safe_unpack64_array(&object_ptr->grp_used_tres_run_secs,
+				    &tmp32, buffer);
+		safe_unpackdouble(&object_ptr->grp_used_wall, buffer);
+		safe_unpackdouble(&object_ptr->fs_factor, buffer);
+		safe_unpack32(&object_ptr->level_shares, buffer);
+		safe_unpackdouble(&object_ptr->shares_norm, buffer);
+		safe_unpacklongdouble(&object_ptr->usage_efctv, buffer);
+		safe_unpacklongdouble(&object_ptr->usage_norm, buffer);
+		safe_unpacklongdouble(&object_ptr->usage_raw, buffer);
+		safe_unpacklongdouble_array(&object_ptr->usage_tres_raw,
+					    &tmp32, buffer);
+
+		safe_unpack32(&object_ptr->used_jobs, buffer);
+		safe_unpack32(&object_ptr->used_submit_jobs, buffer);
+		safe_unpacklongdouble(&object_ptr->level_fs, buffer);
+		unpack_bit_str_hex(&object_ptr->valid_qos, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64_array(&object_ptr->grp_used_tres, &tmp32, buffer);
 		object_ptr->tres_cnt = tmp32;
 		safe_unpack64_array(&object_ptr->grp_used_tres_run_secs,
