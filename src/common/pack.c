@@ -40,10 +40,14 @@
 \****************************************************************************/
 
 #include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 
 #include "slurm/slurm_errno.h"
@@ -65,6 +69,7 @@
  * for details.
  */
 strong_alias(create_buf,	slurm_create_buf);
+strong_alias(create_mmap_buf,	slurm_create_mmap_buf);
 strong_alias(free_buf,		slurm_free_buf);
 strong_alias(grow_buf,		slurm_grow_buf);
 strong_alias(init_buf,		slurm_init_buf);
@@ -117,9 +122,51 @@ Buf create_buf(char *data, uint32_t size)
 	my_buf->size = size;
 	my_buf->processed = 0;
 	my_buf->head = data;
+	my_buf->mmaped = false;
 
 	return my_buf;
 }
+
+/*
+ * create_mmap_buf - create an mmap()'d read-only buffer from
+ * the supplied file.
+ */
+Buf create_mmap_buf(char *file)
+{
+	Buf my_buf;
+	int fd;
+	struct stat f_stat;
+	void *data;
+
+	if ((fd = open(file, O_RDONLY)) < 0) {
+		debug("%s: Failed to open file `%s`, %m", __func__, file);
+		return NULL;
+	}
+
+	if (fstat(fd, &f_stat)) {
+		debug("%s: Failed to fstat file `%s`, %m", __func__, file);
+		return NULL;
+	}
+
+	data = mmap(NULL, f_stat.st_size, PROT_READ, MAP_SHARED, fd, 0);
+	close(fd);
+	if (data == MAP_FAILED) {
+		debug("%s: Failed to mmap file `%s`, %m", __func__, file);
+		return NULL;
+	}
+
+	my_buf = xmalloc_nz(sizeof(struct slurm_buf));
+	my_buf->magic = BUF_MAGIC;
+	my_buf->size = f_stat.st_size;
+	my_buf->processed = 0;
+	my_buf->head = data;
+	my_buf->mmaped = true;
+
+	debug3("%s: loaded file `%s` as Buf", __func__, file);
+
+	return my_buf;
+}
+
 
 /* free_buf - release memory associated with a given buffer */
 void free_buf(Buf my_buf)
@@ -127,13 +174,19 @@ void free_buf(Buf my_buf)
 	if (!my_buf)
 		return;
 	assert(my_buf->magic == BUF_MAGIC);
-	xfree(my_buf->head);
+	if (my_buf->mmaped)
+		munmap(my_buf->head, my_buf->size);
+	else
+		xfree(my_buf->head);
+
 	xfree(my_buf);
 }
 
 /* Grow a buffer by the specified amount */
 void grow_buf (Buf buffer, uint32_t size)
 {
+	if (buffer->mmaped)
+		fatal_abort("attempt to grow mmap()'d buffer not supported");
 	if ((buffer->size + size) > MAX_BUF_SIZE) {
 		error("%s: Buffer size limit exceeded (%u > %u)",
 		      __func__, (buffer->size + size), MAX_BUF_SIZE);
@@ -161,6 +214,7 @@ Buf init_buf(uint32_t size)
 	my_buf->size = size;
 	my_buf->processed = 0;
 	my_buf->head = xmalloc(sizeof(char)*size);
+	my_buf->mmaped = false;
 	return my_buf;
 }
 
@@ -171,6 +225,10 @@ void *xfer_buf_data(Buf my_buf)
 	void *data_ptr;
 
 	assert(my_buf->magic == BUF_MAGIC);
+
+	if (my_buf->mmaped)
+		fatal_abort("attempt to grow mmap()'d buffer not supported");
+
 	data_ptr = (void *) my_buf->head;
 	xfree(my_buf);
 	return data_ptr;

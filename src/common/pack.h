@@ -44,6 +44,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include "src/common/bitstring.h"
@@ -64,6 +65,7 @@ struct slurm_buf {
 	char *head;
 	uint32_t size;
 	uint32_t processed;
+	bool mmaped;
 };
 
 typedef struct slurm_buf * Buf;
@@ -75,6 +77,7 @@ typedef struct slurm_buf * Buf;
 #define size_buf(__buf)			(__buf->size)
 
 Buf	create_buf (char *data, uint32_t size);
+Buf	create_mmap_buf(char *file);
 void	free_buf(Buf my_buf);
 Buf	init_buf(uint32_t size);
 void    grow_buf (Buf my_buf, uint32_t size);
