@@ -5498,11 +5498,9 @@ extern int dump_assoc_mgr_state(void)
 
 extern int load_assoc_usage(void)
 {
-	int data_allocated, data_read = 0, i;
-	uint32_t data_size = 0;
+	int i;
 	uint16_t ver = 0;
-	int state_fd;
-	char *data = NULL, *state_file, *tmp_str = NULL;
+	char *state_file, *tmp_str = NULL;
 	Buf buffer = NULL;
 	time_t buf_time;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .file = READ_LOCK };
@@ -5518,37 +5516,14 @@ extern int load_assoc_usage(void)
 	xstrcat(state_file, "/assoc_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
+
+	if (!(buffer = create_mmap_buf(state_file))) {
 		debug2("No Assoc usage file (%s) to recover", state_file);
 		xfree(state_file);
 		assoc_mgr_unlock(&locks);
 		return ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
-
-	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_usage header is %u", ver);
@@ -5627,11 +5602,8 @@ unpack_error:
 
 extern int load_qos_usage(void)
 {
-	int data_allocated, data_read = 0;
-	uint32_t data_size = 0;
 	uint16_t ver = 0;
-	int state_fd;
-	char *data = NULL, *state_file, *tmp_str = NULL;
+	char *state_file, *tmp_str = NULL;
 	Buf buffer = NULL;
 	time_t buf_time;
 	ListIterator itr = NULL;
@@ -5648,37 +5620,14 @@ extern int load_qos_usage(void)
 	xstrcat(state_file, "/qos_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
+
+	if (!(buffer = create_mmap_buf(state_file))) {
 		debug2("No Qos usage file (%s) to recover", state_file);
 		xfree(state_file);
 		assoc_mgr_unlock(&locks);
 		return ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
-
-	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in qos_usage header is %u", ver);
@@ -5747,11 +5696,9 @@ unpack_error:
 
 extern int load_assoc_mgr_last_tres(void)
 {
-	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
-	uint32_t data_size = 0;
+	int error_code = SLURM_SUCCESS;
 	uint16_t ver = 0;
-	int state_fd;
-	char *data = NULL, *state_file;
+	char *state_file;
 	Buf buffer = NULL;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
@@ -5765,37 +5712,14 @@ extern int load_assoc_mgr_last_tres(void)
 				    *init_setup.state_save_location);
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
+
+	if (!(buffer = create_mmap_buf(state_file))) {
 		debug2("No last_tres file (%s) to recover", state_file);
 		xfree(state_file);
 		assoc_mgr_unlock(&locks);
 		return ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
-
-	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in last_tres header is %u", ver);
@@ -5844,12 +5768,10 @@ unpack_error:
 
 extern int load_assoc_mgr_state(bool only_tres)
 {
-	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
-	uint32_t data_size = 0;
+	int error_code = SLURM_SUCCESS;
 	uint16_t type = 0;
 	uint16_t ver = 0;
-	int state_fd;
-	char *data = NULL, *state_file;
+	char *state_file;
 	Buf buffer = NULL;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
@@ -5866,37 +5788,14 @@ extern int load_assoc_mgr_state(bool only_tres)
 	xstrcat(state_file, "/assoc_mgr_state"); /* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
+
+	if (!(buffer = create_mmap_buf(state_file))) {
 		debug2("No association state file (%s) to recover", state_file);
 		xfree(state_file);
 		assoc_mgr_unlock(&locks);
 		return ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
-
-	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_mgr_state header is %u", ver);
