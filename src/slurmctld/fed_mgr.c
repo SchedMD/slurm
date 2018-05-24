@@ -2779,47 +2779,21 @@ extern int fed_mgr_state_save(char *state_save_location)
 static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 {
 	Buf buffer = NULL;
-	char *data = NULL, *state_file;
+	char *state_file;
 	time_t buf_time;
 	uint16_t ver = 0;
-	uint32_t data_size = 0;
-	int state_fd;
-	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
 	slurmdb_federation_rec_t *ret_fed = NULL;
 	List tmp_list = NULL;
 
 	state_file = xstrdup_printf("%s/%s", state_save_location,
 				    FED_MGR_STATE_FILE);
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
+	if (!(buffer = create_mmap_buf(state_file))) {
 		error("No fed_mgr state file (%s) to recover", state_file);
 		xfree(state_file);
 		return NULL;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
-
-	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
 

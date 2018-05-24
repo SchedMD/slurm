@@ -883,40 +883,28 @@ extern int trigger_state_save(void)
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static int _open_resv_state_file(char **state_file)
+static Buf _open_trigger_state_file(char **state_file)
 {
-	int state_fd;
-	struct stat stat_buf;
+	Buf buf;
 
 	*state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(*state_file, "/trigger_state");
-	state_fd = open(*state_file, O_RDONLY);
-	if (state_fd < 0) {
+	if (!(buf = create_mmap_buf(*state_file)))
 		error("Could not open trigger state file %s: %m",
 		      *state_file);
-	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat trigger state file %s: %m",
-		      *state_file);
-		(void) close(state_fd);
-	} else if (stat_buf.st_size < 10) {
-		error("Trigger state file %s too small", *state_file);
-		(void) close(state_fd);
-	} else 	/* Success */
-		return state_fd;
+	else
+		return buf;
 
 	error("NOTE: Trying backup state save file. Triggers may be lost!");
 	xstrcat(*state_file, ".old");
-	state_fd = open(*state_file, O_RDONLY);
-	return state_fd;
+	return create_mmap_buf(*state_file);;
 }
 
 extern void trigger_state_restore(void)
 {
-	int data_allocated, data_read = 0;
-	uint32_t data_size = 0;
 	uint16_t protocol_version = NO_VAL16;
-	int state_fd, trigger_cnt = 0;
-	char *data = NULL, *state_file;
+	int trigger_cnt = 0;
+	char *state_file;
 	Buf buffer;
 	time_t buf_time;
 	char *ver_str = NULL;
@@ -924,38 +912,15 @@ extern void trigger_state_restore(void)
 
 	/* read the file */
 	lock_state_files();
-	state_fd = _open_resv_state_file(&state_file);
-	if (state_fd < 0) {
+	if (!(buffer = _open_trigger_state_file(&state_file))) {
 		info("No trigger state file (%s) to recover", state_file);
 		xfree(state_file);
 		unlock_state_files();
 		return;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
 	unlock_state_files();
 
-	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	if (ver_str && !xstrcmp(ver_str, TRIGGER_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);

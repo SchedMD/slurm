@@ -209,7 +209,7 @@ static bitstr_t *_make_requeue_array(char *conf_buf);
 static uint32_t _max_switch_wait(uint32_t input_wait);
 static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
-static int  _open_job_state_file(char **state_file);
+static Buf  _open_job_state_file(char **state_file);
 static time_t _get_last_job_state_write_time(void);
 static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer);
 static void _pack_default_job_details(struct job_record *job_ptr,
@@ -822,29 +822,21 @@ static int _find_resv_part(void *x, void *key)
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static int _open_job_state_file(char **state_file)
+static Buf _open_job_state_file(char **state_file)
 {
-	int state_fd;
-	struct stat stat_buf;
+	Buf buf;
 
 	*state_file = xstrdup_printf("%s/job_state",
 				     slurmctld_conf.state_save_location);
-	state_fd = open(*state_file, O_RDONLY);
-	if (state_fd < 0) {
+
+	if (!(buf = create_mmap_buf(*state_file)))
 		error("Could not open job state file %s: %m", *state_file);
-	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat job state file %s: %m", *state_file);
-		(void) close(state_fd);
-	} else if (stat_buf.st_size < 10) {
-		error("Job state file %s too small", *state_file);
-		(void) close(state_fd);
-	} else	/* Success */
-		return state_fd;
+	else
+		return buf;
 
 	error("NOTE: Trying backup state save file. Jobs may be lost!");
 	xstrcat(*state_file, ".old");
-	state_fd = open(*state_file, O_RDONLY);
-	return state_fd;
+	return create_mmap_buf(*state_file);
 }
 
 extern void set_job_tres_req_str(struct job_record *job_ptr,
@@ -901,10 +893,8 @@ extern void backup_slurmctld_restart(void)
  * error */
 static time_t _get_last_job_state_write_time(void)
 {
-	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
-	uint32_t data_size = 0;
-	int state_fd;
-	char *data, *state_file;
+	int error_code = SLURM_SUCCESS;
+	char *state_file;
 	Buf buffer;
 	time_t buf_time = (time_t) 0;
 	char *ver_str = NULL;
@@ -912,37 +902,14 @@ static time_t _get_last_job_state_write_time(void)
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
-	state_fd = _open_job_state_file(&state_file);
-	if (state_fd < 0) {
+	if (!(buffer = _open_job_state_file(&state_file))) {
 		info("No job state file (%s) found", state_file);
 		error_code = ENOENT;
-	} else {
-		data_allocated = 128;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 (data_allocated - data_size));
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size += data_read;
-			if (data_size >= 128)
-				break;
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
 	if (error_code)
 		return buf_time;
 
-	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	if (ver_str && !xstrcmp(ver_str, JOB_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
@@ -962,10 +929,9 @@ unpack_error:
  */
 extern int load_all_job_state(void)
 {
-	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
-	uint32_t data_size = 0;
-	int state_fd, job_cnt = 0;
-	char *data = NULL, *state_file;
+	int error_code = SLURM_SUCCESS;
+	int job_cnt = 0;
+	char *state_file;
 	Buf buffer;
 	time_t buf_time;
 	uint32_t saved_job_id;
@@ -976,40 +942,17 @@ extern int load_all_job_state(void)
 
 	/* read the file */
 	lock_state_files();
-	state_fd = _open_job_state_file(&state_file);
-	if (state_fd < 0) {
+	if (!(buffer = _open_job_state_file(&state_file))) {
 		info("No job state file (%s) to recover", state_file);
 		xfree(state_file);
 		unlock_state_files();
 		return ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
 	unlock_state_files();
 
 	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 
-	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str && !xstrcmp(ver_str, JOB_STATE_VERSION))
@@ -1063,10 +1006,7 @@ unpack_error:
  */
 extern int load_last_job_id( void )
 {
-	int data_allocated, data_read = 0;
-	uint32_t data_size = 0;
-	int state_fd;
-	char *data = NULL, *state_file;
+	char *state_file;
 	Buf buffer;
 	time_t buf_time;
 	char *ver_str = NULL;
@@ -1077,38 +1017,15 @@ extern int load_last_job_id( void )
 	state_file = xstrdup_printf("%s/job_state",
 				    slurmctld_conf.state_save_location);
 	lock_state_files();
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
+	if (!(buffer = _open_job_state_file(&state_file))) {
 		debug("No job state file (%s) to recover", state_file);
 		xfree(state_file);
 		unlock_state_files();
 		return ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
 	unlock_state_files();
 
-	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str && !xstrcmp(ver_str, JOB_STATE_VERSION))
