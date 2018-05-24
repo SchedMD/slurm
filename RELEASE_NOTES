@@ -170,6 +170,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Add "NumaCpuBind" option to knl.conf file to automatically change a node's
     CpuBind parameter based upon changes to a node's NUMA mode.
  -- Remove support for "ChosLoc" configuration parameter.
+ -- Add SlurmctldParameters option allow_user_triggers to enable user-defined
+    triggers. User defined triggers are now disabled by default.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

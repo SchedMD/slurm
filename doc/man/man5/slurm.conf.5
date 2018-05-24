@@ -3327,6 +3327,19 @@ logs are written.
 The default value is none (performs logging via syslog).
 .br
 See the section \fBLOGGING\fR if a pathname is specified.
+
+.TP
+\fBSlurmctldParameters\fR
+Multiple options may be comma-separated.
+
+.RS
+.TP
+\fBallow_user_triggers\fR
+Permit setting triggers from non-root/slurm_user users. SlurmUser must also
+be set to root to permit these triggers to work. See the \fBstrigger\fR man
+page for additional details.
+.RE
+
 .TP
 \fBSlurmctldPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmctld\fR daemon

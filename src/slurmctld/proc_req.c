@@ -5723,12 +5723,19 @@ inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
+	bool allow_user_triggers = xstrcasestr(slurmctld_conf.slurmctld_params,
+					       "allow_user_triggers");
 	DEF_TIMERS;
 
 	START_TIMER;
 	debug("Processing RPC: REQUEST_TRIGGER_SET from uid=%d", uid);
-
-	rc = trigger_set(uid, gid, trigger_ptr);
+	if (validate_slurm_user(uid) || allow_user_triggers) {
+		rc = trigger_set(uid, gid, trigger_ptr);
+	} else {
+		rc = ESLURM_ACCESS_DENIED;
+		error("Security violation, REQUEST_TRIGGER_SET RPC from uid=%d",
+		      uid);
+	}
 	END_TIMER2("_slurm_rpc_trigger_set");
 
 	slurm_send_rc_msg(msg, rc);
