@@ -44,7 +44,6 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <grp.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,7 +89,7 @@ static uid_t *_get_groups_members(char *group_names);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
 static int    _match_part_ptr(void *part_ptr, void *key);
-static int    _open_part_state_file(char **state_file);
+static Buf    _open_part_state_file(char **state_file);
 static int    _uid_list_size(uid_t * uid_list_ptr);
 static void   _unlink_free_nodes(bitstr_t *old_bitmap,
 			struct part_record *part_ptr);
@@ -560,31 +559,23 @@ static int _dump_part_state(void *x, void *arg)
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static int _open_part_state_file(char **state_file)
+static Buf _open_part_state_file(char **state_file)
 {
-	int state_fd;
-	struct stat stat_buf;
+	Buf buf;
 
 	*state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(*state_file, "/part_state");
-	state_fd = open(*state_file, O_RDONLY);
-	if (state_fd < 0) {
+	buf = create_mmap_buf(*state_file);
+	if (!buf) {
 		error("Could not open partition state file %s: %m",
 		      *state_file);
-	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat partition state file %s: %m",
-		      *state_file);
-		(void) close(state_fd);
-	} else if (stat_buf.st_size < 10) {
-		error("Partition state file %s too small", *state_file);
-		(void) close(state_fd);
 	} else 	/* Success */
-		return state_fd;
+		return buf;
 
 	error("NOTE: Trying backup partition state save file. Information may be lost!");
 	xstrcat(*state_file, ".old");
-	state_fd = open(*state_file, O_RDONLY);
-	return state_fd;
+	buf = create_mmap_buf(*state_file);
+	return buf;
 }
 
 /*
@@ -597,7 +588,7 @@ int load_all_part_state(void)
 	char *part_name = NULL, *nodes = NULL;
 	char *allow_accounts = NULL, *allow_groups = NULL, *allow_qos = NULL;
 	char *deny_accounts = NULL, *deny_qos = NULL, *qos_char = NULL;
-	char *state_file = NULL, *data = NULL;
+	char *state_file = NULL;
 	uint32_t max_time, default_time, max_nodes, min_nodes;
 	uint32_t max_cpus_per_node = INFINITE, cpu_bind = 0, grace_time = 0;
 	time_t time;
@@ -605,9 +596,8 @@ int load_all_part_state(void)
 	uint16_t max_share, over_time_limit = NO_VAL16, preempt_mode;
 	uint16_t state_up, cr_type;
 	struct part_record *part_ptr;
-	uint32_t data_size = 0, name_len;
-	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
-	int state_fd;
+	uint32_t name_len;
+	int error_code = 0, part_cnt = 0;
 	Buf buffer;
 	char *ver_str = NULL;
 	char* allow_alloc_nodes = NULL;
@@ -618,39 +608,16 @@ int load_all_part_state(void)
 
 	/* read the file */
 	lock_state_files();
-	state_fd = _open_part_state_file(&state_file);
-	if (state_fd < 0) {
+	buffer = _open_part_state_file(&state_file);
+	if (!buffer) {
 		info("No partition state file (%s) to recover",
 		     state_file);
 		xfree(state_file);
 		unlock_state_files();
 		return ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if  (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-						state_file);
-					break;
-				}
-			} else if (data_read == 0)     /* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
 	unlock_state_files();
-
-	buffer = create_buf(data, data_size);
 
 	safe_unpackstr_xmalloc(&ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
