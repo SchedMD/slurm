@@ -110,7 +110,7 @@ static bool	_is_cloud_hidden(struct node_record *node_ptr);
 static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
 static bool	_node_is_hidden(struct node_record *node_ptr, uid_t uid);
-static int	_open_node_state_file(char **state_file);
+static Buf	_open_node_state_file(char **state_file);
 static void 	_pack_node(struct node_record *dump_node_ptr, Buf buffer,
 			   uint16_t protocol_version, uint16_t show_flags);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
@@ -250,29 +250,21 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static int _open_node_state_file(char **state_file)
+static Buf _open_node_state_file(char **state_file)
 {
-	int state_fd;
-	struct stat stat_buf;
+	Buf buf;
 
 	*state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(*state_file, "/node_state");
-	state_fd = open(*state_file, O_RDONLY);
-	if (state_fd < 0) {
+	buf = create_mmap_buf(*state_file);
+	if (!(buf = create_mmap_buf(*state_file)))
 		error("Could not open node state file %s: %m", *state_file);
-	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat node state file %s: %m", *state_file);
-		(void) close(state_fd);
-	} else if (stat_buf.st_size < 10) {
-		error("Node state file %s too small", *state_file);
-		(void) close(state_fd);
-	} else 	/* Success */
-		return state_fd;
+	else
+		return buf;
 
 	error("NOTE: Trying backup state save file. Information may be lost!");
 	xstrcat(*state_file, ".old");
-	state_fd = open(*state_file, O_RDONLY);
-	return state_fd;
+	return create_mmap_buf(*state_file);
 }
 
 /*
@@ -286,21 +278,20 @@ static int _open_node_state_file(char **state_file)
 extern int load_all_node_state ( bool state_only )
 {
 	char *comm_name = NULL, *node_hostname = NULL;
-	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
+	char *node_name = NULL, *reason = NULL, *state_file;
 	char *features = NULL, *features_act = NULL;
 	char *gres = NULL, *cpu_spec_list = NULL;
 	char *mcs_label = NULL;
-	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
+	int error_code = 0, node_cnt = 0;
 	uint16_t core_spec_cnt = 0;
 	uint32_t node_state, cpu_bind = 0;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint64_t real_memory;
-	uint32_t tmp_disk, data_size = 0, name_len;
+	uint32_t tmp_disk, name_len;
 	uint32_t reason_uid = NO_VAL;
 	time_t boot_req_time = 0, reason_time = 0;
 	List gres_list = NULL;
 	struct node_record *node_ptr;
-	int state_fd;
 	time_t time_stamp, now = time(NULL);
 	Buf buffer;
 	char *ver_str = NULL;
@@ -316,38 +307,15 @@ extern int load_all_node_state ( bool state_only )
 
 	/* read the file */
 	lock_state_files ();
-	state_fd = _open_node_state_file(&state_file);
-	if (state_fd < 0) {
+	buffer = _open_node_state_file(&state_file);
+	if (!buffer) {
 		info("No node state file (%s) to recover", state_file);
 		xfree(state_file);
 		unlock_state_files();
 		return ENOENT;
 	}
-	else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size], BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error ("Read error on %s: %m",
-						state_file);
-					break;
-				}
-			} else if (data_read == 0)     /* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close (state_fd);
-	}
-	xfree (state_file);
-	unlock_state_files ();
-
-	buffer = create_buf (data, data_size);
+	xfree(state_file);
+	unlock_state_files();
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in node_state header is %s", ver_str);
