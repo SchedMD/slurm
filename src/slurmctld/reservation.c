@@ -152,7 +152,7 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
 			 bitstr_t *node_bitmap, char *resv_name);
 static int _job_resv_check(void *x, void *arg);
 static List _list_dup(List license_list);
-static int  _open_resv_state_file(char **state_file);
+static Buf  _open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal, uint16_t protocol_version);
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
@@ -3478,31 +3478,21 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static int _open_resv_state_file(char **state_file)
+static Buf _open_resv_state_file(char **state_file)
 {
-	int state_fd;
-	struct stat stat_buf;
+	Buf buf;
 
 	*state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(*state_file, "/resv_state");
-	state_fd = open(*state_file, O_RDONLY);
-	if (state_fd < 0) {
+	if (!(buf = create_mmap_buf(*state_file)))
 		error("Could not open reservation state file %s: %m",
 		      *state_file);
-	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat reservation state file %s: %m",
-		      *state_file);
-		(void) close(state_fd);
-	} else if (stat_buf.st_size < 10) {
-		error("Reservation state file %s too small", *state_file);
-		(void) close(state_fd);
-	} else 	/* Success */
-		return state_fd;
+	else
+		return buf;
 
 	error("NOTE: Trying backup state save file. Reservations may be lost");
 	xstrcat(*state_file, ".old");
-	state_fd = open(*state_file, O_RDONLY);
-	return state_fd;
+	return create_mmap_buf(*state_file);
 }
 
 /*
@@ -3517,10 +3507,10 @@ static int _open_resv_state_file(char **state_file)
  */
 extern int load_all_resv_state(int recover)
 {
-	char *state_file, *data = NULL, *ver_str = NULL;
+	char *state_file, *ver_str = NULL;
 	time_t now;
-	uint32_t data_size = 0, uint32_tmp;
-	int data_allocated, data_read = 0, error_code = 0, state_fd;
+	uint32_t uint32_tmp;
+	int error_code = 0;
 	Buf buffer;
 	slurmctld_resv_t *resv_ptr = NULL;
 	uint16_t protocol_version = NO_VAL16;
@@ -3539,39 +3529,15 @@ extern int load_all_resv_state(int recover)
 
 	/* read the file */
 	lock_state_files();
-	state_fd = _open_resv_state_file(&state_file);
-	if (state_fd < 0) {
+	if (!(buffer = _open_resv_state_file(&state_file))) {
 		info("No reservation state file (%s) to recover",
 		     state_file);
 		xfree(state_file);
 		unlock_state_files();
 		return ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					BUF_SIZE);
-			if (data_read < 0) {
-				if  (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-						state_file);
-					break;
-				}
-			} else if (data_read == 0)     /* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
 	unlock_state_files();
-
-	buffer = create_buf(data, data_size);
 
 	safe_unpackstr_xmalloc( &ver_str, &uint32_tmp, buffer);
 	debug3("Version string in resv_state header is %s", ver_str);
