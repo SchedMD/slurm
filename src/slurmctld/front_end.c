@@ -88,32 +88,23 @@ static void _dump_front_end_state(front_end_record_t *front_end_ptr,
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static int _open_front_end_state_file(char **state_file)
+static Buf _open_front_end_state_file(char **state_file)
 {
-	int state_fd;
-	struct stat stat_buf;
+	Buf buf;
 
 	*state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(*state_file, "/front_end_state");
-	state_fd = open(*state_file, O_RDONLY);
-	if (state_fd < 0) {
+
+	if (!(buf = create_mmap_buf(*state_file)))
 		error("Could not open front_end state file %s: %m",
 		      *state_file);
-	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat front_end state file %s: %m",
-		      *state_file);
-		(void) close(state_fd);
-	} else if (stat_buf.st_size < 10) {
-		error("Front_end state file %s too small", *state_file);
-		(void) close(state_fd);
-	} else 	/* Success */
-		return state_fd;
+	else
+		return buf;
 
 	error("NOTE: Trying backup front_end_state save file. Information may "
 	      "be lost!");
 	xstrcat(*state_file, ".old");
-	state_fd = open(*state_file, O_RDONLY);
-	return state_fd;
+	return create_mmap_buf(*state_file);
 }
 
 /*
@@ -772,52 +763,28 @@ extern int dump_all_front_end_state(void)
 extern int load_all_front_end_state(bool state_only)
 {
 #ifdef HAVE_FRONT_END
-	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
-	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
+	char *node_name = NULL, *reason = NULL, *state_file;
+	int error_code = 0, node_cnt = 0;
 	uint32_t node_state;
-	uint32_t data_size = 0, name_len;
+	uint32_t name_len;
 	uint32_t reason_uid = NO_VAL;
 	time_t reason_time = 0;
 	front_end_record_t *front_end_ptr;
-	int state_fd;
 	time_t time_stamp;
 	Buf buffer;
 	char *ver_str = NULL;
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
-	lock_state_files ();
-	state_fd = _open_front_end_state_file(&state_file);
-	if (state_fd < 0) {
+	lock_state_files();
+	if (!(buffer = _open_front_end_state_file(&state_file))) {
 		info("No node state file (%s) to recover", state_file);
 		xfree(state_file);
 		unlock_state_files();
 		return ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size], BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error ("Read error on %s: %m",
-						state_file);
-					break;
-				}
-			} else if (data_read == 0)     /* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close (state_fd);
 	}
-	xfree (state_file);
-	unlock_state_files ();
-
-	buffer = create_buf (data, data_size);
+	xfree(state_file);
+	unlock_state_files();
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in front_end_state header is %s", ver_str);
