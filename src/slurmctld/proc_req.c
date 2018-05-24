@@ -2698,7 +2698,7 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	struct job_record *job_ptr;
-	char *script;
+	Buf script;
 	job_id_msg_t *job_id_msg = (job_id_msg_t *) msg->data;
 	/* Locks: Read config, job, and node info */
 	slurmctld_lock_t job_read_lock = {
@@ -2738,7 +2738,7 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 		response_msg.msg_type = RESPONSE_BATCH_SCRIPT;
 		response_msg.data = script;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		xfree(script);
+		free_buf(script);
 	}
 }
 

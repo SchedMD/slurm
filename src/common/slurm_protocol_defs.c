@@ -839,6 +839,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->reservation);
 		xfree(msg->resp_host);
 		xfree(msg->script);
+		free_buf(msg->script_buf);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
 		xfree(msg->std_err);
@@ -946,6 +947,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->restart_dir);
 		xfree(msg->resv_name);
 		xfree(msg->script);
+		free_buf(msg->script_buf);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		if (msg->spank_job_env) {
 			for (i = 0; i < msg->spank_job_env_size; i++)

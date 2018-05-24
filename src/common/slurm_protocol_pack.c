@@ -8701,6 +8701,8 @@ static void
 _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		   uint16_t protocol_version)
 {
+	if (job_desc_ptr->script_buf)
+		job_desc_ptr->script = ((Buf) job_desc_ptr->script_buf)->head;
 
 	/* load the data values */
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
@@ -9103,6 +9105,9 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
 	}
+
+	if (job_desc_ptr->script_buf)
+		job_desc_ptr->script = NULL;
 }
 
 /* _unpack_job_desc_msg
@@ -12379,6 +12384,9 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 {
 	xassert(msg != NULL);
 
+	if (msg->script_buf)
+		msg->script = msg->script_buf->head;
+
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
@@ -12578,6 +12586,9 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		error("%s: protocol_version %hu not supported", __func__,
 		      protocol_version);
 	}
+
+	if (msg->script_buf)
+		msg->script = NULL;
 }
 
 static int

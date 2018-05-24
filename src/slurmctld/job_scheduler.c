@@ -2263,7 +2263,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 		launch_msg_ptr->gids = copy_gids(job_ptr->ngids, job_ptr->gids);
 	}
 
-	if ((launch_msg_ptr->script = get_job_script(job_ptr)) == NULL) {
+	if (!(launch_msg_ptr->script_buf = get_job_script(job_ptr))) {
 		error("Can not find batch script, Aborting batch job %u",
 		      job_ptr->job_id);
 		/* FIXME: This is a kludge, but this event indicates a missing

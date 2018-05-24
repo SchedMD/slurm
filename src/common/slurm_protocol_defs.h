@@ -1050,6 +1050,7 @@ typedef struct batch_job_launch_msg {
 	char *nodes;		/* list of nodes allocated to job_step */
 	uint32_t profile;       /* what to profile for the batch step */
 	char *script;		/* the actual job script, default NONE */
+	Buf script_buf;		/* the job script as a mmap buf */
 	char *std_err;		/* pathname of stderr */
 	char *std_in;		/* pathname of stdin */
 	char *qos;              /* qos the job is running under */

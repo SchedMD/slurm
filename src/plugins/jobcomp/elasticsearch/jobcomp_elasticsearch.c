@@ -617,7 +617,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], time_str[32];
 	char *json_str = NULL, *script_str = NULL, *state_string = NULL;
-	char *exit_code_str = NULL, *derived_ec_str = NULL, *script = NULL;
+	char *exit_code_str = NULL, *derived_ec_str = NULL;
+	Buf script;
 	enum job_states job_state;
 	int i, tmp_int, tmp_int2;
 	time_t elapsed_time;
@@ -832,12 +833,12 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	script = get_job_script(job_ptr);
-	if (script && script[0]) {
-		script_str = _json_escape(script);
+	if (script) {
+		script_str = _json_escape(script->head);
 		xstrfmtcat(json_str, ",\"script\":\"%s\"", script_str);
 		xfree(script_str);
 	}
-	xfree(script);
+	free_buf(script);
 
 	if (job_ptr->assoc_ptr) {
 		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,

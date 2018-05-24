@@ -1211,9 +1211,9 @@ extern char **get_job_env (struct job_record *job_ptr, uint32_t *env_size);
 /*
  * get_job_script - return the script for a given job
  * IN job_ptr - pointer to job for which data is required
- * RET point to string containing job script
+ * RET Buf containing job script
  */
-extern char *get_job_script (struct job_record *job_ptr);
+extern Buf get_job_script(struct job_record *job_ptr);
 
 /*
  * Return the next available job_id to be used.

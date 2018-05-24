@@ -223,7 +223,6 @@ static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t * size,
 				       struct job_record *job_ptr);
-static int   _read_data_from_file(int fd, char *file_name, char **data);
 static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
 static void _remove_job_hash(struct job_record *job_ptr,
@@ -7609,13 +7608,14 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 /*
  * get_job_script - return the script for a given job
  * IN job_ptr - pointer to job for which data is required
- * RET point to string containing job script
+ * RET Buf containing job script
  */
-char *get_job_script(struct job_record *job_ptr)
+Buf get_job_script(struct job_record *job_ptr)
 {
-	char *file_name = NULL, *script = NULL;
-	int fd = -1, hash;
+	char *file_name = NULL;
+	int hash;
 	uint32_t use_id;
+	Buf buf;
 
 	if (!job_ptr->batch_flag)
 		return NULL;
@@ -7626,17 +7626,12 @@ char *get_job_script(struct job_record *job_ptr)
 	file_name = xstrdup_printf("%s/hash.%d/job.%u/script",
 				   slurmctld_conf.state_save_location,
 				   hash, use_id);
-	fd = open(file_name, 0);
 
-	if (fd >= 0) {
-		_read_data_from_file(fd, file_name, &script);
-		close(fd);
-	} else {
+	if (!(buf = create_mmap_buf(file_name)))
 		error("Could not open script file for job %u", job_ptr->job_id);
-	}
-
 	xfree(file_name);
-	return script;
+
+	return buf;
 }
 
 /*
@@ -7762,55 +7757,6 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
 
 	*size = rec_cnt;
 	*data = array_ptr;
-	return 0;
-}
-
-/*
- * Read a string from a file
- * IN fd - file descriptor to read from
- * IN file_name - file to read from
- * OUT data - pointer to  string
- *	must be xfreed when no longer needed
- * RET - 0 on success, -1 on error
- */
-static int _read_data_from_file(int fd, char *file_name, char **data)
-{
-	struct stat stat_buf;
-	int pos, buf_size, amount, count;
-	char *buffer;
-
-	xassert(file_name);
-	xassert(data);
-	*data = NULL;
-
-	if (fstat(fd, &stat_buf)) {
-		error("%s: Unable to stat file %s", __func__, file_name);
-		return -1;
-	}
-
-	pos = 0;
-	buf_size = stat_buf.st_size;
-	buffer = xmalloc(buf_size);
-	while (pos < buf_size) {
-		count = buf_size - pos;
-		amount = read(fd, &buffer[pos], count);
-		if (amount < 0) {
-			if (errno == EINTR)
-				continue;
-			error("%s: Error reading file %s, %m",
-			      __func__, file_name);
-			xfree(buffer);
-			close(fd);
-			return -1;
-		}
-		if (amount < count) {	/* end of file */
-			error("%s: File %s shortened??", __func__, file_name);
-			break;
-		}
-		pos += amount;
-	}
-
-	*data = buffer;
 	return 0;
 }
 
@@ -17286,7 +17232,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->requeue           = details->requeue;
 	job_desc->reservation       = xstrdup(job_ptr->resv_name);
 	job_desc->restart_cnt       = job_ptr->restart_cnt;
-	job_desc->script            = get_job_script(job_ptr);
+	job_desc->script_buf        = get_job_script(job_ptr);
 	if (details->share_res == 1)
 		job_desc->shared     = JOB_SHARED_OK;
 	else if (details->whole_node == WHOLE_NODE_REQUIRED)

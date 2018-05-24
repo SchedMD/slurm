@@ -1493,6 +1493,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t requeue;	/* enable or disable job requeue option */
 	char *reservation;	/* name of reservation to use */
 	char *script;		/* the actual job script, default NONE */
+	void *script_buf;	/* job script as mmap buf */
 	uint16_t shared;	/* 2 if the job can only share nodes with other
 				 *   jobs owned by that user,
 				 * 1 if job can share nodes with other jobs,
