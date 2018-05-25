@@ -150,6 +150,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->grace_time = 0;
 		if (qos->grp_jobs == NO_VAL)
 			qos->grp_jobs = INFINITE;
+		if (qos->grp_jobs_accrue == NO_VAL)
+			qos->grp_jobs_accrue = INFINITE;
 		if (qos->grp_submit_jobs == NO_VAL)
 			qos->grp_submit_jobs = INFINITE;
 		if (qos->grp_wall == NO_VAL)
@@ -158,6 +160,12 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->max_jobs_pa = INFINITE;
 		if (qos->max_jobs_pu == NO_VAL)
 			qos->max_jobs_pu = INFINITE;
+		if (qos->max_jobs_accrue_pa == NO_VAL)
+			qos->max_jobs_accrue_pa = INFINITE;
+		if (qos->max_jobs_accrue_pu == NO_VAL)
+			qos->max_jobs_accrue_pu = INFINITE;
+		if (qos->max_prio_thresh == NO_VAL)
+			qos->max_prio_thresh = INFINITE;
 		if (qos->max_submit_jobs_pa == NO_VAL)
 			qos->max_submit_jobs_pa = INFINITE;
 		if (qos->max_submit_jobs_pu == NO_VAL)
@@ -224,6 +232,18 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", grp_jobs=%u", qos->grp_jobs);
 	}
 
+	if (qos->grp_jobs_accrue == INFINITE) {
+		xstrcat(*cols, ", grp_jobs_accrue");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_jobs_accrue=NULL");
+	} else if ((qos->grp_jobs_accrue != NO_VAL)
+		   && ((int32_t)qos->grp_jobs_accrue >= 0)) {
+		xstrcat(*cols, ", grp_jobs_accrue");
+		xstrfmtcat(*vals, ", %u", qos->grp_jobs_accrue);
+		xstrfmtcat(*extra, ", grp_jobs_accrue=%u",
+			   qos->grp_jobs_accrue);
+	}
+
 	if (qos->grp_submit_jobs == INFINITE) {
 		xstrcat(*cols, ", grp_submit_jobs");
 		xstrcat(*vals, ", NULL");
@@ -267,6 +287,42 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", max_jobs_per_user");
 		xstrfmtcat(*vals, ", %u", qos->max_jobs_pu);
 		xstrfmtcat(*extra, ", max_jobs_per_user=%u", qos->max_jobs_pu);
+	}
+
+	if (qos->max_jobs_accrue_pa == INFINITE) {
+		xstrcat(*cols, ", max_jobs_accrue_pa");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_jobs_accrue_pa=NULL");
+	} else if ((qos->max_jobs_accrue_pa != NO_VAL)
+		   && ((int32_t)qos->max_jobs_accrue_pa >= 0)) {
+		xstrcat(*cols, ", max_jobs_accrue_pa");
+		xstrfmtcat(*vals, ", %u", qos->max_jobs_accrue_pa);
+		xstrfmtcat(*extra, ", max_jobs_accrue_pa=%u",
+			   qos->max_jobs_accrue_pa);
+	}
+
+	if (qos->max_jobs_accrue_pu == INFINITE) {
+		xstrcat(*cols, ", max_jobs_accrue_pu");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_jobs_accrue_pu=NULL");
+	} else if ((qos->max_jobs_accrue_pu != NO_VAL)
+		   && ((int32_t)qos->max_jobs_accrue_pu >= 0)) {
+		xstrcat(*cols, ", max_jobs_accrue_pu");
+		xstrfmtcat(*vals, ", %u", qos->max_jobs_accrue_pu);
+		xstrfmtcat(*extra, ", max_jobs_accrue_pu=%u",
+			   qos->max_jobs_accrue_pu);
+	}
+
+	if (qos->max_prio_thresh == INFINITE) {
+		xstrcat(*cols, ", max_prio_thresh");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_prio_thresh=NULL");
+	} else if ((qos->max_prio_thresh != NO_VAL)
+		   && ((int32_t)qos->max_prio_thresh >= 0)) {
+		xstrcat(*cols, ", max_prio_thresh");
+		xstrfmtcat(*vals, ", %u", qos->max_prio_thresh);
+		xstrfmtcat(*extra, ", max_prio_thresh=%u",
+			   qos->max_prio_thresh);
 	}
 
 	if (qos->max_submit_jobs_pa == INFINITE) {
@@ -829,6 +885,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			     qos_rec->id, 0);
 
 		qos_rec->grp_jobs = qos->grp_jobs;
+		qos_rec->grp_jobs_accrue = qos->grp_jobs_accrue;
 		qos_rec->grp_submit_jobs = qos->grp_submit_jobs;
 		qos_rec->grp_wall = qos->grp_wall;
 
@@ -858,6 +915,9 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		qos_rec->max_jobs_pa  = qos->max_jobs_pa;
 		qos_rec->max_jobs_pu  = qos->max_jobs_pu;
+		qos_rec->max_jobs_accrue_pa  = qos->max_jobs_accrue_pa;
+		qos_rec->max_jobs_accrue_pu  = qos->max_jobs_accrue_pu;
+		qos_rec->max_prio_thresh  = qos->max_prio_thresh;
 		qos_rec->max_submit_jobs_pa  = qos->max_submit_jobs_pa;
 		qos_rec->max_submit_jobs_pu  = qos->max_submit_jobs_pu;
 		qos_rec->max_wall_pj = qos->max_wall_pj;
@@ -1159,6 +1219,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"grp_tres_run_mins",
 		"grp_tres",
 		"grp_jobs",
+		"grp_jobs_accrue",
 		"grp_submit_jobs",
 		"grp_wall",
 		"max_tres_mins_pj",
@@ -1170,6 +1231,9 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"max_tres_pu",
 		"max_jobs_pa",
 		"max_jobs_per_user",
+		"max_jobs_accrue_pa",
+		"max_jobs_accrue_pu",
+		"max_prio_thresh",
 		"max_submit_jobs_pa",
 		"max_submit_jobs_per_user",
 		"max_wall_duration_per_job",
@@ -1190,6 +1254,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_GTRM,
 		QOS_REQ_GT,
 		QOS_REQ_GJ,
+		QOS_REQ_GJA,
 		QOS_REQ_GSJ,
 		QOS_REQ_GW,
 		QOS_REQ_MTMPJ,
@@ -1201,6 +1266,9 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_MTPU,
 		QOS_REQ_MJPA,
 		QOS_REQ_MJPU,
+		QOS_REQ_MJAPA,
+		QOS_REQ_MJAPU,
+		QOS_REQ_MPT,
 		QOS_REQ_MSJPA,
 		QOS_REQ_MSJPU,
 		QOS_REQ_MWPJ,
@@ -1327,6 +1395,10 @@ empty:
 			qos->grp_jobs = slurm_atoul(row[QOS_REQ_GJ]);
 		else
 			qos->grp_jobs = INFINITE;
+		if (row[QOS_REQ_GJA])
+			qos->grp_jobs_accrue = slurm_atoul(row[QOS_REQ_GJA]);
+		else
+			qos->grp_jobs_accrue = INFINITE;
 		if (row[QOS_REQ_GSJ])
 			qos->grp_submit_jobs = slurm_atoul(row[QOS_REQ_GSJ]);
 		else
@@ -1345,6 +1417,23 @@ empty:
 			qos->max_jobs_pu = slurm_atoul(row[QOS_REQ_MJPU]);
 		else
 			qos->max_jobs_pu = INFINITE;
+
+		if (row[QOS_REQ_MJAPA])
+			qos->max_jobs_accrue_pa =
+				slurm_atoul(row[QOS_REQ_MJAPA]);
+		else
+			qos->max_jobs_accrue_pa = INFINITE;
+
+		if (row[QOS_REQ_MJAPU])
+			qos->max_jobs_accrue_pu =
+				slurm_atoul(row[QOS_REQ_MJAPU]);
+		else
+			qos->max_jobs_accrue_pu = INFINITE;
+
+		if (row[QOS_REQ_MPT])
+			qos->max_prio_thresh = slurm_atoul(row[QOS_REQ_MPT]);
+		else
+			qos->max_prio_thresh = INFINITE;
 
 		if (row[QOS_REQ_MSJPA])
 			qos->max_submit_jobs_pa =

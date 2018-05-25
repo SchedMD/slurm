@@ -56,6 +56,7 @@ char *assoc_req_inx[] = {
 	"grp_tres_run_mins",
 	"grp_tres",
 	"grp_jobs",
+	"grp_jobs_accrue",
 	"grp_submit_jobs",
 	"grp_wall",
 	"max_tres_mins_pj",
@@ -85,6 +86,7 @@ enum {
 	ASSOC_REQ_GTRM,
 	ASSOC_REQ_GT,
 	ASSOC_REQ_GJ,
+	ASSOC_REQ_GJA,
 	ASSOC_REQ_GSJ,
 	ASSOC_REQ_GW,
 	ASSOC_REQ_MTMPJ,
@@ -1514,6 +1516,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			     mod_assoc->id, 1);
 
 		mod_assoc->grp_jobs = assoc->grp_jobs;
+		mod_assoc->grp_jobs_accrue = assoc->grp_jobs_accrue;
 		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
 		mod_assoc->grp_wall = assoc->grp_wall;
 
@@ -2022,6 +2025,12 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			assoc->grp_jobs = slurm_atoul(row[ASSOC_REQ_GJ]);
 		else
 			assoc->grp_jobs = INFINITE;
+
+		if (row[ASSOC_REQ_GJA])
+			assoc->grp_jobs_accrue =
+				slurm_atoul(row[ASSOC_REQ_GJA]);
+		else
+			assoc->grp_jobs_accrue = INFINITE;
 
 		if (row[ASSOC_REQ_GSJ])
 			assoc->grp_submit_jobs =
