@@ -100,6 +100,13 @@ static int _print_used_acct_limit(slurmdb_used_limits_t *used_limit,
 		printf("N");
 	printf("(%u) ", used_limit->jobs);
 
+	printf("MaxJobsAccruePA=");
+	if (qos_rec->max_jobs_accrue_pa != INFINITE)
+		printf("%u", qos_rec->max_jobs_accrue_pa);
+	else
+		printf("N");
+	printf("(%u) ", used_limit->accrue_cnt);
+
 	printf("MaxSubmitJobsPA=");
 	if (qos_rec->max_submit_jobs_pa != INFINITE)
 		printf("%u", qos_rec->max_submit_jobs_pa);
@@ -137,7 +144,14 @@ static int _print_used_user_limit(slurmdb_used_limits_t *used_limit,
 		printf("%u", qos_rec->max_jobs_pu);
 	else
 		printf("N");
-	printf("(%u)%s", used_limit->jobs, new_line_char);
+	printf("(%u) ", used_limit->jobs);
+
+	printf("MaxJobsAccruePU=");
+	if (qos_rec->max_jobs_accrue_pu != INFINITE)
+		printf("%u", qos_rec->max_jobs_accrue_pu);
+	else
+		printf("N");
+	printf("(%u) ", used_limit->accrue_cnt);
 
 	printf("MaxSubmitJobsPU=");
 	if (qos_rec->max_submit_jobs_pu != INFINITE)
@@ -259,12 +273,19 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 
 
 			if (assoc_rec->grp_jobs != INFINITE)
-				printf("GrpJobs=%u(%u)",
+				printf("GrpJobs=%u(%u) ",
 				       assoc_rec->grp_jobs,
 				       assoc_rec->usage->used_jobs);
 			else
-				printf("GrpJobs=N(%u)",
+				printf("GrpJobs=N(%u) ",
 				       assoc_rec->usage->used_jobs);
+			if (assoc_rec->grp_jobs_accrue != INFINITE)
+				printf("GrpJobsAccrue=%u(%u)",
+				       assoc_rec->grp_jobs_accrue,
+				       assoc_rec->usage->accrue_cnt);
+			else
+				printf("GrpJobsAccrue=N(%u)",
+				       assoc_rec->usage->accrue_cnt);
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
@@ -309,6 +330,13 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 				       assoc_rec->usage->used_jobs);
 			else
 				printf("MaxJobs= ");
+
+			if (assoc_rec->max_jobs_accrue != INFINITE)
+				printf("MaxJobsAccrue=%u(%u) ",
+				       assoc_rec->max_jobs_accrue,
+				       assoc_rec->usage->accrue_cnt);
+			else
+				printf("MaxJobsAccrue= ");
 
 			if (assoc_rec->max_submit_jobs != INFINITE)
 				printf("MaxSubmitJobs=%u(%u) ",
@@ -371,6 +399,13 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			else
 				printf("GrpJobs=N(%u) ",
 				       qos_rec->usage->grp_used_jobs);
+			if (qos_rec->grp_jobs_accrue != INFINITE)
+				printf("GrpJobsAccrue=%u(%u) ",
+				       qos_rec->grp_jobs_accrue,
+				       qos_rec->usage->accrue_cnt);
+			else
+				printf("GrpJobsAccrue=N(%u) ",
+				       qos_rec->usage->accrue_cnt);
 			if (qos_rec->grp_submit_jobs != INFINITE)
 				printf("GrpSubmitJobs=%u(%u) ",
 				       qos_rec->grp_submit_jobs,
@@ -411,6 +446,13 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 				       qos_rec->max_wall_pj);
 			else
 				printf("MaxWallPJ=");
+
+			if (qos_rec->max_prio_thresh != INFINITE)
+				printf("MaxPrioThresh=%u",
+				       qos_rec->max_prio_thresh);
+			else
+				printf("MaxPrioThresh=");
+
 
 			/* NEW LINE */
 			printf("%s", new_line_char);
