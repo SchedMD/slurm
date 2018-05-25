@@ -153,4 +153,19 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr);
  */
 extern bool acct_policy_job_time_out(struct job_record *job_ptr);
 
+/*
+ * acct_policy_handle_accrue_time - Set accrue time if we are under a limit.  If
+ * we are a task array we will also split off things to handle them
+ * individually.
+ */
+extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
+					  bool assoc_mgr_locked);
+
+/*
+ * acct_policy_add_accrue_time - Implicitly add job to the accrue_cnt of the
+ * assoc and QOS of the job/part.
+ */
+extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
+					bool assoc_mgr_locked);
+
 #endif /* !_HAVE_ACCT_POLICY_H */

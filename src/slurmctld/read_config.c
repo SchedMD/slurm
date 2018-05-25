@@ -2653,7 +2653,10 @@ static int _restore_job_dependencies(void)
 			    IS_JOB_SUSPENDED(job_ptr)) {
 				acct_policy_job_begin(job_ptr);
 				job_claim_resv(job_ptr);
-			}
+			} else if (IS_JOB_PENDING(job_ptr) &&
+				   job_ptr->details &&
+				   job_ptr->details->accrue_time)
+				acct_policy_add_accrue_time(job_ptr, true);
 		}
 
 		license_list = license_validate(job_ptr->licenses,

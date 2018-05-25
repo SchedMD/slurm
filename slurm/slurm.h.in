@@ -1059,6 +1059,8 @@ enum ctx_keys {
 #define JOB_SALLOC_FLAG    0x00010000	/* For internal salloc/sbatch/srun use */
 #define TOP_PRIO_TMP       0x00020000	/* Temporary flag for top priority job
 					 * operation */
+#define JOB_ACCRUE_OVER    0x00040000	/* We have cleared the accrual count of
+					 * a job. */
 
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
 #define X11_FORWARD_BATCH	0x0002  /* only the batch node */
