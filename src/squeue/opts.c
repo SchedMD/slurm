@@ -1440,6 +1440,11 @@ extern int parse_long_format( char* format_long )
 							 right_justify,
 							 suffix );
 
+			else if (!xstrcasecmp(token, "accruetime"))
+				job_format_add_accrue_time(params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix);
 			else if (!xstrcasecmp(token, "allocnodes"))
 				job_format_add_alloc_nodes( params.format_list,
 							    field_size,

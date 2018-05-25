@@ -526,6 +526,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	xstrcat(out, line_end);
 
+	/****** Line 7.5 ******/
+	slurm_make_time_str(&job_ptr->accrue_time, time_str, sizeof(time_str));
+	xstrfmtcat(out, "AccrueTime=%s", time_str);
+
+	xstrcat(out, line_end);
+
 	/****** Line 8 (optional) ******/
 	if (job_ptr->resize_time) {
 		slurm_make_time_str(&job_ptr->resize_time, time_str, sizeof(time_str));

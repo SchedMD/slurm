@@ -1612,6 +1612,20 @@ int _print_job_nice(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_accrue_time(job_info_t * job, int width, bool right_justify,
+			   char* suffix)
+{
+	if (job == NULL)
+		_print_str("ACCRUE_TIME", width, right_justify, true);
+	else {
+		_print_time(job->accrue_time, 0, width, right_justify);
+	}
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_alloc_nodes(job_info_t * job, int width, bool right_justify,
 			   char* suffix)
 {

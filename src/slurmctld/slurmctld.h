@@ -482,6 +482,8 @@ typedef struct job_feature {
  * can be purged after initiation */
 struct job_details {
 	char *acctg_freq;		/* accounting polling interval */
+	time_t accrue_time;             /* Time when we start accruing time for
+					 * priority, */
 	uint32_t argc;			/* count of argv elements */
 	char **argv;			/* arguments for a batch job script */
 	time_t begin_time;		/* start at this time (srun --begin),
