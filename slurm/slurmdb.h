@@ -804,16 +804,14 @@ typedef struct {
 	uint64_t *grp_used_tres_run_secs; /* count of running tres secs
 					 * (DON'T PACK for state file) */
 	double grp_used_wall;   /* group count of time (minutes) used in
-				 * running jobs (DON'T PACK for state file) */
+				 * running jobs */
 	double norm_priority;/* normalized priority (DON'T PACK for
 			      * state file) */
 	uint32_t tres_cnt; /* size of the tres arrays,
 			    * (DON'T PACK for state file) */
-	long double usage_raw;	/* measure of resource usage (DON'T
-				 * PACK for state file) */
+	long double usage_raw;	/* measure of resource usage */
 
-	long double *usage_tres_raw; /* measure of each TRES usage (DON'T
-				      * PACK for state file)*/
+	long double *usage_tres_raw; /* measure of each TRES usage */
 	List user_limit_list; /* slurmdb_used_limits_t's (DON'T PACK
 			       * for state file) */
 } slurmdb_qos_usage_t;
