@@ -534,7 +534,8 @@ typedef struct slurmdb_assoc_rec {
 struct slurmdb_assoc_usage {
 	List children_list;     /* list of children associations
 				 * (DON'T PACK) */
-	uint64_t *grp_used_tres; /* array of active tres counts */
+	uint64_t *grp_used_tres; /* array of active tres counts
+				  * (DON'T PACK for state file) */
 	uint64_t *grp_used_tres_run_secs; /* array of running tres secs
 					   * (DON'T PACK for state file) */
 
