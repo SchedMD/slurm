@@ -421,7 +421,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			continue;
 		if (job_ptr->array_recs->task_cnt == 1) {
 			job_ptr->array_task_id = i;
-			job_array_post_sched(job_ptr);
+			(void) job_array_post_sched(job_ptr);
 			continue;
 		}
 		job_ptr->array_task_id = i;
@@ -473,7 +473,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			continue;
 		if (job_ptr->array_recs->task_cnt == 1) {
 			job_ptr->array_task_id = i;
-			job_array_post_sched(job_ptr);
+			(void) job_array_post_sched(job_ptr);
 			continue;
 		}
 		job_ptr->array_task_id = i;

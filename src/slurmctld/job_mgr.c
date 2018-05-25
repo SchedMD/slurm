@@ -17939,13 +17939,13 @@ extern void job_array_pre_sched(struct job_record *job_ptr)
 }
 
 /* If this is a job array meta-job, clean up after scheduling attempt */
-extern void job_array_post_sched(struct job_record *job_ptr)
+extern struct job_record *job_array_post_sched(struct job_record *job_ptr)
 {
-	struct job_record *new_job_ptr;
+	struct job_record *new_job_ptr = NULL;
 	char jobid_buf[32];
 
 	if (!job_ptr->array_recs || !job_ptr->array_recs->task_id_bitmap)
-		return;
+		return job_ptr;
 
 	if (job_ptr->array_recs->task_cnt <= 1) {
 		/* Preserve array_recs for min/max exit codes for job array */
@@ -17977,6 +17977,7 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 					job_ptr->array_task_id)) {
 			_add_job_array_hash(job_ptr);
 		}
+		new_job_ptr = job_ptr;
 	} else {
 		new_job_ptr = job_array_split(job_ptr);
 		if (new_job_ptr) {
@@ -17989,6 +17990,8 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		}
 	}
+
+	return new_job_ptr;
 }
 
 /* _kill_dependent()
