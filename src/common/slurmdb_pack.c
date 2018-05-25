@@ -778,6 +778,7 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		if (!object) {
+			pack32(0, buffer);
 			packnull(buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
@@ -787,6 +788,7 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 			return;
 		}
 
+		pack32(object->accrue_cnt, buffer);
 		packstr(object->acct, buffer);
 		pack32(object->jobs, buffer);
 		pack32(object->submit_jobs, buffer);
@@ -829,6 +831,7 @@ extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
 	*object = (void *)object_ptr;
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->accrue_cnt, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->acct, &tmp32, buffer);
 		safe_unpack32(&object_ptr->jobs, buffer);
 		safe_unpack32(&object_ptr->submit_jobs, buffer);
@@ -1719,6 +1722,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 
 			pack32(0, buffer);
 			pack16(0, buffer);
@@ -1778,6 +1782,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->grp_tres_run_mins, buffer);
 		packstr(object->grp_tres, buffer);
 		pack32(object->grp_jobs, buffer);
+		pack32(object->grp_jobs_accrue, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
@@ -1976,6 +1981,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr_xmalloc(&object_ptr->grp_tres,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_jobs_accrue, buffer);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
@@ -2133,6 +2139,7 @@ extern void slurmdb_pack_assoc_usage(void *in, uint16_t protocol_version,
         xassert(usage);
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		pack32(usage->accrue_cnt, buffer);
 		pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
 		pack64_array(usage->grp_used_tres_run_secs, usage->tres_cnt,
 			     buffer);
@@ -2181,6 +2188,7 @@ extern int slurmdb_unpack_assoc_usage(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->accrue_cnt, buffer);
 		safe_unpack64_array(&object_ptr->grp_used_tres, &tmp32, buffer);
 		object_ptr->tres_cnt = tmp32;
 		safe_unpack64_array(&object_ptr->grp_used_tres_run_secs,
@@ -2416,6 +2424,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 
 			packnull(buffer);
 			packnull(buffer);
@@ -2424,6 +2433,9 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -2453,6 +2465,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer
 		packstr(object->grp_tres_run_mins, buffer);
 		packstr(object->grp_tres, buffer);
 		pack32(object->grp_jobs, buffer);
+		pack32(object->grp_jobs_accrue, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
@@ -2465,6 +2478,9 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer
 		packstr(object->max_tres_pu, buffer);
 		pack32(object->max_jobs_pa, buffer);
 		pack32(object->max_jobs_pu, buffer);
+		pack32(object->max_jobs_accrue_pa, buffer);
+		pack32(object->max_jobs_accrue_pu, buffer);
+		pack32(object->max_prio_thresh, buffer);
 		pack32(object->max_submit_jobs_pa, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
 		pack32(object->max_wall_pj, buffer);
@@ -2616,6 +2632,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&object_ptr->grp_tres,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_jobs_accrue, buffer);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
@@ -2635,6 +2652,9 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->max_jobs_pa, buffer);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
+		safe_unpack32(&object_ptr->max_jobs_accrue_pa, buffer);
+		safe_unpack32(&object_ptr->max_jobs_accrue_pu, buffer);
+		safe_unpack32(&object_ptr->max_prio_thresh, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pa, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
@@ -2750,6 +2770,7 @@ extern void slurmdb_pack_qos_usage(void *in, uint16_t protocol_version,
 	void *used_limits;
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		pack32(usage->accrue_cnt, buffer);
 		pack32(usage->grp_used_jobs, buffer);
 		pack32(usage->grp_used_submit_jobs, buffer);
 		pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
@@ -2852,6 +2873,7 @@ extern int slurmdb_unpack_qos_usage(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->accrue_cnt, buffer);
 		safe_unpack32(&object_ptr->grp_used_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_used_submit_jobs, buffer);
 		safe_unpack64_array(&object_ptr->grp_used_tres,

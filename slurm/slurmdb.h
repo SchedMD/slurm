@@ -431,6 +431,9 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t grp_jobs;	   /* max number of jobs the
 				    * underlying group of associations can run
 				    * at one time */
+	uint32_t grp_jobs_accrue;  /* max number of jobs the
+				    * underlying group of associations can have
+				    * accruing priority at one time */
 	uint32_t grp_submit_jobs;  /* max number of jobs the
 				    * underlying group of
 				    * associations can submit at
@@ -532,6 +535,8 @@ typedef struct slurmdb_assoc_rec {
 } slurmdb_assoc_rec_t;
 
 struct slurmdb_assoc_usage {
+	uint32_t accrue_cnt;    /* Count of how many jobs I have accuring prio
+				 * (DON'T PACK for state file) */
 	List children_list;     /* list of children associations
 				 * (DON'T PACK) */
 	uint64_t *grp_used_tres; /* array of active tres counts
@@ -791,6 +796,8 @@ typedef struct {
 } slurmdb_job_rec_t;
 
 typedef struct {
+	uint32_t accrue_cnt;    /* Count of how many jobs I have accuring prio
+				 * (DON'T PACK for state file) */
 	List acct_limit_list; /* slurmdb_used_limits_t's (DON'T PACK
 			       * for state file) */
 	List job_list; /* list of job pointers to submitted/running
@@ -822,6 +829,9 @@ typedef struct {
 	uint32_t flags; /* flags for various things to enforce or
 			   override other limits */
 	uint32_t grace_time; /* preemption grace time */
+	uint32_t grp_jobs_accrue; /* max number of jobs this qos can
+				   * have accruing priority time
+				   */
 	uint32_t grp_jobs;	/* max number of jobs this qos can run
 				 * at one time */
 	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at
@@ -852,6 +862,15 @@ typedef struct {
 				 * run with this qos at one time */
 	uint32_t max_jobs_pu;	/* max number of jobs a user can
 				 * run with this qos at one time */
+	uint32_t max_jobs_accrue_pa; /* max number of jobs an account can
+				      * have accruing priority time
+				      */
+	uint32_t max_jobs_accrue_pu; /* max number of jobs a user can
+				      * have accruing priority time
+				      */
+	uint32_t max_prio_thresh;  /* A priority threshold for which to count
+				    * jobs that have a priority at or above that
+				    * level. */
 	uint32_t max_submit_jobs_pa; /* max number of jobs an account can
 					submit with this qos at once */
 	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
@@ -1075,6 +1094,7 @@ typedef struct {
 /* Right now this is used in the slurmdb_qos_rec_t structure.  In the
  * user_limit_list and acct_limit_list. */
 typedef struct {
+	uint32_t accrue_cnt; /* count of jobs accruing prio */
 	char *acct; /* If limits for an account this is the accounts name */
 	uint32_t jobs;	/* count of active jobs */
 	uint32_t submit_jobs; /* count of jobs pending or running */
