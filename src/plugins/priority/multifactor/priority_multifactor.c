@@ -2017,29 +2017,21 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 
 	qos_ptr = job_ptr->qos_ptr;
 
-	if (weight_age) {
+	if (weight_age && job_ptr->details->accrue_time) {
 		uint32_t diff = 0;
-		time_t use_time;
 
-		if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
-			use_time = job_ptr->details->submit_time;
+		/*
+		 * Only really add an age priority if the
+		 * job_ptr->details->accrue_time is past the start_time.
+		 */
+		if (start_time > job_ptr->details->accrue_time)
+			diff = start_time - job_ptr->details->accrue_time;
+
+		if (diff < max_age)
+			job_ptr->prio_factors->priority_age =
+				(double)diff / (double)max_age;
 		else
-			use_time = job_ptr->details->begin_time;
-
-		/* Only really add an age priority if the use_time is
-		   past the start_time.
-		*/
-		if (start_time > use_time)
-			diff = start_time - use_time;
-
-		if (job_ptr->details->begin_time
-		    || (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)) {
-			if (diff < max_age) {
-				job_ptr->prio_factors->priority_age =
-					(double)diff / (double)max_age;
-			} else
-				job_ptr->prio_factors->priority_age = 1.0;
-		}
+			job_ptr->prio_factors->priority_age = 1.0;
 	}
 
 	if (job_ptr->assoc_ptr && weight_fs) {
