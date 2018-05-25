@@ -12303,7 +12303,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_specs->time_limit = orig_time_limit;
 
 		/*
-		 * Since we are succeful to this point remove the job from the
+		 * Since we are successful to this point remove the job from the
 		 * old qos/assoc's
 		 */
 		acct_policy_remove_job_submit(job_ptr);
