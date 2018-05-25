@@ -400,6 +400,9 @@ static int _addto_used_info(slurmdb_assoc_rec_t *assoc1,
 		assoc1->usage->usage_tres_raw[i] +=
 			assoc2->usage->usage_tres_raw[i];
 	}
+
+	assoc1->usage->accrue_cnt += assoc2->usage->accrue_cnt;
+
 	assoc1->usage->grp_used_wall += assoc2->usage->grp_used_wall;
 
 	assoc1->usage->used_jobs += assoc2->usage->used_jobs;
@@ -421,6 +424,7 @@ static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 		assoc->usage->grp_used_tres_run_secs[i] = 0;
 	}
 
+	assoc->usage->accrue_cnt = 0;
 	assoc->usage->used_jobs  = 0;
 	assoc->usage->used_submit_jobs = 0;
 	/* do not reset usage_raw or grp_used_wall.
@@ -442,6 +446,7 @@ static void _clear_qos_used_limit_list(List used_limit_list, uint32_t tres_cnt)
 
 	itr = list_iterator_create(used_limit_list);
 	while ((used_limits = list_next(itr))) {
+		used_limits->accrue_cnt = 0;
 		used_limits->jobs = 0;
 		used_limits->submit_jobs = 0;
 		for (i=0; i<tres_cnt; i++) {
@@ -2473,6 +2478,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if (!assoc->grp_tres)
 		assoc->grp_tres        = ret_assoc->grp_tres;
 	assoc->grp_jobs        = ret_assoc->grp_jobs;
+	assoc->grp_jobs_accrue = ret_assoc->grp_jobs_accrue;
 	assoc->grp_submit_jobs = ret_assoc->grp_submit_jobs;
 	assoc->grp_wall        = ret_assoc->grp_wall;
 
@@ -2690,6 +2696,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	if (!qos->grp_tres)
 		qos->grp_tres        = found_qos->grp_tres;
 	qos->grp_jobs        = found_qos->grp_jobs;
+	qos->grp_jobs_accrue = found_qos->grp_jobs_accrue;
 	qos->grp_submit_jobs = found_qos->grp_submit_jobs;
 	qos->grp_wall        = found_qos->grp_wall;
 
@@ -2709,6 +2716,9 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 		qos->max_tres_pu     = found_qos->max_tres_pu;
 	qos->max_jobs_pa     = found_qos->max_jobs_pa;
 	qos->max_jobs_pu     = found_qos->max_jobs_pu;
+	qos->max_jobs_accrue_pa = found_qos->max_jobs_accrue_pa;
+	qos->max_jobs_accrue_pu = found_qos->max_jobs_accrue_pu;
+	qos->max_prio_thresh     = found_qos->max_prio_thresh;
 	qos->max_submit_jobs_pa = found_qos->max_submit_jobs_pa;
 	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
 	qos->max_wall_pj     = found_qos->max_wall_pj;
@@ -3677,6 +3687,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
+			if (object->grp_jobs_accrue != NO_VAL)
+				rec->grp_jobs_accrue = object->grp_jobs_accrue;
 			if (object->grp_submit_jobs != NO_VAL)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
 			if (object->grp_wall != NO_VAL) {
@@ -4406,6 +4418,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
+			if (object->grp_jobs_accrue != NO_VAL)
+				rec->grp_jobs_accrue = object->grp_jobs_accrue;
 			if (object->grp_submit_jobs != NO_VAL)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
 			if (object->grp_wall != NO_VAL) {
@@ -4504,6 +4518,17 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			if (object->max_jobs_pu != NO_VAL)
 				rec->max_jobs_pu = object->max_jobs_pu;
+
+			if (object->max_jobs_accrue_pa != NO_VAL)
+				rec->max_jobs_accrue_pa =
+					object->max_jobs_accrue_pa;
+
+			if (object->max_jobs_accrue_pu != NO_VAL)
+				rec->max_jobs_accrue_pu =
+					object->max_jobs_accrue_pu;
+
+			if (object->max_prio_thresh != NO_VAL)
+				rec->max_prio_thresh = object->max_prio_thresh;
 
 			if (object->max_submit_jobs_pa != NO_VAL)
 				rec->max_submit_jobs_pa =
