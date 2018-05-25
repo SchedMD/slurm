@@ -1128,7 +1128,7 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 						     qos->max_jobs_pu,
 						     (curr_inx == field_count));
 				break;
-			case PRINT_MAXJA:
+			case PRINT_MAXJPA:
 				field->print_routine(field,
 						     qos->max_jobs_pa,
 						     (curr_inx == field_count));

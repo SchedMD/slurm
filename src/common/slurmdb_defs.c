@@ -1435,7 +1435,7 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	/* assoc->max_tres_run_mins = NULL; */
 	/* assoc->max_tres_pj = NULL; */
 	assoc->max_jobs = NO_VAL;
-	assoc->max_jobs_prio = NO_VAL;
+	assoc->max_jobs_accrue = NO_VAL;
 	assoc->max_prio_thresh = NO_VAL;
 	assoc->max_submit_jobs = NO_VAL;
 	assoc->max_wall_pj = NO_VAL;
@@ -2453,10 +2453,10 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 	else if (assoc_ptr->max_jobs != NO_VAL)
 		debug2("  MaxJobs          : %u", assoc_ptr->max_jobs);
 
-	if (assoc_ptr->max_jobs_prio == INFINITE)
-		debug2("  MaxJobsPrioAccrue: NONE");
-	else if (assoc_ptr->max_jobs_prio != NO_VAL)
-		debug2("  MaxJobsPrioAccrue: %u", assoc_ptr->max_jobs_prio);
+	if (assoc_ptr->max_jobs_accrue == INFINITE)
+		debug2("  MaxJobsAccrue    : NONE");
+	else if (assoc_ptr->max_jobs_accrue != NO_VAL)
+		debug2("  MaxJobsAccrue    : %u", assoc_ptr->max_jobs_accrue);
 
 	if (assoc_ptr->max_prio_thresh == INFINITE)
 		debug2("  MaxPrioThresh    : NONE");
@@ -3253,7 +3253,7 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 	out->grp_wall = in->grp_wall;
 
 	out->max_jobs = in->max_jobs;
-	out->max_jobs_prio = in->max_jobs_prio;
+	out->max_jobs_accrue = in->max_jobs_accrue;
 	out->max_prio_thresh = in->max_prio_thresh;
 	out->max_submit_jobs = in->max_submit_jobs;
 	xfree(out->max_tres_pj);

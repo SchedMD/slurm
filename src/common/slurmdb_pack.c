@@ -1790,7 +1790,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->max_tres_pj, buffer);
 		packstr(object->max_tres_pn, buffer);
 		pack32(object->max_jobs, buffer);
-		pack32(object->max_jobs_prio, buffer);
+		pack32(object->max_jobs_accrue, buffer);
 		pack32(object->max_prio_thresh, buffer);
 		pack32(object->max_submit_jobs, buffer);
 		pack32(object->max_wall_pj, buffer);
@@ -1992,7 +1992,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr_xmalloc(&object_ptr->max_tres_pn,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->max_jobs, buffer);
-		safe_unpack32(&object_ptr->max_jobs_prio, buffer);
+		safe_unpack32(&object_ptr->max_jobs_accrue, buffer);
 		safe_unpack32(&object_ptr->max_prio_thresh, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);

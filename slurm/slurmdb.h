@@ -474,8 +474,8 @@ typedef struct slurmdb_assoc_rec {
 
 	uint32_t max_jobs;	   /* max number of jobs this
 				    * association can run at one time */
-	uint32_t max_jobs_prio;    /* max number of jobs this association can
-				    * have over max_prio_thresh.
+	uint32_t max_jobs_accrue;  /* max number of jobs this association can
+				    * have accruing priority time.
 				    */
 	uint32_t max_prio_thresh;  /* A priority threshold for which to count
 				    * jobs that have a priority at or above that

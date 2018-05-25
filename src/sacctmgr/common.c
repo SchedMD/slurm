@@ -493,7 +493,7 @@ static print_field_t *_get_print_field(char *object)
 				 MAX(command_len, 11)) ||
 		   !xstrncasecmp("MaxJobsPA", object,
 				 MAX(command_len, 9))) {
-		field->type = PRINT_MAXJA;
+		field->type = PRINT_MAXJPA;
 		field->name = xstrdup("MaxJobsPA");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
@@ -1748,10 +1748,10 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	else if (assoc->max_jobs != NO_VAL)
 		printf("  MaxJobs       = %u\n", assoc->max_jobs);
 
-	if (assoc->max_jobs_prio == INFINITE)
+	if (assoc->max_jobs_accrue == INFINITE)
 		printf("  MaxJobsPrioAcc= NONE\n");
-	else if (assoc->max_jobs_prio != NO_VAL)
-		printf("  MaxJobsPrioAcc= %u\n", assoc->max_jobs_prio);
+	else if (assoc->max_jobs_accrue != NO_VAL)
+		printf("  MaxJobsPrioAcc= %u\n", assoc->max_jobs_accrue);
 
 	if (assoc->max_prio_thresh == INFINITE)
 		printf("  MaxPrioThresh = NONE\n");

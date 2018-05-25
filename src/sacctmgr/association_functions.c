@@ -506,10 +506,10 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (get_uint(value, &assoc->max_jobs,
 			     "MaxJobs") == SLURM_SUCCESS)
 			set = 1;
-	} else if (!xstrncasecmp(type, "MaxJobsPriorityAccrue",
+	} else if (!xstrncasecmp(type, "MaxJobsAccrue",
 				 MAX(command_len, 8))) {
-		if (get_uint(value, &assoc->max_jobs_prio,
-			     "MaxJobsPriorityAccrue") == SLURM_SUCCESS)
+		if (get_uint(value, &assoc->max_jobs_accrue,
+			     "MaxJobsAccrue") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!xstrncasecmp(type, "MaxNodesPerJob", MAX(command_len, 4))) {
 		if (get_uint64(value, &tmp64,
@@ -750,8 +750,8 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	case PRINT_MAXJ:
 		field->print_routine(field, assoc->max_jobs, last);
 		break;
-	case PRINT_MAXJP:
-		field->print_routine(field, assoc->max_jobs_prio, last);
+	case PRINT_MAXJA:
+		field->print_routine(field, assoc->max_jobs_accrue, last);
 		break;
 	case PRINT_MAXPT:
 		field->print_routine(field, assoc->max_prio_thresh, last);
