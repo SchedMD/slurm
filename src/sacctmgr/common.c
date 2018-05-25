@@ -358,6 +358,12 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("GrpJobs");
 		field->len = 7;
 		field->print_routine = print_fields_uint;
+	} else if (!xstrncasecmp("GrpJobsAccrue",
+				 object, MAX(command_len, 8))) {
+		field->type = PRINT_GRPJA;
+		field->name = xstrdup("GrpJobsAccrue");
+		field->len = 13;
+		field->print_routine = print_fields_uint;
 	} else if (!xstrncasecmp("GrpMemory", object, MAX(command_len, 4))) {
 		field->type = PRINT_GRPMEM;
 		field->name = xstrdup("GrpMem");
@@ -486,6 +492,30 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_MAXJ;
 		field->name = xstrdup("MaxJobs");
 		field->len = 7;
+		field->print_routine = print_fields_uint;
+	} else if (!xstrncasecmp("MaxJobsAccrue",
+				 object, MAX(command_len, 4))) {
+		field->type = PRINT_MAXJA;
+		field->name = xstrdup("MaxJobsAccrue");
+		field->len = 13;
+		field->print_routine = print_fields_uint;
+	} else if (!xstrncasecmp("MaxJobsAccruePerAccount", object,
+				 MAX(command_len, 17)) ||
+		   !xstrncasecmp("MaxJobsAccruePerAcct", object,
+				 MAX(command_len, 17)) ||
+		   !xstrncasecmp("MaxJobsAccruePA", object,
+				 MAX(command_len, 15))) {
+		field->type = PRINT_MAXJAA;
+		field->name = xstrdup("MaxJobsAccruePA");
+		field->len = 15;
+		field->print_routine = print_fields_uint;
+	} else if (!xstrncasecmp("MaxJobsAccruePerUser", object,
+				 MAX(command_len, 17)) ||
+		   !xstrncasecmp("MaxJobsAccruePU", object,
+				 MAX(command_len, 15))) {
+		field->type = PRINT_MAXJAU;
+		field->name = xstrdup("MaxJobsAccruePU");
+		field->len = 15;
 		field->print_routine = print_fields_uint;
 	} else if (!xstrncasecmp("MaxJobsPerAccount", object,
 				 MAX(command_len, 11)) ||

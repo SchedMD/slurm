@@ -399,6 +399,10 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (get_uint(value, &assoc->grp_jobs,
 			     "GrpJobs") == SLURM_SUCCESS)
 			set = 1;
+	} else if (!xstrncasecmp(type, "GrpJobsAccrue", MAX(command_len, 8))) {
+		if (get_uint(value, &assoc->grp_jobs,
+			     "GrpJobsAccrue") == SLURM_SUCCESS)
+			set = 1;
 	} else if (!xstrncasecmp(type, "GrpMemory", MAX(command_len, 4))) {
 		if (get_uint64(value, &tmp64,
 			       "GrpMemory") == SLURM_SUCCESS) {
@@ -691,6 +695,9 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		break;
 	case PRINT_GRPJ:
 		field->print_routine(field, assoc->grp_jobs, last);
+		break;
+	case PRINT_GRPJA:
+		field->print_routine(field, assoc->grp_jobs_accrue, last);
 		break;
 	case PRINT_GRPMEM:
 		field->print_routine(field,
