@@ -101,8 +101,9 @@ int pmixp_server_pp_same_thread(void);
 bool pmixp_server_pp_check_fini(int size);
 
 void pmixp_server_init_cperf(char ***env);
-bool pmixp_server_want_cperf();
-void pmixp_server_run_cperf();
+bool pmixp_server_want_cperf(void);
+void pmixp_server_run_cperf(void);
+int pmixp_direct_conn_early(void);
 
 #else
 /* Stubs for the initialization code */

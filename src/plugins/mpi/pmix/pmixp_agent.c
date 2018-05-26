@@ -293,13 +293,6 @@ rwfail:
 	return NULL;
 }
 
-void _direct_init_sent_buf_cb(int rc, pmixp_p2p_ctx_t ctx, void *data)
-{
-	Buf buf = (Buf) data;
-	FREE_NULL_BUFFER(buf);
-	return;
-}
-
 int pmixp_agent_start(void)
 {
 	slurm_mutex_lock(&agent_mutex);
@@ -312,6 +305,13 @@ int pmixp_agent_start(void)
 	/* wait for the agent thread to initialize */
 	slurm_cond_wait(&agent_running_cond, &agent_mutex);
 
+	/* Establish the early direct connection */
+	if (pmixp_info_srv_direct_conn_early()) {
+		if (pmixp_direct_conn_early()) {
+			slurm_mutex_unlock(&agent_mutex);
+			return SLURM_ERROR;
+		}
+	}
 	/* Check if a ping-pong run was requested by user
 	 * NOTE: enabled only if `--enable-debug` configuration
 	 * option was passed
@@ -330,40 +330,6 @@ int pmixp_agent_start(void)
 
 	PMIXP_DEBUG("agent thread started: tid = %lu",
 		    (unsigned long) _agent_tid);
-
-	if (pmixp_info_srv_direct_conn_early()) {
-		pmixp_coll_t *coll = NULL;
-		int rc;
-		pmixp_proc_t proc;
-
-		pmixp_debug_hang(0);
-
-		proc.rank = pmixp_lib_get_wildcard();
-		strncpy(proc.nspace, _pmixp_job_info.nspace, PMIXP_MAX_NSLEN);
-
-		coll = pmixp_state_coll_get(PMIXP_COLL_TYPE_FENCE, &proc, 1);
-
-		if (coll->type == PMIXP_COLL_TYPE_FENCE &&
-				coll->state.tree.prnt_host) {
-			pmixp_ep_t ep = {0};
-			Buf buf = pmixp_server_buf_new();
-
-			pmixp_debug_hang(0);
-
-			ep.type = PMIXP_EP_NOIDEID;
-			ep.ep.nodeid = coll->state.tree.prnt_peerid;
-
-			rc = pmixp_server_send_nb(
-				&ep, PMIXP_MSG_INIT_DIRECT, coll->seq,
-				buf, _direct_init_sent_buf_cb, NULL);
-
-			if (SLURM_SUCCESS != rc) {
-				PMIXP_ERROR_STD("send init msg error");
-				slurm_mutex_unlock(&agent_mutex);
-				return SLURM_ERROR;
-			}
-		}
-	}
 
 	slurm_thread_create(&_timer_tid, _pmix_timer_thread, NULL);
 

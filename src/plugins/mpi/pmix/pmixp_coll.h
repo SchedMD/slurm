@@ -41,8 +41,11 @@
 #include "pmixp_common.h"
 #include "pmixp_debug.h"
 
+#define PMIXP_COLL_DEBUG 1
+#define PMIXP_COLL_RING_CTX_NUM 2
+
 typedef enum {
-	PMIXP_COLL_TYPE_FENCE = 0,
+	PMIXP_COLL_TYPE_FENCE_TREE = 0,
 	PMIXP_COLL_TYPE_FENCE_RING,
 	/* reserve coll fence ids up to 15 */
 	PMIXP_COLL_TYPE_FENCE_MAX = 15,
@@ -54,7 +57,7 @@ typedef enum {
 inline static char *
 pmixp_coll_type2str(pmixp_coll_type_t type) {
 	switch(type) {
-	case PMIXP_COLL_TYPE_FENCE:
+	case PMIXP_COLL_TYPE_FENCE_TREE:
 		return "COLL_FENCE_TREE";
 	case PMIXP_COLL_TYPE_FENCE_RING:
 		return "COLL_FENCE_RING";
@@ -65,13 +68,10 @@ pmixp_coll_type2str(pmixp_coll_type_t type) {
 	}
 }
 
-#define PMIXP_COLL_DEBUG 1
-
 int pmixp_hostset_from_ranges(const pmixp_proc_t *procs, size_t nprocs,
 			      hostlist_t *hl_out);
 
 /* PMIx Tree collective */
-
 typedef enum {
 	PMIXP_COLL_TREE_SYNC,
 	PMIXP_COLL_TREE_COLLECT,
@@ -161,8 +161,70 @@ typedef struct {
 	size_t serv_offs, dfwd_offset, ufwd_offset;
 } pmixp_coll_tree_t;
 
-/* General coll struct */
+/* PMIx Ring collective */
+typedef enum {
+	PMIXP_COLL_RING_SYNC,
+	PMIXP_COLL_RING_COLLECT,
+	PMIXP_COLL_RING_DONE,
+} pmixp_ring_state_t;
+
+struct pmixp_coll_s;
+
 typedef struct {
+	/* ptr to coll data */
+	struct pmixp_coll_s *coll;
+
+	/* context data */
+	bool in_use;
+	uint32_t seq;
+	bool contrib_local;
+	uint32_t contrib_prev;
+	bool *contrib_map;
+	pmixp_ring_state_t state;
+	Buf ring_buf;
+} pmixp_coll_ring_ctx_t;
+
+/* coll ring struct */
+typedef struct {
+	/* coll contexts data */
+	pmixp_coll_ring_ctx_t ctx_array[PMIXP_COLL_RING_CTX_NUM];
+	/* buffer pool to ensure parallel sends of ring data */
+	List fwrd_buf_pool;
+} pmixp_coll_ring_t;
+
+typedef struct {
+	uint32_t type;
+	uint32_t contrib_id;
+	uint32_t seq;
+	uint32_t hop_seq;
+	uint32_t nodeid;
+	size_t msgsize;
+} pmixp_coll_ring_msg_hdr_t;
+
+typedef struct {
+	size_t size;
+	char *ptr;
+	uint32_t contrib_id;
+	uint32_t hop_seq;
+} pmixp_coll_msg_ring_data_t;
+
+inline static char *
+pmixp_coll_ring_state2str(pmixp_ring_state_t state)
+{
+	switch (state) {
+	case PMIXP_COLL_RING_SYNC:
+		return "COLL_RING_SYNC";
+	case PMIXP_COLL_RING_COLLECT:
+		return "COLL_RING_COLLECT";
+	case PMIXP_COLL_RING_DONE:
+		return "COLL_RING_DONE";
+	default:
+		return "COLL_RING_UNKNOWN";
+	}
+}
+
+/* General coll struct */
+typedef struct pmixp_coll_s {
 #ifndef NDEBUG
 #define PMIXP_COLL_STATE_MAGIC 0xC011CAFE
 	int magic;
@@ -197,19 +259,13 @@ typedef struct {
 	/* coll states */
 	union {
 		pmixp_coll_tree_t tree;
-		/* pmixp_coll_ring_t ring */
+		pmixp_coll_ring_t ring;
 	} state;
 } pmixp_coll_t;
 
-static inline void pmixp_coll_tree_sanity_check(pmixp_coll_t *coll)
-{
-	xassert(NULL != coll);
-	xassert(coll->magic == PMIXP_COLL_STATE_MAGIC);
-}
-
-int pmixp_coll_tree_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
-			 size_t nprocs);
-void pmixp_coll_tree_free(pmixp_coll_t *coll);
+/* tree coll functions*/
+int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t *hl);
+void pmixp_coll_tree_free(pmixp_coll_tree_t *tree);
 
 pmixp_coll_t *pmixp_coll_tree_from_cbdata(void *cbdata);
 
@@ -225,11 +281,44 @@ bool pmixp_coll_tree_progress(pmixp_coll_t *coll, char *fwd_node,
 int pmixp_coll_tree_unpack_info(Buf buf, pmixp_coll_type_t *type,
 				int *nodeid, pmixp_proc_t **r,
 				size_t *nr);
-int pmixp_coll_tree_belong_chk(pmixp_coll_type_t type,
-			       const pmixp_proc_t *procs, size_t nprocs);
 void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts);
 int pmixp_coll_tree_check_seq(pmixp_coll_t *coll, uint32_t seq);
 
 void pmixp_coll_log(pmixp_coll_t *coll);
 
-#endif // PMIXP_COLL_H
+/* ring coll functions */
+int pmixp_coll_ring_init(pmixp_coll_t *coll);
+void pmixp_coll_ring_free(pmixp_coll_ring_t *coll_ring);
+int pmixp_coll_ring_hdr_sanity_check(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr);
+int pmixp_coll_ring_contrib_local(pmixp_coll_t  *coll, char *data, size_t size,
+				  void *cbfunc, void *cbdata);
+int pmixp_coll_ring_contrib_prev(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr,
+				 Buf buf);
+void pmixp_coll_ring_reset(pmixp_coll_ring_ctx_t *coll);
+int pmixp_coll_ring_unpack_info(Buf buf, pmixp_coll_type_t *type,
+		pmixp_coll_ring_msg_hdr_t *ring_hdr,
+		pmixp_proc_t **r, size_t *nr);
+void pmixp_coll_ring_reset_if_to(pmixp_coll_t  *coll, time_t ts);
+pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_select(pmixp_coll_t *coll,
+						 const uint32_t seq);
+void pmixp_coll_ring_progress(pmixp_coll_ring_ctx_t *coll_ctx);
+pmixp_coll_t *pmixp_coll_ring_from_cbdata(void *cbdata);
+void pmixp_coll_ring_free(pmixp_coll_ring_t *ring);
+
+
+
+/* common coll func */
+static inline void pmixp_coll_sanity_check(pmixp_coll_t *coll)
+{
+	xassert(NULL != coll);
+	xassert(coll->magic == PMIXP_COLL_STATE_MAGIC);
+}
+int pmixp_coll_init(pmixp_coll_t *coll, pmixp_coll_type_t type,
+		    const pmixp_proc_t *procs, size_t nprocs);
+int pmixp_coll_contrib_local(pmixp_coll_t *coll, pmixp_coll_type_t type,
+			     char *data, size_t ndata,
+			     void *cbfunc, void *cbdata);
+void pmixp_coll_free(pmixp_coll_t *coll);
+int pmixp_coll_belong_chk(const pmixp_proc_t *procs, size_t nprocs);
+
+#endif /* PMIXP_COLL_RING_H */

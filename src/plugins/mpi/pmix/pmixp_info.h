@@ -85,6 +85,7 @@ bool pmixp_info_same_arch(void);
 bool pmixp_info_srv_direct_conn(void);
 bool pmixp_info_srv_direct_conn_early(void);
 bool pmixp_info_srv_direct_conn_ucx(void);
+int pmixp_info_srv_fence_coll_type(void);
 
 
 static inline int pmixp_info_timeout(void)

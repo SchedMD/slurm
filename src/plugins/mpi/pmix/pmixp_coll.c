@@ -80,16 +80,14 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, pmixp_coll_type_t type,
 	PMIXP_DEBUG("%p: %s seq=%d, size=%lu", coll, pmixp_coll_type2str(type),
 		    coll->seq, ndata);
 	switch (type) {
-	case PMIXP_COLL_TYPE_FENCE:
+	case PMIXP_COLL_TYPE_FENCE_TREE:
 		ret = pmixp_coll_tree_contrib_local(coll, data,
 						    ndata, cbfunc, cbdata);
 		break;
-	/*
 	case PMIXP_COLL_TYPE_FENCE_RING:
 		ret = pmixp_coll_ring_contrib_local(coll, data,
 						    ndata, cbfunc, cbdata);
 		break;
-	*/
 	default:
 		ret = SLURM_FAILURE;
 		break;
@@ -102,10 +100,99 @@ int pmixp_coll_init(pmixp_coll_t *coll, pmixp_coll_type_t type,
 		    const pmixp_proc_t *procs, size_t nprocs)
 {
 	int rc = SLURM_SUCCESS;
+	hostlist_t hl;
 
+	coll->seq = 0;
+#ifndef NDEBUG
+	coll->magic = PMIXP_COLL_STATE_MAGIC;
+#endif
 	coll->type = type;
+	coll->pset.procs = xmalloc(sizeof(*procs) * nprocs);
+	coll->pset.nprocs = nprocs;
+	memcpy(coll->pset.procs, procs, sizeof(*procs) * nprocs);
 
+	if (SLURM_SUCCESS != pmixp_hostset_from_ranges(procs, nprocs, &hl)) {
+		/* TODO: provide ranges output routine */
+		PMIXP_ERROR("Bad ranges information");
+		rc = SLURM_ERROR;
+		goto exit;
+	}
+	coll->peers_cnt = hostlist_count(hl);
+	coll->my_peerid = hostlist_find(hl, pmixp_info_hostname());
+#ifdef PMIXP_COLL_DEBUG
+	/* if we debug collectives - store a copy of a full
+	 * hostlist to resolve participant id to the hostname */
+	coll->peers_hl = hostlist_copy(hl);
+#endif
 
+	switch(type) {
+	case PMIXP_COLL_TYPE_FENCE_TREE:
+		rc = pmixp_coll_tree_init(coll, &hl);
+		break;
+	case PMIXP_COLL_TYPE_FENCE_RING:
+		rc = pmixp_coll_ring_init(coll);
+		break;
+	default:
+		PMIXP_ERROR("Unknown coll type");
+		rc = SLURM_FAILURE;
+	}
+	hostlist_destroy(hl);
+	if (rc) {
+		goto exit;
+	}
 
+exit:
 	return rc;
+}
+
+void pmixp_coll_free(pmixp_coll_t *coll)
+{
+	pmixp_coll_sanity_check(coll);
+
+	if (NULL != coll->pset.procs) {
+		xfree(coll->pset.procs);
+	}
+#ifdef PMIXP_COLL_DEBUG
+	hostlist_destroy(coll->peers_hl);
+#endif
+	switch(coll->type) {
+	case PMIXP_COLL_TYPE_FENCE_TREE:
+
+		/*
+		 * check for collective in a not-SYNC state - something went
+		 * wrong
+		 */
+		if (PMIXP_COLL_TREE_SYNC != coll->state.tree.state)
+			pmixp_coll_log(coll);
+
+		pmixp_coll_tree_free(&coll->state.tree);
+		break;
+	case PMIXP_COLL_TYPE_FENCE_RING:
+		pmixp_coll_ring_free(&coll->state.ring);
+		break;
+	default:
+		PMIXP_ERROR("Unknown coll type");
+		break;
+	}
+	xfree(coll);
+}
+
+int pmixp_coll_belong_chk(const pmixp_proc_t *procs, size_t nprocs)
+{
+	int i;
+	pmixp_namespace_t *nsptr = pmixp_nspaces_local();
+	/* Find my namespace in the range */
+	for (i = 0; i < nprocs; i++) {
+		if (0 != xstrcmp(procs[i].nspace, nsptr->name)) {
+			continue;
+		}
+		if (pmixp_lib_is_wildcard(procs[i].rank))
+			return 0;
+		if (0 <= pmixp_info_taskid2localid(procs[i].rank)) {
+			return 0;
+		}
+	}
+	/* we don't participate in this collective! */
+	PMIXP_ERROR("Have collective that doesn't include this job's namespace");
+	return -1;
 }

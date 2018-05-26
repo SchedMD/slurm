@@ -39,6 +39,7 @@
 #include "pmixp_common.h"
 #include "pmixp_debug.h"
 #include "pmixp_info.h"
+#include "pmixp_coll.h"
 
 /* Server communication */
 static char *_srv_usock_path = NULL;
@@ -51,6 +52,7 @@ static bool _srv_use_direct_conn_ucx = true;
 #else
 static bool _srv_use_direct_conn_ucx = false;
 #endif
+static int _srv_fence_coll_type = PMIXP_COLL_TYPE_FENCE_MAX;
 
 pmix_jobinfo_t _pmixp_job_info;
 
@@ -88,11 +90,18 @@ bool pmixp_info_srv_direct_conn(void){
 }
 
 bool pmixp_info_srv_direct_conn_early(void){
-	return _srv_use_direct_conn_early;
+	return _srv_use_direct_conn_early && _srv_use_direct_conn;
 }
 
 bool pmixp_info_srv_direct_conn_ucx(void){
 	return _srv_use_direct_conn_ucx && _srv_use_direct_conn;
+}
+
+int pmixp_info_srv_fence_coll_type(void){
+	if (!_srv_use_direct_conn) {
+		return PMIXP_COLL_TYPE_FENCE_TREE;
+	}
+	return _srv_fence_coll_type;
 }
 
 /* Job information */
@@ -442,6 +451,18 @@ static int _env_set(char ***env)
 		} else if (!xstrcmp("0", p) || !xstrcasecmp("false", p) ||
 			   !xstrcasecmp("no", p)) {
 			_srv_use_direct_conn_early = false;
+		}
+	}
+
+	/*------------- Fence coll type setting ----------*/
+	p = getenvp(*env, PMIXP_COLL_FENCE);
+	if (p) {
+		if (!xstrcmp("auto", p)) {
+			_srv_fence_coll_type = PMIXP_COLL_TYPE_FENCE_MAX;
+		} else if (!xstrcmp("tree", p)) {
+			_srv_fence_coll_type = PMIXP_COLL_TYPE_FENCE_TREE;
+		} else if (!xstrcmp("ring", p)) {
+			_srv_fence_coll_type = PMIXP_COLL_TYPE_FENCE_RING;
 		}
 	}
 

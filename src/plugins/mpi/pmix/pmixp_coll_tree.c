@@ -185,27 +185,6 @@ int pmixp_coll_tree_unpack_info(Buf buf, pmixp_coll_type_t *type,
 	return SLURM_SUCCESS;
 }
 
-int pmixp_coll_tree_belong_chk(pmixp_coll_type_t type,
-			       const pmixp_proc_t *procs, size_t nprocs)
-{
-	int i;
-	pmixp_namespace_t *nsptr = pmixp_nspaces_local();
-	/* Find my namespace in the range */
-	for (i = 0; i < nprocs; i++) {
-		if (0 != xstrcmp(procs[i].nspace, nsptr->name)) {
-			continue;
-		}
-		if (pmixp_lib_is_wildcard(procs[i].rank))
-			return 0;
-		if (0 <= pmixp_info_taskid2localid(procs[i].rank)) {
-			return 0;
-		}
-	}
-	/* we don't participate in this collective! */
-	PMIXP_ERROR("Have collective that doesn't include this job's namespace");
-	return -1;
-}
-
 static void _reset_coll_ufwd(pmixp_coll_t *coll)
 {
 	pmixp_coll_tree_t *tree = &coll->state.tree;
@@ -294,44 +273,21 @@ static void _reset_coll(pmixp_coll_t *coll)
 /*
  * Based on ideas provided by Hongjia Cao <hjcao@nudt.edu.cn> in PMI2 plugin
  */
-int pmixp_coll_tree_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
-			 size_t nprocs)
+int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t *hl)
 {
-	hostlist_t hl;
 	int max_depth, width, depth, i;
 	char *p;
 	pmixp_coll_tree_t *tree = NULL;
 
-#ifndef NDEBUG
-	coll->magic = PMIXP_COLL_STATE_MAGIC;
-#endif
-	coll->type = PMIXP_COLL_TYPE_FENCE;
 	tree = &coll->state.tree;
 	tree->state = PMIXP_COLL_TREE_SYNC;
-	coll->pset.procs = xmalloc(sizeof(*procs) * nprocs);
-	coll->pset.nprocs = nprocs;
-	memcpy(coll->pset.procs, procs, sizeof(*procs) * nprocs);
-
-	if (SLURM_SUCCESS != pmixp_hostset_from_ranges(procs, nprocs, &hl)) {
-		/* TODO: provide ranges output routine */
-		PMIXP_ERROR("Bad ranges information");
-		goto err_exit;
-	}
-#ifdef PMIXP_COLL_DEBUG
-	/* if we debug collectives - store a copy of a full
-	 * hostlist to resolve participant id to the hostname */
-	coll->peers_hl = hostlist_copy(hl);
-#endif
 
 	width = slurm_get_tree_width();
-	coll->peers_cnt = hostlist_count(hl);
-	coll->my_peerid = hostlist_find(hl, pmixp_info_hostname());
 	reverse_tree_info(coll->my_peerid, coll->peers_cnt, width,
 			  &tree->prnt_peerid, &tree->chldrn_cnt, &depth,
 			  &max_depth);
 
 	/* We interested in amount of direct childs */
-	coll->seq = 0;
 	tree->contrib_children = 0;
 	tree->contrib_local = false;
 	tree->chldrn_ids = xmalloc(sizeof(int) * width);
@@ -347,7 +303,7 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
 		 * ourselfs there)
 		 */
 		tree->prnt_host = NULL;
-		tree->all_chldrn_hl = hostlist_copy(hl);
+		tree->all_chldrn_hl = hostlist_copy(*hl);
 		hostlist_delete_host(tree->all_chldrn_hl,
 				     pmixp_info_hostname());
 		tree->chldrn_str =
@@ -361,7 +317,7 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
 		/*
 		 * setup parent id's
 		 */
-		p = hostlist_nth(hl, tree->prnt_peerid);
+		p = hostlist_nth(*hl, tree->prnt_peerid);
 		tree->prnt_host = xstrdup(p);
 		free(p);
 		/* reset prnt_peerid to the global peer */
@@ -371,7 +327,7 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
 		 * setup root id's
 		 * (we need this for the Slurm API communication case)
 		 */
-		p = hostlist_nth(hl, 0);
+		p = hostlist_nth(*hl, 0);
 		tree->root_host = xstrdup(p);
 		free(p);
 		/* reset prnt_peerid to the global peer */
@@ -384,11 +340,10 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
 
 	/* fixup children peer ids to te global ones */
 	for(i=0; i<tree->chldrn_cnt; i++){
-		p = hostlist_nth(hl, tree->chldrn_ids[i]);
+		p = hostlist_nth(*hl, tree->chldrn_ids[i]);
 		tree->chldrn_ids[i] = pmixp_info_job_hostid(p);
 		free(p);
 	}
-	hostlist_destroy(hl);
 
 	/* Collective state */
 	tree->ufwd_buf = pmixp_server_buf_new();
@@ -402,17 +357,10 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
 	slurm_mutex_init(&coll->lock);
 
 	return SLURM_SUCCESS;
-err_exit:
-	return SLURM_ERROR;
 }
 
-void pmixp_coll_tree_free(pmixp_coll_t *coll)
+void pmixp_coll_tree_free(pmixp_coll_tree_t *tree)
 {
-	pmixp_coll_tree_t *tree = &coll->state.tree;
-
-	if (NULL != coll->pset.procs) {
-		xfree(coll->pset.procs);
-	}
 	if (NULL != tree->prnt_host) {
 		xfree(tree->prnt_host);
 	}
@@ -423,9 +371,6 @@ void pmixp_coll_tree_free(pmixp_coll_t *coll)
 	if (tree->chldrn_str) {
 		xfree(tree->chldrn_str);
 	}
-#ifdef PMIXP_COLL_DEBUG
-	hostlist_destroy(coll->peers_hl);
-#endif
 	if (NULL != tree->contrib_chld) {
 		xfree(tree->contrib_chld);
 	}
@@ -446,7 +391,7 @@ typedef struct {
 pmixp_coll_t *pmixp_coll_tree_from_cbdata(void *cbdata)
 {
 	pmixp_coll_cbdata_t *ptr = (pmixp_coll_cbdata_t*)cbdata;
-	pmixp_coll_tree_sanity_check(ptr->coll);
+	pmixp_coll_sanity_check(ptr->coll);
 	return ptr->coll;
 }
 
@@ -611,8 +556,8 @@ static int _progress_collect(pmixp_coll_t *coll)
 		    coll, pmixp_coll_tree_state2str(tree->state),
 		    (int)tree->contrib_local, tree->contrib_children);
 #endif
-	/* lock the collective */
-	pmixp_coll_tree_sanity_check(coll);
+	/* sanity check */
+	pmixp_coll_sanity_check(coll);
 
 	if (PMIXP_COLL_TREE_COLLECT != tree->state) {
 		/* In case of race condition between libpmix and
@@ -955,7 +900,7 @@ static int _progress_dfwd(pmixp_coll_t *coll)
 		return false;
 	}
 #ifdef PMIXP_COLL_DEBUG
-	PMIXP_DEBUG("%p: %s seq=%d is DONE", coll,
+	PMIXP_ERROR("%p: %s seq=%d is DONE", coll,
 		    pmixp_coll_type2str(coll->type), coll->seq);
 #endif
 	_reset_coll(coll);
@@ -1009,7 +954,7 @@ int pmixp_coll_tree_contrib_local(pmixp_coll_t *coll, char *data, size_t size,
 
 	pmixp_debug_hang(0);
 	/* sanity check */
-	pmixp_coll_tree_sanity_check(coll);
+	pmixp_coll_sanity_check(coll);
 
 	/* lock the structure */
 	slurm_mutex_lock(&coll->lock);
@@ -1130,7 +1075,7 @@ int pmixp_coll_tree_contrib_child(pmixp_coll_t *coll, uint32_t peerid,
 
 	/* lock the structure */
 	slurm_mutex_lock(&coll->lock);
-	pmixp_coll_tree_sanity_check(coll);
+	pmixp_coll_sanity_check(coll);
 	if (0 > (chld_id = _chld_id(tree, peerid))) {
 		char *nodename = pmixp_info_job_host(peerid);
 		char *avail_ids = _chld_ids_str(tree);
@@ -1285,7 +1230,7 @@ int pmixp_coll_tree_contrib_parent(pmixp_coll_t *coll, uint32_t peerid,
 	}
 
 	/* Sanity check */
-	pmixp_coll_tree_sanity_check(coll);
+	pmixp_coll_sanity_check(coll);
 	if (expected_peerid != peerid) {
 		char *nodename = pmixp_info_job_host(peerid);
 		/* protect ourselfs if we are running with no asserts */
