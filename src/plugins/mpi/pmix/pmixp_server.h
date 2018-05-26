@@ -2,7 +2,7 @@
  **  pmix_server.h - PMIx server side functionality
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2018 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of Slurm, a resource management program.
@@ -47,8 +47,9 @@ typedef enum {
 	PMIXP_MSG_DMDX,
 	PMIXP_MSG_INIT_DIRECT,
 #ifndef NDEBUG
-	PMIXP_MSG_PINGPONG
+	PMIXP_MSG_PINGPONG,
 #endif
+	PMIXP_MSG_RING
 } pmixp_srv_cmd_t;
 
 typedef enum {

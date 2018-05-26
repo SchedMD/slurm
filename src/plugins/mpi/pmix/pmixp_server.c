@@ -2,7 +2,7 @@
  **  pmix_server.c - PMIx server side functionality
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2018 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of Slurm, a resource management program.
@@ -786,7 +786,7 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		pmixp_coll_type_t type = 0;
 		int c_nodeid;
 
-		rc = pmixp_coll_unpack_info(buf, &type, &c_nodeid,
+		rc = pmixp_coll_tree_unpack_info(buf, &type, &c_nodeid,
 					    &procs, &nprocs);
 		if (SLURM_SUCCESS != rc) {
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
@@ -804,8 +804,8 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 			    ((PMIXP_MSG_FAN_IN == hdr->type) ?
 				     "fan-in" : "fan-out"),
 			    hdr->seq);
-		rc = pmixp_coll_check_seq(coll, hdr->seq);
-		if (PMIXP_COLL_REQ_FAILURE == rc) {
+		rc = pmixp_coll_tree_check_seq(coll, hdr->seq);
+		if (PMIXP_COLL_TREE_REQ_FAILURE == rc) {
 			/* this is unexepable event: either something went
 			 * really wrong or the state machine is incorrect.
 			 * This will 100% lead to application hang.
@@ -819,7 +819,7 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 					    pmixp_info_stepid(), SIGKILL);
 			xfree(nodename);
 			break;
-		} else if (PMIXP_COLL_REQ_SKIP == rc) {
+		} else if (PMIXP_COLL_TREE_REQ_SKIP == rc) {
 			PMIXP_DEBUG("Wrong collective seq. #%d from"
 				    " nodeid %u, current is %d, skip "
 				    "this message",
@@ -828,10 +828,10 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		}
 
 		if (PMIXP_MSG_FAN_IN == hdr->type) {
-			pmixp_coll_contrib_child(coll, hdr->nodeid,
+			pmixp_coll_tree_contrib_child(coll, hdr->nodeid,
 						 hdr->seq, buf);
 		} else {
-			pmixp_coll_contrib_parent(coll, hdr->nodeid,
+			pmixp_coll_tree_contrib_parent(coll, hdr->nodeid,
 						  hdr->seq, buf);
 		}
 
@@ -1718,7 +1718,7 @@ static void _pmixp_cperf_cbfunc(int status,
 	/* small violation - we kinow what is the type of release
 	 * data and will use that knowledge to avoid the deadlock
 	 */
-	pmixp_coll_t *coll = pmixp_coll_from_cbdata(r_cbdata);
+	pmixp_coll_t *coll = pmixp_coll_tree_from_cbdata(r_cbdata);
 	xassert(SLURM_SUCCESS == status);
 
 	/*
@@ -1749,7 +1749,7 @@ static int _pmixp_server_cperf_iter(char *data, int ndata)
 	procs.rank = pmixp_lib_get_wildcard();
 
 	coll = pmixp_state_coll_get(PMIXP_COLL_TYPE_FENCE, &procs, 1);
-	xassert(!pmixp_coll_contrib_local(coll, data, ndata,
+	xassert(!pmixp_coll_tree_contrib_local(coll, data, ndata,
 					  _pmixp_cperf_cbfunc, NULL));
 
 	while (cur_count == _pmixp_server_cperf_count()) {

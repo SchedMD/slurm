@@ -2,7 +2,7 @@
  **  pmix_client_v1.c - PMIx v1 client communication code
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2018 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>,
  *             Boris Karasev <karasev.b@gmail.com, boriska@mellanox.com>.
  *
@@ -113,7 +113,7 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v1[], size_t nprocs,
 		strncpy(procs[i].nspace, procs_v1[i].nspace, PMIXP_MAX_NSLEN);
 	}
 	coll = pmixp_state_coll_get(type, procs, nprocs);
-	ret = pmixp_coll_contrib_local(coll, data, ndata, cbfunc, cbdata);
+	ret = pmixp_coll_tree_contrib_local(coll, data, ndata, cbfunc, cbdata);
 	xfree(procs);
 
 	if (SLURM_SUCCESS != ret) {

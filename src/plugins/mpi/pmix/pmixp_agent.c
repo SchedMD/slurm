@@ -2,7 +2,7 @@
  **  pmix_agent.c - PMIx agent thread
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2018 Mellanox Technologies. All rights reserved.
  *  Written by Artem Y. Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of Slurm, a resource management program.
@@ -343,14 +343,15 @@ int pmixp_agent_start(void)
 
 		coll = pmixp_state_coll_get(PMIXP_COLL_TYPE_FENCE, &proc, 1);
 
-		if (coll->prnt_host) {
+		if (coll->type == PMIXP_COLL_TYPE_FENCE &&
+				coll->state.tree.prnt_host) {
 			pmixp_ep_t ep = {0};
 			Buf buf = pmixp_server_buf_new();
 
 			pmixp_debug_hang(0);
 
 			ep.type = PMIXP_EP_NOIDEID;
-			ep.ep.nodeid = coll->prnt_peerid;
+			ep.ep.nodeid = coll->state.tree.prnt_peerid;
 
 			rc = pmixp_server_send_nb(
 				&ep, PMIXP_MSG_INIT_DIRECT, coll->seq,

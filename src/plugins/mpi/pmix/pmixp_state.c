@@ -2,8 +2,9 @@
  **  pmix_state.c - PMIx agent state related code
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
- *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
+ *  Copyright (C) 2015-2018 Mellanox Technologies. All rights reserved.
+ *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>,
+ *             Boris Karasev <karasev.b@gmail.com, boriska@mellanox.com>.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -47,12 +48,13 @@ pmixp_state_t _pmixp_state;
 void _xfree_coll(void *x)
 {
 	pmixp_coll_t *coll = (pmixp_coll_t *)x;
+	pmixp_coll_tree_t *tree = &coll->state.tree;
 
 	/* check for collective in a not-SYNC state - something went wrong */
-	if (PMIXP_COLL_SYNC != coll->state) {
+	if (PMIXP_COLL_TREE_SYNC != tree->state) {
 		pmixp_coll_log(coll);
 	}
-	pmixp_coll_free(coll);
+	pmixp_coll_tree_free(coll);
 	xfree(coll);
 }
 
@@ -142,7 +144,7 @@ pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
 	 * concurent thread already created it while we were doing the
 	 * first search */
 
-	if (pmixp_coll_belong_chk(type, procs, nprocs)) {
+	if (pmixp_coll_tree_belong_chk(type, procs, nprocs)) {
 		return NULL;
 	}
 
@@ -154,7 +156,7 @@ pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
 		 * structure right after that */
 		ret = xmalloc(sizeof(*ret));
 		/* initialize with unlocked list but locked element */
-		if (SLURM_SUCCESS != pmixp_coll_init(ret, procs, nprocs, type)) {
+		if (SLURM_SUCCESS != pmixp_coll_tree_init(ret, procs, nprocs)) {
 			if (ret->pset.procs) {
 				xfree(ret->pset.procs);
 			}
@@ -178,7 +180,7 @@ void pmixp_state_coll_cleanup(void)
 	/* Walk through the list looking for the collective descriptor */
 	it = list_iterator_create(_pmixp_state.coll);
 	while ((coll = list_next(it))) {
-		pmixp_coll_reset_if_to(coll, ts);
+		pmixp_coll_tree_reset_if_to(coll, ts);
 	}
 	list_iterator_destroy(it);
 }
