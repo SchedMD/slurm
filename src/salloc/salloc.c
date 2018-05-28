@@ -977,15 +977,15 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (opt.cpus_per_gpu)
 		xstrfmtcat(desc->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
-	if (opt.gpu_bind)
-		xstrfmtcat(desc->tres_bind, "gpu:%s", opt.gpu_bind);
-	if (opt.gpu_freq)
-		xstrfmtcat(desc->tres_freq, "gpu:%s", opt.gpu_freq);
-	if (tres_freq_verify_cmdline(desc->tres_freq)) {
+	xfmt_tres(&opt.tres_bind, "gpu", opt.gpu_bind);
+	desc->tres_bind = xstrdup(opt.tres_bind);
+	xfmt_tres(&opt.tres_freq, "gpu", opt.gpu_freq);
+	if (tres_freq_verify_cmdline(opt.tres_freq)) {
 		error("Invalid --tres-freq argument: %s. Ignored",
-		      desc->tres_freq);
-		xfree(desc->tres_freq);
+		      opt.tres_freq);
+		xfree(opt.tres_freq);
 	}
+	desc->tres_freq = xstrdup(opt.tres_freq);
 	xfmt_tres(&desc->tres_per_job,    "gpu", opt.gpus);
 	xfmt_tres(&desc->tres_per_node,   "gpu", opt.gpus_per_node);
 	if (opt.gres) {

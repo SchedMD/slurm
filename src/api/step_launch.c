@@ -310,6 +310,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.cpu_freq_min	= params->cpu_freq_min;
 	launch.cpu_freq_max	= params->cpu_freq_max;
 	launch.cpu_freq_gov	= params->cpu_freq_gov;
+	launch.tres_bind	= params->tres_bind;
+	launch.tres_freq	= params->tres_freq;
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
 	launch.accel_bind_type	= params->accel_bind_type;
@@ -515,6 +517,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.cpu_freq_min	= params->cpu_freq_min;
 	launch.cpu_freq_max	= params->cpu_freq_max;
 	launch.cpu_freq_gov	= params->cpu_freq_gov;
+	launch.tres_bind	= params->tres_bind;
+	launch.tres_freq	= params->tres_freq;
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
 	launch.accel_bind_type	= params->accel_bind_type;

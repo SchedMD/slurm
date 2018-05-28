@@ -2416,9 +2416,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
 					 job_ptr->select_jobinfo);
 
-	if (job_ptr->account) {
-		launch_msg_ptr->account = xstrdup(job_ptr->account);
-	}
 	if (job_ptr->qos_ptr) {
 		if (!xstrcmp(job_ptr->qos_ptr->description,
 			     "Normal QOS default"))
@@ -2427,9 +2424,8 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 			launch_msg_ptr->qos = xstrdup(
 				job_ptr->qos_ptr->description);
 	}
-	if (job_ptr->resv_name) {
-		launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_name);
-	}
+	launch_msg_ptr->account = xstrdup(job_ptr->account);
+	launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_name);
 
 	return launch_msg_ptr;
 }

@@ -45,6 +45,7 @@
 #include "src/common/xstring.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/proc_args.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xsignal.h"
 
@@ -308,30 +309,23 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xstrfmtcat(job->ctx_params.cpus_per_tres, "gpu:%d",
 			   opt_local->cpus_per_gpu);
 	}
-	if (opt_local->gpu_bind) {
-		xstrfmtcat(job->ctx_params.tres_bind, "gpu:%s",
-			   opt_local->gpu_bind);
-	}
-	if (opt_local->gpu_freq) {
-		xstrfmtcat(job->ctx_params.tres_freq, "gpu:%s",
-			   opt_local->gpu_freq);
-	}
-	if (tres_freq_verify_cmdline(job->ctx_params.tres_freq)) {
+	xfree(opt_local->tres_bind);	/* Vestigial value from job allocate */
+	xfmt_tres(&opt_local->tres_bind, "gpu", opt_local->gpu_bind);
+	job->ctx_params.tres_bind = xstrdup(opt_local->tres_bind);
+	xfree(opt_local->tres_freq);	/* Vestigial value from job allocate */
+	xfmt_tres(&opt_local->tres_freq, "gpu", opt_local->gpu_freq);
+	if (tres_freq_verify_cmdline(opt_local->tres_freq)) {
 		if (tres_freq_err_log) {	/* Log once */
 			error("Invalid --tres-freq argument: %s. Ignored",
-			      job->ctx_params.tres_freq);
+			      opt_local->tres_freq);
 			tres_freq_err_log = false;
 		}
-		xfree(job->ctx_params.tres_freq);
+		xfree(opt_local->tres_freq);
 	}
-	if (opt_local->gpus) {
-		xstrfmtcat(job->ctx_params.tres_per_step, "gpu:%s",
-			   opt_local->gpus);
-	}
-	if (opt_local->gpus_per_node) {
-		xstrfmtcat(job->ctx_params.tres_per_node, "gpu:%s",
-			   opt_local->gpus_per_node);
-	}
+	job->ctx_params.tres_freq = xstrdup(opt_local->tres_freq);
+	xfmt_tres(&job->ctx_params.tres_per_step, "gpu", opt_local->gpus);
+	xfmt_tres(&job->ctx_params.tres_per_node, "gpu",
+		  opt_local->gpus_per_node);
 	if (opt_local->gres)
 		add_tres = opt_local->gres;
 	else
@@ -343,14 +337,10 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		} else
 			job->ctx_params.tres_per_node = xstrdup(add_tres);
 	}
-	if (opt_local->gpus_per_socket) {
-		xstrfmtcat(job->ctx_params.tres_per_socket, "gpu:%s",
-			   opt_local->gpus_per_socket);
-	}
-	if (opt_local->gpus_per_task) {
-		xstrfmtcat(job->ctx_params.tres_per_task, "gpu:%s",
-			   opt_local->gpus_per_task);
-	}
+	xfmt_tres(&job->ctx_params.tres_per_socket, "gpu",
+		  opt_local->gpus_per_socket);
+	xfmt_tres(&job->ctx_params.tres_per_task, "gpu",
+		  opt_local->gpus_per_task);
 	if (opt_local->mem_per_gpu) {
 		xstrfmtcat(job->ctx_params.mem_per_tres, "gpu:%"PRIi64,
 			   opt.mem_per_gpu);
