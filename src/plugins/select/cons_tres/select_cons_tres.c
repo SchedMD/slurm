@@ -166,6 +166,7 @@ static void _create_part_data(void);
 static inline void _dump_nodes(void);
 static inline void _dump_parts(struct part_res_record *p_ptr);
 static uint16_t _get_job_node_req(struct job_record *job_ptr);
+static bool _job_cleaning(struct job_record *job_ptr);
 static char *_node_state_str(uint16_t node_state);
 static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 				   uint32_t node_cnt, uint32_t *core_cnt,
@@ -184,6 +185,8 @@ static void _spec_core_filter(bitstr_t **avail_cores);
  * if action = 0 then add cores, memory + GRES (starting new job)
  * if action = 1 then add memory + GRES (adding suspended job)
  * if action = 2 then only add cores (suspended job is resumed)
+ *
+ * See also: rm_job_res() in job_test.c
  */
 static int _add_job_to_res(struct job_record *job_ptr, int action)
 {
@@ -557,6 +560,23 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 	}
 
 	return NODE_CR_ONE_ROW;
+}
+
+/*
+ * Return true if job is in the processing of cleaning up.
+ * This is used for Cray systems to indicate the Node Health Check (NHC)
+ * is still running. Until NHC completes, the job's resource use persists
+ * the select/cons_res plugin data structures.
+ */
+static bool _job_cleaning(struct job_record *job_ptr)
+{
+	uint16_t cleaning = 0;
+
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING, &cleaning);
+	if (cleaning)
+		return true;
+	return false;
 }
 
 static char *_node_state_str(uint16_t node_state)
@@ -1299,7 +1319,7 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-//FIXME: Add code here
+//FIXME: Add code here, lower priority work
 	return SLURM_SUCCESS;
 }
 
@@ -1311,7 +1331,7 @@ extern bool select_p_job_expand_allow(void)
 extern int select_p_job_expand(struct job_record *from_job_ptr,
 			       struct job_record *to_job_ptr)
 {
-//FIXME: Add code here
+//FIXME: Add code here, lower priority work
 	return SLURM_SUCCESS;
 }
 
@@ -1378,11 +1398,18 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 {
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("cons_tres: %s: job %u", __func__, job_ptr->job_id);
 
-//FIXME: Add code here
-	return SLURM_SUCCESS;
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		if (indf_susp)
+			info("cons_tres: %s: job %u indf_susp", __func__,
+			     job_ptr->job_id);
+		else
+			info("cons_tres: %s: job %u",__func__, job_ptr->job_id);
+	}
+	if (!indf_susp)
+		return SLURM_SUCCESS;
+
+	return rm_job_res(select_part_record, select_node_usage, job_ptr, 2);
 }
 
 /* See NOTE with select_p_job_suspend() above */
@@ -1390,11 +1417,17 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 {
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("cons_tres: %s: job %u", __func__, job_ptr->job_id);
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		if (indf_susp)
+			info("cons_tres: %s: job %u indf_susp", __func__,
+			     job_ptr->job_id);
+		else
+			info("cons_tres: %s: job %u",__func__, job_ptr->job_id);
+	}
+	if (!indf_susp)
+		return SLURM_SUCCESS;
 
-//FIXME: Add code here
-	return SLURM_SUCCESS;
+	return _add_job_to_res(job_ptr, 2);
 }
 
 
@@ -1403,7 +1436,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					  uint32_t node_count,
 					  bitstr_t **avail_nodes)
 {
-//FIXME: Add code here?
+//FIXME: Add code here?, lower priority work
 	return NULL;
 }
 
@@ -1526,8 +1559,55 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 					enum node_states state,
 					void *data)
 {
-//FIXME: Add code here
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+	uint16_t *uint16 = (uint16_t *) data;
+	uint64_t *uint64 = (uint64_t *) data;
+	char **tmp_char = (char **) data;
+	double *tmp_double = (double *) data;
+	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
+
+	if (nodeinfo == NULL) {
+		error("%s: nodeinfo not set", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (nodeinfo->magic != NODEINFO_MAGIC) {
+		error("%s: jobinfo magic bad", __func__);
+		return SLURM_ERROR;
+	}
+
+	switch (dinfo) {
+	case SELECT_NODEDATA_SUBGRP_SIZE:
+		*uint16 = 0;
+		break;
+	case SELECT_NODEDATA_SUBCNT:
+		if (state == NODE_STATE_ALLOCATED)
+			*uint16 = nodeinfo->alloc_cpus;
+		else
+			*uint16 = 0;
+		break;
+	case SELECT_NODEDATA_PTR:
+		*select_nodeinfo = nodeinfo;
+		break;
+	case SELECT_NODEDATA_RACK_MP:
+	case SELECT_NODEDATA_EXTRA_INFO:
+		*tmp_char = NULL;
+		break;
+	case SELECT_NODEDATA_MEM_ALLOC:
+		*uint64 = nodeinfo->alloc_memory;
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_FMT_STR:
+		*tmp_char = xstrdup(nodeinfo->tres_alloc_fmt_str);
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_WEIGHTED:
+		*tmp_double = nodeinfo->tres_alloc_weighted;
+		break;
+	default:
+		error("%s: Unsupported option %d", __func__, dinfo);
+		rc = SLURM_ERROR;
+		break;
+	}
+	return rc;
 }
 
 /* Unused for this plugin */
@@ -1638,15 +1718,47 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 	return rc;
 }
 
-extern int select_p_update_node_config (int index)
+extern int select_p_update_node_config(int index)
 {
-//FIXME: Add code here
+	if (index >= select_node_cnt) {
+		error("%s: index too large (%d > %d)", __func__, index,
+		      select_node_cnt);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Socket and core count can be changed when KNL node reboots in a
+	 * different NUMA configuration
+	 */
+	if ((select_fast_schedule == 1) &&
+	    (select_node_record[index].sockets !=
+	     select_node_record[index].node_ptr->config_ptr->sockets) &&
+	    (select_node_record[index].cores !=
+	     select_node_record[index].node_ptr->config_ptr->cores) &&
+	    ((select_node_record[index].sockets *
+	      select_node_record[index].cores) ==
+	     (select_node_record[index].node_ptr->sockets *
+	      select_node_record[index].node_ptr->cores))) {
+		select_node_record[index].sockets =
+			select_node_record[index].node_ptr->config_ptr->sockets;
+		select_node_record[index].cores =
+			select_node_record[index].node_ptr->config_ptr->cores;
+	}
+
+	if (select_fast_schedule)
+		return SLURM_SUCCESS;
+
+	select_node_record[index].real_memory =
+		select_node_record[index].node_ptr->real_memory;
+	select_node_record[index].mem_spec_limit =
+		select_node_record[index].node_ptr->mem_spec_limit;
+
 	return SLURM_SUCCESS;
 }
 
+/* Unused for this plugin */
 extern int select_p_update_node_state(struct node_record *node_ptr)
 {
-//FIXME: Add code here
 	return SLURM_SUCCESS;
 }
 
@@ -1658,8 +1770,61 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 extern int select_p_reconfigure(void)
 {
-//FIXME: Add code here
-select_state_initializing = false;
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	int cleaning_job_cnt = 0, rc = SLURM_SUCCESS, run_time;
+	time_t now = time(NULL);
+
+	info("cons_res: select_p_reconfigure");
+	select_debug_flags = slurm_get_debug_flags();
+
+	rc = select_p_node_init(node_record_table_ptr, node_record_count);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	/* reload job data */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (IS_JOB_RUNNING(job_ptr)) {
+			/* add the job */
+			_add_job_to_res(job_ptr, 0);
+		} else if (IS_JOB_SUSPENDED(job_ptr)) {
+			/* add the job in a suspended state */
+			if (job_ptr->priority == 0)
+				(void) _add_job_to_res(job_ptr, 1);
+			else	/* Gang schedule suspend */
+				(void) _add_job_to_res(job_ptr, 0);
+		} else if (_job_cleaning(job_ptr)) {
+			cleaning_job_cnt++;
+			run_time = (int) difftime(now, job_ptr->end_time);
+			if (run_time >= 300) {
+				info("Job %u NHC hung for %d secs, releasing "
+				     "resources now, may underflow later)",
+				     job_ptr->job_id, run_time);
+				/*
+				 * If/when NHC completes, it will release
+				 * resources that are not marked as allocated
+				 * to this job without line below.
+				 */
+				//_add_job_to_res(job_ptr, 0);
+				uint16_t released = 1;
+				select_g_select_jobinfo_set(
+					               job_ptr->select_jobinfo,
+					               SELECT_JOBDATA_RELEASED,
+					               &released);
+			} else {
+				_add_job_to_res(job_ptr, 0);
+			}
+		}
+	}
+	list_iterator_destroy(job_iterator);
+	select_state_initializing = false;
+
+	if (cleaning_job_cnt) {
+		info("%d jobs are in cleaning state (running Node Health Check)",
+		     cleaning_job_cnt);
+	}
+
 	return SLURM_SUCCESS;
 }
 

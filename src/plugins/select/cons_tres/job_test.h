@@ -125,6 +125,8 @@ extern void log_tres_state(struct node_use_record *node_usage,
  * if action = 0 then subtract cores, memory + GRES (running job was terminated)
  * if action = 1 then subtract memory + GRES (suspended job was terminated)
  * if action = 2 then only subtract cores (job is suspended)
+ *
+ * See also: _add_job_to_res() in select_cons_tres.c
  */
 extern int rm_job_res(struct part_res_record *part_record_ptr,
 		      struct node_use_record *node_usage,
