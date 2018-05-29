@@ -616,7 +616,6 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 	}
 
 	_spec_core_filter(avail_cores);
-//FIXME: exclude allocated cores, NOT currently enforced in cons_res, add it here
 
 	picked_node_bitmap = bit_alloc(select_node_cnt);
 	i_first = bit_ffs(avail_node_bitmap);
@@ -770,7 +769,6 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			core_array_and_not(avail_cores, *exc_cores);
 		}
 		_spec_core_filter(avail_cores);
-//FIXME: exclude allocated cores, NOT currently enforced in cons_res, add it here
 
 		for (i = 0; i < select_node_cnt; i++) {
 			if (fini || !avail_cores[i] ||
