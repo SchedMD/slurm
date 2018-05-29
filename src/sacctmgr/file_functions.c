@@ -340,7 +340,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 		slurm_addto_char_list(format_list,
 				      "Account,ParentName");
 	slurm_addto_char_list(format_list,
-			      "Share,GrpTRESM,GrpTRESR,GrpTRES,GrpJ,"
+			      "Share,GrpTRESM,GrpTRESR,GrpTRES,GrpJ,GrpJobA,"
 			      "GrpMEM,GrpN,GrpS,GrpW,MaxTRESM,MaxTRES,"
 			      "MaxTRESPerN,MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
 
@@ -465,6 +465,20 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->assoc_rec.grp_jobs);
 	}
 
+	if ((file_opts->assoc_rec.grp_jobs_accrue != NO_VAL)
+	    && (assoc->grp_jobs_accrue !=
+		file_opts->assoc_rec.grp_jobs_accrue)) {
+		mod_assoc.grp_jobs_accrue =
+			file_opts->assoc_rec.grp_jobs_accrue;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpJobsAccrue",
+			   type, name,
+			   assoc->grp_jobs_accrue,
+			   file_opts->assoc_rec.grp_jobs_accrue);
+	}
+
 	if ((file_opts->assoc_rec.grp_submit_jobs != NO_VAL)
 	    && (assoc->grp_submit_jobs !=
 		file_opts->assoc_rec.grp_submit_jobs)) {
@@ -555,6 +569,20 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   type, name,
 			   assoc->max_jobs,
 			   file_opts->assoc_rec.max_jobs);
+	}
+
+	if ((file_opts->assoc_rec.max_jobs_accrue != NO_VAL)
+	    && (assoc->max_jobs_accrue !=
+		file_opts->assoc_rec.max_jobs_accrue)) {
+		mod_assoc.max_jobs_accrue =
+			file_opts->assoc_rec.max_jobs_accrue;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxJobsAccrue",
+			   type, name,
+			   assoc->max_jobs_accrue,
+			   file_opts->assoc_rec.max_jobs_accrue);
 	}
 
 	if ((file_opts->assoc_rec.max_submit_jobs != NO_VAL)
@@ -1437,6 +1465,9 @@ extern int print_file_add_limits_to_line(char **line,
 	if (assoc->grp_jobs != INFINITE)
 		xstrfmtcat(*line, ":GrpJobs=%u", assoc->grp_jobs);
 
+	if (assoc->grp_jobs_accrue != INFINITE)
+		xstrfmtcat(*line, ":GrpJobsAccrue=%u", assoc->grp_jobs_accrue);
+
 	if (assoc->grp_submit_jobs != INFINITE)
 		xstrfmtcat(*line, ":GrpSubmitJobs=%u", assoc->grp_submit_jobs);
 
@@ -1481,6 +1512,9 @@ extern int print_file_add_limits_to_line(char **line,
 
 	if (assoc->max_jobs != INFINITE)
 		xstrfmtcat(*line, ":MaxJobs=%u", assoc->max_jobs);
+
+	if (assoc->max_jobs_accrue != INFINITE)
+		xstrfmtcat(*line, ":MaxJobsAccrue=%u", assoc->max_jobs_accrue);
 
 	if (assoc->max_submit_jobs != INFINITE)
 		xstrfmtcat(*line, ":MaxSubmitJobs=%u", assoc->max_submit_jobs);
