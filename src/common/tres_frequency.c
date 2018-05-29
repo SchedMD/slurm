@@ -179,8 +179,8 @@ static int _valid_gpu_freq(const char *arg)
  * arg IN - Parameter value to check
  * RET - -1 on error, else 0
  *
- * Example: gpu=medium:memory=high:voltage=high
- *          gpu=450:voltage=4.5
+ * Example: gpu:medium:memory=high:voltage=high
+ *          gpu+450:voltage=4.5
  */
 extern int tres_freq_verify_cmdline(const char *arg)
 {

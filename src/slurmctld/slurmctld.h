@@ -2670,14 +2670,12 @@ extern double calc_job_billable_tres(struct job_record *job_ptr,
  */
 extern void update_job_limit_set_tres(uint16_t **tres_limits);
 
-/* Validate TRES specification of the form "name=spec[;name=spec]" */
-extern bool valid_tres_bind(char *tres);
-
-/* Validate TRES specification of the form "name=[type:]#[;name=[type:]#]" */
+/*
+ * Validate TRES specification of the form:
+ * "name=[type:]#[,[type:]#][;name=[type:]#]"
+ * For example: "gpu:kepler:2,craynetwork=1"
+ */
 extern bool valid_tres_cnt(char *tres);
-
-/* Validate TRES specification of the form "name=spec[;name=spec]" */
-extern bool valid_tres_freq(char *tres);
 
 /*
  * Validate the named TRES is valid for scheduling parameters.

@@ -72,6 +72,7 @@ extern int	sig_array[];
 extern time_t	srun_begin_time; /* begin time of srun process */
 extern bool	srun_max_timer;
 extern bool	srun_shutdown;
+extern bool	tres_bind_err_log;
 extern bool	tres_freq_err_log;
 
 /*

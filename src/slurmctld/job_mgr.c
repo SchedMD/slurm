@@ -78,6 +78,8 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"
 #include "src/common/timers.h"
+#include "src/common/tres_bind.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -6744,8 +6746,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	if (!valid_tres_cnt(job_desc->cpus_per_tres)	||
 	    !valid_tres_cnt(job_desc->mem_per_tres)	||
-	    !valid_tres_bind(job_desc->tres_bind)	||
-	    !valid_tres_freq(job_desc->tres_freq)	||
+	    tres_bind_verify_cmdline(job_desc->tres_bind) ||
+	    tres_freq_verify_cmdline(job_desc->tres_freq) ||
 	    !valid_tres_cnt(job_desc->mem_per_tres)	||
 	    !valid_tres_cnt(job_desc->tres_per_job)	||
 	    !valid_tres_cnt(job_desc->tres_per_node)	||
@@ -8510,41 +8512,10 @@ static bool _valid_pn_min_mem(struct job_record *job_ptr,
 	return false;
 }
 
-/* Validate TRES specification of the form "name=spec[;name=spec]" */
-extern bool valid_tres_bind(char *tres)
-{
-	char *save_ptr = NULL, *sep, *tok, *tmp;
-	bool rc = true;
-
-	if (!tres || (tres[0] == '\0'))
-		return true;
-
-	tmp = xstrdup(tres);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		sep = strchr(tok, ':');
-		if (!sep) {
-			rc = false;
-			break;
-		}
-		sep[0] = '\0';
-		sep++;
-		if (!valid_tres_name(tok)) {
-			rc = false;
-			break;
-		}
-		/* Expand here to validate "spec" portion */
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
-
-	return rc;
-}
-
 /*
  * Validate TRES specification of the form:
  * "name=[type:]#[,[type:]#][;name=[type:]#]"
- * For example: "gpu=kepler:2,tesla:1;craynetwork=1"
+ * For example: "gpu:kepler:2,craynetwork=1"
  */
 extern bool valid_tres_cnt(char *tres)
 {
@@ -8584,37 +8555,6 @@ extern bool valid_tres_cnt(char *tres)
 			rc = false;
 			break;
 		}
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
-
-	return rc;
-}
-
-/* Validate TRES specification of the form "name=spec[;name=spec]" */
-extern bool valid_tres_freq(char *tres)
-{
-	char *save_ptr = NULL, *sep, *tok, *tmp;
-	bool rc = true;
-
-	if (!tres || (tres[0] == '\0'))
-		return true;
-
-	tmp = xstrdup(tres);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		sep = strchr(tok, ':');
-		if (!sep) {
-			rc = false;
-			break;
-		}
-		sep[0] = '\0';
-		sep++;
-		if (!valid_tres_name(tok)) {
-			rc = false;
-			break;
-		}
-		/* Expand here to validate "spec" portion */
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
@@ -13853,7 +13793,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	if (job_specs->tres_bind) {
-		if (!valid_tres_bind(job_specs->tres_bind)) {
+		if (tres_bind_verify_cmdline(job_specs->tres_bind)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -13869,7 +13809,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	if (job_specs->tres_freq) {
-		if (!valid_tres_freq(job_specs->tres_freq)) {
+		if (tres_freq_verify_cmdline(job_specs->tres_freq)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}

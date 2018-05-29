@@ -55,6 +55,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
+#include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -1141,7 +1142,16 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 
 	if (opt.cpus_per_gpu)
 		xstrfmtcat(j->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
-	xfmt_tres(&opt.tres_bind, "gpu", opt.gpu_bind);
+	if (opt.gpu_bind)
+		xstrfmtcat(opt.tres_bind, "gpu:%s", opt.gpu_bind);
+	if (tres_bind_verify_cmdline(opt.tres_bind)) {
+		if (tres_bind_err_log) {	/* Log once */
+			error("Invalid --tres-bind argument: %s. Ignored",
+			      opt.tres_bind);
+			tres_bind_err_log = false;
+		}
+		xfree(opt.tres_bind);
+	}
 	j->tres_bind = xstrdup(opt.tres_bind);
 	xfmt_tres(&opt.tres_freq, "gpu", opt.gpu_freq);
 	if (tres_freq_verify_cmdline(opt.tres_freq)) {

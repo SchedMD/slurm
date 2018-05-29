@@ -60,13 +60,15 @@
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/switch.h"
+#include "src/common/tres_bind.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_ext_sensors.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -2447,8 +2449,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	if (!valid_tres_cnt(step_specs->cpus_per_tres)	||
 	    !valid_tres_cnt(step_specs->mem_per_tres)	||
-	    !valid_tres_bind(step_specs->tres_bind)	||
-	    !valid_tres_freq(step_specs->tres_freq)	||
+	    tres_bind_verify_cmdline(step_specs->tres_bind) ||
+	    tres_freq_verify_cmdline(step_specs->tres_freq) ||
 	    !valid_tres_cnt(step_specs->tres_per_step)	||
 	    !valid_tres_cnt(step_specs->tres_per_node)	||
 	    !valid_tres_cnt(step_specs->tres_per_socket)||

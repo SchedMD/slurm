@@ -129,6 +129,7 @@ libcommon_la_SOURCES = 			\
 	run_command.c run_command.h	\
 	x11_util.c x11_util.h		\
 	state_control.c state_control.h	\
+	tres_bind.c tres_bind.h		\
 	tres_frequency.c tres_frequency.h
 
 EXTRA_libcommon_la_SOURCES = 		\

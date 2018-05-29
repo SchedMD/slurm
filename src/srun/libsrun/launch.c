@@ -46,6 +46,7 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/proc_args.h"
+#include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xsignal.h"
 
@@ -310,7 +311,16 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			   opt_local->cpus_per_gpu);
 	}
 	xfree(opt_local->tres_bind);	/* Vestigial value from job allocate */
-	xfmt_tres(&opt_local->tres_bind, "gpu", opt_local->gpu_bind);
+	if (opt_local->gpu_bind)
+		xstrfmtcat(opt_local->tres_bind, "gpu:%s", opt_local->gpu_bind);
+	if (tres_bind_verify_cmdline(opt_local->tres_bind)) {
+		if (tres_bind_err_log) {	/* Log once */
+			error("Invalid --tres-bind argument: %s. Ignored",
+			      opt_local->tres_bind);
+			tres_bind_err_log = false;
+		}
+		xfree(opt_local->tres_bind);
+	}
 	job->ctx_params.tres_bind = xstrdup(opt_local->tres_bind);
 	xfree(opt_local->tres_freq);	/* Vestigial value from job allocate */
 	xfmt_tres(&opt_local->tres_freq, "gpu", opt_local->gpu_freq);
