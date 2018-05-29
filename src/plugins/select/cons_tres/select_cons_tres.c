@@ -118,6 +118,16 @@ const uint32_t plugin_id      = SELECT_PLUGIN_CONS_TRES;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
+struct select_nodeinfo {
+	uint16_t magic;		/* magic number */
+	uint16_t alloc_cpus;
+	uint64_t alloc_memory;
+	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
+					   NOT PACKED */
+	char     *tres_alloc_fmt_str;	/* formatted str of allocated tres */
+	double    tres_alloc_weighted;	/* weighted number of tres allocated. */
+};
+
 /* Global variables */
 bool       backfill_busy_nodes	= false;
 uint16_t   cr_type		= CR_CPU; /* cr_type is overwritten in init() */
@@ -139,6 +149,10 @@ bool       select_state_initializing = true;
 bool       spec_cores_first	= false;
 bitstr_t **spec_core_res	= NULL;
 bool       topo_optional	= false;
+
+/* Global functions */
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
+extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Local variables */
 static int  bf_window_scale	= 0;
@@ -1309,7 +1323,37 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 
 extern int select_p_job_mem_confirm(struct job_record *job_ptr)
 {
-//FIXME: Add code here
+	int i_first, i_last, i, offset;
+	uint64_t avail_mem, lowest_mem = 0;
+
+	xassert(job_ptr);
+
+	if (((job_ptr->bit_flags & NODE_MEM_CALC) == 0) ||
+	    (select_fast_schedule != 0))
+		return SLURM_SUCCESS;
+	if ((job_ptr->details == NULL) ||
+	    (job_ptr->job_resrcs == NULL) ||
+	    (job_ptr->job_resrcs->node_bitmap == NULL) ||
+	    (job_ptr->job_resrcs->memory_allocated == NULL))
+		return SLURM_ERROR;
+	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
+	else
+		i_last = i_first - 1;
+	for (i = i_first, offset = 0; i <= i_last; i++) {
+		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
+			continue;
+		avail_mem = select_node_record[i].real_memory -
+			    select_node_record[i].mem_spec_limit;
+		job_ptr->job_resrcs->memory_allocated[offset] = avail_mem;
+		select_node_usage[i].alloc_memory = avail_mem;
+		if ((offset == 0) || (lowest_mem > avail_mem))
+			lowest_mem = avail_mem;
+		offset++;
+	}
+	job_ptr->details->pn_min_memory = lowest_mem;
+
 	return SLURM_SUCCESS;
 }
 
@@ -1387,7 +1431,13 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)
 {
-//FIXME: Add code here
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack16(nodeinfo->alloc_cpus, buffer);
+		pack64(nodeinfo->alloc_memory, buffer);
+		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
+		packdouble(nodeinfo->tres_alloc_weighted, buffer);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -1395,19 +1445,50 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   Buf buffer,
 					   uint16_t protocol_version)
 {
-//FIXME: Add code here
+	uint32_t uint32_tmp;
+	select_nodeinfo_t *nodeinfo_ptr = NULL;
+
+	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
+	*nodeinfo = nodeinfo_ptr;
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+		safe_unpack64(&nodeinfo_ptr->alloc_memory, buffer);
+		safe_unpackstr_xmalloc(&nodeinfo_ptr->tres_alloc_fmt_str,
+				       &uint32_tmp, buffer);
+		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: error unpacking here", __func__);
+	select_p_select_nodeinfo_free(nodeinfo_ptr);
+	*nodeinfo = NULL;
+
+	return SLURM_ERROR;
 }
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
-//FIXME: Add code here
-	return NULL;
+	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
+
+	nodeinfo->magic = NODEINFO_MAGIC;
+
+	return nodeinfo;
 }
 
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
-//FIXME: Add code here
+	if (nodeinfo) {
+		if (nodeinfo->magic != NODEINFO_MAGIC) {
+			error("%s: nodeinfo magic bad", __func__);
+			return EINVAL;
+		}
+		xfree(nodeinfo->tres_alloc_cnt);
+		xfree(nodeinfo->tres_alloc_fmt_str);
+		xfree(nodeinfo);
+	}
 	return SLURM_SUCCESS;
 }
 
