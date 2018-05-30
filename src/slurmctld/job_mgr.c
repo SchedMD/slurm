@@ -9092,7 +9092,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	}
 	if ( job_desc_msg->group_id == NO_VAL ) {
 		debug("_validate_job_desc: job failed to specify group");
-		job_desc_msg->group_id = 0;	/* uses user default */
+		return ESLURM_GROUP_ID_MISSING;
 	}
 	if (job_desc_msg->contiguous == NO_VAL16)
 		job_desc_msg->contiguous = 0;
