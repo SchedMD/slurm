@@ -549,6 +549,12 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MaxNodesPU");
 		field->len = 10;
 		field->print_routine = print_fields_uint;
+	} else if (!xstrncasecmp("MaxPrioThreshold", object,
+				 MAX(command_len, 4))) {
+		field->type = PRINT_MAXPT;
+		field->name = xstrdup("MaxPrioThres");
+		field->len = 12;
+		field->print_routine = print_fields_uint;
 	} else if (!xstrncasecmp("MaxSubmitJobs", object,
 				 MAX(command_len, 4))) {
 		field->type = PRINT_MAXS;

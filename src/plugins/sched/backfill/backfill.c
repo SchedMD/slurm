@@ -1230,7 +1230,8 @@ static int _attempt_backfill(void)
 
 	sort_job_queue(job_queue);
 	while (1) {
-		uint32_t bf_job_id, bf_array_task_id, bf_job_priority;
+		uint32_t bf_job_id, bf_array_task_id, bf_job_priority,
+			prio_reserve;
 
 		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
 		if (!job_queue_rec) {
@@ -1396,9 +1397,17 @@ static int _attempt_backfill(void)
 			continue;
 		}
 
+		if (!(prio_reserve = acct_policy_get_prio_thresh(
+			      job_ptr, false)))
+			prio_reserve = bf_min_prio_reserve;
+
+		if (prio_reserve && (debug_flags & DEBUG_FLAG_BACKFILL))
+			info("backfill: %u has a prio_reserve of %u",
+			     job_ptr->job_id, prio_reserve);
+
 		job_no_reserve = 0;
-		if (bf_min_prio_reserve &&
-		    (job_ptr->priority < bf_min_prio_reserve)) {
+		if (prio_reserve &&
+		    (job_ptr->priority < prio_reserve)) {
 			job_no_reserve = TEST_NOW_ONLY;
 		} else if (bf_min_age_reserve && job_ptr->details->begin_time) {
 			pend_time = difftime(time(NULL),

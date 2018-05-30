@@ -338,6 +338,12 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			else
 				printf("MaxJobsAccrue= ");
 
+			if (assoc_rec->max_prio_thresh != INFINITE)
+				printf("MaxPrioThresh=%u ",
+				       assoc_rec->max_prio_thresh);
+			else
+				printf("MaxPrioThresh= ");
+
 			if (assoc_rec->max_submit_jobs != INFINITE)
 				printf("MaxSubmitJobs=%u(%u) ",
 				       assoc_rec->max_submit_jobs,
@@ -441,18 +447,17 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 					 qos_rec->usage->
 					 grp_used_tres_run_secs, 60, 0);
 
+			if (qos_rec->max_prio_thresh != INFINITE)
+				printf("MaxPrioThresh=%u ",
+				       qos_rec->max_prio_thresh);
+			else
+				printf("MaxPrioThresh= ");
+
 			if (qos_rec->max_wall_pj != INFINITE)
 				printf("MaxWallPJ=%u",
 				       qos_rec->max_wall_pj);
 			else
 				printf("MaxWallPJ=");
-
-			if (qos_rec->max_prio_thresh != INFINITE)
-				printf("MaxPrioThresh=%u",
-				       qos_rec->max_prio_thresh);
-			else
-				printf("MaxPrioThresh=");
-
 
 			/* NEW LINE */
 			printf("%s", new_line_char);

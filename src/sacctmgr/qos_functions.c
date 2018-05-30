@@ -514,10 +514,10 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				xfree(tmp_char);
 			}
-		} else if (!xstrncasecmp(argv[i], "MaxPriorityThresh",
+		} else if (!xstrncasecmp(argv[i], "MaxPrioThresh",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &qos->max_prio_thresh,
-				     "MaxPriorityThresh") == SLURM_SUCCESS)
+				     "MaxPrioThresh") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxSubmitJobsPerAccount",
 					 MAX(command_len, 17)) ||
@@ -1115,6 +1115,11 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 					field,
 					slurmdb_find_tres_count_in_string(
 						qos->max_tres_pu, TRES_CPU),
+					(curr_inx == field_count));
+				break;
+			case PRINT_MAXPT:
+				field->print_routine(
+					field, qos->max_prio_thresh,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXTM:

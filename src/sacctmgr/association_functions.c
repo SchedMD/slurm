@@ -526,10 +526,10 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			xfree(tmp_char);
 		}
-	} else if (!xstrncasecmp(type, "MaxPriorityThresh",
+	} else if (!xstrncasecmp(type, "MaxPrioThresh",
 				 MAX(command_len, 4))) {
 		if (get_uint(value, &assoc->max_prio_thresh,
-			     "MaxPriorityThresh") == SLURM_SUCCESS)
+			     "MaxPrioThresh") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!xstrncasecmp(type, "MaxSubmitJobs", MAX(command_len, 4))) {
 		if (get_uint(value, &assoc->max_submit_jobs,

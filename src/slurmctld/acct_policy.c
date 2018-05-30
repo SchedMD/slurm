@@ -2617,6 +2617,18 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 	assoc_mgr_unlock(&locks);
 }
 
+static void _get_prio_thresh(uint32_t *prio_thresh, uint32_t in_thresh)
+{
+	/*
+	 * If we already set prio_thresh then call it good.
+	 * If in_thresh is INFINITE we don't have a limit
+	 */
+	if ((*prio_thresh) || (in_thresh == INFINITE))
+		return;
+
+	*prio_thresh = in_thresh;
+}
+
 static void _get_accrue_create_cnt(uint32_t *max_jobs_accrue, int *create_cnt,
 				   uint32_t in_accrue, uint32_t in_used)
 {
@@ -4513,4 +4525,42 @@ extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 				  1);
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
+}
+
+extern uint32_t acct_policy_get_prio_thresh(struct job_record *job_ptr,
+					    bool assoc_mgr_locked)
+{
+	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
+	slurmdb_assoc_rec_t *assoc_ptr;
+	uint32_t prio_thresh = 0;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
+
+	/* check to see if we are enforcing limits */
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
+		return 0;
+
+	assoc_ptr = job_ptr->assoc_ptr;
+	if (!assoc_ptr) {
+		fatal_abort("%s: no assoc_ptr", __func__);
+		return 0;
+	}
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
+	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+
+	if (qos_ptr_1)
+		_get_prio_thresh(&prio_thresh, qos_ptr_1->max_prio_thresh);
+
+	if (qos_ptr_2)
+		_get_prio_thresh(&prio_thresh, qos_ptr_2->max_prio_thresh);
+
+	_get_prio_thresh(&prio_thresh, assoc_ptr->max_prio_thresh);
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
+
+	return prio_thresh;
 }

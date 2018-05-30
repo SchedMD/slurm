@@ -1222,6 +1222,7 @@ static int _schedule(uint32_t job_limit)
 	char job_id_buf[32];
 	bool fail_by_part;
 	uint32_t deadline_time_limit, save_time_limit = 0;
+	uint32_t prio_reserve;
 #if HAVE_SYS_PRCTL_H
 	char get_name[16];
 #endif
@@ -2106,8 +2107,13 @@ skip_start:
 					fail_by_part = false;
 			}
 		}
-		if (fail_by_part && bf_min_prio_reserve &&
-		    (job_ptr->priority < bf_min_prio_reserve))
+
+		if (!(prio_reserve = acct_policy_get_prio_thresh(
+			      job_ptr, false)))
+			prio_reserve = bf_min_prio_reserve;
+
+		if (fail_by_part && prio_reserve &&
+		    (job_ptr->priority < prio_reserve))
 			fail_by_part = false;
 
 fail_this_part:	if (fail_by_part) {

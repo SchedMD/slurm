@@ -168,4 +168,7 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 					bool assoc_mgr_locked);
 
+extern uint32_t acct_policy_get_prio_thresh(struct job_record *job_ptr,
+					    bool assoc_mgr_locked);
+
 #endif /* !_HAVE_ACCT_POLICY_H */
