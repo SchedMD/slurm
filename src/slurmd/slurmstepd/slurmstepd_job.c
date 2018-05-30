@@ -66,12 +66,6 @@
 #include "src/slurmd/slurmstepd/multi_prog.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#ifdef HAVE_NATIVE_CRAY
-static bool already_validated_uid = true;
-#else
-static bool already_validated_uid = false;
-#endif
-
 static char ** _array_copy(int n, char **src);
 static void _array_free(char ***array);
 static void _srun_info_destructor(void *arg);
@@ -240,10 +234,6 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 	xassert(msg != NULL);
 	xassert(msg->complete_nodelist != NULL);
 	debug3("entering stepd_step_rec_create");
-
-	if (!slurm_valid_uid_gid((uid_t)msg->uid, &(msg->gid),
-				 &(msg->user_name), already_validated_uid, 1))
-		return NULL;
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq))
 		return NULL;
@@ -434,10 +424,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	xassert(msg != NULL);
 
 	debug3("entering batch_stepd_step_rec_create");
-
-	if (!slurm_valid_uid_gid((uid_t)msg->uid, &(msg->gid),
-				 &(msg->user_name), already_validated_uid, 1))
-		return NULL;
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem, msg->acctg_freq))
 		return NULL;
