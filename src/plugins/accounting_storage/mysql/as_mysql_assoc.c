@@ -65,7 +65,7 @@ char *assoc_req_inx[] = {
 	"max_tres_pn",
 	"max_jobs",
 	"max_jobs_accrue",
-	"max_prio_thresh",
+	"min_prio_thresh",
 	"max_submit_jobs",
 	"max_wall_pj",
 	"parent_acct",
@@ -727,8 +727,8 @@ static int _set_assoc_limits_for_add(
 		assoc->max_jobs = slurm_atoul(row[ASSOC2_REQ_MJ]);
 	if (row[ASSOC2_REQ_MJA] && assoc->max_jobs_accrue == INFINITE)
 		assoc->max_jobs_accrue = slurm_atoul(row[ASSOC2_REQ_MJA]);
-	if (row[ASSOC2_REQ_MPT] && assoc->max_prio_thresh == INFINITE)
-		assoc->max_prio_thresh = slurm_atoul(row[ASSOC2_REQ_MPT]);
+	if (row[ASSOC2_REQ_MPT] && assoc->min_prio_thresh == INFINITE)
+		assoc->min_prio_thresh = slurm_atoul(row[ASSOC2_REQ_MPT]);
 	if (row[ASSOC2_REQ_MSJ] && assoc->max_submit_jobs == INFINITE)
 		assoc->max_submit_jobs = slurm_atoul(row[ASSOC2_REQ_MSJ]);
 	if (row[ASSOC2_REQ_MWPJ] && assoc->max_wall_pj == INFINITE)
@@ -819,7 +819,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"`partition`",
 		"max_jobs",
 		"max_jobs_accrue",
-		"max_prio_thresh",
+		"min_prio_thresh",
 		"max_submit_jobs",
 		"max_tres_pj",
 		"max_tres_pn",
@@ -909,8 +909,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			modified = 1;
 		}
 
-		if (!row[ASSOC_MPT] && assoc->max_prio_thresh != NO_VAL) {
-			mod_assoc->max_prio_thresh = assoc->max_prio_thresh;
+		if (!row[ASSOC_MPT] && assoc->min_prio_thresh != NO_VAL) {
+			mod_assoc->min_prio_thresh = assoc->min_prio_thresh;
 			modified = 1;
 		}
 
@@ -1458,9 +1458,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				    && row2[ASSOC2_REQ_MJA])
 					alt_assoc.max_jobs_accrue = slurm_atoul(
 						row2[ASSOC2_REQ_MJA]);
-				if ((assoc->max_prio_thresh == INFINITE)
+				if ((assoc->min_prio_thresh == INFINITE)
 				    && row2[ASSOC2_REQ_MPT])
-					alt_assoc.max_prio_thresh = slurm_atoul(
+					alt_assoc.min_prio_thresh = slurm_atoul(
 						row2[ASSOC2_REQ_MPT]);
 				if ((assoc->max_submit_jobs == INFINITE)
 				    && row2[ASSOC2_REQ_MSJ])
@@ -1548,10 +1548,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			mod_assoc->max_jobs_accrue = alt_assoc.max_jobs_accrue;
 		else
 			mod_assoc->max_jobs_accrue = assoc->max_jobs_accrue;
-		if (alt_assoc.max_prio_thresh != NO_VAL)
-			mod_assoc->max_prio_thresh = alt_assoc.max_prio_thresh;
+		if (alt_assoc.min_prio_thresh != NO_VAL)
+			mod_assoc->min_prio_thresh = alt_assoc.min_prio_thresh;
 		else
-			mod_assoc->max_prio_thresh = assoc->max_prio_thresh;
+			mod_assoc->min_prio_thresh = assoc->min_prio_thresh;
 		if (alt_assoc.max_submit_jobs != NO_VAL)
 			mod_assoc->max_submit_jobs = alt_assoc.max_submit_jobs;
 		else
@@ -2185,10 +2185,10 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			assoc->max_jobs_accrue = parent_mja;
 
 		if (row[ASSOC_REQ_MPT])
-			assoc->max_prio_thresh = slurm_atoul(
+			assoc->min_prio_thresh = slurm_atoul(
 				row[ASSOC_REQ_MPT]);
 		else
-			assoc->max_prio_thresh = parent_mpt;
+			assoc->min_prio_thresh = parent_mpt;
 
 		if (row[ASSOC_REQ_MSJ])
 			assoc->max_submit_jobs = slurm_atoul(

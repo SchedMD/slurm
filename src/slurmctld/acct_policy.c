@@ -4552,12 +4552,12 @@ extern uint32_t acct_policy_get_prio_thresh(struct job_record *job_ptr,
 	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	if (qos_ptr_1)
-		_get_prio_thresh(&prio_thresh, qos_ptr_1->max_prio_thresh);
+		_get_prio_thresh(&prio_thresh, qos_ptr_1->min_prio_thresh);
 
 	if (qos_ptr_2)
-		_get_prio_thresh(&prio_thresh, qos_ptr_2->max_prio_thresh);
+		_get_prio_thresh(&prio_thresh, qos_ptr_2->min_prio_thresh);
 
-	_get_prio_thresh(&prio_thresh, assoc_ptr->max_prio_thresh);
+	_get_prio_thresh(&prio_thresh, assoc_ptr->min_prio_thresh);
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);

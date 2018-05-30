@@ -1796,7 +1796,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->max_tres_pn, buffer);
 		pack32(object->max_jobs, buffer);
 		pack32(object->max_jobs_accrue, buffer);
-		pack32(object->max_prio_thresh, buffer);
+		pack32(object->min_prio_thresh, buffer);
 		pack32(object->max_submit_jobs, buffer);
 		pack32(object->max_wall_pj, buffer);
 
@@ -1999,7 +1999,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->max_jobs, buffer);
 		safe_unpack32(&object_ptr->max_jobs_accrue, buffer);
-		safe_unpack32(&object_ptr->max_prio_thresh, buffer);
+		safe_unpack32(&object_ptr->min_prio_thresh, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
@@ -2480,7 +2480,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer
 		pack32(object->max_jobs_pu, buffer);
 		pack32(object->max_jobs_accrue_pa, buffer);
 		pack32(object->max_jobs_accrue_pu, buffer);
-		pack32(object->max_prio_thresh, buffer);
+		pack32(object->min_prio_thresh, buffer);
 		pack32(object->max_submit_jobs_pa, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
 		pack32(object->max_wall_pj, buffer);
@@ -2654,7 +2654,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_jobs_accrue_pa, buffer);
 		safe_unpack32(&object_ptr->max_jobs_accrue_pu, buffer);
-		safe_unpack32(&object_ptr->max_prio_thresh, buffer);
+		safe_unpack32(&object_ptr->min_prio_thresh, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pa, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);

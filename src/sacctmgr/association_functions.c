@@ -526,10 +526,10 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			xfree(tmp_char);
 		}
-	} else if (!xstrncasecmp(type, "MaxPrioThresh",
+	} else if (!xstrncasecmp(type, "MinPrioThresh",
 				 MAX(command_len, 4))) {
-		if (get_uint(value, &assoc->max_prio_thresh,
-			     "MaxPrioThresh") == SLURM_SUCCESS)
+		if (get_uint(value, &assoc->min_prio_thresh,
+			     "MinPrioThresh") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!xstrncasecmp(type, "MaxSubmitJobs", MAX(command_len, 4))) {
 		if (get_uint(value, &assoc->max_submit_jobs,
@@ -760,8 +760,8 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	case PRINT_MAXJA:
 		field->print_routine(field, assoc->max_jobs_accrue, last);
 		break;
-	case PRINT_MAXPT:
-		field->print_routine(field, assoc->max_prio_thresh, last);
+	case PRINT_MINPT:
+		field->print_routine(field, assoc->min_prio_thresh, last);
 		break;
 	case PRINT_MAXN:
 		field->print_routine(field,

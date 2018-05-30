@@ -480,9 +480,6 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t max_jobs_accrue;  /* max number of jobs this association can
 				    * have accruing priority time.
 				    */
-	uint32_t max_prio_thresh;  /* A priority threshold for which to count
-				    * jobs that have a priority at or above that
-				    * level. */
 	uint32_t max_submit_jobs;  /* max number of jobs that can be
 				      submitted by association */
 	char *max_tres_mins_pj;    /* max number of cpu seconds this
@@ -515,6 +512,9 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t max_wall_pj;      /* longest time this
 				    * association can run a job */
 
+	uint32_t min_prio_thresh;  /* Don't reserve resources for pending jobs
+				    * unless they have a priority equal to or
+				    * higher than this. */
 	char *parent_acct;	   /* name of parent account */
 	uint32_t parent_id;	   /* id of parent account */
 	char *partition;	   /* optional partition in a cluster
@@ -868,9 +868,6 @@ typedef struct {
 	uint32_t max_jobs_accrue_pu; /* max number of jobs a user can
 				      * have accruing priority time
 				      */
-	uint32_t max_prio_thresh;  /* A priority threshold for which to count
-				    * jobs that have a priority at or above that
-				    * level. */
 	uint32_t max_submit_jobs_pa; /* max number of jobs an account can
 					submit with this qos at once */
 	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
@@ -931,6 +928,9 @@ typedef struct {
 					      * (DON'T PACK) */
 	uint32_t max_wall_pj; /* longest time this
 			       * qos can run a job */
+	uint32_t min_prio_thresh;  /* Don't reserve resources for pending jobs
+				    * unless they have a priority equal to or
+				    * higher than this. */
 	char *min_tres_pj; /* min number of tres a job can
 			    * allocate with this qos */
 	uint64_t *min_tres_pj_ctld;   /* min_tres_pj broken out in an array

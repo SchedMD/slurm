@@ -549,10 +549,10 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MaxNodesPU");
 		field->len = 10;
 		field->print_routine = print_fields_uint;
-	} else if (!xstrncasecmp("MaxPrioThreshold", object,
+	} else if (!xstrncasecmp("MinPrioThreshold", object,
 				 MAX(command_len, 4))) {
-		field->type = PRINT_MAXPT;
-		field->name = xstrdup("MaxPrioThres");
+		field->type = PRINT_MINPT;
+		field->name = xstrdup("MinPrioThres");
 		field->len = 12;
 		field->print_routine = print_fields_uint;
 	} else if (!xstrncasecmp("MaxSubmitJobs", object,
@@ -1789,10 +1789,10 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	else if (assoc->max_jobs_accrue != NO_VAL)
 		printf("  MaxJobsPrioAcc= %u\n", assoc->max_jobs_accrue);
 
-	if (assoc->max_prio_thresh == INFINITE)
-		printf("  MaxPrioThresh = NONE\n");
-	else if (assoc->max_prio_thresh != NO_VAL)
-		printf("  MaxPrioThresh = %u\n", assoc->max_prio_thresh);
+	if (assoc->min_prio_thresh == INFINITE)
+		printf("  MinPrioThresh = NONE\n");
+	else if (assoc->min_prio_thresh != NO_VAL)
+		printf("  MinPrioThresh = %u\n", assoc->min_prio_thresh);
 
 	if (assoc->max_submit_jobs == INFINITE)
 		printf("  MaxSubmitJobs = NONE\n");

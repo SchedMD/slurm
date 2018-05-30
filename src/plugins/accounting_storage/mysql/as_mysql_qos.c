@@ -164,8 +164,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->max_jobs_accrue_pa = INFINITE;
 		if (qos->max_jobs_accrue_pu == NO_VAL)
 			qos->max_jobs_accrue_pu = INFINITE;
-		if (qos->max_prio_thresh == NO_VAL)
-			qos->max_prio_thresh = INFINITE;
+		if (qos->min_prio_thresh == NO_VAL)
+			qos->min_prio_thresh = INFINITE;
 		if (qos->max_submit_jobs_pa == NO_VAL)
 			qos->max_submit_jobs_pa = INFINITE;
 		if (qos->max_submit_jobs_pu == NO_VAL)
@@ -313,16 +313,16 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			   qos->max_jobs_accrue_pu);
 	}
 
-	if (qos->max_prio_thresh == INFINITE) {
-		xstrcat(*cols, ", max_prio_thresh");
+	if (qos->min_prio_thresh == INFINITE) {
+		xstrcat(*cols, ", min_prio_thresh");
 		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_prio_thresh=NULL");
-	} else if ((qos->max_prio_thresh != NO_VAL)
-		   && ((int32_t)qos->max_prio_thresh >= 0)) {
-		xstrcat(*cols, ", max_prio_thresh");
-		xstrfmtcat(*vals, ", %u", qos->max_prio_thresh);
-		xstrfmtcat(*extra, ", max_prio_thresh=%u",
-			   qos->max_prio_thresh);
+		xstrcat(*extra, ", min_prio_thresh=NULL");
+	} else if ((qos->min_prio_thresh != NO_VAL)
+		   && ((int32_t)qos->min_prio_thresh >= 0)) {
+		xstrcat(*cols, ", min_prio_thresh");
+		xstrfmtcat(*vals, ", %u", qos->min_prio_thresh);
+		xstrfmtcat(*extra, ", min_prio_thresh=%u",
+			   qos->min_prio_thresh);
 	}
 
 	if (qos->max_submit_jobs_pa == INFINITE) {
@@ -917,7 +917,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec->max_jobs_pu  = qos->max_jobs_pu;
 		qos_rec->max_jobs_accrue_pa  = qos->max_jobs_accrue_pa;
 		qos_rec->max_jobs_accrue_pu  = qos->max_jobs_accrue_pu;
-		qos_rec->max_prio_thresh  = qos->max_prio_thresh;
+		qos_rec->min_prio_thresh  = qos->min_prio_thresh;
 		qos_rec->max_submit_jobs_pa  = qos->max_submit_jobs_pa;
 		qos_rec->max_submit_jobs_pu  = qos->max_submit_jobs_pu;
 		qos_rec->max_wall_pj = qos->max_wall_pj;
@@ -1233,7 +1233,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"max_jobs_per_user",
 		"max_jobs_accrue_pa",
 		"max_jobs_accrue_pu",
-		"max_prio_thresh",
+		"min_prio_thresh",
 		"max_submit_jobs_pa",
 		"max_submit_jobs_per_user",
 		"max_wall_duration_per_job",
@@ -1431,9 +1431,9 @@ empty:
 			qos->max_jobs_accrue_pu = INFINITE;
 
 		if (row[QOS_REQ_MPT])
-			qos->max_prio_thresh = slurm_atoul(row[QOS_REQ_MPT]);
+			qos->min_prio_thresh = slurm_atoul(row[QOS_REQ_MPT]);
 		else
-			qos->max_prio_thresh = INFINITE;
+			qos->min_prio_thresh = INFINITE;
 
 		if (row[QOS_REQ_MSJPA])
 			qos->max_submit_jobs_pa =

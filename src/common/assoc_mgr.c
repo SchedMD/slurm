@@ -2496,7 +2496,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 		assoc->max_tres_pn     = ret_assoc->max_tres_pn;
 	assoc->max_jobs        = ret_assoc->max_jobs;
 	assoc->max_jobs_accrue = ret_assoc->max_jobs_accrue;
-	assoc->max_prio_thresh = ret_assoc->max_prio_thresh;
+	assoc->min_prio_thresh = ret_assoc->min_prio_thresh;
 	assoc->max_submit_jobs = ret_assoc->max_submit_jobs;
 	assoc->max_wall_pj     = ret_assoc->max_wall_pj;
 
@@ -2718,7 +2718,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	qos->max_jobs_pu     = found_qos->max_jobs_pu;
 	qos->max_jobs_accrue_pa = found_qos->max_jobs_accrue_pa;
 	qos->max_jobs_accrue_pu = found_qos->max_jobs_accrue_pu;
-	qos->max_prio_thresh    = found_qos->max_prio_thresh;
+	qos->min_prio_thresh    = found_qos->min_prio_thresh;
 	qos->max_submit_jobs_pa = found_qos->max_submit_jobs_pa;
 	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
 	qos->max_wall_pj     = found_qos->max_wall_pj;
@@ -3753,8 +3753,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				rec->max_jobs = object->max_jobs;
 			if (object->max_jobs_accrue != NO_VAL)
 				rec->max_jobs_accrue = object->max_jobs_accrue;
-			if (object->max_prio_thresh != NO_VAL)
-				rec->max_prio_thresh = object->max_prio_thresh;
+			if (object->min_prio_thresh != NO_VAL)
+				rec->min_prio_thresh = object->min_prio_thresh;
 			if (object->max_submit_jobs != NO_VAL)
 				rec->max_submit_jobs = object->max_submit_jobs;
 			if (object->max_wall_pj != NO_VAL) {
@@ -4527,9 +4527,9 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				rec->max_jobs_accrue_pu =
 					object->max_jobs_accrue_pu;
 
-			if (object->max_prio_thresh != NO_VAL)
-				rec->max_prio_thresh = object->max_prio_thresh;
-			info("got it here with %d", rec->max_prio_thresh);
+			if (object->min_prio_thresh != NO_VAL)
+				rec->min_prio_thresh = object->min_prio_thresh;
+			info("got it here with %d", rec->min_prio_thresh);
 			if (object->max_submit_jobs_pa != NO_VAL)
 				rec->max_submit_jobs_pa =
 					object->max_submit_jobs_pa;
