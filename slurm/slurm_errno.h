@@ -194,6 +194,8 @@ enum {
 	ESLURM_JOB_SETTING_DB_INX,
 	ESLURM_RSV_ALREADY_STARTED,
 
+	ESLURM_GROUP_ID_MISSING =			2113,
+
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
 	ESLURM_SWITCH_MAX = 3099,
