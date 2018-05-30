@@ -2,16 +2,16 @@
 
 <h1>CALL  FOR  ABSTRACTS</h1>
 <p>Slurm User Group Meeting 2017<br>
-24-26 September 2017<br>
-Berkeley, California, USA</p>
+25-26 September 2018<br>
+Madrid, Spain</p>
 
 <p>You are invited to submit an abstract of a tutorial, technical presentation
-or site report to be given at the Slurm User Group Meeting 2017. This event is
+or site report to be given at the Slurm User Group Meeting 2018. This event is
 sponsored and organized by the
-<a href="http://www.nersc.gov/">National Energy Research Scientific Computing Center (NERSC)</a> and
+<a href="http://www.ciemat.es/">Research Centre for Energy, Environment and Technology (CIEMAT)</a> and
 <a href="https://www.schedmd.com/">SchedMD</a>.
-It will be held at the National Energy Scientific Computing Center (NERSC)
-at 1 Cyclotron Road in Berkeley, California, USA, on 24-26 September 2017.</p>
+It will be held at CIEMAT (Building #1, main auditorium) Madrid, Spain
+on 25-26 September 2018.</p>
 
 <p>This international event is opened to everyone who wants to:
 <ul>
@@ -27,20 +27,23 @@ or tutorial about Slurm is invited to send an abstract to
 <a href="mailto:slugc@schedmd.com">slugc@schedmd.com</a>.</p>
 
 <p><b>Important Dates:</b><br>
-30 June 2017: Abstracts due<br>
-15 July 2017: Notification of acceptance<br>
-24-26 September 2017: Slurm User Group Meeting<br>
+29 June 2018: Abstracts due<br>
+13 July 2018: Notification of acceptance<br>
+25-26 September 2018: Slurm User Group Meeting<br>
 </p>
 
 <p><b>Program Committee:</b><br>
-Brian Gilmer (Cray)<br>
-Douglas Jacobsen (NERSC)<br>
+James Botts (NERSC)<br>
+Thomas Cadeau (Atos)<br>
+Joshi Fullop (LANL)<br>
+Matthieu Hautreux (CEA)<br>
 Morris Jette (SchedMD)<br>
-Bruce Pfaff (NASA Goddard)<br>
+Dr. Antonio Rubio Montero (CIEMAT)<br>
+Manuel Rodriguez-Pascual (PACKLINK)<br>
 Tim Wickberg (SchedMD)</p>
 
 <p><a href="slurm_ug_agenda.html">Registration Information</a></p>
 
-<p style="text-align:center;">Last modified 1 May 2017</p>
+<p style="text-align:center;">Last modified 30 May 2018</p>
 
 <!--#include virtual="footer.txt"-->
