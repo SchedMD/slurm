@@ -492,7 +492,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	int len = 0;
 	Buf buffer = NULL;
 	slurm_msg_t msg;
-	uid_t uid = (uid_t)-1;
 	gid_t gid = (uid_t)-1;
 	gids_t *gids = NULL;
 
@@ -501,8 +500,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	char *parent_alias = NULL;
 	char *user_name = NULL;
 	slurm_addr_t parent_addr = {0};
-	char pwd_buffer[PW_BUF_SIZE];
-	struct passwd pwd, *pwd_result;
 
 	slurm_msg_t_init(&msg);
 	/* send type over to slurmstepd */
@@ -627,18 +624,11 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
 		gid = (uid_t)((batch_job_launch_msg_t *)req)->gid;
-		uid = (uid_t)((batch_job_launch_msg_t *)req)->uid;
 		user_name = ((batch_job_launch_msg_t *)req)->user_name;
 		msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
 	case LAUNCH_TASKS:
-		/*
-		 * The validity of req->uid was verified against the
-		 * auth credential in _rpc_launch_tasks().  req->gid
-		 * has NOT yet been checked!
-		 */
 		gid = (uid_t)((launch_tasks_request_msg_t *)req)->gid;
-		uid = (uid_t)((launch_tasks_request_msg_t *)req)->uid;
 		user_name = ((launch_tasks_request_msg_t *)req)->user_name;
 		msg.msg_type = REQUEST_LAUNCH_TASKS;
 		break;
@@ -664,44 +654,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
 	buffer = NULL;
-
-#ifdef HAVE_NATIVE_CRAY
-	/* Try to avoid calling this on a system which is a native
-	 * cray.  getpwuid_r is slow on the compute nodes and this has
-	 * in theory been verified earlier.
-	 */
-	if (!user_name) {
-#endif
-		/* send cached group ids array for the relevant uid */
-		debug3("_send_slurmstepd_init: call to getpwuid_r");
-		if (slurm_getpwuid_r(uid, &pwd, pwd_buffer, PW_BUF_SIZE,
-				     &pwd_result) || (pwd_result == NULL)) {
-			error("%s: getpwuid_r: %m", __func__);
-			len = 0;
-			safe_write(fd, &len, sizeof(int));
-			errno = ESLURMD_UID_NOT_FOUND;
-			return errno;
-		}
-		debug3("%s: return from getpwuid_r", __func__);
-		if (gid != pwd_result->pw_gid) {
-			debug("%s: Changing gid from %d to %d",
-			      __func__, gid, pwd_result->pw_gid);
-		}
-		gid = pwd_result->pw_gid;
-		if (!user_name)
-			user_name = pwd_result->pw_name;
-#ifdef HAVE_NATIVE_CRAY
-	}
-#endif
-	if (!user_name) {
-		/* Sanity check since gids_cache_lookup will fail
-		 * with a NULL. */
-		error("%s: No user name for %d: %m", __func__, uid);
-		len = 0;
-		safe_write(fd, &len, sizeof(int));
-		errno = ESLURMD_UID_NOT_FOUND;
-		return errno;
-	}
 
 	if ((gids = _gids_cache_lookup(user_name, gid))) {
 		int i;
@@ -1395,6 +1347,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
+	gid_t    req_gid;
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     super_user = false;
 	bool     mem_sort = false;
@@ -1413,6 +1366,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
 #endif
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, conf->auth_info);
+	req_gid = g_slurm_auth_get_gid(msg->auth_cred, conf->auth_info);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 
 	super_user = _slurm_authorized_user(req_uid);
@@ -1422,6 +1376,21 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		      (unsigned int) req_uid);
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
 		goto done;
+	}
+
+	/* cannot trust it, remove and overwrite */
+	xfree(req->user_name);
+	req->user_name = uid_to_string(req->uid);
+
+	if (!super_user && (req_gid != req->gid)) {
+		if (!slurm_valid_uid_gid(req->uid, &req->gid, &req->user_name,
+					 false, true)) {
+			error("%s: user %u does not belong to group %u, "
+			      "rejecting job %u", __func__, req->uid,
+			      req->gid, req->job_id);
+			errnum = ESLURM_GROUP_ID_MISSING;
+			goto done;
+		}
 	}
 
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
@@ -2049,6 +2018,7 @@ static void _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->tasks_to_launch	= xmalloc(sizeof(uint16_t)
 						  * req->nnodes);
 	launch_req->uid			= req->uid;
+	launch_req->user_name		= req->user_name;
 
 	for (i = 0; i < req->nnodes; i++) {
 		uint32_t *tmp32 = xmalloc(sizeof(uint32_t));
@@ -2106,6 +2076,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		      (unsigned int) req_uid);
 		return;
 	}
+
+	if (!req->user_name)
+		req->user_name = uid_to_string(req->uid);
 
 	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error starting prolog: %m");
@@ -2222,6 +2195,9 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	}
 
 	task_g_slurmd_batch_request(req->job_id, req);	/* determine task affinity */
+
+	if (!req->user_name)
+		req->user_name = uid_to_string(req->uid);
 
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
@@ -3995,6 +3971,9 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(key.uid))
 		return rc;
 
+	/* cannot trust, so discard */
+	xfree(req->user_name);
+
 #if 0
 	info("last_block=%u force=%u modes=%o",
 	     req->last_block, req->force, req->modes);
@@ -4137,6 +4116,10 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	gids_t *gids;
 	pid_t child;
 	file_bcast_info_t *file_info;
+
+	/* cannot trust, discard and overwrite */
+	xfree(req->user_name);
+	req->user_name = uid_to_string(key->uid);
 
 	if (!(gids = _gids_cache_lookup(req->user_name, key->gid))) {
 		error("sbcast: gids_cache_lookup for %s failed", req->user_name);
@@ -5802,7 +5785,6 @@ static char **
 _build_env(job_env_t *job_env)
 {
 	char **env = xmalloc(sizeof(char *));
-	bool user_name_set = 0;
 
 	env[0]  = NULL;
 	if (!valid_spank_job_env(job_env->spank_job_env,
@@ -5824,17 +5806,13 @@ _build_env(job_env_t *job_env)
 	setenvf(&env, "SLURM_JOB_ID", "%u", job_env->jobid);
 	setenvf(&env, "SLURM_JOB_UID",   "%u", job_env->uid);
 
-#ifndef HAVE_NATIVE_CRAY
-	/* uid_to_string on a cray is a heavy call, so try to avoid it */
-	if (!job_env->user_name) {
-		job_env->user_name = uid_to_string(job_env->uid);
-		user_name_set = 1;
+	if (job_env->user_name) {
+		setenvf(&env, "SLURM_JOB_USER", "%s", job_env->user_name);
+	} else {
+		char *user_name = uid_to_string(job_env->uid);
+		setenvf(&env, "SLURM_JOB_USER", "%s", user_name);
+		xfree(user_name);
 	}
-#endif
-
-	setenvf(&env, "SLURM_JOB_USER", "%s", job_env->user_name);
-	if (user_name_set)
-		xfree(job_env->user_name);
 
 	setenvf(&env, "SLURM_JOBID", "%u", job_env->jobid);
 	setenvf(&env, "SLURM_UID",   "%u", job_env->uid);
