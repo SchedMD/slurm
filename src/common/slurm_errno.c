@@ -349,6 +349,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Duplicate job step id"				},
 	{ ESLURM_X11_NOT_AVAIL,
 	  "X11 forwarding not available"			},
+	{ ESLURM_GROUP_ID_MISSING,
+	  "Invalid group id"					},
 	{ ESLURM_BATCH_CONSTRAINT,
 	  "Job --batch option is invalid or not a subset of --constraints" },
 	{ ESLURM_INVALID_TRES,
