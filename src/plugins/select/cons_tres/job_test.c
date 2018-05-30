@@ -80,7 +80,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		     bool qos_preemptor, bool preempt_mode);
 static inline void _log_select_maps(char *loc, bitstr_t *node_map,
 				    bitstr_t **core_map);
-static bitstr_t **_mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec);
 static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct node_use_record *node_usage,
 			    struct job_record *job_ptr, int action);
@@ -941,10 +940,10 @@ static int _sort_usable_nodes_dec(void *j1, void *j2)
 /*
  * Bit a core bitmap array of available cores
  * node_bitmap IN - Nodes available for use
- * core_spec IN - Specialized core specification
+ * core_spec IN - Specialized core specification, NO_VAL16 if none
  * RET core bitmap array, one per node. Use free_core_array() to release memory
  */
-static bitstr_t **_mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec)
+extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec)
 {
 	bitstr_t **avail_cores;
 	int i, i_first, i_last;
@@ -1079,8 +1078,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		job_ptr->bit_flags |= NODE_MEM_CALC;	/* To be calculated */
 
 	orig_node_map = bit_copy(node_bitmap);
-	avail_cores = _mark_avail_cores(node_bitmap,
-					job_ptr->details->core_spec);
+	avail_cores = mark_avail_cores(node_bitmap,
+				       job_ptr->details->core_spec);
 
 	/*
 	 * test to make sure that this job can succeed with all avail_cores

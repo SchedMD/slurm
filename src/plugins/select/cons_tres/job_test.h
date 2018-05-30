@@ -118,6 +118,14 @@ extern void log_tres_state(struct node_use_record *node_usage,
 			   struct part_res_record *part_record_ptr);
 
 /*
+ * Bit a core bitmap array of available cores
+ * node_bitmap IN - Nodes available for use
+ * core_spec IN - Specialized core specification, NO_VAL16 if none
+ * RET core bitmap array, one per node. Use free_core_array() to release memory
+ */
+extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec);
+
+/*
  * deallocate resources previously allocated to the given job
  * - subtract 'struct job_resources' resources from 'struct part_res_record'
  * - subtract job's memory requirements from 'struct node_res_record'
