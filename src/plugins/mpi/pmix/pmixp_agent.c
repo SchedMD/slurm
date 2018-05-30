@@ -251,7 +251,7 @@ static void *_agent_thread(void *unused)
 	}
 
 	slurm_mutex_lock(&agent_mutex);
-	pthread_cond_signal(&agent_running_cond);
+	slurm_cond_signal(&agent_running_cond);
 	slurm_mutex_unlock(&agent_mutex);
 
 	eio_handle_mainloop(_io_handle);
