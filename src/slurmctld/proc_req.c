@@ -76,6 +76,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/agent.h"
@@ -1047,6 +1048,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
+					 slurmctld_config.auth_info);
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
 	bool reject_job = false;
@@ -1065,6 +1068,18 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, RESOURCE_ALLOCATE from uid=%d",
 		      uid);
+	}
+	if ((gid != job_desc_msg->group_id) && (!validate_super_user(uid))) {
+		char *user_name = NULL;
+		/* check if it is a valid extended gid instead */
+		if (!slurm_valid_uid_gid(job_desc_msg->user_id,
+					 &job_desc_msg->group_id,
+					 &user_name, false, true)) {
+			error_code = ESLURM_GROUP_ID_MISSING;
+			error("Security violation, RESOURCE_ALLOCATE from uid=%u who is not in gid=%u",
+			      job_desc_msg->user_id, job_desc_msg->group_id);
+		}
+		xfree(user_name);
 	}
 	debug2("sched: Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%d",
 	       uid);
@@ -3528,6 +3543,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
+					 slurmctld_config.auth_info);
 	char *err_msg = NULL;
 	bool reject_job = false;
 
@@ -3544,6 +3561,18 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		/* NOTE: Super root can submit a batch job for any user */
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, SUBMIT_JOB from uid=%d", uid);
+	}
+	if ((gid != job_desc_msg->group_id) && (!validate_super_user(uid))) {
+		char *user_name = NULL;
+		/* check if it is a valid extended gid instead */
+		if (!slurm_valid_uid_gid(job_desc_msg->user_id,
+					 &job_desc_msg->group_id,
+					 &user_name, false, true)) {
+			error_code = ESLURM_GROUP_ID_MISSING;
+			error("Security violation, SUBMIT_JOB from uid=%u who is not in gid=%u",
+			      job_desc_msg->user_id, job_desc_msg->group_id);
+		}
+		xfree(user_name);
 	}
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
