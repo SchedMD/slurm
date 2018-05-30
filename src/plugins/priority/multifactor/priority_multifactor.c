@@ -1878,6 +1878,8 @@ extern List priority_p_get_priority_factors_list(
 	}
 
 	if (job_list && list_count(job_list)) {
+		time_t use_time;
+
 		ret_list = list_create(slurm_destroy_priority_factors_object);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
@@ -1892,8 +1894,12 @@ extern List priority_p_get_priority_factors_list(
 			/*
 			 * This means the job is not eligible yet
 			 */
-			if (!job_ptr->details->begin_time
-			    || (job_ptr->details->begin_time > start_time))
+			if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
+				use_time = job_ptr->details->submit_time;
+			else
+				use_time = job_ptr->details->begin_time;
+
+			if (!use_time || (use_time > start_time))
 				continue;
 
 			/*

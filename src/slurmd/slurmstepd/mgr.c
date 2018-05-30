@@ -159,7 +159,6 @@ static bool _access(const char *path, int modes, uid_t uid,
 		    int ngids, gid_t *gids);
 static void _send_launch_failure(launch_tasks_request_msg_t *,
 				 slurm_addr_t *, int, uint16_t);
-static int  _drain_node(char *reason);
 static int  _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized);
 static int  _become_user(stepd_step_rec_t *job, struct priv_state *ps);
 static void  _set_prio_process (stepd_step_rec_t *job);
@@ -172,9 +171,6 @@ static int  _slurmd_job_log_init(stepd_step_rec_t *job);
 static void _wait_for_io(stepd_step_rec_t *job);
 static int  _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n,
 			   int status);
-static void _wait_for_children_slurmstepd(stepd_step_rec_t *job);
-static int  _send_pending_exit_msgs(stepd_step_rec_t *job);
-static void _send_step_complete_msgs(stepd_step_rec_t *job);
 static void _set_job_state(stepd_step_rec_t *job, slurmstepd_state_t new_state);
 static void _wait_for_all_tasks(stepd_step_rec_t *job);
 static int  _wait_for_any_task(stepd_step_rec_t *job, bool waitflag);
@@ -404,10 +400,10 @@ batch_finish(stepd_step_rec_t *job, int rc)
 			job->jobid, rc, step_complete.step_rc);
 		_send_complete_batch_script_msg(job, rc, step_complete.step_rc);
 	} else {
-		_wait_for_children_slurmstepd(job);
+		stepd_wait_for_children_slurmstepd(job);
 		verbose("job %u.%u completed with slurm_rc = %d, job_rc = %d",
 			job->jobid, job->stepid, rc, step_complete.step_rc);
-		_send_step_complete_msgs(job);
+		stepd_send_step_complete_msgs(job);
 	}
 
 	/* Do not purge directory until slurmctld is notified of batch job
@@ -709,8 +705,7 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 	return SLURM_SUCCESS;
 }
 
-static void
-_wait_for_children_slurmstepd(stepd_step_rec_t *job)
+extern void stepd_wait_for_children_slurmstepd(stepd_step_rec_t *job)
 {
 	int left = 0;
 	int rc;
@@ -920,8 +915,7 @@ _bit_getrange(int start, int size, int *first, int *last)
  * not yet signaled their completion, so there will be gaps in the
  * completed node bitmap, requiring that more than one message be sent.
  */
-static void
-_send_step_complete_msgs(stepd_step_rec_t *job)
+extern void stepd_send_step_complete_msgs(stepd_step_rec_t *job)
 {
 	int start, size;
 	int first = -1, last = -1;
@@ -1165,8 +1159,8 @@ fail1:
 	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
 
 	if (step_complete.rank > -1)
-		_wait_for_children_slurmstepd(job);
-	_send_step_complete_msgs(job);
+		stepd_wait_for_children_slurmstepd(job);
+	stepd_send_step_complete_msgs(job);
 
 	return rc;
 }
@@ -1432,7 +1426,7 @@ fail2:
 
 	/* Notify srun of completion AFTER frequency reset to avoid race
 	 * condition starting another job on these CPUs. */
-	while (_send_pending_exit_msgs(job)) {;}
+	while (stepd_send_pending_exit_msgs(job)) {;}
 
 	/*
 	 * This just cleans up all of the PAM state in case rc == 0
@@ -1463,8 +1457,8 @@ fail1:
 		if (job->aborted)
 			info("job_manager exiting with aborted job");
 		else
-			_wait_for_children_slurmstepd(job);
-		_send_step_complete_msgs(job);
+			stepd_wait_for_children_slurmstepd(job);
+		stepd_send_step_complete_msgs(job);
 	}
 
 	if (!job->batch && core_spec_g_clear(job->cont_id))
@@ -1970,8 +1964,7 @@ fail1:
  * the client) Aggregate these tasks into a single task exit message.
  *
  */
-static int
-_send_pending_exit_msgs(stepd_step_rec_t *job)
+extern int stepd_send_pending_exit_msgs(stepd_step_rec_t *job)
 {
 	int  i;
 	int  nsent  = 0;
@@ -2197,7 +2190,7 @@ _wait_for_all_tasks(stepd_step_rec_t *job)
 			/* Send partial completion message only.
 			 * The full completion message can only be sent
 			 * after resetting CPU frequencies */
-			while (_send_pending_exit_msgs(job)) {;}
+			while (stepd_send_pending_exit_msgs(job)) {;}
 		}
 	}
 }
@@ -2265,7 +2258,7 @@ _make_batch_dir(stepd_step_rec_t *job)
 	if ((mkdir(path, 0750) < 0) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
 		if (errno == ENOSPC)
-			_drain_node("SlurmdSpoolDir is full");
+			stepd_drain_node("SlurmdSpoolDir is full");
 		goto error;
 	}
 
@@ -2311,7 +2304,7 @@ again:
 		(void) fclose(fp);
 		error("fputs: %m");
 		if (errno == ENOSPC)
-			_drain_node("SlurmdSpoolDir is full");
+			stepd_drain_node("SlurmdSpoolDir is full");
 		goto error;
 	}
 
@@ -2336,7 +2329,7 @@ error:
 
 }
 
-static int _drain_node(char *reason)
+extern int stepd_drain_node(char *reason)
 {
 	slurm_msg_t req_msg;
 	update_node_msg_t update_node_msg;

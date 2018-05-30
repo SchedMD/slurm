@@ -40,6 +40,7 @@ set file_err    "test$test_id.error"
 set file_in     "test$test_id.input"
 set file_out    "$cwd/test$test_id.output"
 set tmp_dir     "[exec $bin_printenv HOME]"
+set tmp_dir     "[exec readlink -f $tmp_dir]"
 
 print_header $test_id
 
@@ -49,7 +50,7 @@ print_header $test_id
 #
 exec $bin_rm -f $file_in $file_out $tmp_dir/$file_err
 if {[file exists $tmp_dir/$file_err]} {
-	send_user "\nWARNING: can not delete /tmp/$file_err to run test\n"
+	send_user "\nWARNING: can not delete $tmp_dir/$file_err to run test\n"
 	set random 0
 	spawn $bin_date +%N
 	expect {

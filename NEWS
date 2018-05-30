@@ -139,6 +139,13 @@ documents those changes that are of interest to users and administrators.
  -- Fix for possible slurmctld daemon abort with NULL pointer.
  -- Fix different issues when requesting memory per cpu/node.
  -- PMIx - override default paths at configure time if --with-pmix is used.
+ -- Have sprio display jobs before eligible time when
+    PriorityFlags=ACCRUE_ALWAYS is set.
+ -- Make sure locks are always in place when calling _post_qos_list().
+ -- Notify srun and ctld when unkillable stepd exits.
+ -- Fix slurmstepd deadlock in stepd cleanup caused by race condition in
+    the jobacct_gather fini() interfaces introduced in 17.11.6.
+ -- Fix slurmstepd deadlock in PMIx startup.
 
 * Changes in Slurm 17.11.6
 ==========================

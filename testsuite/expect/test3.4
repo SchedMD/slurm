@@ -117,8 +117,14 @@ expect {
 #
 # Change that job's priority
 #
+set validate_new_priority 1
 spawn $scontrol update Jobid=$job_id Priority=$new_prio
 expect {
+	-re "Changes to job priority are not persistent, change nice instead for job $job_id" {
+		send_user "\nWARNING: setting priority directly by normal user is only temporary.\n"
+		set validate_new_priority 0
+		exp_continue
+	}
 	-re "slurm_update error: Access.*denied" {
 		send_user "\nWARNING: User not authorized to modify jobs\n"
 		cancel_job $job_id
@@ -151,7 +157,7 @@ expect {
 		wait
 	}
 }
-if {$read_priority != $new_prio} {
+if {$validate_new_priority && ($read_priority != $new_prio)} {
 	send_user "\nFAILURE: scontrol priority change error\n"
 	set exit_code 1
 }
