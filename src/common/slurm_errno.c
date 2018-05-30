@@ -349,6 +349,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Duplicate job step id"				},
 	{ ESLURM_X11_NOT_AVAIL,
 	  "X11 forwarding not available"			},
+	{ ESLURM_GROUP_ID_MISSING,
+	  "Invalid group id"					},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,

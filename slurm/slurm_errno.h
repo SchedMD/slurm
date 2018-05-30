@@ -201,6 +201,7 @@ enum {
 	ESLURM_DUPLICATE_STEP_ID =			2110,
 	ESLURM_INVALID_CORE_CNT,
 	ESLURM_X11_NOT_AVAIL,
+	ESLURM_GROUP_ID_MISSING,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
