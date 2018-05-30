@@ -1476,7 +1476,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		 * granularity, using the designated or default distribution
 		 * method (block or cyclic).
 		 */
-		char *str;
+		char *str = NULL;
 
 		if (bind_verbose) {
 			info("task/cgroup: task[%u] using %s granularity dist %u",
@@ -1543,7 +1543,9 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 			      "taskset '%s'",taskid,str);
 			fstatus = SLURM_ERROR;
 		}
-		free(str);
+
+		if (str)
+			free(str);
 	}
 
 	/* Destroy hwloc objects */

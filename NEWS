@@ -146,6 +146,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmstepd deadlock in stepd cleanup caused by race condition in
     the jobacct_gather fini() interfaces introduced in 17.11.6.
  -- Fix slurmstepd deadlock in PMIx startup.
+ -- task/cgroup - fix invalid free() if the hwloc library does not return a
+    string as expected.
 
 * Changes in Slurm 17.11.6
 ==========================
