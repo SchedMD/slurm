@@ -1282,6 +1282,68 @@ _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 	}
 }
 
+int pmixp_server_direct_conn_early(void)
+{
+	pmixp_coll_type_t types[] = { PMIXP_COLL_TYPE_FENCE_TREE, PMIXP_COLL_TYPE_FENCE_RING };
+	pmixp_coll_type_t type = pmixp_info_srv_fence_coll_type();
+	pmixp_coll_t *coll[PMIXP_COLL_TYPE_FENCE_MAX] = { NULL };
+	int i, rc, count = 0;
+	pmixp_proc_t proc;
+
+	PMIXP_DEBUG("called");
+	proc.rank = pmixp_lib_get_wildcard();
+	strncpy(proc.nspace, _pmixp_job_info.nspace, PMIXP_MAX_NSLEN);
+
+	for (i=0; i < sizeof(types)/sizeof(types[0]); i++){
+		if (type != PMIXP_COLL_TYPE_FENCE_MAX && type != types[i]) {
+			continue;
+		}
+		coll[count++] = pmixp_state_coll_get(types[i], &proc, 1);
+	}
+	/* use Tree algo by defaut */
+	if (!count) {
+		coll[count++] = pmixp_state_coll_get(PMIXP_COLL_TYPE_FENCE_TREE, &proc, 1);
+	}
+	for (i = 0; i < count; i++) {
+		if (coll[i]) {
+			pmixp_ep_t ep = {0};
+			Buf buf;
+
+			ep.type = PMIXP_EP_NOIDEID;
+
+			switch (coll[i]->type) {
+			case PMIXP_COLL_TYPE_FENCE_TREE:
+				ep.ep.nodeid = coll[i]->state.tree.prnt_peerid;
+				if (ep.ep.nodeid < 0) {
+					/* this is the root node, it has no
+					 * the parent node to early connect */
+					continue;
+				}
+				break;
+			case PMIXP_COLL_TYPE_FENCE_RING:
+				/* calculate the id of the next ring neighbor */
+				ep.ep.nodeid = (coll[i]->my_peerid + 1) %
+						coll[i]->peers_cnt;
+				break;
+			default:
+				PMIXP_ERROR("Unknown coll type");
+				return SLURM_ERROR;
+			}
+
+			buf = pmixp_server_buf_new();
+			rc = pmixp_server_send_nb(
+				&ep, PMIXP_MSG_INIT_DIRECT, coll[i]->seq,
+				buf, pmixp_server_sent_buf_cb, buf);
+
+			if (SLURM_SUCCESS != rc) {
+				PMIXP_ERROR_STD("send init msg error");
+				return SLURM_ERROR;
+			}
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
 /*
  * ------------------- Slurm communication protocol -----------------------
  */
@@ -1908,83 +1970,4 @@ void pmixp_server_run_cperf(void)
 	}
 }
 
-static void _direct_init_sent_buf_cb(int rc, pmixp_p2p_ctx_t ctx, void *data)
-{
-	Buf buf = (Buf) data;
-	FREE_NULL_BUFFER(buf);
-	return;
-}
-
-int pmixp_direct_conn_early(void)
-{
-	pmixp_coll_t *coll[PMIXP_COLL_TYPE_FENCE_MAX] = { NULL };
-	int rc, i, ncoll = 0;
-	pmixp_proc_t proc;
-	pmixp_coll_type_t type = pmixp_info_srv_fence_coll_type();
-
-	PMIXP_DEBUG("called");
-
-	proc.rank = pmixp_lib_get_wildcard();
-	strncpy(proc.nspace, _pmixp_job_info.nspace, PMIXP_MAX_NSLEN);
-
-	switch(type) {
-	default:
-	case PMIXP_COLL_TYPE_FENCE_TREE:
-		coll[PMIXP_COLL_TYPE_FENCE_TREE] =
-				pmixp_state_coll_get(PMIXP_COLL_TYPE_FENCE_TREE,
-						     &proc, 1);
-		ncoll++;
-		if (type == PMIXP_COLL_TYPE_FENCE_TREE) {
-			break;
-		}
-	case PMIXP_COLL_TYPE_FENCE_RING:
-		coll[PMIXP_COLL_TYPE_FENCE_RING] =
-				pmixp_state_coll_get(PMIXP_COLL_TYPE_FENCE_RING,
-						     &proc, 1);
-		ncoll++;
-		if (type == PMIXP_COLL_TYPE_FENCE_RING) {
-			break;
-		}
-	}
-
-	for (i = 0; i < ncoll; i++) {
-		if (coll[i]) {
-			pmixp_ep_t ep = {0};
-			Buf buf;
-
-			ep.type = PMIXP_EP_NOIDEID;
-
-			switch (coll[i]->type) {
-			case PMIXP_COLL_TYPE_FENCE_TREE:
-				ep.ep.nodeid = coll[i]->state.tree.prnt_peerid;
-				if (ep.ep.nodeid < 0) {
-					/* this is the root node, it has no
-					 * the parent node to early connect */
-					continue;
-				}
-				break;
-			case PMIXP_COLL_TYPE_FENCE_RING:
-				/* calculate the id of the next ring neighbor */
-				ep.ep.nodeid = (coll[i]->my_peerid + 1) %
-						coll[i]->peers_cnt;
-				break;
-			default:
-				PMIXP_ERROR("Unknown coll type");
-				return SLURM_ERROR;
-			}
-
-			buf = pmixp_server_buf_new();
-			rc = pmixp_server_send_nb(
-				&ep, PMIXP_MSG_INIT_DIRECT, coll[i]->seq,
-				buf, _direct_init_sent_buf_cb, NULL);
-
-			if (SLURM_SUCCESS != rc) {
-				PMIXP_ERROR_STD("send init msg error");
-				return SLURM_ERROR;
-			}
-		}
-	}
-	return SLURM_SUCCESS;
-}
-
-#endif
+#endif // NDEBUG

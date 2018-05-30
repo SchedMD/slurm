@@ -307,7 +307,7 @@ int pmixp_agent_start(void)
 
 	/* Establish the early direct connection */
 	if (pmixp_info_srv_direct_conn_early()) {
-		if (pmixp_direct_conn_early()) {
+		if (pmixp_server_direct_conn_early()) {
 			slurm_mutex_unlock(&agent_mutex);
 			return SLURM_ERROR;
 		}
