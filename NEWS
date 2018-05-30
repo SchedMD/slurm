@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Notify srun and ctld when unkillable stepd exits.
  -- Fix slurmstepd deadlock in stepd cleanup caused by race condition in
     the jobacct_gather fini() interfaces introduced in 17.11.6.
+ -- Fix slurmstepd deadlock in PMIx startup.
 
 * Changes in Slurm 17.11.6
 ==========================
