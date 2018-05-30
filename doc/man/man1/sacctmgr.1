@@ -1245,6 +1245,10 @@ Maximum number of jobs each account is allowed to run at one time.
 Maximum number of jobs each user is allowed to run at one time.
 
 .TP
+\fIMinPrioThreshold\fP
+Minimum priority required to reserve resources when scheduling.
+
+.TP
 \fIMinTRESPerJob\fP
 Minimum number of TRES each job running under this QOS must request.
 Otherwise the job will pend until modified.
@@ -1425,6 +1429,11 @@ Maximum wall clock time each job is able to use.
 <max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMinPrioThreshold\fP
+Minimum priority required to reserve resources when scheduling.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
