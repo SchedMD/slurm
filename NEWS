@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 17.02.12
+==========================
+
 * Changes in Slurm 17.02.11
 ==========================
  -- Fix insecure handling of user_name and gid fields. CVE-2018-10995.
