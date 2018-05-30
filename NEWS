@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
     return the node weight to be used for a compute node that requires reboot
     for use (e.g. to change the NUMA mode of a KNL node).
  -- Add NodeRebootWeight parameter to knl.conf configuration file.
+ -- Fix insecure handling of job requested gid field. CVE-2018-10995.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
@@ -134,6 +135,9 @@ documents those changes that are of interest to users and administrators.
     node_features_p_changeable_feature in node_features plugin.
  -- Add Slurm configuration file check logic using "slurmctld -t" command.
 
+* Changes in Slurm 17.11.8
+==========================
+
 * Changes in Slurm 17.11.7
 ==========================
  -- Fix for possible slurmctld daemon abort with NULL pointer.
@@ -148,6 +152,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmstepd deadlock in PMIx startup.
  -- task/cgroup - fix invalid free() if the hwloc library does not return a
     string as expected.
+ -- Fix insecure handling of job requested gid field. CVE-2018-10995.
 
 * Changes in Slurm 17.11.6
 ==========================
@@ -893,8 +898,12 @@ documents those changes that are of interest to users and administrators.
     '--quit-on-interrupt' to '--qos'.
  -- Change sched_min_interval default from 0 to 2 microseconds.
 
+* Changes in Slurm 17.02.12
+==========================
+
 * Changes in Slurm 17.02.11
 ==========================
+ -- Fix insecure handling of user_name and gid fields. CVE-2018-10995.
 
 * Changes in Slurm 17.02.10
 ==========================

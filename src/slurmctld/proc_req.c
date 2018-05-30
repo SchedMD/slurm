@@ -1017,6 +1017,26 @@ extern bool validate_operator(uid_t uid)
 		return false;
 }
 
+static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
+{
+	if (validate_slurm_user(uid))
+		return SLURM_SUCCESS;
+
+	if (uid != msg->user_id) {
+		error("%s: Requested UID=%u doesn't match user UID=%u.",
+		      caller, msg->user_id, uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+
+	if (gid != msg->group_id) {
+		error("%s: Requested GID=%u doesn't match user GID=%u.",
+		      caller, msg->group_id, gid);
+		return ESLURM_GROUP_ID_MISSING;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* _kill_job_on_msg_fail - The request to create a job record successed,
  *	but the reply message to srun failed. We kill the job to avoid
  *	leaving it orphaned */
@@ -1236,11 +1256,12 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
+					 slurmctld_config.auth_info);
 	uint32_t job_uid = NO_VAL;
 	struct job_record *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
 	ListIterator iter;
-	bool priv_user;
 	List submit_job_list = NULL;
 	uint32_t pack_job_id = 0, pack_job_offset = 0;
 	hostset_t jobid_hostset = NULL;
@@ -1286,7 +1307,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	       uid);
 	pack_cnt = list_count(job_req_list);
 	job_submit_user_msg = xmalloc(sizeof(char *) * pack_cnt);
-	priv_user = validate_slurm_user(uid);
 	submit_job_list = list_create(NULL);
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
@@ -1295,10 +1315,9 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
 		if (job_uid == NO_VAL)
 			job_uid = job_desc_msg->user_id;
-		if ((uid != job_desc_msg->user_id) && !priv_user) {
-			error_code = ESLURM_USER_ID_MISSING;
-			error("Security violation, REQUEST_JOB_PACK_ALLOCATION from uid=%d",
-			      uid);
+
+		if ((error_code = _valid_id("REQUEST_JOB_PACK_ALLOCATION",
+					    job_desc_msg, uid, gid))) {
 			break;
 		}
 
@@ -1487,6 +1506,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
+					 slurmctld_config.auth_info);
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
 	bool reject_job = false;
@@ -1504,11 +1525,12 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		goto send_msg;
 	}
 
-	if ((uid != job_desc_msg->user_id) && (!validate_slurm_user(uid))) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, RESOURCE_ALLOCATE from uid=%d",
-		      uid);
+	if ((error_code = _valid_id("REQUEST_RESOURCE_ALLOCATION",
+				    job_desc_msg, uid, gid))) {
+		reject_job = true;
+		goto send_msg;
 	}
+
 	debug2("sched: Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%d",
 	       uid);
 
@@ -2889,27 +2911,6 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	}
 }
 
-static bool _is_valid_will_run_user(job_desc_msg_t *job_desc_msg, uid_t uid)
-{
-	char *account = NULL;
-
-	if ((uid == job_desc_msg->user_id) || validate_operator(uid))
-		return true;
-
-	if (job_desc_msg->job_id != NO_VAL) {
-		struct job_record *job_ptr;
-		job_ptr = find_job_record(job_desc_msg->job_id);
-		if (job_ptr)
-			account = job_ptr->account;
-	} else if (job_desc_msg->account)
-		account = job_desc_msg->account;
-
-	if (account && assoc_mgr_is_user_acct_coord(acct_db_conn, uid, account))
-		return true;
-
-	return false;
-}
-
 /* _slurm_rpc_job_will_run - process RPC to determine if job with given
  *	configuration can be initiated */
 static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
@@ -2927,6 +2928,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
+					 slurmctld_config.auth_info);
 	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
@@ -2942,10 +2945,10 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_JOB_WILL_RUN from uid=%d", uid);
 
 	/* do RPC call */
-	if (!_is_valid_will_run_user(job_desc_msg, uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, JOB_WILL_RUN RPC from uid=%d", uid);
-	}
+	if ((error_code = _valid_id("REQUEST_JOB_WILL_RUN",
+				    job_desc_msg, uid, gid)))
+		goto send_reply;
+
 	if ((job_desc_msg->alloc_node == NULL)
 	    ||  (job_desc_msg->alloc_node[0] == '\0')) {
 		error_code = ESLURM_INVALID_NODE_NAME;
@@ -3984,6 +3987,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
+					 slurmctld_config.auth_info);
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 
@@ -3996,13 +4001,12 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	/* do RPC call */
-	if ((uid != job_desc_msg->user_id) && (!validate_super_user(uid))) {
-		/* NOTE: Super root can submit a batch job for any user */
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, REQUEST_SUBMIT_BATCH_JOB from uid=%d",
-		      uid);
+	if ((error_code = _valid_id("REQUEST_SUBMIT_BATCH_JOB",
+				    job_desc_msg, uid, gid))) {
+		reject_job = true;
+		goto send_msg;
 	}
+
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
 		error_code = ESLURM_INVALID_NODE_NAME;
@@ -4126,10 +4130,11 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	List job_req_list = (List) msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
+					 slurmctld_config.auth_info);
 	uint32_t job_uid = NO_VAL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
-	bool is_super_user;
 	List submit_job_list = NULL;
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
@@ -4170,19 +4175,18 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	}
 
 	/* Validate the individual request */
-	is_super_user = validate_super_user(uid);
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
 		if (job_uid == NO_VAL)
 			job_uid = job_desc_msg->user_id;
-		if ((uid != job_desc_msg->user_id) && !is_super_user) {
-			/* NOTE: Super root can submit a job for any user */
-			error("Security violation, REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
-			      uid);
-			error_code = ESLURM_USER_ID_MISSING;
+
+		if ((error_code = _valid_id("REQUEST_SUBMIT_BATCH_JOB",
+					    job_desc_msg, uid, gid))) {
+			reject_job = true;
 			break;
 		}
+
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
 			error("REQUEST_SUBMIT_BATCH_PACK_JOB lacks alloc_node from uid=%d",
@@ -4190,6 +4194,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			error_code = ESLURM_INVALID_NODE_NAME;
 			break;
 		}
+
 		dump_job_desc(job_desc_msg);
 
 		job_desc_msg->pack_job_offset = pack_job_offset;
