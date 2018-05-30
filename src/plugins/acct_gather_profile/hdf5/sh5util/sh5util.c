@@ -1229,9 +1229,9 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 {
 	size_t   i;
 	uint64_t min_val;
-	size_t   min_idx;
+	size_t   min_idx = 0;
 	uint64_t max_val;
-	size_t   max_idx;
+	size_t   max_idx = 0;
 	uint64_t sum, sum_max = 0;
 	double   avg, avg_max = 0;
 	size_t   nb_series_in_smp;
@@ -1330,9 +1330,9 @@ static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
 {
 	size_t   i;
 	double   min_val;
-	size_t   min_idx;
+	size_t   min_idx = 0;
 	double   max_val;
-	size_t   max_idx;
+	size_t   max_idx = 0;
 	double   sum, sum_max = 0;
 	double   avg, avg_max = 0;
 	size_t   nb_series_in_smp;
