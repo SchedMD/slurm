@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmstepd deadlock in PMIx startup.
  -- task/cgroup - fix invalid free() if the hwloc library does not return a
     string as expected.
+ -- Fix insecure handling of job requested gid field. CVE-2018-10995.
 
 * Changes in Slurm 17.11.6
 ==========================
