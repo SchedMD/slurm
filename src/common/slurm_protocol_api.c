@@ -3811,7 +3811,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		free_buf(buffer);
 
 		if ((rc < 0) && (errno == ENOTCONN)) {
-			debug3("slurm_persist_send_msg: pesistant connection has disappeared for msg_type=%u",
+			debug3("slurm_persist_send_msg: persistent connection has disappeared for msg_type=%u",
 			       msg->msg_type);
 		} else if (rc < 0) {
 			slurm_addr_t peer_addr;
