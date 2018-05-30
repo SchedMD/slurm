@@ -541,7 +541,7 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MaxNodes");
 		field->len = 8;
 		field->print_routine = print_fields_uint;
-	} else if (!xstrncasecmp("MaxNodesPerUser", object, 
+	} else if (!xstrncasecmp("MaxNodesPerUser", object,
 				 MAX(command_len, 12)) ||
 		   !xstrncasecmp("MaxNodesPU", object,
 				 MAX(command_len, 10))) {
