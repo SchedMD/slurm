@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.8
 ==========================
+ -- Fix incomplete RESPONSE_[RESOURCE|JOB_PACK]_ALLOCATION building path.
 
 * Changes in Slurm 17.11.7
 ==========================

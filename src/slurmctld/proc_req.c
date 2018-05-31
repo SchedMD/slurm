@@ -1105,13 +1105,19 @@ static int _pack_job_cancel(void *x, void *arg)
 	return 0;
 }
 
-static void _build_alloc_msg(struct job_record *job_ptr,
-			     resource_allocation_response_msg_t *alloc_msg,
-			     int error_code, char *job_submit_user_msg)
+/*
+ * build_alloc_msg - Fill in resource_allocation_response_msg_t off job_record.
+ * job_ptr IN - job_record to copy members off.
+ * error_code IN - error code used for the response.
+ * job_submit_user_msg IN - user message from job submit plugin.
+ * RET resource_allocation_response_msg_t filled in.
+ */
+extern resource_allocation_response_msg_t *build_alloc_msg(
+	struct job_record *job_ptr, int error_code, char *job_submit_user_msg)
 {
 	int i;
-
-	memset(alloc_msg, 0, sizeof(resource_allocation_response_msg_t));
+	resource_allocation_response_msg_t *alloc_msg =
+		xmalloc(sizeof(resource_allocation_response_msg_t));
 
 	/* send job_ID and node_name_ptr */
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
@@ -1141,7 +1147,9 @@ static void _build_alloc_msg(struct job_record *job_ptr,
 		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	if (job_ptr->details) {
 		alloc_msg->pn_min_memory = job_ptr->details->pn_min_memory;
-
+		alloc_msg->cpu_freq_min = job_ptr->details->cpu_freq_min;
+		alloc_msg->cpu_freq_max = job_ptr->details->cpu_freq_max;
+		alloc_msg->cpu_freq_gov = job_ptr->details->cpu_freq_gov;
 		if (job_ptr->details->mc_ptr) {
 			alloc_msg->ntasks_per_board =
 				job_ptr->details->mc_ptr->ntasks_per_board;
@@ -1178,6 +1186,8 @@ static void _build_alloc_msg(struct job_record *job_ptr,
 
 	set_remote_working_response(alloc_msg, job_ptr,
 				    job_ptr->origin_cluster);
+
+	return alloc_msg;
 }
 
 static void _del_alloc_pack_msg(void *x)
@@ -1386,7 +1396,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		else
 			FREE_NULL_LIST(submit_job_list);
 	} else {
-		resource_allocation_response_msg_t *alloc_msg;
 		ListIterator iter;
 		int buf_size = pack_job_offset * 16;
 		char *tmp_str = xmalloc(buf_size);
@@ -1405,11 +1414,10 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			job_ptr->pack_job_id_set = xstrdup(tmp_offset);
 			if (!resp)
 				resp = list_create(_del_alloc_pack_msg);
-			alloc_msg = xmalloc_nz(
-				sizeof(resource_allocation_response_msg_t));
-			_build_alloc_msg(job_ptr, alloc_msg, error_code,
-					 job_submit_user_msg[inx++]);
-			list_append(resp, alloc_msg);
+			list_append(resp,
+				    build_alloc_msg(
+					    job_ptr, error_code,
+					    job_submit_user_msg[inx++]));
 			if (slurmctld_conf.debug_flags &
 			    DEBUG_FLAG_HETERO_JOBS) {
 				char buf[BUFSIZ];
@@ -1464,7 +1472,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
-	resource_allocation_response_msg_t alloc_msg;
+	resource_allocation_response_msg_t *alloc_msg = NULL;
 	/* Locks: Read config, read job, read node, read partition */
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
@@ -1523,7 +1531,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	 * char *job_submit_user_msg because err_msg can be overwritten later
 	 * in the calls to fed_mgr_job_allocate and/or job_allocate, and we
 	 * need the job submit plugin value to build the resource allocation
-	 * response in the call to _build_alloc_msg.
+	 * response in the call to build_alloc_msg.
 	 */
 	if (err_msg)
 		job_submit_user_msg = xstrdup(err_msg);
@@ -1596,8 +1604,8 @@ send_msg:
 		info("sched: %s JobId=%u NodeList=%s %s", __func__,
 		     job_ptr->job_id, job_ptr->nodes, TIME_STR);
 
-		_build_alloc_msg(job_ptr, &alloc_msg, error_code,
-				 job_submit_user_msg);
+		alloc_msg = build_alloc_msg(job_ptr, error_code,
+					    job_submit_user_msg);
 
 		/*
 		 * This check really isn't needed, but just doing it
@@ -1613,7 +1621,7 @@ send_msg:
 		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
-		response_msg.data = &alloc_msg;
+		response_msg.data = alloc_msg;
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_ptr->job_id);
@@ -1621,13 +1629,13 @@ send_msg:
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 
-		if (!alloc_msg.node_cnt) /* didn't get an allocation */
+		if (!alloc_msg->node_cnt) /* didn't get an allocation */
 			queue_job_scheduler();
 
 		/* NULL out working_cluster_rec since it's pointing to global
 		 * memory */
-		alloc_msg.working_cluster_rec = NULL;
-		slurm_free_resource_allocation_response_msg_members(&alloc_msg);
+		alloc_msg->working_cluster_rec = NULL;
+		slurm_free_resource_allocation_response_msg(alloc_msg);
 	} else {	/* allocate error */
 		if (do_unlock) {
 			unlock_slurmctld(job_write_lock);
@@ -3153,7 +3161,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		 * the global memory */
 		job_info_resp_msg->working_cluster_rec = NULL;
 		slurm_free_resource_allocation_response_msg_members(
-			job_info_resp_msg);
+							job_info_resp_msg);
 		xfree(job_info_resp_msg);
 	}
 }
@@ -3958,7 +3966,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	 * char *job_submit_user_msg because err_msg can be overwritten later
 	 * in the calls to fed_mgr_job_allocate and/or job_allocate, and we
 	 * need the job submit plugin value to build the resource allocation
-	 * response in the call to _build_alloc_msg.
+	 * response in the call to build_alloc_msg.
 	 */
 	if (err_msg)
 		job_submit_user_msg = xstrdup(err_msg);
@@ -4159,7 +4167,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	 * char *job_submit_user_msg because err_msg can be overwritten later
 	 * in the calls to job_allocate, and we need the job submit plugin value
 	 * to build the resource allocation response in the call to
-	 * _build_alloc_msg.
+	 * build_alloc_msg.
 	 */
 	if (err_msg)
 		job_submit_user_msg = xstrdup(err_msg);
