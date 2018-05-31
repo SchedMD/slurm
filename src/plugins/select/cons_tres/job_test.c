@@ -3656,7 +3656,24 @@ extern int test_only(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes,
 		     uint32_t req_nodes, uint16_t job_node_req)
 {
-	return EINVAL;
+	int rc;
+	uint16_t tmp_cr_type = cr_type;
+
+	if (job_ptr->part_ptr->cr_type) {
+		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
+			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
+			tmp_cr_type |= job_ptr->part_ptr->cr_type;
+		} else {
+			info("cons_tres: Can't use Partition SelectType unless "
+			     "using CR_Socket or CR_Core");
+		}
+	}
+
+	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
+		       SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
+		       select_part_record, select_node_usage, NULL, false,
+		       false, false);
+	return rc;
 }
 
 /*
