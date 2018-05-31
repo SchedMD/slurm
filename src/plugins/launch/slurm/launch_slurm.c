@@ -414,6 +414,7 @@ static void _task_finish(task_exit_msg_t *msg)
 			msg_printed = 1;
 		}
 		if (((*local_global_rc & 0xff) != SIG_OOM) &&
+		    (!WIFSIGNALED(*local_global_rc)) &&
 		    (!WIFEXITED(*local_global_rc) ||
 		     (rc > WEXITSTATUS(*local_global_rc))))
 			*local_global_rc = msg->return_code;
@@ -434,7 +435,15 @@ static void _task_finish(task_exit_msg_t *msg)
 			      hosts, task_str, tasks, signal_str, core_str);
 			msg_printed = 1;
 		}
-		if (*local_global_rc == NO_VAL)
+		/*
+		 * Even though lower numbered signals can be stronger than
+		 * higher numbered signals, keep the highest signal so that it's
+		 * predicatable to the user.
+		 */
+		rc = WTERMSIG(msg->return_code);
+		if (((*local_global_rc & 0xff) != SIG_OOM) &&
+		    (!WIFSIGNALED(*local_global_rc) ||
+		     (rc > WTERMSIG(*local_global_rc))))
 			*local_global_rc = msg->return_code;
 	}
 	xfree(tasks);
@@ -698,7 +707,6 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		slurm_mutex_unlock(&pack_lock);
 		local_srun_job = job;
 		local_global_rc = global_rc;
-		*local_global_rc = NO_VAL;
 		list_append(local_job_list, local_srun_job);
 		list_append(task_state_list, task_state);
 		first_launch = true;

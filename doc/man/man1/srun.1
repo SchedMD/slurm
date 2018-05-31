@@ -20,6 +20,11 @@ allocation of cpus to jobs and tasks.
 .br
 https://slurm.schedmd.com/cpu_management.html
 
+.SH "RETURN VALUE"
+srun will return the highest exit code of all tasks run or the highest signal
+(with the high-order bit set in an 8-bit integer -- e.g. 128 + signal) of any
+task that exited with a signal.
+
 .SH "OPTIONS"
 .LP
 

@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
     for use (e.g. to change the NUMA mode of a KNL node).
  -- Add NodeRebootWeight parameter to knl.conf configuration file.
  -- Fix insecure handling of job requested gid field. CVE-2018-10995.
+ -- Fix srun to return highest signal of any task.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
