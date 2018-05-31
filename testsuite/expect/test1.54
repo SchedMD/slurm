@@ -125,7 +125,7 @@ puts $file "# multi-program configuration file
 close $file
 exec $bin_chmod 700 $file_in
 
-set job_id    -
+set job_id    0
 set matches   0
 set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog --debugger-test -v ./$file_in]
 expect {
