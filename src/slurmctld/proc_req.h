@@ -88,4 +88,14 @@ extern int slurm_fail_job(uint32_t job_id, uint32_t job_state);
  * strings in the array */
 extern char **xduparray(uint32_t size, char ** array);
 
+/*
+ * build_alloc_msg - Fill in resource_allocation_response_msg_t off job_record.
+ * job_ptr IN - job_record to copy members off.
+ * error_code IN - error code used for the response.
+ * job_submit_user_msg IN - user message from job submit plugin.
+ * RET resource_allocation_response_msg_t filled in.
+ */
+extern resource_allocation_response_msg_t *build_alloc_msg(
+	struct job_record *job_ptr, int error_code, char *job_submit_user_msg);
+
 #endif /* !_HAVE_PROC_REQ_H */

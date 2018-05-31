@@ -47,6 +47,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/fed_mgr.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
@@ -108,49 +109,6 @@ static bool _pending_pack_jobs(struct job_record *job_ptr)
 	return pending_job;
 }
 
-resource_allocation_response_msg_t *_build_alloc_msg(struct job_record *job_ptr)
-{
-	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
-	resource_allocation_response_msg_t *msg_arg;
-	int i;
-
-	msg_arg = xmalloc(sizeof(resource_allocation_response_msg_t));
-	msg_arg->job_id 	= job_ptr->job_id;
-	msg_arg->node_list	= xstrdup(job_ptr->nodes);
-	msg_arg->partition	= xstrdup(job_ptr->partition);
-	msg_arg->alias_list	= xstrdup(job_ptr->alias_list);
-	msg_arg->num_cpu_groups	= job_resrcs_ptr->cpu_array_cnt;
-	msg_arg->cpus_per_node  = xmalloc(sizeof(uint16_t) *
-				  job_resrcs_ptr->cpu_array_cnt);
-	if (job_ptr->details) {
-		msg_arg->pn_min_memory = job_ptr->details->pn_min_memory;
-		msg_arg->cpu_freq_min = job_ptr->details->cpu_freq_min;
-		msg_arg->cpu_freq_max = job_ptr->details->cpu_freq_max;
-		msg_arg->cpu_freq_gov = job_ptr->details->cpu_freq_gov;
-		if (job_ptr->details->env_cnt) {
-			msg_arg->env_size = job_ptr->details->env_cnt;
-			msg_arg->environment = xmalloc(
-					sizeof(char *) * msg_arg->env_size);
-			for (i = 0; i < msg_arg->env_size; i++) {
-				msg_arg->environment[i] =
-					xstrdup(job_ptr->details->env_sup[i]);
-			}
-		}
-	}
-	memcpy(msg_arg->cpus_per_node, job_resrcs_ptr->cpu_array_value,
-	       (sizeof(uint16_t) * job_resrcs_ptr->cpu_array_cnt));
-	msg_arg->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
-				   job_resrcs_ptr->cpu_array_cnt);
-	memcpy(msg_arg->cpu_count_reps, job_resrcs_ptr->cpu_array_reps,
-	       (sizeof(uint32_t) * job_resrcs_ptr->cpu_array_cnt));
-	msg_arg->node_cnt	= job_ptr->node_cnt;
-	msg_arg->select_jobinfo = select_g_select_jobinfo_copy(
-				job_ptr->select_jobinfo);
-	msg_arg->error_code	= SLURM_SUCCESS;
-
-	return msg_arg;
-}
-
 static void _free_srun_alloc(void *x)
 {
 	resource_allocation_response_msg_t *alloc_msg;
@@ -169,7 +127,7 @@ extern void srun_allocate (uint32_t job_id)
 {
 	struct job_record *job_ptr = find_job_record(job_id);
 	struct job_record *pack_job, *pack_leader;
-	resource_allocation_response_msg_t *msg_arg;
+	resource_allocation_response_msg_t *msg_arg = NULL;
 	slurm_addr_t *addr;
 	ListIterator iter;
 	List job_resp_list = NULL;
@@ -184,9 +142,8 @@ extern void srun_allocate (uint32_t job_id)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->alloc_resp_port,
 			job_ptr->resp_host);
-		msg_arg = _build_alloc_msg(job_ptr);
-		set_remote_working_response(msg_arg, job_ptr,
-					    job_ptr->origin_cluster);
+
+		msg_arg = build_alloc_msg(job_ptr, SLURM_SUCCESS, NULL);
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,
 				   job_ptr->start_protocol_ver);
@@ -204,10 +161,10 @@ extern void srun_allocate (uint32_t job_id)
 				      __func__, pack_leader->pack_job_id);
 				continue;
 			}
-			msg_arg = _build_alloc_msg(pack_job);
-			set_remote_working_response(msg_arg, pack_job,
-						    pack_job->origin_cluster);
+			msg_arg = build_alloc_msg(pack_job, SLURM_SUCCESS,
+						  NULL);
 			list_append(job_resp_list, msg_arg);
+			msg_arg = NULL;
 		}
 		list_iterator_destroy(iter);
 		_srun_agent_launch(addr, job_ptr->alloc_node,
