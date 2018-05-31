@@ -124,8 +124,7 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v1[], size_t nprocs,
 			for (i = 0; i < ninfo; i++) {
 				if (0 == strncmp(info[i].key, PMIX_COLLECT_DATA, PMIX_MAX_KEYLEN)) {
 					type = PMIXP_COLL_TYPE_FENCE_RING;
-				} else {
-					type = PMIXP_COLL_TYPE_FENCE_TREE;
+					break;
 				}
 			}
 		}

@@ -507,6 +507,8 @@ static void _libpmix_cb(void *_vcbdata)
 	pmixp_coll_t *coll = cbdata->coll;
 	pmixp_coll_tree_t *tree = &coll->state.tree;
 
+	sleep(1);
+
 	/* lock the collective */
 	slurm_mutex_lock(&coll->lock);
 
@@ -824,7 +826,6 @@ static int _progress_ufwd_sc(pmixp_coll_t *coll)
 static int _progress_ufwd_wpc(pmixp_coll_t *coll)
 {
 	pmixp_coll_tree_t *tree = &coll->state.tree;
-
 	xassert(PMIXP_COLL_TREE_UPFWD_WPC == tree->state);
 
 	if (!tree->contrib_prnt) {
@@ -866,7 +867,6 @@ static int _progress_ufwd_wpc(pmixp_coll_t *coll)
 static int _progress_dfwd(pmixp_coll_t *coll)
 {
 	pmixp_coll_tree_t *tree = &coll->state.tree;
-
 	xassert(PMIXP_COLL_TREE_DOWNFWD == tree->state);
 
 	/* if all childrens + local callbacks was invoked */

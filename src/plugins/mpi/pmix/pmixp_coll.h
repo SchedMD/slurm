@@ -164,8 +164,8 @@ typedef struct {
 /* PMIx Ring collective */
 typedef enum {
 	PMIXP_COLL_RING_SYNC,
-	PMIXP_COLL_RING_COLLECT,
-	PMIXP_COLL_RING_DONE,
+	PMIXP_COLL_RING_PROGRESS,
+	PMIXP_COLL_RING_FINILIZE,
 } pmixp_ring_state_t;
 
 struct pmixp_coll_s;
@@ -179,6 +179,7 @@ typedef struct {
 	uint32_t seq;
 	bool contrib_local;
 	uint32_t contrib_prev;
+	uint32_t forward_cnt;
 	bool *contrib_map;
 	pmixp_ring_state_t state;
 	Buf ring_buf;
@@ -190,6 +191,7 @@ typedef struct {
 	pmixp_coll_ring_ctx_t ctx_array[PMIXP_COLL_RING_CTX_NUM];
 	/* buffer pool to ensure parallel sends of ring data */
 	List fwrd_buf_pool;
+	List ring_buf_pool;
 } pmixp_coll_ring_t;
 
 typedef struct {
@@ -214,10 +216,10 @@ pmixp_coll_ring_state2str(pmixp_ring_state_t state)
 	switch (state) {
 	case PMIXP_COLL_RING_SYNC:
 		return "COLL_RING_SYNC";
-	case PMIXP_COLL_RING_COLLECT:
-		return "COLL_RING_COLLECT";
-	case PMIXP_COLL_RING_DONE:
-		return "COLL_RING_DONE";
+	case PMIXP_COLL_RING_PROGRESS:
+		return "PMIXP_COLL_RING_PROGRESS";
+	case PMIXP_COLL_RING_FINILIZE:
+		return "PMIXP_COLL_RING_FINILIZE";
 	default:
 		return "COLL_RING_UNKNOWN";
 	}
@@ -292,7 +294,7 @@ void pmixp_coll_ring_free(pmixp_coll_ring_t *coll_ring);
 int pmixp_coll_ring_hdr_sanity_check(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr);
 int pmixp_coll_ring_contrib_local(pmixp_coll_t  *coll, char *data, size_t size,
 				  void *cbfunc, void *cbdata);
-int pmixp_coll_ring_contrib_prev(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr,
+int pmixp_coll_ring_contrib_nbr(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr,
 				 Buf buf);
 void pmixp_coll_ring_reset(pmixp_coll_ring_ctx_t *coll);
 int pmixp_coll_ring_unpack_info(Buf buf, pmixp_coll_type_t *type,

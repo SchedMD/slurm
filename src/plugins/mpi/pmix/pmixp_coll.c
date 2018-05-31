@@ -2,7 +2,8 @@
  **  pmix_coll.c - PMIx collective primitives
  *****************************************************************************
  *  Copyright (C) 2018      Mellanox Technologies. All rights reserved.
- *  Written by Boris Karasev <karasev.b@gmail.com, boriska@mellanox.com>.
+ *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>,
+ *             Boris Karasev <karasev.b@gmail.com, boriska@mellanox.com>.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -193,6 +194,6 @@ int pmixp_coll_belong_chk(const pmixp_proc_t *procs, size_t nprocs)
 		}
 	}
 	/* we don't participate in this collective! */
-	PMIXP_ERROR("Have collective that doesn't include this job's namespace");
+	PMIXP_ERROR("No process controlled by this slurmstepd is involved in this collective.");
 	return -1;
 }

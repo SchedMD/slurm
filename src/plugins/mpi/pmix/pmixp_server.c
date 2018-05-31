@@ -891,7 +891,7 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		size_t nprocs = 0;
 		pmixp_coll_ring_msg_hdr_t ring_hdr;
 		pmixp_coll_type_t type = 0;
-		pmixp_coll_ring_ctx_t *coll_ctx = NULL;
+		//pmixp_coll_ring_ctx_t *coll_ctx = NULL;
 
 		if (pmixp_coll_ring_unpack_info(buf, &type, &ring_hdr,
 						&procs, &nprocs)) {
@@ -918,30 +918,21 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		}
 		pmixp_coll_sanity_check(coll);
 #ifdef PMIXP_COLL_DEBUG
-		PMIXP_DEBUG("%s collective message from nodeid=%u"
+		PMIXP_DEBUG("%s collective message from nodeid=%u, "
 			    "contrib_id=%u, seq=%u, hop=%u, msgsize=%lu",
 			    pmixp_coll_type2str(type),
 			    hdr->nodeid, ring_hdr.contrib_id,
 			    ring_hdr.seq, ring_hdr.hop_seq, ring_hdr.msgsize);
 #endif
 		if (pmixp_coll_ring_hdr_sanity_check(coll, &ring_hdr)) {
-			/* no error, just reject */
-			break;
-		}
-
-		if (!(coll_ctx = pmixp_coll_ring_ctx_select(coll, ring_hdr.seq))) {
-			/* no error, just reject */
-			char *nodename = pmixp_info_job_host(ring_hdr.nodeid);
-			PMIXP_DEBUG("Unexpected contrib from %s:%d: "
-				    "contrib_seq=%d",
-				    nodename, ring_hdr.nodeid,
-				    ring_hdr.seq);
+			char *nodename = pmixp_info_job_host(hdr->nodeid);
+			PMIXP_ERROR("%p: unexpected contrib from %s:%d, coll->seq=%d, "
+				    "seq=%d",
+				    coll, nodename, hdr->nodeid,coll->seq, hdr->seq);
 			xfree(nodename);
-			pmixp_debug_hang(0);
 			break;
 		}
-
-		pmixp_coll_ring_contrib_prev(coll, &ring_hdr, buf);
+		pmixp_coll_ring_contrib_nbr(coll, &ring_hdr, buf);
 		break;
 	}
 	default:
@@ -1892,27 +1883,22 @@ static int _pmixp_server_cperf_iter(char *data, int ndata)
 	pmixp_coll_t *coll;
 	pmixp_proc_t procs;
 	int cur_count = _pmixp_server_cperf_count();
-	pmixp_coll_type_t type = pmixp_info_srv_fence_coll_type();
+	pmixp_coll_type_t type;
 	pmixp_cperf_cbfunc_fn_t cperf_cbfunc = _pmixp_cperf_tree_cbfunc;
 
 	strncpy(procs.nspace, pmixp_info_namespace(), PMIXP_MAX_NSLEN);
 	procs.rank = pmixp_lib_get_wildcard();
 
-	switch (type) {
-	case PMIXP_COLL_TYPE_FENCE_RING:
+	/* If PMIXP_COLL_TYPE_FENCE_MAX == type,
+	 * then use TREE by default */
+	type = pmixp_info_srv_fence_coll_type() == PMIXP_COLL_TYPE_FENCE_MAX ?
+				PMIXP_COLL_TYPE_FENCE_TREE : PMIXP_COLL_TYPE_FENCE_RING;
+
+	if (PMIXP_COLL_TYPE_FENCE_RING == type) {
 		cperf_cbfunc = _pmixp_cperf_ring_cbfunc;
-		break;
-	case PMIXP_COLL_TYPE_FENCE_TREE:
-		/* If PMIXP_COLL_TYPE_FENCE_MAX == type,
-		 * then use TREE by default */
-	default:
-		type = PMIXP_COLL_TYPE_FENCE_TREE;
-		cperf_cbfunc = _pmixp_cperf_tree_cbfunc;
-		break;
 	}
 
 	PMIXP_DEBUG("%s", pmixp_coll_type2str(type));
-
 	coll = pmixp_state_coll_get(type, &procs, 1);
 	pmixp_coll_sanity_check(coll);
 	xassert(!pmixp_coll_contrib_local(coll, type, data, ndata,
