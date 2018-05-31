@@ -1032,16 +1032,18 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	    (tmp_ptr = strcasestr(sched_params, "preempt_reorder_count="))) {
 		preempt_reorder_cnt = atoi(tmp_ptr + 22);
 		if (preempt_reorder_cnt < 0) {
-			fatal("Invalid SchedulerParameters preempt_reorder_count: %d",
+			error("Invalid SchedulerParameters preempt_reorder_count: %d",
 			      preempt_reorder_cnt);
+			preempt_reorder_cnt = 1;	/* Use default value */
 		}
 	}
         if (sched_params &&
             (tmp_ptr = strcasestr(sched_params, "bf_window_linear="))) {
 		bf_window_scale = atoi(tmp_ptr + 17);
 		if (bf_window_scale <= 0) {
-			fatal("Invalid SchedulerParameters bf_window_linear: %d",
+			error("Invalid SchedulerParameters bf_window_linear: %d",
 			      bf_window_scale);
+			bf_window_scale = 0;		/* Use default value */
 		}
 	} else
 		bf_window_scale = 0;
@@ -1256,12 +1258,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			     req_nodes, job_node_req, preemptee_candidates,
 			     preemptee_job_list, exc_cores);
 	} else {
-		fatal("cons_tres: %s: Mode %d is invalid", __func__, mode);
+		/* Should never get here */
+		error("cons_tres: %s: Mode %d is invalid", __func__, mode);
+		return EINVAL;
 	}
 
 	if ((select_debug_flags & DEBUG_FLAG_CPU_BIND) ||
 	    (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
-//FIXME: Expand log_job_resources() for TRES
+//FIXME: Expand log_job_resources() and data structures for TRES, lower priority work
 		if (job_ptr->job_resrcs) {
 			if (rc != SLURM_SUCCESS) {
 				info("cons_tres: %s: error:%s", __func__,

@@ -117,8 +117,8 @@ struct sort_support {
 extern void add_job_res(job_resources_t *job_resrcs_ptr,
 			bitstr_t ***sys_resrcs_ptr)
 {
-//FIXME: Add other resources than CPUs (e.g. GPUs)
-//FIXME: Change argument to job pointer? Enhance contents of job_resources_t?
+//FIXME: Add other resources than CPUs (e.g. GPUs), lower priority work
+//FIXME: Change argument to job pointer? Enhance contents of job_resources_t?, lower priority work
 	int i, i_first, i_last;
 	int c, c_job, c_off = 0, c_max;
 	int rep_inx = 0, rep_offset = -1;
@@ -268,13 +268,13 @@ extern void log_tres_state(struct node_use_record *node_usage,
 		     _node_state_str(node_usage[i].node_state),
 		     node_usage[i].alloc_memory,
 		     select_node_record[i].real_memory);
-//FIXME: Add GRES/TRES info
+//FIXME: Add GRES/TRES info, lower priority work
 	}
 
 	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
 		info("Part:%s Rows:%u", p_ptr->part_ptr->name, p_ptr->num_rows);
 		row = p_ptr->row;
-//FIXME: What is wrong here?
+//FIXME: What is wrong here? Appears to be fixed
 if (!row) {error("ROW IS NULL"); continue; }
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			core_str = _build_core_str(row[i].row_bitmap);
@@ -307,8 +307,8 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 	int i, n;
 	List gres_list;
 
-//FIXME: Need to add support for additional resources
-//FIXME: Sync with recent changes to cons_res plugin
+//FIXME: Need to add support for additional resources, lower priority work
+//FIXME: Sync with recent changes to cons_res plugin, lower priority work
 	if (select_state_initializing) {
 		/*
 		 * Ignore job removal until select/cons_tres data structures
@@ -1021,7 +1021,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 {
 	int error_code = SLURM_SUCCESS;
 	bitstr_t *orig_node_map, **part_core_map = NULL;
-	bitstr_t *free_cores_tmp = NULL,  *node_bitmap_tmp = NULL;
+	bitstr_t **free_cores_tmp = NULL,  *node_bitmap_tmp = NULL;
+	bitstr_t **free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
 	bitstr_t **avail_cores, **free_cores;
 	bool test_only;
 	uint32_t c, j, n, csize, total_cpus;
@@ -1029,8 +1030,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	int32_t build_cnt;
 	job_resources_t *job_res;
 	struct job_details *details_ptr;
-	struct part_res_record *p_ptr;
-	uint16_t *cpu_count;
+	struct part_res_record *p_ptr, *jp_ptr;
+	uint16_t *cpu_count, *cpu_count_tmp;
 	int i, i_first, i_last;
 
 	details_ptr = job_ptr->details;
@@ -1234,24 +1235,22 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		info("cons_tres: %s: test 1 fail - not enough idle resources",
 		     __func__);
 	}
-#if 0
+
 	/*** Step 2 ***/
-	bit_copybits(node_bitmap, orig_node_map);
-	bit_copybits(free_cores, avail_cores);
-
-	if (exc_core_bitmap) {
-		bit_and_not(free_cores, exc_core_bitmap);
-	}
-
 	for (jp_ptr = cr_part_ptr; jp_ptr; jp_ptr = jp_ptr->next) {
 		if (jp_ptr->part_ptr == job_ptr->part_ptr)
 			break;
 	}
 	if (!jp_ptr) {
-		fatal("cons_tres %s: could not find partition for job %u",
+		error("cons_tres %s: could not find partition for job %u",
 		      __func__, job_ptr->job_id);
-		return SLURM_ERROR;	/* CLANG false positive */
+		goto alloc_job;
 	}
+
+	bit_copybits(node_bitmap, orig_node_map);
+	free_cores = copy_core_array(avail_cores);
+	if (exc_cores)
+		core_array_and_not(free_cores, exc_cores);
 
 	if (preempt_by_part) {
 		/*
@@ -1281,14 +1280,18 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			for (i = 0; i < p_ptr->num_rows; i++) {
 				if (!p_ptr->row[i].row_bitmap)
 					continue;
-				bit_and_not(free_cores, p_ptr->row[i].row_bitmap);
+				core_array_and_not(free_cores,
+						   p_ptr->row[i].row_bitmap);
 			}
 		}
 	}
+
 	if (job_ptr->details->whole_node == 1)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
+
 	/* make these changes permanent */
-	bit_copybits(avail_cores, free_cores);
+	free_core_array(&avail_cores);
+	avail_cores = copy_core_array(free_cores);
 
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
 				  node_bitmap, free_cores,
@@ -1313,10 +1316,13 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 
 	/*** Step 3 ***/
 	bit_copybits(node_bitmap, orig_node_map);
-	bit_copybits(free_cores, avail_cores);
+	free_core_array(&free_cores);
+	free_cores = copy_core_array(avail_cores);
 
-	/* remove existing allocations (jobs) from same-priority partitions
-	 * from avail_cores */
+	/*
+	 * remove existing allocations (jobs) from same-priority partitions
+	 * from avail_cores
+	 */
 	for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
 		if (p_ptr->part_ptr->priority_tier !=
 		    jp_ptr->part_ptr->priority_tier)
@@ -1326,20 +1332,20 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (!p_ptr->row[i].row_bitmap)
 				continue;
-			bit_and_not(free_cores, p_ptr->row[i].row_bitmap);
+			core_array_and_not(free_cores,
+					   p_ptr->row[i].row_bitmap);
 		}
 	}
 
 	if (job_ptr->details->whole_node == 1)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 
-	free_cores_tmp  = bit_copy(free_cores);
+	free_cores_tmp  = copy_core_array(free_cores);
 	node_bitmap_tmp = bit_copy(node_bitmap);
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
 				  node_bitmap, free_cores,
 				  node_usage, cr_type, test_only,
 				  part_core_map, prefer_alloc_nodes);
-
 	if (cpu_count) {
 		/*
 		 * To the extent possible, remove from consideration resources
@@ -1358,15 +1364,15 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			for (i = 0; i < p_ptr->num_rows; i++) {
 				if (!p_ptr->row[i].row_bitmap)
 					continue;
-				bit_and_not(free_cores_tmp,
-					    p_ptr->row[i].row_bitmap);
+				core_array_and_not(free_cores_tmp,
+						   p_ptr->row[i].row_bitmap);
 			}
 			if (job_ptr->details->whole_node == 1) {
 				_block_whole_nodes(node_bitmap_tmp, avail_cores,
 						   free_cores_tmp);
 			}
 
-			free_cores_tmp2  = bit_copy(free_cores_tmp);
+			free_cores_tmp2  = copy_core_array(free_cores_tmp);
 			node_bitmap_tmp2 = bit_copy(node_bitmap_tmp);
 			cpu_count_tmp = _select_nodes(job_ptr, min_nodes,
 						max_nodes, req_nodes,
@@ -1376,7 +1382,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 						part_core_map,
 						prefer_alloc_nodes);
 			if (!cpu_count_tmp) {
-				FREE_NULL_BITMAP(free_cores_tmp2);
+				free_core_array(&free_cores_tmp2);
 				FREE_NULL_BITMAP(node_bitmap_tmp2);
 				break;
 			}
@@ -1384,12 +1390,14 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 				info("cons_tres: %s: remove low-priority partition %s",
 				     __func__, p_ptr->part_ptr->name);
 			}
-			bit_copybits(free_cores->core_bitmap, free_cores_tmp);
-			bit_copybits(node_bitmap, node_bitmap_tmp);
-			bit_copybits(free_cores_tmp, free_cores_tmp2);
-			bit_copybits(node_bitmap_tmp, node_bitmap_tmp2);
-			FREE_NULL_BITMAP(free_cores_tmp2);
-			FREE_NULL_BITMAP(node_bitmap_tmp2);
+			free_core_array(&free_cores);
+			free_cores      = free_cores_tmp;
+			free_cores_tmp  = free_cores_tmp2;
+			free_cores_tmp2 = NULL;
+			FREE_NULL_BITMAP(node_bitmap);
+			node_bitmap      = node_bitmap_tmp;
+			node_bitmap_tmp  = node_bitmap_tmp2;
+			node_bitmap_tmp2 = NULL;
 			xfree(cpu_count);
 			cpu_count = cpu_count_tmp;
 		}
@@ -1399,7 +1407,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		info("cons_tres: %s: test 3 fail - not enough idle resources in same priority",
 		     __func__);
 	}
-
 
 	/*** Step 4 ***/
 	/*
@@ -1418,8 +1425,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		 * jobs in the other partitions with <= priority to
 		 * this partition
 		 */
+		free_core_array(&free_cores);
+		free_cores = copy_core_array(avail_cores);
 		bit_copybits(node_bitmap, orig_node_map);
-		bit_copybits(free_cores->core_bitmap, avail_cores->core_bitmap);
 		cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes,
 					  req_nodes, node_bitmap,
 					  free_cores, node_usage, cr_type,
@@ -1432,6 +1440,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		goto alloc_job;
 	}
 
+
 	if ((jp_ptr->num_rows > 1) && !preempt_by_qos)
 		cr_sort_part_rows(jp_ptr);	/* Preserve row order for QOS */
 	c = jp_ptr->num_rows;
@@ -1442,14 +1451,12 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	for (i = 0; i < c; i++) {
 		if (!jp_ptr->row[i].row_bitmap)
 			break;
+		free_core_array(&free_cores);
+		free_cores = copy_core_array(avail_cores);
+		core_array_and_not(free_cores, jp_ptr->row[i].row_bitmap);
 		bit_copybits(node_bitmap, orig_node_map);
-		bit_copybits(free_cores->core_bitmap, avail_cores->core_bitmap);
-		bit_and_not(free_cores->core_bitmap, jp_ptr->row[i].row_bitmap);
-
 		if (job_ptr->details->whole_node == 1)
-			_block_whole_nodes(node_bitmap, avail_cores->core_bitmap,
-					   free_cores->core_bitmap);
-
+			_block_whole_nodes(node_bitmap, avail_cores,free_cores);
 		cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes,
 					  req_nodes, node_bitmap,
 					  free_cores, node_usage, cr_type,
@@ -1470,8 +1477,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 
 	if ((i < c) && !jp_ptr->row[i].row_bitmap) {
 		/* we've found an empty row, so use it */
-//		bit_copybits(node_bitmap, orig_node_map);
-//		bit_copybits(free_cores, avail_cores);
+		free_core_array(&free_cores);
+		free_cores = copy_core_array(avail_cores);
+		bit_copybits(node_bitmap, orig_node_map);
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("cons_tres: %s: test 4 trying empty row %i",
 			     __func__, i);
@@ -1500,7 +1508,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	 * and existing jobs in the other partitions with <= priority to
 	 * this partition
 	 */
-#endif
+
 alloc_job:
 	/*
 	 * at this point we've found a good set of nodes and cores for the job:
@@ -1514,7 +1522,7 @@ alloc_job:
 	 */
 	FREE_NULL_BITMAP(orig_node_map);
 	free_core_array(&part_core_map);
-	FREE_NULL_BITMAP(free_cores_tmp);
+	free_core_array(&free_cores_tmp);
 	FREE_NULL_BITMAP(node_bitmap_tmp);
 	if (!cpu_count || !job_ptr->best_switch) {
 		/* we were sent here to cleanup and exit */
@@ -1569,7 +1577,6 @@ alloc_job:
 					(job_res->nhosts *
 					 details_ptr->pn_min_cpus));
 	job_res->node_req         = job_node_req;
-//FIXME: task count VS cpu count
 	job_res->cpus             = cpu_count;
 	job_res->cpus_used        = xmalloc(job_res->nhosts *
 					    sizeof(uint16_t));
@@ -1590,14 +1597,13 @@ alloc_job:
 	}
 
 	/* total up all CPUs and load the core_bitmap */
-//FIXME: eliminate from CPU counts
 	total_cpus = 0;
+	c = 0;
 	csize = bit_size(job_res->core_bitmap);
-	for (i = 0, n = 0; n < select_node_cnt; n++) {
+	i_first = bit_ffs(node_bitmap);
+	for (i = 0, n = i_first; n < select_node_cnt; n++) {
 		if (!bit_test(node_bitmap, n))
 			continue;
-//FIXME: j and k based upon global core bitmap
-		c = cr_get_coremap_offset(n);
 		for (j = 0; j < select_node_record[n].tot_cores; j++, c++) {
 			if (!bit_test(free_cores[n], j))
 				continue;
@@ -1635,7 +1641,7 @@ alloc_job:
 		     job_res->nhosts);
 	}
 	free_core_array(&free_cores);
-//OK TO HERE
+
 	/* distribute the tasks and clear any unused cores */
 	job_ptr->job_resrcs = job_res;
 	error_code = cr_dist(job_ptr, cr_type, preempt_mode, avail_cores);
@@ -2006,8 +2012,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	    (!bit_super_set(details_ptr->req_node_bitmap, node_map)))
 		return error_code;
 #if 0
-//FIXME: Can we better handle nodes of different weights?
-//FIXME: Weights job-specific due to FLEX reservations and node_features reboot needs
+//FIXME: Can we better handle nodes of different weights?, lower priority work
+//FIXME: Weights job-specific due to FLEX reservations and node_features reboot needs, lower priority work
 	if (job_ptr->bit_flags & SPREAD_JOB) {
 		/* Spread the job out over many nodes */
 		return _eval_nodes_spread(job_ptr, node_map,
@@ -2522,10 +2528,10 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
  * IN cpu_bitmap     - Identification of available CPUs (NULL if no restriction)
  * IN job_id         - job's ID (for logging)
  * IN node_name      - name of the node (for logging)
- * IN node_i - Node index
- * IN s_p_n - Sockets per node required by this job or NO_VAL
- * RET: NO_VAL    - All cores on node are available
- *      otherwise - Count of available cores
+ * IN node_i         - Node index
+ * IN s_p_n          - Sockets per node required by this job or NO_VAL
+ * RET: NO_VAL       - All cores on node are available
+ *      otherwise    - Count of available cores
  */
 static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 				    bool use_total_gres, bitstr_t *core_bitmap,
@@ -3665,6 +3671,7 @@ extern int will_run_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			 List preemptee_candidates, List *preemptee_job_list,
 			 bitstr_t **exc_core_bitmap)
 {
+//FIXME: Add code here
 	return EINVAL;
 }
 
