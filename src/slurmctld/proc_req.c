@@ -1197,8 +1197,7 @@ static void _del_alloc_pack_msg(void *x)
 	alloc_msg = (resource_allocation_response_msg_t *) x;
 	/* NULL out working_cluster_rec since it's pointing to global memory */
 	alloc_msg->working_cluster_rec = NULL;
-	slurm_free_resource_allocation_response_msg_members(alloc_msg);
-	xfree(alloc_msg);
+	slurm_free_resource_allocation_response_msg(alloc_msg);
 }
 
 static bool _sched_backfill(void)
@@ -3160,9 +3159,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		/* NULL out msg->working_cluster_rec because it's pointing to
 		 * the global memory */
 		job_info_resp_msg->working_cluster_rec = NULL;
-		slurm_free_resource_allocation_response_msg_members(
-							job_info_resp_msg);
-		xfree(job_info_resp_msg);
+		slurm_free_resource_allocation_response_msg(job_info_resp_msg);
 	}
 }
 
@@ -3174,8 +3171,7 @@ static void _pack_alloc_list_del(void *x)
 	/* NULL out msg->working_cluster_rec because it's pointing to
 	 * the global memory */
 	job_info_resp_msg->working_cluster_rec = NULL;
-	slurm_free_resource_allocation_response_msg_members(job_info_resp_msg);
-	xfree(job_info_resp_msg);
+	slurm_free_resource_allocation_response_msg(job_info_resp_msg);
 }
 
 /*
