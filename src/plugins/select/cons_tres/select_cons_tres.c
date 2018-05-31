@@ -130,6 +130,7 @@ struct select_nodeinfo {
 
 /* Global variables */
 bool       backfill_busy_nodes	= false;
+int        bf_window_scale	= 0;
 uint16_t   cr_type		= CR_CPU; /* cr_type is overwritten in init() */
 int        gang_mode		= -1;
 bool       have_dragonfly	= false;
@@ -154,9 +155,6 @@ bool       topo_optional	= false;
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
-/* Local variables */
-static int  bf_window_scale	= 0;
-
 /* Local functions */
 static int _add_job_to_res(struct job_record *job_ptr, int action);
 static bitstr_t *_array_to_core_bitmap(bitstr_t **core_res);
@@ -166,7 +164,6 @@ static void _create_part_data(void);
 static inline void _dump_nodes(void);
 static inline void _dump_parts(struct part_res_record *p_ptr);
 static uint16_t _get_job_node_req(struct job_record *job_ptr);
-static bool _job_cleaning(struct job_record *job_ptr);
 static char *_node_state_str(uint16_t node_state);
 static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 				   uint32_t node_cnt, uint32_t *core_cnt,
@@ -560,23 +557,6 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 	}
 
 	return NODE_CR_ONE_ROW;
-}
-
-/*
- * Return true if job is in the processing of cleaning up.
- * This is used for Cray systems to indicate the Node Health Check (NHC)
- * is still running. Until NHC completes, the job's resource use persists
- * the select/cons_res plugin data structures.
- */
-static bool _job_cleaning(struct job_record *job_ptr)
-{
-	uint16_t cleaning = 0;
-
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CLEANING, &cleaning);
-	if (cleaning)
-		return true;
-	return false;
 }
 
 static char *_node_state_str(uint16_t node_state)
@@ -1916,7 +1896,7 @@ extern int select_p_reconfigure(void)
 				(void) _add_job_to_res(job_ptr, 1);
 			else	/* Gang schedule suspend */
 				(void) _add_job_to_res(job_ptr, 0);
-		} else if (_job_cleaning(job_ptr)) {
+		} else if (job_cleaning(job_ptr)) {
 			cleaning_job_cnt++;
 			run_time = (int) difftime(now, job_ptr->end_time);
 			if (run_time >= 300) {

@@ -111,6 +111,7 @@ struct part_res_record {
 
 /* Global variables */
 extern bool	backfill_busy_nodes;
+extern int	bf_window_scale;
 extern uint16_t	cr_type;
 extern int	gang_mode;
 extern bool	have_dragonfly;

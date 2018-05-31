@@ -104,6 +104,18 @@ extern void core_array_or(bitstr_t **core_array1, bitstr_t **core_array2);
 /* Free an array of bitmaps, one per node */
 extern void free_core_array(bitstr_t ***core_array);
 
+/* Return TRUE if identified job is preemptable */
+extern bool is_preemptable(struct job_record *job_ptr,
+			   List preemptee_candidates);
+
+/*
+ * Return true if job is in the processing of cleaning up.
+ * This is used for Cray systems to indicate the Node Health Check (NHC)
+ * is still running. Until NHC completes, the job's resource use persists
+ * the select/cons_res plugin data structures.
+ */
+extern bool job_cleaning(struct job_record *job_ptr);
+
 /*
  * Test if job can fit into the given set of core_bitmaps
  * IN job_resrcs_ptr - resources allocated to a job
