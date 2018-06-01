@@ -199,8 +199,8 @@ set_umask(stepd_step_rec_t *job)
 
 /*
  * Set rlimit using value of env vars such as SLURM_RLIMIT_FSIZE if
- * the slurm config file has PropagateResourceLimits=YES or the user
- * requested it with srun --propagate.
+ * the slurm config file has PropagateResourceLimits set or the user
+ * requested it with srun/sbatch --propagate.
  *
  * NOTE: THIS FUNCTION SHOULD ONLY BE CALLED RIGHT BEFORE THE EXEC OF
  * A SCRIPT AFTER THE FORK SO AS TO LIMIT THE ABOUT OF EFFECT THE

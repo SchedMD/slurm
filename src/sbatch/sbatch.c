@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 		}
 
 		if (opt.get_user_env_time < 0) {
-			/* Moab does not propage the user's resource limits, so
+			/* Moab doesn't propagate the user's resource limits, so
 			 * slurmd determines the values at the same time that it
 			 * gets the user's default environment variables. */
 			(void) _set_rlimit_env();
