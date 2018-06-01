@@ -311,7 +311,7 @@ extern bool is_preemptable(struct job_record *job_ptr,
  * Return true if job is in the processing of cleaning up.
  * This is used for Cray systems to indicate the Node Health Check (NHC)
  * is still running. Until NHC completes, the job's resource use persists
- * the select/cons_res plugin data structures.
+ * the select/cons_tres plugin data structures.
  */
 extern bool job_cleaning(struct job_record *job_ptr)
 {
@@ -2040,7 +2040,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	xassert(node_map);
 	if (select_node_cnt != node_record_count) {
-		error("cons_res: node count inconsistent with slurmctld");
+		error("cons_tres: node count inconsistent with slurmctld");
 		return error_code;
 	}
 	if (bit_set_count(node_map) < min_nodes)
@@ -2167,7 +2167,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < consec_index; i++) {
-			info("cons_res: eval_nodes:%d consec "
+			info("cons_tres: eval_nodes:%d consec "
 			     "CPUs:%d nodes:%d begin:%d end:%d required:%d",
 			     i, consec_cpus[i], consec_nodes[i],
 			     consec_start[i], consec_end[i], consec_req[i]);

@@ -2,6 +2,7 @@
  *  dist_tasks.c - Assign task count for each resource.
  *****************************************************************************
  *  Copyright (C) 2018 SchedMD LLC
+ *  Derived in large part from select/cons_res plugin
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -672,7 +673,7 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
 
 	if (plane_size <= 0) {
-		error("cons_res: %s: invalid plane_size", __func__);
+		error("cons_tres: %s: invalid plane_size", __func__);
 		return SLURM_ERROR;
 	}
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));

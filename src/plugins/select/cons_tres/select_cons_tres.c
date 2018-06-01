@@ -1877,7 +1877,7 @@ extern int select_p_reconfigure(void)
 	int cleaning_job_cnt = 0, rc = SLURM_SUCCESS, run_time;
 	time_t now = time(NULL);
 
-	info("cons_res: select_p_reconfigure");
+	info("cons_tres: select_p_reconfigure");
 	select_debug_flags = slurm_get_debug_flags();
 
 	rc = select_p_node_init(node_record_table_ptr, node_record_count);
