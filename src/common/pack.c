@@ -39,6 +39,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -138,7 +140,7 @@ Buf create_mmap_buf(char *file)
 	struct stat f_stat;
 	void *data;
 
-	if ((fd = open(file, O_RDONLY)) < 0) {
+	if ((fd = open(file, O_RDONLY | O_CLOEXEC)) < 0) {
 		debug("%s: Failed to open file `%s`, %m", __func__, file);
 		return NULL;
 	}
