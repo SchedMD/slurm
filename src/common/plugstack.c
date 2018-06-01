@@ -36,6 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "config.h"
 
 #include <ctype.h>
@@ -49,7 +51,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xassert.h"
-#include "src/common/safeopen.h"
 #include "src/common/strlcpy.h"
 #include "src/common/read_config.h"
 #include "src/common/plugstack.h"
@@ -536,12 +537,12 @@ _spank_stack_process_line(struct spank_stack *stack,
 	return (0);
 }
 
-
 static int _spank_stack_load(struct spank_stack *stack, const char *path)
 {
 	int rc = 0;
 	int line;
 	char buf[4096];
+	int fd;
 	FILE *fp;
 
 	debug ("spank: opening plugin stack %s", path);
@@ -550,7 +551,8 @@ static int _spank_stack_load(struct spank_stack *stack, const char *path)
 	 *  Try to open plugstack.conf. A missing config file is not an
 	 *   error, but is equivalent to an empty file.
 	 */
-	if (!(fp = safeopen(path, "r", SAFEOPEN_NOCREATE|SAFEOPEN_LINK_OK))) {
+	if ((fd = open(path, O_RDONLY | O_CLOEXEC)) < 0 ||
+	    (fp = fdopen(fd, "r")) < 0) {
 		if (errno == ENOENT)
 			return (0);
 		error("spank: Failed to open %s: %m", path);
