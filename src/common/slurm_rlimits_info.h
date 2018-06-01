@@ -43,6 +43,7 @@
  */
 #define PROPAGATE_RLIMITS    1  /* The default is to propagate rlimits */
 #define NO_PROPAGATE_RLIMITS 0
+#define PROPAGATE_RLIMITS_NOT_SET -1
 
 struct slurm_rlimits_info {
         int  resource;          /* Values:  RLIMIT_NPROC, RLIMIT_MEMLOCK, ... */

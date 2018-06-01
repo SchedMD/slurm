@@ -53,39 +53,39 @@
 
 static slurm_rlimits_info_t rlimits_info[] = {
 
-		      /*  resource,        name,       propagate_flag  */
+		/*  resource,        name,       propagate_flag  */
 
 #ifdef RLIMIT_CPU
-			{ RLIMIT_CPU,      "CPU",      -1      },
+		{ RLIMIT_CPU,      "CPU",      PROPAGATE_RLIMITS_NOT_SET },
 #endif
 #ifdef RLIMIT_FSIZE
-			{ RLIMIT_FSIZE,    "FSIZE",    -1      },
+		{ RLIMIT_FSIZE,    "FSIZE",    PROPAGATE_RLIMITS_NOT_SET },
 #endif
 #ifdef RLIMIT_DATA
-			{ RLIMIT_DATA,     "DATA",     -1      },
+		{ RLIMIT_DATA,     "DATA",     PROPAGATE_RLIMITS_NOT_SET },
 #endif
 #ifdef RLIMIT_STACK
-			{ RLIMIT_STACK,    "STACK",    -1      },
+		{ RLIMIT_STACK,    "STACK",    PROPAGATE_RLIMITS_NOT_SET },
 #endif
 #ifdef RLIMIT_CORE
-			{ RLIMIT_CORE,     "CORE",     -1      },
+		{ RLIMIT_CORE,     "CORE",     PROPAGATE_RLIMITS_NOT_SET },
 #endif
 #ifdef RLIMIT_RSS
-			{ RLIMIT_RSS,      "RSS",      -1      },
+		{ RLIMIT_RSS,      "RSS",      PROPAGATE_RLIMITS_NOT_SET },
 #endif
 #ifdef RLIMIT_NPROC
-			{ RLIMIT_NPROC,    "NPROC",    -1      },
+		{ RLIMIT_NPROC,    "NPROC",    PROPAGATE_RLIMITS_NOT_SET },
 #endif
 #ifdef RLIMIT_NOFILE
-			{ RLIMIT_NOFILE,   "NOFILE",   -1      },
+		{ RLIMIT_NOFILE,   "NOFILE",   PROPAGATE_RLIMITS_NOT_SET },
 #endif
 #ifdef RLIMIT_MEMLOCK
-			{ RLIMIT_MEMLOCK,  "MEMLOCK",  -1      },
+		{ RLIMIT_MEMLOCK,  "MEMLOCK",  PROPAGATE_RLIMITS_NOT_SET },
 #endif
 #ifdef RLIMIT_AS
-			{ RLIMIT_AS,       "AS",       -1      },
+		{ RLIMIT_AS,       "AS",       PROPAGATE_RLIMITS_NOT_SET },
 #endif
-			{ 0,               NULL,       -1      }
+		{ 0,               NULL,       PROPAGATE_RLIMITS_NOT_SET }
 };
 
 
@@ -146,30 +146,30 @@ parse_rlimits( char *rlimits_str, int propagate_flag )
 	 */
 	if (rlimits_were_parsed)
 		for (rli = rlimits_info; rli->name; rli++)
-			rli->propagate_flag = -1;
+			rli->propagate_flag = PROPAGATE_RLIMITS_NOT_SET;
 
 	rlimits_str_dup = xstrdup( rlimits_str );
-	if ((tp = strtok( rlimits_str_dup, RLIMIT_DELIMS )) != NULL) {
-		do {
-			found = false;
-			for (rli = rlimits_info; rli->name; rli++) {
-				/*
-				 * Accept either "RLIMIT_CORE" or "CORE"
-				 */
-				if (xstrncmp( tp, RLIMIT_, LEN_RLIMIT_ ) == 0)
-					tp += LEN_RLIMIT_;
-				if (xstrcmp( tp, rli->name ))
-					continue;
-				rli->propagate_flag = propagate_flag;
-				found = true;
-				break;
-			}
-			if (found == false) {
-				error( "Bad rlimit name: %s", tp );
-				xfree( rlimits_str_dup );
-				return( -1 );
-			}
-		} while ((tp = strtok( NULL, RLIMIT_DELIMS )));
+	tp = strtok( rlimits_str_dup, RLIMIT_DELIMS );
+	while (tp != NULL) {
+		found = false;
+		for (rli = rlimits_info; rli->name; rli++) {
+			/*
+			 * Accept either "RLIMIT_CORE" or "CORE"
+			 */
+			if (xstrncmp( tp, RLIMIT_, LEN_RLIMIT_ ) == 0)
+				tp += LEN_RLIMIT_;
+			if (xstrcmp( tp, rli->name ))
+				continue;
+			rli->propagate_flag = propagate_flag;
+			found = true;
+			break;
+		}
+		if (found == false) {
+			error( "Bad rlimit name: %s", tp );
+			xfree( rlimits_str_dup );
+			return( -1 );
+		}
+		tp = strtok( NULL, RLIMIT_DELIMS );
 	}
 	xfree( rlimits_str_dup );
 
@@ -178,7 +178,7 @@ parse_rlimits( char *rlimits_str, int propagate_flag )
 	 * opposite propagate flag value.
 	 */
 	for (rli = rlimits_info; rli->name; rli++)
-		if (rli->propagate_flag == -1)
+		if (rli->propagate_flag == PROPAGATE_RLIMITS_NOT_SET)
 			rli->propagate_flag = ( ! propagate_flag );
 
 	rlimits_were_parsed = true;
