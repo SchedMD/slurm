@@ -40,7 +40,6 @@ libcommon_la_SOURCES = 			\
 	net.c net.h                     \
 	log.c log.h			\
 	cbuf.c cbuf.h			\
-	safeopen.c safeopen.h		\
 	bitstring.c bitstring.h 	\
 	mpi.c slurm_mpi.h               \
 	pack.c pack.h			\

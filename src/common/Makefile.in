@@ -164,19 +164,19 @@ libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	node_features.lo xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	strnatcmp.lo forward.lo msg_aggr.lo strlcpy.lo list.lo \
-	xtree.lo xhash.lo net.lo log.lo cbuf.lo safeopen.lo \
-	bitstring.lo mpi.lo pack.lo parse_config.lo parse_value.lo \
-	plugin.lo plugrack.lo power.lo print_fields.lo read_config.lo \
-	node_select.lo env.lo fd.lo slurm_cred.lo slurm_errno.lo \
-	slurm_ext_sensors.lo slurm_mcs.lo slurm_priority.lo \
-	slurm_protocol_api.lo slurm_protocol_pack.lo \
-	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
-	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
-	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo \
-	working_cluster.lo uid.lo util-net.lo slurm_auth.lo \
-	slurm_acct_gather.lo slurm_accounting_storage.lo \
-	slurm_jobacct_gather.lo slurm_acct_gather_energy.lo \
-	slurm_acct_gather_profile.lo slurm_acct_gather_interconnect.lo \
+	xtree.lo xhash.lo net.lo log.lo cbuf.lo bitstring.lo mpi.lo \
+	pack.lo parse_config.lo parse_value.lo plugin.lo plugrack.lo \
+	power.lo print_fields.lo read_config.lo node_select.lo env.lo \
+	fd.lo slurm_cred.lo slurm_errno.lo slurm_ext_sensors.lo \
+	slurm_mcs.lo slurm_priority.lo slurm_protocol_api.lo \
+	slurm_protocol_pack.lo slurm_protocol_util.lo \
+	slurm_protocol_socket_implementation.lo slurm_protocol_defs.lo \
+	slurm_rlimits_info.lo slurmdb_defs.lo slurmdb_pack.lo \
+	slurmdbd_defs.lo slurmdbd_pack.lo working_cluster.lo uid.lo \
+	util-net.lo slurm_auth.lo slurm_acct_gather.lo \
+	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
+	slurm_acct_gather_energy.lo slurm_acct_gather_profile.lo \
+	slurm_acct_gather_interconnect.lo \
 	slurm_acct_gather_filesystem.lo slurm_jobcomp.lo \
 	slurm_route.lo slurm_time.lo slurm_topology.lo switch.lo \
 	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
@@ -565,7 +565,6 @@ libcommon_la_SOURCES = \
 	net.c net.h                     \
 	log.c log.h			\
 	cbuf.c cbuf.h			\
-	safeopen.c safeopen.h		\
 	bitstring.c bitstring.h 	\
 	mpi.c slurm_mpi.h               \
 	pack.c pack.h			\
@@ -803,7 +802,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_command.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/safeopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_accounting_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather_energy.Plo@am__quote@
