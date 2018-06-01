@@ -70,7 +70,6 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/safeopen.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
@@ -320,15 +319,21 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->facility = fac;
 
 	if (logfile && (log->opt.logfile_level > LOG_LEVEL_QUIET)) {
+		int mode = O_CREAT | O_WRONLY | O_APPEND | O_CLOEXEC;
+		int fd;
 		FILE *fp;
 
-		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
+		fd = open(logfile, mode, S_IRUSR | S_IWUSR);
+		if (fd >= 0)
+			fp = fdopen(fd, "a");
 
-		if (!fp) {
+		if ((fd < 0) || !fp) {
 			char *errmsg = slurm_strerror(errno);
 			fprintf(stderr,
-				"%s: log_init(): Unable to open logfile"
-			        "`%s': %s\n", prog, logfile, errmsg);
+				"%s: %s: Unable to open logfile `%s': %s\n",
+				prog, __func__, logfile, errmsg);
+			if (fd >= 0)
+				close(fd);
 			rc = errno;
 			goto out;
 		}
@@ -401,11 +406,21 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 		sched_log->facility = fac;
 
 	if (logfile) {
+		int mode = O_CREAT | O_WRONLY | O_APPEND | O_CLOEXEC;
+		int fd;
 		FILE *fp;
 
-		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
+		fd = open(logfile, mode, S_IRUSR | S_IWUSR);
+		if (fd >= 0)
+			fp = fdopen(fd, "a");
 
-		if (!fp) {
+		if ((fd < 0) || !fp) {
+			char *errmsg = slurm_strerror(errno);
+			fprintf(stderr,
+				"%s: %s: Unable to open logfile `%s': %s\n",
+				prog, __func__, logfile, errmsg);
+			if (fd >= 0)
+				close(fd);
 			rc = errno;
 			goto out;
 		}
