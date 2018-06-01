@@ -39,6 +39,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "config.h"
 
 #if HAVE_SYS_PRCTL_H
@@ -52,6 +54,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -80,7 +83,6 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
-#include "src/common/safeopen.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_jobacct_gather.h"
@@ -2273,47 +2275,62 @@ error:
 	return NULL;
 }
 
-static char *
-_make_batch_script(batch_job_launch_msg_t *msg, char *path)
+static char *_make_batch_script(batch_job_launch_msg_t *msg, char *path)
 {
-	FILE *fp = NULL;
+	int flags = O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC;
+	int fd, length;
 	char *script = NULL;
+	char *output;
 
 	if (msg->script == NULL) {
 		error("_make_batch_script: called with NULL script");
 		return NULL;
 	}
 
-	xstrfmtcat(script, "%s/%s", path, "slurm_script");
-
-again:
-	if ((fp = safeopen(script, "w", SAFEOPEN_CREATE_ONLY)) == NULL) {
-		if ((errno != EEXIST) || (unlink(script) < 0))  {
-			error("couldn't open `%s': %m", script);
-			goto error;
-		}
-		goto again;
+	/* note: should replace this with a length as part of msg */
+	if ((length = strlen(msg->script)) < 1) {
+		error("_make_batch_script: called with empty script");
+		return NULL;
 	}
 
-	if (fputs(msg->script, fp) < 0) {
-		(void) fclose(fp);
-		error("fputs: %m");
-		if (errno == ENOSPC)
-			stepd_drain_node("SlurmdSpoolDir is full");
+	xstrfmtcat(script, "%s/%s", path, "slurm_script");
+
+	if ((fd = open(script, flags, S_IRWXU)) < 0) {
+		error("couldn't open `%s': %m", script);
 		goto error;
 	}
 
-	if (fclose(fp) < 0) {
-		error("fclose: %m");
+	if (lseek(fd, length - 1, SEEK_SET) == -1) {
+		error("%s: lseek to %d failed on `%s`: %m",
+		      __func__, length, script);
+		close(fd);
+		goto error;
 	}
+
+	output = mmap(0, length, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+	if (output == MAP_FAILED) {
+		error("%s: mmap failed", __func__);
+		close(fd);
+		goto error;
+	}
+
+	if (write(fd, "", 1) == -1) {
+		error("%s: write failed", __func__);
+		if (errno == ENOSPC)
+			stepd_drain_node("SlurmdSpoolDir is full");
+		close(fd);
+		goto error;
+	}
+
+	(void) close(fd);
+
+	memcpy(output, msg->script, length);
+
+	munmap(output, length);
 
 	if (chown(script, (uid_t) msg->uid, (gid_t) -1) < 0) {
 		error("chown(%s): %m", path);
 		goto error;
-	}
-
-	if (chmod(script, 0500) < 0) {
-		error("chmod: %m");
 	}
 
 	return script;
