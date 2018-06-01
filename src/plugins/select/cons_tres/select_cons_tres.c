@@ -180,7 +180,7 @@ static void _spec_core_filter(bitstr_t **avail_cores);
  * - add job's memory requirements to 'struct node_res_record'
  *
  * if action = 0 then add cores, memory + GRES (starting new job)
- * if action = 1 then add memory + GRES (adding suspended job)
+ * if action = 1 then add memory + GRES (adding suspended job at restart)
  * if action = 2 then only add cores (suspended job is resumed)
  *
  * See also: rm_job_res() in job_test.c
@@ -226,9 +226,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				gres_list = node_ptr->gres_list;
 			core_bitmap = copy_job_resources_node(job, n);
 			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
-					      job->nhosts, n, job->cpus[n],
-					      job_ptr->job_id, node_ptr->name,
-					      core_bitmap);
+					      job->nhosts, n, job_ptr->job_id,
+					      node_ptr->name, core_bitmap);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
 			FREE_NULL_BITMAP(core_bitmap);
 		}

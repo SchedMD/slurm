@@ -2013,8 +2013,8 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 #endif
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
-				       job_node_inx, cpus_alloc,
-				       job_ptr->job_id, step_ptr->step_id);
+				       job_node_inx, job_ptr->job_id,
+				       step_ptr->step_id);
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
 			if (step_ptr->pn_min_memory & MEM_PER_CPU) {
 				uint64_t mem_use = step_ptr->pn_min_memory;
