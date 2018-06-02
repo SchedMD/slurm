@@ -1571,12 +1571,6 @@ extern int select_p_update_node_state(struct node_record *node_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* Unused for this plugin */
-extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_reconfigure(void)
 {
 //FIXME: Add code here

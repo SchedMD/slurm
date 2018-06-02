@@ -105,7 +105,6 @@ const char *node_select_syms[] = {
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
 	"select_p_update_node_state",
-	"select_p_alter_node_cnt",
 	"select_p_reconfigure",
 	"select_p_resv_test",
 	"select_p_ba_init",
@@ -740,18 +739,6 @@ extern int other_update_node_state (struct node_record *node_ptr)
 		return SLURM_ERROR;
 
 	return (*(ops.update_node_state))(node_ptr);
-}
-
-/*
- * Alter the node count for a job given the type of system we are on
- * IN/OUT job_desc  - current job desc
- */
-extern int other_alter_node_cnt (enum select_node_cnt type, void *data)
-{
-	if (other_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.alter_node_cnt))(type, data);
 }
 
 /*

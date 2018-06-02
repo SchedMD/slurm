@@ -140,12 +140,6 @@ extern int other_update_node_config(int index);
 extern int other_update_node_state(struct node_record *node_ptr);
 
 /*
- * Alter the node count for a job given the type of system we are on
- * IN/OUT job_desc  - current job desc
- */
-extern int other_alter_node_cnt(enum select_node_cnt type, void *data);
-
-/*
  * Select the "best" nodes for given job from those available
  * IN/OUT job_ptr - pointer to job being considered for initiation,
  *                  set's start_time when job expected to start

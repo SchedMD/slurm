@@ -108,7 +108,6 @@ const char *node_select_syms[] = {
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
 	"select_p_update_node_state",
-	"select_p_alter_node_cnt",
 	"select_p_reconfigure",
 	"select_p_resv_test",
 	"select_p_ba_init",
@@ -1292,15 +1291,12 @@ extern int select_g_update_node_state (struct node_record *node_ptr)
  */
 extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
 {
-	if (slurm_select_init(0) < 0)
-		return SLURM_ERROR;
-
 	if (type == SELECT_GET_NODE_SCALING) {
 		/* default to one, so most plugins don't have to */
 		uint32_t *nodes = (uint32_t *)data;
 		*nodes = 1;
 	}
-	return (*(ops[select_context_default].alter_node_cnt))(type, data);
+	return 0;
 }
 
 /*

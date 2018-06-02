@@ -218,8 +218,6 @@ typedef struct slurm_select_ops {
 						 void *data);
 	int		(*update_node_config)	(int index);
 	int		(*update_node_state)	(struct node_record *node_ptr);
-	int		(*alter_node_cnt)	(enum select_node_cnt type,
-						 void *data);
 	int		(*reconfigure)		(void);
 	bitstr_t *      (*resv_test)            (resv_desc_msg_t *resv_desc_ptr,
 						 uint32_t node_cnt,
