@@ -790,7 +790,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t protocol_version)
 {
 	int inx;
-	uint32_t nodes_packed, tmp_offset, node_scaling;
+	uint32_t nodes_packed, tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
 	struct node_record *node_ptr = node_record_table_ptr;
@@ -808,9 +808,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
-		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-					&node_scaling);
-		pack32(node_scaling, buffer);
+		pack32(1, buffer); /* was node_scaling */
 
 		pack_time(now, buffer);
 
@@ -881,7 +879,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t show_flags, uid_t uid, char *node_name,
 			   uint16_t protocol_version)
 {
-	uint32_t nodes_packed, tmp_offset, node_scaling;
+	uint32_t nodes_packed, tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
 	struct node_record *node_ptr;
@@ -899,9 +897,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
-		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-					&node_scaling);
-		pack32(node_scaling, buffer);
+		pack32(1, buffer); /* was node_scaling */
 
 		pack_time(now, buffer);
 
