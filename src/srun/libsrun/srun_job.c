@@ -1096,8 +1096,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					merge_nodelist = false;
 					list_append(used_resp_list, resp);
 				}
-				select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
-							&resp->node_cnt);
 				if (srun_opt->nodes_set_env  &&
 				    !srun_opt->nodes_set_opt &&
 				    (opt_local->min_nodes > resp->node_cnt)) {
