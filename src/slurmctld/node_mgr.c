@@ -3871,66 +3871,23 @@ extern int send_nodes_to_accounting(time_t event_time)
 {
 	int rc = SLURM_SUCCESS, i = 0;
 	struct node_record *node_ptr = NULL;
-	uint32_t node_scaling = 0;
 	char *reason = NULL;
 	slurmctld_lock_t node_read_lock = {
 		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
 
-	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, &node_scaling);
-
  	lock_slurmctld(node_read_lock);
-	/* send nodes not in not 'up' state */
+	/* send nodes not in 'up' state */
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (!node_ptr->name)
+			continue;
 		if (node_ptr->reason)
 			reason = node_ptr->reason;
 		else
 			reason = "First Registration";
-		if (!node_ptr->name ||
-		   (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr) &&
-		    !IS_NODE_DOWN(node_ptr))) {
-			/* At this point, the node appears to be up,
-			   but on some systems we need to make sure there
-			   aren't some part of a node in an error state. */
-			if (node_ptr->select_nodeinfo) {
-				uint16_t err_cpus = 0;
-				select_g_select_nodeinfo_get(
-					node_ptr->select_nodeinfo,
-					SELECT_NODEDATA_SUBCNT,
-					NODE_STATE_ERROR,
-					&err_cpus);
-				if (err_cpus) {
-					struct node_record send_node;
-					struct config_record config_rec;
-					int cpus_per_node = 1;
-
-					memset(&send_node, 0,
-					       sizeof(struct node_record));
-					memset(&config_rec, 0,
-					       sizeof(struct config_record));
-					send_node.name = node_ptr->name;
-					send_node.config_ptr = &config_rec;
-					select_g_alter_node_cnt(
-						SELECT_GET_NODE_SCALING,
-						&node_scaling);
-
-					if (node_scaling)
-						cpus_per_node = node_ptr->cpus
-							/ node_scaling;
-					err_cpus *= cpus_per_node;
-
-					send_node.cpus = err_cpus;
-					send_node.node_state = NODE_STATE_ERROR;
-					config_rec.cpus = err_cpus;
-
-					rc = clusteracct_storage_g_node_down(
-						acct_db_conn,
-						&send_node, event_time,
-						reason,
-						slurmctld_conf.slurm_user_id);
-				}
-			}
-		} else
+		if (IS_NODE_DRAIN(node_ptr) ||
+		    IS_NODE_FAIL(node_ptr) ||
+		    IS_NODE_DOWN(node_ptr))
 			rc = clusteracct_storage_g_node_down(
 				acct_db_conn,
 				node_ptr, event_time,
