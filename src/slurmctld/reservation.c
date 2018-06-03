@@ -224,15 +224,7 @@ static void _create_cluster_core_bitmap(bitstr_t **core_bitmap)
 	if (*core_bitmap)
 		return;
 
-#ifdef HAVE_BG
-	if (!cnodes_per_mp) {
-		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-					&cnodes_per_mp);
-	}
-	*core_bitmap = cr_create_cluster_core_bitmap(cnodes_per_mp);
-#else
 	*core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
-#endif
 }
 
 static List _list_dup(List license_list)
@@ -1965,21 +1957,10 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 
 	if (resv_ptr->full_nodes && resv_ptr->node_bitmap) {
 		resv_ptr->core_cnt = 0;
-#ifdef HAVE_BG
-		if (!cnodes_per_mp)
-			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-						&cnodes_per_mp);
-#endif
 
 		for (i=0; i<node_record_count; i++, node_ptr++) {
 			if (!bit_test(resv_ptr->node_bitmap, i))
 				continue;
-#ifdef HAVE_BG
-			if (cnodes_per_mp)
-				resv_ptr->core_cnt += cnodes_per_mp;
-			else
-				resv_ptr->core_cnt += node_ptr->sockets;
-#else
 			if (slurmctld_conf.fast_schedule) {
 				resv_ptr->core_cnt +=
 					(node_ptr->config_ptr->cores *
@@ -1990,12 +1971,8 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 						       node_ptr->sockets);
 				cpu_cnt += node_ptr->cpus;
 			}
-#endif
 		}
 	} else if (resv_ptr->core_bitmap) {
-		/* This doesn't work on bluegene systems so don't
-		 * worry about it.
-		 */
 		resv_ptr->core_cnt =
 			bit_set_count(resv_ptr->core_bitmap);
 
@@ -2029,17 +2006,6 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		} else
 			  cpu_cnt = resv_ptr->core_cnt;
 	}
-
-#ifdef HAVE_BG
-	/* Since on a bluegene we track cnodes instead of cpus do the
-	   adjustment since accounting is expecting cpus here.
-	*/
-	if (!cpu_mult)
-		(void)select_g_alter_node_cnt(
-			SELECT_GET_NODE_CPU_CNT, &cpu_mult);
-
-	cpu_cnt = resv_ptr->core_cnt * cpu_mult;
-#endif
 
 	xfree(resv_ptr->tres_str);
 	if (cpu_cnt)
@@ -2277,85 +2243,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 	}
 
-#ifdef HAVE_BG
-	if (!cnodes_per_mp) {
-		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-					&cnodes_per_mp);
-	}
-	if (resv_desc_ptr->node_cnt && cnodes_per_mp) {
-		/* Pack multiple small blocks into midplane rather than
-		 * allocating a whole midplane for each small block */
-		int small_block_nodes = 0, first_small = -1;
-		bool req_mixed = false;
-
-		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
-			if (resv_desc_ptr->node_cnt[i] < cnodes_per_mp) {
-				if (first_small == -1)
-					first_small = i;
-				small_block_nodes += resv_desc_ptr->node_cnt[i];
-			} else
-				req_mixed = true;
-		}
-
-		if (small_block_nodes) {
-			if (req_mixed)
-				resv_desc_ptr->node_cnt[first_small] =
-					small_block_nodes < cnodes_per_mp ?
-					cnodes_per_mp : small_block_nodes;
-			else
-				resv_desc_ptr->node_cnt[first_small] =
-					small_block_nodes;
-
-			small_block_nodes = 0;
-			/* Since there will only ever be 1 small block we can
-			 * set the the one after the first small to 0.
-			 */
-			resv_desc_ptr->node_cnt[first_small+1] = 0;
-		}
-
-		/* Convert c-node count to midplane count */
-
-		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
-			if (!resv_desc_ptr->node_cnt[i])
-				break;
-
-			if (resv_desc_ptr->node_cnt[i] < cnodes_per_mp) {
-				/* There will only ever be one here */
-				if (!resv_desc_ptr->core_cnt)
-					resv_desc_ptr->core_cnt =
-						xmalloc(sizeof(uint32_t) * 2);
-				resv_desc_ptr->core_cnt[0] =
-					resv_desc_ptr->node_cnt[i];
-				resv_desc_ptr->node_cnt[i] = 1;
-			} else {
-				resv_desc_ptr->node_cnt[i] +=
-					(cnodes_per_mp - 1);
-				resv_desc_ptr->node_cnt[i] /= cnodes_per_mp;
-			}
-		}
-	}
-#endif
-
 	if (resv_desc_ptr->node_list) {
-#ifdef HAVE_BG
-		int inx;
-		bitstr_t *cnode_bitmap = NULL;
-		for (inx = 0; resv_desc_ptr->node_list[inx]; inx++) {
-			if (resv_desc_ptr->node_list[inx] == '['
-			    && resv_desc_ptr->node_list[inx-1] <= '9'
-			    && resv_desc_ptr->node_list[inx-1] >= '0') {
-				if (!(cnode_bitmap =
-				      select_g_ba_cnodelist2bitmap(
-					      resv_desc_ptr->node_list+inx))) {
-					rc = ESLURM_INVALID_NODE_NAME;
-					goto bad_parse;
-				}
-				resv_desc_ptr->node_list[inx] = '\0';
-				break;
-			}
-		}
-#endif
-
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
 		if (xstrcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			if ((resv_desc_ptr->partition) &&
@@ -2401,42 +2289,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_NODES_BUSY;
 			goto bad_parse;
 		}
-#ifdef HAVE_BG
-		if (cnode_bitmap && total_node_cnt == 1) {
-			int offset =
-				cr_get_coremap_offset(bit_ffs(node_bitmap));
-
-			if (!cnodes_per_mp)
-				select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-							&cnodes_per_mp);
-
-			_create_cluster_core_bitmap(&core_bitmap);
-			if (!resv_desc_ptr->core_cnt) {
-				resv_desc_ptr->core_cnt =
-					xmalloc(sizeof(uint32_t) * 2);
-				resv_desc_ptr->core_cnt[0] =
-					bit_clear_count(cnode_bitmap);
-			}
-			if (!resv_desc_ptr->node_cnt) {
-				resv_desc_ptr->node_cnt =
-					xmalloc(sizeof(uint32_t) * 2);
-				resv_desc_ptr->node_cnt[0] = 1;
-			}
-
-			/* We only have to worry about this one
-			   midplane since none of the others will be
-			   considered.
-			*/
-			for (inx=0; inx < cnodes_per_mp; inx++) {
-				/* Skip any not set, since they are
-				 * the only ones available to run on. */
-				if (!bit_test(cnode_bitmap, inx))
-					continue;
-				bit_set(core_bitmap, inx+offset);
-			}
-		}
-		FREE_NULL_BITMAP(cnode_bitmap);
-#endif
 		/* We do allow to request cores with nodelist */
 		if (resv_desc_ptr->core_cnt) {
 			int nodecnt = bit_set_count(node_bitmap);
@@ -2947,19 +2799,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 		resv_ptr->flags &= (~RESERVE_FLAG_ALL_NODES);
 
-#ifdef HAVE_BG
-		if (!cnodes_per_mp) {
-			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-						&cnodes_per_mp);
-		}
-		if (cnodes_per_mp) {
-			/* Convert c-node count to midplane count */
-			for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
-				resv_desc_ptr->node_cnt[i] += cnodes_per_mp - 1;
-				resv_desc_ptr->node_cnt[i] /= cnodes_per_mp;
-			}
-		}
-#endif
 		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
 			total_node_cnt += resv_desc_ptr->node_cnt[i];
 		}
@@ -5376,25 +5215,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	bit_nset(*node_bitmap, 0, (node_record_count - 1));
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;
-#ifdef HAVE_BG
-	/*
-	 * Since on a bluegene we track cnodes instead of cpus do the
-	 * adjustment since accounting is expecting cpus here.
-	 */
-	if (!cpus_per_mp) {
-		(void) select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT,
-					       &cpus_per_mp);
-	}
-
-	/*
-	 * If the job is looking for whole mp blocks we need to tell the
-	 * the reservations about it so it sends the plugin the correct thing.
-	 */
-	if (job_ptr->details->max_cpus < cpus_per_mp)
-		job_ptr->details->whole_node = 0;
-	else
-		job_ptr->details->whole_node = 1;
-#endif
 
 	/*
 	 * Job has no reservation, try to find time when this can
