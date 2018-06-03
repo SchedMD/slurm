@@ -1202,8 +1202,6 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 void pack_part(struct part_record *part_ptr, Buf buffer,
 	       uint16_t protocol_version)
 {
-	uint32_t altered;
-
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
@@ -1217,9 +1215,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack32(part_ptr->default_time, buffer);
 		pack32(part_ptr->max_nodes_orig, buffer);
 		pack32(part_ptr->min_nodes_orig, buffer);
-		altered = part_ptr->total_nodes;
-		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
-		pack32(altered,              buffer);
+		pack32(part_ptr->total_nodes, buffer);
 		pack32(part_ptr->total_cpus, buffer);
 		pack64(part_ptr->def_mem_per_cpu, buffer);
 		pack32(part_ptr->max_cpus_per_node, buffer);
@@ -1261,9 +1257,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack32(part_ptr->default_time, buffer);
 		pack32(part_ptr->max_nodes_orig, buffer);
 		pack32(part_ptr->min_nodes_orig, buffer);
-		altered = part_ptr->total_nodes;
-		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
-		pack32(altered,              buffer);
+		pack32(part_ptr->total_nodes, buffer);
 		pack32(part_ptr->total_cpus, buffer);
 		pack64(part_ptr->def_mem_per_cpu, buffer);
 		pack32(part_ptr->max_cpus_per_node, buffer);
@@ -1421,8 +1415,6 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		     part_desc->max_nodes, part_desc->name);
 		part_ptr->max_nodes      = part_desc->max_nodes;
 		part_ptr->max_nodes_orig = part_desc->max_nodes;
-		select_g_alter_node_cnt(SELECT_SET_MP_CNT,
-					&part_ptr->max_nodes);
 	}
 
 	if (part_desc->min_nodes != NO_VAL) {
@@ -1430,8 +1422,6 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		     part_desc->min_nodes, part_desc->name);
 		part_ptr->min_nodes      = part_desc->min_nodes;
 		part_ptr->min_nodes_orig = part_desc->min_nodes;
-		select_g_alter_node_cnt(SELECT_SET_MP_CNT,
-					&part_ptr->min_nodes);
 	}
 
 	if (part_desc->grace_time != NO_VAL) {
