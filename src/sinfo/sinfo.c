@@ -722,15 +722,8 @@ static bool _filter_out(node_info_t *node_ptr)
 					break;
 				}
 			} else if (*node_state == NODE_STATE_ERROR) {
-				slurm_get_select_nodeinfo(
-					node_ptr->select_nodeinfo,
-					SELECT_NODEDATA_SUBCNT,
-					NODE_STATE_ERROR,
-					&cpus);
-				if (cpus) {
-					match = true;
-					break;
-				}
+				/* This was only a valid state on a BlueGene */
+				;
 			} else if (*node_state == NODE_STATE_ALLOCATED) {
 				slurm_get_select_nodeinfo(
 					node_ptr->select_nodeinfo,
