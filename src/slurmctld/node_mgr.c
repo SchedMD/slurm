@@ -805,7 +805,49 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE*16);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		/* write header: count and time */
+		pack32(nodes_packed, buffer);
+		pack32(1, buffer); /* was node_scaling */
+
+		pack_time(now, buffer);
+
+		/* write node records */
+		for (inx = 0; inx < node_record_count; inx++, node_ptr++) {
+			xassert(node_ptr->magic == NODE_MAGIC);
+			xassert(node_ptr->config_ptr->magic == CONFIG_MAGIC);
+
+			/*
+			 * We can't avoid packing node records without breaking
+			 * the node index pointers. So pack a node with a name
+			 * of NULL and let the caller deal with it.
+			 */
+			hidden = false;
+			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
+			    (_node_is_hidden(node_ptr, uid)))
+				hidden = true;
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 (!(show_flags & SHOW_FUTURE)))
+				hidden = true;
+			else if (_is_cloud_hidden(node_ptr))
+				hidden = true;
+			else if ((node_ptr->name == NULL) ||
+				 (node_ptr->name[0] == '\0'))
+				hidden = true;
+
+			if (hidden) {
+				char *orig_name = node_ptr->name;
+				node_ptr->name = NULL;
+				_pack_node(node_ptr, buffer, protocol_version,
+				           show_flags);
+				node_ptr->name = orig_name;
+			} else {
+				_pack_node(node_ptr, buffer, protocol_version,
+					   show_flags);
+			}
+			nodes_packed++;
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack32(1, buffer); /* was node_scaling */
@@ -894,7 +936,40 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		/* write header: count and time */
+		pack32(nodes_packed, buffer);
+		pack32(1, buffer); /* was node_scaling */
+
+		pack_time(now, buffer);
+
+		/* write node records */
+		if (node_name)
+			node_ptr = find_node_record(node_name);
+		else
+			node_ptr = node_record_table_ptr;
+		if (node_ptr) {
+			hidden = false;
+			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
+			    (_node_is_hidden(node_ptr, uid)))
+				hidden = true;
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 (!(show_flags & SHOW_FUTURE)))
+				hidden = true;
+//			Don't hide the node if explicitly requested by name
+//			else if (_is_cloud_hidden(node_ptr))
+//				hidden = true;
+			else if ((node_ptr->name == NULL) ||
+				 (node_ptr->name[0] == '\0'))
+				hidden = true;
+
+			if (!hidden) {
+				_pack_node(node_ptr, buffer, protocol_version,
+					   show_flags);
+				nodes_packed++;
+			}
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack32(1, buffer); /* was node_scaling */
