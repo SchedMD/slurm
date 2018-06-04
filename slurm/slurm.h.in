@@ -4312,12 +4312,10 @@ extern void slurm_print_node_info_msg(FILE *out,
  *	based upon message as loaded using slurm_load_node
  * IN out - file to write to
  * IN node_ptr - an individual node information record pointer
- * IN node_scaling - number of nodes each node represents
  * IN one_liner - print as a single line if true
  */
 extern void slurm_print_node_table(FILE *out,
 				   node_info_t *node_ptr,
-				   int node_scaling,
 				   int one_liner);
 
 /*
@@ -4325,12 +4323,10 @@ extern void slurm_print_node_table(FILE *out,
  *	based upon message as loaded using slurm_load_node
  * IN node_ptr - an individual node information record pointer
  * IN one_liner - print as a single line if true
- * IN node_scaling - number of nodes each node represents
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
 extern char *slurm_sprint_node_table(node_info_t *node_ptr,
-				     int node_scaling,
 				     int one_liner);
 
 /*

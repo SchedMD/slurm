@@ -211,6 +211,8 @@ Added the following API's
 
 Changed the following API's
 ============================
+ -- Remove node_scaling argument to slurm_print_node_table() and
+    slurm_sprint_node_table().
 
 Removed the following API's
 ===========================

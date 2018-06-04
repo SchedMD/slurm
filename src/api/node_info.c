@@ -97,7 +97,6 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
 
 	for (i = 0; i < node_info_msg_ptr-> record_count; i++) {
 		slurm_print_node_table ( out, & node_ptr[i],
-					 node_info_msg_ptr->node_scaling,
 					 one_liner ) ;
 	}
 }
@@ -108,16 +107,12 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
  *	based upon message as loaded using slurm_load_node
  * IN out - file to write to
  * IN node_ptr - an individual node information record pointer
- * IN node_scaling - number of nodes each node represents
  * IN one_liner - print as a single line if true
  */
-void
-slurm_print_node_table ( FILE * out, node_info_t * node_ptr,
-			 int node_scaling, int one_liner )
+void slurm_print_node_table(FILE *out, node_info_t *node_ptr, int one_liner)
 {
-	char *print_this = slurm_sprint_node_table(node_ptr, node_scaling,
-						   one_liner);
-	fprintf ( out, "%s", print_this);
+	char *print_this = slurm_sprint_node_table(node_ptr, one_liner);
+	fprintf(out, "%s", print_this);
 	xfree(print_this);
 }
 
@@ -174,14 +169,11 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
  * slurm_sprint_node_table - output information about a specific Slurm nodes
  *	based upon message as loaded using slurm_load_node
  * IN node_ptr - an individual node information record pointer
- * IN node_scaling - number of nodes each node represents
  * IN one_liner - print as a single line if true
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-char *
-slurm_sprint_node_table (node_info_t * node_ptr,
-			 int node_scaling, int one_liner )
+char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 {
 	uint32_t my_state = node_ptr->node_state;
 	char *cloud_str = "", *comp_str = "", *drain_str = "", *power_str = "";

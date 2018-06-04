@@ -53,8 +53,6 @@ void \fBslurm_print_node_table\fR (
 .br
 	node_info_t *\fInode_ptr\fP,
 .br
-	int \fInode_scaling\fP
-.br
 	int \fIone_liner\fP
 .br
 );
@@ -62,8 +60,6 @@ void \fBslurm_print_node_table\fR (
 char *\fBslurm_sprint_node_table\fR (
 .br
 	node_info_t *\fInode_ptr\fP,
-.br
-	int \fInode_scaling\fP
 .br
 	int \fIone_liner\fP
 .br
@@ -87,9 +83,6 @@ Name of the node for which information is requested.
 \fInode_ptr\fP
 Specifies a pointer to a single node record from the \fInode_info_msg_ptr\fP
 data structure.
-.TP
-\fInode_scaling\fP
-number of nodes each node represents default is 1.
 .TP
 \fIone_liner\fP
 Print one record per line if non\-zero.
