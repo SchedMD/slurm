@@ -2389,7 +2389,7 @@ static char *_build_tres_str(struct job_record *job_ptr)
 	if (job_ptr->tres_per_task) {
 		xstrfmtcat(tres_str, "%sPER_TASK:%s", sep,
 			   job_ptr->tres_per_task);
-		sep = " ";
+		/* sep = " ";	Reported as "dead assignment" by Clang */
 	}
 	if (!tres_str)
 		tres_str = xstrdup("NONE");
