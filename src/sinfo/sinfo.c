@@ -698,11 +698,6 @@ static bool _filter_out(node_info_t *node_ptr)
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ALLOCATED,
 					&cpus);
-				if (params.cluster_flags & CLUSTER_FLAG_BG
-				    && !cpus &&
-				    (IS_NODE_ALLOCATED(node_ptr) ||
-				     IS_NODE_COMPLETING(node_ptr)))
-					cpus = node_ptr->cpus;
 				if (cpus) {
 					match = true;
 					break;
