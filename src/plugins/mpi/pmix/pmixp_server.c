@@ -786,7 +786,7 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		pmixp_coll_type_t type = 0;
 		int c_nodeid;
 
-		rc = pmixp_coll_tree_unpack_info(buf, &type, &c_nodeid,
+		rc = pmixp_coll_tree_unpack(buf, &type, &c_nodeid,
 					    &procs, &nprocs);
 		if (SLURM_SUCCESS != rc) {
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
@@ -798,50 +798,54 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		if (PMIXP_COLL_TYPE_FENCE_TREE != type) {
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
 			PMIXP_ERROR("Unexpected collective type=%s from node %s, expected=%s",
-				    pmixp_coll_ring_state2str(type), nodename,
-				    pmixp_coll_ring_state2str(PMIXP_COLL_TYPE_FENCE_TREE));
+				    pmixp_coll_type2str(type), nodename,
+				    pmixp_coll_type2str(PMIXP_COLL_TYPE_FENCE_TREE));
 			xfree(nodename);
 			goto exit;
 		}
 		coll = pmixp_state_coll_get(type, procs, nprocs);
 		xfree(procs);
-
-		PMIXP_DEBUG("%s collective message from nodeid = %u, "
-			    "type = %s, seq = %d",
+		if (!coll) {
+			PMIXP_ERROR("Unable to pmixp_state_coll_get()");
+			break;
+		}
+		pmixp_coll_sanity_check(coll);
+#ifdef PMIXP_COLL_DEBUG
+		PMIXP_DEBUG("%s collective message from nodeid = %u, type = %s, seq = %d",
 			    pmixp_coll_type2str(type),
 			    hdr->nodeid,
 			    ((PMIXP_MSG_FAN_IN == hdr->type) ?
 				     "fan-in" : "fan-out"),
 			    hdr->seq);
-		rc = pmixp_coll_tree_check_seq(coll, hdr->seq);
+#endif
+		rc = pmixp_coll_tree_check(coll, hdr->seq);
 		if (PMIXP_COLL_TREE_REQ_FAILURE == rc) {
-			/* this is unexepable event: either something went
+			/* this is an unacceptable event: either something went
 			 * really wrong or the state machine is incorrect.
 			 * This will 100% lead to application hang.
 			 */
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
-			PMIXP_ERROR("Bad collective seq. #%d from %s, current"
-				    " is %d",
-				    hdr->seq, nodename, coll->seq);
+			PMIXP_ERROR("Bad collective seq. #%d from %s:%u, current is %d",
+				    hdr->seq, nodename, hdr->nodeid, coll->seq);
 			pmixp_debug_hang(0); /* enable hang to debug this! */
 			slurm_kill_job_step(pmixp_info_jobid(),
 					    pmixp_info_stepid(), SIGKILL);
 			xfree(nodename);
 			break;
 		} else if (PMIXP_COLL_TREE_REQ_SKIP == rc) {
-			PMIXP_DEBUG("Wrong collective seq. #%d from"
-				    " nodeid %u, current is %d, skip "
-				    "this message",
+#ifdef PMIXP_COLL_DEBUG
+			PMIXP_DEBUG("Wrong collective seq. #%d from nodeid %u, current is %d, skip this message",
 				    hdr->seq, hdr->nodeid, coll->seq);
+#endif
 			goto exit;
 		}
 
 		if (PMIXP_MSG_FAN_IN == hdr->type) {
-			pmixp_coll_tree_contrib_child(coll, hdr->nodeid,
-						 hdr->seq, buf);
+			pmixp_coll_tree_child(coll, hdr->nodeid,
+					      hdr->seq, buf);
 		} else {
-			pmixp_coll_tree_contrib_parent(coll, hdr->nodeid,
-						  hdr->seq, buf);
+			pmixp_coll_tree_parent(coll, hdr->nodeid,
+					       hdr->seq, buf);
 		}
 
 		break;
@@ -891,10 +895,9 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		size_t nprocs = 0;
 		pmixp_coll_ring_msg_hdr_t ring_hdr;
 		pmixp_coll_type_t type = 0;
-		//pmixp_coll_ring_ctx_t *coll_ctx = NULL;
 
-		if (pmixp_coll_ring_unpack_info(buf, &type, &ring_hdr,
-						&procs, &nprocs)) {
+		if (pmixp_coll_ring_unpack(buf, &type, &ring_hdr,
+					   &procs, &nprocs)) {
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
 			PMIXP_ERROR("Bad message header from node %s",
 				    nodename);
@@ -903,9 +906,9 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		}
 		if (PMIXP_COLL_TYPE_FENCE_RING != type) {
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
-			PMIXP_ERROR("Unexpected collective type=%s from node %s, expected=%s",
-				   pmixp_coll_ring_state2str(type), nodename,
-				   pmixp_coll_ring_state2str(PMIXP_COLL_TYPE_FENCE_RING));
+			PMIXP_ERROR("Unexpected collective type=%s from node %s:%u, expected=%s",
+				   pmixp_coll_type2str(type), nodename, hdr->nodeid,
+				   pmixp_coll_type2str(PMIXP_COLL_TYPE_FENCE_RING));
 			xfree(nodename);
 			goto exit;
 		}
@@ -913,26 +916,25 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		coll = pmixp_state_coll_get(type, procs, nprocs);
 		xfree(procs);
 		if (!coll) {
-			PMIXP_ERROR("Collective error");
+			PMIXP_ERROR("Unable to pmixp_state_coll_get()");
 			break;
 		}
 		pmixp_coll_sanity_check(coll);
 #ifdef PMIXP_COLL_DEBUG
-		PMIXP_DEBUG("%s collective message from nodeid=%u, "
-			    "contrib_id=%u, seq=%u, hop=%u, msgsize=%lu",
+		PMIXP_DEBUG("%s collective message from nodeid=%u, contrib_id=%u, seq=%u, hop=%u, msgsize=%lu",
 			    pmixp_coll_type2str(type),
 			    hdr->nodeid, ring_hdr.contrib_id,
 			    ring_hdr.seq, ring_hdr.hop_seq, ring_hdr.msgsize);
 #endif
-		if (pmixp_coll_ring_hdr_sanity_check(coll, &ring_hdr)) {
+		if (pmixp_coll_ring_check(coll, &ring_hdr)) {
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
-			PMIXP_ERROR("%p: unexpected contrib from %s:%d, coll->seq=%d, "
-				    "seq=%d",
-				    coll, nodename, hdr->nodeid,coll->seq, hdr->seq);
+			PMIXP_ERROR("%p: unexpected contrib from %s:%u, coll->seq=%d, seq=%d",
+				    coll, nodename, hdr->nodeid,
+				    coll->seq, hdr->seq);
 			xfree(nodename);
 			break;
 		}
-		pmixp_coll_ring_contrib_nbr(coll, &ring_hdr, buf);
+		pmixp_coll_ring_neighbor(coll, &ring_hdr, buf);
 		break;
 	}
 	default:

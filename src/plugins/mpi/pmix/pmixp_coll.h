@@ -165,7 +165,7 @@ typedef struct {
 typedef enum {
 	PMIXP_COLL_RING_SYNC,
 	PMIXP_COLL_RING_PROGRESS,
-	PMIXP_COLL_RING_FINILIZE,
+	PMIXP_COLL_RING_FINALIZE,
 } pmixp_ring_state_t;
 
 struct pmixp_coll_s;
@@ -218,7 +218,7 @@ pmixp_coll_ring_state2str(pmixp_ring_state_t state)
 		return "COLL_RING_SYNC";
 	case PMIXP_COLL_RING_PROGRESS:
 		return "PMIXP_COLL_RING_PROGRESS";
-	case PMIXP_COLL_RING_FINILIZE:
+	case PMIXP_COLL_RING_FINALIZE:
 		return "PMIXP_COLL_RING_FINILIZE";
 	default:
 		return "COLL_RING_UNKNOWN";
@@ -271,39 +271,37 @@ void pmixp_coll_tree_free(pmixp_coll_tree_t *tree);
 
 pmixp_coll_t *pmixp_coll_tree_from_cbdata(void *cbdata);
 
-int pmixp_coll_tree_contrib_local(pmixp_coll_t *coll, char *data, size_t size,
+int pmixp_coll_tree_local(pmixp_coll_t *coll, char *data, size_t size,
 				  void *cbfunc, void *cbdata);
-int pmixp_coll_tree_contrib_child(pmixp_coll_t *coll, uint32_t nodeid,
+int pmixp_coll_tree_child(pmixp_coll_t *coll, uint32_t nodeid,
 				  uint32_t seq, Buf buf);
-int pmixp_coll_tree_contrib_parent(pmixp_coll_t *coll, uint32_t nodeid,
+int pmixp_coll_tree_parent(pmixp_coll_t *coll, uint32_t nodeid,
 				   uint32_t seq, Buf buf);
 void pmixp_coll_tree_bcast(pmixp_coll_t *coll);
 bool pmixp_coll_tree_progress(pmixp_coll_t *coll, char *fwd_node,
 			      void **data, uint64_t size);
-int pmixp_coll_tree_unpack_info(Buf buf, pmixp_coll_type_t *type,
+int pmixp_coll_tree_unpack(Buf buf, pmixp_coll_type_t *type,
 				int *nodeid, pmixp_proc_t **r,
 				size_t *nr);
 void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts);
-int pmixp_coll_tree_check_seq(pmixp_coll_t *coll, uint32_t seq);
-
+int pmixp_coll_tree_check(pmixp_coll_t *coll, uint32_t seq);
 void pmixp_coll_log(pmixp_coll_t *coll);
 
 /* ring coll functions */
 int pmixp_coll_ring_init(pmixp_coll_t *coll);
 void pmixp_coll_ring_free(pmixp_coll_ring_t *coll_ring);
-int pmixp_coll_ring_hdr_sanity_check(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr);
-int pmixp_coll_ring_contrib_local(pmixp_coll_t  *coll, char *data, size_t size,
+int pmixp_coll_ring_check(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr);
+int pmixp_coll_ring_local(pmixp_coll_t  *coll, char *data, size_t size,
 				  void *cbfunc, void *cbdata);
-int pmixp_coll_ring_contrib_nbr(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr,
+int pmixp_coll_ring_neighbor(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr,
 				 Buf buf);
 void pmixp_coll_ring_reset(pmixp_coll_ring_ctx_t *coll);
-int pmixp_coll_ring_unpack_info(Buf buf, pmixp_coll_type_t *type,
+int pmixp_coll_ring_unpack(Buf buf, pmixp_coll_type_t *type,
 		pmixp_coll_ring_msg_hdr_t *ring_hdr,
 		pmixp_proc_t **r, size_t *nr);
 void pmixp_coll_ring_reset_if_to(pmixp_coll_t  *coll, time_t ts);
 pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_select(pmixp_coll_t *coll,
 						 const uint32_t seq);
-void pmixp_coll_ring_progress(pmixp_coll_ring_ctx_t *coll_ctx);
 pmixp_coll_t *pmixp_coll_ring_from_cbdata(void *cbdata);
 void pmixp_coll_ring_free(pmixp_coll_ring_t *ring);
 

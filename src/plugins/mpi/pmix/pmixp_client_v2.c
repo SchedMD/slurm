@@ -108,6 +108,15 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v2[], size_t nprocs,
 	size_t i;
 	pmixp_proc_t *procs = xmalloc(sizeof(*procs) * nprocs);
 
+	for (i = 0; i < nprocs; i++) {
+		procs[i].rank = procs_v2[i].rank;
+		strncpy(procs[i].nspace, procs_v2[i].nspace, PMIXP_MAX_NSLEN);
+	}
+
+	//--------------------------------------------------------------
+	// This code looks replicated in v1 and v2
+	// need to put into the common section as much as we can
+
 	/* Chooses the coll algorithm defined by user
 	 * thru the env variable: SLURM_PMIXP_FENCE.
 	 * By default: PMIXP_COLL_TYPE_FENCE_AUTO
@@ -132,11 +141,6 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v2[], size_t nprocs,
 		break;
 	}
 
-	for (i = 0; i < nprocs; i++) {
-		procs[i].rank = procs_v2[i].rank;
-		strncpy(procs[i].nspace, procs_v2[i].nspace, PMIXP_MAX_NSLEN);
-	}
-
 	coll = pmixp_state_coll_get(type, procs, nprocs);
 	if (!coll) {
 		status = PMIX_ERROR;
@@ -145,10 +149,14 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v2[], size_t nprocs,
 	ret = pmixp_coll_contrib_local(coll, type, data, ndata, cbfunc, cbdata);
 	xfree(procs);
 
+
 	if (SLURM_SUCCESS != ret) {
 		status = PMIX_ERROR;
 		goto error;
 	}
+
+	//-------------------------------------------------------------------------
+
 	return PMIX_SUCCESS;
 error:
 	cbfunc(status, NULL, 0, cbdata, NULL, NULL);

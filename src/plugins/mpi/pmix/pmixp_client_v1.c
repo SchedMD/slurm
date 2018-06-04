@@ -113,6 +113,15 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v1[], size_t nprocs,
 	 * is used the both fence algorithms */
 	pmixp_coll_type_t type = pmixp_info_srv_fence_coll_type();
 
+	for (i = 0; i < nprocs; i++) {
+		procs[i].rank = procs_v1[i].rank;
+		strncpy(procs[i].nspace, procs_v1[i].nspace, PMIXP_MAX_NSLEN);
+	}
+
+	//--------------------------------------------------------------
+	// This code looks replicated in v1 and v2
+	// need to put into the common section as much as we can
+
 	switch (type) {
 	case PMIXP_COLL_TYPE_FENCE_RING:
 	case PMIXP_COLL_TYPE_FENCE_TREE:
@@ -131,15 +140,15 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v1[], size_t nprocs,
 		break;
 	}
 
-	for (i = 0; i < nprocs; i++) {
-		procs[i].rank = procs_v1[i].rank;
-		strncpy(procs[i].nspace, procs_v1[i].nspace, PMIXP_MAX_NSLEN);
-	}
+
 	coll = pmixp_state_coll_get(type, procs, nprocs);
 	if (!coll) {
 		status = PMIX_ERROR;
 		goto error;
 	}
+
+	/* sanity check */
+	pmixp_coll_sanity_check(coll);
 
 	ret = pmixp_coll_contrib_local(coll, type, data, ndata, cbfunc, cbdata);
 	xfree(procs);
@@ -148,6 +157,8 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v1[], size_t nprocs,
 		status = PMIX_ERROR;
 		goto error;
 	}
+
+	//----------------------------------------------------
 	return PMIX_SUCCESS;
 error:
 	cbfunc(status, NULL, 0, cbdata, NULL, NULL);
