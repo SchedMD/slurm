@@ -6650,8 +6650,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	bool valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
 	uint32_t user_submit_priority, acct_reason = 0;
-	static uint32_t node_scaling = 1;
-	static uint32_t cpus_per_mp = 1;
 	acct_policy_limit_set_t acct_policy_limit_set;
 
 	if (select_serial == -1) {
@@ -6682,9 +6680,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			bit_fill_gaps(req_bitmap);
 		i = bit_set_count(req_bitmap);
 		if (i > job_desc->min_nodes)
-			job_desc->min_nodes = i * node_scaling;
+			job_desc->min_nodes = i;
 		if (i > job_desc->min_cpus)
-			job_desc->min_cpus = i * cpus_per_mp;
+			job_desc->min_cpus = i;
 		if (job_desc->max_nodes &&
 		    (job_desc->min_nodes > job_desc->max_nodes)) {
 #if 0
