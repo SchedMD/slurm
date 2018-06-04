@@ -4673,7 +4673,7 @@ extern int slurm_unpack_list(List *recv_list,
 		 * created.
 		 */
 		*recv_list = list_create((*(destroy_function)));
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			if (((*(unpack_function))(&object,
 						  protocol_version, buffer))
 			    == SLURM_ERROR)
