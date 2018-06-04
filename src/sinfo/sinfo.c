@@ -1111,17 +1111,6 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 	sinfo_data_t *sinfo_ptr = NULL;
 	ListIterator itr = NULL;
 
-	if (params.cluster_flags & CLUSTER_FLAG_BG) {
-		uint16_t error_cpus = 0;
-		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-					     SELECT_NODEDATA_SUBCNT,
-					     NODE_STATE_ERROR,
-					     &error_cpus);
-
-		if (error_cpus && !node_ptr->reason)
-			node_ptr->reason = xstrdup("Block(s) in error state");
-	}
-
 	itr = list_iterator_create(sinfo_list);
 	while ((sinfo_ptr = list_next(itr))) {
 		if (!_match_part_data(sinfo_ptr, part_ptr))
