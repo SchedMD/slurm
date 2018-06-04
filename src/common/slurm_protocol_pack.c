@@ -3922,40 +3922,41 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int
-_unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer,
-		      uint16_t protocol_version)
+static int _unpack_node_info_msg(node_info_msg_t **msg, Buf buffer,
+				 uint16_t protocol_version)
 {
 	int i;
-	node_info_t *node = NULL;
+	node_info_msg_t *tmp_ptr;
 
 	xassert(msg != NULL);
-	*msg = xmalloc(sizeof(node_info_msg_t));
+	tmp_ptr = xmalloc(sizeof(node_info_msg_t));
+	*msg = tmp_ptr;
 
 	/* load buffer's header (data structure version and time) */
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&((*msg)->record_count), buffer);
-		safe_unpack32(&((*msg)->node_scaling), buffer);
-		safe_unpack_time(&((*msg)->last_update), buffer);
+		safe_unpack32(&tmp_ptr->record_count, buffer);
+		safe_unpack32(&tmp_ptr->node_scaling, buffer);
+		safe_unpack_time(&tmp_ptr->last_update, buffer);
 
-		node = (*msg)->node_array =
-			xmalloc(sizeof(node_info_t) * (*msg)->record_count);
+		tmp_ptr->node_array = xmalloc(sizeof(node_info_t) *
+					      tmp_ptr->record_count);
 
 		/* load individual job info */
-		for (i = 0; i < (*msg)->record_count; i++) {
-			if (_unpack_node_info_members(&node[i], buffer,
+		for (i = 0; i < tmp_ptr->record_count; i++) {
+			if (_unpack_node_info_members(&tmp_ptr->node_array[i],
+						      buffer,
 						      protocol_version))
 				goto unpack_error;
 		}
 	} else {
-		error("_unpack_node_info_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
 	}
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_node_info_msg(*msg);
+	slurm_free_node_info_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
