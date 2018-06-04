@@ -941,6 +941,7 @@ extern int fini(void)
 	cr_destroy_part_data(select_part_record);
 	select_part_record = NULL;
 	free_core_array(&spec_core_res);
+	cr_fini_global_core_data();
 
 	return SLURM_SUCCESS;
 }
