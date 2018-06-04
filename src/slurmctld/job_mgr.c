@@ -6093,7 +6093,6 @@ static int _part_access_check(struct part_record *part_ptr,
 
 	/* Check against total nodes on the partition */
 	total_nodes = part_ptr->total_nodes;
-	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &total_nodes);
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
 	    (job_desc->min_nodes != NO_VAL) &&
 	    (job_desc->min_nodes > total_nodes)) {
@@ -6531,12 +6530,6 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	job_desc_msg_t job_desc;
 	int rc;
 
-#ifdef HAVE_BG
-	static uint16_t cpus_per_node = 0;
-	if (!cpus_per_node)
-		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-					&cpus_per_node);
-#endif
 	job_ptr = *job_pptr;
 	detail_ptr = job_ptr->details;
 	part_ptr = job_ptr->part_ptr;
@@ -6560,21 +6553,10 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	job_desc.user_id = job_ptr->user_id;
 	job_desc.alloc_node = job_ptr->alloc_node;
 	job_desc.min_cpus = detail_ptr->orig_min_cpus;
-#ifdef HAVE_BG
-	/*
-	 * The node counts have been altered to reflect slurm nodes instead of
-	 * cnodes, so we need to figure out the cnode count
-	 * by using the cpu counts.  The partitions have been altered as well
-	 * so we have to use the original values.
-	 */
-	job_desc.min_nodes = detail_ptr->orig_min_cpus / cpus_per_node;
-	job_desc.max_nodes = detail_ptr->orig_max_cpus / cpus_per_node;
-#else
 	job_desc.min_nodes = detail_ptr->min_nodes;
 	/* _part_access_check looks for NO_VAL instead of 0 */
 	job_desc.max_nodes = detail_ptr->max_nodes ?
 		detail_ptr->max_nodes : NO_VAL;;
-#endif
 	if (check_min_time && job_ptr->time_min)
 		job_desc.time_limit = job_ptr->time_min;
 	else
@@ -6673,23 +6655,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	static uint32_t node_scaling = 1;
 	static uint32_t cpus_per_mp = 1;
 	acct_policy_limit_set_t acct_policy_limit_set;
-
-#ifdef HAVE_BG
-	uint16_t geo[SYSTEM_DIMENSIONS];
-	uint16_t reboot;
-	uint16_t rotate;
-	uint16_t conn_type[SYSTEM_DIMENSIONS];
-	static bool sub_mp_system = 0;
-
-	if (node_scaling == 1) {
-		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-					&node_scaling);
-		select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT,
-					&cpus_per_mp);
-		if (node_scaling < 512)
-			sub_mp_system = 1;
-	}
-#endif
 
 	if (select_serial == -1) {
 		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
@@ -6895,23 +6860,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	/*
-	 * This needs to be done after the association acct policy check since
-	 * it looks at unaltered nodes for bluegene systems
-	 */
-	debug3("before alteration asking for nodes %u-%u cpus %u-%u",
-	       job_desc->min_nodes, job_desc->max_nodes,
-	       job_desc->min_cpus, job_desc->max_cpus);
-	if (select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc)
-	    != SLURM_SUCCESS) {
-		error_code = ESLURM_INVALID_NODE_COUNT;
-		goto cleanup_fail;
-	}
-
-	debug3("after alteration asking for nodes %u-%u cpus %u-%u",
-	       job_desc->min_nodes, job_desc->max_nodes,
-	       job_desc->min_cpus, job_desc->max_cpus);
-
 	if (job_desc->exc_nodes) {
 		error_code = node_name2bitmap(job_desc->exc_nodes, false,
 					      &exc_bitmap);
@@ -6936,71 +6884,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = 1;
-
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-				    SELECT_JOBDATA_GEOMETRY, &geo);
-	if (geo[0] == NO_VAL16) {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			geo[i] = 0;
-		select_g_select_jobinfo_set(job_desc->select_jobinfo,
-					    SELECT_JOBDATA_GEOMETRY, &geo);
-	} else if (geo[0] != 0) {
-		uint32_t i, tot = 1;
-		for (i = 0; i < SYSTEM_DIMENSIONS; i++)
-			tot *= geo[i];
-		if (job_desc->min_nodes > tot) {
-			info("MinNodes(%d) > GeometryNodes(%d)",
-			     job_desc->min_nodes, tot);
-			error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
-			goto cleanup_fail;
-		}
-		job_desc->min_nodes = tot;
-	}
-	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-				    SELECT_JOBDATA_REBOOT, &reboot);
-	if (reboot == NO_VAL16) {
-		reboot = 0;	/* default is no reboot */
-		select_g_select_jobinfo_set(job_desc->select_jobinfo,
-					    SELECT_JOBDATA_REBOOT, &reboot);
-	}
-	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-				    SELECT_JOBDATA_ROTATE, &rotate);
-	if (rotate == NO_VAL16) {
-		rotate = 1;	/* refault is to rotate */
-		select_g_select_jobinfo_set(job_desc->select_jobinfo,
-					    SELECT_JOBDATA_ROTATE, &rotate);
-	}
-	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
-
-	if ((conn_type[0] != NO_VAL16)
-	    && (((conn_type[0] >= SELECT_SMALL)
-		 && ((job_desc->min_cpus >= cpus_per_mp) && !sub_mp_system))
-		|| (!sub_mp_system
-		    && ((conn_type[0] == SELECT_TORUS)
-			|| (conn_type[0] == SELECT_MESH))
-		    && (job_desc->min_cpus < cpus_per_mp)))) {
-		/*
-		 * check to make sure we have a valid conn_type with
-		 * the cpu count
-		 */
-		info("Job's cpu count at %u makes our conn_type "
-		     "of '%s' invalid.",
-		     job_desc->min_cpus, conn_type_string(conn_type[0]));
-		error_code = ESLURM_INVALID_NODE_COUNT;
-		goto cleanup_fail;
-	}
-
-	/* make sure we reset all the NO_VAL's to NAV's */
-	for (i = 0; i < SYSTEM_DIMENSIONS; i++) {
-		if (conn_type[i] == NO_VAL16)
-			conn_type[i] = SELECT_NAV;
-	}
-	select_g_select_jobinfo_set(job_desc->select_jobinfo,
-				    SELECT_JOBDATA_CONN_TYPE,
-				    &conn_type);
-#endif
 
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
@@ -8449,10 +8332,6 @@ static bool _valid_pn_min_mem(struct job_record *job_ptr,
 	 * calculated avail_cpus_per_node value, the same way we remove
 	 * MemSpecLimit from RealMemory to calculate the allocatable memory on
 	 * the node.
-	 *
-	 * Should we use this function instead?
-	 * select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-	 *			   &avail_cpus_per_node);
 	 */
 	 if (!cpus_called) {
 		 avail_cpus_per_node = _cpus_per_node_part(part_ptr);
@@ -11807,22 +11686,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
-#ifdef HAVE_BG
-	uint16_t conn_type[SYSTEM_DIMENSIONS] = {NO_VAL16};
-	uint16_t reboot = NO_VAL16;
-	uint16_t rotate = NO_VAL16;
-	uint16_t geometry[SYSTEM_DIMENSIONS] = {NO_VAL16};
-	char *image = NULL;
-	static uint32_t cpus_per_mp = 0;
-	static uint16_t cpus_per_node = 0;
-
-	if (!cpus_per_mp)
-		select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT, &cpus_per_mp);
-	if (!cpus_per_node)
-		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-					&cpus_per_node);
-#endif
-
 	/* This means we are in the middle of requesting the db_inx from the
 	 * database. So we can't update right now.  You should try again outside
 	 * the job_write lock in a second or so.
@@ -12044,7 +11907,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	 * Must check req_nodes to set the job_ptr->details->req_node_bitmap
 	 * before we validate it later.
 	 */
-#ifndef HAVE_BG
 	if (job_specs->req_nodes &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/* Use req_nodes to change the nodes associated with a running
@@ -12087,10 +11949,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			update_accounting = true;
 		}
 		FREE_NULL_BITMAP(new_req_bitmap);
-	} else	/* NOTE: continues to "if" logic below */
-#endif
-
-	if (job_specs->req_nodes) {
+	} else if (job_specs->req_nodes) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->req_nodes[0] == '\0')
@@ -12341,7 +12200,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		/* Used by scontrol just to get current configuration info */
 		job_specs->min_nodes = NO_VAL;
 	}
-#if defined(HAVE_BG) || defined(HAVE_ALPS_CRAY)
+#if defined(HAVE_ALPS_CRAY)
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 #else
@@ -12434,26 +12293,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		 * _part_access_check().
 		 */
 		if (job_specs->min_nodes == NO_VAL) {
-#ifdef HAVE_BG
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_NODE_CNT,
-				&job_specs->min_nodes);
-#else
 			job_specs->min_nodes = detail_ptr->min_nodes;
-#endif
 			min_reset = true;
 		}
 		if ((job_specs->max_nodes == NO_VAL) &&
 		    (detail_ptr->max_nodes != 0)) {
-#ifdef HAVE_BG
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_NODE_CNT,
-				&job_specs->max_nodes);
-#else
 			job_specs->max_nodes = detail_ptr->max_nodes;
-#endif
 			max_reset = true;
 		}
 
@@ -12566,21 +12411,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		update_accounting = true;
 	}
 
-	/* This needs to be done after the association acct policy check since
-	 * it looks at unaltered nodes for bluegene systems
-	 */
-	debug3("update before alteration asking for nodes %u-%u cpus %u-%u",
-	       job_specs->min_nodes, job_specs->max_nodes,
-	       job_specs->min_cpus, job_specs->max_cpus);
-	if (select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_specs)
-	    != SLURM_SUCCESS) {
-		error_code = ESLURM_INVALID_NODE_COUNT;
-		goto fini;
-	}
-	debug3("update after alteration asking for nodes %u-%u cpus %u-%u",
-	       job_specs->min_nodes, job_specs->max_nodes,
-	       job_specs->min_cpus, job_specs->max_cpus);
-
 	/* Reset min and max cpu counts as needed, ensure consistency */
 	if (job_specs->min_cpus != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
@@ -12617,20 +12447,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 
 	if (save_min_cpus && (detail_ptr->min_cpus != save_min_cpus)) {
-#ifdef HAVE_BG
-		uint32_t node_cnt = detail_ptr->min_cpus;
-		if (cpus_per_node)
-			node_cnt /= cpus_per_node;
-		/* Ensure that accounting is set up correctly */
-		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &node_cnt);
-		/* Reset geo since changing this makes any geo
-		 * potentially invalid */
-		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_GEOMETRY,
-					    geometry);
-#endif
 		info("update_job: setting min_cpus from "
 		     "%u to %u for job_id %u",
 		     save_min_cpus, detail_ptr->min_cpus, job_ptr->job_id);
@@ -12750,16 +12566,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if (job_specs->num_tasks < 1)
 			error_code = ESLURM_BAD_TASK_COUNT;
 		else {
-#ifdef HAVE_BG
-			uint32_t node_cnt = job_specs->num_tasks;
-			if (cpus_per_node)
-				node_cnt /= cpus_per_node;
-			/* This is only set up so accounting is set up
-			   correctly */
-			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						    SELECT_JOBDATA_NODE_CNT,
-						    &node_cnt);
-#endif
 			detail_ptr->num_tasks = job_specs->num_tasks;
 			info("update_job: setting num_tasks to %u for "
 			     "job_id %u", job_specs->num_tasks,
@@ -13618,194 +13424,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
 
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
-	if (conn_type[0] != NO_VAL16) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_JOB_NOT_PENDING;
-		else {
-			char *conn_type_char = conn_type_string_full(conn_type);
-			if ((conn_type[0] >= SELECT_SMALL)
-			   && (detail_ptr->min_cpus >= cpus_per_mp)) {
-				info("update_job: could not change "
-				     "conn_type to '%s' because cpu "
-				     "count is %u for job %u making "
-				     "the conn_type invalid.",
-				     conn_type_char,
-				     detail_ptr->min_cpus,
-				     job_ptr->job_id);
-				error_code = ESLURM_INVALID_NODE_COUNT;
-			} else if (((conn_type[0] == SELECT_TORUS)
-				   || (conn_type[0] == SELECT_MESH))
-				  && (detail_ptr->min_cpus < cpus_per_mp)) {
-				info("update_job: could not change "
-				     "conn_type to '%s' because cpu "
-				     "count is %u for job %u making "
-				     "the conn_type invalid.",
-				     conn_type_char,
-				     detail_ptr->min_cpus,
-				     job_ptr->job_id);
-				error_code = ESLURM_INVALID_NODE_COUNT;
-			} else {
-				info("update_job: setting conn_type to '%s' "
-				     "for jobid %u",
-				     conn_type_char,
-				     job_ptr->job_id);
-				select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,
-					SELECT_JOBDATA_CONN_TYPE, &conn_type);
-			}
-			xfree(conn_type_char);
-		}
-	}
-
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-
-	/* check to make sure we didn't mess up with the proc count */
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
-	if (detail_ptr &&
-	   (((conn_type[0] >= SELECT_SMALL)
-	     && (detail_ptr->min_cpus >= cpus_per_mp))
-	    || (((conn_type[0] == SELECT_TORUS)|| (conn_type[0] == SELECT_MESH))
-		&& (detail_ptr->min_cpus < cpus_per_mp)))) {
-		char *conn_type_char = conn_type_string_full(conn_type);
-		info("update_job: With cpu count at %u our conn_type "
-		     "of '%s' is invalid for job %u.",
-		     detail_ptr->min_cpus,
-		     conn_type_char,
-		     job_ptr->job_id);
-		xfree(conn_type_char);
-		error_code = ESLURM_INVALID_NODE_COUNT;
-		goto fini;
-	}
-
-	select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				    SELECT_JOBDATA_ROTATE, &rotate);
-	if (rotate != NO_VAL16) {
-		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-			goto fini;
-		} else {
-			info("sched: update_job: setting rotate to %u for "
-			     "jobid %u", rotate, job_ptr->job_id);
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_ROTATE, &rotate);
-		}
-	}
-
-	select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				    SELECT_JOBDATA_REBOOT, &reboot);
-	if (reboot != NO_VAL16) {
-		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-			goto fini;
-		} else {
-			info("sched: update_job: setting reboot to %u for "
-			     "jobid %u", reboot, job_ptr->job_id);
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_REBOOT, &reboot);
-		}
-	}
-
-	select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				    SELECT_JOBDATA_GEOMETRY, geometry);
-	if (geometry[0] != NO_VAL16) {
-		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (operator) {
-			uint32_t i, tot = 1;
-			for (i=0; i<SYSTEM_DIMENSIONS; i++)
-				tot *= geometry[i];
-			info("sched: update_job: setting geometry to %ux%ux%u"
-			     " min_nodes=%u for jobid %u",
-			     geometry[0], geometry[1],
-			     geometry[2], tot, job_ptr->job_id);
-			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						    SELECT_JOBDATA_GEOMETRY,
-						    geometry);
-			detail_ptr->min_nodes = tot;
-		} else {
-			error("sched: Attempt to change geometry for job %u",
-			      job_ptr->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-
-	select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				    SELECT_JOBDATA_BLRTS_IMAGE, &image);
-	if (image) {
-		if (!IS_JOB_PENDING(job_ptr)) {
-			xfree(image);
-			error_code = ESLURM_JOB_NOT_PENDING;
-			goto fini;
-		} else {
-			info("sched: update_job: setting BlrtsImage to %s "
-			     "for jobid %u", image, job_ptr->job_id);
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_BLRTS_IMAGE,
-				image);
-		}
-		xfree(image);
-	}
-	select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				    SELECT_JOBDATA_LINUX_IMAGE, &image);
-	if (image) {
-		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-			xfree(image);
-			goto fini;
-		} else {
-			info("sched: update_job: setting LinuxImage to %s "
-			     "for jobid %u", image, job_ptr->job_id);
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_LINUX_IMAGE, image);
-		}
-		xfree(image);
-	}
-	select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				    SELECT_JOBDATA_MLOADER_IMAGE, &image);
-	if (image) {
-		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-			xfree(image);
-			goto fini;
-		} else {
-			info("sched: update_job: setting MloaderImage to %s "
-			     "for jobid %u", image, job_ptr->job_id);
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_MLOADER_IMAGE,
-				image);
-		}
-		xfree(image);
-	}
-	select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				    SELECT_JOBDATA_RAMDISK_IMAGE, &image);
-	if (image) {
-		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-			xfree(image);
-			goto fini;
-		} else {
-			info("sched: update_job: setting RamdiskImage to %s "
-			     "for jobid %u", image, job_ptr->job_id);
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_RAMDISK_IMAGE,
-				image);
-		}
-		xfree(image);
-	}
-#else
 	if (job_specs->reboot != NO_VAL16) {
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -13819,7 +13437,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				job_ptr->reboot = MAX(1, job_specs->reboot);
 		}
 	}
-#endif
 
 	if (job_specs->network && !xstrcmp(job_specs->network,
 					   job_ptr->network)) {
