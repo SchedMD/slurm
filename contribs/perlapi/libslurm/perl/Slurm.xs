@@ -1665,7 +1665,7 @@ slurm_print_node_info_msg(slurm_t self, FILE *out, HV *node_info_msg, int one_li
 		xfree(ni_msg.node_array);
 
 void
-slurm_print_node_table(slurm_t self, FILE *out, HV *node_info, int node_scaling=1, int one_liner=0)
+slurm_print_node_table(slurm_t self, FILE *out, HV *node_info, int one_liner=0)
 	PREINIT:
 		node_info_t ni;
 	INIT:
@@ -1681,10 +1681,10 @@ slurm_print_node_table(slurm_t self, FILE *out, HV *node_info, int node_scaling=
 			XSRETURN_UNDEF;
 		}
 	C_ARGS:
-		out, &ni, node_scaling, one_liner
+		out, &ni, one_liner
 
 char_xfree *
-slurm_sprint_node_table(slurm_t self, HV *node_info, int node_scaling=1, int one_liner=0)
+slurm_sprint_node_table(slurm_t self, HV *node_info, int one_liner=0)
 	PREINIT:
 		node_info_t ni;
 	CODE:
@@ -1696,7 +1696,7 @@ slurm_sprint_node_table(slurm_t self, HV *node_info, int node_scaling=1, int one
 		if(hv_to_node_info(node_info, &ni) < 0) {
 			XSRETURN_UNDEF;
 		}
-		RETVAL = slurm_sprint_node_table(&ni, node_scaling, one_liner);
+		RETVAL = slurm_sprint_node_table(&ni, one_liner);
 	OUTPUT:
 		RETVAL
 

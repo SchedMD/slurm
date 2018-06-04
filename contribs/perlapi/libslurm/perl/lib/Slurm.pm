@@ -1049,7 +1049,7 @@ Output information about all SLURM nodes based upon message as loaded using C<lo
 
 =back    
 
-=head3 $slurm->print_node_table($out, $node_info, $node_scaling=1, $one_liner=0);
+=head3 $slurm->print_node_table($out, $node_info, $one_liner=0);
 
 Output information about a specific SLURM node based upon message as loaded using C<load_node()>.
 
@@ -1059,21 +1059,17 @@ Output information about a specific SLURM node based upon message as loaded usin
 
 =item * IN $node_info: an individual node information record with structure of C<node_info_t>.
 
-=item * IN $node_scaling: the number of nodes each node information record represents.
-
 =item * IN $one_liner: whether to print as a single line.
 
 =back    
 
-=head3 $str = $slurm->sprint_node_table($node_info, $node_scaling=1, $one_liner=0);
+=head3 $str = $slurm->sprint_node_table($node_info, $one_liner=0);
 
 Output information about a specific SLURM node based upon message as loaded using C<load_node>.
 
 =over 2
 
 =item * IN $node_info: an individual node information record with structure of C<node_info_t>.
-
-=item * IN $node_scaling: number of nodes each node information record represents.
 
 =item * IN $one_liner: whether to print as a single line.
 

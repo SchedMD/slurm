@@ -80,7 +80,7 @@ extern int job_step_stat_response_msg_to_hv(job_step_stat_response_msg_t
 		*stat_msg, HV *hv);
 
 /********** node info conversion functions **********/
-extern int node_info_to_hv(node_info_t *node_info, uint16_t node_scaling, HV *hv);
+extern int node_info_to_hv(node_info_t *node_info, HV *hv);
 extern int hv_to_node_info(HV *hv, node_info_t *node_info);
 extern int node_info_msg_to_hv(node_info_msg_t *node_info_msg, HV *hv);
 extern int hv_to_node_info_msg(HV *hv, node_info_msg_t *node_info_msg);
