@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
  -- Add NodeRebootWeight parameter to knl.conf configuration file.
  -- Completely remove "gres" field from step record. Use "tres_per_node",
     "tres_per_socket", etc.
+ -- Add "Links" parameter to gres.conf configuration file.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

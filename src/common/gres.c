@@ -2,7 +2,7 @@
  *  gres.c - driver for gres plugin
  *****************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2014 SchedMD LLC
+ *  Portions Copyright (C) 2014-2018 SchedMD LLC
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -251,6 +251,7 @@ static uint64_t	_step_test(void *step_gres_data, void *job_gres_data,
 static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
 static void	_validate_config(slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
+static void	_validate_links(gres_slurmd_conf_t *p);
 static void	_validate_gres_node_cores(gres_node_state_t *node_gres_ptr,
 					  int cpus_ctld, char *node_name);
 static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
@@ -683,6 +684,7 @@ static void _destroy_gres_slurmd_conf(void *x)
 	xfree(p->cpus);
 	FREE_NULL_BITMAP(p->cpus_bitmap);
 	xfree(p->file);		/* Only used by slurmd */
+	xfree(p->links);
 	xfree(p->name);
 	xfree(p->type);
 	xfree(p);
@@ -694,6 +696,7 @@ static void _destroy_gres_slurmd_conf(void *x)
 static int _log_gres_slurmd_conf(void *x, void *arg)
 {
 	gres_slurmd_conf_t *p;
+	char *links = NULL;
 
 	p = (gres_slurmd_conf_t *) x;
 	xassert(p);
@@ -704,18 +707,21 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 		return 0;
 	}
 
+	if (p->links)
+		xstrfmtcat(links, "Links=%s", p->links);
 	if (p->cpus) {
 		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s "
-		     "Cores=%s CoreCnt=%u",
+		     "Cores=%s CoreCnt=%u %s",
 		     p->name, p->type, p->count, p->plugin_id, p->file, p->cpus,
-		     p->cpu_cnt);
+		     p->cpu_cnt, links);
 	} else if (p->file) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s",
-		     p->name, p->type, p->count, p->plugin_id, p->file);
+		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s %s",
+		     p->name, p->type, p->count, p->plugin_id, p->file, links);
 	} else {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u", p->name,
-		     p->type, p->count, p->plugin_id);
+		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u %s", p->name,
+		     p->type, p->count, p->plugin_id, links);
 	}
+	xfree(links);
 
 	return 0;
 }
@@ -796,6 +802,37 @@ static int _validate_file(char *path_name, char *gres_name)
 }
 
 /*
+ * Check that we have a comma-delimited list of numbers
+ */
+static void _validate_links(gres_slurmd_conf_t *p)
+{
+	char *tmp, *tok, *save_ptr = NULL, *end_ptr = NULL;
+	long int val;
+
+	if (!p->links)
+		return;
+	if (p->links[0] == '\0') {
+		xfree(p->links);
+		return;
+	}
+
+	tmp = xstrdup(p->links);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		val = strtol(tok, &end_ptr, 10);
+		if ((val < 0) || (val > GRES_MAX_LINK) || (val == LONG_MIN) ||
+		    (end_ptr[0] != '\0')) {
+			error("gres.conf: Ignoring invalid Link (%s) for Name=%s",
+			      tok, p->name);
+			xfree(p->links);
+			break;
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+}
+
+/*
  * Build gres_slurmd_conf_t record based upon a line from the gres.conf file
  */
 static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
@@ -806,8 +843,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		{"Count", S_P_STRING},	/* Number of Gres available */
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource
 					 * (deprecated, use Cores) */
-		{"Cores" , S_P_STRING},	/* Cores to bind to Gres resource */
+		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
+		{"Link",  S_P_STRING},	/* Communication link IDs */
+		{"Links", S_P_STRING},	/* Communication link IDs */
 		{"Name",  S_P_STRING},	/* Gres name */
 		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
 		{NULL}
@@ -858,6 +897,11 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&p->file, "File", tbl)) {
 		p->count = _validate_file(p->file, p->name);
 		p->has_file = 1;
+	}
+
+	if (s_p_get_string(&p->links, "Link",  tbl) ||
+	    s_p_get_string(&p->links, "Links", tbl)) {
+		_validate_links(p);
 	}
 
 	if (s_p_get_string(&p->type, "Type", tbl) && !p->file) {
@@ -923,6 +967,8 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
 		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
+		{"Link",  S_P_STRING},	/* Communication link IDs */
+		{"Links", S_P_STRING},	/* Communication link IDs */
 		{"Name",  S_P_STRING},	/* Gres name */
 		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
 		{NULL}
@@ -1114,6 +1160,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 			pack8(gres_slurmd_conf->has_file, buffer);
 			pack32(gres_slurmd_conf->plugin_id, buffer);
 			packstr(gres_slurmd_conf->cpus, buffer);
+			packstr(gres_slurmd_conf->links, buffer);
 			packstr(gres_slurmd_conf->name, buffer);
 			packstr(gres_slurmd_conf->type, buffer);
 		}
@@ -1129,14 +1176,14 @@ extern int gres_plugin_node_config_pack(Buf buffer)
  * IN/OUT buffer - message buffer to unpack
  * IN node_name - name of node whose data is being unpacked
  */
-extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
+extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 {
 	int i, j, rc;
 	uint32_t cpu_cnt, magic, plugin_id, utmp32;
 	uint64_t count64;
 	uint16_t rec_cnt, protocol_version;
 	uint8_t has_file;
-	char *tmp_cpus, *tmp_name, *tmp_type;
+	char *tmp_cpus, *tmp_links, *tmp_name, *tmp_type;
 	gres_slurmd_conf_t *p;
 
 	rc = gres_plugin_init();
@@ -1153,8 +1200,13 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		goto unpack_error;
 
 	slurm_mutex_lock(&gres_context_lock);
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		for (i = 0; i < rec_cnt; i++) {
+	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+	for (i = 0; i < rec_cnt; i++) {
+		if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -1164,81 +1216,93 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 			safe_unpack8(&has_file, buffer);
 			safe_unpack32(&plugin_id, buffer);
 			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
+		} else {  /* protocol_version >= SLURM_MIN_PROTOCOL_VERSION */
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
 
-	 		for (j = 0; j < gres_context_cnt; j++) {
-	 			if (gres_context[j].plugin_id != plugin_id)
-					continue;
-				if (xstrcmp(gres_context[j].gres_name,
-					    tmp_name)) {
-					/* Should have beeen caught in
-					 * gres_plugin_init() */
-					error("gres_plugin_node_config_unpack: "
-					      "gres/%s duplicate plugin ID with"
-					      " %s, unable to process",
-					      tmp_name,
-					      gres_context[j].gres_name);
-					continue;
-				}
-				if (gres_context[j].has_file &&
-				    !has_file && count64) {
-					error("gres_plugin_node_config_unpack: "
-					      "gres/%s lacks File parameter "
-					      "for node %s",
-					      tmp_name, node_name);
-					has_file = 1;
-				}
-				if (has_file && (count64 > MAX_GRES_BITMAP)) {
-					/* Avoid over-subscribing memory with
-					 * huge bitmaps */
-					error("%s: gres/%s has File plus very "
-					      "large Count (%"PRIu64") for "
-					      "node %s, resetting value to %d",
-					      __func__, tmp_name, count64,
-					      node_name, MAX_GRES_BITMAP);
-					count64 = MAX_GRES_BITMAP;
-				}
-				if (has_file)	/* Don't clear if already set */
-					gres_context[j].has_file = true;
-				break;
-	 		}
-			if (j >= gres_context_cnt) {
-				/* GresPlugins is inconsistently configured.
-				 * Not a fatal error. Skip this data. */
-				error("gres_plugin_node_config_unpack: no "
-				      "plugin configured to unpack data "
-				      "type %s from node %s",
-				      tmp_name, node_name);
-				xfree(tmp_cpus);
-				xfree(tmp_name);
+			safe_unpack64(&count64, buffer);
+			safe_unpack32(&cpu_cnt, buffer);
+			safe_unpack8(&has_file, buffer);
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
+			tmp_links = NULL;
+			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
+		}
+	 	for (j = 0; j < gres_context_cnt; j++) {
+	 		if (gres_context[j].plugin_id != plugin_id)
+				continue;
+			if (xstrcmp(gres_context[j].gres_name, tmp_name)) {
+				/*
+				 * Should have beeen caught in
+				 * gres_plugin_init()
+				 */
+				error("%s: gres/%s duplicate plugin ID with"
+				      " %s, unable to process",
+				      __func__, tmp_name,
+				      gres_context[j].gres_name);
 				continue;
 			}
-			p = xmalloc(sizeof(gres_slurmd_conf_t));
-			p->count = count64;
-			p->cpu_cnt = cpu_cnt;
-			p->has_file = has_file;
-			p->cpus = tmp_cpus;
-			tmp_cpus = NULL;	/* Nothing left to xfree */
-			p->name = tmp_name;     /* Preserve for accounting! */
-			p->type = tmp_type;
-			tmp_type = NULL;	/* Nothing left to xfree */
-			p->plugin_id = plugin_id;
-			list_append(gres_conf_list, p);
+			if (gres_context[j].has_file && !has_file && count64) {
+				error("%s: gres/%s lacks File parameter for node %s",
+				      __func__, tmp_name, node_name);
+				has_file = 1;
+			}
+			if (has_file && (count64 > MAX_GRES_BITMAP)) {
+				/*
+				 * Avoid over-subscribing memory with
+				 * huge bitmaps
+				 */
+				error("%s: gres/%s has File plus very "
+				      "large Count (%"PRIu64") for "
+				      "node %s, resetting value to %d",
+				      __func__, tmp_name, count64,
+				      node_name, MAX_GRES_BITMAP);
+				count64 = MAX_GRES_BITMAP;
+			}
+			if (has_file)	/* Don't clear if already set */
+				gres_context[j].has_file = true;
+			break;
+	 	}
+		if (j >= gres_context_cnt) {
+			/*
+			 * GresPlugins is inconsistently configured.
+			 * Not a fatal error. Skip this data.
+			 */
+			error("%s: no plugin configured to unpack data "
+			      "type %s from node %s",
+			      __func__, tmp_name, node_name);
+			xfree(tmp_cpus);
+			xfree(tmp_name);
+			continue;
 		}
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-		goto unpack_error;
+		p = xmalloc(sizeof(gres_slurmd_conf_t));
+		p->count = count64;
+		p->cpu_cnt = cpu_cnt;
+		p->has_file = has_file;
+		p->cpus = tmp_cpus;
+		tmp_cpus = NULL;	/* Nothing left to xfree */
+		p->links = tmp_links;
+		tmp_links = NULL;	/* Nothing left to xfree */
+		p->name = tmp_name;     /* Preserve for accounting! */
+		p->type = tmp_type;
+		tmp_type = NULL;	/* Nothing left to xfree */
+		p->plugin_id = plugin_id;
+		_validate_links(p);
+		list_append(gres_conf_list, p);
 	}
 
 	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
 
 unpack_error:
-	error("gres_plugin_node_config_unpack: unpack error from node %s",
-	      node_name);
+	error("%s: unpack error from node %s", __func__, node_name);
 	xfree(tmp_cpus);
+	xfree(tmp_links);
 	xfree(tmp_name);
 	slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
@@ -1259,12 +1323,15 @@ static void _gres_node_list_delete(void *list_element)
 	FREE_NULL_BITMAP(gres_node_ptr->gres_bit_alloc);
 	xfree(gres_node_ptr->gres_used);
 	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
+		if (gres_node_ptr->links_bitmap)
+			FREE_NULL_BITMAP(gres_node_ptr->links_bitmap[i]);
 		if (gres_node_ptr->topo_core_bitmap)
 			FREE_NULL_BITMAP(gres_node_ptr->topo_core_bitmap[i]);
 		if (gres_node_ptr->topo_gres_bitmap)
 			FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
 		xfree(gres_node_ptr->topo_model[i]);
 	}
+	xfree(gres_node_ptr->links_bitmap);
 	xfree(gres_node_ptr->topo_core_bitmap);
 	xfree(gres_node_ptr->topo_gres_bitmap);
 	xfree(gres_node_ptr->topo_gres_cnt_alloc);
@@ -1641,6 +1708,21 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 	return rc;
 }
 
+static bitstr_t *_links_str2bitmap(char *links, char *node_name)
+{
+	bitstr_t *link_bitmap = NULL;
+
+	if (!links || !links[0])
+		return NULL;
+	link_bitmap = bit_alloc(GRES_MAX_LINK + 1);
+	if (bit_unfmt(link_bitmap, links) == 0)
+		return link_bitmap;
+	info("%s: Ignoring invalid GRES links (%s) for node %s", __func__,
+	     links, node_name);
+	bit_free(link_bitmap);
+	return NULL;
+}
+
 static int _node_config_validate(char *node_name, char *orig_config,
 				 char **new_config, gres_state_t *gres_ptr,
 				 uint16_t fast_schedule, char **reason_down,
@@ -1690,6 +1772,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		xfree(gres_data->topo_gres_cnt_alloc);
 		xfree(gres_data->topo_gres_cnt_avail);
 		for (i = 0; i < gres_data->topo_cnt; i++) {
+			if (gres_data->links_bitmap)
+				FREE_NULL_BITMAP(gres_data->links_bitmap[i]);
 			if (gres_data->topo_gres_bitmap) {
 				FREE_NULL_BITMAP(gres_data->
 						 topo_gres_bitmap[i]);
@@ -1700,6 +1784,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			}
 			xfree(gres_data->topo_model[i]);
 		}
+		xfree(gres_data->links_bitmap);
 		xfree(gres_data->topo_gres_bitmap);
 		xfree(gres_data->topo_core_bitmap);
 		xfree(gres_data->topo_model);
@@ -1707,8 +1792,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 
 	if (context_ptr->has_file && (set_cnt != gres_data->topo_cnt)) {
-		/* Need to rebuild topology info */
-		/* Resize the data structures here */
+		/*
+		 * Need to rebuild topology info
+		 * Resize the data structures here
+		 */
 		gres_data->topo_gres_cnt_alloc =
 			xrealloc(gres_data->topo_gres_cnt_alloc,
 				 set_cnt * sizeof(uint64_t));
@@ -1716,6 +1803,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			xrealloc(gres_data->topo_gres_cnt_avail,
 				 set_cnt * sizeof(uint64_t));
 		for (i = 0; i < gres_data->topo_cnt; i++) {
+			if (gres_data->links_bitmap)
+				FREE_NULL_BITMAP(gres_data->links_bitmap[i]);
 			if (gres_data->topo_gres_bitmap) {
 				FREE_NULL_BITMAP(gres_data->
 						 topo_gres_bitmap[i]);
@@ -1726,6 +1815,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			}
 			xfree(gres_data->topo_model[i]);
 		}
+		gres_data->links_bitmap =
+			xrealloc(gres_data->links_bitmap,
+				 set_cnt * sizeof(bitstr_t *));
 		gres_data->topo_gres_bitmap =
 			xrealloc(gres_data->topo_gres_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
@@ -1756,6 +1848,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				      " some of the records on node %s",
 				      context_ptr->gres_type, node_name);
 			}
+
+			gres_data->links_bitmap[i] =
+				_links_str2bitmap(gres_slurmd_conf->links,
+						  node_name);
 			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
 			for (j = 0; j < gres_slurmd_conf->count; j++) {
 				bit_set(gres_data->topo_gres_bitmap[i],
@@ -1826,6 +1922,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		      gres_data->gres_cnt_config, gres_data->gres_cnt_found);
 		if (gres_data->topo_core_bitmap) {
 			for (i = 0; i < gres_data->topo_cnt; i++) {
+				if (gres_data->links_bitmap) {
+					FREE_NULL_BITMAP(gres_data->
+							 links_bitmap[i]);
+				}
 				if (gres_data->topo_core_bitmap) {
 					FREE_NULL_BITMAP(gres_data->
 							 topo_core_bitmap[i]);
@@ -1836,6 +1936,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				}
 				xfree(gres_data->topo_model[i]);
 			}
+			xfree(gres_data->links_bitmap);
 			xfree(gres_data->topo_core_bitmap);
 			xfree(gres_data->topo_gres_bitmap);
 			xfree(gres_data->topo_gres_cnt_alloc);
@@ -2272,6 +2373,8 @@ static void *_node_state_dup(void *gres_data)
 		return new_gres;
 
 	new_gres->topo_cnt         = gres_ptr->topo_cnt;
+	new_gres->links_bitmap = xmalloc(gres_ptr->topo_cnt  *
+					 sizeof(bitstr_t *));
 	new_gres->topo_core_bitmap = xmalloc(gres_ptr->topo_cnt *
 					     sizeof(bitstr_t *));
 	new_gres->topo_gres_bitmap = xmalloc(gres_ptr->topo_cnt *
@@ -2282,6 +2385,10 @@ static void *_node_state_dup(void *gres_data)
 						sizeof(uint64_t));
 	new_gres->topo_model = xmalloc(gres_ptr->topo_cnt * sizeof(char *));
 	for (i = 0; i < gres_ptr->topo_cnt; i++) {
+		if (gres_ptr->links_bitmap[i]) {
+			new_gres->links_bitmap[i] =
+				bit_copy(gres_ptr->links_bitmap[i]);
+		}
 		if (gres_ptr->topo_core_bitmap[i]) {
 			new_gres->topo_core_bitmap[i] =
 				bit_copy(gres_ptr->topo_core_bitmap[i]);
@@ -2558,6 +2665,12 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 
 	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
 		info("  type[%d]:%s", i, gres_node_ptr->topo_model[i]);
+		if (gres_node_ptr->links_bitmap &&
+		    gres_node_ptr->links_bitmap[i]) {
+			bit_fmt(tmp_str, sizeof(tmp_str),
+				gres_node_ptr->links_bitmap[i]);
+			info("   links_bitmap[%d]:%s", i, tmp_str);
+		}
 		if (gres_node_ptr->topo_core_bitmap[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_node_ptr->topo_core_bitmap[i]);

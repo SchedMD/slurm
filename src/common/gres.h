@@ -45,7 +45,7 @@
 #include "src/common/pack.h"
 
 #define GRES_MAGIC 0x438a34d4
-
+#define GRES_MAX_LINK 1023
 
 enum {
 	GRES_VAL_TYPE_FOUND  = 0,
@@ -74,6 +74,9 @@ typedef struct gres_slurmd_conf {
 	/* Device file associated with this configuration record */
 	char *file;
 	uint8_t has_file;	/* non-zero if file is set, flag for RPC */
+
+	/* Comma-separated list of communication link IDs (numbers) */
+	char *links;
 
 	/* Name of this gres */
 	char *name;
@@ -112,8 +115,9 @@ typedef struct gres_node_state {
 	uint64_t  gres_cnt_alloc;
 	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File field */
 
-	/* Topology specific information (if gres.conf contains "cores" option) */
+	/* Topology specific information */
 	uint16_t topo_cnt;		/* Size of topo_ arrays */
+	bitstr_t **links_bitmap;
 	bitstr_t **topo_core_bitmap;
 	bitstr_t **topo_gres_bitmap;
 	uint64_t *topo_gres_cnt_alloc;
