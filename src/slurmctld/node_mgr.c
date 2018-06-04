@@ -808,8 +808,6 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
-		pack32(1, buffer); /* was node_scaling */
-
 		pack_time(now, buffer);
 
 		/* write node records */
@@ -851,7 +849,6 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack32(1, buffer); /* was node_scaling */
-
 		pack_time(now, buffer);
 
 		/* write node records */
@@ -939,8 +936,6 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
-		pack32(1, buffer); /* was node_scaling */
-
 		pack_time(now, buffer);
 
 		/* write node records */
@@ -973,7 +968,6 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack32(1, buffer); /* was node_scaling */
-
 		pack_time(now, buffer);
 
 		/* write node records */
