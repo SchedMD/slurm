@@ -66,8 +66,6 @@ typedef struct load_info_struct {
 
 struct sinfo_parameters params;
 
-static int g_node_scaling = 1;
-
 static int sinfo_cnt;	/* thread count */
 static pthread_mutex_t sinfo_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  sinfo_cnt_cond  = PTHREAD_COND_INITIALIZER;
@@ -81,14 +79,13 @@ static int  _build_sinfo_data(List sinfo_list,
 			      partition_info_msg_t *partition_msg,
 			      node_info_msg_t *node_msg);
 static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
-				   uint16_t part_inx, node_info_t *node_ptr,
-				   uint32_t node_scaling);
+				   uint16_t part_inx, node_info_t *node_ptr);
 static int  _find_part_list(void *x, void *key);
 static bool _filter_out(node_info_t *node_ptr);
 static int  _get_info(bool clear_old, slurmdb_federation_rec_t *fed);
 static int  _insert_node_ptr(List sinfo_list, uint16_t part_num,
 			     partition_info_t *part_ptr,
-			     node_info_t *node_ptr, uint32_t node_scaling);
+			     node_info_t *node_ptr);
 static int  _load_resv(reserve_info_msg_t ** reserv_pptr, bool clear_old);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
@@ -104,8 +101,7 @@ static int  _reservation_report(reserve_info_msg_t *resv_ptr);
 static bool _serial_part_data(void);
 static void _sinfo_list_delete(void *data);
 static void _sort_hostlist(List sinfo_list);
-static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
-			  uint32_t node_scaling);
+static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 
 int main(int argc, char **argv)
 {
@@ -512,8 +508,7 @@ void *_build_part_info(void *args)
 				continue;
 
 			_insert_node_ptr(sinfo_list, part_num,
-					 part_ptr, node_ptr,
-					 node_msg->node_scaling);
+					 part_ptr, node_ptr);
 		}
 		j += 2;
 	}
@@ -550,8 +545,6 @@ static int _build_sinfo_data(List sinfo_list,
 	partition_info_t *part_ptr = NULL;
 	int j;
 
-	g_node_scaling = node_msg->node_scaling;
-
 	/* by default every partition is shown, even if no nodes */
 	if ((!params.node_flag) && params.match_flags.partition_flag) {
 		part_ptr = partition_msg->partition_array;
@@ -562,8 +555,7 @@ static int _build_sinfo_data(List sinfo_list,
 					     part_ptr->name))) {
 				list_append(sinfo_list, _create_sinfo(
 						    part_ptr, (uint16_t) j,
-						    NULL,
-						    node_msg->node_scaling));
+						    NULL));
 			}
 		}
 	}
@@ -599,8 +591,7 @@ static int _build_sinfo_data(List sinfo_list,
 			if (pos < 0)
 				continue;
 			_insert_node_ptr(sinfo_list, (uint16_t) j,
-					 part_ptr, node_ptr,
-					 node_msg->node_scaling);
+					 part_ptr, node_ptr);
 			continue;
 		}
 
@@ -931,8 +922,7 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	return true;
 }
 
-static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
-			  uint32_t node_scaling)
+static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	uint32_t base_state;
 	uint64_t alloc_mem = 0;
@@ -1067,7 +1057,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 			    partition_info_t *part_ptr,
-			    node_info_t *node_ptr, uint32_t node_scaling)
+			    node_info_t *node_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	sinfo_data_t *sinfo_ptr = NULL;
@@ -1080,7 +1070,7 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 		if (sinfo_ptr->nodes_total &&
 		    (!_match_node_data(sinfo_ptr, node_ptr)))
 			continue;
-		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);
+		_update_sinfo(sinfo_ptr, node_ptr);
 		break;
 	}
 	list_iterator_destroy(itr);
@@ -1088,8 +1078,7 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 	/* if no match, create new sinfo_data entry */
 	if (!sinfo_ptr) {
 		list_append(sinfo_list,
-			    _create_sinfo(part_ptr, part_num,
-					  node_ptr, node_scaling));
+			    _create_sinfo(part_ptr, part_num, node_ptr));
 	}
 
 	return rc;
@@ -1103,8 +1092,7 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
  * node_ptr IN       - pointer to node record to add
  */
 static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
-				   uint16_t part_inx, node_info_t *node_ptr,
-				   uint32_t node_scaling)
+				   uint16_t part_inx, node_info_t *node_ptr)
 {
 	sinfo_data_t *sinfo_ptr;
 	/* create an entry */
@@ -1117,7 +1105,7 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 	sinfo_ptr->hostnames = hostlist_create(NULL);
 
 	if (node_ptr)
-		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);
+		_update_sinfo(sinfo_ptr, node_ptr);
 
 	return sinfo_ptr;
 }
