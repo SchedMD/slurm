@@ -404,6 +404,14 @@ extern void exec_task(stepd_step_rec_t *job, int i)
 	setup_env(job->envtp, false);
 	setenvf(&job->envtp->env, "SLURM_JOB_GID", "%d", job->gid);
 	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
+	if (job->tres_bind) {
+		setenvf(&job->envtp->env, "SLURMD_TRES_BIND", "%s",
+			job->tres_bind);
+	}
+	if (job->tres_freq) {
+		setenvf(&job->envtp->env, "SLURMD_TRES_FREQ", "%s",
+			job->tres_freq);
+	}
 	tmp_env = job->env;
 	job->env = job->envtp->env;
 	env_array_free(tmp_env);

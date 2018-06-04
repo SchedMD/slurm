@@ -60,13 +60,15 @@
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/switch.h"
+#include "src/common/tres_bind.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_ext_sensors.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -371,10 +373,11 @@ extern void step_list_purge(struct job_record *job_ptr)
 /* _free_step_rec - delete a step record's data structures */
 static void _free_step_rec(struct step_record *step_ptr)
 {
-/* FIXME: If job step record is preserved after completion,
+/*
+ * FIXME: If job step record is preserved after completion,
  * the switch_g_job_step_complete() must be called upon completion
- * and not upon record purging. Presently both events occur
- * simultaneously. */
+ * and not upon record purging. Presently both events occur simultaneously.
+ */
 	if (step_ptr->switch_job) {
 		if (step_ptr->step_layout)
 			switch_g_job_step_complete(
@@ -396,7 +399,6 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->resv_ports);
 	xfree(step_ptr->network);
 	xfree(step_ptr->ckpt_dir);
-	xfree(step_ptr->gres);
 	FREE_NULL_LIST(step_ptr->gres_list);
 	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
 	xfree(step_ptr->tres_alloc_str);
@@ -406,7 +408,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->mem_per_tres);
 	xfree(step_ptr->tres_bind);
 	xfree(step_ptr->tres_freq);
-	xfree(step_ptr->tres_per_job);
+	xfree(step_ptr->tres_per_step);
 	xfree(step_ptr->tres_per_node);
 	xfree(step_ptr->tres_per_socket);
 	xfree(step_ptr->tres_per_task);
@@ -497,8 +499,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   mem_per_%s=%"PRIu64" resv_port_cnt=%u immediate=%u"
 	       " no_kill=%u", mem_type, mem_value, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
-	debug3("   overcommit=%d time_limit=%u gres=%s",
-	       step_spec->overcommit, step_spec->time_limit, step_spec->gres);
+	debug3("   overcommit=%d time_limit=%u",
+	       step_spec->overcommit, step_spec->time_limit);
 
 	if (step_spec->cpus_per_tres)
 		debug3("   CPUs_per_TRES=%s", step_spec->cpus_per_tres);
@@ -508,8 +510,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		debug3("   TRES_bind=%s", step_spec->tres_bind);
 	if (step_spec->tres_freq)
 		debug3("   TRES_freq=%s", step_spec->tres_freq);
-	if (step_spec->tres_per_job)
-		debug3("   TRES_per_job=%s", step_spec->tres_per_job);
+	if (step_spec->tres_per_step)
+		debug3("   tres_per_step=%s", step_spec->tres_per_step);
 	if (step_spec->tres_per_node)
 		debug3("   TRES_per_node=%s", step_spec->tres_per_node);
 	if (step_spec->tres_per_socket)
@@ -1311,7 +1313,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if ((step_spec->pn_min_memory && _is_mem_resv()) ||
-	    (step_spec->gres && (step_spec->gres[0]))) {
+	    (step_spec->tres_per_node && step_spec->tres_per_node[0])) {
 		int fail_mode = ESLURM_INVALID_TASK_MEMORY;
 		uint64_t tmp_mem;
 		uint32_t tmp_cpus, avail_cpus, total_cpus;
@@ -1376,7 +1378,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				}
 			}
 
-			if (step_spec->gres) {
+			if (step_spec->tres_per_node) {
 				/* ignore current step allocations */
 				tmp_cpus = gres_plugin_step_test(step_gres_list,
 							job_ptr->gres_list,
@@ -2011,8 +2013,8 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 #endif
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
-				       job_node_inx, cpus_alloc,
-				       job_ptr->job_id, step_ptr->step_id);
+				       job_node_inx, job_ptr->job_id,
+				       step_ptr->step_id);
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
 			if (step_ptr->pn_min_memory & MEM_PER_CPU) {
 				uint64_t mem_use = step_ptr->pn_min_memory;
@@ -2313,6 +2315,24 @@ static void _set_def_cpu_bind(struct job_record *job_ptr)
 }
 
 /*
+ * If a job step specification does not include any TRES specification,
+ * then copy those values from the job record
+ */
+static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
+				   struct job_record  *job_ptr)
+{
+	if (step_specs->tres_per_step	||
+	    step_specs->tres_per_node	||
+	    step_specs->tres_per_socket	||
+	    step_specs->tres_per_task)
+		return;
+	step_specs->tres_per_step	= xstrdup(job_ptr->tres_per_job);
+	step_specs->tres_per_node	= xstrdup(job_ptr->tres_per_node);
+	step_specs->tres_per_socket	= xstrdup(job_ptr->tres_per_socket);
+	step_specs->tres_per_task	= xstrdup(job_ptr->tres_per_task);
+}
+
+/*
  * step_create - creates a step_record in step_specs->job_id, sets up the
  *	according to the step_specs.
  * IN step_specs - job step specifications
@@ -2429,16 +2449,15 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	if (!valid_tres_cnt(step_specs->cpus_per_tres)	||
 	    !valid_tres_cnt(step_specs->mem_per_tres)	||
-	    !valid_tres_bind(step_specs->tres_bind)	||
-	    !valid_tres_freq(step_specs->tres_freq)	||
-	    !valid_tres_cnt(step_specs->tres_per_job)	||
+	    tres_bind_verify_cmdline(step_specs->tres_bind) ||
+	    tres_freq_verify_cmdline(step_specs->tres_freq) ||
+	    !valid_tres_cnt(step_specs->tres_per_step)	||
 	    !valid_tres_cnt(step_specs->tres_per_node)	||
 	    !valid_tres_cnt(step_specs->tres_per_socket)||
 	    !valid_tres_cnt(step_specs->tres_per_task))
 		return ESLURM_INVALID_TRES;
 
 	if (_test_strlen(step_specs->ckpt_dir, "ckpt_dir", MAXPATHLEN)	||
-	    _test_strlen(step_specs->gres, "gres", 1024)		||
 	    _test_strlen(step_specs->host, "host", 1024)		||
 	    _test_strlen(step_specs->name, "name", 1024)		||
 	    _test_strlen(step_specs->network, "network", 1024))
@@ -2459,8 +2478,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	if (step_specs->overcommit) {
 		if (step_specs->exclusive) {
-			/* Not really a legitimate combination, try to
-			 * exclusively allocate one CPU per task */
+			/*
+			 * Not really a legitimate combination,
+			 * try to exclusively allocate one CPU per task
+			 */
 			step_specs->overcommit = 0;
 			step_specs->cpu_count = step_specs->num_tasks;
 		} else
@@ -2475,12 +2496,14 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	if (step_specs->no_kill > 1)
 		step_specs->no_kill = 1;
-
-	if (step_specs->gres && !xstrcasecmp(step_specs->gres, "NONE"))
-		xfree(step_specs->gres);
-	else if (step_specs->gres == NULL)
-		step_specs->gres = xstrdup(job_ptr->gres);
-	i = gres_plugin_step_state_validate(step_specs->gres, &step_gres_list,
+	_copy_job_tres_to_step(step_specs, job_ptr);
+	i = gres_plugin_step_state_validate(step_specs->cpus_per_tres,
+					    step_specs->tres_per_step,
+					    step_specs->tres_per_node,
+					    step_specs->tres_per_socket,
+					    step_specs->tres_per_task,
+					    step_specs->mem_per_tres,
+					    &step_gres_list,
 					    job_ptr->gres_list, job_ptr->job_id,
 					    NO_VAL);
 	if (i != SLURM_SUCCESS) {
@@ -2599,8 +2622,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 		break;
 	}
 
-	step_ptr->gres      = step_specs->gres;
-	step_specs->gres    = NULL;
 	step_ptr->gres_list = step_gres_list;
 	step_gres_list      = (List) NULL;
 	gres_plugin_step_state_log(step_ptr->gres_list, job_ptr->job_id,
@@ -2636,7 +2657,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->mem_per_tres = xstrdup(step_specs->mem_per_tres);
 	step_ptr->tres_bind = xstrdup(step_specs->tres_bind);
 	step_ptr->tres_freq = xstrdup(step_specs->tres_freq);
-	step_ptr->tres_per_job = xstrdup(step_specs->tres_per_job);
+	step_ptr->tres_per_step = xstrdup(step_specs->tres_per_step);
 	step_ptr->tres_per_node = xstrdup(step_specs->tres_per_node);
 	step_ptr->tres_per_socket = xstrdup(step_specs->tres_per_socket);
 	step_ptr->tres_per_task = xstrdup(step_specs->tres_per_task);
@@ -2766,7 +2787,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	slurm_step_layout_req_t step_layout_req;
 
 #ifndef HAVE_BGQ
-	uint32_t gres_cpus;
+	uint64_t gres_cpus;
 	int cpu_inx = -1, cpus_task_inx = -1;
 	int i, usable_cpus, usable_mem;
 	int set_nodes = 0/* , set_tasks = 0 */;
@@ -2945,7 +2966,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 							  false,
 							  job_ptr->job_id,
 							  step_ptr->step_id);
-			usable_cpus = MIN(usable_cpus, gres_cpus);
+			if (usable_cpus > gres_cpus)
+				usable_cpus = gres_cpus;
 			if (usable_cpus <= 0) {
 				error("%s: no usable CPUs", __func__);
 				return NULL;
@@ -3097,7 +3119,6 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
 		packstr(step_ptr->ckpt_dir, buffer);
-		packstr(step_ptr->gres, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
@@ -3107,7 +3128,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(step_ptr->mem_per_tres, buffer);
 		packstr(step_ptr->tres_bind, buffer);
 		packstr(step_ptr->tres_freq, buffer);
-		packstr(step_ptr->tres_per_job, buffer);
+		packstr(step_ptr->tres_per_step, buffer);
 		packstr(step_ptr->tres_per_node, buffer);
 		packstr(step_ptr->tres_per_socket, buffer);
 		packstr(step_ptr->tres_per_task, buffer);
@@ -3154,7 +3175,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
 		packstr(step_ptr->ckpt_dir, buffer);
-		packstr(step_ptr->gres, buffer);
+		packstr(step_ptr->tres_per_node, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
@@ -3201,7 +3222,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
 		packstr(step_ptr->ckpt_dir, buffer);
-		packstr(step_ptr->gres, buffer);
+		packstr(step_ptr->tres_per_node, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
@@ -3209,8 +3230,8 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 	} else {
-		error("_pack_ctld_job_step_info: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 	}
 }
 
@@ -3953,7 +3974,6 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->network, buffer);
 	packstr(step_ptr->ckpt_dir, buffer);
 
-	packstr(step_ptr->gres, buffer);
 	(void) gres_plugin_step_state_pack(step_ptr->gres_list, buffer,
 					   step_ptr->job_ptr->job_id,
 					   step_ptr->step_id,
@@ -3977,7 +3997,7 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->mem_per_tres, buffer);
 	packstr(step_ptr->tres_bind, buffer);
 	packstr(step_ptr->tres_freq, buffer);
-	packstr(step_ptr->tres_per_job, buffer);
+	packstr(step_ptr->tres_per_step, buffer);
 	packstr(step_ptr->tres_per_node, buffer);
 	packstr(step_ptr->tres_per_socket, buffer);
 	packstr(step_ptr->tres_per_task, buffer);
@@ -4005,10 +4025,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
-	char *gres = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 	char *cpus_per_tres = NULL, *mem_per_tres = NULL, *tres_bind = NULL;
-	char *tres_freq = NULL, *tres_per_job = NULL, *tres_per_node = NULL;
+	char *tres_freq = NULL, *tres_per_step = NULL, *tres_per_node = NULL;
 	char *tres_per_socket = NULL, *tres_per_task = NULL;
 	dynamic_plugin_data_t *switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
@@ -4053,7 +4072,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
 
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
 		if (gres_plugin_step_state_unpack(&gres_list, buffer,
 						  job_ptr->job_id, step_id,
 						  protocol_version)
@@ -4084,7 +4102,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&mem_per_tres, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_bind, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_freq, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_per_job, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_step, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_per_node, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_per_socket, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_per_task, &name_len, buffer);
@@ -4125,7 +4143,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
 
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_per_node, &name_len, buffer);
 		if (gres_plugin_step_state_unpack(&gres_list, buffer,
 						  job_ptr->job_id, step_id,
 						  protocol_version)
@@ -4186,7 +4204,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->network      = network;
 	step_ptr->no_kill      = no_kill;
 	step_ptr->ckpt_dir     = ckpt_dir;
-	step_ptr->gres         = gres;
 	step_ptr->gres_list    = gres_list;
 	step_ptr->srun_pid     = srun_pid;
 	step_ptr->port         = port;
@@ -4231,9 +4248,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	xfree(step_ptr->tres_freq);
 	step_ptr->tres_freq = tres_freq;
 	tres_freq = NULL;
-	xfree(step_ptr->tres_per_job);
-	step_ptr->tres_per_job = tres_per_job;
-	tres_per_job = NULL;
+	xfree(step_ptr->tres_per_step);
+	step_ptr->tres_per_step = tres_per_step;
+	tres_per_step = NULL;
 	xfree(step_ptr->tres_per_node);
 	step_ptr->tres_per_node = tres_per_node;
 	tres_per_node = NULL;
@@ -4284,7 +4301,6 @@ unpack_error:
 	xfree(name);
 	xfree(network);
 	xfree(ckpt_dir);
-	xfree(gres);
 	FREE_NULL_LIST(gres_list);
 	bit_free(exit_node_bitmap);
 	bit_free(core_bitmap_job);
@@ -4300,7 +4316,7 @@ unpack_error:
 	xfree(mem_per_tres);
 	xfree(tres_bind);
 	xfree(tres_freq);
-	xfree(tres_per_job);
+	xfree(tres_per_step);
 	xfree(tres_per_node);
 	xfree(tres_per_socket);
 	xfree(tres_per_task);

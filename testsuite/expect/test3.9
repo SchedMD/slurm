@@ -47,7 +47,7 @@ if { [string compare [test_launch_type] "slurm"] } {
 #
 set timeout $max_job_delay
 set matches 0
-spawn $srun -N1 $scontrol show slurmd
+spawn $srun -t1 -N1 $scontrol show slurmd
 expect {
 	-re "Active Steps *= $number" {
 		incr matches

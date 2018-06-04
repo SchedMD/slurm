@@ -188,6 +188,4 @@ extern int
 cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 		  uint32_t gov, uint32_t min, uint32_t max, uint32_t freq);
 
-
-
 #endif /* _CPU_FREQUENCY_H_ */

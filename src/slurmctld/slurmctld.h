@@ -676,7 +676,6 @@ struct job_record {
 					 * do not pack. this is here to cache
 					 * the record, and may not be set
 					 * depending on configuration */
-	char *gres;			/* generic resources requested by job */
 	List gres_list;			/* generic resource allocation detail */
 	char *gres_alloc;		/* Allocated GRES added over all nodes
 					 * to be passed to slurmdbd */
@@ -889,7 +888,6 @@ struct 	step_record {
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 	ext_sensors_data_t *ext_sensors; /* external sensors plugin data */
-	char *gres;			/* generic resources required */
 	List gres_list;			/* generic resource allocation detail */
 	char *host;			/* host for srun communications */
 	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
@@ -932,7 +930,7 @@ struct 	step_record {
 	char *tres_bind;		/* Task to TRES binding directives */
 	char *tres_fmt_alloc_str;       /* formatted tres string for step */
 	char *tres_freq;		/* TRES frequency directives */
-	char *tres_per_job;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_step;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_node;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
@@ -2672,14 +2670,12 @@ extern double calc_job_billable_tres(struct job_record *job_ptr,
  */
 extern void update_job_limit_set_tres(uint16_t **tres_limits);
 
-/* Validate TRES specification of the form "name=spec[;name=spec]" */
-extern bool valid_tres_bind(char *tres);
-
-/* Validate TRES specification of the form "name=[type:]#[;name=[type:]#]" */
+/*
+ * Validate TRES specification of the form:
+ * "name=[type:]#[,[type:]#][;name=[type:]#]"
+ * For example: "gpu:kepler:2,craynetwork=1"
+ */
 extern bool valid_tres_cnt(char *tres);
-
-/* Validate TRES specification of the form "name=spec[;name=spec]" */
-extern bool valid_tres_freq(char *tres);
 
 /*
  * Validate the named TRES is valid for scheduling parameters.

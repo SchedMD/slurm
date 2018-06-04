@@ -55,6 +55,8 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
+#include "src/common/tres_bind.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -924,8 +926,6 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->core_spec      = opt_local->core_spec;
 	j->features       = opt_local->constraints;
 	j->cluster_features = opt_local->c_constraints;
-	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE"))
-		j->gres   = opt_local->gres;
 	if (opt_local->immediate == 1)
 		j->immediate = opt_local->immediate;
 	if (opt_local->job_name)
@@ -1143,11 +1143,34 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	if (opt.cpus_per_gpu)
 		xstrfmtcat(j->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
 	if (opt.gpu_bind)
-		xstrfmtcat(j->tres_bind, "gpu:%s", opt.gpu_bind);
-	if (opt.gpu_freq)
-		xstrfmtcat(j->tres_freq, "gpu:%s", opt.gpu_freq);
+		xstrfmtcat(opt.tres_bind, "gpu:%s", opt.gpu_bind);
+	if (tres_bind_verify_cmdline(opt.tres_bind)) {
+		if (tres_bind_err_log) {	/* Log once */
+			error("Invalid --tres-bind argument: %s. Ignored",
+			      opt.tres_bind);
+			tres_bind_err_log = false;
+		}
+		xfree(opt.tres_bind);
+	}
+	j->tres_bind = xstrdup(opt.tres_bind);
+	xfmt_tres(&opt.tres_freq, "gpu", opt.gpu_freq);
+	if (tres_freq_verify_cmdline(opt.tres_freq)) {
+		if (tres_freq_err_log) {	/* Log once */
+			error("Invalid --tres-freq argument: %s. Ignored",
+			      opt.tres_freq);
+			tres_freq_err_log = false;
+		}
+		xfree(opt.tres_freq);
+	}
+	j->tres_freq = xstrdup(opt.tres_freq);
 	xfmt_tres(&j->tres_per_job,    "gpu", opt.gpus);
 	xfmt_tres(&j->tres_per_node,   "gpu", opt.gpus_per_node);
+	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE")) {
+		if (j->tres_per_node)
+			xstrfmtcat(j->tres_per_node, ",%s", opt_local->gres);
+		else
+			j->tres_per_node = xstrdup(opt_local->gres);
+	}
 	xfmt_tres(&j->tres_per_socket, "gpu", opt.gpus_per_socket);
 	xfmt_tres(&j->tres_per_task,   "gpu", opt.gpus_per_task);
 	if (opt.mem_per_gpu)

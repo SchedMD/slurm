@@ -304,6 +304,8 @@ typedef struct slurm_options {
 	char *mcs_label;		/* mcs label			*/
 	time_t deadline;		/* ---deadline			*/
 	uint32_t delay_boot;		/* --delay-boot			*/
+	char *tres_bind;		/* derived from gpu_bind	*/
+	char *tres_freq;		/* derived from gpu_freq	*/
 	uint16_t x11;			/* --x11			*/
 	char *x11_magic_cookie;		/* cookie retrieved from xauth	*/
 	/* no x11_target_host here, alloc_host will be equivalent */

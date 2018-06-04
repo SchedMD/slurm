@@ -187,7 +187,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	node_conf.lo gres.lo entity.lo layout.lo layouts_mgr.lo \
 	mapping.lo xcgroup_read_config.lo xlua.lo callerid.lo \
 	group_cache.lo slurm_persist_conn.lo run_command.lo \
-	x11_util.lo state_control.lo
+	x11_util.lo state_control.lo tres_bind.lo tres_frequency.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -658,7 +658,9 @@ libcommon_la_SOURCES = \
 	slurm_persist_conn.c slurm_persist_conn.h \
 	run_command.c run_command.h	\
 	x11_util.c x11_util.h		\
-	state_control.c state_control.h
+	state_control.c state_control.h	\
+	tres_bind.c tres_bind.h		\
+	tres_frequency.c tres_frequency.h
 
 EXTRA_libcommon_la_SOURCES = \
 	uthash/LICENSE			\
@@ -844,6 +846,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strnatcmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timers.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tres_bind.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tres_frequency.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util-net.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/working_cluster.Plo@am__quote@

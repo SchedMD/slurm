@@ -830,7 +830,6 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->features);
 		xfree(msg->cluster_features);
 		xfree(msg->job_id_str);
-		xfree(msg->gres);
 		xfree(msg->licenses);
 		xfree(msg->linuximage);
 		xfree(msg->mail_user);
@@ -964,6 +963,8 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->std_err);
 		xfree(msg->std_in);
 		xfree(msg->std_out);
+		xfree(msg->tres_bind);
+		xfree(msg->tres_freq);
 		xfree(msg->user_name);
 		xfree(msg->work_dir);
 		xfree(msg);
@@ -1003,7 +1004,6 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->fed_origin_str);
 		xfree(job->fed_siblings_active_str);
 		xfree(job->fed_siblings_viable_str);
-		xfree(job->gres);
 		if (job->gres_detail_str) {
 			for (i = 0; i < job->gres_detail_cnt; i++)
 				xfree(job->gres_detail_str[i]);
@@ -1204,7 +1204,6 @@ extern void slurm_free_job_step_create_request_msg(
 		xfree(msg->ckpt_dir);
 		xfree(msg->cpus_per_tres);
 		xfree(msg->features);
-		xfree(msg->gres);
 		xfree(msg->host);
 		xfree(msg->mem_per_tres);
 		xfree(msg->name);
@@ -1212,7 +1211,7 @@ extern void slurm_free_job_step_create_request_msg(
 		xfree(msg->node_list);
 		xfree(msg->tres_bind);
 		xfree(msg->tres_freq);
-		xfree(msg->tres_per_job);
+		xfree(msg->tres_per_step);
 		xfree(msg->tres_per_node);
 		xfree(msg->tres_per_socket);
 		xfree(msg->tres_per_task);
@@ -1345,6 +1344,8 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	if (msg->select_jobinfo)
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 
+	xfree(msg->tres_bind);
+	xfree(msg->tres_freq);
 	xfree(msg->x11_magic_cookie);
 	xfree(msg->x11_target_host);
 
@@ -3661,12 +3662,13 @@ static void _free_all_step_info (job_step_info_response_msg_t *msg)
 		slurm_free_job_step_info_members (&msg->job_steps[i]);
 }
 
-extern void slurm_free_job_step_info_members (job_step_info_t * msg)
+extern void slurm_free_job_step_info_members(job_step_info_t * msg)
 {
-	if (msg != NULL) {
+	if (msg) {
 		xfree(msg->ckpt_dir);
 		xfree(msg->cluster);
-		xfree(msg->gres);
+		xfree(msg->tres_per_node);
+		xfree(msg->mem_per_tres);
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->nodes);
@@ -3677,6 +3679,12 @@ extern void slurm_free_job_step_info_members (job_step_info_t * msg)
 		msg->select_jobinfo = NULL;
 		xfree(msg->srun_host);
 		xfree(msg->tres_alloc_str);
+		xfree(msg->tres_bind);
+		xfree(msg->tres_freq);
+		xfree(msg->tres_per_step);
+		xfree(msg->tres_per_node);
+		xfree(msg->tres_per_socket);
+		xfree(msg->tres_per_task);
 	}
 }
 

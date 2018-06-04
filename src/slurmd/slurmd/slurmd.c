@@ -1675,6 +1675,7 @@ cleanup:
 static int
 _slurmd_fini(void)
 {
+	assoc_mgr_fini(false);
 	node_features_g_fini();
 	core_spec_g_fini();
 	switch_g_node_fini();

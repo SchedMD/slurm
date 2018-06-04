@@ -1469,8 +1469,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default NONE */
 	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
 	uint64_t fed_siblings_viable; /* Bitmap of viable fed sibling ids */
-	char *gres;		/* comma separated list of required generic
-				 * resources, default NONE */
 	uint32_t group_id;	/* group to assume, if run as root. */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
@@ -1658,7 +1656,6 @@ typedef struct job_info {
 	char *fed_siblings_active_str; /* string of active sibling names */
 	uint64_t fed_siblings_viable;  /* bitmap of viable fed sibling ids */
 	char *fed_siblings_viable_str; /* string of viable sibling names */
-	char *gres;		/* comma separated list of generic resources */
 	uint32_t gres_detail_cnt; /* Count of gres_detail_str records,
 				 * one per allocated node */
 	char **gres_detail_str;	/* Details of GRES index alloc per node */
@@ -1939,7 +1936,6 @@ typedef struct {
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (use job limit) */
 	char *ckpt_dir;		/* directory to store checkpoint image files */
-	char *gres;		/* generic resources needed */
 	char *name;		/* name of the job step */
 	char *network;		/* network use spec */
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
@@ -1965,7 +1961,7 @@ typedef struct {
 	uint32_t time_limit;	/* step time limit */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_job;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_step;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
@@ -2040,6 +2036,8 @@ typedef struct {
 	char **spank_job_env;	/* environment variables for job prolog/epilog
 				 * scripts as set by SPANK plugins */
 	uint32_t spank_job_env_size;	/* element count in spank_env */
+	char *tres_bind;
+	char *tres_freq;
 } slurm_step_launch_params_t;
 
 typedef struct {
@@ -2076,10 +2074,9 @@ typedef struct {
 	uint32_t cpu_freq_min;	/* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
-	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
-	char *gres;		/* generic resources required */
+	char *cpus_per_tres;	/* comma delimited list of TRES=# values */
 	uint32_t job_id;	/* job ID */
-	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
+	char *mem_per_tres;	/* comma delimited list of TRES=# values */
 	char *name;		/* name of job step */
 	char *network;		/* network specs for job step */
 	char *nodes;		/* list of nodes allocated to job_step */
@@ -2108,10 +2105,10 @@ typedef struct {
 	char *tres_alloc_str;   /* tres used in the job */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_job;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_step;	/* comma delimited list of TRES=# values */
+	char *tres_per_node;	/* comma delimited list of TRES=# values */
+	char *tres_per_socket;	/* comma delimited list of TRES=# values */
+	char *tres_per_task;	/* comma delimited list of TRES=# values */
 	uint32_t user_id;	/* user the job runs as */
 } job_step_info_t;
 

@@ -18,6 +18,7 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 {
 	slurm_step_ctx_params_t_init(params);
 
+	FETCH_FIELD(hv, params, ckpt_dir, charp, FALSE);
 	FETCH_FIELD(hv, params, ckpt_interval, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, cpu_count, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, cpu_freq_min, uint32_t, FALSE);
@@ -28,8 +29,6 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 	FETCH_FIELD(hv, params, immediate, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, job_id, uint32_t, FALSE); /* for slurm_step_ctx_create_no_alloc */
 	FETCH_FIELD(hv, params, pn_min_memory, uint64_t, FALSE);
-	FETCH_FIELD(hv, params, ckpt_dir, charp, FALSE);
-	FETCH_FIELD(hv, params, gres, charp, FALSE);
 	FETCH_FIELD(hv, params, name, charp, FALSE);
 	FETCH_FIELD(hv, params, network, charp, FALSE);
 	FETCH_FIELD(hv, params, profile, uint32_t, FALSE);
@@ -43,6 +42,11 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 	FETCH_FIELD(hv, params, resv_port_cnt, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, task_count, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, task_dist, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, tres_per_node, charp, FALSE);
+	FETCH_FIELD(hv, params, tres_per_step, charp, FALSE);
+	FETCH_FIELD(hv, params, tres_per_node, charp, FALSE);
+	FETCH_FIELD(hv, params, tres_per_socket, charp, FALSE);
+	FETCH_FIELD(hv, params, tres_per_task, charp, FALSE);
 	FETCH_FIELD(hv, params, time_limit, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, uid, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, verbose_level, uint16_t, FALSE);

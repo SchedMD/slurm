@@ -78,6 +78,8 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"
 #include "src/common/timers.h"
+#include "src/common/tres_bind.h"
+#include "src/common/tres_frequency.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -1298,7 +1300,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->admin_comment, buffer);
 	packstr(dump_job_ptr->comment, buffer);
-	packstr(dump_job_ptr->gres, buffer);
 	packstr(dump_job_ptr->gres_alloc, buffer);
 	packstr(dump_job_ptr->gres_req, buffer);
 	packstr(dump_job_ptr->gres_used, buffer);
@@ -1394,7 +1395,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
-	char *resv_name = NULL, *gres = NULL, *batch_host = NULL;
+	char *resv_name = NULL, *batch_host = NULL;
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
 	char *burst_buffer = NULL, *burst_buffer_state = NULL;
 	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
@@ -1558,7 +1559,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
@@ -1783,7 +1783,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_per_node, &name_len,
+				       buffer);
 		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
@@ -1984,7 +1985,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_per_node, &name_len,
+				       buffer);
 		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
@@ -2151,9 +2153,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->comment      = comment;
 	comment               = NULL;  /* reused, nothing left to free */
 	job_ptr->billable_tres = billable_tres;
-	xfree(job_ptr->gres);
-	job_ptr->gres         = gres;
-	gres                  = NULL;  /* reused, nothing left to free */
 	xfree(job_ptr->gres_alloc);
 	job_ptr->gres_alloc   = gres_alloc;
 	gres_alloc            = NULL;  /* reused, nothing left to free */
@@ -2300,10 +2299,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->req_switch      = req_switch;
 	job_ptr->wait4switch     = wait4switch;
 	job_ptr->profile         = profile;
-	/* This needs to always to initialized to "true".  The select
-	   plugin will deal with it every time it goes through the
-	   logic if req_switch or wait4switch are set.
-	*/
+	/*
+	 * This needs to always to initialized to "true".  The select
+	 * plugin will deal with it every time it goes through the
+	 * logic if req_switch or wait4switch are set.
+	 */
 	job_ptr->best_switch     = true;
 	job_ptr->start_protocol_ver = start_protocol_ver;
 
@@ -2417,7 +2417,6 @@ unpack_error:
 	xfree(burst_buffer);
 	xfree(clusters);
 	xfree(comment);
-	xfree(gres);
 	xfree(gres_alloc);
 	xfree(gres_req);
 	xfree(gres_used);
@@ -2454,7 +2453,7 @@ unpack_error:
 			job_ptr->job_id = NO_VAL;
 		purge_job_record(job_ptr->job_id);
 	}
-	for (i=0; i<pelog_env_size; i++)
+	for (i = 0; i < pelog_env_size; i++)
 		xfree(pelog_env[i]);
 	xfree(pelog_env);
 	return SLURM_FAILURE;
@@ -4090,8 +4089,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->features, job_specs->batch_features,
 	       job_specs->cluster_features);
 
-	debug3("   req_nodes=%s exc_nodes=%s gres=%s",
-	       job_specs->req_nodes, job_specs->exc_nodes, job_specs->gres);
+	debug3("   req_nodes=%s exc_nodes=%s",
+	       job_specs->req_nodes, job_specs->exc_nodes);
 
 	time_limit = (job_specs->time_limit != NO_VAL) ?
 		(long) job_specs->time_limit : -1L;
@@ -4389,7 +4388,6 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 
 	job_ptr_pend->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
-	job_ptr_pend->gres = xstrdup(job_ptr->gres);
 	if (job_ptr->gres_list) {
 		job_ptr_pend->gres_list =
 			gres_plugin_job_state_dup(job_ptr->gres_list);
@@ -6711,8 +6709,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	if (!valid_tres_cnt(job_desc->cpus_per_tres)	||
 	    !valid_tres_cnt(job_desc->mem_per_tres)	||
-	    !valid_tres_bind(job_desc->tres_bind)	||
-	    !valid_tres_freq(job_desc->tres_freq)	||
+	    tres_bind_verify_cmdline(job_desc->tres_bind) ||
+	    tres_freq_verify_cmdline(job_desc->tres_freq) ||
 	    !valid_tres_cnt(job_desc->mem_per_tres)	||
 	    !valid_tres_cnt(job_desc->tres_per_job)	||
 	    !valid_tres_cnt(job_desc->tres_per_node)	||
@@ -6807,10 +6805,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	/* Use old form of GRES specification, then new (expanded) form */
-	if ((error_code =
-	     gres_plugin_job_state_validate(&job_desc->gres, &gres_list)) ||
-	    (error_code = gres_plugin_job_state_validate2(
+	if ((error_code = gres_plugin_job_state_validate(
 						job_desc->cpus_per_tres,
 						job_desc->tres_per_job,
 						job_desc->tres_per_node,
@@ -7191,7 +7186,6 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->features, "features", 1024)		||
 	    _test_strlen(
 		job_desc->cluster_features, "cluster_features", 1024)   ||
-	    _test_strlen(job_desc->gres, "gres", 1024)			||
 	    _test_strlen(job_desc->licenses, "licenses", 1024)		||
 	    _test_strlen(job_desc->linuximage, "linuximage", 1024)	||
 	    _test_strlen(job_desc->mail_user, "mail_user", 1024)	||
@@ -7870,8 +7864,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->name = xstrdup(job_desc->name);
 	job_ptr->wckey = xstrdup(job_desc->wckey);
 
-	/* Since this is only used in the slurmctld copy it now.
-	 */
+	/* Since this is only used in the slurmctld, copy it now. */
 	job_ptr->tres_req_cnt = job_desc->tres_req_cnt;
 	job_desc->tres_req_cnt = NULL;
 	set_job_tres_req_str(job_ptr, false);
@@ -7893,7 +7886,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->account    = xstrdup(job_desc->account);
 	job_ptr->batch_features = xstrdup(job_desc->batch_features);
 	job_ptr->burst_buffer = xstrdup(job_desc->burst_buffer);
-	job_ptr->gres       = xstrdup(job_desc->gres);
 	job_ptr->network    = xstrdup(job_desc->network);
 	job_ptr->resv_name  = xstrdup(job_desc->reservation);
 	job_ptr->restart_cnt = job_desc->restart_cnt;
@@ -8068,7 +8060,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	job_ptr->clusters = xstrdup(job_desc->clusters);
 
-	/* The priority needs to be set after this since we don't have
+	/*
+	 * The priority needs to be set after this since we don't have
 	 * an association rec yet
 	 */
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);
@@ -8396,41 +8389,10 @@ static bool _valid_pn_min_mem(struct job_record *job_ptr,
 	return false;
 }
 
-/* Validate TRES specification of the form "name=spec[;name=spec]" */
-extern bool valid_tres_bind(char *tres)
-{
-	char *save_ptr = NULL, *sep, *tok, *tmp;
-	bool rc = true;
-
-	if (!tres || (tres[0] == '\0'))
-		return true;
-
-	tmp = xstrdup(tres);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		sep = strchr(tok, ':');
-		if (!sep) {
-			rc = false;
-			break;
-		}
-		sep[0] = '\0';
-		sep++;
-		if (!valid_tres_name(tok)) {
-			rc = false;
-			break;
-		}
-		/* Expand here to validate "spec" portion */
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
-
-	return rc;
-}
-
 /*
  * Validate TRES specification of the form:
  * "name=[type:]#[,[type:]#][;name=[type:]#]"
- * For example: "gpu=kepler:2,tesla:1;craynetwork=1"
+ * For example: "gpu:kepler:2,craynetwork=1"
  */
 extern bool valid_tres_cnt(char *tres)
 {
@@ -8444,6 +8406,7 @@ extern bool valid_tres_cnt(char *tres)
 	tmp = xstrdup(tres);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
+		bool valid_name = false;
 		sep = strchr(tok, ':');
 		if (!sep) {
 			rc = false;
@@ -8451,10 +8414,8 @@ extern bool valid_tres_cnt(char *tres)
 		}
 		sep[0] = '\0';
 		sep++;
-		if (!valid_tres_name(tok)) {
-			rc = false;
-			break;
-		}
+		if (valid_tres_name(tok))
+			valid_name = true;
 
 		colon = strchr(sep, ':');
 		if (colon) {	/* Includes TRES type specification */
@@ -8466,41 +8427,11 @@ extern bool valid_tres_cnt(char *tres)
 		}
 
 		val = strtoll(sep, &end_ptr, 10);
-		if ((end_ptr[0] != '\0') || (val < 0) || (val == LLONG_MAX)) {
+		if (((end_ptr[0] != '\0') || (val < 0) || (val == LLONG_MAX)) ||
+		    (!valid_name && (val != 0))) {
 			rc = false;
 			break;
 		}
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
-
-	return rc;
-}
-
-/* Validate TRES specification of the form "name=spec[;name=spec]" */
-extern bool valid_tres_freq(char *tres)
-{
-	char *save_ptr = NULL, *sep, *tok, *tmp;
-	bool rc = true;
-
-	if (!tres || (tres[0] == '\0'))
-		return true;
-
-	tmp = xstrdup(tres);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		sep = strchr(tok, ':');
-		if (!sep) {
-			rc = false;
-			break;
-		}
-		sep[0] = '\0';
-		sep++;
-		if (!valid_tres_name(tok)) {
-			rc = false;
-			break;
-		}
-		/* Expand here to validate "spec" portion */
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
@@ -9344,7 +9275,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->cpus_per_tres);
 	free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
-	xfree(job_ptr->gres);
 	xfree(job_ptr->gres_alloc);
 	_clear_job_gres_details(job_ptr);
 	xfree(job_ptr->gres_req);
@@ -9970,7 +9900,6 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
-		packstr(dump_job_ptr->gres, buffer);
 		packstr(dump_job_ptr->batch_features, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
 		packstr(dump_job_ptr->burst_buffer, buffer);
@@ -10172,7 +10101,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
-		packstr(dump_job_ptr->gres, buffer);
+		packstr(dump_job_ptr->tres_per_node, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
 		packstr(dump_job_ptr->burst_buffer, buffer);
 		packstr(dump_job_ptr->burst_buffer_state, buffer);
@@ -10358,7 +10287,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
-		packstr(dump_job_ptr->gres, buffer);
+		packstr(dump_job_ptr->tres_per_node, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
 		packnull(buffer); /* was batch_script */
 		packstr(dump_job_ptr->burst_buffer, buffer);
@@ -12055,12 +11984,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 
 		assoc_mgr_lock(&locks);
-		if (!gres_update && !job_specs->gres) {
-			gres_set_job_tres_cnt(job_ptr->gres_list,
-					      job_specs->min_nodes,
-					      job_specs->tres_req_cnt,
-					      true);
-		}
 
 		if (!job_specs->licenses) {
 			license_set_job_tres_cnt(job_ptr->license_list,
@@ -12094,31 +12017,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_specs->min_nodes :
 		detail_ptr ? detail_ptr->min_nodes : 1);
 
-	/* Use old form of GRES specification, then new (expanded) form */
-	if (job_specs->gres) {
-		if (!xstrcmp(job_specs->gres, job_ptr->gres)) {
-			debug("sched: update_job: new gres identical to "
-			      "old gres \"%s\"", job_ptr->gres);
-			xfree(job_specs->gres);
-		} else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
-			   (detail_ptr->expanding_jobid != 0)) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if ((error_code = gres_plugin_job_state_validate(
-				    &job_specs->gres, &gres_list))) {
-			info("sched: update_job: invalid gres %s for job %u",
-			     job_specs->gres, job_ptr->job_id);
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
 	if (gres_update) {
 		gres_list = gres_plugin_job_state_dup(job_ptr->gres_list);
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
 		    (detail_ptr->expanding_jobid != 0)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if ((error_code = gres_plugin_job_state_validate(
-				    &job_specs->gres, &gres_list)) ||
-			   (error_code = gres_plugin_job_state_validate2(
 						job_specs->cpus_per_tres,
 						job_specs->tres_per_job,
 						job_specs->tres_per_node,
@@ -12135,7 +12039,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
-	if (job_specs->gres || gres_update) {
+	if (gres_update) {
 //FIXME: TRES counts not necessarily established for GRES at this point
 		gres_set_job_tres_cnt(gres_list, detail_ptr->min_nodes,
 				      job_specs->tres_req_cnt, false);
@@ -13055,12 +12959,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (gres_list) {
 		char *tmp = NULL;
-		if (job_specs->gres) {
-			xstrfmtcat(tmp, "gres:%s ", job_specs->gres);
-			xfree(job_ptr->gres);
-			job_ptr->gres = job_specs->gres;
-			job_specs->gres = NULL;
-		}
 		if (job_specs->cpus_per_tres) {
 			xstrfmtcat(tmp, "cpus_per_tres:%s ",
 				   job_specs->cpus_per_tres);
@@ -13106,7 +13004,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		info("sched: update_job: setting %sfor job:%u",
 		     tmp, job_ptr->job_id);
 		xfree(tmp);
-
 		FREE_NULL_LIST(job_ptr->gres_list);
 		job_ptr->gres_list = gres_list;
 		gres_build_job_details(job_ptr->gres_list,
@@ -13510,7 +13407,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	if (job_specs->tres_bind) {
-		if (!valid_tres_bind(job_specs->tres_bind)) {
+		if (tres_bind_verify_cmdline(job_specs->tres_bind)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -13526,7 +13423,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	if (job_specs->tres_freq) {
-		if (!valid_tres_freq(job_specs->tres_freq)) {
+		if (tres_freq_verify_cmdline(job_specs->tres_freq)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -17344,7 +17241,6 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
 	job_desc->features          = xstrdup(details->features);
 	job_desc->cluster_features  = xstrdup(details->cluster_features);
-	job_desc->gres              = xstrdup(job_ptr->gres);
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
 	job_desc->job_id            = job_ptr->job_id;
@@ -17419,6 +17315,15 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->ntasks_per_node   = details->ntasks_per_node;
 	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	job_desc->ntasks_per_core   = mc_ptr->ntasks_per_core;
+
+	job_desc->cpus_per_tres     = xstrdup(job_ptr->cpus_per_tres);
+	job_desc->mem_per_tres      = xstrdup(job_ptr->mem_per_tres);
+	job_desc->tres_bind         = xstrdup(job_ptr->tres_bind);
+	job_desc->tres_freq         = xstrdup(job_ptr->tres_freq);
+	job_desc->tres_per_job      = xstrdup(job_ptr->tres_per_job);
+	job_desc->tres_per_node     = xstrdup(job_ptr->tres_per_node);
+	job_desc->tres_per_socket   = xstrdup(job_ptr->tres_per_socket);
+	job_desc->tres_per_task     = xstrdup(job_ptr->tres_per_task);
 
 	if (job_ptr->fed_details) {
 		job_desc->fed_siblings_active =

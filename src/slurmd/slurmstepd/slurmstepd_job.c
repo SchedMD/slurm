@@ -292,6 +292,8 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->cpu_bind = xstrdup(msg->cpu_bind);
 	job->mem_bind_type = msg->mem_bind_type;
 	job->mem_bind = xstrdup(msg->mem_bind);
+	job->tres_bind = xstrdup(msg->tres_bind);
+	job->tres_freq = xstrdup(msg->tres_freq);
 	job->cpu_freq_min = msg->cpu_freq_min;
 	job->cpu_freq_max = msg->cpu_freq_max;
 	job->cpu_freq_gov = msg->cpu_freq_gov;
@@ -409,25 +411,26 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 
-	/* If users have configured MemLimitEnforce=no
+	/*
+	 * If users have configured MemLimitEnforce=no
 	 * in their slurm.conf keep going.
 	 */
-	if (job->step_mem
-	    && conf->mem_limit_enforce) {
+	if (job->step_mem && conf->mem_limit_enforce) {
 		jobacct_gather_set_mem_limit(job->jobid, job->stepid,
 					     job->step_mem);
-	} else if (job->job_mem
-		   && conf->mem_limit_enforce) {
+	} else if (job->job_mem && conf->mem_limit_enforce) {
 		jobacct_gather_set_mem_limit(job->jobid, job->stepid,
 					     job->job_mem);
 	}
 
 #ifdef HAVE_ALPS_CRAY
-	/* This is only used for Cray emulation mode where slurmd is used to
+	/*
+	 * This is only used for Cray emulation mode where slurmd is used to
 	 * launch job steps. On a real Cray system, ALPS is used to launch
 	 * the tasks instead of SLURM. Slurm's task launch RPC does NOT
 	 * contain the reservation ID, so just use some non-zero value here
-	 * for testing purposes. */
+	 * for testing purposes.
+	 */
 	job->resv_id = 1;
 	select_g_select_jobinfo_set(msg->select_jobinfo, SELECT_JOBDATA_RESV_ID,
 				    &job->resv_id);
@@ -626,6 +629,8 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job->restart_dir);
 	xfree(job->step_alloc_cores);
 	xfree(job->task_cnts);
+	xfree(job->tres_bind);
+	xfree(job->tres_freq);
 	xfree(job->user_name);
 	xfree(job);
 }

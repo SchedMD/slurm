@@ -85,14 +85,14 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  */
 static void _append_gres(struct job_descriptor *job_desc)
 {
-	if (job_desc->gres == NULL) {
-		job_desc->gres = xstrdup(CRAY_GRES_POSTFIX);
-	} else if (strlen(job_desc->gres) == 0) {
-		xstrcat(job_desc->gres, CRAY_GRES_POSTFIX);
-	} else if (strstr(job_desc->gres, CRAY_GRES) == NULL) {
+	if (job_desc->tres_per_node == NULL) {
+		job_desc->tres_per_node = xstrdup(CRAY_GRES_POSTFIX);
+	} else if (strlen(job_desc->tres_per_node) == 0) {
+		xstrcat(job_desc->tres_per_node, CRAY_GRES_POSTFIX);
+	} else if (strstr(job_desc->tres_per_node, CRAY_GRES) == NULL) {
 		// Don't append if they already specified craynetwork
 		// Allows the user to ask for more or less than the default
-		xstrcat(job_desc->gres, "," CRAY_GRES_POSTFIX);
+		xstrcat(job_desc->tres_per_node, "," CRAY_GRES_POSTFIX);
 	}
 }
 

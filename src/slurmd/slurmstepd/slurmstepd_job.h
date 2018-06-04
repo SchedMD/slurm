@@ -227,6 +227,8 @@ typedef struct {
 	char	      *step_alloc_cores;/* needed by the SPANK cpuset plugin */
 	List           job_gres_list;	/* Needed by GRES plugin */
 	List           step_gres_list;	/* Needed by GRES plugin */
+	char          *tres_bind;	/* TRES binding */
+	char          *tres_freq;	/* TRES frequency */
 	launch_tasks_request_msg_t *msg; /* When a non-batch step this
 					  * is the message sent.  DO
 					  * NOT FREE, IT IS JUST A

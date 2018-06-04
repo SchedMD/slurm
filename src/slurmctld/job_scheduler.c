@@ -2395,9 +2395,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
 					 job_ptr->select_jobinfo);
 
-	if (job_ptr->account) {
-		launch_msg_ptr->account = xstrdup(job_ptr->account);
-	}
 	if (job_ptr->qos_ptr) {
 		if (!xstrcmp(job_ptr->qos_ptr->description,
 			     "Normal QOS default"))
@@ -2406,9 +2403,8 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 			launch_msg_ptr->qos = xstrdup(
 				job_ptr->qos_ptr->description);
 	}
-	if (job_ptr->resv_name) {
-		launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_name);
-	}
+	launch_msg_ptr->account = xstrdup(job_ptr->account);
+	launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_name);
 
 	return launch_msg_ptr;
 }
@@ -3405,13 +3401,40 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 				job_ptr->details->expanding_jobid = job_id;
-				/* GRES configuration of this job must match
-				 * the job being expanded */
-				xfree(job_ptr->gres);
-				job_ptr->gres = xstrdup(dep_job_ptr->gres);
+				/*
+				 * GRES configuration of this job must match
+				 * the job being expanded
+				 */
+				xfree(job_ptr->cpus_per_tres);
+				job_ptr->cpus_per_tres =
+					xstrdup(dep_job_ptr->cpus_per_tres);
+				xfree(job_ptr->tres_per_job);
+				job_ptr->tres_per_job =
+					xstrdup(dep_job_ptr->tres_per_job);
+				xfree(job_ptr->tres_per_node);
+				job_ptr->tres_per_node =
+					xstrdup(dep_job_ptr->tres_per_node);
+				xfree(job_ptr->tres_per_socket);
+				job_ptr->tres_per_socket =
+					xstrdup(dep_job_ptr->tres_per_socket);
+				xfree(job_ptr->tres_per_task);
+				job_ptr->tres_per_task =
+					xstrdup(dep_job_ptr->tres_per_task);
+				xfree(job_ptr->mem_per_tres);
+				job_ptr->mem_per_tres =
+					xstrdup(dep_job_ptr->mem_per_tres);
 				FREE_NULL_LIST(job_ptr->gres_list);
-				gres_plugin_job_state_validate(
-					&job_ptr->gres, &job_ptr->gres_list);
+				(void) gres_plugin_job_state_validate(
+						job_ptr->cpus_per_tres,
+						job_ptr->tres_per_job,
+						job_ptr->tres_per_node,
+						job_ptr->tres_per_socket,
+						job_ptr->tres_per_task,
+						job_ptr->mem_per_tres,
+						job_ptr->details->num_tasks,
+						job_ptr->details->min_nodes,
+						job_ptr->details->max_nodes,
+						&job_ptr->gres_list);
 				assoc_mgr_lock(&locks);
 				gres_set_job_tres_cnt(job_ptr->gres_list,
 						      job_ptr->details ?

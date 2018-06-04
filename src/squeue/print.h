@@ -374,8 +374,6 @@ int _print_job_user_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_user_name(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_gres(job_info_t * job, int width, bool right_justify,
-			char* suffix);
 int _print_job_group_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_group_name(job_info_t * job, int width, bool right_justify,
@@ -602,8 +600,6 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_name)
 #define step_format_add_num_tasks(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_num_tasks)
-#define step_format_add_gres(list,wid,right,suffix) \
-	step_format_add_function(list,wid,right,suffix,_print_step_gres)
 #define step_format_add_invalid(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,	\
 				 (void*)_print_com_invalid)
@@ -639,8 +635,8 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_tres_bind)
 #define step_format_add_tres_freq(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_tres_freq)
-#define step_format_add_tres_per_job(list,wid,right,suffix) \
-	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_job)
+#define step_format_add_tres_per_step(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_step)
 #define step_format_add_tres_per_node(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_tres_per_node)
 #define step_format_add_tres_per_socket(list,wid,right,suffix) \
@@ -677,8 +673,6 @@ int _print_step_nodes(job_step_info_t * step, int width,
 		      bool right_justify, char *suffix);
 int _print_step_num_tasks(job_step_info_t * step, int width,
 			  bool right_justify, char *suffix);
-int _print_step_gres(job_step_info_t * step, int width,
-		     bool right_justify, char *suffix);
 int _print_step_array_job_id(job_step_info_t * step, int width, bool right,
 			     char* suffix);
 int _print_step_array_task_id(job_step_info_t * step, int width, bool right,
@@ -709,8 +703,8 @@ int _print_step_tres_bind(job_step_info_t * step, int width, bool right,
 			  char* suffix);
 int _print_step_tres_freq(job_step_info_t * step, int width, bool right,
 			  char* suffix);
-int _print_step_tres_per_job(job_step_info_t * step, int width, bool right,
-			     char* suffix);
+int _print_step_tres_per_step(job_step_info_t * step, int width, bool right,
+			      char* suffix);
 int _print_step_tres_per_node(job_step_info_t * step, int width, bool right,
 			      char* suffix);
 int _print_step_tres_per_socket(job_step_info_t * step, int width, bool right,

@@ -136,7 +136,7 @@ if {$cpu_match != 1} {
 }
 
 #######################################
-# Bad tests
+# Tests for expected failures
 #######################################
 
 # Run a job with invalid job allocation
@@ -153,7 +153,6 @@ expect {
 		wait
 	}
 }
-
 if {$fail_match != 1} {
 	send_user "\nFAILURE: This test should have failed but did not\n"
 	set exit_code 1

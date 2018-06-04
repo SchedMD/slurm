@@ -25,17 +25,17 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 	if(step_info->ckpt_dir)
 		STORE_FIELD(hv, step_info, ckpt_dir, charp);
 	STORE_FIELD(hv, step_info, ckpt_interval, uint16_t);
-	if(step_info->gres)
-		STORE_FIELD(hv, step_info, gres, charp);
+	if (step_info->tres_per_node)
+		STORE_FIELD(hv, step_info, tres_per_node, charp);
 	STORE_FIELD(hv, step_info, job_id, uint32_t);
-	if(step_info->name)
+	if (step_info->name)
 		STORE_FIELD(hv, step_info, name, charp);
-	if(step_info->network)
+	if (step_info->network)
 		STORE_FIELD(hv, step_info, network, charp);
-	if(step_info->nodes)
+	if (step_info->nodes)
 		STORE_FIELD(hv, step_info, nodes, charp);
 	av = newAV();
-	for(j = 0; ; j += 2) {
+	for (j = 0; ; j += 2) {
 		if(step_info->node_inx[j] == -1)
 			break;
 		av_store_int(av, j, step_info->node_inx[j]);
@@ -74,7 +74,7 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	FETCH_FIELD(hv, step_info, array_task_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, ckpt_dir, charp, FALSE);
 	FETCH_FIELD(hv, step_info, ckpt_interval, uint16_t, TRUE);
-	FETCH_FIELD(hv, step_info, gres, charp, FALSE);
+	FETCH_FIELD(hv, step_info, tres_per_node, charp, FALSE);
 	FETCH_FIELD(hv, step_info, job_id, uint16_t, TRUE);
 	FETCH_FIELD(hv, step_info, name, charp, FALSE);
 	FETCH_FIELD(hv, step_info, network, charp, FALSE);

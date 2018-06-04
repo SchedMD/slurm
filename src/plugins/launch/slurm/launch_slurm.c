@@ -767,6 +767,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.cpu_freq_min       = opt_local->cpu_freq_min;
 	launch_params.cpu_freq_max       = opt_local->cpu_freq_max;
 	launch_params.cpu_freq_gov       = opt_local->cpu_freq_gov;
+	launch_params.tres_bind          = opt_local->tres_bind;
+	launch_params.tres_freq          = opt_local->tres_freq;
 	launch_params.task_dist          = opt_local->distribution;
 	launch_params.ckpt_dir		 = srun_opt->ckpt_dir;
 	launch_params.restart_dir        = srun_opt->restart_dir;

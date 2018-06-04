@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	int rc;
 	uint32_t cpu_count, cpu_alloc, job_id = 12345;
 	char *node_name, *reason_down = NULL;
-	char *orig_config, *new_config = NULL, *job_config = NULL;
+	char *orig_config, *new_config = NULL, *tres_per_node = NULL;
 	Buf buffer;
 	List job_gres_list = NULL, node_gres_list = NULL;
 	bitstr_t *cpu_bitmap;
@@ -132,10 +132,20 @@ int main(int argc, char *argv[])
 	}
 
 	if (argc > 2)
-		job_config = xstrdup(argv[1]);
+		tres_per_node = xstrdup(argv[1]);
 
-	rc = gres_plugin_job_state_validate(&job_config, &job_gres_list);
+	rc = gres_plugin_job_state_validate(NULL,	/* cpus_per_tres */
+					    NULL,	/* tres_per_job */
+					    tres_per_node,
+					    NULL,	/* tres_per_socket */
+					    NULL,	/* tres_per_task */
+					    NULL,	/* mem_per_tres */
+					    1,		/* num_tasks */
+					    1,		/* min_nodes */
+					    1,		/* max_nodes */
+					    &job_gres_list);
 	if (rc != SLURM_SUCCESS) {
+		slurm_seterrno(rc);
 		slurm_perror("failure: gres_plugin_job_state_validate");
 		exit(1);
 	}

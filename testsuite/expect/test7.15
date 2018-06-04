@@ -70,7 +70,7 @@ if {$have_runjob || [test_serial]} {
 #   default for the job.
 #
 set timeout $max_job_delay
-set srun_pid  [exp_spawn $srun -N$nnodes -p $partition ./$file_prog]
+set srun_pid  [exp_spawn $srun -t1 -N$nnodes -p $partition ./$file_prog]
 expect {
 	-re "Signal ($number) is ignored!" {
 		set signal $expect_out(1,string)
