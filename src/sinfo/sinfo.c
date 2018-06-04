@@ -76,7 +76,6 @@ static pthread_mutex_t sinfo_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*************
  * Functions *
  *************/
-static int  _bg_report(block_info_msg_t *block_ptr);
 void *      _build_part_info(void *args);
 static int  _build_sinfo_data(List sinfo_list,
 			      partition_info_msg_t *partition_msg,
@@ -93,7 +92,6 @@ static int  _handle_subgrps(List sinfo_list, uint16_t part_num,
 static int  _insert_node_ptr(List sinfo_list, uint16_t part_num,
 			     partition_info_t *part_ptr,
 			     node_info_t *node_ptr, uint32_t node_scaling);
-static int  _load_blocks(block_info_msg_t **block_pptr, bool clear_old);
 static int  _load_resv(reserve_info_msg_t ** reserv_pptr, bool clear_old);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
@@ -173,18 +171,9 @@ static int _multi_cluster(List clusters)
 static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed)
 {
 	List node_info_msg_list = NULL, part_info_msg_list = NULL;
-	block_info_msg_t *block_msg = NULL;
 	reserve_info_msg_t *reserv_msg = NULL;
 	List sinfo_list = NULL;
 	int rc = SLURM_SUCCESS;
-
-	if (params.bg_flag) {
-		if (_load_blocks(&block_msg, clear_old))
-			rc = SLURM_ERROR;
-		else
-			(void) _bg_report(block_msg);
-		return rc;
-	}
 
 	if (params.reservation_flag) {
 		if (_load_resv(&reserv_msg, clear_old))
@@ -216,38 +205,6 @@ static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed)
 }
 
 /*
- * _bg_report - download and print current bgblock state information
- */
-static int _bg_report(block_info_msg_t *block_ptr)
-{
-	int i;
-
-	if (!block_ptr) {
-		slurm_perror("No block_ptr given");
-		return SLURM_ERROR;
-	}
-
-	if (!params.no_header)
-		printf("BG_BLOCK         MIDPLANES       STATE    CONNECTION USE\n");
-/*                      1234567890123456 123456789012 12345678 1234567890 12345+ */
-/*                      RMP_22Apr1544018 bg[123x456]  READY    TORUS      COPROCESSOR */
-
-	for (i = 0; i < block_ptr->record_count; i++) {
-		char *conn_str = conn_type_string_full(
-			block_ptr->block_array[i].conn_type);
-		printf("%-16.16s %-15.15s %-8.8s %-10.10s %s\n",
-		       block_ptr->block_array[i].bg_block_id,
-		       block_ptr->block_array[i].mp_str,
-		       bg_block_state_string(block_ptr->block_array[i].state),
-		       conn_str,
-		       node_use_string(block_ptr->block_array[i].node_use));
-		xfree(conn_str);
-	}
-
-	return SLURM_SUCCESS;
-}
-
-/*
  * _reservation_report - print current reservation information
  */
 static int _reservation_report(reserve_info_msg_t *resv_ptr)
@@ -260,51 +217,6 @@ static int _reservation_report(reserve_info_msg_t *resv_ptr)
 		print_sinfo_reservation(resv_ptr);
 	else
 		printf ("No reservations in the system\n");
-	return SLURM_SUCCESS;
-}
-
-/*
- * _load_blocks - download the current server's BlueGene block data state
- * block_pptr IN/OUT - BlueGene block data
- * clear_old IN - If set, then always replace old data, needed when going
- *		  between clusters.
- * RET zero or error code
- */
-static int _load_blocks(block_info_msg_t **block_pptr, bool clear_old)
-{
-	static block_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
-	uint16_t show_flags = 0;
-	int error_code = SLURM_SUCCESS;
-
-	if (params.all_flag)
-		show_flags |= SHOW_ALL;
-
-	if (params.cluster_flags & CLUSTER_FLAG_BG) {
-		if (old_bg_ptr) {
-			if (clear_old)
-				old_bg_ptr->last_update = 0;
-			error_code = slurm_load_block_info(
-				old_bg_ptr->last_update,
-				&new_bg_ptr, show_flags);
-			if (error_code == SLURM_SUCCESS)
-				slurm_free_block_info_msg(old_bg_ptr);
-			else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-				error_code = SLURM_SUCCESS;
-				new_bg_ptr = old_bg_ptr;
-			}
-		} else {
-			error_code = slurm_load_block_info((time_t) NULL,
-							   &new_bg_ptr,
-							   show_flags);
-		}
-	}
-
-	if (error_code) {
-		slurm_perror("slurm_load_block");
-		return error_code;
-	}
-	old_bg_ptr = new_bg_ptr;
-	*block_pptr = new_bg_ptr;
 	return SLURM_SUCCESS;
 }
 
