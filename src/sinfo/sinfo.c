@@ -335,34 +335,15 @@ static List _query_server(bool clear_old)
 			/* don't worry about mixed since the
 			 * whole node is being drained. */
 		} else {
-			uint16_t alloc_cpus = 0, err_cpus = 0, idle_cpus;
-			int single_node_cpus =
-				(node_ptr->cpus / g_node_scaling);
+			uint16_t alloc_cpus = 0, idle_cpus;
 
 			select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 						     SELECT_NODEDATA_SUBCNT,
 						     NODE_STATE_ALLOCATED,
 						     &alloc_cpus);
-			if (params.cluster_flags & CLUSTER_FLAG_BG) {
-				if (!alloc_cpus &&
-				    (IS_NODE_ALLOCATED(node_ptr) ||
-				     IS_NODE_COMPLETING(node_ptr)))
-					alloc_cpus = node_ptr->cpus;
-				else
-					alloc_cpus *= single_node_cpus;
-			}
 			idle_cpus = node_ptr->cpus - alloc_cpus;
 
-			select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-						     SELECT_NODEDATA_SUBCNT,
-						     NODE_STATE_ERROR,
-						     &err_cpus);
-			if (params.cluster_flags & CLUSTER_FLAG_BG)
-				err_cpus *= single_node_cpus;
-			idle_cpus -= err_cpus;
-
-			if ((alloc_cpus && err_cpus) ||
-			    (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
+			if (idle_cpus && (idle_cpus != node_ptr->cpus)) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;
 				node_ptr->node_state |= NODE_STATE_MIXED;
 			}
@@ -423,34 +404,15 @@ static void *_load_job_prio_thread(void *args)
 			/* don't worry about mixed since the
 			 * whole node is being drained. */
 		} else {
-			uint16_t alloc_cpus = 0, err_cpus = 0, idle_cpus;
-			int single_node_cpus =
-				(node_ptr->cpus / g_node_scaling);
+			uint16_t alloc_cpus = 0, idle_cpus;
 
 			select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 						     SELECT_NODEDATA_SUBCNT,
 						     NODE_STATE_ALLOCATED,
 						     &alloc_cpus);
-			if (params.cluster_flags & CLUSTER_FLAG_BG) {
-				if (!alloc_cpus &&
-				    (IS_NODE_ALLOCATED(node_ptr) ||
-				     IS_NODE_COMPLETING(node_ptr)))
-					alloc_cpus = node_ptr->cpus;
-				else
-					alloc_cpus *= single_node_cpus;
-			}
 			idle_cpus = node_ptr->cpus - alloc_cpus;
 
-			select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-						     SELECT_NODEDATA_SUBCNT,
-						     NODE_STATE_ERROR,
-						     &err_cpus);
-			if (params.cluster_flags & CLUSTER_FLAG_BG)
-				err_cpus *= single_node_cpus;
-			idle_cpus -= err_cpus;
-
-			if ((alloc_cpus && err_cpus) ||
-			    (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
+			if (idle_cpus && (idle_cpus != node_ptr->cpus)) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;
 				node_ptr->node_state |= NODE_STATE_MIXED;
 			}
