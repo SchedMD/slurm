@@ -1217,7 +1217,7 @@ extern int scontrol_update_job(int argc, char **argv)
 			char* geometry_tmp = xstrdup(val);
 			char* original_ptr = geometry_tmp;
 			token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-			for (j=0; j<dims; j++) {
+			for (j = 0; j < dims; j++) {
 				if (token == NULL) {
 					error("insufficient dimensions in "
 						"Geometry");
@@ -1237,15 +1237,13 @@ extern int scontrol_update_job(int argc, char **argv)
 			if (token != NULL) {
 				error("too many dimensions in Geometry");
 				rc = -1;
-				break;
 			}
 
-			if (original_ptr)
-				xfree(original_ptr);
+			xfree(original_ptr);
 			if (rc != 0)
 				exit_code = 1;
 			else {
-				for (j=0; j<dims; j++)
+				for (j = 0; j < dims; j++)
 					job_msg.geometry[j] = geo[j];
 				update_cnt++;
 			}
