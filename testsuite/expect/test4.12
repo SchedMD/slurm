@@ -44,7 +44,6 @@ set inode_name  ""
 set smallest    1
 set layout "static"
 set select_type ""
-set node_scaling 0
 
 proc scontrol_test { node proc_cnt } {
 	global scontrol number prompt
@@ -151,7 +150,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 }
 
 proc sinfo_test_2 { node proc_cnt total_procs } {
-	global sinfo number prompt node_scaling
+	global sinfo number prompt
 	upvar spawn_id spawn_id
 
 	set rc 0
@@ -160,10 +159,6 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	set alloc_nodes 1
 	set total_nodes 1
 
-	if {$node_scaling} {
-		set alloc_nodes [expr $proc_cnt / $node_scaling]
-		set total_nodes [expr $total_procs / $node_scaling]
-	}
 	set idle_nodes [expr $total_nodes - $alloc_nodes]
 
 	send "$sinfo -o \"%t %D %N\" -h -n $node\r"
