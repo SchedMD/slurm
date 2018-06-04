@@ -973,11 +973,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 {
 	uint32_t base_state;
 	uint64_t alloc_mem = 0;
-	uint16_t used_cpus = 0, error_cpus = 0;
+	uint16_t used_cpus = 0;
 	int total_cpus = 0, total_nodes = 0;
-	/* since node_scaling could be less here, we need to use the
-	 * global node scaling which should never change. */
-	int single_node_cpus = (node_ptr->cpus / g_node_scaling);
 
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 
@@ -1079,76 +1076,28 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 				     NODE_STATE_ALLOCATED,
 				     &used_cpus);
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_SUBCNT,
-				     NODE_STATE_ERROR,
-				     &error_cpus);
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_MEM_ALLOC,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_mem);
 
-	if (params.cluster_flags & CLUSTER_FLAG_BG) {
-		if (!params.match_flags.state_flag &&
-		    (used_cpus || error_cpus)) {
-			/* We only get one shot at this (because all states
-			 * are combined together), so we need to make
-			 * sure we get all the subgrps accounted. (So use
-			 * g_node_scaling for safe measure) */
-			total_nodes = g_node_scaling;
-
-			sinfo_ptr->nodes_alloc += used_cpus;
-			sinfo_ptr->nodes_other += error_cpus;
-			sinfo_ptr->nodes_idle +=
-				(total_nodes - (used_cpus + error_cpus));
-			used_cpus  *= single_node_cpus;
-			error_cpus *= single_node_cpus;
-		} else {
-			/* process only for this subgrp and then return */
-			total_cpus = total_nodes * single_node_cpus;
-
-			if ((base_state == NODE_STATE_ALLOCATED) ||
-			    (base_state == NODE_STATE_MIXED) ||
-			    (node_ptr->node_state & NODE_STATE_COMPLETING)) {
-				sinfo_ptr->nodes_alloc += total_nodes;
-				sinfo_ptr->cpus_alloc += total_cpus;
-			} else if (IS_NODE_DRAIN(node_ptr) ||
-				   (base_state == NODE_STATE_DOWN)) {
-				sinfo_ptr->nodes_other += total_nodes;
-				sinfo_ptr->cpus_other += total_cpus;
-			} else {
-				sinfo_ptr->nodes_idle += total_nodes;
-				sinfo_ptr->cpus_idle += total_cpus;
-			}
-
-			sinfo_ptr->nodes_total += total_nodes;
-			sinfo_ptr->cpus_total += total_cpus;
-
-			return;
-		}
-	} else {
-		if ((base_state == NODE_STATE_ALLOCATED) ||
-		    (base_state == NODE_STATE_MIXED) ||
-		    IS_NODE_COMPLETING(node_ptr))
-			sinfo_ptr->nodes_alloc += total_nodes;
-		else if (IS_NODE_DRAIN(node_ptr)
-			 || (base_state == NODE_STATE_DOWN))
-			sinfo_ptr->nodes_other += total_nodes;
-		else
-			sinfo_ptr->nodes_idle += total_nodes;
-	}
+	if ((base_state == NODE_STATE_ALLOCATED) ||
+	    (base_state == NODE_STATE_MIXED) ||
+	    IS_NODE_COMPLETING(node_ptr))
+		sinfo_ptr->nodes_alloc += total_nodes;
+	else if (IS_NODE_DRAIN(node_ptr)
+		 || (base_state == NODE_STATE_DOWN))
+		sinfo_ptr->nodes_other += total_nodes;
+	else
+		sinfo_ptr->nodes_idle += total_nodes;
 
 	sinfo_ptr->nodes_total += total_nodes;
 
 	sinfo_ptr->cpus_alloc += used_cpus;
 	sinfo_ptr->cpus_total += total_cpus;
-	total_cpus -= used_cpus + error_cpus;
+	total_cpus -= used_cpus;
 	sinfo_ptr->alloc_memory = alloc_mem;
 
-	if (error_cpus) {
-		sinfo_ptr->cpus_idle += total_cpus;
-		sinfo_ptr->cpus_other += error_cpus;
-	} else if (IS_NODE_DRAIN(node_ptr) ||
-		   (base_state == NODE_STATE_DOWN)) {
+	if (IS_NODE_DRAIN(node_ptr) || (base_state == NODE_STATE_DOWN)) {
 		sinfo_ptr->cpus_other += total_cpus;
 	} else
 		sinfo_ptr->cpus_idle += total_cpus;
