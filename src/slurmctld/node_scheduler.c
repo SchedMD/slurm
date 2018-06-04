@@ -2147,6 +2147,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			break;
 	}
 	FREE_NULL_BITMAP(avail_bitmap);
+	FREE_NULL_BITMAP(total_bitmap);
 
 	/* The job is not able to start right now, return a
 	 * value indicating when the job can start */
