@@ -33,7 +33,6 @@
 #define _DEBUG 0
 #define ECLIPSE_RT 0
 
-int cpus_per_node = 1;
 int g_node_scaling = 1;
 //static int _l_topo_color_ndx = MAKE_TOPO_1;
 //static int _l_sw_color_ndx = 0;
@@ -1013,8 +1012,6 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		int idle_cpus;
 
 		g_node_scaling = new_node_ptr->node_scaling;
-		cpus_per_node =
-			new_node_ptr->node_array[0].cpus / g_node_scaling;
 		for (i=0; i<g_node_info_ptr->record_count; i++) {
 			node_ptr = &(g_node_info_ptr->node_array[i]);
 			if (!node_ptr->name || (node_ptr->name[0] == '\0'))

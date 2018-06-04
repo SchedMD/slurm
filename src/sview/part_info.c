@@ -1629,9 +1629,6 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 	int idle_cpus = node_ptr->cpus;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 
-	if (node_scaling)
-		cpus_per_node = node_ptr->cpus / node_scaling;
-
 	xassert(sview_part_sub);
 	xassert(sview_part_sub->node_ptr_list);
 	xassert(sview_part_sub->hl);
