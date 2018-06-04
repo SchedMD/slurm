@@ -1286,20 +1286,6 @@ extern int select_g_update_node_state (struct node_record *node_ptr)
 }
 
 /*
- * Alter the node count for a job given the type of system we are on
- * IN/OUT job_desc  - current job desc
- */
-extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
-{
-	if (type == SELECT_GET_NODE_SCALING) {
-		/* default to one, so most plugins don't have to */
-		uint32_t *nodes = (uint32_t *)data;
-		*nodes = 1;
-	}
-	return 0;
-}
-
-/*
  * Note reconfiguration or change in partition configuration
  */
 extern int select_g_reconfigure (void)

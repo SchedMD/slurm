@@ -388,14 +388,6 @@ extern bool select_g_node_ranking(struct node_record *node_ptr, int node_cnt);
  */
 extern int select_g_update_node_state (struct node_record *node_ptr);
 
-/*
- * Alter the node count based upon system architecture (i.e. on Bluegene
- * systems, one node/midplane is equivalent to 512 compute nodes
- * IN type - an enum describing how to transform the count
- * IN/OUT data - The data to be modified
- */
-extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
-
 /***************************\
  * BLOCK SPECIFIC FUNCIONS *
 \***************************/
