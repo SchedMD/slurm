@@ -321,7 +321,6 @@ extern int global_row_count;
 extern gint last_event_x;
 extern gint last_event_y;
 extern GdkCursor* in_process_cursor;
-extern int g_node_scaling;
 extern char *sview_colors[];
 extern int sview_colors_cnt;
 extern int cluster_dims;

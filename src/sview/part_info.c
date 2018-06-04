@@ -1623,8 +1623,7 @@ static void _destroy_part_sub(void *object)
 }
 
 static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
-				   node_info_t *node_ptr,
-				   int node_scaling)
+				   node_info_t *node_ptr)
 {
 	int idle_cpus = node_ptr->cpus;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
@@ -1672,7 +1671,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 	sview_part_sub->cpu_idle_cnt += idle_cpus;
 	sview_part_sub->disk_total += node_ptr->tmp_disk;
 	sview_part_sub->mem_total  += node_ptr->real_memory;
-	sview_part_sub->node_cnt   += node_scaling;
+	sview_part_sub->node_cnt++;
 
 	list_append(sview_part_sub->node_ptr_list, node_ptr);
 	hostlist_push_host(sview_part_sub->hl, node_ptr->name);
@@ -1684,8 +1683,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
  * sview_part_sub OUT     - ptr to an inited sview_part_sub_t
  */
 static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
-						node_info_t *node_ptr,
-						int node_scaling)
+						node_info_t *node_ptr)
 {
 	sview_part_sub_t *sview_part_sub_ptr =
 		xmalloc(sizeof(sview_part_sub_t));
@@ -1703,15 +1701,14 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 	sview_part_sub_ptr->part_ptr = part_ptr;
 	sview_part_sub_ptr->hl = hostlist_create(NULL);
 	sview_part_sub_ptr->node_ptr_list = list_create(NULL);
-	_update_sview_part_sub(sview_part_sub_ptr, node_ptr, node_scaling);
+	_update_sview_part_sub(sview_part_sub_ptr, node_ptr);
 
 	return sview_part_sub_ptr;
 }
 
 static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 				  partition_info_t *part_ptr,
-				  node_info_t *node_ptr,
-				  int node_scaling)
+				  node_info_t *node_ptr)
 {
 	sview_part_sub_t *sview_part_sub = NULL;
 	ListIterator itr = list_iterator_create(sview_part_info->sub_list);
@@ -1720,8 +1717,7 @@ static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 		if (sview_part_sub->node_state
 		    == node_ptr->node_state) {
 			_update_sview_part_sub(sview_part_sub,
-					       node_ptr,
-					       node_scaling);
+					       node_ptr);
 			break;
 		}
 	}
@@ -1729,7 +1725,7 @@ static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 
 	if (!sview_part_sub) {
 		if ((sview_part_sub = _create_sview_part_sub(
-			     part_ptr, node_ptr, node_scaling)))
+			     part_ptr, node_ptr)))
 			list_push(sview_part_info->sub_list,
 				  sview_part_sub);
 	}
@@ -1863,8 +1859,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 
 				_insert_sview_part_sub(sview_part_info,
 						       part_ptr,
-						       node_ptr,
-						       g_node_scaling);
+						       node_ptr);
 			}
 			j2 += 2;
 		}
