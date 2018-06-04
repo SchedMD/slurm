@@ -759,7 +759,6 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			 "Draining", true, -1},
 			{G_TYPE_NONE, NODE_STATE_IDLE | NODE_STATE_DRAIN,
 			 "Drained", true, -1},
-			{G_TYPE_NONE, NODE_STATE_ERROR, "Error", true, -1},
 			{G_TYPE_NONE, NODE_STATE_FAIL, "Fail", true, -1},
 			{G_TYPE_NONE, NODE_STATE_FAIL | NODE_STATE_ALLOCATED,
 			 "Failing", true, -1},

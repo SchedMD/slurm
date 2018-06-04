@@ -325,8 +325,7 @@ static bool _change_button_color(grid_button_t *grid_button,
 
 	if (node_base_state == NODE_STATE_DOWN) {
 		_put_button_as_down(grid_button, NODE_STATE_DOWN);
-	} else if ((state & NODE_STATE_DRAIN) ||
-		   (node_base_state == NODE_STATE_ERROR)) {
+	} else if (state & NODE_STATE_DRAIN) {
 		_put_button_as_down(grid_button, NODE_STATE_DRAIN);
 	} else if (grid_button->node_name &&
 		   !xstrcmp(grid_button->node_name, "EMPTY")) {
@@ -980,8 +979,7 @@ extern grid_button_t *create_grid_button_from_another(
 			GTK_CONTAINER(send_grid_button->button),
 			image);
 	} else if ((color_inx >= 0)
-		   && ((send_grid_button->state & NODE_STATE_DRAIN)
-		       || (node_base_state == NODE_STATE_ERROR))) {
+		   && (send_grid_button->state & NODE_STATE_DRAIN)) {
 		GtkWidget *image = gtk_image_new_from_stock(
 			GTK_STOCK_DIALOG_ERROR,
 			GTK_ICON_SIZE_SMALL_TOOLBAR);

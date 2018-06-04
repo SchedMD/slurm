@@ -1772,28 +1772,18 @@ display_it:
 			else if (search_info->int_data
 				 != node_ptr->node_state) {
 				if (IS_NODE_MIXED(node_ptr)) {
-					uint16_t alloc_cnt = 0, err_cnt = 0;
+					uint16_t alloc_cnt = 0;
 					uint16_t idle_cnt = node_ptr->cpus;
 					select_g_select_nodeinfo_get(
 						node_ptr->select_nodeinfo,
 						SELECT_NODEDATA_SUBCNT,
 						NODE_STATE_ALLOCATED,
 						&alloc_cnt);
-					select_g_select_nodeinfo_get(
-						node_ptr->select_nodeinfo,
-						SELECT_NODEDATA_SUBCNT,
-						NODE_STATE_ERROR,
-						&err_cnt);
-					idle_cnt -= (alloc_cnt + err_cnt);
+					idle_cnt -= alloc_cnt;
 					if ((search_info->int_data
 					     & NODE_STATE_BASE)
 					    == NODE_STATE_ALLOCATED) {
 						if (alloc_cnt)
-							break;
-					} else if ((search_info->int_data
-						    & NODE_STATE_BASE)
-						   == NODE_STATE_ERROR) {
-						if (err_cnt)
 							break;
 					} else if ((search_info->int_data
 						    & NODE_STATE_BASE)

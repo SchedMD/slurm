@@ -507,7 +507,7 @@ static void _failing_node(struct node_record *node_ptr)
 	info("node_fail_callback for node:%s", node_ptr->name);
 	if (!job_fail_list)
 		return;
-	if (IS_NODE_DOWN(node_ptr) || IS_NODE_ERROR(node_ptr))
+	if (IS_NODE_DOWN(node_ptr))
 		event_flag |= SMD_EVENT_NODE_FAILED;
 	if (IS_NODE_FAIL(node_ptr))
 		event_flag |= SMD_EVENT_NODE_FAILING;
@@ -542,7 +542,7 @@ extern void node_fail_callback(struct job_record *job_ptr,
 
 	info("node_fail_callback for job:%u node:%s",
 	     job_ptr->job_id, node_ptr->name);
-	if (IS_NODE_DOWN(node_ptr) || IS_NODE_ERROR(node_ptr))
+	if (IS_NODE_DOWN(node_ptr))
 		event_flag |= SMD_EVENT_NODE_FAILED;
 	if (IS_NODE_FAIL(node_ptr))
 		event_flag |= SMD_EVENT_NODE_FAILING;

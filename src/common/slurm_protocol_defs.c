@@ -2861,10 +2861,6 @@ extern char *node_state_string(uint32_t inx)
 			if (no_resp_flag)
 				return "DRAINING*";
 			return "DRAINING";
-		} else if (base == NODE_STATE_ERROR) {
-			if (no_resp_flag)
-				return "ERROR*";
-			return "ERROR";
 		} else {
 			if (no_resp_flag)
 				return "DRAINED*";
@@ -2946,19 +2942,6 @@ extern char *node_state_string(uint32_t inx)
 			return "RESERVED";
 		return "IDLE";
 	}
-	if (base == NODE_STATE_ERROR) {
-		if (maint_flag)
-			return "ERROR$";
-		if (reboot_flag)
-			return "ERROR@";
-		if (power_up_flag)
-			return "ERROR#";
-		if (power_down_flag)
-			return "ERROR~";
-		if (no_resp_flag)
-			return "ERROR*";
-		return "ERROR";
-	}
 	if (base == NODE_STATE_MIXED) {
 		if (maint_flag)
 			return "MIXED$";
@@ -3036,10 +3019,6 @@ extern char *node_state_string_compact(uint32_t inx)
 			if (no_resp_flag)
 				return "DRNG*";
 			return "DRNG";
-		} else if (inx == NODE_STATE_ERROR) {
-			if (no_resp_flag)
-				return "ERROR*";
-			return "ERROR";
 		} else {
 			if (no_resp_flag)
 				return "DRAIN*";
@@ -3120,19 +3099,6 @@ extern char *node_state_string_compact(uint32_t inx)
 		if (res_flag)
 			return "RESV";
 		return "IDLE";
-	}
-	if (inx == NODE_STATE_ERROR) {
-		if (maint_flag)
-			return "ERR$";
-		if (reboot_flag)
-			return "ERR@";
-		if (power_up_flag)
-			return "ERR#";
-		if (power_down_flag)
-			return "ERR~";
-		if (no_resp_flag)
-			return "ERR*";
-		return "ERR";
 	}
 	if (inx == NODE_STATE_MIXED) {
 		if (maint_flag)

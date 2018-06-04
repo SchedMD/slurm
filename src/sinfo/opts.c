@@ -550,8 +550,6 @@ _node_state_id (char *str)
 		return NODE_STATE_DRAIN;
 	if (xstrncasecmp("DRAINED", str, len) == 0)
 		return NODE_STATE_DRAIN | NODE_STATE_IDLE;
-	if (xstrncasecmp("ERROR", str, len) == 0)
-		return NODE_STATE_ERROR;
 	if ((xstrncasecmp("RESV", str, len) == 0) ||
 	    (xstrncasecmp("RESERVED", str, len) == 0))
 		return NODE_STATE_RES;

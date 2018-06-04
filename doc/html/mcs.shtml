@@ -229,7 +229,7 @@ JOBID               USER                MCSLABEL
 <pre>
 scontrol show nodes
 NodeName=node0001 Arch=x86_64 CoresPerSocket=4
-   CPUAlloc=0 CPUErr=0 CPUTot=8 CPULoad=0.01 Features=(null)
+   CPUAlloc=0 CPUTot=8 CPULoad=0.01 Features=(null)
    Gres=(null)
    NodeAddr=noder0001 NodeHostName=node0001 Version=15.08
    OS=Linux RealMemory=23780 AllocMem=0 Sockets=2 Boards=1
