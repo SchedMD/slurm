@@ -2198,12 +2198,6 @@ typedef struct node_info {
 
 typedef struct node_info_msg {
 	time_t last_update;		/* time of latest info */
-	uint32_t node_scaling;          /* the amount of nodes per
-					   each record used for
-					   systems like bluegene
-					   where Slurm handles a
-					   bluegene midplane as a
-					   single Slurm node. */
 	uint32_t record_count;		/* number of records */
 	node_info_t *node_array;	/* the node records */
 } node_info_msg_t;

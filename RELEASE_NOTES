@@ -202,6 +202,7 @@ Added the following struct definitions
 
 Removed members from the following struct definitions
 =====================================================
+ -- Removed node_scaling from node_info_msg_t.
 
 Changed the following enums and #defines
 ========================================

@@ -3934,8 +3934,9 @@ static int _unpack_node_info_msg(node_info_msg_t **msg, Buf buffer,
 
 	/* load buffer's header (data structure version and time) */
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpack32(&tmp_ptr->record_count, buffer);
-		safe_unpack32(&tmp_ptr->node_scaling, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was node_scaling */
 		safe_unpack_time(&tmp_ptr->last_update, buffer);
 
 		tmp_ptr->node_array = xmalloc(sizeof(node_info_t) *
@@ -3949,8 +3950,9 @@ static int _unpack_node_info_msg(node_info_msg_t **msg, Buf buffer,
 				goto unpack_error;
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpack32(&tmp_ptr->record_count, buffer);
-		safe_unpack32(&tmp_ptr->node_scaling, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was node_scaling */
 		safe_unpack_time(&tmp_ptr->last_update, buffer);
 
 		tmp_ptr->node_array = xmalloc(sizeof(node_info_t) *
