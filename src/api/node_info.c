@@ -187,16 +187,11 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	char *cloud_str = "", *comp_str = "", *drain_str = "", *power_str = "";
 	char time_str[32];
 	char *out = NULL, *reason_str = NULL, *select_reason_str = NULL;
-	uint16_t err_cpus = 0, alloc_cpus = 0;
-	int cpus_per_node = 1;
+	uint16_t alloc_cpus = 0;
 	int idle_cpus;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	uint64_t alloc_memory;
 	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
-
-	if (node_scaling)
-		cpus_per_node = node_ptr->cpus / node_scaling;
 
 	if (my_state & NODE_STATE_CLOUD) {
 		my_state &= (~NODE_STATE_CLOUD);
@@ -222,41 +217,15 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				  SELECT_NODEDATA_SUBCNT,
 				  NODE_STATE_ALLOCATED,
 				  &alloc_cpus);
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		if (!alloc_cpus &&
-		    (IS_NODE_ALLOCATED(node_ptr) ||
-		     IS_NODE_COMPLETING(node_ptr)))
-			alloc_cpus = node_ptr->cpus;
-		else
-			alloc_cpus *= cpus_per_node;
-	}
 	idle_cpus = node_ptr->cpus - alloc_cpus;
 
-	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-				  SELECT_NODEDATA_SUBCNT,
-				  NODE_STATE_ERROR,
-				  &err_cpus);
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		err_cpus *= cpus_per_node;
-	idle_cpus -= err_cpus;
-
-	if ((alloc_cpus && err_cpus) ||
-	    (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
+	if (idle_cpus  && (idle_cpus != node_ptr->cpus)) {
 		my_state &= NODE_STATE_FLAGS;
 		my_state |= NODE_STATE_MIXED;
 	}
 
 	/****** Line 1 ******/
 	xstrfmtcat(out, "NodeName=%s ", node_ptr->name);
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-					  SELECT_NODEDATA_RACK_MP,
-					  0, &select_reason_str);
-		if (select_reason_str) {
-			xstrfmtcat(out, "RackMidplane=%s ", select_reason_str);
-			xfree(select_reason_str);
-		}
-	}
 
 	if (node_ptr->arch)
 		xstrfmtcat(out, "Arch=%s ", node_ptr->arch);
@@ -272,8 +241,8 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	xstrfmtcat(out, "CPUAlloc=%u CPUErr=%u CPUTot=%u ",
-		   alloc_cpus, err_cpus, node_ptr->cpus);
+	xstrfmtcat(out, "CPUAlloc=%u CPUTot=%u ",
+		   alloc_cpus, node_ptr->cpus);
 
 	if (node_ptr->cpu_load == NO_VAL)
 		xstrcat(out, "CPULoad=N/A");

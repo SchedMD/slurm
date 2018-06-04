@@ -182,6 +182,8 @@ COMMAND CHANGES (see man pages for details)
     For example "sbatch --batch=haswell ...".
  -- Report cgroup and NodeFeatures plugin configuration with scontrol and
     sview commands.
+ -- Remove the "CPUErr" value from the slurm_print_node_table() API call
+    ("scontrol show node"). This was always zero for non-BlueGene systems.
 
 OTHER CHANGES
 =============
