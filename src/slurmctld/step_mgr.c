@@ -2452,48 +2452,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 				    SELECT_JOBDATA_RESV_ID, &resv_id);
 #endif
 
-#if defined HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &node_count);
-
-#if defined HAVE_BGQ
-	if (step_specs->min_nodes < node_count) {
-		node_count = step_specs->min_nodes;
-
-		step_specs->min_nodes = 1;
-		step_specs->max_nodes = 1;
-	} else if (node_count == step_specs->min_nodes) {
-		step_specs->min_nodes = job_ptr->details->min_nodes;
-		step_specs->max_nodes = job_ptr->details->max_nodes;
-	} else {
-		error("bad node count %u only have %u", step_specs->min_nodes,
-		      node_count);
-		return ESLURM_INVALID_NODE_COUNT;
-	}
-#else
-	/* No sub-block steps in BGL/P, always give them the full allocation */
-	step_specs->min_nodes = job_ptr->details->min_nodes;
-	step_specs->max_nodes = job_ptr->details->max_nodes;
-#endif
-
-	if (cpus_per_mp == NO_VAL16)
-		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-					&cpus_per_mp);
-	/* Below is done to get the correct cpu_count and then we need to set
-	 * the cpu_count to 0 later so just pretend we are overcommitting. */
-	step_specs->cpu_count = node_count * cpus_per_mp;
-	step_specs->overcommit = 1;
-	step_specs->exclusive = 0;
-#endif
-
-#ifndef HAVE_BGQ /* This is to remove a Clang error since
-		  * orig_cpu_count is set below for BGQ systems. */
 	/* if the overcommit flag is checked, we 0 set cpu_count=0
 	 * which makes it so we don't check to see the available cpus
 	 */
 	orig_cpu_count =  step_specs->cpu_count;
-#endif
 
 	if (step_specs->overcommit) {
 		if (step_specs->exclusive) {
