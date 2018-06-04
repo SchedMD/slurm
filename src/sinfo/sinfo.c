@@ -937,7 +937,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	uint32_t base_state;
 	uint64_t alloc_mem = 0;
 	uint16_t used_cpus = 0;
-	int total_cpus = 0, total_nodes = 0;
+	int total_cpus = 0;
 
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 
@@ -1032,7 +1032,6 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		hostlist_push_host(sinfo_ptr->hostnames, node_ptr->node_hostname);
 
 	total_cpus = node_ptr->cpus;
-	total_nodes = node_scaling;
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_SUBCNT,
@@ -1046,14 +1045,14 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	if ((base_state == NODE_STATE_ALLOCATED) ||
 	    (base_state == NODE_STATE_MIXED) ||
 	    IS_NODE_COMPLETING(node_ptr))
-		sinfo_ptr->nodes_alloc += total_nodes;
+		sinfo_ptr->nodes_alloc++;
 	else if (IS_NODE_DRAIN(node_ptr)
 		 || (base_state == NODE_STATE_DOWN))
-		sinfo_ptr->nodes_other += total_nodes;
+		sinfo_ptr->nodes_other++;
 	else
-		sinfo_ptr->nodes_idle += total_nodes;
+		sinfo_ptr->nodes_idle++;
 
-	sinfo_ptr->nodes_total += total_nodes;
+	sinfo_ptr->nodes_total++;
 
 	sinfo_ptr->cpus_alloc += used_cpus;
 	sinfo_ptr->cpus_total += total_cpus;
