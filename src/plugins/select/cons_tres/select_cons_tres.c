@@ -2292,6 +2292,8 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 		free_core_array(&picked_core_bitmap);
 		return picked_node_bitmap;
 	}
+	free_core_array(&exc_core_bitmap);
+
 	return avail_nodes_bitmap;
 }
 
