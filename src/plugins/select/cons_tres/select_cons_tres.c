@@ -1240,6 +1240,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	} else {
 		/* Should never get here */
 		error("cons_tres: %s: Mode %d is invalid", __func__, mode);
+		free_core_array(&exc_cores);
 		return EINVAL;
 	}
 
