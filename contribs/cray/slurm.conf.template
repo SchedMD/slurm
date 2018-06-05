@@ -33,6 +33,7 @@ JobContainerType=job_container/cncu
 #JobRequeue=1
 JobSubmitPlugins=cray
 KillOnBadExit=1
+LaunchParameters=send_gids
 #LaunchType=launch/slurm
 #Licenses=foo*4,bar
 #MailProg=/bin/mail
