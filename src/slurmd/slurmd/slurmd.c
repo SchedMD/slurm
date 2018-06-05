@@ -1010,6 +1010,7 @@ _read_config(void)
 	_free_and_set(conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(conf->pubkey,   path_pubkey);
+	_free_and_set(conf->x11_params, xstrdup(cf->x11_params));
 
 	conf->debug_flags = cf->debug_flags;
 	conf->syslog_debug = cf->slurmd_syslog_debug;
@@ -1258,6 +1259,7 @@ _destroy_conf(void)
 		xfree(conf->task_prolog);
 		xfree(conf->task_epilog);
 		xfree(conf->tmpfs);
+		xfree(conf->x11_params);
 		slurm_mutex_destroy(&conf->config_mutex);
 		FREE_NULL_LIST(conf->starting_steps);
 		slurm_cond_destroy(&conf->starting_steps_cond);

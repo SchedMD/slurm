@@ -167,6 +167,7 @@ typedef struct slurmd_config {
 	char         *plugstack;	/* path to SPANK config file	*/
 	uint16_t      kill_wait;	/* seconds between SIGXCPU to SIGKILL
 					 * on job termination */
+	char           *x11_params;	/* X11Parameters */
 } slurmd_conf_t;
 
 extern slurmd_conf_t * conf;

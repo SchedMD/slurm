@@ -3014,6 +3014,7 @@ typedef struct slurm_ctl_conf {
 	char *version;		/* version of slurmctld */
 	uint16_t vsize_factor;	/* virtual memory limit size factor */
 	uint16_t wait_time;	/* default job --wait time */
+	char *x11_params;	/* X11Parameters */
 } slurm_ctl_conf_t;
 
 typedef struct slurmd_status_msg {

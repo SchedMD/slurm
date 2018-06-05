@@ -197,6 +197,8 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	xsignal(SIGTERM, _shutdown_x11);
 	xsignal_unblock(sig_array);
 
+	debug("X11Parameters: %s", conf->x11_params);
+
 	if (!(home = _get_home(job->uid))) {
 		error("could not find HOME in environment");
 		return SLURM_ERROR;

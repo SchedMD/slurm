@@ -390,6 +390,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"UsePAM", S_P_BOOLEAN},
 	{"VSizeFactor", S_P_UINT16},
 	{"WaitTime", S_P_UINT16},
+	{"X11Parameters", S_P_STRING},
 
 	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
 	{"FrontendName", S_P_ARRAY, _parse_frontend, destroy_frontend},
@@ -2803,6 +2804,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->topology_plugin);
 	xfree (ctl_conf_ptr->unkillable_program);
 	xfree (ctl_conf_ptr->version);
+	xfree (ctl_conf_ptr->x11_params);
 
 	if (purge_node_hash)
 		_free_name_hashtbl();
@@ -2997,6 +2999,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->use_spec_resources	= 0;
 	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= NO_VAL16;
+	xfree (ctl_conf_ptr->x11_params);
 	ctl_conf_ptr->prolog_epilog_timeout = NO_VAL16;
 
 	_free_name_hashtbl();
@@ -4795,6 +4798,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->wait_time, "WaitTime", hashtbl))
 		conf->wait_time = DEFAULT_WAIT_TIME;
+
+	(void) s_p_get_string(&conf->x11_params, "X11Parameters", hashtbl);
 
 	(void) s_p_get_string(&conf->topology_param, "TopologyParam", hashtbl);
 	if (conf->topology_param) {
