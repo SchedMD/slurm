@@ -1880,27 +1880,27 @@ typedef void (*pmixp_cperf_cbfunc_fn_t)(int status, const char *data,
 					size_t ndata, void *cbdata,
 					void *r_fn, void *r_cbdata);
 
-static int _pmixp_server_cperf_iter(char *data, int ndata)
+static int _pmixp_server_cperf_iter(pmixp_coll_type_t type, char *data, int ndata)
 {
 	pmixp_coll_t *coll;
 	pmixp_proc_t procs;
 	int cur_count = _pmixp_server_cperf_count();
-	pmixp_coll_type_t type;
 	pmixp_cperf_cbfunc_fn_t cperf_cbfunc = _pmixp_cperf_tree_cbfunc;
 
 	strncpy(procs.nspace, pmixp_info_namespace(), PMIXP_MAX_NSLEN);
 	procs.rank = pmixp_lib_get_wildcard();
 
-	/* If PMIXP_COLL_TYPE_FENCE_MAX == type,
-	 * then use TREE by default */
-	type = pmixp_info_srv_fence_coll_type() == PMIXP_COLL_TYPE_FENCE_MAX ?
-				PMIXP_COLL_TYPE_FENCE_TREE : PMIXP_COLL_TYPE_FENCE_RING;
-
-	if (PMIXP_COLL_TYPE_FENCE_RING == type) {
+	switch (type) {
+	case PMIXP_COLL_TYPE_FENCE_RING:
 		cperf_cbfunc = _pmixp_cperf_ring_cbfunc;
+		break;
+	case PMIXP_COLL_TYPE_FENCE_TREE:
+		cperf_cbfunc = _pmixp_cperf_tree_cbfunc;
+		break;
+	default:
+		PMIXP_ERROR("Uncnown coll type");
+		return SLURM_ERROR;
 	}
-
-	PMIXP_DEBUG("%s", pmixp_coll_type2str(type));
 	coll = pmixp_state_coll_get(type, &procs, 1);
 	pmixp_coll_sanity_check(coll);
 	xassert(!pmixp_coll_contrib_local(coll, type, data, ndata,
@@ -1909,7 +1909,7 @@ static int _pmixp_server_cperf_iter(char *data, int ndata)
 	while (cur_count == _pmixp_server_cperf_count()) {
 		usleep(1);
 	}
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1924,13 +1924,26 @@ void pmixp_server_run_cperf(void)
 {
 	int size;
 	size_t start, end, bound;
+	pmixp_coll_type_t type;
+	pmixp_coll_type_t types[] = { PMIXP_COLL_TYPE_FENCE_TREE, PMIXP_COLL_TYPE_FENCE_RING };
+	pmixp_coll_cperf_mode_t mode = pmixp_info_srv_fence_coll_type();
+	bool is_barrier = pmixp_info_srv_fence_coll_barrier();
+
+	int rc = SLURM_SUCCESS;
 
 	pmixp_debug_hang(0);
 
-	start = 1 << _pmixp_cperf_low;
-	end = 1 << _pmixp_cperf_up;
-	bound = 1 << _pmixp_cperf_bound;
+	if (!is_barrier) {
+		start = 1 << _pmixp_cperf_low;
+		end = 1 << _pmixp_cperf_up;
+		bound = 1 << _pmixp_cperf_bound;
+	} else {
+		start = 0;
+		end = 1;
+		bound = 1;
+	}
 
+	PMIXP_ERROR("coll perf mode=%s", pmixp_coll_cperf_mode2str(mode));
 	for (size = start; size <= end; size *= 2) {
 		int j, iters = _pmixp_cperf_siter;
 		struct timeval tv1, tv2;
@@ -1942,9 +1955,23 @@ void pmixp_server_run_cperf(void)
 
 		PMIXP_ERROR("coll perf %d", size);
 
-		for(j=0; j<iters; j++){
+		for(j=0; j<iters && !rc; j++){
+			switch (mode) {
+			case PMIXP_COLL_CPERF_MIXED:
+				type = types[j%(sizeof(types)/sizeof(types[0]))];
+				break;
+			case PMIXP_COLL_CPERF_RING:
+				type = PMIXP_COLL_TYPE_FENCE_RING;
+				break;
+			case PMIXP_COLL_CPERF_TREE:
+				type = PMIXP_COLL_TYPE_FENCE_TREE;
+				break;
+			default:
+				type = PMIXP_COLL_TYPE_FENCE_RING;
+				break;
+			}
 			gettimeofday(&tv1, NULL);
-			_pmixp_server_cperf_iter(data, size);
+			rc = _pmixp_server_cperf_iter(type, data, size);
 			gettimeofday(&tv2, NULL);
 			times[j] = tv2.tv_sec + 1E-6 * tv2.tv_usec -
 					(tv1.tv_sec + 1E-6 * tv1.tv_usec);
@@ -1955,6 +1982,9 @@ void pmixp_server_run_cperf(void)
 			PMIXP_ERROR("\t%d %d: %.9lf", j, size, times[j]);
 		}
 		xfree(data);
+		if (is_barrier) {
+			break;
+		}
 	}
 }
 

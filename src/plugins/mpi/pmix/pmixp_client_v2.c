@@ -102,66 +102,28 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v2[], size_t nprocs,
 				 pmix_modex_cbfunc_t cbfunc, void *cbdata)
 {
 	PMIXP_DEBUG("called");
-	pmixp_coll_t *coll;
-	pmix_status_t status = PMIX_SUCCESS;
 	int ret;
 	size_t i;
 	pmixp_proc_t *procs = xmalloc(sizeof(*procs) * nprocs);
+	bool collect = false;
 
 	for (i = 0; i < nprocs; i++) {
 		procs[i].rank = procs_v2[i].rank;
 		strncpy(procs[i].nspace, procs_v2[i].nspace, PMIXP_MAX_NSLEN);
 	}
-
-	//--------------------------------------------------------------
-	// This code looks replicated in v1 and v2
-	// need to put into the common section as much as we can
-
-	/* Chooses the coll algorithm defined by user
-	 * thru the env variable: SLURM_PMIXP_FENCE.
-	 * By default: PMIXP_COLL_TYPE_FENCE_AUTO
-	 * is used the both fence algorithms */
-	pmixp_coll_type_t type = pmixp_info_srv_fence_coll_type();
-
-	switch (type) {
-	case PMIXP_COLL_TYPE_FENCE_RING:
-	case PMIXP_COLL_TYPE_FENCE_TREE:
-		break;
-	default:
-		type = PMIXP_COLL_TYPE_FENCE_TREE;
-		/* check the info keys */
-		if (info) {
-			for (i = 0; i < ninfo; i++) {
-				if (0 == strncmp(info[i].key, PMIX_COLLECT_DATA, PMIX_MAX_KEYLEN)) {
-					type = PMIXP_COLL_TYPE_FENCE_RING;
-					break;
-				}
+	/* check the info keys */
+	if (info) {
+		for (i = 0; i < ninfo; i++) {
+			if (0 == strncmp(info[i].key, PMIX_COLLECT_DATA, PMIX_MAX_KEYLEN)) {
+				collect = true;
+				break;
 			}
 		}
-		break;
 	}
-
-	coll = pmixp_state_coll_get(type, procs, nprocs);
-	if (!coll) {
-		status = PMIX_ERROR;
-		goto error;
-	}
-	ret = pmixp_coll_contrib_local(coll, type, data, ndata, cbfunc, cbdata);
+	ret = pmixp_lib_fence(procs, nprocs, collect, data, ndata, cbfunc, cbdata);
 	xfree(procs);
 
-
-	if (SLURM_SUCCESS != ret) {
-		status = PMIX_ERROR;
-		goto error;
-	}
-
-	//-------------------------------------------------------------------------
-
-	return PMIX_SUCCESS;
-error:
-	cbfunc(status, NULL, 0, cbdata, NULL, NULL);
-
-	return status;
+	return ret;
 }
 
 static pmix_status_t _dmodex_fn(const pmix_proc_t *proc,

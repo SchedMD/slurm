@@ -78,8 +78,10 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, pmixp_coll_type_t type,
 			     void *cbfunc, void *cbdata) {
 	int ret = SLURM_SUCCESS;
 
+#ifdef PMIXP_COLL_DEBUG
 	PMIXP_DEBUG("%p: %s seq=%d, size=%lu", coll, pmixp_coll_type2str(type),
 		    coll->seq, ndata);
+#endif
 	switch (type) {
 	case PMIXP_COLL_TYPE_FENCE_TREE:
 		ret = pmixp_coll_tree_local(coll, data, ndata,

@@ -86,5 +86,8 @@ int pmixp_lib_is_wildcard(uint32_t rank);
 int pmixp_lib_is_undef(uint32_t rank);
 uint32_t pmixp_lib_get_wildcard(void);
 uint32_t pmixp_lib_get_version(void);
+int pmixp_lib_fence(const pmixp_proc_t procs[], size_t nprocs,
+		    bool collect, char *data, size_t ndata,
+		    void *cbfunc, void *cbdata);
 
 #endif /* PMIXP_CLIENT_H */

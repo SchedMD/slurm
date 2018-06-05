@@ -52,7 +52,8 @@ static bool _srv_use_direct_conn_ucx = true;
 #else
 static bool _srv_use_direct_conn_ucx = false;
 #endif
-static int _srv_fence_coll_type = PMIXP_COLL_TYPE_FENCE_MAX;
+static int _srv_fence_coll_type = PMIXP_COLL_CPERF_RING;
+static bool _srv_fence_coll_barrier = false;
 
 pmix_jobinfo_t _pmixp_job_info;
 
@@ -97,11 +98,17 @@ bool pmixp_info_srv_direct_conn_ucx(void){
 	return _srv_use_direct_conn_ucx && _srv_use_direct_conn;
 }
 
-int pmixp_info_srv_fence_coll_type(void){
+int pmixp_info_srv_fence_coll_type(void)
+{
 	if (!_srv_use_direct_conn) {
 		return PMIXP_COLL_TYPE_FENCE_TREE;
 	}
 	return _srv_fence_coll_type;
+}
+
+bool pmixp_info_srv_fence_coll_barrier(void)
+{
+	return _srv_fence_coll_barrier;
 }
 
 /* Job information */
@@ -457,12 +464,22 @@ static int _env_set(char ***env)
 	/*------------- Fence coll type setting ----------*/
 	p = getenvp(*env, PMIXP_COLL_FENCE);
 	if (p) {
-		if (!xstrcmp("auto", p)) {
-			_srv_fence_coll_type = PMIXP_COLL_TYPE_FENCE_MAX;
+		if (!xstrcmp("mixed", p)) {
+			_srv_fence_coll_type = PMIXP_COLL_CPERF_MIXED;
 		} else if (!xstrcmp("tree", p)) {
-			_srv_fence_coll_type = PMIXP_COLL_TYPE_FENCE_TREE;
+			_srv_fence_coll_type = PMIXP_COLL_CPERF_TREE;
 		} else if (!xstrcmp("ring", p)) {
-			_srv_fence_coll_type = PMIXP_COLL_TYPE_FENCE_RING;
+			_srv_fence_coll_type = PMIXP_COLL_CPERF_RING;
+		}
+	}
+	p = getenvp(*env, SLURM_PMIXP_FENCE_BARRIER);
+	if (p) {
+		if (!xstrcmp("1",p) || !xstrcasecmp("true", p) ||
+		    !xstrcasecmp("yes", p)) {
+			_srv_fence_coll_barrier = true;
+		} else if (!xstrcmp("0",p) || !xstrcasecmp("false", p) ||
+			   !xstrcasecmp("no", p)) {
+			_srv_fence_coll_barrier = false;
 		}
 	}
 
