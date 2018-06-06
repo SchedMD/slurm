@@ -818,8 +818,8 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 				     "fan-in" : "fan-out"),
 			    hdr->seq);
 #endif
-		rc = pmixp_coll_tree_check(coll, hdr->seq);
-		if (PMIXP_COLL_TREE_REQ_FAILURE == rc) {
+		rc = pmixp_coll_check(coll, hdr->seq);
+		if (PMIXP_COLL_REQ_FAILURE == rc) {
 			/* this is an unacceptable event: either something went
 			 * really wrong or the state machine is incorrect.
 			 * This will 100% lead to application hang.
@@ -832,7 +832,7 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 					    pmixp_info_stepid(), SIGKILL);
 			xfree(nodename);
 			break;
-		} else if (PMIXP_COLL_TREE_REQ_SKIP == rc) {
+		} else if (PMIXP_COLL_REQ_SKIP == rc) {
 #ifdef PMIXP_COLL_DEBUG
 			PMIXP_DEBUG("Wrong collective seq. #%d from nodeid %u, current is %d, skip this message",
 				    hdr->seq, hdr->nodeid, coll->seq);

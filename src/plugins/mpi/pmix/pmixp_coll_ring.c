@@ -345,8 +345,7 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 			/* check for all data is collected and forwarded */
 			if (!_ring_remain_contrib(coll_ctx) ) {
 				coll_ctx->state = PMIXP_COLL_RING_FINALIZE;
-				/* increase coll sequence */
-				coll->seq++;
+
 				if (coll->cbfunc) {
 					pmixp_coll_ring_cbdata_t *cbdata;
 
@@ -370,6 +369,8 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 				    pmixp_coll_type2str(coll->type),
 				    coll_ctx->seq);
 #endif
+				/* increase coll sequence */
+				coll->seq++;
 				_reset_coll_ring(coll_ctx);
 				ret = true;
 
@@ -386,6 +387,43 @@ static void _free_from_buf_pool(void *p)
 {
 	Buf buf = (Buf)p;
 	free_buf(buf);
+}
+
+pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_new(pmixp_coll_t *coll)
+{
+	int i;
+	pmixp_coll_ring_ctx_t *coll_ctx = NULL, *ret_ctx = NULL, *free_ctx = NULL;
+	pmixp_coll_ring_t *ring = &coll->state.ring;
+	uint32_t seq = coll->seq;
+
+	for (i = 0; i < PMIXP_COLL_RING_CTX_NUM; i++) {
+		coll_ctx = &ring->ctx_array[i];
+		/* check that no active context exists to exclude the double context */
+		if (coll_ctx->in_use) {
+			switch(coll_ctx->state) {
+			case PMIXP_COLL_RING_FINALIZE:
+				seq++;
+				break;
+			case PMIXP_COLL_RING_SYNC:
+			case PMIXP_COLL_RING_PROGRESS:
+				if (!ret_ctx && !coll_ctx->contrib_local) {
+					ret_ctx = coll_ctx;
+				}
+				break;
+			}
+		} else {
+			free_ctx = coll_ctx;
+			xassert(!free_ctx->in_use);
+		}
+	}
+	/* add this context to use */
+	if (!ret_ctx && free_ctx) {
+		ret_ctx = free_ctx;
+		ret_ctx->in_use = true;
+		ret_ctx->seq = seq;
+		ret_ctx->ring_buf = _get_contrib_buf(ret_ctx);
+	}
+	return ret_ctx;
 }
 
 pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_select(pmixp_coll_t *coll,
@@ -510,9 +548,9 @@ int pmixp_coll_ring_local(pmixp_coll_t *coll, char *data, size_t size,
 	coll->cbfunc = cbfunc;
 	coll->cbdata = cbdata;
 
-	coll_ctx = pmixp_coll_ring_ctx_select(coll, coll->seq);
+	coll_ctx = pmixp_coll_ring_ctx_new(coll);
 	if (!coll_ctx) {
-		PMIXP_ERROR("Can not get ring collective context, "
+		PMIXP_ERROR("Can not get new ring collective context, "
 			    "seq=%u", coll->seq);
 		ret = SLURM_ERROR;
 		goto exit;
@@ -540,10 +578,35 @@ exit:
 
 int pmixp_coll_ring_check(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr)
 {
+	char *nodename = NULL;
+	int rc;
+
 	if (hdr->nodeid != _ring_prev_id(coll)) {
-		return SLURM_ERROR;
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("%p: unexpected contrib from %s:%u, expected is %d",
+			  coll, nodename, hdr->nodeid, _ring_prev_id(coll));
+		return SLURM_FAILURE;
 	}
-	if (hdr->seq < coll->seq) {
+	rc = pmixp_coll_check(coll, hdr->seq);
+	if (PMIXP_COLL_REQ_FAILURE == rc) {
+		/* this is an unacceptable event: either something went
+		 * really wrong or the state machine is incorrect.
+		 * This will 100% lead to application hang.
+		 */
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Bad collective seq. #%d from %s:%u, current is %d",
+			    hdr->seq, nodename, hdr->nodeid, coll->seq);
+		pmixp_debug_hang(0); /* enable hang to debug this! */
+		slurm_kill_job_step(pmixp_info_jobid(),
+				    pmixp_info_stepid(), SIGKILL);
+		xfree(nodename);
+		return SLURM_SUCCESS;
+	} else if (PMIXP_COLL_REQ_SKIP == rc) {
+#ifdef PMIXP_COLL_DEBUG
+		nodename = pmixp_info_job_host(hdr->nodeid);
+		PMIXP_ERROR("Wrong collective seq. #%d from nodeid %u, current is %d, skip this message",
+			    hdr->seq, hdr->nodeid, coll->seq);
+#endif
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;

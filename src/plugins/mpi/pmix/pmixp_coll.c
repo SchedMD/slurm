@@ -41,6 +41,75 @@
 #include "pmixp_client.h"
 #include "pmixp_server.h"
 
+/*
+ * This is important routine that takes responsibility to decide
+ * what messages may appear and what may not. In absence of errors
+ * we won't need this routine. Unfortunately they are exist.
+ * There can be 3 general types of communication errors:
+ * 1. We are trying to send our contribution to a parent and it fails.
+ *    In this case we will be blocked in send function. At some point
+ *    we either succeed or fail after predefined number of trials.
+ *
+ *    If we succeed - we are OK. Otherwise we will abort the whole job step.
+ *
+ * 2. A child of us sends us the message and gets the error, however we receive
+ *    this message (false negative). Child will try again while we might be:
+ *    (a) at FAN-IN step waiting for other contributions.
+ *    (b) at FAN-OUT since we get all we need.
+ *    (c) 2 step forward (SYNC) with coll->seq = (child_seq+1) if root of the
+ *        tree successfuly broadcasted the whole database to us.
+ *    (d) 3 step forward (next FAN-IN) with coll->seq = (child_seq+1)
+ *        if somebody initiated next collective.
+ *    (e) we won't move further because the child with problem won't send us
+ *        next contribution.
+ *
+ *    Cases (a) and (b) can't be noticed here since child and we have the
+ *    same seq number. They will later be detected  in pmixp_coll_contrib_node()
+ *    based on collective contribution accounting vector.
+ *
+ *    Cases (c) and (d) would be visible here and should be treated as possible
+ *    errors that should be ignored discarding the contribution.
+ *
+ *    Other cases are obvious error, we can abort in this case or ignore with
+ *    error.
+ *
+ * 3. Root of the tree broadcasts the data and we get it, however root gets
+ *    false negative. In this case root will try again. We might be:
+ *    (a) at SYNC since we just got the DB and we are fine
+ *        (coll->seq == root_seq+1)
+ *    (b) at FAN-IN if somebody initiated next collective
+ *        (coll->seq == root_seq+1)
+ *    (c) at FAN-OUT if we will collect all necessary contributions and send
+ *        it to our parent.
+ *    (d) we won't be able to switch to SYNC since root will be busy dealing
+ *        with previous DB broadcast.
+ *    (e) at FAN-OUT waiting for the fan-out msg while receiving next fan-in
+ *        message from one of our children (coll->seq + 1 == child_seq).
+ */
+inline int pmixp_coll_check(pmixp_coll_t *coll, uint32_t seq)
+{
+	if (coll->seq == seq) {
+		/* accept this message */
+		return PMIXP_COLL_REQ_PROGRESS;
+	} else if ((coll->seq+1) == seq) {
+		/* practice shows that because of Slurm communication
+		 * infrastructure our child can switch to the next Fence
+		 * and send us the message before the current fan-out message
+		 * arrived. This is accounted in current state machine, so we
+		 * allow if we receive message with seq number grater by one */
+		return PMIXP_COLL_REQ_PROGRESS;
+	} else if ((coll->seq - 1) == seq) {
+		/* his may be our child OR root of the tree that
+		 * had false negatives from Slurm protocol.
+		 * It's normal situation, return error because we
+		 * want to discard this message */
+		return PMIXP_COLL_REQ_SKIP;
+	}
+	/* maybe need more sophisticated handling in presence of
+	 * several steps. However maybe it's enough to just ignore */
+	return PMIXP_COLL_REQ_FAILURE;
+}
+
 int pmixp_hostset_from_ranges(const pmixp_proc_t *procs, size_t nprocs,
 			      hostlist_t *hl_out)
 {

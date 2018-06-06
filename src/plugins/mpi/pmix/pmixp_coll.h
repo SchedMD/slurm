@@ -150,10 +150,10 @@ pmixp_coll_tree_sndstatus2str(pmixp_coll_tree_sndstate_t state)
 }
 
 typedef enum {
-	PMIXP_COLL_TREE_REQ_PROGRESS,
-	PMIXP_COLL_TREE_REQ_SKIP,
-	PMIXP_COLL_TREE_REQ_FAILURE
-} pmixp_coll_tree_req_state_t;
+	PMIXP_COLL_REQ_PROGRESS,
+	PMIXP_COLL_REQ_SKIP,
+	PMIXP_COLL_REQ_FAILURE
+} pmixp_coll_req_state_t;
 
 /* tree coll struct */
 typedef struct {
@@ -307,7 +307,7 @@ int pmixp_coll_tree_unpack(Buf buf, pmixp_coll_type_t *type,
 			   int *nodeid, pmixp_proc_t **r,
 			   size_t *nr);
 void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts);
-int pmixp_coll_tree_check(pmixp_coll_t *coll, uint32_t seq);
+int pmixp_coll_check(pmixp_coll_t *coll, uint32_t seq);
 void pmixp_coll_log(pmixp_coll_t *coll);
 
 /* ring coll functions */
