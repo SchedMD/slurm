@@ -414,11 +414,14 @@ static void _do_power_work(time_t now)
 		    IS_NODE_NO_RESPOND(node_ptr)) {
 			info("node %s not resumed by ResumeTimeout(%d) - marking down and power_save",
 			     node_ptr->name, resume_timeout);
+			/*
+			 * set_node_down_ptr() will remove the node from the
+			 * avail_node_bitmap.
+			 */
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
 			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
 			bit_set(power_node_bitmap, i);
-			bit_set(avail_node_bitmap, i);
 			bit_clear(booting_node_bitmap, i);
 			bit_clear(resume_node_bitmap, i);
 			node_ptr->last_idle = 0;

@@ -31,6 +31,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with openssl	%_with_openssl 1	require openssl RPM to be installed
 #						ensures auth/openssl and crypto/openssl are built
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
+# --without x11		%_without_x11 1		disable internal X11 support
 
 #  Options that are off by default (enable with --with <opt>)
 %bcond_with cray
@@ -44,6 +45,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with hdf5
 %bcond_with lua
 %bcond_with numa
+%bcond_with x11
 
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
 %bcond_without openssl
@@ -305,6 +307,7 @@ notifies slurm about failed nodes.
 	%{?_with_freeipmi} \
 	%{?_with_hdf5} \
 	%{?_with_shared_libslurm} \
+	%{?_without_x11:--disable-x11} \
 	%{?_with_cflags}
 
 make %{?_smp_mflags}

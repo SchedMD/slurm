@@ -142,6 +142,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.8
 ==========================
  -- Fix incomplete RESPONSE_[RESOURCE|JOB_PACK]_ALLOCATION building path.
+ -- Do not allocate nodes that were marked down due to the node not responding
+    by ResumeTimeout.
 
 * Changes in Slurm 17.11.7
 ==========================
@@ -158,6 +160,7 @@ documents those changes that are of interest to users and administrators.
  -- task/cgroup - fix invalid free() if the hwloc library does not return a
     string as expected.
  -- Fix insecure handling of job requested gid field. CVE-2018-10995.
+ -- Add --without x11 option to rpmbuild in slurm.spec.
 
 * Changes in Slurm 17.11.6
 ==========================
