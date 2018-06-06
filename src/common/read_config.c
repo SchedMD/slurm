@@ -3385,10 +3385,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 * the cluster name is lower case since sacctmgr makes sure
 	 * this is the case as well.
 	 */
-	if (conf->cluster_name) {
+	if (conf->cluster_name && *conf->cluster_name) {
 		for (i = 0; conf->cluster_name[i] != '\0'; i++)
 			conf->cluster_name[i] =
 				(char)tolower((int)conf->cluster_name[i]);
+	} else {
+		error("ClusterName needs to be specified");
+		return SLURM_ERROR;
 	}
 
 	if (!s_p_get_uint16(&conf->complete_wait, "CompleteWait", hashtbl))
