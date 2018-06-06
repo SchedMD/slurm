@@ -458,7 +458,7 @@ int main(int argc, char **argv)
 			slurmctld_conf.job_credential_private_key);
 	if (!slurmctld_config.cred_ctx) {
 		if (test_config) {
-			fatal("slurm_cred_creator_ctx_create(%s): %m",
+			error("slurm_cred_creator_ctx_create(%s): %m",
 				slurmctld_conf.job_credential_private_key);
 			test_config_rc = 1;
 		} else {
