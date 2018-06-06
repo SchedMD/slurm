@@ -152,6 +152,9 @@ HIGHLIGHTS
  -- Disable local PTY output processing when using 'srun --unbuffered'. This
     prevents the PTY subsystem from inserting extraneous \r characters into
     the output stream.
+ -- Append ", with requeued tasks" to job array "end" emails if any tasks in the
+    array were requeued. This is a hint to use "sacct --duplicates" to see the
+    whole picture of the array job.
 
 RPMBUILD CHANGES
 ================

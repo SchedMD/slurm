@@ -1823,6 +1823,11 @@ static void _set_job_term_info(struct job_record *job_ptr, uint16_t mail_type,
 				snprintf(buf, buf_len, ", %s",
 					 job_state_string(base_state));
 			}
+
+			if (job_ptr->array_recs->array_flags &
+			    ARRAY_TASK_REQUEUED)
+				strncat(buf, ", with requeued tasks",
+					buf_len - strlen(buf) - 1);
 		} else {
 			exit_status_max = job_ptr->exit_code;
 			if (WIFEXITED(exit_status_max)) {
