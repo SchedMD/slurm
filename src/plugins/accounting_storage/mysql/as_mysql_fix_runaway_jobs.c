@@ -68,7 +68,6 @@ static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
 	start_tm.tm_mday = 0;
-	start_tm.tm_isdst = -1;
 	month_start = slurm_mktime(&start_tm);
 
 	query = xstrdup_printf("UPDATE \"%s_%s\" SET hourly_rollup = %ld, "

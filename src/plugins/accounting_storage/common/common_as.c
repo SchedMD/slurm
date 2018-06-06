@@ -431,7 +431,6 @@ extern int set_usage_information(char **usage_table,
 	}
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
-	end_tm.tm_isdst = -1;
 	end = slurm_mktime(&end_tm);
 
 	if (!start) {
@@ -451,7 +450,6 @@ extern int set_usage_information(char **usage_table,
 	}
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
-	start_tm.tm_isdst = -1;
 	start = slurm_mktime(&start_tm);
 
 	if (end-start < 3600) {
@@ -677,7 +675,6 @@ extern time_t archive_setup_end_time(time_t last_submit, uint32_t purge)
 		return 0;
 	}
 
-	time_tm.tm_isdst = -1;
 	return (slurm_mktime(&time_tm) - 1);
 }
 

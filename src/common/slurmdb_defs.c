@@ -2538,7 +2538,6 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
-	end_tm.tm_isdst = -1;
 	(*end) = slurm_mktime(&end_tm);
 
 	if (!sent_start) {
@@ -2564,7 +2563,6 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 	}
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
-	start_tm.tm_isdst = -1;
 	(*start) = slurm_mktime(&start_tm);
 
 	if ((*end)-(*start) < 3600)

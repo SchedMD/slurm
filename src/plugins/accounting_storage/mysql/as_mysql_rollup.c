@@ -1737,7 +1737,6 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 		start_tm.tm_sec = 0;
 		start_tm.tm_min = 0;
 		start_tm.tm_hour = 0;
-		start_tm.tm_isdst = -1;
 
 		if (run_month) {
 			unit_name = "month";

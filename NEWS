@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- Completely remove "gres" field from step record. Use "tres_per_node",
     "tres_per_socket", etc.
  -- Add "Links" parameter to gres.conf configuration file.
+ -- Force slurm_mktime() to set tm_isdst to -1 so anyone using the function
+    doesn't forget to set it.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

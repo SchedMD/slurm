@@ -729,7 +729,6 @@ static void *_rollup_handler(void *db_conn)
 		tm.tm_sec = 0;
 		tm.tm_min = 0;
 		tm.tm_hour++;
-		tm.tm_isdst = -1;
 		next_time = slurm_mktime(&tm);
 
 		sleep((next_time - start_time));

@@ -209,7 +209,6 @@ static void _advance_time(time_t *res_time, int day_cnt)
 	struct tm time_tm;
 
 	slurm_localtime_r(res_time, &time_tm);
-	time_tm.tm_isdst = -1;
 	time_tm.tm_mday += day_cnt;
 	*res_time = slurm_mktime(&time_tm);
 	if (*res_time == (time_t)(-1)) {

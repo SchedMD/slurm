@@ -3184,7 +3184,6 @@ uint32_t _get_begin_next_month(time_t start)
 	parts.tm_hour  = 0;
 	parts.tm_min   = 0;
 	parts.tm_sec   = 0;
-	parts.tm_isdst = -1;
 
 	if (parts.tm_mon > 11) {
 		parts.tm_year++;

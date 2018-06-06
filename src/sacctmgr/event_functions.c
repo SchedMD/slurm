@@ -440,7 +440,6 @@ static int _set_cond(int *start, int argc, char **argv,
 			start_tm.tm_min = 0;
 			start_tm.tm_hour = 0;
 			start_tm.tm_mday--;
-			start_tm.tm_isdst = -1;
 			event_cond->period_start = slurm_mktime(&start_tm);
 		}
 	}
@@ -486,7 +485,6 @@ extern int sacctmgr_list_event(int argc, char **argv)
 		start_tm.tm_min = 0;
 		start_tm.tm_hour = 0;
 		start_tm.tm_mday--;
-		start_tm.tm_isdst = -1;
 		event_cond->period_start = slurm_mktime(&start_tm);
 	}
 

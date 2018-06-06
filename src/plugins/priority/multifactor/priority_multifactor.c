@@ -696,7 +696,6 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 	last_tm.tm_hour  = 0;
 /*	last_tm.tm_wday = 0	ignored */
 /*	last_tm.tm_yday = 0;	ignored */
-	last_tm.tm_isdst = -1;
 	switch (reset_period) {
 	case PRIORITY_RESET_DAILY:
 		tmp_time = slurm_mktime(&last_tm);

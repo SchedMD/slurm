@@ -175,7 +175,6 @@ int sacctmgr_list_reservation(int argc, char **argv)
                 start_tm.tm_min = 0;
                 start_tm.tm_hour = 0;
                 start_tm.tm_mday--;
-                start_tm.tm_isdst = -1;
                 reservation_cond->time_start = slurm_mktime(&start_tm);
         }
 

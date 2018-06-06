@@ -224,16 +224,17 @@ static void *_cluster_rollup_usage(void *arg)
 	 * epoch times we need to set the tm_isdst = -1 so we don't
 	 * have to worry about the time changes.  Not setting it to -1
 	 * will cause problems in the day and month with the date change.
+	 *
+	 * NOTE: slurm_mktime() implementation already sets it to -1 so
+	 *	 there's no need to manually set it beforehand.
 	 */
 
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
-	start_tm.tm_isdst = -1;
 	hour_start = slurm_mktime(&start_tm);
 
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
-	end_tm.tm_isdst = -1;
 	hour_end = slurm_mktime(&end_tm);
 
 /* 	info("hour start %s", slurm_ctime2(&hour_start)); */
@@ -254,11 +255,9 @@ static void *_cluster_rollup_usage(void *arg)
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
-	start_tm.tm_isdst = -1;
 	day_start = slurm_mktime(&start_tm);
 
 	end_tm.tm_hour = 0;
-	end_tm.tm_isdst = -1;
 	day_end = slurm_mktime(&end_tm);
 
 /* 	info("day start %s", slurm_ctime2(&day_start)); */
@@ -276,14 +275,12 @@ static void *_cluster_rollup_usage(void *arg)
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
 	start_tm.tm_mday = 1;
-	start_tm.tm_isdst = -1;
 	month_start = slurm_mktime(&start_tm);
 
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_hour = 0;
 	end_tm.tm_mday = 1;
-	end_tm.tm_isdst = -1;
 	month_end = slurm_mktime(&end_tm);
 
 /* 	info("month start %s", slurm_ctime2(&month_start)); */

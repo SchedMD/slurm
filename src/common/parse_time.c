@@ -634,7 +634,6 @@ extern time_t parse_time(char *time_str, int past)
 	res_tm.tm_mday  = mday;
 	res_tm.tm_mon   = month;
 	res_tm.tm_year  = year;
-	res_tm.tm_isdst = -1;
 
 /* 	printf("%d/%d/%d %d:%d\n",month+1,mday,year,hour,minute); */
 	if ((ret_time = slurm_mktime(&res_tm)) != -1)

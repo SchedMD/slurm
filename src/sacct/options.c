@@ -985,7 +985,6 @@ extern void parse_command_line(int argc, char **argv)
 			start_tm.tm_sec = 0;
 			start_tm.tm_min = 0;
 			start_tm.tm_hour = 0;
-			start_tm.tm_isdst = -1;
 			job_cond->usage_start = slurm_mktime(&start_tm);
 		}
 	}
