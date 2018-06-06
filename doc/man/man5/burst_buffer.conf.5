@@ -1,4 +1,4 @@
-.TH "burst_buffer.conf" "5" "December 2017" "burst_buffer.conf 17.11" "Slurm configuration file"
+.TH "burst_buffer.conf" "5" "June 2018" "burst_buffer.conf 18.08" "Slurm configuration file"
 .SH "NAME"
 burst_buffer.conf \- Slurm configuration file for burst buffer management.
 
@@ -91,6 +91,12 @@ create or destroy persistent burst buffers.
 \fBPrivateData\fR
 If set, then only Slurm operators and the burst buffer owner can see burst
 buffer data.
+.TP
+\fBSetExecHost\fR
+If using Cray DataWarp version CLE.6.0.UP07 or later, this flag may be set to
+notify DataWarp of the login node for an interactive jobs. This changes
+behavior such that the login node will be given access to the DataWarp burst
+buffers.
 .TP
 \fBTeardownFailure\fR
 If set, then teardown a burst buffer after file staging error. Otherwise
@@ -230,7 +236,7 @@ StopStageIn=/usr/local/slurm/17.11/sbin/PSI
 StopStageOut=/usr/local/slurm/17.11/sbin/PSO
 
 .SH "COPYING"
-Copyright (C) 2014-2017 SchedMD LLC.
+Copyright (C) 2014-2018 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
  -- Add "Links" parameter to gres.conf configuration file.
  -- Force slurm_mktime() to set tm_isdst to -1 so anyone using the function
     doesn't forget to set it.
+ -- burst_buffer.conf - Add SetExecHost flag to enable burst buffer access
+    from the login node for interactive jobs.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
