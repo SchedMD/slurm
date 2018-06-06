@@ -145,7 +145,7 @@ _pmixp_io_drop_messages(pmixp_io_engine_t *eng)
 		void *msg = NULL;
 
 		/* complete all messages */
-		pmixp_io_send_cleanup(eng);
+		pmixp_io_send_cleanup(eng, PMIXP_P2P_REGULAR);
 
 		/* drop all outstanding messages */
 		while ((msg = list_dequeue(eng->send_queue))) {
@@ -558,6 +558,7 @@ int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
 	slurm_mutex_lock(&eng->send_lock);
 	_send_progress(eng);
 	slurm_mutex_unlock(&eng->send_lock);
+	pmixp_io_send_cleanup(eng, PMIXP_P2P_INLINE);
 
 	return SLURM_SUCCESS;
 }
@@ -594,11 +595,11 @@ bool pmixp_io_send_pending(pmixp_io_engine_t *eng)
 	return ret;
 }
 
-void pmixp_io_send_cleanup(pmixp_io_engine_t *eng)
+void pmixp_io_send_cleanup(pmixp_io_engine_t *eng, pmixp_p2p_ctx_t ctx)
 {
 	void *msg = NULL;
 	while ((msg = list_dequeue(eng->complete_queue))) {
-		eng->h.send_complete(msg, PMIXP_P2P_REGULAR, SLURM_SUCCESS);
+		eng->h.send_complete(msg, ctx, SLURM_SUCCESS);
 	}
 }
 
@@ -608,5 +609,5 @@ void pmixp_io_send_progress(pmixp_io_engine_t *eng)
 	slurm_mutex_lock(&eng->send_lock);
 	_send_progress(eng);
 	slurm_mutex_unlock(&eng->send_lock);
-	pmixp_io_send_cleanup(eng);
+	pmixp_io_send_cleanup(eng, PMIXP_P2P_REGULAR);
 }

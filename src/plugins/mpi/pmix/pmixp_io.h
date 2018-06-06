@@ -176,6 +176,6 @@ int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg);
 int pmixp_io_send_urgent(pmixp_io_engine_t *eng, void *msg);
 void pmixp_io_send_progress(pmixp_io_engine_t *eng);
 bool pmixp_io_send_pending(pmixp_io_engine_t *eng);
-void pmixp_io_send_cleanup(pmixp_io_engine_t *eng);
+void pmixp_io_send_cleanup(pmixp_io_engine_t *eng, pmixp_p2p_ctx_t ctx);
 
 #endif /* PMIXP_IO_H */

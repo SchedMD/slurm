@@ -633,7 +633,7 @@ static bool _serv_writable(eio_obj_t *obj)
 	pmixp_debug_hang(0);
 
 	/* Invoke cleanup callbacks if any */
-	pmixp_io_send_cleanup(eng);
+	pmixp_io_send_cleanup(eng, PMIXP_P2P_REGULAR);
 
 	/* check if we have something to send */
 	if (pmixp_io_send_pending(eng)) {
