@@ -1432,8 +1432,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			free_cores      = free_cores_tmp;
 			free_cores_tmp  = free_cores_tmp2;
 			free_cores_tmp2 = NULL;
-			FREE_NULL_BITMAP(node_bitmap);
-			node_bitmap      = node_bitmap_tmp;
+			bit_copybits(node_bitmap, node_bitmap_tmp);
+			FREE_NULL_BITMAP(node_bitmap_tmp);
 			node_bitmap_tmp  = node_bitmap_tmp2;
 			node_bitmap_tmp2 = NULL;
 			xfree(cpu_count);
