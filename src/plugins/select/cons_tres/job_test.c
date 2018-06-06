@@ -1286,6 +1286,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	}
 
 	bit_copybits(node_bitmap, orig_node_map);
+	free_core_array(&free_cores);
 	free_cores = copy_core_array(avail_cores);
 	if (exc_cores)
 		core_array_and_not(free_cores, exc_cores);
