@@ -67,6 +67,8 @@ documents those changes that are of interest to users and administrators.
  -- Append ", with requeued tasks" to job array "end" emails if any tasks in the
     array were requeued. This is a hint to use "sacct --duplicates" to see the
     whole picture of the array job.
+ -- Add ResumeFailProgram slurm.conf option to specify a program that is called
+    when a node fails to respond by ResumeTimeout.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
