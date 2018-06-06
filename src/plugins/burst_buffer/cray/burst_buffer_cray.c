@@ -500,8 +500,10 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 	tok = strtok_r(bb_specs, "\n", &save_ptr);
 	while (tok) {
 		uint32_t bb_flag = 0;
-		if (tok[0] != '#')
+		if (tok[0] != '#') {
+			tok = strtok_r(NULL, "\n", &save_ptr);
 			continue;
+		}
 		if ((tok[1] == 'B') && (tok[2] == 'B'))
 			bb_flag = BB_FLAG_BB_OP;
 		else if ((tok[1] == 'D') && (tok[2] == 'W'))
