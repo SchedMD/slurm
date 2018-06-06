@@ -1988,8 +1988,10 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	}
 
 	/* Use topology state information */
-	if (bit_set_count(avail_node_bitmap) < node_cnt)
+	if (bit_set_count(avail_node_bitmap) < node_cnt) {
+		free_core_array(&exc_core_bitmap);
 		return NULL;
+	}
 
 	if (core_cnt && spec_core_res) {
 		if (!exc_core_bitmap)
