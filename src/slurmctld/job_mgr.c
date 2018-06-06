@@ -17563,6 +17563,7 @@ extern bool job_hold_requeue(struct job_record *job_ptr)
 {
 	uint32_t state;
 	uint32_t flags;
+	struct job_record *base_job_ptr = NULL;
 
 	xassert(job_ptr);
 
@@ -17618,6 +17619,16 @@ extern bool job_hold_requeue(struct job_record *job_ptr)
 	}
 
 	job_ptr->job_state &= ~JOB_REQUEUE;
+
+	/*
+	 * Mark array as requeued. Exit codes have already been handled in
+	 * _job_array_comp()
+	 */
+	if (((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) &&
+	    (base_job_ptr = find_job_record(job_ptr->array_job_id)) &&
+	    base_job_ptr->array_recs) {
+		base_job_ptr->array_recs->array_flags |= ARRAY_TASK_REQUEUED;
+	}
 
 	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
 	      job_ptr->job_id, job_ptr->job_state,
