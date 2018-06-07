@@ -1103,9 +1103,11 @@ when the \fBJobCompType\fR is "jobcomp/filetxt" or the database where
 job completion records are stored when the \fBJobCompType\fR is a
 database, or an url with format http://yourelasticserver:port when
 \fBJobCompType\fR is "jobcomp/elasticsearch".
-NOTE: when you specify a URL for elasticsearch, Slurm will remove any trailing
+NOTE: when you specify a URL for Elasticsearch, Slurm will remove any trailing
 slashes "/" from the configured URL and append "/slurm/jobcomp", which are the
-elasticsearch index name (slurm) and mapping (jobcomp).
+Elasticsearch index name (slurm) and mapping (jobcomp).
+NOTE: More information is available at the Slurm web site
+( https://slurm.schedmd.com/elasticsearch.html ).
 Also see \fBDefaultStorageLoc\fR.
 
 .TP
@@ -1133,6 +1135,8 @@ here is redundant.
 The value "jobcomp/elasticsearch" indicates that a record of the job
 should be written to an Elasticsearch server specified by the
 \fBJobCompLoc\fR parameter.
+NOTE: More information is available at the Slurm web site
+( https://slurm.schedmd.com/elasticsearch.html ).
 The value "jobcomp/filetxt" indicates that a record of the job should be
 written to a text file specified by the \fBJobCompLoc\fR parameter.
 The value "jobcomp/mysql" indicates that a record of the job should be

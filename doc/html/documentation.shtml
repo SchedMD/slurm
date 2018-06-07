@@ -58,6 +58,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="troubleshoot.html">Troubleshooting Guide</a></li>
 <li><a href="user_permissions.html">User Permissions</a></li>
 <li><a href="wckey.html">WCKey Management</a></li>
+<li><a href="elasticsearch.html">Elasticsearch Guide</a></li>
 <li>Workload Prioritization</li>
 <ul>
 <li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
@@ -141,6 +142,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 12 December 2017</p>
+<p style="text-align:center;">Last modified 6 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

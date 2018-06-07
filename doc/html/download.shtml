@@ -60,14 +60,6 @@ See our <a href="accounting.html">Accounting</a> web page for more information.
 <li><a href="http://www.mysql.com/">MySQL</a></li>
 <li><a href="https://mariadb.org/">MariaDB</a></li>
 </ul><br>
-In addition, job completion data can be written to an
-<a href="http://www.elasticsearch.org/">elasticsearch</a> server using the
-"job_comp/elasticsearch" plugin.
-The plugin is currently available from
-<a href="https://github.com/asanchez1987/jobcomp-elasticsearch.git">
-https://github.com/asanchez1987/jobcomp-elasticsearch.git</a>
-and merged with the Slurm distribution.
-It may be included directly in a future release of Slurm.</li><br>
 
 <li><b>Debuggers</b> and debugging tools</li>
 <ul>
@@ -413,6 +405,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 16 October 2017</p>
+<p style="text-align:center;">Last modified 6 June 2018</p>
 
 <!--#include virtual="footer.txt"-->
