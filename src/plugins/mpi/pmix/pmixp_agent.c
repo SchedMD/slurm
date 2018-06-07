@@ -79,7 +79,6 @@ static struct io_operations to_ops = {
 
 static bool _conn_readable(eio_obj_t *obj)
 {
-	PMIXP_DEBUG("fd = %d", obj->fd);
 	if (obj->shutdown == true) {
 		if (obj->fd != -1) {
 			close(obj->fd);
@@ -97,8 +96,6 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 	struct sockaddr addr;
 	socklen_t size = sizeof(addr);
 	int shutdown = 0;
-
-	PMIXP_DEBUG("fd = %d", obj->fd);
 
 	while (1) {
 		/* Return early if fd is not now ready */
@@ -147,7 +144,6 @@ static int _timer_conn_read(eio_obj_t *obj, List objs)
 {
 	char *tmpbuf[32];
 	int shutdown;
-	PMIXP_DEBUG("Timeout thread, fd = %d", obj->fd);
 
 	/* drain everything from in fd */
 	while (32 == pmixp_read_buf(obj->fd, tmpbuf, 32, &shutdown, false))

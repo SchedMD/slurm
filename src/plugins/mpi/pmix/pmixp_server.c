@@ -590,7 +590,6 @@ static int _serv_read(eio_obj_t *obj, List objs)
 		return 0;
 	}
 
-	PMIXP_DEBUG("fd = %d", obj->fd);
 	pmixp_conn_t *conn = (pmixp_conn_t *)obj->arg;
 	bool proceed = true;
 
