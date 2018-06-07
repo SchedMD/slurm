@@ -9,7 +9,7 @@ Plugins</a>. These plugins are an orthogonal way to provide historical job
 <p>In most installations, Slurm is already configured with an
 <a href="slurm.conf.html#OPT_AccountingStorageType">AccountingStorageType</a>
 plugin &mdash; usually <b>slurmdbd</b>. In these situations, the information
-captured by a completion plugin is intentionally redundant</p>
+captured by a completion plugin is intentionally redundant.</p>
 
 <p>The <b>jobcomp/elasticsearch</b> plugin can be used together with a web
 layer on top of the Elasticsearch server &mdash; such as
