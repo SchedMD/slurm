@@ -280,6 +280,8 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if (conf->requeue_exit_hold)
 		STORE_FIELD(hv, conf, requeue_exit_hold, charp);
 
+	if (conf->resume_fail_program)
+		STORE_FIELD(hv, conf, resume_fail_program, charp);
 	if (conf->resume_program)
 		STORE_FIELD(hv, conf, resume_program, charp);
 	STORE_FIELD(hv, conf, resume_rate, uint16_t);
@@ -567,6 +569,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, reconfig_flags, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, requeue_exit, charp, FALSE);
 	FETCH_FIELD(hv, conf, requeue_exit_hold, charp, FALSE);
+	FETCH_FIELD(hv, conf, resume_fail_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, resume_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, resume_rate, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, resume_timeout, uint16_t, TRUE);

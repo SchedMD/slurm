@@ -87,7 +87,7 @@ bool power_save_enabled = false;
 bool power_save_started = false;
 
 int idle_time, suspend_rate, resume_timeout, resume_rate, suspend_timeout;
-char *suspend_prog = NULL, *resume_prog = NULL;
+char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
 time_t last_config = (time_t) 0, last_suspend = (time_t) 0;
 time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
@@ -106,6 +106,7 @@ int   suspend_cnt,   resume_cnt;
 float suspend_cnt_f, resume_cnt_f;
 
 static void  _clear_power_config(void);
+static void  _do_failed_nodes(char *hosts);
 static void  _do_power_work(time_t now);
 static void  _do_resume(char *host);
 static void  _do_suspend(char *host);
@@ -258,7 +259,7 @@ static void _do_power_work(time_t now)
 	int i, wake_cnt = 0, susp_total = 0;
 	time_t delta_t;
 	uint32_t susp_state;
-	bitstr_t *avoid_node_bitmap = NULL;
+	bitstr_t *avoid_node_bitmap = NULL, *failed_node_bitmap = NULL;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
 	bool run_suspend = false;
@@ -425,6 +426,14 @@ static void _do_power_work(time_t now)
 			bit_clear(booting_node_bitmap, i);
 			bit_clear(resume_node_bitmap, i);
 			node_ptr->last_idle = 0;
+
+			if (resume_fail_prog) {
+				if (!failed_node_bitmap) {
+					failed_node_bitmap =
+						bit_alloc(node_record_count);
+				}
+				bit_set(failed_node_bitmap, i);
+			}
 		}
 	}
 	FREE_NULL_BITMAP(avoid_node_bitmap);
@@ -457,6 +466,17 @@ static void _do_power_work(time_t now)
 		FREE_NULL_BITMAP(wake_node_bitmap);
 		/* last_node_update could be changed already by another thread!
 		last_node_update = now; */
+	}
+
+	if (failed_node_bitmap) {
+		char *nodes;
+		nodes = bitmap2node_name(failed_node_bitmap);
+		if (nodes)
+			_do_failed_nodes(nodes);
+		else
+			error("power_save: bitmap2nodename");
+		xfree(nodes);
+		FREE_NULL_BITMAP(failed_node_bitmap);
 	}
 }
 
@@ -618,6 +638,16 @@ static void _re_wake(void)
 		xfree(nodes);
 		FREE_NULL_BITMAP(wake_node_bitmap);
 	}
+}
+
+static void _do_failed_nodes(char *hosts)
+{
+	pid_t pid = _run_prog(resume_fail_prog, hosts, NULL, 0);
+#if _DEBUG
+	info("power_save: pid %d handle failed nodes %s", (int)pid, hosts);
+#else
+	verbose("power_save: pid %d handle failed nodes %s", (int)pid, hosts);
+#endif
 }
 
 static void _do_resume(char *host)
@@ -817,6 +847,8 @@ static int _init_power_config(void)
 	_clear_power_config();
 	if (slurmctld_conf.suspend_program)
 		suspend_prog = xstrdup(slurmctld_conf.suspend_program);
+	if (slurmctld_conf.resume_fail_program)
+		resume_fail_prog = xstrdup(slurmctld_conf.resume_fail_program);
 	if (slurmctld_conf.resume_program)
 		resume_prog = xstrdup(slurmctld_conf.resume_program);
 	if (slurmctld_conf.suspend_exc_nodes)
@@ -857,6 +889,11 @@ static int _init_power_config(void)
 		      resume_prog);
 		test_config_rc = 1;
 		return -1;
+	}
+
+	if (resume_fail_prog && !_valid_prog(resume_fail_prog)) {
+		/* error's already reported in _valid_prog() */
+		xfree(resume_fail_prog);
 	}
 
 	return 0;

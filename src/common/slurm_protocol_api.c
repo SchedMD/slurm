@@ -1024,6 +1024,24 @@ uint16_t slurm_get_private_data(void)
 	return private_data;
 }
 
+/* slurm_get_resume_fail_program
+ * returns the ResumeFailProgram from slurmctld_conf object
+ * RET char *    - ResumeFailProgram, MUST be xfreed by caller
+ */
+char *slurm_get_resume_fail_program(void)
+{
+	char *resume_fail_program = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		resume_fail_program = xstrdup(conf->resume_fail_program);
+		slurm_conf_unlock();
+	}
+	return resume_fail_program;
+}
+
 /* slurm_get_resume_program
  * returns the ResumeProgram from slurmctld_conf object
  * RET char *    - ResumeProgram, MUST be xfreed by caller

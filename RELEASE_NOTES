@@ -175,6 +175,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Remove support for "ChosLoc" configuration parameter.
  -- Add SlurmctldParameters option allow_user_triggers to enable user-defined
     triggers. User defined triggers are now disabled by default.
+ -- Add ResumeFailProgram slurm.conf option to specify a program that is called
+    when a node fails to respond by ResumeTimeout.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
