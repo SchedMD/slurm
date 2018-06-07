@@ -219,7 +219,7 @@ extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
 	DEF_TIMERS;
 	int i, rc;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
@@ -251,7 +251,7 @@ extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
 	DEF_TIMERS;
 	int i, rc;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));

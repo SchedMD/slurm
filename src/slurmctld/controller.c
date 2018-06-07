@@ -2575,11 +2575,11 @@ static int _report_locks_set(void)
 
 	get_lock_values(&lock_flags);
 
-	if (lock_flags.entity[read_lock(CONFIG_LOCK)])
+	if (lock_flags.entity[read_lock(CONF_LOCK)])
 		strcat(config, "R");
-	if (lock_flags.entity[write_lock(CONFIG_LOCK)])
+	if (lock_flags.entity[write_lock(CONF_LOCK)])
 		strcat(config, "W");
-	if (lock_flags.entity[write_wait_lock(CONFIG_LOCK)])
+	if (lock_flags.entity[write_wait_lock(CONF_LOCK)])
 		strcat(config, "P");
 
 	if (lock_flags.entity[read_lock(JOB_LOCK)])
@@ -2852,7 +2852,7 @@ static int _shutdown_backup_controller(void)
 /* Reset the job credential key based upon configuration parameters */
 static void _update_cred_key(void)
 {
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx,
 				  slurmctld_conf.job_credential_private_key);

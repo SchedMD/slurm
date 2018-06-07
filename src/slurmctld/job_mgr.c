@@ -4282,7 +4282,7 @@ int init_job_conf(void)
  */
 extern void rehash_jobs(void)
 {
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	if (job_hash == NULL) {
@@ -4795,7 +4795,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
@@ -10856,7 +10856,7 @@ void purge_old_job(void)
 	struct job_record *job_ptr;
 	int i, purge_job_count;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	if ((purge_job_count = list_count(purge_files_list)))
@@ -11151,7 +11151,7 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 /* update first assigned job id as needed on reconfigure */
 void reset_first_job_id(void)
 {
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 }
 
@@ -14463,7 +14463,7 @@ int sync_job_files(void)
 {
 	List batch_dirs;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	if (!slurmctld_primary)	/* Don't purge files from backup slurmctld */
@@ -14488,7 +14488,7 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 	uint32_t *job_id_ptr;
 	char *endptr;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	xassert(slurmctld_conf.state_save_location);
 	f_dir = opendir(slurmctld_conf.state_save_location);
@@ -14604,7 +14604,7 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 	ListIterator batch_dir_inx;
 	uint32_t *job_id_ptr;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	batch_dir_inx = list_iterator_create(batch_dirs);
 	while ((job_id_ptr = list_next(batch_dir_inx))) {

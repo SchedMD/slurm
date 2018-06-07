@@ -119,7 +119,7 @@ typedef struct {
  * the size of "entity" in src/common/assoc_mgr.h
  */
 typedef enum {
-	CONFIG_LOCK,
+	CONF_LOCK,
 	JOB_LOCK,
 	NODE_LOCK,
 	PART_LOCK,

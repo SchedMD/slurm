@@ -614,7 +614,7 @@ int load_all_part_state(void)
 	uint16_t protocol_version = NO_VAL16;
 	char* alternate = NULL;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	/* read the file */
 	lock_state_files();

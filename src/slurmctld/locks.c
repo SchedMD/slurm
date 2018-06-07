@@ -123,9 +123,9 @@ extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 	xassert(_store_locks(lock_levels));
 
 	if (lock_levels.conf == READ_LOCK)
-		_wr_rdlock(CONFIG_LOCK);
+		_wr_rdlock(CONF_LOCK);
 	else if (lock_levels.conf == WRITE_LOCK)
-		_wr_wrlock(CONFIG_LOCK);
+		_wr_wrlock(CONF_LOCK);
 
 	if (lock_levels.job == READ_LOCK)
 		_wr_rdlock(JOB_LOCK);
@@ -175,9 +175,9 @@ extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 		_wr_wrunlock(JOB_LOCK);
 
 	if (lock_levels.conf == READ_LOCK)
-		_wr_rdunlock(CONFIG_LOCK);
+		_wr_rdunlock(CONF_LOCK);
 	else if (lock_levels.conf == WRITE_LOCK)
-		_wr_wrunlock(CONFIG_LOCK);
+		_wr_wrunlock(CONF_LOCK);
 }
 
 /* _wr_rdlock - Issue a read lock on the specified data type

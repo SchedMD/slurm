@@ -674,7 +674,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	uint32_t next_job_id;
 	int i;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));

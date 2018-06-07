@@ -304,7 +304,7 @@ extern int load_all_node_state ( bool state_only )
 	bool power_save_mode = false;
 	uint16_t protocol_version = NO_VAL16;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	if (slurmctld_conf.suspend_program && slurmctld_conf.resume_program)
 		power_save_mode = true;
@@ -796,7 +796,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	struct node_record *node_ptr = node_record_table_ptr;
 	bool hidden;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	buffer_ptr[0] = NULL;
@@ -885,7 +885,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	struct node_record *node_ptr;
 	bool hidden;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	buffer_ptr[0] = NULL;
@@ -956,7 +956,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 {
 	char *gres_drain = NULL, *gres_used = NULL;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
@@ -1138,7 +1138,7 @@ void set_slurmd_addr (void)
 	struct node_record *node_ptr = node_record_table_ptr;
 	DEF_TIMERS;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	START_TIMER;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
@@ -2289,7 +2289,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	static uint32_t cr_flag = NO_VAL;
 	int *cpu_spec_array;
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL)
@@ -2853,7 +2853,7 @@ extern int validate_nodes_via_front_end(
 	front_end_record_t *front_end_ptr;
 	char step_str[64];
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
@@ -3304,7 +3304,7 @@ void node_did_resp (char *name)
 	node_ptr = find_node_record (name);
 #endif
 
-	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	if (node_ptr == NULL) {
 		error ("node_did_resp unable to find node %s", name);
