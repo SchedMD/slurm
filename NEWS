@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix incomplete RESPONSE_[RESOURCE|JOB_PACK]_ALLOCATION building path.
  -- Do not allocate nodes that were marked down due to the node not responding
     by ResumeTimeout.
+ -- task/cray plugin - search for "mems" cgroup information in the file
+    "cpuset.mems" then fall back to the file "mems".
 
 * Changes in Slurm 17.11.7
 ==========================

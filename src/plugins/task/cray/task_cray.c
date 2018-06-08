@@ -483,8 +483,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	 * For a batch job step (only on the head node and only for batch jobs):
 	 * /dev/cpuset/slurm/uid_<uid>/job_<jobID>/step_batch/
 	 *
-	 * NUMA node: mems
-	 * CPU Masks: cpus
+	 * NUMA node: mems (or cpuset.mems)
 	 */
 	if (job->stepid == SLURM_BATCH_SCRIPT) {
 		// Batch Job Step
@@ -727,7 +726,10 @@ static int _check_status_file(stepd_step_rec_t *job,
  * RETURN
  *  0 on success and -1 on failure.
  */
-static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
+static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array)
+{
+	bool cpuset_prefix_set = true;
+	char *cpuset_prefix = "cpuset.";
 	struct bitmask *bm;
 	int i, index, rc = 0;
 	int lsz;
@@ -736,12 +738,19 @@ static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
 	FILE *f = NULL;
 	char *lin = NULL;
 
-	rc = snprintf(buffer, sizeof(buffer), "%s/%s", path, "mems");
+again:
+	rc = snprintf(buffer, sizeof(buffer), "%s/%s%s", path, cpuset_prefix,
+		      "mems");
 	if (rc < 0)
 		CRAY_ERR("snprintf failed. Return code: %d", rc);
 
 	f = fopen(buffer, "r");
 	if (f == NULL) {
+		if (cpuset_prefix_set) {
+			cpuset_prefix_set = false;
+			cpuset_prefix = "";
+			goto again;
+		}
 		/* Failure common due to race condition in releasing cgroups */
 		debug("%s: Failed to open file %s: %m", __func__, buffer);
 		return SLURM_ERROR;
