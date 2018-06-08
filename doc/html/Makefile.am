@@ -29,6 +29,7 @@ generated_html = \
 	dist_plane.html \
 	documentation.html \
 	download.html \
+	elasticsearch.html \
 	elastic_computing.html \
 	ext_sensorsplugins.html \
 	faq.html \

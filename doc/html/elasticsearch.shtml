@@ -1,0 +1,139 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Elasticsearch Guide</h1>
+
+<p>Slurm provides multiple <a href="jobcompplugins.html">Job Completion
+Plugins</a>. These plugins are an orthogonal way to provide historical job
+<a href="accounting.html">accounting</a> data for finished jobs.</p>
+
+<p>In most installations, Slurm is already configured with an
+<a href="slurm.conf.html#OPT_AccountingStorageType">AccountingStorageType</a>
+plugin &mdash; usually <b>slurmdbd</b>. In these situations, the information
+captured by a completion plugin is intentionally redundant.</p>
+
+<p>The <b>jobcomp/elasticsearch</b> plugin can be used together with a web
+layer on top of the Elasticsearch server &mdash; such as
+<a href="https://www.elastic.co/products/kibana">Kibana</a> &mdash; to
+visualize your finished jobs and the state of your cluster. Some of these
+visualization tools also let you easily create different types of dashboards,
+diagrams, tables, histograms and/or apply customized filters when searching.
+</p>
+
+<h2>Configuration</h2>
+<p>
+The plugin requires the <a href="https://curl.haxx.se/libcurl/">libcurl</a>
+library to be installed and usable on the controller, and the development
+libraries to be available at configure time. At Slurm configuration time,
+the configure script should emit a message like this if the appropriate
+library and headers have been successfully located:
+
+<pre>checking whether libcurl is usable... yes</pre>
+
+There are two <b>configure</b> options to control whether to look for the
+library or not and where:
+
+<pre>
+--with-libcurl=PREFIX	look for the curl library in PREFIX/lib and headers in
+PREFIX/include (default PREFIX is curl-config path or $PATH).
+--without-libcurl
+</pre>
+</p>
+
+<p>The Elasticsearch instance should be running and reachable from the
+<a href="slurm.conf.html#OPT_ControlMachine">ControlMachine</a> and from the
+<a href="slurm.conf.html#OPT_BackupController">BackupController</a>
+(if configured). Refer to the <a href="https://www.elastic.co/">Elasticsearch
+Official Documentation</a> for further details on setup and configuration.
+
+<p>There are three <a href="slurm.conf.html">slurm.conf</a> options related to
+this plugin:</p>
+
+<ul>
+<li>
+<a href="slurm.conf.html#OPT_JobCompType"><b>JobCompType</b></a>
+is used to select the job completion plugin type to activate. It should be set
+to <b>jobcomp/elasticsearch</b>.
+<pre>JobCompType=jobcomp/elasticsearch</pre>
+</li>
+<li>
+<a href="slurm.conf.html#OPT_JobCompLoc"><b>JobCompLoc</b></a> should be set to
+the Elasticsearch server URL, including the port number after the semicolon
+"<b>:</b>".
+<pre>JobCompLoc=http://&lt;elasticserver&gt;:&lt;port&gt;</pre>
+The plugin will remove any trailing slashes from that URL, and append
+<b>/slurm/jobcomp</b> at the end. The first part of the path &mdash;
+<b>slurm</b> &mdash; defines the Elasticsearch <i>index</i> name and the second
+&mdash; <b>jobcomp</b> &mdash; is the <i>index type</i> name.
+These concepts are further described in the Elasticsearch documentation.
+</li>
+<li>
+<a href="slurm.conf.html#OPT_DebugFlags"><b>DebugFlags</b></a> could include
+the <b>Elasticsearch</b> flag for extra debugging purposes.
+<pre>DebugFlags=Elasticsearch</pre>
+It is a good idea to turn this on initially until you have verified that
+finished jobs are properly indexed. Note that you do not need to manually
+create the Elasticsearch <i>index</i>, since the plugin will automatically
+do so when trying to index the first job document.
+</li>
+</ul>
+
+<h2>Visualization</h2>
+
+<p>Once jobs are being indexed, it is a good idea to use a web visualization
+layer to analyze the data.
+<a href="https://www.elastic.co/products/kibana"><b>Kibana</b></a> is a
+recommended open-source data visualization plugin for Elasticsearch.
+Once installed, an Elasticsearch <i>index</i> name or pattern has to be
+configured to instruct Kibana to retrieve the data. The appropriate index for
+Slurm is either <b>slurm</b> or <b>slurm*</b>. Once data is loaded it is
+possible to create tables where each row is a finished job, ordered by
+any column you choose &mdash; the @end_time timestamp is suggested &mdash; and
+any dashboards, graphs, or other analysis of interest.
+
+<h2>Testing and Debugging</h2>
+
+<p>For debugging purposes, you can use the <b>curl</b> command or any similar
+tool to perform REST requests against Elasticsearch directly. Some of the
+following examples using the <b>curl</b> tool may be useful.</p>
+
+<p>Query information about the <b>slurm</b> <i>index</i>, including the document
+count (which should be one per job indexed):</p>
+<pre>
+$ curl -XGET http://localhost:9200/_cat/indices/slurm?v
+health status index uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+yellow open   slurm 103CW7GqQICiMQiSQv6M_g   5   1          9            0    142.8kb        142.8kb
+</pre>
+
+<p>Query all indexed jobs in the <b>slurm</b> <i>index</i>:</p>
+<pre>
+$ curl -XGET 'http://localhost:9200/slurm/_search?pretty=true&q=*:*' | less
+</pre>
+
+<p>Delete the <b>slurm</b> <i>index</i> (caution!):</p>
+<pre>
+$ curl -XDELETE http://localhost:9200/slurm
+{"acknowledged":true}
+</pre>
+
+<p>Query information about <b>_cat</b> options. More can be found in the
+official documentation.</p>
+<pre>
+$ curl -XGET http://localhost:9200/_cat
+</pre>
+
+<h2>Failure management</h2>
+When the primary slurmctld is shut down, information about all completed but
+not yet indexed jobs held within the Elasticsearch plugin saved to a
+file named <b>elasticsearch_state</b>, which is located in the
+<a href="slurm.conf.html#OPT_StateSaveLocation">StateSaveLocation</a>. This
+permits the plugin to restore the information when the slurmctld is restarted,
+and will be sent to the Elasticsearch database when the connection is
+restored.</p>
+
+<h2>Acknowledgments</h2>
+<p>The Elasticsearch plugin was created as part of Alejandro Sanchez's
+<a href="https://upcommons.upc.edu/handle/2117/79252">Master's Thesis</a>.</p>
+
+<p style="text-align:center;">Last modified 6 June 2018</p>
+
+<!--#include virtual="footer.txt"-->
