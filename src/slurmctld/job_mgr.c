@@ -2409,8 +2409,22 @@ unpack_error:
  */
 void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 {
-	pack32(detail_ptr->min_cpus, buffer);
-	pack32(detail_ptr->max_cpus, buffer);
+	/*
+	 * Some job fields can change in the course of scheduling, so we
+	 * report the original values supplied by the user rather than
+	 * an intermediate value that might be set by our scheduling
+	 * logic (e.g. to enforce a partition, association or QOS limit).
+	 *
+	 * Fields subject to change and their original values are as follows:
+	 * min_cpus		orig_min_cpus
+	 * max_cpus		orig_max_cpus
+	 * cpus_per_task 	orig_cpus_per_task
+	 * pn_min_cpus		orig_pn_min_cpus
+	 * pn_min_memory	orig_pn_min_memory
+	 * dependency		orig_dependency
+	 */
+	pack32(detail_ptr->orig_min_cpus, buffer);	/* subject to change */
+	pack32(detail_ptr->orig_max_cpus, buffer);	/* subject to change */
 	pack32(detail_ptr->min_nodes, buffer);
 	pack32(detail_ptr->max_nodes, buffer);
 	pack32(detail_ptr->num_tasks, buffer);
@@ -2418,7 +2432,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->acctg_freq, buffer);
 	pack16(detail_ptr->contiguous, buffer);
 	pack16(detail_ptr->core_spec, buffer);
-	pack16(detail_ptr->cpus_per_task, buffer);
+	pack16(detail_ptr->orig_cpus_per_task, buffer);	/* subject to change */
 	pack32(detail_ptr->nice, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
 	pack16(detail_ptr->requeue, buffer);
@@ -2437,8 +2451,8 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack8(detail_ptr->overcommit, buffer);
 	pack8(detail_ptr->prolog_running, buffer);
 
-	pack32(detail_ptr->pn_min_cpus, buffer);
-	pack64(detail_ptr->pn_min_memory, buffer);
+	pack32(detail_ptr->orig_pn_min_cpus, buffer);	/* subject to change */
+	pack64(detail_ptr->orig_pn_min_memory, buffer);	/* subject to change */
 	pack32(detail_ptr->pn_min_tmp_disk, buffer);
 	pack32(detail_ptr->cpu_freq_min, buffer);
 	pack32(detail_ptr->cpu_freq_max, buffer);
@@ -2451,7 +2465,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->features,   buffer);
 	packstr(detail_ptr->cluster_features, buffer);
 	packstr(detail_ptr->dependency, buffer);
-	packstr(detail_ptr->orig_dependency, buffer);
+	packstr(detail_ptr->orig_dependency, buffer);	/* subject to change */
 
 	packstr(detail_ptr->std_err,       buffer);
 	packstr(detail_ptr->std_in,        buffer);
@@ -2721,6 +2735,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->cpu_freq_max = cpu_freq_max;
 	job_ptr->details->cpu_freq_gov = cpu_freq_gov;
 	job_ptr->details->cpus_per_task = cpus_per_task;
+	job_ptr->details->orig_cpus_per_task = cpus_per_task;
 	job_ptr->details->dependency = dependency;
 	job_ptr->details->orig_dependency = orig_dependency;
 	job_ptr->details->env_cnt = env_cnt;
@@ -2731,14 +2746,18 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->cluster_features = cluster_features;
 	job_ptr->details->std_in = in;
 	job_ptr->details->pn_min_cpus = pn_min_cpus;
+	job_ptr->details->orig_pn_min_cpus = pn_min_cpus;
 	job_ptr->details->pn_min_memory = pn_min_memory;
+	job_ptr->details->orig_pn_min_memory = pn_min_memory;
 	job_ptr->details->pn_min_tmp_disk = pn_min_tmp_disk;
 	job_ptr->details->max_cpus = max_cpus;
+	job_ptr->details->orig_max_cpus = max_cpus;
 	job_ptr->details->max_nodes = max_nodes;
 	job_ptr->details->mc_ptr = mc_ptr;
 	job_ptr->details->mem_bind = mem_bind;
 	job_ptr->details->mem_bind_type = mem_bind_type;
 	job_ptr->details->min_cpus = min_cpus;
+	job_ptr->details->orig_min_cpus = min_cpus;
 	job_ptr->details->min_nodes = min_nodes;
 	job_ptr->details->nice = nice;
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
@@ -6489,7 +6508,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	job_desc.reservation = job_ptr->resv_name;
 	job_desc.user_id = job_ptr->user_id;
 	job_desc.alloc_node = job_ptr->alloc_node;
-	job_desc.min_cpus = detail_ptr->min_cpus;
+	job_desc.min_cpus = detail_ptr->orig_min_cpus;
 #ifdef HAVE_BG
 	/*
 	 * The node counts have been altered to reflect slurm nodes instead of
@@ -6569,8 +6588,8 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		 * were already initialized above to call _part_access_check, as
 		 * well as the memset for job_desc.
 		 */
-		job_desc.pn_min_memory = detail_ptr->pn_min_memory;
-		job_desc.cpus_per_task = detail_ptr->cpus_per_task;
+		job_desc.pn_min_memory = detail_ptr->orig_pn_min_memory;
+		job_desc.cpus_per_task = detail_ptr->orig_cpus_per_task;
 		if (detail_ptr->num_tasks)
 			job_desc.num_tasks = detail_ptr->num_tasks;
 		else {
@@ -6580,10 +6599,10 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 					detail_ptr->ntasks_per_node;
 		}
 		//job_desc.min_cpus = detail_ptr->min_cpus; /* init'ed above */
-		job_desc.max_cpus = detail_ptr->max_cpus;
+		job_desc.max_cpus = detail_ptr->orig_max_cpus;
 		job_desc.shared = (uint16_t)detail_ptr->share_res;
 		job_desc.ntasks_per_node = detail_ptr->ntasks_per_node;
-		job_desc.pn_min_cpus = detail_ptr->pn_min_cpus;
+		job_desc.pn_min_cpus = detail_ptr->orig_pn_min_cpus;
 		job_desc.job_id = job_ptr->job_id;
 		if (!_valid_pn_min_mem(&job_desc, part_ptr)) {
 			/* debug2 message already logged inside the function. */
@@ -7973,7 +7992,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
 	detail_ptr->min_cpus   = job_desc->min_cpus;
+	detail_ptr->orig_min_cpus   = job_desc->min_cpus;
 	detail_ptr->max_cpus   = job_desc->max_cpus;
+	detail_ptr->orig_max_cpus   = job_desc->max_cpus;
 	detail_ptr->min_nodes  = job_desc->min_nodes;
 	detail_ptr->max_nodes  = job_desc->max_nodes;
 	detail_ptr->x11        = job_desc->x11;
@@ -8033,6 +8054,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
 	else
 		detail_ptr->cpus_per_task = 1;
+	detail_ptr->orig_cpus_per_task = detail_ptr->cpus_per_task;
 	if (job_desc->pn_min_cpus != NO_VAL16)
 		detail_ptr->pn_min_cpus = job_desc->pn_min_cpus;
 	if (job_desc->overcommit != NO_VAL8)
@@ -8049,6 +8071,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->pn_min_cpus = MAX(detail_ptr->pn_min_cpus,
 					      detail_ptr->cpus_per_task);
 	}
+	detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus;
 	if (job_desc->reboot != NO_VAL16)
 		job_ptr->reboot = MIN(job_desc->reboot, 1);
 	else
@@ -8059,6 +8082,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->requeue = slurmctld_conf.job_requeue;
 	if (job_desc->pn_min_memory != NO_VAL64)
 		detail_ptr->pn_min_memory = job_desc->pn_min_memory;
+	detail_ptr->orig_pn_min_memory = detail_ptr->pn_min_memory;
 	if (job_desc->pn_min_tmp_disk != NO_VAL)
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
 	if (job_desc->num_tasks != NO_VAL)
@@ -9050,36 +9074,63 @@ _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 {
 	ListIterator iter;
 	struct part_record *part;
-	bool cc;
+	uint64_t tmp_pn_min_memory;
+	uint16_t tmp_cpus_per_task;
+	uint32_t tmp_min_cpus;
+	uint32_t tmp_max_cpus;
+	uint32_t tmp_pn_min_cpus;
+	bool cc = false;
 
 	/* no reason to check them here as we aren't enforcing them */
 	if (!slurmctld_conf.enforce_part_limits)
 		return true;
 
-	if (part_list == NULL)
-		return _valid_pn_min_mem(job_desc_msg, part_ptr);
+	tmp_pn_min_memory = job_desc_msg->pn_min_memory;
+	tmp_cpus_per_task = job_desc_msg->cpus_per_task;
+	tmp_min_cpus = job_desc_msg->min_cpus;
+	tmp_max_cpus = job_desc_msg->max_cpus;
+	tmp_pn_min_cpus = job_desc_msg->pn_min_cpus;
 
-	cc = false;
-	iter = list_iterator_create(part_list);
-	while ((part = list_next(iter))) {
-		cc = _valid_pn_min_mem(job_desc_msg, part);
+	if (part_list == NULL) {
+		cc = _valid_pn_min_mem(job_desc_msg, part_ptr);
+	} else {
+		iter = list_iterator_create(part_list);
+		while ((part = list_next(iter))) {
+			cc = _valid_pn_min_mem(job_desc_msg, part);
 
-		/* for ALL we have to test them all */
-		if (slurmctld_conf.enforce_part_limits ==
-		    PARTITION_ENFORCE_ALL) {
-			if (!cc)
+			/* for ALL we have to test them all */
+			if (slurmctld_conf.enforce_part_limits ==
+			    PARTITION_ENFORCE_ALL) {
+				if (!cc)
+					break;
+			} else if (cc) /* break, we found one! */
 				break;
-		} else if (cc) /* break, we found one! */
-			break;
-		else if (slurmctld_conf.enforce_part_limits ==
-			 PARTITION_ENFORCE_ANY) {
-			debug("%s: Job requested for (%"PRIu64")MB is invalid"
-			      " for partition %s",
-			      __func__, job_desc_msg->pn_min_memory,
-			      part->name);
+			else if (slurmctld_conf.enforce_part_limits ==
+				 PARTITION_ENFORCE_ANY) {
+				debug("%s: Job requested for (%"PRIu64")MB is invalid"
+				      " for partition %s",
+				      __func__, job_desc_msg->pn_min_memory,
+				      part->name);
+			}
+
+			job_desc_msg->pn_min_memory = tmp_pn_min_memory;
+			job_desc_msg->cpus_per_task = tmp_cpus_per_task;
+			job_desc_msg->min_cpus = tmp_min_cpus;
+			job_desc_msg->max_cpus = tmp_max_cpus;
+			job_desc_msg->pn_min_cpus = tmp_pn_min_cpus;
 		}
+		list_iterator_destroy(iter);
 	}
-	list_iterator_destroy(iter);
+
+	/*
+	 * Restoring original values, if it is necessary,
+	 * these will be modified in job_limits_check()
+	 */
+	job_desc_msg->pn_min_memory = tmp_pn_min_memory;
+	job_desc_msg->cpus_per_task = tmp_cpus_per_task;
+	job_desc_msg->min_cpus = tmp_min_cpus;
+	job_desc_msg->max_cpus = tmp_max_cpus;
+	job_desc_msg->pn_min_cpus = tmp_pn_min_cpus;
 
 	return cc;
 }
@@ -12080,6 +12131,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     save_min_cpus, detail_ptr->min_cpus, job_ptr->job_id);
 		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
 			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
+		detail_ptr->orig_min_cpus = job_specs->min_cpus;
 		update_accounting = true;
 	}
 	if (save_max_cpus && (detail_ptr->max_cpus != save_max_cpus)) {
@@ -12090,6 +12142,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		 * super user it be set correctly */
 		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
 			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
+		detail_ptr->orig_max_cpus = job_specs->max_cpus;
 		update_accounting = true;
 	}
 
@@ -12100,6 +12153,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else {
 			detail_ptr->pn_min_cpus = job_specs->pn_min_cpus;
+			detail_ptr->orig_pn_min_cpus = job_specs->pn_min_cpus;
 			info("update_job: setting pn_min_cpus to %u for "
 			     "job_id %u", job_specs->pn_min_cpus,
 			     job_ptr->job_id);
@@ -12119,6 +12173,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_specs->cpus_per_task,
 			     job_ptr->job_id);
 			detail_ptr->cpus_per_task = job_specs->cpus_per_task;
+			detail_ptr->orig_cpus_per_task =
+					job_specs->cpus_per_task;
 		}
 	}
 
@@ -12563,6 +12619,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				entity = "job";
 
 			detail_ptr->pn_min_memory = job_specs->pn_min_memory;
+			detail_ptr->orig_pn_min_memory =
+					job_specs->pn_min_memory;
 			info("sched: update_job: setting min_memory_%s to %"
 			     ""PRIu64" for job_id %u", entity,
 			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
