@@ -187,6 +187,16 @@ typedef struct gres_step_state {
 	bitstr_t **gres_bit_alloc;	/* Used with GRES files */
 } gres_step_state_t;
 
+/* Per-socket GRES availability information for scheduling purposes */
+typedef struct sock_gres {	/* GRES availability by socket */
+	uint64_t cnt_any_sock;	/* GRES count unconstrained by cores */
+	uint64_t *cnt_by_sock;	/* Per-socket GRES count of this name & type */
+	char *gres_name;	/* GRES name */
+	char *model_type;	/* Model type for this GRES name */
+	uint32_t plugin_id;	/* Plugin ID (for quick search) */
+	uint64_t total_cnt;	/* Total GRES count of this name & type */
+} sock_gres_t;
+
 typedef enum {
 	GRES_STATE_TYPE_NODE = 0,
 	GRES_STATE_TYPE_JOB,
@@ -228,7 +238,7 @@ extern int gres_plugin_help_msg(char *msg, int msg_size);
 
 /*
  **************************************************************************
- *                 PLUGIN CALLS FOR SLURMD DAEMON                         *
+ *                 PLUGIN CALLS FOR SLURMD DAEMOtN                         *
  **************************************************************************
  */
 /*
@@ -538,6 +548,26 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 				     uint32_t job_id, char *node_name);
 
 /*
+ * Determine how many cores on each socket of a node can be used by this job
+ * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN use_total_gres - if set then consider all gres resources as available,
+ *		       and none are commited to running jobs
+ * IN core_bitmap    - Identification of available cores (NULL if no restriction)
+ * IN sockets        - Count of sockets on the node
+ * IN cores_per_sock - Count of cores per socket on this node
+ * IN job_id         - job's ID (for logging)
+ * IN node_name      - name of the node (for logging)
+ * RET: List of sock_gres_t entries identifying what resources are available on
+ *	each core. Returns NULL if none available. Call FREE_NULL_LIST() to
+ *	release memory.
+ */
+extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
+				  bool use_total_gres, bitstr_t *core_bitmap,
+				  uint16_t sockets, uint16_t cores_per_sock,
+				  uint32_t job_id, char *node_name);
+
+/*
  * Allocate resource to a job and update node and job gres information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
@@ -741,6 +771,14 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
  */
 extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 				    uint32_t job_id, uint32_t step_id);
+
+/*
+ * Build a string containing the GRES details for a given node and socket
+ * sock_gres_list IN - List of sock_gres_t entries
+ * sock_inx IN - zero-origin socket for which information is to be returned
+ * RET string, must call xfree() to release memory
+ */
+extern char *gres_plugin_sock_str(List sock_gres_list, int sock_inx);
 
 /*
  * Map a given GRES type ID back to a GRES type name.

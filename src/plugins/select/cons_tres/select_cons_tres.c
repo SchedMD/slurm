@@ -49,7 +49,7 @@
 #include "select_cons_tres.h"
 #include "job_test.h"
 
-#define _DEBUG 1	/* Enables module specific debugging */
+#define _DEBUG 0	/* Enables module specific debugging */
 #define NODEINFO_MAGIC 0x8a5d
 
 /*
@@ -164,7 +164,6 @@ static void _create_part_data(void);
 static inline void _dump_nodes(void);
 static inline void _dump_parts(struct part_res_record *p_ptr);
 static uint16_t _get_job_node_req(struct job_record *job_ptr);
-static char *_node_state_str(uint16_t node_state);
 static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 				   uint32_t node_cnt, uint32_t *core_cnt,
 				   bitstr_t ***exc_cores);
@@ -321,9 +320,7 @@ static bitstr_t **_core_bitmap_to_array(bitstr_t *core_bitmap)
 	bitstr_t **core_array = NULL;
 	int i, i_first, i_last, j, c;
 	int node_inx, last_node_inx = 0, core_offset;
-#if _DEBUG
 	char tmp[128];
-#endif
 
 	if (!core_bitmap)
 		return core_array;
@@ -558,6 +555,7 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 	return NODE_CR_ONE_ROW;
 }
 
+#if _DEBUG
 static char *_node_state_str(uint16_t node_state)
 {
 	if (node_state >= NODE_CR_RESERVED)
@@ -566,6 +564,7 @@ static char *_node_state_str(uint16_t node_state)
 		return "one_row";	/* Dedicated core for this partition */
 	return "available";		/* Idle or in-use (shared) */
 }
+#endif
 
 /*
  * Select resources for advanced reservation
@@ -581,8 +580,9 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 {
 #if _DEBUG
 	char tmp[128];
+	bitstr_t **tmp_cores;
 #endif
-	bitstr_t **avail_cores, **local_cores = NULL, **tmp_cores;
+	bitstr_t **avail_cores, **local_cores = NULL;
 	bitstr_t *picked_node_bitmap = NULL;
 	bitstr_t *tmp_core_bitmap;
 	int c, c_cnt, i;
@@ -686,8 +686,9 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 {
 #if _DEBUG
 	char tmp[128];
+	bitstr_t **tmp_cores;
 #endif
-	bitstr_t **avail_cores, **local_cores = NULL, **tmp_cores;
+	bitstr_t **avail_cores, **local_cores = NULL;
 	bitstr_t *picked_node_bitmap;
 	char str[300];
 	int cores_per_node = 0, extra_cores_needed = -1;

@@ -43,7 +43,7 @@
  */
 #define MAX_BOARDS 8
 
-#define _DEBUG 1	/* Enables module specific debugging */
+#define _DEBUG 0	/* Enables module specific debugging */
 
 /*
  * Combination counts

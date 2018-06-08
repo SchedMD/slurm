@@ -8406,29 +8406,34 @@ extern bool valid_tres_cnt(char *tres)
 	while (tok) {
 		bool valid_name = false;
 		sep = strchr(tok, ':');
-		if (!sep) {
-			rc = false;
-			break;
+		if (sep) {
+			sep[0] = '\0';
+			sep++;
 		}
-		sep[0] = '\0';
-		sep++;
 		if (valid_tres_name(tok))
 			valid_name = true;
-
-		colon = strchr(sep, ':');
-		if (colon) {	/* Includes TRES type specification */
-			if ((sep[0] >= '0') && (sep[0] <= '9')) {
+		if (!sep) {	/* No model or count. Implicit count of 1 */
+			if (!valid_name) {
 				rc = false;
 				break;
 			}
-			sep = colon + 1;
-		}
+		} else {
+			colon = strchr(sep, ':');
+			if (colon) {	/* Includes TRES type specification */
+				if ((sep[0] >= '0') && (sep[0] <= '9')) {
+					rc = false;
+					break;
+				}
+				sep = colon + 1;
+			}
 
-		val = strtoll(sep, &end_ptr, 10);
-		if (((end_ptr[0] != '\0') || (val < 0) || (val == LLONG_MAX)) ||
-		    (!valid_name && (val != 0))) {
-			rc = false;
-			break;
+			val = strtoll(sep, &end_ptr, 10);
+			if (((end_ptr[0] != '\0') || (val < 0) ||
+			    (val == LLONG_MAX)) ||
+			    (!valid_name && (val != 0))) {
+				rc = false;
+				break;
+			}
 		}
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
@@ -8439,13 +8444,12 @@ extern bool valid_tres_cnt(char *tres)
 
 /*
  * Validate the named TRES is valid for scheduling parameters.
- * This is currently a subset of all defined TRES.
  */
 extern bool valid_tres_name(char *name)
 {
 	if (!name || (name[0] == '\0'))
 		return false;
-	if (!xstrcmp(name, "gpu"))
+	if (gres_get_system_cnt(name))
 		return true;
 
 	return false;
