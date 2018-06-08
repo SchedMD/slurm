@@ -271,7 +271,7 @@ if {[llength $opts] < 3} {
 	send_user "\nFAILURE: scontrol node output is bad\n"
 	exit 1
 } 
-set opt3 [lindex $opts 2]
+set opt3 [lindex $opts 1]
 if {[string first "CPUTot" $opt3] != 0} {
 	send_user "\nFAILURE: CPUTot not found in scontrol node output\n"
 	exit 1
