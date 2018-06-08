@@ -704,10 +704,8 @@ static int _ipmi_send_profile(void)
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
 		for (i = 0; i < descriptions_len; i++) {
-			id = descriptions[i].sensor_idxs[j];
 			info("PROFILE-Energy: %sPower=%d",
-			     descriptions[i].label,
-			     sensors[id].energy.current_watts);
+			     descriptions[i].label, data[i]);
 		}
 	}
 	return acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
