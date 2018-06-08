@@ -704,7 +704,7 @@ static int _ipmi_send_profile(void)
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
 		for (i = 0; i < descriptions_len; i++) {
-			info("PROFILE-Energy: %sPower=%d",
+			info("PROFILE-Energy: %sPower=%"PRIu64"",
 			     descriptions[i].label, data[i]);
 		}
 	}
