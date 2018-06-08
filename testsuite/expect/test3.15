@@ -36,25 +36,6 @@ set license_name        "test$test_id"
 set resv_name           "resv$test_id"
 set user_name		""
 
-proc reconfigure { } {
-	global error_code scontrol
-	spawn $scontrol reconfigure
-	expect {
-		-re "Error|error" {
-			send_user "\nFAILURE: scontrol reconfigure error\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
-
 proc submit_job { license_count } {
 	global bin_sleep license_name sbatch number exit_code
 	set job_id 0

@@ -39,6 +39,15 @@ set file_in     "test$test_id.input"
 print_header $test_id
 
 #
+# This test must be run as a Slurm administrator, root, or SlurmUser in order to
+# issue scontrol reconfigure.
+#
+if {(![is_super_user]) && ([check_accounting_admin_level] != "Administrator")} {
+	log_warn "This test can't be run except as SlurmUser or Admin"
+	exit 0
+}
+
+#
 # Have a job running when the reconfigure happens
 #
 make_bash_script $file_in "
@@ -73,24 +82,8 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 #
 # Issue scontrol reconfigure
 #
-spawn $scontrol reconfigure
-expect {
-	-re "slurm_reconfigure error: Invalid user id" {
-		exp_continue
-	}
-	-re "slurm_reconfigure error:" {
-		send_user "\nFAILURE: scontrol reconfigure error\n"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+reconfigure
+
 if {[wait_for_job $job_id RUNNING] != 0} {
 	send_user "\nFAILURE: job $job_id not running after reconfiguration\n"
 	set exit_code 1

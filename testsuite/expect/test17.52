@@ -73,26 +73,6 @@ proc get_conf_path { } {
 }
 
 #
-# Do an scontrol reconfig to update MCS params
-#
-proc update_conf { } {
-	global scontrol exit_code
-
-	spawn $scontrol reconfigure
-	expect {
-		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	# Wait for the reconfigure to complete (especially with valgrind)
-	sleep 5
-}
-
-#
 # Copy slurm.conf file
 #
 proc copy_conf { } {
@@ -142,7 +122,7 @@ exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
 exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_path/slurm.conf
 exec $bin_echo MCSParameters=ondemand,select,privatedata:$groups_name >> $config_path/slurm.conf
 exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
-update_conf
+reconfigure
 
 
 #
@@ -365,7 +345,7 @@ exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
 exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_path/slurm.conf
 exec $bin_echo MCSParameters=enforced,noselect,privatedata:$groups_name >> $config_path/slurm.conf
 exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
-update_conf
+reconfigure
 
 
 ###### Check that sbatch uses mcs-label=group ######
@@ -470,7 +450,7 @@ cancel_job $job_id
 # Clean up vestigial files and restore original slurm.conf file
 send_user "\nChanging slurm.conf back\n"
 exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
-update_conf
+reconfigure
 
 if {$exit_code == 0} {
 	exec $bin_rm $tmp_job $cwd/slurm.conf.orig

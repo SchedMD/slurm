@@ -168,7 +168,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	$bin_sleep 10
 
 	# Update config file
-	update_conf
+	reconfigure
 
 	set sub_job 0
 	spawn $srun -t1 -w$run_host $bin_printenv SLURMD_NODENAME
@@ -206,23 +206,6 @@ proc run_job { file_type program_name conf_change task_pro} {
 	exec $bin_rm -rf $cwd/$program_name
 }
 
-
-proc update_conf { } {
-	global scontrol exit_code
-
-	spawn $scontrol reconfigure
-	expect {
-		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	# Wait for the reconfigure to complete (especially with valgrind)
-	sleep 5
-}
 
 if { [test_super_user] == 0 } {
 	send_user "WARNING: Test can only be run as SlurmUser\n"
@@ -300,7 +283,7 @@ expect {
 #
 change_pro_epi srun-task-epilog srun--task-epilog_$test_name 1 0
 
-update_conf
+reconfigure
 
 set sub_job 0
 set invalid_node 0
@@ -349,7 +332,7 @@ if {$make_file == 1} {
 	# Test srun --task-prolog
 	change_pro_epi srun-task-prolog srun--task-prolog_$test_name 1 1
 
-	update_conf
+	reconfigure
 
 	set sub_job 0
 	set sbcast_file      "$file_dir/${test_name}_sbcast"
@@ -420,7 +403,7 @@ run_job prolog prolog_$test_name 0 0
 
 # Clean up vestigial files and restore original slurm.conf file
 exec $bin_cp $cwd/slurm.conf.orig $config_dir/slurm.conf
-update_conf
+reconfigure
 
 if {$exit_code == 0} {
 	exec $bin_rm -fr $config_dir/$inc_slurm $config_dir/$pro_epi_prog $cwd/slurm.conf.orig

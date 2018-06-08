@@ -46,31 +46,14 @@ if { [test_super_user] == 0 } {
 	exit $exit_code
 }
 
-proc update_conf { } {
-	global scontrol exit_code
-
-	spawn $scontrol reconfigure
-	expect {
-		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	# Wait for the reconfigure to complete (especially with valgrind)
-	sleep 5
-}
-
 proc clean_up { } {
 
 	global cwd config_dir exit_code bin_rm bin_cp good_prolog bad_prolog
-	global update_conf scontrol test_node test_script
+	global scontrol test_node test_script
 
 	exec $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
 	exec $bin_rm $test_script $good_prolog $bad_prolog $cwd/slurm.conf.orig
-	update_conf
+	reconfigure
 
 	spawn $scontrol update node=$test_node state=idle
 	expect {
@@ -136,7 +119,7 @@ exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
 
 # Append Prolog config to the slurm.conf
 exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_dir/slurm.conf
-update_conf
+reconfigure
 
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
 expect {
@@ -197,7 +180,7 @@ exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
 
 # Append Prolog config to the slurm.conf
 exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_dir/slurm.conf
-update_conf
+reconfigure
 
 set job_id 0
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script

@@ -359,25 +359,6 @@ expect {
 	}
 }
 
-proc reconfigure { cluster } {
-	global error_code scontrol
-	spawn $scontrol -M$cluster reconfigure
-	expect {
-		-re "Error|error" {
-			send_user "\nFAILURE: scontrol reconfigure error\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
-
 proc get_slurm_conf { cluster } {
 	global scontrol exit_code
 

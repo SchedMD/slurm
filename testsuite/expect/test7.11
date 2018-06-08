@@ -53,23 +53,9 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
-proc reconfigure { } {
-	global scontrol
-	spawn $scontrol reconfigure
-	expect {
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
-
 proc end_it { exit_code } {
 	global test_id orig_spank_conf spank_conf_file new_spank_conf spank_out
-	global file_out spank_out bin_cp bin_rm file_in file_prog reconfigure
+	global file_out spank_out bin_cp bin_rm file_in file_prog
 	#
 	# Restore the original plugstack
 	#

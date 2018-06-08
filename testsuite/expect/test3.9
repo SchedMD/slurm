@@ -42,9 +42,6 @@ if { [string compare [test_launch_type] "slurm"] } {
 	exit $exit_code
 }
 
-#
-# Issue scontrol reconfigure
-#
 set timeout $max_job_delay
 set matches 0
 spawn $srun -t1 -N1 $scontrol show slurmd
