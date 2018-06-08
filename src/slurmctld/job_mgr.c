@@ -217,7 +217,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer,
 				      uint16_t protocol_version);
 static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max);
-static uint64_t _part_node_lowest_mem(struct part_record *part_ptr);
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t * size,
@@ -258,7 +257,10 @@ static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			       uid_t submit_uid, struct part_record *part_ptr,
 			       List part_list);
 static void _validate_job_files(List batch_dirs);
-static bool _valid_pn_min_mem(struct job_record *job_ptr,
+static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
+					struct part_record *part_ptr,
+					List part_list);
+static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 			      struct part_record *part_ptr);
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
@@ -2407,20 +2409,8 @@ unpack_error:
  */
 void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 {
-	/*
-	 * Some job fields can change in the course of scheduling, so we
-	 * report the original values supplied by the user rather than
-	 * an intermediate value that might be set by our scheduling
-	 * logic (e.g. to enforce a partition, association or QOS limit).
-	 *
-	 * Fields subject to change and their original values are as follows:
-	 * min_cpus		orig_min_cpus
-	 * max_cpus		orig_max_cpus
-	 * pn_min_memory	orig_pn_min_memory
-	 * dependency		orig_dependency
-	 */
-	pack32(detail_ptr->orig_min_cpus, buffer);	/* subject to change */
-	pack32(detail_ptr->orig_max_cpus, buffer);	/* subject to change */
+	pack32(detail_ptr->min_cpus, buffer);
+	pack32(detail_ptr->max_cpus, buffer);
 	pack32(detail_ptr->min_nodes, buffer);
 	pack32(detail_ptr->max_nodes, buffer);
 	pack32(detail_ptr->num_tasks, buffer);
@@ -2448,7 +2438,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack8(detail_ptr->prolog_running, buffer);
 
 	pack32(detail_ptr->pn_min_cpus, buffer);
-	pack64(detail_ptr->orig_pn_min_memory, buffer);	/* subject to change */
+	pack64(detail_ptr->pn_min_memory, buffer);
 	pack32(detail_ptr->pn_min_tmp_disk, buffer);
 	pack32(detail_ptr->cpu_freq_min, buffer);
 	pack32(detail_ptr->cpu_freq_max, buffer);
@@ -2460,7 +2450,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->exc_nodes,  buffer);
 	packstr(detail_ptr->features,   buffer);
 	packstr(detail_ptr->cluster_features, buffer);
-	packstr(detail_ptr->dependency, buffer);	/* subject to change */
+	packstr(detail_ptr->dependency, buffer);
 	packstr(detail_ptr->orig_dependency, buffer);
 
 	packstr(detail_ptr->std_err,       buffer);
@@ -2742,16 +2732,13 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->std_in = in;
 	job_ptr->details->pn_min_cpus = pn_min_cpus;
 	job_ptr->details->pn_min_memory = pn_min_memory;
-	job_ptr->details->orig_pn_min_memory = pn_min_memory;
 	job_ptr->details->pn_min_tmp_disk = pn_min_tmp_disk;
 	job_ptr->details->max_cpus = max_cpus;
-	job_ptr->details->orig_max_cpus = max_cpus;
 	job_ptr->details->max_nodes = max_nodes;
 	job_ptr->details->mc_ptr = mc_ptr;
 	job_ptr->details->mem_bind = mem_bind;
 	job_ptr->details->mem_bind_type = mem_bind_type;
 	job_ptr->details->min_cpus = min_cpus;
-	job_ptr->details->orig_min_cpus = min_cpus;
 	job_ptr->details->min_nodes = min_nodes;
 	job_ptr->details->nice = nice;
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
@@ -6502,7 +6489,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	job_desc.reservation = job_ptr->resv_name;
 	job_desc.user_id = job_ptr->user_id;
 	job_desc.alloc_node = job_ptr->alloc_node;
-	job_desc.min_cpus = detail_ptr->orig_min_cpus;
+	job_desc.min_cpus = detail_ptr->min_cpus;
 #ifdef HAVE_BG
 	/*
 	 * The node counts have been altered to reflect slurm nodes instead of
@@ -6510,8 +6497,8 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	 * by using the cpu counts.  The partitions have been altered as well
 	 * so we have to use the original values.
 	 */
-	job_desc.min_nodes = detail_ptr->orig_min_cpus / cpus_per_node;
-	job_desc.max_nodes = detail_ptr->orig_max_cpus / cpus_per_node;
+	job_desc.min_nodes = detail_ptr->min_cpus / cpus_per_node;
+	job_desc.max_nodes = detail_ptr->max_cpus / cpus_per_node;
 #else
 	job_desc.min_nodes = detail_ptr->min_nodes;
 	/* _part_access_check looks for NO_VAL instead of 0 */
@@ -6574,9 +6561,40 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 			fail_reason = WAIT_QOS_THRES;
 		}
 	} else if (fail_reason == WAIT_NO_REASON) {
-		if (!_valid_pn_min_mem(job_ptr, part_ptr)) {
+		/*
+		 * Here we need to pretend we are just submitting the job so we
+		 * can utilize the already existing function _valid_pn_min_mem.
+		 * If anything else is ever checked in that function this will
+		 * most likely have to be updated. Some of the needed members
+		 * were already initialized above to call _part_access_check, as
+		 * well as the memset for job_desc.
+		 */
+		job_desc.pn_min_memory = detail_ptr->pn_min_memory;
+		job_desc.cpus_per_task = detail_ptr->cpus_per_task;
+		if (detail_ptr->num_tasks)
+			job_desc.num_tasks = detail_ptr->num_tasks;
+		else {
+			job_desc.num_tasks = job_desc.min_nodes;
+			if (detail_ptr->ntasks_per_node != NO_VAL16)
+				job_desc.num_tasks *=
+					detail_ptr->ntasks_per_node;
+		}
+		//job_desc.min_cpus = detail_ptr->min_cpus; /* init'ed above */
+		job_desc.max_cpus = detail_ptr->max_cpus;
+		job_desc.shared = (uint16_t)detail_ptr->share_res;
+		job_desc.ntasks_per_node = detail_ptr->ntasks_per_node;
+		job_desc.pn_min_cpus = detail_ptr->pn_min_cpus;
+		job_desc.job_id = job_ptr->job_id;
+		if (!_valid_pn_min_mem(&job_desc, part_ptr)) {
 			/* debug2 message already logged inside the function. */
 			fail_reason = WAIT_PN_MEM_LIMIT;
+		} else {
+			/* Copy back to job_record adjusted members */
+			detail_ptr->pn_min_memory = job_desc.pn_min_memory;
+			detail_ptr->cpus_per_task = job_desc.cpus_per_task;
+			detail_ptr->min_cpus = job_desc.min_cpus;
+			detail_ptr->max_cpus = job_desc.max_cpus;
+			detail_ptr->pn_min_cpus = job_desc.pn_min_cpus;
 		}
 	}
 
@@ -7955,13 +7973,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
 	detail_ptr->min_cpus   = job_desc->min_cpus;
-	detail_ptr->orig_min_cpus   = job_desc->min_cpus;
 	detail_ptr->max_cpus   = job_desc->max_cpus;
-	detail_ptr->orig_max_cpus   = job_desc->max_cpus;
 	detail_ptr->min_nodes  = job_desc->min_nodes;
 	detail_ptr->max_nodes  = job_desc->max_nodes;
-	detail_ptr->pn_min_memory = job_desc->pn_min_memory;
-	detail_ptr->orig_pn_min_memory = job_desc->pn_min_memory;
 	detail_ptr->x11        = job_desc->x11;
 	detail_ptr->x11_magic_cookie = xstrdup(job_desc->x11_magic_cookie);
 	/* no x11_target_host, alloc_nodes is the same */
@@ -8043,6 +8057,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->requeue = MIN(job_desc->requeue, 1);
 	else
 		detail_ptr->requeue = slurmctld_conf.job_requeue;
+	if (job_desc->pn_min_memory != NO_VAL64)
+		detail_ptr->pn_min_memory = job_desc->pn_min_memory;
 	if (job_desc->pn_min_tmp_disk != NO_VAL)
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
 	if (job_desc->num_tasks != NO_VAL)
@@ -8130,278 +8146,132 @@ static uint16_t _cpus_per_node_part(struct part_record *part_ptr)
 }
 
 /*
- * Find lowest allocatable node memory size across all the nodes belonging
- * to the given partition. Allocatable as RealMemory - MemSpecLimit.
+ * Test if this job exceeds any of MaxMemPer[CPU|Node] limits and potentially
+ * adjust mem / cpu ratios.
  *
- * IN - part_record to retrieve the information.
- * RET - lowest allocatable node memory size (-1 if none found).
+ * NOTE: This function is also called with a dummy job_desc_msg_t from
+ * job_limits_check(), if there is any new check added here you may also have to
+ * add that parameter to the job_desc_msg_t in that function.
  */
-static uint64_t _part_node_lowest_mem(struct part_record *part_ptr)
-{
-	uint64_t allocatable;
-	uint64_t lowest = -1;
-	struct node_record *node_ptr = NULL;
-	bitoff_t first, last, i;
-
-	if (!part_ptr) {
-		error("%s: no part_record pointer.", __func__);
-		return -1;
-	}
-
-	if (!part_ptr->name) {
-		error("%s: part_record has no name.", __func__);
-		return -1;
-	}
-
-	if (!part_ptr->node_bitmap) {
-		error("%s: partition %s has no node_bitmap.", __func__,
-		      part_ptr->name);
-		return -1;
-	}
-
-	first = bit_ffs(part_ptr->node_bitmap);
-	if (first == -1) {
-		error("%s: no first bit found in partition %s node_bitmap.",
-		      __func__, part_ptr->name);
-		return -1;
-	}
-
-	last = bit_fls(part_ptr->node_bitmap);
-	if (last == -1) {
-		error("%s: no last bit found in partition %s node_bitmap.",
-		      __func__, part_ptr->name);
-		return -1;
-	}
-
-	for (i = first; i <= last; i++) {
-		if (!bit_test(part_ptr->node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr + i;
-		if (slurmctld_conf.fast_schedule) {
-			if (!node_ptr->config_ptr) {
-				error("%s: node has no config_ptr", __func__);
-				return -1;
-			}
-			allocatable = node_ptr->config_ptr->real_memory -
-					node_ptr->config_ptr->mem_spec_limit;
-		} else
-			allocatable = node_ptr->real_memory -
-					node_ptr->mem_spec_limit;
-		if (allocatable < lowest)
-			lowest = allocatable;
-		if (lowest == 0)
-			break;
-	}
-
-	return lowest;
-}
-
-/*
- * Test if job pn_min_memory exceeds MaxMemPer[CPU|Node] limit, previously
- * setting it to the cluster or current tested partition default if the original
- * job request didn't specify memory.
- *
- * IN job_ptr - job_record pointer to test pn_min_memory.
- * IN part_ptr - part_record pointer to check limits against.
- * RET - true if job memory doesn't exceed the limit.
- */
-static bool _valid_pn_min_mem(struct job_record *job_ptr,
+static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 			      struct part_record *part_ptr)
 {
-	uint64_t job_mem, def_mem, max_mem, lowest_mem, tmp_max_mem;
-	uint32_t job_cpus_per_node = 1, avail_cpus_per_node = 1;
-	bool cpus_called = false;
+	uint64_t job_mem_limit = job_desc_msg->pn_min_memory;
+	uint64_t sys_mem_limit;
+	uint16_t cpus_per_node;
 
-	if (!job_ptr->details) {
-		error("%s: job %u has no details pointer.", __func__,
-		      job_ptr->job_id);
-		return false;
-	}
-
-	if (!part_ptr) {
-		error("%s: called with no part_record pointer.", __func__);
-		return false;
-	}
-
-	if (part_ptr->max_mem_per_cpu)
-		max_mem = part_ptr->max_mem_per_cpu;
+	if (part_ptr && part_ptr->max_mem_per_cpu)
+		sys_mem_limit = part_ptr->max_mem_per_cpu;
 	else
-		max_mem = slurmctld_conf.max_mem_per_cpu;
+		sys_mem_limit = slurmctld_conf.max_mem_per_cpu;
 
-	/*
-	 * Set job_ptr->details->pn_min_memory starting from the original user
-	 * requested memory (orig_pn_min_memory), since pn_min_memory could
-	 * have been modified through the course of scheduling (i.e. when
-	 * testing different partitions). If the original request didn't specify
-	 * memory, then use the cluster or partition DefMemPer[CPU|Node].
-	 * If the value is 0, handle the special case below.
-	 */
-	if (job_ptr->details->orig_pn_min_memory == NO_VAL64) {
-		if (part_ptr->def_mem_per_cpu)
-			def_mem = part_ptr->def_mem_per_cpu;
-		else
-			def_mem = slurmctld_conf.def_mem_per_cpu;
-		job_ptr->details->pn_min_memory = def_mem;
-		debug2("%s: setting job %u memory %s to default %"PRIu64"M in partition %s",
-		      __func__, job_ptr->job_id,
-		      (def_mem & MEM_PER_CPU) ? "per cpu" : "per node",
-		      (def_mem & MEM_PER_CPU) ? (def_mem & (~MEM_PER_CPU)) :
-		      def_mem, (part_ptr->name) ? part_ptr->name : "N/A");
-	} else
-		job_ptr->details->pn_min_memory =
-			job_ptr->details->orig_pn_min_memory;
-
-	if ((job_ptr->details->pn_min_memory == 0) ||
-	    (job_ptr->details->pn_min_memory == MEM_PER_CPU)) {
-		/*
-		 * Job --mem[-per-cpu]=0, special case where job requests Slurm
-		 * to allocate all the possible memory on the node.
-		 * Since the partition may have nodes of different memory sizes,
-		 * find node with the smallest RealMemory - MemSpecLimit value.
-		 */
-
-		/* Force map pn_min_memory to per-node. */
-		job_ptr->details->pn_min_memory = 0;
-		lowest_mem = _part_node_lowest_mem(part_ptr);
-		if (lowest_mem == -1) {
-			error("%s: no lowest allocatable memory size found in partition %s",
-			      __func__, (part_ptr->name) ? part_ptr->name :
-			      "N/A");
-			return false;
-		} else if ((max_mem == 0) || (max_mem == MEM_PER_CPU)) {
-			/* No MaxMemPER[CPU|Node] configured (unlimited). */
-			job_ptr->details->pn_min_memory = lowest_mem;
-		} else {
-			/*
-			 * MIN that value with MaxMemPer[CPU|Node], so that it
-			 * ends up the highest possible. Wondering if we should
-			 * only do this if ACCOUNTING_ENFORCE_LIMITS flag set.
-			 */
-			 tmp_max_mem = max_mem;
-			if (max_mem & MEM_PER_CPU) {
-				/* max_mem PerCPU, set tmp to PerNode. */
-				avail_cpus_per_node =
-						_cpus_per_node_part(part_ptr);
-				cpus_called = true;
-				if (avail_cpus_per_node)
-					tmp_max_mem *= avail_cpus_per_node;
-				else
-					avail_cpus_per_node = 1;
-			}
-			job_ptr->details->pn_min_memory =
-						MIN(lowest_mem, tmp_max_mem);
-		}
-		debug2("%s: job %u memory per node set to %"PRIu64"M in partition %s", __func__,
-		       job_ptr->job_id, job_ptr->details->pn_min_memory,
-		       (part_ptr->name) ? part_ptr->name : "N/A");
-	}
-	job_mem = job_ptr->details->pn_min_memory;
-
-	/* No MaxMemPer[CPU|Node] configured (unlimited). */
-	if ((max_mem == 0) || (max_mem == MEM_PER_CPU))
+	if ((sys_mem_limit == 0) || (sys_mem_limit == MEM_PER_CPU))
 		return true;
 
-	/*
-	 * Job memory and configured max limit have same form, thus
-	 * job --mem-per-cpu and limit MaxMemPerCPU or
-	 * job --mem and limit MaxMemPerNode.
-	 */
-	if (((job_mem & MEM_PER_CPU) && (max_mem & MEM_PER_CPU)) ||
-	   (((job_mem & MEM_PER_CPU) == 0) && ((max_mem & MEM_PER_CPU) == 0))) {
-		if (job_mem <= max_mem) /* No need to remove flag to compare. */
+	if ((job_mem_limit & MEM_PER_CPU) && (sys_mem_limit & MEM_PER_CPU)) {
+		uint32_t cpu_ratio;
+		uint64_t mem_ratio;
+		job_mem_limit &= (~MEM_PER_CPU);
+		sys_mem_limit &= (~MEM_PER_CPU);
+		if (job_mem_limit <= sys_mem_limit)
 			return true;
-		else {
-			debug2("%s: job %u mem%s=%"PRIu64"M > MaxMemPer%s=%"PRIu64"M in partition %s",
-			       __func__, job_ptr->job_id,
-			       (job_mem & MEM_PER_CPU) ? "_per_cpu" :
-			       "_per_node", (job_mem & MEM_PER_CPU) ?
-			       (job_mem & (~MEM_PER_CPU)) : job_mem,
-			       (max_mem & MEM_PER_CPU) ? "CPU" : "Node",
-			       (max_mem & MEM_PER_CPU) ?
-			       (max_mem & (~MEM_PER_CPU)) : max_mem,
-			       (part_ptr->name) ? part_ptr->name : "N/A");
-			return false;
-		}
-	}
-
-	/*
-	 * Job memory and configured limit forms differ (i.e. one is a per-cpu
-	 * and the other is per-node). Covert them both to per-node values for
-	 * comparison.
-	 *
-	 * NOTE: the conversion assumes a simplification since in order to
-	 * retrieve the number of cpus per node, we use the first node in the
-	 * partition, and nodes may differ... and this can have unexpected
-	 * consequences.
-	 *
-	 * Ideally I think we should also remove CoreSpecCount from the
-	 * calculated avail_cpus_per_node value, the same way we remove
-	 * MemSpecLimit from RealMemory to calculate the allocatable memory on
-	 * the node.
-	 *
-	 * Should we use this function instead?
-	 * select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-	 *			   &avail_cpus_per_node);
-	 */
-	 if (!cpus_called) {
-		 avail_cpus_per_node = _cpus_per_node_part(part_ptr);
-		 if (!avail_cpus_per_node)
-			 avail_cpus_per_node = 1;
-	}
-
-	if (job_mem & MEM_PER_CPU) {
-		/*
-		 * Job has per-cpu form and limit has per-node one. Estimate
-		 * the job_cpus_per_node requested and then MIN that to the
-		 * avail_cpus_per_node. Then use the result as a factor to
-		 * obtain the job per-node form and compare it with the limit.
-		 */
-		if ((job_ptr->details->ntasks_per_node != NO_VAL16) &&
-		    (job_ptr->details->ntasks_per_node != 0))
-			job_cpus_per_node = job_ptr->details->ntasks_per_node;
+		mem_ratio = (job_mem_limit + sys_mem_limit - 1);
+		mem_ratio /= sys_mem_limit;
+		debug("increasing cpus_per_task and decreasing mem_per_cpu by "
+		      "factor of %"PRIu64" based upon mem_per_cpu limits",
+		      mem_ratio);
+		if (job_desc_msg->cpus_per_task == NO_VAL16)
+			job_desc_msg->cpus_per_task = mem_ratio;
 		else
-			job_cpus_per_node = 1;
-
-		if ((job_ptr->details->num_tasks != NO_VAL) &&
-		    (job_ptr->details->num_tasks != 0) &&
-		    (job_ptr->details->max_nodes != NO_VAL) &&
-		    (job_ptr->details->max_nodes != 0)) {
-			job_cpus_per_node = MAX(job_cpus_per_node,
-				((job_ptr->details->num_tasks +
-				  job_ptr->details->max_nodes - 1) /
-				 job_ptr->details->max_nodes));
+			job_desc_msg->cpus_per_task *= mem_ratio;
+		job_desc_msg->pn_min_memory = ((job_mem_limit + mem_ratio - 1) /
+					       mem_ratio) | MEM_PER_CPU;
+		if ((job_desc_msg->num_tasks != NO_VAL) &&
+		    (job_desc_msg->num_tasks != 0) &&
+		    (job_desc_msg->min_cpus  != NO_VAL)) {
+			cpu_ratio = job_desc_msg->min_cpus /
+				    job_desc_msg->num_tasks;
+			if (cpu_ratio < mem_ratio) {
+				job_desc_msg->min_cpus =
+					job_desc_msg->num_tasks * mem_ratio;
+			}
+			if ((job_desc_msg->max_cpus != NO_VAL) &&
+			    (job_desc_msg->max_cpus < job_desc_msg->min_cpus)) {
+				job_desc_msg->max_cpus = job_desc_msg->min_cpus;
+			}
 		}
-
-		if ((job_ptr->details->cpus_per_task != NO_VAL16) &&
-		    (job_ptr->details->cpus_per_task != 0))
-			job_cpus_per_node *= job_ptr->details->cpus_per_task;
-
-		if ((job_ptr->details->pn_min_cpus != NO_VAL16) &&
-		    (job_ptr->details->pn_min_cpus > job_cpus_per_node))
-			job_cpus_per_node = job_ptr->details->pn_min_cpus;
-
-		if ((job_ptr->details->min_cpus != NO_VAL16) &&
-		    (job_ptr->details->min_cpus > job_cpus_per_node))
-			job_cpus_per_node = job_ptr->details->min_cpus;
-
-		job_mem &= (~MEM_PER_CPU);
-		job_mem *= MIN(job_cpus_per_node, avail_cpus_per_node);
-	} else {
-		/*
-		 * Job has per-node form and limit has per-cpu one. Use the
-		 * avail_cpus_per_node as a factor to obtain the limit per-node
-		 * form and compare it with the job memory.
-		 */
-		max_mem &= (~MEM_PER_CPU);
-		max_mem *= avail_cpus_per_node;
+		return true;
 	}
 
-	if (job_mem <= max_mem)
+	if (((job_mem_limit & MEM_PER_CPU) == 0) &&
+	    ((sys_mem_limit & MEM_PER_CPU) == 0)) {
+		if (job_mem_limit <= sys_mem_limit)
+			return true;
+		debug2("Job %u mem=%"PRIu64"M > MaxMemPerNode=%"PRIu64"M in partition %s",
+		       job_desc_msg->job_id, job_mem_limit, sys_mem_limit,
+		       (part_ptr && part_ptr->name) ? part_ptr->name : "N/A");
+		return false;
+	}
+
+	/* Job and system have different memory limit forms (i.e. one is a
+	 * per-job and the other is per-node). Covert them both to per-node
+	 * values for comparison. */
+	if (part_ptr && (!part_ptr->max_share || !job_desc_msg->shared)) {
+		/* Whole node allocation */
+		cpus_per_node = _cpus_per_node_part(part_ptr);
+	} else {
+		if ((job_desc_msg->ntasks_per_node != NO_VAL16) &&
+		    (job_desc_msg->ntasks_per_node != 0))
+			cpus_per_node = job_desc_msg->ntasks_per_node;
+		else
+			cpus_per_node = 1;
+
+		if ((job_desc_msg->num_tasks != NO_VAL) &&
+		    (job_desc_msg->num_tasks != 0)     &&
+		    (job_desc_msg->max_nodes != NO_VAL) &&
+		    (job_desc_msg->max_nodes != 0)) {
+			cpus_per_node = MAX(cpus_per_node,
+				((job_desc_msg->num_tasks +
+				  job_desc_msg->max_nodes - 1) /
+				 job_desc_msg->max_nodes));
+		}
+
+		if ((job_desc_msg->cpus_per_task != NO_VAL16) &&
+		    (job_desc_msg->cpus_per_task != 0))
+			cpus_per_node *= job_desc_msg->cpus_per_task;
+
+		if ((job_desc_msg->pn_min_cpus != NO_VAL16) &&
+		    (job_desc_msg->pn_min_cpus > cpus_per_node))
+			cpus_per_node = job_desc_msg->pn_min_cpus;
+	}
+
+	if (job_mem_limit & MEM_PER_CPU) {
+		/* Job has per-CPU memory limit, system has per-node limit */
+		job_mem_limit &= (~MEM_PER_CPU);
+		job_mem_limit *= cpus_per_node;
+	} else {
+		/* Job has per-node memory limit, system has per-CPU limit */
+		uint32_t min_cpus;
+		sys_mem_limit &= (~MEM_PER_CPU);
+		min_cpus = (job_mem_limit + sys_mem_limit - 1) / sys_mem_limit;
+
+		if ((job_desc_msg->pn_min_cpus == NO_VAL16) ||
+		    (job_desc_msg->pn_min_cpus < min_cpus)) {
+			debug("Setting job's pn_min_cpus to %u due to memory "
+			      "limit", min_cpus);
+			job_desc_msg->pn_min_cpus = min_cpus;
+			cpus_per_node = MAX(cpus_per_node, min_cpus);
+		}
+		sys_mem_limit *= cpus_per_node;
+	}
+
+	if (job_mem_limit <= sys_mem_limit)
 		return true;
 
-	debug2("%s: job %u mem_per_node=%"PRIu64"M > MaxMemPerNode=%"PRIu64"M in partition %s",
-	       __func__, job_ptr->job_id, job_mem, max_mem,
-	       (part_ptr->name) ? part_ptr->name : "N/A");
+	debug2("Job %u mem=%"PRIu64"M > MaxMemPer%s=%"PRIu64"M in partition:%s",
+	       job_desc_msg->job_id, job_mem_limit,
+	       (job_mem_limit & MEM_PER_CPU) ? "CPU" : "Node", sys_mem_limit,
+	       (part_ptr && part_ptr->name) ? part_ptr->name : "N/A");
 
 	return false;
 }
@@ -9142,6 +9012,13 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			job_desc_msg->pn_min_memory =
 					slurmctld_conf.def_mem_per_cpu;
 		}
+	} else if (!_validate_min_mem_partition(
+			   job_desc_msg, part_ptr, part_list))
+		return ESLURM_INVALID_TASK_MEMORY;
+
+	if (job_desc_msg->pn_min_memory == MEM_PER_CPU) {
+		/* Map --mem-per-cpu=0 to --mem=0 for simpler logic */
+		job_desc_msg->pn_min_memory = 0;
 	}
 
 	/* Validate a job's accounting frequency, if specified */
@@ -9161,6 +9038,50 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->pn_min_tmp_disk = 0;/* default 0MB disk per node */
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Traverse the list of partitions and invoke the
+ * function validating the job memory specification.
+ */
+static bool
+_validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
+			    struct part_record *part_ptr, List part_list)
+{
+	ListIterator iter;
+	struct part_record *part;
+	bool cc;
+
+	/* no reason to check them here as we aren't enforcing them */
+	if (!slurmctld_conf.enforce_part_limits)
+		return true;
+
+	if (part_list == NULL)
+		return _valid_pn_min_mem(job_desc_msg, part_ptr);
+
+	cc = false;
+	iter = list_iterator_create(part_list);
+	while ((part = list_next(iter))) {
+		cc = _valid_pn_min_mem(job_desc_msg, part);
+
+		/* for ALL we have to test them all */
+		if (slurmctld_conf.enforce_part_limits ==
+		    PARTITION_ENFORCE_ALL) {
+			if (!cc)
+				break;
+		} else if (cc) /* break, we found one! */
+			break;
+		else if (slurmctld_conf.enforce_part_limits ==
+			 PARTITION_ENFORCE_ANY) {
+			debug("%s: Job requested for (%"PRIu64")MB is invalid"
+			      " for partition %s",
+			      __func__, job_desc_msg->pn_min_memory,
+			      part->name);
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return cc;
 }
 
 /*
@@ -12159,7 +12080,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     save_min_cpus, detail_ptr->min_cpus, job_ptr->job_id);
 		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
 			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
-		detail_ptr->orig_min_cpus = job_specs->min_cpus;
 		update_accounting = true;
 	}
 	if (save_max_cpus && (detail_ptr->max_cpus != save_max_cpus)) {
@@ -12170,7 +12090,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		 * super user it be set correctly */
 		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
 			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
-		detail_ptr->orig_max_cpus = job_specs->max_cpus;
 		update_accounting = true;
 	}
 
@@ -12644,8 +12563,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				entity = "job";
 
 			detail_ptr->pn_min_memory = job_specs->pn_min_memory;
-			detail_ptr->orig_pn_min_memory =
-					job_specs->pn_min_memory;
 			info("sched: update_job: setting min_memory_%s to %"
 			     ""PRIu64" for job_id %u", entity,
 			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),

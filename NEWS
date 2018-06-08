@@ -26,8 +26,9 @@ documents those changes that are of interest to users and administrators.
     stage-out is completed.
  -- Reorder proctrack/task plugin load in the slurmstepd to match that of slurmd
     and avoid race condition calling task before proctrack can introduce.
-    qos as def_qos_id.
  -- Prevent reboot of a busy KNL node when requesting inactive features.
+ -- Revert to previous behavior when requesting memory per cpu/node introduced
+    in 17.11.7.
 
 * Changes in Slurm 17.11.7
 ==========================

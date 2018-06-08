@@ -1401,10 +1401,6 @@ next_task:
 				continue;
 		}
 		job_ptr->part_ptr = part_ptr;
-		if (job_limits_check(&job_ptr, true) != WAIT_NO_REASON) {
-			/* should never happen */
-			continue;
-		}
 
 		if (debug_flags & DEBUG_FLAG_BACKFILL) {
 			char job_id_str[64];
