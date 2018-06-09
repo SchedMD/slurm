@@ -507,9 +507,7 @@ The default value is "crypto/munge" and is the recommended.
 Defines specific subsystems which should provide more detailed event logging.
 Multiple subsystems can be specified with comma separators.
 Most DebugFlags will result in verbose logging for the identified subsystems
-and could impact performance.  The below DB_* flags are only useful when
-writing directly to the database.  If using the DBD put these debug flags in the
-slurmdbd.conf.
+and could impact performance.
 Valid subsystems available today (with more to come) include:
 .RS
 .TP 17
@@ -541,38 +539,6 @@ CPU binding details for jobs and steps
 .TP
 \fBCpuFrequency\fR
 Cpu frequency details for jobs and steps using the \-\-cpu\-freq option.
-.TP
-\fBDB_ASSOC\fR
-SQL statements/queries when dealing with associations in the database.
-.TP
-\fBDB_EVENT\fR
-SQL statements/queries when dealing with (node) events in the database.
-.TP
-\fBDB_JOB\fR
-SQL statements/queries when dealing with jobs in the database.
-.TP
-\fBDB_QOS\fR
-SQL statements/queries when dealing with QOS in the database.
-.TP
-\fBDB_QUERY\fR
-SQL statements/queries when dealing with transactions and such in the database.
-.TP
-\fBDB_RESERVATION\fR
-SQL statements/queries when dealing with reservations in the database.
-.TP
-\fBDB_RESOURCE\fR
-SQL statements/queries when dealing with resources like licenses in the
-database.
-.TP
-\fBDB_STEP\fR
-SQL statements/queries when dealing with steps in the database.
-.TP
-\fBDB_USAGE\fR
-SQL statements/queries when dealing with usage queries and inserts
-in the database.
-.TP
-\fBDB_WCKEY\fR
-SQL statements/queries when dealing with wckeys in the database.
 .TP
 \fBElasticsearch\fR
 Elasticsearch debug info
