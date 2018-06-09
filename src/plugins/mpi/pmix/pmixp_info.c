@@ -101,6 +101,13 @@ bool pmixp_info_srv_direct_conn_ucx(void){
 int pmixp_info_srv_fence_coll_type(void)
 {
 	if (!_srv_use_direct_conn) {
+		static bool printed = false;
+		if (!printed && PMIXP_COLL_CPERF_RING == _srv_fence_coll_type) {
+			PMIXP_ERROR("Ring collective algorithm cannot be used "
+				    "with Slurm RPC's communication subsystem. "
+				    "Tree-based collective will be used instead.");
+			printed = true;
+		}
 		return PMIXP_COLL_TYPE_FENCE_TREE;
 	}
 	return _srv_fence_coll_type;
