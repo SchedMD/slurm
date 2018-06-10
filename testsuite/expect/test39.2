@@ -37,6 +37,10 @@ set file_in     "test$test_id.input"
 print_header $test_id
 
 set gpu_cnt [get_gpu_count]
+if {$gpu_cnt < 0} {
+	send_user "\nFAILURE: Error getting GPU count\n"
+	exit 1
+}
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
 	exit 0
