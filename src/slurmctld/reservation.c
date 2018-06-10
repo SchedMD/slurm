@@ -5088,6 +5088,8 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
  *	ESLURM_INVALID_TIME_VALUE reservation invalid at time "when"
  *	ESLURM_NODES_BUSY job has no reservation, but required nodes are
  *			  reserved
+ *	ESLURM_RESERVATION_MAINT job has no reservation, but required nodes are
+ *				 in maintenance reservation
  */
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
@@ -5250,8 +5252,10 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    (end_relative   <= job_start_time))
 				continue;
 
-			if (resv_ptr->flags & RESERVE_FLAG_ALL_NODES) {
-				rc = ESLURM_NODES_BUSY;
+			if (resv_ptr->flags & RESERVE_FLAG_ALL_NODES ||
+			    ((resv_ptr->flags  & RESERVE_FLAG_PART_NODES) &&
+			     job_ptr->part_ptr == resv_ptr->part_ptr)) {
+				rc = ESLURM_RESERVATION_MAINT;
 				if (move_time)
 					*when = resv_ptr->end_time;
 				break;
@@ -5329,7 +5333,10 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		}
 		if (rc == SLURM_SUCCESS)
 			break;
-		/* rc == ESLURM_NODES_BUSY here from above break */
+		/*
+		 * rc == ESLURM_NODES_BUSY or rc == ESLURM_RESERVATION_MAINT
+		 * above "break"
+		 */
 		if (move_time && (i < 10)) {  /* Retry for later start time */
 			job_start_time = *when;
 			job_end_time   = *when +

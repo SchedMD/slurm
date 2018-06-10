@@ -69,6 +69,7 @@ documents those changes that are of interest to users and administrators.
     whole picture of the array job.
  -- Add ResumeFailProgram slurm.conf option to specify a program that is called
     when a node fails to respond by ResumeTimeout.
+ -- Add new job pending reason of "ReqNodeNotAvail, reserved for maintenance".
 
 * Changes in Slurm 18.08.0pre1
 ==============================

@@ -1083,7 +1083,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bitstr_t *saved_req_node_bitmap = NULL;
 	bitstr_t *inactive_bitmap = NULL;
 	uint32_t saved_min_cpus, saved_req_nodes;
-	int rc, tmp_node_set_size;
+	int resv_rc = SLURM_SUCCESS, tmp_node_set_size;
 	int mcs_select = 0;
 	struct node_set *tmp_node_set_ptr, *prev_node_set_ptr;
 	int error_code = SLURM_SUCCESS, i;
@@ -1105,15 +1105,19 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	 */
 	if (job_ptr->resv_name == NULL) {
 		time_t start_res = time(NULL);
-		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-				   &exc_core_bitmap, &resv_overlap, true);
-		if (rc == ESLURM_NODES_BUSY) {
+		resv_rc = job_test_resv(job_ptr, &start_res, false,
+					&resv_bitmap, &exc_core_bitmap,
+					&resv_overlap, true);
+		if ((resv_rc == ESLURM_NODES_BUSY) ||
+		    (resv_rc == ESLURM_RESERVATION_MAINT)) {
 			save_avail_node_bitmap = avail_node_bitmap;
 			avail_node_bitmap = bit_alloc(node_record_count);
 			FREE_NULL_BITMAP(resv_bitmap);
-			/* Continue executing through _pick_best_nodes() below
-			 * in order reject job if it can never run */
-		} else if (rc != SLURM_SUCCESS) {
+			/*
+			 * Continue executing through _pick_best_nodes() below
+			 * in order reject job if it can never run
+			 */
+		} else if (resv_rc != SLURM_SUCCESS) {
 			FREE_NULL_BITMAP(resv_bitmap);
 			FREE_NULL_BITMAP(exc_core_bitmap);
 			return ESLURM_NODES_BUSY;	/* reserved */
@@ -1436,6 +1440,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				max_nodes, req_nodes, test_only,
 				preemptee_candidates, preemptee_job_list,
 				has_xand, exc_core_bitmap, resv_overlap);
+		if ((resv_rc == ESLURM_RESERVATION_MAINT) &&
+		    (error_code == ESLURM_NODE_NOT_AVAIL))
+			 error_code = ESLURM_RESERVATION_MAINT;
 	}
 #if 0
 {
@@ -2544,11 +2551,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/*    job_ptr->details->max_nodes, part_ptr->max_nodes); */
 	error_code = get_node_cnts(job_ptr, qos_flags, part_ptr,
 				   &min_nodes, &req_nodes, &max_nodes);
-
 	if ((error_code == ESLURM_ACCOUNTING_POLICY) ||
 	    (error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE))
 		goto cleanup;
-	else if (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
+	else if ((error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+		 (error_code != ESLURM_RESERVATION_MAINT)) {
 		/* Select resources for the job here */
 		job_array_pre_sched(job_ptr);
 		error_code = _get_req_features(node_set_ptr, node_set_size,
@@ -2695,6 +2702,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			}
 			xfree(unavail_node);
 			last_job_update = now;
+		} else if (error_code == ESLURM_RESERVATION_MAINT) {
+			error_code = ESLURM_RESERVATION_BUSY;	/* All reserved */
+			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc,
+				   "ReqNodeNotAvail, Reserved for maintenance");
 		} else if ((error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 			   (error_code == ESLURM_RESERVATION_BUSY)) {
 			job_ptr->state_reason = WAIT_RESERVATION;

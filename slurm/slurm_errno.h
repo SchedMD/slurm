@@ -206,6 +206,7 @@ enum {
 	ESLURM_INVALID_TRES,
 	ESLURM_INVALID_TRES_BILLING_WEIGHTS,
 	ESLURM_INVALID_JOB_DEFAULTS,
+	ESLURM_RESERVATION_MAINT,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
