@@ -82,7 +82,7 @@ typedef struct gres_slurmd_conf {
 	char *name;
 
 	/* Type of this gres (e.g. model name) */
-	char *type;
+	char *type_name;
 
 	/* Gres ID number */
 	uint32_t plugin_id;
@@ -122,18 +122,21 @@ typedef struct gres_node_state {
 	bitstr_t **topo_gres_bitmap;
 	uint64_t *topo_gres_cnt_alloc;
 	uint64_t *topo_gres_cnt_avail;
-	char **topo_model;		/* Type of this gres (e.g. model name) */
+	uint32_t *topo_type_id;		/* GRES type (e.g. model ID) */
+	char **topo_type_name;		/* GRES type (e.g. model name) */
 
 	/* GRES type specific information (if gres.conf contains type option) */
 	uint16_t type_cnt;		/* Size of type_ arrays */
 	uint64_t *type_cnt_alloc;
 	uint64_t *type_cnt_avail;
-	char **type_model;		/* Type of this GRES (e.g. model name) */
+	uint32_t *type_id;		/* GRES type (e.g. model ID) */
+	char **type_name;		/* GRES type (e.g. model name) */
 } gres_node_state_t;
 
 /* Gres job state as used by slurmctld daemon */
 typedef struct gres_job_state {
-	char *type_model;		/* Type of this gres (e.g. model name) */
+	uint32_t type_id;		/* GRES type (e.g. model ID) */
+	char *type_name;		/* GRES type (e.g. model name) */
 
 	/* Count of required GRES resources plus associated CPUs and memory */
 	uint16_t cpus_per_gres;
@@ -161,7 +164,8 @@ typedef struct gres_job_state {
 
 /* Gres job step state as used by slurmctld daemon */
 typedef struct gres_step_state {
-	char *type_model;		/* Type of this gres (e.g. model name) */
+	uint32_t type_id;		/* GRES type (e.g. model ID) */
+	char *type_name;		/* GRES type (e.g. model name) */
 
 	/* Count of required GRES resources plus associated CPUs and memory */
 	uint16_t cpus_per_gres;
@@ -192,9 +196,10 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	uint64_t cnt_any_sock;	/* GRES count unconstrained by cores */
 	uint64_t *cnt_by_sock;	/* Per-socket GRES count of this name & type */
 	char *gres_name;	/* GRES name */
-	char *model_type;	/* Model type for this GRES name */
 	uint32_t plugin_id;	/* Plugin ID (for quick search) */
 	uint64_t total_cnt;	/* Total GRES count of this name & type */
+	uint32_t type_id;	/* GRES type (e.g. model ID) */
+	char *type_name;	/* GRES type (e.g. model name) */
 } sock_gres_t;
 
 typedef enum {
@@ -647,7 +652,7 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id);
 
 /*
  * Given a step's requested gres configuration, validate it and build gres list
- * IN *tres* - step;s request's gres input string
+ * IN *tres* - step's request's gres input string
  * OUT step_gres_list - List of Gres records for this step to track usage
  * IN job_gres_list - List of Gres records for this job
  * IN job_id, step_id - ID of the step being allocated.
