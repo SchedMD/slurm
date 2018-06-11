@@ -2577,6 +2577,8 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	return ec;
 }
 
+#if 0
+//FIXME: Can this be removed? Relocated?
 /* Determine how many sockets per node this job requires for GRES */
 static uint32_t _socks_per_node(struct job_record *job_ptr)
 {
@@ -2612,29 +2614,7 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 
 	return s_p_n;
 }
-
-/*
- * Determine how many CPUs on the node can be used by this job
- * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
- * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
- * IN use_total_gres - if set then consider all gres resources as available,
- *		       and none are commited to running jobs
- * IN cpu_bitmap     - Identification of available CPUs (NULL if no restriction)
- * IN job_id         - job's ID (for logging)
- * IN node_name      - name of the node (for logging)
- * IN node_i         - Node index
- * IN s_p_n          - Sockets per node required by this job or NO_VAL
- * RET: NO_VAL       - All cores on node are available
- *      otherwise    - Count of available cores
- */
-static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
-				    bool use_total_gres, bitstr_t *core_bitmap,
-				    uint32_t job_id, char *node_name,
-				    uint32_t node_i, uint32_t s_p_n)
-{
-//FIXME: Add code here
-return NO_VAL;
-}
+#endif
 
 /*
  * _allocate_sc - Given the job requirements, determine which cores/sockets
@@ -3064,56 +3044,77 @@ static avail_res_t *_allocate_sockets(struct job_record *job_ptr,
 			    cpu_alloc_size, true);
 }
 
+typedef struct node_res {
+	uint16_t avail_cpus;
+//FIXME: Other fields forthcoming, perhaps core_bitmap
+} node_res_t;
+
+static void _free_node_res(node_res_t *node_res)
+{
+	if (node_res) {
+//FIXME: Other fields forthcoming
+		xfree(node_res);
+	}
+}
+
+static void _log_node_res(node_res_t *node_res, char *node_name)
+{
+#if _DEBUG
+	if (!node_res)
+		return;
+
+	info("Node:%s AvailCPUs:%u", node_name, node_res->avail_cpus);
+#endif
+}
+
 /*
  * _can_job_run_on_node - Given the job requirements, determine which
  *                        resources from the given node (if any) can be
- *                        allocated to this job. Returns the number of
- *                        CPUs that can be used by this node and a bitmap
- *                        of available resources for allocation.
+ *                        allocated to this job. Returns a structure identifying
+ *                        the resources available for allocation to this job.
  *       NOTE: This process does NOT support overcommitting resources
  *
  * IN job_ptr       - pointer to job requirements
  * IN/OUT core_map  - per-node bitmap of available cores
  * IN node_i        - index of node to be evaluated
- * IN s_p_n         - Expected sockets_per_node (NO_VAL if not known)
  * IN cr_type       - Consumable Resource setting
  * IN test_only     - ignore allocated memory check
  * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
  *                     partition or NULL if don't care
+ * RET Available resources. Call _free_node_res() to release memory.
  *
  * NOTE: The returned cpu_count may be less than the number of set bits in
  *       core_map for the given node. The cr_dist functions will determine
- *       which bits to deselect from the core_map to match the cpu_count.
+ *       which bits to de-select from the core_map to match the cpu_count.
  */
-uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t **core_map,
-			      const uint32_t node_i, uint32_t s_p_n,
-			      struct node_use_record *node_usage,
-			      uint16_t cr_type,
-			      bool test_only, bitstr_t **part_core_map)
+static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
+				bitstr_t **core_map, const uint32_t node_i,
+				struct node_use_record *node_usage,
+				uint16_t cr_type, bool test_only,
+				bitstr_t **part_core_map)
 {
 	uint16_t cpus = 0;
 	uint64_t avail_mem, req_mem;
-	uint32_t gres_cores, gres_cpus, cpus_per_core;
 	int core_cnt, cpu_alloc_size, i;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
 	bitstr_t *part_core_map_ptr = NULL;
 	avail_res_t *avail_res;
 	List sock_gres_list = NULL;
+	node_res_t *node_res;
 
+	node_res = xmalloc(sizeof(node_res_t));
 	if (((job_ptr->bit_flags & BACKFILL_TEST) == 0) &&
 	    !test_only && IS_NODE_COMPLETING(node_ptr)) {
 		/*
 		 * Do not allocate more jobs to nodes with completing jobs,
 		 * backfill scheduler independently handles completing nodes
 		 */
-//FIXME: change return value type and contents below
-		return cpus;
+		return node_res;
 	}
 
 	if (part_core_map)
 		part_core_map_ptr = part_core_map[node_i];
-	cpus_per_core = select_node_record[node_i].vpus;
 	node_ptr = select_node_record[node_i].node_ptr;
 	if (node_usage[node_i].gres_list)
 		gres_list = node_usage[node_i].gres_list;
@@ -3124,8 +3125,6 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t **core_map,
 	gres_plugin_job_core_filter(job_ptr->gres_list, gres_list, test_only,
 				    core_map[node_i], 0, core_cnt - 1,
 				    node_ptr->name);
-//	if (s_p_n == NO_VAL) {
-//FIXME: RESTRUCTURE LOGIC BELOW
 	if (job_ptr->gres_list) {
 		sock_gres_list = gres_plugin_job_test2(job_ptr->gres_list,
 					gres_list, test_only,
@@ -3133,19 +3132,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t **core_map,
 					select_node_record[node_i].sockets,
 					select_node_record[node_i].cores,
 					job_ptr->job_id, node_ptr->name);
-		if (!sock_gres_list)
-			return cpus;
-//FIXME: gres_cores probably not needed any more
-gres_cores = NO_VAL;
-	} else {
-//FIXME: REMOVE LOGIC BELOW
-		gres_cores = _gres_sock_job_test(job_ptr->gres_list,
-						 gres_list, test_only,
-						 core_map[node_i],
-						 job_ptr->job_id,
-						 node_ptr->name, node_i, s_p_n);
-		if (gres_cores == 0)
-			return cpus;
+		if (!sock_gres_list)	/* Unsatisfied GRES requirements */
+			return node_res;
 	}
 
 	if (cr_type & CR_CORE) {
@@ -3232,14 +3220,8 @@ gres_cores = NO_VAL;
 		}
 	}
 
-	gres_cpus = gres_cores;
-	if (gres_cpus != NO_VAL)
-		gres_cpus *= cpus_per_core;
-	if ((gres_cpus < job_ptr->details->ntasks_per_node) ||
-	    ((job_ptr->details->cpus_per_task > 1) &&
-	     (gres_cpus < job_ptr->details->cpus_per_task)))
-		gres_cpus = 0;
-
+#if 0
+//FIXME: Add some validation here?
 	while (gres_cpus < cpus) {
 		if ((int) cpus < cpu_alloc_size) {
 			debug3("cons_tres: %s: cpu_alloc_size > cpus, cannot "
@@ -3250,6 +3232,7 @@ gres_cores = NO_VAL;
 			cpus -= cpu_alloc_size;
 		}
 	}
+#endif
 
 	if (cpus == 0)
 		bit_clear_all(core_map[node_i]);
@@ -3262,8 +3245,8 @@ gres_cores = NO_VAL;
 		     select_node_record[node_i].real_memory);
 	}
 
-//FIXME:  change return value type and contents below
-	return cpus;
+	node_res->avail_cpus = cpus;
+	return node_res;
 }
 
 /*
@@ -3287,15 +3270,23 @@ static void _get_res_avail(struct job_record *job_ptr, bitstr_t *node_map,
 {
 	uint16_t *cpu_cnt;
 	uint32_t n;
-	uint32_t s_p_n = _socks_per_node(job_ptr);
+	node_res_t *node_res;
+	struct node_record *node_ptr;
+//FIXME: where should s_p_n be handled?
+//	uint32_t s_p_n = _socks_per_node(job_ptr);
 
 	cpu_cnt = xmalloc(sizeof(uint16_t) * select_node_cnt);
 	for (n = 0; n < select_node_cnt; n++) {
 		if (!bit_test(node_map, n))
 			continue;
-		cpu_cnt[n] = _can_job_run_on_node(job_ptr, core_map, n, s_p_n,
-						  node_usage, cr_type,
-						  test_only, part_core_map);
+//FIXME: Need to restructure returned information
+		node_res = _can_job_run_on_node(job_ptr, core_map, n,
+						node_usage, cr_type, test_only,
+						part_core_map);
+		cpu_cnt[n] = node_res->avail_cpus;
+		node_ptr = select_node_record[n].node_ptr;
+		_log_node_res(node_res, node_ptr->name);
+		_free_node_res(node_res);
 	}
 	*cpu_cnt_ptr = cpu_cnt;
 }
