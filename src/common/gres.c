@@ -4420,7 +4420,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 {
 	int i, j, s, c, tot_cores;
 	sock_gres_t *sock_gres = xmalloc(sizeof(sock_gres_t));
-	uint64_t avail_gres;
+	uint64_t avail_gres, min_gres = 1, total_gres = 0;
 	bool match = false;
 
 	sock_gres = xmalloc(sizeof(sock_gres_t));
@@ -4471,12 +4471,33 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 					      j))
 					continue;
 				sock_gres->cnt_by_sock[s] += avail_gres;
+				total_gres += avail_gres;
 				avail_gres = 0;
 				match = true;
 				break;
 			}
 		}
 	}
+
+	/* Process per-GRES limits */
+	if (match && job_gres_ptr->gres_per_socket) {
+		for (s = 0; s < sockets; s++) {
+			if (sock_gres->cnt_by_sock[s] <
+			    job_gres_ptr->gres_per_socket) {
+				total_gres -= sock_gres->cnt_by_sock[s];
+				sock_gres->cnt_by_sock[s] = 0;
+			}
+		}
+	}
+	if (match) {
+		if (job_gres_ptr->gres_per_node)
+			min_gres = job_gres_ptr-> gres_per_node;
+		if (job_gres_ptr->gres_per_task)
+			min_gres = MAX(min_gres, job_gres_ptr->gres_per_task);
+		if (total_gres < min_gres)
+			match = false;
+	}
+
 	if (match) {
 		sock_gres->type_id = job_gres_ptr->type_id;
 		sock_gres->type_name = xstrdup(job_gres_ptr->type_name);
@@ -4510,9 +4531,9 @@ static sock_gres_t *_build_sock_gres_by_type(gres_job_state_t *job_gres_ptr,
 	if (job_gres_ptr->gres_per_node)
 		min_gres = job_gres_ptr-> gres_per_node;
 	if (job_gres_ptr->gres_per_socket)
-		min_gres = MIN(min_gres, job_gres_ptr-> gres_per_socket);
+		min_gres = MAX(min_gres, job_gres_ptr->gres_per_socket);
 	if (job_gres_ptr->gres_per_task)
-		min_gres = MIN(min_gres, job_gres_ptr-> gres_per_task);
+		min_gres = MAX(min_gres, job_gres_ptr->gres_per_task);
 	sock_gres = xmalloc(sizeof(sock_gres_t));
 	for (i = 0; i < node_gres_ptr->type_cnt; i++) {
 		if (job_gres_ptr->type_name &&
@@ -4565,9 +4586,9 @@ static sock_gres_t *_build_sock_gres_basic(gres_job_state_t *job_gres_ptr,
 	if (job_gres_ptr->gres_per_node)
 		min_gres = job_gres_ptr-> gres_per_node;
 	if (job_gres_ptr->gres_per_socket)
-		min_gres = MIN(min_gres, job_gres_ptr-> gres_per_socket);
+		min_gres = MAX(min_gres, job_gres_ptr->gres_per_socket);
 	if (job_gres_ptr->gres_per_task)
-		min_gres = MIN(min_gres, job_gres_ptr-> gres_per_task);
+		min_gres = MAX(min_gres, job_gres_ptr->gres_per_task);
 	if (!use_total_gres) {
 		avail_gres = node_gres_ptr->gres_cnt_avail -
 			     node_gres_ptr->gres_cnt_alloc;
@@ -4654,8 +4675,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 			FREE_NULL_LIST(sock_gres_list);
 			break;
 		}
-//FIXME:
-sock_gres->gres_name = xstrdup("TBD");
+		sock_gres->gres_name = xstrdup(job_data_ptr->gres_name);
 		sock_gres->plugin_id = job_gres_ptr->plugin_id;
 		list_append(sock_gres_list, sock_gres);
 	}
