@@ -399,6 +399,10 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (get_uint(value, &assoc->grp_jobs,
 			     "GrpJobs") == SLURM_SUCCESS)
 			set = 1;
+	} else if (!xstrncasecmp(type, "GrpJobsAccrue", MAX(command_len, 8))) {
+		if (get_uint(value, &assoc->grp_jobs,
+			     "GrpJobsAccrue") == SLURM_SUCCESS)
+			set = 1;
 	} else if (!xstrncasecmp(type, "GrpMemory", MAX(command_len, 4))) {
 		if (get_uint64(value, &tmp64,
 			       "GrpMemory") == SLURM_SUCCESS) {
@@ -506,6 +510,11 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (get_uint(value, &assoc->max_jobs,
 			     "MaxJobs") == SLURM_SUCCESS)
 			set = 1;
+	} else if (!xstrncasecmp(type, "MaxJobsAccrue",
+				 MAX(command_len, 8))) {
+		if (get_uint(value, &assoc->max_jobs_accrue,
+			     "MaxJobsAccrue") == SLURM_SUCCESS)
+			set = 1;
 	} else if (!xstrncasecmp(type, "MaxNodesPerJob", MAX(command_len, 4))) {
 		if (get_uint64(value, &tmp64,
 			       "MaxNodes") == SLURM_SUCCESS) {
@@ -517,6 +526,11 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			xfree(tmp_char);
 		}
+	} else if (!xstrncasecmp(type, "MinPrioThresh",
+				 MAX(command_len, 4))) {
+		if (get_uint(value, &assoc->min_prio_thresh,
+			     "MinPrioThresh") == SLURM_SUCCESS)
+			set = 1;
 	} else if (!xstrncasecmp(type, "MaxSubmitJobs", MAX(command_len, 4))) {
 		if (get_uint(value, &assoc->max_submit_jobs,
 			     "MaxSubmitJobs") == SLURM_SUCCESS)
@@ -682,6 +696,9 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	case PRINT_GRPJ:
 		field->print_routine(field, assoc->grp_jobs, last);
 		break;
+	case PRINT_GRPJA:
+		field->print_routine(field, assoc->grp_jobs_accrue, last);
+		break;
 	case PRINT_GRPMEM:
 		field->print_routine(field,
 				     slurmdb_find_tres_count_in_string(
@@ -739,6 +756,12 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		break;
 	case PRINT_MAXJ:
 		field->print_routine(field, assoc->max_jobs, last);
+		break;
+	case PRINT_MAXJA:
+		field->print_routine(field, assoc->max_jobs_accrue, last);
+		break;
+	case PRINT_MINPT:
+		field->print_routine(field, assoc->min_prio_thresh, last);
 		break;
 	case PRINT_MAXN:
 		field->print_routine(field,

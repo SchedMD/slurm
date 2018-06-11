@@ -187,6 +187,7 @@ enum {
 	SORTID_THREAD_SPEC,
 /* 	SORTID_THREADS_MAX, */
 /* 	SORTID_THREADS_MIN, */
+	SORTID_TIME_ACCRUE,
 	SORTID_TIME_ELIGIBLE,
 	SORTID_TIME_END,
 	SORTID_TIMELIMIT,
@@ -270,6 +271,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_TIME_SUBMIT, "Time Submit", false,
 	 EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TIME_ACCRUE, "Time Accrue", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_ELIGIBLE, "Time Eligible", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", false,
@@ -1747,6 +1750,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_THREAD_SPEC),
 				   tmp_char);
 
+	slurm_make_time_str((time_t *)&job_ptr->accrue_time, tmp_char,
+			    sizeof(tmp_char));
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TIME_ACCRUE),
+				   tmp_char);
 	slurm_make_time_str((time_t *)&job_ptr->eligible_time, tmp_char,
 			    sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter,
@@ -1879,6 +1888,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_std_err[128],  tmp_std_in[128],     tmp_std_out[128];
 	char tmp_thread_spec[40], tmp_time_deadline[40], tmp_pack_job_id[40];
 	char tmp_pack_job_id_set[40], tmp_pack_job_offset[40];
+	char tmp_time_accrue[40];
 	char *tmp_batch,  *tmp_cont, *tmp_requeue, *tmp_uname;
 	char *tmp_reboot, *tmp_reason, *tmp_nodes;
 	char time_buf[32];
@@ -2153,6 +2163,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	sprintf(tmp_prio, "%u", job_ptr->priority);
 
+	slurm_make_time_str((time_t *)&job_ptr->accrue_time, tmp_time_accrue,
+			    sizeof(tmp_time_accrue));
+
 	slurm_make_time_str((time_t *)&job_ptr->eligible_time, tmp_time_elig,
 			    sizeof(tmp_time_elig));
 
@@ -2330,6 +2343,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_STD_OUT,      tmp_std_out,
 				   SORTID_SWITCHES,     tmp_rqswitch,
 				   SORTID_THREAD_SPEC,  tmp_thread_spec,
+				   SORTID_TIME_ACCRUE,  tmp_time_accrue,
 				   SORTID_TIME_ELIGIBLE,tmp_time_elig,
 				   SORTID_TIME_END,     tmp_time_end,
 				   SORTID_TIME_RESIZE,  tmp_time_resize,

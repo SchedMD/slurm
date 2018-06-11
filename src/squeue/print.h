@@ -230,6 +230,9 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,(void*)_print_com_invalid)
 #define job_format_add_nice(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_nice)
+#define job_format_add_accrue_time(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix, \
+				_print_job_accrue_time)
 #define job_format_add_alloc_nodes(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_alloc_nodes)
 #define job_format_add_alloc_sid(list,wid,right,suffix) \
@@ -467,6 +470,8 @@ int _print_job_work_dir(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_nice(job_info_t * job, int width, bool right_justify,
 		    char* suffix);
+int _print_job_accrue_time(job_info_t * job, int width, bool right_justify,
+			   char* suffix);
 int _print_job_alloc_nodes(job_info_t * job, int width, bool right_justify,
 			   char* suffix);
 int _print_job_alloc_sid(job_info_t * job, int width, bool right_justify,

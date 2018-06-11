@@ -342,6 +342,12 @@ this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
+\fIGrpJobsAccrue\fP=<max jobs>
+Maximum number of pending jobs in aggregate able to accrue age priority for this
+association and all associations which are children of this association.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
 \fIGrpSubmitJobs\fP=<max jobs>
 Maximum number of jobs which can be in a pending or running state at any time
 in aggregate for this association and all associations which are children of
@@ -388,6 +394,14 @@ Resource plugin.
 \fIMaxJobs\fP=<max jobs>
 Maximum number of jobs each user is allowed to run at one time in this
 association.
+This is overridden if set directly on a user.
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMaxJobsAccrue\fP=<max jobs>
+Maximum number of pending jobs able to accrue age priority at any given time for
+the given association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -628,6 +642,11 @@ Maximum number of running jobs in aggregate for
 this association and all associations which are children of this association.
 
 .TP
+\fIGrpJobsAccrue\fP
+Maximum number of pending jobs in aggregate able to accrue age priority for this
+association and all associations which are children of this association.
+
+.TP
 \fIGrpSubmitJobs\fP
 Maximum number of jobs which can be in a pending or running state at any time
 in aggregate for this association and all associations which are children of
@@ -660,6 +679,10 @@ Maximum number of TRES each job is able to use.
 .TP
 \fIMaxJobs\fP
 Maximum number of jobs each user is allowed to run at one time.
+
+.TP
+\fIMaxJobsAccrue\fP
+Maximum number of pending jobs able to accrue age priority at any given time.
 
 .TP
 \fIMaxSubmitJobs\fP
@@ -1165,6 +1188,11 @@ this QOS.
 Maximum number of running jobs in aggregate for this QOS.
 
 .TP
+\fIGrpJobsAccrue\fP
+Maximum number of pending jobs in aggregate able to accrue age priority for this
+QOS.
+
+.TP
 \fIGrpSubmitJobs\fP
 Maximum number of jobs which can be in a pending or running state at any time
 in aggregate for this QOS.
@@ -1199,12 +1227,26 @@ Maximum number of TRES each node in a job allocation can use.
 Maximum number of TRES each user is able to use.
 
 .TP
+\fIMaxJobsAccruePerAccount\fP
+Maximum number of pending jobs an account (or subacct) can have accruing age
+priority at any given time.
+
+.TP
+\fIMaxJobsAccruePerUser\fP
+Maximum number of pending jobs a user can have accruing age priority at any
+given time.
+
+.TP
 \fIMaxJobsPerAccount\fP
 Maximum number of jobs each account is allowed to run at one time.
 
 .TP
 \fIMaxJobsPerUser\fP
 Maximum number of jobs each user is allowed to run at one time.
+
+.TP
+\fIMinPrioThreshold\fP
+Minimum priority required to reserve resources when scheduling.
 
 .TP
 \fIMinTRESPerJob\fP
@@ -1308,6 +1350,12 @@ Maximum number of running jobs in aggregate for this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
+\fIGrpJobsAccrue\fP
+Maximum number of pending jobs in aggregate able to accrue age priority for this
+QOS.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
 \fIGrpSubmitJobs\fP
 Maximum number of jobs which can be in a pending or running state at any time
 in aggregate for this QOS.
@@ -1381,6 +1429,11 @@ Maximum wall clock time each job is able to use.
 <max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMinPrioThreshold\fP
+Minimum priority required to reserve resources when scheduling.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
@@ -1914,6 +1967,10 @@ are children of this association.
 Maximum number of running jobs in aggregate for this
 association and all associations which are children of this association.
 .TP
+\fIGrpJobsAccrue\fP
+Maximum number of pending jobs in aggregate able to accrue age priority for this
+association and all associations which are children of this association.
+.TP
 \fIGrpNodes=\fP
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
@@ -1989,6 +2046,10 @@ are children of this association.
 .TP
 \fIGrpJobs=\fP
 Maximum number of running jobs in aggregate for this
+association and all associations which are children of this association.
+.TP
+\fIGrpJobsAccrue\fP
+Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .TP
 \fIGrpNodes=\fP

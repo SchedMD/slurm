@@ -179,6 +179,14 @@ list) as in the following examples: </p>
   run after previous jobs complete from this group.
 </li>
 
+<li><b>GrpJobsAccrue=</b> The total number of pending jobs able to accrue age
+  priority at any given time from an association and its children QOS.  If
+  this limit is reached new jobs will be queued but not accrue age priority
+  until after previous jobs are removed from pending in this group.
+  This limit does not determine if the job can run or not, it only limits the
+  age factor of the priority.
+</li>
+
 <li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
   to the system at any given time from an association and its children
   or QOS.  If this limit is reached new submission requests will be
@@ -214,6 +222,10 @@ list) as in the following examples: </p>
   the job will be denied at submission.
 </li>
 
+<li><b>MinPrioThreshold=</b> Used to override bf_min_prio_reserve,
+  see <a href="slurm.conf.html#OPT_bf_min_prio_reserve=#">bf_min_prio_reserve</a> for details.
+</li>
+
 <!-- For future use
 <li><b>MaxTRESRunMinsPerJob=</b> A limit of TRES minutes to be used by jobs
   running from the given association/QOS.  If this limit is
@@ -246,6 +258,14 @@ list) as in the following examples: </p>
   the association.
 </li>
 
+<li><b>MaxJobsAccrue=</b> The maximum number of pending jobs able to accrue age
+  priority at any given time for the given association.  If this limit is
+  reached new jobs will be queued but not accrue age priority
+  until after previous jobs are removed from pending using this association.
+  This limit does not determine if the job can run or not, it only limits the
+  age factor of the priority.
+</li>
+
 <li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
   to the system at any given time from the given association.  If
   this limit is reached new submission requests will be denied until
@@ -261,6 +281,18 @@ list) as in the following examples: </p>
 <h2>QOS specific limits supported</h2>
 
 <ul>
+<li><b>MaxJobsAccruePerAccount=</b> The maximum number of pending jobs an
+  account (or subacct) can have accruing age priority at any given time.
+  This limit does not determine if the job can run or not, it only limits the
+  age factor of the priority.
+</li>
+
+<li><b>MaxJobsAccruePerUser=</b> The maximum number of pending jobs a
+  user can have accruing age priority at any given time.
+  This limit does not determine if the job can run or not, it only limits the
+  age factor of the priority.
+</li>
+
 <li><b>MaxJobsPerAccount=</b> The maximum number of jobs an account (or
   subaccount) can have running at a given time.
 </li>

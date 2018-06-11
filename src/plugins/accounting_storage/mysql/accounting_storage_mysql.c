@@ -545,6 +545,9 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "grace_time", "int unsigned default NULL" },
 		{ "max_jobs_pa", "int default NULL" },
 		{ "max_jobs_per_user", "int default NULL" },
+		{ "max_jobs_accrue_pa", "int default NULL" },
+		{ "max_jobs_accrue_pu", "int default NULL" },
+		{ "min_prio_thresh", "int default NULL" },
 		{ "max_submit_jobs_pa", "int default NULL" },
 		{ "max_submit_jobs_per_user", "int default NULL" },
 		{ "max_tres_pa", "text not null default ''" },
@@ -557,6 +560,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "min_tres_pj", "text not null default ''" },
 		{ "max_wall_duration_per_job", "int default NULL" },
 		{ "grp_jobs", "int default NULL" },
+		{ "grp_jobs_accrue", "int default NULL" },
 		{ "grp_submit_jobs", "int default NULL" },
 		{ "grp_tres", "text not null default ''" },
 		{ "grp_tres_mins", "text not null default ''" },
@@ -605,6 +609,10 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ NULL, NULL}
 	};
 
+	/*
+	 * If more limits are added here they need to be added to
+	 * get_parent_limits_select in as_mysql_assoc.c
+	 */
 	char *get_parent_proc =
 		"drop procedure if exists get_parent_limits; "
 		"create procedure get_parent_limits("
@@ -612,6 +620,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"begin "
 		"set @par_id = NULL; "
 		"set @mj = NULL; "
+		"set @mja = NULL; "
+		"set @mpt = NULL; "
 		"set @msj = NULL; "
 		"set @mwpj = NULL; "
 		"set @mtpj = ''; "
@@ -636,6 +646,12 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"end if; "
 		"if @mj is NULL then set @s = CONCAT("
 		"@s, '@mj := max_jobs, '); "
+		"end if; "
+		"if @mja is NULL then set @s = CONCAT("
+		"@s, '@mja := max_jobs_accrue, '); "
+		"end if; "
+		"if @mpt is NULL then set @s = CONCAT("
+		"@s, '@mpt := min_prio_thresh, '); "
 		"end if; "
 		"if @msj is NULL then set @s = CONCAT("
 		"@s, '@msj := max_submit_jobs, '); "
@@ -1163,6 +1179,8 @@ extern int create_cluster_assoc_table(
 		{ "rgt", "int not null" },
 		{ "shares", "int default 1 not null" },
 		{ "max_jobs", "int default NULL" },
+		{ "max_jobs_accrue", "int default NULL" },
+		{ "min_prio_thresh", "int default NULL" },
 		{ "max_submit_jobs", "int default NULL" },
 		{ "max_tres_pj", "text not null default ''" },
 		{ "max_tres_pn", "text not null default ''" },
@@ -1170,6 +1188,7 @@ extern int create_cluster_assoc_table(
 		{ "max_tres_run_mins", "text not null default ''" },
 		{ "max_wall_pj", "int default NULL" },
 		{ "grp_jobs", "int default NULL" },
+		{ "grp_jobs_accrue", "int default NULL" },
 		{ "grp_submit_jobs", "int default NULL" },
 		{ "grp_tres", "text not null default ''" },
 		{ "grp_tres_mins", "text not null default ''" },
@@ -1621,12 +1640,18 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			assoc->shares_raw = INFINITE;
 		if (assoc->grp_jobs == NO_VAL)
 			assoc->grp_jobs = INFINITE;
+		if (assoc->grp_jobs_accrue == NO_VAL)
+			assoc->grp_jobs_accrue = INFINITE;
 		if (assoc->grp_submit_jobs == NO_VAL)
 			assoc->grp_submit_jobs = INFINITE;
 		if (assoc->grp_wall == NO_VAL)
 			assoc->grp_wall = INFINITE;
 		if (assoc->max_jobs == NO_VAL)
 			assoc->max_jobs = INFINITE;
+		if (assoc->max_jobs_accrue == NO_VAL)
+			assoc->max_jobs_accrue = INFINITE;
+		if (assoc->min_prio_thresh == NO_VAL)
+			assoc->min_prio_thresh = INFINITE;
 		if (assoc->max_submit_jobs == NO_VAL)
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
@@ -1656,6 +1681,18 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", grp_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
 		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
+	}
+
+	if (assoc->grp_jobs_accrue == INFINITE) {
+		xstrcat(*cols, ", grp_jobs_accrue");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_jobs_accrue=NULL");
+	} else if ((assoc->grp_jobs_accrue != NO_VAL)
+		   && ((int32_t)assoc->grp_jobs_accrue >= 0)) {
+		xstrcat(*cols, ", grp_jobs_accrue");
+		xstrfmtcat(*vals, ", %u", assoc->grp_jobs_accrue);
+		xstrfmtcat(*extra, ", grp_jobs_accrue=%u",
+			   assoc->grp_jobs_accrue);
 	}
 
 	if (assoc->grp_submit_jobs == INFINITE) {
@@ -1700,6 +1737,30 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", max_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
 		xstrfmtcat(*extra, ", max_jobs=%u", assoc->max_jobs);
+	}
+
+	if (assoc->max_jobs_accrue == INFINITE) {
+		xstrcat(*cols, ", max_jobs_accrue");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_jobs_accrue=NULL");
+	} else if ((assoc->max_jobs_accrue != NO_VAL)
+		   && ((int32_t)assoc->max_jobs_accrue >= 0)) {
+		xstrcat(*cols, ", max_jobs_accrue");
+		xstrfmtcat(*vals, ", %u", assoc->max_jobs_accrue);
+		xstrfmtcat(*extra, ", max_jobs_accrue=%u",
+			   assoc->max_jobs_accrue);
+	}
+
+	if (assoc->min_prio_thresh == INFINITE) {
+		xstrcat(*cols, ", min_prio_thresh");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", min_prio_thresh=NULL");
+	} else if ((assoc->min_prio_thresh != NO_VAL)
+		   && ((int32_t)assoc->min_prio_thresh >= 0)) {
+		xstrcat(*cols, ", min_prio_thresh");
+		xstrfmtcat(*vals, ", %u", assoc->min_prio_thresh);
+		xstrfmtcat(*extra, ", min_prio_thresh=%u",
+			   assoc->min_prio_thresh);
 	}
 
 	if (assoc->max_submit_jobs == INFINITE) {
@@ -2053,6 +2114,9 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				   "grace_time=DEFAULT, "
 				   "max_jobs_pa=DEFAULT, "
 				   "max_jobs_per_user=DEFAULT, "
+				   "max_jobs_accrue_pa=DEFAULT, "
+				   "max_jobs_accrue_pu=DEFAULT, "
+				   "min_prio_thresh=DEFAULT, "
 				   "max_submit_jobs_pa=DEFAULT, "
 				   "max_submit_jobs_per_user=DEFAULT, "
 				   "max_tres_pa=DEFAULT, "
@@ -2065,7 +2129,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				   "min_tres_pj=DEFAULT, "
 				   "max_wall_duration_per_job=DEFAULT, "
 				   "grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
-				   "grp_tres=DEFAULT, "
+				   "grp_jobs_accrue=DEFAULT, grp_tres=DEFAULT, "
 				   "grp_tres_mins=DEFAULT, "
 				   "grp_tres_run_mins=DEFAULT, "
 				   "grp_wall=DEFAULT, "
@@ -2312,6 +2376,8 @@ just_update:
 	query = xstrdup_printf("update \"%s_%s\" as t1 set "
 			       "mod_time=%ld, deleted=1, def_qos_id=DEFAULT, "
 			       "shares=DEFAULT, max_jobs=DEFAULT, "
+			       "max_jobs_accrue=DEFAULT, "
+			       "min_prio_thresh=DEFAULT, "
 			       "max_submit_jobs=DEFAULT, "
 			       "max_wall_pj=DEFAULT, "
 			       "max_tres_pj=DEFAULT, "
@@ -2319,7 +2385,7 @@ just_update:
 			       "max_tres_mins_pj=DEFAULT, "
 			       "max_tres_run_mins=DEFAULT, "
 			       "grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
-			       "grp_wall=DEFAULT, "
+			       "grp_jobs_accrue=DEFAULT, grp_wall=DEFAULT, "
 			       "grp_tres=DEFAULT, "
 			       "grp_tres_mins=DEFAULT, "
 			       "grp_tres_run_mins=DEFAULT, "

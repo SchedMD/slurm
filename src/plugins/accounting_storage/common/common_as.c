@@ -212,6 +212,10 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 
 		if (assoc->max_jobs == NO_VAL)
 			assoc->max_jobs = INFINITE;
+		if (assoc->max_jobs_accrue == NO_VAL)
+			assoc->max_jobs_accrue = INFINITE;
+		if (assoc->min_prio_thresh == NO_VAL)
+			assoc->min_prio_thresh = INFINITE;
 		if (assoc->max_submit_jobs == NO_VAL)
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)

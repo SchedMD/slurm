@@ -482,6 +482,8 @@ typedef struct job_feature {
  * can be purged after initiation */
 struct job_details {
 	char *acctg_freq;		/* accounting polling interval */
+	time_t accrue_time;             /* Time when we start accruing time for
+					 * priority, */
 	uint32_t argc;			/* count of argv elements */
 	char **argv;			/* arguments for a batch job script */
 	time_t begin_time;		/* start at this time (srun --begin),
@@ -1336,7 +1338,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 extern void job_array_pre_sched(struct job_record *job_ptr);
 
 /* If this is a job array meta-job, clean up after scheduling attempt */
-extern void job_array_post_sched(struct job_record *job_ptr);
+extern struct job_record *job_array_post_sched(struct job_record *job_ptr);
 
 /* Create an exact copy of an existing job record for a job array.
  * IN job_ptr - META job record for a job array, which is to become an

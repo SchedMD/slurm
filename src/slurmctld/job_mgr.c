@@ -2514,6 +2514,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack32(detail_ptr->cpu_freq_max, buffer);
 	pack32(detail_ptr->cpu_freq_gov, buffer);
 	pack_time(detail_ptr->begin_time, buffer);
+	pack_time(detail_ptr->accrue_time, buffer);
 	pack_time(detail_ptr->submit_time, buffer);
 
 	packstr(detail_ptr->req_nodes,  buffer);
@@ -2559,12 +2560,69 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
 	uint8_t share_res, whole_node;
-	time_t begin_time, submit_time;
+	time_t begin_time, accrue_time = 0, submit_time;
 	int i;
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpack32(&min_cpus, buffer);
+		safe_unpack32(&max_cpus, buffer);
+		safe_unpack32(&min_nodes, buffer);
+		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&num_tasks, buffer);
+
+		safe_unpackstr_xmalloc(&acctg_freq, &name_len, buffer);
+		safe_unpack16(&contiguous, buffer);
+		safe_unpack16(&core_spec, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack32(&nice, buffer);
+		safe_unpack16(&ntasks_per_node, buffer);
+		safe_unpack16(&requeue, buffer);
+		safe_unpack32(&task_dist, buffer);
+
+		safe_unpack8(&share_res, buffer);
+		safe_unpack8(&whole_node, buffer);
+
+		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+		safe_unpack16(&cpu_bind_type, buffer);
+		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+		safe_unpack16(&mem_bind_type, buffer);
+		safe_unpack16(&plane_size, buffer);
+
+		safe_unpack8(&open_mode, buffer);
+		safe_unpack8(&overcommit, buffer);
+		safe_unpack8(&prolog_running, buffer);
+
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+		safe_unpack_time(&begin_time, buffer);
+		safe_unpack_time(&accrue_time, buffer);
+		safe_unpack_time(&submit_time, buffer);
+
+		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
+		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
+		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
+		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&err, &name_len, buffer);
+		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&out, &name_len, buffer);
+		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&argv, &argc, buffer);
+		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -2725,6 +2783,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->acctg_freq = acctg_freq;
 	job_ptr->details->argc = argc;
 	job_ptr->details->argv = argv;
+	job_ptr->details->accrue_time = accrue_time;
 	job_ptr->details->begin_time = begin_time;
 	job_ptr->details->contiguous = contiguous;
 	job_ptr->details->core_spec = core_spec;
@@ -9785,7 +9844,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	      uint16_t protocol_version, uid_t uid)
 {
 	struct job_details *detail_ptr;
-	time_t begin_time = 0, start_time = 0, end_time = 0;
+	time_t accrue_time = 0, begin_time = 0, start_time = 0, end_time = 0;
 	uint32_t time_limit;
 	char *nodelist = NULL;
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
@@ -9842,12 +9901,15 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 			pack_time(dump_job_ptr->details->submit_time, buffer);
 			/* Earliest possible begin time */
 			begin_time = dump_job_ptr->details->begin_time;
+			/* When we started accruing time for priority */
+			accrue_time = dump_job_ptr->details->accrue_time;
 		} else {   /* Some job details may be purged after completion */
 			pack32(NICE_OFFSET, buffer);	/* Best guess */
 			pack_time((time_t) 0, buffer);
 		}
 
 		pack_time(begin_time, buffer);
+		pack_time(accrue_time, buffer);
 
 		if (IS_JOB_STARTED(dump_job_ptr)) {
 			/* Report actual start time, in past */
@@ -12247,7 +12309,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_specs->time_limit = orig_time_limit;
 
 		/*
-		 * Since we are succeful to this point remove the job from the
+		 * Since we are successful to this point remove the job from the
 		 * old qos/assoc's
 		 */
 		acct_policy_remove_job_submit(job_ptr);
@@ -14878,6 +14940,10 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 		if (now == job_ptr->details->submit_time)
 			now++;
 		job_ptr->details->submit_time = now;
+
+		/* clear the accrue flag */
+		job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
+		job_ptr->details->accrue_time = 0;
 	}
 
 	/*
@@ -17876,13 +17942,13 @@ extern void job_array_pre_sched(struct job_record *job_ptr)
 }
 
 /* If this is a job array meta-job, clean up after scheduling attempt */
-extern void job_array_post_sched(struct job_record *job_ptr)
+extern struct job_record *job_array_post_sched(struct job_record *job_ptr)
 {
-	struct job_record *new_job_ptr;
+	struct job_record *new_job_ptr = NULL;
 	char jobid_buf[32];
 
 	if (!job_ptr->array_recs || !job_ptr->array_recs->task_id_bitmap)
-		return;
+		return job_ptr;
 
 	if (job_ptr->array_recs->task_cnt <= 1) {
 		/* Preserve array_recs for min/max exit codes for job array */
@@ -17914,6 +17980,7 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 					job_ptr->array_task_id)) {
 			_add_job_array_hash(job_ptr);
 		}
+		new_job_ptr = job_ptr;
 	} else {
 		new_job_ptr = job_array_split(job_ptr);
 		if (new_job_ptr) {
@@ -17926,6 +17993,8 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		}
 	}
+
+	return new_job_ptr;
 }
 
 /* _kill_dependent()
