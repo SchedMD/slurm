@@ -340,7 +340,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 		slurm_addto_char_list(format_list,
 				      "Account,ParentName");
 	slurm_addto_char_list(format_list,
-			      "Share,GrpTRESM,GrpTRESR,GrpTRES,GrpJ,GrpJobA,"
+			      "Share,GrpTRESM,GrpTRESR,GrpTRES,GrpJ,GrpJobsA,"
 			      "GrpMEM,GrpN,GrpS,GrpW,MaxTRESM,MaxTRES,"
 			      "MaxTRESPerN,MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
 
