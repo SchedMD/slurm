@@ -206,7 +206,7 @@ static void	_job_state_delete(void *gres_data);
 static void *	_job_state_dup(void *gres_data);
 static void *	_job_state_dup2(void *gres_data, int node_index);
 static void	_job_state_log(void *gres_data, uint32_t job_id,
-			       char *gres_name, uint32_t plugin_id);
+			       uint32_t plugin_id);
 static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *core_bitmap,
 			  int core_start_bit, int core_end_bit, bool *topo_set,
@@ -2921,6 +2921,7 @@ static void _job_state_delete(void *gres_data)
 	xfree(gres_ptr->gres_cnt_node_alloc);
 	xfree(gres_ptr->gres_bit_step_alloc);
 	xfree(gres_ptr->gres_cnt_step_alloc);
+	xfree(gres_ptr->gres_name);
 	xfree(gres_ptr->type_name);
 	xfree(gres_ptr);
 }
@@ -3169,6 +3170,8 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 		job_gres_data = gres_ptr->gres_data;
 	} else {
 		job_gres_data = xmalloc(sizeof(gres_job_state_t));
+		job_gres_data->gres_name =
+			xstrdup(gres_context[context_inx].gres_name);
 		job_gres_data->type_id = _build_id(type);
 		job_gres_data->type_name = type;
 		type = NULL;	/* String moved above */
@@ -3182,8 +3185,10 @@ fini:	xfree(name);
 	xfree(type);
 	if (my_rc != SLURM_SUCCESS) {
 		prev_save_ptr = NULL;
-		if (my_rc == ESLURM_INVALID_GRES)
-			info("Invalid GRES job specification %s", in_val);
+		if (my_rc == ESLURM_INVALID_GRES) {
+			info("%s: Invalid GRES job specification %s", __func__,
+			     in_val);
+		}
 		*rc = my_rc;
 	}
 	*save_ptr = prev_save_ptr;
@@ -3395,6 +3400,7 @@ static void *_job_state_dup(void *gres_data)
 
 	new_gres_ptr = xmalloc(sizeof(gres_job_state_t));
 	new_gres_ptr->cpus_per_gres	= gres_ptr->cpus_per_gres;
+	new_gres_ptr->gres_name		= xstrdup(gres_ptr->gres_name);
 	new_gres_ptr->gres_per_job	= gres_ptr->gres_per_job;
 	new_gres_ptr->gres_per_node	= gres_ptr->gres_per_node;
 	new_gres_ptr->gres_per_socket	= gres_ptr->gres_per_socket;
@@ -3436,6 +3442,7 @@ static void *_job_state_dup2(void *gres_data, int node_index)
 
 	new_gres_ptr = xmalloc(sizeof(gres_job_state_t));
 	new_gres_ptr->cpus_per_gres	= gres_ptr->cpus_per_gres;
+	new_gres_ptr->gres_name		= xstrdup(gres_ptr->gres_name);
 	new_gres_ptr->gres_per_job	= gres_ptr->gres_per_job;
 	new_gres_ptr->gres_per_node	= gres_ptr->gres_per_node;
 	new_gres_ptr->gres_per_socket	= gres_ptr->gres_per_socket;
@@ -3803,8 +3810,8 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 				}
 			}
 		} else {
-			error("gres_plugin_job_state_unpack: protocol_version"
-			      " %hu not supported", protocol_version);
+			error("%s: protocol_version %hu not supported",
+			      __func__, protocol_version);
 			goto unpack_error;
 		}
 
@@ -3813,14 +3820,16 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 				break;
 		}
 		if (i >= gres_context_cnt) {
-			/* A likely sign that GresPlugins has changed.
-			 * Not a fatal error, skip over the data. */
-			error("gres_plugin_job_state_unpack: no plugin "
-			      "configured to unpack data type %u from job %u",
-			      plugin_id, job_id);
+			/*
+			 * A likely sign that GresPlugins has changed.
+			 * Not a fatal error, skip over the data.
+			 */
+			error("%s: no plugin configured to unpack data type %u from job %u",
+			      __func__, plugin_id, job_id);
 			_job_state_delete(gres_job_ptr);
 			continue;
 		}
+		gres_job_ptr->gres_name = xstrdup(gres_context[i].gres_name);
 		gres_ptr = xmalloc(sizeof(gres_state_t));
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
 		gres_ptr->gres_data = gres_job_ptr;
@@ -5435,6 +5444,8 @@ step2:	if (!from_job_gres_list)
 			gres_job_ptr2 = xmalloc(sizeof(gres_job_state_t));
 			gres_ptr2->plugin_id = gres_ptr->plugin_id;
 			gres_ptr2->gres_data = gres_job_ptr2;
+			gres_job_ptr2->gres_name =
+					xstrdup(gres_job_ptr->gres_name);
 			gres_job_ptr2->cpus_per_gres =
 					gres_job_ptr->cpus_per_gres;
 			gres_job_ptr2->gres_per_job =
@@ -5545,8 +5556,7 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-static void _job_state_log(void *gres_data, uint32_t job_id, char *gres_name,
-			   uint32_t plugin_id)
+static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 {
 	gres_job_state_t *gres_ptr;
 	char tmp_str[128];
@@ -5555,8 +5565,8 @@ static void _job_state_log(void *gres_data, uint32_t job_id, char *gres_name,
 	xassert(gres_data);
 	gres_ptr = (gres_job_state_t *) gres_data;
 	info("gres:%s(%u) type:%s(%u) job:%u state",
-	      gres_name, plugin_id, gres_ptr->type_name, gres_ptr->type_id,
-	      job_id);
+	      gres_ptr->gres_name, plugin_id, gres_ptr->type_name,
+	      gres_ptr->type_id, job_id);
 	if (gres_ptr->cpus_per_gres)
 		info("  cpus_per_gres:%u", gres_ptr->cpus_per_gres);
 	if (gres_ptr->gres_per_job)
@@ -5649,7 +5659,6 @@ extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
  */
 extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 {
-	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 
@@ -5661,15 +5670,8 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			_job_state_log(gres_ptr->gres_data, job_id,
-				       gres_context[i].gres_name,
-				       gres_ptr->plugin_id);
-			break;
-		}
+		_job_state_log(gres_ptr->gres_data, job_id,
+			       gres_ptr->plugin_id);
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);

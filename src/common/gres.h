@@ -135,6 +135,7 @@ typedef struct gres_node_state {
 
 /* Gres job state as used by slurmctld daemon */
 typedef struct gres_job_state {
+	char *gres_name;		/* GRES name (e.g. "gpu") */
 	uint32_t type_id;		/* GRES type (e.g. model ID) */
 	char *type_name;		/* GRES type (e.g. model name) */
 

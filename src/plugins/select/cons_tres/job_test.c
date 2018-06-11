@@ -3127,7 +3127,6 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t **core_map,
 //	if (s_p_n == NO_VAL) {
 //FIXME: RESTRUCTURE LOGIC BELOW
 	if (job_ptr->gres_list) {
-//FIXME: Modify gres_plugin_job_test2() to set gres_name field
 		sock_gres_list = gres_plugin_job_test2(job_ptr->gres_list,
 					gres_list, test_only,
 					core_map[node_i],

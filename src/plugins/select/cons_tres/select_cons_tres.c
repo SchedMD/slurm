@@ -1247,13 +1247,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 
 	if ((select_debug_flags & DEBUG_FLAG_CPU_BIND) ||
 	    (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
-//FIXME: Expand log_job_resources() and data structures for TRES, lower priority work
 		if (job_ptr->job_resrcs) {
 			if (rc != SLURM_SUCCESS) {
 				info("cons_tres: %s: error:%s", __func__,
 				     slurm_strerror(rc));
 			}
 			log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
+			gres_plugin_job_state_log(job_ptr->gres_list,
+						  job_ptr->job_id);
 		} else {
 			info("cons_tres: %s: no job_resources info for job %u rc=%d",
 			     __func__, job_ptr->job_id, rc);
@@ -1302,7 +1303,7 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-//FIXME: Add code here, lower priority work
+//FIXME: Job resize logic, lower priority work
 	return SLURM_SUCCESS;
 }
 
@@ -1314,7 +1315,7 @@ extern bool select_p_job_expand_allow(void)
 extern int select_p_job_expand(struct job_record *from_job_ptr,
 			       struct job_record *to_job_ptr)
 {
-//FIXME: Add code here, lower priority work
+//FIXME: Job resize logic, lower priority work
 	return SLURM_SUCCESS;
 }
 
@@ -1419,7 +1420,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					  uint32_t node_count,
 					  bitstr_t **avail_nodes)
 {
-//FIXME: Add code here?, lower priority work
+//FIXME: Unused by select/cons_res, but perhaps desired here, lower priority work
 	return NULL;
 }
 
