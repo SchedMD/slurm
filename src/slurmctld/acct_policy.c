@@ -4261,6 +4261,10 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 	if (details_ptr->accrue_time) {
 		if (!(job_ptr->bit_flags & JOB_ACCRUE_OVER) &&
 		    !IS_JOB_PENDING(job_ptr)) {
+
+			/* We only want to handle this once */
+			job_ptr->bit_flags |= JOB_ACCRUE_OVER;
+
 			if (qos_ptr_1) {
 				if (qos_ptr_1->usage->accrue_cnt)
 					qos_ptr_1->usage->accrue_cnt--;

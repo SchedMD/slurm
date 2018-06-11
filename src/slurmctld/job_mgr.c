@@ -14932,7 +14932,6 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 						  SLURM_CRED_OPT_EXPIRY_WINDOW,
 						  &cred_lifetime);
 			job_ptr->details->begin_time = now + cred_lifetime + 1;
-			job_ptr->details->accrue_time = 0;
 		}
 
 		/* Since this could happen on a launch we need to make sure the
@@ -14941,6 +14940,10 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 		if (now == job_ptr->details->submit_time)
 			now++;
 		job_ptr->details->submit_time = now;
+
+		/* clear the accrue flag */
+		job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
+		job_ptr->details->accrue_time = 0;
 	}
 
 	/*
