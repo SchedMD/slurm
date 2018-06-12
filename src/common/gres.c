@@ -4446,6 +4446,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		    !node_gres_ptr->topo_core_bitmap[i]) {
 			/* Not constrained by core */
 			sock_gres->cnt_any_sock += avail_gres;
+			total_gres += avail_gres;
 			match = true;
 			continue;
 		}
@@ -4482,7 +4483,8 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 	/* Process per-GRES limits */
 	if (match && job_gres_ptr->gres_per_socket) {
 		for (s = 0; s < sockets; s++) {
-			if (sock_gres->cnt_by_sock[s] <
+			if ((sock_gres->cnt_any_sock +
+			     sock_gres->cnt_by_sock[s]) <
 			    job_gres_ptr->gres_per_socket) {
 				total_gres -= sock_gres->cnt_by_sock[s];
 				sock_gres->cnt_by_sock[s] = 0;
@@ -4496,7 +4498,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 	}
 	if (match) {
 		if (job_gres_ptr->gres_per_node)
-			min_gres = job_gres_ptr-> gres_per_node;
+			min_gres = job_gres_ptr->gres_per_node;
 		if (job_gres_ptr->gres_per_task)
 			min_gres = MAX(min_gres, job_gres_ptr->gres_per_task);
 		if (total_gres < min_gres)

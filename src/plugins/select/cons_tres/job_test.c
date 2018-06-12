@@ -2616,10 +2616,10 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 #endif
 
 /*
- * _allocate_sc - Given the job requirements, determine which cores/sockets
+ * _allocate_sc - Given the job requirements, determine which resources
  *                from the given node can be allocated (if any) to this
- *                job. Returns the number of cpus that can be used by
- *                this node AND a bitmap of the selected cores.
+ *                job. Returns structure identifying the usable resources and
+ *                a bitmap of the selected cores.
  *
  * IN job_ptr       - pointer to job requirements
  * IN/OUT core_map  - core_bitmap of available cores on this node
