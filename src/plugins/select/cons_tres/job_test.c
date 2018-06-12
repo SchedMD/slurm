@@ -3066,6 +3066,58 @@ static void _log_node_res(node_res_t *node_res, char *node_name)
 }
 
 /*
+ * Get configured DefCpuPerGPU information from a list
+ * (either global or per partition list)
+ * Returns 0 if not configuration parameter not set
+ */
+extern uint64_t get_def_cpu_per_gpu(List job_defaults_list)
+{
+	uint64_t cpu_per_gpu = 0;
+	ListIterator iter;
+	job_defaults_t *job_defaults;
+
+	if (!job_defaults_list)
+		return cpu_per_gpu;
+
+	iter = list_iterator_create(job_defaults_list);
+	while ((job_defaults = (job_defaults_t *) list_next(iter))) {
+		if (job_defaults->type == JOB_DEF_CPU_PER_GPU) {
+			cpu_per_gpu = job_defaults->value;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return cpu_per_gpu;
+}
+
+/*
+ * Get configured DefMemPerGPU information from a list
+ * (either global or per partition list)
+ * Returns 0 if not configuration parameter not set
+ */
+extern uint64_t get_def_mem_per_gpu(List job_defaults_list)
+{
+	uint64_t mem_per_gpu = 0;
+	ListIterator iter;
+	job_defaults_t *job_defaults;
+
+	if (!job_defaults_list)
+		return mem_per_gpu;
+
+	iter = list_iterator_create(job_defaults_list);
+	while ((job_defaults = (job_defaults_t *) list_next(iter))) {
+		if (job_defaults->type == JOB_DEF_MEM_PER_GPU) {
+			mem_per_gpu = job_defaults->value;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return mem_per_gpu;
+}
+
+/*
  * _can_job_run_on_node - Given the job requirements, determine which
  *                        resources from the given node (if any) can be
  *                        allocated to this job. Returns a structure identifying
@@ -3165,6 +3217,23 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	cpus -= avail_res->spec_threads;
 	_avail_res_log(avail_res, node_ptr->name);
 	_avail_res_del(avail_res);
+
+//FIXME: Identify GRES related default configuration parameters
+#if _DEBUG
+uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0;
+if (job_ptr->part_ptr && job_ptr->part_ptr->job_defaults_list) {
+  def_cpu_per_gpu = get_def_cpu_per_gpu(job_ptr->part_ptr->job_defaults_list);
+  def_mem_per_gpu = get_def_mem_per_gpu(job_ptr->part_ptr->job_defaults_list);
+  info("PART:%s DefCPUPerGPU:%"PRIu64" MemPerGPU:%"PRIu64,
+       job_ptr->part_ptr->name, def_cpu_per_gpu, def_mem_per_gpu);
+}
+if (slurmctld_conf.job_defaults_list) {
+  def_cpu_per_gpu = get_def_cpu_per_gpu(slurmctld_conf.job_defaults_list);
+  def_mem_per_gpu = get_def_mem_per_gpu(slurmctld_conf.job_defaults_list);
+  info("GLOBAL DefCPUPerGPU:%"PRIu64" MemPerGPU:%"PRIu64, def_cpu_per_gpu,
+       def_mem_per_gpu);
+}
+#endif
 
 	if (cr_type & CR_MEMORY) {
 		/*

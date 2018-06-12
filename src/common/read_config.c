@@ -1420,7 +1420,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (s_p_get_uint64(&def_mem_per_gpu, "DefMemPerGPU", tbl) ||
 		    s_p_get_uint64(&def_mem_per_gpu, "DefMemPerGPU", dflt)) {
 			job_defaults = xmalloc(sizeof(job_defaults_t));
-			job_defaults->type  = JOB_DEF_CPU_PER_GPU;
+			job_defaults->type  = JOB_DEF_MEM_PER_GPU;
 			job_defaults->value = def_mem_per_gpu;
 			if (!p->job_defaults_list) {
 				p->job_defaults_list =

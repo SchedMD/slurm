@@ -104,6 +104,20 @@ extern void core_array_or(bitstr_t **core_array1, bitstr_t **core_array2);
 /* Free an array of bitmaps, one per node */
 extern void free_core_array(bitstr_t ***core_array);
 
+/*
+ * Get configured DefCpuPerGPU information from a list
+ * (either global or per partition list)
+ * Returns 0 if not configuration parameter not set
+ */
+extern uint64_t get_def_cpu_per_gpu(List job_defaults_list);
+
+/*
+ * Get configured DefMemPerGPU information from a list
+ * (either global or per partition list)
+ * Returns 0 if not configuration parameter not set
+ */
+extern uint64_t get_def_mem_per_gpu(List job_defaults_list);
+
 /* Return TRUE if identified job is preemptable */
 extern bool is_preemptable(struct job_record *job_ptr,
 			   List preemptee_candidates);
