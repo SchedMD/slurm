@@ -3093,7 +3093,7 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 {
 	uint16_t cpus = 0;
 	uint64_t avail_mem, req_mem;
-	int core_cnt, cpu_alloc_size, i;
+	int cpu_alloc_size, i;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
 	bitstr_t *part_core_map_ptr = NULL;
@@ -3118,12 +3118,15 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		gres_list = node_usage[node_i].gres_list;
 	else
 		gres_list = node_ptr->gres_list;
-	core_cnt = select_node_record[node_i].tot_cores;
 
-	gres_plugin_job_core_filter(job_ptr->gres_list, gres_list, test_only,
-				    core_map[node_i], 0, core_cnt - 1,
-				    node_ptr->name);
 	if (job_ptr->gres_list) {
+		/* Identify available GRES and usable cores */
+		if (!core_map[node_i]) {
+			core_map[node_i] = bit_alloc(
+					select_node_record[node_i].sockets *
+					select_node_record[node_i].cores);
+			bit_set_all(core_map[node_i]);
+		}
 		sock_gres_list = gres_plugin_job_test2(job_ptr->gres_list,
 					gres_list, test_only,
 					core_map[node_i],
@@ -3135,6 +3138,7 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	}
 
 	if (cr_type & CR_CORE) {
+//FIXME: Consider GPUs here?
 		/* cpu_alloc_size = CPUs per core */
 		cpu_alloc_size = select_node_record[node_i].vpus;
 		avail_res = _allocate_cores(job_ptr, core_map[node_i],

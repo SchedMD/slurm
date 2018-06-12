@@ -4486,6 +4486,11 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 			    job_gres_ptr->gres_per_socket) {
 				total_gres -= sock_gres->cnt_by_sock[s];
 				sock_gres->cnt_by_sock[s] = 0;
+				if (core_bitmap) {
+					i = s * cores_per_sock;
+					bit_nclear(core_bitmap, i,
+						   i + cores_per_sock - 1);
+				}
 			}
 		}
 	}
@@ -4559,6 +4564,7 @@ static sock_gres_t *_build_sock_gres_by_type(gres_job_state_t *job_gres_ptr,
 		sock_gres->type_name = xstrdup(job_gres_ptr->type_name);
 	} else
 		xfree(sock_gres);
+
 	return sock_gres;
 }
 
@@ -4605,15 +4611,15 @@ static sock_gres_t *_build_sock_gres_basic(gres_job_state_t *job_gres_ptr,
 
 /*
  * Determine how many cores on each socket of a node can be used by this job
- * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
- * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
- * IN use_total_gres - if set then consider all gres resources as available,
- *		       and none are commited to running jobs
- * IN core_bitmap    - Identification of available cores (NULL if no restriction)
- * IN sockets        - Count of sockets on the node
- * IN cores_per_sock - Count of cores per socket on this node
- * IN job_id         - job's ID (for logging)
- * IN node_name      - name of the node (for logging)
+ * IN job_gres_list   - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_gres_list  - node's gres_list built by gres_plugin_node_config_validate()
+ * IN use_total_gres  - if set then consider all gres resources as available,
+ *		        and none are commited to running jobs
+ * IN/OUT core_bitmap - Identification of available cores on this node
+ * IN sockets         - Count of sockets on the node
+ * IN cores_per_sock  - Count of cores per socket on this node
+ * IN job_id          - job's ID (for logging)
+ * IN node_name       - name of the node (for logging)
  * RET: List of sock_gres_t entries identifying what resources are available on
  *	each core. Returns NULL if none available. Call FREE_NULL_LIST() to
  *	release memory.
@@ -4672,6 +4678,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 		}
 		if (!sock_gres) {
 			/* node lack available resources required by the job */
+			bit_clear_all(core_bitmap);
 			FREE_NULL_LIST(sock_gres_list);
 			break;
 		}
