@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     "cpuset.mems" then fall back to the file "mems".
  -- Fix ipmi profile debug uninitialized variable.
  -- Improve detection of Lua package on older RHEL distributions.
+ -- PMIx: fixed the direct connect inline msg sending.
 
 * Changes in Slurm 17.11.7
 ==========================
