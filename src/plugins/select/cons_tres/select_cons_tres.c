@@ -1516,6 +1516,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	struct node_record *node_ptr = NULL;
 	int i, n;
 	uint32_t alloc_cpus, alloc_cores, node_cores, node_cpus, node_threads;
+	uint32_t node_boards, node_sockets, total_node_cores;
 	bitstr_t **alloc_core_bitmap = NULL;
 	List gres_list;
 
@@ -1569,14 +1570,19 @@ extern int select_p_select_nodeinfo_set_all(void)
 		}
 
 		if (slurmctld_conf.fast_schedule) {
+			node_boards  = node_ptr->config_ptr->boards;
+			node_sockets = node_ptr->config_ptr->sockets;
 			node_cores   = node_ptr->config_ptr->cores;
 			node_cpus    = node_ptr->config_ptr->cpus;
 			node_threads = node_ptr->config_ptr->threads;
 		} else {
+			node_boards  = node_ptr->boards;
+			node_sockets = node_ptr->sockets;
 			node_cores   = node_ptr->cores;
 			node_cpus    = node_ptr->cpus;
 			node_threads = node_ptr->threads;
 		}
+		total_node_cores = node_boards * node_sockets * node_cores;
 
 		if (alloc_core_bitmap && alloc_core_bitmap[n])
 			alloc_cores = bit_set_count(alloc_core_bitmap[n]);
@@ -1587,8 +1593,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 		 * Administrator could resume suspended jobs and oversubscribe
 		 * cores, avoid reporting more cores in use than configured
 		 */
-		if (alloc_cores > node_cores)
-			alloc_cpus = node_cores;
+		if (alloc_cores > total_node_cores)
+			alloc_cpus = total_node_cores;
 		else
 			alloc_cpus = alloc_cores;
 
@@ -1596,7 +1602,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		 * The minimum allocatable unit may a core, so scale by thread
 		 * count up to the proper CPU count as needed
 		 */
-		if (node_cores < node_cpus)
+		if (total_node_cores < node_cpus)
 			alloc_cpus *= node_threads;
 		nodeinfo->alloc_cpus = alloc_cpus;
 

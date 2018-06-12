@@ -63,7 +63,7 @@ struct config_record {
 	char *cpu_spec_list;	/* arbitrary list of specialized cpus */
 	uint16_t boards;	/* count of boards configured */
 	uint16_t sockets;	/* number of sockets per node */
-	uint16_t cores;		/* number of cores per CPU */
+	uint16_t cores;		/* number of cores per socket */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint32_t cpu_bind;	/* default CPU binding type */
 	uint16_t threads;	/* number of threads per core */
@@ -102,7 +102,7 @@ struct node_record {
 	uint16_t cpus;			/* count of processors on the node */
 	uint16_t boards; 		/* count of boards configured */
 	uint16_t sockets;		/* number of sockets per node */
-	uint16_t cores;			/* number of cores per CPU */
+	uint16_t cores;			/* number of cores per socket */
 	char *cpu_spec_list;		/* node's specialized cpus */
 	uint16_t core_spec_cnt;		/* number of specialized cores on node*/
 	uint16_t threads;		/* number of threads per core */
