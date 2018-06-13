@@ -3895,7 +3895,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	if (((!job_ptr->job_resrcs || !job_ptr->job_resrcs->nodes)) &&
-	    job_ptr->details && (job_ptr->details->min_nodes != 0)) {
+	    (job_ptr->details->min_nodes != 0)) {
 		error("%s: %s lacks node allocation", __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return SLURM_ERROR;
