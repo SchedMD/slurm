@@ -810,7 +810,6 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		FREE_NULL_BITMAP(msg->array_bitmap);
 		xfree(msg->array_inx);
 		xfree(msg->batch_features);
-		xfree(msg->blrtsimage);
 		xfree(msg->burst_buffer);
 		xfree(msg->ckpt_dir);
 		xfree(msg->clusters);
@@ -829,18 +828,15 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->cluster_features);
 		xfree(msg->job_id_str);
 		xfree(msg->licenses);
-		xfree(msg->linuximage);
 		xfree(msg->mail_user);
 		xfree(msg->mcs_label);
 		xfree(msg->mem_bind);
 		xfree(msg->mem_per_tres);
-		xfree(msg->mloaderimage);
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->origin_cluster);
 		xfree(msg->partition);
 		xfree(msg->qos);
-		xfree(msg->ramdiskimage);
 		xfree(msg->req_nodes);
 		xfree(msg->reservation);
 		xfree(msg->resp_host);

@@ -8821,48 +8821,11 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		} else {
 			dynamic_plugin_data_t *select_jobinfo;
 			select_jobinfo = select_g_select_jobinfo_alloc();
-			if (job_desc_ptr->geometry[0] != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_GEOMETRY,
-					job_desc_ptr->geometry);
-
-			if (job_desc_ptr->conn_type[0] != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_CONN_TYPE,
-					&(job_desc_ptr->conn_type));
 			if (job_desc_ptr->reboot != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_REBOOT,
 					&(job_desc_ptr->reboot));
-			if (job_desc_ptr->rotate != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_ROTATE,
-					&(job_desc_ptr->rotate));
-			if (job_desc_ptr->blrtsimage) {
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_BLRTS_IMAGE,
-					job_desc_ptr->blrtsimage);
-			}
-			if (job_desc_ptr->linuximage)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_LINUX_IMAGE,
-					job_desc_ptr->linuximage);
-			if (job_desc_ptr->mloaderimage)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_MLOADER_IMAGE,
-					job_desc_ptr->mloaderimage);
-			if (job_desc_ptr->ramdiskimage)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_RAMDISK_IMAGE,
-					job_desc_ptr->ramdiskimage);
 			select_g_select_jobinfo_pack(select_jobinfo, buffer,
 						     protocol_version);
 			select_g_select_jobinfo_free(select_jobinfo);
@@ -9002,48 +8965,11 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		} else {
 			dynamic_plugin_data_t *select_jobinfo;
 			select_jobinfo = select_g_select_jobinfo_alloc();
-			if (job_desc_ptr->geometry[0] != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_GEOMETRY,
-					job_desc_ptr->geometry);
-
-			if (job_desc_ptr->conn_type[0] != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_CONN_TYPE,
-					&(job_desc_ptr->conn_type));
 			if (job_desc_ptr->reboot != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_REBOOT,
 					&(job_desc_ptr->reboot));
-			if (job_desc_ptr->rotate != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_ROTATE,
-					&(job_desc_ptr->rotate));
-			if (job_desc_ptr->blrtsimage) {
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_BLRTS_IMAGE,
-					job_desc_ptr->blrtsimage);
-			}
-			if (job_desc_ptr->linuximage)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_LINUX_IMAGE,
-					job_desc_ptr->linuximage);
-			if (job_desc_ptr->mloaderimage)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_MLOADER_IMAGE,
-					job_desc_ptr->mloaderimage);
-			if (job_desc_ptr->ramdiskimage)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_RAMDISK_IMAGE,
-					job_desc_ptr->ramdiskimage);
 			select_g_select_jobinfo_pack(select_jobinfo, buffer,
 						     protocol_version);
 			select_g_select_jobinfo_free(select_jobinfo);
@@ -9171,48 +9097,11 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		} else {
 			dynamic_plugin_data_t *select_jobinfo;
 			select_jobinfo = select_g_select_jobinfo_alloc();
-			if (job_desc_ptr->geometry[0] != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_GEOMETRY,
-					job_desc_ptr->geometry);
-
-			if (job_desc_ptr->conn_type[0] != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_CONN_TYPE,
-					&(job_desc_ptr->conn_type));
 			if (job_desc_ptr->reboot != NO_VAL16)
 				select_g_select_jobinfo_set(
 					select_jobinfo,
 					SELECT_JOBDATA_REBOOT,
 					&(job_desc_ptr->reboot));
-			if (job_desc_ptr->rotate != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_ROTATE,
-					&(job_desc_ptr->rotate));
-			if (job_desc_ptr->blrtsimage) {
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_BLRTS_IMAGE,
-					job_desc_ptr->blrtsimage);
-			}
-			if (job_desc_ptr->linuximage)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_LINUX_IMAGE,
-					job_desc_ptr->linuximage);
-			if (job_desc_ptr->mloaderimage)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_MLOADER_IMAGE,
-					job_desc_ptr->mloaderimage);
-			if (job_desc_ptr->ramdiskimage)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_RAMDISK_IMAGE,
-					job_desc_ptr->ramdiskimage);
 			select_g_select_jobinfo_pack(select_jobinfo, buffer,
 						     protocol_version);
 			select_g_select_jobinfo_free(select_jobinfo);
@@ -9402,16 +9291,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 			    buffer, protocol_version))
 			goto unpack_error;
 
-		/* These are set so we don't confuse them later for what is
-		 * set in the select_jobinfo structure.
-		 */
-		job_desc_ptr->geometry[0] = NO_VAL16;
-		job_desc_ptr->conn_type[0] = NO_VAL16;
-		job_desc_ptr->rotate = NO_VAL16;
-		job_desc_ptr->blrtsimage = NULL;
-		job_desc_ptr->linuximage = NULL;
-		job_desc_ptr->mloaderimage = NULL;
-		job_desc_ptr->ramdiskimage = NULL;
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
@@ -9596,16 +9475,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 			    buffer, protocol_version))
 			goto unpack_error;
 
-		/* These are set so we don't confuse them later for what is
-		 * set in the select_jobinfo structure.
-		 */
-		job_desc_ptr->geometry[0] = NO_VAL16;
-		job_desc_ptr->conn_type[0] = NO_VAL16;
-		job_desc_ptr->rotate = NO_VAL16;
-		job_desc_ptr->blrtsimage = NULL;
-		job_desc_ptr->linuximage = NULL;
-		job_desc_ptr->mloaderimage = NULL;
-		job_desc_ptr->ramdiskimage = NULL;
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
@@ -9769,16 +9638,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 			    buffer, protocol_version))
 			goto unpack_error;
 
-		/* These are set so we don't confuse them later for what is
-		 * set in the select_jobinfo structure.
-		 */
-		job_desc_ptr->geometry[0] = NO_VAL16;
-		job_desc_ptr->conn_type[0] = NO_VAL16;
-		job_desc_ptr->rotate = NO_VAL16;
-		job_desc_ptr->blrtsimage = NULL;
-		job_desc_ptr->linuximage = NULL;
-		job_desc_ptr->mloaderimage = NULL;
-		job_desc_ptr->ramdiskimage = NULL;
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);

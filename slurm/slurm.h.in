@@ -1575,22 +1575,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t pn_min_tmp_disk;/* minimum tmp disk per node,
 				  * default=0 */
 
-/*
- * The following parameters are only meaningful on a Blue Gene
- * system at present. Some will be of value on other system. Don't remove these
- * they are needed for LCRM and others that can't talk to the opaque data type
- * select_jobinfo.
- */
-	uint16_t geometry[HIGHEST_DIMENSIONS];	/* node count in various
-						 * dimensions, e.g. X, Y, and Z */
-	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* see enum connection_type */
-	uint16_t rotate;	/* permit geometry rotation if set */
-	char *blrtsimage;       /* BlrtsImage for block */
-	char *linuximage;       /* LinuxImage for block */
-	char *mloaderimage;     /* MloaderImage for block */
-	char *ramdiskimage;     /* RamDiskImage for block */
-
-/* End of Blue Gene specific values */
 	uint32_t req_switch;    /* Minimum number of switches */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
 					   * Slurm internal use only */

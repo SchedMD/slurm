@@ -55,7 +55,6 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
 	memset(job_desc_msg, 0, sizeof(job_desc_msg_t));
 	job_desc_msg->alloc_sid		= NO_VAL;
-	job_desc_msg->conn_type[0]	= NO_VAL16;
 	job_desc_msg->contiguous	= NO_VAL16;
 	job_desc_msg->core_spec		= NO_VAL16;
 	job_desc_msg->cores_per_socket	= NO_VAL16;
@@ -65,7 +64,6 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->cpu_freq_gov	= NO_VAL;
 	job_desc_msg->cpus_per_task	= NO_VAL16;
 	job_desc_msg->delay_boot	= NO_VAL;
-	job_desc_msg->geometry[0]       = NO_VAL16;
 	job_desc_msg->group_id		= NO_VAL;
 	job_desc_msg->job_id		= NO_VAL;
 	job_desc_msg->kill_on_node_fail = NO_VAL16;
@@ -88,7 +86,6 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->reboot		= NO_VAL16;
 	job_desc_msg->requeue		= NO_VAL16;
 	job_desc_msg->req_switch	= NO_VAL;
-	job_desc_msg->rotate		= NO_VAL16;
 	job_desc_msg->shared		= NO_VAL16;
 	job_desc_msg->sockets_per_node	= NO_VAL16;
 	job_desc_msg->task_dist		= NO_VAL;
