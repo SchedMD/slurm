@@ -1065,8 +1065,7 @@ extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec)
 			 * work down to lower sockets
 			 */
 			rem_core_spec = core_spec;
-			sock_per_node = select_node_record[i].boards *
-					select_node_record[i].sockets;
+			sock_per_node = select_node_record[i].tot_sockets;
 			for (s = sock_per_node - 1;
 			     (s >= 0) && (rem_core_spec > 0); s--) {
 				for (c = select_node_record[i].cores - 1;
@@ -1778,7 +1777,7 @@ alloc_job:
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
 			sock_cnt = 0;
-			for (s = 0; s < select_node_record[i].sockets; s++) {
+			for (s = 0; s < select_node_record[i].tot_sockets; s++){
 				last_s = -1;
 				for (c = 0; c<select_node_record[i].cores; c++){
 					if (bit_test(job_res->core_bitmap, ci)){
@@ -2639,7 +2638,7 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	uint32_t c;
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
 	uint16_t free_core_count = 0, spec_threads = 0;
-	uint16_t i, j, sockets    = select_node_record[node_i].sockets;
+	uint16_t i, j, sockets    = select_node_record[node_i].tot_sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
 	uint16_t min_cores = 1, min_sockets = 1, ntasks_per_socket = 0;

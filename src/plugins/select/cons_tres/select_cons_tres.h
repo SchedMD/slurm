@@ -72,6 +72,7 @@ struct node_res_record {
 	uint16_t cores;			/* count of cores per socket configured */
 	uint16_t threads;		/* count of hyperthreads per core */
 	uint16_t tot_cores;		/* total cores per node */
+	uint16_t tot_sockets;		/* total sockets per node */
 	uint16_t vpus;			/* count of virtual processors configure
 					 * this could be the physical threads
 					 * count or could be the core count if
