@@ -90,7 +90,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_PMIX_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_1 = pmix
+@HAVE_PMIX_TRUE@am__append_1 = pmix
 subdir = src/plugins/mpi
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -107,7 +107,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
 	$(top_srcdir)/auxdir/x_ac_blcr.m4 \
-	$(top_srcdir)/auxdir/x_ac_bluegene.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_curl.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
@@ -238,14 +237,10 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BGQ_LOADED = @BGQ_LOADED@
-BG_INCLUDES = @BG_INCLUDES@
-BG_LDFLAGS = @BG_LDFLAGS@
 BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
 BLCR_HOME = @BLCR_HOME@
 BLCR_LDFLAGS = @BLCR_LDFLAGS@
 BLCR_LIBS = @BLCR_LIBS@
-BLUEGENE_LOADED = @BLUEGENE_LOADED@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -385,12 +380,10 @@ PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
-REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
 RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
 RRDTOOL_LIBS = @RRDTOOL_LIBS@
-RUNJOB_LDFLAGS = @RUNJOB_LDFLAGS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -490,10 +483,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@REAL_BGQ_LOADED_FALSE@SUBDIRS = none openmpi pmi2 $(am__append_1)
-
-#on a real BGQ do not compile any mpi plugins
-@REAL_BGQ_LOADED_TRUE@SUBDIRS = none $(am__append_1)
+SUBDIRS = none openmpi pmi2 $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

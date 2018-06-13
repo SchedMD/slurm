@@ -23,12 +23,6 @@ srun_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 
 srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
-if BGQ_LOADED
-# because totalview needs the libraries on load we link in srun
-# and not in the launch plugin.
-srun_LDFLAGS += $(RUNJOB_LDFLAGS)
-endif
-
 force:
 $(srun_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

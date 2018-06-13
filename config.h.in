@@ -39,21 +39,6 @@
 /* Define to 1 if running against an ALPS emulation */
 #undef HAVE_ALPS_EMULATION
 
-/* Define to 1 if emulating or running on Blue Gene system */
-#undef HAVE_BG
-
-/* Define to 1 if emulating or running on Blue Gene/Q system */
-#undef HAVE_BGQ
-
-/* Define to 1 if have Blue Gene files */
-#undef HAVE_BG_FILES
-
-/* Define to 1 if using code where blocks have actions */
-#undef HAVE_BG_GET_ACTION
-
-/* Define to 1 if using code with new iocheck */
-#undef HAVE_BG_NEW_IO_CHECK
-
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 

@@ -28,33 +28,9 @@ AC_CONFIG_HEADERS([slurm/slurm.h])
 
 X_AC_RPATH
 
-dnl This sets the first compiler to be C instead of C++ (which would happen
-dnl if X_AC_BGQ was the first thing called.
+dnl This sets the first compiler to be C instead of C++.
 X_AC_DATABASES
 
-X_AC_BG
-
-dnl This needs to be close to the front to set CFLAGS=-m64, but needs to
-dnl be after something that does a AC_LINK_IFELSE or the compiler configure
-dnl checks for will be C++ instead of C.
-X_AC_BGQ
-
-dnl We need to know if this is a Q system
-AM_CONDITIONAL(BGQ_LOADED, test "x$ac_bgq_loaded" = "xyes")
-AC_SUBST(BGQ_LOADED)
-
-dnl ok now check if We are on a real L or P system, (test if to build srun
-dnl or not.  If we are emulating things we should build it.
-AM_CONDITIONAL(REAL_BGQ_LOADED, test "x$ac_real_bluegene_loaded" = "xyes")
-AC_SUBST(REAL_BGQ_LOADED)
-
-
-dnl ok now check if any bluegene was loaded.
-AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
-AC_SUBST(BLUEGENE_LOADED)
-
-
-dnl
 dnl Check to see if this architecture should use slurm_* prefix function
 dnl aliases for plugins.
 dnl
