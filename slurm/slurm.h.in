@@ -575,7 +575,7 @@ enum node_use_type {
 
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
-	SELECT_PLUGIN_BLUEGENE       = 100, /* Bluegene all variants */
+	/* 100 unused (originally for BlueGene) */
 	SELECT_PLUGIN_CONS_RES       = 101, /* Cons Res on a normal system */
 	SELECT_PLUGIN_LINEAR         = 102, /* Linear on a normal system */
 	/* 103 unused (originally used for BGQ) */
@@ -597,33 +597,16 @@ enum switch_plugin_type {
 };
 
 enum select_jobdata_type {
-	SELECT_JOBDATA_GEOMETRY,/* data-> uint16_t geometry[SYSTEM_DIMENSIONS] */
-	SELECT_JOBDATA_ROTATE,	/* data-> uint16_t rotate */
-	SELECT_JOBDATA_CONN_TYPE,	/* data-> uint16_t connection_type */
-	SELECT_JOBDATA_BLOCK_ID,	/* data-> char *bg_block_id */
-	SELECT_JOBDATA_NODES,	/* data-> char *nodes */
-	SELECT_JOBDATA_IONODES,	/* data-> char *ionodes */
-	SELECT_JOBDATA_NODE_CNT,	/* data-> uint32_t cnode_cnt */
-	SELECT_JOBDATA_ALTERED,    /* data-> uint16_t altered */
-	SELECT_JOBDATA_BLRTS_IMAGE,/* data-> char *blrtsimage */
-	SELECT_JOBDATA_LINUX_IMAGE,/* data-> char *linuximage */
-	SELECT_JOBDATA_MLOADER_IMAGE,/* data-> char *mloaderimage */
-	SELECT_JOBDATA_RAMDISK_IMAGE,/* data-> char *ramdiskimage */
-	SELECT_JOBDATA_REBOOT,	/* data-> uint16_t reboot */
-	SELECT_JOBDATA_RESV_ID,	/* data-> uint32_t reservation_id */
-	SELECT_JOBDATA_PAGG_ID,	/* data-> uint64_t job container ID */
-	SELECT_JOBDATA_PTR,	/* data-> select_jobinfo_t *jobinfo */
-	SELECT_JOBDATA_BLOCK_PTR, /* data-> bg_record_t *bg_record */
-	SELECT_JOBDATA_DIM_CNT, /* data-> uint16_t dim_cnt */
-	SELECT_JOBDATA_BLOCK_NODE_CNT,	/* data-> uint32_t block_cnode_cnt */
-	SELECT_JOBDATA_START_LOC, /* data-> uint16_t
-				   * start_loc[SYSTEM_DIMENSIONS] */
-	SELECT_JOBDATA_USER_NAME, /* data-> char * user_name */
-	SELECT_JOBDATA_CONFIRMED, /* data-> uint8_t ALPS reservation confirmed */
-	SELECT_JOBDATA_CLEANING, /* data-> uint16_t if the job is in
-				  * cleaning state or not. */
-	SELECT_JOBDATA_NETWORK,  /* data-> char * network info */
-	SELECT_JOBDATA_RELEASED /* if job resources have been released */
+	SELECT_JOBDATA_RESV_ID	= 13,	/* data-> uint32_t reservation_id */
+	SELECT_JOBDATA_PAGG_ID	= 14,	/* data-> uint64_t job container ID */
+	SELECT_JOBDATA_PTR	= 15,	/* data-> select_jobinfo_t *jobinfo */
+	SELECT_JOBDATA_BLOCK_PTR = 16,	/* data-> bg_record_t *bg_record */
+	SELECT_JOBDATA_DIM_CNT	= 17,	/* data-> uint16_t dim_cnt */
+	SELECT_JOBDATA_CONFIRMED = 21,	/* data-> uint8_t ALPS reservation confirmed */
+	SELECT_JOBDATA_CLEANING	= 22,	/* data-> uint16_t if the job is in
+					 * cleaning state or not. */
+	SELECT_JOBDATA_NETWORK	= 23,	/* data-> char * network info */
+	SELECT_JOBDATA_RELEASED	= 24,	/* if job resources have been released */
 };
 
 enum select_nodedata_type {
