@@ -2439,10 +2439,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 	struct job_record *job_ptr = NULL;
 	char *msg_title = "node(s)";
 	char *nodes = comp_msg->node_name;
-#ifdef HAVE_BG
-	update_block_msg_t block_desc;
-	memset(&block_desc, 0, sizeof(update_block_msg_t));
-#endif
+
 	/* init */
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT from "
@@ -2579,14 +2576,6 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		      slurm_strerror(comp_msg->slurm_rc));
 		slurmctld_diag_stats.jobs_failed++;
 		if (error_code == SLURM_SUCCESS) {
-#ifdef HAVE_BG
-			if (job_ptr) {
-				select_g_select_jobinfo_get(
-					job_ptr->select_jobinfo,
-					SELECT_JOBDATA_BLOCK_ID,
-					&block_desc.bg_block_id);
-			}
-#else
 #ifdef HAVE_FRONT_END
 			if (job_ptr && job_ptr->front_end_ptr) {
 				update_front_end_msg_t update_node_msg;
@@ -2604,7 +2593,6 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 						 "batch job complete failure",
 						 slurmctld_conf.slurm_user_id);
 #endif	/* !HAVE_FRONT_END */
-#endif	/* !HAVE_BG */
 			if ((comp_msg->job_rc != SLURM_SUCCESS) && job_ptr &&
 			    job_ptr->details && job_ptr->details->requeue)
 				job_requeue = true;
@@ -2623,15 +2611,6 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
 	}
-#ifdef HAVE_BG
-	if (block_desc.bg_block_id) {
-		block_desc.reason = slurm_strerror(comp_msg->slurm_rc);
-		block_desc.state = BG_BLOCK_ERROR_FLAG;
-		i = select_g_update_block(&block_desc);
-		error_code = MAX(error_code, i);
-		xfree(block_desc.bg_block_id);
-	}
-#endif
 
 	/* this has to be done after the job_complete */
 
@@ -2750,7 +2729,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		return;
 	}
 
-#if defined HAVE_FRONT_END && !defined HAVE_BGQ	&& !defined HAVE_ALPS_CRAY
+#if defined HAVE_FRONT_END && !defined HAVE_ALPS_CRAY
 	/* Limited job step support */
 	/* Non-super users not permitted to run job steps on front-end.
 	 * A single slurmd can not handle a heavy load. */
