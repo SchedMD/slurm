@@ -393,7 +393,6 @@ extern bitstr_t * other_resv_test(resv_desc_msg_t *resv_desc_ptr,
 				  bitstr_t **core_bitmap);
 
 extern void other_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
-extern void other_ba_fini(void);
 extern int *other_ba_get_dims(void);
 
 #endif /* _CRAY_OTHER_SELECT_H */

@@ -4410,10 +4410,6 @@ extern void select_p_ba_init(void)
 {
 	return;
 }
-extern void select_p_ba_fini(void)
-{
-	return;
-}
 
 extern int *select_p_ba_get_dims(void)
 {

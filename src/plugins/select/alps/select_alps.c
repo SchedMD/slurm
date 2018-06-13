@@ -979,8 +979,3 @@ extern int *select_p_ba_get_dims(void)
 		return select_cray_dim_size;
 	return NULL;
 }
-
-extern void select_p_ba_fini(void)
-{
-	other_ba_fini();
-}

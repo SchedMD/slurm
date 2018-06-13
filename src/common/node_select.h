@@ -225,7 +225,6 @@ typedef struct slurm_select_ops {
 						 bitstr_t **core_bitmap);
 	void            (*ba_init)              (node_info_msg_t *node_info_ptr,
 						 bool sanity_check);
-	void            (*ba_fini)              (void);
 	int *           (*ba_get_dims)          (void);
 } slurm_select_ops_t;
 
@@ -749,8 +748,5 @@ extern int *select_g_ba_get_dims(void);
  * IN sanity_check - If set, then verify each node's suffix contains values
  *                   within the system dimension limits */
 extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
-
-/* Free storage allocated by select_g_ba_init() */
-extern void select_g_ba_fini(void);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

@@ -2680,8 +2680,3 @@ extern int *select_p_ba_get_dims(void)
 {
 	return NULL;
 }
-
-extern void select_p_ba_fini(void)
-{
-	other_ba_fini();
-}

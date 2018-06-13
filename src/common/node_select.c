@@ -111,7 +111,6 @@ const char *node_select_syms[] = {
 	"select_p_reconfigure",
 	"select_p_resv_test",
 	"select_p_ba_init",
-	"select_p_ba_fini",
 	"select_p_ba_get_dims",
 };
 
@@ -1334,21 +1333,6 @@ extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 		plugin_id = select_context_default;
 
 	(*(ops[plugin_id].ba_init))(node_info_ptr, sanity_check);
-}
-
-extern void select_g_ba_fini(void)
-{
-	uint32_t plugin_id;
-
-	if (slurm_select_init(0) < 0)
-		return;
-
-	if (working_cluster_rec)
-		plugin_id = working_cluster_rec->plugin_id_select;
-	else
-		plugin_id = select_context_default;
-
-	(*(ops[plugin_id].ba_fini))();
 }
 
 extern int *select_g_ba_get_dims(void)

@@ -758,19 +758,14 @@ the plugin should return SLURM_ERROR.</p>
 <h3>Block Allocator interface</h3>
 
 <p class="commandline">void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);</p>
-<p style="margin-left:.2in"><b>Description</b>: Construct an internal block allocation
-table containing information about the nodes on a computer. This allocated memory
-should be released  by calling select_p_ba_fini();</p>
+<p style="margin-left:.2in"><b>Description</b>: Setup the cluster dims returned
+by select_p_ba_get_dims().</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> node_info_ptr</span>&nbsp; &nbsp;&nbsp;(input)
 Information about the nodes on a system.<br>
 <span class="commandline"> sanity_check</span>&nbsp; &nbsp;&nbsp;(input) if set
 then validate that the node name suffix values represent coordinates which are
 within the system's dimension size (see function select_p_ba_get_dims).</p>
-
-<p class="commandline">void select_p_ba_fini(void);</p>
-<p style="margin-left:.2in"><b>Description</b>: Free storage allocated by
-select_p_ba_init().</p>
 
 <p class="commandline">int *select_p_ba_get_dims(void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Return an array containing

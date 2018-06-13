@@ -2329,12 +2329,6 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 }
 
 /* Unused for this plugin */
-extern void select_p_ba_fini(void)
-{
-	return;
-}
-
-/* Unused for this plugin */
 extern int *select_p_ba_get_dims(void)
 {
 	return NULL;
