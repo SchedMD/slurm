@@ -95,7 +95,6 @@
 #define OPT_OVERCOMMIT  0x06
 #define OPT_COMPRESS	0x07
 #define OPT_RESV_PORTS	0x09
-#define OPT_NO_ROTATE	0x0a
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
 #define OPT_MEM_BIND    0x0e
@@ -267,7 +266,6 @@ struct option long_options[] = {
 	{"qos",		     required_argument, 0, 'q'},
 	{"quiet",            no_argument,       0, 'Q'},
 	{"relative",         required_argument, 0, 'r'},
-	{"no-rotate",        no_argument,       0, 'R'},
 	{"share",            no_argument,       0, 's'},
 	{"core-spec",        required_argument, 0, 'S'},
 	{"time",             required_argument, 0, 't'},
@@ -379,7 +377,7 @@ struct option long_options[] = {
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string = "+A:B:c:C:d:D:e:EG:hHi:I::jJ:kK::lL:m:M:n:N:"
-		   "o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
+		   "o:Op:P:qQr:sS:t:T:uU:vVw:W:x:XZ";
 
 
 static slurm_opt_t *_get_first_opt(int pack_offset);
@@ -949,7 +947,6 @@ static void _opt_default(void)
 	sropt.multi_prog_cmds		= 0;
 	opt.network			= NULL;
 	sropt.network_set_env		= false;
-	opt.no_rotate			= false;
 	opt.nodelist			= NULL;
 	opt.nodes_set			= false;
 	sropt.nodes_set_env		= false;
@@ -1065,7 +1062,6 @@ env_vars_t env_vars[] = {
 {"SLURM_NETWORK",       OPT_STRING,     &opt.network,  &sropt.network_set_env},
 {"SLURM_JOB_NUM_NODES", OPT_NODES,      NULL,               NULL             },
 {"SLURM_JOB_NODELIST",  OPT_STRING,     &sropt.alloc_nodelist,NULL           },
-{"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL             },
 {"SLURM_NTASKS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
 {"SLURM_NPROCS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
 {"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
@@ -1285,10 +1281,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		else
 			error("Invalid SLURM_OPEN_MODE: %s. Ignored", val);
 		break;
-	case OPT_NO_ROTATE:
-		opt.no_rotate = true;
-		break;
-
 	case OPT_GRES_FLAGS:
 		if (!xstrcasecmp(val, "enforce-binding")) {
 			opt.job_flags |= GRES_ENFORCE_BIND;
@@ -1673,9 +1665,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			sropt.relative = _get_int(optarg, "relative", false);
 			sropt.relative_set = true;
-			break;
-		case (int)'R':
-			opt.no_rotate = true;
 			break;
 		case (int)'s':
 			opt.shared = 1;
@@ -3223,7 +3212,6 @@ static void _opt_list(void)
 	info("constraints    : %s", str);
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
-	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("preserve_env   : %s", tf_(sropt.preserve_env));
 
 	if (opt.linuximage)

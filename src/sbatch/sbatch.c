@@ -611,8 +611,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->priority     = 0;
 	if (opt.reboot)
 		desc->reboot = 1;
-	if (opt.no_rotate)
-		desc->rotate = 0;
 	if (opt.blrtsimage)
 		desc->blrtsimage = xstrdup(opt.blrtsimage);
 	if (opt.linuximage)

@@ -87,7 +87,6 @@
 #define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
-#define OPT_NO_ROTATE	0x08
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
 #define OPT_JOBID       0x0c
@@ -457,7 +456,6 @@ env_vars_t env_vars[] = {
   {"SALLOC_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
   {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
-  {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL          },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
@@ -722,7 +720,6 @@ static void _set_options(int argc, char **argv)
 		{"partition",     required_argument, 0, 'p'},
 		{"qos",		  required_argument, 0, 'q'},
 		{"quiet",         no_argument,       0, 'Q'},
-		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
 		{"core-spec",     required_argument, 0, 'S'},
 		{"time",          required_argument, 0, 't'},
@@ -805,7 +802,7 @@ static void _set_options(int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:B:c:C:d:D:F:G:hHI::J:kK::L:m:M:n:N:Op:P:q:QRsS:t:uU:vVw:W:x:";
+		"+A:B:c:C:d:D:F:G:hHI::J:kK::L:m:M:n:N:Op:P:q:QsS:t:uU:vVw:W:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -964,9 +961,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'Q':
 			opt.quiet++;
-			break;
-		case 'R':
-			opt.no_rotate = true;
 			break;
 		case 's':
 			opt.shared = 1;
@@ -2144,7 +2138,6 @@ static void _opt_list(void)
 	info("constraints    : %s", str);
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
-	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	if (opt.linuximage)
 		info("CnloadImage    : %s", opt.linuximage);
 	if (opt.mloaderimage)

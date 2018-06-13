@@ -2313,13 +2313,6 @@ Default from \fIblugene.conf\fR if not set. This option applies to job
 allocations.
 
 .TP
-\fB\-R\fR, \fB\-\-no\-rotate\fR
-Disables rotation of the job's requested geometry in order to fit an
-appropriate block.
-By default the specified geometry can rotate in three dimensions.
-This option applies to job allocations.
-
-.TP
 \fB\-\-ramdisk\-image\fR=<\fIpath\fR>
 Path to ramdisk image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set. This option applies to job
@@ -2688,9 +2681,6 @@ Same as \fB\-\-mpi\fR
 .TP
 \fBSLURM_NETWORK\fR
 Same as \fB\-\-network\fR
-.TP
-\fBSLURM_NO_ROTATE\fR
-Same as \fB\-R, \-\-no\-rotate\fR
 .TP
 \fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Same as \fB\-n, \-\-ntasks\fR
