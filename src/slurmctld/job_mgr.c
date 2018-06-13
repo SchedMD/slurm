@@ -12199,17 +12199,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error("Attempt to change admin_comment for job %u",
 			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
-		} else if ((job_specs->admin_comment[0] == '+') &&
-			   (job_specs->admin_comment[1] == '=')) {
-			if (job_ptr->admin_comment)
-				xstrcat(job_ptr->admin_comment, ",");
-			xstrcat(job_ptr->admin_comment,
-				job_specs->admin_comment + 2);
-			info("update_job: adding to admin_comment it is now %s for job_id %u",
-			     job_ptr->admin_comment, job_ptr->job_id);
-		} else if (!xstrcmp(job_ptr->admin_comment,
-				   job_specs->admin_comment)) {
-			info("update_job: admin_comment the same as before, not changing");
 		} else {
 			xfree(job_ptr->admin_comment);
 			job_ptr->admin_comment =

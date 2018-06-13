@@ -70,6 +70,7 @@ documents those changes that are of interest to users and administrators.
  -- Add ResumeFailProgram slurm.conf option to specify a program that is called
     when a node fails to respond by ResumeTimeout.
  -- Add new job pending reason of "ReqNodeNotAvail, reserved for maintenance".
+ -- Remove AdminComment += syntax from 'scontrol update job'.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
