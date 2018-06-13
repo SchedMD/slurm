@@ -90,8 +90,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_NRT_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_1 = poe
-@HAVE_ALPS_CRAY_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_2 = aprun
+@HAVE_NRT_TRUE@am__append_1 = poe
+@HAVE_ALPS_CRAY_TRUE@am__append_2 = aprun
 subdir = src/plugins/launch
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -203,7 +203,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = slurm poe aprun runjob
+DIST_SUBDIRS = slurm poe aprun
 am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
@@ -491,9 +491,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-# launch/slurm can be useful for testing on any system other type
-@REAL_BGQ_LOADED_FALSE@SUBDIRS = slurm $(am__append_1) $(am__append_2)
-@REAL_BGQ_LOADED_TRUE@SUBDIRS = runjob $(am__append_1) $(am__append_2)
+SUBDIRS = slurm $(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:

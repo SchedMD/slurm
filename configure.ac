@@ -563,7 +563,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/launch/Makefile
 		 src/plugins/launch/aprun/Makefile
 		 src/plugins/launch/poe/Makefile
-		 src/plugins/launch/runjob/Makefile
 		 src/plugins/launch/slurm/Makefile
 		 src/plugins/mcs/Makefile
 		 src/plugins/mcs/account/Makefile
@@ -603,10 +602,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/alps/Makefile
 		 src/plugins/select/alps/libalps/Makefile
 		 src/plugins/select/alps/libemulate/Makefile
-		 src/plugins/select/bluegene/Makefile
-		 src/plugins/select/bluegene/ba_bgq/Makefile
-		 src/plugins/select/bluegene/bl_bgq/Makefile
-		 src/plugins/select/bluegene/sfree/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cons_tres/Makefile
 		 src/plugins/select/cray/Makefile
