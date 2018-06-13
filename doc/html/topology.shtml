@@ -161,6 +161,11 @@ automatically generated using the <b>slurmibtopology</b> tool found here:<br>
 <a href="https://ftp.fysik.dtu.dk/Slurm/slurmibtopology.sh">
 https://ftp.fysik.dtu.dk/Slurm/slurmibtopology.sh</a>.</p>
 
+<p><b>NOTE:</b>The <b>topology.conf</b> file for an Omni-Path (OPA) switch can
+be automatically generated using the <b>opa2slurm</b> tool found here:<br>
+<a href="https://gitlab.com/jtfrey/opa2slurm">
+https://gitlab.com/jtfrey/opa2slurm</a>.</p>
+
 <h2>User Options</h2>
 
 <p>For use with the topology/tree plugin, user can also specify the maximum

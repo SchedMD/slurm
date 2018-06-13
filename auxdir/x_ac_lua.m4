@@ -20,7 +20,7 @@ AC_DEFUN([X_AC_LUA],
 		[PKG_CHECK_EXISTS([lua-5.2], [x_ac_lua_pkg_name=lua-5.2],
 		[PKG_CHECK_EXISTS([lua5.1], [x_ac_lua_pkg_name=lua5.1],
 		[PKG_CHECK_EXISTS([lua-5.1], [x_ac_lua_pkg_name=lua-5.1],
-	        [])])])])])])
+	        [x_ac_lua_pkg_name="lua >= 5.1"])])])])])])
 	PKG_CHECK_MODULES([lua], ${x_ac_lua_pkg_name},
                 [x_ac_have_lua="yes"],
                 [x_ac_have_lua="no"])

@@ -24405,6 +24405,8 @@ else
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   x_ac_lua_pkg_name=lua-5.1
+else
+  x_ac_lua_pkg_name="lua >= 5.1"
 fi
 fi
 fi
