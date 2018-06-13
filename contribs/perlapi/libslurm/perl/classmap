@@ -16,7 +16,6 @@ $slurm_perl_api::class_map = {
 	"job_resources_tPtr"		=> "Slurm::job_resources_t",
 	"slurm_cred_tPtr"               => "Slurm::slurm_cred_t",
 	"switch_jobinfo_tPtr"           => "Slurm::switch_jobinfo_t",
-	"select_jobinfo_tPtr"           => "Slurm::select_jobinfo_t",
 	"select_nodeinfo_tPtr"          => "Slurm::select_nodeinfo_t",
 	"jobacctinfo_tPtr"              => "Slurm::jobacctinfo_t",
 	"allocation_msg_thread_tPtr"       => "Slurm::allocation_msg_thread_t",

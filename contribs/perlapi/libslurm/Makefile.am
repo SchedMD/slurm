@@ -17,7 +17,6 @@ perl_sources = \
 	       $(perl_dir)/bitstr.h \
 	       $(perl_dir)/slurm-perl.h \
 	       $(perl_dir)/alloc.c \
-	       $(perl_dir)/block.c \
 	       $(perl_dir)/conf.c \
 	       $(perl_dir)/job.c \
 	       $(perl_dir)/node.c \
@@ -31,7 +30,6 @@ test_sources = \
 	$(perl_dir)/t/00-use.t \
 	$(perl_dir)/t/01-error.t \
 	$(perl_dir)/t/02-string.t \
-	$(perl_dir)/t/03-block.t \
 	$(perl_dir)/t/04-alloc.c \
 	$(perl_dir)/t/05-signal.t \
 	$(perl_dir)/t/06-complete.t \
