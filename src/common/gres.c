@@ -3195,6 +3195,19 @@ fini:	xfree(name);
 	return job_gres_data;
 }
 
+/* Return true if job specification only includes cpus_per_gres or mem_per_gres
+ * Return false if any other field set
+ */
+static bool _generic_job_state(gres_job_state_t *job_state)
+{
+	if (job_state->gres_per_job ||
+	    job_state->gres_per_node ||
+	    job_state->gres_per_socket ||
+	    job_state->gres_per_task)
+		return false;
+	return true;
+}
+
 /*
  * Given a job's requested gres configuration, validate it and build a gres list
  * Note: This function can be used for a new request with gres_list==NULL or
@@ -3219,12 +3232,14 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  List *gres_list)
 {
 	typedef struct overlap_check {
+		gres_job_state_t *without_model_state;
 		uint32_t plugin_id;
 		bool with_model;
 		bool without_model;
 	} overlap_check_t;
 	overlap_check_t *over_list;
 	int i, over_count = 0, rc = SLURM_SUCCESS, size;
+	bool overlap_merge = false;
 	gres_state_t *gres_state;
 	gres_job_state_t *job_gres_data;
 	uint64_t cnt = 0;
@@ -3363,21 +3378,61 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		if (i >= over_count) {
 			over_list[over_count++].plugin_id =
 				gres_state->plugin_id;
-			if (job_gres_data->type_name)
+			if (job_gres_data->type_name) {
 				over_list[i].with_model = true;
-			else
+			} else {
 				over_list[i].without_model = true;
+				over_list[i].without_model_state =
+					job_gres_data;
+			}
 		} else if (job_gres_data->type_name) {
 			over_list[i].with_model = true;
-			if (over_list[i].without_model) {
-				rc = ESLURM_INVALID_GRES;
-				break;
-			}
+			if (over_list[i].without_model)
+				overlap_merge = true;
 		} else {
 			over_list[i].without_model = true;
-			if (over_list[i].with_model) {
-				rc = ESLURM_INVALID_GRES;
+			over_list[i].without_model_state = job_gres_data;
+			if (over_list[i].with_model)
+				overlap_merge = true;
+		}
+	}
+	if (overlap_merge) {	/* Merge generic data if possible */
+		uint16_t cpus_per_gres;
+		uint64_t mem_per_gres;
+		for (i = 0; i < over_count; i++) {
+			if (!over_list[i].with_model ||
+			    !over_list[i].without_model_state)
+				continue;
+			if (!_generic_job_state(
+					over_list[i].without_model_state)) {
+				rc = ESLURM_INVALID_GRES_TYPE;
 				break;
+			}
+			/* Propagate generic parameters */
+			cpus_per_gres =
+				over_list[i].without_model_state->cpus_per_gres;
+			mem_per_gres =
+				over_list[i].without_model_state->mem_per_gres;
+			list_iterator_reset(iter);
+			while ((gres_state = (gres_state_t *)list_next(iter))) {
+				job_gres_data = (gres_job_state_t *)
+					gres_state->gres_data;
+				if (over_list[i].plugin_id !=
+				    gres_state->plugin_id)
+					continue;
+				if (job_gres_data ==
+				    over_list[i].without_model_state) {
+					list_remove(iter);
+					continue;
+				}
+				if (job_gres_data->cpus_per_gres == 0) {
+					job_gres_data->cpus_per_gres =
+						cpus_per_gres;
+				}
+				if (job_gres_data->mem_per_gres == 0) {
+					job_gres_data->mem_per_gres =
+						mem_per_gres;
+				}
 			}
 		}
 	}
@@ -4349,6 +4404,7 @@ static void _sock_gres_del(void *x)
 	if (sock_gres) {
 		xfree(sock_gres->cnt_by_sock);
 		xfree(sock_gres->gres_name);
+		/* NOTE: sock_gres->job_specs is just a pointer, do not free */
 		xfree(sock_gres->type_name);
 		xfree(sock_gres);
 	}
@@ -4420,7 +4476,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 {
 	int i, j, s, c, tot_cores;
 	sock_gres_t *sock_gres;
-	uint64_t avail_gres, min_gres = 1, total_gres = 0;
+	uint64_t avail_gres, min_gres = 1;
 	bool match = false;
 
 	sock_gres = xmalloc(sizeof(sock_gres_t));
@@ -4446,7 +4502,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		    !node_gres_ptr->topo_core_bitmap[i]) {
 			/* Not constrained by core */
 			sock_gres->cnt_any_sock += avail_gres;
-			total_gres += avail_gres;
+			sock_gres->total_cnt += avail_gres;
 			match = true;
 			continue;
 		}
@@ -4465,14 +4521,12 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 				j = (s * cores_per_sock) + c;
 				if (j >= tot_cores)
 					break;	/* Off end of core bitmap */
-				if (core_bitmap && !bit_test(core_bitmap, j))
-					continue;
 				if (node_gres_ptr->topo_core_bitmap[i] &&
 				    !bit_test(node_gres_ptr->topo_core_bitmap[i],
 					      j))
 					continue;
 				sock_gres->cnt_by_sock[s] += avail_gres;
-				total_gres += avail_gres;
+				sock_gres->total_cnt += avail_gres;
 				avail_gres = 0;
 				match = true;
 				break;
@@ -4483,16 +4537,25 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 	/* Process per-GRES limits */
 	if (match && job_gres_ptr->gres_per_socket) {
 		for (s = 0; s < sockets; s++) {
-			if ((sock_gres->cnt_any_sock +
-			     sock_gres->cnt_by_sock[s]) <
+			if (sock_gres->cnt_by_sock[s] <
 			    job_gres_ptr->gres_per_socket) {
-				total_gres -= sock_gres->cnt_by_sock[s];
+				/* Insufficient GRES, clear count */
+				sock_gres->total_cnt -=
+					sock_gres->cnt_by_sock[s];
 				sock_gres->cnt_by_sock[s] = 0;
 				if (core_bitmap) {
 					i = s * cores_per_sock;
 					bit_nclear(core_bitmap, i,
 						   i + cores_per_sock - 1);
 				}
+			} else if (sock_gres->cnt_by_sock[s] >
+				   job_gres_ptr->gres_per_socket) {
+				/* Excess GRES, reduce count */
+				i = sock_gres->cnt_by_sock[s] -
+				    job_gres_ptr->gres_per_socket;
+				sock_gres->cnt_by_sock[s] =
+					job_gres_ptr->gres_per_socket;
+				sock_gres->total_cnt -= i;
 			}
 		}
 	}
@@ -4501,7 +4564,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 			min_gres = job_gres_ptr->gres_per_node;
 		if (job_gres_ptr->gres_per_task)
 			min_gres = MAX(min_gres, job_gres_ptr->gres_per_task);
-		if (total_gres < min_gres)
+		if (sock_gres->total_cnt < min_gres)
 			match = false;
 	}
 
@@ -4531,9 +4594,6 @@ static sock_gres_t *_build_sock_gres_by_type(gres_job_state_t *job_gres_ptr,
 	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1;
 	bool match = false;
-
-	if (core_bitmap && (bit_set_count(core_bitmap) == 0))
-		return NULL;
 
 	if (job_gres_ptr->gres_per_node)
 		min_gres = job_gres_ptr-> gres_per_node;
@@ -4583,8 +4643,6 @@ static sock_gres_t *_build_sock_gres_basic(gres_job_state_t *job_gres_ptr,
 	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1;
 
-	if (core_bitmap && (bit_set_count(core_bitmap) == 0))
-		return NULL;
 	if (job_gres_ptr->type_name)
 		return NULL;
 	if (!use_total_gres &&
@@ -4662,7 +4720,10 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 		}
 		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
 		node_data_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
-		if (node_data_ptr->topo_cnt) {
+
+		if (core_bitmap && (bit_set_count(core_bitmap) == 0)) {
+			sock_gres = NULL;	/* No cores available */
+		} else if (node_data_ptr->topo_cnt) {
 			sock_gres = _build_sock_gres_by_topo(job_data_ptr,
 					node_data_ptr, use_total_gres,
 					core_bitmap, sockets, cores_per_sock,
@@ -4684,6 +4745,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 			FREE_NULL_LIST(sock_gres_list);
 			break;
 		}
+		sock_gres->job_specs = job_data_ptr;
 		sock_gres->gres_name = xstrdup(job_data_ptr->gres_name);
 		sock_gres->plugin_id = job_gres_ptr->plugin_id;
 		list_append(sock_gres_list, sock_gres);
@@ -4692,6 +4754,110 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return sock_gres_list;
+}
+
+static bool *_build_avail_cores_by_sock(bitstr_t *core_bitmap,
+					uint16_t sockets,
+					uint16_t cores_per_sock)
+{
+	bool *avail_cores_by_sock = xmalloc(sizeof(bool) * sockets);
+	int s, c, i, lim = 0;
+
+	lim = bit_size(core_bitmap);
+	for (s = 0; s < sockets; s++) {
+		for (c = 0; c < cores_per_sock; c++) {
+			i = (s * cores_per_sock) + c;
+			if (i >= lim)
+				goto fini;	/* should never happen */
+			if (bit_test(core_bitmap, i)) {
+				avail_cores_by_sock[s] = true;
+				break;
+			}
+		}
+	}
+
+fini:	return avail_cores_by_sock;
+}
+
+/*
+ * Determine how many GRES can be used on this node given the available cores
+ * IN sock_gres_list  - list of sock_gres_t entries built by gres_plugin_job_test2()
+ * IN enforce_binding - GRES must be co-allocated with cores
+ * IN core_bitmap     - Identification of available cores on this node
+ * IN sockets         - Count of sockets on the node
+ * IN cores_per_sock  - Count of cores per socket on this node
+ * IN cpus_per_core   - Count of CPUs per core on this node
+ * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
+ */
+extern int gres_plugin_job_core_filter2(List sock_gres_list,
+					bool enforce_binding,
+					bitstr_t *core_bitmap,
+					uint16_t sockets,
+					uint16_t cores_per_sock,
+					uint16_t cpus_per_core)
+{
+	ListIterator sock_gres_iter;
+	sock_gres_t *sock_gres;
+	bool *avail_cores_by_sock = NULL;
+	int s, rc = 0;
+	int cpu_cnt;
+
+	if (!core_bitmap || !sock_gres_list ||
+	    (list_count(sock_gres_list) == 0))
+		return rc;
+
+	cpu_cnt = bit_set_count(core_bitmap);
+	sock_gres_iter = list_iterator_create(sock_gres_list);
+	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
+		if (sock_gres->cnt_by_sock) {
+			if (!avail_cores_by_sock) {
+				avail_cores_by_sock =_build_avail_cores_by_sock(
+							core_bitmap, sockets,
+							cores_per_sock);
+			}
+			for (s = 0; s < sockets; s++) {
+				if (!avail_cores_by_sock[s]) {
+					sock_gres->total_cnt -=
+						sock_gres->cnt_by_sock[s];
+					sock_gres->cnt_by_sock[s] = 0;
+				}
+			}
+		}
+		if (sock_gres->job_specs &&
+		    sock_gres->job_specs->gres_per_task) {
+			if (sock_gres->job_specs->gres_per_task >
+			    sock_gres->total_cnt) {
+				rc = -1;
+				break;
+			} else {
+//FIXME: possibly set maximum task count to gres_per_task
+			}
+		}
+		if (sock_gres->job_specs &&
+		    sock_gres->job_specs->gres_per_node) {
+			if (sock_gres->job_specs->gres_per_node >
+			    sock_gres->total_cnt) {
+				rc = -1;
+				break;
+			} else {
+//FIXME: possibly set maximum GRES count to gres_per_node
+			}
+		}
+		if (sock_gres->job_specs &&
+		    sock_gres->job_specs->cpus_per_gres) {
+			cpu_cnt *= cpus_per_core;
+			if (sock_gres->job_specs->cpus_per_gres > cpu_cnt) {
+				rc = -1;
+				break;
+			} else {
+//FIXME: possibly set maximum GRES count to cpu_cnt / cpus_per_gres
+			}
+		}
+	}
+	list_iterator_destroy(sock_gres_iter);
+	xfree(avail_cores_by_sock);
+
+	return rc;
 }
 
 /*

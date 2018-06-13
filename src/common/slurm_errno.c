@@ -361,6 +361,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid JobDefaults specification"			},
 	{ ESLURM_RESERVATION_MAINT,
 	  "Job can not start due to maintenance reservation."	},
+	{ ESLURM_INVALID_GRES_TYPE,
+	  "Invalid GRES specification (with and without type identification)" },
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,

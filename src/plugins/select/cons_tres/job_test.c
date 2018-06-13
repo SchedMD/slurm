@@ -43,7 +43,8 @@
 
 typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
-	uint16_t avail_cpus;	/* Total available CPUs */
+	uint16_t max_cpus;	/* Maximum available CPUs */
+	uint16_t min_cpus;	/* Minimum allocated CPUs */
 	uint16_t sock_cnt;	/* Number of sockets on this node */
 	List sock_gres;		/* Per-socket GRES availability, sock_gres_t */
 	uint16_t spec_threads;	/* Specialized threads to be reserved */
@@ -140,9 +141,9 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 		return;
 	}
 
-	info("Node:%s Sockets:%u SpecThreads:%u VPUs:%u",
+	info("Node:%s Sockets:%u SpecThreads:%u CPUsMin-Max:%u-%u VPUs:%u",
 	     node_name, avail_res->sock_cnt, avail_res->spec_threads,
-	     avail_res->vpus);
+	     avail_res->min_cpus, avail_res->max_cpus, avail_res->vpus);
 	gres_info = gres_plugin_sock_str(avail_res->sock_gres, -1);
 	if (gres_info) {
 		info("  AnySocket %s", gres_info);
@@ -2979,17 +2980,15 @@ fini:
 	cpu_count -= spec_threads;
 
 	avail_res = xmalloc(sizeof(avail_res_t));
-	avail_res->avail_cpus = cpu_count;
+	avail_res->max_cpus = cpu_count;
+	avail_res->min_cpus = *cpu_alloc_size;
 	avail_res->avail_cores_per_sock = xmalloc(sizeof(uint16_t) * sockets);
 	for (c = 0; c < select_node_record[node_i].tot_cores; c++) {
 		i = (uint16_t) (c / cores_per_socket);
 		if (bit_test(core_map, c))
 			avail_res->avail_cores_per_sock[i]++;
 	}
-//FIXME:	avail_res->gres_avail = TBD
 	avail_res->sock_cnt = sockets;
-//	avail_res->gres_avail = list_create(_sock_gres_del);
-//FIXME: Count of spec_threads seems bad
 	avail_res->spec_threads = spec_threads;
 	avail_res->vpus = select_node_record[node_i].vpus;
 
@@ -3144,13 +3143,14 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 {
 	uint16_t cpus = 0;
 	uint64_t avail_mem, req_mem;
-	int cpu_alloc_size, i;
+	int cpu_alloc_size, i, rc;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
 	bitstr_t *part_core_map_ptr = NULL;
 	avail_res_t *avail_res;
 	List sock_gres_list = NULL;
 	node_res_t *node_res;
+	bool enforce_binding = false;
 
 	node_res = xmalloc(sizeof(node_res_t));
 	if (((job_ptr->bit_flags & BACKFILL_TEST) == 0) &&
@@ -3171,7 +3171,9 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		gres_list = node_ptr->gres_list;
 
 	if (job_ptr->gres_list) {
-		/* Identify available GRES and usable cores */
+		/* Identify available GRES and adjacent cores */
+		if (job_ptr->bit_flags & GRES_ENFORCE_BIND)
+			enforce_binding = true;
 		if (!core_map[node_i]) {
 			core_map[node_i] = bit_alloc(
 					select_node_record[node_i].tot_cores);
@@ -3180,34 +3182,51 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		sock_gres_list = gres_plugin_job_test2(job_ptr->gres_list,
 					gres_list, test_only,
 					core_map[node_i],
-					select_node_record[node_i].sockets,
+					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
 					job_ptr->job_id, node_ptr->name);
 		if (!sock_gres_list)	/* Unsatisfied GRES requirements */
 			return node_res;
 	}
 
+	/* Identify available CPUs */
 	if (cr_type & CR_CORE) {
-//FIXME: Consider GPUs here?
-		/* cpu_alloc_size = CPUs per core */
+		/* cpu_alloc_size = # of CPUs per core */
 		cpu_alloc_size = select_node_record[node_i].vpus;
 		avail_res = _allocate_cores(job_ptr, core_map[node_i],
 					    part_core_map_ptr, node_i,
 					    &cpu_alloc_size, false);
 
 	} else if (cr_type & CR_SOCKET) {
-		/* cpu_alloc_size = CPUs per socket */
+		/* cpu_alloc_size = # of CPUs per socket */
 		cpu_alloc_size = select_node_record[node_i].cores *
 				 select_node_record[node_i].vpus;
 		avail_res = _allocate_sockets(job_ptr, core_map[node_i],
 					      part_core_map_ptr, node_i,
 					      &cpu_alloc_size);
 	} else {
+		/* cpu_alloc_size = 1 individual CPU */
 		cpu_alloc_size = 1;
 		avail_res = _allocate_cores(job_ptr, core_map[node_i],
 					    part_core_map_ptr, node_i,
 					    &cpu_alloc_size, true);
 	}
+
+	if (sock_gres_list) {
+//FIXME: Modify to test GRES & CPU limits too
+		/* Disable GRES that can't be used with remaining cores */
+		rc = gres_plugin_job_core_filter2(sock_gres_list,
+					enforce_binding, core_map[node_i],
+					select_node_record[node_i].tot_sockets,
+					select_node_record[node_i].cores,
+					select_node_record[node_i].vpus);
+		if (rc != 0) {
+			FREE_NULL_LIST(sock_gres_list);
+			_avail_res_del(avail_res);
+			return node_res;
+		}
+	}
+
 	for (i = 0; i < avail_res->sock_cnt; i++)
 		cpus += avail_res->avail_cores_per_sock[i];
 	avail_res->sock_gres = sock_gres_list;
@@ -3229,17 +3248,16 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		if (!test_only)
 			avail_mem -= node_usage[node_i].alloc_memory;
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-			/* memory is per-cpu */
-			if (!(cr_type & CR_CPU) &&
-			    job_ptr->details->mc_ptr &&
-			    job_ptr->details->mc_ptr->ntasks_per_core == 1 &&
-			    job_ptr->details->cpus_per_task == 1) {
+			/* memory is per-CPU */
+			if (!(cr_type & CR_CPU) && job_ptr->details->mc_ptr &&
+			    (job_ptr->details->mc_ptr->ntasks_per_core == 1) &&
+			    (job_ptr->details->cpus_per_task == 1)) {
 				/*
-				 * In this scenario, cpus represents cores and
-				 * the cpu/core count will be inflated later on
+				 * In this scenario, CPUs represents cores and
+				 * the CPU/core count will be inflated later on
 				 * to include all of the threads on a core. So
 				 * we need to compare apples to apples and only
-				 * remove 1 cpu/core at a time.
+				 * remove 1 CPU/core at a time.
 				 */
 				while ((cpus > 0) &&
 				       ((req_mem *
