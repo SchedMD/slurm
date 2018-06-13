@@ -2340,12 +2340,6 @@ extern int *select_p_ba_get_dims(void)
 	return NULL;
 }
 
-/* Unused for this plugin */
-extern bitstr_t *select_p_ba_cnodelist2bitmap(char *cnodelist)
-{
-	return NULL;
-}
-
 /* Delete the given select_node_record and select_node_usage arrays */
 extern void cr_destroy_node_data(struct node_use_record *node_usage,
 				 struct node_res_record *node_data)

@@ -110,7 +110,6 @@ const char *node_select_syms[] = {
 	"select_p_ba_init",
 	"select_p_ba_fini",
 	"select_p_ba_get_dims",
-	"select_p_ba_cnodelist2bitmap",
 };
 
 static slurm_select_ops_t ops;
@@ -786,12 +785,4 @@ extern int *other_ba_get_dims(void)
 		return NULL;
 
 	return (*(ops.ba_get_dims))();
-}
-
-extern bitstr_t *other_ba_cnodelist2bitmap(char *cnodelist)
-{
-	if (other_select_init() < 0)
-		return NULL;
-
-	return (*(ops.ba_cnodelist2bitmap))(cnodelist);
 }

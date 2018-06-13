@@ -781,18 +781,8 @@ contain the values 8, 4, 4.</p>
 <p style="margin-left:.2in"><b>Returns</b>: An array containing the number of
 elements in each dimension of the system size.</p>
 
-<p class="commandline">bitstr_t *select_g_ba_cnodelist2bitmap(char *cnodelist);</p>
-<p style="margin-left:.2in"><b>Description</b>: Returns a bitmap
-representing the cnodelist input with the bits of the cnodelist in a
-midplane not set.
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> cnodelist</span>&nbsp; &nbsp;&nbsp;(input)
-cnodelist (e.g. on a BGQ it would look something like '[00000x11331]').</br>
-<p style="margin-left:.2in"><b>Returns</b>: A bitmap the size of the
-  number of cnodes in a midplane with the bits available for use unset.</p>
-
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 June 2016</p>
+<p style="text-align:center;">Last modified 12 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

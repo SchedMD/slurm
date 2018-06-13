@@ -113,7 +113,6 @@ const char *node_select_syms[] = {
 	"select_p_ba_init",
 	"select_p_ba_fini",
 	"select_p_ba_get_dims",
-	"select_p_ba_cnodelist2bitmap",
 };
 
 strong_alias(destroy_select_ba_request,	slurm_destroy_select_ba_request);
@@ -1365,19 +1364,4 @@ extern int *select_g_ba_get_dims(void)
 		plugin_id = select_context_default;
 
 	return (*(ops[plugin_id].ba_get_dims))();
-}
-
-extern bitstr_t *select_g_ba_cnodelist2bitmap(char *cnodelist)
-{
-	uint32_t plugin_id;
-
-	if (slurm_select_init(0) < 0)
-		return NULL;
-
-	if (working_cluster_rec)
-		plugin_id = working_cluster_rec->plugin_id_select;
-	else
-		plugin_id = select_context_default;
-
-	return (*(ops[plugin_id].ba_cnodelist2bitmap))(cnodelist);
 }

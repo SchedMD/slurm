@@ -3666,11 +3666,6 @@ extern int *select_p_ba_get_dims(void)
 	return NULL;
 }
 
-extern bitstr_t *select_p_ba_cnodelist2bitmap(char *cnodelist)
-{
-	return NULL;
-}
-
 extern int cr_cpus_per_core(struct job_details *details, int node_inx)
 {
 	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
