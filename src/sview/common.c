@@ -826,35 +826,6 @@ extern void set_page_opts(int page, display_data_t *display_data,
 	itr = list_iterator_create(page_opts->col_list);
 	while ((col_name = list_next(itr))) {
 		replus(col_name);
-		if (strstr(col_name, "list") || strstr(col_name, " count")) {
-			char *orig_ptr = col_name;
-			xstrsubstitute(col_name, "bp ", "midplane");
-			if (cluster_flags & CLUSTER_FLAG_BG) {
-				/* We only want to replace "nodes",
-				 * not "cnodes"
-				 */
-				if (col_name[0] != 'c')
-					xstrsubstitute(col_name,
-						       "node", "midplane");
-				xstrsubstitute(col_name, "core", "cnode");
-			} else {
-				xstrsubstitute(col_name, "midplane", "node");
-				xstrsubstitute(col_name, "cnode", "core");
-			}
-
-			/* Make sure we have the correct pointer here
-			   since xstrsubstitute() could of changed it
-			   on us.
-			*/
-			if (col_name != orig_ptr) {
-				list_insert(itr, col_name);
-				/* Don't use list_delete_item().
-				   xstrsubstitute() has already
-				   deleted it for us.
-				*/
-				list_remove(itr);
-			}
-		}
 		while (display_data++) {
 			if (display_data->id == -1)
 				break;
