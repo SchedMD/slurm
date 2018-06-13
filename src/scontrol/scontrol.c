@@ -42,7 +42,6 @@
 #include "config.h"
 
 #include "scontrol.h"
-#include "src/plugins/select/bluegene/bg_enums.h"
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
@@ -71,7 +70,6 @@ uint32_t cluster_flags; /* what type of cluster are we talking to */
 uint32_t euid = NO_VAL;	 /* send request to the slurmctld in behave of
 			    this user */
 
-block_info_msg_t *old_block_info_ptr = NULL;
 front_end_info_msg_t *old_front_end_info_ptr = NULL;
 job_info_msg_t *old_job_info_ptr = NULL;
 node_info_msg_t *old_node_info_ptr = NULL;
@@ -92,8 +90,6 @@ static void	_print_slurmd(char *hostlist);
 static void     _print_version(void);
 static int	_process_command(int argc, char **argv);
 static void	_update_it(int argc, char **argv);
-static int	_update_bluegene_block(int argc, char **argv);
-static int      _update_bluegene_submp(int argc, char **argv);
 static int	_update_slurmctld_debug(char *val);
 static void	_usage(void);
 static void	_write_config(void);
@@ -780,8 +776,6 @@ static int _process_command (int argc, char **argv)
 			}
 		}
 		cluster_flags = slurmdb_setup_cluster_flags();
-		slurm_free_block_info_msg(old_block_info_ptr);
-		old_block_info_ptr = NULL;
 		slurm_free_front_end_info_msg(old_front_end_info_ptr);
 		old_front_end_info_ptr = NULL;
 		slurm_free_job_info_msg(old_job_info_ptr);
@@ -794,8 +788,6 @@ static int _process_command (int argc, char **argv)
 		old_res_info_ptr = NULL;
 		slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
 		old_slurm_ctl_conf_ptr = NULL;
-		/* if (old_block_info_ptr) */
-		/* 	old_block_info_ptr->last_update = 0; */
 		/* if (old_job_info_ptr) */
 		/* 	old_job_info_ptr->last_update = 0; */
 		/* if (old_node_info_ptr) */
@@ -1554,23 +1546,6 @@ static void _delete_it(int argc, char **argv)
 			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
 			slurm_perror(errmsg);
 		}
-	} else if (xstrncasecmp(tag, "BlockName", MAX(tag_len, 3)) == 0) {
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			update_block_msg_t   block_msg;
-			slurm_init_update_block_msg ( &block_msg );
-			block_msg.bg_block_id = val;
-			block_msg.state = BG_BLOCK_NAV;
-			if (slurm_update_block(&block_msg)) {
-				char errmsg[64];
-				snprintf(errmsg, 64, "delete_block %s",
-					 argv[0]);
-				slurm_perror(errmsg);
-			}
-		} else {
-			exit_code = 1;
-			fprintf(stderr,
-				"This only works on a bluegene system.\n");
-		}
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "Invalid deletion entity: %s\n", argv[0]);
@@ -1632,8 +1607,6 @@ static void _show_it(int argc, char **argv)
 	} else if (!xstrncasecmp(tag, "bbstat", MAX(tag_len, 2)) ||
 		   !xstrncasecmp(tag, "dwstat", MAX(tag_len, 2))) {
 		scontrol_print_bbstat(argc - 2, argv + 2);
-	} else if (xstrncasecmp(tag, "blocks", MAX(tag_len, 2)) == 0) {
-		scontrol_print_block (val);
 	} else if (xstrncasecmp(tag, "burstbuffer", MAX(tag_len, 2)) == 0) {
 		scontrol_print_burst_buffer ();
 	} else if (!xstrncasecmp(tag, "assoc_mgr", MAX(tag_len, 2)) ||
@@ -1718,7 +1691,7 @@ static void _update_it(int argc, char **argv)
 	char *val = NULL;
 	int i, error_code = SLURM_SUCCESS;
 	int node_tag = 0, part_tag = 0, job_tag = 0;
-	int block_tag = 0, sub_tag = 0, res_tag = 0;
+	int res_tag = 0;
 	int debug_tag = 0, step_tag = 0, front_end_tag = 0;
 	int layout_tag = 0;
 	int powercap_tag = 0;
@@ -1747,11 +1720,6 @@ static void _update_it(int argc, char **argv)
 			job_tag = 1;
 		} else if (!xstrncasecmp(tag, "StepId", MAX(tag_len, 4))) {
 			step_tag = 1;
-		} else if (!xstrncasecmp(tag, "BlockName", MAX(tag_len, 3))) {
-			block_tag = 1;
-		} else if (!xstrncasecmp(tag, "SubBPName", MAX(tag_len, 3)) ||
-			   !xstrncasecmp(tag, "SubMPName", MAX(tag_len, 3))) {
-			sub_tag = 1;
 		} else if (!xstrncasecmp(tag, "FrontendName",
 					 MAX(tag_len, 2))) {
 			front_end_tag = 1;
@@ -1787,10 +1755,6 @@ static void _update_it(int argc, char **argv)
 		error_code = scontrol_update_front_end (argc, argv);
 	else if (part_tag)
 		error_code = scontrol_update_part (argc, argv);
-	else if (block_tag)
-		error_code = _update_bluegene_block (argc, argv);
-	else if (sub_tag)
-		error_code = _update_bluegene_submp (argc, argv);
 	else if (debug_tag)
 		error_code = _update_slurmctld_debug(val);
 	else if (layout_tag)
@@ -1801,10 +1765,6 @@ static void _update_it(int argc, char **argv)
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");
 		fprintf(stderr, "Input line must include \"NodeName\", ");
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			fprintf(stderr, "\"BlockName\", \"SubMPName\" "
-				"(i.e. bgl000[0-3]),");
-		}
 		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
 			"\"JobId\", \"SlurmctldDebug\" , \"PowerCap\"" 
 			"or \"Layouts\"\n");
@@ -1820,170 +1780,6 @@ static void _update_it(int argc, char **argv)
 	 */
 	if (jerror_code)
 		exit_code = 1;
-}
-
-/*
- * _update_bluegene_block - update the bluegene block per the
- *	supplied arguments
- * IN argc - count of arguments
- * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise. parsing error prints
- *			error message and returns 0
- */
-static int _update_bluegene_block(int argc, char **argv)
-{
-	int i, update_cnt = 0;
-	update_block_msg_t block_msg;
-
-	if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-		exit_code = 1;
-		fprintf(stderr, "This only works on a bluegene system.\n");
-		return 0;
-	}
-
-	slurm_init_update_block_msg ( &block_msg );
-
-	for (i=0; i<argc; i++) {
-		char *tag = argv[i];
-		char *val = strchr(argv[i], '=');
-		int tag_len = 0, vallen = 0;
-
-		if (val) {
-			tag_len = val - argv[i];
-			val++;
-			vallen = strlen(val);
-		} else {
-			exit_code = 1;
-			error("Invalid input for BlueGene block "
-			      "update %s",
-			      argv[i]);
-			return 0;
-		}
-
-		if (!xstrncasecmp(tag, "BlockName", MAX(tag_len, 2))) {
-			block_msg.bg_block_id = val;
-		} else if (!xstrncasecmp(tag, "State", MAX(tag_len, 2))) {
-			if (!xstrncasecmp(val, "ERROR", MAX(vallen, 1)))
-				block_msg.state = BG_BLOCK_ERROR_FLAG;
-			else if (!xstrncasecmp(val, "FREE", MAX(vallen, 1)))
-				block_msg.state = BG_BLOCK_FREE;
-			else if (!xstrncasecmp(val, "RECREATE", MAX(vallen, 3)))
-				block_msg.state = BG_BLOCK_BOOTING;
-			else if (!xstrncasecmp(val, "REMOVE", MAX(vallen, 3)))
-				block_msg.state = BG_BLOCK_NAV;
-			else if (!xstrncasecmp(val, "RESUME", MAX(vallen, 3)))
-				block_msg.state = BG_BLOCK_TERM;
-			else {
-				exit_code = 1;
-				fprintf (stderr, "Invalid input: %s\n",
-					 argv[i]);
-				fprintf (stderr,
-					 "Acceptable State values "
-					 "are ERROR, FREE, RECREATE, "
-					 "REMOVE, RESUME\n");
-				return 0;
-			}
-			update_cnt++;
-		} else {
-			exit_code = 1;
-			error("Invalid input for BlueGene block update %s",
-			      argv[i]);
-			return 0;
-		}
-	}
-
-	if (!block_msg.bg_block_id) {
-		error("You didn't supply a block name.");
-		return 0;
-	} else if (block_msg.state == NO_VAL16) {
-		error("You didn't give me a state to set %s to "
-		      "(i.e. FREE, ERROR).", block_msg.mp_str);
-		return 0;
-	}
-
-	if (slurm_update_block(&block_msg)) {
-		exit_code = 1;
-		return slurm_get_errno ();
-	} else
-		return 0;
-}
-
-/*
- * _update_bluegene_submp - update the bluegene nodecards per the
- *	supplied arguments
- * IN argc - count of arguments
- * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise. parsing error prints
- *			error message and returns 0
- */
-static int _update_bluegene_submp(int argc, char **argv)
-{
-	int i, update_cnt = 0;
-	update_block_msg_t block_msg;
-
-	if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-		exit_code = 1;
-		fprintf(stderr, "This only works on a bluegene system.\n");
-		return 0;
-	}
-
-	slurm_init_update_block_msg ( &block_msg );
-
-	for (i=0; i<argc; i++) {
-		char *tag = argv[i];
-		char *val = strchr(argv[i], '=');
-		int tag_len = 0, vallen = 0;
-
-		if (val) {
-			tag_len = val - argv[i];
-			val++;
-			vallen = strlen(val);
-		} else {
-			exit_code = 1;
-			error("Invalid input for BlueGene SubMPName update %s",
-			      argv[i]);
-			return 0;
-		}
-
-		if (!xstrncasecmp(tag, "SubBPName", MAX(tag_len, 2))
-		    || !xstrncasecmp(tag, "SubMPName", MAX(tag_len, 2)))
-			block_msg.mp_str = val;
-		else if (!xstrncasecmp(tag, "State", MAX(tag_len, 2))) {
-			if (!xstrncasecmp(val, "ERROR", MAX(vallen, 1)))
-				block_msg.state = BG_BLOCK_ERROR_FLAG;
-			else if (!xstrncasecmp(val, "FREE", MAX(vallen, 1)))
-				block_msg.state = BG_BLOCK_FREE;
-			else {
-				exit_code = 1;
-				fprintf (stderr, "Invalid input: %s\n",
-					 argv[i]);
-				fprintf (stderr, "Acceptable State values "
-					 "are FREE and ERROR\n");
-				return 0;
-			}
-			update_cnt++;
-		} else {
-			exit_code = 1;
-			error("Invalid input for BlueGene SubMPName update %s",
-			      argv[i]);
-			return 0;
-		}
-	}
-
-	if (!block_msg.mp_str) {
-		error("You didn't supply an ionode list.");
-		return 0;
-	} else if (block_msg.state == NO_VAL16) {
-		error("You didn't give me a state to set %s to "
-		      "(i.e. FREE, ERROR).", block_msg.mp_str);
-		return 0;
-	}
-
-	if (slurm_update_block(&block_msg)) {
-		exit_code = 1;
-		return slurm_get_errno ();
-	} else
-		return 0;
 }
 
 /*
@@ -2058,8 +1854,6 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      details                  evokes additional details from the \"show\"  \n\
 			      command                                      \n\
      delete <SPECIFICATIONS>  delete the specified partition or reservation\n\
-			      On Dynamic layout Bluegene systems you can also\n\
-			      delete blocks.                               \n\
      errnumstr <ERRNO>        Given a Slurm error number, return a         \n\
                               descriptive string.                          \n\
      exit                     terminate scontrol                           \n\
@@ -2101,8 +1895,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      top <job_list>           Put specified job first in queue for user    \n\
      takeover                 ask slurm backup controller to take over     \n\
      uhold <jobid_list>       place user hold on specified job (see hold)  \n\
-     update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
-			      step or bluegene block/submp configuration   \n\
+     update <SPECIFICATIONS>  update job, node, partition, reservation, or \n\
+			      step                                         \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      wait_job <job_id>        wait until the nodes allocated to the job    \n\
@@ -2119,7 +1913,6 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
        \"hostlist\", \"hostlistsorted\", \"hostnames\",                    \n\
        \"job\", \"layouts\", \"node\", \"partition\", \"reservation\",     \n\
        \"slurmd\", \"step\", or \"topology\"                               \n\
-       (also for BlueGene only: \"block\" or \"submp\").                   \n\
 									   \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
        name, reservation name, job step id, or hostlist or pathname to a   \n\
@@ -2145,11 +1938,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 									   \n\
   <SPECIFICATIONS> are specified in the same format as the configuration   \n\
   file. You may wish to use the \"show\" keyword then use its output as    \n\
-  input for the update keyword, editing as needed.  Bluegene blocks/submps \n\
-  are only able to be set to an error or free state.  You can also remove  \n\
-  blocks by specifying 'remove' as the state.  The remove option is only   \n\
-  valid on Dynamic layout systems.                                         \n\
-  (Bluegene systems only)                                                  \n\
+  input for the update keyword, editing as needed.                         \n\
 									   \n\
   <CH_OP> identify checkpoint operations and may be \"able\", \"disable\", \n\
   \"enable\", \"create\", \"vacate\", \"requeue\", \"restart\", or \"error\"\n\

@@ -160,9 +160,8 @@ COMPLETING or DOWN state.
 \fBdelete\fP \fISPECIFICATION\fP
 Delete the entry with the specified \fISPECIFICATION\fP.
 The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP and
-\fIReservation=<name>\fP.  On Dynamically laid out Bluegene systems
-\fIBlockName=<name>\fP also works. Reservations and partitions should have
-no associated jobs at the time of their deletion (modify the job's first).
+\fIReservation=<name>\fP. Reservations and partitions should have
+no associated jobs at the time of their deletion (modify the jobs first).
 If the specified partition is in use, the request is denied.
 
 .TP
@@ -342,7 +341,6 @@ Display the state of the specified entity with the specified identification.
 \fIfederation\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
 \fIpartition\fP, \fIpowercap\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
 \fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or \fIhostnames\fP
-(also \fIblock\fP or \fIsubmp\fP on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified
 entity: job ID, node name, partition name, reservation name, or job step ID for
 \fIjob\fP, \fInode\fP, \fIpartition\fP, or \fIstep\fP respectively.
@@ -676,9 +674,6 @@ Value may be cleared with blank data value, for example "Features=".
 .TP
 \fIGeometry\fP=<geo>
 Reset the required job geometry.
-On Blue Gene the value should be three digits separated by
-"x" or ",". The digits represent the allocation size in
-X, Y and Z dimensions (e.g. "2x3x4").
 
 .TP
 \fIGres\fP=<list>
@@ -1279,8 +1274,7 @@ The memory size is specified in megabytes.
 .TP
 \fIMaxNodes\fP=<count>
 Set the maximum number of nodes which will be allocated to any single job
-in the partition. Specify a number, "INFINITE" or "UNLIMITED".  (On a
-Bluegene type system this represents a c\-node count.)
+in the partition. Specify a number, "INFINITE" or "UNLIMITED".
 Changing the \fIMaxNodes\fP of a partition has no effect upon jobs that
 have already begun execution.
 
@@ -1505,13 +1499,6 @@ use these reserved licenses plus any which are generally available.
 \fINodeCnt\fP=<num>[,num,...]
 Identify number of nodes to be reserved. The number can include a suffix of
 "k" or "K", in which case the number specified is multiplied by 1024.
-On BlueGene systems, this number represents a c\-node (compute node) count and
-will be rounded up as needed to reserve whole nodes (midplanes).
-In order to optimize the topology of the resource allocation on a new
-reservation (not on an updated reservation), specific sizes
-required for the reservation may be specified. For example, if you want to
-reserve 4096 c\-nodes on a BlueGene system that can be used to allocate two
-jobs each with 2048 c\-nodes, specify "NodeCnt=2k,2k".
 A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses.
 
@@ -1727,62 +1714,6 @@ Licenses and BurstBuffer parameters respectively.  Also CPU represents
 CoreCnt, in a reservation and will be adjusted if you have threads per
 core on your nodes.
 
-
-.TP
-\fBSPECIFICATIONS FOR UPDATE BLOCK/SUBMP \fR
-.TP
-Bluegene systems only!
-.TP
-\fIBlockName\fP=<name>
-Identify the bluegene block to be updated. This specification is required.
-.TP
-\fIState\fP=<free|error|recreate|remove|resume>
-This will update the state of a bluegene block.
-(i.e. update BlockName=RMP0 STATE=ERROR)
-\fBWARNING!!!!\fR With the exception of the RESUME state, all other
-state values will cancel any running job on the block!
-.RS
-.TP 10
-\fIFREE\fP
-Return the block to a free state.
-.TP
-\fIERROR\fP
-Make it so jobs don't run on the block.
-.TP
-\fIRECREATE\fP
-Destroy the current block and create a new one to take its place.
-.TP
-\fIREMOVE\fP
-Free and remove the block from the system.  If the block is smaller
-than a midplane every block on that midplane will be removed. (only
-available on dynamic laid out systems)
-.TP
-\fIRESUME\fP
-If a block is in ERROR state RESUME will return the block to its
-previous usable state (FREE or READY).
-.RE
-
-.TP
-\fISubMPName\fP=<name>
-Identify the bluegene ionodes to be updated (i.e. bg000[0\-3]). This
-specification is required.
-NOTE: Even on BGQ where node names are given in bg0000[00000] format
-this option takes an ionode name bg0000[0].
-
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, LAYOUTS \fR
-.TP
-\fILayout\fP=<name>
-Identify the layout to be updated. This specification is required.
-.TP
-\fIEntity\fP=<entity list>
-Identify the entities to be updated. This specification is required.
-.TP
-\fIKey\fP=<value>
-Keys/Values to update for the entities. The format must respect the layout.d
-configuration files. Key=Type cannot be updated. At least one Key/Value is
-required, several can be set.
-
 .TP
 \fBSPECIFICATIONS FOR SHOW COMMAND, LAYOUTS\fR
 .PP
@@ -1954,11 +1885,6 @@ restriction has been defined in the slurm.conf file.
 \fBscontrol update step:       \fR Admin, Operator, Coordinator
 .br
 .sp
-\fBscontrol show block:        \fR Admin, Operator
-.br
-\fBscontrol update block:      \fR Admin
-.br
-.sp
 \fBscontrol show node:         \fR Admin, Operator
 .br
 \fBscontrol update node:       \fR Admin
@@ -2071,7 +1997,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010-2017 SchedMD LLC.
+Copyright (C) 2010-2018 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.
