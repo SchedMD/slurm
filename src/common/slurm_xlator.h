@@ -360,7 +360,6 @@
 #define accounting_enforce_string slurm_accounting_enforce_string
 #define conn_type_string	slurm_conn_type_string
 #define node_use_string		slurm_node_use_string
-#define bg_block_state_string	slurm_bg_block_state_string
 #define reservation_flags_string slurm_reservation_flags_string
 #define print_multi_line_string slurm_print_multi_line_string
 

@@ -1546,8 +1546,6 @@ extern void  accounting_enforce_string(uint16_t enforce,
 extern char *conn_type_string(enum connection_type conn_type);
 extern char *conn_type_string_full(uint16_t *conn_type);
 extern char *node_use_string(enum node_use_type node_use);
-/* Translate a state enum to a readable string */
-extern char *bg_block_state_string(uint16_t state);
 
 /* Translate a Slurm nodelist to a char * of numbers
  * nid000[36-37] -> 36-37

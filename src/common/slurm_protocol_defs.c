@@ -59,7 +59,6 @@
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/plugins/select/bluegene/bg_enums.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -79,7 +78,6 @@ strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
 strong_alias(conn_type_string,	slurm_conn_type_string);
 strong_alias(conn_type_string_full, slurm_conn_type_string_full);
 strong_alias(node_use_string, slurm_node_use_string);
-strong_alias(bg_block_state_string, slurm_bg_block_state_string);
 strong_alias(cray_nodelist2nids, slurm_cray_nodelist2nids);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 strong_alias(print_multi_line_string, slurm_print_multi_line_string);
@@ -3331,58 +3329,6 @@ extern char* node_use_string(enum node_use_type node_use)
 		break;
 	}
 	return "";
-}
-
-extern char *bg_block_state_string(uint16_t state)
-{
-	static char tmp[25];
-	char *state_str = NULL;
-	char *err_str = NULL;
-	if (state & BG_BLOCK_ERROR_FLAG) {
-		err_str = "Error";
-		state &= (~BG_BLOCK_ERROR_FLAG);
-	}
-
-	switch (state) {
-	case BG_BLOCK_NAV:
-		if (!err_str)
-			state_str = "NAV";
-		else {
-			err_str = NULL;
-			state_str = "Error";
-		}
-		break;
-	case BG_BLOCK_FREE:
-		state_str = "Free";
-		break;
-	case BG_BLOCK_BUSY:
-		state_str = "Busy";
-		break;
-	case BG_BLOCK_BOOTING:
-		state_str = "Boot";
-		break;
-	case BG_BLOCK_REBOOTING:
-		state_str = "Reboot";
-		break;
-	case BG_BLOCK_INITED:
-		state_str = "Ready";
-		break;
-	case BG_BLOCK_ALLOCATED:
-		state_str = "Alloc";
-		break;
-	case BG_BLOCK_TERM:
-		state_str = "Term";
-		break;
-	default:
-		state_str = "Unknown";
-		break;
-	}
-
-	if (err_str)
-		snprintf(tmp, sizeof(tmp), "%s(%s)", err_str, state_str);
-	else
-		return state_str;
-	return tmp;
 }
 
 extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist)
