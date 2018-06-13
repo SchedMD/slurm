@@ -1158,13 +1158,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			temp_nodes = step_ptr->job_ptr->nodes;
 		} else {
 			tasks = step_ptr->step_layout->task_cnt;
-#ifdef HAVE_BGQ
-			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-						    SELECT_JOBDATA_NODE_CNT,
-						    &nodes);
-#else
 			nodes = step_ptr->step_layout->node_cnt;
-#endif
 			task_dist = step_ptr->step_layout->task_dist;
 			temp_nodes = step_ptr->step_layout->node_list;
 		}

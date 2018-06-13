@@ -111,9 +111,6 @@ extern int topo_build_config(void)
  */
 extern bool topo_generate_node_ranking(void)
 {
-#ifdef HAVE_BG
-	return false;
-#endif
 	nodes_to_hilbert_curve();
 	return true;
 }

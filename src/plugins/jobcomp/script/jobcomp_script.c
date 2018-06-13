@@ -206,11 +206,6 @@ struct jobcomp_info {
 	char *std_in;
 	char *std_out;
 	char *std_err;
-#ifdef HAVE_BG
-	char *connect_type;
-	char *geometry;
-	char *blockid;
-#endif
 };
 
 static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
@@ -298,14 +293,6 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 			j->std_err = xstrdup(job->details->std_err);
 	}
 
-#ifdef HAVE_BG
-	j->connect_type = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
-						   SELECT_PRINT_CONNECTION);
-	j->geometry = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
-					       SELECT_PRINT_GEOMETRY);
-	j->blockid = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
-					      SELECT_PRINT_BG_ID);
-#endif
 	return (j);
 }
 
@@ -330,11 +317,6 @@ static void _jobcomp_info_destroy(void *arg)
 	xfree (j->std_err);
 	xfree (j->user_name);
 	xfree (j->work_dir);
-#ifdef HAVE_BG
-	xfree (j->blockid);
-	xfree (j->connect_type);
-	xfree (j->geometry);
-#endif
 	xfree (j);
 }
 
@@ -479,12 +461,6 @@ static char ** _create_environment (struct jobcomp_info *job)
 		_env_append (&env, "STDERR",     job->std_err);
 	mins2time_str(job->limit, time_str, sizeof(time_str));
 	_env_append (&env, "LIMIT", time_str);
-
-#ifdef HAVE_BG
-	_env_append (&env, "BLOCKID",      job->blockid);
-	_env_append (&env, "CONNECT_TYPE", job->connect_type);
-	_env_append (&env, "GEOMETRY",     job->geometry);
-#endif
 
 	if ((tz = getenv ("TZ")))
 		_env_append_fmt (&env, "TZ", "%s", tz);
