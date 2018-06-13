@@ -1,15 +1,11 @@
 # Makefile for node selection plugins
 
-if WITH_CXX
-BLUEGENE = bluegene
-endif
-
-SUBDIRS = other alps $(BLUEGENE) cons_res cons_tres cray linear serial
+SUBDIRS = other alps cons_res cons_tres cray linear serial
 
 # Each plugin here needs a plugin_id, here are the currect plug_ids
 # for each plugin.
 
-# bluegene	   = 100
+# bluegene	   = 100 ==> Not currently used
 # cons_res	   = 101
 # linear	   = 102
 # bgq		   = 103 ==> Not currently used
