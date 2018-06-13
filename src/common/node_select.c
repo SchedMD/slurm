@@ -103,7 +103,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_sprint",
 	"select_p_select_jobinfo_xstrdup",
 	"select_p_update_block",
-	"select_p_fail_cnode",
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
 	"select_p_update_node_state",
@@ -1206,19 +1205,6 @@ extern int select_g_update_block (update_block_msg_t *block_desc_ptr)
 
 	return (*(ops[select_context_default].
 		  update_block))(block_desc_ptr);
-}
-
-/*
- * Fail certain cnodes in a blocks midplane (usually comes from the
- *        IBM runjob mux)
- * IN step_ptr - step that has failed cnodes
- */
-extern int select_g_fail_cnode (struct step_record *step_ptr)
-{
-	if (slurm_select_init(0) < 0)
-		return SLURM_ERROR;
-
-	return (*(ops[select_context_default].fail_cnode))(step_ptr);
 }
 
 /*

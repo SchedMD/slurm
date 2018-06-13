@@ -98,13 +98,6 @@ extern int other_block_init(List part_list);
 extern int other_update_block(update_block_msg_t *block_desc_ptr);
 
 /*
- * Fail certain cnodes in a blocks midplane (usually comes from the
- *        IBM runjob mux)
- * IN step_ptr - step that failed
- */
-extern int other_fail_cnode (struct step_record *step_ptr);
-
-/*
  * Get select data from a plugin
  * IN node_pts  - current node record
  * IN dinfo   - type of data to get from the node record

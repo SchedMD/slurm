@@ -679,15 +679,6 @@ False if the termination of the step has completed (all processes have exited).<
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="commandline">int select_p_fail_cnode(struct step_record *step_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: This function fails
-  certain cnodes in a blocks midplane.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline">step_ptr</span>&nbsp; &nbsp;&nbsp(input)
-information on the step that has failed cnodes.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR.</p>
-
 <p class="footer"><a href="#top">top</a></p>
 
 

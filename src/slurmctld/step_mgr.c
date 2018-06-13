@@ -638,7 +638,6 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	 * to KILL afterwards.
 	 */
 	if (signal == SIG_NODE_FAIL) {
-		select_g_fail_cnode(step_ptr);
 		signal = SIGKILL;
 		if (rc != SLURM_SUCCESS)
 			return rc;
