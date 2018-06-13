@@ -12194,7 +12194,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     job_ptr->wait4switch, job_ptr->job_id);
 	}
 
-	/* Always do this last just in case the assoc_ptr changed */
 	if (job_specs->admin_comment) {
 		if (!validate_super_user(uid)) {
 			error("Attempt to change admin_comment for job %u",
@@ -12220,7 +12219,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 	}
 
-	/* Always do this last just in case the assoc_ptr changed */
 	if (job_specs->comment) {
 		xfree(job_ptr->comment);
 		job_ptr->comment = xstrdup(job_specs->comment);
