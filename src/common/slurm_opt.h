@@ -275,7 +275,6 @@ typedef struct slurm_options {
 	/* BLUEGENE SPECIFIC */
 	bool reboot;			/* --reboot			*/
 	bool no_rotate;			/* --no_rotate			*/
-	uint16_t conn_type[HIGHEST_DIMENSIONS];/* --conn-type		*/
 	char *blrtsimage;		/* BlrtsImage for block		*/
 	char *linuximage;		/* LinuxImage for block		*/
 	char *mloaderimage;		/* mloaderImage for block	*/

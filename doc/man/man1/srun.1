@@ -2295,22 +2295,6 @@ Default from \fIblugene.conf\fR if not set. This option applies to job
 allocations.
 
 .TP
-\fB\-\-conn\-type\fR=<\fItype\fR>
-Require the block connection type to be of a certain type.
-On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.
-If NAV, or if not set, then Slurm will try to fit a what the
-DefaultConnType is set to in the bluegene.conf if that isn't set the
-default is TORUS.
-You should not normally set this option.
-If running on a BGP system and wanting to run in HTC mode (only for 1
-midplane and below).  You can use HTC_S for SMP, HTC_D for Dual, HTC_V
-for virtual node mode, and HTC_L for Linux mode.
-For systems that allow a different connection type per dimension you
-can supply a comma separated list of connection types may be specified, one for
-each dimension (i.e. M,T,T,T will give you a torus connection is all
-dimensions expect the first). This option applies to job allocations.
-
-.TP
 \fB\-\-ioload\-image\fR=<\fIpath\fR>
 Path to io image for bluegene block.  BGP only.
 Default from \fIblugene.conf\fR if not set. This option applies to job
@@ -2573,9 +2557,6 @@ Same as \fB\-\-cnload\-image\fR
 .TP
 \fBSLURM_COMPRESS\fR
 Same as \fB\-\-compress\fR
-.TP
-\fBSLURM_CONN_TYPE\fR
-Same as \fB\-\-conn\-type\fR
 .TP
 \fBSLURM_CONSTRAINT\fR
 Same as \fB\-C\fR, \fB\-\-constraint\fR

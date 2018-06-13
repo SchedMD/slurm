@@ -94,7 +94,6 @@
 #define OPT_NODES       0x05
 #define OPT_OVERCOMMIT  0x06
 #define OPT_COMPRESS	0x07
-#define OPT_CONN_TYPE	0x08
 #define OPT_RESV_PORTS	0x09
 #define OPT_NO_ROTATE	0x0a
 #define OPT_MPI         0x0c
@@ -142,7 +141,6 @@
 #define LONG_OPT_COMPRESS    0x10e
 #define LONG_OPT_POWER       0x10f
 #define LONG_OPT_DEBUG_TS    0x110
-#define LONG_OPT_CONNTYPE    0x111
 #define LONG_OPT_THREAD_SPEC 0x112
 #define LONG_OPT_TEST_ONLY   0x113
 #define LONG_OPT_NETWORK     0x114
@@ -294,7 +292,6 @@ struct option long_options[] = {
 	{"cnload-image",     required_argument, 0, LONG_OPT_LINUX_IMAGE},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 	{"comment",          required_argument, 0, LONG_OPT_COMMENT},
-	{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
@@ -1026,7 +1023,6 @@ env_vars_t env_vars[] = {
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &sropt.ckpt_dir,    NULL             },
 {"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
-{"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL             },
 {"SLURM_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL             },
 {"SLURM_CLUSTER_CONSTRAINT",OPT_STRING, &opt.c_constraints, NULL             },
 {"SLURM_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL             },
@@ -1289,11 +1285,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		else
 			error("Invalid SLURM_OPEN_MODE: %s. Ignored", val);
 		break;
-
-	case OPT_CONN_TYPE:
-		verify_conn_type(val, opt.conn_type);
-		break;
-
 	case OPT_NO_ROTATE:
 		opt.no_rotate = true;
 		break;
@@ -2003,11 +1994,6 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_USAGE:
 			_usage();
 			exit(0);
-		case LONG_OPT_CONNTYPE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			verify_conn_type(optarg, opt.conn_type);
-			break;
 		case LONG_OPT_TEST_ONLY:
 			sropt.test_only = true;
 			break;
@@ -3236,11 +3222,6 @@ static void _opt_list(void)
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	if (opt.conn_type[0] != NO_VAL16) {
-		str = conn_type_string_full(opt.conn_type);
-		info("conn_type      : %s", str);
-		xfree(str);
-	}
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("preserve_env   : %s", tf_(sropt.preserve_env));

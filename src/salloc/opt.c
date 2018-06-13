@@ -87,7 +87,6 @@
 #define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
-#define OPT_CONN_TYPE	0x07
 #define OPT_NO_ROTATE	0x08
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
@@ -128,7 +127,6 @@
 #define LONG_OPT_MINCORES    0x10d
 #define LONG_OPT_MINTHREADS  0x10e
 #define LONG_OPT_CORE	     0x10f
-#define LONG_OPT_CONNTYPE    0x110
 #define LONG_OPT_EXCLUSIVE   0x111
 #define LONG_OPT_BEGIN       0x112
 #define LONG_OPT_MAIL_TYPE   0x113
@@ -435,7 +433,6 @@ env_vars_t env_vars[] = {
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SALLOC_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
-  {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SALLOC_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL          },
   {"SALLOC_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraints, NULL          },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
@@ -743,7 +740,6 @@ static void _set_options(int argc, char **argv)
 		{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"cnload-image",  required_argument, 0, LONG_OPT_LINUX_IMAGE},
 		{"comment",       required_argument, 0, LONG_OPT_COMMENT},
-		{"conn-type",     required_argument, 0, LONG_OPT_CONNTYPE},
 		{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
@@ -1181,9 +1177,6 @@ static void _set_options(int argc, char **argv)
 				error("--gid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_CONNTYPE:
-			verify_conn_type(optarg, opt.conn_type);
 			break;
 		case LONG_OPT_BEGIN:
 			if (!optarg)
@@ -2150,11 +2143,6 @@ static void _opt_list(void)
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	if (opt.conn_type[0] != NO_VAL16) {
-		str = conn_type_string_full(opt.conn_type);
-		info("conn_type      : %s", str);
-		xfree(str);
-	}
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	if (opt.linuximage)

@@ -93,7 +93,6 @@ enum wrappers {
 #define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
-#define OPT_CONN_TYPE	0x07
 #define OPT_DISTRIB	0x08
 #define OPT_NO_ROTATE	0x09
 #define OPT_MULTI	0x0b
@@ -139,7 +138,6 @@ enum wrappers {
 #define LONG_OPT_MINCORES    0x10d
 #define LONG_OPT_MINTHREADS  0x10e
 #define LONG_OPT_CORE	     0x10f
-#define LONG_OPT_CONNTYPE    0x110
 #define LONG_OPT_EXCLUSIVE   0x111
 #define LONG_OPT_BEGIN       0x112
 #define LONG_OPT_MAIL_TYPE   0x113
@@ -503,7 +501,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL          },
   {"SBATCH_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL          },
   {"SBATCH_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraints, NULL          },
-  {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SBATCH_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
@@ -670,11 +667,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-
-	case OPT_CONN_TYPE:
-		verify_conn_type(val, opt.conn_type);
-		break;
-
 	case OPT_NO_ROTATE:
 		opt.no_rotate = true;
 		break;
@@ -840,7 +832,6 @@ static struct option long_options[] = {
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"cnload-image",  required_argument, 0, LONG_OPT_LINUX_IMAGE},
 	{"comment",       required_argument, 0, LONG_OPT_COMMENT},
-	{"conn-type",     required_argument, 0, LONG_OPT_CONNTYPE},
 	{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
@@ -1816,11 +1807,6 @@ static void _set_options(int argc, char **argv)
 				error("--gid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_CONNTYPE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			verify_conn_type(optarg, opt.conn_type);
 			break;
 		case LONG_OPT_BEGIN:
 			if (!optarg)
@@ -3437,11 +3423,6 @@ static void _opt_list(void)
 	str = print_constraints();
 	info("constraints       : %s", str);
 	xfree(str);
-	if (opt.conn_type[0] != NO_VAL16) {
-		str = conn_type_string_full(opt.conn_type);
-		info("conn_type      : %s", str);
-		xfree(str);
-	}
 	info("reboot            : %s", opt.reboot ? "no" : "yes");
 	info("rotate            : %s", opt.no_rotate ? "yes" : "no");
 	info("network           : %s", opt.network);
