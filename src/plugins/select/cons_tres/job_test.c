@@ -3175,8 +3175,7 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		/* Identify available GRES and usable cores */
 		if (!core_map[node_i]) {
 			core_map[node_i] = bit_alloc(
-					select_node_record[node_i].sockets *
-					select_node_record[node_i].cores);
+					select_node_record[node_i].tot_cores);
 			bit_set_all(core_map[node_i]);
 		}
 		sock_gres_list = gres_plugin_job_test2(job_ptr->gres_list,
