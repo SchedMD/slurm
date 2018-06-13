@@ -4419,7 +4419,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 				uint32_t job_id, char *node_name)
 {
 	int i, j, s, c, tot_cores;
-	sock_gres_t *sock_gres = xmalloc(sizeof(sock_gres_t));
+	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1, total_gres = 0;
 	bool match = false;
 
@@ -4528,7 +4528,7 @@ static sock_gres_t *_build_sock_gres_by_type(gres_job_state_t *job_gres_ptr,
 				uint32_t job_id, char *node_name)
 {
 	int i;
-	sock_gres_t *sock_gres = xmalloc(sizeof(sock_gres_t));
+	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1;
 	bool match = false;
 
@@ -4580,7 +4580,7 @@ static sock_gres_t *_build_sock_gres_basic(gres_job_state_t *job_gres_ptr,
 				uint16_t sockets, uint16_t cores_per_sock,
 				uint32_t job_id, char *node_name)
 {
-	sock_gres_t *sock_gres = xmalloc(sizeof(sock_gres_t));
+	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1;
 
 	if (core_bitmap && (bit_set_count(core_bitmap) == 0))
