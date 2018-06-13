@@ -390,9 +390,6 @@
 #define jobacctinfo_create      slurm_jobacctinfo_create
 #define jobacctinfo_destroy     slurm_jobacctinfo_destroy
 
-/* node_select.[ch] functions */
-#define destroy_select_ba_request	slurm_destroy_select_ba_request
-
 /* parse_config.[ch] functions */
 #define s_p_hashtbl_create	slurm_s_p_hashtbl_create
 #define s_p_hashtbl_destroy	slurm_s_p_hashtbl_destroy

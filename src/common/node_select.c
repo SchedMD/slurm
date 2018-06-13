@@ -112,8 +112,6 @@ const char *node_select_syms[] = {
 	"select_p_ba_get_dims",
 };
 
-strong_alias(destroy_select_ba_request,	slurm_destroy_select_ba_request);
-
 static int select_context_cnt = -1;
 static int select_context_default = -1;
 
@@ -146,26 +144,6 @@ static int _load_plugins(void *x, void *arg)
 	}
 
 	return 0;
-}
-
-/**
- * delete a block request
- */
-extern void destroy_select_ba_request(void *arg)
-{
-	select_ba_request_t *ba_request = (select_ba_request_t *)arg;
-
-	if (ba_request) {
-		xfree(ba_request->save_name);
-		FREE_NULL_LIST(ba_request->elongate_geos);
-
-		xfree(ba_request->blrtsimage);
-		xfree(ba_request->linuximage);
-		xfree(ba_request->mloaderimage);
-		xfree(ba_request->ramdiskimage);
-
-		xfree(ba_request);
-	}
 }
 
 /**
