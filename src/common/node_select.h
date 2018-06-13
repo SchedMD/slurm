@@ -209,8 +209,6 @@ typedef struct slurm_select_ops {
 						 int mode);
 	int		(*update_block)		(update_block_msg_t
 						 *block_desc_ptr);
-	int		(*update_sub_node)	(update_block_msg_t
-						 *block_desc_ptr);
 	int             (*fail_cnode)           (struct step_record *step_ptr);
 	int		(*get_info_from_plugin)	(enum
 						 select_plugindata_info dinfo,
@@ -389,12 +387,6 @@ extern int select_g_update_node_state (struct node_record *node_ptr);
 /***************************\
  * BLOCK SPECIFIC FUNCIONS *
 \***************************/
-
-/*
- * Update specific sub nodes (usually something has gone wrong)
- * IN block_desc_ptr - information about the block
- */
-extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr);
 
 /*
  * Update specific block (usually something has gone wrong)

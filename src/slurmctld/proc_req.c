@@ -5146,10 +5146,6 @@ static void _slurm_rpc_update_block(slurm_msg_t * msg)
 			error_code = select_g_update_block(block_desc_ptr);
 			END_TIMER2("_slurm_rpc_update_block");
 			name = block_desc_ptr->bg_block_id;
-		} else if (block_desc_ptr->mp_str) {
-			error_code = select_g_update_sub_node(block_desc_ptr);
-			END_TIMER2("_slurm_rpc_update_subbp");
-			name = block_desc_ptr->mp_str;
 		} else {
 			error("Unknown update for blocks");
 			error_code = SLURM_ERROR;

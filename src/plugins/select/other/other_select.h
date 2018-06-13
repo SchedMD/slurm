@@ -98,12 +98,6 @@ extern int other_block_init(List part_list);
 extern int other_update_block(update_block_msg_t *block_desc_ptr);
 
 /*
- * Update specific sub nodes(usually something has gone wrong)
- * IN block_desc_ptr - information about the block
- */
-extern int other_update_sub_node(update_block_msg_t *block_desc_ptr);
-
-/*
  * Fail certain cnodes in a blocks midplane (usually comes from the
  *        IBM runjob mux)
  * IN step_ptr - step that failed

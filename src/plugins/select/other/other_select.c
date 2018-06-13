@@ -100,7 +100,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_sprint",
 	"select_p_select_jobinfo_xstrdup",
 	"select_p_update_block",
-	"select_p_update_sub_node",
 	"select_p_fail_cnode",
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
@@ -666,18 +665,6 @@ extern int other_update_block (update_block_msg_t *block_desc_ptr)
 		return SLURM_ERROR;
 
 	return (*(ops.update_block))(block_desc_ptr);
-}
-
-/*
- * Update specific sub nodes (usually something has gone wrong)
- * IN block_desc_ptr - information about the block
- */
-extern int other_update_sub_node (update_block_msg_t *block_desc_ptr)
-{
-	if (other_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.update_sub_node))(block_desc_ptr);
 }
 
 /*
