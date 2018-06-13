@@ -527,45 +527,6 @@ extern void verify_conn_type(const char *arg, uint16_t *conn_type)
 	xfree(arg_tmp);
 }
 
-/*
- * verify geometry arguments, must have proper count
- * returns -1 on error, 0 otherwise
- */
-int verify_geometry(const char *arg, uint16_t *geometry)
-{
-	char* token, *delimiter = ",x", *next_ptr;
-	int i, rc = 0;
-	char* geometry_tmp = xstrdup(arg);
-	char* original_ptr = geometry_tmp;
-	int dims = slurmdb_setup_cluster_dims();
-
-	token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-	for (i=0; i<dims; i++) {
-		if (token == NULL) {
-			error("insufficient dimensions in --geometry");
-			rc = -1;
-			break;
-		}
-		geometry[i] = (uint16_t)atoi(token);
-		if (geometry[i] == 0 || geometry[i] == NO_VAL16) {
-			error("invalid --geometry argument");
-			rc = -1;
-			break;
-		}
-		geometry_tmp = next_ptr;
-		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-	}
-	if (token != NULL) {
-		error("too many dimensions in --geometry");
-		rc = -1;
-	}
-
-	if (original_ptr)
-		xfree(original_ptr);
-
-	return rc;
-}
-
 /* return command name from its full path name */
 char * base_name(char* command)
 {

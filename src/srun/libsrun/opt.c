@@ -97,7 +97,6 @@
 #define OPT_CONN_TYPE	0x08
 #define OPT_RESV_PORTS	0x09
 #define OPT_NO_ROTATE	0x0a
-#define OPT_GEOMETRY	0x0b
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
 #define OPT_MEM_BIND    0x0e
@@ -248,7 +247,6 @@ struct option long_options[] = {
 	{"error",            required_argument, 0, 'e'},
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
-	{"geometry",         required_argument, 0, 'g'},
 	{"gpus",             required_argument, 0, 'G'},
 	{"hold",             no_argument,       0, 'H'},
 	{"input",            required_argument, 0, 'i'},
@@ -383,7 +381,7 @@ struct option long_options[] = {
 #endif
 	{NULL,               0,                 0, 0}
 	};
-char *opt_string = "+A:B:c:C:d:D:e:Eg:G:hHi:I::jJ:kK::lL:m:M:n:N:"
+char *opt_string = "+A:B:c:C:d:D:e:EG:hHi:I::jJ:kK::lL:m:M:n:N:"
 		   "o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
 
 
@@ -795,7 +793,6 @@ static void _opt_default(void)
 {
 	char *launch_params;
 	char buf[MAXPATHLEN + 1];
-	int i;
 	uid_t uid = getuid();
 
 	if (pass_number == 1) {
@@ -911,10 +908,6 @@ static void _opt_default(void)
 	sropt.accel_bind_type		= 0;
 	opt.blrtsimage			= NULL;
 	opt.burst_buffer		= NULL;
-	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
-		opt.conn_type[i]	= NO_VAL16;
-		opt.geometry[i]		= 0;
-	}
 	sropt.compress			= 0;
 	opt.constraints			= NULL;
 	opt.contiguous			= false;
@@ -931,7 +924,6 @@ static void _opt_default(void)
 	opt.cpus_set			= false;
 	sropt.exclusive			= false;
 	opt.extra_set			= false;
-	/* opt.geometry[i]		= 0;	See above */
 	opt.gres			= NULL;
 	opt.hint_env			= NULL;
 	opt.hint_set			= false;
@@ -1049,7 +1041,6 @@ env_vars_t env_vars[] = {
 {"SLURM_EPILOG",        OPT_STRING,     &sropt.epilog,      NULL             },
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
 {"SLURM_EXPORT_ENV",    OPT_STRING,     &sropt.export_env,  NULL             },
-{"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
 {"SLURM_GPUS",          OPT_STRING,     &opt.gpus,          NULL             },
 {"SLURM_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL             },
 {"SLURM_GPU_FREQ",      OPT_STRING,     &opt.gpu_freq,      NULL             },
@@ -1307,13 +1298,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.no_rotate = true;
 		break;
 
-	case OPT_GEOMETRY:
-		if (verify_geometry(val, opt.geometry)) {
-			error("\"%s=%s\" -- invalid geometry, ignoring...",
-			      e->var, val);
-		}
-		break;
-
 	case OPT_GRES_FLAGS:
 		if (!xstrcasecmp(val, "enforce-binding")) {
 			opt.job_flags |= GRES_ENFORCE_BIND;
@@ -1557,12 +1541,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'E':
 			sropt.preserve_env = true;
-			break;
-		case (int)'g':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (verify_geometry(optarg, opt.geometry))
-				exit(error_exit);
 			break;
 		case (int)'G':
 			xfree(opt.gpus);
@@ -3263,9 +3241,6 @@ static void _opt_list(void)
 		info("conn_type      : %s", str);
 		xfree(str);
 	}
-	str = print_geometry(opt.geometry);
-	info("geometry       : %s", str);
-	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("preserve_env   : %s", tf_(sropt.preserve_env));

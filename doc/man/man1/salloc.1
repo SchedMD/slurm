@@ -1612,15 +1612,6 @@ each dimension (i.e. M,T,T,T will give you a torus connection is all
 dimensions expect the first).
 
 .TP
-\fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR> | <\fIAxXxYxZ\fR>
-Specify the geometry requirements for the job. On BlueGene/L and BlueGene/P
-systems there are three numbers giving dimensions in the X, Y and Z directions,
-while on BlueGene/Q systems there are four numbers giving dimensions in the
-A, X, Y and Z directions and can not be used to allocate sub-blocks.
-For example "\-\-geometry=1x2x3x4", specifies a block of nodes having
-1 x 2 x 3 x 4 = 24 nodes (actually midplanes on BlueGene).
-
-.TP
 \fB\-\-ioload\-image\fR=<\fIpath\fR>
 Path to io image for bluegene block.  BGP only.
 Default from \fIblugene.conf\fR if not set.
@@ -1688,9 +1679,6 @@ Same as \fB\-\-delay\-boot\fR
 .TP
 \fBSALLOC_EXCLUSIVE\fR
 Same as \fB\-\-exclusive\fR
-.TP
-\fBSALLOC_GEOMETRY\fR
-Same as \fB\-g, \-\-geometry\fR
 .\ .TP
 .\ \fBSALLOC_GPUS\fR
 .\ Same as \fB\-G, \-\-gpus\fR

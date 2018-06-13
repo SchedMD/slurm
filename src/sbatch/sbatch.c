@@ -610,13 +610,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.hold)
 		desc->priority     = 0;
 
-	if (opt.geometry[0] != NO_VAL16) {
-		int dims = slurmdb_setup_cluster_dims();
-
-		for (i = 0; i < dims; i++)
-			desc->geometry[i] = opt.geometry[i];
-	}
-
 	memcpy(desc->conn_type, opt.conn_type, sizeof(desc->conn_type));
 
 	if (opt.reboot)

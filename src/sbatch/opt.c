@@ -96,7 +96,6 @@ enum wrappers {
 #define OPT_CONN_TYPE	0x07
 #define OPT_DISTRIB	0x08
 #define OPT_NO_ROTATE	0x09
-#define OPT_GEOMETRY	0x0a
 #define OPT_MULTI	0x0b
 #define OPT_EXCLUSIVE	0x0c
 #define OPT_OVERCOMMIT	0x0d
@@ -310,7 +309,6 @@ static bool _valid_node_list(char **node_list_pptr)
 static void _opt_default(bool first_pass)
 {
 	char buf[MAXPATHLEN + 1];
-	int i;
 	uid_t uid = getuid();
 
 	/* Some options will persist for all components of a heterogeneous job
@@ -393,10 +391,6 @@ static void _opt_default(bool first_pass)
 	xfree(opt.burst_buffer);
 	xfree(opt.constraints);
 	opt.contiguous			= false;
-	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
-		opt.conn_type[i]	 = NO_VAL16;
-		opt.geometry[i]	 	= 0;
-	}
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.cpu_freq_gov		= NO_VAL;
@@ -405,7 +399,6 @@ static void _opt_default(bool first_pass)
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
 	opt.distribution		= SLURM_DIST_UNKNOWN;
-	/* opt.geometry[i]	See above */
 	xfree(opt.gres);
 	opt.hint_env			= NULL;
 	opt.hint_set			= false;
@@ -519,7 +512,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL          },
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SBATCH_EXPORT",        OPT_STRING,     &sbopt.export_env,  NULL          },
-  {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
   {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
   {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
   {"SBATCH_GPUS",          OPT_STRING,     &opt.gpus,          NULL          },
@@ -686,14 +678,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_NO_ROTATE:
 		opt.no_rotate = true;
 		break;
-
-	case OPT_GEOMETRY:
-		if (verify_geometry(val, opt.geometry)) {
-			error("\"%s=%s\" -- invalid geometry, ignoring...",
-			      e->var, val);
-		}
-		break;
-
 	case OPT_GRES_FLAGS:
 		if (!xstrcasecmp(val, "enforce-binding")) {
 			opt.job_flags |= GRES_ENFORCE_BIND;
@@ -815,7 +799,6 @@ static struct option long_options[] = {
 	{"workdir",       required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
-	{"geometry",      required_argument, 0, 'g'},
 	{"gpus",          required_argument, 0, 'G'},
 	{"help",          no_argument,       0, 'h'},
 	{"hold",          no_argument,       0, 'H'},
@@ -932,7 +915,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+ba:A:B:c:C:d:D:e:F:g:G:hHi:IJ:kL:m:M:n:N:o:Op:P:q:QRsS:t:uU:vVw:Wx:";
+	"+ba:A:B:c:C:d:D:e:F:G:hHi:IJ:kL:m:M:n:N:o:Op:P:q:QRsS:t:uU:vVw:Wx:";
 char *pos_delimit;
 
 
@@ -1505,12 +1488,6 @@ static void _set_options(int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case 'g':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (verify_geometry(optarg, opt.geometry))
-				exit(error_exit);
 			break;
 		case 'G':
 			xfree(opt.gpus);
@@ -3465,9 +3442,6 @@ static void _opt_list(void)
 		info("conn_type      : %s", str);
 		xfree(str);
 	}
-	str = print_geometry(opt.geometry);
-	info("geometry          : %s", str);
-	xfree(str);
 	info("reboot            : %s", opt.reboot ? "no" : "yes");
 	info("rotate            : %s", opt.no_rotate ? "yes" : "no");
 	info("network           : %s", opt.network);

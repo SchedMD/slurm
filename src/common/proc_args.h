@@ -66,9 +66,6 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size);
  */
 extern void verify_conn_type(const char *arg, uint16_t *conn_type);
 
-/* verify the requested geometry arguments */
-int verify_geometry(const char *arg, uint16_t *geometry);
-
 /* return command name from its full path name */
 char * base_name(char* command);
 

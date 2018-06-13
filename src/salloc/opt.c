@@ -89,7 +89,6 @@
 #define OPT_CORE        0x06
 #define OPT_CONN_TYPE	0x07
 #define OPT_NO_ROTATE	0x08
-#define OPT_GEOMETRY	0x09
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
 #define OPT_JOBID       0x0c
@@ -294,8 +293,6 @@ static void argerror(const char *msg, ...)
  */
 static void _opt_default(void)
 {
-	int i;
-
 	/*
 	 * Some options will persist for all components of a heterogeneous job
 	 * once specified for one, but will be overwritten with new values if
@@ -370,10 +367,6 @@ static void _opt_default(void)
 	xfree(opt.burst_buffer);
 	xfree(opt.constraints);
 	opt.contiguous			= false;
-	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
-		opt.conn_type[i]	 = NO_VAL16;
-		opt.geometry[i] 	 = 0;
-	}
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.cpu_freq_max		= NO_VAL;
@@ -383,7 +376,6 @@ static void _opt_default(void)
 	opt.cpus_set			= false;
 	saopt.default_job_name		= false;
 	opt.distribution		= SLURM_DIST_UNKNOWN;
-	/* opt.geometry[i]		= 0;	See above */
 	xfree(opt.hint_env);
 	opt.hint_set			= false;
 	xfree(opt.gres);
@@ -395,7 +387,6 @@ static void _opt_default(void)
 	opt.mem_per_cpu			= -1;
 	opt.pn_min_cpus			= -1;
 	opt.min_nodes			= 1;
-	opt.no_rotate			= false;
 	opt.ntasks			= 1;
 	opt.ntasks_per_node		= 0;  /* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
@@ -453,7 +444,6 @@ env_vars_t env_vars[] = {
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SALLOC_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
-  {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
   {"SALLOC_GPUS",          OPT_STRING,     &opt.gpus,          NULL          },
   {"SALLOC_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
   {"SALLOC_GPU_FREQ",      OPT_STRING,     &opt.gpu_freq,      NULL          },
@@ -581,21 +571,6 @@ _process_env_var(env_vars_t *e, const char *val)
 						   &opt.max_nodes );
 		if (opt.nodes_set == false) {
 			error("invalid node count in env variable, ignoring");
-		}
-		break;
-
-	case OPT_CONN_TYPE:
-		verify_conn_type(val, opt.conn_type);
-		break;
-
-	case OPT_NO_ROTATE:
-		opt.no_rotate = true;
-		break;
-
-	case OPT_GEOMETRY:
-		if (verify_geometry(val, opt.geometry)) {
-			error("\"%s=%s\" -- invalid geometry, ignoring...",
-			      e->var, val);
 		}
 		break;
 	case OPT_GRES_FLAGS:
@@ -731,7 +706,6 @@ static void _set_options(int argc, char **argv)
 		{"dependency",    required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
-		{"geometry",      required_argument, 0, 'g'},
 		{"gpus",          required_argument, 0, 'G'},
 		{"help",          no_argument,       0, 'h'},
 		{"hold",          no_argument,       0, 'H'},
@@ -835,7 +809,7 @@ static void _set_options(int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:B:c:C:d:D:F:g:G:hHI::J:kK::L:m:M:n:N:Op:P:q:QRsS:t:uU:vVw:W:x:";
+		"+A:B:c:C:d:D:F:G:hHI::J:kK::L:m:M:n:N:Op:P:q:QRsS:t:uU:vVw:W:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -909,10 +883,6 @@ static void _set_options(int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case 'g':
-			if (verify_geometry(optarg, opt.geometry))
-				exit(error_exit);
 			break;
 		case 'G':
 			xfree(opt.gpus);
@@ -2185,9 +2155,6 @@ static void _opt_list(void)
 		info("conn_type      : %s", str);
 		xfree(str);
 	}
-	str = print_geometry(opt.geometry);
-	info("geometry       : %s", str);
-	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	if (opt.linuximage)

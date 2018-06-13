@@ -1034,14 +1034,6 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->priority     = 0;
 	if (opt_local->jobid != NO_VAL)
 		j->job_id	= opt_local->jobid;
-#ifdef HAVE_BG
-	if (opt_local->geometry[0] > 0) {
-		int i;
-		for (i = 0; i < SYSTEM_DIMENSIONS; i++)
-			j->geometry[i] = opt_local->geometry[i];
-	}
-#endif
-
 	memcpy(j->conn_type, opt_local->conn_type, sizeof(j->conn_type));
 
 	if (opt_local->reboot)

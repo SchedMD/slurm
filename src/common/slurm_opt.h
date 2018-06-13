@@ -273,7 +273,6 @@ typedef struct slurm_options {
 	char *exc_nodes;		/* --exclude=node1,node2,...	*/
 
 	/* BLUEGENE SPECIFIC */
-	uint16_t geometry[HIGHEST_DIMENSIONS];/* --geometry		*/
 	bool reboot;			/* --reboot			*/
 	bool no_rotate;			/* --no_rotate			*/
 	uint16_t conn_type[HIGHEST_DIMENSIONS];/* --conn-type		*/

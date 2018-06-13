@@ -2311,16 +2311,6 @@ each dimension (i.e. M,T,T,T will give you a torus connection is all
 dimensions expect the first). This option applies to job allocations.
 
 .TP
-\fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR> | <\fIAxXxYxZ\fR>
-Specify the geometry requirements for the job. On BlueGene/L and BlueGene/P
-systems there are three numbers giving dimensions in the X, Y and Z directions,
-while on BlueGene/Q systems there are four numbers giving dimensions in the
-A, X, Y and Z directions and can not be used to allocate sub-blocks.
-For example "\-\-geometry=1x2x3x4", specifies a block of nodes having
-1 x 2 x 3 x 4 = 24 nodes (actually midplanes on BlueGene). This option applies
-to job allocations.
-
-.TP
 \fB\-\-ioload\-image\fR=<\fIpath\fR>
 Path to io image for bluegene block.  BGP only.
 Default from \fIblugene.conf\fR if not set. This option applies to job
@@ -2645,9 +2635,6 @@ is used and resources are not currently available.
 This can be used by a script to distinguish application exit codes from
 various Slurm error conditions.
 Also see \fBSLURM_EXIT_ERROR\fR.
-.TP
-\fBSLURM_GEOMETRY\fR
-Same as \fB\-g, \-\-geometry\fR
 .\ .TP
 .\ \fBSLURM_GPUS\fR
 .\ Same as \fB\-G, \-\-gpus\fR
