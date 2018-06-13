@@ -107,14 +107,14 @@ extern void free_core_array(bitstr_t ***core_array);
 /*
  * Get configured DefCpuPerGPU information from a list
  * (either global or per partition list)
- * Returns 0 if not configuration parameter not set
+ * Returns NO_VAL64 if configuration parameter not set
  */
 extern uint64_t get_def_cpu_per_gpu(List job_defaults_list);
 
 /*
  * Get configured DefMemPerGPU information from a list
  * (either global or per partition list)
- * Returns 0 if not configuration parameter not set
+ * Returns NO_VAL64 if configuration parameter not set
  */
 extern uint64_t get_def_mem_per_gpu(List job_defaults_list);
 

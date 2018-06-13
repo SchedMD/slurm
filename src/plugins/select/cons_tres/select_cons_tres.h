@@ -113,6 +113,8 @@ struct part_res_record {
 extern bool	backfill_busy_nodes;
 extern int	bf_window_scale;
 extern uint16_t	cr_type;
+extern uint64_t def_cpu_per_gpu;
+extern uint64_t def_mem_per_gpu;
 extern int	gang_mode;
 extern bool	have_dragonfly;
 extern bool	pack_serial_at_end;

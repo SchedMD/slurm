@@ -147,6 +147,14 @@ typedef struct gres_job_state {
 	uint64_t gres_per_task;
 	uint64_t mem_per_gres;
 
+	/*
+	 * Default GRES configuration parameters. These values are subject to
+	 * change depending upon which partition the job is currently being
+	 * considered for scheduling in.
+	 */
+	uint16_t def_cpus_per_gres;
+	uint64_t def_mem_per_gres;
+
 	/* Allocated resources details */
 	uint64_t total_gres;		/* allocated GRES for this job */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
@@ -632,6 +640,17 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 				    int node_inx);
 
+/*
+ * Set job default parameters in a given element of a list
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN gres_name - name of gres, apply defaults to all elements (e.g. updates to
+ *		  gres_name="gpu" would apply to "gpu:tesla", "gpu:volta", etc.)
+ * IN cpu_per_gpu - value to set as default
+ * IN mem_per_gpu - value to set as default
+ */
+extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
+				     uint64_t cpu_per_gpu,
+				     uint64_t mem_per_gpu);
 
 /*
  * Extract from the job record's gres_list the count of allocated resources of

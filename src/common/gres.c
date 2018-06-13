@@ -5585,6 +5585,40 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
+/*
+ * Set job default parameters in a given element of a list
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN gres_name - name of gres, apply defaults to all elements (e.g. updates to
+ *		  gres_name="gpu" would apply to "gpu:tesla", "gpu:volta", etc.)
+ * IN cpu_per_gpu - value to set as default
+ * IN mem_per_gpu - value to set as default
+ */
+extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
+				     uint64_t cpu_per_gpu,
+				     uint64_t mem_per_gpu)
+{
+	uint32_t plugin_id;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr = NULL;
+	gres_job_state_t *job_gres_data;
+
+	if (!job_gres_list)
+		return;
+
+	plugin_id = _build_id(gres_name);
+	gres_iter = list_iterator_create(job_gres_list);
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		if (gres_ptr->plugin_id != plugin_id)
+			continue;
+		job_gres_data = (gres_job_state_t *) gres_ptr->gres_data;
+		if (!job_gres_data)
+			continue;
+		job_gres_data->def_cpus_per_gres = cpu_per_gpu;
+		job_gres_data->def_mem_per_gres = mem_per_gpu;
+	}
+	list_iterator_destroy(gres_iter);
+}
+
 static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 {
 	gres_job_state_t *gres_ptr;
@@ -5598,6 +5632,8 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 	      gres_ptr->type_id, job_id);
 	if (gres_ptr->cpus_per_gres)
 		info("  cpus_per_gres:%u", gres_ptr->cpus_per_gres);
+	else if (gres_ptr->def_cpus_per_gres)
+		info("  def_cpus_per_gres:%u", gres_ptr->def_cpus_per_gres);
 	if (gres_ptr->gres_per_job)
 		info("  gres_per_job:%"PRIu64, gres_ptr->gres_per_job);
 	if (gres_ptr->gres_per_node) {
@@ -5610,6 +5646,8 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 		info("  gres_per_task:%"PRIu64, gres_ptr->gres_per_task);
 	if (gres_ptr->mem_per_gres)
 		info("  mem_per_gres:%"PRIu64, gres_ptr->mem_per_gres);
+	else if (gres_ptr->def_mem_per_gres)
+		info("  def_mem_per_gres:%"PRIu64, gres_ptr->def_mem_per_gres);
 
 	if (gres_ptr->node_cnt == 0)
 		return;

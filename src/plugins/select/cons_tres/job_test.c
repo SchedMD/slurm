@@ -3068,11 +3068,11 @@ static void _log_node_res(node_res_t *node_res, char *node_name)
 /*
  * Get configured DefCpuPerGPU information from a list
  * (either global or per partition list)
- * Returns 0 if not configuration parameter not set
+ * Returns NO_VAL64 if configuration parameter not set
  */
 extern uint64_t get_def_cpu_per_gpu(List job_defaults_list)
 {
-	uint64_t cpu_per_gpu = 0;
+	uint64_t cpu_per_gpu = NO_VAL64;
 	ListIterator iter;
 	job_defaults_t *job_defaults;
 
@@ -3094,11 +3094,11 @@ extern uint64_t get_def_cpu_per_gpu(List job_defaults_list)
 /*
  * Get configured DefMemPerGPU information from a list
  * (either global or per partition list)
- * Returns 0 if not configuration parameter not set
+ * Returns NO_VAL64 if configuration parameter not set
  */
 extern uint64_t get_def_mem_per_gpu(List job_defaults_list)
 {
-	uint64_t mem_per_gpu = 0;
+	uint64_t mem_per_gpu = NO_VAL64;
 	ListIterator iter;
 	job_defaults_t *job_defaults;
 
@@ -3218,23 +3218,6 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	_avail_res_log(avail_res, node_ptr->name);
 	_avail_res_del(avail_res);
 
-//FIXME: Identify GRES related default configuration parameters
-#if _DEBUG
-uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0;
-if (job_ptr->part_ptr && job_ptr->part_ptr->job_defaults_list) {
-  def_cpu_per_gpu = get_def_cpu_per_gpu(job_ptr->part_ptr->job_defaults_list);
-  def_mem_per_gpu = get_def_mem_per_gpu(job_ptr->part_ptr->job_defaults_list);
-  info("PART:%s DefCPUPerGPU:%"PRIu64" MemPerGPU:%"PRIu64,
-       job_ptr->part_ptr->name, def_cpu_per_gpu, def_mem_per_gpu);
-}
-if (slurmctld_conf.job_defaults_list) {
-  def_cpu_per_gpu = get_def_cpu_per_gpu(slurmctld_conf.job_defaults_list);
-  def_mem_per_gpu = get_def_mem_per_gpu(slurmctld_conf.job_defaults_list);
-  info("GLOBAL DefCPUPerGPU:%"PRIu64" MemPerGPU:%"PRIu64, def_cpu_per_gpu,
-       def_mem_per_gpu);
-}
-#endif
-
 	if (cr_type & CR_MEMORY) {
 		/*
 		 * Memory Check: check pn_min_memory to see if:
@@ -3242,7 +3225,7 @@ if (slurmctld_conf.job_defaults_list) {
 		 *          - there are enough free_cores (MEM_PER_CPU == 1)
 		 */
 		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
-//FIXME: NEED TO ADJUST FOR MEM_PER_GPU BY JOB/GLOBAL/PARTITION, lower priority
+//FIXME: NEED TO ADJUST FOR MEM_PER_GPU, lower priority
 		avail_mem = select_node_record[node_i].real_memory -
 			    select_node_record[node_i].mem_spec_limit;
 		if (!test_only)
@@ -3320,6 +3303,41 @@ if (slurmctld_conf.job_defaults_list) {
 	return node_res;
 }
 
+static void _set_gpu_defaults(struct job_record *job_ptr)
+{
+	static struct part_record *last_part_ptr = NULL;
+	static uint64_t last_cpu_per_gpu = NO_VAL64;
+	static uint64_t last_mem_per_gpu = NO_VAL64;
+	uint64_t cpu_per_gpu, mem_per_gpu;
+
+	if (!job_ptr->gres_list)
+		return;
+
+	if (job_ptr->part_ptr != last_part_ptr) {
+		/* Cache data from last partition referenced */
+		last_part_ptr = job_ptr->part_ptr;
+		last_cpu_per_gpu = get_def_cpu_per_gpu(
+					job_ptr->part_ptr->job_defaults_list);
+		last_mem_per_gpu = get_def_mem_per_gpu(
+					job_ptr->part_ptr->job_defaults_list);
+	}
+	if (last_cpu_per_gpu != NO_VAL64)
+		cpu_per_gpu = last_cpu_per_gpu;
+	else if (def_cpu_per_gpu != NO_VAL64)
+		cpu_per_gpu = def_cpu_per_gpu;
+	else
+		cpu_per_gpu = 0;
+	if (last_mem_per_gpu != NO_VAL64)
+		mem_per_gpu = last_mem_per_gpu;
+	else if (def_mem_per_gpu != NO_VAL64)
+		mem_per_gpu = def_mem_per_gpu;
+	else
+		mem_per_gpu = 0;
+
+	gres_plugin_job_set_defs(job_ptr->gres_list, "gpu", cpu_per_gpu,
+				 mem_per_gpu);
+}
+
 /*
  * Determine CPU/core availability for pending job
  *
@@ -3346,6 +3364,7 @@ static void _get_res_avail(struct job_record *job_ptr, bitstr_t *node_map,
 //FIXME: where should s_p_n be handled?
 //	uint32_t s_p_n = _socks_per_node(job_ptr);
 
+	_set_gpu_defaults(job_ptr);
 	cpu_cnt = xmalloc(sizeof(uint16_t) * select_node_cnt);
 	for (n = 0; n < select_node_cnt; n++) {
 		if (!bit_test(node_map, n))

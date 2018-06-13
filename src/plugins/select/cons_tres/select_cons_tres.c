@@ -132,6 +132,8 @@ struct select_nodeinfo {
 bool       backfill_busy_nodes	= false;
 int        bf_window_scale	= 0;
 uint16_t   cr_type		= CR_CPU; /* cr_type is overwritten in init() */
+uint64_t   def_cpu_per_gpu	= 0;
+uint64_t   def_mem_per_gpu	= 0;
 int        gang_mode		= -1;
 bool       have_dragonfly	= false;
 bool       pack_serial_at_end	= false;
@@ -1882,6 +1884,14 @@ extern int select_p_reconfigure(void)
 
 	info("cons_tres: select_p_reconfigure");
 	select_debug_flags = slurm_get_debug_flags();
+	def_cpu_per_gpu = 0;
+	def_mem_per_gpu = 0;
+	if (slurmctld_conf.job_defaults_list) {
+		def_cpu_per_gpu = get_def_cpu_per_gpu(
+					slurmctld_conf.job_defaults_list);
+		def_mem_per_gpu = get_def_mem_per_gpu(
+					slurmctld_conf.job_defaults_list);
+	}
 
 	rc = select_p_node_init(node_record_table_ptr, node_record_count);
 	if (rc != SLURM_SUCCESS)
