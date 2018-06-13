@@ -580,10 +580,6 @@ has at least one of the specified features.
 \fIComment\fP=<spec>
 Arbitrary descriptive string.
 .TP
-\fIConn\-Type\fP=<type>
-Reset the node connection type. Supported only on IBM BlueGene systems.
-Possible values on are "MESH", "TORUS" and "NAV" (mesh else torus).
-.TP
 \fIContiguous\fP=<yes|no>
 Set the job's requirement for contiguous (consecutive) nodes to be allocated.
 Possible values are "YES" and "NO".
@@ -670,10 +666,6 @@ resource allocation should include 4 nodes with ALL of the features "knl",
 "a2a", and "flat" plus 2 nodes with the feature "haswell".
 Constraints with node counts may only be combined with AND operators.
 Value may be cleared with blank data value, for example "Features=".
-
-.TP
-\fIGeometry\fP=<geo>
-Reset the required job geometry.
 
 .TP
 \fIGres\fP=<list>
@@ -785,10 +777,6 @@ for no, 1 for yes.
 \fIReservationName\fP=<name>
 Set the job's reservation to the specified value.
 Value may be cleared with blank data value, "ReservationName=".
-.TP
-\fIRotate\fP=<yes|no>
-Permit the job's geometry to be rotated.
-Possible values are "YES" and "NO".
 .TP
 \fIShared\fP=<yes|no>
 See \fIOverSubscribe\fP option above.

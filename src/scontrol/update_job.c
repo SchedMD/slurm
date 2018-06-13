@@ -1209,63 +1209,6 @@ extern int scontrol_update_job(int argc, char **argv)
 			job_msg.dependency = val;
 			update_cnt++;
 		}
-		else if (xstrncasecmp(tag, "Geometry", MAX(taglen, 2)) == 0) {
-			char* token, *delimiter = ",x", *next_ptr;
-			int j, rc = 0;
-			int dims = slurmdb_setup_cluster_dims();
-			uint16_t geo[dims];
-			char* geometry_tmp = xstrdup(val);
-			char* original_ptr = geometry_tmp;
-			token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-			for (j = 0; j < dims; j++) {
-				if (token == NULL) {
-					error("insufficient dimensions in "
-						"Geometry");
-					rc = -1;
-					break;
-				}
-				geo[j] = (uint16_t) atoi(token);
-				if (geo[j] <= 0) {
-					error("invalid --geometry argument");
-					rc = -1;
-					break;
-				}
-				geometry_tmp = next_ptr;
-				token = strtok_r(geometry_tmp, delimiter,
-					&next_ptr);
-			}
-			if (token != NULL) {
-				error("too many dimensions in Geometry");
-				rc = -1;
-			}
-
-			xfree(original_ptr);
-			if (rc != 0)
-				exit_code = 1;
-			else {
-				for (j = 0; j < dims; j++)
-					job_msg.geometry[j] = geo[j];
-				update_cnt++;
-			}
-		}
-
-		else if (xstrncasecmp(tag, "Rotate", MAX(taglen, 2)) == 0) {
-			if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
-				job_msg.rotate = 1;
-			else if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
-				job_msg.rotate = 0;
-			else if (parse_uint16(val, &job_msg.rotate)) {
-				error ("Invalid rotate value: %s", val);
-				exit_code = 1;
-				return 0;
-			}
-			update_cnt++;
-		}
-		else if (xstrncasecmp(tag, "Conn-Type", MAX(taglen, 2)) == 0) {
-			verify_conn_type(val, job_msg.conn_type);
-			if (job_msg.conn_type[0] != NO_VAL16)
-				update_cnt++;
-		}
 		else if (xstrncasecmp(tag, "Licenses", MAX(taglen, 1)) == 0) {
 			job_msg.licenses = val;
 			update_cnt++;
