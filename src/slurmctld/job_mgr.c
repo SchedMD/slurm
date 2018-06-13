@@ -2285,8 +2285,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->last_sched_eval = last_sched_eval;
 	job_ptr->preempt_time = preempt_time;
 	job_ptr->user_id      = user_id;
-	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_USER_NAME, &user_id);
 	job_ptr->wait_all_nodes = wait_all_nodes;
 	job_ptr->warn_flags   = warn_flags;
 	job_ptr->warn_signal  = warn_signal;
@@ -8097,9 +8095,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo =
 		select_g_select_jobinfo_copy(job_desc->select_jobinfo);
-	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_USER_NAME,
-				    &job_ptr->user_id);
 
 	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NETWORK,

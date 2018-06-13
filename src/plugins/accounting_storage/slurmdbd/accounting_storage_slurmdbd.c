@@ -2690,7 +2690,6 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	dbd_step_start_msg_t req;
 	char temp_bit[BUF_SIZE];
 	char *temp_nodes = NULL;
-	char *ionodes = NULL;
 
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		tasks = step_ptr->job_ptr->total_cpus;
@@ -2709,14 +2708,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		temp_nodes = step_ptr->step_layout->node_list;
 	}
 
-	select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-				    SELECT_JOBDATA_IONODES,
-				    &ionodes);
-	if (ionodes) {
-		snprintf(node_list, BUFFER_SIZE, "%s[%s]", temp_nodes, ionodes);
-		xfree(ionodes);
-	} else
-		snprintf(node_list, BUFFER_SIZE, "%s", temp_nodes);
+	snprintf(node_list, BUFFER_SIZE, "%s", temp_nodes);
 
 	if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
 		/*

@@ -1129,7 +1129,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 				   TRES_CPU, 1,
 				   TRES_NODE, 1);
 	} else {
-		char *ionodes = NULL, *temp_nodes = NULL;
+		char *temp_nodes = NULL;
 
 		if (step_ptr->step_node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
@@ -1163,15 +1163,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			temp_nodes = step_ptr->step_layout->node_list;
 		}
 
-		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-					    SELECT_JOBDATA_IONODES,
-					    &ionodes);
-		if (ionodes) {
-			snprintf(node_list, BUFFER_SIZE, "%s[%s]",
-				 temp_nodes, ionodes);
-			xfree(ionodes);
-		} else
-			snprintf(node_list, BUFFER_SIZE, "%s", temp_nodes);
+		snprintf(node_list, BUFFER_SIZE, "%s", temp_nodes);
 	}
 
 	if (!step_ptr->job_ptr->db_index) {

@@ -8821,11 +8821,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		} else {
 			dynamic_plugin_data_t *select_jobinfo;
 			select_jobinfo = select_g_select_jobinfo_alloc();
-			if (job_desc_ptr->reboot != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_REBOOT,
-					&(job_desc_ptr->reboot));
 			select_g_select_jobinfo_pack(select_jobinfo, buffer,
 						     protocol_version);
 			select_g_select_jobinfo_free(select_jobinfo);
@@ -8965,11 +8960,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		} else {
 			dynamic_plugin_data_t *select_jobinfo;
 			select_jobinfo = select_g_select_jobinfo_alloc();
-			if (job_desc_ptr->reboot != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_REBOOT,
-					&(job_desc_ptr->reboot));
 			select_g_select_jobinfo_pack(select_jobinfo, buffer,
 						     protocol_version);
 			select_g_select_jobinfo_free(select_jobinfo);
@@ -9097,11 +9087,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		} else {
 			dynamic_plugin_data_t *select_jobinfo;
 			select_jobinfo = select_g_select_jobinfo_alloc();
-			if (job_desc_ptr->reboot != NO_VAL16)
-				select_g_select_jobinfo_set(
-					select_jobinfo,
-					SELECT_JOBDATA_REBOOT,
-					&(job_desc_ptr->reboot));
 			select_g_select_jobinfo_pack(select_jobinfo, buffer,
 						     protocol_version);
 			select_g_select_jobinfo_free(select_jobinfo);
