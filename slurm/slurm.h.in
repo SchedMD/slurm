@@ -2425,62 +2425,7 @@ typedef struct will_run_response_msg {
 /* BLUEGENE specific information */
 
 typedef struct {
-	char *cnodes;           /* used for sub-block jobs */
-	int32_t *cnode_inx;	/* list index pairs for cnodes in the
-				 * node listed for *cnodes:
-				 * start_range_1, end_range_1,
-				 * start_range_2, .., -1  used for
-				 * sub-block jobs */
-	uint32_t job_id;        /* job id */
-	void *job_ptr;          /* internal use only, not packed. */
-	uint32_t user_id;       /* user running the job's ID */
-	char *user_name;        /* user running the job's name */
-} block_job_info_t;
-
-typedef struct {
-	char *bg_block_id;
-	char *blrtsimage;       /* BlrtsImage for this block */
-	uint16_t conn_type[HIGHEST_DIMENSIONS];
-	uint32_t cnode_cnt;
-	uint32_t cnode_err_cnt;
-	int32_t *ionode_inx;	/* list index pairs for ionodes in the
-				 * node listed for *ionode_str:
-				 * start_range_1, end_range_1,
-				 * start_range_2, .., -1  */
-	char *ionode_str;
-	List job_list;          /* List of running jobs on each block */
-	char *linuximage;       /* LinuxImage for this block */
-	char *mloaderimage;     /* mloaderImage for this block */
-	int32_t *mp_inx;	/* list index pairs into node_table for *mp_str:
-				 * start_range_1, end_range_1,
-				 * start_range_2, .., -1  */
-	char *mp_str;
-	uint16_t node_use;
-	char *ramdiskimage;     /* RamDiskImage for this block */
-	char *reason;
-	uint16_t state;
-} block_info_t;
-
-typedef struct {
-	block_info_t *block_array;
-	time_t    last_update;
-	uint32_t  record_count;
-} block_info_msg_t;
-
-typedef block_info_t update_block_msg_t;
-
-/*
- * slurm_free_block_info_msg - free buffer returned by
- *	slurm_load_block
- * IN block_info_msg_ptr - pointer to block_info_msg_t
- * RET 0 or a slurm error code
- */
-extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);
-
-/* update state or remove block */
-extern int slurm_update_block(update_block_msg_t *block_msg);
-
-void slurm_init_update_block_msg(update_block_msg_t *update_block_msg);
+} update_block_msg_t;
 
 /*********************************/
 

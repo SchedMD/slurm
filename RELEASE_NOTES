@@ -202,6 +202,10 @@ Added members to the following struct definitions
 Added the following struct definitions
 ======================================
 
+Removed the following structs
+=============================
+ -- Removed block_job_info_t, block_info_t, block_info_msg_t.
+
 Removed members from the following struct definitions
 =====================================================
  -- Removed node_scaling from node_info_msg_t.
@@ -221,6 +225,8 @@ Removed the following API's
 ===========================
  -- Removed slurm_xslurm_strerrorcat() function.
  -- Removed slurm_xstrstrip() function.
- -- Removed slurm_load_block_info(), slurm_print_block_info_msg(),
-    slurm_print_block_info(), slurm_sprint_block_info().
+ -- Removed slurm_free_block_info_msg(), slurm_init_update_block_msg(),
+    slurm_load_block_info(), slurm_print_block_info(),
+    slurm_print_block_info_msg(), slurm_sprint_block_info(),
+    slurm_update_block().
  -- Removed slurm_get_select_jobinfo().

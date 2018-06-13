@@ -175,19 +175,6 @@ void slurm_init_update_front_end_msg (update_front_end_msg_t *
 }
 
 /*
- * slurm_init_update_block_msg - initialize block update message
- * OUT update_block_msg - user defined block descriptor
- */
-void slurm_init_update_block_msg (update_block_msg_t *update_block_msg)
-{
-	memset(update_block_msg, 0, sizeof(update_block_msg_t));
-	update_block_msg->conn_type[0] = NO_VAL16;
-	update_block_msg->cnode_cnt = NO_VAL;
-	update_block_msg->node_use = NO_VAL16;
-	update_block_msg->state = NO_VAL16;
-}
-
-/*
  * slurm_init_trigger_msg - initialize trigger clear/update message
  * OUT trigger_info_msg - user defined trigger descriptor
  */

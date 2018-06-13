@@ -285,8 +285,9 @@ typedef enum {
 	RESPONSE_CREATE_RESERVATION,
 	REQUEST_DELETE_RESERVATION,
 	REQUEST_UPDATE_RESERVATION,
-	REQUEST_UPDATE_BLOCK,		/* 3010 */
-	REQUEST_UPDATE_FRONT_END,
+	DEFUNCT_REQUEST_UPDATE_BLOCK,		/* DEFUNCT, CAN BE REUSED 2
+						   VERSIONS AFTER 18.08 */
+	REQUEST_UPDATE_FRONT_END,		/* 3011 */
 	REQUEST_UPDATE_LAYOUT,
 	REQUEST_UPDATE_POWERCAP,
 
@@ -628,11 +629,6 @@ typedef struct node_info_single_msg {
 typedef struct front_end_info_request_msg {
 	time_t last_update;
 } front_end_info_request_msg_t;
-
-typedef struct block_info_request_msg {
-	time_t last_update;
-	uint16_t show_flags;
-} block_info_request_msg_t;
 
 typedef struct part_info_request_msg {
 	time_t last_update;
@@ -1492,12 +1488,6 @@ extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 extern void slurm_free_step_complete_msg(step_complete_msg_t *msg);
 extern void slurm_free_job_step_stat(void *object);
 extern void slurm_free_job_step_pids(void *object);
-extern void slurm_free_block_job_info(void *object);
-extern void slurm_free_block_info_members(block_info_t *block_info);
-extern void slurm_free_block_info(block_info_t *block_info);
-extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);
-extern void slurm_free_block_info_request_msg(
-		block_info_request_msg_t *msg);
 extern void slurm_free_acct_gather_node_resp_msg(
 	acct_gather_node_resp_msg_t *msg);
 extern void slurm_free_acct_gather_energy_req_msg(

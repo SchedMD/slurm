@@ -3991,61 +3991,6 @@ extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp)
 	}
 }
 
-extern void slurm_free_block_job_info(void *object)
-{
-	block_job_info_t *block_job_info = (block_job_info_t *)object;
-	if (block_job_info) {
-		xfree(block_job_info->cnodes);
-		xfree(block_job_info->cnode_inx);
-		xfree(block_job_info->user_name);
-		xfree(block_job_info);
-	}
-}
-
-extern void slurm_free_block_info_members(block_info_t *block_info)
-{
-	if (block_info) {
-		xfree(block_info->bg_block_id);
-		xfree(block_info->blrtsimage);
-		xfree(block_info->ionode_inx);
-		xfree(block_info->ionode_str);
-		xfree(block_info->linuximage);
-		xfree(block_info->mloaderimage);
-		xfree(block_info->mp_inx);
-		xfree(block_info->mp_str);
-		xfree(block_info->ramdiskimage);
-		xfree(block_info->reason);
-	}
-}
-
-extern void slurm_free_block_info(block_info_t *block_info)
-{
-	if (block_info) {
-		slurm_free_block_info_members(block_info);
-		xfree(block_info);
-	}
-}
-
-extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg)
-{
-	if (block_info_msg) {
-		if (block_info_msg->block_array) {
-			int i;
-			for (i=0; i<block_info_msg->record_count; i++)
-				slurm_free_block_info_members(
-					&(block_info_msg->block_array[i]));
-			xfree(block_info_msg->block_array);
-		}
-		xfree(block_info_msg);
-	}
-}
-
-extern void slurm_free_block_info_request_msg(
-	block_info_request_msg_t *msg)
-{
-	xfree(msg);
-}
-
 extern void slurm_free_trigger_msg(trigger_info_msg_t *msg)
 {
 	int i;
@@ -4551,9 +4496,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_MESSAGE_COMPOSITE:
 		slurm_free_composite_msg(data);
 		break;
-	case REQUEST_UPDATE_BLOCK:
-		slurm_free_block_info(data);
-		break;
 	case REQUEST_JOB_NOTIFY:
 		slurm_free_job_notify_msg(data);
 		break;
@@ -4931,9 +4873,7 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_DELETE_RESERVATION";
 	case REQUEST_UPDATE_RESERVATION:
 		return "REQUEST_UPDATE_RESERVATION";
-	case REQUEST_UPDATE_BLOCK:
-		return "REQUEST_UPDATE_BLOCK";			/* 3010 */
-	case REQUEST_UPDATE_FRONT_END:
+	case REQUEST_UPDATE_FRONT_END:				/* 3011 */
 		return "REQUEST_UPDATE_FRONT_END";
 	case REQUEST_UPDATE_LAYOUT:
 		return "REQUEST_UPDATE_LAYOUT";

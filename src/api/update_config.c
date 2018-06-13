@@ -272,18 +272,6 @@ slurm_delete_reservation (reservation_name_msg_t * resv_msg)
 	return _slurm_update ((void *) resv_msg, REQUEST_DELETE_RESERVATION);
 }
 
-/*
- * slurm_update_block - issue RPC to a blocks's configuration per
- *	request, only usable by user root
- * IN block_msg - description of block updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- */
-int
-slurm_update_block (update_block_msg_t * block_msg)
-{
-	return _slurm_update ((void *) block_msg, REQUEST_UPDATE_BLOCK);
-}
-
 /* Update the time limit of a job step,
  * step_id == NO_VAL updates all job steps of the specified job_id
  * RET 0 or -1 on error */
