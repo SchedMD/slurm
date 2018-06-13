@@ -319,10 +319,7 @@ extern void parse_command_line(int argc, char **argv)
 	if ( params.format == NULL ) {
 		if ( params.summarize ) {
 			params.part_field_flag = true;	/* compute size later */
-			if (params.cluster_flags & CLUSTER_FLAG_BG)
-				params.format = "%9P %.5a %.10l %.32F  %N";
-			else
-				params.format = "%9P %.5a %.10l %.16F  %N";
+			params.format = "%9P %.5a %.10l %.16F  %N";
 		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
 			params.part_field_flag = true;	/* compute size later */

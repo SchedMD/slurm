@@ -471,36 +471,10 @@ int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 		     bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
-	char tmpa[8];
-	char tmpi[8];
-	char tmpo[8];
-	char tmpt[8];
 	if (sinfo_data) {
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
-			convert_num_unit((float)sinfo_data->cpus_alloc,
-					 tmpa, sizeof(tmpa), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-			convert_num_unit((float)sinfo_data->cpus_idle,
-					 tmpi, sizeof(tmpi), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-			convert_num_unit((float)sinfo_data->cpus_other,
-					 tmpo, sizeof(tmpo), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-			convert_num_unit((float)sinfo_data->cpus_total,
-					 tmpt, sizeof(tmpt), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-		} else {
-			snprintf(tmpa, sizeof(tmpa), "%u",
-				 sinfo_data->cpus_alloc);
-			snprintf(tmpi, sizeof(tmpi), "%u",
-				 sinfo_data->cpus_idle);
-			snprintf(tmpo, sizeof(tmpo), "%u",
-				 sinfo_data->cpus_other);
-			snprintf(tmpt, sizeof(tmpt), "%u",
-				 sinfo_data->cpus_total);
-		}
-		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s",
-			 tmpa, tmpi, tmpo, tmpt);
+		snprintf(id, FORMAT_STRING_SIZE, "%u/%u/%u/%u",
+			 sinfo_data->cpus_alloc, sinfo_data->cpus_idle,
+			 sinfo_data->cpus_other, sinfo_data->cpus_total);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("CPUS(A/I/O/T)", width, right_justify, true);
@@ -742,9 +716,6 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 		xfree(tmp);
 	} else {
 		char *title = "NODELIST";
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			title = "MIDPLANELIST";
-
 		_print_str(title, width, right_justify, false);
 	}
 
@@ -779,16 +750,9 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 		   bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
-	char tmp[8];
 	if (sinfo_data) {
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			convert_num_unit((float)sinfo_data->nodes_total,
-					 tmp, sizeof(tmp), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-		else
-			snprintf(tmp, sizeof(tmp), "%d",
-				 sinfo_data->nodes_total);
-		snprintf(id, FORMAT_STRING_SIZE, "%s", tmp);
+		snprintf(id, FORMAT_STRING_SIZE, "%d",
+			 sinfo_data->nodes_total);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("NODES", width, right_justify, true);
@@ -802,24 +766,9 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 		    bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
-	char tmpa[8];
-	char tmpi[8];
 	if (sinfo_data) {
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
-			convert_num_unit((float)sinfo_data->nodes_alloc,
-					 tmpa, sizeof(tmpa), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-			convert_num_unit((float)sinfo_data->nodes_idle,
-					 tmpi, sizeof(tmpi), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-		} else {
-			snprintf(tmpa, sizeof(tmpa), "%d",
-				 sinfo_data->nodes_alloc);
-			snprintf(tmpi, sizeof(tmpi), "%d",
-				 sinfo_data->nodes_idle);
-		}
-		snprintf(id, FORMAT_STRING_SIZE, "%s/%s",
-			 tmpa, tmpi);
+		snprintf(id, FORMAT_STRING_SIZE, "%d/%d",
+			 sinfo_data->nodes_alloc, sinfo_data->nodes_idle);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("NODES(A/I)", width, right_justify, true);
@@ -833,36 +782,10 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
-	char tmpa[8];
-	char tmpi[8];
-	char tmpo[8];
-	char tmpt[8];
 	if (sinfo_data) {
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
-			convert_num_unit((float)sinfo_data->nodes_alloc,
-					 tmpa, sizeof(tmpa), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-			convert_num_unit((float)sinfo_data->nodes_idle,
-					 tmpi, sizeof(tmpi), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-			convert_num_unit((float)sinfo_data->nodes_other,
-					 tmpo, sizeof(tmpo), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-			convert_num_unit((float)sinfo_data->nodes_total,
-					 tmpt, sizeof(tmpt), UNIT_NONE, NO_VAL,
-					 params.convert_flags);
-		} else {
-			snprintf(tmpa, sizeof(tmpa), "%u",
-				 sinfo_data->nodes_alloc);
-			snprintf(tmpi, sizeof(tmpi), "%u",
-				 sinfo_data->nodes_idle);
-			snprintf(tmpo, sizeof(tmpo), "%u",
-				 sinfo_data->nodes_other);
-			snprintf(tmpt, sizeof(tmpt), "%u",
-				 sinfo_data->nodes_total);
-		}
-		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s",
-			 tmpa, tmpi, tmpo, tmpt);
+		snprintf(id, FORMAT_STRING_SIZE, "%u/%u/%u/%u",
+			 sinfo_data->nodes_alloc, sinfo_data->nodes_idle,
+			 sinfo_data->nodes_other, sinfo_data->nodes_total);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("NODES(A/I/O/T)", width, right_justify, true);
