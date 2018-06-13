@@ -16,10 +16,6 @@ specifications:</p>
 The major type must be &quot;select.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
 <ul>
-<li><b>bluegene</b> &mdash; <a href="http://www.research.ibm.com/bluegene/">IBM BlueGene/Q</a>
-node selector. Note that this plugin not only selects the nodes for a job, but performs
-some initialization and termination functions for the job. Use this plugin for
-BlueGene/Q systems.</li>
 <li><b>cons_res</b> &mdash; A plugin that can allocate individual processors,
 memory, etc. within nodes. This plugin is recommended for systems with
 many non-parallel programs sharing nodes. For more information see
@@ -52,7 +48,6 @@ in other Slurm functions used by the plugin.</p>
 <pre>
 /* slurmctld daemon starts, recover state */
 if ((<i>select_p_node_init)</i>()     != SLURM_SUCCESS) ||
-    (<i>select_p_block_init)</i>()    != SLURM_SUCCESS) ||
     (<i>select_p_state_restore)</i>() != SLURM_SUCCESS) ||
     (<i>select_p_job_init)</i>()      != SLURM_SUCCESS))
    abort
@@ -167,18 +162,6 @@ may have their the <i>name</i> field in the record cleared (zero length) rather 
 rebuilding the node records and bitmaps.<br><br>
 <span class="commandline"> node_cnt</span>&nbsp; &nbsp;&nbsp;(input) number
 of node data records.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
-
-<p class="commandline">int select_p_block_init (List part_list);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note the initialization of the
-partition record data structure. This function is called by the slurmctld
-daemon when the partition records are initially established and again
-when any partition configurations change. </p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> part_list</span>&nbsp;&nbsp;&nbsp;(input) list of partition
-record entries. Note that some of these partitions may have no associated nodes. Also
-consider that nodes can be removed from one partition and added to a different partition.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
@@ -306,46 +289,6 @@ the entire system.</p>
 <span class="commandline"> node_ptr</span>&nbsp;&nbsp;&nbsp;(input/output) pointer
 to the node data structure. Each node's node rank field may be set.<br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
-
-<p class="commandline">int select_p_alter_node_cnt (enum
-select_node_cnt type, void *data);</p>
-<p style="margin-left:.2in"><b>Description</b>: Used for systems like an IBM
-Bluegene system where one Slurm node is mapped to many compute nodes. In
-Bluegene's case one Slurm node/midplane represents 512 compute nodes, but
-since 512 is typically the smallest allocatable block Slurm treats
-it as one node.  This is a function so the user can issue a 'real'
-number and the function will alter it so Slurm can understand what the
-user really means in Slurm terms.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> type</span>&nbsp;&nbsp;&nbsp;(input) enum
-telling the plugin how to transform the data.<br>
-<span class="commandline"> data</span>&nbsp;&nbsp;&nbsp;(input/output)
-Is a void * and the actual data type depends upon the first argument to this
-function (type).</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
-
-<p class="footer"><a href="#top">top</a></p>
-
-
-<h3>Block-Specific Functions</h3>
-
-<p class="commandline">int select_p_update_sub_node (update_block_msg_t *block_desc_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: Update the state of a portion of
-a Slurm node. Currently used on BlueGene systems to place node cards within a
-midplane into or out of an error state.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> block_desc_ptr</span>&nbsp;&nbsp;&nbsp;(input) pointer
-to the modified block containing the sub-block name and its new state.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
-
-<p class="commandline">int select_p_update_block (update_block_msg_t *block_desc_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: This function is called when the admin needs
-to manually update the state of a block. </p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> block_desc_ptr</span>&nbsp;&nbsp;&nbsp;(input) block
-description variable.  Containing the block name and the state to set the block.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -529,8 +472,7 @@ later execution.</p>
 
 <p class="commandline">int select_p_job_ready (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Test if resources are configured
-and ready for job execution. This function is only used in the job prolog for
-BlueGene systems to determine if the bgblock has been booted and is ready for use.</p>
+and ready for job execution.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
 to the job being initialized. Data in this job record may safely be read.
