@@ -980,11 +980,6 @@ extern GtkListStore *create_model_defaults(int type)
 				   -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "block",
-				   1, type,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
 				   0, "node",
 				   1, type,
 				   -1);

@@ -924,6 +924,7 @@ extern void destroy_grid_button(void *arg)
  * the button, an example of this would be in
  * add_extra_bluegene_buttons were the small block buttons do
  * something different than they do regularly
+ * TODO - this may be simplified now that bluegene is gone.
  */
 
 extern grid_button_t *create_grid_button_from_another(

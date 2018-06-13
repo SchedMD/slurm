@@ -62,7 +62,6 @@ typedef struct {
 	int node_cnt;
 	char *nodes;
 	int pos;
-	bool small_block;
 	List step_list;
 	hostlist_t task_hl;
 	char *task_hl_str;

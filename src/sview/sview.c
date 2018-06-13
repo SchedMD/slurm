@@ -89,7 +89,6 @@ switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
 popup_pos_t popup_pos;
 char *federation_name = NULL;
 
-block_info_msg_t *g_block_info_ptr = NULL;
 front_end_info_msg_t *g_front_end_info_ptr;
 job_info_msg_t *g_job_info_ptr = NULL;
 node_info_msg_t *g_node_info_ptr = NULL;
@@ -1070,8 +1069,6 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	/* } */
 
 	/* free old info under last cluster */
-	slurm_free_block_info_msg(g_block_info_ptr);
-	g_block_info_ptr = NULL;
 	slurm_free_front_end_info_msg(g_front_end_info_ptr);
 	g_front_end_info_ptr = NULL;
 	slurm_free_burst_buffer_info_msg(g_bb_info_ptr);
