@@ -65,11 +65,6 @@
 #include "opt.h"
 #include "launch.h"
 
-#ifdef HAVE_BG
-#include "src/common/node_select.h"
-#include "src/plugins/select/bluegene/bg_enums.h"
-#endif
-
 #if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
 /*
  * On Cray installations, the libjob headers are not automatically installed

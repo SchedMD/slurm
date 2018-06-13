@@ -74,10 +74,7 @@
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 
-#ifdef HAVE_BG
-#include "src/common/node_select.h"
-#include "src/plugins/select/bluegene/bg_enums.h"
-#elif defined(HAVE_ALPS_CRAY)
+#if defined(HAVE_ALPS_CRAY)
 #include "src/common/node_select.h"
 
 #ifdef HAVE_REAL_CRAY
