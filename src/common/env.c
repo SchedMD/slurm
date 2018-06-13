@@ -97,41 +97,7 @@ static int _setup_particulars(uint32_t cluster_flags,
 			       dynamic_plugin_data_t *select_jobinfo)
 {
 	int rc = SLURM_SUCCESS;
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		char *bg_part_id = NULL;
-		uint32_t node_cnt = 0;
-		select_g_select_jobinfo_get(select_jobinfo,
-					    SELECT_JOBDATA_BLOCK_ID,
-					    &bg_part_id);
-		if (bg_part_id) {
-			select_g_select_jobinfo_get(
-				select_jobinfo,
-				SELECT_JOBDATA_BLOCK_NODE_CNT,
-				&node_cnt);
-			if (node_cnt)
-				setenvf(dest, "SLURM_BLOCK_NUM_NODES",
-					"%u", node_cnt);
-
-			setenvf(dest, "MPIRUN_PARTITION", "%s", bg_part_id);
-			setenvf(dest, "MPIRUN_NOFREE", "%d", 1);
-			setenvf(dest, "MPIRUN_NOALLOCATE", "%d", 1);
-			xfree(bg_part_id);
-			select_g_select_jobinfo_get(select_jobinfo,
-						    SELECT_JOBDATA_IONODES,
-						    &bg_part_id);
-			if (bg_part_id) {
-				setenvf(dest, "SLURM_JOB_SUB_MP", "%s",
-					bg_part_id);
-				xfree(bg_part_id);
-			}
-		} else
-			rc = SLURM_FAILURE;
-
-		if (rc == SLURM_FAILURE) {
-			error("Can't set MPIRUN_PARTITION "
-			      "environment variable");
-		}
-	} else if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
+	if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
 		uint32_t resv_id = 0;
 
 		select_g_select_jobinfo_get(select_jobinfo,
@@ -682,8 +648,7 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (!(cluster_flags & CLUSTER_FLAG_BG) &&
-	    !(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
+	if (!(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
 		/*
 		 * These aren't relavant to a system not using Slurm as the
 		 * launcher. Since there isn't a flag for that we check for
@@ -966,8 +931,6 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
  *	SLURM_NODE_ALIASES
- *	SLURM_BG_NUM_NODES, MPIRUN_PARTITION, MPIRUN_NOFREE, and
- *	MPIRUN_NOALLOCATE (BG only)
  *
  * dest OUT - array in which to the set environment variables
  * alloc IN - resource allocation response
@@ -1004,18 +967,6 @@ extern int env_array_for_job(char ***dest,
 	cpus_task_reps[0] = alloc->node_cnt;
 
 	_setup_particulars(cluster_flags, dest, alloc->select_jobinfo);
-
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		select_g_select_jobinfo_get(alloc->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &step_layout_req.num_hosts);
-		if (!step_layout_req.num_hosts)
-			step_layout_req.num_hosts = alloc->node_cnt;
-
-		env_array_overwrite_pack_fmt(dest, "SLURM_BG_NUM_NODES",
-					     pack_offset, "%u",
-					     step_layout_req.num_hosts);
-	}
 
 	if (pack_offset < 1) {
 		env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u",
@@ -1246,10 +1197,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",
 				step_layout_req.num_hosts);
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES",
-					"%u", step_layout_req.num_hosts);
-	}
 	if (batch->array_task_id != NO_VAL) {
 		env_array_overwrite_fmt(dest, "SLURM_ARRAY_JOB_ID", "%u",
 					batch->array_job_id);
@@ -1401,7 +1348,6 @@ env_array_for_step(char ***dest,
 {
 	char *tmp, *tpn;
 	uint32_t node_cnt, task_cnt;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (!step || !launch)
 		return;
@@ -1418,28 +1364,6 @@ env_array_for_step(char ***dest,
 		env_array_append_fmt(dest, "SLURM_JOB_NODELIST", "%s", tmp);
 	}
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST", "%s", tmp);
-
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		char geo_char[HIGHEST_DIMENSIONS+1];
-
-		select_g_select_jobinfo_get(step->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &node_cnt);
-		if (!node_cnt)
-			node_cnt = step->step_layout->node_cnt;
-
-		select_g_select_jobinfo_sprint(step->select_jobinfo,
-					       geo_char, sizeof(geo_char),
-					       SELECT_PRINT_GEOMETRY);
-		if (geo_char[0] != '0')
-			env_array_overwrite_fmt(dest, "SLURM_STEP_GEO",
-						"%s", geo_char);
-		select_g_select_jobinfo_sprint(step->select_jobinfo,
-					       geo_char, sizeof(geo_char),
-					       SELECT_PRINT_START_LOC);
-		env_array_overwrite_fmt(dest, "SLURM_STEP_START_LOC",
-					"%s", geo_char);
-	}
 
 	if (launch->pack_nnodes && (launch->pack_nnodes != NO_VAL))
 		node_cnt = launch->pack_nnodes;
@@ -1473,15 +1397,6 @@ env_array_for_step(char ***dest,
 	if (step->resv_ports) {
 		env_array_overwrite_fmt(dest, "SLURM_STEP_RESV_PORTS",
 					"%s", step->resv_ports);
-	}
-
-	tmp = NULL;
-	select_g_select_jobinfo_get(step->select_jobinfo,
-				    SELECT_JOBDATA_IONODES,
-				    &tmp);
-	if (tmp) {
-		setenvf(dest, "SLURM_STEP_SUB_MP", "%s", tmp);
-		xfree(tmp);
 	}
 
 	/* OBSOLETE, but needed by some MPI implementations, do not remove */
