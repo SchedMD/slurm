@@ -272,13 +272,7 @@ typedef struct slurm_options {
 	char *nodelist;			/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;		/* --exclude=node1,node2,...	*/
 
-	/* BLUEGENE SPECIFIC */
 	bool reboot;			/* --reboot			*/
-	char *blrtsimage;		/* BlrtsImage for block		*/
-	char *linuximage;		/* LinuxImage for block		*/
-	char *mloaderimage;		/* mloaderImage for block	*/
-	char *ramdiskimage;		/* RamDiskImage for block	*/
-	/*********************/
 
 	time_t begin;			/* --begin			*/
 	char *extra;			/* unused			*/

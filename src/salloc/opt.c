@@ -734,8 +734,6 @@ static void _set_options(int argc, char **argv)
 		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
-		{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
-		{"cnload-image",  required_argument, 0, LONG_OPT_LINUX_IMAGE},
 		{"comment",       required_argument, 0, LONG_OPT_COMMENT},
 		{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
@@ -754,9 +752,7 @@ static void _set_options(int argc, char **argv)
 		{"gres",          required_argument, 0, LONG_OPT_GRES},
 		{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
-		{"ioload-image",  required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"jobid",         required_argument, 0, LONG_OPT_JOBID},
-		{"linux-image",   required_argument, 0, LONG_OPT_LINUX_IMAGE},
 		{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
 		{"mcs-label",     required_argument, 0, LONG_OPT_MCS_LABEL},
@@ -769,7 +765,6 @@ static void _set_options(int argc, char **argv)
 		{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
 		{"minsockets",    required_argument, 0, LONG_OPT_MINSOCKETS},
 		{"minthreads",    required_argument, 0, LONG_OPT_MINTHREADS},
-		{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"nice",          optional_argument, 0, LONG_OPT_NICE},
 		{"priority",      required_argument, 0, LONG_OPT_PRIORITY},
@@ -780,7 +775,6 @@ static void _set_options(int argc, char **argv)
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"power",         required_argument, 0, LONG_OPT_POWER},
 		{"profile",       required_argument, 0, LONG_OPT_PROFILE},
-		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
@@ -1319,22 +1313,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_REBOOT:
 			opt.reboot = true;
 			break;
-		case LONG_OPT_BLRTS_IMAGE:
-			xfree(opt.blrtsimage);
-			opt.blrtsimage = xstrdup(optarg);
-			break;
-		case LONG_OPT_LINUX_IMAGE:
-			xfree(opt.linuximage);
-			opt.linuximage = xstrdup(optarg);
-			break;
-		case LONG_OPT_MLOADER_IMAGE:
-			xfree(opt.mloaderimage);
-			opt.mloaderimage = xstrdup(optarg);
-			break;
-		case LONG_OPT_RAMDISK_IMAGE:
-			xfree(opt.ramdiskimage);
-			opt.ramdiskimage = xstrdup(optarg);
-			break;
 		case LONG_OPT_ACCTG_FREQ:
 			xfree(opt.acctg_freq);
 			if (validate_acctg_freq(optarg))
@@ -1702,21 +1680,6 @@ static bool _opt_verify(void)
 		saopt.kill_command_signal_set = false;
 	}
 #endif
-
-	if (opt.linuximage && strchr(opt.linuximage, ' ')) {
-		error("invalid CnloadImage given '%s'", opt.linuximage);
-		verified = false;
-	}
-
-	if (opt.mloaderimage && strchr(opt.mloaderimage, ' ')) {
-		error("invalid MloaderImage given '%s'", opt.mloaderimage);
-		verified = false;
-	}
-
-	if (opt.ramdiskimage && strchr(opt.ramdiskimage, ' ')) {
-		error("invalid IoloadImage given '%s'", opt.ramdiskimage);
-		verified = false;
-	}
 
 	if ((opt.pn_min_memory > -1) && (opt.mem_per_cpu > -1)) {
 		if (opt.pn_min_memory < opt.mem_per_cpu) {
@@ -2138,12 +2101,6 @@ static void _opt_list(void)
 	info("constraints    : %s", str);
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
-	if (opt.linuximage)
-		info("CnloadImage    : %s", opt.linuximage);
-	if (opt.mloaderimage)
-		info("MloaderImage   : %s", opt.mloaderimage);
-	if (opt.ramdiskimage)
-		info("IoloadImage   : %s", opt.ramdiskimage);
 
 	if (opt.begin) {
 		char time_str[32];

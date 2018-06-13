@@ -880,14 +880,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->priority     = 0;
 	if (opt.reboot)
 		desc->reboot = 1;
-	if (opt.blrtsimage)
-		desc->blrtsimage = xstrdup(opt.blrtsimage);
-	if (opt.linuximage)
-		desc->linuximage = xstrdup(opt.linuximage);
-	if (opt.mloaderimage)
-		desc->mloaderimage = xstrdup(opt.mloaderimage);
-	if (opt.ramdiskimage)
-		desc->ramdiskimage = xstrdup(opt.ramdiskimage);
 
 	/* job constraints */
 	if (opt.pn_min_cpus > -1)

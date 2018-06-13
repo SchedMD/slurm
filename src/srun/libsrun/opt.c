@@ -170,10 +170,6 @@
 #define LONG_OPT_NTASKSPERCORE	 0x138
 #define LONG_OPT_MEM_PER_CPU     0x13a
 #define LONG_OPT_HINT	         0x13b
-#define LONG_OPT_BLRTS_IMAGE     0x140
-#define LONG_OPT_LINUX_IMAGE     0x141
-#define LONG_OPT_MLOADER_IMAGE   0x142
-#define LONG_OPT_RAMDISK_IMAGE   0x143
 #define LONG_OPT_REBOOT          0x144
 #define LONG_OPT_GET_USER_ENV    0x145
 #define LONG_OPT_PTY             0x146
@@ -284,10 +280,8 @@ struct option long_options[] = {
 	{"bbf",              required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"begin",            required_argument, 0, LONG_OPT_BEGIN},
-	{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 	{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",   required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
-	{"cnload-image",     required_argument, 0, LONG_OPT_LINUX_IMAGE},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 	{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
@@ -313,9 +307,7 @@ struct option long_options[] = {
 	{"gres-flags",       required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"help",             no_argument,       0, LONG_OPT_HELP},
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
-	{"ioload-image",     required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-	{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
 	{"launch-cmd",       no_argument,       0, LONG_OPT_LAUNCH_CMD},
 	{"launcher-opts",    required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
 	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
@@ -330,7 +322,6 @@ struct option long_options[] = {
 	{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
 	{"minsockets",       required_argument, 0, LONG_OPT_MINSOCKETS},
 	{"minthreads",       required_argument, 0, LONG_OPT_MINTHREADS},
-	{"mloader-image",    required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
@@ -348,7 +339,6 @@ struct option long_options[] = {
 	{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
 	{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
-	{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 	{"reboot",           no_argument,       0, LONG_OPT_REBOOT},
 	{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
 	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
@@ -651,7 +641,6 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		for (i = 0; i < sropt.argc; i++)
 			opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
 		sropt.bcast_file = NULL;	/* Moved by memcpy */
-		opt.blrtsimage = NULL;		/* Moved by memcpy */
 		opt.burst_buffer = NULL;	/* Moved by memcpy */
 		opt_dup->srun_opt->ckpt_dir = xstrdup(sropt.ckpt_dir);
 		opt_dup->srun_opt->ckpt_interval_str =
@@ -671,10 +660,8 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		opt_dup->srun_opt->launcher_opts = xstrdup(sropt.launcher_opts);
 		sropt.launcher_opts = NULL;	/* Moved by memcpy */
 		opt.licenses = NULL;		/* Moved by memcpy */
-		opt.linuximage = NULL;		/* Moved by memcpy */
 		opt.mail_user = NULL;		/* Moved by memcpy */
 		opt.mem_bind = NULL;		/* Moved by memcpy */
-		opt.mloaderimage = NULL;	/* Moved by memcpy */
 		opt.network = NULL;		/* Moved by memcpy */
 		opt.nodelist = NULL;		/* Moved by memcpy */
 		sropt.pack_group = NULL;	/* Moved by memcpy */
@@ -682,7 +669,6 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		opt.partition = NULL;		/* Moved by memcpy */
 		opt_dup->srun_opt->prolog = xstrdup(sropt.prolog);
 		opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
-		opt.ramdiskimage = NULL;	/* Moved by memcpy */
 		sropt.restart_dir = NULL;	/* Moved by memcpy */
 		opt.spank_job_env = NULL;	/* Moved by memcpy */
 		opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
@@ -901,7 +887,6 @@ static void _opt_default(void)
 	sropt.bcast_file		= NULL;
 	sropt.bcast_flag		= false;
 	sropt.accel_bind_type		= 0;
-	opt.blrtsimage			= NULL;
 	opt.burst_buffer		= NULL;
 	sropt.compress			= 0;
 	opt.constraints			= NULL;
@@ -927,7 +912,6 @@ static void _opt_default(void)
 	opt.job_flags			= 0;
 	sropt.launch_cmd		= false;
 	sropt.launcher_opts		= NULL;
-	opt.linuximage			= NULL;
 	launch_params = slurm_get_launch_params();
 	if (launch_params && strstr(launch_params, "mem_sort"))
 		opt.mem_bind_type	|= MEM_BIND_SORT;
@@ -942,7 +926,6 @@ static void _opt_default(void)
 	opt.mem_bind_type		= 0;
 	opt.mem_per_cpu			= NO_VAL64;
 	opt.min_nodes			= 1;
-	opt.mloaderimage		= NULL;
 	sropt.multi_prog			= false;
 	sropt.multi_prog_cmds		= 0;
 	opt.network			= NULL;
@@ -966,7 +949,6 @@ static void _opt_default(void)
 	opt.pn_min_memory		= NO_VAL64;
 	opt.pn_min_tmp_disk		= NO_VAL;
 	opt.power_flags			= 0;
-	opt.ramdiskimage		= NULL;
 	sropt.relative			= NO_VAL;
 	sropt.relative_set		= false;
 	opt.req_switch			= -1;
@@ -1013,12 +995,10 @@ env_vars_t env_vars[] = {
 {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL             },
 {"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
-{"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL             },
 {"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
 {"SLURM_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL             },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &sropt.ckpt_dir,    NULL             },
-{"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
 {"SLURM_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL             },
 {"SLURM_CLUSTER_CONSTRAINT",OPT_STRING, &opt.c_constraints, NULL             },
@@ -1044,19 +1024,16 @@ env_vars_t env_vars[] = {
 {"SLURM_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL             },
 {"SLURM_HINT",          OPT_HINT,       NULL,               NULL             },
 {"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
-{"SLURM_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL             },
 /* SLURM_JOBID was used in slurm version 1.3 and below, it is now vestigial */
 {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_JOB_ID",        OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &sropt.job_name_set_env},
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &sropt.kill_bad_exit,NULL            },
 {"SLURM_LABELIO",       OPT_INT,        &sropt.labelio,     NULL             },
-{"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_MEM_PER_GPU",   OPT_MEM_PER_GPU,&opt.mem_per_gpu,  NULL              },
 {"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL             },
 {"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
 {"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
-{"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
 {"SLURM_NETWORK",       OPT_STRING,     &opt.network,  &sropt.network_set_env},
@@ -1074,7 +1051,6 @@ env_vars_t env_vars[] = {
 {"SLURM_PROFILE",       OPT_PROFILE,    NULL,               NULL             },
 {"SLURM_PROLOG",        OPT_STRING,     &sropt.prolog,      NULL             },
 {"SLURM_QOS",           OPT_STRING,     &opt.qos,           NULL             },
-{"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
 {"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
 {"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
@@ -2190,30 +2166,6 @@ static void _set_options(const int argc, char **argv)
 			opt.ntasks_per_core_set  = true;
 			opt.threads_per_core_set = true;
 			break;
-		case LONG_OPT_BLRTS_IMAGE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.blrtsimage);
-			opt.blrtsimage = xstrdup(optarg);
-			break;
-		case LONG_OPT_LINUX_IMAGE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.linuximage);
-			opt.linuximage = xstrdup(optarg);
-			break;
-		case LONG_OPT_MLOADER_IMAGE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.mloaderimage);
-			opt.mloaderimage = xstrdup(optarg);
-			break;
-		case LONG_OPT_RAMDISK_IMAGE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.ramdiskimage);
-			opt.ramdiskimage = xstrdup(optarg);
-			break;
 		case LONG_OPT_REBOOT:
 			opt.reboot = true;
 			break;
@@ -2737,21 +2689,6 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.linuximage && strchr(opt.linuximage, ' ')) {
-		error("invalid CnloadImage given '%s'", opt.linuximage);
-		verified = false;
-	}
-
-	if (opt.mloaderimage && strchr(opt.mloaderimage, ' ')) {
-		error("invalid MloaderImage given '%s'", opt.mloaderimage);
-		verified = false;
-	}
-
-	if (opt.ramdiskimage && strchr(opt.ramdiskimage, ' ')) {
-		error("invalid IoloadImage given '%s'", opt.ramdiskimage);
-		verified = false;
-	}
-
 	if (!opt.ntasks_per_node) {
 		error("ntasks-per-node is 0");
 		verified = false;
@@ -3213,13 +3150,6 @@ static void _opt_list(void)
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("preserve_env   : %s", tf_(sropt.preserve_env));
-
-	if (opt.linuximage)
-		info("CnloadImage    : %s", opt.linuximage);
-	if (opt.mloaderimage)
-		info("MloaderImage   : %s", opt.mloaderimage);
-	if (opt.ramdiskimage)
-		info("IoloadImage   : %s", opt.ramdiskimage);
 
 	info("network        : %s", opt.network);
 	info("propagate      : %s",

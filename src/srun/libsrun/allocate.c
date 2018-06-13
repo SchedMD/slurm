@@ -1036,14 +1036,6 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->job_id	= opt_local->jobid;
 	if (opt_local->reboot)
 		j->reboot = 1;
-	if (opt_local->blrtsimage)
-		j->blrtsimage = opt_local->blrtsimage;
-	if (opt_local->linuximage)
-		j->linuximage = opt_local->linuximage;
-	if (opt_local->mloaderimage)
-		j->mloaderimage = opt_local->mloaderimage;
-	if (opt_local->ramdiskimage)
-		j->ramdiskimage = opt_local->ramdiskimage;
 
 	if (opt_local->max_nodes)
 		j->max_nodes    = opt_local->max_nodes;

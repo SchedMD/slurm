@@ -2279,46 +2279,6 @@ only available for the users "SlurmUser" and "root". This option applies to job
 allocations.
 
 .PP
-The following options support Blue Gene systems, but may be
-applicable to other systems as well.
-
-.TP
-\fB\-\-blrts\-image\fR=<\fIpath\fR>
-Path to blrts image for bluegene block.  BGL only.
-Default from \fIblugene.conf\fR if not set. This option applies to job
-allocations.
-
-.TP
-\fB\-\-cnload\-image\fR=<\fIpath\fR>
-Path to compute node image for bluegene block.  BGP only.
-Default from \fIblugene.conf\fR if not set. This option applies to job
-allocations.
-
-.TP
-\fB\-\-ioload\-image\fR=<\fIpath\fR>
-Path to io image for bluegene block.  BGP only.
-Default from \fIblugene.conf\fR if not set. This option applies to job
-allocations.
-
-.TP
-\fB\-\-linux\-image\fR=<\fIpath\fR>
-Path to linux image for bluegene block.  BGL only.
-Default from \fIblugene.conf\fR if not set. This option applies to job
-allocations.
-
-.TP
-\fB\-\-mloader\-image\fR=<\fIpath\fR>
-Path to mloader image for bluegene block.
-Default from \fIblugene.conf\fR if not set. This option applies to job
-allocations.
-
-.TP
-\fB\-\-ramdisk\-image\fR=<\fIpath\fR>
-Path to ramdisk image for bluegene block.  BGL only.
-Default from \fIblugene.conf\fR if not set. This option applies to job
-allocations.
-
-.PP
 .B srun
 will submit the job request to the slurm job controller, then initiate all
 processes on the remote nodes. If the request cannot be met immediately,
@@ -2533,9 +2493,6 @@ Same as \fB\-\-acctg\-freq\fR
 \fBSLURM_BCAST\fR
 Same as \fB\-\-bcast\fR
 .TP
-\fBSLURM_BLRTS_IMAGE\fR
-Same as \fB\-\-blrts\-image\fR
-.TP
 \fBSLURM_BURST_BUFFER\fR
 Same as \fB\-\-bb\fR
 .TP
@@ -2544,9 +2501,6 @@ Same as \fB\-\-checkpoint\fR
 .TP
 \fBSLURM_CHECKPOINT_DIR\fR
 Same as \fB\-\-checkpoint\-dir\fR
-.TP
-\fBSLURM_CNLOAD_IMAGE\fR
-Same as \fB\-\-cnload\-image\fR
 .TP
 \fBSLURM_COMPRESS\fR
 Same as \fB\-\-compress\fR
@@ -2637,9 +2591,6 @@ Same as \fB\-\-gres\fR. Also see \fBSLURM_STEP_GRES\fR
 \fBSLURM_IMMEDIATE\fR
 Same as \fB\-I, \-\-immediate\fR
 .TP
-\fBSLURM_IOLOAD_IMAGE\fR
-Same as \fB\-\-ioload\-image\fR
-.TP
 \fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
 Same as \fB\-\-jobid\fR
 .TP
@@ -2658,9 +2609,6 @@ Same as \fB\-K, \-\-kill\-on\-bad\-exit\fR
 \fBSLURM_LABELIO\fR
 Same as \fB\-l, \-\-label\fR
 .TP
-\fBSLURM_LINUX_IMAGE\fR
-Same as \fB\-\-linux\-image\fR
-.TP
 \fBSLURM_MEM_BIND\fR
 Same as \fB\-\-mem\-bind\fR
 .TP
@@ -2672,9 +2620,6 @@ Same as \fB\-\-mem\-per\-cpu\fR
 .TP
 \fBSLURM_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
-.TP
-\fBSLURM_MLOADER_IMAGE\fR
-Same as \fB\-\-mloader\-image\fR
 .TP
 \fBSLURM_MPI_TYPE\fR
 Same as \fB\-\-mpi\fR
@@ -2721,9 +2666,6 @@ Same as \fB\-\-prolog\fR
 .TP
 \fBSLURM_QOS\fR
 Same as \fB\-\-qos\fR
-.TP
-\fBSLURM_RAMDISK_IMAGE\fR
-Same as \fB\-\-ramdisk\-image\fR
 .TP
 \fBSLURM_REMOTE_CWD\fR
 Same as \fB\-D, \-\-chdir=\fR
