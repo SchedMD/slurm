@@ -4423,9 +4423,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_PRIORITY_FACTORS:
 		slurm_free_priority_factors_response_msg(data);
 		break;
-	case REQUEST_BLOCK_INFO:
-		slurm_free_block_info_request_msg(data);
-		break;
 	case REQUEST_STEP_COMPLETE:
 	case REQUEST_STEP_COMPLETE_AGGR:
 		slurm_free_step_complete_msg(data);
@@ -4836,11 +4833,7 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_ID";
 	case RESPONSE_JOB_ID:
 		return "RESPONSE_JOB_ID";
-	case REQUEST_BLOCK_INFO:
-		return "REQUEST_BLOCK_INFO";
-	case RESPONSE_BLOCK_INFO:
-		return "RESPONSE_BLOCK_INFO";
-	case REQUEST_TRIGGER_SET:
+	case REQUEST_TRIGGER_SET:				/* 2017 */
 		return "REQUEST_TRIGGER_SET";
 	case REQUEST_TRIGGER_GET:
 		return "REQUEST_TRIGGER_GET";

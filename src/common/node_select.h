@@ -109,10 +109,6 @@ typedef struct slurm_select_ops {
 	int             (*step_start)           (struct step_record *step_ptr);
 	int             (*step_finish)          (struct step_record *step_ptr,
 						 bool killing_step);
-	int		(*pack_select_info)	(time_t last_query_time,
-						 uint16_t show_flags,
-						 Buf *buffer_ptr,
-						 uint16_t protocol_version);
 	int		(*nodeinfo_pack)	(select_nodeinfo_t *nodeinfo,
 						 Buf buffer,
 						 uint16_t protocol_version);
@@ -644,20 +640,6 @@ extern bitstr_t * select_g_resv_test(resv_desc_msg_t *resv_desc_ptr,
 extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data);
-
-/* pack node-select plugin specific information into a buffer in
- *	machine independent form
- * IN last_update_time - time of latest information consumer has
- * IN show_flags - flags to control information output
- * OUT buffer - location to hold the data, consumer must free
- * IN protocol_version - slurm protocol version of client
- * RET - slurm error code
- *
- * NOTE: The unpack for this is in common/slurm_protocol_pack.c
- */
-extern int select_g_pack_select_info(time_t last_query_time,
-				     uint16_t show_flags, Buf *buffer,
-				     uint16_t protocol_version);
 
 /* Get the number of elements in each dimension of a system
  * RET - An array of element counts, one element per dimension */

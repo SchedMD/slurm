@@ -1440,14 +1440,6 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 	return SLURM_SUCCESS;
 }
 
-/* This function is always invalid on normal Linux clusters */
-extern int select_p_pack_select_info(time_t last_query_time,
-				     uint16_t show_flags, Buf *buffer_ptr,
-				     uint16_t protocol_version)
-{
-	return SLURM_ERROR;
-}
-
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)

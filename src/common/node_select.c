@@ -85,7 +85,6 @@ const char *node_select_syms[] = {
 	"select_p_step_pick_nodes",
 	"select_p_step_start",
 	"select_p_step_finish",
-	"select_p_pack_select_info",
 	"select_p_select_nodeinfo_pack",
 	"select_p_select_nodeinfo_unpack",
 	"select_p_select_nodeinfo_alloc",
@@ -746,17 +745,6 @@ extern int select_g_step_finish(struct step_record *step_ptr, bool killing_step)
 
 	return (*(ops[select_context_default].step_finish))
 		(step_ptr, killing_step);
-}
-
-extern int select_g_pack_select_info(time_t last_query_time,
-				     uint16_t show_flags, Buf *buffer,
-				     uint16_t protocol_version)
-{
-	if (slurm_select_init(0) < 0)
-		return SLURM_ERROR;
-
-	return (*(ops[select_context_default].pack_select_info))
-		(last_query_time, show_flags, buffer, protocol_version);
 }
 
 extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,

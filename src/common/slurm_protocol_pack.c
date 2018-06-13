@@ -362,12 +362,6 @@ static int _unpack_job_info_request_msg(job_info_request_msg_t**
 					msg, Buf buffer,
 					uint16_t protocol_version);
 
-static void _pack_block_info_req_msg(block_info_request_msg_t *
-				     msg, Buf buffer,
-				     uint16_t protocol_version);
-static int _unpack_block_info_req_msg(block_info_request_msg_t **
-				      msg, Buf buffer,
-				      uint16_t protocol_version);
 static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 				 uint16_t protocol_version);
 static int _unpack_block_info(block_info_t **block_info, Buf buffer,
@@ -1415,14 +1409,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			buffer,
 			msg->protocol_version);
 		break;
-	case REQUEST_BLOCK_INFO:
-		_pack_block_info_req_msg(
-			(block_info_request_msg_t *) msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_BLOCK_INFO:
-		_pack_block_info_resp_msg((slurm_msg_t *) msg, buffer);
-		break;
 	case RESPONSE_BURST_BUFFER_INFO:
 		_pack_burst_buffer_info_resp_msg((slurm_msg_t *) msg, buffer);
 		break;
@@ -2159,17 +2145,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		_unpack_priority_factors_response_msg(
 			(priority_factors_response_msg_t**)&msg->data,
 			buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_BLOCK_INFO:
-		rc = _unpack_block_info_req_msg(
-			(block_info_request_msg_t **) &msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_BLOCK_INFO:
-		rc = slurm_unpack_block_info_msg(
-			(block_info_msg_t **) &(msg->data), buffer,
 			msg->protocol_version);
 		break;
 	case RESPONSE_BURST_BUFFER_INFO:
@@ -11977,45 +11952,6 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 unpack_error:
 	xfree(uint32_ptr);
 	slurm_free_job_info_request_msg(job_info);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static void
-_pack_block_info_req_msg(block_info_request_msg_t *msg, Buf buffer,
-			 uint16_t protocol_version)
-{
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_time(msg->last_update, buffer);
-		pack16(msg->show_flags, buffer);
-	} else {
-		error("_pack_block_info_req_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-	}
-}
-
-static int
-_unpack_block_info_req_msg(block_info_request_msg_t **msg,
-			   Buf buffer,
-			   uint16_t protocol_version)
-{
-	block_info_request_msg_t *node_sel_info;
-
-	node_sel_info = xmalloc(sizeof(block_info_request_msg_t));
-	*msg = node_sel_info;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack_time(&node_sel_info->last_update, buffer);
-		safe_unpack16(&node_sel_info->show_flags, buffer);
-	} else {
-		error("_unpack_block_info_req_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-		goto unpack_error;
-	}
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_block_info_request_msg(node_sel_info);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

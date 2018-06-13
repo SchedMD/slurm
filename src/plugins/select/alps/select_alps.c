@@ -498,14 +498,6 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 	return other_step_finish(step_ptr, killing_step);
 }
 
-extern int select_p_pack_select_info(time_t last_query_time,
-				     uint16_t show_flags, Buf *buffer_ptr,
-				     uint16_t protocol_version)
-{
-	return other_pack_select_info(last_query_time, show_flags, buffer_ptr,
-				      protocol_version);
-}
-
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));

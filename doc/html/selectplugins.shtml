@@ -720,30 +720,6 @@ the job related to the query (if applicable; may be NULL).<br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="commandline">int select_p_pack_select_info(time_t last_query_time,
-uint16_t show_flags, Buf *buffer_ptr, uint16_t protocol_version);</p>
-<p style="margin-left:.2in"><b>Description</b>: Pack plugin-specific information
-about its general state into a buffer. Currently only used by select/bluegene
-to pack block state information.<br>
-<b>NOTE:</b> Functions to work with this data may be needed on computers
-without the plugin which generated the data, so those functions are in
-src/common modules. The unpack function is performed by
-slurm_unpack_block_info_members() in src/common/slurm_protocol_pack.c
-using BlueGene specific data structures. Use destroy_select_ba_request()
-in src/common/noe_select.c to free the data structure's memory.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> last_query_time</span>&nbsp; &nbsp;&nbsp;(input)
-Time when the data was previously requested (used so only updated information
-needs to be sent).<br>
-<span class="commandline"> show_flags</span>&nbsp; &nbsp;&nbsp;(input) identifies
-the type of data requested.<br>
-<span class="commandline"> buffer_ptr</span>&nbsp; &nbsp;&nbsp;(input/output)
-Pointer to buffer filled in with select plugin state information.</br>
-<span class="commandline"> protocol_version</span>&nbsp; &nbsp;&nbsp;(input)
-Version number of the data packing mechanism (needed for backward compatibility).</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR.</p>
-
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>Block Allocator interface</h3>
