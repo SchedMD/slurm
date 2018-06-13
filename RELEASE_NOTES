@@ -221,4 +221,6 @@ Removed the following API's
 ===========================
  -- Removed slurm_xslurm_strerrorcat() function.
  -- Removed slurm_xstrstrip() function.
- -- Removed slurm_load_block_info().
+ -- Removed slurm_load_block_info(), slurm_print_block_info_msg(),
+    slurm_print_block_info(), slurm_sprint_block_info().
+ -- Removed slurm_get_select_jobinfo().

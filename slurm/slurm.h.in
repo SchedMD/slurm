@@ -2470,52 +2470,6 @@ typedef struct {
 typedef block_info_t update_block_msg_t;
 
 /*
- * slurm_print_block_info_msg - output information about all Bluegene
- *	blocks based upon message as loaded using slurm_load_block
- * IN out - file to write to
- * IN info_ptr - block information message pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_block_info_msg(FILE *out,
-				       block_info_msg_t *info_ptr,
-				       int one_liner);
-
-/*
- * slurm_print_block_info - output information about a specific Bluegene
- *	block based upon message as loaded using slurm_load_block
- * IN out - file to write to
- * IN bg_info_ptr - an individual block information record pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_block_info(FILE *out,
-				   block_info_t *bg_info_ptr,
-				   int one_liner);
-
-/*
- * slurm_sprint_block_info - output information about a specific Bluegene
- *	block based upon message as loaded using slurm_load_block
- * IN bg_info_ptr - an individual partition information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-extern char *slurm_sprint_block_info(block_info_t *bg_info_ptr, int one_liner);
-
-/*
- * slurm_load_block_info - issue RPC to get slurm all node select plugin
- *	information if changed since update_time
- * IN update_time - time of current configuration data
- * IN block_info_msg_pptr - place to store a node select configuration
- *	pointer
- * IN show_flags - controls output form or filtering, see SHOW_* in slurm.h
- * RET 0 or a slurm error code
- * NOTE: free the response using slurm_free_block_info_msg
- */
-extern int slurm_load_block_info(time_t update_time,
-				 block_info_msg_t **block_info_msg_pptr,
-				 uint16_t show_flags);
-
-/*
  * slurm_free_block_info_msg - free buffer returned by
  *	slurm_load_block
  * IN block_info_msg_ptr - pointer to block_info_msg_t
@@ -4499,17 +4453,6 @@ extern int slurm_update_powercap(update_powercap_msg_t *powercap_msg);
 /*****************************************************************************\
  *	SLURM SELECT READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
-
-/*
- * slurm_get_select_jobinfo - get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN/OUT data - the data to enter into job credential
- * RET 0 or -1 on error
- */
-extern int slurm_get_select_jobinfo(dynamic_plugin_data_t *jobinfo,
-				    enum select_jobdata_type data_type,
-				    void *data);
 
 /*
  * slurm_get_select_nodeinfo - get data from a select node credential
