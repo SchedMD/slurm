@@ -146,35 +146,6 @@ static int _load_plugins(void *x, void *arg)
 	return 0;
 }
 
-/**
- * print a block request
- */
-extern void print_select_ba_request(select_ba_request_t* ba_request)
-{
-	int dim;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	uint16_t cluster_dims = slurmdb_setup_cluster_dims();
-
-	if (ba_request == NULL){
-		error("print_ba_request Error, request is NULL");
-		return;
-	}
-	debug("  ba_request:");
-	debug("    geometry:\t");
-	for (dim=0; dim<cluster_dims; dim++){
-		debug("%d", ba_request->geometry[dim]);
-	}
-	debug("        size:\t%d", ba_request->size);
-	if (cluster_flags & CLUSTER_FLAG_BGQ) {
-		for (dim=0; dim<cluster_dims; dim++)
-			debug("   conn_type:\t%d", ba_request->conn_type[dim]);
-	} else
-		debug("   conn_type:\t%d", ba_request->conn_type[0]);
-
-	debug("      rotate:\t%d", ba_request->rotate);
-	debug("    elongate:\t%d", ba_request->elongate);
-}
-
 extern int select_char2coord(char coord)
 {
 	if ((coord >= '0') && (coord <= '9'))
