@@ -2421,12 +2421,6 @@ typedef struct will_run_response_msg {
 	double sys_usage_per;	/* System usage percentage */
 } will_run_response_msg_t;
 
-
-/* BLUEGENE specific information */
-
-typedef struct {
-} update_block_msg_t;
-
 /*********************************/
 
 /*

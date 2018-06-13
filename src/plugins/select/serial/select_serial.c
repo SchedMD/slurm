@@ -2120,7 +2120,7 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	return NULL;
 }
 
-extern int select_p_update_block(update_part_msg_t *part_desc_ptr)
+extern int select_p_update_basil(void)
 {
 	return SLURM_SUCCESS;
 }

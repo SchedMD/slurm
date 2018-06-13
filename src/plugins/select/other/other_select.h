@@ -92,12 +92,6 @@ extern int other_node_init(struct node_record *node_ptr, int node_cnt);
 extern int other_block_init(List part_list);
 
 /*
- * Update specific block (usually something has gone wrong)
- * IN block_desc_ptr - information about the block
- */
-extern int other_update_block(update_block_msg_t *block_desc_ptr);
-
-/*
  * Get select data from a plugin
  * IN node_pts  - current node record
  * IN dinfo   - type of data to get from the node record

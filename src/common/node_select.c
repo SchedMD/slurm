@@ -101,7 +101,7 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_unpack",
 	"select_p_select_jobinfo_sprint",
 	"select_p_select_jobinfo_xstrdup",
-	"select_p_update_block",
+	"select_p_update_basil",
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
 	"select_p_update_node_state",
@@ -1132,16 +1132,14 @@ extern char *select_g_select_jobinfo_xstrdup(
 }
 
 /*
- * Update specific block (usually something has gone wrong)
- * IN block_desc_ptr - information about the block
+ * Update basil in select/alps
  */
-extern int select_g_update_block (update_block_msg_t *block_desc_ptr)
+extern int select_g_update_basil(void)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	return (*(ops[select_context_default].
-		  update_block))(block_desc_ptr);
+	return (*(ops[select_context_default].update_basil))();
 }
 
 /*

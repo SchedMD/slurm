@@ -2616,9 +2616,9 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	return buf;
 }
 
-extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
+extern int select_p_update_basil(void)
 {
-	return other_update_block(block_desc_ptr);
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
