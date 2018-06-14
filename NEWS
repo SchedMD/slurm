@@ -71,6 +71,7 @@ documents those changes that are of interest to users and administrators.
     when a node fails to respond by ResumeTimeout.
  -- Add new job pending reason of "ReqNodeNotAvail, reserved for maintenance".
  -- Remove AdminComment += syntax from 'scontrol update job'.
+ -- sched/backfill: Reset job time limit if needed for deadline scheduling.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

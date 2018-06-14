@@ -2066,6 +2066,11 @@ skip_start:
 				acct_policy_alter_job(job_ptr, comp_time_limit);
 				job_ptr->time_limit = comp_time_limit;
 				job_ptr->limit_set.time = 1;
+			} else if (deadline_time_limit &&
+				   (rc == SLURM_SUCCESS)) {
+				acct_policy_alter_job(job_ptr, comp_time_limit);
+				job_ptr->time_limit = comp_time_limit;
+				reset_time = true;
 			} else {
 				acct_policy_alter_job(job_ptr, orig_time_limit);
 				_set_job_time_limit(job_ptr, orig_time_limit);
