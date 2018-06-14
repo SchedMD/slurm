@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve detection of Lua package on older RHEL distributions.
  -- PMIx: fixed the direct connect inline msg sending.
  -- MYSQL: Fix issue not handling all fields when loading an archive dump.
+ -- Allow a job_submit plugin to change the admin_comment field during
+    job_submit_plugin_modify().
 
 * Changes in Slurm 17.11.7
 ==========================
