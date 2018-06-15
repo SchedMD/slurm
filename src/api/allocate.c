@@ -601,8 +601,6 @@ int slurm_job_will_run(job_desc_msg_t *req)
 	will_run_response_msg_t *will_run_resp = NULL;
 	char buf[64], local_hostname[64];
 	int rc;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	char *type = "processors";
 	char *cluster_name = NULL;
 	void *ptr = NULL;
 
@@ -626,13 +624,11 @@ int slurm_job_will_run(job_desc_msg_t *req)
 			will_run_resp->job_submit_user_msg, -1);
 
 	if ((rc == 0) && will_run_resp) {
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			type = "cnodes";
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
-		info("Job %u to start at %s using %u %s on %s",
+		info("Job %u to start at %s using %u processors on %s",
 		     will_run_resp->job_id, buf,
-		     will_run_resp->proc_cnt, type,
+		     will_run_resp->proc_cnt,
 		     will_run_resp->node_list);
 		if (will_run_resp->preemptee_job_id) {
 			ListIterator itr;
@@ -674,7 +670,6 @@ extern int slurm_pack_job_will_run(List job_req_list)
 	will_run_response_msg_t *will_run_resp;
 	char buf[64], local_hostname[64] = "", *sep = "";
 	int rc = SLURM_SUCCESS, inx = 0;
-	char *type = "processors";
 	ListIterator iter, itr;
 	time_t first_start = (time_t) 0;
 	uint32_t first_job_id = 0, tot_proc_count = 0, *job_id_ptr;
@@ -735,16 +730,13 @@ extern int slurm_pack_job_will_run(List job_req_list)
 
 
 	if (rc == SLURM_SUCCESS) {
-		uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 		char node_list[1028] = "";
 
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			type = "cnodes";
 		if (hs)
 			hostset_ranged_string(hs, sizeof(node_list), node_list);
 		slurm_make_time_str(&first_start, buf, sizeof(buf));
-		info("Job %u to start at %s using %u %s on %s",
-		     first_job_id, buf, tot_proc_count, type, node_list);
+		info("Job %u to start at %s using %u processors on %s",
+		     first_job_id, buf, tot_proc_count, node_list);
 		if (job_list)
 			info("  Preempts: %s", job_list);
 	}

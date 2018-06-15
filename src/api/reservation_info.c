@@ -105,8 +105,6 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	char *out = NULL, *watts_str = NULL;
 	uint32_t duration;
 	time_t now = time(NULL);
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	bool is_bluegene = cluster_flags & CLUSTER_FLAG_BG;
 	char *line_end = (one_liner) ? " " : "\n   ";
 	int i;
 
@@ -127,13 +125,12 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	/****** Line ******/
 	flag_str = reservation_flags_string(resv_ptr->flags);
 
-	xstrfmtcat(out, "%s=%s %sCnt=%u %sCnt=%u Features=%s "
+	xstrfmtcat(out, "Nodes=%s NodeCnt=%u CoreCnt=%u Features=%s "
 		   "PartitionName=%s Flags=%s",
-		   is_bluegene ? "Midplanes" : "Nodes", resv_ptr->node_list,
-		   is_bluegene ? "Midplane" : "Node",
+		   resv_ptr->node_list,
 		   (resv_ptr->node_cnt == NO_VAL) ? 0 : resv_ptr->node_cnt,
-		   is_bluegene ? "Cnode" : "Core", resv_ptr->core_cnt,
-		   resv_ptr->features,  resv_ptr->partition, flag_str);
+		   resv_ptr->core_cnt, resv_ptr->features, resv_ptr->partition,
+		   flag_str);
 	xfree(flag_str);
 	xstrcat(out, line_end);
 

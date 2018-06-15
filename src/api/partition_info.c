@@ -120,11 +120,9 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 				    int one_liner )
 {
-	char tmp[16];
 	char *out = NULL;
 	char *allow_deny, *value;
 	uint16_t force, preempt_mode, val;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	char *line_end = (one_liner) ? " " : "\n   ";
 
 	/****** Line 1 ******/
@@ -196,14 +194,6 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	xstrcat(out, line_end);
 
-	/****** Line 4 added here for BG partitions only
-	 ****** to maintain alphabetized output ******/
-
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		xstrfmtcat(out, "Midplanes=%s", part_ptr->nodes);
-		xstrcat(out, line_end);
-	}
-
 	/****** Line 5 ******/
 
 	if (part_ptr->default_time == INFINITE)
@@ -240,16 +230,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	if (part_ptr->max_nodes == INFINITE)
 		xstrcat(out, "MaxNodes=UNLIMITED");
-	else {
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			convert_num_unit((float)part_ptr->max_nodes, tmp,
-					 sizeof(tmp), UNIT_NONE, NO_VAL,
-					 CONVERT_NUM_UNIT_EXACT);
-			xstrfmtcat(out, "MaxNodes=%s", tmp);
-		} else
-			xstrfmtcat(out, "MaxNodes=%u", part_ptr->max_nodes);
-
-	}
+	else
+		xstrfmtcat(out, "MaxNodes=%u", part_ptr->max_nodes);
 
 	if (part_ptr->max_time == INFINITE)
 		xstrcat(out, " MaxTime=UNLIMITED");
@@ -260,12 +242,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrfmtcat(out, " MaxTime=%s", time_line);
 	}
 
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		convert_num_unit((float)part_ptr->min_nodes, tmp, sizeof(tmp),
-				 UNIT_NONE, NO_VAL, CONVERT_NUM_UNIT_EXACT);
-		xstrfmtcat(out, " MinNodes=%s", tmp);
-	} else
-		xstrfmtcat(out, " MinNodes=%u", part_ptr->min_nodes);
+	xstrfmtcat(out, " MinNodes=%u", part_ptr->min_nodes);
 
 	if (part_ptr->flags & PART_FLAG_LLN)
 		xstrcat(out, " LLN=YES");
@@ -280,14 +257,6 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	}
 
 	xstrcat(out, line_end);
-
-	/****** Line added here for non BG nodes
-	 to keep with alphabetized output******/
-
-	if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-		xstrfmtcat(out, "Nodes=%s", part_ptr->nodes);
-		xstrcat(out, line_end);
-	}
 
 	/****** Line 7 ******/
 
@@ -344,20 +313,9 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "State=UNKNOWN");
 
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		convert_num_unit((float)part_ptr->total_cpus, tmp, sizeof(tmp),
-				 UNIT_NONE, NO_VAL, CONVERT_NUM_UNIT_EXACT);
-		xstrfmtcat(out, " TotalCPUs=%s", tmp);
-	} else
-		xstrfmtcat(out, " TotalCPUs=%u", part_ptr->total_cpus);
+	xstrfmtcat(out, " TotalCPUs=%u", part_ptr->total_cpus);
 
-
-	if (cluster_flags & CLUSTER_FLAG_BG) {
-		convert_num_unit((float)part_ptr->total_nodes, tmp, sizeof(tmp),
-				 UNIT_NONE, NO_VAL, CONVERT_NUM_UNIT_EXACT);
-		xstrfmtcat(out, " TotalNodes=%s", tmp);
-	} else
-		xstrfmtcat(out, " TotalNodes=%u", part_ptr->total_nodes);
+	xstrfmtcat(out, " TotalNodes=%u", part_ptr->total_nodes);
 
 	xstrfmtcat(out, " SelectTypeParameters=%s",
 		   select_type_param_string(part_ptr->cr_type));
