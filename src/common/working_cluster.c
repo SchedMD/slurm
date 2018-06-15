@@ -106,12 +106,6 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 		return cluster_flags;
 
 	cluster_flags = 0;
-#ifdef HAVE_BG
-	cluster_flags |= CLUSTER_FLAG_BG;
-#endif
-#ifdef HAVE_BGQ
-	cluster_flags |= CLUSTER_FLAG_BGQ;
-#endif
 #ifdef MULTIPLE_SLURMD
 	cluster_flags |= CLUSTER_FLAG_MULTSD;
 #endif

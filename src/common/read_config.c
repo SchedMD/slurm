@@ -4135,13 +4135,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			return SLURM_ERROR;
 		}
 	}
-#ifdef HAVE_BG
-	if ((conf->preempt_mode & PREEMPT_MODE_GANG) ||
-	    (conf->preempt_mode & PREEMPT_MODE_SUSPEND)) {
-		error("PreemptMode incompatible with BlueGene systems");
-		return SLURM_ERROR;
-	}
-#endif
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
@@ -4833,13 +4826,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->topology_plugin, "TopologyPlugin", hashtbl))
 		conf->topology_plugin = xstrdup(DEFAULT_TOPOLOGY_PLUGIN);
-#ifdef HAVE_BG
-	if (xstrcmp(conf->topology_plugin, "topology/none")) {
-		error("On IBM BlueGene systems TopologyPlugin=topology/none "
-		      "is required");
-		return SLURM_ERROR;
-	}
-#endif
 
 	if (s_p_get_uint16(&conf->tree_width, "TreeWidth", hashtbl)) {
 		if (conf->tree_width == 0) {
@@ -4864,12 +4850,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	(void) s_p_get_uint16(&conf->vsize_factor, "VSizeFactor", hashtbl);
 
-#ifdef HAVE_BG
-	if (conf->node_prefix == NULL) {
-		error("No valid node name prefix identified");
-		return SLURM_ERROR;
-	}
-#endif
 	/* The default value is true meaning the memory
 	 * is going to be enforced by slurmstepd and/or
 	 * slurmd.

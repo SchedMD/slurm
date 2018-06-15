@@ -120,10 +120,8 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 		job_resrcs->sock_core_rep_count[sock_inx]++;
 		core_cnt += (cores * socks);
 	}
-#ifndef HAVE_BG
 	job_resrcs->core_bitmap      = bit_alloc(core_cnt);
 	job_resrcs->core_bitmap_used = bit_alloc(core_cnt);
-#endif
 	return SLURM_SUCCESS;
 }
 

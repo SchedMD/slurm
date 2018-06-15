@@ -178,21 +178,6 @@ extern int slurm_select_init(bool only_default)
 	if (working_cluster_rec) {
 		/* just ignore warnings here */
 	} else {
-#ifdef HAVE_BG
-		if (xstrcasecmp(select_type, "select/bluegene")) {
-			error("%s is incompatible with BlueGene", select_type);
-			fatal("Use SelectType=select/bluegene");
-		}
-#else
-		if (!xstrcasecmp(select_type, "select/bluegene")) {
-			fatal("Requested SelectType=select/bluegene "
-			      "in slurm.conf, but not running on a BG[L|P|Q] "
-			      "system.  If looking to emulate a BG[L|P|Q] "
-			      "system use --enable-bgl-emulation or "
-			      "--enable-bgp-emulation respectively.");
-		}
-#endif
-
 #ifdef HAVE_ALPS_CRAY
 		if (xstrcasecmp(select_type, "select/alps")) {
 			error("%s is incompatible with Cray system "

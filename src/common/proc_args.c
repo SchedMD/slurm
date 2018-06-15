@@ -500,10 +500,6 @@ extern void verify_conn_type(const char *arg, uint16_t *conn_type)
 	if (working_cluster_rec) {
 		if (working_cluster_rec->flags & CLUSTER_FLAG_BGQ)
 			highest_dims = 4;
-	} else {
-#if defined HAVE_BGQ
-		highest_dims = 4;
-#endif
 	}
 
 	tok = strtok_r(arg_tmp, ",", &save_ptr);
@@ -1112,23 +1108,6 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
 
-#if defined HAVE_BG
-	/* BGQ's runjob command requires always a fully qualified path */
-	/* Relative path */
-	if (cmd[0] == '.') {
-		char *cmd1 = xstrdup_printf("%s/%s", cwd, cmd);
-		if (access(cmd1, access_mode) == 0)
-			xstrcat(fullpath, cmd1);
-		xfree(cmd1);
-		goto done;
-	}
-	/* Absolute path */
-	if (cmd[0] == '/') {
-		if (access(cmd, access_mode) == 0)
-			xstrcat(fullpath, cmd);
-		goto done;
-	}
-#else
 	/* Relative path */
 	if (cmd[0] == '.') {
 		if (test_exec) {
@@ -1145,7 +1124,6 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 			xstrcat(fullpath, cmd);
 		goto done;
 	}
-#endif
 	/* Otherwise search in PATH */
 	l = _create_path_list();
 	if (l == NULL)
