@@ -191,8 +191,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		       opt_local->min_nodes, opt_local->max_nodes);
 		return SLURM_ERROR;
 	}
-#if !defined HAVE_FRONT_END || (defined HAVE_BGQ)
-//#if !defined HAVE_FRONT_END || (defined HAVE_BGQ && defined HAVE_BG_FILES)
+#if !defined HAVE_FRONT_END
 	if (opt_local->min_nodes && (opt_local->min_nodes > job->nhosts)) {
 		error ("Minimum node count > allocated node count (%d > %d)",
 		       opt_local->min_nodes, job->nhosts);

@@ -94,14 +94,7 @@ static uint32_t pending_job_id = 0;
 static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local);
 static void _set_pending_job_id(uint32_t job_id);
 static void _signal_while_allocating(int signo);
-
-#ifdef HAVE_BG
-static int _wait_bluegene_block_ready(
-	resource_allocation_response_msg_t *alloc);
-static int _blocks_dealloc(void);
-#else
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
-#endif
 
 static sig_atomic_t destroy_job = 0;
 
@@ -249,103 +242,6 @@ static bool _retry(void)
 	return true;
 }
 
-#ifdef HAVE_BG
-/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
-static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
-{
-	int is_ready = 0, i, rc;
-	char *block_id = NULL;
-	double cur_delay = 0;
-	double cur_sleep = 0;
-	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
-		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
-
-	select_g_select_jobinfo_get(alloc->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID,
-				    &block_id);
-
-	for (i = 0; cur_delay < max_delay; i++) {
-		cur_sleep = POLL_SLEEP * i;
-		if (i == 1) {
-			debug("Waiting for block %s to become ready for job",
-			      block_id);
-		}
-		if (i) {
-			usleep(1000000 * cur_sleep);
-			rc = _blocks_dealloc();
-			if ((rc == 0) || (rc == -1))
-				cur_delay += cur_sleep;
-			debug2("still waiting");
-		}
-
-		rc = slurm_job_node_ready(alloc->job_id);
-
-		if (rc == READY_JOB_FATAL)
-			break;				/* fatal error */
-		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
-			continue;			/* retry */
-		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
-			break;
-		if (rc & READY_NODE_STATE) {		/* job and node ready */
-			is_ready = 1;
-			break;
-		}
-		if (destroy_job)
-			break;
-	}
-	if (is_ready)
-     		debug("Block %s is ready for job", block_id);
-	else if (!destroy_job)
-		error("Block %s still not ready", block_id);
-	else	/* destroy_job set and slurmctld not responing */
-		is_ready = 0;
-
-	xfree(block_id);
-
-	return is_ready;
-}
-
-/*
- * Test if any BG blocks are in deallocating state since they are
- * probably related to this job we will want to sleep longer
- * RET	1:  deallocate in progress
- *	0:  no deallocate in progress
- *     -1: error occurred
- */
-static int _blocks_dealloc(void)
-{
-	static block_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
-	int rc = 0, error_code = 0, i;
-
-	if (bg_info_ptr) {
-		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr, SHOW_ALL);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_block_info_msg(bg_info_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-			error_code = SLURM_SUCCESS;
-			new_bg_ptr = bg_info_ptr;
-		}
-	} else {
-		error_code = slurm_load_block_info((time_t) NULL,
-						   &new_bg_ptr, SHOW_ALL);
-	}
-
-	if (error_code) {
-		error("slurm_load_block_info: %s",
-		      slurm_strerror(slurm_get_errno()));
-		return -1;
-	}
-	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if (new_bg_ptr->block_array[i].state == BG_BLOCK_TERM) {
-			rc = 1;
-			break;
-		}
-	}
-	bg_info_ptr = new_bg_ptr;
-	return rc;
-}
-#else
 /* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 {
@@ -421,7 +317,6 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 
 	return is_ready;
 }
-#endif	/* HAVE_BG */
 
 static int _allocate_test(slurm_opt_t *opt_local)
 {
@@ -566,23 +461,6 @@ extern resource_allocation_response_msg_t *
 			}
 		}
 
-#ifdef HAVE_BG
-		uint32_t node_cnt = 0;
-		select_g_select_jobinfo_get(resp->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &node_cnt);
-		if ((node_cnt == 0) || (node_cnt == NO_VAL)) {
-			opt_local->min_nodes = node_cnt;
-			opt_local->max_nodes = node_cnt;
-		} /* else we just use the original request */
-
-		if (!_wait_bluegene_block_ready(resp)) {
-			if (!destroy_job)
-				error("Something is wrong with the "
-				      "boot of the block.");
-			goto relinquish;
-		}
-#else
 		opt_local->min_nodes = resp->node_cnt;
 		opt_local->max_nodes = resp->node_cnt;
 
@@ -594,7 +472,6 @@ extern resource_allocation_response_msg_t *
 				error("Something is wrong with the boot of the nodes.");
 			goto relinquish;
 		}
-#endif
 	} else if (destroy_job) {
 		goto relinquish;
 	}
@@ -755,23 +632,6 @@ List allocate_pack_nodes(bool handle_signals)
 				opt_local->mem_per_cpu =
 					(resp->pn_min_memory & (~MEM_PER_CPU));
 
-#ifdef HAVE_BG
-			uint32_t node_cnt = 0;
-			select_g_select_jobinfo_get(resp->select_jobinfo,
-						    SELECT_JOBDATA_NODE_CNT,
-						    &node_cnt);
-			if ((node_cnt == 0) || (node_cnt == NO_VAL)) {
-				opt_local->min_nodes = node_cnt;
-				opt_local->max_nodes = node_cnt;
-			} /* else we just use the original request */
-
-			if (!_wait_bluegene_block_ready(resp)) {
-				if (!destroy_job)
-					error("Something is wrong with the "
-					      "boot of the block.");
-				goto relinquish;
-			}
-#else
 			opt_local->min_nodes = resp->node_cnt;
 			opt_local->max_nodes = resp->node_cnt;
 
@@ -784,7 +644,6 @@ List allocate_pack_nodes(bool handle_signals)
 					      "boot of the nodes.");
 				goto relinquish;
 			}
-#endif
 		}
 		list_iterator_destroy(resp_iter);
 		list_iterator_destroy(opt_iter);

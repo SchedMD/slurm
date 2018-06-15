@@ -9,12 +9,6 @@
 
 #include "config.h"
 
-#if defined HAVE_BG_FILES
-/* Use symbols from the runjob.so library provided by IBM.
- * Do NOT use debugger symbols local to the srun command */
-
-#else
-
 /* This file contains support for bringing processes up stopped, so that
  * a debugger can attach to them     (done for TotalView)
  */
@@ -82,5 +76,4 @@ extern void MPIR_Breakpoint(srun_job_t *job);
 extern char *totalview_jobid;
 extern char *totalview_stepid;
 
-#endif
 #endif

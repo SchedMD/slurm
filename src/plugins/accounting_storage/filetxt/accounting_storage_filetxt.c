@@ -132,36 +132,26 @@ static int _print_record(struct job_record *job_ptr,
 			 time_t time, char *data)
 {
 	static int   rc=SLURM_SUCCESS;
-	char *block_id = NULL;
 	if (!job_ptr->details) {
 		error("job_acct: job=%u doesn't exist", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 	debug2("_print_record, job=%u, \"%s\"",
 	       job_ptr->job_id, data);
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_BLOCK_ID,
-			     &block_id);
-
-#endif
-	if (!block_id)
-		block_id = xstrdup("-");
 
 	slurm_mutex_lock( &logfile_lock );
 
 	if (fprintf(LOGFILE,
-		    "%u %s %d %d %u %u %s - %s\n",
+		    "%u %s %d %d %u %u - - %s\n",
 		    job_ptr->job_id, job_ptr->partition,
 		    (int)job_ptr->details->submit_time, (int)time,
-		    job_ptr->user_id, job_ptr->group_id, block_id, data)
+		    job_ptr->user_id, job_ptr->group_id, data)
 	    < 0)
 		rc=SLURM_ERROR;
 #ifdef HAVE_FDATASYNC
 	fdatasync(LOGFILE_FD);
 #endif
 	slurm_mutex_unlock( &logfile_lock );
-	xfree(block_id);
 
 	return rc;
 }
@@ -749,9 +739,6 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	char buf[BUFFER_SIZE];
 	int cpus = 0, rc;
 	char node_list[BUFFER_SIZE];
-#ifdef HAVE_BG
-	char *ionodes = NULL;
-#endif
 	float float_tmp = 0;
 	char *account, *step_name;
 
@@ -760,23 +747,6 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		return SLURM_ERROR;
 	}
 
-#ifdef HAVE_BG
-	if (step_ptr->job_ptr->details)
-		cpus = step_ptr->job_ptr->details->min_cpus;
-	else
-		cpus = step_ptr->job_ptr->cpu_cnt;
-	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_IONODES,
-			     &ionodes);
-	if (ionodes) {
-		snprintf(node_list, BUFFER_SIZE,
-			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->job_ptr->nodes);
-
-#else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
@@ -785,7 +755,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->step_layout->node_list);
 	}
-#endif
+
 	account   = _safe_dup(step_ptr->job_ptr->account);
 	step_name = _safe_dup(step_ptr->name);
 
@@ -861,9 +831,6 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	char node_list[BUFFER_SIZE];
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
-#ifdef HAVE_BG
-	char *ionodes = NULL;
-#endif
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
 	float ave_cpu = 0;
 	uint32_t ave_cpu2 = 0;
@@ -898,23 +865,6 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 			comp_status = JOB_COMPLETE;
 	}
 
-#ifdef HAVE_BG
-	if (step_ptr->job_ptr->details)
-		cpus = step_ptr->job_ptr->details->min_cpus;
-	else
-		cpus = step_ptr->job_ptr->cpu_cnt;
-	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_IONODES,
-			     &ionodes);
-	if (ionodes) {
-		snprintf(node_list, BUFFER_SIZE,
-			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->job_ptr->nodes);
-
-#else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
@@ -924,7 +874,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->step_layout->node_list);
 	}
-#endif
+
 	/* figure out the ave of the totals sent */
 	if (cpus > 0) {
 		ave_vsize = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];

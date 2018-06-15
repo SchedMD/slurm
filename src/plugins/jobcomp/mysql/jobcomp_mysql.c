@@ -340,13 +340,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 						   SELECT_PRINT_GEOMETRY);
 	start = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						SELECT_PRINT_START);
-#ifdef HAVE_BG
-	blockid = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						  SELECT_PRINT_BG_ID);
-#else
 	blockid = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						  SELECT_PRINT_RESV_ID);
-#endif
 	query = xstrdup_printf(
 		"insert into %s (jobid, uid, user_name, gid, group_name, "
 		"name, state, proc_cnt, `partition`, timelimit, "

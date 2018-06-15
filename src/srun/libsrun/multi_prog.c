@@ -121,10 +121,6 @@ _build_path(const char * cwd, char* fname)
 static void
 _set_range(int low_num, int high_num, char *exec_name, bool ignore_duplicates)
 {
-#if defined HAVE_BG_FILES
-	/* Use symbols from the runjob.so library provided by IBM.
-	 * Do NOT use debugger symbols local to the srun command */
-#else
 	int i;
 
 	for (i = low_num; i <= high_num; i++) {
@@ -137,7 +133,6 @@ _set_range(int low_num, int high_num, char *exec_name, bool ignore_duplicates)
 			      i);
 		}
 	}
-#endif
 }
 
 static void
@@ -194,18 +189,13 @@ mpir_set_multi_name(int ntasks, const char *config_fname, const char * cwd)
 	int line_num = 0;
 	bool last_line_break = false, line_break = false;
 	int line_len;
-
-#if defined HAVE_BG_FILES
-	/* Use symbols from the runjob.so library provided by IBM.
-	 * Do NOT use debugger symbols local to the srun command */
-#else
 	int i;
+
 	for (i = 0; i < ntasks; i++) {
 		MPIR_PROCDESC *tv;
 		tv = &MPIR_proctable[i];
 		tv->executable_name = NULL;
 	}
-#endif
 
 	config_fd = fopen(config_fname, "r");
 	if (config_fd == NULL) {
@@ -260,26 +250,17 @@ mpir_set_multi_name(int ntasks, const char *config_fname, const char * cwd)
 extern void
 mpir_init(int num_tasks)
 {
-#if defined HAVE_BG_FILES
-	/* Use symbols from the runjob.so library provided by IBM.
-	 * Do NOT use debugger symbols local to the srun command */
-#else
 	MPIR_proctable_size = num_tasks;
 	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * num_tasks);
 	if (MPIR_proctable == NULL) {
 		error("Unable to initialize MPIR_proctable: %m");
 		exit(error_exit);
 	}
-#endif
 }
 
 extern void
 mpir_cleanup(void)
 {
-#if defined HAVE_BG_FILES
-	/* Use symbols from the runjob.so library provided by IBM.
-	 * Do NOT use debugger symbols local to the srun command */
-#else
 	int i;
 
 	for (i = 0; i < MPIR_proctable_size; i++) {
@@ -287,17 +268,12 @@ mpir_cleanup(void)
 		xfree(MPIR_proctable[i].executable_name);
 	}
 	xfree(MPIR_proctable);
-#endif
 }
 
 extern void mpir_set_executable_names(const char *executable_name,
 				      uint32_t task_offset,
 				      uint32_t task_count)
 {
-#if defined HAVE_BG_FILES
-	/* Use symbols from the runjob.so library provided by IBM.
-	 * Do NOT use debugger symbols local to the srun command */
-#else
 	int i;
 
 	if (task_offset == NO_VAL)
@@ -307,16 +283,11 @@ extern void mpir_set_executable_names(const char *executable_name,
 		MPIR_proctable[i].executable_name = xstrdup(executable_name);
 		// info("NAME[%d]:%s", i, executable_name);
 	}
-#endif
 }
 
 extern void
 mpir_dump_proctable(void)
 {
-#if defined HAVE_BG_FILES
-	/* Use symbols from the runjob.so library provided by IBM.
-	 * Do NOT use debugger symbols local to the srun command */
-#else
 	MPIR_PROCDESC *tv;
 	int i;
 
@@ -325,7 +296,6 @@ mpir_dump_proctable(void)
 		info("task:%d, host:%s, pid:%d, executable:%s",
 		     i, tv->host_name, tv->pid, tv->executable_name);
 	}
-#endif
 }
 
 static int

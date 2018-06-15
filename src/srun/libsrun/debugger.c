@@ -41,12 +41,6 @@
 
 #include <signal.h>
 
-#if defined HAVE_BG_FILES
-/* Use symbols from the runjob.so library provided by IBM.
- * Do NOT use debugger symbols local to the srun command */
-
-#else
-
 #include "src/common/log.h"
 
 #include "debugger.h"
@@ -78,4 +72,3 @@ void MPIR_Breakpoint(srun_job_t *job)
 	debug("In MPIR_Breakpoint");
 	launch_g_fwd_signal(SIG_DEBUG_WAKE);
 }
-#endif

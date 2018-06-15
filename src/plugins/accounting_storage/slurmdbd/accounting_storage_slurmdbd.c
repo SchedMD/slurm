@@ -164,16 +164,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->account       = xstrdup(job_ptr->account);
 
 	req->assoc_id      = job_ptr->assoc_id;
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID,
-				    &req->block_id);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &req->alloc_nodes);
-#else
 	req->alloc_nodes   = job_ptr->total_nodes;
-#endif
 
 	if (job_ptr->resize_time) {
 		req->eligible_time = job_ptr->resize_time;
@@ -2697,13 +2688,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		temp_nodes = step_ptr->job_ptr->nodes;
 	} else {
 		tasks = step_ptr->step_layout->task_cnt;
-#ifdef HAVE_BGQ
-		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &nodes);
-#else
 		nodes = step_ptr->step_layout->node_cnt;
-#endif
 		task_dist = step_ptr->step_layout->task_dist;
 		temp_nodes = step_ptr->step_layout->node_list;
 	}

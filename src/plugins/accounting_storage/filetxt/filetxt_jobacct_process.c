@@ -215,9 +215,6 @@ static void _free_filetxt_header(void *object)
 	filetxt_header_t *header = (filetxt_header_t *)object;
 	if (header) {
 		xfree(header->partition);
-#ifdef HAVE_BG
-		xfree(header->blockid);
-#endif
 	}
 }
 
