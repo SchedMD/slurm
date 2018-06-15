@@ -4,7 +4,7 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 # noinst_LTLIBRARIES = libslurmctld.la
 # libslurmctld_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic

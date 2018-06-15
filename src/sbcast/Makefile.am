@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)
 bin_PROGRAMS = sbcast
 
 depend_libs = $(top_builddir)/src/bcast/libfile_bcast.la
