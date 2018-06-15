@@ -29,7 +29,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="resource_binding.html">Resource Binding</a></li>
 <li>Specific Systems</li>
 <ul>
-<li><a href="bluegene.html">BlueGene/Q User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
 <li><a href="cray_alps.html">Cray User and Administrator Guide with ALPS</a></li>
 <li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
@@ -89,7 +88,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </ul>
 <li>Specific Systems</li>
 <ul>
-<li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
 <li><a href="cray_alps.html">Cray User and Administrator Guide with ALPS</a></li>
 <li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
@@ -143,6 +141,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 June 2018</p>
+<p style="text-align:center;">Last modified 18 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

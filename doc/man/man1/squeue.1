@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "May 2018" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "June 2018" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -173,7 +173,7 @@ Executing (batch) host. For an allocated session, this is the host on which
 the session is executing (i.e. the node from which the \fBsrun\fR or the
 \fBsalloc\fR command was executed). For a batch job, this is the node executing
 the batch script. In the case of a typical Linux cluster, this would be the
-compute node zero of the allocation. In the case of a BlueGene or a Cray
+compute node zero of the allocation. In the case of a Cray ALPS
 system, this would be the front\-end host whose slurmd daemon executes the job
 script.
 .TP
@@ -314,8 +314,7 @@ If the time is obviously wrong (e.g. negative), it displays as "INVALID".
 (Valid for jobs and job steps)
 .TP
 \fB%n\fR
-List of node names (or base partitions on BlueGene systems) explicitly
-requested by the job.
+List of node names explicitly requested by the job.
 (Valid for jobs only)
 .TP
 \fB%N\fR
@@ -499,7 +498,7 @@ Executing (batch) host. For an allocated session, this is the host on which
 the session is executing (i.e. the node from which the the \fBsrun\fR or the
 \fBsalloc\fR command was executed). For a batch job, this is the node executing
 the batch script. In the case of a typical Linux cluster, this would be the
-compute node zero of the allocation. In the case of a BlueGene or a Cray/ALPS
+compute node zero of the allocation. In the case of a Cray ALPS
 system, this would be the front\-end host whose slurmd daemon executes the job
 script.
 (Valid for jobs only)
@@ -798,8 +797,7 @@ Indicates if the allocated nodes should be rebooted before starting the job.
 (Valid on jobs only)
 .TP
 \fBreqnodes\fR
-List of node names (or base partitions on BlueGene systems) explicitly
-requested by the job.
+List of node names explicitly requested by the job.
 (Valid for jobs only)
 .TP
 \fBreqswitch\fR
@@ -1112,12 +1110,6 @@ The job's constraints can not be satisfied.
 .TP
 \fBBeginTime\fR
 The job's earliest start time has not yet been reached.
-.TP
-\fBBlockFreeAction\fR
-An IBM BlueGene block is being freed and can not allow more jobs to start.
-.TP
-\fBBlockMaxError\fR
-An IBM BlueGene block has too many cnodes in error state to allow more jobs to start.
 .TP
 \fBCleaning\fR
 The job is being requeued and still cleaning up from its previous execution.

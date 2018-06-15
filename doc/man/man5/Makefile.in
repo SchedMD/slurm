@@ -456,7 +456,6 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 man5_MANS = \
 	acct_gather.conf.5 \
-	bluegene.conf.5 \
 	burst_buffer.conf.5 \
 	cgroup.conf.5 \
 	cray.conf.5 \
@@ -471,7 +470,6 @@ man5_MANS = \
 EXTRA_DIST = $(man5_MANS) $(am__append_1)
 @HAVE_MAN2HTML_TRUE@html_DATA = \
 @HAVE_MAN2HTML_TRUE@	acct_gather.conf.html \
-@HAVE_MAN2HTML_TRUE@	bluegene.conf.html \
 @HAVE_MAN2HTML_TRUE@	burst_buffer.conf.html \
 @HAVE_MAN2HTML_TRUE@	cgroup.conf.html \
 @HAVE_MAN2HTML_TRUE@	cray.conf.html \

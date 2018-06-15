@@ -38,8 +38,6 @@ as the other resources managed. Depending upon the value of the
 <I>FastSchedule</I> parameter, nodes which are found to have fewer resources
 than configured will be placed in a DOWN state.</P>
 
-<P>Note that the Gres specification is not supported on BlueGene systems.</P>
-
 <P>Sample slurm.conf file:</P>
 <PRE>
 # Configure support for our four GPUs

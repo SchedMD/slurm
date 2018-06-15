@@ -31,7 +31,7 @@ Architectures</a><br>
 <a href="dist_plane.html">Plane distribution</a></p>
 
 <p>This document describes Slurm CPU management for conventional Linux clusters only.  For
-information on Cray and IBM BlueGene systems, please refer to the appropriate documents.</p><br>
+information on Cray ALPS systems, please refer to the appropriate documents.</p><br>
 <a name="Section1"></a>
 <h2>CPU Management Steps performed by Slurm</h2>
 <p>Slurm uses four basic steps to manage CPU resources for a job/step:</p>

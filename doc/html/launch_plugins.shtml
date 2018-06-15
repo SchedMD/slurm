@@ -13,7 +13,7 @@ plugin_name[]="<i>launch&nbsp;Slurm&nbsp;plugin</i>"</span>
 <p style="margin-left:.2in">
 
 <p><span class="commandline">const char
-plugin_type[]="<i>launch/[aprun|poe|runjob|slurm</i>"</span><br>
+plugin_type[]="<i>launch/[aprun|poe|slurm</i>"</span><br>
 <p style="margin-left:.2in">
 
 <ul>
@@ -21,8 +21,6 @@ plugin_type[]="<i>launch/[aprun|poe|runjob|slurm</i>"</span><br>
 systems with ALPS installed.</li>
 <li><b>poe</b> &mdash; Use IBM's poe command to launch tasks - used on systems
   IBM's parallel environment (PE) installed.</li>
-<li><b>runjob</b> &mdash; Use IBM's runjob command to launch tasks - used on
-  BlueGene/Q systems.</li>
 <li><b>slurm</b> &mdash; Use Slurm's default launching infrastructure</li>
 </ul>
 
@@ -152,6 +150,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 20 December 2017</p>
+<p style="text-align:center;">Last modified 14 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

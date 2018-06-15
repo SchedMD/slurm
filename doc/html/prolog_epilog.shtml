@@ -320,10 +320,6 @@ to all of the programs.</p>
 Basil reservation ID.
 Available on Cray systems with ALPS only.</li>
 
-<li><b>MPIRUN_PARTITION</b>
-BlueGene partition name.
-Available on BlueGene systems only.</li>
-
 <li><b>SLURM_ARRAY_JOB_ID</b>
 If this job is part of a job array, this will be set to the job ID.
 Otherwise it will not be set.
@@ -452,6 +448,6 @@ PrologSlurmctld fails.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 29 September 2017</p>
+<p style="text-align:center;">Last modified 14 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

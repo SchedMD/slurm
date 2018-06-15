@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2018" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "June 2018" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -518,18 +518,6 @@ Backfill scheduler details
 Backfill scheduler to log a very verbose map of reserved resources through
 time. Combine with \fBBackfill\fR for a verbose and complete view of the
 backfill scheduler's work.
-.TP
-\fBBGBlockAlgo\fR
-BlueGene block selection details
-.TP
-\fBBGBlockAlgoDeep\fR
-BlueGene block selection, more details
-.TP
-\fBBGBlockPick\fR
-BlueGene block selection for jobs
-.TP
-\fBBGBlockWires\fR
-BlueGene block wiring (switch state details)
 .TP
 \fBBurstBuffer\fR
 Burst Buffer plugin
@@ -1306,9 +1294,6 @@ For use with Cray systems with ALPS and the default value for those systems
 \fBlaunch/poe\fR
 For use with IBM Parallel Environment (PE) and the default value for systems
 with the IBM NRT library installed.
-.TP
-\fBlaunch/runjob\fR
-For use with IBM BlueGene/Q systems and the default value for those systems
 .TP
 \fBlaunch/slurm\fR
 For all other systems and the default value for those systems
@@ -2252,7 +2237,6 @@ once it becomes idle after the command "scontrol reboot_nodes" is executed by
 an authorized user or a job is submitted with the "\-\-reboot" option.
 After being rebooting, the node is returned to normal use.
 See \fBResumeTimeout\fR to configure the time you expect a reboot to finish in.
-NOTE: This configuration option does not apply to IBM BlueGene systems.
 
 .TP
 \fBReconfigFlags\fR
@@ -3024,10 +3008,6 @@ since the job state save format used by each plugin is different.
 Acceptable values include
 .RS
 .TP
-\fBselect/bluegene\fR
-for a three\-dimensional BlueGene system.
-The default value is "select/bluegene" for BlueGene systems.
-.TP
 \fBselect/cons_res\fR
 The resources (cores and memory) within a node are individually allocated as
 consumable resources.
@@ -3048,7 +3028,7 @@ the job's node and CPU specification if \fBTopologyPlugin=topology/none\fR is
 configured. Use of other topology plugins with select/linear and heterogeneous
 nodes is not recommended and may result in valid job allocation requests being
 rejected.
-This is the default value for non\-BlueGene systems.
+This is the default value.
 .TP
 \fBselect/serial\fR
 for allocating resources to single CPU jobs only.
@@ -3068,7 +3048,6 @@ program.
 \fBSelectTypeParameters\fR
 The permitted values of \fBSelectTypeParameters\fR depend upon the
 configured value of \fBSelectType\fR.
-\fBSelectType=select/bluegene\fR supports no \fBSelectTypeParameters\fR.
 The only supported options for \fBSelectType=select/linear\fR are
 \fBCR_ONE_TASK_PER_CORE\fR and
 \fBCR_Memory\fR, which treats memory as a consumable resource and
@@ -4126,17 +4105,11 @@ If one or more numeric expressions are included, one of them
 must be at the end of the name (e.g. "unit[0\-31]rack" is invalid),
 but arbitrary names can always be used in a comma separated list.
 .LP
-On BlueGene systems only, the square brackets should contain
-pairs of three digit numbers separated by a "x".
-These numbers indicate the boundaries of a rectangular prism
-(e.g. "bgl[000x144,400x544]").
-See BlueGene documentation for more details.
 The node configuration specified the following information:
 
 .TP
 \fBNodeName\fR
-Name that Slurm uses to refer to a node (or base partition for
-BlueGene systems).
+Name that Slurm uses to refer to a node.
 Typically this would be the string that "/bin/hostname \-s" returns.
 It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
 (e.g. "foo1.bar.com"), or any valid domain name associated with the host
@@ -4528,13 +4501,12 @@ The default value is "UNKNOWN".
 
 .LP
 On computers where frontend nodes are used to execute batch scripts
-rather than compute nodes (BlueGene or Cray systems), one may
-configure one or more frontend nodes using the configuration parameters
-defined below. These options are very similar to those used in configuring
-compute nodes. These options may only be used on systems configured and built
-with the appropriate parameters (\-\-have\-front\-end,
-\-\-enable\-bluegene\-emulation) or a system determined to have the
-appropriate architecture by the configure script (BlueGene or Cray systems).
+rather than compute nodes (Cray ALPS systems), one may configure one or more
+frontend nodes using the configuration parameters defined below. These options
+are very similar to those used in configuring compute nodes. These options may
+only be used on systems configured and built with the appropriate parameters
+(\-\-have\-front\-end) or a system determined to have the appropriate
+architecture by the configure script (Cray ALPS systems).
 The front end configuration specifies the following information:
 
 .TP
@@ -4884,8 +4856,6 @@ Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 .TP
 \fBMaxNodes\fR
 Maximum count of nodes which may be allocated to any single job.
-For BlueGene systems this will be a  c\-nodes count and will be converted
-to a midplane count with a reduction in resolution.
 The default value is "UNLIMITED", which is represented internally as \-1.
 This limit does not apply to jobs executed by SlurmUser or user root.
 
@@ -4902,15 +4872,12 @@ This limit does not apply to jobs executed by SlurmUser or user root.
 .TP
 \fBMinNodes\fR
 Minimum count of nodes which may be allocated to any single job.
-For BlueGene systems this will be a  c\-nodes count and will be converted
-to a midplane count with a reduction in resolution.
 The default value is 0.
 This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP
 \fBNodes\fR
-Comma separated list of nodes (or base partitions for BlueGene systems)
-which are associated with this partition.
+Comma separated list of nodes which are associated with this partition.
 Node names may be specified using the node range expression syntax
 described above. A blank list of nodes
 (i.e. "Nodes= ") can be used if one wants a partition to exist,
@@ -4962,9 +4929,8 @@ May be followed with a colon and maximum number of jobs in
 running or suspended state.
 For example "OverSubscribe=FORCE:4" enables each node, socket or
 core to execute up to four jobs at once.
-Recommended only for BlueGene systems configured with
-small blocks or for systems running
-with gang scheduling (\fBPreemptMode=suspend,gang\fR).
+Recommended only for systems running with gang scheduling
+(\fBPreemptMode=suspend,gang\fR).
 NOTE: \fIPreemptType=QOS\fR will permit one additional job to be run
 on the partition if started due to job preemption. For example, a configuration
 of \fIOverSubscribe=FORCE:1\fR will only permit one job per resources normally,
@@ -5185,10 +5151,6 @@ to all of the programs.
 Basil reservation ID.
 Available on Cray systems with ALPS only.
 .TP
-\fBMPIRUN_PARTITION\fR
-BlueGene partition name.
-Available on BlueGene systems only.
-.TP
 \fBSLURM_ARRAY_JOB_ID\fR
 If this job is part of a job array, this will be set to the job ID.
 Otherwise it will not be set.
@@ -5291,7 +5253,7 @@ User name of the job's owner.
 .SH "NETWORK TOPOLOGY"
 Slurm is able to optimize job allocations to minimize network contention.
 Special Slurm logic is used to optimize allocations on systems with a
-three\-dimensional interconnect (BlueGene, etc.)
+three\-dimensional interconnect.
 and information about configuring those systems are available on
 web pages available here: <https://slurm.schedmd.com/>.
 For a hierarchical network, Slurm needs to have detailed information
@@ -5304,8 +5266,7 @@ Otherwise it will allocate a job's resources onto multiple leaf switches
 so as to minimize the use of higher\-level switches.
 The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information.
-The only values presently supported are
-"topology/3d_torus" (default for IBM BlueGene and
+The only values presently supported are "topology/3d_torus" (default for
 Cray XT/XE systems, performs best\-fit logic over three\-dimensional topology),
 "topology/none" (default for other systems,
 best\-fit logic over one\-dimensional topology),
@@ -5667,7 +5628,7 @@ details.
 
 .SH "SEE ALSO"
 .LP
-\fBbluegene.conf\fR(5), \fBcgroup.conf\fR(5), \fBgethostbyname\fR (3),
+\fBcgroup.conf\fR(5), \fBgethostbyname\fR (3),
 \fBgetrlimit\fR (2), \fBgres.conf\fR(5), \fBgroup\fR (5), \fBhostname\fR (1),
 \fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8),
 \fBslurmdbd\fR(8), \fBslurmdbd.conf\fR(5), \fBsrun(1)\fR,

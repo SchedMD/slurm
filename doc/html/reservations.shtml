@@ -176,7 +176,7 @@ feature that every selected node must contain.</p>
 whole nodes.
 This capability permits the administrator to identify the core count to be
 reserved on each node as shown in the examples below.<br>
-<b>NOTE:</b> Core reservations are not available on IBM BlueGene or
+<b>NOTE:</b> Core reservations are not available on
 Cray/ALPS systems, nor when the system is configured to use the select/linear
 or select/serial plugins.</p>
 <pre>
@@ -361,7 +361,7 @@ $ scontrol create reservation user=operator nodes=tux8 \
 to jobs are automatically replaced with new idle nodes.
 The effect of this is to always maintain a constant size pool of resources.
 This is accomplished by using a "replace" flag as shown in the example below.
-This option is not supported on IBM Bluegene systems or for reservations
+This option is not supported for reservations
 of individual cores which span more than one node rather than full nodes 
 (e.g. a 1 core reservation on node "tux1" will be moved if node "tux1" goes
 down, but a reservation containing 2 cores on node "tux1" and 3 cores on "tux2"

@@ -185,7 +185,6 @@ are silently ignored:</p>
 <li>--ntasks-per-socket (number of tasks to invoke per socket)</li>
 <li>-O, --overcommit (over subscribe resources)</li>
 <li>--resv-ports (communication ports reserved for OpenMPI)</li>
-<li>--runjob-opts (used only on IBM BlueGene/Q systems)</li>
 <li>--signal (signal to send when near time limit and the remaining time required)</li>
 <li>--sockets-per-node (number of sockets per node required)</li>
 <li>--task-epilog (per-task epilog program)</li>

@@ -13,23 +13,6 @@ may also prove useful.</p>
 <li><a href="#completing">Jobs and nodes are stuck in COMPLETING state</a></li>
 <li><a href="#nodes">Notes are getting set to a DOWN state</a></li>
 <li><a href="#network">Networking and configuration problems</a></li>
-<br>
-<li><b>Bluegene system specific questions</b></li>
-<ul>
-<li><a href="#bluegene-block-error">Why is a block in an error state</a></li>
-<li><a href="#bluegene-block-norun">How to make it so no jobs will run
-on a block</a></li>
-<li><a href="#bluegene-block-check">Static blocks in <i>bluegene.conf</i>
-file not loading</a></li>
-<li><a href="#bluegene-block-free">How to free a block manually</a></li>
-<li><a href="#bluegene-error-state">How to set a block in an error
-state manually</a></li>
-<li><a href="#bluegene-error-state2">How to set a sub base partition
-which doesn't have a block already created in an error
-state manually</a></li>
-<li><a href="#bluegene-block-create">How to make a <i>bluegene.conf</i>
-file that will load in Slurm</a></li>
-</ul>
 </ul>
 
 
@@ -209,89 +192,6 @@ commands with a version of 17.11.x, 17.02.x or 16.05.x).</li>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<h2><a name="bluegene-block-error">Bluegene:
-Why is a block in an error state</a></h2>
-
-<ol>
-<li>Check the controller log file (<i>SlurmctldLog</i> in the <i>slurm.conf</i>
-file) for an indication of why it is failing. (grep for update_block:)</li>
-<li>If the reason was something that happened to the system like a
-failed boot or a nodecard going bad or something like that you will
-need to fix the problem and then
-<a href="#bluegene-block-free">manually set the block to free</a>.</li>
-</ol>
-<p class="footer"><a href="#top">top</a></p>
-
-<h2><a name="bluegene-block-norun">Bluegene: How to make it so no jobs
-will run on a block</a></h2>
-
-<ol>
-<li><a href="#bluegene-error-state">Set the block state to be in error
-manually</a>.</li>
-<li>When you are ready to run jobs again on the block <a
-href="#bluegene-block-free">manually set the block to free</a>.</li>
-</ol>
-<p class="footer"><a href="#top">top</a></p>
-
-<h2><a name="bluegene-block-check">Bluegene: Static blocks in
-<i>bluegene.conf</i> file not loading</a></h2>
-
-<ol>
-<li>Run "<i>smap -Dc</i>"</li>
-<li>When it comes up type "<i>load /path/to/bluegene.conf</i>".</li>
-<li>This should give you some reasons why which block it is having
-problems loading.</li>
-<li>Note the blocks in the <i>bluegene.conf</i> file must be in the same
-order smap created them or you may encounter some problems loading the
-configuration.</li>
-<li>If you need help creating a loadable <i>bluegene.conf</i> file <a
-href="#bluegene-block-create">click here</a></li>
-</ol>
-<p class="footer"><a href="#top">top</a></p>
-
-<h2><a name="bluegene-block-free">Bluegene: How to free a block(s)
-manually</a></h2>
-<ul>
-<li><b>Using sfree</b></li>
-<ol>
-<li>To free a specific block run "<i>sfree -b BLOCKNAME</i>".</li>
-<li>To free all the blocks on the system run "<i>sfree -a</i>".</li>
-</ol>
-<li><b>Using scontrol</b></li>
-<ol>
-<li>Run "<i>scontrol update state=FREE BlockName=BLOCKNAME</i>".</li>
-</ol>
-</ul>
-<p class="footer"><a href="#top">top</a></p>
-
-<h2><a name="bluegene-error-state">Bluegene: How to set a block in
-an error state manually</a></h2>
-
-<ol>
-<li>Run "<i>scontrol update state=ERROR BlockName=BLOCKNAME</i>".</li>
-</ol>
-<p class="footer"><a href="#top">top</a></p>
-
-<h2><a name="bluegene-error-state2">Bluegene: How to set a sub base partition
-which doesn't have a block already created in an error
-state manually</a></h2>
-
-<ol>
-<li>Run "<i>scontrol update state=ERROR subBPName=IONODE_LIST</i>".</li>
-IONODE_LIST is a list of the ionodes you want to down in a certain base
-partition i.e. bg000[0-3] will down the first 4 ionodes in base
-partition 000.
-</ol>
-<p class="footer"><a href="#top">top</a></p>
-
-<h2><a name="bluegene-block-create">Bluegene: How to make a
-<i>bluegene.conf</i> file that will load in Slurm</a></h2>
-
-<ol>
-<li>See the <a href="bluegene.html#bluegene-conf">Bluegene admin guide</a></li>
-</ol>
-<p class="footer"><a href="#top">top</a></p>
-
-<p style="text-align:center;">Last modified 15 December 2016</p>
+<p style="text-align:center;">Last modified 14 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

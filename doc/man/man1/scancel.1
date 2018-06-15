@@ -1,4 +1,4 @@
-.TH scancel "1" "Slurm Commands" "February 2017" "Slurm Commands"
+.TH scancel "1" "Slurm Commands" "June 2018" "Slurm Commands"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -47,7 +47,7 @@ Also see the \fB\-f\fR, \fB\-\-full\fR option.
 Send the job signal request to the slurmctld daemon rather than directly to the
 slurmd daemons. This increases overhead, but offers better fault tolerance.
 This is the default behavior on architectures using front end nodes (e.g.
-BlueGene and Cray computers) or when the \fB\-\-clusters\fR option is used.
+Cray ALPS computers) or when the \fB\-\-clusters\fR option is used.
 
 .TP
 \fB\-f\fR, \fB\-\-full\fR

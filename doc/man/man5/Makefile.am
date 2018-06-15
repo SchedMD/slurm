@@ -2,7 +2,6 @@ htmldir = ${datadir}/doc/${PACKAGE}-${SLURM_VERSION_STRING}/html
 
 man5_MANS = \
 	acct_gather.conf.5 \
-	bluegene.conf.5 \
 	burst_buffer.conf.5 \
 	cgroup.conf.5 \
 	cray.conf.5 \
@@ -20,7 +19,6 @@ if HAVE_MAN2HTML
 
 html_DATA = \
 	acct_gather.conf.html \
-	bluegene.conf.html \
 	burst_buffer.conf.html \
 	cgroup.conf.html \
 	cray.conf.html \

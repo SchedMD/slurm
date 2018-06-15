@@ -593,9 +593,8 @@ failure, the plugin should return a Slurm error code.</p>
 select_jobinfo_t *step_jobinfo, uint32_t node_count)</p>
 <p style="margin-left:.2in"><b>Description</b>: If the select plugin needs to
 select nodes for a job step, then do so here.<br>
-<b>NOTE:</b> Only select/bluegene selects the job step resources. The logic
-within the slurmctld daemon directly selects resources for a job step for all
-other select plugins.</p>
+<b>NOTE:</b> The logic within the slurmctld daemon directly selects resources
+for a job step for all other select plugins at present.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input)
 Pointer to the job which is attempting to allocate a job step.</br>
@@ -678,15 +677,13 @@ within the system's dimension size (see function select_p_ba_get_dims).</p>
 
 <p class="commandline">int *select_p_ba_get_dims(void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Return an array containing
-the number of elements in each dimension of the system size. For example, an IBM
-Bluegene/P system has a three-dimensional torus topology. If it has eight elements
-in the X dimension, and four in the Y and Z dimensions, the returned array will
-contain the values 8, 4, 4.</p>
+the number of elements in each dimension of the system size.
+Only used by Cray ALPS at present.
 <p style="margin-left:.2in"><b>Returns</b>: An array containing the number of
 elements in each dimension of the system size.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 June 2018</p>
+<p style="text-align:center;">Last modified 14 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

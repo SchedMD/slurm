@@ -65,10 +65,6 @@ line as well with the <i>--launch-cmd</i> option.</p>
    string. For example, a NodeAddr of '07A' corresponds to the coordinates X = 0, Y = 7, Z = 10.
    The <i>NodeAddr</i> of a node can also be shown using 'scontrol show node nid#####'.</p>
 
-<p>Please note that the sbatch/salloc options "<i>--geometry</i>" and "<i>--no-rotate</i>" are BlueGene-specific
-   and have no impact on Cray systems. Topological node placement depends on what Cray makes available via the
-   ALPS_NIDORDER configuration option (see below).</p>
-
 <h3>Specifying thread depth</h3>
 <p>For threaded applications, use the <i>--cpus-per-task</i>/<i>-c</i> parameter of sbatch/salloc to set
    the thread depth per node. This corresponds to mppdepth in PBS and to the aprun -d parameter. Please

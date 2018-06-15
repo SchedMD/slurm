@@ -629,7 +629,7 @@ While the size of a pending job may be changed with few restrictions, several
 significant restrictions apply to changing the size of a running job as noted
 below:
 <ol>
-<li>Support is not available on BlueGene or Cray ALPS system due to limitations
+<li>Support is not available on Cray ALPS system due to limitations
 in the software underlying Slurm.</li>
 <li>Job(s) changing size must not be in a suspended state, including jobs
 suspended for gang scheduling. The jobs must be in a state of pending or
@@ -2254,6 +2254,6 @@ accessed files within jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 April 2018</p>
+<p style="text-align:center;">Last modified 14 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

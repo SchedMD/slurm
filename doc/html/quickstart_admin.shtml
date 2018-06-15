@@ -395,12 +395,6 @@ numbers of entries. The node range expression can contain one
 pair of square brackets with a sequence of comma separated
 numbers and/or ranges of numbers separated by a &quot;-&quot;
 (e.g. &quot;linux[0-64,128]&quot;, or &quot;lx[15,18,32-33]&quot;).
-On BlueGene systems only, the square brackets should contain
-pairs of three digit numbers separated by a &quot;x&quot;.
-These numbers indicate the boundaries of a rectangular prism
-(e.g. &quot;bgl[000x144,400x544]&quot;).
-See our <a href="bluegene.html">Blue Gene User and Administrator Guide</a>
-for more details.
 Up to two numeric ranges can be included in the expression
 (e.g. &quot;rack[0-63]_blade[0-41]&quot;).
 If one or more numeric expressions are included, one of them
@@ -765,6 +759,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 15 February 2018</p>
+<p style="text-align:center;">Last modified 14 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

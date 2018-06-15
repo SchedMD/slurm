@@ -19,14 +19,7 @@ allocated to the job.</p>
 <a name="topo_3d"><h2>Three-dimension Topology</h2></a>
 
 <p>Some larger computers rely upon a three-dimensional torus interconnect.
-The IBM BlueGene computers is one example of this which has highly
-constrained resource allocation scheme, essentially requiring that
-jobs be allocated a set of nodes logically having a rectangular prism shape.
-Slurm has a plugin specifically written for BlueGene to select appropriate
-nodes for jobs, change network switch routing, boot nodes, etc as described
-in the <a href="bluegene.html">BlueGene User and Administrator Guide</a>.</p>
-
-<p>The Cray systems also have three-dimensional
+The Cray XT and XE systems also have three-dimensional
 torus interconnects, but do not require that jobs execute in adjacent nodes.
 On those systems, Slurm only needs to allocate resources to a job which
 are nearby on the network.
@@ -195,6 +188,6 @@ The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.</p>
 
-<p style="text-align:center;">Last modified 8 May 2017</p>
+<p style="text-align:center;">Last modified 14 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

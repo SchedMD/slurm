@@ -35,7 +35,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <h2>Configuration Files</h2>
 <table border="1">
 <tr><td><a href="acct_gather.conf.html">acct_gather.conf</a></td><td>Slurm configuration file for the acct_gather plugins</td></tr>
-<tr><td><a href="bluegene.conf.html">bluegene.conf</a></td><td>Slurm configuration file for BlueGene systems</td></tr>
 <tr><td><a href="burst_buffer.conf.html">burst_buffer.conf</a></td><td>Slurm burst buffer configuration</td></tr>
 <tr><td><a href="cgroup.conf.html">cgroup.conf</a></td><td>Slurm configuration file for the cgroup support</td></tr>
 <tr><td><a href="cray.conf.html">cray.conf</a></td><td>Slurm configuration file Cray systems.</td></tr>
@@ -57,7 +56,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="spank.html">SPANK</a></td><td>Slurm Plug-in Architecture for Node and job (K)control</td></tr>
 </table>
 
-
-<p style="text-align:center;">Last modified 15 December 2016</p>
+<p style="text-align:center;">Last modified 14 June 2018</p>
 
 <!--#include virtual="footer.txt"-->

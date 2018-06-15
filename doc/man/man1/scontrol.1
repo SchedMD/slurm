@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "January 2018" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "June 2018" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1281,7 +1281,7 @@ have already begun execution.
 .TP
 \fIMinNodes\fP=<count>
 Set the minimum number of nodes which will be allocated to any single job
-in the partition.   (On a Bluegene type system this represents a c\-node count.)
+in the partition.
 Changing the \fIMinNodes\fP of a partition has no effect upon jobs that
 have already begun execution.
 
@@ -1609,7 +1609,6 @@ This option can be used to maintain a constant number of idle resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.
-This option is not supported on IBM Bluegene systems.
 .TP
 \fIREPLACE_DOWN\fR
 Nodes which are DOWN or DRAINED are automatically replenished using idle resources.
@@ -1617,7 +1616,6 @@ This option can be used to maintain a constant sized pool of resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.
-This option is not supported on IBM Bluegene systems.
 .TP
 \fISPEC_NODES\fR
 Reservation is for specific nodes (output only)

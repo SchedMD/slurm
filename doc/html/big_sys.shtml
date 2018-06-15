@@ -92,7 +92,7 @@ be set quite high for memory size, open file count and stack size.</p>
 for smaller clusters, the overhead of keeping track of the individual
 processors and memory within each node adds significant overhead.
 For best scalability, allocate whole nodes using <i>select/linear</i>
-or <i>select/bluegene</i> and avoid <i>select/cons_res</i>.</p>
+and avoid <i>select/cons_res</i>.</p>
 
 <h2>Job Accounting Gather Plugin (JobAcctGatherType)</h2>
 
@@ -191,6 +191,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 3 March 2017</p>
+<p style="text-align:center;">Last modified 14 June 2018</p>
 
 <!--#include virtual="footer.txt"-->
