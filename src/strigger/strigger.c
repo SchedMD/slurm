@@ -146,8 +146,6 @@ static int _set_trigger(void)
 		else
 			ti.res_id = "*";
 	}
-	if (params.block_err)
-		ti.trig_type |= TRIGGER_TYPE_BLOCK_ERR;
 	if (params.burst_buffer)
 		ti.trig_type |= TRIGGER_TYPE_BURST_BUFFER;
 	if (params.node_down)
@@ -236,11 +234,6 @@ static int _get_trigger(void)
 
 	for (i=0; i<trig_msg->record_count; i++) {
 		/* perform filtering */
-		if (params.block_err) {
-			if (trig_msg->trigger_array[i].trig_type
-					!= TRIGGER_TYPE_BLOCK_ERR)
-				continue;
-		}
 		if (params.burst_buffer) {
 			if (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_BURST_BUFFER)

@@ -3008,7 +3008,7 @@ typedef struct stats_info_response_msg {
 #define TRIGGER_TYPE_TIME               0x00000008
 #define TRIGGER_TYPE_FINI               0x00000010
 #define TRIGGER_TYPE_RECONFIG           0x00000020
-#define TRIGGER_TYPE_BLOCK_ERR          0x00000040
+/*  was TRIGGER_TYPE_BLOCK_ERR          0x00000040, removed v18.08 */
 #define TRIGGER_TYPE_IDLE               0x00000080
 #define TRIGGER_TYPE_DRAINED            0x00000100
 #define TRIGGER_TYPE_PRI_CTLD_FAIL      0x00000200

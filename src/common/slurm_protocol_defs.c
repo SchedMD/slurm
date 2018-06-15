@@ -2570,8 +2570,6 @@ extern char *trigger_type(uint32_t trig_type)
 		return "primary_database_failure";
 	else if (trig_type == TRIGGER_TYPE_PRI_DB_RES_OP)
 		return "primary_database_resumed_operation";
-	else if (trig_type == TRIGGER_TYPE_BLOCK_ERR)
-		return "block_err";
 	else if (trig_type == TRIGGER_TYPE_BURST_BUFFER)
 		return "burst_buffer";
 	else

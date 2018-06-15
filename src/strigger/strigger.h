@@ -47,7 +47,6 @@
 #include "src/common/slurmdb_defs.h"
 
 struct strigger_parameters {
-	bool     block_err;
 	bool     burst_buffer;
 	List     clusters;
 	uint16_t flags;

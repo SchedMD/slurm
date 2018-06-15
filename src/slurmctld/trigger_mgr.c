@@ -78,7 +78,6 @@ bitstr_t *trigger_drained_nodes_bitmap = NULL;
 bitstr_t *trigger_fail_nodes_bitmap = NULL;
 bitstr_t *trigger_up_nodes_bitmap   = NULL;
 static bool trigger_bb_error = false;
-static bool trigger_block_err = false;
 static bool trigger_node_reconfig = false;
 static bool trigger_pri_ctld_fail = false;
 static bool trigger_pri_ctld_res_op = false;
@@ -686,13 +685,6 @@ extern void trigger_primary_db_res_op(void)
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
-extern void trigger_block_error(void)
-{
-	slurm_mutex_lock(&trigger_mutex);
-	trigger_block_err = true;
-	slurm_mutex_unlock(&trigger_mutex);
-}
-
 extern void trigger_burst_buffer(void)
 {
 	slurm_mutex_lock(&trigger_mutex);
@@ -1178,15 +1170,6 @@ static void _trigger_other_event(trig_mgr_info_t *trig_in, time_t now)
 
 static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 {
-	if ((trig_in->trig_type & TRIGGER_TYPE_BLOCK_ERR) &&
-	    trigger_block_err) {
-		trig_in->state = 1;
-		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_TRIGGERS)
-			info("trigger[%u] for block_err", trig_in->trig_id);
-		return;
-	}
-
 	if ((trig_in->trig_type & TRIGGER_TYPE_DOWN) &&
 	    trigger_down_nodes_bitmap                &&
 	    (bit_ffs(trigger_down_nodes_bitmap) != -1)) {
@@ -1597,7 +1580,6 @@ static void _clear_event_triggers(void)
 	}
 	trigger_node_reconfig = false;
 	trigger_bb_error = false;
-	trigger_block_err = false;
 	trigger_pri_ctld_fail = false;
 	trigger_pri_ctld_res_op = false;
 	trigger_pri_ctld_res_ctrl = false;
