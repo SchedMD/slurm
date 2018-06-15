@@ -2897,7 +2897,6 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 	char *dist = NULL, *dist_lllp = NULL;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	hostlist_t hl = NULL;
 	int hl_cnt = 0;
 
@@ -2967,12 +2966,6 @@ static bool _opt_verify(void)
 			opt.min_nodes = hl_cnt;
 		opt.nodes_set = true;
 	}
-
-	if (cluster_flags & CLUSTER_FLAG_BGQ)
-		bg_figure_nodes_tasks(&opt.min_nodes, &opt.max_nodes,
-				      &opt.ntasks_per_node, &opt.ntasks_set,
-				      &opt.ntasks, opt.nodes_set, opt.nodes_set,
-				      opt.overcommit, 0);
 
 	if ((opt.ntasks_per_node > 0) && (!opt.ntasks_set) &&
 	    ((opt.max_nodes == 0) || (opt.min_nodes == opt.max_nodes))) {
