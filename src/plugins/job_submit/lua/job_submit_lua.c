@@ -562,7 +562,7 @@ static void _update_resvs_global(void)
 		/* Store the slurmctld_resv_t in the metatable, so the index
 		 * function knows which reservation it's getting data for.
 		 */
-		lua_pushlightuserdata(L, resv_ptr->name);
+		lua_pushlightuserdata(L, resv_ptr);
 		lua_setfield(L, -2, "_resv_ptr");
 		lua_setmetatable(L, -2);
 
