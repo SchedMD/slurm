@@ -2196,11 +2196,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
 		job_env.user_name = req->user_name;
-#if defined(HAVE_BG)
-		select_g_select_jobinfo_get(req->select_jobinfo,
-					    SELECT_JOBDATA_BLOCK_ID,
-					    &job_env.resv_id);
-#elif defined(HAVE_ALPS_CRAY)
+#if defined(HAVE_ALPS_CRAY)
 		job_env.resv_id = select_g_select_jobinfo_xstrdup(
 			req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
@@ -2382,11 +2378,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		/*
 	 	 * Run job prolog on this node
 	 	 */
-#if defined(HAVE_BG)
-		select_g_select_jobinfo_get(req->select_jobinfo,
-					    SELECT_JOBDATA_BLOCK_ID,
-					    &job_env.resv_id);
-#elif defined(HAVE_ALPS_CRAY)
+#if defined(HAVE_ALPS_CRAY)
 		job_env.resv_id = select_g_select_jobinfo_xstrdup(
 			req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
@@ -5113,11 +5105,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.uid = req->job_uid;
 
-#if defined(HAVE_BG)
-	select_g_select_jobinfo_get(req->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID,
-				    &job_env.resv_id);
-#elif defined(HAVE_ALPS_CRAY)
+#if defined(HAVE_ALPS_CRAY)
 	job_env.resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 							  SELECT_PRINT_RESV_ID);
 #endif
@@ -5560,11 +5548,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.uid = req->job_uid;
 
-#if defined(HAVE_BG)
-	select_g_select_jobinfo_get(req->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID,
-				    &job_env.resv_id);
-#elif defined(HAVE_ALPS_CRAY)
+#if defined(HAVE_ALPS_CRAY)
 	job_env.resv_id = select_g_select_jobinfo_xstrdup(
 		req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
@@ -5863,9 +5847,7 @@ _build_env(job_env_t *job_env)
 		setenvf(&env, "SLURM_JOB_PARTITION", "%s", job_env->partition);
 
 	if (job_env->resv_id) {
-#if defined(HAVE_BG)
-		setenvf(&env, "MPIRUN_PARTITION", "%s", job_env->resv_id);
-#elif defined(HAVE_ALPS_CRAY)
+#if defined(HAVE_ALPS_CRAY)
 		setenvf(&env, "BASIL_RESERVATION_ID", "%s", job_env->resv_id);
 #endif
 	}
@@ -5975,32 +5957,6 @@ static int _run_job_script(const char *name, const char *path,
 	return (status);
 }
 
-#ifdef HAVE_BG
-/* a slow prolog is expected on bluegene systems */
-static int
-_run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
-{
-	int rc;
-	char *my_prolog;
-	char **my_env;
-
-	my_env = _build_env(job_env);
-	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
-
-	slurm_mutex_lock(&conf->config_mutex);
-	my_prolog = xstrdup(conf->prolog);
-	slurm_mutex_unlock(&conf->config_mutex);
-
-	rc = _run_job_script("prolog", my_prolog, job_env->jobid,
-			     -1, my_env, job_env->uid);
-	if (remove_running)
-		_remove_job_running_prolog(job_env->jobid);
-	xfree(my_prolog);
-	_destroy_env(my_env);
-
-	return rc;
-}
-#else
 static void *_prolog_timer(void *x)
 {
 	int delay_time, rc = SLURM_SUCCESS;
@@ -6149,7 +6105,6 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 
 	return rc;
 }
-#endif
 
 static int
 _run_epilog(job_env_t *job_env)
