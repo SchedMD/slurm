@@ -43,12 +43,6 @@
 #ifndef _SLURM_H
 #define _SLURM_H
 
-/* Define to 1 if you have Blue Gene system support. */
-#undef HAVE_BG
-
-/* Define to 1 if emulating or running on Blue Gene/Q system */
-#undef HAVE_BGQ
-
 /* Number of dimensions the system has */
 #define SYSTEM_DIMENSIONS 1
 #define HIGHEST_DIMENSIONS 5
