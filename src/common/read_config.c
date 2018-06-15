@@ -4665,11 +4665,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (long_suspend_time < -1) {
 			error("SuspendTime value (%ld) is less than -1",
 			      long_suspend_time);
-		} else if ((long_suspend_time > -1) &&
-			   (!xstrcmp(conf->select_type, "select/bluegene"))) {
-			error("SuspendTime (power save mode) incompatible with "
-			      "select/bluegene");
-			return SLURM_ERROR;
 		} else
 			conf->suspend_time = long_suspend_time + 1;
 	} else {
