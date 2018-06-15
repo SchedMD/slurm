@@ -643,15 +643,14 @@ struct job_record {
 	char *comment;			/* arbitrary comment */
 	uint32_t cpu_cnt;		/* current count of CPUs held
 					 * by the job, decremented while job is
-					 * completing (N/A for bluegene
-					 * systems) */
+					 * completing */
 	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
 	uint16_t cr_enabled;            /* specify if Consumable Resources
 					 * is enabled. Needed since CR deals
 					 * with a finer granularity in its
 					 * node/cpu scheduling (available cpus
 					 * instead of available nodes) than the
-					 * bluegene and the linear plugins
+					 * linear plugin
 					 * 0 if cr is NOT enabled,
 					 * 1 if cr is enabled */
 	uint64_t db_index;              /* used only for database plugins */

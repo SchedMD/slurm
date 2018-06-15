@@ -368,7 +368,7 @@ static int _build_gres_alloc_string(struct job_record *job_ptr)
 	int error_code;
 
 	if (cr_enabled == NO_VAL) {
-		cr_enabled = 0; /* select/linear and bluegene are no-ops */
+		cr_enabled = 0; /* select/linear and others are no-ops */
 		error_code = select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
 							   NULL, &cr_enabled);
 		if (error_code != SLURM_SUCCESS)
@@ -1767,7 +1767,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	/* Are Consumable Resources enabled?  Check once. */
 	if (cr_enabled == NO_VAL) {
-		cr_enabled = 0;	/* select/linear and bluegene are no-ops */
+		cr_enabled = 0;	/* select/linear and others are no-ops */
 		error_code = select_g_get_info_from_plugin (SELECT_CR_PLUGIN,
 							    NULL, &cr_enabled);
 		if (error_code != SLURM_SUCCESS) {

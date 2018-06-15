@@ -10976,7 +10976,7 @@ void reset_job_bitmaps(void)
 	xassert(job_list);
 
 	if (cr_flag == NO_VAL) {
-		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
+		cr_flag = 0;  /* call is no-op for select/linear and others */
 		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
 						  NULL, &cr_flag)) {
 			cr_flag = NO_VAL;	/* error */
@@ -14727,10 +14727,10 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
-	/* If there is a bad epilog error don't down the frontend
-	   node.  If needed (not on a bluegene) the nodes in use by
-	   the job will be downed below.
-	*/
+	/*
+	 * If there is a bad epilog error don't down the frontend node.
+	 * If needed the nodes in use by the job will be downed below.
+	 */
 	if (return_code)
 		error("%s: %s epilog error on %s",
 		      __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),

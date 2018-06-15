@@ -400,7 +400,7 @@ typedef enum {
 	SRUN_EXEC,
 	SRUN_STEP_MISSING,
 	SRUN_REQUEST_SUSPEND,
-	SRUN_STEP_SIGNAL,	/* for launch plugins aprun, poe and runjob,
+	SRUN_STEP_SIGNAL,	/* for launch plugins aprun and poe,
 				 * srun forwards signal to the launch command */
 
 	PMI_KVS_PUT_REQ = 7201,

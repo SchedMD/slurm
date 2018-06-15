@@ -2369,7 +2369,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	bit_clear(booting_node_bitmap, node_inx);
 
 	if (cr_flag == NO_VAL) {
-		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
+		cr_flag = 0;  /* call is no-op for select/linear and others */
 		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
 						  NULL, &cr_flag)) {
 			cr_flag = NO_VAL;	/* error */
