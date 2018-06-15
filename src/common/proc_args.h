@@ -60,12 +60,6 @@ void set_distribution(task_dist_states_t distribution,
 /* verify the requested distribution type */
 task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size);
 
-/*
- * verify comma separated list of connection types to array of uint16_t
- * connection_types or NO_VAL if not recognized
- */
-extern void verify_conn_type(const char *arg, uint16_t *conn_type);
-
 /* return command name from its full path name */
 char * base_name(char* command);
 
