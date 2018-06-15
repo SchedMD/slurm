@@ -1289,7 +1289,7 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 	slurm_cred_t *cred = NULL;
 	char *bit_fmt_str = NULL;
 	char       **sigp;
-	uint32_t     cluster_flags = slurmdb_setup_cluster_flags();
+	uint32_t tot_core_cnt;
 
 	xassert(buffer != NULL);
 
@@ -1323,33 +1323,26 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
 		safe_unpack_time(&cred->ctime, buffer);
-
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-			uint32_t tot_core_cnt;
-			safe_unpack32(&tot_core_cnt, buffer);
-			unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
-			unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
-			safe_unpack16(&cred->core_array_size, buffer);
-			if (cred->core_array_size) {
-				safe_unpack16_array(&cred->cores_per_socket,
-						    &len,
-						    buffer);
-				if (len != cred->core_array_size)
-					goto unpack_error;
-				safe_unpack16_array(&cred->sockets_per_node,
-						    &len, buffer);
-				if (len != cred->core_array_size)
-					goto unpack_error;
-				safe_unpack32_array(&cred->sock_core_rep_count,
-						    &len,
-						    buffer);
-				if (len != cred->core_array_size)
-					goto unpack_error;
-			}
-			safe_unpack32(&cred->job_nhosts, buffer);
-			safe_unpackstr_xmalloc(&cred->job_hostlist, &len,
-					       buffer);
+		safe_unpack32(&tot_core_cnt, buffer);
+		unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
+		unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
+		safe_unpack16(&cred->core_array_size, buffer);
+		if (cred->core_array_size) {
+			safe_unpack16_array(&cred->cores_per_socket, &len,
+					    buffer);
+			if (len != cred->core_array_size)
+				goto unpack_error;
+			safe_unpack16_array(&cred->sockets_per_node, &len,
+					    buffer);
+			if (len != cred->core_array_size)
+				goto unpack_error;
+			safe_unpack32_array(&cred->sock_core_rep_count, &len,
+					    buffer);
+			if (len != cred->core_array_size)
+				goto unpack_error;
 		}
+		safe_unpack32(&cred->job_nhosts, buffer);
+		safe_unpackstr_xmalloc(&cred->job_hostlist, &len, buffer);
 
 		/* "sigp" must be last */
 		sigp = (char **) &cred->signature;
@@ -1381,33 +1374,26 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack_time(&cred->ctime, buffer);
-
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-			uint32_t tot_core_cnt;
-			safe_unpack32(&tot_core_cnt, buffer);
-			unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
-			unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
-			safe_unpack16(&cred->core_array_size, buffer);
-			if (cred->core_array_size) {
-				safe_unpack16_array(&cred->cores_per_socket,
-						    &len,
-						    buffer);
-				if (len != cred->core_array_size)
-					goto unpack_error;
-				safe_unpack16_array(&cred->sockets_per_node,
-						    &len, buffer);
-				if (len != cred->core_array_size)
-					goto unpack_error;
-				safe_unpack32_array(&cred->sock_core_rep_count,
-						    &len,
-						    buffer);
-				if (len != cred->core_array_size)
-					goto unpack_error;
-			}
-			safe_unpack32(&cred->job_nhosts, buffer);
-			safe_unpackstr_xmalloc(&cred->job_hostlist, &len,
-					       buffer);
+		safe_unpack32(&tot_core_cnt, buffer);
+		unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
+		unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
+		safe_unpack16(&cred->core_array_size, buffer);
+		if (cred->core_array_size) {
+			safe_unpack16_array(&cred->cores_per_socket, &len,
+					    buffer);
+			if (len != cred->core_array_size)
+				goto unpack_error;
+			safe_unpack16_array(&cred->sockets_per_node, &len,
+					    buffer);
+			if (len != cred->core_array_size)
+				goto unpack_error;
+			safe_unpack32_array(&cred->sock_core_rep_count, &len,
+					    buffer);
+			if (len != cred->core_array_size)
+				goto unpack_error;
 		}
+		safe_unpack32(&cred->job_nhosts, buffer);
+		safe_unpackstr_xmalloc(&cred->job_hostlist, &len, buffer);
 
 		/* "sigp" must be last */
 		sigp = (char **) &cred->signature;
