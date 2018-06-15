@@ -343,7 +343,6 @@ struct option long_options[] = {
 	{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
 	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
-	{"runjob-opts",      required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
 	{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 	{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
