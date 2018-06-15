@@ -2523,17 +2523,6 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
-	if (opt.nodelist && (!sropt.test_only)) {
-#ifdef HAVE_BG
-		info("\tThe nodelist option should only be used if\n"
-		     "\tthe block you are asking for can be created.\n"
-		     "\tIt should also include all the midplanes you\n"
-		     "\twant to use, partial lists will not work correctly.\n"
-		     "\tPlease consult smap before using this option\n"
-		     "\tor your job may be stuck with no way to run.");
-#endif
-	}
-
 	sropt.argc = 0;
 	if (optind < argc) {
 		rest = argv + optind;
@@ -2548,32 +2537,12 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	if (!rest && !sropt.test_only)
 		fatal("No command given to execute.");
 
-#if defined HAVE_BG
-	/* Since this is needed on an emulated system don't put this code in
-	 * the launch plugin.
-	 */
-	bg_figure_nodes_tasks(&opt.min_nodes, &opt.max_nodes,
-			      &opt.ntasks_per_node, &opt.ntasks_set,
-			      &opt.ntasks, opt.nodes_set, sropt.nodes_set_opt,
-			      opt.overcommit, 1);
-#endif
-
 	if (launch_init() != SLURM_SUCCESS) {
 		fatal("Unable to load launch plugin, check LaunchType "
 		      "configuration");
 	}
 	command_pos = launch_g_setup_srun_opt(rest, &opt);
 
-	/* Since this is needed on an emulated system don't put this code in
-	 * the launch plugin.
-	 */
-#if defined HAVE_BG
-	if (sropt.test_only && !opt.jobid_set && (opt.jobid != NO_VAL)) {
-		/* Do not perform allocate test, only disable use of "runjob" */
-		sropt.test_only = false;
-	}
-
-#endif
 	/* make sure we have allocated things correctly */
 	if (command_args)
 		xassert((command_pos + command_args) <= sropt.argc);
@@ -2631,18 +2600,6 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 		}
 	}
 
-#if defined HAVE_BG
-	/* BGQ's runjob command required a fully qualified path */
-	if (!launch_g_handle_multi_prog_verify(command_pos, &opt) &&
-	    (sropt.argc > command_pos)) {
-		if ((fullpath = search_path(opt.cwd,
-					    sropt.argv[command_pos],
-					    true, X_OK, sropt.test_exec))) {
-			xfree(sropt.argv[command_pos]);
-			sropt.argv[command_pos] = fullpath;
-		}
-	}
-#else
 	/* may exit() if an error with the multi_prog script */
 	(void) launch_g_handle_multi_prog_verify(command_pos, &opt);
 
@@ -2656,7 +2613,6 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 			fatal("Can not execute %s", sropt.argv[command_pos]);
 		}
 	}
-#endif
 }
 
 /*
@@ -3417,15 +3373,8 @@ static char *_read_file(char *fname)
 /* Determine if srun is under the control of a parallel debugger or not */
 static bool _under_parallel_debugger (void)
 {
-#if defined HAVE_BG_FILES
-	/* Use symbols from the runjob.so library provided by IBM.
-	 * Do NOT use debugger symbols local to the srun command */
-	return false;
-#else
 	return (MPIR_being_debugged != 0);
-#endif
 }
-
 
 static void _usage(void)
 {
@@ -3446,11 +3395,6 @@ static void _usage(void)
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
 "            [--profile=...]\n"
-#ifdef HAVE_BG		/* Blue gene specific options */
-"            [--export=env_vars|NONE] [--geometry=AxXxYxZ] [--conn-type=type] [--no-rotate]\n"
-"            [--cnload-image=path]\n"
-"            [--mloader-image=path] [--ioload-image=path]\n"
-#endif
 "            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
@@ -3664,23 +3608,6 @@ static void _help(void)
 "Cray related options:\n"
 "      --network=type          Use network performance counters\n"
 "                              (system, network, or processor)\n"
-"\n"
-#endif
-#ifdef HAVE_BG				/* Blue gene specific options */
-"Blue Gene related options:\n"
-"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
-"                              if not set, then tries to fit TORUS else MESH\n"
-"  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
-"                              sub-block allocations can not be allocated\n"
-"                              with the geometry option\n"
-"  -R, --no-rotate             disable geometry rotation\n"
-"                              If wanting to run in HTC mode (only for 1\n"
-"                              midplane and below).  You can use HTC_S for\n"
-"                              SMP, HTC_D for Dual, HTC_V for\n"
-"                              virtual node mode, and HTC_L for Linux mode.\n"
-"      --cnload-image=path     path to compute node image for bluegene block.  Default if not set\n"
-"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
-"      --ioload-image=path     path to ioload image for bluegene block.  Default if not set\n"
 "\n"
 #endif
 "Help options:\n"

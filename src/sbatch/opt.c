@@ -2038,13 +2038,6 @@ static void _set_options(int argc, char **argv)
 			opt.ramdiskimage = xstrdup(optarg);
 			break;
 		case LONG_OPT_REBOOT:
-#if defined HAVE_BG
-			info("WARNING: If your job is smaller than the block "
-			     "it is going to run on and other jobs are "
-			     "running on it the --reboot option will not be "
-			     "honored.  If this is the case, contact your "
-			     "admin to reboot the block for you.");
-#endif
 			opt.reboot = true;
 			break;
 		case LONG_OPT_WRAP:
@@ -2602,12 +2595,6 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 	if (hostlist_count(hl) > 0) {
 		xfree(opt.nodelist);
 		opt.nodelist = hostlist_ranged_string_xmalloc(hl);
-#ifdef HAVE_BG
-		info("\tThe nodelist option should only be used if\n"
-		     "\tthe block you are asking for can be created.\n"
-		     "\tPlease consult smap before using this option\n"
-		     "\tor your job may be stuck with no way to run.");
-#endif
 	}
 
 	hostlist_destroy(hl);
@@ -3226,17 +3213,6 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if (opt.nodelist && (!sbopt.test_only)) {
-#ifdef HAVE_BG
-		info("\tThe nodelist option should only be used if\n"
-		     "\tthe block you are asking for can be created.\n"
-		     "\tIt should also include all the midplanes you\n"
-		     "\twant to use, partial lists will not work correctly.\n"
-		     "\tPlease consult smap before using this option\n"
-		     "\tor your job may be stuck with no way to run.");
-#endif
-	}
-
 	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
 			 opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
 
@@ -3572,11 +3548,6 @@ static void _usage(void)
 "              [--jobid=id] [--verbose] [--gid=group] [--uid=user]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
-#ifdef HAVE_BG		/* Blue gene specific options */
-"              [--geometry=AxXxYxZ] [--conn-type=type] [--no-rotate]\n"
-"              [--cnload-image=path]\n"
-"              [--mloader-image=path] [--ioload-image=path]\n"
-#endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]] [--wait]\n"
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
@@ -3747,23 +3718,6 @@ static void _help(void)
 "Cray related options:\n"
 "      --network=type          Use network performance counters\n"
 "                              (system, network, or processor)\n"
-"\n"
-#endif
-#ifdef HAVE_BG				/* Blue gene specific options */
-"Blue Gene related options:\n"
-"  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
-"                              sub-block allocations can not be allocated\n"
-"                              with the geometry option\n"
-"  -R, --no-rotate             disable geometry rotation\n"
-"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
-"                              if not set, then tries to fit TORUS else MESH\n"
-"                              If wanting to run in HTC mode (only for 1\n"
-"                              midplane and below).  You can use HTC_S for\n"
-"                              SMP, HTC_D for Dual, HTC_V for\n"
-"                              virtual node mode, and HTC_L for Linux mode.\n"
-"      --cnload-image=path     path to compute node image for bluegene block.  Default if not set\n"
-"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
-"      --ioload-image=path     path to ioload image for bluegene block.  Default if not set\n"
 "\n"
 #endif
 "Help options:\n"

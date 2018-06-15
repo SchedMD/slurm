@@ -1025,15 +1025,6 @@ static void _set_options(int argc, char **argv)
 		case 'w':
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
-#ifdef HAVE_BG
-			info("\tThe nodelist option should only be used if\n"
-			     "\tthe block you are asking for can be created.\n"
-			     "\tIt should also include all the midplanes you\n"
-			     "\twant to use, partial lists may not\n"
-			     "\twork correctly.\n"
-			     "\tPlease consult smap before using this option\n"
-			     "\tor your job may be stuck with no way to run.");
-#endif
 			break;
 		case 'W':
 			verbose("wait option has been deprecated, use "
@@ -1369,13 +1360,6 @@ static void _set_options(int argc, char **argv)
 			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_REBOOT:
-#if defined HAVE_BG
-			info("WARNING: If your job is smaller than the block "
-			     "it is going to run on and other jobs are "
-			     "running on it the --reboot option will not be "
-			     "honored.  If this is the case, contact your "
-			     "admin to reboot the block for you.");
-#endif
 			opt.reboot = true;
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
@@ -2273,11 +2257,6 @@ static void _usage(void)
 "              [--clusters=cluster_names]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
-#ifdef HAVE_BG		/* Blue gene specific options */
-"              [--geometry=AxXxYxZ] [--conn-type=type] [--no-rotate]\n"
-"              [--cnload-image=path]\n"
-"              [--mloader-image=path] [--ioload-image=path]\n"
-#endif
 "              [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 "              [--bell] [--no-bell] [--kill-command[=signal]] [--spread-job]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
@@ -2434,22 +2413,6 @@ static void _help(void)
 "      --network=type          Use network performance counters\n"
 "                              (system, network, or processor)\n"
 "\n"
-#endif
-#ifdef HAVE_BG				/* Blue gene specific options */
-"Blue Gene related options:\n"
-"  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
-"                              sub-block allocations can not be allocated\n"
-"                              with the geometry option\n"
-"  -R, --no-rotate             disable geometry rotation\n"
-"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
-"                              if not set, then tries to fit TORUS else MESH\n"
-"                              If wanting to run in HTC mode (only for 1\n"
-"                              midplane and below).  You can use HTC_S for\n"
-"                              SMP, HTC_D for Dual, HTC_V for\n"
-"                              virtual node mode, and HTC_L for Linux mode.\n"
-"      --cnload-image=path     path to compute node image for bluegene block.  Default if not set\n"
-"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
-"      --ioload-image=path     path to ioload image for bluegene block.  Default if not set\n"
 #endif
 "\n"
 "Help options:\n"
