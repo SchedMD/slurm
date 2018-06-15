@@ -533,7 +533,8 @@ extern void log_job_resources(uint32_t job_id,
 extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			       uint16_t protocol_version)
 {
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	int i;
+	uint32_t core_cnt = 0, sock_recs = 0;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (job_resrcs_ptr == NULL) {
@@ -585,36 +586,33 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 				     job_resrcs_ptr->nhosts, buffer);
 		else
 			pack64_array(job_resrcs_ptr->memory_used, 0, buffer);
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-			int i;
-			uint32_t core_cnt = 0, sock_recs = 0;
-			xassert(job_resrcs_ptr->cores_per_socket);
-			xassert(job_resrcs_ptr->sock_core_rep_count);
-			xassert(job_resrcs_ptr->sockets_per_node);
 
-			for (i=0; i<job_resrcs_ptr->nhosts; i++) {
-				core_cnt += job_resrcs_ptr->sockets_per_node[i]
-					* job_resrcs_ptr->cores_per_socket[i] *
-					job_resrcs_ptr->sock_core_rep_count[i];
-				sock_recs += job_resrcs_ptr->
-					     sock_core_rep_count[i];
-				if (sock_recs >= job_resrcs_ptr->nhosts)
-					break;
-			}
-			i++;
-			pack16_array(job_resrcs_ptr->sockets_per_node,
-				     (uint32_t) i, buffer);
-			pack16_array(job_resrcs_ptr->cores_per_socket,
-				     (uint32_t) i, buffer);
-			pack32_array(job_resrcs_ptr->sock_core_rep_count,
-				     (uint32_t) i, buffer);
+		xassert(job_resrcs_ptr->cores_per_socket);
+		xassert(job_resrcs_ptr->sock_core_rep_count);
+		xassert(job_resrcs_ptr->sockets_per_node);
 
-			xassert(job_resrcs_ptr->core_bitmap);
-			xassert(job_resrcs_ptr->core_bitmap_used);
-			pack_bit_str_hex(job_resrcs_ptr->core_bitmap, buffer);
-			pack_bit_str_hex(job_resrcs_ptr->core_bitmap_used,
-					 buffer);
+		for (i=0; i < job_resrcs_ptr->nhosts; i++) {
+			core_cnt += job_resrcs_ptr->sockets_per_node[i]
+				* job_resrcs_ptr->cores_per_socket[i] *
+				job_resrcs_ptr->sock_core_rep_count[i];
+			sock_recs += job_resrcs_ptr->
+				     sock_core_rep_count[i];
+			if (sock_recs >= job_resrcs_ptr->nhosts)
+				break;
 		}
+		i++;
+		pack16_array(job_resrcs_ptr->sockets_per_node,
+			     (uint32_t) i, buffer);
+		pack16_array(job_resrcs_ptr->cores_per_socket,
+			     (uint32_t) i, buffer);
+		pack32_array(job_resrcs_ptr->sock_core_rep_count,
+			     (uint32_t) i, buffer);
+
+		xassert(job_resrcs_ptr->core_bitmap);
+		xassert(job_resrcs_ptr->core_bitmap_used);
+		pack_bit_str_hex(job_resrcs_ptr->core_bitmap, buffer);
+		pack_bit_str_hex(job_resrcs_ptr->core_bitmap_used,
+				 buffer);
 	} else {
 		error("pack_job_resources: protocol_version %hu not supported",
 		      protocol_version);
@@ -627,7 +625,6 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 	char *bit_fmt = NULL;
 	uint32_t empty, tmp32;
 	job_resources_t *job_resrcs;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	xassert(job_resrcs_pptr);
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -675,24 +672,22 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		if (tmp32 == 0)
 			xfree(job_resrcs->memory_used);
 
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-			safe_unpack16_array(&job_resrcs->sockets_per_node,
-					    &tmp32, buffer);
-			if (tmp32 == 0)
-				xfree(job_resrcs->sockets_per_node);
-			safe_unpack16_array(&job_resrcs->cores_per_socket,
-					    &tmp32, buffer);
-			if (tmp32 == 0)
-				xfree(job_resrcs->cores_per_socket);
-			safe_unpack32_array(&job_resrcs->sock_core_rep_count,
-					    &tmp32, buffer);
-			if (tmp32 == 0)
-				xfree(job_resrcs->sock_core_rep_count);
+		safe_unpack16_array(&job_resrcs->sockets_per_node,
+				    &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->sockets_per_node);
+		safe_unpack16_array(&job_resrcs->cores_per_socket,
+				    &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->cores_per_socket);
+		safe_unpack32_array(&job_resrcs->sock_core_rep_count,
+				    &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->sock_core_rep_count);
 
-			unpack_bit_str_hex(&job_resrcs->core_bitmap, buffer);
-			unpack_bit_str_hex(&job_resrcs->core_bitmap_used,
-					   buffer);
-		}
+		unpack_bit_str_hex(&job_resrcs->core_bitmap, buffer);
+		unpack_bit_str_hex(&job_resrcs->core_bitmap_used,
+				   buffer);
 	} else {
 		error("unpack_job_resources: protocol_version %hu not "
 		      "supported", protocol_version);

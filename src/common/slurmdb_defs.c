@@ -419,20 +419,15 @@ static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
 	will_run_response_msg_t *will_run_resp;
 	char buf[64];
 	int rc;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	char *type = "processors";
 
 	rc = slurm_job_will_run2(req, &will_run_resp);
 
 	if (rc >= 0) {
-		if (cluster_flags & CLUSTER_FLAG_BG)
-			type = "cnodes";
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
-		debug("Job %u to start at %s on cluster %s using %u %s on %s",
+		debug("Job %u to start at %s on cluster %s using %u processors on %s",
 		      will_run_resp->job_id, buf, working_cluster_rec->name,
-		      will_run_resp->proc_cnt, type,
-		      will_run_resp->node_list);
+		      will_run_resp->proc_cnt, will_run_resp->node_list);
 
 		local_cluster = xmalloc(sizeof(local_cluster_rec_t));
 		local_cluster->cluster_rec = working_cluster_rec;
