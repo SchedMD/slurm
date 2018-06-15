@@ -168,7 +168,6 @@ int	association_based_accounting = 0;
 void *	acct_db_conn = NULL;
 int	backup_inx;
 int	batch_sched_delay = 3;
-int	bg_recover = DEFAULT_RECOVER;
 uint32_t cluster_cpus = 0;
 time_t	control_time = 0;
 time_t	last_proc_req_start = 0;
@@ -912,16 +911,6 @@ int main(int argc, char **argv)
 	 * do this outside of MEMORY_LEAK_DEBUG so that remote connections get
 	 * closed.
 	 */
-
-#ifdef HAVE_BG
-	/*
-	 * Always call slurm_select_fini() on some systems like
-	 * BlueGene we need to make sure other processes are ended
-	 * or we could get a random core from within it's
-	 * underlying infrastructure.
-	 */
-        slurm_select_fini();
-#endif
 
 #endif
 
@@ -2643,18 +2632,12 @@ static void _parse_commandline(int argc, char **argv)
 {
 	int c = 0;
 	char *tmp_char;
-	bool bg_recover_override = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "BcdDf:hiL:n:rRtvV")) != -1) {
+	while ((c = getopt(argc, argv, "cdDf:hiL:n:rRtvV")) != -1) {
 		switch (c) {
-		case 'B':
-			bg_recover = 0;
-			bg_recover_override = 1;
-			break;
 		case 'c':
 			recover = 0;
-			bg_recover = 0;
 			break;
 		case 'd':
 			daemonize = 1;
@@ -2687,13 +2670,9 @@ static void _parse_commandline(int argc, char **argv)
 			break;
 		case 'r':
 			recover = 1;
-			if (!bg_recover_override)
-				bg_recover = 1;
 			break;
 		case 'R':
 			recover = 2;
-			if (!bg_recover_override)
-				bg_recover = 1;
 			break;
 		case 't':
 			test_config = true;
@@ -2722,10 +2701,6 @@ static void _parse_commandline(int argc, char **argv)
 static void _usage(char *prog_name)
 {
 	fprintf(stderr, "Usage: %s [OPTIONS]\n", prog_name);
-#ifdef HAVE_BG
-	fprintf(stderr, "  -B      "
-			"\tDo not recover state of bluegene blocks.\n");
-#endif
 #if (DEFAULT_RECOVER != 0)
 	fprintf(stderr, "  -c      "
 			"\tDo not recover state from last checkpoint.\n");

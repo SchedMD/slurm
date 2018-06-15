@@ -1034,9 +1034,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		pack16(dump_node_ptr->port, buffer);
 		pack32(dump_node_ptr->node_state, buffer);
 		packstr (dump_node_ptr->version, buffer);
-		/* On a bluegene system always use the regular node
-		* infomation not what is in the config_ptr. */
-#ifndef HAVE_BG
 		if (slurmctld_conf.fast_schedule) {
 			/* Only data from config_record used for scheduling */
 			pack16(dump_node_ptr->config_ptr->cpus, buffer);
@@ -1047,7 +1044,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack64(dump_node_ptr->config_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 		} else {
-#endif
 			/* Individual node data used for scheduling */
 			pack16(dump_node_ptr->cpus, buffer);
 			pack16(dump_node_ptr->boards, buffer);
@@ -1056,9 +1052,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack16(dump_node_ptr->threads, buffer);
 			pack64(dump_node_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->tmp_disk, buffer);
-#ifndef HAVE_BG
 		}
-#endif
 		packstr(dump_node_ptr->mcs_label, buffer);
 		pack32(dump_node_ptr->owner, buffer);
 		pack16(dump_node_ptr->core_spec_cnt, buffer);
@@ -1115,9 +1109,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		pack16(dump_node_ptr->port, buffer);
 		pack32(dump_node_ptr->node_state, buffer);
 		packstr (dump_node_ptr->version, buffer);
-		/* On a bluegene system always use the regular node
-		* infomation not what is in the config_ptr. */
-#ifndef HAVE_BG
 		if (slurmctld_conf.fast_schedule) {
 			/* Only data from config_record used for scheduling */
 			pack16(dump_node_ptr->config_ptr->cpus, buffer);
@@ -1128,7 +1119,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack64(dump_node_ptr->config_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 		} else {
-#endif
 			/* Individual node data used for scheduling */
 			pack16(dump_node_ptr->cpus, buffer);
 			pack16(dump_node_ptr->boards, buffer);
@@ -1137,9 +1127,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack16(dump_node_ptr->threads, buffer);
 			pack64(dump_node_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->tmp_disk, buffer);
-#ifndef HAVE_BG
 		}
-#endif
 		packstr(dump_node_ptr->mcs_label, buffer);
 		pack32(dump_node_ptr->owner, buffer);
 		pack16(dump_node_ptr->core_spec_cnt, buffer);
@@ -3044,18 +3032,8 @@ extern int validate_nodes_via_front_end(
 			continue;
 		if (job_ptr->front_end_ptr != front_end_ptr)
 			continue;
-#ifdef HAVE_BG
-		/* slurmd does not report job presence until after prolog
-		 * completes which waits for bgblock boot to complete.
-		 * This can take several minutes on BlueGene. */
-		if (difftime(now, job_ptr->time_last_active) <=
-		    (BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
-		     BG_INCR_BLOCK_BOOT * job_ptr->node_cnt))
-			continue;
-#else
 		if (difftime(now, job_ptr->time_last_active) <= 5)
 			continue;
-#endif
 		info("Killing orphan batch job %u", job_ptr->job_id);
 		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
 			     false, false, 0);

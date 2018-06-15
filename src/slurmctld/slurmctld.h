@@ -219,7 +219,6 @@ extern int   accounting_enforce;
 extern int   association_based_accounting;
 extern int   backup_inx;		/* BackupController# index */
 extern int   batch_sched_delay;
-extern int   bg_recover;		/* state recovery mode */
 extern time_t control_time;		/* Time when became primary controller */
 extern uint32_t   cluster_cpus;
 extern bool node_features_updated;

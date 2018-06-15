@@ -923,19 +923,7 @@ next_part:		part_ptr = (struct part_record *)
 			     job_ptr->total_cpus);
 
 			if ((job_ptr->total_cpus > 0) &&
-#ifdef HAVE_BG
-				/*
-				 * On a bluegene system we need to run the
-				 * prolog while the job is CONFIGURING so this
-				 * can't work off the CONFIGURING flag as done
-				 * elsewhere.
-				 */
-				!job_ptr->details->prolog_running &&
-				!(job_ptr->bit_flags & NODE_REBOOT)
-#else
-				!IS_JOB_CONFIGURING(job_ptr)
-#endif
-				) {
+			    !IS_JOB_CONFIGURING(job_ptr)) {
 				launch_msg = _build_launch_job_msg(job_ptr,
 							msg->protocol_version);
 			}
@@ -1199,11 +1187,6 @@ static int _schedule(uint32_t job_limit)
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	char jbuf[JBUFSIZ];
 	bool is_job_array_head;
-#ifdef HAVE_BG
-	char *ionodes = NULL;
-	char tmp_char[256];
-	static bool backfill_sched = false;
-#endif
 	static time_t sched_update = 0;
 	static bool fifo_sched = false;
 	static bool assoc_limit_stop = false;
@@ -1245,11 +1228,6 @@ static int _schedule(uint32_t job_limit)
 		char *sched_params, *tmp_ptr;
 		char *sched_type = slurm_get_sched_type();
 		char *prio_type = slurm_get_priority_type();
-#ifdef HAVE_BG
-		/* On BlueGene, do FIFO only with sched/backfill */
-		if (xstrcmp(sched_type, "sched/backfill") == 0)
-			backfill_sched = true;
-#endif
 		if ((xstrcmp(sched_type, "sched/builtin") == 0) &&
 		    (xstrcmp(prio_type, "priority/basic") == 0) &&
 		    _all_partition_priorities_same())
@@ -1988,44 +1966,14 @@ skip_start:
 						       "Cluster",
 						       "CurrentSumPower");
 			}
-#ifdef HAVE_BG
-			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-						    SELECT_JOBDATA_IONODES,
-						    &ionodes);
-			if (ionodes) {
-				sprintf(tmp_char,"%s[%s]",
-					job_ptr->nodes, ionodes);
-			} else {
-				sprintf(tmp_char,"%s",job_ptr->nodes);
-			}
-
-			info("sched: Allocate %s MidplaneList=%s Partition=%s",
-			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
-			     tmp_char, job_ptr->part_ptr->name);
-			xfree(ionodes);
-#else
 			info("sched: Allocate %s NodeList=%s #CPUs=%u "
 			     "Partition=%s",
 			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
 			     job_ptr->nodes, job_ptr->total_cpus,
 			     job_ptr->part_ptr->name);
-#endif
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
-			else if (
-#ifdef HAVE_BG
-				/*
-				 * On a bluegene system we need to run the
-				 * prolog while the job is CONFIGURING so this
-				 * can't work off the CONFIGURING flag as done
-				 * elsewhere.
-				 */
-				!job_ptr->details->prolog_running &&
-				!(job_ptr->bit_flags & NODE_REBOOT)
-#else
-				!IS_JOB_CONFIGURING(job_ptr)
-#endif
-				)
+			else if (!IS_JOB_CONFIGURING(job_ptr))
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
@@ -2065,17 +2013,6 @@ skip_start:
 			job_ptr->priority = 0;
 		}
 
-#ifdef HAVE_BG
-		/*
-		 * When we use static or overlap partitioning on BlueGene,
-		 * each job can possibly be scheduled independently, without
-		 * impacting other jobs of different sizes. Therefore we sort
-		 * and try to schedule every pending job unless the backfill
-		 * scheduler is configured.
-		 */
-		if (!backfill_sched)
-			fail_by_part = false;
-#else
 		if (job_ptr->details && job_ptr->details->req_node_bitmap &&
 		    (bit_set_count(job_ptr->details->req_node_bitmap) >=
 		     job_ptr->details->min_nodes)) {
@@ -2085,7 +2022,6 @@ skip_start:
 			bit_and_not(avail_node_bitmap,
 				job_ptr->details->req_node_bitmap);
 		}
-#endif
 		if (fail_by_part && job_ptr->resv_name) {
 		 	/* do not schedule more jobs in this reservation, but
 			 * other jobs in this partition can be scheduled. */
@@ -2447,15 +2383,12 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
 
 	iter = list_iterator_create(pack_leader->pack_job_list);
 	while ((pack_job = (struct job_record *) list_next(iter))) {
-#ifndef HAVE_BG
 		uint8_t prolog = 0;
-#endif
 		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
 			error("%s: Bad pack_job_list for job %u",
 			      __func__, pack_leader->pack_job_id);
 			continue;
 		}
-#ifndef HAVE_BG
 		if (job_ptr->details)
 			prolog = pack_job->details->prolog_running;
 		if (prolog || IS_JOB_CONFIGURING(pack_job) ||
@@ -2463,7 +2396,6 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
 			pack_leader = NULL;
 			break;
 		}
-#endif
 		if ((job_ptr->batch_flag == 0) ||
 		    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
 			pack_leader = NULL;
@@ -2523,12 +2455,6 @@ static void _set_pack_env(struct job_record *pack_leader,
 			      __func__, pack_leader->pack_job_id);
 			continue;
 		}
-#if HAVE_BG
-		(void) env_array_overwrite_pack_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_BG_NUM_NODES", pack_offset,
-				"%u", pack_job->node_cnt);
-#endif
 		if (pack_job->details &&
 		    (pack_job->details->cpus_per_task > 0) &&
 		    (pack_job->details->cpus_per_task != NO_VAL16)) {
@@ -3776,14 +3702,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		will_run_response_msg_t *resp_data;
 		resp_data = xmalloc(sizeof(will_run_response_msg_t));
 		resp_data->job_id     = job_ptr->job_id;
-#ifdef HAVE_BG
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &resp_data->proc_cnt);
-
-#else
 		resp_data->proc_cnt = job_ptr->total_cpus;
-#endif
 		_delayed_job_start_time(job_ptr);
 		resp_data->start_time = MAX(job_ptr->start_time,
 					    orig_start_time);
@@ -3864,12 +3783,7 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 				(const char **) job_ptr->spank_job_env);
 	}
 
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID, &name);
-	setenvf(&my_env, "MPIRUN_PARTITION", "%s", name);
-	xfree(name);
-#elif defined HAVE_ALPS_CRAY
+#if defined HAVE_ALPS_CRAY
 	name = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						SELECT_PRINT_RESV_ID);
 	setenvf(&my_env, "BASIL_RESERVATION_ID", "%s", name);

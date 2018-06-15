@@ -922,10 +922,8 @@ static int
 _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
 		       uint32_t cons_res_flag)
 {
-#ifndef HAVE_BG
 	if (job_ptr->reboot)
 		return 0;
-#endif
 
 	/* no sharing if partition Shared=EXCLUSIVE */
 	if (part_max_share == 0) {
@@ -1921,20 +1919,16 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				if (shared) {
 					bit_and(node_set_ptr[i].my_bitmap,
 						share_node_bitmap);
-#ifndef HAVE_BG
 					bit_and_not(node_set_ptr[i].my_bitmap,
 						    cg_node_bitmap);
-#endif
 				} else {
 					bit_and(node_set_ptr[i].my_bitmap,
 						idle_node_bitmap);
 					/* IDLE nodes are not COMPLETING */
 				}
 			} else {
-#ifndef HAVE_BG
 				bit_and_not(node_set_ptr[i].my_bitmap,
 					    cg_node_bitmap);
-#endif
 			}
 			if (!nodes_busy) {
 				count2 = bit_set_count(node_set_ptr[i].
@@ -2180,23 +2174,19 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					   share_node_bitmap)) {
 				error_code = ESLURM_NODES_BUSY;
 			}
-#ifndef HAVE_BG
 			if (bit_overlap(job_ptr->details->req_node_bitmap,
 					cg_node_bitmap)) {
 				error_code = ESLURM_NODES_BUSY;
 			}
-#endif
 		} else if (!bit_super_set(job_ptr->details->req_node_bitmap,
 					  idle_node_bitmap)) {
 			error_code = ESLURM_NODES_BUSY;
 			/* Note: IDLE nodes are not COMPLETING */
 		}
-#ifndef HAVE_BG
 	} else if (job_ptr->details->req_node_bitmap &&
 		   bit_overlap(job_ptr->details->req_node_bitmap,
 			       cg_node_bitmap)) {
 		error_code = ESLURM_NODES_BUSY;
-#endif
 	}
 
 	if (error_code == SLURM_SUCCESS) {
@@ -2574,20 +2564,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 */
 	if (select_bitmap
 	    && ((error_code == SLURM_SUCCESS) || !job_ptr->node_cnt_wag)) {
-#ifdef HAVE_BG
-		xassert(job_ptr->select_jobinfo);
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &selected_node_cnt);
-		if (selected_node_cnt == NO_VAL) {
-			/* This should never happen */
-			selected_node_cnt = bit_set_count(select_bitmap);
-			error("node_cnt not available at %s:%d\n",
-			      __FILE__, __LINE__);
-		}
-#else
 		selected_node_cnt = bit_set_count(select_bitmap);
-#endif
 		job_ptr->node_cnt_wag = selected_node_cnt;
 	} else
 		selected_node_cnt = req_nodes;
@@ -2936,11 +2913,6 @@ cleanup:
 
 	if (error_code != SLURM_SUCCESS)
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
-
-#ifdef HAVE_BG
-	if (error_code != SLURM_SUCCESS)
-		free_job_resources(&job_ptr->job_resrcs);
-#endif
 
 	return error_code;
 }
@@ -4357,16 +4329,6 @@ extern void re_kill_job(struct job_record *job_ptr)
 	}
 	hostlist_uniq(kill_hostlist);
 	host_str = hostlist_ranged_string_xmalloc(kill_hostlist);
-#ifdef HAVE_BG
-	if (job_ptr->job_id != last_job_id) {
-		info("Resending TERMINATE_JOB request JobId=%u Midplanelist=%s",
-		     job_ptr->job_id, host_str);
-	} else {
-		debug("Resending TERMINATE_JOB request JobId=%u "
-		      "Midplanelist=%s",
-		      job_ptr->job_id, host_str);
-	}
-#else
 	if (job_ptr->job_id != last_job_id) {
 		info("Resending TERMINATE_JOB request JobId=%u Nodelist=%s",
 		     job_ptr->job_id, host_str);
@@ -4374,7 +4336,6 @@ extern void re_kill_job(struct job_record *job_ptr)
 		debug("Resending TERMINATE_JOB request JobId=%u Nodelist=%s",
 		      job_ptr->job_id, host_str);
 	}
-#endif
 
 	xfree(host_str);
 	last_job_id = job_ptr->job_id;

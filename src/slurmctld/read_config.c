@@ -503,29 +503,6 @@ static int _build_all_nodeline_info(void)
 	rc2 = build_all_frontend_info(false);
 	rc = MAX(rc, rc2);
 
-	/* Now perform operations on the node table as needed by slurmctld */
-#ifdef HAVE_BG
-{
-	char *node_000 = NULL;
-	struct node_record *node_rec = NULL;
-	if (slurmctld_conf.node_prefix)
-		node_000 = xstrdup(slurmctld_conf.node_prefix);
-#if (SYSTEM_DIMENSIONS == 3)
-	xstrcat(node_000, "000");
-#endif
-#if (SYSTEM_DIMENSIONS == 4)
-	xstrcat(node_000, "0000");
-#endif
-#if (SYSTEM_DIMENSIONS == 5)
-	xstrcat(node_000, "00000");
-#endif
-	node_rec = find_node_record(node_000);
-	if (node_rec == NULL)
-		info("WARNING: No node %s configured", node_000);
-	xfree(node_000);
-}
-#endif	/* HAVE_BG */
-
 	return rc;
 }
 
@@ -1830,17 +1807,13 @@ static int _restore_node_state(int recover,
 		node_ptr->select_nodeinfo = old_node_ptr->select_nodeinfo;
 		old_node_ptr->select_nodeinfo = tmp_select_nodeinfo;
 
-#ifndef HAVE_BG
-		/* If running on a BlueGene system the cpus never
-		   change so just skip this.
-		*/
 		if (old_node_ptr->port != node_ptr->config_ptr->cpus) {
 			rc = ESLURM_NEED_RESTART;
 			error("Configured cpu count change on %s (%u to %u)",
 			      node_ptr->name, old_node_ptr->port,
 			      node_ptr->config_ptr->cpus);
 		}
-#endif
+
 		node_ptr->boot_time     = old_node_ptr->boot_time;
 		node_ptr->cpus          = old_node_ptr->cpus;
 		node_ptr->cores         = old_node_ptr->cores;

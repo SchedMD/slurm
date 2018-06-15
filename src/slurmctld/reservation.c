@@ -100,12 +100,6 @@ time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
 uint32_t  top_suffix = 0;
 
-#ifdef HAVE_BG
-uint32_t  cpu_mult = 0;
-uint32_t  cnodes_per_mp = 0;
-uint32_t  cpus_per_mp = 0;
-#endif
-
 /*
  * the two following structs enable to build a
  * planning of a constraint evolution over time
@@ -2145,10 +2139,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->flags == NO_VAL)
 		resv_desc_ptr->flags = 0;
 	else {
-#ifdef HAVE_BG
-		resv_desc_ptr->flags &= (~RESERVE_FLAG_REPLACE);
-		resv_desc_ptr->flags &= (~RESERVE_FLAG_REPLACE_DOWN);
-#endif
 		resv_desc_ptr->flags &= RESERVE_FLAG_MAINT    |
 					RESERVE_FLAG_FLEX     |
 					RESERVE_FLAG_OVERLAP  |
@@ -2475,7 +2465,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
 	/* FIXME: Support more core based reservation updates */
-#ifndef HAVE_BG
 	if ((!resv_ptr->full_nodes &&
 	     (resv_desc_ptr->node_cnt || resv_desc_ptr->node_list)) ||
 	    resv_desc_ptr->core_cnt) {
@@ -2483,7 +2472,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		     resv_desc_ptr->name);
 		return ESLURM_CORE_RESERVATION_UPDATE;
 	}
-#endif
 
 	/* Make backup to restore state in case of failure */
 	resv_backup = _copy_resv(resv_ptr);
@@ -2528,7 +2516,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_STATIC;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
-#ifndef HAVE_BG
 		if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
 		    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 			if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
@@ -2541,7 +2528,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			else
 				resv_ptr->flags |= RESERVE_FLAG_REPLACE_DOWN;
 		}
-#endif
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES) {
 			if ((resv_ptr->partition == NULL) &&
 			    (resv_desc_ptr->partition == NULL)) {
@@ -3276,20 +3262,6 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		xfree(old_resv_ptr.tres_str);
 		last_resv_update = time(NULL);
 	} else if (resv_ptr->node_list) {	/* Change bitmap last */
-#ifdef HAVE_BG
-		int inx;
-		char save = '\0';
-		/* Make sure we take off the cnodes in the reservation */
-		for (inx = 0; resv_ptr->node_list[inx]; inx++) {
-			if (resv_ptr->node_list[inx] == '['
-			    && resv_ptr->node_list[inx-1] <= '9'
-			    && resv_ptr->node_list[inx-1] >= '0') {
-				save = resv_ptr->node_list[inx];
-				resv_ptr->node_list[inx] = '\0';
-				break;
-			}
-		}
-#endif
 		if (xstrcasecmp(resv_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
@@ -3299,11 +3271,6 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			      resv_ptr->name, resv_ptr->node_list);
 			return false;
 		}
-
-#ifdef HAVE_BG
-		if (save)
-			resv_ptr->node_list[inx] = save;
-#endif
 
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		resv_ptr->node_bitmap = node_bitmap;
@@ -4053,21 +4020,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 {
 	int i;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
-	uint32_t total_node_cnt = 0;
 	bool resv_debug;
-
-#ifdef HAVE_BG
-	hostlist_t hl = NULL;
-	static uint16_t static_blocks = NO_VAL16;
-	if (static_blocks == NO_VAL16) {
-		/* Since this never changes we can just set it once
-		 * and not look at it again. */
-		select_g_get_info_from_plugin(SELECT_STATIC_PART, NULL,
-					      &static_blocks);
-	}
-#else
-	static uint16_t static_blocks = 0;
-#endif
 
 	/* Free node_list here, it could be filled in by the select plugin. */
 	xfree(resv_desc_ptr->node_list);
@@ -4080,23 +4033,6 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
 					   resv_desc_ptr->node_cnt[0],
 					   core_bitmap);
-	}
-
-	/* Try to create a single reservation that can contain all blocks
-	 * unless we have static blocks on a BlueGene system */
-	if (static_blocks != 0) {
-		for (i = 0; resv_desc_ptr->node_cnt[i]; i++)
-			total_node_cnt += resv_desc_ptr->node_cnt[i];
-		tmp_bitmap = _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
-						 total_node_cnt, core_bitmap);
-		if (tmp_bitmap) {
-			if (total_node_cnt == bit_set_count(tmp_bitmap))
-				return tmp_bitmap;
-			/* Oversized allocation, possibly due to BlueGene block
-			 * size limitations. Need to create as multiple
-			 * blocks */
-			FREE_NULL_BITMAP(tmp_bitmap);
-		}
 	}
 
 	/* Need to create reservation containing multiple blocks */
@@ -4126,24 +4062,8 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 			ret_bitmap = bit_copy(tmp_bitmap);
 		bit_and_not(avail_bitmap, tmp_bitmap);
 		FREE_NULL_BITMAP(tmp_bitmap);
-
-#ifdef HAVE_BG
-		if (!hl)
-			hl = hostlist_create(resv_desc_ptr->node_list);
-		else
-			hostlist_push(hl, resv_desc_ptr->node_list);
-#endif
-	}
-#ifdef HAVE_BG
-	if (hl) {
-		hostlist_uniq(hl);
-		hostlist_sort(hl);
-		xfree(resv_desc_ptr->node_list);
-		resv_desc_ptr->node_list = hostlist_ranged_string_xmalloc(hl);
-		hostlist_destroy(hl);
 	}
 
-#endif
 	return ret_bitmap;
 }
 

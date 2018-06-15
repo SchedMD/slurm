@@ -1048,10 +1048,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if ((nodes_picked = select_g_step_pick_nodes(
 		     job_ptr, select_jobinfo, node_count, &select_nodes_avail)))
 		return nodes_picked;
-#ifdef HAVE_BGQ
-	*return_code = ESLURM_NODES_BUSY;
-	return NULL;
-#endif
+
 	if (!nodes_avail)
 		nodes_avail = bit_copy (job_ptr->node_bitmap);
 	bit_and (nodes_avail, up_node_bitmap);
@@ -1964,9 +1961,6 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	if (i_first == -1)	/* empty bitmap */
 		return;
 
-#ifdef HAVE_BG
-	pick_step_cores = false;
-#else
 	xassert(job_resrcs_ptr->core_bitmap);
 	xassert(job_resrcs_ptr->core_bitmap_used);
 	if (step_ptr->core_bitmap_job) {
@@ -1980,7 +1974,6 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 			job_resrcs_ptr->core_bitmap);
 		pick_step_cores = false;
 	}
-#endif
 
 	if (step_ptr->pn_min_memory && _is_mem_resv() &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
@@ -2178,7 +2171,6 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 			break;
 	}
 
-#ifndef HAVE_BG
 	xassert(job_resrcs_ptr->core_bitmap);
 	xassert(job_resrcs_ptr->core_bitmap_used);
 	if (step_ptr->core_bitmap_job) {
@@ -2196,7 +2188,6 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		}
 		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	}
-#endif
 }
 
 static int _test_strlen(char *test_str, char *str_name, int max_str_len)
@@ -2360,10 +2351,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 #ifdef HAVE_ALPS_CRAY
 	uint32_t resv_id = 0;
-#endif
-#if defined HAVE_BG
-	static uint16_t cpus_per_mp = NO_VAL16;
-#elif (!defined HAVE_ALPS_CRAY)
+#else
 	uint32_t max_tasks;
 #endif
 	*new_step_record = NULL;
@@ -2533,17 +2521,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	select_g_select_jobinfo_set(select_jobinfo,
 				    SELECT_JOBDATA_RESV_ID, &resv_id);
 #endif
-#ifdef HAVE_BGQ
-	/* Things might of changed here since sometimes users ask for
-	 * the wrong size in cnodes to make a block. */
-	select_g_select_jobinfo_get(select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &node_count);
-	step_specs->cpu_count = node_count * cpus_per_mp;
-	orig_cpu_count =  step_specs->cpu_count;
-#else
 	node_count = bit_set_count(nodeset);
-#endif
 	if (step_specs->num_tasks == NO_VAL) {
 		if (step_specs->cpu_count != NO_VAL)
 			step_specs->num_tasks = step_specs->cpu_count;
@@ -2551,7 +2529,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_specs->num_tasks = node_count;
 	}
 
-#if (!defined HAVE_BG && !defined HAVE_ALPS_CRAY)
+#if (!defined HAVE_ALPS_CRAY)
 	max_tasks = node_count * slurmctld_conf.max_tasks_per_node;
 	if (step_specs->num_tasks > max_tasks) {
 		error("step has invalid task count: %u max is %u",
@@ -2784,8 +2762,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	slurm_step_layout_req_t step_layout_req;
-
-#ifndef HAVE_BGQ
 	uint64_t gres_cpus;
 	int cpu_inx = -1, cpus_task_inx = -1;
 	int i, usable_cpus, usable_mem;
@@ -2797,10 +2773,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	uint32_t cpus_task = 0;
 	uint16_t ntasks_per_core = 0;
 	uint16_t ntasks_per_socket = 0;
-#else
-	uint32_t cpu_count_reps[1];
-	uint32_t cpus_task_reps[1];
-#endif
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -2823,19 +2795,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			step_ptr->job_ptr->front_end_ptr->protocol_version;
 #endif
 
-#ifdef HAVE_BGQ
-	/*
-	 * Since we have to deal with a conversion between cnodes and
-	 * midplanes here the math is really easy, and already has
-	 * been figured out for us in the plugin, so just copy the
-	 * numbers.
-	 */
-	memcpy(cpus_per_node, job_resrcs_ptr->cpus, sizeof(cpus_per_node));
-	cpus_per_task_array[0] = cpus_per_task;
-	cpu_count_reps[0] = job_resrcs_ptr->ncpus;
-	cpus_task_reps[0] = job_resrcs_ptr->ncpus;
-
-#else
 	/* build  cpus-per-node arrays for the subset of nodes used by step */
 	first_bit = bit_ffs(job_ptr->node_bitmap);
 	last_bit  = bit_fls(job_ptr->node_bitmap);
@@ -3008,7 +2967,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				break;
 		}
 	}
-#endif
+
 	/* if (set_tasks < num_tasks) { */
 	/* 	error("Resources only available for %u of %u tasks", */
 	/* 	     set_tasks, num_tasks); */
@@ -3048,8 +3007,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 	time_t begin_time, run_time;
 	bitstr_t *pack_bitstr;
 
-//#if defined HAVE_FRONT_END && (!defined HAVE_BGQ || !defined HAVE_BG_FILES)
-#if defined HAVE_FRONT_END && (!defined HAVE_BGQ) && (!defined HAVE_ALPS_CRAY)
+#if defined HAVE_FRONT_END && (!defined HAVE_ALPS_CRAY)
 	/* On front-end systems, the steps only execute on one node.
 	 * We need to make them appear like they are running on the job's
 	 * entire allocation (which they really are). */
@@ -3622,7 +3580,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	if (!step_ptr->exit_node_bitmap) {
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
-#if defined HAVE_BGQ || defined HAVE_ALPS_CRAY
+#if defined HAVE_ALPS_CRAY
 		/* For BGQ we only have 1 real task, so if it exits,
 		   the whole step is ending as well.
 		*/
@@ -3632,7 +3590,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr->exit_code = req->step_rc;
 	} else {
 		nodes = bit_size(step_ptr->exit_node_bitmap);
-#if defined HAVE_BGQ || defined HAVE_ALPS_CRAY
+#if defined HAVE_ALPS_CRAY
 		/* For BGQ we only have 1 real task, so if it exits,
 		   the whole step is ending as well.
 		*/
@@ -4430,15 +4388,11 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	static int notify_srun = -1;
 
 	if (notify_srun == -1) {
-#if defined HAVE_BG_FILES
-		notify_srun = 1;
-#else
 		/* do this for all but slurm (poe, aprun, etc...) */
 		if (xstrcmp(slurmctld_conf.launch_type, "launch/slurm"))
 			notify_srun = 1;
 		else
 			notify_srun = 0;
-#endif
 	}
 
 	step_ptr->state = JOB_TIMEOUT;

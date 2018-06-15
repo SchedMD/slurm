@@ -6169,13 +6169,8 @@ static int _part_access_check(struct part_record *part_ptr,
 	 */
 	job_min_nodes = job_desc->min_nodes;
 	job_max_nodes = job_desc->max_nodes;
-#ifdef HAVE_BG
-	min_nodes_tmp = part_ptr->min_nodes_orig;
-	max_nodes_tmp = part_ptr->max_nodes_orig;
-#else
 	min_nodes_tmp = part_ptr->min_nodes;
 	max_nodes_tmp = part_ptr->max_nodes;
-#endif
 
 	/* Check against min/max node limits in the partition */
 
@@ -8694,6 +8689,7 @@ void job_time_limit(void)
 			    slurmctld_conf.msg_timeout + 1);
 	time_t over_run;
 	uint16_t over_time_limit;
+	uint8_t prolog;
 	int job_test_count = 0;
 	uint32_t resv_over_run = slurmctld_conf.resv_over_run;
 
@@ -8712,25 +8708,12 @@ void job_time_limit(void)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	DEF_TIMERS;
 
-#ifndef HAVE_BG
-	uint8_t prolog;
-#endif
-
 	job_iterator = list_iterator_create(job_list);
 	START_TIMER;
 	while ((job_ptr = list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		job_test_count++;
 
-#ifndef HAVE_BG
-		/*
-		 * If the CONFIGURING flag is removed elsewhere like
-		 * on a Bluegene system this check is not needed and
-		 * should be avoided.  In the case of BG blocks that
-		 * are booting aren't associated with
-		 * power_node_bitmap so bit_overlap always returns 0
-		 * and erroneously removes the flag.
-		 */
 		if (job_ptr->details)
 			prolog = job_ptr->details->prolog_running;
 		else
@@ -8748,7 +8731,6 @@ void job_time_limit(void)
 					launch_job(job_ptr);
 			}
 		}
-#endif
 
 		/*
 		 * Features have been changed on some node, make job eligiable
@@ -8982,14 +8964,8 @@ extern void job_set_req_tres(
 	if (job_ptr->total_cpus)
 		cpu_cnt = job_ptr->total_cpus;
 
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &node_cnt);
-#else
 	if (job_ptr->node_cnt)
 		node_cnt = job_ptr->node_cnt;
-#endif
 
 	job_ptr->tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)node_cnt;
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)cpu_cnt;
@@ -9058,13 +9034,7 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU] = (uint64_t)job_ptr->total_cpus;
 
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &alloc_nodes);
-#else
 	alloc_nodes = job_ptr->node_cnt;
-#endif
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE] = (uint64_t)alloc_nodes;
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] =
 			job_get_tres_mem(
@@ -9106,11 +9076,6 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 
 	xassert(job_ptr);
 
-#ifdef HAVE_BG
-	/* This function doesn't apply to a bluegene system since the
-	 * cpu count isn't set up on that system. */
-	return SLURM_SUCCESS;
-#endif
 	if (job_ptr->details->whole_node == 1) {
 		/* Since we are allocating whole nodes don't rely on
 		 * the job_resrcs since it could be less because the
@@ -10433,7 +10398,6 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 		return;
 
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
-#ifndef HAVE_BG
 		if (slurmctld_conf.fast_schedule) {
 			/* Only data from config_record used for scheduling */
 			max_cpu_cnt = MAX(max_cpu_cnt,
@@ -10441,13 +10405,10 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 			max_core_cnt =  MAX(max_core_cnt,
 					    node_ptr->config_ptr->cores);
 		} else {
-#endif
 			/* Individual node data used for scheduling */
 			max_cpu_cnt = MAX(max_cpu_cnt, node_ptr->cpus);
 			max_core_cnt =  MAX(max_core_cnt, node_ptr->cores);
-#ifndef HAVE_BG
 		}
-#endif
 	}
 }
 
@@ -11339,25 +11300,6 @@ static bool _top_priority(struct job_record *job_ptr, uint32_t pack_job_offset)
 	time_t now = time(NULL);
 	int pend_time;
 	bool top;
-
-#ifdef HAVE_BG
-	static uint16_t static_part = NO_VAL16;
-	int rc = SLURM_SUCCESS;
-
-	/* On BlueGene with static partitioning, we don't want to delay
-	 * jobs based upon priority since jobs of different sizes can
-	 * execute on different sets of nodes. While sched/backfill would
-	 * eventually start the job if delayed here based upon priority,
-	 * that could delay the initiation of a job by a few seconds. */
-	if (static_part == NO_VAL16) {
-		/* Since this never changes we can just set it once
-		   and not look at it again. */
-		rc = select_g_get_info_from_plugin(SELECT_STATIC_PART, job_ptr,
-						   &static_part);
-	}
-	if ((rc == SLURM_SUCCESS) && (static_part == 1))
-		return true;
-#endif
 
 	if (job_ptr->priority == 0)	/* user held */
 		top = false;
@@ -14819,16 +14761,10 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
 			node_ptr = &node_record_table_ptr[i];
-#ifndef HAVE_BG
-			/* If this is a bluegene system we do not want to mark
-			 * the entire midplane down if we have an epilog error.
-			 * This would most likely kill other jobs sharing that
-			 * midplane and that is not what we want. */
 			if (return_code) {
 				drain_nodes(node_ptr->name, "Epilog error",
 					    slurmctld_conf.slurm_user_id);
 			}
-#endif
 			/* Change job from completing to completed */
 			make_node_idle(node_ptr, job_ptr);
 		}
@@ -14883,14 +14819,6 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	//job_ptr->next_step_id = 0;
 
 	job_ptr->node_cnt = 0;
-#ifdef HAVE_BG
-	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID, "unassigned");
-	/* If on a bluegene system we want to remove the job_resrcs so
-	 * we don't get an error message about them already existing
-	 * when the job goes to run again. */
-	free_job_resources(&job_ptr->job_resrcs);
-#endif
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
@@ -15803,11 +15731,6 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	xfree(sus_ptr->job_id_str);
 	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->job_id);
 
-#ifdef HAVE_BG
-	rc = ESLURM_NOT_SUPPORTED;
-	goto reply;
-#endif
-
 	/* validate the request */
 	if (!validate_operator(uid)) {
 		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
@@ -15872,11 +15795,6 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	return_code_msg_t rc_msg;
 	resp_array_struct_t *resp_array = NULL;
 	job_array_resp_msg_t *resp_array_msg = NULL;
-
-#ifdef HAVE_BG
-	rc = ESLURM_NOT_SUPPORTED;
-	goto reply;
-#endif
 
 	if (max_array_size == NO_VAL) {
 		max_array_size = slurmctld_conf.max_array_sz;
