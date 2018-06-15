@@ -1543,8 +1543,6 @@ extern char    *power_flags_str(uint16_t power_flags);
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);
 extern void  accounting_enforce_string(uint16_t enforce,
 				       char *str, int str_len);
-extern char *conn_type_string(enum connection_type conn_type);
-extern char *conn_type_string_full(uint16_t *conn_type);
 extern char *node_use_string(enum node_use_type node_use);
 
 /* Translate a Slurm nodelist to a char * of numbers

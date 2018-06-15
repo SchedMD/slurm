@@ -37,7 +37,6 @@ extern void  slurm_private_data_string(uint16_t private_data,
 				       char *str, int str_len);
 extern void  slurm_accounting_enforce_string(uint16_t enforce,
 					     char *str, int str_len);
-extern char *slurm_conn_type_string(enum connection_type conn_type);
 extern char *slurm_node_use_string(enum node_use_type node_use);
 
 

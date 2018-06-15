@@ -250,18 +250,6 @@ slurm_accounting_enforce_string(slurm_t self, uint16_t enforce)
 		RETVAL
 
 char *
-slurm_conn_type_string(slurm_t self, uint16_t conn_type)
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		RETVAL = slurm_conn_type_string((enum connection_type)conn_type);
-	OUTPUT:
-		RETVAL
-
-char *
 slurm_node_use_string(slurm_t self, uint16_t node_use)
 	CODE:
 		if (self); /* this is needed to avoid a warning about

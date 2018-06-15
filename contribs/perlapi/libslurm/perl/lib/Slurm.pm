@@ -325,18 +325,6 @@ Get the string representation of the specified accounting enforce type.
 
 =back    
 
-=head3 $str = $slurm->conn_type_string($num);
-
-Get the string representation of the specified connection type.
-
-=over 2
-
-=item * IN $num: connection type number.
-    
-=item * RET: connection type string.
-
-=back    
-
 =head3 $str = $slurm->node_use_string($num);
 
 Get the string representation of the specified node usage type.
