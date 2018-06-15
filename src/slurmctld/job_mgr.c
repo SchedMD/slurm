@@ -11640,6 +11640,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 	}
 
+	/*
+	 * Validate before job_submit_plugin_modify() so that the job_submit
+	 * plugin can make changes to the field without triggering an auth
+	 * issue.
+	 */
+	if (job_specs->admin_comment && !validate_super_user(uid)) {
+		error("Attempt to change admin_comment for job %u",
+		      job_ptr->job_id);
+		error_code = ESLURM_ACCESS_DENIED;
+		goto fini;
+	}
+
 	if (job_specs->user_id == NO_VAL) {
 		/* Used by job_submit/lua to find default partition and
 		 * access control logic below to validate partition change */
