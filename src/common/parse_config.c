@@ -490,7 +490,7 @@ static void _compute_hash_val(uint32_t *hash_val, char *line)
 /*
  * Reads the next line from the "file" into buffer "buf".
  *
- * Concatonates together lines that are continued on
+ * Concatenates together lines that are continued on
  * the next line by a trailing "\".  Strips out comments,
  * replaces escaped "\#" with "#", and replaces "\\" with "\".
  */
