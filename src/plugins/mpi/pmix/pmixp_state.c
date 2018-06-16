@@ -47,6 +47,11 @@ pmixp_state_t _pmixp_state;
 void _xfree_coll(void *x)
 {
 	pmixp_coll_t *coll = (pmixp_coll_t *)x;
+
+	/* check for collective in a not-SYNC state - something went wrong */
+	if (PMIXP_COLL_SYNC != coll->state) {
+		pmixp_coll_log(coll);
+	}
 	pmixp_coll_free(coll);
 	xfree(coll);
 }
