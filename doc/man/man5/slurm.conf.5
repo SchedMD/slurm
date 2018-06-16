@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2018" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "June 2018" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -49,7 +49,7 @@ The overall configuration parameters available include:
 The name of the backup machine hosting the accounting storage database.
 If used with the accounting_storage/slurmdbd plugin, this is where the backup
 slurmdbd would be running.
-Only used for database type storage plugins, ignored otherwise.
+Only used with systems using SlurmDBD, ignored otherwise.
 
 .TP
 \fBAccountingStorageEnforce\fR
@@ -89,15 +89,13 @@ daemon is required (not just a "scontrol reconfig").
 .TP
 \fBAccountingStorageHost\fR
 The name of the machine hosting the accounting storage database.
-Only used for database type storage plugins, ignored otherwise.
+Only used with systems using SlurmDBD, ignored otherwise.
 Also see \fBDefaultStorageHost\fR.
 
 .TP
 \fBAccountingStorageLoc\fR
 The fully qualified file name where accounting records are written
-when the \fBAccountingStorageType\fR is "accounting_storage/filetxt"
-or else the name of the database where accounting records are stored when the
-\fBAccountingStorageType\fR is a database.
+when the \fBAccountingStorageType\fR is "accounting_storage/filetxt".
 Also see \fBDefaultStorageLoc\fR.
 
 .TP
@@ -686,9 +684,7 @@ defined.
 \fBDefaultStorageLoc\fR
 The fully qualified file name where accounting records and/or job
 completion records are written when the \fBDefaultStorageType\fR is
-"filetxt" or the name of the database where accounting records and/or job
-completion records are stored when the \fBDefaultStorageType\fR is a
-database.
+"filetxt".
 Also see \fBAccountingStorageLoc\fR and \fBJobCompLoc\fR.
 
 .TP
