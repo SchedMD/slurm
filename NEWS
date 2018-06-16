@@ -164,6 +164,7 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL: Fix issue not handling all fields when loading an archive dump.
  -- Allow a job_submit plugin to change the admin_comment field during
     job_submit_plugin_modify().
+ -- job_submit/lua - fix access into reservation table.
 
 * Changes in Slurm 17.11.7
 ==========================
