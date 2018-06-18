@@ -259,6 +259,10 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	xstrcat(out, line_end);
 
 	/****** Line 7 ******/
+	xstrfmtcat(out, "Nodes=%s", part_ptr->nodes);
+	xstrcat(out, line_end);
+
+	/****** Line 7 ******/
 
 	xstrfmtcat(out, "PriorityJobFactor=%u", part_ptr->priority_job_factor);
 	xstrfmtcat(out, " PriorityTier=%u", part_ptr->priority_tier);
