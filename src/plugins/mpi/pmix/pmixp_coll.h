@@ -45,29 +45,6 @@
 #define PMIXP_COLL_RING_CTX_NUM 3
 
 typedef enum {
-	PMIXP_COLL_CPERF_RING,
-	PMIXP_COLL_CPERF_TREE,
-	PMIXP_COLL_CPERF_MIXED,
-	PMIXP_COLL_CPERF_BARRIER
-} pmixp_coll_cperf_mode_t;
-
-inline static char *
-pmixp_coll_cperf_mode2str(pmixp_coll_cperf_mode_t mode) {
-	switch(mode) {
-	case PMIXP_COLL_CPERF_RING:
-		return "PMIXP_COLL_CPERF_RING";
-	case PMIXP_COLL_CPERF_TREE:
-		return "PMIXP_COLL_CPERF_TREE";
-	case PMIXP_COLL_CPERF_MIXED:
-		return "PMIXP_COLL_CPERF_MIXED";
-	case PMIXP_COLL_CPERF_BARRIER:
-		return "PMIXP_COLL_CPERF_BARRIER";
-	default:
-		return "PMIXP_COLL_CPERF_UNK";
-	}
-}
-
-typedef enum {
 	PMIXP_COLL_TYPE_FENCE_TREE = 0,
 	PMIXP_COLL_TYPE_FENCE_RING,
 	/* reserve coll fence ids up to 15 */
@@ -88,6 +65,29 @@ pmixp_coll_type2str(pmixp_coll_type_t type) {
 		return "COLL_FENCE_MAX";
 	default:
 		return "COLL_FENCE_UNK";
+	}
+}
+
+typedef enum {
+	PMIXP_COLL_CPERF_TREE = PMIXP_COLL_TYPE_FENCE_TREE,
+	PMIXP_COLL_CPERF_RING = PMIXP_COLL_TYPE_FENCE_RING,
+	PMIXP_COLL_CPERF_MIXED = PMIXP_COLL_TYPE_FENCE_MAX,
+	PMIXP_COLL_CPERF_BARRIER
+} pmixp_coll_cperf_mode_t;
+
+inline static char *
+pmixp_coll_cperf_mode2str(pmixp_coll_cperf_mode_t mode) {
+	switch(mode) {
+	case PMIXP_COLL_CPERF_RING:
+		return "PMIXP_COLL_CPERF_RING";
+	case PMIXP_COLL_CPERF_TREE:
+		return "PMIXP_COLL_CPERF_TREE";
+	case PMIXP_COLL_CPERF_MIXED:
+		return "PMIXP_COLL_CPERF_MIXED";
+	case PMIXP_COLL_CPERF_BARRIER:
+		return "PMIXP_COLL_CPERF_BARRIER";
+	default:
+		return "PMIXP_COLL_CPERF_UNK";
 	}
 }
 

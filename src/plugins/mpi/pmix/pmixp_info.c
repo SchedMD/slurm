@@ -108,7 +108,7 @@ int pmixp_info_srv_fence_coll_type(void)
 				    "Tree-based collective will be used instead.");
 			printed = true;
 		}
-		return PMIXP_COLL_TYPE_FENCE_TREE;
+		return PMIXP_COLL_CPERF_TREE;
 	}
 	return _srv_fence_coll_type;
 }
