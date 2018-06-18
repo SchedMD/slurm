@@ -124,9 +124,7 @@ void entity_init(entity_t* entity, const char* name, const char* type)
 {
 	entity->name = xstrdup(name);
 	entity->type = xstrdup(type);
-	entity->data = xhash_init(_entity_data_identify,
-				  (xhash_freefunc_t)_entity_data_destroy,
-				  NULL, 0);
+	entity->data = xhash_init(_entity_data_identify, _entity_data_destroy);
 	entity->nodes = list_create(_entity_node_destroy);
 	entity->ptr = NULL;
 }

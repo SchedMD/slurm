@@ -80,10 +80,7 @@ typedef void (*xhash_freefunc_t)(void* item);
  *
  * @returns the newly allocated hash table. Must be freed with xhash_free.
  */
-xhash_t* xhash_init(xhash_idfunc_t idfunc,
-		    xhash_freefunc_t freefunc,
-		    xhash_hashfunc_t hashfunc, /* Currently: should be NULL */
-		    uint32_t table_size);      /* Currently: unused         */
+xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc);
 
 /** @returns an item from a key searching through the hash table. NULL if not
  * found.

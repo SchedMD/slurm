@@ -653,8 +653,7 @@ extern struct node_record *create_node_record (
 	node_ptr = node_record_table_ptr + (node_record_count++);
 	node_ptr->name = xstrdup(node_name);
 	if (!node_hash_table)
-		node_hash_table = xhash_init(_node_record_hash_identity,
-					     NULL, NULL, 0);
+		node_hash_table = xhash_init(_node_record_hash_identity, NULL);
 	xhash_add(node_hash_table, node_ptr);
 
 	node_ptr->config_ptr = config_ptr;
@@ -949,8 +948,7 @@ extern void rehash_node (void)
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	xhash_free (node_hash_table);
-	node_hash_table = xhash_init(_node_record_hash_identity,
-				     NULL, NULL, 0);
+	node_hash_table = xhash_init(_node_record_hash_identity, NULL);
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))

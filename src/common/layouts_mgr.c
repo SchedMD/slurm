@@ -940,11 +940,11 @@ static void _layouts_mgr_init(layouts_mgr_t* mgr)
 	mgr->init_done = true;
 	_layouts_mgr_parse_global_conf(mgr);
 	mgr->layouts = xhash_init(layout_hashable_identify_by_type,
-				  (xhash_freefunc_t)_layout_free, NULL, 0);
+				  _layout_free);
 	mgr->entities = xhash_init(entity_hashable_identify,
-				   (xhash_freefunc_t)_entity_free, NULL, 0);
+				   _entity_free);
 	mgr->keydefs = xhash_init(layouts_keydef_idfunc,
-				  _layouts_keydef_free, NULL, 0);
+				  _layouts_keydef_free);
 }
 
 /*****************************************************************************\

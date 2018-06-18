@@ -73,10 +73,7 @@ struct xhash_st {
 					     key */
 };
 
-xhash_t* xhash_init(xhash_idfunc_t idfunc,
-		    xhash_freefunc_t freefunc,
-		    xhash_hashfunc_t hashfunc,
-		    uint32_t table_size)
+xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc)
 {
 	xhash_t* table = NULL;
 	if (!idfunc)
