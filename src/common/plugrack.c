@@ -473,16 +473,6 @@ _match_major ( const char *path_name, const char *major_type )
 }
 
 int
-plugrack_read_cache( plugrack_t rack,
-		     const char *cache_file )
-{
-	/* Don't care for now. */
-
-	return SLURM_ERROR;
-}
-
-
-int
 plugrack_purge_idle( plugrack_t rack )
 {
 	ListIterator it;
@@ -522,16 +512,6 @@ plugrack_load_all( plugrack_t rack )
 	}
 
 	list_iterator_destroy( it );
-	return SLURM_SUCCESS;
-}
-
-
-int
-plugrack_write_cache( plugrack_t rack,
-		      const char *cache )
-{
-	/* Not implemented. */
-
 	return SLURM_SUCCESS;
 }
 

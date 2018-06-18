@@ -123,15 +123,6 @@ int plugrack_read_dir( plugrack_t rack,
 		       const char *dir );
 
 /*
- * Add plugins to the rack by reading the given cache.  Note that plugins
- * may not actually load, but the rack will be made aware of them.
- *
- * NOT CURRENTLY IMPLEMENTED.
- */
-int plugrack_read_cache( plugrack_t rack,
-			 const char *cache );
-
-/*
  * Remove from memory all plugins that are not currently in use by the
  * program.
  *
@@ -145,14 +136,6 @@ int plugrack_purge_idle( plugrack_t rack );
  * Returns a Slurm errno.
  */
 int plugrack_load_all( plugrack_t rack );
-
-/*
- * Write the current contents of the plugin rack to a file
- * in cache format, suitable to be read later using plugrack_read_cache().
- *
- * Returns a Slurm errno.
- */
-int plugrack_write_cache( plugrack_t rack, const char *cache );
 
 /*
  * Find a plugin in the rack which matches the given minor type,
