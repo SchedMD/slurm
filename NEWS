@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow a job_submit plugin to change the admin_comment field during
     job_submit_plugin_modify().
  -- job_submit/lua - fix access into reservation table.
+ -- MySQL - Prevent deadlock caused by archive logic locking reads.
 
 * Changes in Slurm 17.11.7
 ==========================
