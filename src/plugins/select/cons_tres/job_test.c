@@ -3142,7 +3142,7 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 				bitstr_t **part_core_map)
 {
 	uint16_t cpus = 0;
-	uint64_t avail_mem, req_mem;
+	uint64_t avail_mem = 0, req_mem;
 	int cpu_alloc_size, i, rc;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
@@ -3212,10 +3212,17 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					    &cpu_alloc_size, true);
 	}
 
+	if (cr_type & CR_MEMORY) {
+		avail_mem = select_node_record[node_i].real_memory -
+			    select_node_record[node_i].mem_spec_limit;
+		if (!test_only)
+			avail_mem -= node_usage[node_i].alloc_memory;
+	}
+
 	if (sock_gres_list) {
 //FIXME: Modify to test GRES & CPU limits too
 		/* Disable GRES that can't be used with remaining cores */
-		rc = gres_plugin_job_core_filter2(sock_gres_list,
+		rc = gres_plugin_job_core_filter2(sock_gres_list, avail_mem,
 					enforce_binding, core_map[node_i],
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
@@ -3242,11 +3249,6 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		 *          - there are enough free_cores (MEM_PER_CPU == 1)
 		 */
 		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
-//FIXME: NEED TO ADJUST FOR MEM_PER_GPU, lower priority
-		avail_mem = select_node_record[node_i].real_memory -
-			    select_node_record[node_i].mem_spec_limit;
-		if (!test_only)
-			avail_mem -= node_usage[node_i].alloc_memory;
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			/* memory is per-CPU */
 			if (!(cr_type & CR_CPU) && job_ptr->details->mc_ptr &&
