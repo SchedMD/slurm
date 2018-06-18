@@ -4288,7 +4288,7 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 				else
 					error("%s: QOS %s user %u accrue_cnt underflow",
 					      __func__, qos_ptr_1->name,
-					      used_limits_a1->uid);
+					      used_limits_u1->uid);
 			}
 
 			if (qos_ptr_2) {
