@@ -345,5 +345,8 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, pmixp_coll_type_t type,
 			     void *cbfunc, void *cbdata);
 void pmixp_coll_free(pmixp_coll_t *coll);
 int pmixp_coll_belong_chk(const pmixp_proc_t *procs, size_t nprocs);
+void pmixp_coll_log(pmixp_coll_t *coll);
+void pmixp_coll_ring_log(pmixp_coll_t *coll);
+void pmixp_coll_tree_log(pmixp_coll_t *coll);
 
 #endif /* PMIXP_COLL_RING_H */

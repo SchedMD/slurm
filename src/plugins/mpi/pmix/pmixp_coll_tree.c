@@ -611,6 +611,7 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		}
 		return false;
 	default:
+		/* Should not happen */
 		PMIXP_ERROR("Bad collective ufwd state=%d", (int)tree->ufwd_status);
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
@@ -735,6 +736,7 @@ static int _progress_ufwd_sc(pmixp_coll_t *coll)
 		/* move to the next step */
 		break;
 	default:
+		/* Should not happen */
 		PMIXP_ERROR("Bad collective ufwd state=%d", (int)tree->ufwd_status);
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
@@ -820,6 +822,7 @@ static int _progress_dfwd(pmixp_coll_t *coll)
 	case PMIXP_COLL_TREE_SND_DONE:
 		break;
 	default:
+		/* Should not happen */
 		PMIXP_ERROR("Bad collective dfwd state=%d", (int)tree->dfwd_status);
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
@@ -1127,9 +1130,9 @@ proceed:
 error:
 	pmixp_coll_log(coll);
 	_reset_coll(coll);
+error2:
 	slurm_kill_job_step(pmixp_info_jobid(),
 			    pmixp_info_stepid(), SIGKILL);
-error2:
 	/* unlock the structure */
 	slurm_mutex_unlock(&coll->lock);
 
@@ -1232,7 +1235,9 @@ int pmixp_coll_tree_parent(pmixp_coll_t *coll, uint32_t peerid,
 		/* should not happen in normal workflow */
 		PMIXP_ERROR("%p: unknown collective state %s",
 			    coll, pmixp_coll_tree_state2str(tree->state));
-		goto error;
+		/* collective is spoiled, reset state */
+		tree->state = PMIXP_COLL_TREE_SYNC;
+		goto error2;
 	}
 
 	/* Because of possible timeouts/delays in transmission we
@@ -1274,6 +1279,7 @@ proceed:
 error:
 	pmixp_coll_log(coll);
 	_reset_coll(coll);
+error2:
 	slurm_kill_job_step(pmixp_info_jobid(),
 			    pmixp_info_stepid(), SIGKILL);
 	slurm_mutex_unlock(&coll->lock);
@@ -1309,15 +1315,6 @@ void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts)
 		/* report the timeout event */
 		PMIXP_ERROR("%p: collective timeout seq=%d", coll, coll->seq);
 		pmixp_coll_log(coll);
-		/* TODO: Output:
-		 * - sequence ID,
-		 * - contribution set,
-		 * - who is parent (hostname + id),
-		 * - who are childrens (hostnames and id's)
-		 * - what is the state of collective
-		 * - send statuses of upward/downward
-		 */
-
 		/* drop the collective */
 		_reset_coll(coll);
 	}
@@ -1326,15 +1323,14 @@ unlock:
 	slurm_mutex_unlock(&coll->lock);
 }
 
-void pmixp_coll_log(pmixp_coll_t *coll)
+void pmixp_coll_tree_log(pmixp_coll_t *coll)
 {
 	int i;
-	char *nodename;
 	pmixp_coll_tree_t *tree = &coll->state.tree;
+	char *nodename;
 
-	PMIXP_ERROR("Dumping collective state");
-	PMIXP_ERROR("%p: state seq=%d contribs: loc=%d/prnt=%d/child=%u",
-		    coll, coll->seq,
+	PMIXP_ERROR("%p: %s state seq=%d contribs: loc=%d/prnt=%d/child=%u",
+		    coll, pmixp_coll_type2str(coll->type), coll->seq,
 		    tree->contrib_local, tree->contrib_prnt, tree->contrib_children);
 	nodename = pmixp_info_job_host(coll->my_peerid);
 	PMIXP_ERROR("my peerid: %d:%s", coll->my_peerid, nodename);

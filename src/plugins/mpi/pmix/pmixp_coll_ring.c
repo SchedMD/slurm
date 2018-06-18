@@ -714,23 +714,79 @@ void pmixp_coll_ring_reset_if_to(pmixp_coll_t *coll, time_t ts) {
 				pmixp_lib_modex_invoke(coll->cbfunc, PMIXP_ERR_TIMEOUT, NULL,
 						       0, coll->cbdata, NULL, NULL);
 			}
-
 			/* report the timeout event */
-			PMIXP_ERROR("Collective timeout!");
-			/* TODO: Output:
-			 * - sequence ID,
-			 * - contribution set,
-			 * - who is the prev neighbor (hostname + id),
-			 * - who is the next neighbor (hostname + id),
-			 * - how many contributions sent
-			 * - how many contributions received
-			 * - etc. ...
-			 */
-
+			PMIXP_ERROR("%p: collective timeout seq=%d", coll, coll_ctx->seq);
+			pmixp_coll_log(coll);
 			/* drop the collective */
 			_reset_coll_ring(coll_ctx);
 		}
 	}
 	/* unlock the structure */
 	slurm_mutex_unlock(&coll->lock);
+}
+
+void pmixp_coll_ring_log(pmixp_coll_t *coll)
+{
+	int i;
+	pmixp_coll_ring_t *ring = &coll->state.ring;
+	char *nodename, *next, *prev;
+	char *out_str = NULL;
+
+	PMIXP_ERROR("%p: %s state seq=%d",
+		    coll, pmixp_coll_type2str(coll->type), coll->seq);
+	nodename = pmixp_info_job_host(coll->my_peerid);
+	PMIXP_ERROR("my peerid: %d:%s", coll->my_peerid, nodename);
+	xfree(nodename);
+
+	next = pmixp_info_job_host(_ring_next_id(coll));
+	prev = pmixp_info_job_host(_ring_prev_id(coll));
+	xstrfmtcat(out_str,"neighbor id: next %d:%s, prev %d:%s",
+		   _ring_next_id(coll), next, _ring_prev_id(coll), prev);
+	PMIXP_ERROR("%s", out_str);
+	xfree(next);
+	xfree(prev);
+	xfree(out_str);
+
+
+	for (i = 0; i < PMIXP_COLL_RING_CTX_NUM; i++) {
+		pmixp_coll_ring_ctx_t *coll_ctx = &ring->ctx_array[i];
+
+		PMIXP_ERROR("Context ptr=%p, #%d, in-use=%d", coll_ctx, i, coll_ctx->in_use);
+
+		if (coll_ctx->in_use) {
+			int id;
+			char *done_contrib, *wait_contrib;
+			hostlist_t hl_done_contrib, hl_wait_contrib;
+
+			pmixp_hostset_from_ranges(coll->pset.procs, coll->pset.nprocs, &hl_done_contrib);
+			hl_wait_contrib = hostlist_copy(hl_done_contrib);
+
+			PMIXP_ERROR("\t seq=%d contribs: loc=%d/prev=%d/fwd=%d",
+				    coll_ctx->seq, coll_ctx->contrib_local,
+				    coll_ctx->contrib_prev, coll_ctx->forward_cnt);
+			PMIXP_ERROR("\t neighbor contribs [%d]:", coll->peers_cnt);
+
+			for (id = 0; id < coll->peers_cnt; id++) {
+				char *nodename = pmixp_info_job_host(id);
+
+				if(coll_ctx->contrib_map[id]) {
+					hostlist_delete_host(hl_wait_contrib, nodename);
+				} else {
+					hostlist_delete_host(hl_done_contrib, nodename);
+				}
+				xfree(nodename);
+			}
+			done_contrib = slurm_hostlist_ranged_string_xmalloc(hl_done_contrib);
+			wait_contrib = slurm_hostlist_ranged_string_xmalloc(hl_wait_contrib);
+			PMIXP_ERROR("\t done contrib: %s", strlen(done_contrib) ? done_contrib : "-");
+			PMIXP_ERROR("\t wait contrib: %s", strlen(wait_contrib) ? wait_contrib : "-");
+			PMIXP_ERROR("\t status=%s", pmixp_coll_ring_state2str(coll_ctx->state));
+			PMIXP_ERROR("\t buf size=%u, remain=%u", size_buf(coll_ctx->ring_buf),
+				    remaining_buf(coll_ctx->ring_buf));
+			xfree(done_contrib);
+			xfree(wait_contrib);
+			hostlist_destroy(hl_done_contrib);
+			hostlist_destroy(hl_wait_contrib);
+		}
+	}
 }
