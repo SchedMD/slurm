@@ -4826,7 +4826,7 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			} else { /* Insufficient memory for any GRES */
 				rc = -1;
 				break;
-			}	
+			}
 		}
 		if (sock_gres->cnt_by_sock) {
 			if (!avail_cores_by_sock) {

@@ -3220,7 +3220,6 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	}
 
 	if (sock_gres_list) {
-//FIXME: Modify to test GRES & CPU limits too
 		/* Disable GRES that can't be used with remaining cores */
 		rc = gres_plugin_job_core_filter2(sock_gres_list, avail_mem,
 					enforce_binding, core_map[node_i],
@@ -3291,20 +3290,6 @@ static node_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 				cpus = 0;
 		}
 	}
-
-#if 0
-//FIXME: Add some validation here?
-	while (gres_cpus < cpus) {
-		if ((int) cpus < cpu_alloc_size) {
-			debug3("cons_tres: %s: cpu_alloc_size > cpus, cannot "
-			       "continue (node: %s)", __func__, node_ptr->name);
-			cpus = 0;
-			break;
-		} else {
-			cpus -= cpu_alloc_size;
-		}
-	}
-#endif
 
 	if (cpus == 0)
 		bit_clear_all(core_map[node_i]);
