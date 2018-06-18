@@ -3076,7 +3076,6 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 				goto next;
 			}
 		}
-		offset = sep - name;
 	} else if (!comma) {
 		/* TRES name only, implied count of 1 */
 		sep = NULL;
@@ -6214,7 +6213,6 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 				goto next;
 			}
 		}
-		offset = sep - name;
 	} else if (!comma) {
 		/* TRES name only, implied count of 1 */
 		sep = NULL;
