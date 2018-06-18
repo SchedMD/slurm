@@ -87,27 +87,6 @@ if {$matches == 0} {
 }
 
 set matches 0
-set strigger_pid [spawn $strigger --set -v --block_err --program=$cwd/$file_in]
-expect {
-	-re "trigger set" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: strigger not responding\n"
-		slow_kill $strigger_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches == 0} {
-	send_user "\nFAILURE: trigger creation failure\n"
-	exit 1
-}
-
-set matches 0
 set strigger_pid [spawn $strigger --get -v --down --user=$uid]
 expect {
 	-re "$file_in" {
