@@ -492,17 +492,6 @@ static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
 	*coord_y = (y_offset - y) + z;
 }
 
-static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset,
-			   int *coord_x, int *coord_y, int* dim_size)
-{
-	int x_offset, y_offset;
-
-	x_offset = (dim_size[1] + dim_size[3]) * a;
-	*coord_x = x_offset + (x + (dim_size[3] - 1)) - z;
-	y_offset = default_y_offset - (dim_size[3] * y);
-	*coord_y = (y_offset - y) + z;
-}
-
 static int *_get_cluster_dims(void)
 {
 	int *my_dim_size = slurmdb_setup_cluster_dim_size();
@@ -569,47 +558,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		}
 	}
 
-	if (cluster_dims == 4) {
-		int a, x, y, z;
-		if (node_ptr) {
-			a = select_char2coord(node_ptr->name[len-4]);
-			x = select_char2coord(node_ptr->name[len-3]);
-			y = select_char2coord(node_ptr->name[len-2]);
-			z = select_char2coord(node_ptr->name[len-1]);
-			/* Ignore "b" dimension for BlueGene/Q */
-			i = ((a * dim_size[1] + x) * dim_size[2] + y) *
-			    dim_size[3] + z;
-			node_exists[i] = true;
-			_calc_coord_4d(a, x, y, z,
-				       button_processor->default_y_offset,
-				       &coord_x, &coord_y, dim_size);
-		} else {
-			for (i = -1, a = 0; a < dim_size[0]; a++) {
-				for (x = 0; x < dim_size[1]; x++) {
-					for (y = 0; y < dim_size[2]; y++) {
-						for (z = 0; z < dim_size[3];
-						     z++) {
-							i++;
-							if (node_exists[i])
-								continue;
-							_calc_coord_4d(a,x,y,z,
-				      				button_processor->
-								default_y_offset,
-								&coord_x,
-								&coord_y,
-								dim_size);
-							_build_empty_node(
-								coord_x,
-								coord_y,
-								button_processor);
-						}
-					}
-				}
-			}
-			xfree(node_exists);
-			return SLURM_SUCCESS;
-		}
-	} else if (cluster_dims == 3) {
+	if (cluster_dims == 3) {
 		int x, y, z;
 		if (node_ptr) {
 			if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
@@ -866,14 +815,8 @@ static int _init_button_processor(button_processor_t *button_processor,
 			return SLURM_ERROR;
 		}
 	}
-	if (cluster_dims == 4) {
-		button_processor->default_y_offset = (dim_size[3] * dim_size[2])
-					+ (dim_size[2] - dim_size[3]);
-		working_sview_config.grid_x_width = (dim_size[1] + dim_size[3])
-						    * dim_size[0];
-		button_processor->table_y = (dim_size[3] * dim_size[2])
-					    + dim_size[2];
-	} else if (cluster_dims == 3) {
+
+	if (cluster_dims == 3) {
 		button_processor->default_y_offset = (dim_size[2] * dim_size[1])
 			+ (dim_size[1] - dim_size[2]);
 		working_sview_config.grid_x_width = dim_size[0] + dim_size[2];
@@ -1286,21 +1229,7 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 
 	itr = list_iterator_create(button_list);
 	while ((grid_button = list_next(itr))) {
-		if (cluster_dims == 4) {
-			grid_button->table = table;
-			gtk_table_attach(table, grid_button->button,
-					 grid_button->table_x,
-					 (grid_button->table_x+1),
-					 grid_button->table_y,
-					 (grid_button->table_y+1),
-					 GTK_SHRINK, GTK_SHRINK,
-					 1, 1);
-			if (!grid_button->table_x) {
-				gtk_table_set_row_spacing(table,
-						grid_button->table_y,
-						working_sview_config.gap_size);
-			}
-		} else if (cluster_dims == 3) {
+		if (cluster_dims == 3) {
 			grid_button->table = table;
 			gtk_table_attach(table, grid_button->button,
 					 grid_button->table_x,

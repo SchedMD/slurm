@@ -148,8 +148,8 @@ extern void parse_command_line(int argc, char **argv)
 	}
 
 	params.cluster_dims = slurmdb_setup_cluster_dims();
-	if (params.cluster_dims > 4)
-		fatal("smap is unable to support more than four dimensions");
+	if (params.cluster_dims > 3)
+		fatal("smap is unable to support more than three dimensions");
 	params.cluster_base = hostlist_get_base(params.cluster_dims);
 	params.cluster_flags = slurmdb_setup_cluster_flags();
 }

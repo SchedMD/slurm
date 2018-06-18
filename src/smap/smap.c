@@ -100,9 +100,7 @@ int main(int argc, char **argv)
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
 	}
 
-	if (params.cluster_dims == 4) {
-		min_screen_width = 92;
-	} else if (params.cluster_dims == 3)
+	if (params.cluster_dims == 3)
 		min_screen_width = 92;
 
 	while (slurm_load_node((time_t) NULL,
@@ -129,12 +127,7 @@ int main(int argc, char **argv)
 		init_grid(new_node_ptr, COLS);
 		signal(SIGWINCH, (void (*)(int))_resize_handler);
 
-		if (params.cluster_dims == 4) {
-			height = dim_size[2] * dim_size[3] + dim_size[2] + 3;
-			width = (dim_size[1] + dim_size[3] + 1) * dim_size[0]
-				 + 2;
-			check_width += width;
-		} else if (params.cluster_dims == 3) {
+		if (params.cluster_dims == 3) {
 			height = dim_size[1] * dim_size[2] + dim_size[1] + 3;
 			width = dim_size[0] + dim_size[2] + 3;
 			check_width += width;
@@ -167,11 +160,7 @@ int main(int argc, char **argv)
 		grid_win = newwin(height, width, starty, startx);
 		max_display = (getmaxy(grid_win) - 1) * (getmaxx(grid_win) - 1);
 
-		if (params.cluster_dims == 4) {
-			startx = width;
-			width = COLS - width - 2;
-			height = LINES;
-		} else if (params.cluster_dims == 3) {
+		if (params.cluster_dims == 3) {
 			startx = width;
 			width = COLS - width - 2;
 			height = LINES;
@@ -400,11 +389,7 @@ static void *_resize_handler(int sig)
 	initscr();
 	doupdate();	/* update now to make sure we get the new size */
 
-	if (params.cluster_dims == 4) {
-		height = dim_size[2] * dim_size[3] + dim_size[2] + 3;
-		width = (dim_size[1] + dim_size[3] + 1) * dim_size[0];
-		check_width += width;
-	} else if (params.cluster_dims == 3) {
+	if (params.cluster_dims == 3) {
 		height = dim_size[1] * dim_size[2] + dim_size[1] + 3;
 		width = dim_size[0] + dim_size[2] + 3;
 		check_width += width;
@@ -424,11 +409,7 @@ static void *_resize_handler(int sig)
 	grid_win = newwin(height, width, starty, startx);
 	max_display = (getmaxy(grid_win) - 1) * (getmaxx(grid_win) - 1);
 
-	if (params.cluster_dims == 4) {
-		startx = width;
-		width = COLS - width - 2;
-		height = LINES;
-	} else if (params.cluster_dims == 3) {
+	if (params.cluster_dims == 3) {
 		startx = width;
 		width = COLS - width - 2;
 		height = LINES;

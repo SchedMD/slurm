@@ -50,17 +50,6 @@ static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
 	*coord_y = (y_offset - y) + z;
 }
 
-static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset,
-			   int *coord_x, int *coord_y, int* dim_size)
-{
-	int x_offset, y_offset;
-
-	x_offset = (dim_size[1] + dim_size[3]) * a + 2;
-	*coord_x = x_offset + (x + (dim_size[3] - 1)) - z;
-	y_offset = default_y_offset - (dim_size[3] * y);
-	*coord_y = (y_offset - y) + z;
-}
-
 extern int *get_cluster_dims(node_info_msg_t *node_info_ptr)
 {
 	int *dim_size = slurmdb_setup_cluster_dim_size();
@@ -188,9 +177,6 @@ extern void init_grid(node_info_msg_t *node_info_ptr, int cols)
 	if (params.cluster_dims == 3) {
 		default_y_offset = (dim_size[2] * dim_size[1]) +
 				   (dim_size[1] - dim_size[2]);
-	} else if (params.cluster_dims == 4) {
-		default_y_offset = (dim_size[3] * dim_size[2]) +
-				   (dim_size[2] - dim_size[3]);
 	}
 	if (cols == 0)
 		cols = 80;
@@ -208,12 +194,6 @@ extern void init_grid(node_info_msg_t *node_info_ptr, int cols)
 		} else if (params.cluster_dims == 3) {
 			_calc_coord_3d(smap_node->coord[0], smap_node->coord[1],
 				       smap_node->coord[2],
-				       default_y_offset,
-				       &smap_node->grid_xcord,
-				       &smap_node->grid_ycord, dim_size);
-		} else if (params.cluster_dims == 4) {
-			_calc_coord_4d(smap_node->coord[0], smap_node->coord[1],
-				       smap_node->coord[2], smap_node->coord[3],
 				       default_y_offset,
 				       &smap_node->grid_xcord,
 				       &smap_node->grid_ycord, dim_size);
