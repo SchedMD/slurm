@@ -4186,7 +4186,7 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 {
 	struct job_record *old_job_ptr;
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
-	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
+	slurmdb_assoc_rec_t *assoc_ptr;
 	struct job_details *details_ptr;
 	slurmdb_used_limits_t *used_limits_a1 = NULL, *used_limits_u1 = NULL;
 	slurmdb_used_limits_t *used_limits_a2 = NULL, *used_limits_u2 = NULL;
