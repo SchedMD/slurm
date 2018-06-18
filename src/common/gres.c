@@ -92,7 +92,6 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/xstring.h"
 
 #define _DEBUG 0
-#define GRES_MAGIC 0x438a34d4
 #define MAX_GRES_BITMAP 1024
 
 strong_alias(gres_gresid_to_gresname, slurm_gres_gresid_to_gresname);
