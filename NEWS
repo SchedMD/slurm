@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
  -- Add new job pending reason of "ReqNodeNotAvail, reserved for maintenance".
  -- Remove AdminComment += syntax from 'scontrol update job'.
  -- sched/backfill: Reset job time limit if needed for deadline scheduling.
+ -- For heterogeneous job component with required nodes, explicitly exclude
+    those nodes from all other job components.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

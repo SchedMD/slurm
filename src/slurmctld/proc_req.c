@@ -1246,6 +1246,45 @@ static bool _sched_backfill(void)
 	return false;
 }
 
+/*
+ * If any job component has required nodes, those nodes must be excluded
+ * from all other components to avoid scheduling deadlock
+*/
+static void _exclude_pack_nodes(List job_req_list)
+{
+	job_desc_msg_t *job_desc_msg;
+	ListIterator iter;
+	int pack_cnt, req_cnt = 0, i;
+	char **req_nodes, *sep;
+
+	pack_cnt = list_count(job_req_list);
+	req_nodes = xmalloc(sizeof(char *) * pack_cnt);
+	iter = list_iterator_create(job_req_list);
+	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+		if (!job_desc_msg->req_nodes || !job_desc_msg->req_nodes[0])
+			continue;
+		req_nodes[req_cnt++] = job_desc_msg->req_nodes;
+	}
+	if (req_cnt) {
+		list_iterator_reset(iter);
+		while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+			for (i = 0; i < req_cnt; i++) {
+				if (req_nodes[i] == job_desc_msg->req_nodes)
+					continue;     /* required by this job */
+				if (job_desc_msg->exc_nodes &&
+				    job_desc_msg->exc_nodes[0])
+					sep = ",";
+				else
+					sep = "";
+				xstrfmtcat(job_desc_msg->exc_nodes, "%s%s",
+					   sep, req_nodes[i]);
+			}
+		}
+	}
+	list_iterator_destroy(iter);
+	xfree(req_nodes);
+}
+
 /* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
 static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 {
@@ -1309,6 +1348,13 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 
 	debug2("sched: Processing RPC: REQUEST_JOB_PACK_ALLOCATION from uid=%d",
 	       uid);
+
+	/*
+	 * If any job component has required nodes, those nodes must be excluded
+	 * from all other components to avoid scheduling deadlock
+	 */
+	_exclude_pack_nodes(job_req_list);
+
 	pack_cnt = list_count(job_req_list);
 	job_submit_user_msg = xmalloc(sizeof(char *) * pack_cnt);
 	submit_job_list = list_create(NULL);
@@ -4155,6 +4201,12 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		reject_job = true;
 		goto send_msg;
 	}
+
+	/*
+	 * If any job component has required nodes, those nodes must be excluded
+	 * from all other components to avoid scheduling deadlock
+	 */
+	_exclude_pack_nodes(job_req_list);
 
 	/* Validate the individual request */
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
