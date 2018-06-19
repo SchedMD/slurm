@@ -150,7 +150,7 @@ HIGHLIGHTS
  -- The sprio command has been modified to report a job's priority information
     for every partition the job has been submitted to.
  -- Group ID lookup performed at job submit time to avoid lookup on all compute
-    nodes. Enable with PrologFlags=SendGIDs configuration parameter.
+    nodes. Enable with LaunchParameters=send_gids configuration parameter.
  -- Slurm commands and daemons dynamically link to libslurmfull.so instead of
     statically linking.  This dramatically reduces the footprint of Slurm.  If
     for some reason this creates issues with your build you can configure slurm
