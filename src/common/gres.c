@@ -4809,6 +4809,18 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 	cpu_cnt = bit_set_count(core_bitmap);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
+		uint64_t min_gres = 1;
+		if (sock_gres->job_specs) {
+			gres_job_state_t *job_gres_ptr = sock_gres->job_specs;
+			if (job_gres_ptr->gres_per_node)
+				min_gres = job_gres_ptr-> gres_per_node;
+			if (job_gres_ptr->gres_per_socket)
+				min_gres = MAX(min_gres,
+					       job_gres_ptr->gres_per_socket);
+			if (job_gres_ptr->gres_per_task)
+				min_gres = MAX(min_gres,
+					       job_gres_ptr->gres_per_task);
+		}
 		if (sock_gres->job_specs && avail_mem) {
 			if (sock_gres->job_specs->mem_per_gres) {
 				mem_per_gres =
@@ -4881,6 +4893,10 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			} else {
 //FIXME: possibly set maximum GRES count to cpu_cnt / cpus_per_gres
 			}
+		}
+		if (sock_gres->total_cnt < min_gres) {
+			rc = -1;
+			break;
 		}
 	}
 	list_iterator_destroy(sock_gres_iter);
