@@ -243,7 +243,7 @@ static int _ring_forward_data(pmixp_coll_ring_ctx_t *coll_ctx, uint32_t contrib_
 {
 	pmixp_coll_ring_msg_hdr_t hdr;
 	pmixp_coll_t *coll = _ctx_get_coll(coll_ctx);
-	int next_nodeid = _ring_next_id(coll);
+	pmixp_coll_ring_t *ring = &coll->state.ring;
 	hdr.nodeid = coll->my_peerid;
 	hdr.msgsize = size;
 	hdr.seq = coll_ctx->seq;
@@ -255,18 +255,19 @@ static int _ring_forward_data(pmixp_coll_ring_ctx_t *coll_ctx, uint32_t contrib_
 	Buf buf = _get_fwd_buf(coll_ctx);
 	int rc = SLURM_SUCCESS;
 
+
 	pmixp_coll_ring_ctx_sanity_check(coll_ctx);
 
 #ifdef PMIXP_COLL_DEBUG
 	PMIXP_DEBUG("%p: transit data to nodeid=%d, seq=%d, hop=%d, size=%lu, contrib=%d",
-		    coll_ctx, next_nodeid, hdr.seq, hdr.hop_seq, hdr.msgsize, hdr.contrib_id);
+		    coll_ctx, _ring_next_id(coll), hdr.seq, hdr.hop_seq, hdr.msgsize, hdr.contrib_id);
 #endif
 	if (!buf) {
 		rc = SLURM_ERROR;
 		goto exit;
 	}
 	ep->type = PMIXP_EP_NOIDEID;
-	ep->ep.nodeid = next_nodeid;
+	ep->ep.nodeid = ring->next_peerid;
 
 	/* pack ring info */
 	_pack_coll_ring_info(coll, &hdr, buf);
@@ -452,7 +453,7 @@ pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_select(pmixp_coll_t *coll,
 	return ret;
 }
 
-int pmixp_coll_ring_init(pmixp_coll_t *coll)
+int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t *hl)
 {
 #ifdef PMIXP_COLL_DEBUG
 	PMIXP_DEBUG("called");
@@ -460,6 +461,13 @@ int pmixp_coll_ring_init(pmixp_coll_t *coll)
 	int i;
 	pmixp_coll_ring_ctx_t *coll_ctx = NULL;
 	pmixp_coll_ring_t *ring = &coll->state.ring;
+	char *p;
+	int rel_id = hostlist_find(*hl, pmixp_info_hostname());
+
+	/* compute the next absolute id of the neighbor */
+	p = hostlist_nth(*hl, (rel_id + 1) % coll->peers_cnt);
+	ring->next_peerid = pmixp_info_job_hostid(p);
+	free(p);
 
 	ring->fwrd_buf_pool = list_create(_free_from_buf_pool);
 	ring->ring_buf_pool = list_create(_free_from_buf_pool);
@@ -471,7 +479,6 @@ int pmixp_coll_ring_init(pmixp_coll_t *coll)
 		coll_ctx->seq = coll->seq;
 		coll_ctx->contrib_local = false;
 		coll_ctx->contrib_prev = 0;
-		//coll_ctx->ring_buf = create_buf(NULL, 0);
 		coll_ctx->state = PMIXP_COLL_RING_SYNC;
 		coll_ctx->contrib_map = xmalloc(sizeof(bool) * coll->peers_cnt); // TODO bit vector
 		memset(coll_ctx->contrib_map, 0, sizeof(bool) * coll->peers_cnt);

@@ -210,6 +210,8 @@ typedef struct {
 
 /* coll ring struct */
 typedef struct {
+	/* next node id */
+	int next_peerid;
 	/* coll contexts data */
 	pmixp_coll_ring_ctx_t ctx_array[PMIXP_COLL_RING_CTX_NUM];
 	/* buffer pool to ensure parallel sends of ring data */
@@ -311,7 +313,7 @@ int pmixp_coll_check(pmixp_coll_t *coll, uint32_t seq);
 void pmixp_coll_log(pmixp_coll_t *coll);
 
 /* ring coll functions */
-int pmixp_coll_ring_init(pmixp_coll_t *coll);
+int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t *hl);
 void pmixp_coll_ring_free(pmixp_coll_ring_t *coll_ring);
 int pmixp_coll_ring_check(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr);
 int pmixp_coll_ring_local(pmixp_coll_t  *coll, char *data, size_t size,

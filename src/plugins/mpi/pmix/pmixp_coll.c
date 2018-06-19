@@ -202,7 +202,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, pmixp_coll_type_t type,
 		rc = pmixp_coll_tree_init(coll, &hl);
 		break;
 	case PMIXP_COLL_TYPE_FENCE_RING:
-		rc = pmixp_coll_ring_init(coll);
+		rc = pmixp_coll_ring_init(coll, &hl);
 		break;
 	default:
 		PMIXP_ERROR("Unknown coll type");
