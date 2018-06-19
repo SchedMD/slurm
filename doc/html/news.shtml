@@ -155,7 +155,7 @@ every partition the job has been submitted to.
 	</li>
 	<li>
 Group ID lookup performed at job submit time to avoid lookup on all compute
-nodes. Enable with PrologFlags=SendGIDs configuration parameter.
+nodes. Enable with LaunchParameters=send_gids configuration parameter.
 	</li>
 	<li>
 Slurm commands and daemons dynamically link to libslurmfull.so instead of

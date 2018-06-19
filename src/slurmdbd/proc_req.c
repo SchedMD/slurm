@@ -1423,7 +1423,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 	debug2("DBD_GET_JOBS_COND: called");
 
 	/* fail early if too wide a query */
-	if (!_validate_slurm_user(*uid)
+	if (!job_cond->step_list && !_validate_slurm_user(*uid)
 	    && (slurmdbd_conf->max_time_range != INFINITE)) {
 		time_t start, end;
 

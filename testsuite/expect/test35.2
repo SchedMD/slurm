@@ -8,8 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2015 SchedMD LLC.
-# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Copyright (C) 2015-2018 SchedMD LLC.
 # Written by Morris Jette <jette(at)schedmd.com>
 #
 # This file is part of Slurm, a resource management program.
@@ -133,6 +132,7 @@ if {$job_id_use == 0} {
 } elseif {[wait_for_job $job_id_use "DONE"] != 0} {
 	send_user "\nFAILURE: job did not complete\n"
 	set exit_code 1
+	cancel_job $job_id_use
 } elseif {[wait_for_file $output_use] != 0} {
 	set exit_code 1
 } elseif {[find_bb_jobid $output_use $job_id_use] == 0} {
