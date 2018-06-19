@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     job_submit_plugin_modify().
  -- job_submit/lua - fix access into reservation table.
  -- MySQL - Prevent deadlock caused by archive logic locking reads.
+ -- Don't enforce MaxQueryTimeRange when requesting specific jobs.
 
 * Changes in Slurm 17.11.7
 ==========================

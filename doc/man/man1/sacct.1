@@ -344,9 +344,10 @@ starttime is 'now'.
 .TP
 \f3\-S\fP\f3,\fP \f3\-\-starttime\fP
 Select jobs in any state after the specified time. Default is 00:00:00 of the
-current day, unless '\-s' is set then the default is 'now'.  If states
-are given with the '\-s' option then only jobs in this state at this
-time will be returned.
+current day, unless the '\-s' or '\-j' options are used. If the '\-s' option is
+used, then the default is 'now'. If states are given with the '\-s' option then
+only jobs in this state at this time will be returned. If the '\-j' option is
+used, then the default time is Unix Epoch 0.
 
 Valid time formats are...
 .sp
