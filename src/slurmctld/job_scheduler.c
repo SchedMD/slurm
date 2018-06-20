@@ -3628,7 +3628,9 @@ next_part:
 		bit_nset(avail_bitmap, 0, (node_record_count - 1));
 	} else if (node_name2bitmap(job_desc_msg->req_nodes, false,
 				    &avail_bitmap) != 0) {
-		rc = ESLURM_INVALID_NODE_NAME;
+		/* Don't need to check for each partition */
+		list_iterator_destroy(iter);
+		return ESLURM_INVALID_NODE_NAME;
 	}
 
 	/* Consider only nodes in this job's partition */
@@ -3662,11 +3664,10 @@ next_part:
 		FREE_NULL_BITMAP(exc_core_bitmap);
 		if (job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
 			goto next_part;
-		else {
-			if (iter)
-				list_iterator_destroy(iter);
-			return i;
-		}
+
+		if (iter)
+			list_iterator_destroy(iter);
+		return i;
 	}
 	bit_and(avail_bitmap, resv_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
@@ -3790,6 +3791,7 @@ next_part:
 
 	if (iter)
 		list_iterator_destroy(iter);
+
 	return rc;
 }
 
