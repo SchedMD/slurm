@@ -1633,6 +1633,7 @@ alloc_job:
 		/* we were sent here to cleanup and exit */
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
+		xfree(cpu_count);
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("cons_tres: %s: exiting with no allocation",
 			     __func__);
