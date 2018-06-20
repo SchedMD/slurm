@@ -3617,7 +3617,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 next_part:
 	rc = SLURM_SUCCESS;
 	if (part_ptr == NULL) {
-		list_iterator_destroy(iter);
+		if (iter)
+			list_iterator_destroy(iter);
 		return ESLURM_INVALID_PARTITION_NAME;
 	}
 
@@ -3629,7 +3630,8 @@ next_part:
 	} else if (node_name2bitmap(job_desc_msg->req_nodes, false,
 				    &avail_bitmap) != 0) {
 		/* Don't need to check for each partition */
-		list_iterator_destroy(iter);
+		if (iter)
+			list_iterator_destroy(iter);
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
