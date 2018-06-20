@@ -138,6 +138,8 @@ struct node_record {
 					 * use for scheduling purposes */
 	List gres_list;			/* list of gres state info managed by
 					 * plugins */
+	uint32_t sched_weight;		/* Node's weight for scheduling
+					 * purposes. For cons_tres use */
 	uint32_t weight;		/* orignal weight, used only for state
 					 * save/restore, DO NOT use for
 					 * scheduling purposes. */

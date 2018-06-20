@@ -957,8 +957,11 @@ enum select_plugindata_info {
 	SELECT_AVAIL_MEMORY, /* data-> uint64 avail mem  (CR support) */
 	SELECT_STATIC_PART,  /* data-> uint16, 1 if static partitioning
 			      * BlueGene support */
-	SELECT_CONFIG_INFO   /* data-> List get .conf info from select
+	SELECT_CONFIG_INFO,  /* data-> List get .conf info from select
 			      * plugin */
+	SELECT_SINGLE_JOB_TEST	/* data-> uint16 1 if one select_g_job_test()
+				 * call per job, node weights in node data
+				 * structure, 0 otherwise, for cons_tres */
 };
 #define SELECT_TYPE_CONS_RES	1
 #define SELECT_TYPE_CONS_TRES	2

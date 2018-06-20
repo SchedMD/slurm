@@ -1805,6 +1805,9 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 	case SELECT_CONFIG_INFO:
 		*tmp_list = NULL;
 		break;
+	case SELECT_SINGLE_JOB_TEST:
+		*tmp_32 = 0;
+		break;
 	default:
 		error("%s: info type %d invalid", __func__, info);
 		rc = SLURM_ERROR;

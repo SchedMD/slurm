@@ -1660,6 +1660,28 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	return error_code;
 }
 
+static void _sync_node_weight(struct node_set *node_set_ptr, int node_set_size)
+{
+	int i, i_first, i_last, s;
+	struct node_record *node_ptr;
+
+	for (s = 0; s < node_set_size; s++) {
+		if (!node_set_ptr[s].my_bitmap)
+			continue;	/* No nodes in this set */
+		i_first = bit_ffs(node_set_ptr[s].my_bitmap);
+		if (i_first >= 0)
+			i_last = bit_fls(node_set_ptr[s].my_bitmap);
+		else
+			i_last = i_first - 1;
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(node_set_ptr[s].my_bitmap, i))
+				continue;
+			node_ptr = node_record_table_ptr + i;
+			node_ptr->sched_weight = node_set_ptr[s].weight;
+		}
+	}
+}
+
 /*
  * _pick_best_nodes - from a weight order list of all nodes satisfying a
  *	job's specifications, select the "best" for use
@@ -1711,6 +1733,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 List *preemptee_job_list, bool has_xand,
 		 bitstr_t *exc_core_bitmap, bool resv_overlap)
 {
+	static uint32_t cr_enabled = NO_VAL;
+	static uint32_t single_select_job_test = 0;
+
 	struct node_record *node_ptr;
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, avail_nodes = 0;
@@ -1721,7 +1746,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
-	static uint32_t cr_enabled = NO_VAL;
 	bool preempt_flag = false;
 	bool nodes_busy = false;
 	int shared = 0, select_mode;
@@ -1778,12 +1802,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	/* Are Consumable Resources enabled?  Check once. */
 	if (cr_enabled == NO_VAL) {
 		cr_enabled = 0;	/* select/linear and others are no-ops */
-		error_code = select_g_get_info_from_plugin (SELECT_CR_PLUGIN,
-							    NULL, &cr_enabled);
+		error_code = select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+							   NULL, &cr_enabled);
 		if (error_code != SLURM_SUCCESS) {
 			cr_enabled = NO_VAL;
 			return error_code;
 		}
+		(void) select_g_get_info_from_plugin(SELECT_SINGLE_JOB_TEST,
+						     NULL,
+						     &single_select_job_test);
 	}
 
 	shared = _resolve_shared_status(job_ptr, part_ptr->max_share,
@@ -1866,6 +1893,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	debug3("%s: job %u idle_nodes %u share_nodes %u", __func__,
 		job_ptr->job_id, bit_set_count(idle_node_bitmap),
 		bit_set_count(share_node_bitmap));
+
+	if (single_select_job_test)
+		_sync_node_weight(node_set_ptr, node_set_size);
 	/*
 	 * Accumulate resources for this job based upon its required
 	 * features (possibly with node counts).
@@ -1955,6 +1985,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 
 			tried_sched = false;	/* need to test these nodes */
+
+			if (single_select_job_test && ((i+1) < node_set_size)) {
+				/*
+				 * Execute select_g_job_test() _once_ using
+				 * sched_weight in struct node_record as set
+				 * by _sync_node_weight()
+				 */
+				continue;
+			}
 
 			if ((shared || preempt_flag ||
 			    (switch_record_cnt > 1))     &&
