@@ -1046,6 +1046,7 @@ static void _filter_by_node_feature(struct job_record *job_ptr,
 				    struct node_set *node_set_ptr,
 				    int node_set_size)
 {
+	static uint32_t reboot_weight = 0;
 	int i;
 
 	if ((job_ptr->details == NULL) ||
@@ -1054,8 +1055,10 @@ static void _filter_by_node_feature(struct job_record *job_ptr,
 	      time(NULL))))
 		return;
 
+	if (reboot_weight == 0)
+		reboot_weight = node_features_g_reboot_weight();
 	for (i = 0; i < node_set_size; i++) {
-		if (node_set_ptr[i].weight != INFINITE)
+		if (node_set_ptr[i].weight != reboot_weight)
 			continue;
 		bit_and_not(avail_node_bitmap, node_set_ptr[i].my_bitmap);
 	}
@@ -1077,6 +1080,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		  bool test_only, List *preemptee_job_list, bool can_reboot,
 		  bool submission)
 {
+	static uint32_t reboot_weight = 0;
 	uint32_t saved_min_nodes, saved_job_min_nodes, saved_job_num_tasks;
 	bitstr_t *saved_req_node_bitmap = NULL;
 	bitstr_t *inactive_bitmap = NULL;
@@ -1094,6 +1098,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bool resv_overlap = false;
 	uint32_t powercap;
 	int layout_power;
+
+	if (reboot_weight == 0)
+		reboot_weight = node_features_g_reboot_weight();
 
 	/*
 	 * Mark nodes reserved for other jobs as off limit for this job.
@@ -1259,20 +1266,23 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				tmp_node_set_size++;
 
 				if (test_only || !can_reboot ||
-				    (prev_node_set_ptr->weight == INFINITE))
+				    (prev_node_set_ptr->weight ==
+				     reboot_weight))
 					continue;
 				inactive_bitmap =
 					bit_copy(node_set_ptr[i].my_bitmap);
 				bit_and_not(inactive_bitmap,
 					    feat_ptr->node_bitmap_active);
 				if (bit_ffs(inactive_bitmap) == -1) {
+					/* No inactive nodes (require reboot) */
 					FREE_NULL_BITMAP(inactive_bitmap);
 					continue;
 				}
 				sort_again = true;
 				if (bit_equal(prev_node_set_ptr->my_bitmap,
 					      inactive_bitmap)) {
-					prev_node_set_ptr->weight = INFINITE;
+					prev_node_set_ptr->weight =
+						reboot_weight;
 					FREE_NULL_BITMAP(inactive_bitmap);
 					continue;
 				}
@@ -1283,7 +1293,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					real_memory =
 					node_set_ptr[i].real_memory;
 				tmp_node_set_ptr[tmp_node_set_size].weight =
-					INFINITE;
+					reboot_weight;
 				tmp_node_set_ptr[tmp_node_set_size].features =
 					xstrdup(node_set_ptr[i].features);
 				tmp_node_set_ptr[tmp_node_set_size].
@@ -3719,8 +3729,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].nodes) {
-			if (node_set_ptr[i].weight != INFINITE)
-				node_set_ptr[i].weight = INFINITE;
+			if (node_set_ptr[i].weight != reboot_weight)
+				node_set_ptr[i].weight = reboot_weight;
 			continue;	/* all nodes powered down */
 		}
 
@@ -3732,8 +3742,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		node_set_ptr[node_set_inx].nodes = power_cnt;
 		node_set_ptr[i].nodes -= power_cnt;
 		node_set_ptr[node_set_inx].weight = node_set_ptr[i].weight;
-		if (node_set_ptr[node_set_inx].weight != INFINITE)
-			node_set_ptr[node_set_inx].weight = INFINITE;
+		if (node_set_ptr[node_set_inx].weight != reboot_weight)
+			node_set_ptr[node_set_inx].weight = reboot_weight;
 		node_set_ptr[node_set_inx].features =
 			xstrdup(node_set_ptr[i].features);
 		node_set_ptr[node_set_inx].feature_bits =
