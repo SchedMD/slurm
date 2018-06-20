@@ -3559,10 +3559,25 @@ static void _delayed_job_start_time(struct job_record *job_ptr)
 	job_ptr->start_time += cume_space_time;
 }
 
-/* Determine if a pending job will run using only the specified nodes
+static int _part_weight_sort(void *x, void *y)
+{
+	struct part_record *parta = *(struct part_record **) x;
+	struct part_record *partb = *(struct part_record **) y;
+
+	if (parta->priority_tier > partb->priority_tier)
+		return -1;
+	if (parta->priority_tier < partb->priority_tier)
+		return 1;
+
+	return 0;
+}
+
+/*
+ * Determine if a pending job will run using only the specified nodes
  * (in job_desc_msg->req_nodes), build response message and return
  * SLURM_SUCCESS on success. Otherwise return an error code. Caller
- * must free response message */
+ * must free response message
+ */
 extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			  will_run_response_msg_t **resp)
 {
@@ -3586,6 +3601,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		return ESLURM_DISABLED;
 
 	if (job_ptr->part_ptr_list) {
+		list_sort(job_ptr->part_ptr_list, _part_weight_sort);
 		iter = list_iterator_create(job_ptr->part_ptr_list);
 		part_ptr = list_next(iter);
 	} else
