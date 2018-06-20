@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - fix access into reservation table.
  -- MySQL - Prevent deadlock caused by archive logic locking reads.
  -- Don't enforce MaxQueryTimeRange when requesting specific jobs.
+ -- Modify --test-only logic to properly support jobs submitted to more than
+    one partition.
 
 * Changes in Slurm 17.11.7
 ==========================
