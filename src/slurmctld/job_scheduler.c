@@ -3727,6 +3727,7 @@ next_part:
 		resp_data->start_time = MAX(resp_data->start_time, start_res);
 		job_ptr->start_time   = 0;  /* restore pending job start time */
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
+		resp_data->part_name  = xstrdup(part_ptr->name);
 
 		if (preemptee_job_list) {
 			ListIterator preemptee_iterator;

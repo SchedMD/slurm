@@ -14106,6 +14106,7 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer,
 		pack32(msg->job_id, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
 		packstr(msg->node_list, buffer);
+		packstr(msg->part_name, buffer);
 
 		if (msg->preemptee_job_id)
 			count = list_count(msg->preemptee_job_id);
@@ -14183,6 +14184,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&msg->job_submit_user_msg, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->part_name, &uint32_tmp, buffer);
 
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)

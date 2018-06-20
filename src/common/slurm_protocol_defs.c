@@ -2041,8 +2041,9 @@ extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg)
 extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->node_list);
 		xfree(msg->job_submit_user_msg);
+		xfree(msg->node_list);
+		xfree(msg->part_name);
 		FREE_NULL_LIST(msg->preemptee_job_id);
 		xfree(msg);
 	}

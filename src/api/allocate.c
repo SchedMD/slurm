@@ -626,10 +626,22 @@ int slurm_job_will_run(job_desc_msg_t *req)
 	if ((rc == 0) && will_run_resp) {
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
-		info("Job %u to start at %s using %u processors on %s",
-		     will_run_resp->job_id, buf,
-		     will_run_resp->proc_cnt,
-		     will_run_resp->node_list);
+		if (will_run_resp->part_name) {
+			info("Job %u to start at %s using %u processors on nodes %s in partition %s",
+			     will_run_resp->job_id, buf,
+			     will_run_resp->proc_cnt,
+			     will_run_resp->node_list,
+			     will_run_resp->part_name);
+		} else {
+			/*
+			 * Partition name not provided from slurmctld v17.11
+			 * or earlier. Remove this in the future.
+			 */
+			info("Job %u to start at %s using %u processors on nodes %s",
+			     will_run_resp->job_id, buf,
+			     will_run_resp->proc_cnt,
+			     will_run_resp->node_list);
+		}
 		if (will_run_resp->preemptee_job_id) {
 			ListIterator itr;
 			uint32_t *job_id_ptr;

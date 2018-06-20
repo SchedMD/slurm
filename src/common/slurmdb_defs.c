@@ -425,9 +425,10 @@ static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
 	if (rc >= 0) {
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
-		debug("Job %u to start at %s on cluster %s using %u processors on %s",
+		debug("Job %u to start at %s on cluster %s using %u processors on nodes %s in partition %s",
 		      will_run_resp->job_id, buf, working_cluster_rec->name,
-		      will_run_resp->proc_cnt, will_run_resp->node_list);
+		      will_run_resp->proc_cnt, will_run_resp->node_list,
+		      will_run_resp->part_name);
 
 		local_cluster = xmalloc(sizeof(local_cluster_rec_t));
 		local_cluster->cluster_rec = working_cluster_rec;

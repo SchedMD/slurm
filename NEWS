@@ -74,6 +74,8 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill: Reset job time limit if needed for deadline scheduling.
  -- For heterogeneous job component with required nodes, explicitly exclude
     those nodes from all other job components.
+ -- Add name of partition used to output of srun --test-only output (valuable
+    for jobs submitted to multiple partitions).
 
 * Changes in Slurm 18.08.0pre1
 ==============================
