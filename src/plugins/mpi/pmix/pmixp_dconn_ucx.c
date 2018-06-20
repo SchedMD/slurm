@@ -222,7 +222,7 @@ int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
 	pmixp_rlist_init(&_rcv_complete, &_free_list, PMIXP_UCX_LIST_PREALLOC);
 
 
-	status = ucp_config_read(NULL, NULL, &config);
+	status = ucp_config_read("SLURM", NULL, &config);
 	if (status != UCS_OK) {
 		PMIXP_ERROR("Fail to read UCX config: %s",
 			    ucs_status_string(status));
