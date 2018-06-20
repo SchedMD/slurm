@@ -91,6 +91,8 @@ documents those changes that are of interest to users and administrators.
     are required to run the job). This option may permit a job to be allocated
     resources sooner than otherwise possible, but may result in lower job
     performance.
+ -- SlurmDBD - Print warning if MySQL/MariaDB internal tuning is not at least
+    half of the recommended values.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
