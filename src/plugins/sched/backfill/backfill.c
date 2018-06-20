@@ -232,8 +232,9 @@ static void _dump_job_sched(struct job_record *job_ptr, time_t end_time,
 	slurm_make_time_str(&job_ptr->start_time, begin_buf, sizeof(begin_buf));
 	slurm_make_time_str(&end_time, end_buf, sizeof(end_buf));
 	node_list = bitmap2node_name(avail_bitmap);
-	info("Job %u to start at %s, end at %s on %s",
-	     job_ptr->job_id, begin_buf, end_buf, node_list);
+	info("Job %u to start at %s, end at %s on nodes %s in partition %s",
+	     job_ptr->job_id, begin_buf, end_buf, node_list,
+	     job_ptr->part_ptr->name);
 	xfree(node_list);
 }
 
