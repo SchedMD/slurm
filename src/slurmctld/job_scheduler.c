@@ -3576,17 +3576,27 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
 	List preemptee_candidates = NULL, preemptee_job_list = NULL;
 	bool resv_overlap = false;
+	ListIterator iter = NULL;
 
 	job_ptr = find_job_record(job_desc_msg->job_id);
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
-	part_ptr = job_ptr->part_ptr;
-	if (part_ptr == NULL)
-		return ESLURM_INVALID_PARTITION_NAME;
-
 	if ((job_ptr->details == NULL) || (!IS_JOB_PENDING(job_ptr)))
 		return ESLURM_DISABLED;
+
+	if (job_ptr->part_ptr_list) {
+		iter = list_iterator_create(job_ptr->part_ptr_list);
+		part_ptr = list_next(iter);
+	} else
+		part_ptr = job_ptr->part_ptr;
+next_part:
+	rc = SLURM_SUCCESS;
+	if (part_ptr == NULL) {
+		if (iter)
+			list_iterator_destroy(iter);
+		return ESLURM_INVALID_PARTITION_NAME;
+	}
 
 	if ((job_desc_msg->req_nodes == NULL) ||
 	    (job_desc_msg->req_nodes[0] == '\0')) {
@@ -3595,6 +3605,9 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		bit_nset(avail_bitmap, 0, (node_record_count - 1));
 	} else if (node_name2bitmap(job_desc_msg->req_nodes, false,
 				    &avail_bitmap) != 0) {
+		/* Don't need to check for each partition */
+		if (iter)
+			list_iterator_destroy(iter);
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
@@ -3627,6 +3640,11 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	if (i != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(avail_bitmap);
 		FREE_NULL_BITMAP(exc_core_bitmap);
+		if (job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
+			goto next_part;
+
+		if (iter)
+			list_iterator_destroy(iter);
 		return i;
 	}
 	bit_and(avail_bitmap, resv_bitmap);
@@ -3738,6 +3756,13 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	FREE_NULL_LIST(preemptee_job_list);
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(exc_core_bitmap);
+
+	if (rc && job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
+		goto next_part;
+
+	if (iter)
+		list_iterator_destroy(iter);
+
 	return rc;
 }
 
