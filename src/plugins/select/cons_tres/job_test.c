@@ -3202,7 +3202,8 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					core_map[node_i],
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
-					job_ptr->job_id, node_ptr->name);
+					job_ptr->job_id, node_ptr->name,
+					enforce_binding);
 		if (!sock_gres_list)	/* GRES requirement fail */
 			return avail_res;
 	}
