@@ -2081,7 +2081,10 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
 	return (avail_nodes >= needed_nodes);
 }
 
-/* this is the heart of the selection process */
+/*
+ * this is the heart of the selection process
+ * RET SLURM_SUCCESS or an error code
+ */
 static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			uint32_t min_nodes, uint32_t max_nodes,
 			uint32_t req_nodes, avail_res_t **avail_res_array,
@@ -2512,9 +2515,11 @@ fini:	xfree(consec_cpus);
 }
 
 /*
- * this is an intermediary step between _select_nodes and _eval_nodes
+ * This is an intermediary step between _select_nodes() and _eval_nodes()
  * to tackle the knapsack problem. This code incrementally removes nodes
- * with low cpu counts for the job and re-evaluates each result
+ * with low CPU counts for the job and re-evaluates each result.
+ *
+ * RET SLURM_SUCCESS or an error code
  */
 static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			 uint32_t min_nodes, uint32_t max_nodes,
