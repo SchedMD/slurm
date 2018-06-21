@@ -4494,8 +4494,8 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, bool batch,
 	while ((stepd = list_next(i))) {
 		if (stepd->jobid != jobid) {
 			/* multiple jobs expected on shared nodes */
-			debug3("Step from other job: jobid=%u (this jobid=%u)",
-			       stepd->jobid, jobid);
+			debug3("%s: Looking for job %u, found step from job %u",
+			       __func__, jobid, stepd->jobid);
 			continue;
 		}
 
