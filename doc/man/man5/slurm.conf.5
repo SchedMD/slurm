@@ -1332,7 +1332,8 @@ local address itself.
 .TP
 \fBMailProg\fR
 Fully qualified pathname to the program used to send email per user request.
-The default value is "/bin/mail".
+The default value is "/bin/mail" (or "/usr/bin/mail" if "/bin/mail" does not
+exist but "/usr/bin/mail" does exist).
 
 .TP
 \fBMaxArraySize\fR

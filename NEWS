@@ -76,6 +76,8 @@ documents those changes that are of interest to users and administrators.
     those nodes from all other job components.
  -- Add name of partition used to output of srun --test-only output (valuable
     for jobs submitted to multiple partitions).
+ -- If MailProg is not configured and "/bin/mail" (the default) does not exist,
+    but "/usr/bin/mail" does exist then use "/usr/bin/mail" as a default value.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

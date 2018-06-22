@@ -3791,8 +3791,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	(void) s_p_get_string(&conf->mail_domain, "MailDomain", hashtbl);
 
-	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl))
-		conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);
+	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl)) {
+		struct stat stat_buf;
+		if ((stat(DEFAULT_MAIL_PROG,     &stat_buf) == 0) ||
+		    (stat(DEFAULT_MAIL_PROG_ALT, &stat_buf) != 0))
+			conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);
+		else
+			conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG_ALT);
+	}
 
 	if (!s_p_get_uint32(&conf->max_array_sz, "MaxArraySize", hashtbl))
 		conf->max_array_sz = DEFAULT_MAX_ARRAY_SIZE;
