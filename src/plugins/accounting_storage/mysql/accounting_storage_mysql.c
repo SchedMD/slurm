@@ -1627,6 +1627,8 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE |
 		TRES_STR_FLAG_NO_NULL;
 
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 	if (!assoc)
 		return SLURM_ERROR;
 
@@ -1748,6 +1750,13 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*extra, ", def_qos_id=NULL");
 	} else if ((assoc->def_qos_id != NO_VAL)
 		   && ((int32_t)assoc->def_qos_id > 0)) {
+		assoc_mgr_lock(&locks);
+		if (!list_find_first(assoc_mgr_qos_list,
+		    slurmdb_find_qos_in_list, &(assoc->def_qos_id))) {
+			assoc_mgr_unlock(&locks);
+			return ESLURM_INVALID_QOS;
+		}
+		assoc_mgr_unlock(&locks);
 		xstrcat(*cols, ", def_qos_id");
 		xstrfmtcat(*vals, ", %u", assoc->def_qos_id);
 		xstrfmtcat(*extra, ", def_qos_id=%u", assoc->def_qos_id);

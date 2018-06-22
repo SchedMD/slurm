@@ -2473,8 +2473,18 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(extra, ", id_assoc='%u'", object->id);
 		}
 
-		setup_assoc_limits(object, &cols, &vals, &extra,
-				   QOS_LEVEL_NONE, 1);
+		if ((rc = setup_assoc_limits(object, &cols, &vals, &extra,
+					     QOS_LEVEL_NONE, 1))) {
+			error("%s: Failed, setup_assoc_limits functions returned error",
+			      __func__);
+			xfree(query);
+			xfree(cols);
+			xfree(vals);
+			xfree(extra);
+			xfree(update);
+			break;
+		}
+
 
 		xstrcat(tmp_char, aassoc_req_inx[0]);
 		for(i=1; i<AASSOC_COUNT; i++)
@@ -3004,8 +3014,17 @@ is_same_user:
 		xstrcat(extra, " && user = '' ");
 	}
 
-	setup_assoc_limits(assoc, &tmp_char1, &tmp_char2,
-			   &vals, QOS_LEVEL_MODIFY, 0);
+	if ((rc = setup_assoc_limits(assoc, &tmp_char1, &tmp_char2,
+				     &vals, QOS_LEVEL_MODIFY, 0))) {
+		xfree(tmp_char1);
+		xfree(tmp_char2);
+		xfree(vals);
+		xfree(extra);
+		errno = rc;
+		error("%s: Failed, setup_assoc_limits functions returned error",
+		      __func__);
+		return NULL;
+	}
 	xfree(tmp_char1);
 	xfree(tmp_char2);
 

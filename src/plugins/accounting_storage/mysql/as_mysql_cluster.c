@@ -272,10 +272,21 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(cols, "creation_time, mod_time, acct");
 		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
-		if (object->root_assoc)
-			setup_assoc_limits(object->root_assoc, &cols,
-					   &vals, &extra,
-					   QOS_LEVEL_SET, 1);
+		if (object->root_assoc) {
+			rc = setup_assoc_limits(object->root_assoc, &cols,
+						&vals, &extra,
+						QOS_LEVEL_SET, 1);
+			if (rc) {
+				xfree(extra);
+				xfree(cols);
+				xfree(vals);
+				added=0;
+				error("%s: Failed, setup_assoc_limits functions returned error",
+				      __func__);
+				goto end_it;
+
+			}
+		}
 
 		if (object->fed.name) {
 			has_feds = 1;
