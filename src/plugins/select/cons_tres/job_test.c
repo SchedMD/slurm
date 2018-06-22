@@ -2616,9 +2616,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	return ec;
 }
 
-#if 0
-//FIXME: Can this be removed? Relocated?
-/* Determine how many sockets per node this job requires for GRES */
+/* Determine how many sockets per node this job requires */
 static uint32_t _socks_per_node(struct job_record *job_ptr)
 {
 	multi_core_data_t *mc_ptr;
@@ -2626,8 +2624,7 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 	uint32_t cpu_cnt, cpus_per_node, tasks_per_node;
 	uint32_t min_nodes;
 
-	if ((job_ptr->details == NULL) || (job_ptr->gres_list == NULL) ||
-	    ((job_ptr->bit_flags & GRES_ENFORCE_BIND) == 0))
+	if (!job_ptr->details)
 		return s_p_n;
 
 	cpu_cnt = job_ptr->details->num_tasks * job_ptr->details->cpus_per_task;
@@ -2638,7 +2635,10 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 		return (uint32_t) 1;
 
 	mc_ptr = job_ptr->details->mc_ptr;
-	if ((mc_ptr->ntasks_per_socket != NO_VAL16) &&
+	if (mc_ptr && (mc_ptr->sockets_per_node != NO_VAL16))
+		return mc_ptr->sockets_per_node;
+	if (mc_ptr &&
+	    (mc_ptr->ntasks_per_socket != NO_VAL16) &&
 	    (mc_ptr->ntasks_per_socket != INFINITE16)) {
 		tasks_per_node = job_ptr->details->num_tasks / min_nodes;
 		s_p_n = (tasks_per_node + mc_ptr->ntasks_per_socket - 1) /
@@ -2653,7 +2653,6 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 
 	return s_p_n;
 }
-#endif
 
 /*
  * _allocate_sc - Given the job requirements, determine which CPUs/cores
@@ -3150,6 +3149,7 @@ extern uint64_t get_def_mem_per_gpu(List job_defaults_list)
  * IN job_ptr       - pointer to job requirements
  * IN/OUT core_map  - per-node bitmap of available cores
  * IN node_i        - index of node to be evaluated
+ * IN s_p_n         - Expected sockets_per_node (NO_VAL if not limited)
  * IN cr_type       - Consumable Resource setting
  * IN test_only     - ignore allocated memory check
  * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
@@ -3162,6 +3162,7 @@ extern uint64_t get_def_mem_per_gpu(List job_defaults_list)
  */
 static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 				bitstr_t **core_map, const uint32_t node_i,
+				uint32_t s_p_n,
 				struct node_use_record *node_usage,
 				uint16_t cr_type, bool test_only,
 				bitstr_t **part_core_map)
@@ -3209,7 +3210,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
 					job_ptr->job_id, node_ptr->name,
-					enforce_binding);
+					enforce_binding, s_p_n);
 		if (!sock_gres_list)	/* GRES requirement fail */
 			return avail_res;
 	}
@@ -3388,8 +3389,7 @@ static avail_res_t **_get_res_avail(struct job_record *job_ptr,
 {
 	uint32_t n;
 	avail_res_t **avail_res_array = NULL;
-//FIXME: where should s_p_n be handled?
-//	uint32_t s_p_n = _socks_per_node(job_ptr);
+	uint32_t s_p_n = _socks_per_node(job_ptr);
 
 	_set_gpu_defaults(job_ptr);
 	avail_res_array = xmalloc(sizeof(avail_res_t *) * select_node_cnt);
@@ -3397,8 +3397,8 @@ static avail_res_t **_get_res_avail(struct job_record *job_ptr,
 		if (!bit_test(node_map, n))
 			continue;
 		avail_res_array[n] = _can_job_run_on_node(job_ptr, core_map, n,
-							  node_usage, cr_type,
-							  test_only,
+							  s_p_n, node_usage,
+							  cr_type, test_only,
 							  part_core_map);
 	}
 

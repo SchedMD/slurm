@@ -4471,7 +4471,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 				bool use_total_gres, bitstr_t *core_bitmap,
 				uint16_t sockets, uint16_t cores_per_sock,
 				uint32_t job_id, char *node_name,
-				bool enforce_binding)
+				bool enforce_binding, uint32_t s_p_n)
 {
 	int i, j, s, c, tot_cores;
 	sock_gres_t *sock_gres;
@@ -4516,6 +4516,17 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 						 topo_core_bitmap[i]));
 		}
 		for (s = 0; ((s < sockets) && avail_gres); s++) {
+			if (core_bitmap) {
+				for (c = 0; c < cores_per_sock; c++) {
+					j = (s * cores_per_sock) + c;
+					if (bit_test(core_bitmap, j))
+						break;
+				}
+				if (c >= cores_per_sock) {
+					/* No available cores on this socket */
+					continue;
+				}
+			}
 			for (c = 0; c < cores_per_sock; c++) {
 				j = (s * cores_per_sock) + c;
 				if (j >= tot_cores)
@@ -4561,7 +4572,50 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 				sock_gres->total_cnt -= i;
 			}
 		}
-	}  else if (match && enforce_binding) {
+	}
+
+	/*
+	 * Satisfy sockets-per-node (s_p_n) limit by selecting the sockets with
+	 * the most GRES. Sockets with low GRES counts have their core_bitmap
+	 * cleared so that _allocate_sc() in cons_tres/job_test.c does not
+	 * remove sockets needed to satisfy the job's GRES specification.
+	 */
+	if (match && enforce_binding && core_bitmap && (s_p_n < sockets)) {
+		int avail_sock = 0;
+		bool *avail_sock_flag = xmalloc(sizeof(bool) * sockets);
+		for (s = 0; s < sockets; s++) {
+			if (sock_gres->cnt_by_sock[s] == 0)
+				continue;
+			for (c = 0; c < cores_per_sock; c++) {
+				i = (s * cores_per_sock) + c;
+				if (!bit_test(core_bitmap, i))
+					continue;
+				avail_sock++;
+				avail_sock_flag[s] = true;	
+				break;
+			}
+		}
+		while (avail_sock > s_p_n) {
+			int low_gres_sock_inx = -1;
+			for (s = 0; s < sockets; s++) {
+				if (!avail_sock_flag[s])
+					continue;
+				if ((low_gres_sock_inx == -1) ||
+				    (sock_gres->cnt_by_sock[s] <
+				     sock_gres->cnt_by_sock[low_gres_sock_inx]))
+					low_gres_sock_inx = s;
+			}
+			if (low_gres_sock_inx == -1)
+				break;
+			s = low_gres_sock_inx;
+			i = s * cores_per_sock;
+			bit_nclear(core_bitmap, i, i + cores_per_sock - 1);
+			sock_gres->total_cnt -= sock_gres->cnt_by_sock[s];
+			sock_gres->cnt_by_sock[s] = 0;
+			avail_sock--;
+		}
+		xfree(avail_sock_flag);
+	}  else if (match && enforce_binding && core_bitmap) {
 		/* Clear core bitmap on sockets without GRES */
 		for (s = 0; s < sockets; s++) {
 			if (sock_gres->cnt_by_sock[s] == 0) {
@@ -4571,6 +4625,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 			}
 		}
 	}
+
 	if (match) {
 		if (job_gres_ptr->gres_per_node)
 			min_gres = job_gres_ptr->gres_per_node;
@@ -4692,6 +4747,7 @@ static sock_gres_t *_build_sock_gres_basic(gres_job_state_t *job_gres_ptr,
  * IN job_id          - job's ID (for logging)
  * IN node_name       - name of the node (for logging)
  * IN enforce_binding - if true then only use GRES with direct access to cores
+ * IN s_p_n           - Expected sockets_per_node (NO_VAL if not limited)
  * RET: List of sock_gres_t entries identifying what resources are available on
  *	each core. Returns NULL if none available. Call FREE_NULL_LIST() to
  *	release memory.
@@ -4700,13 +4756,14 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 				  bool use_total_gres, bitstr_t *core_bitmap,
 				  uint16_t sockets, uint16_t cores_per_sock,
 				  uint32_t job_id, char *node_name,
-				  bool enforce_binding)
+				  bool enforce_binding, uint32_t s_p_n)
 {
 	List sock_gres_list = NULL;
 	ListIterator job_gres_iter,  node_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 	gres_job_state_t  *job_data_ptr;
 	gres_node_state_t *node_data_ptr;
+	uint32_t local_s_p_n;
 
 	if (!job_gres_list || (list_count(job_gres_list) == 0))
 		return sock_gres_list;
@@ -4734,13 +4791,19 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
 		node_data_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
 
+		if (job_data_ptr->gres_per_job &&
+		    !job_data_ptr->gres_per_socket)
+			local_s_p_n = s_p_n;	/* Maximize GRES per node */
+		else
+			local_s_p_n = NO_VAL;	/* No need to optimize socket */
 		if (core_bitmap && (bit_set_count(core_bitmap) == 0)) {
 			sock_gres = NULL;	/* No cores available */
 		} else if (node_data_ptr->topo_cnt) {
 			sock_gres = _build_sock_gres_by_topo(job_data_ptr,
 					node_data_ptr, use_total_gres,
 					core_bitmap, sockets, cores_per_sock,
-					job_id, node_name, enforce_binding);
+					job_id, node_name, enforce_binding,
+					local_s_p_n);
 		} else if (node_data_ptr->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(job_data_ptr,
 					node_data_ptr, use_total_gres,
