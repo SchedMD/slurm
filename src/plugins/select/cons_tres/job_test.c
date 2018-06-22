@@ -2656,10 +2656,10 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 #endif
 
 /*
- * _allocate_sc - Given the job requirements, determine which resources
+ * _allocate_sc - Given the job requirements, determine which CPUs/cores
  *                from the given node can be allocated (if any) to this
  *                job. Returns structure identifying the usable resources and
- *                a bitmap of the selected cores.
+ *                a bitmap of the available cores.
  *
  * IN job_ptr       - pointer to job requirements
  * IN/OUT core_map  - core_bitmap of available cores on this node
@@ -2823,22 +2823,28 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 
 	/*
 	 * Ignore resources that would push a job allocation over the
-	 * partition CPU limit (if any)
+	 * partition CPU limit (if any). Try to preserve resources on every
+	 * socket for GRES and min-cores-per-socket support.
 	 */
 	if ((job_ptr->part_ptr->max_cpus_per_node != INFINITE) &&
 	    (free_cpu_count + used_cpu_count >
 	     job_ptr->part_ptr->max_cpus_per_node)) {
 		int excess = free_cpu_count + used_cpu_count -
 			     job_ptr->part_ptr->max_cpus_per_node;
-		for (c = 0; c < select_node_record[node_i].tot_cores; c++) {
-			i = (uint16_t) (c / cores_per_socket);
-			if (free_cores[i] > 0) {
-				free_core_count--;
-				free_cores[i]--;
-				excess -= threads_per_core;
-				if (excess <= 0)
-					break;
+		uint16_t core_limit = MAX(min_cores, 1);
+		while (excess > 0) {
+			for (i = 0; (i < sockets) && (excess > 0); i++) {
+				while ((free_cores[i] > core_limit) &&
+				       (excess > 0)) {
+					free_core_count--;
+					free_cores[i]--;
+					excess -= threads_per_core;
+				}
 			}
+			if (core_limit > 0)
+				core_limit = 0;
+			else
+				break;
 		}
 	}
 
@@ -2940,7 +2946,7 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	for (c = 0;
 	     c < select_node_record[node_i].tot_cores && (avail_cpus > 0);
 	     c++) {
-		if (bit_test(core_map, c) == 0)
+		if (!bit_test(core_map, c))
 			continue;
 		i = (uint16_t) (c / cores_per_socket);
 		if (free_cores[i] > 0) {
