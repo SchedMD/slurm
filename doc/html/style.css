@@ -737,7 +737,7 @@ input[type="checkbox"] {
 	}
 
 	.content {
-		flex: 1;
+		flex: auto;
 		width: calc(100% - 360px);
 		float: right;
 	}
