@@ -222,6 +222,16 @@ def setup_nfs_exports():
 
 def expand_machine_type():
 
+    # Force re-evaluation of site-packages so that namespace packages (such
+    # as google-auth) are importable. This is needed because we install the
+    # packages while this script is running and do not have the benefit of
+    # restarting the interpreter for it to do it's usual startup sequence to
+    # configure import magic.
+    import sys
+    import site
+    for path in [x for x in sys.path if 'site-packages' in x]:
+        site.addsitedir(path)
+
     import googleapiclient.discovery
 
     # Assume sockets is 1. Currently, no instances with multiple sockets
