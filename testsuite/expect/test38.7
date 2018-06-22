@@ -329,10 +329,9 @@ if {[wait_for_file $file_out] == 0} {
 ########################################################################
 
 if {[test_pack_step] == 0} {
-	send_user "\nWARNING: heterogeneous steps not currently supported\n"
-	exit $exit_code
-}
-if {[test_pack_step] == 0} {
+	if {$exit_code == 0} {
+		exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
+	}
 	send_user "\nWARNING: heterogeneous steps not currently supported\n"
 	exit $exit_code
 }
