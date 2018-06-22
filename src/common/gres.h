@@ -221,14 +221,14 @@ typedef enum {
 } gres_state_type_enum_t;
 
 /*
- * Initialize the gres plugin.
+ * Initialize the GRES plugins.
  *
  * Returns a Slurm errno.
  */
 extern int gres_plugin_init(void);
 
 /*
- * Terminate the gres plugin. Free memory.
+ * Terminate the GRES plugins. Free memory.
  *
  * Returns a Slurm errno.
  */

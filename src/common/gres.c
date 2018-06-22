@@ -5337,7 +5337,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 }
 
 /*
- * Allocate resource to a job and update node and job gres information
+ * Select and allocate GRES to a job and update node and job GRES information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
  *		       gres_plugin_node_config_validate()
@@ -5361,8 +5361,8 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
 	if (node_gres_list == NULL) {
-		error("gres_job_alloc: job %u has gres specification while "
-		      "node %s has none", job_id, node_name);
+		error("%s: job %u has gres specification while node %s has none",
+		      __func__, job_id, node_name);
 		return SLURM_ERROR;
 	}
 
@@ -5377,9 +5377,9 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				break;
 		}
 		if (i >= gres_context_cnt) {
-			error("gres_plugin_job_alloc: no plugin configured "
-			      "for data type %u for job %u and node %s",
-			      job_gres_ptr->plugin_id, job_id, node_name);
+			error("%s: no plugin configured for data type %u for job %u and node %s",
+			      __func__, job_gres_ptr->plugin_id, job_id,
+			      node_name);
 			/* A likely sign that GresPlugins has changed */
 			continue;
 		}
@@ -5392,9 +5392,9 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 		}
 		list_iterator_destroy(node_gres_iter);
 		if (node_gres_ptr == NULL) {
-			error("gres_plugin_job_alloc: job %u allocated gres/%s "
-			      "on node %s lacking that gres",
-			      job_id, gres_context[i].gres_name, node_name);
+			error("%s: job %u allocated gres/%s on node %s lacking that gres",
+			      __func__, job_id, gres_context[i].gres_name,
+			      node_name);
 			continue;
 		}
 
