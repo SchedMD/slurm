@@ -93,11 +93,11 @@ typedef enum {
  * log options: Each of stderr, syslog, and logfile can have a different level
  */
 typedef struct {
-	log_level_t stderr_level;   /* max level to log to stderr         */
-	log_level_t syslog_level;   /* max level to log to syslog         */
-	log_level_t logfile_level;  /* max level to log to logfile        */
-	unsigned    prefix_level:1; /* prefix level (e.g. "debug: ") if 1 */
-	unsigned    buffered:1;     /* Use internal buffer to never block */
+	log_level_t stderr_level;   /* max level to log to stderr            */
+	log_level_t syslog_level;   /* max level to log to syslog            */
+	log_level_t logfile_level;  /* max level to log to logfile           */
+	bool prefix_level;          /* prefix level (e.g. "debug: ") if true */
+	bool buffered;              /* use internal buffer to never block    */
 } 	log_options_t;
 
 extern char *slurm_prog_name;
