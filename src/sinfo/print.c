@@ -94,11 +94,13 @@ int print_sinfo_list(List sinfo_list)
 	ListIterator i = list_iterator_create(sinfo_list);
 	sinfo_data_t *current;
 
-	if (params.node_field_flag)
-		_set_node_field_size(sinfo_list);
-	if (params.part_field_flag)
-		_set_part_field_size(sinfo_list);
-
+  if ( ! params.should_show_parseable ) {
+    if (params.node_field_flag)
+      _set_node_field_size(sinfo_list);
+    if (params.part_field_flag)
+      _set_part_field_size(sinfo_list);
+  }
+  
 	if (!params.no_header)
 		print_sinfo_entry(NULL);
 
@@ -114,11 +116,16 @@ int print_sinfo_entry(sinfo_data_t *sinfo_data)
 	ListIterator i = list_iterator_create(params.format_list);
 	sinfo_format_t *current;
 
-	while ((current = (sinfo_format_t *) list_next(i)) != NULL) {
+  current = (sinfo_format_t *) list_next(i);
+	while ( current != NULL ) {
 		if (current->function(sinfo_data, current->width,
 				      current->right_justify, current->suffix)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
+      
+    current = (sinfo_format_t *) list_next(i);
+    if ( (params.field_delimiter != NULL) && (current != NULL) )
+      fputs(params.field_delimiter, stdout);
 	}
 	list_iterator_destroy(i);
 

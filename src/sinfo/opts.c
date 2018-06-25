@@ -59,6 +59,7 @@
 #define OPT_LONG_LOCAL     0x103
 #define OPT_LONG_NOCONVERT 0x104
 #define OPT_LONG_FEDR      0x105
+#define OPT_LONG_PARSEABLE 0x106
 
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
@@ -93,6 +94,7 @@ extern void parse_command_line(int argc, char **argv)
 	static struct option long_options[] = {
 		{"all",       no_argument,       0, 'a'},
 		{"dead",      no_argument,       0, 'd'},
+    {"delimiter", required_argument, 0, 'D'},
 		{"exact",     no_argument,       0, 'e'},
 		{"federation",no_argument,       0, OPT_LONG_FEDR},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
@@ -109,6 +111,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"format",    required_argument, 0, 'o'},
 		{"Format",    required_argument, 0, 'O'},
 		{"partition", required_argument, 0, 'p'},
+    {"parseable", no_argument,       0, OPT_LONG_PARSEABLE},
 		{"responding",no_argument,       0, 'r'},
 		{"list-reasons", no_argument,    0, 'R'},
 		{"summarize", no_argument,       0, 's'},
@@ -156,9 +159,12 @@ extern void parse_command_line(int argc, char **argv)
 		working_cluster_rec = list_peek(params.clusters);
 		params.local = true;
 	}
+  
+  params.field_delimiter = NULL;
+  params.should_show_parseable = false;
 
 	while ((opt_char = getopt_long(argc, argv,
-				       "adehi:lM:n:No:O:p:rRsS:t:TvV",
+				       "adD:ehi:lM:n:No:O:p:rRsS:t:TvV",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -175,6 +181,12 @@ extern void parse_command_line(int argc, char **argv)
 		case (int)'d':
 			params.dead_nodes = true;
 			break;
+    case (int)'D':
+      if ( optarg ) {
+        if ( params.field_delimiter ) xfree(params.field_delimiter);
+        params.field_delimiter = xstrdup(optarg);
+      }
+      break;
 		case (int)'e':
 			params.exact_match = true;
 			break;
@@ -246,6 +258,9 @@ extern void parse_command_line(int argc, char **argv)
 			params.part_list = _build_part_list(optarg);
 			params.all_flag = true;
 			break;
+    case OPT_LONG_PARSEABLE:
+      params.should_show_parseable = true;
+      break;
 		case (int) 'r':
 			params.responding_nodes = true;
 			break;
@@ -348,6 +363,10 @@ extern void parse_command_line(int argc, char **argv)
 			  "%9P %.5a %.10l %.6D %.6t %N";
 		}
 	}
+  
+  /* If parseable output was chosen, make sure there's a delimiter: */
+  if ( params.should_show_parseable && (params.field_delimiter == NULL) )
+    params.field_delimiter = xstrdup("|");
 
 	if (long_form)
 		_parse_long_format(params.format);
@@ -612,6 +631,15 @@ _parse_format( char* format )
 	while (token) {
 		_parse_token( token, field, &field_size, &right_justify,
 			      &suffix);
+    
+    if ( params.should_show_parseable ) {
+      field_size = 0;
+      right_justify = false;
+      if ( suffix )
+        xfree(suffix);
+      suffix = NULL;
+    }
+    
 		if        (field[0] == 'a') {
 			params.match_flags.avail_flag = true;
 			format_add_avail( params.format_list,
@@ -899,6 +927,14 @@ static int _parse_long_format (char* format_long)
 	while (token) {
 		_parse_long_token( token, sep, &field_size, &right_justify,
 				   &suffix);
+    
+    if ( params.should_show_parseable ) {
+      field_size = 0;
+      right_justify = false;
+      if ( suffix )
+        xfree(suffix);
+      suffix = NULL;
+    }
 
 		if (!xstrcasecmp(token, "all")) {
 			_parse_format ("%all");
@@ -1241,14 +1277,34 @@ _parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
 	xassert(token);
 	ptr = strchr(token, ':');
 	if (ptr) {
-		ptr[0] = '\0';
-		if (ptr[1] == '.') {
+    char    *endptr;
+    long    value;
+    
+		*ptr = '\0';
+		ptr++;
+    if (*ptr == '.') {
 			*right_justify = true;
 			ptr++;
 		} else {
 			*right_justify = false;
 		}
-		*field_size = atoi(ptr + 1);
+    /* Default width = 0 (what atoi() would have returned for an
+     * invalid integer string).  No suffix by default.
+     * 
+     * See if there's an integer we can parse; if so, that's the
+     * width and what's left is the suffix.  If there was no integer
+     * to parse, the string left at ptr is the suffix.
+     */
+    value = strtol(ptr, &endptr, 10);
+    *suffix = NULL;
+    *field_size = 0;
+    if ( endptr > ptr ) {
+      *field_size = value;
+      ptr = endptr;
+    }
+    if ( *ptr ) {
+      *suffix = xstrdup(ptr);
+    }
 	} else {
 		*right_justify = false;
 		*field_size = 20;
@@ -1260,6 +1316,7 @@ void _print_options( void )
 {
 	printf("-----------------------------\n");
 	printf("dead        = %s\n", params.dead_nodes ? "true" : "false");
+  printf("delimiter   = %s\n", (params.field_delimiter != NULL) ? params.field_delimiter : "");
 	printf("exact       = %d\n", params.exact_match);
 	printf("filtering   = %s\n", params.filtering ? "true" : "false");
 	printf("format      = %s\n", params.format);
@@ -1274,6 +1331,7 @@ void _print_options( void )
 					"true" : "false");
 	printf("partition   = %s\n", params.partition ?
 					params.partition: "n/a");
+  printf("parseable   = %s\n", params.should_show_parseable ? "true" : "false");
 	printf("responding  = %s\n", params.responding_nodes ?
 					"true" : "false");
 	printf("states      = %s\n", params.states);
@@ -1340,8 +1398,9 @@ void _print_options( void )
 static void _usage( void )
 {
 	printf("\
-Usage: sinfo [-abdelNRrsTv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
-             [-S fields] [-o format] [-O Format] [--federation] [--local]\n");
+Usage: sinfo [-abdelNRrsTv] [-D delim] [-i seconds] [-t states] [-p partition]\n\
+              [-n nodes] [-S fields] [-o format] [-O Format] [--federation]\n\
+              [--parseable] [--local]\n");
 }
 
 static void _help( void )
@@ -1351,6 +1410,7 @@ Usage: sinfo [OPTIONS]\n\
   -a, --all                  show all partitions (including hidden and those\n\
 			     not accessible)\n\
   -d, --dead                 show only non-responding nodes\n\
+  -D, --delimiter=DELIM      print DELIM between each output field\n\
   -e, --exact                group nodes only on exact match of configuration\n\
       --federation           Report federated information if a member of one\n\
   -h, --noheader             no headers on output\n\
@@ -1368,6 +1428,7 @@ Usage: sinfo [OPTIONS]\n\
   -o, --format=format        format specification\n\
   -O, --Format=format        long format specification\n\
   -p, --partition=PARTITION  report on specific partition\n\
+  --parseable                display output suitable for machine parsing\n\
   -r, --responding           report only responding nodes\n\
   -R, --list-reasons         list reason nodes are down or drained\n\
   -s, --summarize            report state summary only\n\
