@@ -2888,6 +2888,8 @@ static void _depend_list2str(struct job_record *job_ptr, bool set_or_flag)
 			dep_str = "aftercorr";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND)
 			dep_str = "expand";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
+			dep_str = "afterburstbuffer";
 		else
 			dep_str = "unknown";
 
@@ -3105,6 +3107,12 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				job_ptr->details->whole_node =
 					djob_ptr->details->whole_node;
 			}
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER) {
+			if (IS_JOB_COMPLETED(djob_ptr) &&
+			    (bb_g_job_test_stage_out(djob_ptr) == 1)) {
+				clear_dep = true;
+			} else
+				depends = true;
 		} else
 			failure = true;
 		if (clear_dep && djob_ptr &&
@@ -3327,6 +3335,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			depend_type = SLURM_DEPEND_AFTER_ANY;
 		else if (xstrncasecmp(tok, "afterok", 7) == 0)
 			depend_type = SLURM_DEPEND_AFTER_OK;
+		else if (xstrncasecmp(tok, "afterburstbuffer", 10) == 0)
+			depend_type = SLURM_DEPEND_BURST_BUFFER;
 		else if (xstrncasecmp(tok, "after", 5) == 0)
 			depend_type = SLURM_DEPEND_AFTER;
 		else if (xstrncasecmp(tok, "expand", 6) == 0) {

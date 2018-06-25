@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "December 2017" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "February 2018" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -450,6 +450,10 @@ execution.
 .TP
 \fBafterany:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated.
+.TP
+\fBafterburstbuffer:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated and
+any associated burst buffer stage out operations have completed.
 .TP
 \fBaftercorr:job_id[:jobid...]\fR
 A task of this job array can begin execution after the corresponding task ID
