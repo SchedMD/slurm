@@ -188,6 +188,9 @@ struct sinfo_parameters {
 	int node_field_size;
 	int part_field_size;
 	int verbose;
+  
+  char* field_delimiter;
+  bool  should_show_parseable;
 
 	List  part_list;
 	List  format_list;

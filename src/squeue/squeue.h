@@ -102,6 +102,9 @@ struct squeue_parameters {
 	uint32_t user_id;	/* set if request for a single user ID */
 
 	uint32_t convert_flags;
+  
+  char* field_delimiter;
+  bool  should_show_parseable;
 
 	List  account_list;
 	List  format_list;

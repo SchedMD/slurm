@@ -64,6 +64,7 @@
 #define OPT_LONG_LOCAL        0x106
 #define OPT_LONG_SIBLING      0x107
 #define OPT_LONG_FEDR         0x108
+#define OPT_LONG_PARSEABLE    0x109
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -99,6 +100,7 @@ parse_command_line( int argc, char* *argv )
 		{"all",        no_argument,       0, 'a'},
 		{"array",      no_argument,       0, 'r'},
 		{"array-unique",no_argument,      0, OPT_LONG_ARRAY_UNIQUE},
+    {"delimiter",  required_argument, 0, 'D'},
 		{"Format",     required_argument, 0, 'O'},
 		{"format",     required_argument, 0, 'o'},
 		{"federation", no_argument,       0, OPT_LONG_FEDR},
@@ -112,13 +114,14 @@ parse_command_line( int argc, char* *argv )
 		{"cluster",    required_argument, 0, 'M'},
 		{"clusters",   required_argument, 0, 'M'},
 		{"name",       required_argument, 0, 'n'},
-                {"noconvert",  no_argument,       0, OPT_LONG_NOCONVERT},
+    {"noconvert",  no_argument,       0, OPT_LONG_NOCONVERT},
 		{"node",       required_argument, 0, 'w'},
 		{"nodes",      required_argument, 0, 'w'},
 		{"nodelist",   required_argument, 0, 'w'},
 		{"noheader",   no_argument,       0, 'h'},
 		{"partitions", required_argument, 0, 'p'},
 		{"priority",   no_argument,       0, 'P'},
+    {"parseable",  no_argument,       0, OPT_LONG_PARSEABLE},
 		{"qos",        required_argument, 0, 'q'},
 		{"reservation",required_argument, 0, 'R'},
 		{"sib",        no_argument,       0, OPT_LONG_SIBLING},
@@ -165,8 +168,12 @@ parse_command_line( int argc, char* *argv )
 		params.priority_flag = true;
 	if (getenv("SQUEUE_SIB") || getenv("SQUEUE_SIBLING"))
 		params.sibling_flag = true;
+  
+  params.field_delimiter = NULL;
+  params.should_show_parseable = false;
+  
 	while ((opt_char = getopt_long(argc, argv,
-				       "A:ahi:j::lL:n:M:O:o:p:Pq:R:rs::S:t:u:U:vVw:",
+				       "A:aD:hi:j::lL:n:M:O:o:p:Pq:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -183,6 +190,12 @@ parse_command_line( int argc, char* *argv )
 		case (int)'a':
 			params.all_flag = true;
 			break;
+    case (int)'D':
+      if ( optarg ) {
+        if ( params.field_delimiter ) xfree(params.field_delimiter);
+        params.field_delimiter = xstrdup(optarg);
+      }
+      break;
 		case (int)'h':
 			params.no_header = true;
 			break;
@@ -259,6 +272,9 @@ parse_command_line( int argc, char* *argv )
 		case (int) 'P':
 			params.priority_flag = true;
 			break;
+    case OPT_LONG_PARSEABLE:
+      params.should_show_parseable = true;
+      break;
 		case (int) 'q':
 			xfree(params.qoss);
 			params.qoss = xstrdup(optarg);
@@ -488,6 +504,10 @@ parse_command_line( int argc, char* *argv )
 		}
 		list_iterator_destroy(iterator);
 	}
+  
+  /* If parseable output was chosen, make sure there's a delimiter: */
+  if ( params.should_show_parseable && (params.field_delimiter == NULL) )
+    params.field_delimiter = xstrdup("|");
 
 	if ( params.verbose )
 		_print_options();
@@ -581,6 +601,15 @@ extern int parse_format( char* format )
 	while (token) {
 		_parse_token( token, field, &field_size, &right_justify,
 			      &suffix);
+    
+    if ( params.should_show_parseable ) {
+      field_size = 0;
+      right_justify = false;
+      if ( suffix )
+        xfree(suffix);
+      suffix = NULL;
+    }
+    
 		if (params.step_flag) {
 			if      (field[0] == 'A')
 				step_format_add_num_tasks( params.format_list,
@@ -959,6 +988,14 @@ extern int parse_long_format( char* format_long )
 		_parse_long_token( token, sep, &field_size, &right_justify,
 				   &suffix);
 
+    if ( params.should_show_parseable ) {
+      field_size = 0;
+      right_justify = false;
+      if ( suffix )
+        xfree(suffix);
+      suffix = NULL;
+    }
+    
 		if (params.step_flag) {
 
 			if (!xstrcasecmp(token, "cluster"))
@@ -1787,6 +1824,9 @@ _parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
 	xassert(token);
 	ptr = strchr(token, ':');
 	if (ptr) {
+    char    *endptr;
+    long    value;
+    
 		ptr[0] = '\0';
 		if (ptr[1] == '.') {
 			*right_justify = true;
@@ -1794,7 +1834,23 @@ _parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
 		} else {
 			*right_justify = false;
 		}
-		*field_size = atoi(ptr + 1);
+    /* Default width = 0 (what atoi() would have returned for an
+     * invalid integer string).  No suffix by default.
+     * 
+     * See if there's an integer we can parse; if so, that's the
+     * width and what's left is the suffix.  If there was no integer
+     * to parse, the string left at ptr is the suffix.
+     */
+    value = strtol(ptr, &endptr, 10);
+    *suffix = NULL;
+    *field_size = 0;
+    if ( endptr > ptr ) {
+      *field_size = value;
+      ptr = endptr;
+    }
+    if ( *ptr ) {
+      *suffix = xstrdup(ptr);
+    }
 	} else {
 		*right_justify = false;
 		*field_size = 20;
@@ -1822,6 +1878,7 @@ _print_options(void)
 	printf( "-----------------------------\n" );
 	printf( "all         = %s\n", params.all_flag ? "true" : "false");
 	printf( "array       = %s\n", params.array_flag ? "true" : "false");
+  printf( "delimiter   = %s\n", (params.field_delimiter != NULL) ? params.field_delimiter : "");
 	printf( "federation  = %s\n", params.federation_flag ? "true":"false");
 	printf( "format      = %s\n", params.format );
 	printf( "iterate     = %d\n", params.iterate );
@@ -1831,6 +1888,7 @@ _print_options(void)
 	printf( "local       = %s\n", params.local_flag ? "true" : "false");
 	printf( "names       = %s\n", params.names );
 	printf( "nodes       = %s\n", hostlist ) ;
+  printf( "parseable   = %s\n", params.should_show_parseable ? "true" : "false");
 	printf( "partitions  = %s\n", params.partitions ) ;
 	printf( "priority    = %s\n", params.priority_flag ? "true" : "false");
 	printf( "reservation = %s\n", params.reservation ) ;
@@ -2146,10 +2204,10 @@ _build_user_list( char* str )
 static void _usage(void)
 {
 	printf("\
-Usage: squeue [-A account] [--clusters names] [-i seconds] [--job jobid]\n\
-              [-n name] [-o format] [-p partitions] [--qos qos]\n\
+Usage: squeue [-A account] [--clusters names] [-D delim] [-i seconds]\n\
+              [--job jobid] [-n name] [-o format] [-p partitions] [--qos qos]\n\
               [--reservation reservation] [--sort fields] [--start]\n\
-              [--step step_id] [-t states] [-u user_name] [--usage]\n\
+              [--step step_id] [-t states] [-u user_name] [--usage] [--parseable]\n\
               [-L licenses] [-w nodes] [--federation] [--local] [--sibling]\n\
 	      [-ahjlrsv]\n");
 }
@@ -2163,6 +2221,7 @@ Usage: squeue [OPTIONS]\n\
   -a, --all                       display jobs in hidden partitions\n\
       --array-unique              display one unique pending job array\n\
                                   element per line\n\
+  -D, --delimiter=DELIM           print DELIM between each output field\n\
       --federation                Report federated information if a member\n\
                                   of one\n\
   -h, --noheader                  no headers on output\n\
@@ -2184,6 +2243,7 @@ Usage: squeue [OPTIONS]\n\
   -O, --Format=format             format specification\n\
   -p, --partition=partition(s)    comma separated list of partitions\n\
 				  to view, default is all partitions\n\
+      --parseable                 display output suitable for machine parsing\n\
   -q, --qos=qos(s)                comma separated list of qos's\n\
 				  to view, default is all qos's\n\
   -R, --reservation=name          reservation to view, default is all\n\

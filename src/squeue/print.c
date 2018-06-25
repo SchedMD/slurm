@@ -402,7 +402,8 @@ static int _print_one_job_from_format(job_info_t * job, List list)
 	job_format_t *current;
 	int total_width = 0;
 
-	while ((current = (job_format_t *) list_next(iter)) != NULL) {
+  current = (job_format_t *) list_next(iter);
+	while (current != NULL) {
 		if (current->
 		    function(job, current->width, current->right_justify,
 			     current->suffix)
@@ -412,6 +413,9 @@ static int _print_one_job_from_format(job_info_t * job, List list)
 			total_width += (current->width + 1);
 		else
 			total_width += 10;
+    current = (job_format_t *) list_next(iter);
+    if ( (params.field_delimiter != NULL) && (current != NULL) )
+      fputs(params.field_delimiter, stdout);
 	}
 	list_iterator_destroy(iter);
 
@@ -2304,7 +2308,8 @@ static int _print_step_from_format(void *x, void *arg)
 	step_format_t *current;
 	int total_width = 0;
 
-	while ((current = (step_format_t *) list_next(i)) != NULL) {
+  current = (step_format_t *) list_next(i);
+	while (current != NULL) {
 		if (current->
 		    function(job_step, current->width,
 			     current->right_justify, current->suffix)
@@ -2314,6 +2319,9 @@ static int _print_step_from_format(void *x, void *arg)
 			total_width += current->width;
 		else
 			total_width += 10;
+    current = (step_format_t *) list_next(i);
+    if ( (params.field_delimiter != NULL) && (current != NULL) )
+      fputs(params.field_delimiter, stdout);
 	}
 	list_iterator_destroy(i);
 	printf("\n");
