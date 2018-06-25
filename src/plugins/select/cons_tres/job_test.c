@@ -3369,7 +3369,7 @@ static void _set_gpu_defaults(struct job_record *job_ptr)
 }
 
 /*
- * Determine CPU/core availability for pending job
+ * Determine resource availability for pending job
  *
  * IN: job_ptr       - pointer to the job requesting resources
  * IN: node_map      - bitmap of available nodes
@@ -3452,14 +3452,12 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 		    (!avail_res_array[n] ||
 		     !avail_res_array[n]->avail_cpus)) {
 			/* insufficient resources available on this node */
-			if (req_map && bit_test(req_map, n)) {
-				/* cannot clear a required node! */
-				goto fini;
-			}
 			bit_clear(node_bitmap, n);
 		}
 	}
 	if (bit_set_count(node_bitmap) < min_nodes)
+		goto fini;
+	if (req_map && !bit_super_set(req_map, node_bitmap))
 		goto fini;
 
 	_log_select_maps("_select_nodes/elim_nodes", node_bitmap, avail_core);
