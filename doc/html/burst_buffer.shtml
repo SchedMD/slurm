@@ -10,6 +10,7 @@
 <li><a href="#interactive">Interactive Job Options</a></li>
 <li><a href="#status">Status Commands</a></li>
 <li><a href="#reservation">Advanced Reservations</a></li>
+<li><a href="#dependencies">Job Dependencies</a></li>
 </ul>
 
 <h2><a name="overview">Overview</a></h2>
@@ -348,6 +349,18 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
   BurstBuffer=cray:pool_test:4G
 </pre>
 
-<p style="text-align:center;">Last modified 1 December 2017</p>
+<h2><a name="dependencies">Job Dependencies</a></h2>
+
+<p>If two jobs use burst buffers and one is depend on the other (e.g.
+"sbatch --dependency=afterok:123 ...") then the second job will not begin until
+the first job completes and it's burst buffer stage out completes.
+If the second job does not use a burst buffer, but is dependent upon the first
+job's completion, then it will not wait for the stage out operation of the first
+job to complete.
+The second job can be made to wait for the first job's stage out operation to
+complete using the "afterburstbuffer" dependency option (e.g.
+"sbatch --dependency=afterburstbuffer:123 ...").</p>
+
+<p style="text-align:center;">Last modified 24 April 2018</p>
 
 <!--#include virtual="footer.txt"-->

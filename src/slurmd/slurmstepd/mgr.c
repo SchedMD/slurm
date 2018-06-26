@@ -1199,8 +1199,8 @@ job_manager(stepd_step_rec_t *job)
 	if ((acct_gather_conf_init() != SLURM_SUCCESS)          ||
 	    (core_spec_g_init() != SLURM_SUCCESS)		||
 	    (switch_init(1) != SLURM_SUCCESS)			||
-	    (slurmd_task_init() != SLURM_SUCCESS)		||
 	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
+	    (slurmd_task_init() != SLURM_SUCCESS)		||
 	    (checkpoint_init(ckpt_type) != SLURM_SUCCESS)	||
 	    (jobacct_gather_init() != SLURM_SUCCESS)		||
 	    (acct_gather_profile_init() != SLURM_SUCCESS)	||

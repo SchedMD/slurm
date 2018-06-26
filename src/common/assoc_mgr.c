@@ -3772,10 +3772,6 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				// reset the parent pointers below
 				parents_changed = 1;
 			}
-			/* info("rec has def of %d %d", */
-			/*      rec->def_qos_id, object->def_qos_id); */
-			if (object->def_qos_id != NO_VAL)
-				rec->def_qos_id = object->def_qos_id;
 
 			if (object->qos_list) {
 				if (rec->qos_list) {
@@ -3806,6 +3802,15 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 						rec->qos_list);
 				}
 			}
+
+			/* info("rec has def of %d %d", */
+			/*      rec->def_qos_id, object->def_qos_id); */
+			if (object->def_qos_id != NO_VAL &&
+			    object->def_qos_id >= g_qos_count) {
+				error("qos %d doesn't exist", rec->def_qos_id);
+				rec->def_qos_id = 0;
+			} else  if (object->def_qos_id != NO_VAL)
+				rec->def_qos_id = object->def_qos_id;
 
 			if (rec->def_qos_id && rec->user
 			    && rec->usage && rec->usage->valid_qos

@@ -175,6 +175,15 @@ documents those changes that are of interest to users and administrators.
  -- Don't enforce MaxQueryTimeRange when requesting specific jobs.
  -- Modify --test-only logic to properly support jobs submitted to more than
     one partition.
+ -- Prevent slurmctld from abort when attempting to set non-existing
+    qos as def_qos_id.
+ -- Add new job dependency type of "afterburstbuffer". The pending job will be
+    delayed until the first job completes execution and it's burst buffer
+    stage-out is completed.
+ -- Reorder proctrack/task plugin load in the slurmstepd to match that of slurmd
+    and avoid race condition calling task before proctrack can introduce.
+    qos as def_qos_id.
+ -- Prevent reboot of a busy KNL node when requesting inactive features.
 
 * Changes in Slurm 17.11.7
 ==========================

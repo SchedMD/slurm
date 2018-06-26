@@ -1742,6 +1742,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
 	bitstr_t *backup_bitmap = NULL;
 	bitstr_t *possible_bitmap = NULL;
+	bitstr_t *node_set_map;
 	int max_feature, min_feature;
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
@@ -1906,13 +1907,22 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			for (i = 0; i < node_set_size; i++) {
 				if (!bit_test(node_set_ptr[i].feature_bits, j))
 					continue;
-				if (avail_bitmap) {
-					bit_or(avail_bitmap,
-					       node_set_ptr[i].my_bitmap);
-				} else {
-					avail_bitmap = bit_copy(node_set_ptr[i].
-								my_bitmap);
+				node_set_map =
+					bit_copy(node_set_ptr[i].my_bitmap);
+
+				if (node_set_ptr[i].weight == INFINITE - 1) {
+					/* Node reboot required */
+					bit_and(node_set_map,
+						idle_node_bitmap);
 				}
+
+				if (avail_bitmap) {
+					bit_or(avail_bitmap, node_set_map);
+					FREE_NULL_BITMAP(node_set_map);
+				} else {
+					avail_bitmap = node_set_map;
+				}
+
 			}
 			if (!bit_super_set(job_ptr->details->req_node_bitmap,
 					   avail_bitmap))
@@ -1938,7 +1948,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						node_set_ptr[i].my_bitmap);
 			}
 
-			if (node_set_ptr[i].weight == INFINITE) {
+			if (node_set_ptr[i].weight == INFINITE - 1) {
 				/* Node reboot required */
 				count1 = bit_set_count(node_set_ptr[i].
 						       my_bitmap);

@@ -490,6 +490,10 @@ execution.
 \fBafterany:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated.
 .TP
+\fBafterburstbuffer:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated and
+any associated burst buffer stage out operations have completed.
+.TP
 \fBaftercorr:job_id[:jobid...]\fR
 A task of this job array can begin execution after the corresponding task ID
 in the specified job has completed successfully (ran to completion with an

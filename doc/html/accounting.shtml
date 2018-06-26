@@ -96,11 +96,8 @@ Storing information directly into a database would be similar.</p>
 <p>Note that SlurmDBD relies upon existing Slurm plugins
 for authentication and Slurm sql for database use, but the other Slurm
 commands and daemons are not required on the host where
-SlurmDBD is installed. Install the <i>slurmdbd</i>,
-<i>slurm-plugins</i>, and <i>slurm-sql</i> RPMs on the computer when SlurmDBD
-is to execute.  If you want munge authentication, which is highly
-recommended, you will also need to install
-the <i>slurm-munge</i> RPM.</p>
+SlurmDBD is installed. Install the <i>slurm</i> and <i>slurm-slurmdbd</i>
+RPMs on the server where SlurmDBD is to run.</p>
 
 <p>Note if you switch from using the MySQL plugin to use the SlurmDBD plugin
   you must make sure the cluster has been added to the database.  The MySQL

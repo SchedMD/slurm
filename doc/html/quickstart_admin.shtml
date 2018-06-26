@@ -188,22 +188,14 @@ by configuration, but here is a suggested starting point:
     Compute and Login Nodes</li>
 	<ul>
 	<li>slurm</li>
-	<li>slurm-devel</li>
-	<li>slurm-munge</li>
 	<li>slurm-perlapi</li>
-	<li>slurm-plugins</li>
-	<li>slurm-sjobexit (only prior to version 17.02)</li>
-	<li>slurm-sjstat (only prior to version 17.02)</</li>
-	<li>slurm-torque</li>
+	<li>slurm-slurmctld (only on the head node)</li>
+	<li>slurm-slurmd (only on the compute nodes)</li>
 	</ul>
-<li>Slurmdbd Node</li>
+<li>SlurmDBD Node</li>
 	<ul>
 	<li>slurm</li>
-	<li>slurm-devel</li>
-	<li>slurm-munge</li>
-	<li>slurm-plugins</li>
 	<li>slurm-slurmdbd</li>
-	<li>slurm-sql</li>
 	</ul>
 </ul>
 
