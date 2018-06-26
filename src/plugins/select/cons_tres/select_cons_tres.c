@@ -226,6 +226,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			else
 				gres_list = node_ptr->gres_list;
 			core_bitmap = copy_job_resources_node(job, n);
+//FIXME: Selects specific GRES too late
 			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
 					      job->nhosts, n, job_ptr->job_id,
 					      node_ptr->name, core_bitmap);
@@ -254,6 +255,11 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		}
 	}
 	
+	if (action != 2) {
+		gres_build_job_details(job_ptr->gres_list,
+				       &job_ptr->gres_detail_cnt,
+				       &job_ptr->gres_detail_str);
+	}
 
 	/* add cores */
 	if (action != 1) {

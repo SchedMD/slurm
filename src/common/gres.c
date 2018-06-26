@@ -5105,6 +5105,10 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 		}
 		job_gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
 						       node_cnt);
+		if (!job_gres_ptr->gres_cnt_node_alloc) {
+			job_gres_ptr->gres_cnt_node_alloc =
+				xmalloc(sizeof(uint64_t) * node_cnt);
+		}
 	}
 	/*
 	 * These next 2 checks were added long before job resizing was allowed.
@@ -5127,6 +5131,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	 * Check that sufficient resources exist on this node
 	 */
 	gres_cnt = job_gres_ptr->gres_per_node;
+	job_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_cnt;
 	i = node_gres_ptr->gres_cnt_alloc + gres_cnt;
 
 	if (i > node_gres_ptr->gres_cnt_avail) {
@@ -5419,7 +5424,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	bool type_array_updated = false;
-	uint64_t gres_cnt, k;
+	uint64_t gres_cnt = 0, k;
 
 	/*
 	 * Validate data structures. Either job_gres_data->node_cnt and
@@ -5468,16 +5473,19 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 				      node_name);
 			}
 		}
-	} else if (node_gres_ptr->gres_cnt_alloc >=
-		   job_gres_ptr->gres_per_node) {
-		node_gres_ptr->gres_cnt_alloc -= job_gres_ptr->gres_per_node;
+	} else if (job_gres_ptr->gres_cnt_node_alloc) {
+		gres_cnt = job_gres_ptr->gres_cnt_node_alloc[node_offset];
 	} else {
-		node_gres_ptr->gres_cnt_alloc = 0;
+		gres_cnt = job_gres_ptr->gres_per_node;
+	}
+	if (gres_cnt && (node_gres_ptr->gres_cnt_alloc >= gres_cnt))
+		node_gres_ptr->gres_cnt_alloc -= gres_cnt;
+	else if (gres_cnt) {
 		error("gres/%s: job %u node %s GRES count underflow "
 		      "(%"PRIu64" < %"PRIu64")",
 		      gres_name, job_id, node_name,
-		      node_gres_ptr->gres_cnt_alloc,
-		      job_gres_ptr->gres_per_node);
+		      node_gres_ptr->gres_cnt_alloc, gres_cnt);
+		node_gres_ptr->gres_cnt_alloc = 0;
 	}
 
 	if (job_gres_ptr->gres_bit_alloc &&
@@ -7355,7 +7363,7 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 {
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
-	uint64_t gres_needed;
+	uint64_t gres_needed, gres_avail;
 	bitstr_t *gres_bit_alloc;
 	int i, len;
 
@@ -7373,40 +7381,49 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		return SLURM_ERROR;
 	}
 
-	if (step_gres_ptr->gres_per_node > job_gres_ptr->gres_per_node) {
+//FIXME: Add support for other GRES count specifications
+	gres_needed = step_gres_ptr->gres_per_node;
+	if (step_gres_ptr->node_cnt == 0)
+		step_gres_ptr->node_cnt = job_gres_ptr->node_cnt;
+	if (!step_gres_ptr->gres_cnt_node_alloc) {
+		step_gres_ptr->gres_cnt_node_alloc =
+			xmalloc(sizeof(uint64_t) * step_gres_ptr->node_cnt);
+	}
+	if (job_gres_ptr->gres_cnt_node_alloc)
+		gres_avail = job_gres_ptr->gres_cnt_node_alloc[node_offset];
+	else
+		gres_avail = job_gres_ptr->gres_per_node;
+	if (gres_needed > gres_avail) {
 		error("gres/%s: %s for %u.%u, step's > job's "
 		      "for node %d (%"PRIu64" > %"PRIu64")",
 		      gres_name, __func__, job_id, step_id, node_offset,
-		      step_gres_ptr->gres_per_node,
-		      job_gres_ptr->gres_per_node);
+		      gres_needed, gres_avail);
 		return SLURM_ERROR;
 	}
-
-	if (job_gres_ptr->gres_cnt_step_alloc == NULL) {
+	if (step_gres_ptr->gres_cnt_node_alloc &&
+	    (node_offset < step_gres_ptr->node_cnt))
+		step_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_needed;
+	if (!job_gres_ptr->gres_cnt_step_alloc) {
 		job_gres_ptr->gres_cnt_step_alloc =
 			xmalloc(sizeof(uint64_t) * job_gres_ptr->node_cnt);
 	}
 
-	if (step_gres_ptr->gres_per_node >
-	    (job_gres_ptr->gres_per_node -
-	     job_gres_ptr->gres_cnt_step_alloc[node_offset])) {
+	if (gres_needed >
+	    (gres_avail - job_gres_ptr->gres_cnt_step_alloc[node_offset])) {
 		error("gres/%s: %s for %u.%u, step's > job's "
 		      "remaining for node %d (%"PRIu64" > "
 		      "(%"PRIu64" - %"PRIu64"))",
 		      gres_name, __func__, job_id, step_id, node_offset,
-		      step_gres_ptr->gres_per_node,
-		      job_gres_ptr->gres_per_node,
+		      gres_needed, gres_avail,
 		      job_gres_ptr->gres_cnt_step_alloc[node_offset]);
 		return SLURM_ERROR;
 	}
 
-	step_gres_ptr->node_cnt = job_gres_ptr->node_cnt;
 	if (step_gres_ptr->node_in_use == NULL) {
 		step_gres_ptr->node_in_use = bit_alloc(job_gres_ptr->node_cnt);
 	}
 	bit_set(step_gres_ptr->node_in_use, node_offset);
-	job_gres_ptr->gres_cnt_step_alloc[node_offset] +=
-		step_gres_ptr->gres_per_node;
+	job_gres_ptr->gres_cnt_step_alloc[node_offset] += gres_needed;
 
 	if ((job_gres_ptr->gres_bit_alloc == NULL) ||
 	    (job_gres_ptr->gres_bit_alloc[node_offset] == NULL)) {
@@ -7422,7 +7439,6 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 			job_gres_ptr->gres_bit_step_alloc[node_offset]);
 	}
 
-	gres_needed = step_gres_ptr->gres_per_node;
 	len = bit_size(gres_bit_alloc);
 	for (i = 0; i < len; i++) {
 		if (gres_needed > 0) {
@@ -7555,6 +7571,7 @@ static int _step_dealloc(void *step_gres_data, void *job_gres_data,
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
 	uint32_t i, j, node_cnt;
+	uint64_t gres_cnt;
 	int len_j, len_s;
 
 	xassert(job_gres_ptr);
@@ -7577,11 +7594,15 @@ static int _step_dealloc(void *step_gres_data, void *job_gres_data,
 		if (!bit_test(step_gres_ptr->node_in_use, i))
 			continue;
 
+		if (step_gres_ptr->gres_cnt_node_alloc)
+			gres_cnt = step_gres_ptr->gres_cnt_node_alloc[i];
+		else
+			gres_cnt = step_gres_ptr->gres_per_node;
 		if (job_gres_ptr->gres_cnt_step_alloc) {
 			if (job_gres_ptr->gres_cnt_step_alloc[i] >=
-			    step_gres_ptr->gres_per_node) {
+			    gres_cnt) {
 				job_gres_ptr->gres_cnt_step_alloc[i] -=
-					step_gres_ptr->gres_per_node;
+					gres_cnt;
 			} else {
 				error("gres/%s: %s step %u.%u dealloc count "
 				      "underflow",
