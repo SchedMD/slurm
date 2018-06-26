@@ -10802,8 +10802,8 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 			pack_multi_core_data(NULL, buffer, protocol_version);
 		}
 	} else {
-		error("_pack_pending_job_details: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 	}
 }
 

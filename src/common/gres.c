@@ -5600,8 +5600,8 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
 	if (node_gres_list == NULL) {
-		error("gres_job_dealloc: job %u has gres specification while "
-		      "node %s has none", job_id, node_name);
+		error("%s: job %u has gres specification while node %s has none",
+		      __func__, job_id, node_name);
 		return SLURM_ERROR;
 	}
 
@@ -5616,9 +5616,9 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				break;
 		}
 		if (i >= gres_context_cnt) {
-			error("gres_plugin_job_dealloc: no plugin configured "
-			      "for data type %u for job %u and node %s",
-			      job_gres_ptr->plugin_id, job_id, node_name);
+			error("%s: no plugin configured for data type %u for job %u and node %s",
+			      __func__, job_gres_ptr->plugin_id, job_id,
+			      node_name);
 			/* A likely sign that GresPlugins has changed */
 			gres_name = "UNKNOWN";
 		} else
@@ -5632,8 +5632,8 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 		}
 		list_iterator_destroy(node_gres_iter);
 		if (node_gres_ptr == NULL) {
-			error("gres_plugin_job_dealloc: node %s lacks gres/%s "
-			      "for job %u", node_name, gres_name , job_id);
+			error("%s: node %s lacks gres/%s for job %u", __func__,
+			      node_name, gres_name , job_id);
 			continue;
 		}
 
@@ -7433,8 +7433,7 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		}
 	}
 	if (gres_needed) {
-		error("gres/%s: %s step %u.%u oversubscribed resources on "
-		      "node %d",
+		error("gres/%s: %s step %u.%u oversubscribed resources on node %d",
 		      gres_name, __func__, job_id, step_id, node_offset);
 	}
 

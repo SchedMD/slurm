@@ -754,7 +754,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 						   last_hosts, tmp2,
 						   last_mem_alloc_ptr ?
 						   last_mem_alloc : 0,
-						    gres_last);
+						   gres_last);
 					xfree(last_hosts);
 					xstrcat(out, line_end);
 
