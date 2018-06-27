@@ -174,9 +174,9 @@ AC_DEFUN([X_AC_DEBUG], [
   else
     AC_MSG_RESULT([no])
   fi
-  ]
 
   if test "$x_ac_optimizations" = no; then
     test "$GCC" = yes && CFLAGS="$CFLAGS -O0"
   fi
-)
+
+])

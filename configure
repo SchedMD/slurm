@@ -23976,10 +23976,10 @@ $as_echo "yes" >&6; }
 $as_echo "no" >&6; }
   fi
 
-
   if test "$x_ac_optimizations" = no; then
     test "$GCC" = yes && CFLAGS="$CFLAGS -O0"
   fi
+
 
  if test "x$ac_debug" = "xtrue"; then
   DEBUG_MODULES_TRUE=
