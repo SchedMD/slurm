@@ -7339,6 +7339,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	}
 
 	/* Only set min and max cpus if overcommit isn't set */
+info("CPUS:%u:%u", job_desc->min_cpus, job_desc->max_cpus);
 	if ((job_desc->overcommit == NO_VAL8) &&
 	    (job_desc->min_cpus   != NO_VAL)  &&
 	    (job_desc->num_tasks  != NO_VAL)  &&
@@ -7359,6 +7360,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		    (job_desc->max_cpus < job_desc->min_cpus))
 			job_desc->max_cpus = job_desc->min_cpus;
 	}
+info("CPUS:%u:%u", job_desc->min_cpus, job_desc->max_cpus);
 
 	if (job_desc->reboot && (job_desc->reboot != NO_VAL16))
 		job_desc->shared = 0;
