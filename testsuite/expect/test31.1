@@ -48,7 +48,7 @@ print_header $test_id
 if {[test_cray]} {
 	set make_file 1
 	if { [file exists $pcmd_prog] == 0 } {
-		send_user "\nFAILURE: The file $pcmd_prog was not found\n"
+		send_user "\nWARNING: The file $pcmd_prog was not found\n"
 		exit $exit_code
 	}
 }
