@@ -30,7 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "39.2"
+set test_id     "39.3"
 set exit_code   0
 set file_in     "test$test_id.input"
 
@@ -82,7 +82,7 @@ exit 0"
 #
 set match 0
 set timeout $max_job_delay
-spawn $srun --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu -t1 ./$file_in
+spawn $srun --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu -n1 -t1 ./$file_in
 expect {
 	-re "CpusPerTres=gpu:$cpus_per_gpu" {
 		incr match
