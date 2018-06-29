@@ -705,7 +705,7 @@ extern int slurm_load_node(time_t update_time, node_info_msg_t **resp,
 	req_msg.msg_type = REQUEST_NODE_INFO;
 	req_msg.data     = &req;
 
-	if (show_flags & SHOW_FEDERATION) {
+	if ((show_flags & SHOW_FEDERATION) && ptr) { /* "ptr" check for CLANG */
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_nodes(&req_msg, resp, show_flags, cluster_name,
 				     fed);

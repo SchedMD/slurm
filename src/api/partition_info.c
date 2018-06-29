@@ -582,7 +582,7 @@ extern int slurm_load_partitions(time_t update_time,
 	req_msg.msg_type = REQUEST_PARTITION_INFO;
 	req_msg.data     = &req;
 
-	if (show_flags & SHOW_FEDERATION) {
+	if ((show_flags & SHOW_FEDERATION) && ptr) { /* "ptr" check for CLANG */
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_parts(&req_msg, resp, show_flags, cluster_name,
 				     fed);
