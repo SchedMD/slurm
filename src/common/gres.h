@@ -156,7 +156,7 @@ typedef struct gres_job_state {
 	uint64_t def_mem_per_gres;
 
 	/* Allocated resources details */
-	uint64_t total_gres;		/* allocated GRES for this job */
+	uint64_t total_gres;		/* Count of allocated GRES to job */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
 					 * Used without GRES files */
 	uint32_t node_cnt;		/* 0 if no_consume */
@@ -485,13 +485,70 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  List *gres_list);
 
 /*
+ * Clear GRES allocation info for all job GRES at start of scheduling cycle
+ * Return TRUE if any gres_per_job constraints to satisfy
+ */
+extern bool gres_plugin_job_sched_init(List job_gres_list);
+
+/*
+ * Return TRUE if all gres_per_job specifications are satisfied
+ */
+extern bool gres_plugin_job_sched_test(List job_gres_list, uint32_t job_id);
+
+/*
+ * Return TRUE if all gres_per_job specifications will be satisfied with
+ *	the addtitional resources provided by a single node
+ * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ * IN job_id - The job being tested
+ */
+extern bool gres_plugin_job_sched_test2(List job_gres_list, List sock_gres_list,
+					uint32_t job_id);
+
+/*
+ * Update a job's total_gres counter as we add a node to potential allocaiton
+ * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ */
+extern void gres_plugin_job_sched_add(List job_gres_list, List sock_gres_list);
+
+/*
+ * Create/update List GRES that can be made available on the specified node
+ * IN/OUT consec_gres - List of sock_gres_t that can be made available on
+ *			a set of nodes
+ * IN job_gres_list - List of job's GRES requirements (gres_job_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ */
+extern void gres_plugin_job_sched_consec(List *consec_gres, List job_gres_list,
+					 List sock_gres_list);
+
+/*
+ * Determine if the additional sock_gres_list resources will result in
+ * satisfying the job's gres_per_job constraints
+ * IN job_gres_list - job's GRES requirements
+ * IN sock_gres_list - available GRES in a set of nodes, data structure built
+ *		       by gres_plugin_job_sched_consec()
+ */
+extern bool gres_plugin_job_sched_sufficient(List job_gres_list,
+					     List sock_gres_list);
+
+/*
+ * Given a List of sock_gres_t entries, return a string identifying the
+ * count of each GRES available on this set of nodes
+ * IN sock_gres_list - count of GRES available in this group of nodes
+ * IN job_gres_list - job GRES specification, used only to get GRES name/type
+ * RET xfree the returned string
+ */
+extern char *gres_plugin_job_sched_str(List sock_gres_list, List job_gres_list);
+
+/*
  * Create a (partial) copy of a job's gres state for job binding
  * IN gres_list - List of Gres records for this job to track usage
  * RET The copy or NULL on failure
  * NOTE: Only gres_cnt_alloc, node_cnt and gres_bit_alloc are copied
  *	 Job step details are NOT copied.
  */
-List gres_plugin_job_state_dup(List gres_list);
+extern List gres_plugin_job_state_dup(List gres_list);
 
 /*
  * Create a (partial) copy of a job's gres state for a particular node index
@@ -499,7 +556,7 @@ List gres_plugin_job_state_dup(List gres_list);
  * IN node_index - zero-origin index to the node
  * RET The copy or NULL on failure
  */
-List gres_plugin_job_state_extract(List gres_list, int node_index);
+extern List gres_plugin_job_state_extract(List gres_list, int node_index);
 
 /*
  * Pack a job's current gres status, called from slurmctld for save/restore

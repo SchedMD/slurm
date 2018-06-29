@@ -182,6 +182,8 @@ static gres_node_state_t *
 static uint32_t	_build_id(char *name);
 static bitstr_t *_core_bitmap_rebuild(bitstr_t *old_core_bitmap, int new_size);
 static void	_destroy_gres_slurmd_conf(void *x);
+static int	_find_job_by_sock_gres(void *x, void *key);
+static int	_find_sock_by_job_gres(void *x, void *key);
 static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			      char *gres_name, char *gres_name_colon,
 			      int gres_name_colon_len);
@@ -235,6 +237,7 @@ static int	_parse_gres_config2(void **dest, slurm_parser_enum_t type,
 static void	_set_gres_cnt(char *orig_config, char **new_config,
 			      uint64_t new_cnt, char *gres_name,
 			      char *gres_name_colon, int gres_name_colon_len);
+static void	_sock_gres_del(void *x);
 static int	_step_alloc(void *step_gres_data, void *job_gres_data,
 			    int node_offset, char *gres_name,
 			    uint32_t job_id, uint32_t step_id);
@@ -3440,6 +3443,316 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 	return rc;
 }
 
+/*
+ * Find a sock_gres_t record in a list by matching the plugin_id and type_id
+ *	from a gres_state_t job record
+ * IN x - a sock_gres_t record to test
+ * IN key - the gres_state_t record (from a job) we want to match
+ * RET 1 on match, otherwise 0
+ */
+static int _find_sock_by_job_gres(void *x, void *key)
+{
+	sock_gres_t *sock_data = (sock_gres_t *) x;
+	gres_state_t *job_gres_state = (gres_state_t *) key;
+	gres_job_state_t *job_data;
+
+	job_data = (gres_job_state_t *) job_gres_state->gres_data;
+	if ((sock_data->plugin_id == job_gres_state->plugin_id) &&
+	    (sock_data->type_id   == job_data->type_id))
+		return 1;
+	return 0;
+}
+
+/*
+ * Find a gres_state_t job record in a list by matching the plugin_id and
+ *	type_id from a sock_gres_t record
+ * IN x - a gres_state_t record (from a job) to test
+ * IN key - the sock_gres_t record we want to match
+ * RET 1 on match, otherwise 0
+ */
+static int _find_job_by_sock_gres(void *x, void *key)
+{
+	gres_state_t *job_gres_state = (gres_state_t *) x;
+	gres_job_state_t *job_data;
+	sock_gres_t *sock_data = (sock_gres_t *) key;
+
+	job_data = (gres_job_state_t *) job_gres_state->gres_data;
+	if ((sock_data->plugin_id == job_gres_state->plugin_id) &&
+	    (sock_data->type_id   == job_data->type_id))
+		return 1;
+	return 0;
+}
+
+/*
+ * Clear GRES allocation info for all job GRES at start of scheduling cycle
+ * Return TRUE if any gres_per_job constraints to satisfy
+ */
+extern bool gres_plugin_job_sched_init(List job_gres_list)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	bool rc = false;
+
+	if (!job_gres_list)
+		return rc;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = (gres_state_t *) list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (!job_data->gres_per_job)
+			continue;
+		job_data->total_gres = 0;
+		rc = true;
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
+ * Return TRUE if all gres_per_job specifications are satisfied
+ */
+extern bool gres_plugin_job_sched_test(List job_gres_list, uint32_t job_id)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	bool rc = true;
+
+	if (!job_gres_list)
+		return rc;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = (gres_state_t *) list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (job_data->gres_per_job &&
+		    (job_data->gres_per_job > job_data->total_gres)) {
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
+ * Return TRUE if all gres_per_job specifications will be satisfied with
+ *	the addtitional resources provided by a single node
+ * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ * IN job_id - The job being tested
+ */
+extern bool gres_plugin_job_sched_test2(List job_gres_list, List sock_gres_list,
+					uint32_t job_id)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	sock_gres_t *sock_data;
+	bool rc = true;
+
+	if (!job_gres_list)
+		return rc;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = (gres_state_t *) list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if ((job_data->gres_per_job == 0) ||
+		    (job_data->gres_per_job < job_data->total_gres))
+			continue;
+		sock_data = list_find_first(sock_gres_list,
+					    _find_sock_by_job_gres,
+					    job_gres_state);
+		if (!sock_data ||
+		    (job_data->gres_per_job >
+		     (job_data->total_gres + sock_data->total_cnt))) {
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
+ * Update a job's total_gres counter as we add a node to potential allocaiton
+ * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ */
+extern void gres_plugin_job_sched_add(List job_gres_list, List sock_gres_list)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	sock_gres_t *sock_data;
+
+	if (!job_gres_list)
+		return;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = (gres_state_t *) list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (!job_data->gres_per_job)	/* Don't care about totals */
+			continue;
+		sock_data = list_find_first(sock_gres_list,
+					    _find_sock_by_job_gres,
+					    job_gres_state);
+		if (!sock_data)		/* None of this GRES available */
+			continue;
+		job_data->total_gres += sock_data->total_cnt;
+	}
+	list_iterator_destroy(iter);
+}
+
+/*
+ * Create/update List GRES that can be made available on the specified node
+ * IN/OUT consec_gres - List of sock_gres_t that can be made available on
+ *			a set of nodes
+ * IN job_gres_list - List of job's GRES requirements (gres_job_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ */
+extern void gres_plugin_job_sched_consec(List *consec_gres, List job_gres_list,
+					 List sock_gres_list)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	sock_gres_t *sock_data, *consec_data;
+
+	if (!job_gres_list)
+		return;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = (gres_state_t *) list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (!job_data->gres_per_job)	/* Don't care about totals */
+			continue;
+		sock_data = list_find_first(sock_gres_list,
+					    _find_sock_by_job_gres,
+					    job_gres_state);
+		if (!sock_data)		/* None of this GRES available */
+			continue;
+		if (*consec_gres == NULL)
+			*consec_gres = list_create(_sock_gres_del);
+		consec_data = list_find_first(*consec_gres,
+					      _find_sock_by_job_gres,
+					      job_gres_state);
+		if (!consec_data) {
+			consec_data = xmalloc(sizeof(sock_gres_t));
+			consec_data->plugin_id = sock_data->plugin_id;
+			consec_data->type_id   = sock_data->type_id;
+			list_append(*consec_gres, consec_data);
+		}
+		consec_data->total_cnt += sock_data->total_cnt;
+	}
+	list_iterator_destroy(iter);
+}
+
+/*
+ * Determine if the additional sock_gres_list resources will result in
+ * satisfying the job's gres_per_job constraints
+ * IN job_gres_list - job's GRES requirements
+ * IN sock_gres_list - available GRES in a set of nodes, data structure built
+ *		       by gres_plugin_job_sched_consec()
+ */
+extern bool gres_plugin_job_sched_sufficient(List job_gres_list,
+					     List sock_gres_list)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	sock_gres_t *sock_data;
+	bool rc = true;
+
+	if (!job_gres_list)
+		return true;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = (gres_state_t *) list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (!job_data->gres_per_job)	/* Don't care about totals */
+			continue;
+		if (job_data->total_gres >= job_data->gres_per_job)
+			continue;
+		sock_data = list_find_first(sock_gres_list,
+					    _find_sock_by_job_gres,
+					    job_gres_state);
+		if (!sock_data)	{	/* None of this GRES available */
+			rc = false;
+			break;
+		}
+		if ((job_data->total_gres + sock_data->total_cnt) <
+		    job_data->gres_per_job) {
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
+ * Given a List of sock_gres_t entries, return a string identifying the
+ * count of each GRES available on this set of nodes
+ * IN sock_gres_list - count of GRES available in this group of nodes
+ * IN job_gres_list - job GRES specification, used only to get GRES name/type
+ * RET xfree the returned string
+ */
+extern char *gres_plugin_job_sched_str(List sock_gres_list, List job_gres_list)
+{
+	ListIterator iter;
+	sock_gres_t *sock_data;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	char *out_str = NULL, *sep;
+
+	if (!sock_gres_list)
+		return NULL;
+
+	iter = list_iterator_create(sock_gres_list);
+	while ((sock_data = (sock_gres_t *) list_next(iter))) {
+		job_gres_state = list_find_first(job_gres_list,
+					   _find_job_by_sock_gres, sock_data);
+		if (!job_gres_state) {	/* Should never happen */
+			error("%s: Could not find job GRES for type %u:%u",
+			      __func__, sock_data->plugin_id,
+			      sock_data->type_id);
+			continue;
+		}
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (out_str)
+			sep = ",";
+		else
+			sep = "GRES:";
+		if (job_data->type_name) {
+			xstrfmtcat(out_str, "%s%s:%s:%"PRIu64, sep,
+				   job_data->gres_name, job_data->type_name,
+				   sock_data->total_cnt);
+		} else {
+			xstrfmtcat(out_str, "%s%s:%"PRIu64, sep,
+				   job_data->gres_name, sock_data->total_cnt);
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return out_str;
+}
+
+/*
+ * Create a (partial) copy of a job's gres state for job binding
+ * IN gres_list - List of Gres records for this job to track usage
+ * RET The copy or NULL on failure
+ * NOTE: Only job details are copied, NOT the job step details
+ */
+extern List gres_plugin_job_state_dup(List gres_list)
+{
+	return gres_plugin_job_state_extract(gres_list, -1);
+}
+
 /* Copy gres_job_state_t record for ALL nodes */
 static void *_job_state_dup(void *gres_data)
 {
@@ -3520,23 +3833,12 @@ static void *_job_state_dup2(void *gres_data, int node_index)
 }
 
 /*
- * Create a (partial) copy of a job's gres state for job binding
- * IN gres_list - List of Gres records for this job to track usage
- * RET The copy or NULL on failure
- * NOTE: Only job details are copied, NOT the job step details
- */
-List gres_plugin_job_state_dup(List gres_list)
-{
-	return gres_plugin_job_state_extract(gres_list, -1);
-}
-
-/*
  * Create a (partial) copy of a job's gres state for a particular node index
  * IN gres_list - List of Gres records for this job to track usage
  * IN node_index - zero-origin index to the node
  * RET The copy or NULL on failure
  */
-List gres_plugin_job_state_extract(List gres_list, int node_index)
+extern List gres_plugin_job_state_extract(List gres_list, int node_index)
 {
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr, *new_gres_state;

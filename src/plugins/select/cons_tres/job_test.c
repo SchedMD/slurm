@@ -2103,22 +2103,24 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			uint16_t cr_type, bool prefer_alloc_nodes)
 {
 	int i, j, error_code = SLURM_ERROR;
-	int *consec_nodes;	/* how many nodes we can add from this
+	int *consec_cpus;	/* how many CPUs we can add from this
 				 * consecutive set of nodes */
-	int *consec_cpus;	/* how many nodes we can add from this
+	List *consec_gres;	/* how many GRES we can add from this
+				 * consecutive set of nodes */
+	int *consec_nodes;	/* how many nodes we can add from this
 				 * consecutive set of nodes */
 	int *consec_start;	/* where this consecutive set starts (index) */
 	int *consec_end;	/* where this consecutive set ends (index) */
 	int *consec_req;	/* are nodes from this set required
 				 * (in req_bitmap) */
+
 	int consec_index, consec_size, sufficient;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
-	int total_cpus = 0;	/* #CPUs allocated to job */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_sufficient, best_fit_index = 0;
 	int avail_cpus;
-	bool required_node;
+	bool gres_per_job, required_node;
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 
@@ -2196,12 +2198,14 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	/* Build table with information about sets of consecutive nodes */
 	consec_index = 0;
-	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
 
 	rem_cpus = details_ptr->min_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
 	min_rem_nodes = min_nodes;
+	gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list);
+	if (gres_per_job)
+		consec_gres  = xmalloc(sizeof(List) * consec_size);
 
 	for (i = 0; i < select_node_cnt; i++) {
 		if (req_map)
@@ -2218,16 +2222,28 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					/* first required node in set */
 					consec_req[consec_index] = i;
 				}
-				total_cpus += avail_cpus;
-				rem_cpus   -= avail_cpus;
+				rem_cpus -= avail_cpus;
 				rem_nodes--;
 				min_rem_nodes--;
 				/* leaving bitmap set, decrement max limit */
 				max_nodes--;
+				if (gres_per_job) {
+//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
+					gres_plugin_job_sched_add(
+						job_ptr->gres_list,
+						avail_res_array[i]->sock_gres_list);
+				}
 			} else {	/* node not selected (yet) */
 				bit_clear(node_map, i);
 				consec_cpus[consec_index] += avail_cpus;
 				consec_nodes[consec_index]++;
+				if (gres_per_job) {
+//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
+					gres_plugin_job_sched_consec(
+						&consec_gres[consec_index],
+						job_ptr->gres_list,
+						avail_res_array[i]->sock_gres_list);
+				}
 			}
 		} else if (consec_nodes[consec_index] == 0) {
 			consec_req[consec_index] = -1;
@@ -2241,9 +2257,11 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				xrealloc(consec_start, sizeof(int)*consec_size);
 				xrealloc(consec_end,   sizeof(int)*consec_size);
 				xrealloc(consec_req,   sizeof(int)*consec_size);
+				if (gres_per_job) {
+					xrealloc(consec_gres,
+						 sizeof(List) * consec_size);
+				}
 			}
-			consec_cpus[consec_index]  = 0;
-			consec_nodes[consec_index] = 0;
 			consec_req[consec_index]   = -1;
 		}
 	}
@@ -2252,10 +2270,19 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < consec_index; i++) {
+			char *gres_str = NULL, *gres_print = "";
+			if (gres_per_job) {
+				gres_str = gres_plugin_job_sched_str(
+						consec_gres[i],
+						job_ptr->gres_list);
+				if (gres_str)
+					gres_print = gres_str;
+			}
 			info("cons_tres: eval_nodes:%d consec "
-			     "CPUs:%d nodes:%d begin:%d end:%d required:%d",
-			     i, consec_cpus[i], consec_nodes[i],
+			     "CPUs:%d nodes:%d %s begin:%d end:%d required:%d",
+			     i, consec_cpus[i], consec_nodes[i], gres_print,
 			     consec_start[i], consec_end[i], consec_req[i]);
+			xfree(gres_str);
 		}
 	}
 
@@ -2278,6 +2305,11 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			sufficient = (consec_cpus[i] >= rem_cpus) &&
 				     _enough_nodes(consec_nodes[i], rem_nodes,
 						   min_nodes, req_nodes);
+			if (sufficient && gres_per_job) {
+				sufficient = gres_plugin_job_sched_sufficient(
+						job_ptr->gres_list,
+						consec_gres[i]);
+			}
 
 			/*
 			 * if first possibility OR
@@ -2320,10 +2352,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		if (best_fit_nodes == 0)
 			break;
 
-		if (details_ptr->contiguous &&
-		    ((best_fit_cpus < rem_cpus) ||
-		     (!_enough_nodes(best_fit_nodes, rem_nodes,
-				     min_nodes, req_nodes))))
+		if (details_ptr->contiguous && !best_fit_sufficient)
 			break;	/* no hole large enough */
 		if (best_fit_req != -1) {
 			/*
@@ -2334,7 +2363,11 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			for (i = best_fit_req;
 			     i <= consec_end[best_fit_index]; i++) {
 				if ((max_nodes <= 0) ||
-				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
+				    ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+				     (!gres_per_job ||
+				      gres_plugin_job_sched_test(
+						job_ptr->gres_list,
+						job_ptr->job_id))))
 					break;
 				if (bit_test(node_map, i)) {
 					/* required node already in set */
@@ -2354,17 +2387,27 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				_cpus_to_use(&avail_cpus, rem_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type);
-				total_cpus += avail_cpus;
 				bit_set(node_map, i);
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
 				rem_cpus -= avail_cpus;
+				if (gres_per_job) {
+//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
+					gres_plugin_job_sched_add(
+						job_ptr->gres_list,
+						avail_res_array[i]->
+						sock_gres_list);
+				}
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_index]; i--) {
 				if ((max_nodes <= 0) ||
-				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
+				    ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+				     (!gres_per_job ||
+				      gres_plugin_job_sched_test(
+						job_ptr->gres_list,
+						job_ptr->job_id))))
 					break;
 				if (bit_test(node_map, i))
 					continue;
@@ -2382,12 +2425,18 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				_cpus_to_use(&avail_cpus, rem_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type);
-				total_cpus += avail_cpus;
 				rem_cpus -= avail_cpus;
 				bit_set(node_map, i);
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
+				if (gres_per_job) {
+//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
+					gres_plugin_job_sched_add(
+						job_ptr->gres_list,
+						avail_res_array[i]->
+						sock_gres_list);
+				}
 			}
 		} else {
 			/* No required nodes, try best fit single node */
@@ -2406,6 +2455,15 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 						avail_res_array[i]->avail_cpus;
 					if (cpus_array[j] < rem_cpus)
 						continue;
+					if (gres_per_job &&
+//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
+					    !gres_plugin_job_sched_test2(
+							job_ptr->gres_list,
+							avail_res_array[i]->
+							sock_gres_list,
+							job_ptr->job_id)) {
+						continue;
+					}
 					if ((best_fit == -1) ||
 					    (cpus_array[j] < best_size)) {
 						best_fit = j;
@@ -2416,7 +2474,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				}
 				/*
 				 * If we found a single node to use,
-				 * clear cpu counts for all other nodes
+				 * clear CPU counts for all other nodes
 				 */
 				for (i = first, j = 0;
 				     ((i <= last) && (best_fit != -1));
@@ -2428,7 +2486,11 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 			for (i = first, j = 0; i <= last; i++, j++) {
 				if ((max_nodes <= 0) ||
-				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
+				    ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+				     (!gres_per_job ||
+				      gres_plugin_job_sched_test(
+						job_ptr->gres_list,
+						job_ptr->job_id))))
 					break;
 				if (bit_test(node_map, i) ||
 				    !avail_res_array[i])
@@ -2461,17 +2523,24 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				_cpus_to_use(&avail_cpus, rem_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type);
-				total_cpus += avail_cpus;
 				rem_cpus -= avail_cpus;
 				bit_set(node_map, i);
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
+				if (gres_per_job) {
+//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
+					gres_plugin_job_sched_add(
+						job_ptr->gres_list,
+						avail_res_array[i]->sock_gres_list);
+				}
 			}
 			xfree(cpus_array);
 		}
 
-		if ((rem_nodes <= 0) && (rem_cpus <= 0)) {
+		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+		    gres_plugin_job_sched_test(job_ptr->gres_list,
+					       job_ptr->job_id)) {
 			error_code = SLURM_SUCCESS;
 			break;
 		}
@@ -2480,6 +2549,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	}
 
 	if (error_code && (rem_cpus <= 0) &&
+	    gres_plugin_job_sched_test(job_ptr->gres_list, job_ptr->job_id) &&
 	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes))
 		error_code = SLURM_SUCCESS;
 
@@ -2488,6 +2558,12 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	xfree(consec_start);
 	xfree(consec_end);
 	xfree(consec_req);
+	if (gres_per_job) {
+		for (i = 0; i < consec_size; i++)
+			FREE_NULL_LIST(consec_gres[i]);
+		xfree(consec_gres);
+	}
+
 	return error_code;
 }
 
@@ -2521,9 +2597,9 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			continue;
 		/*
 		 * Make sure we don't say we can use a node exclusively
-		 * that is bigger than our max CPU count.
+		 * that is bigger than our whole-job maximum CPU count.
 		 */
-//FIXME: Need to enforce max_cpus limit on full allocation too
+//FIXME: Need to enforce max_cpus limit on full allocation too, bug also in cons_res
 		if (((job_ptr->details->whole_node == 1) &&
 		     (job_ptr->details->max_cpus != NO_VAL) &&
 		     (job_ptr->details->max_cpus <
