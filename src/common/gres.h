@@ -465,11 +465,23 @@ extern int gres_plugin_job_count(List gres_list, int arr_len,
 extern char *gres_plugin_job_alloc_count(List gres_list);
 
 /*
- * Given a job's requested gres configuration, validate it and build a gres list
- * IN *tres* - job request's gres input string
- * IN num_tasks - requested task count
- * IN min_nodes - requested minimum node count
- * IN max_nodes - requested maximum node count
+ * Given a job's requested GRES configuration, validate it and build a GRES list
+ * Note: This function can be used for a new request with gres_list==NULL or
+ *	 used to update an existing job, in which case gres_list is a copy
+ *	 of the job's original value (so we can clear fields as needed)
+ * IN *tres* - job requested gres input string
+ * IN/OUT num_tasks - requested task count, may be reset to provide
+ *		      consistent gres_per_node/task values
+ * IN/OUT min_nodes - requested minimum node count, may be reset to provide
+ *		      consistent gres_per_node/task values
+ * IN/OUT max_nodes - requested maximum node count, may be reset to provide
+ *		      consistent gres_per_node/task values
+ * IN/OUT ntasks_per_node - requested tasks_per_node count, may be reset to
+ *		      provide consistent gres_per_node/task values
+ * IN/OUT ntasks_per_socket - requested ntasks_per_socket count, may be reset to
+ *		      provide consistent gres_per_node/task values
+ * IN/OUT cpus_per_task - requested ntasks_per_socket count, may be reset to
+ *		      provide consistent gres_per_task/cpus_per_gres values
  * OUT gres_list - List of GRES records for this job to track usage
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
@@ -479,9 +491,12 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  char *tres_per_socket,
 					  char *tres_per_task,
 					  char *mem_per_tres,
-					  uint32_t num_tasks,
-					  uint32_t min_nodes,
-					  uint32_t max_nodes,
+					  uint32_t *num_tasks,
+					  uint32_t *min_nodes,
+					  uint32_t *max_nodes,
+					  uint16_t *ntasks_per_node,
+					  uint16_t *ntasks_per_socket,
+					  uint16_t *cpus_per_task,
 					  List *gres_list);
 
 /*

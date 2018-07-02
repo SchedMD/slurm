@@ -3379,9 +3379,15 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 						job_ptr->tres_per_socket,
 						job_ptr->tres_per_task,
 						job_ptr->mem_per_tres,
-						job_ptr->details->num_tasks,
-						job_ptr->details->min_nodes,
-						job_ptr->details->max_nodes,
+						&job_ptr->details->num_tasks,
+						&job_ptr->details->min_nodes,
+						&job_ptr->details->max_nodes,
+						&job_ptr->details->
+							ntasks_per_node,
+						&job_ptr->details->mc_ptr->
+							ntasks_per_socket,
+						&job_ptr->details->
+							cpus_per_task,
 						&job_ptr->gres_list);
 				assoc_mgr_lock(&locks);
 				gres_set_job_tres_cnt(job_ptr->gres_list,

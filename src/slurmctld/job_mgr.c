@@ -6862,9 +6862,12 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 						job_desc->tres_per_socket,
 						job_desc->tres_per_task,
 						job_desc->mem_per_tres,
-						job_desc->num_tasks,
-						job_desc->min_nodes,
-						job_desc->max_nodes,
+						&job_desc->num_tasks,
+						&job_desc->min_nodes,
+						&job_desc->max_nodes,
+						&job_desc->ntasks_per_node,
+						&job_desc->ntasks_per_socket,
+						&job_desc->cpus_per_task,
 						&gres_list)))
 		goto cleanup_fail;
 
@@ -7339,7 +7342,6 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	}
 
 	/* Only set min and max cpus if overcommit isn't set */
-info("CPUS:%u:%u", job_desc->min_cpus, job_desc->max_cpus);
 	if ((job_desc->overcommit == NO_VAL8) &&
 	    (job_desc->min_cpus   != NO_VAL)  &&
 	    (job_desc->num_tasks  != NO_VAL)  &&
@@ -7360,7 +7362,6 @@ info("CPUS:%u:%u", job_desc->min_cpus, job_desc->max_cpus);
 		    (job_desc->max_cpus < job_desc->min_cpus))
 			job_desc->max_cpus = job_desc->min_cpus;
 	}
-info("CPUS:%u:%u", job_desc->min_cpus, job_desc->max_cpus);
 
 	if (job_desc->reboot && (job_desc->reboot != NO_VAL16))
 		job_desc->shared = 0;
@@ -11956,6 +11957,68 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	    job_specs->tres_per_node   || job_specs->tres_per_socket ||
 	    job_specs->tres_per_task   || job_specs->mem_per_tres)
 		gres_update = true;
+	if (gres_update) {
+		uint16_t orig_ntasks_per_socket = NO_VAL16;
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
+		    (detail_ptr->expanding_jobid != 0)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+			goto fini;
+		}
+
+		if (job_specs->num_tasks == NO_VAL)
+			job_specs->num_tasks = detail_ptr->num_tasks;
+		if (job_specs->min_nodes == NO_VAL)
+			job_specs->min_nodes = detail_ptr->min_nodes;
+		if (job_specs->max_nodes == NO_VAL)
+			job_specs->max_nodes = detail_ptr->max_nodes;
+		if (job_specs->ntasks_per_node == NO_VAL16)
+			job_specs->ntasks_per_node = detail_ptr->ntasks_per_node;
+		if ((job_specs->ntasks_per_socket == NO_VAL16) &&
+		    (detail_ptr->mc_ptr) &&
+		    (detail_ptr->mc_ptr->ntasks_per_socket != INFINITE16)) {
+			job_specs->ntasks_per_socket =
+				mc_ptr->ntasks_per_socket;
+			orig_ntasks_per_socket = job_specs->ntasks_per_socket;
+		}
+		if (job_specs->cpus_per_task == NO_VAL16)
+			job_specs->cpus_per_task = detail_ptr->cpus_per_task;
+		gres_list = gres_plugin_job_state_dup(job_ptr->gres_list);
+		if ((error_code = gres_plugin_job_state_validate(
+						job_specs->cpus_per_tres,
+						job_specs->tres_per_job,
+						job_specs->tres_per_node,
+						job_specs->tres_per_socket,
+						job_specs->tres_per_task,
+						job_specs->mem_per_tres,
+						&job_specs->num_tasks,
+						&job_specs->min_nodes,
+						&job_specs->max_nodes,
+						&job_specs->ntasks_per_node,
+						&job_specs->ntasks_per_socket,
+						&job_specs->cpus_per_task,
+						&gres_list))) {
+			info("sched: update_job: invalid GRES for job %u",
+			     job_ptr->job_id);
+			goto fini;
+		}
+		if (job_specs->num_tasks == detail_ptr->num_tasks)
+			job_specs->num_tasks = NO_VAL;	/* Unchanged */
+		if (job_specs->min_nodes == detail_ptr->min_nodes)
+			job_specs->min_nodes = NO_VAL;	/* Unchanged */
+		if (job_specs->max_nodes == detail_ptr->max_nodes)
+			job_specs->max_nodes = NO_VAL;	/* Unchanged */
+		if (job_specs->ntasks_per_node == detail_ptr->ntasks_per_node)
+			job_specs->ntasks_per_node = NO_VAL16;	/* Unchanged */
+		if (job_specs->ntasks_per_socket == orig_ntasks_per_socket)
+			job_specs->ntasks_per_socket = NO_VAL16; /* Unchanged */
+		if (job_specs->cpus_per_task == detail_ptr->cpus_per_task)
+			job_specs->cpus_per_task = NO_VAL16;	/* Unchanged */
+	}
+	if (gres_update) {
+//FIXME: TRES counts not necessarily established for GRES at this point
+		gres_set_job_tres_cnt(gres_list, detail_ptr->min_nodes,
+				      job_specs->tres_req_cnt, false);
+	}
 
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (job_specs->min_nodes != INFINITE)) {
@@ -12026,34 +12089,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_specs->min_nodes != NO_VAL ?
 		job_specs->min_nodes :
 		detail_ptr ? detail_ptr->min_nodes : 1);
-
-	if (gres_update) {
-		gres_list = gres_plugin_job_state_dup(job_ptr->gres_list);
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
-		    (detail_ptr->expanding_jobid != 0)) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if ((error_code = gres_plugin_job_state_validate(
-						job_specs->cpus_per_tres,
-						job_specs->tres_per_job,
-						job_specs->tres_per_node,
-						job_specs->tres_per_socket,
-						job_specs->tres_per_task,
-						job_specs->mem_per_tres,
-						job_specs->num_tasks,
-						job_specs->min_nodes,
-						job_specs->max_nodes,
-						&gres_list))) {
-			info("sched: update_job: invalid GRES for job %u",
-			     job_ptr->job_id);
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-	if (gres_update) {
-//FIXME: TRES counts not necessarily established for GRES at this point
-		gres_set_job_tres_cnt(gres_list, detail_ptr->min_nodes,
-				      job_specs->tres_req_cnt, false);
-	}
 
 	if (job_specs->licenses && !xstrcmp(job_specs->licenses,
 					    job_ptr->licenses)) {
@@ -13189,11 +13224,30 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if (operator) {
 			detail_ptr->ntasks_per_node =
 				job_specs->ntasks_per_node;
-			info("sched: update_job: setting ntasks_per_node to %u"
-			     " for job_id %u", job_specs->ntasks_per_node,
+			info("sched: update_job: setting ntasks_per_node to %u "
+			     "for job_id %u", job_specs->ntasks_per_node,
 			     job_ptr->job_id);
 		} else {
-			error("sched: Not super user: ignore ntasks_oper_node "
+			error("sched: Not super user: ignore ntasks_per_node "
+			      "change for job %u", job_ptr->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_specs->ntasks_per_socket != NO_VAL16) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
+		    (detail_ptr->mc_ptr == NULL)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else if (operator) {
+			detail_ptr->mc_ptr->ntasks_per_socket =
+				job_specs->ntasks_per_socket;
+			info("sched: update_job: setting ntasks_per_socket to %u "
+			     "for job_id %u", job_specs->ntasks_per_socket,
+			     job_ptr->job_id);
+		} else {
+			error("sched: Not super user: ignore ntasks_per_socket "
 			      "change for job %u", job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}

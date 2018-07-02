@@ -55,6 +55,7 @@ set gpu_bind "closest"
 set gpu_freq "medium"
 set tot_gpus $gpu_cnt
 if {$nb_nodes > 1} {
+	set nb_nodes 2
 	incr tot_gpus $gpu_cnt
 }
 set gpus_per_node $gpu_cnt
@@ -82,7 +83,7 @@ exit 0"
 #
 set match 0
 set timeout $max_job_delay
-spawn $salloc --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu -t1 ./$file_in
+spawn $salloc --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu -N$nb_nodes -t1 ./$file_in
 expect {
 	-re "CpusPerTres=gpu:$cpus_per_gpu" {
 		incr match

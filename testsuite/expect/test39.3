@@ -55,6 +55,7 @@ set gpu_bind "closest"
 set gpu_freq "medium"
 set tot_gpus $gpu_cnt
 if {$nb_nodes > 1} {
+	set nb_nodes 2
 	incr tot_gpus $gpu_cnt
 }
 set gpus_per_node $gpu_cnt
@@ -79,40 +80,42 @@ exit 0"
 
 #
 # Spawn srun job with various --gpu options
+# We only look at the output of the first task. Multiple tasks may be used
+# due to the various options.
 #
 set match 0
 set timeout $max_job_delay
-spawn $srun --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu -n1 -t1 ./$file_in
+spawn $srun --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu -N$nb_nodes -t1 -l ./$file_in
 expect {
-	-re "CpusPerTres=gpu:$cpus_per_gpu" {
+	-re "0: *CpusPerTres=gpu:$cpus_per_gpu" {
 		incr match
 		exp_continue
 	}
-	-re "MemPerTres=gpu:$mem_per_gpu" {
+	-re "0: *MemPerTres=gpu:$mem_per_gpu" {
 		incr match
 		exp_continue
 	}
-	-re "TresBind=gpu:$gpu_bind" {
+	-re "0: *TresBind=gpu:$gpu_bind" {
 		incr match
 		exp_continue
 	}
-	-re "TresFreq=gpu:$gpu_freq" {
+	-re "0: *TresFreq=gpu:$gpu_freq" {
 		incr match
 		exp_continue
 	}
-	-re "TresPerStep=gpu:$tot_gpus" {
+	-re "0: *TresPerStep=gpu:$tot_gpus" {
 		incr match
 		exp_continue
 	}
-	-re "TresPerNode=gpu:$gpus_per_node" {
+	-re "0: *TresPerNode=gpu:$gpus_per_node" {
 		incr match
 		exp_continue
 	}
-	-re "TresPerSocket=gpu:$gpus_per_socket" {
+	-re "0: *TresPerSocket=gpu:$gpus_per_socket" {
 		incr match
 		exp_continue
 	}
-	-re "TresPerTask=gpu:$gpus_per_task" {
+	-re "0: *TresPerTask=gpu:$gpus_per_task" {
 		incr match
 		exp_continue
 	}
