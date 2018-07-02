@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
     in 17.11.7.
  -- Fix to reinitialize previously adjusted job members to their original value
     when validating the job memory in multi-partition requests.
+ -- Fix _step_signal() from always returning SLURM_SUCCESS.
 
 * Changes in Slurm 17.11.7
 ==========================
