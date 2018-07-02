@@ -102,6 +102,7 @@
 
 #define MAX_RETRIES		100
 #define MAX_RPC_PACK_CNT	100
+#define RPC_PACK_MAX_AGE	30	/* Rebuild data over 30 seconds old */
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
@@ -213,6 +214,10 @@ static bool pending_mail = false;
 static bool pending_thread_running = false;
 
 static bool run_scheduler    = false;
+
+static uint32_t *rpc_counts = NULL, *rpc_types = NULL;
+static uint32_t type_count = 0;
+static time_t cache_build_time = 0;
 
 /*
  * agent - party responsible for transmitting an common RPC in parallel
@@ -1406,41 +1411,52 @@ extern void agent_trigger(int min_wait, bool mail_too)
 /* agent_pack_pending_rpc_stats - pack counts of pending RPCs into a buffer */
 extern void agent_pack_pending_rpc_stats(Buf buffer)
 {
+	time_t now;
 	int i;
-	uint32_t type_count = 0;
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
 	ListIterator list_iter;
-	uint32_t *rpc_counts = NULL, *rpc_types = NULL;
+
+	now = time(NULL);
+	if (difftime(now, cache_build_time) <= RPC_PACK_MAX_AGE)
+		goto pack_it;	/* Send cached data */
+	cache_build_time = now;
+
+	if (rpc_counts) {	/* Clear existing data */
+		type_count = 0;
+		memset(rpc_counts, 0, sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+		memset(rpc_types,  0, sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+	} else {		/* Allocate buffers for data */
+		rpc_counts = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+		rpc_types  = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+	}
 
 	slurm_mutex_lock(&retry_mutex);
-	if (!retry_list || (list_count(retry_list) == 0))
-		goto cleanup;
-	rpc_counts = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
-	rpc_types  = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
-	list_iter = list_iterator_create(retry_list);
-	/* iterate through list, find type slot or make a new one */
-	while ((queued_req_ptr = (queued_request_t *) list_next(list_iter))) {
-		agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
-		for (i = 0; i < MAX_RPC_PACK_CNT; i++) {
-			if (rpc_types[i] == 0) {
-				rpc_types[i] = agent_arg_ptr->msg_type;
-				type_count++;
-			} else if (rpc_types[i] != agent_arg_ptr->msg_type)
-				continue;
-			rpc_counts[i]++;
-			break;
+	if (retry_list) {
+		list_iter = list_iterator_create(retry_list);
+		/* iterate through list, find type slot or make a new one */
+		while ((queued_req_ptr = (queued_request_t *)
+					 list_next(list_iter))) {
+			agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+			for (i = 0; i < MAX_RPC_PACK_CNT; i++) {
+				if (rpc_types[i] == 0) {
+					rpc_types[i] = agent_arg_ptr->msg_type;
+					type_count++;
+				} else if (rpc_types[i] !=
+					   agent_arg_ptr->msg_type)
+					continue;
+				rpc_counts[i]++;
+				break;
+			}
 		}
+		list_iterator_destroy(list_iter);
 	}
-	list_iterator_destroy(list_iter);
-cleanup:
 	slurm_mutex_unlock(&retry_mutex);
 
+pack_it:
 	pack32(type_count, buffer);
 	pack32_array(rpc_types,  type_count, buffer);
 	pack32_array(rpc_counts, type_count, buffer);
-	xfree(rpc_counts);
-	xfree(rpc_types);
 }
 
 /* Do the work requested by agent_retry (retry pending RPCs).
@@ -1630,6 +1646,9 @@ extern void agent_purge(void)
 		FREE_NULL_LIST(mail_list);
 		slurm_mutex_unlock(&mail_mutex);
 	}
+
+	xfree(rpc_counts);
+	xfree(rpc_types);
 }
 
 extern int get_agent_count(void)
