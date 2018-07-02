@@ -202,6 +202,10 @@ int main(int argc, char **argv)
 			list_append(job_req_list, desc);
 		}
 	}
+	if (!desc) {	/* For CLANG false positive */
+		error("Internal parsing error");
+		exit(1);
+	}
 
 	if (job_env_list) {
 		ListIterator desc_iter, env_iter;
@@ -220,9 +224,15 @@ int main(int argc, char **argv)
 		set_envs(&desc->environment, &pack_env, -1);
 		desc->env_size = envcount(desc->environment);
 	}
+	if (!desc) {	/* For CLANG false positive */
+		error("Internal parsing error");
+		exit(1);
+	}
 
-	/* If can run on multiple clusters find the earliest run time
-	 * and run it there */
+	/*
+	 * If can run on multiple clusters find the earliest run time
+	 * and run it there
+	 */
 	if (opt.clusters) {
 		if (job_req_list) {
 			rc = slurmdb_get_first_pack_cluster(job_req_list,
