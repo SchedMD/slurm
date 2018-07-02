@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test full set of sbatch --gpu options and scontrol show job.
+#          Test some invalid combintations of --gpu options
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -30,13 +30,14 @@
 ############################################################################
 source ./globals
 
-set test_id     "39.1"
+set test_id     "39.4"
 set exit_code   0
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
 set job_id      0
 
 print_header $test_id
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
 
 set gpu_cnt [get_gpu_count]
 if {$gpu_cnt < 0} {
@@ -49,43 +50,20 @@ if {$gpu_cnt < 1} {
 }
 send_user "\nGPU count is $gpu_cnt\n"
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
-
-set cpus_per_gpu 1
-set gpu_bind "closest"
-set gpu_freq "medium"
-set tot_gpus $gpu_cnt
-if {$nb_nodes > 1} {
-	set nb_nodes 2
-	incr tot_gpus $gpu_cnt
-}
-set gpus_per_node $gpu_cnt
-if {$gpus_per_node > 1} {
-	set gpus_per_socket [expr $gpus_per_node / 2]
-} else {
-	set gpus_per_socket $gpus_per_node
-}
-if {$gpus_per_socket > 1} {
-	set gpus_per_task [expr $gpus_per_socket / 2]
-} else {
-	set gpus_per_task $gpus_per_socket
-}
-set mem_per_gpu 10
-
 #
-# Build input script file
+# Request more GPUs per node than exist on a single node
 #
-exec $bin_rm -f $file_in $file_out
-make_bash_script $file_in "$scontrol show job \$SLURM_JOB_ID"
-
-#
-# Spawn a batch job with various --gpu options
-#
-spawn $sbatch --output=/dev/null --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu -N$nb_nodes -t1 ./$file_in
+send_user "\n\n==== TEST 1 ====\n"
+spawn $sbatch --gpus-per-node=[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
 		exp_continue
 	}
 	timeout {
@@ -96,45 +74,21 @@ expect {
 		wait
 	}
 }
-if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
-	exec $bin_rm -f $file_in $file_out
-	exit 1
-}
 
-set match 0
-spawn $scontrol show job $job_id
+#
+# Specify 1 node and more GPUs than exist on a single node
+#
+send_user "\n\n==== TEST 2 ====\n"
+spawn $sbatch --gpus-per-node=$gpu_cnt --gres=[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
-	-re "CpusPerTres=gpu:$cpus_per_gpu" {
-		incr match
+	-re "Submitted batch job ($number)" {
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
 		exp_continue
 	}
-	-re "MemPerTres=gpu:$mem_per_gpu" {
-		incr match
-		exp_continue
-	}
-	-re "TresBind=gpu:$gpu_bind" {
-		incr match
-		exp_continue
-	}
-	-re "TresFreq=gpu:$gpu_freq" {
-		incr match
-		exp_continue
-	}
-	-re "TresPerJob=gpu:$tot_gpus" {
-		incr match
-		exp_continue
-	}
-	-re "TresPerNode=gpu:$gpus_per_node" {
-		incr match
-		exp_continue
-	}
-	-re "TresPerSocket=gpu:$gpus_per_socket" {
-		incr match
-		exp_continue
-	}
-	-re "TresPerTask=gpu:$gpus_per_task" {
-		incr match
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
 		exp_continue
 	}
 	timeout {
@@ -145,14 +99,58 @@ expect {
 		wait
 	}
 }
-if {$match != 8} {
-	send_user "\nFAILURE: sbatch gpu options not fully processed ($match != 8)\n"
-	set exit_code 1
 
+#
+# Specify inconsistent --cpus-per-task and --gpus-per-task/--cpus-per-gpu
+#
+send_user "\n\n==== TEST 3 ====\n"
+spawn $sbatch --gpus-per-task=1 --cpus-per-gpu=1 --cpus-per-task=2 -N1 --output=/dev/null -t1 --wrap $bin_hostname
+expect {
+	-re "Submitted batch job ($number)" {
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
-cancel_job $job_id
+
+#
+# Specify inconsistent tasks per node
+#
+send_user "\n\n==== TEST 4 ====\n"
+spawn $sbatch --gpus-per-task=1 --gpus-per-node=1 -n2 -N1 --output=/dev/null -t1 --wrap $bin_hostname
+expect {
+	-re "Submitted batch job ($number)" {
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
