@@ -101,6 +101,7 @@
 #include "src/slurmctld/srun_comm.h"
 
 #define MAX_RETRIES		100
+#define MAX_RPC_PACK_CNT	100
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
@@ -1400,6 +1401,46 @@ extern void agent_trigger(int min_wait, bool mail_too)
 		pending_mail = mail_too;
 	slurm_cond_broadcast(&pending_cond);
 	slurm_mutex_unlock(&pending_mutex);
+}
+
+/* agent_pack_pending_rpc_stats - pack counts of pending RPCs into a buffer */
+extern void agent_pack_pending_rpc_stats(Buf buffer)
+{
+	int i;
+	uint32_t type_count = 0;
+	queued_request_t *queued_req_ptr = NULL;
+	agent_arg_t *agent_arg_ptr = NULL;
+	ListIterator list_iter;
+	uint32_t *rpc_counts = NULL, *rpc_types = NULL;
+
+	slurm_mutex_lock(&retry_mutex);
+	if (!retry_list || (list_count(retry_list) == 0))
+		goto cleanup;
+	rpc_counts = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+	rpc_types  = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+	list_iter = list_iterator_create(retry_list);
+	/* iterate through list, find type slot or make a new one */
+	while ((queued_req_ptr = (queued_request_t *) list_next(list_iter))) {
+		agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+		for (i = 0; i < MAX_RPC_PACK_CNT; i++) {
+			if (rpc_types[i] == 0) {
+				rpc_types[i] = agent_arg_ptr->msg_type;
+				type_count++;
+			} else if (rpc_types[i] != agent_arg_ptr->msg_type)
+				continue;
+			rpc_counts[i]++;
+			break;
+		}
+	}
+	list_iterator_destroy(list_iter);
+cleanup:
+	slurm_mutex_unlock(&retry_mutex);
+
+	pack32(type_count, buffer);
+	pack32_array(rpc_types,  type_count, buffer);
+	pack32_array(rpc_counts, type_count, buffer);
+	xfree(rpc_counts);
+	xfree(rpc_types);
 }
 
 /* Do the work requested by agent_retry (retry pending RPCs).

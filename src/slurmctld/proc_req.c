@@ -6288,6 +6288,9 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 		pack32_array(rpc_user_id,   i, buffer);
 		pack32_array(rpc_user_cnt,  i, buffer);
 		pack64_array(rpc_user_time, i, buffer);
+
+		agent_pack_pending_rpc_stats(buffer);
+
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		for (i = 0; i < rpc_type_size; i++) {
 			if (rpc_type_id[i] == 0)

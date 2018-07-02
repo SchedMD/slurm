@@ -14557,6 +14557,11 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 		safe_unpack32_array(&msg->rpc_user_id,   &uint32_tmp, buffer);
 		safe_unpack32_array(&msg->rpc_user_cnt,  &uint32_tmp, buffer);
 		safe_unpack64_array(&msg->rpc_user_time, &uint32_tmp, buffer);
+
+		safe_unpack32(&msg->rpc_queue_type_count, buffer);
+		safe_unpack32_array(&msg->rpc_queue_type_id, &uint32_tmp,
+				    buffer);
+		safe_unpack32_array(&msg->rpc_queue_count, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->parts_packed,	buffer);
 		if (msg->parts_packed) {
