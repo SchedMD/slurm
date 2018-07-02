@@ -6312,6 +6312,10 @@ static int _get_job_parts(job_desc_msg_t * job_desc,
 					part_ptr_tmp->name);
 			}
 			list_iterator_destroy(iter);
+			if (!part_ptr) {
+				rc = ESLURM_PARTITION_NOT_AVAIL;
+				goto fini;
+			}
 		}
 	} else {
 		rc = _alt_part_test(part_ptr, &part_ptr_new);
