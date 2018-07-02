@@ -4273,7 +4273,12 @@ static int _receive_fd(int socket)
 	}
 
 	cmsg = CMSG_FIRSTHDR(&msg);
+	if (!cmsg) {
+		error("%s: CMSG_FIRSTHDR error: %m", __func__);
+		return -1;
+	}
 	memmove(&fd, CMSG_DATA(cmsg), sizeof(fd));
+
 	return fd;
 }
 
