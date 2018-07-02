@@ -67,6 +67,12 @@ int main(int argc, char *argv[])
 	bitstr_t *cpu_bitmap;
 	char config_dir[10000], test[1000];
 	char slurm_conf[1000];
+	uint32_t num_tasks = 1;
+	uint32_t min_nodes = 1;
+	uint32_t max_nodes = 1;
+	uint16_t ntasks_per_node = NO_VAL16;
+	uint16_t ntasks_per_socket = NO_VAL16;
+	uint16_t cpus_per_task = NO_VAL16;
 
 	/* Setup slurm.conf and gres.conf test paths */
 	strcpy(config_dir, argv[2]);
@@ -140,9 +146,12 @@ int main(int argc, char *argv[])
 					    NULL,	/* tres_per_socket */
 					    NULL,	/* tres_per_task */
 					    NULL,	/* mem_per_tres */
-					    1,		/* num_tasks */
-					    1,		/* min_nodes */
-					    1,		/* max_nodes */
+					    &num_tasks,
+					    &min_nodes,
+					    &max_nodes,
+					    &ntasks_per_node,
+					    &ntasks_per_socket,
+					    &cpus_per_task,
 					    &job_gres_list);
 	if (rc != SLURM_SUCCESS) {
 		slurm_seterrno(rc);
