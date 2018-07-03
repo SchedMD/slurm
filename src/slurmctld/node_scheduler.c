@@ -133,6 +133,8 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 				 struct config_record *config_ptr,
 				 bool can_reboot);
 
+static uint32_t reboot_weight = 0;
+
 /*
  * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
  *	the given job_details record.  If it wasn't set, return 0xffff.
@@ -1046,7 +1048,6 @@ static void _filter_by_node_feature(struct job_record *job_ptr,
 				    struct node_set *node_set_ptr,
 				    int node_set_size)
 {
-	static uint32_t reboot_weight = 0;
 	int i;
 
 	if ((job_ptr->details == NULL) ||
@@ -1055,8 +1056,6 @@ static void _filter_by_node_feature(struct job_record *job_ptr,
 	      time(NULL))))
 		return;
 
-	if (reboot_weight == 0)
-		reboot_weight = node_features_g_reboot_weight();
 	for (i = 0; i < node_set_size; i++) {
 		if (node_set_ptr[i].weight != reboot_weight)
 			continue;
@@ -1080,7 +1079,6 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		  bool test_only, List *preemptee_job_list, bool can_reboot,
 		  bool submission)
 {
-	static uint32_t reboot_weight = 0;
 	uint32_t saved_min_nodes, saved_job_min_nodes, saved_job_num_tasks;
 	bitstr_t *saved_req_node_bitmap = NULL;
 	bitstr_t *inactive_bitmap = NULL;
@@ -1098,9 +1096,6 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bool resv_overlap = false;
 	uint32_t powercap;
 	int layout_power;
-
-	if (reboot_weight == 0)
-		reboot_weight = node_features_g_reboot_weight();
 
 	/*
 	 * Mark nodes reserved for other jobs as off limit for this job.
@@ -1910,7 +1905,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				node_set_map =
 					bit_copy(node_set_ptr[i].my_bitmap);
 
-				if (node_set_ptr[i].weight == INFINITE - 1) {
+				if (node_set_ptr[i].weight == reboot_weight) {
 					/* Node reboot required */
 					bit_and(node_set_map,
 						idle_node_bitmap);
@@ -1948,7 +1943,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						node_set_ptr[i].my_bitmap);
 			}
 
-			if (node_set_ptr[i].weight == INFINITE - 1) {
+			if (node_set_ptr[i].weight == reboot_weight) {
 				/* Node reboot required */
 				count1 = bit_set_count(node_set_ptr[i].
 						       my_bitmap);
@@ -2502,6 +2497,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	if (!acct_policy_job_runnable_pre_select(job_ptr, false))
 		return ESLURM_ACCOUNTING_POLICY;
+
+	if (reboot_weight == 0)
+		reboot_weight = node_features_g_reboot_weight();
 
 	part_ptr = job_ptr->part_ptr;
 
@@ -3483,7 +3481,6 @@ static int _build_node_list(struct job_record *job_ptr,
 			    int *node_set_size, char **err_msg, bool test_only,
 			    bool can_reboot)
 {
-	static uint32_t reboot_weight = 0;
 	int adj_cpus, i, node_set_inx, node_set_len, power_cnt, rc;
 	struct node_set *node_set_ptr, *prev_node_set_ptr;
 	struct config_record *config_ptr;
@@ -3499,8 +3496,6 @@ static int _build_node_list(struct job_record *job_ptr,
 	bool has_xor = false;
 	bool resv_overlap = false;
 
-	if (reboot_weight == 0)
-		reboot_weight = node_features_g_reboot_weight();
 	if (job_ptr->resv_name) {
 		/*
 		 * Limit node selection to those in selected reservation.
