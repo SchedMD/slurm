@@ -3996,12 +3996,12 @@ end_node_set:
  */
 static void _set_sched_weight(struct node_set *node_set_ptr)
 {
-	node_set_ptr->sched_weight = node_set_ptr->node_weight << 4;
+	node_set_ptr->sched_weight = node_set_ptr->node_weight;
 	if ((node_set_ptr->flags & NODE_SET_REBOOT) ||
 	    (node_set_ptr->flags & NODE_SET_POWER_DN))	/* Boot required */
-		node_set_ptr->sched_weight |= 0x0200000000;
+		node_set_ptr->sched_weight |= 0x200000000;
 	if (node_set_ptr->flags & NODE_SET_OUTSIDE_FLEX)
-		node_set_ptr->sched_weight |= 0x0100000000;
+		node_set_ptr->sched_weight |= 0x100000000;
 }
 
 static int _sort_node_set(const void *x, const void *y)
