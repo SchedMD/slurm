@@ -85,6 +85,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
 
+#define _DEBUG	0
 #define MAX_FEATURES  32	/* max exclusive features "[fs1|fs2]"=2 */
 
 struct node_set {		/* set of nodes with same configuration */
@@ -692,7 +693,7 @@ extern void find_feature_nodes(List feature_list, bool can_reboot)
 			job_feat_ptr->node_bitmap_avail =
 				bit_copy(job_feat_ptr->node_bitmap_active);
 		}
-#if 1
+#if _DEBUG
 {
 		char *tmp1, *tmp2, *tmp3, *tmp4 = NULL;
 		if (job_feat_ptr->op_code == FEATURE_OP_OR)
@@ -4019,7 +4020,7 @@ static void _log_node_set(uint32_t job_id, struct node_set *node_set_ptr,
 			  int node_set_size)
 {
 /* Used for debugging purposes only */
-#if 1
+#if _DEBUG
 	char *node_list;
 	int i;
 
@@ -4431,7 +4432,7 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 	}
 	list_iterator_destroy(feat_iter);
 
-#if 1
+#if _DEBUG
 {
 	char tmp[64];
 	bit_fmt(tmp, sizeof(tmp), result_node_bitmap);
