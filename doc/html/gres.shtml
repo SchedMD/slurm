@@ -79,8 +79,16 @@ If any core can be effectively used with the resources, then do not specify the
 Cores option for improved speed in the Slurm scheduling logic.
 
 <B>NOTE:</B> If your cores contain multiple threads only list the first thread
-of each core.  The logic is such that it uses core instead of thread scheduling
-per GRES.
+of each core. The logic is such that it uses core instead of thread scheduling
+per GRES. Also note that since Slurm must be able to perform resource
+management on heterogeneous clusters having various core ID numbering schemes,
+an abstract index will be used instead of the physical core index. That
+abstract id may not correspond to your physical core number.
+Basically Slurm starts numbering from 0 to n, being 0 the id of the first
+processing unit (core or thread if HT is enabled) on the first socket,
+first core and maybe first thread, and then continuing sequentially to the
+next thread, core, and socket. The numbering generally coincides with the
+processing unit logical number (PU L#) seen in lstopo output.
 
 <LI><B>File</B> Fully qualified pathname of the device files associated with a
 resource.
