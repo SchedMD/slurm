@@ -271,15 +271,18 @@ the same user's soft hard resource limits on the node from which the
 job was submitted. It is recommended that the system administrator
 establish uniform hard resource limits for users on all nodes
 within a cluster to prevent this from occurring.</li>
-</ul></p>
+<li>PropagateResourceLimits or PropagateResourceLimitsExcept parameters are
+configured in slurm.conf and avoid propagation of specified limits.</li>
+</ul>
+</p>
 <p>NOTE: This may produce the error message &quot;Can't propagate RLIMIT_...&quot;.
 The error message is printed only if the user explicitly specifies that
 the resource limit should be propagated or the srun command is running
 with verbose logging of actions from the slurmd daemon (e.g. "srun -d6 ...").</p>
 
 <p><a name="pending"><b>3. Why is my job not running?</b></a><br>
-The answer to this question depends upon the scheduler used by Slurm. Executing
-the command</p>
+The answer to this question depends on a lot of factors. Main one relies upon
+the scheduler used by Slurm. Executing the command</p>
 <blockquote>
 <p> <span class="commandline">scontrol show config | grep SchedulerType</span></p>
 </blockquote>
@@ -297,7 +300,10 @@ jobs will be limited. The backfill scheduler does not alter job specifications
 of required or excluded nodes, so jobs which specify nodes will substantially
 reduce the effectiveness of backfill scheduling. See the <a href="#backfill">
 backfill</a> section for more details. For any scheduler, you can check priorities
-of jobs using the command <span class="commandline">scontrol show job</span>.</p>
+of jobs using the command <span class="commandline">scontrol show job</span>.
+Other reasons can include waiting for resources, memory, qos, reservations, etc.
+As a guide line, issue an <span class="commandline">scontrol show job &lt;jobid&gt;</span>
+and look at the field <i>State</i> and <i>Reason</i> to investigate the cause.</p></p>
 
 <p><a name="sharing"><b>4. Why does the srun --overcommit option not permit multiple jobs
 to run on nodes?</b></a><br>
@@ -419,14 +425,21 @@ the processes).
 The environment variables in effect at the time the <i>srun</i> command
 is executed are propagated to the spawned processes.
 The <i>~/.profile</i> and <i>~/.bashrc</i> scripts are not executed
-as part of the process launch.</p>
+as part of the process launch. You can also look at <i>--export</i> option of
+srun and sbatch. See man pages for details.</p>
 
 <p><a name="prompt"><b>12. How can I get shell prompts in interactive
 mode?</b></a><br>
-<i>srun --pty bash -i</i><br>
+<i>srun --pty bash -i</i><br/>
 Srun's <i>--pty</i> option runs task zero in pseudo terminal mode.
 Bash's <i>-i</i> option tells it to run in interactive mode (with prompts).
-
+<br/>You can also configure <i>SallocDefaultCommand</i> in <i>slurm.conf</i>
+to automatically launch a shell, e.g.:
+<pre>
+SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu_bind=no --mpi=none $SHELL"
+</pre>
+And then run <i>salloc</i> directly which will provide you an allocation with
+an interactive shell console.
 <p><a name="batch_out"><b>13. How can I get the task ID in the output
 or error file name for a batch job?</b></a><br>
 <p>If you want separate output by task, you will need to build a script
@@ -473,8 +486,17 @@ will be unchanged.</p>
 
 <p><a name="terminal"><b>15. Can tasks be launched with a remote (pseudo)
 terminal?</b></a><br>
-Use srun's <i>--pty</i> option.
-
+You have several ways to do so, the recommended ones are the following:<br>
+The simplest method is to make use of srun's <i>--pty</i> option,
+(e.g. <i>srun --pty bash -i</i>).
+Srun's <i>--pty</i> option runs task zero in pseudo terminal mode. Bash's
+<i>-i</i> option instructs it to run in interactive mode (with prompts).<br>
+In addition to that method you have the option to define the
+<i>SallocDefaultCommand</i> to run a task in pseudo terminal mode directly,
+so you get the prompt just invoking salloc:
+<pre>SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu_bind=no --mpi=none $SHELL"</pre>
+Finally you can make use of X11 feature and run a graphical terminal.
+(e.g. <i>srun xterm</i>).<br>
 <p><a name="force"><b>16. What does &quot;srun: Force Terminated job&quot;
 indicate?</b></a><br>
 The srun command normally terminates when the standard output and
@@ -968,10 +990,29 @@ regex white:default ^JOBID.*
 </pre>
 <img src="squeue_color.png" width=600>
 
-<p><a name="x11"><b>33. Can Slurm export an X11 display on an allocated compute node?</b></a><br>
-You will need to build and install an optional SPANK plugin for that functionality
-today. The functionality should be provided natively in Slurm soon. Instructions
-to build and install the plugin follow. Update the Slurm installation path as needed.</p>
+<p><a name="x11"><b>33. Can Slurm export an X11 display on an allocated compute node?</b></a><br/>
+You can use the X11 builtin feature starting at version 17.11. This plugin is
+based on libssh2 and it supports <i>hostbased</i> and <i>pubkey</i>
+authentication.<br/>You just need to have <i>libssh2</i> installed on compute
+nodes, <i>libssh2</i> development package installed in the build host at build
+time and <i>PrologFlags=x11</i> set in <i>slurm.conf</i>. You will need also
+user public/private keys available on compute nodes or otherwise a
+<i>hostbased</i> authentication setup in your ssh servers.
+Other X11 plugins must be deactivated.
+<br/>
+Run it as shown:
+</p>
+<pre>
+$ ssh -X user@login1
+$ srun -n1 --pty --x11 xclock
+</pre>
+<p>
+An alternative for older versions is to build and install an optional SPANK
+plugin for that functionality. Instructions to build and install the plugin
+follow. This SPANK plugin will not work if used in combination with native X11
+support so you must disable it compiling Slurm with <i>--disable-x11</i>. This
+plugin relies on openssh library and it provides features such as GSSAPI
+support.<br/> Update the Slurm installation path as needed:</p>
 <pre>
 # Maybe obvious, but don't forget the -X on ssh
 $ ssh -X alex@testserver.com
@@ -1483,8 +1524,14 @@ an option of <i>--debug=#</i> will result in the desired level of
 detail being logged in the <i>SlurmdLogFile</i> plus the output
 of the program.
 
-<p><a name="rpm"><b>25. Why isn't the auth_none.so (or other file) in a
+<p><a name="rpm"><b>26. Why isn't the pam_slurm.so (or other component) in a
 Slurm RPM?</b></a><br>
+It is possible that at build time the required dependencies for building the
+library are missing. If you want to build the library then install pam-devel
+and compile again. See the file slurm.spec in the Slurm distribution for a list
+of other options that you can specify at compile time with rpmbuild flags
+and your <i>rpmmacros</i> file.
+
 The auth_none plugin is in a separate RPM and not built by default.
 Using the auth_none plugin means that Slurm communications are not
 authenticated, so you probably do not want to run in this mode of operation
@@ -1506,17 +1553,21 @@ slow down to the controller due to a slow or overloaded database.</li>
 <li>Keeping enterprise wide accounting from all Slurm clusters in one database.
 The slurmdbd is multi-threaded and designed to handle all the
 accounting for the entire enterprise.</li>
-<li>With the new database plugins 1.3+ you can query with sacct
-accounting stats from any node Slurm is installed on.  With the
-slurmdbd you can also query any cluster using the slurmdbd from any
-other cluster's nodes.</li>
+<li>With the database plugins you can query with sacct accounting stats from
+any node Slurm is installed on. With the slurmdbd you can also query any
+cluster using the slurmdbd from any other cluster's nodes. Other tools like
+sreport are also available.</li>
 </ol>
 
 <p><a name="debug"><b>27. How can I build Slurm with debugging symbols?</b></a></br>
-Set your CFLAGS environment variable before building.
-You want the "-g" option to produce debugging information and
-"-O0" to set the optimization level to zero (off). For example:<br>
-CFLAGS="-g -O0" ./configure ...
+When configuring, run the configure script with <i>--enable-developer</i> option.
+That will provide asserts, debug messages and the <i>-Werror</i> flag, that
+will in turn activate <i>--enable-debug</i>.
+<br/>With the <i>--enable-debug</i> flag, the code will be compiled with
+<i>-ggdb3</i> and <i>-g -O1 -fno-strict-aliasing</i> flags that will produce
+extra debugging information. Another possible option to use is
+<i>--disable-optimizations</i> that will set <i>-O0</i>.
+See also <i>auxdir/x_ac_debug.m4</i> for more detail.
 
 <p><a name="state_preserve"><b>28. How can I easily preserve drained node
 information between major Slurm updates?</b></a><br>
@@ -1795,10 +1846,10 @@ nodes to the slurmctld daemon include a configuration file checksum, so you
 probably also want to maintain a common slurm.conf file on all nodes. The
 following procedure is recommended:
 <ol>
-<li>Stop the slurmctld daemon (e.g. "/etc/init.d/slurm stop" on the head node)</li>
+<li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
 <li>Update the slurm.conf file on all nodes in the cluster</li>
-<li>Restart the slurmctld daemon (e.g. "/etc/init.d/slurm start" on the head node)</li>
-<li>Start the slurmd daemons on the new nodes (e.g. "/etc/init.d/slurm start" on those node)</li>
+<li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
+<li>Start the slurmd daemons on the new nodes (e.g. "systemctl start slurmd" on those nodes)</li>
 <li>Have all slurmd daemons read the new configuration file (e.g.
 "scontrol reconfig", no need to restart the daemons)</li>
 </ol>
@@ -1823,7 +1874,7 @@ launch a shell on a node in the job's allocation?</b></a></br>
 Yes, just use the SallocDefaultCommand configuration parameter in your
 slurm.conf file as shown below.</p>
 <pre>
-SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none $SHELL"
+SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu_bind=no --mpi=none $SHELL"
 </pre>
 
 <p>
@@ -2256,6 +2307,6 @@ accessed files within jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 April 2018</p>
+<p style="text-align:center;">Last modified 04 July 2018</p>
 
 <!--#include virtual="footer.txt"-->
