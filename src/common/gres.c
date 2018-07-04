@@ -4184,9 +4184,6 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 
 			safe_unpack8(&has_more, buffer);
 			if (has_more) {
-				gres_job_ptr->gres_cnt_node_alloc =
-					xmalloc(sizeof(uint64_t) *
-						gres_job_ptr->node_cnt);
 				safe_unpack64_array(
 					&gres_job_ptr->gres_cnt_node_alloc,
 					&utmp32, buffer);
@@ -7374,9 +7371,6 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			unpack_bit_str_hex(&gres_step_ptr->node_in_use, buffer);
 			safe_unpack8(&has_file, buffer);
 			if (has_file) {
-				gres_step_ptr->gres_cnt_node_alloc =
-					xmalloc(sizeof(uint64_t) *
-						gres_step_ptr->node_cnt);
 				safe_unpack64_array(
 					&gres_step_ptr->gres_cnt_node_alloc,
 					&uint32_tmp, buffer);
