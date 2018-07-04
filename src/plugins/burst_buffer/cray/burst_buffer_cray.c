@@ -4009,6 +4009,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 
 fini:
 	xfree(client_nodes_file_nid);
+	xfree(exec_host_file);
 	xfree(job_dir);
 	return rc;
 }
