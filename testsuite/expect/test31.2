@@ -136,10 +136,11 @@ expect {
 	}
 }
 if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
 	set exit_code 1
 }
 if {$exit_code} {
-	send_user "\nFAILURE: sbatch did not submit job\n"
+	cancel_job $job_id
 	clean_up
 	exit $exit_code
 }

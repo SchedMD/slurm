@@ -4049,6 +4049,10 @@ proc test_pack_step { } {
 proc reconfigure { {cluster ""} } {
 	global exit_code scontrol
 
+#
+#	Increase timeout in case running under valgrind, default timeout 10 sec
+#
+	set timeout 20
 	if { $cluster == "" } {
 		spawn $scontrol reconfigure
 	} else {
