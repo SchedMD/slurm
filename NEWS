@@ -80,6 +80,8 @@ documents those changes that are of interest to users and administrators.
     but "/usr/bin/mail" does exist then use "/usr/bin/mail" as a default value.
  -- sdiag output now reports outgoing slurmctld message queue contents.
  -- Fix issue in performance when reading slurm conf having nodes with features.
+ -- Make it so the slurmdbd's pid file gets created before initing
+    the database.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
