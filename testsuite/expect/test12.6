@@ -107,6 +107,11 @@ expect {
 set timeout 10
 set srun_pid [spawn $sh5util -j $job_id]
 expect {
+	"Output file generated is empty" {
+		send_user "\nFAILURE: sh5util merge didn't make anything\n"
+		slow_kill $srun_pid
+		exit 1
+	}
 	timeout {
 		send_user "\nFAILURE: sh5util merge not responding\n"
 		slow_kill $srun_pid
@@ -120,6 +125,11 @@ expect {
 set hdf5_file "job_$job_id.h5"
 set srun_pid [spawn $sh5util -j $job_id -E -l Node:TimeSeries -s Tasks -o $file_out]
 expect {
+	"Output file generated is empty" {
+		send_user "\nFAILURE: sh5util extract didn't make anything\n"
+		slow_kill $srun_pid
+		exit 1
+	}
 	timeout {
 		send_user "\nFAILURE: sh5util extract not responding\n"
 		slow_kill $srun_pid
