@@ -2113,12 +2113,16 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	int *consec_end;	/* where this consecutive set ends (index) */
 	int *consec_req;	/* are nodes from this set required
 				 * (in req_bitmap) */
+	uint64_t *consec_weight; /* node scheduling weight */
+	struct node_record *node_ptr = NULL;
 
 	int consec_index, consec_size, sufficient;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_sufficient, best_fit_index = 0;
+	bool new_best;
+	uint64_t best_weight;
 	int avail_cpus;
 	bool gres_per_job, required_node;
 	struct job_details *details_ptr = job_ptr->details;
@@ -2190,15 +2194,17 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 #endif
 	consec_size = 50;	/* start allocation for 50 sets of
 				 * consecutive nodes */
-	consec_cpus  = xmalloc(sizeof(int) * consec_size);
-	consec_nodes = xmalloc(sizeof(int) * consec_size);
-	consec_start = xmalloc(sizeof(int) * consec_size);
-	consec_end   = xmalloc(sizeof(int) * consec_size);
-	consec_req   = xmalloc(sizeof(int) * consec_size);
+	consec_cpus   = xmalloc(sizeof(int) * consec_size);
+	consec_nodes  = xmalloc(sizeof(int) * consec_size);
+	consec_start  = xmalloc(sizeof(int) * consec_size);
+	consec_end    = xmalloc(sizeof(int) * consec_size);
+	consec_req    = xmalloc(sizeof(int) * consec_size);
+	consec_weight = xmalloc(sizeof(uint64_t) * consec_size);
 
 	/* Build table with information about sets of consecutive nodes */
 	consec_index = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
+	consec_weight[consec_index] = NO_VAL64;
 
 	rem_cpus = details_ptr->min_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
@@ -2208,11 +2214,47 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		consec_gres  = xmalloc(sizeof(List) * consec_size);
 
 	for (i = 0; i < select_node_cnt; i++) {
+		if ((consec_index + 1) >= consec_size) {
+			consec_size *= 2;
+			xrealloc(consec_cpus,  sizeof(int) * consec_size);
+			xrealloc(consec_nodes, sizeof(int) * consec_size);
+			xrealloc(consec_start, sizeof(int) * consec_size);
+			xrealloc(consec_end,   sizeof(int) * consec_size);
+			xrealloc(consec_req,   sizeof(int) * consec_size);
+			xrealloc(consec_weight,
+			         sizeof(uint64_t) * consec_size);
+			if (gres_per_job) {
+				xrealloc(consec_gres,
+					 sizeof(List) * consec_size);
+			}
+		}
 		if (req_map)
 			required_node = bit_test(req_map, i);
 		else
 			required_node = false;
-		if (bit_test(node_map, i)) {
+		if (bit_test(node_map, i))
+			node_ptr = node_record_table_ptr + i;
+		else
+			node_ptr = NULL;    /* Use as flag, avoid second test */
+		/*
+		 * If job requested contiguous nodes,
+		 * do not worry about matching node weights
+		 */
+		if (node_ptr &&
+		    !details_ptr->contiguous &&
+		    (consec_weight[consec_index] != NO_VAL64) &&
+		    (node_ptr->sched_weight != consec_weight[consec_index])) {
+			/* End last set, setup for start of next set */
+			if (consec_nodes[consec_index] == 0) {
+				/* Only required nodes, re-use consec record */
+				consec_req[consec_index] = -1;
+			} else {
+				/* End last set, setup for start of next set */
+				consec_end[consec_index]   = i - 1;
+				consec_req[++consec_index] = -1;
+			}
+		}
+		if (node_ptr) {
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = i;
 			avail_cpus = avail_res_array[i]->avail_cpus;
@@ -2245,24 +2287,16 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 						avail_res_array[i]->sock_gres_list);
 				}
 			}
+			consec_weight[consec_index] = node_ptr->sched_weight;
 		} else if (consec_nodes[consec_index] == 0) {
+			/* Only required nodes, re-use consec record */
 			consec_req[consec_index] = -1;
-			/* already acquired required nodes re-use record */
+			consec_weight[consec_index] = NO_VAL64;
 		} else {
-			consec_end[consec_index] = i - 1;
-			if (++consec_index >= consec_size) {
-				consec_size *= 2;
-				xrealloc(consec_cpus,  sizeof(int)*consec_size);
-				xrealloc(consec_nodes, sizeof(int)*consec_size);
-				xrealloc(consec_start, sizeof(int)*consec_size);
-				xrealloc(consec_end,   sizeof(int)*consec_size);
-				xrealloc(consec_req,   sizeof(int)*consec_size);
-				if (gres_per_job) {
-					xrealloc(consec_gres,
-						 sizeof(List) * consec_size);
-				}
-			}
-			consec_req[consec_index]   = -1;
+			/* End last set, setup for start of next set */
+			consec_end[consec_index]   = i - 1;
+			consec_req[++consec_index] = -1;
+			consec_weight[consec_index] = NO_VAL64;
 		}
 	}
 	if (consec_nodes[consec_index] != 0)
@@ -2279,9 +2313,10 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					gres_print = gres_str;
 			}
 			info("cons_tres: eval_nodes:%d consec "
-			     "CPUs:%d nodes:%d %s begin:%d end:%d required:%d",
+			     "CPUs:%d nodes:%d %s begin:%d end:%d required:%d weight:%"PRIu64,
 			     i, consec_cpus[i], consec_nodes[i], gres_print,
-			     consec_start[i], consec_end[i], consec_req[i]);
+			     consec_start[i], consec_end[i], consec_req[i],
+			     consec_weight[i]);
 			xfree(gres_str);
 		}
 	}
@@ -2301,7 +2336,6 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			    details_ptr->req_node_bitmap &&
 			    (consec_req[i] == -1))
 				continue;  /* not required nodes */
-
 			sufficient = (consec_cpus[i] >= rem_cpus) &&
 				     _enough_nodes(consec_nodes[i], rem_nodes,
 						   min_nodes, req_nodes);
@@ -2314,20 +2348,39 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			/*
 			 * if first possibility OR
 			 * contains required nodes OR
+			 * lowest node weight
+			 */
+			if ((best_fit_nodes == 0) ||
+			    ((best_fit_req == -1) && (consec_req[i] != -1)) ||
+			    (consec_weight[i] < best_weight))
+				new_best = true;
+			else
+				new_best = false;
+			/*
+			 * If equal node weight
 			 * first set large enough for request OR
 			 * tightest fit (less resource waste) OR
 			 * nothing yet large enough, but this is biggest
 			 */
-			if ((best_fit_nodes == 0) ||
-			    ((best_fit_req == -1) && (consec_req[i] != -1)) ||
-			    (sufficient && (best_fit_sufficient == 0)) ||
-			    (sufficient && (consec_cpus[i] < best_fit_cpus)) ||
-			    (!sufficient && (consec_cpus[i] > best_fit_cpus))) {
+			if (!new_best && (consec_weight[i] == best_weight) &&
+			    ((sufficient && (best_fit_sufficient == 0)) ||
+			     (sufficient && (consec_cpus[i] < best_fit_cpus)) ||
+			     (!sufficient &&
+			      (consec_cpus[i] > best_fit_cpus))))
+				new_best = true;
+			/*
+			 * if first continuous node set large enough
+			 */
+			if (!new_best && !best_fit_sufficient &&
+			    details_ptr->contiguous && sufficient)
+				new_best = true;
+			if (new_best) {
 				best_fit_cpus = consec_cpus[i];
 				best_fit_nodes = consec_nodes[i];
 				best_fit_index = i;
 				best_fit_req = consec_req[i];
 				best_fit_sufficient = sufficient;
+				best_weight = consec_weight[i];
 			}
 
 			if (details_ptr->contiguous &&
@@ -2558,6 +2611,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	xfree(consec_start);
 	xfree(consec_end);
 	xfree(consec_req);
+	xfree(consec_weight);
 	if (gres_per_job) {
 		for (i = 0; i < consec_size; i++)
 			FREE_NULL_LIST(consec_gres[i]);
