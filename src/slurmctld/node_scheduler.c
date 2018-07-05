@@ -857,6 +857,7 @@ extern bitstr_t *build_active_feature_bitmap2(char *reboot_features)
 
 	if (!reboot_features || (reboot_features[0] == '\0')) {
 		active_node_bitmap = bit_alloc(node_record_count);
+		bit_set_all(active_node_bitmap);
 		return active_node_bitmap;
 	}
 

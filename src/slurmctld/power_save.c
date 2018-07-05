@@ -575,7 +575,6 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		xfree(nodes);
 		FREE_NULL_BITMAP(feature_node_bitmap);
 	}
-//	if (boot_node_bitmap && job_ptr->reboot) {
 	if (boot_node_bitmap) {
 		/* Reboot nodes with no feature changes */
 		nodes = bitmap2node_name(boot_node_bitmap);
