@@ -931,36 +931,12 @@ extern int task_cgroup_cpuset_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	 * being started.  */
         if (xcgroup_create(&cpuset_ns, &cpuset_cg,"",0,0) == XCGROUP_SUCCESS) {
 		if (xcgroup_lock(&cpuset_cg) == XCGROUP_SUCCESS) {
-			int i = 0, npids = 0, cnt = 0;
-			pid_t* pids = NULL;
 			/* First move slurmstepd to the root cpuset cg
 			 * so we can remove the step/job/user cpuset
 			 * cg's.  */
 			xcgroup_move_process(&cpuset_cg, getpid());
 
-			/* There is a delay in the cgroup system when moving the
-			 * pid from one cgroup to another.  This is usually
-			 * short, but we need to wait to make sure the pid is
-			 * out of the step cgroup or we will occur an error
-			 * leaving the cgroup unable to be removed.
-			 */
-			do {
-				xcgroup_get_pids(&step_cpuset_cg,
-						 &pids, &npids);
-				for (i = 0 ; i<npids ; i++)
-					if (pids[i] == getpid()) {
-						cnt++;
-						break;
-					}
-				xfree(pids);
-			} while ((i < npids) && (cnt < MAX_MOVE_WAIT));
-
-			if (cnt < MAX_MOVE_WAIT)
-				debug3("Took %d checks before stepd pid was removed from the step cgroup.",
-				       cnt);
-			else
-				error("Pid %d is still in the step cgroup.  It might be left uncleaned after the job.",
-				      getpid());
+			xcgroup_wait_pid_moved(&step_cpuset_cg, "cpuset step");
 
                         if (xcgroup_delete(&step_cpuset_cg) != SLURM_SUCCESS)
                                 debug2("task/cgroup: unable to remove step "

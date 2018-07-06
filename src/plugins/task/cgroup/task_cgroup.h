@@ -39,8 +39,6 @@
 
 #include "src/slurmd/common/xcgroup.h"
 
-#define MAX_MOVE_WAIT 5000
-
 int val_to_char(int v);
 
 extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns);

@@ -582,6 +582,41 @@ int xcgroup_set_param(xcgroup_t* cg, char* param, char* content)
 	return fstatus;
 }
 
+int xcgroup_wait_pid_moved(xcgroup_t* cg, const char *cg_name)
+{
+	pid_t *pids = NULL;
+	int npids = 0;
+	int cnt = 0;
+	int i = 0;
+	pid_t pid = getpid();
+
+	/*
+	 * There is a delay in the cgroup system when moving the
+	 * pid from one cgroup to another.  This is usually
+	 * short, but we need to wait to make sure the pid is
+	 * out of the step cgroup or we will occur an error
+	 * leaving the cgroup unable to be removed.
+	 */
+	do {
+		xcgroup_get_pids(cg, &pids, &npids);
+		for (i = 0 ; i<npids ; i++)
+			if (pids[i] == pid) {
+				cnt++;
+				break;
+			}
+		xfree(pids);
+	} while ((i < npids) && (cnt < MAX_MOVE_WAIT));
+
+	if (cnt < MAX_MOVE_WAIT)
+		debug3("Took %d checks before stepd pid %d was removed from the %s cgroup.",
+		       cnt, pid, cg_name);
+	else
+		error("Pid %d is still in the %s cgroup.  It might be left uncleaned after the job.",
+		      pid, cg_name);
+
+	return XCGROUP_SUCCESS;
+}
+
 int xcgroup_get_param(xcgroup_t* cg, char* param, char **content, size_t *csize)
 {
 	int fstatus = XCGROUP_ERROR;
