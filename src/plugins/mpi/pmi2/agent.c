@@ -299,7 +299,6 @@ static void *
 _agent(void * unused)
 {
 	eio_obj_t *tree_listen_obj, *task_obj;
-	eio_handle_t *orig_handle;
 	int i;
 
 	slurm_mutex_lock(&agent_mutex);
@@ -330,10 +329,7 @@ _agent(void * unused)
 
 	slurm_mutex_lock(&agent_mutex);
 	agent_running = false;
-	orig_handle = pmi2_handle;
-	pmi2_handle = NULL;
 	slurm_mutex_unlock(&agent_mutex);
-	eio_handle_destroy(orig_handle);
 
 	return NULL;
 }
@@ -393,6 +389,9 @@ pmi2_stop_agent(void)
 	while (_agent_running_test()) {
 		sched_yield();
 	}
+
+	if (pmi2_handle)
+		eio_handle_destroy(pmi2_handle);
 
 	return SLURM_SUCCESS;
 }
