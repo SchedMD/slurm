@@ -283,7 +283,14 @@ int _slurm_cgroup_destroy(void)
 	 *   the rmdir(2) triggered by the calls below will always fail,
 	 *   because slurmstepd is still in the cgroup!
 	 */
-	_move_current_to_root_cgroup(&freezer_ns);
+	if (_move_current_to_root_cgroup(&freezer_ns) != SLURM_SUCCESS) {
+		error("%s: Unable to move pid %d to root cgroup",
+		      __func__, getpid());
+		xcgroup_unlock(&freezer_cg);
+		return SLURM_ERROR;
+	}
+
+	xcgroup_wait_pid_moved(&job_freezer_cg, "freezer job");
 
 	if (jobstep_cgroup_path[0] != '\0') {
 		if (xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS) {

@@ -198,11 +198,7 @@ maximum running jobs for an account, etc).
 
 .TP
 \fBDepth Mean (try sched)\fR
-Mean of processed jobs during backfilling scheduling cycles since last reset.
-Jobs which are found to be ineligible to run when examined by the backfill
-scheduler are not counted (e.g. jobs submitted to multiple partitions and
-already started, jobs which have reached a QOS or account limit such as
-maximum running jobs for an account, etc).
+The subset of Depth Mean that the backfill scheduler attempted to schedule.
 
 .TP
 \fBLast queue length\fR

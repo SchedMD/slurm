@@ -917,7 +917,8 @@ static int _step_signal(int signal)
 		      my_srun_job->jobid, my_srun_job->stepid);
 		rc2 = slurm_kill_job_step(my_srun_job->jobid,
 					  my_srun_job->stepid, signal);
-		rc = MAX(rc, rc2);
+		if (rc2)
+			rc = rc2;
 	}
 	list_iterator_destroy(iter);
 	return rc;

@@ -1678,7 +1678,6 @@ next_task:
 			debug("sched: schedule() returning, too many RPCs");
 			break;
 		}
-
 		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON) {
 			/* should never happen */
 			continue;
