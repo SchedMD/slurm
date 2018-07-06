@@ -43,6 +43,8 @@
 
 typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t avail_cpus;	/* Count of available CPUs */
+	uint16_t avail_gpus;	/* Count of available GPUs */
+	uint16_t avail_res_cnt;	/* Count of available CPUs + GPUs */
 	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
 	uint16_t max_cpus;	/* Maximum available CPUs */
 	uint16_t min_cpus;	/* Minimum allocated CPUs */
@@ -2077,6 +2079,8 @@ static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
 		*avail_cpus = MAX(rem_cpus, (int)details_ptr->pn_min_cpus);
 		/* Round up CPU count to CPU in allocation unit (e.g. core) */
 		avail_res->avail_cpus = *avail_cpus;
+		avail_res->avail_res_cnt = avail_res->avail_cpus +
+					   avail_res->avail_gpus;
 	}
 }
 
@@ -2359,7 +2363,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			/*
 			 * If equal node weight
 			 * first set large enough for request OR
-			 * tightest fit (less resource waste) OR
+			 * tightest fit (less resource/CPU waste) OR
 			 * nothing yet large enough, but this is biggest
 			 */
 			if (!new_best && (consec_weight[i] == best_weight) &&
@@ -2634,7 +2638,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			 uint16_t cr_type, bool prefer_alloc_nodes)
 {
 	int i, i_first, i_last;
-	int count, ec, most_cpus = 0, node_cnt = 0;
+	int count, ec, most_res = 0, rem_nodes, node_cnt = 0;
 	bitstr_t *origmap, *reqmap = NULL;
 
 	if (job_ptr->details->req_node_bitmap)
@@ -2687,28 +2691,32 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	/*
 	 * This nodeset didn't work. To avoid a possible knapsack problem,
-	 * incrementally remove nodes with low CPU counts and retry
+	 * incrementally remove nodes with low resource counts (sum of CPU and
+	 * GPU count) and retry
 	 */
 	for (i = 0; i < select_node_cnt; i++) {
 		if (avail_res_array[i]) {
-			most_cpus = MAX(most_cpus,
-					avail_res_array[i]->avail_cpus);
+			most_res = MAX(most_res,
+				       avail_res_array[i]->avail_res_cnt);
 		}
 	}
 
-	for (count = 1; count < most_cpus; count++) {
+	rem_nodes = bit_set_count(node_map);
+	for (count = 1; count < most_res; count++) {
 		int nochange = 1;
 		bit_or(node_map, origmap);
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(node_map, i))
 				continue;
-			if ((avail_res_array[i]->avail_cpus > 0) &&
-			    (avail_res_array[i]->avail_cpus <= count)) {
+			if ((avail_res_array[i]->avail_res_cnt > 0) &&
+			    (avail_res_array[i]->avail_res_cnt <= count)) {
 				if (reqmap && bit_test(reqmap, i))
 					continue;
 				nochange = 0;
 				bit_clear(node_map, i);
 				bit_clear(origmap, i);
+				if (--rem_nodes <= min_nodes)
+					break;
 			}
 		}
 		if (nochange)
@@ -2720,6 +2728,8 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			FREE_NULL_BITMAP(origmap);
 			return ec;
 		}
+		if (rem_nodes <= min_nodes)
+			break;
 	}
 	FREE_NULL_BITMAP(origmap);
 
@@ -3383,7 +3393,8 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					enforce_binding, core_map[node_i],
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
-					select_node_record[node_i].vpus);
+					select_node_record[node_i].vpus,
+					&avail_res->avail_gpus);
 		if (rc != 0) {
 			_free_avail_res(avail_res);
 			return NULL;

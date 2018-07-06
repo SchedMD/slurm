@@ -5274,6 +5274,7 @@ fini:	return avail_cores_by_sock;
  * IN sockets         - Count of sockets on the node
  * IN cores_per_sock  - Count of cores per socket on this node
  * IN cpus_per_core   - Count of CPUs per core on this node
+ * OUT avail_gpus     - Count of available GPUs on this node
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
  */
 extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
@@ -5282,19 +5283,23 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					bitstr_t *core_bitmap,
 					uint16_t sockets,
 					uint16_t cores_per_sock,
-					uint16_t cpus_per_core)
+					uint16_t cpus_per_core,
+					uint16_t *avail_gpus)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
 	bool *avail_cores_by_sock = NULL;
 	uint64_t max_gres, mem_per_gres = 0;
+	uint32_t gpu_plugin_id;
 	int s, rc = 0;
 	int cpu_cnt;
 
+	*avail_gpus = 0;
 	if (!core_bitmap || !sock_gres_list ||
 	    (list_count(sock_gres_list) == 0))
 		return rc;
 
+	gpu_plugin_id = _build_id("gpu");
 	cpu_cnt = bit_set_count(core_bitmap);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
@@ -5400,6 +5405,8 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			rc = -1;
 			break;
 		}
+		if (sock_gres->plugin_id == gpu_plugin_id)
+			 *avail_gpus += sock_gres->total_cnt;
 	}
 	list_iterator_destroy(sock_gres_iter);
 	xfree(avail_cores_by_sock);
