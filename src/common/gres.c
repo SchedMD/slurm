@@ -5267,6 +5267,8 @@ fini:	return avail_cores_by_sock;
  * Determine how many GRES can be used on this node given the available cores
  * IN sock_gres_list  - list of sock_gres_t entries built by gres_plugin_job_test2()
  * IN avail_mem       - memory available for the job
+ * IN max_cpus        - maximum CPUs available on this node (limited by
+ *                      specialized cores and partition CPUs-per-node)
  * IN enforce_binding - GRES must be co-allocated with cores
  * IN core_bitmap     - Identification of available cores on this node
  * IN sockets         - Count of sockets on the node
@@ -5275,6 +5277,7 @@ fini:	return avail_cores_by_sock;
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
  */
 extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
+					uint16_t max_cpus,
 					bool enforce_binding,
 					bitstr_t *core_bitmap,
 					uint16_t sockets,
@@ -5284,7 +5287,7 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
 	bool *avail_cores_by_sock = NULL;
-	uint64_t mem_per_gres = 0;
+	uint64_t max_gres, mem_per_gres = 0;
 	int s, rc = 0;
 	int cpu_cnt;
 
@@ -5306,6 +5309,19 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			if (job_gres_ptr->gres_per_task)
 				min_gres = MAX(min_gres,
 					       job_gres_ptr->gres_per_task);
+		}
+		if (sock_gres->job_specs &&
+		    sock_gres->job_specs->cpus_per_gres) {
+			max_gres = max_cpus /
+				   sock_gres->job_specs->cpus_per_gres;
+			if ((max_gres == 0) ||
+			    (sock_gres->job_specs->gres_per_node > max_gres) ||
+			    (sock_gres->job_specs->gres_per_task > max_gres) ||
+			    (sock_gres->job_specs->gres_per_socket > max_gres)){
+				/* Insufficient CPUs for any GRES */
+				rc = -1;
+				break;
+			}
 		}
 		if (sock_gres->job_specs && avail_mem) {
 			if (sock_gres->job_specs->mem_per_gres) {

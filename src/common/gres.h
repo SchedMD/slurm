@@ -663,6 +663,8 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
  * Determine how many GRES can be used on this node given the available cores
  * IN sock_gres_list  - list of sock_gres_t entries built by gres_plugin_job_test2()
  * IN avail_mem       - memory available for the job
+ * IN max_cpus        - maximum CPUs available on this node (limited by
+ *                      specialized cores and partition CPUs-per-node)
  * IN enforce_binding - GRES must be co-allocated with cores
  * IN core_bitmap     - Identification of available cores on this node
  * IN sockets         - Count of sockets on the node
@@ -671,6 +673,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
  */
 extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
+					uint16_t max_cpus,
 					bool enforce_binding,
 					bitstr_t *core_bitmap,
 					uint16_t sockets,

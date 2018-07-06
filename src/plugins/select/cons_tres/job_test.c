@@ -2783,7 +2783,7 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 				 bitstr_t *part_core_map, const uint32_t node_i,
 				 int *cpu_alloc_size, bool entire_sockets_only)
 {
-	uint16_t cpu_count = 0, cpu_cnt = 0;
+	uint16_t cpu_count = 0, cpu_cnt = 0, part_cpu_limit = 0xffff;
 	uint16_t si, cps, avail_cpus = 0, num_tasks = 0;
 	uint32_t c;
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
@@ -2893,9 +2893,6 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	 * there's enough resources. Reduce the resource count to match max_*
 	 * (if necessary). Also reduce resource count (if necessary) to
 	 * match ntasks_per_resource.
-	 *
-	 * NOTE: Memory is not used as a constraint here - should it?
-	 *       If not then it needs to be done somewhere else!
 	 */
 
 	/*
@@ -2930,30 +2927,27 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			used_cpu_count += used_cores[i] * threads_per_core;
 	}
 
-	/*
-	 * Ignore resources that would push a job allocation over the
-	 * partition CPU limit (if any). Try to preserve resources on every
-	 * socket for GRES and min-cores-per-socket support.
-	 */
+	/* Enforce partition CPU limit, but do not pick specific cores yet */
 	if ((job_ptr->part_ptr->max_cpus_per_node != INFINITE) &&
 	    (free_cpu_count + used_cpu_count >
 	     job_ptr->part_ptr->max_cpus_per_node)) {
-		int excess = free_cpu_count + used_cpu_count -
-			     job_ptr->part_ptr->max_cpus_per_node;
-		uint16_t core_limit = MAX(min_cores, 1);
-		while (excess > 0) {
-			for (i = 0; (i < sockets) && (excess > 0); i++) {
-				while ((free_cores[i] > core_limit) &&
-				       (excess > 0)) {
-					free_core_count--;
-					free_cores[i]--;
-					excess -= threads_per_core;
-				}
-			}
-			if (core_limit > 0)
-				core_limit = 0;
-			else
-				break;
+		if (used_cpu_count >= job_ptr->part_ptr->max_cpus_per_node) {
+			/* no available CPUs on this node */
+			num_tasks = 0;
+			goto fini;
+		}
+		part_cpu_limit = job_ptr->part_ptr->max_cpus_per_node -
+				 used_cpu_count;
+		if ((part_cpu_limit == 1) &&
+		    (((ntasks_per_core != 0xffff) &&
+		      (ntasks_per_core > part_cpu_limit)) ||
+		     (ntasks_per_socket > part_cpu_limit) ||
+		     ((ncpus_per_core != 0xffff) &&
+		      (ncpus_per_core > part_cpu_limit)) ||
+		     (cpus_per_task > part_cpu_limit))) {
+			/* insufficient available CPUs on this node */
+			num_tasks = 0;
+			goto fini;
 		}
 	}
 
@@ -3109,7 +3103,7 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 
 fini:
 	/* if num_tasks == 0 then clear all bits on this node */
-	if (!num_tasks) {
+	if (num_tasks == 0) {
 		bit_clear_all(core_map);
 		cpu_count = 0;
 	}
@@ -3135,7 +3129,7 @@ fini:
 	cpu_count -= spec_threads;
 
 	avail_res = xmalloc(sizeof(avail_res_t));
-	avail_res->max_cpus = cpu_count;
+	avail_res->max_cpus = MIN(cpu_count, part_cpu_limit);
 	avail_res->min_cpus = *cpu_alloc_size;
 	avail_res->avail_cores_per_sock = xmalloc(sizeof(uint16_t) * sockets);
 	for (c = 0; c < select_node_record[node_i].tot_cores; c++) {
@@ -3286,6 +3280,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	avail_res_t *avail_res = NULL;
 	List sock_gres_list = NULL;
 	bool enforce_binding = false;
+	uint16_t min_cpus_per_node, ntasks_per_node = 1;
 
 	if (((job_ptr->bit_flags & BACKFILL_TEST) == 0) &&
 	    !test_only && IS_NODE_COMPLETING(node_ptr)) {
@@ -3293,7 +3288,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		 * Do not allocate more jobs to nodes with completing jobs,
 		 * backfill scheduler independently handles completing nodes
 		 */
-		return avail_res;
+		return NULL;
 	}
 
 	if (part_core_map)
@@ -3322,7 +3317,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					job_ptr->job_id, node_ptr->name,
 					enforce_binding, s_p_n);
 		if (!sock_gres_list)	/* GRES requirement fail */
-			return avail_res;
+			return NULL;
 	}
 
 	/* Identify available CPUs */
@@ -3347,6 +3342,28 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					    part_core_map_ptr, node_i,
 					    &cpu_alloc_size, true);
 	}
+	if (!avail_res || (avail_res->max_cpus == 0) ||
+	    (avail_res->max_cpus < avail_res->min_cpus)) {
+		_free_avail_res(avail_res);
+		return NULL;
+	}
+
+	/* Check that sufficient CPUs remain to run a task on this node */
+	if (job_ptr->details->ntasks_per_node) {
+		ntasks_per_node = job_ptr->details->ntasks_per_node;
+	} else if ((job_ptr->details->max_nodes == 1) &&
+		   (job_ptr->details->num_tasks != 0)) {
+		ntasks_per_node = job_ptr->details->num_tasks;
+	} else {
+		ntasks_per_node = (job_ptr->details->num_tasks +
+				   job_ptr->details->max_nodes - 1) /
+				  job_ptr->details->max_nodes;
+	}
+	min_cpus_per_node = ntasks_per_node * job_ptr->details->cpus_per_task;
+	if (avail_res->max_cpus < min_cpus_per_node) {
+		_free_avail_res(avail_res);
+		return NULL;
+	}
 
 	if (cr_type & CR_MEMORY) {
 		avail_mem = select_node_record[node_i].real_memory -
@@ -3360,14 +3377,14 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		/* Disable GRES that can't be used with remaining cores */
 		rc = gres_plugin_job_core_filter2(
 					sock_gres_list, avail_mem,
+					avail_res->max_cpus,
 					enforce_binding, core_map[node_i],
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
 					select_node_record[node_i].vpus);
 		if (rc != 0) {
 			_free_avail_res(avail_res);
-			avail_res = NULL;
-			return avail_res;
+			return NULL;
 		}
 	}
 
