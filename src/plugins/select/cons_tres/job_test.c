@@ -3351,6 +3351,8 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	/* Check that sufficient CPUs remain to run a task on this node */
 	if (job_ptr->details->ntasks_per_node) {
 		ntasks_per_node = job_ptr->details->ntasks_per_node;
+	} else if (job_ptr->details->overcommit) {
+		ntasks_per_node = 1;
 	} else if ((job_ptr->details->max_nodes == 1) &&
 		   (job_ptr->details->num_tasks != 0)) {
 		ntasks_per_node = job_ptr->details->num_tasks;
