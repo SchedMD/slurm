@@ -1125,7 +1125,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	s_p_hashtbl_destroy(tbl);
 	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
 
-	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		_validate_config(&gres_context[i]);
 		if (gres_context[i].ops.node_config_load == NULL)
 			continue;	/* No plugin */

@@ -158,6 +158,34 @@ extern int node_config_load(List gres_conf_list)
 	if (gres_devices)
 		return rc;
 
+#if 0
+//FIXME: gres_conf_list contains records of type gres_slurmd_conf_t*
+//FIXME: Use "nvidia-smi" tool to populate/update the records here, especially cpus & links
+	ListIterator itr;
+	char cpu_bit_str[64];
+	gres_slurmd_conf_t *gres_slurmd_conf;
+	itr = list_iterator_create(gres_conf_list);
+	while ((gres_slurmd_conf = list_next(itr))) {
+		info("GRES:%s(%u) Type:%s Count:%"PRIu64,
+		     gres_slurmd_conf->name, gres_slurmd_conf->plugin_id,
+		     gres_slurmd_conf->type_name, gres_slurmd_conf->count);
+		if (gres_slurmd_conf->cpus) {
+			info("  CPUs(%u):%s", gres_slurmd_conf->cpu_cnt,
+			     gres_slurmd_conf->cpus);
+		}
+		if (gres_slurmd_conf->cpus_bitmap) {
+			bit_fmt(cpu_bit_str, sizeof(cpu_bit_str),
+				gres_slurmd_conf->cpus_bitmap);
+			info("  CPU_bitmap:%s", cpu_bit_str);
+		}
+		if (gres_slurmd_conf->file)
+			info("  File:%s", gres_slurmd_conf->file);
+		if (gres_slurmd_conf->links)
+			info("  Links:%s", gres_slurmd_conf->links);
+	}
+	list_iterator_destroy(itr);
+#endif
+
 	rc = common_node_config_load(gres_conf_list, gres_name,
 				     &gres_devices);
 
