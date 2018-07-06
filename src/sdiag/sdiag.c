@@ -214,6 +214,17 @@ static int _print_stats(void)
 		       buf->rpc_queue_count[i]);
 	}
 
+	if (buf->rpc_dump_count > 0) {
+		printf("\nPending RPCs\n");
+	}
+
+	for (i = 0; i < buf->rpc_dump_count; i++) {
+		printf("\t%2u: %-36s %s\n",
+		       i+1,
+		       rpc_num2string(buf->rpc_dump_types[i]),
+		       buf->rpc_dump_hostlist[i]);
+	}
+
 	return 0;
 }
 

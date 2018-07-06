@@ -1522,6 +1522,7 @@ extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)
 
 extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg)
 {
+	int i;
 	if (msg) {
 		xfree(msg->rpc_type_id);
 		xfree(msg->rpc_type_cnt);
@@ -1529,6 +1530,13 @@ extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg)
 		xfree(msg->rpc_user_id);
 		xfree(msg->rpc_user_cnt);
 		xfree(msg->rpc_user_time);
+		xfree(msg->rpc_queue_type_id);
+		xfree(msg->rpc_queue_count);
+		xfree(msg->rpc_dump_types);
+		for (i = 0; i < msg->rpc_dump_count; i++) {
+			xfree(msg->rpc_dump_hostlist[i]);
+		}
+		xfree(msg->rpc_dump_hostlist);
 		xfree(msg);
 	}
 }

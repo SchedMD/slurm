@@ -14558,10 +14558,22 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 		safe_unpack32_array(&msg->rpc_user_cnt,  &uint32_tmp, buffer);
 		safe_unpack64_array(&msg->rpc_user_time, &uint32_tmp, buffer);
 
-		safe_unpack32(&msg->rpc_queue_type_count, buffer);
-		safe_unpack32_array(&msg->rpc_queue_type_id, &uint32_tmp,
+		safe_unpack32_array(&msg->rpc_queue_type_id,
+				    &msg->rpc_queue_type_count,
 				    buffer);
-		safe_unpack32_array(&msg->rpc_queue_count, &uint32_tmp, buffer);
+		safe_unpack32_array(&msg->rpc_queue_count,
+				    &uint32_tmp, buffer);
+		if (uint32_tmp != msg->rpc_queue_type_count)
+			goto unpack_error;
+
+		safe_unpack32_array(&msg->rpc_dump_types,
+				    &msg->rpc_dump_count,
+				    buffer);
+		safe_unpackstr_array(&msg->rpc_dump_hostlist,
+				     &uint32_tmp,
+				     buffer);
+		if (uint32_tmp != msg->rpc_dump_count)
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->parts_packed,	buffer);
 		if (msg->parts_packed) {
@@ -14663,15 +14675,15 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 		safe_unpack32_array(&msg->rpc_user_cnt,  &uint32_tmp, buffer);
 		safe_unpack64_array(&msg->rpc_user_time, &uint32_tmp, buffer);
 	} else {
-		error("_unpack_stats_response_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	info("SIM: unpack_stats_response_msg error");
+	info("%s: unpack error", __func__);
 	*msg_ptr = NULL;
 	slurm_free_stats_response_msg(msg);
 	return SLURM_ERROR;

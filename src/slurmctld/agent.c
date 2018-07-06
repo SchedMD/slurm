@@ -103,6 +103,8 @@
 #define MAX_RETRIES		100
 #define MAX_RPC_PACK_CNT	100
 #define RPC_PACK_MAX_AGE	30	/* Rebuild data over 30 seconds old */
+#define DUMP_RPC_COUNT 		25
+#define HOSTLIST_MAX_SIZE 	80
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
@@ -215,8 +217,11 @@ static bool pending_thread_running = false;
 
 static bool run_scheduler    = false;
 
-static uint32_t *rpc_counts = NULL, *rpc_types = NULL;
-static uint32_t type_count = 0;
+static uint32_t *rpc_stat_counts = NULL, *rpc_stat_types = NULL;
+static uint32_t stat_type_count = 0;
+static uint32_t rpc_count = 0;
+static uint32_t *rpc_type_list;
+static char **rpc_host_list = NULL;
 static time_t cache_build_time = 0;
 
 /*
@@ -1422,13 +1427,25 @@ extern void agent_pack_pending_rpc_stats(Buf buffer)
 		goto pack_it;	/* Send cached data */
 	cache_build_time = now;
 
-	if (rpc_counts) {	/* Clear existing data */
-		type_count = 0;
-		memset(rpc_counts, 0, sizeof(uint32_t) * MAX_RPC_PACK_CNT);
-		memset(rpc_types,  0, sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+	if (rpc_stat_counts) {	/* Clear existing data */
+		stat_type_count = 0;
+		memset(rpc_stat_counts, 0, sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+		memset(rpc_stat_types,  0, sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+
+		rpc_count = 0;
+		/* the other variables need not be cleared */
 	} else {		/* Allocate buffers for data */
-		rpc_counts = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
-		rpc_types  = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+		stat_type_count = 0;
+		rpc_stat_counts = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+		rpc_stat_types  = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+
+		rpc_count = 0;
+		rpc_host_list = xmalloc(sizeof(char *) * DUMP_RPC_COUNT);
+		for (i = 0; i < DUMP_RPC_COUNT; i++) {
+			rpc_host_list[i] = xmalloc(sizeof(char) *
+						   HOSTLIST_MAX_SIZE);
+		}
+		rpc_type_list = xmalloc(sizeof(uint32_t) * DUMP_RPC_COUNT);
 	}
 
 	slurm_mutex_lock(&retry_mutex);
@@ -1438,14 +1455,23 @@ extern void agent_pack_pending_rpc_stats(Buf buffer)
 		while ((queued_req_ptr = (queued_request_t *)
 					 list_next(list_iter))) {
 			agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+			if (rpc_count < DUMP_RPC_COUNT) {
+				rpc_type_list[rpc_count] =
+						agent_arg_ptr->msg_type;
+				hostlist_ranged_string(agent_arg_ptr->hostlist,
+						HOSTLIST_MAX_SIZE,
+						rpc_host_list[rpc_count]);
+				rpc_count++;
+			}
 			for (i = 0; i < MAX_RPC_PACK_CNT; i++) {
-				if (rpc_types[i] == 0) {
-					rpc_types[i] = agent_arg_ptr->msg_type;
-					type_count++;
-				} else if (rpc_types[i] !=
+				if (rpc_stat_types[i] == 0) {
+					rpc_stat_types[i] =
+						agent_arg_ptr->msg_type;
+					stat_type_count++;
+				} else if (rpc_stat_types[i] !=
 					   agent_arg_ptr->msg_type)
 					continue;
-				rpc_counts[i]++;
+				rpc_stat_counts[i]++;
 				break;
 			}
 		}
@@ -1454,9 +1480,11 @@ extern void agent_pack_pending_rpc_stats(Buf buffer)
 	slurm_mutex_unlock(&retry_mutex);
 
 pack_it:
-	pack32(type_count, buffer);
-	pack32_array(rpc_types,  type_count, buffer);
-	pack32_array(rpc_counts, type_count, buffer);
+	pack32_array(rpc_stat_types,  stat_type_count, buffer);
+	pack32_array(rpc_stat_counts, stat_type_count, buffer);
+
+	pack32_array(rpc_type_list, rpc_count, buffer);
+	packstr_array(rpc_host_list, rpc_count, buffer);
 }
 
 /* Do the work requested by agent_retry (retry pending RPCs).
@@ -1636,6 +1664,8 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 /* agent_purge - purge all pending RPC requests */
 extern void agent_purge(void)
 {
+	int i;
+
 	if (retry_list) {
 		slurm_mutex_lock(&retry_mutex);
 		FREE_NULL_LIST(retry_list);
@@ -1647,8 +1677,14 @@ extern void agent_purge(void)
 		slurm_mutex_unlock(&mail_mutex);
 	}
 
-	xfree(rpc_counts);
-	xfree(rpc_types);
+	xfree(rpc_stat_counts);
+	xfree(rpc_stat_types);
+	xfree(rpc_type_list);
+	if (rpc_host_list) {
+		for (i = 0; i < DUMP_RPC_COUNT; i++)
+			xfree(rpc_host_list[i]);
+		xfree(rpc_host_list);
+	}
 }
 
 extern int get_agent_count(void)
