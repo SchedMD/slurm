@@ -3991,18 +3991,20 @@ end_node_set:
 /*
  * For a given node_set, set a scheduling weight based upon a combination of
  * node_weight (or reboot_weight) and flags (e.g. try to avoid reboot).
- * 0x200000000 - Requires boot
- * 0x100000000 - Outside of flex reservation
- * 0x0######## - Node weight
+ * 0x20000000000 - Requires boot
+ * 0x10000000000 - Outside of flex reservation
+ * 0x0########00 - Node weight
+ * 0x000000000## - Reserved for cons_tres, favor nodes with co-located CPU/GPU
  */
 static void _set_sched_weight(struct node_set *node_set_ptr)
 {
-	node_set_ptr->sched_weight = node_set_ptr->node_weight;
+	node_set_ptr->sched_weight = node_set_ptr->node_weight < 8;
+	node_set_ptr->sched_weight |= 0xff;
 	if ((node_set_ptr->flags & NODE_SET_REBOOT) ||
 	    (node_set_ptr->flags & NODE_SET_POWER_DN))	/* Boot required */
-		node_set_ptr->sched_weight |= 0x200000000;
+		node_set_ptr->sched_weight |= 0x20000000000;
 	if (node_set_ptr->flags & NODE_SET_OUTSIDE_FLEX)
-		node_set_ptr->sched_weight |= 0x100000000;
+		node_set_ptr->sched_weight |= 0x10000000000;
 }
 
 static int _sort_node_set(const void *x, const void *y)

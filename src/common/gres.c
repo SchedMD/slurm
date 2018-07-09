@@ -5275,6 +5275,7 @@ fini:	return avail_cores_by_sock;
  * IN cores_per_sock  - Count of cores per socket on this node
  * IN cpus_per_core   - Count of CPUs per core on this node
  * OUT avail_gpus     - Count of available GPUs on this node
+ * OUT near_gpus      - Count of GPUs available on sockets with available CPUs
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
  */
 extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
@@ -5284,17 +5285,19 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					uint16_t sockets,
 					uint16_t cores_per_sock,
 					uint16_t cpus_per_core,
-					uint16_t *avail_gpus)
+					uint16_t *avail_gpus,
+					uint16_t *near_gpus)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
 	bool *avail_cores_by_sock = NULL;
-	uint64_t max_gres, mem_per_gres = 0;
+	uint64_t max_gres, mem_per_gres = 0, near_gres_cnt = 0;
 	uint32_t gpu_plugin_id;
 	int s, rc = 0;
 	int cpu_cnt;
 
 	*avail_gpus = 0;
+	*near_gpus = 0;
 	if (!core_bitmap || !sock_gres_list ||
 	    (list_count(sock_gres_list) == 0))
 		return rc;
@@ -5345,20 +5348,34 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 				break;
 			}
 		}
-		if (sock_gres->cnt_by_sock) {
+		if (sock_gres->cnt_by_sock || enforce_binding) {
 			if (!avail_cores_by_sock) {
 				avail_cores_by_sock =_build_avail_cores_by_sock(
 							core_bitmap, sockets,
 							cores_per_sock);
 			}
+		}
+		if (sock_gres->cnt_by_sock && enforce_binding) {
 			for (s = 0; s < sockets; s++) {
-				if (!avail_cores_by_sock[s]) {
+				if (avail_cores_by_sock[s] == 0) {
 					sock_gres->total_cnt -=
 						sock_gres->cnt_by_sock[s];
 					sock_gres->cnt_by_sock[s] = 0;
 				}
 			}
+			near_gres_cnt = sock_gres->total_cnt;
+		} else if (sock_gres->cnt_by_sock) { /* NO enforce_binding */
+			near_gres_cnt = sock_gres->total_cnt;
+			for (s = 0; s < sockets; s++) {
+				if (avail_cores_by_sock[s] == 0) {
+					near_gres_cnt -=
+						sock_gres->cnt_by_sock[s];
+				}
+			}
+		} else {
+			near_gres_cnt = sock_gres->total_cnt;
 		}
+
 		if (sock_gres->job_specs &&
 		    sock_gres->job_specs->gres_per_task) {
 			if (sock_gres->max_gres &&
@@ -5405,8 +5422,14 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			rc = -1;
 			break;
 		}
-		if (sock_gres->plugin_id == gpu_plugin_id)
+
+		if (sock_gres->plugin_id == gpu_plugin_id) {
 			 *avail_gpus += sock_gres->total_cnt;
+			if (sock_gres->max_gres &&
+			    (sock_gres->max_gres < near_gres_cnt))
+				near_gres_cnt = sock_gres->max_gres;
+			*near_gpus += near_gres_cnt;
+		}
 	}
 	list_iterator_destroy(sock_gres_iter);
 	xfree(avail_cores_by_sock);

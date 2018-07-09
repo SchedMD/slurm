@@ -2692,7 +2692,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	/*
 	 * This nodeset didn't work. To avoid a possible knapsack problem,
 	 * incrementally remove nodes with low resource counts (sum of CPU and
-	 * GPU count) and retry
+	 * GPU count if using GPUs, otherwise the CPU count) and retry
 	 */
 	for (i = 0; i < select_node_cnt; i++) {
 		if (avail_res_array[i]) {
@@ -3303,7 +3303,6 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 
 	if (part_core_map)
 		part_core_map_ptr = part_core_map[node_i];
-	node_ptr = select_node_record[node_i].node_ptr;
 	if (node_usage[node_i].gres_list)
 		gres_list = node_usage[node_i].gres_list;
 	else
@@ -3385,6 +3384,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	}
 
 	if (sock_gres_list) {
+		uint16_t near_gpu_cnt = 0;
 		avail_res->sock_gres_list = sock_gres_list;
 		/* Disable GRES that can't be used with remaining cores */
 		rc = gres_plugin_job_core_filter2(
@@ -3394,11 +3394,14 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
 					select_node_record[node_i].vpus,
-					&avail_res->avail_gpus);
+					&avail_res->avail_gpus, &near_gpu_cnt);
 		if (rc != 0) {
 			_free_avail_res(avail_res);
 			return NULL;
 		}
+		node_ptr->sched_weight =
+			(node_ptr->sched_weight & 0xffffffffffffff00) |
+			(0xff - near_gpu_cnt);
 	}
 
 	for (i = 0; i < avail_res->sock_cnt; i++)

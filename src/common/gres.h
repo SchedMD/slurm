@@ -671,6 +671,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
  * IN cores_per_sock  - Count of cores per socket on this node
  * IN cpus_per_core   - Count of CPUs per core on this node
  * OUT avail_gpus     - Count of available GPUs on this node
+ * OUT near_gpus      - Count of GPUs available on sockets with available CPUs
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
  */
 extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
@@ -680,7 +681,8 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					uint16_t sockets,
 					uint16_t cores_per_sock,
 					uint16_t cpus_per_core,
-					uint16_t *avail_gpus);
+					uint16_t *avail_gpus,
+					uint16_t *near_gpus);
 
 /*
  * Allocate resource to a job and update node and job gres information
