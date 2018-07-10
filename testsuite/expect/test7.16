@@ -35,6 +35,38 @@ set exit_code   0
 
 print_header $test_id
 
+#
+# Try to get allocation with bad credential
+#
+proc alloc_job { } {
+	global env salloc bin_bash number
+	set env(SLURM_MUNGE_AUTH_FAIL_TEST) 1
+	set job_id 0
+	set salloc_pid [spawn $salloc -N1 $bin_bash]
+	expect {
+		-re "Granted job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			send "exit\r"
+			exp_continue
+		}
+		-re "error" {
+			send_user "\nError is expected, no worries.\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: salloc not responding\n"
+			if {$job_id != 0} {
+				cancel_job $job_id
+			}
+			slow_kill [expr 0 - $salloc_pid]
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $job_id
+}
 
 #
 # Check if we have auth/munge configured
@@ -61,38 +93,18 @@ if {$auth_munge == 0} {
 	exit $exit_code
 }
 
-#
-# Try to get allocation with bad credential
-#
-set env(SLURM_MUNGE_AUTH_FAIL_TEST) 1
-set job_id 0
-set salloc_pid [spawn $salloc -N1 $bin_bash]
-expect {
-	-re "Granted job allocation ($number)" {
-		set job_id $expect_out(1,string)
-		send "exit\r"
-		exp_continue
-	}
-	-re "error" {
-		send_user "\nError is expected, no worries.\n"
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
-		slow_kill [expr 0 - $salloc_pid]
+set job_id [alloc_job]
+if {$job_id != 0} {
+	send_user "\nWARNING: Allocation granted with bad Munge credential\n"
+	send_user "WARNING: This happens rarely, when the Slurm test modifies a byte that Munge does not use\n"
+	send_user "WARNING: Try one more time...\n"
+	sleep 1
+	set job_id [alloc_job]
+	if {$job_id != 0} {
+		send_user "\nFAILURE: Allocation granted with bad Munge credential\n"
+		send_user "FAILURE: This happens rarely, when the Slurm test modifies a byte that Munge does not use\n"
 		exit 1
 	}
-	eof {
-		wait
-	}
-}
-if {$job_id != 0} {
-	send_user "\nFAILURE: allocation granted with bad Munge credential\n"
-	send_user "FAILURE: This happens rarely, when the Slurm test modifies a byte that Munge does not use\n"
-	exit 1
 }
 
 if { $exit_code == 0 } {
