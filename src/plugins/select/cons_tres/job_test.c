@@ -54,6 +54,23 @@ typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t vpus;		/* Virtual processors (CPUs) per core */
 } avail_res_t;
 
+/* Similar to multi_core_data_t in slurm_protocol_defs.h */
+typedef struct tres_mc_data {
+	uint16_t boards_per_node;	/* boards per node required by job   */
+	uint16_t sockets_per_board;	/* sockets per board required by job */
+	uint16_t sockets_per_node;	/* sockets per node required by job */
+	uint16_t cores_per_socket;	/* cores per cpu required by job */
+	uint16_t threads_per_core;	/* threads per core required by job */
+
+	uint16_t cpus_per_task;     /* Count of CPUs per task */
+	uint16_t ntasks_per_node;   /* number of tasks to invoke on each node */
+	uint16_t ntasks_per_board;  /* number of tasks to invoke on each board */
+	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
+	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */
+	uint8_t overcommit;         /* processors being over subscribed */
+	uint16_t plane_size;        /* plane size when task_dist = SLURM_DIST_PLANE */
+} tres_mc_data_t;
+
 struct sort_support {
 	int jstart;
 	struct job_resources *tmpjobs;
@@ -78,10 +95,12 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
 					   uint16_t num_rows);
 static bool _enough_nodes(int avail_nodes, int rem_nodes,
 			  uint32_t min_nodes, uint32_t req_nodes);
-static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
-			uint32_t min_nodes, uint32_t max_nodes,
-			uint32_t req_nodes, avail_res_t **avail_res_array,
-			uint16_t cr_type, bool prefer_alloc_nodes);
+static int _eval_nodes(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
+		       bitstr_t *node_map, bitstr_t **avail_core,
+		       uint32_t min_nodes, uint32_t max_nodes,
+		       uint32_t req_nodes, avail_res_t **avail_res_array,
+		       uint16_t cr_type, bool prefer_alloc_nodes,
+		       bool first_pass);
 static void _free_avail_res(avail_res_t *avail_res);
 static void _free_avail_res_array(avail_res_t **avail_res);
 static avail_res_t **_get_res_avail(struct job_record *job_ptr,
@@ -2058,6 +2077,13 @@ static inline void _log_select_maps(char *loc, bitstr_t *node_map,
 
 /*
  * Determine how many CPUs on the node can be used
+ * OUT avail_cpus - Count of CPUs to use on this node
+ * IN rem_cpus - Count of CPUs remaining to be allocated for job
+ * IN rem_nodes - Count of nodes remaining to be allocated for job
+ * IN details_ptr - Job details information
+ * IN avail_res - Available resources for job on this node, contents updated
+ * IN node_inx - Node index
+ * IN cr_type - Resource allocation units (CR_CORE, CR_SOCKET, etc).
  */
 static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
 			 struct job_details *details_ptr,
@@ -2098,13 +2124,111 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
 }
 
 /*
- * this is the heart of the selection process
+ * Identify the specific cores and GRES this job should use on this node
+ * IN job_ptr - job attempting to be scheduled
+ * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
+ * IN node_inx - zero-origin node index
+ * IN max_nodes - maximum additional node count to allocate
+ * IN rem_nodes - desired additional node count to allocate
+ * IN rem_tasks - desired additional task count to allocate
+ * IN avail_core - available core bitmap, UPDATED
+ * IN avail_res_array - available resources on the node
+ * IN first_pass - set if first scheduling attempt for this job, only use
+ *		   co-located GRES and cores
+ */
+static void _select_cores(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
+			  int node_inx, int *avail_cpus,
+			  uint32_t *max_nodes, int *rem_nodes,
+			  int *rem_tasks,
+			  bitstr_t **avail_core,
+			  avail_res_t **avail_res_array,
+			  bool first_pass)
+{
+#if _DEBUG
+	int min_tasks_this_node = 0, max_tasks_this_node = 0;
+
+	if (*rem_tasks == 0) {
+		min_tasks_this_node = 1;
+		max_tasks_this_node = 1;
+	} else if (mc_ptr->ntasks_per_node) {
+		min_tasks_this_node = mc_ptr->ntasks_per_node;
+		max_tasks_this_node = mc_ptr->ntasks_per_node;
+	} else if (*rem_tasks && (*max_nodes == 1)) {
+		min_tasks_this_node = *rem_tasks;
+		max_tasks_this_node = *rem_tasks;
+	} else if (mc_ptr->ntasks_per_board) {
+		min_tasks_this_node = mc_ptr->ntasks_per_board;
+		max_tasks_this_node = *rem_tasks;
+	} else if (mc_ptr->ntasks_per_socket) {
+		min_tasks_this_node = mc_ptr->ntasks_per_socket;
+		max_tasks_this_node = *rem_tasks;
+	} else if (mc_ptr->ntasks_per_core) {
+		min_tasks_this_node = mc_ptr->ntasks_per_core;
+		max_tasks_this_node = *rem_tasks;
+	} else {
+		min_tasks_this_node = 1;
+		max_tasks_this_node = *rem_tasks;
+	}
+	if ((*rem_tasks > 0) && (*rem_nodes > 1)) {
+		/* Remaining nodes must be allocated at least one task each */
+		if (*rem_tasks >= *rem_nodes) {
+			max_tasks_this_node = MAX(1, *rem_tasks - *rem_nodes);
+			min_tasks_this_node = MIN(min_tasks_this_node,
+						  max_tasks_this_node);
+		} else {
+			/* Should never get here */
+			min_tasks_this_node = 1;
+			max_tasks_this_node = 1;
+		}
+	}
+
+//FIXME: need to integrate with GRES allocation
+//FIXME: if first_pass==true then try to use only local GRES
+info("NODE:%d MIN-MAX_TASKS: %d-%d", node_inx, min_tasks_this_node, max_tasks_this_node);
+info("REM_TASKS:%d", *rem_tasks);	// 0 IF NOT SPECIFIED
+info("REM_NODES:%d", *rem_nodes);
+info("MAX_NODES:%d", *max_nodes);
+info("BOARDS_PER_NODE:%u", mc_ptr->boards_per_node);
+info("SOCKETS_PER_BOARD:%u", mc_ptr->sockets_per_board);
+info("CORES_PER_SOCKET:%u", mc_ptr->cores_per_socket);
+info("THREADS_PER_CORE:%u", mc_ptr->threads_per_core);
+info("CPUS_PER_TASK:%u", mc_ptr->cpus_per_task);
+info("NTASKS_PER_NODE:%u", mc_ptr->ntasks_per_node);
+info("NTASKS_PER_BOARD:%u", mc_ptr->ntasks_per_board);
+info("NTASKS_PER_SOCKET:%u", mc_ptr->ntasks_per_socket);
+info("NTASKS_PER_CORE:%u", mc_ptr->ntasks_per_core);
+info("OVERCOMMIT:%u\n", mc_ptr->overcommit);
+
+//FIXME: Set for testing
+if (*rem_tasks >= min_tasks_this_node)
+  *rem_tasks -= min_tasks_this_node;
+else
+  *rem_tasks = 0;
+#endif
+
+	*avail_cpus = avail_res_array[node_inx]->avail_cpus;
+}
+/*
+ * This is the heart of the selection process
+ * IN job_ptr - job attempting to be scheduled
+ * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
+ * IN node_map - bitmap of available/selected nodes, UPDATED
+ * IN avail_core - available core bitmap, UPDATED
+ * IN min_nodes - minimum node allocation size in nodes
+ * IN max_nodes - maximum node allocation size in nodes
+ * IN: req_nodes - number of requested nodes
+ * IN avail_res_array - available resources on the node
+ * IN cr_type - allocation type (sockets, cores, etc.)
+ * IN prefer_alloc_nodes - if set, prefer use of already allocated nodes
+ * IN first_pass - set if first scheduling attempt for this job, be picky
  * RET SLURM_SUCCESS or an error code
  */
-static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
-			uint32_t min_nodes, uint32_t max_nodes,
-			uint32_t req_nodes, avail_res_t **avail_res_array,
-			uint16_t cr_type, bool prefer_alloc_nodes)
+static int _eval_nodes(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
+		       bitstr_t *node_map, bitstr_t **avail_core,
+		       uint32_t min_nodes, uint32_t max_nodes,
+		       uint32_t req_nodes, avail_res_t **avail_res_array,
+		       uint16_t cr_type, bool prefer_alloc_nodes,
+		       bool first_pass)
 {
 	int i, j, error_code = SLURM_ERROR;
 	int *consec_cpus;	/* how many CPUs we can add from this
@@ -2119,15 +2243,14 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * (in req_bitmap) */
 	uint64_t *consec_weight; /* node scheduling weight */
 	struct node_record *node_ptr = NULL;
-
 	int consec_index, consec_size, sufficient;
-	int rem_cpus, rem_nodes; /* remaining resources desired */
+	int rem_cpus, rem_nodes, rem_tasks; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_sufficient, best_fit_index = 0;
 	bool new_best;
 	uint64_t best_weight;
-	int avail_cpus;
+	int avail_cpus = 0;
 	bool gres_per_job, required_node;
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
@@ -2144,7 +2267,6 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	    (!bit_super_set(details_ptr->req_node_bitmap, node_map)))
 		return error_code;
 #if 0
-//FIXME: Can we better handle nodes of different weights?, lower priority work
 //FIXME: Weights job-specific due to FLEX reservations and node_features reboot needs, lower priority work
 	if (job_ptr->bit_flags & SPREAD_JOB) {
 		/* Spread the job out over many nodes */
@@ -2154,10 +2276,12 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	}
 
 	if (prefer_alloc_nodes && !details_ptr->contiguous) {
-		/* Select resource on busy nodes first in order to leave
+		/*
+		 * Select resource on busy nodes first in order to leave
 		 * idle resources free for as long as possible so that longer
 		 * running jobs can get more easily started by the backfill
-		 * scheduler plugin */
+		 * scheduler plugin
+		 */
 		return _eval_nodes_busy(job_ptr, node_map,
 				       min_nodes, max_nodes, req_nodes,
 				       cr_node_cnt, cpu_cnt);
@@ -2174,9 +2298,11 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	if (pack_serial_at_end &&
 	    (details_ptr->min_cpus == 1) && (req_nodes == 1)) {
-		/* Put serial jobs at the end of the available node list
+		/*
+		 * Put serial jobs at the end of the available node list
 		 * rather than using a best-fit algorithm, which fragments
-		 * resources. */
+		 * resources.
+		 */
 		return _eval_nodes_serial(job_ptr, node_map,
 					  min_nodes, max_nodes, req_nodes,
 					  cr_node_cnt, cpu_cnt);
@@ -2212,6 +2338,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	rem_cpus = details_ptr->min_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
+	rem_tasks = details_ptr->num_tasks;
 	min_rem_nodes = min_nodes;
 	gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list);
 	if (gres_per_job)
@@ -2246,7 +2373,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		 */
 		if (node_ptr &&
 		    !details_ptr->contiguous &&
-		    (consec_weight[consec_index] != NO_VAL64) &&
+		    (consec_weight[consec_index] != NO_VAL64) && /* Init value*/
 		    (node_ptr->sched_weight != consec_weight[consec_index])) {
 			/* End last set, setup for start of next set */
 			if (consec_nodes[consec_index] == 0) {
@@ -2262,7 +2389,10 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = i;
 			avail_cpus = avail_res_array[i]->avail_cpus;
-
+			_select_cores(job_ptr, mc_ptr, i,
+				      &avail_cpus, &max_nodes, &rem_nodes,
+				      &rem_tasks, avail_core, avail_res_array,
+				      first_pass);
 			if ((max_nodes > 0) && required_node) {
 				if (consec_req[consec_index] == -1) {
 					/* first required node in set */
@@ -2277,7 +2407,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 //FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
 					gres_plugin_job_sched_add(
 						job_ptr->gres_list,
-						avail_res_array[i]->sock_gres_list);
+						avail_res_array[i]->
+						sock_gres_list);
 				}
 			} else {	/* node not selected (yet) */
 				bit_clear(node_map, i);
@@ -2288,7 +2419,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					gres_plugin_job_sched_consec(
 						&consec_gres[consec_index],
 						job_ptr->gres_list,
-						avail_res_array[i]->sock_gres_list);
+						avail_res_array[i]->
+						sock_gres_list);
 				}
 			}
 			consec_weight[consec_index] = node_ptr->sched_weight;
@@ -2625,6 +2757,13 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	return error_code;
 }
 
+static uint16_t _valid_uint16(uint16_t arg)
+{
+	if ((arg == NO_VAL16) || (arg == INFINITE16))
+		return 0;
+	return arg;
+}
+
 /*
  * This is an intermediary step between _select_nodes() and _eval_nodes()
  * to tackle the knapsack problem. This code incrementally removes nodes
@@ -2633,16 +2772,19 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
  * RET SLURM_SUCCESS or an error code
  */
 static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
-			 uint32_t min_nodes, uint32_t max_nodes,
-			 uint32_t req_nodes, avail_res_t **avail_res_array,
-			 uint16_t cr_type, bool prefer_alloc_nodes)
+			 bitstr_t **avail_core, uint32_t min_nodes,
+			 uint32_t max_nodes, uint32_t req_nodes,
+			 avail_res_t **avail_res_array, uint16_t cr_type,
+			 bool prefer_alloc_nodes)
 {
 	int i, i_first, i_last;
 	int count, ec, most_res = 0, rem_nodes, node_cnt = 0;
-	bitstr_t *origmap, *reqmap = NULL;
+	bitstr_t *orig_node_map, *req_node_map = NULL;
+	bitstr_t **orig_core_array;
+	tres_mc_data_t *tres_mc_ptr = NULL;
 
 	if (job_ptr->details->req_node_bitmap)
-		reqmap = job_ptr->details->req_node_bitmap;
+		req_node_map = job_ptr->details->req_node_bitmap;
 
 	/* clear nodes from the bitmap that don't have available resources */
 	i_first = bit_ffs(node_map);
@@ -2665,7 +2807,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		/* OR node has no CPUs */
 		    (avail_res_array[i]->avail_cpus < 1)) {
 
-			if (reqmap && bit_test(reqmap, i)) {
+			if (req_node_map && bit_test(req_node_map, i)) {
 				/* can't clear a required node! */
 				return SLURM_ERROR;
 			}
@@ -2679,13 +2821,47 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	    (max_nodes > job_ptr->details->num_tasks))
 		max_nodes = MAX(job_ptr->details->num_tasks, min_nodes);
 
-	origmap = bit_copy(node_map);
+	tres_mc_ptr = xmalloc(sizeof(multi_core_data_t));
+	if (job_ptr->details && job_ptr->details->mc_ptr) {
+		tres_mc_ptr->cpus_per_task =
+			_valid_uint16(job_ptr->details->cpus_per_task);
+		tres_mc_ptr->ntasks_per_node =
+			_valid_uint16(job_ptr->details->ntasks_per_node);
+		tres_mc_ptr->overcommit = job_ptr->details->overcommit;
+	}
+	if (job_ptr->details && job_ptr->details->mc_ptr) {
+		multi_core_data_t *job_mc_ptr = job_ptr->details->mc_ptr;
+		tres_mc_ptr->boards_per_node =
+			_valid_uint16(job_mc_ptr->boards_per_node);
+		tres_mc_ptr->sockets_per_board =
+			_valid_uint16(job_mc_ptr->sockets_per_board);
+		tres_mc_ptr->sockets_per_node =
+			_valid_uint16(job_mc_ptr->sockets_per_node);
+		tres_mc_ptr->cores_per_socket =
+			_valid_uint16(job_mc_ptr->cores_per_socket);
+		tres_mc_ptr->threads_per_core =
+			_valid_uint16(job_mc_ptr->threads_per_core);
+		tres_mc_ptr->ntasks_per_board =
+			_valid_uint16(job_mc_ptr->ntasks_per_board);
+		tres_mc_ptr->ntasks_per_socket =
+			_valid_uint16(job_mc_ptr->ntasks_per_socket);
+		tres_mc_ptr->ntasks_per_core =
+			_valid_uint16(job_mc_ptr->ntasks_per_core);
+	}
 
-	ec = _eval_nodes(job_ptr, node_map, min_nodes, max_nodes, req_nodes,
-			 avail_res_array, cr_type, prefer_alloc_nodes);
+	/*
+	 * _eval_nodes() might need to be called more than once and is
+	 * destructive of node_map and avail_core. Copy those bitmaps.
+	 */
+	orig_node_map = bit_copy(node_map);
+	orig_core_array = copy_core_array(avail_core);
 
+	ec = _eval_nodes(job_ptr, tres_mc_ptr, node_map, avail_core, min_nodes,
+			 max_nodes, req_nodes, avail_res_array, cr_type,
+			 prefer_alloc_nodes, true);
 	if (ec == SLURM_SUCCESS) {
-		FREE_NULL_BITMAP(origmap);
+		FREE_NULL_BITMAP(orig_node_map);
+		free_core_array(&orig_core_array);
 		return ec;
 	}
 
@@ -2704,34 +2880,39 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	rem_nodes = bit_set_count(node_map);
 	for (count = 1; count < most_res; count++) {
 		int nochange = 1;
-		bit_or(node_map, origmap);
+		bit_or(node_map, orig_node_map);
+		core_array_or(avail_core, orig_core_array);
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(node_map, i))
 				continue;
 			if ((avail_res_array[i]->avail_res_cnt > 0) &&
 			    (avail_res_array[i]->avail_res_cnt <= count)) {
-				if (reqmap && bit_test(reqmap, i))
+				if (req_node_map && bit_test(req_node_map, i))
 					continue;
 				nochange = 0;
 				bit_clear(node_map, i);
-				bit_clear(origmap, i);
+				bit_clear(orig_node_map, i);
 				if (--rem_nodes <= min_nodes)
 					break;
 			}
 		}
-		if (nochange)
+		if (nochange && (count != 1))
 			continue;
-		ec = _eval_nodes(job_ptr, node_map, min_nodes, max_nodes,
-				 req_nodes, avail_res_array, cr_type,
-				 prefer_alloc_nodes);
+		ec = _eval_nodes(job_ptr, tres_mc_ptr, node_map, avail_core,
+				 min_nodes, max_nodes, req_nodes,
+				 avail_res_array, cr_type, prefer_alloc_nodes,
+				 false);
 		if (ec == SLURM_SUCCESS) {
-			FREE_NULL_BITMAP(origmap);
+			FREE_NULL_BITMAP(orig_node_map);
+			free_core_array(&orig_core_array);
 			return ec;
 		}
 		if (rem_nodes <= min_nodes)
 			break;
 	}
-	FREE_NULL_BITMAP(origmap);
+	xfree(tres_mc_ptr);
+	FREE_NULL_BITMAP(orig_node_map);
+	free_core_array(&orig_core_array);
 
 	return ec;
 }
@@ -3620,8 +3801,8 @@ static avail_res_t **_select_nodes(struct job_record *job_ptr,
 	}
 
 	/* choose the best nodes for the job */
-	rc = _choose_nodes(job_ptr, node_bitmap, min_nodes, max_nodes,
-			   req_nodes, avail_res_array, cr_type,
+	rc = _choose_nodes(job_ptr, node_bitmap, avail_core, min_nodes,
+			   max_nodes, req_nodes, avail_res_array, cr_type,
 			   prefer_alloc_nodes);
 	_log_select_maps("_select_nodes/choose_nodes", node_bitmap, avail_core);
 

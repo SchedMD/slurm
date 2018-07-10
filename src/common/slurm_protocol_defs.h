@@ -1168,7 +1168,7 @@ typedef struct multi_core_data {
 	uint16_t cores_per_socket;	/* cores per cpu required by job */
 	uint16_t threads_per_core;	/* threads per core required by job */
 
-	uint16_t ntasks_per_board;  /* number of tasks to invoke on each board*/
+	uint16_t ntasks_per_board;  /* number of tasks to invoke on each board */
 	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
 	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */
 	uint16_t plane_size;        /* plane size when task_dist = SLURM_DIST_PLANE */

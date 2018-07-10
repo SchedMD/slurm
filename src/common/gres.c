@@ -5023,15 +5023,6 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 			avail_sock--;
 		}
 		xfree(avail_sock_flag);
-	}  else if (match && enforce_binding && core_bitmap) {
-		/* Clear core bitmap on sockets without GRES */
-		for (s = 0; s < sockets; s++) {
-			if (sock_gres->cnt_by_sock[s] == 0) {
-				i = s * cores_per_sock;
-				bit_nclear(core_bitmap, i,
-					   i + cores_per_sock - 1);
-			}
-		}
 	}
 
 	if (match) {
