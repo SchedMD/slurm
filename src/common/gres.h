@@ -685,6 +685,29 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					uint16_t *near_gpus);
 
 /*
+ * Determine how many tasks can be started on a given node and which sockets
+ * are required
+ * IN sock_gres_list - list of sock_gres_t entries built by gres_plugin_job_test2()
+ * IN req_cores - set non-zero if core is required, UPDATED
+ * IN avail_cores_per_sock - Count of available cores on each socket
+ * IN sockets - Count of sockets on the node
+ * IN avail_cpus - Count of available CPUs on the node
+ * IN min_tasks_this_node - Minimum count of tasks that can be started on this
+ *                          node, UPDATED
+ * IN max_tasks_this_node - Maximum count of tasks that can be started on this
+ *                          node, UPDATED
+ * IN enforce_binding - GRES must be co-allocated with cores
+ */
+extern void gres_plugin_job_core_filter3(List sock_gres_list,
+					 uint16_t *req_cores,
+					 uint16_t *avail_cores_per_sock,
+					 uint16_t sockets,
+					 uint16_t avail_cpus,
+					 int *min_tasks_this_node,
+					 int *max_tasks_this_node,
+					 bool enforce_binding);
+
+/*
  * Allocate resource to a job and update node and job gres information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by

@@ -2130,22 +2130,23 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
  * IN node_inx - zero-origin node index
  * IN max_nodes - maximum additional node count to allocate
  * IN rem_nodes - desired additional node count to allocate
- * IN rem_tasks - desired additional task count to allocate
+ * IN rem_tasks - desired additional task count to allocate, UPDATED
  * IN avail_core - available core bitmap, UPDATED
  * IN avail_res_array - available resources on the node
  * IN first_pass - set if first scheduling attempt for this job, only use
  *		   co-located GRES and cores
  */
 static void _select_cores(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
-			  int node_inx, int *avail_cpus,
+			  bool enforce_binding, int node_inx, int *avail_cpus,
 			  uint32_t *max_nodes, int *rem_nodes,
 			  int *rem_tasks,
 			  bitstr_t **avail_core,
 			  avail_res_t **avail_res_array,
 			  bool first_pass)
 {
-#if _DEBUG
+	int alloc_tasks = 0;
 	int min_tasks_this_node = 0, max_tasks_this_node = 0;
+	uint16_t *req_cores;
 
 	if (*rem_tasks == 0) {
 		min_tasks_this_node = 1;
@@ -2182,6 +2183,28 @@ static void _select_cores(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
 		}
 	}
 
+	/* Determine how many tasks can be started on this node */
+	if (mc_ptr->cpus_per_task) {
+		alloc_tasks = avail_res_array[node_inx]->avail_cpus /
+			      mc_ptr->cpus_per_task;
+		if (alloc_tasks < min_tasks_this_node)
+			max_tasks_this_node = 0;
+	}
+	if (job_ptr->gres_list) {
+		req_cores = xmalloc(sizeof(uint16_t) *
+				    avail_res_array[node_inx]->sock_cnt);
+		gres_plugin_job_core_filter3(
+				avail_res_array[node_inx]->sock_gres_list,
+				req_cores,
+				avail_res_array[node_inx]->avail_cores_per_sock,
+				avail_res_array[node_inx]->sock_cnt,
+				avail_res_array[node_inx]->avail_cpus,
+				&min_tasks_this_node, &max_tasks_this_node,
+				enforce_binding);
+		xfree(req_cores);
+	}
+
+#if 0
 //FIXME: need to integrate with GRES allocation
 //FIXME: if first_pass==true then try to use only local GRES
 info("NODE:%d MIN-MAX_TASKS: %d-%d", node_inx, min_tasks_this_node, max_tasks_this_node);
@@ -2198,13 +2221,13 @@ info("NTASKS_PER_BOARD:%u", mc_ptr->ntasks_per_board);
 info("NTASKS_PER_SOCKET:%u", mc_ptr->ntasks_per_socket);
 info("NTASKS_PER_CORE:%u", mc_ptr->ntasks_per_core);
 info("OVERCOMMIT:%u\n", mc_ptr->overcommit);
+#endif
 
 //FIXME: Set for testing
 if (*rem_tasks >= min_tasks_this_node)
   *rem_tasks -= min_tasks_this_node;
 else
   *rem_tasks = 0;
-#endif
 
 	*avail_cpus = avail_res_array[node_inx]->avail_cpus;
 }
@@ -2254,6 +2277,7 @@ static int _eval_nodes(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
 	bool gres_per_job, required_node;
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
+	bool enforce_binding = false;
 
 	xassert(node_map);
 	if (select_node_cnt != node_record_count) {
@@ -2322,6 +2346,10 @@ static int _eval_nodes(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
 		}
 	}
 #endif
+
+	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
+		enforce_binding = true;
+
 	consec_size = 50;	/* start allocation for 50 sets of
 				 * consecutive nodes */
 	consec_cpus   = xmalloc(sizeof(int) * consec_size);
@@ -2389,7 +2417,7 @@ static int _eval_nodes(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = i;
 			avail_cpus = avail_res_array[i]->avail_cpus;
-			_select_cores(job_ptr, mc_ptr, i,
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, &max_nodes, &rem_nodes,
 				      &rem_tasks, avail_core, avail_res_array,
 				      first_pass);
