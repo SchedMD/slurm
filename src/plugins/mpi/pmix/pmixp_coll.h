@@ -310,7 +310,6 @@ int pmixp_coll_tree_unpack(Buf buf, pmixp_coll_type_t *type,
 			   size_t *nr);
 void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts);
 int pmixp_coll_check(pmixp_coll_t *coll, uint32_t seq);
-void pmixp_coll_log(pmixp_coll_t *coll);
 
 /* ring coll functions */
 int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t *hl);
