@@ -190,8 +190,9 @@ am__mpi_pmix_v1_la_SOURCES_DIST = mpi_pmix.c pmixp_common.h \
 	pmixp_utils.c pmixp_dmdx.c pmixp_server.h pmixp_state.h \
 	pmixp_io.h pmixp_utils.h pmixp_dmdx.h pmixp_conn.c \
 	pmixp_dconn.c pmixp_dconn_tcp.c pmixp_conn.h pmixp_dconn.h \
-	pmixp_dconn_tcp.h pmixp_coll_tree.c pmixp_dconn_ucx.c \
-	pmixp_dconn_ucx.h pmixp_client_v1.c
+	pmixp_dconn_tcp.h pmixp_coll.c pmixp_coll_tree.c \
+	pmixp_coll_ring.c pmixp_dconn_ucx.c pmixp_dconn_ucx.h \
+	pmixp_client_v1.c
 @HAVE_UCX_TRUE@am__objects_1 = mpi_pmix_v1_la-pmixp_dconn_ucx.lo
 am__objects_2 = mpi_pmix_v1_la-mpi_pmix.lo \
 	mpi_pmix_v1_la-pmixp_agent.lo mpi_pmix_v1_la-pmixp_client.lo \
@@ -200,8 +201,9 @@ am__objects_2 = mpi_pmix_v1_la-mpi_pmix.lo \
 	mpi_pmix_v1_la-pmixp_io.lo mpi_pmix_v1_la-pmixp_utils.lo \
 	mpi_pmix_v1_la-pmixp_dmdx.lo mpi_pmix_v1_la-pmixp_conn.lo \
 	mpi_pmix_v1_la-pmixp_dconn.lo \
-	mpi_pmix_v1_la-pmixp_dconn_tcp.lo \
-	mpi_pmix_v1_la-pmixp_coll_tree.lo $(am__objects_1)
+	mpi_pmix_v1_la-pmixp_dconn_tcp.lo mpi_pmix_v1_la-pmixp_coll.lo \
+	mpi_pmix_v1_la-pmixp_coll_tree.lo \
+	mpi_pmix_v1_la-pmixp_coll_ring.lo $(am__objects_1)
 @HAVE_PMIX_V1_TRUE@am_mpi_pmix_v1_la_OBJECTS = $(am__objects_2) \
 @HAVE_PMIX_V1_TRUE@	mpi_pmix_v1_la-pmixp_client_v1.lo
 mpi_pmix_v1_la_OBJECTS = $(am_mpi_pmix_v1_la_OBJECTS)
@@ -223,8 +225,9 @@ am__mpi_pmix_v2_la_SOURCES_DIST = mpi_pmix.c pmixp_common.h \
 	pmixp_utils.c pmixp_dmdx.c pmixp_server.h pmixp_state.h \
 	pmixp_io.h pmixp_utils.h pmixp_dmdx.h pmixp_conn.c \
 	pmixp_dconn.c pmixp_dconn_tcp.c pmixp_conn.h pmixp_dconn.h \
-	pmixp_dconn_tcp.h pmixp_coll_tree.c pmixp_dconn_ucx.c \
-	pmixp_dconn_ucx.h pmixp_client_v2.c
+	pmixp_dconn_tcp.h pmixp_coll.c pmixp_coll_tree.c \
+	pmixp_coll_ring.c pmixp_dconn_ucx.c pmixp_dconn_ucx.h \
+	pmixp_client_v2.c
 @HAVE_UCX_TRUE@am__objects_3 = mpi_pmix_v2_la-pmixp_dconn_ucx.lo
 am__objects_4 = mpi_pmix_v2_la-mpi_pmix.lo \
 	mpi_pmix_v2_la-pmixp_agent.lo mpi_pmix_v2_la-pmixp_client.lo \
@@ -233,8 +236,9 @@ am__objects_4 = mpi_pmix_v2_la-mpi_pmix.lo \
 	mpi_pmix_v2_la-pmixp_io.lo mpi_pmix_v2_la-pmixp_utils.lo \
 	mpi_pmix_v2_la-pmixp_dmdx.lo mpi_pmix_v2_la-pmixp_conn.lo \
 	mpi_pmix_v2_la-pmixp_dconn.lo \
-	mpi_pmix_v2_la-pmixp_dconn_tcp.lo \
-	mpi_pmix_v2_la-pmixp_coll_tree.lo $(am__objects_3)
+	mpi_pmix_v2_la-pmixp_dconn_tcp.lo mpi_pmix_v2_la-pmixp_coll.lo \
+	mpi_pmix_v2_la-pmixp_coll_tree.lo \
+	mpi_pmix_v2_la-pmixp_coll_ring.lo $(am__objects_3)
 @HAVE_PMIX_V2_TRUE@am_mpi_pmix_v2_la_OBJECTS = $(am__objects_4) \
 @HAVE_PMIX_V2_TRUE@	mpi_pmix_v2_la-pmixp_client_v2.lo
 mpi_pmix_v2_la_OBJECTS = $(am_mpi_pmix_v2_la_OBJECTS)
@@ -572,8 +576,8 @@ pmix_src = mpi_pmix.c pmixp_common.h pmixp_coll.h pmixp_agent.c \
 	pmixp_state.c pmixp_io.c pmixp_utils.c pmixp_dmdx.c \
 	pmixp_server.h pmixp_state.h pmixp_io.h pmixp_utils.h \
 	pmixp_dmdx.h pmixp_conn.c pmixp_dconn.c pmixp_dconn_tcp.c \
-	pmixp_conn.h pmixp_dconn.h pmixp_dconn_tcp.h pmixp_coll_tree.c \
-	$(am__append_1)
+	pmixp_conn.h pmixp_dconn.h pmixp_dconn_tcp.h pmixp_coll.c \
+	pmixp_coll_tree.c pmixp_coll_ring.c $(am__append_1)
 pmix_internal_libs = \
 	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
 
@@ -717,6 +721,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_agent.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_client_v1.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_coll.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_coll_ring.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_coll_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_conn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_dconn.Plo@am__quote@
@@ -733,6 +739,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_agent.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_client_v2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_coll.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_coll_ring.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_coll_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_conn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_dconn.Plo@am__quote@
@@ -858,12 +866,26 @@ mpi_pmix_v1_la-pmixp_dconn_tcp.lo: pmixp_dconn_tcp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v1_la-pmixp_dconn_tcp.lo `test -f 'pmixp_dconn_tcp.c' || echo '$(srcdir)/'`pmixp_dconn_tcp.c
 
+mpi_pmix_v1_la-pmixp_coll.lo: pmixp_coll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v1_la-pmixp_coll.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v1_la-pmixp_coll.Tpo -c -o mpi_pmix_v1_la-pmixp_coll.lo `test -f 'pmixp_coll.c' || echo '$(srcdir)/'`pmixp_coll.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v1_la-pmixp_coll.Tpo $(DEPDIR)/mpi_pmix_v1_la-pmixp_coll.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pmixp_coll.c' object='mpi_pmix_v1_la-pmixp_coll.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v1_la-pmixp_coll.lo `test -f 'pmixp_coll.c' || echo '$(srcdir)/'`pmixp_coll.c
+
 mpi_pmix_v1_la-pmixp_coll_tree.lo: pmixp_coll_tree.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v1_la-pmixp_coll_tree.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v1_la-pmixp_coll_tree.Tpo -c -o mpi_pmix_v1_la-pmixp_coll_tree.lo `test -f 'pmixp_coll_tree.c' || echo '$(srcdir)/'`pmixp_coll_tree.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v1_la-pmixp_coll_tree.Tpo $(DEPDIR)/mpi_pmix_v1_la-pmixp_coll_tree.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pmixp_coll_tree.c' object='mpi_pmix_v1_la-pmixp_coll_tree.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v1_la-pmixp_coll_tree.lo `test -f 'pmixp_coll_tree.c' || echo '$(srcdir)/'`pmixp_coll_tree.c
+
+mpi_pmix_v1_la-pmixp_coll_ring.lo: pmixp_coll_ring.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v1_la-pmixp_coll_ring.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v1_la-pmixp_coll_ring.Tpo -c -o mpi_pmix_v1_la-pmixp_coll_ring.lo `test -f 'pmixp_coll_ring.c' || echo '$(srcdir)/'`pmixp_coll_ring.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v1_la-pmixp_coll_ring.Tpo $(DEPDIR)/mpi_pmix_v1_la-pmixp_coll_ring.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pmixp_coll_ring.c' object='mpi_pmix_v1_la-pmixp_coll_ring.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v1_la-pmixp_coll_ring.lo `test -f 'pmixp_coll_ring.c' || echo '$(srcdir)/'`pmixp_coll_ring.c
 
 mpi_pmix_v1_la-pmixp_dconn_ucx.lo: pmixp_dconn_ucx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v1_la-pmixp_dconn_ucx.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v1_la-pmixp_dconn_ucx.Tpo -c -o mpi_pmix_v1_la-pmixp_dconn_ucx.lo `test -f 'pmixp_dconn_ucx.c' || echo '$(srcdir)/'`pmixp_dconn_ucx.c
@@ -970,12 +992,26 @@ mpi_pmix_v2_la-pmixp_dconn_tcp.lo: pmixp_dconn_tcp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v2_la-pmixp_dconn_tcp.lo `test -f 'pmixp_dconn_tcp.c' || echo '$(srcdir)/'`pmixp_dconn_tcp.c
 
+mpi_pmix_v2_la-pmixp_coll.lo: pmixp_coll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v2_la-pmixp_coll.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v2_la-pmixp_coll.Tpo -c -o mpi_pmix_v2_la-pmixp_coll.lo `test -f 'pmixp_coll.c' || echo '$(srcdir)/'`pmixp_coll.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v2_la-pmixp_coll.Tpo $(DEPDIR)/mpi_pmix_v2_la-pmixp_coll.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pmixp_coll.c' object='mpi_pmix_v2_la-pmixp_coll.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v2_la-pmixp_coll.lo `test -f 'pmixp_coll.c' || echo '$(srcdir)/'`pmixp_coll.c
+
 mpi_pmix_v2_la-pmixp_coll_tree.lo: pmixp_coll_tree.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v2_la-pmixp_coll_tree.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v2_la-pmixp_coll_tree.Tpo -c -o mpi_pmix_v2_la-pmixp_coll_tree.lo `test -f 'pmixp_coll_tree.c' || echo '$(srcdir)/'`pmixp_coll_tree.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v2_la-pmixp_coll_tree.Tpo $(DEPDIR)/mpi_pmix_v2_la-pmixp_coll_tree.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pmixp_coll_tree.c' object='mpi_pmix_v2_la-pmixp_coll_tree.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v2_la-pmixp_coll_tree.lo `test -f 'pmixp_coll_tree.c' || echo '$(srcdir)/'`pmixp_coll_tree.c
+
+mpi_pmix_v2_la-pmixp_coll_ring.lo: pmixp_coll_ring.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v2_la-pmixp_coll_ring.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v2_la-pmixp_coll_ring.Tpo -c -o mpi_pmix_v2_la-pmixp_coll_ring.lo `test -f 'pmixp_coll_ring.c' || echo '$(srcdir)/'`pmixp_coll_ring.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v2_la-pmixp_coll_ring.Tpo $(DEPDIR)/mpi_pmix_v2_la-pmixp_coll_ring.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pmixp_coll_ring.c' object='mpi_pmix_v2_la-pmixp_coll_ring.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v2_la-pmixp_coll_ring.lo `test -f 'pmixp_coll_ring.c' || echo '$(srcdir)/'`pmixp_coll_ring.c
 
 mpi_pmix_v2_la-pmixp_dconn_ucx.lo: pmixp_dconn_ucx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v2_la-pmixp_dconn_ucx.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v2_la-pmixp_dconn_ucx.Tpo -c -o mpi_pmix_v2_la-pmixp_dconn_ucx.lo `test -f 'pmixp_dconn_ucx.c' || echo '$(srcdir)/'`pmixp_dconn_ucx.c
