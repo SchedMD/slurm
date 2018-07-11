@@ -2822,7 +2822,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		max_nodes = MAX(job_ptr->details->num_tasks, min_nodes);
 
 	tres_mc_ptr = xmalloc(sizeof(multi_core_data_t));
-	if (job_ptr->details && job_ptr->details->mc_ptr) {
+	if (job_ptr->details->mc_ptr) {
 		tres_mc_ptr->cpus_per_task =
 			_valid_uint16(job_ptr->details->cpus_per_task);
 		tres_mc_ptr->ntasks_per_node =
