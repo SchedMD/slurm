@@ -408,7 +408,7 @@ static void _dmdx_resp(Buf buf, int nodeid, uint32_t seq_num)
 
 	/* call back to libpmix-server */
 	pmixp_lib_modex_invoke(req->cbfunc, status, data, size,
-			       req->cbdata, pmixp_free_Buf, (void *)buf);
+			       req->cbdata, pmixp_free_buf, (void *)buf);
 
 	/* release tracker & list iterator */
 	req = NULL;
