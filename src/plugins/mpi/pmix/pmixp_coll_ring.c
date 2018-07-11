@@ -384,12 +384,6 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 	} while(ret);
 }
 
-static void _free_from_buf_pool(void *p)
-{
-	Buf buf = (Buf)p;
-	FREE_NULL_BUFFER(buf);
-}
-
 pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_new(pmixp_coll_t *coll)
 {
 	int i;
@@ -469,8 +463,8 @@ int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t *hl)
 	ring->next_peerid = pmixp_info_job_hostid(p);
 	free(p);
 
-	ring->fwrd_buf_pool = list_create(_free_from_buf_pool);
-	ring->ring_buf_pool = list_create(_free_from_buf_pool);
+	ring->fwrd_buf_pool = list_create(pmixp_free_buf);
+	ring->ring_buf_pool = list_create(pmixp_free_buf);
 
 	for (i = 0; i < PMIXP_COLL_RING_CTX_NUM; i++) {
 		coll_ctx = &ring->ctx_array[i];
