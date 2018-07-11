@@ -2859,11 +2859,8 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	ec = _eval_nodes(job_ptr, tres_mc_ptr, node_map, avail_core, min_nodes,
 			 max_nodes, req_nodes, avail_res_array, cr_type,
 			 prefer_alloc_nodes, true);
-	if (ec == SLURM_SUCCESS) {
-		FREE_NULL_BITMAP(orig_node_map);
-		free_core_array(&orig_core_array);
-		return ec;
-	}
+	if (ec == SLURM_SUCCESS)
+		goto fini;
 
 	/*
 	 * This nodeset didn't work. To avoid a possible knapsack problem,
@@ -2902,15 +2899,13 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 min_nodes, max_nodes, req_nodes,
 				 avail_res_array, cr_type, prefer_alloc_nodes,
 				 false);
-		if (ec == SLURM_SUCCESS) {
-			FREE_NULL_BITMAP(orig_node_map);
-			free_core_array(&orig_core_array);
-			return ec;
-		}
+		if (ec == SLURM_SUCCESS)
+			break;
 		if (rem_nodes <= min_nodes)
 			break;
 	}
-	xfree(tres_mc_ptr);
+
+fini:	xfree(tres_mc_ptr);
 	FREE_NULL_BITMAP(orig_node_map);
 	free_core_array(&orig_core_array);
 
