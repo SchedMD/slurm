@@ -481,7 +481,6 @@ int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t *hl)
 		coll_ctx->contrib_prev = 0;
 		coll_ctx->state = PMIXP_COLL_RING_SYNC;
 		coll_ctx->contrib_map = xmalloc(sizeof(bool) * coll->peers_cnt); // TODO bit vector
-		memset(coll_ctx->contrib_map, 0, sizeof(bool) * coll->peers_cnt);
 	}
 
 	return SLURM_SUCCESS;
