@@ -304,8 +304,8 @@ void pmixp_coll_tree_free(pmixp_coll_tree_t *tree)
 	if (NULL != tree->contrib_chld) {
 		xfree(tree->contrib_chld);
 	}
-	free_buf(tree->ufwd_buf);
-	free_buf(tree->dfwd_buf);
+	FREE_NULL_BUFFER(tree->ufwd_buf);
+	FREE_NULL_BUFFER(tree->dfwd_buf);
 }
 
 typedef struct {

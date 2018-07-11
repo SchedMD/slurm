@@ -387,7 +387,7 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 static void _free_from_buf_pool(void *p)
 {
 	Buf buf = (Buf)p;
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 }
 
 pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_new(pmixp_coll_t *coll)
@@ -493,7 +493,7 @@ void pmixp_coll_ring_free(pmixp_coll_ring_t *ring)
 	pmixp_coll_ring_ctx_t *coll_ctx;
 	for (i = 0; i < PMIXP_COLL_RING_CTX_NUM; i++) {
 		coll_ctx = &ring->ctx_array[i];
-		free_buf(coll_ctx->ring_buf);
+		FREE_NULL_BUFFER(coll_ctx->ring_buf);
 		xfree(coll_ctx->contrib_map);
 	}
 	list_destroy(ring->fwrd_buf_pool);

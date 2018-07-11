@@ -215,7 +215,7 @@ static size_t _base_hdr_pack_full_samearch(pmixp_base_hdr_t *hdr, void *net)
 		packmem(pmixp_dconn_ep_data(), pmixp_dconn_ep_len(), buf);
 		offset += get_buf_offset(buf);
 		buf->head = NULL;
-		free_buf(buf);
+		FREE_NULL_BUFFER(buf);
 	}
 	return offset;
 }
@@ -707,7 +707,7 @@ static int _process_extended_hdr(pmixp_base_hdr_t *hdr, Buf buf)
 
 		rc = _auth_cred_create(buf_init);
 		if (rc) {
-			free_buf(init_msg->buf_ptr);
+			FREE_NULL_BUFFER(init_msg->buf_ptr);
 			xfree(init_msg);
 			goto unlock;
 		}
@@ -728,7 +728,7 @@ static int _process_extended_hdr(pmixp_base_hdr_t *hdr, Buf buf)
 		PMIXP_ERROR("Unable to connect to %d", dconn->nodeid);
 		if (init_msg) {
 			/* need to release `init_msg` here */
-			free_buf(init_msg->buf_ptr);
+			FREE_NULL_BUFFER(init_msg->buf_ptr);
 			xfree(init_msg);
 		}
 		goto unlock;
@@ -942,13 +942,13 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 	}
 
 exit:
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 }
 
 void pmixp_server_sent_buf_cb(int rc, pmixp_p2p_ctx_t ctx, void *data)
 {
 	Buf buf = (Buf)data;
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 	return;
 }
 
@@ -1048,7 +1048,7 @@ static int _direct_hdr_unpack_portable(void *net, void *host)
 
 	/* free the Buf packbuf, but not the memory it points to */
 	packbuf->head = NULL;
-	free_buf(packbuf);
+	FREE_NULL_BUFFER(packbuf);
 	return 0;
 }
 
@@ -1070,7 +1070,7 @@ static size_t _direct_hdr_pack_portable(pmixp_base_hdr_t *hdr, void *net)
 	xassert(size <= PMIXP_BASE_HDR_MAX);
 	/* free the Buf packbuf, but not the memory it points to */
 	buf->head = NULL;
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 	return size;
 }
 
@@ -1173,7 +1173,7 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 	/* Retrieve endpoint information */
 	rc = _base_hdr_unpack_ext(buf_msg, &ep_data, &ep_len);
 	if (rc) {
-		free_buf(buf_msg);
+		FREE_NULL_BUFFER(buf_msg);
 		close(fd);
 		nodename = pmixp_info_job_host(hdr->nodeid);
 		PMIXP_ERROR("Failed to unpack the direct connection message from %u(%s)",
@@ -1183,7 +1183,7 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 	}
 	/* Unpack and verify the auth credential */
 	rc = _auth_cred_verify(buf_msg);
-	free_buf(buf_msg);
+	FREE_NULL_BUFFER(buf_msg);
 	if (rc) {
 		close(fd);
 		nodename = pmixp_info_job_host(hdr->nodeid);
@@ -1419,7 +1419,7 @@ static int _slurm_pack_hdr(pmixp_base_hdr_t *hdr, void *net)
 	size = get_buf_offset(buf);
 	/* free the Buf packbuf, but not the memory it points to */
 	buf->head = NULL;
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 	return size;
 }
 
@@ -1437,7 +1437,7 @@ static int _slurm_proto_unpack_hdr(void *net, void *host)
 	}
 	/* free the Buf packbuf, but not the memory it points to */
 	packbuf->head = NULL;
-	free_buf(packbuf);
+	FREE_NULL_BUFFER(packbuf);
 
 	return 0;
 }
@@ -1719,7 +1719,7 @@ struct pp_cbdata
 void pingpong_complete(int rc, pmixp_p2p_ctx_t ctx, void *data)
 {
 	struct pp_cbdata *d = (struct pp_cbdata*)data;
-	free_buf(d->buf);
+	FREE_NULL_BUFFER(d->buf);
 	xfree(data);
 	//    PMIXP_ERROR("Send complete: %d %lf", d->size, GET_TS - d->start);
 }
