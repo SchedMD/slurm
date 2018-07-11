@@ -81,6 +81,8 @@ const char plugin_name[] = "PMIx plugin";
 const char plugin_type[] = "mpi/pmix_v1";
 #elif (HAVE_PMIX_VER == 2)
 const char plugin_type[] = "mpi/pmix_v2";
+#elif (HAVE_PMIX_VER == 3)
+const char plugin_type[] = "mpi/pmix_v3";
 #endif
 
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;

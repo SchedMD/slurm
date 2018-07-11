@@ -138,6 +138,15 @@ static pmix_status_t _dmodex_fn(const pmix_proc_t *proc,
 	return (SLURM_SUCCESS == rc) ? PMIX_SUCCESS : PMIX_ERROR;
 }
 
+static pmix_status_t _job_control(const pmix_proc_t *proct,
+                                  const pmix_proc_t targets[], size_t ntargets,
+                                  const pmix_info_t directives[], size_t ndirs,
+                                  pmix_info_cbfunc_t cbfunc, void *cbdata)
+{
+	PMIXP_DEBUG("called");
+	return PMIX_ERR_NOT_SUPPORTED;
+}
+
 static pmix_status_t _publish_fn(const pmix_proc_t *proc,
 				 const pmix_info_t info[], size_t ninfo,
 				 pmix_op_cbfunc_t cbfunc, void *cbdata)
@@ -203,19 +212,18 @@ static void _errhandler(size_t evhdlr_registration_id,
 }
 
 static pmix_server_module_t slurm_pmix_cb = {
-	_client_connected,
-	_client_finalized,
-	_abort_fn,
-	_fencenb_fn,
-	_dmodex_fn,
-	_publish_fn,
-	_lookup_fn,
-	_unpublish_fn,
-	_spawn_fn,
-	_connect_fn,
-	_disconnect_fn,
-	NULL,
-	NULL
+	.client_connected = _client_connected,
+	.client_finalized = _client_finalized,
+	.abort = _abort_fn,
+	.fence_nb = _fencenb_fn,
+	.direct_modex = _dmodex_fn,
+	.publish = _publish_fn,
+	.lookup = _lookup_fn,
+	.unpublish = _unpublish_fn,
+	.spawn = _spawn_fn,
+	.connect = _connect_fn,
+	.disconnect = _disconnect_fn,
+	.job_control = _job_control
 };
 
 int pmixp_lib_init(void)

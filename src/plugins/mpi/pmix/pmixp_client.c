@@ -94,7 +94,7 @@
 	PMIX_VAL_SET(value, int, rank);				\
 }
 
-#elif (HAVE_PMIX_VER == 2)
+#else
 #define PMIXP_INFO_ARRAY_CREATE(kvp, _array, _count)			\
 {									\
 	(kvp)->value.type = PMIX_DATA_ARRAY;				\

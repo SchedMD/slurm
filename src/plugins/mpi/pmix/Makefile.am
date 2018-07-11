@@ -53,6 +53,21 @@ mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V2_CPPFLAGS) -DHAVE_PMIX_VER=2
 
 endif
 
+if HAVE_PMIX_V3
+
+pkglib_v3dir=$(pkglibdir)
+pkglib_v3_LTLIBRARIES = mpi_pmix_v3.la
+mpi_pmix_v3_la_SOURCES = $(pmix_src) pmixp_client_v2.c
+mpi_pmix_v3_la_LIBADD = $(pmix_libadd)
+mpi_pmix_v3_la_LDFLAGS = $(pmix_ldflags) $(PMIX_V3_LDFLAGS)
+mpi_pmix_v3_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V3_CPPFLAGS) -DHAVE_PMIX_VER=3
+
+endif
+
+if HAVE_PMIX_V3
+mpi_pmix_so := mpi_pmix_v3.so
+else
+
 if HAVE_PMIX_V2
 mpi_pmix_so := mpi_pmix_v2.so
 else
@@ -61,6 +76,7 @@ if HAVE_PMIX_V1
 mpi_pmix_so := mpi_pmix_v1.so
 endif
 
+endif
 endif
 
 force:
