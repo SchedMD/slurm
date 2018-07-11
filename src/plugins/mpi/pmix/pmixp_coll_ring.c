@@ -67,7 +67,7 @@ static inline pmixp_coll_t *_ctx_get_coll(pmixp_coll_ring_ctx_t *coll_ctx)
 }
 
 static inline pmixp_coll_ring_t *_ctx_get_coll_ring(
-		pmixp_coll_ring_ctx_t *coll_ctx)
+	pmixp_coll_ring_ctx_t *coll_ctx)
 {
 	return &coll_ctx->coll->state.ring;
 }
@@ -75,7 +75,7 @@ static inline pmixp_coll_ring_t *_ctx_get_coll_ring(
 static inline uint32_t _ring_remain_contrib(pmixp_coll_ring_ctx_t *coll_ctx)
 {
 	return coll_ctx->coll->peers_cnt -
-			(coll_ctx->contrib_prev + coll_ctx->contrib_local);
+		(coll_ctx->contrib_prev + coll_ctx->contrib_local);
 }
 
 static inline uint32_t _ring_fwd_done(pmixp_coll_ring_ctx_t *coll_ctx)
@@ -121,7 +121,8 @@ exit:
 	xfree(cbdata);
 }
 
-static inline void pmixp_coll_ring_ctx_sanity_check(pmixp_coll_ring_ctx_t *coll_ctx)
+static inline void pmixp_coll_ring_ctx_sanity_check(
+	pmixp_coll_ring_ctx_t *coll_ctx)
 {
 	xassert(NULL != coll_ctx);
 	xassert(coll_ctx->in_use);
@@ -169,7 +170,8 @@ int pmixp_coll_ring_unpack(Buf buf, pmixp_coll_type_t *type,
 	for (i = 0; i < (int)nprocs; i++) {
 		rc = unpackmem(procs[i].nspace, &tmp, buf);
 		if (SLURM_SUCCESS != rc) {
-			PMIXP_ERROR("Cannot unpack namespace for process #%d", i);
+			PMIXP_ERROR("Cannot unpack namespace for process #%d",
+				    i);
 			return rc;
 		}
 		procs[i].nspace[tmp] = '\0';
@@ -260,7 +262,8 @@ static int _ring_forward_data(pmixp_coll_ring_ctx_t *coll_ctx, uint32_t contrib_
 
 #ifdef PMIXP_COLL_DEBUG
 	PMIXP_DEBUG("%p: transit data to nodeid=%d, seq=%d, hop=%d, size=%lu, contrib=%d",
-		    coll_ctx, _ring_next_id(coll), hdr.seq, hdr.hop_seq, hdr.msgsize, hdr.contrib_id);
+		    coll_ctx, _ring_next_id(coll), hdr.seq,
+		    hdr.hop_seq, hdr.msgsize, hdr.contrib_id);
 #endif
 	if (!buf) {
 		rc = SLURM_ERROR;
@@ -350,15 +353,20 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 				if (coll->cbfunc) {
 					pmixp_coll_ring_cbdata_t *cbdata;
 
-					cbdata = xmalloc(sizeof(pmixp_coll_ring_cbdata_t));
+					cbdata = xmalloc(
+						sizeof(pmixp_coll_ring_cbdata_t));
 					cbdata->coll = coll;
 					cbdata->coll_ctx = coll_ctx;
 					cbdata->buf = coll_ctx->ring_buf;
 					cbdata->seq = coll_ctx->seq;
-					pmixp_lib_modex_invoke(coll->cbfunc, SLURM_SUCCESS,
-							       get_buf_data(coll_ctx->ring_buf),
-							       get_buf_offset(coll_ctx->ring_buf),
-							       coll->cbdata, _libpmix_cb, (void *)cbdata);
+					pmixp_lib_modex_invoke(
+						coll->cbfunc, SLURM_SUCCESS,
+						get_buf_data(
+							coll_ctx->ring_buf),
+						get_buf_offset(
+							coll_ctx->ring_buf),
+						coll->cbdata, _libpmix_cb,
+						(void *)cbdata);
 				}
 				ret = true;
 			}
@@ -366,9 +374,9 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 		case PMIXP_COLL_RING_FINALIZE:
 			if(_ring_fwd_done(coll_ctx)) {
 #ifdef PMIXP_COLL_DEBUG
-			PMIXP_DEBUG("%p: %s seq=%d is DONE", coll,
-				    pmixp_coll_type2str(coll->type),
-				    coll_ctx->seq);
+				PMIXP_DEBUG("%p: %s seq=%d is DONE", coll,
+					    pmixp_coll_type2str(coll->type),
+					    coll_ctx->seq);
 #endif
 				/* increase coll sequence */
 				coll->seq++;
@@ -387,13 +395,17 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_new(pmixp_coll_t *coll)
 {
 	int i;
-	pmixp_coll_ring_ctx_t *coll_ctx = NULL, *ret_ctx = NULL, *free_ctx = NULL;
+	pmixp_coll_ring_ctx_t *coll_ctx = NULL, *ret_ctx = NULL,
+		*free_ctx = NULL;
 	pmixp_coll_ring_t *ring = &coll->state.ring;
 	uint32_t seq = coll->seq;
 
 	for (i = 0; i < PMIXP_COLL_RING_CTX_NUM; i++) {
 		coll_ctx = &ring->ctx_array[i];
-		/* check that no active context exists to exclude the double context */
+		/*
+		 * check that no active context exists to exclude the double
+		 * context
+		 */
 		if (coll_ctx->in_use) {
 			switch(coll_ctx->state) {
 			case PMIXP_COLL_RING_FINALIZE:
@@ -474,7 +486,8 @@ int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t *hl)
 		coll_ctx->contrib_local = false;
 		coll_ctx->contrib_prev = 0;
 		coll_ctx->state = PMIXP_COLL_RING_SYNC;
-		coll_ctx->contrib_map = xmalloc(sizeof(bool) * coll->peers_cnt); // TODO bit vector
+		// TODO bit vector
+		coll_ctx->contrib_map = xmalloc(sizeof(bool) * coll->peers_cnt);
 	}
 
 	return SLURM_SUCCESS;
@@ -494,7 +507,8 @@ void pmixp_coll_ring_free(pmixp_coll_ring_t *ring)
 	list_destroy(ring->ring_buf_pool);
 }
 
-inline static int _pmixp_coll_contrib(pmixp_coll_ring_ctx_t *coll_ctx, int contrib_id,
+inline static int _pmixp_coll_contrib(pmixp_coll_ring_ctx_t *coll_ctx,
+				      int contrib_id,
 				      uint32_t hop, char *data, size_t size)
 {
 	pmixp_coll_t *coll = _ctx_get_coll(coll_ctx);
@@ -506,17 +520,19 @@ inline static int _pmixp_coll_contrib(pmixp_coll_ring_ctx_t *coll_ctx, int contr
 
 	/* save contribution */
 	if (!size_buf(coll_ctx->ring_buf)) {
-		pmixp_server_buf_reserve(coll_ctx->ring_buf, size * coll->peers_cnt);
+		pmixp_server_buf_reserve(coll_ctx->ring_buf,
+					 size * coll->peers_cnt);
 	} else if(remaining_buf(coll_ctx->ring_buf) < size) {
 		size_t new_size = size_buf(coll_ctx->ring_buf) + size *
-				_ring_remain_contrib(coll_ctx);
+			_ring_remain_contrib(coll_ctx);
 		pmixp_server_buf_reserve(coll_ctx->ring_buf, new_size);
 	}
 	pmixp_server_buf_reserve(coll_ctx->ring_buf, size);
 	data_ptr = get_buf_data(coll_ctx->ring_buf) +
-			get_buf_offset(coll_ctx->ring_buf);
+		get_buf_offset(coll_ctx->ring_buf);
 	memcpy(data_ptr, data, size);
-	set_buf_offset(coll_ctx->ring_buf, get_buf_offset(coll_ctx->ring_buf) + size);
+	set_buf_offset(coll_ctx->ring_buf,
+		       get_buf_offset(coll_ctx->ring_buf) + size);
 
 	/* check for ring is complete */
 	if (contrib_id != _ring_next_id(coll)) {
@@ -550,8 +566,8 @@ int pmixp_coll_ring_local(pmixp_coll_t *coll, char *data, size_t size,
 
 	coll_ctx = pmixp_coll_ring_ctx_new(coll);
 	if (!coll_ctx) {
-		PMIXP_ERROR("Can not get new ring collective context, "
-			    "seq=%u", coll->seq);
+		PMIXP_ERROR("Can not get new ring collective context, seq=%u",
+			    coll->seq);
 		ret = SLURM_ERROR;
 		goto exit;
 	}
@@ -584,7 +600,7 @@ int pmixp_coll_ring_check(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr)
 	if (hdr->nodeid != _ring_prev_id(coll)) {
 		nodename = pmixp_info_job_host(hdr->nodeid);
 		PMIXP_ERROR("%p: unexpected contrib from %s:%u, expected is %d",
-			  coll, nodename, hdr->nodeid, _ring_prev_id(coll));
+			    coll, nodename, hdr->nodeid, _ring_prev_id(coll));
 		return SLURM_FAILURE;
 	}
 	rc = pmixp_coll_check(coll, hdr->seq);
@@ -625,14 +641,13 @@ int pmixp_coll_ring_neighbor(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr,
 
 	coll_ctx = pmixp_coll_ring_ctx_select(coll, hdr->seq);
 	if (!coll_ctx) {
-		PMIXP_ERROR("Can not get ring collective context, "
-			    "seq=%u", hdr->seq);
+		PMIXP_ERROR("Can not get ring collective context, seq=%u",
+			    hdr->seq);
 		ret = SLURM_ERROR;
 		goto exit;
 	}
 #ifdef PMIXP_COLL_DEBUG
-	PMIXP_DEBUG("%p: contrib/nbr: seqnum=%u, state=%d, nodeid=%d, contrib=%d, "
-		    "seq=%d, size=%lu",
+	PMIXP_DEBUG("%p: contrib/nbr: seqnum=%u, state=%d, nodeid=%d, contrib=%d, seq=%d, size=%lu",
 		    coll_ctx, coll_ctx->seq, coll_ctx->state, hdr->nodeid,
 		    hdr->contrib_id, hdr->hop_seq, hdr->msgsize);
 #endif
@@ -648,7 +663,8 @@ int pmixp_coll_ring_neighbor(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr,
 	}
 
 	/* compute the actual hops of ring: (src - dst + size) % size */
-	hop_seq = (coll->my_peerid + coll->peers_cnt - hdr->contrib_id) % coll->peers_cnt - 1;
+	hop_seq = (coll->my_peerid + coll->peers_cnt - hdr->contrib_id) %
+		coll->peers_cnt - 1;
 	if (hdr->hop_seq != hop_seq) {
 #ifdef PMIXP_COLL_DEBUG
 		PMIXP_DEBUG("%p: unexpected ring seq number=%d, expect=%d, coll seq=%d",
@@ -675,7 +691,7 @@ int pmixp_coll_ring_neighbor(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr,
 
 	data_ptr = get_buf_data(buf) + get_buf_offset(buf);
 	if (_pmixp_coll_contrib(coll_ctx, hdr->contrib_id, hdr->hop_seq + 1,
-				  data_ptr, remaining_buf(buf))) {
+				data_ptr, remaining_buf(buf))) {
 		goto exit;
 	}
 
@@ -698,17 +714,21 @@ void pmixp_coll_ring_reset_if_to(pmixp_coll_t *coll, time_t ts) {
 	slurm_mutex_lock(&coll->lock);
 	for (i = 0; i < PMIXP_COLL_RING_CTX_NUM; i++) {
 		coll_ctx = &coll->state.ring.ctx_array[i];
-		if (!coll_ctx->in_use || (PMIXP_COLL_RING_SYNC == coll_ctx->state)) {
+		if (!coll_ctx->in_use ||
+		    (PMIXP_COLL_RING_SYNC == coll_ctx->state)) {
 			continue;
 		}
 		if (ts - coll->ts > pmixp_info_timeout()) {
 			/* respond to the libpmix */
 			if (coll_ctx->contrib_local && coll->cbfunc) {
-				pmixp_lib_modex_invoke(coll->cbfunc, PMIXP_ERR_TIMEOUT, NULL,
-						       0, coll->cbdata, NULL, NULL);
+				pmixp_lib_modex_invoke(coll->cbfunc,
+						       PMIXP_ERR_TIMEOUT, NULL,
+						       0, coll->cbdata,
+						       NULL, NULL);
 			}
 			/* report the timeout event */
-			PMIXP_ERROR("%p: collective timeout seq=%d", coll, coll_ctx->seq);
+			PMIXP_ERROR("%p: collective timeout seq=%d",
+				    coll, coll_ctx->seq);
 			pmixp_coll_log(coll);
 			/* drop the collective */
 			_reset_coll_ring(coll_ctx);
@@ -744,37 +764,50 @@ void pmixp_coll_ring_log(pmixp_coll_t *coll)
 	for (i = 0; i < PMIXP_COLL_RING_CTX_NUM; i++) {
 		pmixp_coll_ring_ctx_t *coll_ctx = &ring->ctx_array[i];
 
-		PMIXP_ERROR("Context ptr=%p, #%d, in-use=%d", coll_ctx, i, coll_ctx->in_use);
+		PMIXP_ERROR("Context ptr=%p, #%d, in-use=%d",
+			    coll_ctx, i, coll_ctx->in_use);
 
 		if (coll_ctx->in_use) {
 			int id;
 			char *done_contrib, *wait_contrib;
 			hostlist_t hl_done_contrib, hl_wait_contrib;
 
-			pmixp_hostset_from_ranges(coll->pset.procs, coll->pset.nprocs, &hl_done_contrib);
+			pmixp_hostset_from_ranges(coll->pset.procs,
+						  coll->pset.nprocs,
+						  &hl_done_contrib);
 			hl_wait_contrib = hostlist_copy(hl_done_contrib);
 
 			PMIXP_ERROR("\t seq=%d contribs: loc=%d/prev=%d/fwd=%d",
 				    coll_ctx->seq, coll_ctx->contrib_local,
-				    coll_ctx->contrib_prev, coll_ctx->forward_cnt);
-			PMIXP_ERROR("\t neighbor contribs [%d]:", coll->peers_cnt);
+				    coll_ctx->contrib_prev,
+				    coll_ctx->forward_cnt);
+			PMIXP_ERROR("\t neighbor contribs [%d]:",
+				    coll->peers_cnt);
 
 			for (id = 0; id < coll->peers_cnt; id++) {
 				char *nodename = pmixp_info_job_host(id);
 
 				if(coll_ctx->contrib_map[id]) {
-					hostlist_delete_host(hl_wait_contrib, nodename);
+					hostlist_delete_host(hl_wait_contrib,
+							     nodename);
 				} else {
-					hostlist_delete_host(hl_done_contrib, nodename);
+					hostlist_delete_host(hl_done_contrib,
+							     nodename);
 				}
 				xfree(nodename);
 			}
-			done_contrib = slurm_hostlist_ranged_string_xmalloc(hl_done_contrib);
-			wait_contrib = slurm_hostlist_ranged_string_xmalloc(hl_wait_contrib);
-			PMIXP_ERROR("\t done contrib: %s", strlen(done_contrib) ? done_contrib : "-");
-			PMIXP_ERROR("\t wait contrib: %s", strlen(wait_contrib) ? wait_contrib : "-");
-			PMIXP_ERROR("\t status=%s", pmixp_coll_ring_state2str(coll_ctx->state));
-			PMIXP_ERROR("\t buf size=%u, remain=%u", size_buf(coll_ctx->ring_buf),
+			done_contrib = slurm_hostlist_ranged_string_xmalloc(
+				hl_done_contrib);
+			wait_contrib = slurm_hostlist_ranged_string_xmalloc(
+				hl_wait_contrib);
+			PMIXP_ERROR("\t done contrib: %s",
+				    strlen(done_contrib) ? done_contrib : "-");
+			PMIXP_ERROR("\t wait contrib: %s",
+				    strlen(wait_contrib) ? wait_contrib : "-");
+			PMIXP_ERROR("\t status=%s",
+				    pmixp_coll_ring_state2str(coll_ctx->state));
+			PMIXP_ERROR("\t buf size=%u, remain=%u",
+				    size_buf(coll_ctx->ring_buf),
 				    remaining_buf(coll_ctx->ring_buf));
 			xfree(done_contrib);
 			xfree(wait_contrib);
