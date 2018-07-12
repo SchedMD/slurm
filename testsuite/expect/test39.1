@@ -66,11 +66,13 @@ if {$gpus_per_node > 1} {
 } else {
 	set gpus_per_socket $gpus_per_node
 }
+set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
 if {$gpus_per_socket > 1} {
 	set gpus_per_task [expr $gpus_per_socket / 2]
 } else {
 	set gpus_per_task $gpus_per_socket
 }
+set ntasks [expr $tot_gpus / $gpus_per_task]
 set mem_per_gpu 10
 
 #
@@ -82,7 +84,7 @@ make_bash_script $file_in "$scontrol show job \$SLURM_JOB_ID"
 #
 # Spawn a batch job with various --gpu options
 #
-spawn $sbatch --output=/dev/null --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu -N$nb_nodes -t1 ./$file_in
+spawn $sbatch --output=/dev/null --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-socket=$gpus_per_socket --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu --sockets-per-node=$sockets_per_node --nodes=$nb_nodes --ntasks=$ntasks -t1 ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

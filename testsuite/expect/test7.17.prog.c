@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 	uint32_t max_nodes = 1;
 	uint16_t ntasks_per_node = NO_VAL16;
 	uint16_t ntasks_per_socket = NO_VAL16;
+	uint16_t sockets_per_node = NO_VAL16;
 	uint16_t cpus_per_task = NO_VAL16;
 
 	/* Setup slurm.conf and gres.conf test paths */
@@ -151,6 +152,7 @@ int main(int argc, char *argv[])
 					    &max_nodes,
 					    &ntasks_per_node,
 					    &ntasks_per_socket,
+					    &sockets_per_node,
 					    &cpus_per_task,
 					    &job_gres_list);
 	if (rc != SLURM_SUCCESS) {
