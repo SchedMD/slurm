@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
     than one line per node for performance reasons.
  -- Prevent occasionally leaking freezer cgroups.
  -- Fix potential segfault when closing the mpi/pmi2 plugin.
+ -- Fix issues with --exclusive=[user|mcs] to work correctly
+    with preemption or when job requests a specific list of hosts.
 
 * Changes in Slurm 17.11.7
 ==========================

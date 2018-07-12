@@ -1820,25 +1820,47 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				continue;
 			}
 
-			avail_nodes = bit_set_count(avail_bitmap);
-			if ((avail_nodes  < min_nodes)	||
-			    ((avail_nodes >= min_nodes)	&&
-			     (avail_nodes < req_nodes)	&&
-			     ((i+1) < node_set_size)))
-				continue;	/* Keep accumulating nodes */
-
 			/* NOTE: select_g_job_test() is destructive of
 			 * avail_bitmap, so save a backup copy */
 			backup_bitmap = bit_copy(avail_bitmap);
 			FREE_NULL_LIST(*preemptee_job_list);
 			if (job_ptr->details->req_node_bitmap == NULL)
 				bit_and(avail_bitmap, avail_node_bitmap);
+
+			bit_and(avail_bitmap, share_node_bitmap);
+
+			avail_nodes = bit_set_count(avail_bitmap);
+			if ((avail_nodes  < min_nodes)	||
+			    ((avail_nodes >= min_nodes)	&&
+			     (avail_nodes < req_nodes)	&&
+			     ((i+1) < node_set_size))) {
+				FREE_NULL_BITMAP(avail_bitmap);
+				avail_bitmap = backup_bitmap;
+				continue;	/* Keep accumulating nodes */
+			}
+
 			/* Only preempt jobs when all possible nodes are being
 			 * considered for use, otherwise we would preempt jobs
 			 * to use the lowest weight nodes. */
-			if ((i+1) < node_set_size)
+			if ((i+1) < node_set_size || !preemptee_candidates)
 				preemptee_cand = NULL;
-			else
+			else if (preempt_flag) {
+				struct job_record *tmp_job_ptr = NULL;
+				ListIterator job_iterator;
+				job_iterator = list_iterator_create(preemptee_candidates);
+				while ((tmp_job_ptr = (struct job_record *)
+					list_next(job_iterator))) {
+					if (!IS_JOB_RUNNING(tmp_job_ptr) ||
+					    tmp_job_ptr->details->share_res ||
+					    !tmp_job_ptr->job_resrcs)
+						continue;
+					bit_or(avail_bitmap,
+					       tmp_job_ptr->job_resrcs->node_bitmap);
+				}
+				list_iterator_destroy(job_iterator);
+				bit_and(avail_bitmap, avail_node_bitmap);
+				preemptee_cand = preemptee_candidates;
+			} else
 				preemptee_cand = preemptee_candidates;
 
 			job_ptr->details->pn_min_memory = orig_req_mem;
