@@ -241,7 +241,10 @@ static void _reset_coll(pmixp_coll_t *coll)
 		break;
 	default:
 		PMIXP_ERROR("Bad collective state = %d", (int)coll->state);
-		abort();
+		/* collective is spoiled, reset state */
+		coll->state = PMIXP_COLL_SYNC;
+		slurm_kill_job_step(pmixp_info_jobid(),
+				    pmixp_info_stepid(), SIGKILL);
 	}
 }
 
@@ -683,8 +686,12 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		}
 		return false;
 	default:
-		/* Should not happen, fatal error */
-		abort();
+		PMIXP_ERROR("Bad collective ufwd state=%d", (int)coll->ufwd_status);
+		/* collective is spoiled, reset state */
+		coll->state = PMIXP_COLL_SYNC;
+		slurm_kill_job_step(pmixp_info_jobid(),
+				    pmixp_info_stepid(), SIGKILL);
+		return false;
 	}
 
 	/* We now can upward part for the next collective */
@@ -801,8 +808,12 @@ static int _progress_ufwd_sc(pmixp_coll_t *coll)
 		/* move to the next step */
 		break;
 	default:
-		/* Should not happen, fatal error */
-		abort();
+		PMIXP_ERROR("Bad collective ufwd state=%d", (int)coll->ufwd_status);
+		/* collective is spoiled, reset state */
+		coll->state = PMIXP_COLL_SYNC;
+		slurm_kill_job_step(pmixp_info_jobid(),
+				    pmixp_info_stepid(), SIGKILL);
+		return false;
 	}
 
 	/* We now can upward part for the next collective */
@@ -880,8 +891,12 @@ static int _progress_dfwd(pmixp_coll_t *coll)
 	case PMIXP_COLL_SND_DONE:
 		break;
 	default:
-		/* Should not happen, fatal error */
-		abort();
+		PMIXP_ERROR("Bad collective dfwd state=%d", (int)coll->dfwd_status);
+		/* collective is spoiled, reset state */
+		coll->state = PMIXP_COLL_SYNC;
+		slurm_kill_job_step(pmixp_info_jobid(),
+				    pmixp_info_stepid(), SIGKILL);
+		return false;
 	}
 #ifdef PMIXP_COLL_DEBUG
 	PMIXP_DEBUG("%p: collective is DONE", coll);
@@ -933,7 +948,6 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size,
 	int ret = SLURM_SUCCESS;
 
 	pmixp_debug_hang(0);
-
 	/* sanity check */
 	pmixp_coll_sanity_check(coll);
 
@@ -977,11 +991,14 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size,
 		goto exit;
 	default:
 		/* FATAL: should not happen in normal workflow */
-		PMIXP_ERROR("%p: local contrib while active collective, "
-			    "state = %s",
+		PMIXP_ERROR("%p: local contrib while active collective, state = %s",
 			    coll, pmixp_coll_state2str(coll->state));
-		xassert(0);
-		abort();
+		/* collective is spoiled, reset state */
+		coll->state = PMIXP_COLL_SYNC;
+		slurm_kill_job_step(pmixp_info_jobid(),
+				    pmixp_info_stepid(), SIGKILL);
+		ret = SLURM_ERROR;
+		goto exit;
 	}
 
 	if (coll->contrib_local) {
@@ -1087,8 +1104,7 @@ int pmixp_coll_contrib_child(pmixp_coll_t *coll, uint32_t peerid,
 				    coll, nodename, peerid, chld_id,
 				    seq, coll->seq,
 				    pmixp_coll_state2str(coll->state));
-			xassert(coll->seq == seq);
-			abort();
+			goto error;
 		}
 		break;
 	case PMIXP_COLL_UPFWD:
@@ -1097,8 +1113,7 @@ int pmixp_coll_contrib_child(pmixp_coll_t *coll, uint32_t peerid,
 		PMIXP_ERROR("%p: unexpected contrib from %s:%d, state = %s",
 			    coll, nodename, peerid,
 			    pmixp_coll_state2str(coll->state));
-		xassert(0);
-		abort();
+		goto error;
 	case PMIXP_COLL_UPFWD_WPC:
 	case PMIXP_COLL_DOWNFWD:
 #ifdef PMIXP_COLL_DEBUG
@@ -1121,15 +1136,16 @@ int pmixp_coll_contrib_child(pmixp_coll_t *coll, uint32_t peerid,
 				    seq, coll->seq,
 				    pmixp_coll_state2str(coll->state));
 			xfree(nodename);
-			xassert((coll->seq +1) == seq);
-			abort();
+			goto error;
 		}
 		break;
 	default:
 		/* should not happen in normal workflow */
 		PMIXP_ERROR("%p: unknown collective state %s",
 			    coll, pmixp_coll_state2str(coll->state));
-		abort();
+		/* collective is spoiled, reset state */
+		coll->state = PMIXP_COLL_SYNC;
+		goto error2;
 	}
 
 	/* Because of possible timeouts/delays in transmission we
@@ -1173,6 +1189,16 @@ proceed:
 	slurm_mutex_unlock(&coll->lock);
 
 	return SLURM_SUCCESS;
+error:
+	pmixp_coll_log(coll);
+	_reset_coll(coll);
+	slurm_kill_job_step(pmixp_info_jobid(),
+			    pmixp_info_stepid(), SIGKILL);
+error2:
+	/* unlock the structure */
+	slurm_mutex_unlock(&coll->lock);
+
+	return SLURM_ERROR;
 }
 
 int pmixp_coll_contrib_parent(pmixp_coll_t *coll, uint32_t peerid,
@@ -1240,8 +1266,7 @@ int pmixp_coll_contrib_parent(pmixp_coll_t *coll, uint32_t peerid,
 				    seq, coll->seq,
 				    pmixp_coll_state2str(coll->state));
 			xfree(nodename);
-			xassert((coll->seq - 1) == seq);
-			abort();
+			goto error;
 		}
 		goto proceed;
 	case PMIXP_COLL_UPFWD_WSC:{
@@ -1258,8 +1283,7 @@ int pmixp_coll_contrib_parent(pmixp_coll_t *coll, uint32_t peerid,
 			    seq, coll->seq,
 			    pmixp_coll_state2str(coll->state));
 		xfree(nodename);
-		xassert((coll->seq - 1) == seq);
-		abort();
+		goto error;
 	}
 	case PMIXP_COLL_UPFWD:
 	case PMIXP_COLL_UPFWD_WPC:
@@ -1284,16 +1308,15 @@ int pmixp_coll_contrib_parent(pmixp_coll_t *coll, uint32_t peerid,
 				    coll, nodename, peerid,
 				    seq, coll->seq,
 				    pmixp_coll_state2str(coll->state));
-			xassert((coll->seq - 1) == seq);
 			xfree(nodename);
-			abort();
+			goto error;
 		}
 		goto proceed;
 	default:
 		/* should not happen in normal workflow */
 		PMIXP_ERROR("%p: unknown collective state %s",
 			    coll, pmixp_coll_state2str(coll->state));
-		abort();
+		goto error;
 	}
 
 	/* Because of possible timeouts/delays in transmission we
@@ -1336,6 +1359,14 @@ proceed:
 	slurm_mutex_unlock(&coll->lock);
 
 	return SLURM_SUCCESS;
+error:
+	pmixp_coll_log(coll);
+	_reset_coll(coll);
+	slurm_kill_job_step(pmixp_info_jobid(),
+			    pmixp_info_stepid(), SIGKILL);
+	slurm_mutex_unlock(&coll->lock);
+
+	return SLURM_ERROR;
 }
 
 void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts)
@@ -1360,12 +1391,67 @@ void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts)
 			pmixp_lib_modex_invoke(coll->cbfunc, PMIXP_ERR_TIMEOUT, NULL,
 					       0, coll->cbdata, NULL, NULL);
 		}
+		/* report the timeout event */
+		PMIXP_ERROR("%p: collective timeout seq=%d", coll, coll->seq);
+		pmixp_coll_log(coll);
 		/* drop the collective */
 		_reset_coll(coll);
-		/* report the timeout event */
-		PMIXP_ERROR("Collective timeout!");
 	}
 unlock:
 	/* unlock the structure */
 	slurm_mutex_unlock(&coll->lock);
+}
+
+void pmixp_coll_log(pmixp_coll_t *coll)
+{
+	int i;
+	char *nodename;
+
+	PMIXP_ERROR("Dumping collective state");
+	PMIXP_ERROR("%p: state seq=%d contribs: loc=%d/prnt=%d/child=%u",
+		    coll, coll->seq,
+		    coll->contrib_local, coll->contrib_prnt, coll->contrib_children);
+	nodename = pmixp_info_job_host(coll->my_peerid);
+	PMIXP_ERROR("my peerid: %d:%s", coll->my_peerid, nodename);
+	xfree(nodename);
+	nodename = pmixp_info_job_host(coll->root_peerid);
+	PMIXP_ERROR("root host: %d:%s", coll->root_peerid, nodename);
+	xfree(nodename);
+	if (coll->prnt_peerid >= 0) {
+		PMIXP_ERROR("prnt host: %d:%s", coll->prnt_peerid, coll->prnt_host);
+		PMIXP_ERROR("prnt contrib:");
+		PMIXP_ERROR("\t [%d:%s] %s", coll->prnt_peerid, coll->prnt_host,
+			    coll->contrib_prnt ? "true" : "false");
+	}
+	if (coll->chldrn_cnt) {
+		char *done_contrib, *wait_contrib;
+		hostlist_t hl_done_contrib, hl_wait_contrib;
+		hl_done_contrib = hostlist_copy(coll->all_chldrn_hl);
+		hl_wait_contrib = hostlist_copy(coll->all_chldrn_hl);
+
+		PMIXP_ERROR("child contribs [%d]:", coll->chldrn_cnt);
+		for (i = 0; i < coll->chldrn_cnt; i++) {
+			nodename = pmixp_info_job_host(coll->chldrn_ids[i]);
+			if (coll->contrib_chld[i]) {
+				hostlist_delete_host(hl_wait_contrib, nodename);
+			} else {
+				hostlist_delete_host(hl_done_contrib, nodename);
+			}
+			xfree(nodename);
+		}
+		done_contrib = slurm_hostlist_ranged_string_xmalloc(hl_done_contrib);
+		wait_contrib = slurm_hostlist_ranged_string_xmalloc(hl_wait_contrib);
+		PMIXP_ERROR("\t done contrib: %s", strlen(done_contrib) ? done_contrib : "-");
+		PMIXP_ERROR("\t wait contrib: %s", strlen(wait_contrib) ? wait_contrib : "-");
+		hostlist_destroy(hl_done_contrib);
+		hostlist_destroy(hl_wait_contrib);
+		xfree(done_contrib);
+		xfree(wait_contrib);
+	}
+	PMIXP_ERROR("status: coll=%s upfw=%s dfwd=%s", pmixp_coll_state2str(coll->state),
+		    pmixp_coll_sndstatus2str(coll->ufwd_status),
+		    pmixp_coll_sndstatus2str(coll->dfwd_status));
+	PMIXP_ERROR("bufs (size/remain): upfw %u/%u, dfwd %u/%u",
+		    size_buf(coll->ufwd_buf), remaining_buf(coll->ufwd_buf),
+		    size_buf(coll->dfwd_buf), remaining_buf(coll->dfwd_buf));
 }

@@ -260,5 +260,6 @@ int pmixp_coll_unpack_info(Buf buf, pmixp_coll_type_t *type,
 int pmixp_coll_belong_chk(pmixp_coll_type_t type,
 			  const pmixp_proc_t *procs, size_t nprocs);
 void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts);
+void pmixp_coll_log(pmixp_coll_t *coll);
 
 #endif /* PMIXP_COLL_H */

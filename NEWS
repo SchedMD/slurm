@@ -198,6 +198,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential segfault when closing the mpi/pmi2 plugin.
  -- Fix issues with --exclusive=[user|mcs] to work correctly
     with preemption or when job requests a specific list of hosts.
+ -- Make code compile with hdf5 1.10.2+
+ -- mpi/pmix: Fixed the collectives canceling.
 
 * Changes in Slurm 17.11.7
 ==========================
