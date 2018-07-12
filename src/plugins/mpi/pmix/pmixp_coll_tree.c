@@ -560,15 +560,15 @@ static int _progress_collect(pmixp_coll_t *coll)
 					  _ufwd_sent_cb, cbdata);
 
 		if (SLURM_SUCCESS != rc) {
-			PMIXP_ERROR("Cannot send data (size = %lu), to %s:%d",
-				    (uint64_t) get_buf_offset(tree->ufwd_buf),
+			PMIXP_ERROR("Cannot send data (size = %u), to %s:%d",
+				    get_buf_offset(tree->ufwd_buf),
 				    nodename, ep.ep.nodeid);
 			tree->ufwd_status = PMIXP_COLL_TREE_SND_FAILED;
 		}
 #ifdef PMIXP_COLL_DEBUG
-		PMIXP_DEBUG("%p: fwd to %s:%d, size = %lu",
+		PMIXP_DEBUG("%p: fwd to %s:%d, size = %u",
 			    coll, nodename, ep.ep.nodeid,
-			    (uint64_t) get_buf_offset(tree->dfwd_buf));
+			    get_buf_offset(tree->dfwd_buf));
 #endif
 	}
 
@@ -666,15 +666,15 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		if (SLURM_SUCCESS != rc) {
 			if (PMIXP_EP_NOIDEID == ep[i].type){
 				nodename = pmixp_info_job_host(ep[i].ep.nodeid);
-				PMIXP_ERROR("Cannot send data (size = %lu), "
+				PMIXP_ERROR("Cannot send data (size = %u), "
 					    "to %s:%d",
-					    (uint64_t) get_buf_offset(tree->dfwd_buf),
+					    get_buf_offset(tree->dfwd_buf),
 					    nodename, ep[i].ep.nodeid);
 				xfree(nodename);
 			} else {
-				PMIXP_ERROR("Cannot send data (size = %lu), "
+				PMIXP_ERROR("Cannot send data (size = %u), "
 					    "to %s",
-					    (uint64_t) get_buf_offset(tree->dfwd_buf),
+					    get_buf_offset(tree->dfwd_buf),
 					    ep[i].ep.hostlist);
 			}
 			tree->dfwd_status = PMIXP_COLL_TREE_SND_FAILED;
@@ -682,14 +682,14 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 #ifdef PMIXP_COLL_DEBUG
 		if (PMIXP_EP_NOIDEID == ep[i].type) {
 			nodename = pmixp_info_job_host(ep[i].ep.nodeid);
-			PMIXP_DEBUG("%p: fwd to %s:%d, size = %lu",
+			PMIXP_DEBUG("%p: fwd to %s:%d, size = %u",
 				    coll, nodename, ep[i].ep.nodeid,
-				    (uint64_t) get_buf_offset(tree->dfwd_buf));
+				    get_buf_offset(tree->dfwd_buf));
 			xfree(nodename);
 		} else {
-			PMIXP_DEBUG("%p: fwd to %s, size = %lu",
+			PMIXP_DEBUG("%p: fwd to %s, size = %u",
 				    coll, ep[i].ep.hostlist,
-				    (uint64_t) get_buf_offset(tree->dfwd_buf));
+				    get_buf_offset(tree->dfwd_buf));
 		}
 #endif
 	}
@@ -704,7 +704,7 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 				       (void*)cbdata);
 #ifdef PMIXP_COLL_DEBUG
 		PMIXP_DEBUG("%p: local delivery, size = %lu",
-			    coll, (uint64_t)size);
+			    coll, size);
 #endif
 	}
 
@@ -790,7 +790,7 @@ static int _progress_ufwd_wpc(pmixp_coll_t *coll)
 		tree->dfwd_cb_wait++;
 #ifdef PMIXP_COLL_DEBUG
 		PMIXP_DEBUG("%p: local delivery, size = %lu",
-			    coll, (uint64_t)size);
+			    coll, size);
 #endif
 	}
 
