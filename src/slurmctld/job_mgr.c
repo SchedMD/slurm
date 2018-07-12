@@ -6908,6 +6908,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 						&job_desc->max_nodes,
 						&job_desc->ntasks_per_node,
 						&job_desc->ntasks_per_socket,
+						&job_desc->sockets_per_node,
 						&job_desc->cpus_per_task,
 						&gres_list)))
 		goto cleanup_fail;
@@ -11975,6 +11976,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 						&job_specs->max_nodes,
 						&job_specs->ntasks_per_node,
 						&job_specs->ntasks_per_socket,
+						&job_specs->sockets_per_node,
 						&job_specs->cpus_per_task,
 						&gres_list))) {
 			info("sched: update_job: invalid GRES for job %u",

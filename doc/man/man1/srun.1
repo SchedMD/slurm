@@ -890,6 +890,7 @@ job allocations.
 .\ For example "\-\-gpus\-per\-socket=volta:3".
 .\ Multiple options can be requested in a comma separated list, for example:
 .\ "\-\-gpus\-per\-socket=volta:3,kepler:1".
+.\ Requires job to specify a sockets per node count ( \-\-sockets\-per\-node).
 .\ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-node\fR and
 .\ \fB\-\-gpus\-per\-task\fR options.
 .\ 
@@ -902,6 +903,7 @@ job allocations.
 .\ For example "\-\-gpus\-per\-task=volta:1".
 .\ Multiple options can be requested in a comma separated list, for example:
 .\ "\-\-gpus\-per\-task=volta:3,kepler:1".
+.\ Requires job to specify a task count (\-\-nodes).
 .\ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-socket\fR and
 .\ \fB\-\-gpus\-per\-node\fR options.
 .\ 

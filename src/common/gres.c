@@ -3001,10 +3001,11 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			  uint32_t *min_nodes, uint32_t *max_nodes,
 			  uint16_t *ntasks_per_node,
 			  uint16_t *ntasks_per_socket,
+			  uint16_t *sockets_per_node,
 			  uint16_t *cpus_per_task)
 {
 	int req_nodes, req_tasks, req_tasks_per_node, req_tasks_per_socket;
-	int req_cpus_per_task;
+	int req_sockets, req_cpus_per_task;
 
 	/* Insure gres_per_job >= gres_per_node >= gres_per_socket */
 	if (job_gres_data->gres_per_job &&
@@ -3024,6 +3025,18 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	      (job_gres_data->gres_per_socket > job_gres_data->gres_per_node))))
 		return -1;
 
+	/* gres_per_socket requires sockets-per-node count specification */
+	if (job_gres_data->gres_per_socket) {
+		if (*sockets_per_node == NO_VAL16)
+			return -1;
+	}
+
+	/* gres_per_task requires task count specification */
+	if (job_gres_data->gres_per_task) {
+		if (*num_tasks == NO_VAL)
+			return -1;
+	}
+
 	/*
 	 * Insure gres_per_job is multiple of gres_per_node
 	 * Insure node count is consistent with GRES parameters
@@ -3040,6 +3053,23 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 		*min_nodes = *max_nodes = req_nodes;
 	}
 
+	/*
+	 * Insure gres_per_node is multiple of gres_per_socket
+	 * Insure task count is consistent with GRES parameters
+	 */
+	if (job_gres_data->gres_per_node && job_gres_data->gres_per_socket) {
+		if (job_gres_data->gres_per_node %
+		    job_gres_data->gres_per_socket) {
+			/* gres_per_node not multiple of gres_per_socket */
+			return -1;
+		}
+		req_sockets = job_gres_data->gres_per_node /
+			      job_gres_data->gres_per_socket;
+		if (*sockets_per_node == NO_VAL16)
+			*sockets_per_node = req_sockets;
+		else if (*sockets_per_node != req_sockets)
+			return -1;
+	}
 	/*
 	 * Insure gres_per_job is multiple of gres_per_task
 	 * Insure task count is consistent with GRES parameters
@@ -3320,6 +3350,8 @@ static bool _generic_job_state(gres_job_state_t *job_state)
  *		      provide consistent gres_per_node/task values
  * IN/OUT ntasks_per_socket - requested ntasks_per_socket count, may be reset to
  *		      provide consistent gres_per_node/task values
+ * IN/OUT sockets_per_node - requested sockets_per_node count, may be reset to
+ *		      provide consistent gres_per_socket/node values
  * IN/OUT cpus_per_task - requested ntasks_per_socket count, may be reset to
  *		      provide consistent gres_per_task/cpus_per_gres values
  * OUT gres_list - List of GRES records for this job to track usage
@@ -3336,6 +3368,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  uint32_t *max_nodes,
 					  uint16_t *ntasks_per_node,
 					  uint16_t *ntasks_per_socket,
+					  uint16_t *sockets_per_node,
 					  uint16_t *cpus_per_task,
 					  List *gres_list)
 {
@@ -3477,7 +3510,8 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		job_gres_data = (gres_job_state_t *) gres_state->gres_data;
 		if (_test_gres_cnt(job_gres_data, num_tasks, min_nodes,
 				   max_nodes, ntasks_per_node,
-				   ntasks_per_socket, cpus_per_task) != 0) {
+				   ntasks_per_socket, sockets_per_node,
+				   cpus_per_task) != 0) {
 			rc = ESLURM_INVALID_GRES;
 			break;
 		}

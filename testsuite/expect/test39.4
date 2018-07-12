@@ -150,6 +150,59 @@ expect {
 	}
 }
 
+#
+# Specify gpus-per-socket, but no sockets-per-node count
+#
+send_user "\n\n==== TEST 5 ====\n"
+spawn $sbatch --gpus-per-socket=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
+expect {
+	-re "Submitted batch job ($number)" {
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Specify gpus-per-task, but no task count
+#
+send_user "\n\n==== TEST 6 ====\n"
+spawn $sbatch --gpus-per-task=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
+expect {
+	-re "Submitted batch job ($number)" {
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Additional tests only if more than 1 GPU per node in default partition
+#
 if {$gpu_cnt < 2} {
 	send_user "\nWARNING: Additional test require 2 or more GPUs in the default partition\n"
 	if {$exit_code == 0} {
@@ -161,7 +214,7 @@ if {$gpu_cnt < 2} {
 #
 # Specify inconsistent tasks per node (variation of test 4)
 #
-send_user "\n\n==== TEST 5 ====\n"
+send_user "\n\n==== TEST 7 ====\n"
 spawn $sbatch --gpus-per-task=1 --gpus-per-node=2 --ntasks-per-node=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {

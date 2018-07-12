@@ -480,6 +480,8 @@ extern char *gres_plugin_job_alloc_count(List gres_list);
  *		      provide consistent gres_per_node/task values
  * IN/OUT ntasks_per_socket - requested ntasks_per_socket count, may be reset to
  *		      provide consistent gres_per_node/task values
+ * IN/OUT sockets_per_node - requested sockets_per_node count, may be reset to
+ *		      provide consistent gres_per_socket/node values
  * IN/OUT cpus_per_task - requested ntasks_per_socket count, may be reset to
  *		      provide consistent gres_per_task/cpus_per_gres values
  * OUT gres_list - List of GRES records for this job to track usage
@@ -496,6 +498,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  uint32_t *max_nodes,
 					  uint16_t *ntasks_per_node,
 					  uint16_t *ntasks_per_socket,
+					  uint16_t *sockets_per_node,
 					  uint16_t *cpus_per_task,
 					  List *gres_list);
 

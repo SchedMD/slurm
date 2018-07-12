@@ -3346,7 +3346,13 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			}
 			if (depend_type == SLURM_DEPEND_EXPAND) {
 				assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+				uint16_t sockets_per_node = NO_VAL16;
+				multi_core_data_t *mc_ptr;
 
+				if ((mc_ptr = job_ptr->details->mc_ptr)) {
+					sockets_per_node =
+						mc_ptr->sockets_per_node;
+				}
 				job_ptr->details->expanding_jobid = job_id;
 				/*
 				 * GRES configuration of this job must match
@@ -3385,9 +3391,14 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 							ntasks_per_node,
 						&job_ptr->details->mc_ptr->
 							ntasks_per_socket,
+						&sockets_per_node,
 						&job_ptr->details->
 							cpus_per_task,
 						&job_ptr->gres_list);
+				if (mc_ptr && (sockets_per_node != NO_VAL16)) {
+					mc_ptr->sockets_per_node =
+						sockets_per_node;
+				}
 				assoc_mgr_lock(&locks);
 				gres_set_job_tres_cnt(job_ptr->gres_list,
 						      job_ptr->details ?
