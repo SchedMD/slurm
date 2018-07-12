@@ -2210,18 +2210,15 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	xassert(assoc->uid != NO_VAL);
 	xassert(assoc_list);
 
-	/* Call assoc_mgr_refresh_lists instead of just getting the
-	   association list because we need qos and user lists before
-	   the association list can be made.
-	*/
-	if (!assoc_mgr_assoc_list)
-		if (assoc_mgr_refresh_lists(db_conn, 0) == SLURM_ERROR)
-			return SLURM_ERROR;
-
 	if ((!assoc_mgr_assoc_list
 	     || !list_count(assoc_mgr_assoc_list))
 	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		return SLURM_SUCCESS;
+	}
+
+	if (!assoc_mgr_assoc_list) {
+		error("No assoc list available, this should never happen");
+		return SLURM_ERROR;
 	}
 
 	itr = list_iterator_create(assoc_mgr_assoc_list);
