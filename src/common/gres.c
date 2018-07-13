@@ -5324,7 +5324,6 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 	uint64_t max_gres, mem_per_gres = 0, near_gres_cnt = 0;
 	uint32_t gpu_plugin_id;
 	int s, rc = 0;
-	int cpu_cnt;
 
 	*avail_gpus = 0;
 	*near_gpus = 0;
@@ -5333,7 +5332,6 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 		return rc;
 
 	gpu_plugin_id = _build_id("gpu");
-	cpu_cnt = bit_set_count(core_bitmap);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
 		uint64_t min_gres = 1, tmp_u64;
@@ -5427,6 +5425,7 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 		}
 		if (sock_gres->job_specs &&
 		    sock_gres->job_specs->cpus_per_gres) {
+			int cpu_cnt;
 			cpu_cnt = bit_set_count(core_bitmap);
 			cpu_cnt *= cpus_per_core;
 			max_gres = cpu_cnt /
