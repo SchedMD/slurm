@@ -206,8 +206,7 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	uint64_t *cnt_by_sock;	/* Per-socket GRES count of this name & type */
 	char *gres_name;	/* GRES name */
 	gres_job_state_t *job_specs;	/* Pointer to job info, for limits */
-	uint64_t max_gres;	/* Maximum GRES permitted on this node based
-				 * upon mem_per_gres, 0 if no limit */
+	uint64_t max_node_gres;	/* Maximum GRES permitted on this node */
 	uint32_t plugin_id;	/* Plugin ID (for quick search) */
 	uint64_t total_cnt;	/* Total GRES count of this name & type */
 	uint32_t type_id;	/* GRES type (e.g. model ID) */
@@ -663,7 +662,8 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 				  bool enforce_binding, uint32_t s_p_n);
 
 /*
- * Determine how many GRES can be used on this node given the available cores
+ * Determine which GRES can be used on this node given the available cores.
+ *	Filter out unusable GRES.
  * IN sock_gres_list  - list of sock_gres_t entries built by gres_plugin_job_test2()
  * IN avail_mem       - memory available for the job
  * IN max_cpus        - maximum CPUs available on this node (limited by
@@ -673,6 +673,8 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
  * IN sockets         - Count of sockets on the node
  * IN cores_per_sock  - Count of cores per socket on this node
  * IN cpus_per_core   - Count of CPUs per core on this node
+ * IN sock_per_node   - sockets requested by job per node or NO_VAL
+ * IN task_per_node   - tasks requested by job per node or NO_VAL16
  * OUT avail_gpus     - Count of available GPUs on this node
  * OUT near_gpus      - Count of GPUs available on sockets with available CPUs
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
@@ -684,6 +686,8 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					uint16_t sockets,
 					uint16_t cores_per_sock,
 					uint16_t cpus_per_core,
+					uint32_t sock_per_node,
+					uint16_t task_per_node,
 					uint16_t *avail_gpus,
 					uint16_t *near_gpus);
 

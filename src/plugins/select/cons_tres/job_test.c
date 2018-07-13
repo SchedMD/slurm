@@ -2849,6 +2849,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	    (max_nodes > job_ptr->details->num_tasks))
 		max_nodes = MAX(job_ptr->details->num_tasks, min_nodes);
 
+	/* tres_mc_ptr built once and used for all _eval_nodes() calls */
 	tres_mc_ptr = xmalloc(sizeof(multi_core_data_t));
 	if (job_ptr->details->mc_ptr) {
 		tres_mc_ptr->cpus_per_task =
@@ -3598,6 +3599,8 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
 					select_node_record[node_i].vpus,
+					s_p_n,
+					job_ptr->details->ntasks_per_node,
 					&avail_res->avail_gpus, &near_gpu_cnt);
 		if (rc != 0) {
 			_free_avail_res(avail_res);
