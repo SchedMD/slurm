@@ -70,12 +70,13 @@ prepare Slurm and PMIx to work together. PMIx can be obtained from the official
 cloning the repository or by downloading a packaged release.</p>
 
 <p>Slurm support for PMIx was first included in Slurm 16.05 based on the PMIx
-v1.2 release. It has since been updated to support the PMIx v2.x series, as per
-the following table:
+v1.2 release. It has since been updated to support the PMIx v2.x and v3.x
+series, as per the following table:
 <ul>
-<li>Slurm 16.05+ supports only the PMIx v1.x series, starting with v1.2.0. These
-Slurm versions specifically do <b>not</b> support PMIx v2.x and above.</li>
-<li>Slurm 17.11.0+ supports both PMIx v1.2+ and v2.x.</li>
+<li>Slurm 16.05+ supports only the PMIx v1.x series, starting with v1.2.0. This
+Slurm version specifically does <b>not</b> support PMIx v2.x and above.</li>
+<li>Slurm 17.11+ supports both PMIx v1.2+ and v2.x but not v3.x.</li>
+<li>Slurm 18.08+ supports PMIx v1.2+, v2.x and v3.x.</li>
 </ul>
 </p>
 
