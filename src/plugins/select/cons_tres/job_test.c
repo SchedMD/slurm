@@ -3556,8 +3556,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					    part_core_map_ptr, node_i,
 					    &cpu_alloc_size, true);
 	}
-	if (!avail_res || (avail_res->max_cpus == 0) ||
-	    (avail_res->max_cpus < avail_res->min_cpus)) {
+	if (!avail_res || (avail_res->max_cpus == 0)) {
 		_free_avail_res(avail_res);
 		return NULL;
 	}
