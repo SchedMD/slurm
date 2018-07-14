@@ -1604,7 +1604,6 @@ extern void slurmdb_init_res_cond(slurmdb_res_cond_t *res,
 
 extern char *slurmdb_qos_str(List qos_list, uint32_t level)
 {
-	ListIterator itr = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 
 	if (!qos_list) {
@@ -1615,12 +1614,7 @@ extern char *slurmdb_qos_str(List qos_list, uint32_t level)
 		return "";
 	}
 
-	itr = list_iterator_create(qos_list);
-	while((qos = list_next(itr))) {
-		if (level == qos->id)
-			break;
-	}
-	list_iterator_destroy(itr);
+	qos = list_find_first(qos_list, slurmdb_find_qos_in_list, &level);
 	if (qos)
 		return qos->name;
 	else
