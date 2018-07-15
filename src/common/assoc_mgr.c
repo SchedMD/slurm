@@ -76,9 +76,6 @@ static slurmdb_assoc_rec_t **assoc_hash_id = NULL;
 static slurmdb_assoc_rec_t **assoc_hash = NULL;
 static int *assoc_mgr_tres_old_pos = NULL;
 
-static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
-
 static bool _running_cache(void)
 {
 	if (init_setup.running_cache && *init_setup.running_cache)
@@ -1907,71 +1904,32 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 /* _wr_rdlock - Issue a read lock on the specified data type */
 static void _wr_rdlock(assoc_mgr_lock_datatype_t datatype)
 {
-	//info("going to read lock on %d", datatype);
-	slurm_mutex_lock(&locks_mutex);
-	//info("read lock on %d", datatype);
-	while (1) {
-		if ((assoc_mgr_locks.entity[write_wait_lock(datatype)] ==
-		     0)
-		    && (assoc_mgr_locks.entity[write_lock(datatype)] ==
-			0)) {
-			assoc_mgr_locks.entity[read_lock(datatype)]++;
-			break;
-		} else {	/* wait for state change and retry */
-			slurm_cond_wait(&locks_cond, &locks_mutex);
-		}
-	}
-	slurm_mutex_unlock(&locks_mutex);
+	slurm_rwlock_rdlock(&assoc_mgr_locks.lock[datatype]);
 }
 
 /* _wr_rdunlock - Issue a read unlock on the specified data type */
 static void _wr_rdunlock(assoc_mgr_lock_datatype_t datatype)
 {
-	//info("going to read unlock on %d", datatype);
-	slurm_mutex_lock(&locks_mutex);
-	//info("read unlock on %d", datatype);
-	assoc_mgr_locks.entity[read_lock(datatype)]--;
-	slurm_cond_broadcast(&locks_cond);
-	slurm_mutex_unlock(&locks_mutex);
+	slurm_rwlock_unlock(&assoc_mgr_locks.lock[datatype]);
 }
 
 /* _wr_wrlock - Issue a write lock on the specified data type */
 static void _wr_wrlock(assoc_mgr_lock_datatype_t datatype)
 {
-	//info("going to write lock on %d", datatype);
-	slurm_mutex_lock(&locks_mutex);
-	assoc_mgr_locks.entity[write_wait_lock(datatype)]++;
-
-	//info("write lock on %d", datatype);
-	while (1) {
-		if ((assoc_mgr_locks.entity[read_lock(datatype)] == 0) &&
-		    (assoc_mgr_locks.entity[write_lock(datatype)] == 0)) {
-			assoc_mgr_locks.entity[write_lock(datatype)]++;
-			assoc_mgr_locks.
-				entity[write_wait_lock(datatype)]--;
-			break;
-		} else {	/* wait for state change and retry */
-			slurm_cond_wait(&locks_cond, &locks_mutex);
-		}
-	}
-	slurm_mutex_unlock(&locks_mutex);
+	slurm_rwlock_wrlock(&assoc_mgr_locks.lock[datatype]);
 }
 
 /* _wr_wrunlock - Issue a write unlock on the specified data type */
 static void _wr_wrunlock(assoc_mgr_lock_datatype_t datatype)
 {
-	//info("going to write unlock on %d", datatype);
-	slurm_mutex_lock(&locks_mutex);
-	//info("write unlock on %d", datatype);
-	assoc_mgr_locks.entity[write_lock(datatype)]--;
-	slurm_cond_broadcast(&locks_cond);
-	slurm_mutex_unlock(&locks_mutex);
+	slurm_rwlock_unlock(&assoc_mgr_locks.lock[datatype]);
 }
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 			  int db_conn_errno)
 {
 	static uint16_t checked_prio = 0;
+	int i;
 
 	if (!checked_prio) {
 		char *prio = slurm_get_priority_type();
@@ -1980,7 +1938,8 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 
 		xfree(prio);
 		checked_prio = 1;
-		memset(&assoc_mgr_locks, 0, sizeof(assoc_mgr_locks));
+		for (i = 0; i < ASSOC_MGR_ENTITY_COUNT; i++)
+			slurm_rwlock_init(&assoc_mgr_locks.lock[i]);
 		memset(&init_setup, 0, sizeof(assoc_init_args_t));
 		init_setup.cache_level = ASSOC_MGR_CACHE_ALL;
 	}

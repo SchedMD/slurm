@@ -71,13 +71,7 @@ typedef struct {
 	lock_level_t wckey;
 } assoc_mgr_lock_t;
 
-/* Interval lock structure
- * we actually use the count for each data type, see macros below
- *   (assoc_mgr_lock_datatype_t * 4 + 0) = read_lock        read locks in use
- *   (assoc_mgr_lock_datatype_t * 4 + 1) = write_lock       write locks in use
- *   (assoc_mgr_lock_datatype_t * 4 + 2) = write_wait_lock  write locks pending
- *   (assoc_mgr_lock_datatype_t * 4 + 3) = write_cnt_lock   write lock count
- */
+/* Interval lock structure */
 typedef enum {
 	ASSOC_LOCK,
 	FILE_LOCK,
@@ -90,7 +84,7 @@ typedef enum {
 } assoc_mgr_lock_datatype_t;
 
 typedef struct {
-	int entity[ASSOC_MGR_ENTITY_COUNT * 4];
+	pthread_rwlock_t lock[ASSOC_MGR_ENTITY_COUNT];
 } assoc_mgr_lock_flags_t;
 
 typedef struct {
