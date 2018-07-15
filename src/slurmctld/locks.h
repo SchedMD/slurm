@@ -122,11 +122,6 @@ typedef enum {
 extern bool verify_lock(lock_datatype_t datatype, lock_level_t level);
 #endif
 
-typedef struct {
-	pthread_rwlock_t lock[ENTITY_COUNT];
-}	slurmctld_lock_flags_t;
-
-
 /* init_locks - create locks used for slurmctld data structure access
  *	control */
 extern void init_locks ( void );
