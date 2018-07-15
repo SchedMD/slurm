@@ -70,7 +70,9 @@ List assoc_mgr_wckey_list = NULL;
 
 static char *assoc_mgr_cluster_name = NULL;
 static int setup_children = 0;
-static assoc_mgr_lock_flags_t assoc_mgr_locks;
+static pthread_rwlock_t assoc_mgr_locks[ASSOC_MGR_ENTITY_COUNT]
+	= { PTHREAD_RWLOCK_INITIALIZER };
+
 static assoc_init_args_t init_setup;
 static slurmdb_assoc_rec_t **assoc_hash_id = NULL;
 static slurmdb_assoc_rec_t **assoc_hash = NULL;
@@ -1901,35 +1903,10 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 	return SLURM_SUCCESS;
 }
 
-/* _wr_rdlock - Issue a read lock on the specified data type */
-static void _wr_rdlock(assoc_mgr_lock_datatype_t datatype)
-{
-	slurm_rwlock_rdlock(&assoc_mgr_locks.lock[datatype]);
-}
-
-/* _wr_rdunlock - Issue a read unlock on the specified data type */
-static void _wr_rdunlock(assoc_mgr_lock_datatype_t datatype)
-{
-	slurm_rwlock_unlock(&assoc_mgr_locks.lock[datatype]);
-}
-
-/* _wr_wrlock - Issue a write lock on the specified data type */
-static void _wr_wrlock(assoc_mgr_lock_datatype_t datatype)
-{
-	slurm_rwlock_wrlock(&assoc_mgr_locks.lock[datatype]);
-}
-
-/* _wr_wrunlock - Issue a write unlock on the specified data type */
-static void _wr_wrunlock(assoc_mgr_lock_datatype_t datatype)
-{
-	slurm_rwlock_unlock(&assoc_mgr_locks.lock[datatype]);
-}
-
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 			  int db_conn_errno)
 {
 	static uint16_t checked_prio = 0;
-	int i;
 
 	if (!checked_prio) {
 		char *prio = slurm_get_priority_type();
@@ -1938,8 +1915,6 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 
 		xfree(prio);
 		checked_prio = 1;
-		for (i = 0; i < ASSOC_MGR_ENTITY_COUNT; i++)
-			slurm_rwlock_init(&assoc_mgr_locks.lock[i]);
 		memset(&init_setup, 0, sizeof(assoc_init_args_t));
 		init_setup.cache_level = ASSOC_MGR_CACHE_ALL;
 	}
@@ -2078,77 +2053,63 @@ extern int assoc_mgr_fini(bool save_state)
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
 {
 	if (locks->assoc == READ_LOCK)
-		_wr_rdlock(ASSOC_LOCK);
+		slurm_rwlock_rdlock(&assoc_mgr_locks[ASSOC_LOCK]);
 	else if (locks->assoc == WRITE_LOCK)
-		_wr_wrlock(ASSOC_LOCK);
+		slurm_rwlock_wrlock(&assoc_mgr_locks[ASSOC_LOCK]);
 
 	if (locks->file == READ_LOCK)
-		_wr_rdlock(FILE_LOCK);
+		slurm_rwlock_rdlock(&assoc_mgr_locks[FILE_LOCK]);
 	else if (locks->file == WRITE_LOCK)
-		_wr_wrlock(FILE_LOCK);
+		slurm_rwlock_wrlock(&assoc_mgr_locks[FILE_LOCK]);
 
 	if (locks->qos == READ_LOCK)
-		_wr_rdlock(QOS_LOCK);
+		slurm_rwlock_rdlock(&assoc_mgr_locks[QOS_LOCK]);
 	else if (locks->qos == WRITE_LOCK)
-		_wr_wrlock(QOS_LOCK);
+		slurm_rwlock_wrlock(&assoc_mgr_locks[QOS_LOCK]);
 
 	if (locks->res == READ_LOCK)
-		_wr_rdlock(RES_LOCK);
+		slurm_rwlock_rdlock(&assoc_mgr_locks[RES_LOCK]);
 	else if (locks->res == WRITE_LOCK)
-		_wr_wrlock(RES_LOCK);
+		slurm_rwlock_wrlock(&assoc_mgr_locks[RES_LOCK]);
 
 	if (locks->tres == READ_LOCK)
-		_wr_rdlock(TRES_LOCK);
+		slurm_rwlock_rdlock(&assoc_mgr_locks[TRES_LOCK]);
 	else if (locks->tres == WRITE_LOCK)
-		_wr_wrlock(TRES_LOCK);
+		slurm_rwlock_wrlock(&assoc_mgr_locks[TRES_LOCK]);
 
 	if (locks->user == READ_LOCK)
-		_wr_rdlock(USER_LOCK);
+		slurm_rwlock_rdlock(&assoc_mgr_locks[USER_LOCK]);
 	else if (locks->user == WRITE_LOCK)
-		_wr_wrlock(USER_LOCK);
+		slurm_rwlock_wrlock(&assoc_mgr_locks[USER_LOCK]);
 
 	if (locks->wckey == READ_LOCK)
-		_wr_rdlock(WCKEY_LOCK);
+		slurm_rwlock_rdlock(&assoc_mgr_locks[WCKEY_LOCK]);
 	else if (locks->wckey == WRITE_LOCK)
-		_wr_wrlock(WCKEY_LOCK);
+		slurm_rwlock_wrlock(&assoc_mgr_locks[WCKEY_LOCK]);
 }
 
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
 {
-	if (locks->wckey == READ_LOCK)
-		_wr_rdunlock(WCKEY_LOCK);
-	else if (locks->wckey == WRITE_LOCK)
-		_wr_wrunlock(WCKEY_LOCK);
+	if (locks->wckey)
+		slurm_rwlock_unlock(&assoc_mgr_locks[WCKEY_LOCK]);
 
-	if (locks->user == READ_LOCK)
-		_wr_rdunlock(USER_LOCK);
-	else if (locks->user == WRITE_LOCK)
-		_wr_wrunlock(USER_LOCK);
+	if (locks->user)
+		slurm_rwlock_unlock(&assoc_mgr_locks[USER_LOCK]);
 
-	if (locks->tres == READ_LOCK)
-		_wr_rdunlock(TRES_LOCK);
-	else if (locks->tres == WRITE_LOCK)
-		_wr_wrunlock(TRES_LOCK);
+	if (locks->tres)
+		slurm_rwlock_unlock(&assoc_mgr_locks[TRES_LOCK]);
 
-	if (locks->res == READ_LOCK)
-		_wr_rdunlock(RES_LOCK);
-	else if (locks->res == WRITE_LOCK)
-		_wr_wrunlock(RES_LOCK);
+	if (locks->res)
+		slurm_rwlock_unlock(&assoc_mgr_locks[RES_LOCK]);
 
-	if (locks->qos == READ_LOCK)
-		_wr_rdunlock(QOS_LOCK);
-	else if (locks->qos == WRITE_LOCK)
-		_wr_wrunlock(QOS_LOCK);
+	if (locks->qos)
+		slurm_rwlock_unlock(&assoc_mgr_locks[QOS_LOCK]);
 
-	if (locks->file == READ_LOCK)
-		_wr_rdunlock(FILE_LOCK);
-	else if (locks->file == WRITE_LOCK)
-		_wr_wrunlock(FILE_LOCK);
+	if (locks->file)
+		slurm_rwlock_unlock(&assoc_mgr_locks[FILE_LOCK]);
 
-	if (locks->assoc == READ_LOCK)
-		_wr_rdunlock(ASSOC_LOCK);
-	else if (locks->assoc == WRITE_LOCK)
-		_wr_wrunlock(ASSOC_LOCK);
+	if (locks->assoc)
+		slurm_rwlock_unlock(&assoc_mgr_locks[ASSOC_LOCK]);
 }
 
 /* Since the returned assoc_list is full of pointers from the

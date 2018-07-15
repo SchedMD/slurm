@@ -71,7 +71,6 @@ typedef struct {
 	lock_level_t wckey;
 } assoc_mgr_lock_t;
 
-/* Interval lock structure */
 typedef enum {
 	ASSOC_LOCK,
 	FILE_LOCK,
@@ -82,10 +81,6 @@ typedef enum {
 	WCKEY_LOCK,
 	ASSOC_MGR_ENTITY_COUNT
 } assoc_mgr_lock_datatype_t;
-
-typedef struct {
-	pthread_rwlock_t lock[ASSOC_MGR_ENTITY_COUNT];
-} assoc_mgr_lock_flags_t;
 
 typedef struct {
  	uint16_t cache_level;
