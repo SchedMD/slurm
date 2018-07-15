@@ -109,15 +109,6 @@ typedef struct {
 	lock_level_t fed;
 }	slurmctld_lock_t;
 
-/* Interval lock structure
- * we actually use the count for each data type, see macros below
- *	(lock_datatype_t * 4 + 0) = read_lock		read locks in use
- *	(lock_datatype_t * 4 + 1) = write_lock		write locks in use
- *	(lock_datatype_t * 4 + 2) = write_wait_lock	write locks pending
- *	(lock_datatype_t * 4 + 3) = write_cnt_lock	write lock count
- * NOTE: If changing the number of functions (array size), then also change
- * the size of "entity" in src/common/assoc_mgr.h
- */
 typedef enum {
 	CONF_LOCK,
 	JOB_LOCK,
@@ -131,19 +122,10 @@ typedef enum {
 extern bool verify_lock(lock_datatype_t datatype, lock_level_t level);
 #endif
 
-#define read_lock(data_type)		(data_type * 4 + 0)
-#define write_lock(data_type)		(data_type * 4 + 1)
-#define write_wait_lock(data_type)	(data_type * 4 + 2)
-#define write_cnt_lock(data_type)	(data_type * 4 + 3)
-
 typedef struct {
-	int entity[ENTITY_COUNT * 4];
+	pthread_rwlock_t lock[ENTITY_COUNT];
 }	slurmctld_lock_flags_t;
 
-
-/* get_lock_values - Get the current value of all locks
- * OUT lock_flags - a copy of the current lock values */
-extern void get_lock_values (slurmctld_lock_flags_t *lock_flags);
 
 /* init_locks - create locks used for slurmctld data structure access
  *	control */
@@ -155,6 +137,8 @@ extern void lock_slurmctld (slurmctld_lock_t lock_levels);
 /* unlock_slurmctld - Issue the required unlock requests in a well
  *	defined order */
 extern void unlock_slurmctld (slurmctld_lock_t lock_levels);
+
+extern int report_locks_set(void);
 
 /* un/lock semaphore used for saving state of slurmctld */
 extern void lock_state_files ( void );

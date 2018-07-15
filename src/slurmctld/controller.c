@@ -241,7 +241,6 @@ inline static int   _ping_backup_controller(void);
 static void *       _purge_files_thread(void *no_data);
 static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
-inline static int   _report_locks_set(void);
 static void         _run_primary_prog(bool primary_on);
 static void *       _service_connection(void *arg);
 static void         _set_work_dir(void);
@@ -2010,7 +2009,7 @@ static void *_slurmctld_background(void *no_data)
 			}
 			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 
-			if (_report_locks_set() == 0) {
+			if (!report_locks_set()) {
 				info("Saving all slurm state");
 				save_all_state();
 			} else {
@@ -2550,56 +2549,6 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
-}
-
-/*
- * _report_locks_set - report any slurmctld locks left set
- * RET count of locks currently set
- */
-static int _report_locks_set(void)
-{
-	slurmctld_lock_flags_t lock_flags;
-	char config[4] = "", job[4] = "", node[4] = "", partition[4] = "";
-	int lock_count;
-
-	get_lock_values(&lock_flags);
-
-	if (lock_flags.entity[read_lock(CONF_LOCK)])
-		strcat(config, "R");
-	if (lock_flags.entity[write_lock(CONF_LOCK)])
-		strcat(config, "W");
-	if (lock_flags.entity[write_wait_lock(CONF_LOCK)])
-		strcat(config, "P");
-
-	if (lock_flags.entity[read_lock(JOB_LOCK)])
-		strcat(job, "R");
-	if (lock_flags.entity[write_lock(JOB_LOCK)])
-		strcat(job, "W");
-	if (lock_flags.entity[write_wait_lock(JOB_LOCK)])
-		strcat(job, "P");
-
-	if (lock_flags.entity[read_lock(NODE_LOCK)])
-		strcat(node, "R");
-	if (lock_flags.entity[write_lock(NODE_LOCK)])
-		strcat(node, "W");
-	if (lock_flags.entity[write_wait_lock(NODE_LOCK)])
-		strcat(node, "P");
-
-	if (lock_flags.entity[read_lock(PART_LOCK)])
-		strcat(partition, "R");
-	if (lock_flags.entity[write_lock(PART_LOCK)])
-		strcat(partition, "W");
-	if (lock_flags.entity[write_wait_lock(PART_LOCK)])
-		strcat(partition, "P");
-
-	lock_count = strlen(config) + strlen(job) +
-	    strlen(node) + strlen(partition);
-	if (lock_count > 0) {
-		error("Locks left set "
-		      "config:%s, job:%s, node:%s, partition:%s",
-		      config, job, node, partition);
-	}
-	return lock_count;
 }
 
 /*

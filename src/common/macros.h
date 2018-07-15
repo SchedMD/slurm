@@ -260,6 +260,9 @@
 		}							\
 	} while (0)
 
+#define slurm_rwlock_trywrlock(rwlock) pthread_rwlock_trywrlock(rwlock)
+#define slurm_rwlock_tryrdlock(rwlock) pthread_rwlock_tryrdlock(rwlock)
+
 #ifdef PTHREAD_SCOPE_SYSTEM
 #  define slurm_attr_init(attr)						\
 	do {								\

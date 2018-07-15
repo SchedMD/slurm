@@ -45,8 +45,6 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static slurmctld_lock_flags_t slurmctld_locks;
@@ -113,8 +111,10 @@ extern bool verify_lock(lock_datatype_t datatype, lock_level_t level)
  *	control */
 void init_locks(void)
 {
-	/* just clear all semaphores */
-	memset((void *) &slurmctld_locks, 0, sizeof(slurmctld_locks));
+	int i;
+	for(i = 0; i < ENTITY_COUNT; i++){
+		slurm_rwlock_init(&slurmctld_locks.lock[i]);
+	}
 }
 
 /* lock_slurmctld - Issue the required lock requests in a well defined order */
@@ -180,76 +180,73 @@ extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 		_wr_wrunlock(CONF_LOCK);
 }
 
-/* _wr_rdlock - Issue a read lock on the specified data type
- *	Wait until there are no write locks AND
- *	no pending write locks (write_wait_lock == 0)
- *
- *	NOTE: Always favoring write locks could result in starvation for
- *	read locks. */
+/* _wr_rdlock - Issue a read lock on the specified data type  */
 static void _wr_rdlock(lock_datatype_t datatype)
 {
-	slurm_mutex_lock(&locks_mutex);
-	while (1) {
-		if ((slurmctld_locks.entity[write_lock(datatype)] == 0) &&
-		    (slurmctld_locks.entity[write_wait_lock(datatype)] == 0)) {
-			slurmctld_locks.entity[read_lock(datatype)]++;
-			slurmctld_locks.entity[write_cnt_lock(datatype)] = 0;
-			break;
-		} else {	/* wait for state change and retry */
-			slurm_cond_wait(&locks_cond, &locks_mutex);
-		}
-	}
-	slurm_mutex_unlock(&locks_mutex);
+	slurm_rwlock_rdlock(&slurmctld_locks.lock[datatype]);
 }
 
 /* _wr_rdunlock - Issue a read unlock on the specified data type */
 static void _wr_rdunlock(lock_datatype_t datatype)
 {
-	slurm_mutex_lock(&locks_mutex);
-	slurmctld_locks.entity[read_lock(datatype)]--;
-	xassert(slurmctld_locks.entity[read_lock(datatype)] >= 0);
-	slurm_cond_broadcast(&locks_cond);
-	slurm_mutex_unlock(&locks_mutex);
+	slurm_rwlock_unlock(&slurmctld_locks.lock[datatype]);
 }
 
 /* _wr_wrlock - Issue a write lock on the specified data type */
 static void _wr_wrlock(lock_datatype_t datatype)
 {
-	slurm_mutex_lock(&locks_mutex);
-	slurmctld_locks.entity[write_wait_lock(datatype)]++;
-
-	while (1) {
-		if ((slurmctld_locks.entity[read_lock(datatype)] == 0) &&
-		    (slurmctld_locks.entity[write_lock(datatype)] == 0)) {
-			slurmctld_locks.entity[write_lock(datatype)]++;
-			slurmctld_locks.entity[write_wait_lock(datatype)]--;
-			slurmctld_locks.entity[write_cnt_lock(datatype)]++;
-			break;
-		} else {	/* wait for state change and retry */
-			slurm_cond_wait(&locks_cond, &locks_mutex);
-		}
-	}
-	slurm_mutex_unlock(&locks_mutex);
+	slurm_rwlock_wrlock(&slurmctld_locks.lock[datatype]);
 }
 
 /* _wr_wrunlock - Issue a write unlock on the specified data type */
 static void _wr_wrunlock(lock_datatype_t datatype)
 {
-	slurm_mutex_lock(&locks_mutex);
-	slurmctld_locks.entity[write_lock(datatype)]--;
-	xassert(slurmctld_locks.entity[write_lock(datatype)] >= 0);
-	slurm_cond_broadcast(&locks_cond);
-	slurm_mutex_unlock(&locks_mutex);
+	slurm_rwlock_unlock(&slurmctld_locks.lock[datatype]);
 }
 
-/* get_lock_values - Get the current value of all locks
- * OUT lock_flags - a copy of the current lock values */
-void get_lock_values(slurmctld_lock_flags_t * lock_flags)
+/*
+ * _report_lock_set - report whether the read or write lock is set
+ */
+static void _report_lock_set(char *str, lock_datatype_t datatype)
 {
-	xassert(lock_flags);
-	memcpy((void *) lock_flags, (void *) &slurmctld_locks,
-	       sizeof(slurmctld_locks));
+	/* the try functions return zero on success */
+	if (slurm_rwlock_tryrdlock(&slurmctld_locks.lock[datatype])) {
+		strcat(str, "W");
+	} else {
+		slurm_rwlock_unlock(&slurmctld_locks.lock[datatype]);
+		if (slurm_rwlock_trywrlock(&slurmctld_locks.lock[datatype]))
+			strcat(str, "R");
+		else
+			slurm_rwlock_unlock(&slurmctld_locks.lock[datatype]);
+	}
 }
+
+/*
+ * report_locks_set - report any slurmctld locks left set
+ * RET count of locks currently set
+ */
+int report_locks_set(void)
+{
+	char config[4] = "", job[4] = "", node[4] = "", partition[4] = "", fed[4] = "";
+	int lock_count;
+
+	_report_lock_set(config, CONF_LOCK);
+	_report_lock_set(job, JOB_LOCK);
+	_report_lock_set(node, NODE_LOCK);
+	_report_lock_set(partition, PART_LOCK);
+	_report_lock_set(fed, FED_LOCK);
+
+	lock_count = strlen(config) + strlen(job) + strlen(node)
+		     + strlen(partition) + strlen(fed);
+
+	if (lock_count > 0) {
+		error("Locks left set "
+		      "config:%s, job:%s, node:%s, partition:%s, federation:%s",
+		      config, job, node, partition, fed);
+	}
+	return lock_count;
+}
+
 
 /* un/lock semaphore used for saving state of slurmctld */
 extern void lock_state_files(void)
