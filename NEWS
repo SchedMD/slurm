@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect locking when deleting reservations.
  -- Fix incorrect locking when setting up the power save module.
  -- Fix setting format output length for squeue when showing array jobs.
+ -- Add xstrstr function.
 
 * Changes in Slurm 17.11.7
 ==========================
