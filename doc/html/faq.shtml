@@ -1042,7 +1042,7 @@ $ install -m 755 slurm-spank-x11 /opt/slurm/17.02/libexec
 $ install -m 755 x11.so /opt/slurm/17.02/lib/slurm
 
 # Configure
-$ echo -e "optional\tx11.so" >> /opt/slurm/17.02/etc/plugstack.conf
+$ echo -e "optional x11.so" >> /opt/slurm/17.02/etc/plugstack.conf
 $ cd ~/tests
 
 # Run
