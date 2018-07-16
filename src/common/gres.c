@@ -91,7 +91,6 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define _DEBUG 0
 #define MAX_GRES_BITMAP 1024
 
 strong_alias(gres_gresid_to_gresname, slurm_gres_gresid_to_gresname);
@@ -1738,6 +1737,7 @@ static bitstr_t *_links_str2bitmap(char *links, char *node_name)
 
 static int _node_config_validate(char *node_name, char *orig_config,
 				 char **new_config, gres_state_t *gres_ptr,
+				 int cpu_cnt, int core_cnt,
 				 uint16_t fast_schedule, char **reason_down,
 				 slurm_gres_context_t *context_ptr)
 {
@@ -1854,10 +1854,36 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			gres_data->topo_gres_cnt_avail[i] =
 					gres_slurmd_conf->count;
 			if (gres_slurmd_conf->cpus) {
-				gres_data->topo_core_bitmap[i] =
+				bitstr_t *tmp_bitmap;
+				tmp_bitmap =
 					bit_alloc(gres_slurmd_conf->cpu_cnt);
-				bit_unfmt(gres_data->topo_core_bitmap[i],
-					  gres_slurmd_conf->cpus);
+				bit_unfmt(tmp_bitmap, gres_slurmd_conf->cpus);
+				if (gres_slurmd_conf->cpu_cnt == core_cnt) {
+					gres_data->topo_core_bitmap[i] =
+						tmp_bitmap;
+					tmp_bitmap = NULL; /* Nothing to free */
+				} else if (gres_slurmd_conf->cpu_cnt ==
+					   cpu_cnt) {
+					/* Translate CPU to core bitmap */
+					int cpus_per_core = cpu_cnt / core_cnt;
+					int j, core_inx;
+					gres_data->topo_core_bitmap[i] =
+						bit_alloc(core_cnt);
+					for (j = 0; j < cpu_cnt; j++) {
+						if (!bit_test(tmp_bitmap, j))
+							continue;
+						core_inx = j / cpus_per_core;
+						bit_set(gres_data->
+							topo_core_bitmap[i],
+							core_inx);
+					}
+				} else if (i == 0) {
+					error("%s: invalid GRES cpu count (%u) on node %s",
+					      context_ptr->gres_type,
+					      gres_slurmd_conf->cpu_cnt,
+					      node_name);
+				}
+				FREE_NULL_BITMAP(tmp_bitmap);
 				cpus_config = true;
 			} else if (cpus_config) {
 				error("%s: has CPUs configured for only"
@@ -1983,6 +2009,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
  * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN cpu_cnt - Count of CPUs (threads) on this node
+ * IN core_cnt - Count of cores on this node
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
  *		      2: Don't validate hardware, use slurm.conf configuration
@@ -1992,6 +2020,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    char *orig_config,
 					    char **new_config,
 					    List *gres_list,
+					    int cpu_cnt, int core_cnt,
 					    uint16_t fast_schedule,
 					    char **reason_down)
 {
@@ -2018,8 +2047,9 @@ extern int gres_plugin_node_config_validate(char *node_name,
 			list_append(*gres_list, gres_ptr);
 		}
 		rc2 = _node_config_validate(node_name, orig_config, new_config,
-					    gres_ptr, fast_schedule,
-					    reason_down, &gres_context[i]);
+					    gres_ptr, cpu_cnt, core_cnt,
+					    fast_schedule, reason_down,
+					    &gres_context[i]);
 		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&gres_context_lock);

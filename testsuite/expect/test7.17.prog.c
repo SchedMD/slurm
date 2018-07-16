@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
 	uint16_t ntasks_per_socket = NO_VAL16;
 	uint16_t sockets_per_node = NO_VAL16;
 	uint16_t cpus_per_task = NO_VAL16;
+	int core_count;
 
 	/* Setup slurm.conf and gres.conf test paths */
 	strcpy(config_dir, argv[2]);
@@ -130,8 +131,10 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	core_count = cpu_count;
 	rc = gres_plugin_node_config_validate(node_name, orig_config,
 					      &new_config, &node_gres_list,
+					      cpu_count, core_count,
 					      0, &reason_down);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("failure: gres_plugin_node_config_validate");

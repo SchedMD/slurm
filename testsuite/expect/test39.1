@@ -38,6 +38,39 @@ set job_id      0
 
 print_header $test_id
 
+proc get_node_config {} {
+	global cpus_per_socket sockets_per_node
+	global exit_code file_in max_job_delay number srun scontrol
+
+	set cpus_tot 1
+	set sockets_per_node 1
+	set cpus_per_socket 1
+	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	set timeout $max_job_delay
+	log_user 0
+	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 $file_in]
+	expect {
+		-re "CPUTot=($number)" {
+			set cpus_tot $expect_out(1,string)
+			exp_continue
+		}
+		-re "Sockets=($number)" {
+			set sockets_per_node $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+}
+
 set gpu_cnt [get_gpu_count]
 if {$gpu_cnt < 0} {
 	send_user "\nFAILURE: Error getting GPU count\n"
@@ -47,7 +80,10 @@ if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
 	exit 0
 }
+get_node_config
 send_user "\nGPU count is $gpu_cnt\n"
+send_user "Sockets per node is $sockets_per_node\n"
+send_user "CPUs per socket is $cpus_per_socket\n\n"
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
@@ -61,13 +97,14 @@ if {$nb_nodes > 1} {
 	incr tot_gpus $gpu_cnt
 }
 set gpus_per_node $gpu_cnt
-if {$gpus_per_node > 1} {
-	set gpus_per_socket [expr $gpus_per_node / 2]
+if {$gpus_per_node > 1 && $sockets_per_node > 1} {
+	set sockets_per_node 2
+	set gpus_per_socket [expr $gpus_per_node / $sockets_per_node]
 } else {
 	set gpus_per_socket $gpus_per_node
 }
 set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
-if {$gpus_per_socket > 1} {
+if {$gpus_per_socket > 1 && $cpus_per_socket > 1} {
 	set gpus_per_task [expr $gpus_per_socket / 2]
 } else {
 	set gpus_per_task $gpus_per_socket

@@ -2435,6 +2435,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	bool orig_node_avail;
 	static uint32_t cr_flag = NO_VAL;
 	int *cpu_spec_array;
+	int sockets1, sockets2;	/* total sockets on node */
+	int cores1, cores2;	/* total cores on node */
+	int threads1, threads2;	/* total threads on node */
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
@@ -2514,14 +2517,17 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	xfree(orig_features);
 	xfree(orig_features_act);
 
+	sockets1 = reg_msg->sockets;
+	cores1   = sockets1 * reg_msg->cores;
+	threads1 = cores1   * reg_msg->threads;
 	if (gres_plugin_node_config_unpack(reg_msg->gres_info,
 					   node_ptr->name) != SLURM_SUCCESS) {
 		error_code = SLURM_ERROR;
 		xstrcat(reason_down, "Could not unpack gres data");
 	} else if (gres_plugin_node_config_validate(
 			   node_ptr->name, config_ptr->gres,
-			   &node_ptr->gres, &node_ptr->gres_list,
-			   slurmctld_conf.fast_schedule, &reason_down)
+			   &node_ptr->gres, &node_ptr->gres_list, threads1,
+			   cores1, slurmctld_conf.fast_schedule, &reason_down)
 		   != SLURM_SUCCESS) {
 		error_code = EINVAL;
 		/* reason_down set in function above */
@@ -2529,9 +2535,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 	if (slurmctld_conf.fast_schedule != 2) {
-		int sockets1, sockets2;	/* total sockets on node */
-		int cores1, cores2;	/* total cores on node */
-		int threads1, threads2;	/* total threads on node */
 		char *node_features_plugin = slurm_get_node_features_plugins();
 		bool validate_socket_cnt = true;
 
@@ -2544,9 +2547,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		}
 		xfree(node_features_plugin);
 
-		sockets1 = reg_msg->sockets;
-		cores1   = sockets1 * reg_msg->cores;
-		threads1 = cores1   * reg_msg->threads;
+		/* sockets1, cores1, and threads1 are set above */
 		sockets2 = config_ptr->sockets;
 		cores2   = sockets2 * config_ptr->cores;
 		threads2 = cores2   * config_ptr->threads;
@@ -2989,7 +2990,7 @@ extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg,
 		uint16_t protocol_version, bool *newly_up)
 {
-	int error_code = 0, i, j, rc;
+	int error_code = 0, i, j, rc, thread_cnt, core_cnt, socket_cnt;
 	bool update_node_state = false;
 	struct job_record *job_ptr;
 	struct config_record *config_ptr;
@@ -3142,13 +3143,16 @@ extern int validate_nodes_via_front_end(
 		config_ptr = node_ptr->config_ptr;
 		node_ptr->last_response = MAX(now, node_ptr->last_response);
 
+		socket_cnt = reg_msg->sockets;
+		core_cnt   = socket_cnt * reg_msg->cores;
+		thread_cnt = core_cnt * reg_msg->threads;
 		rc = gres_plugin_node_config_validate(node_ptr->name,
-						      config_ptr->gres,
-						      &node_ptr->gres,
-						      &node_ptr->gres_list,
-						      slurmctld_conf.
-						      fast_schedule,
-						      &reason_down);
+						config_ptr->gres,
+						&node_ptr->gres,
+						&node_ptr->gres_list,
+						thread_cnt, core_cnt,
+						slurmctld_conf.fast_schedule,
+						&reason_down);
 		if (rc) {
 			if (!IS_NODE_DOWN(node_ptr)) {
 				error("Setting node %s state to DOWN",
