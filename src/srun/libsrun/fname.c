@@ -54,7 +54,7 @@
  */
 #define MAX_WIDTH 10
 
-static char *_is_path_escaped(char *);
+static char *_remove_path_slashes(char *);
 
 /*
  * Fill in as much of filename as possible from srun, update
@@ -114,7 +114,7 @@ extern fname_t *fname_create(srun_job_t *job, char *format, int task_count)
 	/* Check if path has escaped characters
 	 * in it and prevent them to be expanded.
 	 */
-	esc = _is_path_escaped(format);
+	esc = _remove_path_slashes(format);
 	if (esc) {
 		fname->name = esc;
 		return fname;
@@ -289,14 +289,14 @@ fname_remote_string (fname_t *f)
 	return (NULL);
 }
 
-/* is_path_escaped()
+/* remove_path_slashes()
  *
  * If there are \ chars in the path strip them.
  * The new path will tell the caller not to
  * translate escaped characters.
  */
 static char *
-_is_path_escaped(char *p)
+_remove_path_slashes(char *p)
 {
 	char *buf;
 	bool t;
