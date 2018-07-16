@@ -1674,7 +1674,6 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	jobacct_id_t jobacct_id;
 	char *oom_value;
 	List exec_wait_list = NULL;
-	char *esc;
 	DEF_TIMERS;
 	START_TIMER;
 
@@ -1735,15 +1734,6 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		error ("_drop_privileges: %m");
 		rc = SLURM_ERROR;
 		goto fail2;
-	}
-
-	/*
-	 * If there is an \ in the path, remove it.
-	 */
-	esc = is_path_escaped(job->cwd);
-	if (esc) {
-		xfree(job->cwd);
-		job->cwd = esc;
 	}
 
 	if (chdir(job->cwd) < 0) {

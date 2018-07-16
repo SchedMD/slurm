@@ -83,6 +83,7 @@ documents those changes that are of interest to users and administrators.
  -- Make it so the slurmdbd's pid file gets created before initing
     the database.
  -- Improve escaping special characters on user commands when specifying paths.
+ -- Fix directory names with special char '\' that are not handled correctly.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
