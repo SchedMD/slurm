@@ -657,7 +657,7 @@ int pmixp_coll_ring_neighbor(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr,
 	/* verify msg size */
 	if (hdr->msgsize != remaining_buf(buf)) {
 #ifdef PMIXP_COLL_DEBUG
-		PMIXP_DEBUG("%p: unexpected message size=%d, expect=%zd",
+		PMIXP_DEBUG("%p: unexpected message size=%d, expect=%zu",
 			    coll, remaining_buf(buf), hdr->msgsize);
 #endif
 		goto exit;

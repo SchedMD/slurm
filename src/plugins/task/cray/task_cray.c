@@ -777,7 +777,7 @@ again:
 	}
 
 	if (debug_flags & DEBUG_FLAG_TASK) {
-		info("Bitmask %#lx size: %lu sizeof(*(bm->maskp)): %zd"
+		info("Bitmask %#lx size: %lu sizeof(*(bm->maskp)): %zu"
 		     " weight: %u",
 		     *(bm->maskp), bm->size, sizeof(*(bm->maskp)), *cnt);
 	}

@@ -898,7 +898,7 @@ int pmixp_coll_tree_local(pmixp_coll_t *coll, char *data, size_t size,
 	tree = &coll->state.tree;
 
 #ifdef PMIXP_COLL_DEBUG
-	PMIXP_DEBUG("%p: contrib/loc: seqnum=%u, state=%s, size=%zd",
+	PMIXP_DEBUG("%p: contrib/loc: seqnum=%u, state=%s, size=%zu",
 		    coll, coll->seq, pmixp_coll_tree_state2str(tree->state),
 		    size);
 #endif

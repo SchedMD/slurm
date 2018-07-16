@@ -2273,7 +2273,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	xfree(loc_usage_id_char);
 
 	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
-		DB_DEBUG(mysql_conn->conn, "query\n%s %zd",
+		DB_DEBUG(mysql_conn->conn, "query\n%s %zu",
 			 query, strlen(query));
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);

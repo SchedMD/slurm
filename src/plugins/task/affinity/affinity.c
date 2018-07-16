@@ -339,7 +339,7 @@ int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 	rval = sched_setaffinity(pid, mask);
 #endif
 	if (rval) {
-		verbose("sched_setaffinity(%d,%zd,0x%s) failed: %m",
+		verbose("sched_setaffinity(%d,%zu,0x%s) failed: %m",
 			pid, size, task_cpuset_to_str(mask, mstr));
 	}
 	return (rval);
@@ -369,7 +369,7 @@ int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
 	rval = sched_getaffinity(pid, mask);
 #endif
 	if (rval) {
-		verbose("sched_getaffinity(%d,%zd,0x%s) failed with status %d",
+		verbose("sched_getaffinity(%d,%zu,0x%s) failed with status %d",
 			pid, size, task_cpuset_to_str(mask, mstr), rval);
 	} else {
 		debug3("sched_getaffinity(%d) = 0x%s",
