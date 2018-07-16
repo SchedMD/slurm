@@ -387,13 +387,12 @@ extern int fname_single_task_io (const char *fmt)
 
 /* is_path_escaped()
  *
- * If there are \ chars in the path strip them.
- * The new path will tell the caller not to
- * translate escaped characters.
+ * If there are \ chars in the path strip the escaping ones.
+ * The new path will tell the caller not to translate escaped characters.
  */
 extern char *is_path_escaped(char *p)
 {
-	char *buf;
+	char *buf, *pp;
 	bool t;
 	int i;
 
@@ -404,20 +403,31 @@ extern char *is_path_escaped(char *p)
 	t = false;
 	i = 0;
 
+	pp = p;
+	++pp;
 	while (*p) {
-		if (*p == '\\') {
+		if (*p == '\\' && *pp == '\\') {
+			t = true;
+			buf[i] = *pp;
+			++i;
+			p = p + 2;
+			pp = pp + 2;
+		} else if (*p == '\\') {
 			t = true;
 			++p;
-			continue;
+			++pp;
+		} else {
+			buf[i] = *p;
+			++i;
+			++p;
+			++pp;
 		}
-		buf[i] = *p;
-		++i;
-		++p;
 	}
 
 	if (t == false) {
 		xfree(buf);
 		return NULL;
 	}
+
 	return buf;
 }

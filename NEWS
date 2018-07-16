@@ -82,6 +82,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue in performance when reading slurm conf having nodes with features.
  -- Make it so the slurmdbd's pid file gets created before initing
     the database.
+ -- Improve escaping special characters on user commands when specifying paths.
 
 * Changes in Slurm 18.08.0pre1
 ==============================
