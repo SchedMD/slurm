@@ -428,8 +428,10 @@ Any job not matching \fBall\fP of those fields will not be effected.
 Only jobs submitted to a single partition will be effected.
 This operation changes the order of jobs by adjusting job nice values.
 The net effect on that user's throughput will be negligible to slightly negative.
-This operation may be disabled by the system administrator by including the
-option "disable_user_top" in the SchedulerParameters configuration parameter.
+This operation is disabled by default for non-privileged (non-operator, admin,
+SlurmUser, or root) users. This operation may be enabled for non-privileged
+users by the system administrator by including the option "enable_user_top" in
+the SchedulerParameters configuration parameter.
 
 .TP
 \fBuhold\fP \fIjob_list\fP
