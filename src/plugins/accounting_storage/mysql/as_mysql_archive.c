@@ -3617,9 +3617,9 @@ extern int as_mysql_jobacct_process_archive_load(
 		int data_allocated, data_read = 0;
 		int state_fd = open(arch_rec->archive_file, O_RDONLY);
 		if (state_fd < 0) {
-			info("No archive file (%s) to recover",
+			info("Could not open archive file `%s`: %m",
 			     arch_rec->archive_file);
-			error_code = ENOENT;
+			error_code = errno;
 		} else {
 			data_allocated = BUF_SIZE + 1;
 			data = xmalloc_nz(data_allocated);

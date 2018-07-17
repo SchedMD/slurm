@@ -97,13 +97,13 @@ number of assigned shares.
 
 .TP
 \f3Raw Usage\fP
-The number of cpu-seconds of all the jobs that charged the account by
-the user.  This number will decay over time when PriorityDecayHalfLife
-is defined.
+The number of tres-seconds (cpu-seconds if TRESBillingWeights is not defined)
+of all the jobs charged to the account or user. This number will decay over
+time when PriorityDecayHalfLife is defined.
 
 .TP
 \f3Norm Usage\fP (only appears with \fBsshare \-l\fR option)
-The Raw Usage normalized to the total number of cpu-seconds of all
+The Raw Usage normalized to the total number of tres-seconds of all
 jobs run on the cluster, subject to the PriorityDecayHalfLife decay
 when defined.
 

@@ -202,6 +202,9 @@ documents those changes that are of interest to users and administrators.
     with preemption or when job requests a specific list of hosts.
  -- Make code compile with hdf5 1.10.2+
  -- mpi/pmix: Fixed the collectives canceling.
+ -- SlurmDBD: improve error message handling on archive load failure.
+ -- Fix incorrect locking when deleting reservations.
+ -- Fix incorrect locking when setting up the power save module.
 
 * Changes in Slurm 17.11.7
 ==========================
