@@ -256,7 +256,7 @@ static Buf _open_node_state_file(char **state_file)
 
 	*state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(*state_file, "/node_state");
-	buf = create_mmap_buf(*state_file);
+
 	if (!(buf = create_mmap_buf(*state_file)))
 		error("Could not open node state file %s: %m", *state_file);
 	else
