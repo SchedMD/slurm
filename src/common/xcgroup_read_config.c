@@ -228,9 +228,16 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 				     "ConstrainSwapSpace", tbl))
 			slurm_cgroup_conf->constrain_swap_space = false;
 
+		/*
+		 * Disable constrain_kmem_space by default because of a known
+		 * bug in Linux kernel version 3, early versions of kernel
+		 * version 4, and RedHat/CentOS 6 and 7, which leaks slab
+		 * caches, eventually causing the machine to be unable to create
+		 * new cgroups.
+		 */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_kmem_space,
 				     "ConstrainKmemSpace", tbl))
-			slurm_cgroup_conf->constrain_kmem_space = true;
+			slurm_cgroup_conf->constrain_kmem_space = false;
 
 		conf_get_float (tbl,
 				"AllowedKmemSpace",

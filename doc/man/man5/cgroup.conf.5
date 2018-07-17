@@ -103,9 +103,11 @@ The default value is "no".
 
 .TP
 \fBConstrainKmemSpace\fR=<yes|no>
-If configured to "yes" then constrain the job's Kmem RAM usage. In addition to
+If configured to "yes" then constrain the job's Kmem RAM usage in addition to
 RAM usage. Only takes effect if ConstrainRAMSpace is set to "yes". The default
-value is "yes", in which case the job's Kmem limit will be set to its RAM limit.
+value is "no". If set to yes, the job's Kmem limit will be set to
+AllowedKmemSpace if set; otherwise, the job's Kmem limit will be set to its RAM
+limit.
 Also see \fBAllowedKmemSpace\fR.
 
 .TP

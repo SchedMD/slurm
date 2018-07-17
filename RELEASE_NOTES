@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 18.08
-26 October 2017
+9 July 2018
 
 IMPORTANT NOTES:
 THE MAXJOBID IS NOW 67,108,863. ANY PRE-EXISTING JOBS WILL CONTINUE TO RUN BUT
@@ -177,6 +177,10 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     triggers. User defined triggers are now disabled by default.
  -- Add ResumeFailProgram slurm.conf option to specify a program that is called
     when a node fails to respond by ResumeTimeout.
+ -- ConstrainKmemSpace is now disabled by default. In Linux kernel version 3,
+    early versions of kernel version 4, and RedHat/CentOS 6 and 7, using
+    memory.kmem.limit_in_bytes leaks slab caches, which eventually causes the
+    machine to be unable to create new cgroups.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
