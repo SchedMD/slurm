@@ -923,8 +923,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 38 (optional) ******/
 	if (job_ptr->bitflags &
-	    (GRES_ENFORCE_BIND | KILL_INV_DEP | NO_KILL_INV_DEP | SPREAD_JOB)) {
+	    (GRES_DISABLE_BIND | GRES_ENFORCE_BIND | KILL_INV_DEP |
+	     NO_KILL_INV_DEP | SPREAD_JOB)) {
 		xstrcat(out, line_end);
+		if (job_ptr->bitflags & GRES_DISABLE_BIND)
+			xstrcat(out, "GresEnforceBind=No");
 		if (job_ptr->bitflags & GRES_ENFORCE_BIND)
 			xstrcat(out, "GresEnforceBind=Yes");
 		if (job_ptr->bitflags & KILL_INV_DEP)

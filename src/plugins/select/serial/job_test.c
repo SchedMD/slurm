@@ -119,14 +119,18 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	else
 		gres_list = node_ptr->gres_list;
 
-	gres_plugin_job_core_filter(job_ptr->gres_list, gres_list, test_only,
-				    core_map, core_start_bit, core_end_bit,
-				    node_ptr->name);
-	gres_cores = gres_plugin_job_test(job_ptr->gres_list,
-					  gres_list, test_only,
-					  core_map, core_start_bit,
-					  core_end_bit, job_ptr->job_id,
-					  node_ptr->name);
+	if (job_ptr->bit_flags & GRES_DISABLE_BIND) {
+		gres_cores = NO_VAL;
+	} else {
+		gres_plugin_job_core_filter(job_ptr->gres_list, gres_list,
+					    test_only, core_map, core_start_bit,
+					    core_end_bit, node_ptr->name);
+		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
+						  gres_list, test_only,
+						  core_map, core_start_bit,
+						  core_end_bit, job_ptr->job_id,
+						  node_ptr->name);
+	}
 
 	if (job_ptr->details && (cr_type & CR_MEMORY) && cpus) {
 		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
@@ -263,10 +267,15 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
-						  gres_list, true,
-						  NULL, 0, 0, job_ptr->job_id,
-						  node_ptr->name);
+		if (job_ptr->bit_flags & GRES_DISABLE_BIND) {
+			gres_cores = NO_VAL;
+		} else {
+			gres_cores = gres_plugin_job_test(job_ptr->gres_list,
+							  gres_list, true,
+							  NULL, 0, 0,
+							  job_ptr->job_id,
+							  node_ptr->name);
+		}
 		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL)
 			gres_cpus *= cpus_per_core;

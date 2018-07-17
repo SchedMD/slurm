@@ -84,6 +84,13 @@ documents those changes that are of interest to users and administrators.
     the database.
  -- Improve escaping special characters on user commands when specifying paths.
  -- Fix directory names with special char '\' that are not handled correctly.
+ -- Add salloc/sbatch/srun option of --gres-flags=disable-binding to disable
+    filtering of CPUs with respect to generic resource locality. This option is
+    currently required to use more CPUs than are bound to a GRES (i.e. if a GPU
+    is bound to the CPUs on one socket, but resources on more than one socket
+    are required to run the job). This option may permit a job to be allocated
+    resources sooner than otherwise possible, but may result in lower job
+    performance.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

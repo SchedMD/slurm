@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "June 2018" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "July 2018" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -928,8 +928,21 @@ resource OR set "\-\-gres=none" OR set the SLURM_STEP_GRES environment variable
 to "none".
 
 .TP
-\fB\-\-gres\-flags\fR=enforce\-binding
-If set, the only CPUs available to the job will be those bound to the selected
+\fB\-\-gres\-flags\fR=<\fItype\fR>
+Specify generic resource task binding options.
+This option applies to job allocations.
+.RS
+.TP
+.B disable\-binding
+Disable filtering of CPUs with respect to generic resource locality.
+This option is currently required to use more CPUs than are bound to a GRES
+(i.e. if a GPU is bound to the CPUs on one socket, but resources on more than
+one socket are required to run the job).
+This option may permit a job to be allocated resources sooner than otherwise
+possible, but may result in lower job performance.
+.TP
+.B enforce\-binding
+The only CPUs available to the job will be those bound to the selected
 GRES (i.e. the CPUs identified in the gres.conf file will be strictly enforced
 rather than advisory). This option may result in delayed initiation of a job.
 For example a job requiring two GPUs and one CPU will be delayed until both
@@ -938,7 +951,7 @@ sockets, however the application performance may be improved due to improved
 communication speed.
 Requires the node to be configured with more than one socket and resource
 filtering will be performed on a per\-socket basis.
-This option applies to job allocations.
+.RE
 
 .TP
 \fB\-H, \-\-hold\fR

@@ -1518,6 +1518,8 @@ static void _register_lua_slurm_output_functions (void)
 	/*
 	 * job_desc bitflags
 	 */
+	lua_pushnumber (L, GRES_DISABLE_BIND);
+	lua_setfield (L, -2, "GRES_DISABLE_BIND");
 	lua_pushnumber (L, GRES_ENFORCE_BIND);
 	lua_setfield (L, -2, "GRES_ENFORCE_BIND");
 	lua_pushnumber (L, KILL_INV_DEP);

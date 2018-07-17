@@ -655,7 +655,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 	case OPT_GRES_FLAGS:
-		if (!xstrcasecmp(val, "enforce-binding")) {
+		if (!xstrcasecmp(val, "disable-binding")) {
+			opt.job_flags |= GRES_DISABLE_BIND;
+		} else if (!xstrcasecmp(val, "enforce-binding")) {
 			opt.job_flags |= GRES_ENFORCE_BIND;
 		} else {
 			error("Invalid SBATCH_GRES_FLAGS specification: %s",
@@ -2043,7 +2045,9 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_GRES_FLAGS:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			if (!xstrcasecmp(optarg, "enforce-binding")) {
+			if (!xstrcasecmp(optarg, "disable-binding")) {
+				opt.job_flags |= GRES_DISABLE_BIND;
+			} else if (!xstrcasecmp(optarg, "enforce-binding")) {
 				opt.job_flags |= GRES_ENFORCE_BIND;
 			} else {
 				error("Invalid gres-flags specification: %s",
