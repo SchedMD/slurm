@@ -2851,14 +2851,12 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	/* tres_mc_ptr built once and used for all _eval_nodes() calls */
 	tres_mc_ptr = xmalloc(sizeof(multi_core_data_t));
+	tres_mc_ptr->cpus_per_task =
+		_valid_uint16(job_ptr->details->cpus_per_task);
+	tres_mc_ptr->ntasks_per_node =
+		_valid_uint16(job_ptr->details->ntasks_per_node);
+	tres_mc_ptr->overcommit = job_ptr->details->overcommit;
 	if (job_ptr->details->mc_ptr) {
-		tres_mc_ptr->cpus_per_task =
-			_valid_uint16(job_ptr->details->cpus_per_task);
-		tres_mc_ptr->ntasks_per_node =
-			_valid_uint16(job_ptr->details->ntasks_per_node);
-		tres_mc_ptr->overcommit = job_ptr->details->overcommit;
-	}
-	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *job_mc_ptr = job_ptr->details->mc_ptr;
 		tres_mc_ptr->boards_per_node =
 			_valid_uint16(job_mc_ptr->boards_per_node);
