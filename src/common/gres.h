@@ -213,6 +213,24 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	char *type_name;	/* GRES type (e.g. model name) */
 } sock_gres_t;
 
+/* Similar to multi_core_data_t in slurm_protocol_defs.h */
+typedef struct gres_mc_data {
+	uint16_t boards_per_node;   /* boards per node required by job */
+	uint16_t sockets_per_board; /* sockets per board required by job */
+	uint16_t sockets_per_node;  /* sockets per node required by job */
+	uint16_t cores_per_socket;  /* cores per cpu required by job */
+	uint16_t threads_per_core;  /* threads per core required by job */
+
+	uint16_t cpus_per_task;     /* Count of CPUs per task */
+	uint16_t ntasks_per_node;   /* number of tasks to invoke on each node */
+	uint16_t ntasks_per_board;  /* number of tasks to invoke on each board */
+	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
+	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */
+	uint8_t overcommit;         /* processors being over subscribed */
+	uint16_t plane_size;        /* plane size for SLURM_DIST_PLANE */
+	uint8_t whole_node;         /* allocate entire node */
+} gres_mc_data_t;
+
 typedef enum {
 	GRES_STATE_TYPE_NODE = 0,
 	GRES_STATE_TYPE_JOB,
@@ -532,6 +550,13 @@ extern bool gres_plugin_job_sched_test2(List job_gres_list, List sock_gres_list,
 extern void gres_plugin_job_sched_add(List job_gres_list, List sock_gres_list);
 
 /*
+ * Clear a job's total_gres counter for all GRES
+ * Used with gres_plugin_job_sched_add()
+ * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ */
+extern void gres_plugin_job_sched_clear(List job_gres_list);
+
+/*
  * Create/update List GRES that can be made available on the specified node
  * IN/OUT consec_gres - List of sock_gres_t that can be made available on
  *			a set of nodes
@@ -694,10 +719,10 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					uint16_t *near_gpus);
 
 /*
- * Determine how many tasks can be started on a given node and which sockets
- * are required
+ * Determine how many tasks can be started on a given node and which
+ *	sockets/cores are required
+ * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
  * IN sock_gres_list - list of sock_gres_t entries built by gres_plugin_job_test2()
- * IN req_cores - set non-zero if core is required, UPDATED
  * IN avail_cores_per_sock - Count of available cores on each socket
  * IN sockets - Count of sockets on the node
  * IN avail_cpus - Count of available CPUs on the node
@@ -705,16 +730,25 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
  *                          node, UPDATED
  * IN max_tasks_this_node - Maximum count of tasks that can be started on this
  *                          node, UPDATED
+ * IN rem_nodes - desired additional node count to allocate
+ * IN rem_tasks - desired additional task count to allocate
  * IN enforce_binding - GRES must be co-allocated with cores
+ * IN first_pass - set if first scheduling attempt for this job, use
+ *		   co-located GRES and cores if possible
+ * IN avail_cores - cores available on this node, UPDATED
  */
-extern void gres_plugin_job_core_filter3(List sock_gres_list,
-					 uint16_t *req_cores,
+extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
+					 List sock_gres_list,
 					 uint16_t *avail_cores_per_sock,
 					 uint16_t sockets,
 					 uint16_t avail_cpus,
 					 int *min_tasks_this_node,
 					 int *max_tasks_this_node,
-					 bool enforce_binding);
+					 int rem_nodes,
+					 int rem_tasks,
+					 bool enforce_binding,
+					 bool first_pass,
+					 bitstr_t *avail_core);
 
 /*
  * Allocate resource to a job and update node and job gres information

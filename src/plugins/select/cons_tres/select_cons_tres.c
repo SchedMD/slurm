@@ -429,16 +429,13 @@ static bitstr_t *_array_to_core_bitmap(bitstr_t **core_array)
 static struct multi_core_data * _create_default_mc(void)
 {
 	struct multi_core_data *mc_ptr;
+
 	mc_ptr = xmalloc(sizeof(struct multi_core_data));
 	mc_ptr->sockets_per_node = NO_VAL16;
 	mc_ptr->cores_per_socket = NO_VAL16;
 	mc_ptr->threads_per_core = NO_VAL16;
-	/*
-	 * Other fields initialized to zero by xmalloc:
-	 * mc_ptr->ntasks_per_socket = 0;
-	 * mc_ptr->ntasks_per_core   = 0;
-	 * mc_ptr->plane_size        = 0;
-	 */
+	/* Other fields initialized to zero by xmalloc */
+
 	return mc_ptr;
 }
 

@@ -54,23 +54,6 @@ typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t vpus;		/* Virtual processors (CPUs) per core */
 } avail_res_t;
 
-/* Similar to multi_core_data_t in slurm_protocol_defs.h */
-typedef struct tres_mc_data {
-	uint16_t boards_per_node;	/* boards per node required by job   */
-	uint16_t sockets_per_board;	/* sockets per board required by job */
-	uint16_t sockets_per_node;	/* sockets per node required by job */
-	uint16_t cores_per_socket;	/* cores per cpu required by job */
-	uint16_t threads_per_core;	/* threads per core required by job */
-
-	uint16_t cpus_per_task;     /* Count of CPUs per task */
-	uint16_t ntasks_per_node;   /* number of tasks to invoke on each node */
-	uint16_t ntasks_per_board;  /* number of tasks to invoke on each board */
-	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
-	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */
-	uint8_t overcommit;         /* processors being over subscribed */
-	uint16_t plane_size;        /* plane size when task_dist = SLURM_DIST_PLANE */
-} tres_mc_data_t;
-
 struct sort_support {
 	int jstart;
 	struct job_resources *tmpjobs;
@@ -95,7 +78,7 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
 					   uint16_t num_rows);
 static bool _enough_nodes(int avail_nodes, int rem_nodes,
 			  uint32_t min_nodes, uint32_t req_nodes);
-static int _eval_nodes(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
+static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		       bitstr_t *node_map, bitstr_t **avail_core,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, avail_res_t **avail_res_array,
@@ -2136,7 +2119,7 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
  * IN first_pass - set if first scheduling attempt for this job, only use
  *		   co-located GRES and cores
  */
-static void _select_cores(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
+static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			  bool enforce_binding, int node_inx, int *avail_cpus,
 			  uint32_t *max_nodes, int *rem_nodes,
 			  int *rem_tasks,
@@ -2146,7 +2129,6 @@ static void _select_cores(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
 {
 	int alloc_tasks = 0;
 	int min_tasks_this_node = 0, max_tasks_this_node = 0;
-	uint16_t *req_cores;
 
 	if (*rem_tasks == 0) {
 		min_tasks_this_node = 1;
@@ -2173,7 +2155,8 @@ static void _select_cores(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
 	if ((*rem_tasks > 0) && (*rem_nodes > 1)) {
 		/* Remaining nodes must be allocated at least one task each */
 		if (*rem_tasks >= *rem_nodes) {
-			max_tasks_this_node = MAX(1, *rem_tasks - *rem_nodes);
+			max_tasks_this_node =
+					MAX(1, (*rem_tasks - *rem_nodes + 1));
 			min_tasks_this_node = MIN(min_tasks_this_node,
 						  max_tasks_this_node);
 		} else {
@@ -2191,17 +2174,14 @@ static void _select_cores(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
 			max_tasks_this_node = 0;
 	}
 	if (job_ptr->gres_list) {
-		req_cores = xmalloc(sizeof(uint16_t) *
-				    avail_res_array[node_inx]->sock_cnt);
-		gres_plugin_job_core_filter3(
+		gres_plugin_job_core_filter3(mc_ptr,
 				avail_res_array[node_inx]->sock_gres_list,
-				req_cores,
 				avail_res_array[node_inx]->avail_cores_per_sock,
 				avail_res_array[node_inx]->sock_cnt,
 				avail_res_array[node_inx]->avail_cpus,
 				&min_tasks_this_node, &max_tasks_this_node,
-				enforce_binding);
-		xfree(req_cores);
+				*rem_nodes, *rem_tasks, enforce_binding,
+				first_pass, avail_core[node_inx]);
 	}
 
 #if 0
@@ -2246,7 +2226,7 @@ else
  * IN first_pass - set if first scheduling attempt for this job, be picky
  * RET SLURM_SUCCESS or an error code
  */
-static int _eval_nodes(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
+static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		       bitstr_t *node_map, bitstr_t **avail_core,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, avail_res_t **avail_res_array,
@@ -2349,6 +2329,7 @@ static int _eval_nodes(struct job_record *job_ptr, tres_mc_data_t *mc_ptr,
 
 	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
+	gres_plugin_job_sched_clear(job_ptr->gres_list);
 
 	consec_size = 50;	/* start allocation for 50 sets of
 				 * consecutive nodes */
@@ -2809,7 +2790,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	int count, ec, most_res = 0, rem_nodes, node_cnt = 0;
 	bitstr_t *orig_node_map, *req_node_map = NULL;
 	bitstr_t **orig_core_array;
-	tres_mc_data_t *tres_mc_ptr = NULL;
+	gres_mc_data_t *tres_mc_ptr = NULL;
 
 	if (job_ptr->details->req_node_bitmap)
 		req_node_map = job_ptr->details->req_node_bitmap;
@@ -2850,12 +2831,13 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		max_nodes = MAX(job_ptr->details->num_tasks, min_nodes);
 
 	/* tres_mc_ptr built once and used for all _eval_nodes() calls */
-	tres_mc_ptr = xmalloc(sizeof(multi_core_data_t));
+	tres_mc_ptr = xmalloc(sizeof(gres_mc_data_t));
 	tres_mc_ptr->cpus_per_task =
 		_valid_uint16(job_ptr->details->cpus_per_task);
 	tres_mc_ptr->ntasks_per_node =
 		_valid_uint16(job_ptr->details->ntasks_per_node);
 	tres_mc_ptr->overcommit = job_ptr->details->overcommit;
+	tres_mc_ptr->whole_node = job_ptr->details->whole_node;
 	if (job_ptr->details->mc_ptr) {
 		multi_core_data_t *job_mc_ptr = job_ptr->details->mc_ptr;
 		tres_mc_ptr->boards_per_node =
@@ -2889,6 +2871,16 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	if (ec == SLURM_SUCCESS)
 		goto fini;
 
+	rem_nodes = bit_set_count(node_map);
+	if (rem_nodes <= min_nodes) {
+		/* Can not remove any nodes, enable non-local GRES */
+		ec = _eval_nodes(job_ptr, tres_mc_ptr, node_map, avail_core,
+				 min_nodes, max_nodes, req_nodes,
+				 avail_res_array, cr_type, prefer_alloc_nodes,
+				 false);
+		goto fini;
+	}
+
 	/*
 	 * This nodeset didn't work. To avoid a possible knapsack problem,
 	 * incrementally remove nodes with low resource counts (sum of CPU and
@@ -2901,7 +2893,6 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		}
 	}
 
-	rem_nodes = bit_set_count(node_map);
 	for (count = 1; count < most_res; count++) {
 		int nochange = 1;
 		bit_or(node_map, orig_node_map);
@@ -3603,6 +3594,8 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 			_free_avail_res(avail_res);
 			return NULL;
 		}
+
+		/* Favor nodes with more co-located GPUs */
 		node_ptr->sched_weight =
 			(node_ptr->sched_weight & 0xffffffffffffff00) |
 			(0xff - near_gpu_cnt);
