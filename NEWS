@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Make code compile with hdf5 1.10.2+
  -- mpi/pmix: Fixed the collectives canceling.
  -- SlurmDBD: improve error message handling on archive load failure.
+ -- Fix incorrect locking when deleting reservations.
 
 * Changes in Slurm 17.11.7
 ==========================
