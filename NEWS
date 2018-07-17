@@ -205,6 +205,7 @@ documents those changes that are of interest to users and administrators.
  -- SlurmDBD: improve error message handling on archive load failure.
  -- Fix incorrect locking when deleting reservations.
  -- Fix incorrect locking when setting up the power save module.
+ -- Fix setting format output length for squeue when showing array jobs.
 
 * Changes in Slurm 17.11.7
 ==========================

@@ -518,12 +518,14 @@ where 'system0' is the localhost or database storage host.
 
 <p>Verify you have InnoDB support</p>
 <pre>
-mysql> SHOW VARIABLES LIKE 'have_innodb';
-+---------------+-------+
-| Variable_name | Value |
-+---------------+-------+
-| have_innodb   | YES   |
-+---------------+-------+
+mysql> SHOW ENGINES;
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| Engine             | Support | Comment                                                        | Transactions | XA   | Savepoints |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| ...                |         |                                                                |              |      |            |
+| InnoDB             | DEFAULT | Supports transactions, row-level locking, and foreign keys     | YES          | YES  | YES        |
+| ...                |         |                                                                |              |      |            |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
 </pre>
 
 <p>Then create the database:</p>

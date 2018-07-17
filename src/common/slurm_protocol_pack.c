@@ -6011,7 +6011,7 @@ static void _xlate_task_str(job_info_t *job_ptr)
 		char *bitstr_len_str = getenv("SLURM_BITSTR_LEN");
 		if (bitstr_len_str)
 			bitstr_len = atoi(bitstr_len_str);
-		if (bitstr_len <= 0)
+		if (bitstr_len < 0)
 			bitstr_len = 64;
 		else
 			bitstr_len = MIN(bitstr_len, 4096);
