@@ -4005,9 +4005,8 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	/*
 	 * Send message
 	 */
-	rc = slurm_msg_sendto( fd, get_buf_data(buffer),
-			       get_buf_offset(buffer),
-			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS );
+	rc = slurm_msg_sendto(fd, get_buf_data(buffer),
+			      get_buf_offset(buffer));
 
 	if ((rc < 0) && (errno == ENOTCONN)) {
 		debug3("slurm_msg_sendto: peer has disappeared for msg_type=%u",

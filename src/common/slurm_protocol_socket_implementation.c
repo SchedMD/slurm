@@ -162,15 +162,14 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
 	return (ssize_t) msglen;
 }
 
-extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size,
-				uint32_t flags)
+extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 {
-	return slurm_msg_sendto_timeout( fd, buffer, size, flags,
-				(slurm_get_msg_timeout() * 1000));
+	return slurm_msg_sendto_timeout(fd, buffer, size,
+					(slurm_get_msg_timeout() * 1000));
 }
 
-ssize_t slurm_msg_sendto_timeout(int fd, char *buffer, size_t size,
-				 uint32_t flags, int timeout)
+ssize_t slurm_msg_sendto_timeout(int fd, char *buffer,
+				 size_t size, int timeout)
 {
 	int   len;
 	uint32_t usize;
