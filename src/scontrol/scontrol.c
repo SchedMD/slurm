@@ -707,6 +707,32 @@ static int _reboot_nodes(char *node_list, bool asap)
 	return rc;
 }
 
+void _process_reboot_command(const char *tag, int argc, char **argv)
+{
+	int error_code = SLURM_SUCCESS;
+	bool asap = false;
+	int argc_offset = 1;
+
+	if ((argc > 1) && !strcasecmp(argv[1], "ASAP")) {
+		asap = true;
+		argc_offset++;
+	}
+	if ((argc - argc_offset) > 1) {
+		exit_code = 1;
+		fprintf (stderr,
+			 "too many arguments for keyword:%s\n",
+			 tag);
+	} else if ((argc - argc_offset) < 1) {
+		error_code = _reboot_nodes("ALL", asap);
+	} else
+		error_code = _reboot_nodes(argv[argc_offset], asap);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("scontrol_reboot_nodes error");
+	}
+}
+
 /*
  * _process_command - process the user's command
  * IN argc - count of arguments
@@ -911,26 +937,7 @@ static int _process_command (int argc, char **argv)
 		exit_flag = 1;
 	}
 	else if (xstrncasecmp(tag, "reboot_nodes", MAX(tag_len, 3)) == 0) {
-		bool asap = false;
-		int argc_offset = 1;
-		if ((argc > 1) && !strcasecmp(argv[1], "ASAP")) {
-			asap = true;
-			argc_offset++;
-		}
-		if ((argc - argc_offset) > 1) {
-			exit_code = 1;
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n",
-				 tag);
-		} else if ((argc - argc_offset) < 1) {
-			error_code = _reboot_nodes("ALL", asap);
-		} else
-			error_code = _reboot_nodes(argv[argc_offset], asap);
-		if (error_code) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				slurm_perror ("scontrol_reboot_nodes error");
-		}
+		_process_reboot_command(tag, argc, argv);
 	}
 	else if (xstrncasecmp(tag, "reconfigure", MAX(tag_len, 3)) == 0) {
 		if (argc > 2) {
