@@ -1306,10 +1306,9 @@ extern void parse_command_line(int argc, char **argv)
 	field_count = list_count(print_fields_list);
 
 	if (optind < argc) {
-		debug2("Error: Unknown arguments:");
+		error("Unknown arguments:");
 		for (i=optind; i<argc; i++)
-			debug2(" %s", argv[i]);
-		debug2("\n");
+			error(" %s", argv[i]);
 		exit(1);
 	}
 	return;
