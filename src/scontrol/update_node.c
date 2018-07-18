@@ -55,7 +55,6 @@ extern int
 scontrol_update_node (int argc, char **argv)
 {
 	int i, j, rc = 0, update_cnt = 0;
-	uint16_t state_val;
 	update_node_msg_t node_msg;
 	char *reason_str = NULL;
 	char *tag, *val;
@@ -201,12 +200,12 @@ scontrol_update_node (int argc, char **argv)
 				node_msg.node_state = NODE_STATE_UNDRAIN;
 				update_cnt++;
 			} else {
-				state_val = NO_VAL16;
+				uint32_t state_val = NO_VAL;
 				for (j = 0; j < NODE_STATE_END; j++) {
 					if (xstrncasecmp(node_state_string(j),
 							 val,
 							 MAX(val_len, 3)) == 0){
-						state_val = (uint16_t) j;
+						state_val = (uint32_t) j;
 						break;
 					}
 				}
