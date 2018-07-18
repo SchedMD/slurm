@@ -943,8 +943,8 @@ possible, but may result in lower job performance.
 .TP
 .B enforce\-binding
 The only CPUs available to the job will be those bound to the selected
-GRES (i.e. the CPUs identified in the gres.conf file will be strictly enforced
-rather than advisory). This option may result in delayed initiation of a job.
+GRES (i.e. the CPUs identified in the gres.conf file will be strictly
+enforced). This option may result in delayed initiation of a job.
 For example a job requiring two GPUs and one CPU will be delayed until both
 GPUs on a single socket are available rather than using GPUs bound to separate
 sockets, however the application performance may be improved due to improved
