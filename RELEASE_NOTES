@@ -181,6 +181,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     early versions of kernel version 4, and RedHat/CentOS 6 and 7, using
     memory.kmem.limit_in_bytes leaks slab caches, which eventually causes the
     machine to be unable to create new cgroups.
+ -- SchedulerParameters' "whole_pack" option has been renamed to "whole_hetjob",
+    although "whole_pack" will still be supported for backward compatibility.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

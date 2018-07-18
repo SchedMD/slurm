@@ -191,6 +191,7 @@ static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  Buf buffer);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
 static void _get_batch_job_dir_ids(List batch_dirs);
+static bool _get_whole_hetjob(void);
 static void _job_array_comp(struct job_record *job_ptr, bool was_running,
 			    bool requeue);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
@@ -5346,6 +5347,28 @@ extern int pack_job_signal(struct job_record *pack_leader, uint16_t signal,
 	return rc;
 }
 
+static bool _get_whole_hetjob(void)
+{
+	static time_t sched_update = 0;
+	static bool whole_hetjob = false;
+	char *sched_params = NULL;
+
+	if (sched_update != slurmctld_conf.last_update) {
+		sched_update = slurmctld_conf.last_update;
+		sched_params = slurm_get_sched_params();
+		if (sched_params) {
+			if (strstr(sched_params, "whole_hetjob") ||
+			    strstr(sched_params, "whole_pack"))
+				whole_hetjob = true;
+			else
+				whole_hetjob = false;
+			xfree(sched_params);
+		}
+	}
+
+	return whole_hetjob;
+}
+
 /*
  * job_str_signal - signal the specified job
  * IN job_id_str - id of the job to be signaled, valid formats include "#"
@@ -5359,9 +5382,6 @@ extern int pack_job_signal(struct job_record *pack_leader, uint16_t signal,
 extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			  uid_t uid, bool preempt)
 {
-	static time_t sched_update = 0;
-	static bool whole_pack = false;
-	char *sched_params;
 	struct job_record *job_ptr;
 	uint32_t job_id;
 	time_t now = time(NULL);
@@ -5371,18 +5391,6 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	int rc = SLURM_SUCCESS, rc2, len;
-
-	if (sched_update != slurmctld_conf.last_update) {
-		sched_update = slurmctld_conf.last_update;
-		sched_params = slurm_get_sched_params();
-		if (sched_params) {
-			if (strstr(sched_params, "whole_pack"))
-				whole_pack = true;
-			else
-				whole_pack = false;
-			xfree(sched_params);
-		}
-	}
 
 	if (max_array_size == NO_VAL) {
 		max_array_size = slurmctld_conf.max_array_sz;
@@ -5439,7 +5447,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return pack_job_signal(job_ptr, signal, flags, uid,
 						preempt);
 		}
-		if (job_ptr && job_ptr->pack_job_id && whole_pack) {
+		if (job_ptr && job_ptr->pack_job_id && _get_whole_hetjob()) {
 			struct job_record *pack_leader;
 			pack_leader = find_job_record(job_ptr->pack_job_id);
 			if (pack_leader && pack_leader->pack_job_list) {
@@ -11289,25 +11297,10 @@ static void _hold_job_rec(struct job_record *job_ptr, uid_t uid)
 }
 static void _hold_job(struct job_record *job_ptr, uid_t uid)
 {
-	static time_t sched_update = 0;
-	static bool whole_pack = false;
-	char *sched_params;
 	struct job_record *pack_leader = NULL, *pack_job;
 	ListIterator iter;
 
-	if (sched_update != slurmctld_conf.last_update) {
-		sched_update = slurmctld_conf.last_update;
-		sched_params = slurm_get_sched_params();
-		if (sched_params) {
-			if (strstr(sched_params, "whole_pack"))
-				whole_pack = true;
-			else
-				whole_pack = false;
-			xfree(sched_params);
-		}
-	}
-
-	if (job_ptr->pack_job_id && whole_pack)
+	if (job_ptr->pack_job_id && _get_whole_hetjob())
 		pack_leader = find_job_record(job_ptr->pack_job_id);
 	if (pack_leader && pack_leader->pack_job_list) {
 		iter = list_iterator_create(pack_leader->pack_job_list);
@@ -11333,25 +11326,10 @@ static void _release_job_rec(struct job_record *job_ptr, uid_t uid)
 }
 static void _release_job(struct job_record *job_ptr, uid_t uid)
 {
-	static time_t sched_update = 0;
-	static bool whole_pack = false;
-	char *sched_params;
 	struct job_record *pack_leader = NULL, *pack_job;
 	ListIterator iter;
 
-	if (sched_update != slurmctld_conf.last_update) {
-		sched_update = slurmctld_conf.last_update;
-		sched_params = slurm_get_sched_params();
-		if (sched_params) {
-			if (strstr(sched_params, "whole_pack"))
-				whole_pack = true;
-			else
-				whole_pack = false;
-			xfree(sched_params);
-		}
-	}
-
-	if (job_ptr->pack_job_id && whole_pack)
+	if (job_ptr->pack_job_id && _get_whole_hetjob())
 		pack_leader = find_job_record(job_ptr->pack_job_id);
 	if (pack_leader && pack_leader->pack_job_list) {
 		iter = list_iterator_create(pack_leader->pack_job_list);
