@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix setting format output length for squeue when showing array jobs.
  -- Add xstrstr function.
  -- Fix printing out of --hint options in sbatch, salloc --help.
+ -- Prevent possible divide by zero in _validate_time_limit().
 
 * Changes in Slurm 17.11.7
 ==========================
