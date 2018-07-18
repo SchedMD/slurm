@@ -673,7 +673,7 @@ _print_aliases (char* node_hostname)
  * _reboot_nodes - issue RPC to have computing nodes reboot when idle
  * RET 0 or a slurm error code
  */
-static int _reboot_nodes(char *node_list, bool asap)
+static int _reboot_nodes(char *node_list, bool asap, char *reason)
 {
 	slurm_ctl_conf_t *conf;
 	int rc;
@@ -693,6 +693,7 @@ static int _reboot_nodes(char *node_list, bool asap)
 
 	memset(&req, 0, sizeof(reboot_msg_t));
 	req.node_list = node_list;
+	req.reason    = reason;
 	if (asap)
 		req.flags |= REBOOT_FLAGS_ASAP;
 	msg.msg_type = REQUEST_REBOOT_NODES;
@@ -711,11 +712,29 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	bool asap = false;
+	char *reason = NULL;
 	int argc_offset = 1;
 
-	if ((argc > 1) && !strcasecmp(argv[1], "ASAP")) {
-		asap = true;
-		argc_offset++;
+	if (argc > 1) {
+		int i = 1;
+		for (; i <= 2 && i < argc; i++) {
+			if (!strcasecmp(argv[i], "ASAP")) {
+				asap = true;
+				argc_offset++;
+			} else if (!xstrncasecmp(argv[i], "Reason=",
+						 strlen("Reason="))) {
+				char *tmp_ptr = strchr(argv[i], '=');
+				if (!*(tmp_ptr + 1)) {
+					exit_code = 1;
+					if (!quiet_flag)
+						fprintf(stderr, "missing reason\n");
+					return;
+				}
+
+				reason = xstrdup(tmp_ptr+1);
+				argc_offset++;
+			}
+		}
 	}
 	if ((argc - argc_offset) > 1) {
 		exit_code = 1;
@@ -723,9 +742,12 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 			 "too many arguments for keyword:%s\n",
 			 tag);
 	} else if ((argc - argc_offset) < 1) {
-		error_code = _reboot_nodes("ALL", asap);
-	} else
-		error_code = _reboot_nodes(argv[argc_offset], asap);
+		error_code = _reboot_nodes("ALL", asap, reason);
+	} else {
+		error_code = _reboot_nodes(argv[argc_offset], asap, reason);
+	}
+
+	xfree(reason);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)

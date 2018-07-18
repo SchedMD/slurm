@@ -701,6 +701,7 @@ typedef struct reboot_msg {
 	char *features;
 	uint16_t flags;
 	char *node_list;
+	char *reason;
 } reboot_msg_t;
 
 typedef struct shutdown_msg {

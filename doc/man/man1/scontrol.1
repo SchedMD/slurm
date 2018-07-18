@@ -224,12 +224,14 @@ Ping the primary and secondary slurmctld daemon and report if
 they are responding.
 
 .TP
-\fBreboot\fP [ASAP] [\fINodeList\fP]
+\fBreboot\fP [ASAP] [reason=<reason>] [\fINodeList\fP]
 Reboot all nodes in the system when they become idle using the
 \fBRebootProgram\fP as configured in Slurm's slurm.conf file.
 The option "ASAP" prevents initiation of additional jobs so the node can be
-rebooted and returned to service "As Soon As Possible" (i.e. ASAP).
-Accepts an option list of nodes to reboot. By default all nodes are rebooted.
+rebooted and returned to service "As Soon As Possible" (i.e. ASAP). A user
+defined message can be added to the nodes by using the "reason" option. The
+message will be cleared when the node is resumed.  An optional list of nodes to
+reboot may be specified. By default all nodes are rebooted.
 NOTE: This command does not prevent additional jobs from being scheduled on
 these nodes, so many jobs can be executed on the nodes prior to them being
 rebooted. You can explicitly drain the nodes in order to reboot nodes as soon
