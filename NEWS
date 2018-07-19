@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent possible divide by zero in _validate_time_limit().
  -- Add Delegate=yes to the slurmd.service file to prevent systemd from
     interfering with the jobs' cgroup hierarchies.
+ -- Change the backlog argument to the listen() syscall within srun to 4096
+    to match elsewhere in the code, and avoid communication problems at scale.
 
 * Changes in Slurm 17.11.7
 ==========================
