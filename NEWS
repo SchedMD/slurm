@@ -170,6 +170,9 @@ documents those changes that are of interest to users and administrators.
     node_features_p_changeable_feature in node_features plugin.
  -- Add Slurm configuration file check logic using "slurmctld -t" command.
 
+* Changes in Slurm 17.11.9
+==========================
+
 * Changes in Slurm 17.11.8
 ==========================
  -- Fix incomplete RESPONSE_[RESOURCE|JOB_PACK]_ALLOCATION building path.
@@ -216,6 +219,10 @@ documents those changes that are of interest to users and administrators.
  -- Add xstrstr function.
  -- Fix printing out of --hint options in sbatch, salloc --help.
  -- Prevent possible divide by zero in _validate_time_limit().
+ -- Add Delegate=yes to the slurmd.service file to prevent systemd from
+    interfering with the jobs' cgroup hierarchies.
+ -- Change the backlog argument to the listen() syscall within srun to 4096
+    to match elsewhere in the code, and avoid communication problems at scale.
 
 * Changes in Slurm 17.11.7
 ==========================

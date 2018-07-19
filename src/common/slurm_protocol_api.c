@@ -3030,7 +3030,7 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
 		return -1;
 	}
 
-	cc = listen(s, SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG);
+	cc = listen(s, SLURM_DEFAULT_LISTEN_BACKLOG);
 	if (cc < 0) {
 		close(s);
 		return -1;

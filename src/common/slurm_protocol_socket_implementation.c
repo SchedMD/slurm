@@ -428,7 +428,7 @@ extern int slurm_init_msg_engine(slurm_addr_t *addr)
 		goto error;
 	}
 
-	if (listen(fd, SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG) < 0) {
+	if (listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG) < 0) {
 		error( "Error listening on slurm stream socket: %m" ) ;
 		rc = SLURM_ERROR;
 		goto error;
