@@ -90,6 +90,7 @@ strong_alias(xstrcmp,           slurm_xstrcmp);
 strong_alias(xstrncmp,          slurm_xstrncmp);
 strong_alias(xstrcasecmp,       slurm_xstrcasecmp);
 strong_alias(xstrncasecmp,      slurm_xstrncasecmp);
+strong_alias(xstrstr,           slurm_xstrstr);
 strong_alias(xstrcasestr,       slurm_xstrcasestr);
 
 /*
@@ -558,6 +559,15 @@ int xstrncasecmp(const char *s1, const char *s2, size_t n)
 		return 1;
 	else
 		return strncasecmp(s1, s2, n);
+}
+
+/* safe xstrstr */
+char *xstrstr(const char *haystack, const char *needle)
+{
+	if (!haystack || !needle)
+		return NULL;
+
+	return strstr(haystack, needle);
 }
 
 char *xstrcasestr(char *haystack, char *needle)

@@ -213,6 +213,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect locking when deleting reservations.
  -- Fix incorrect locking when setting up the power save module.
  -- Fix setting format output length for squeue when showing array jobs.
+ -- Add xstrstr function.
+ -- Fix printing out of --hint options in sbatch, salloc --help.
+ -- Prevent possible divide by zero in _validate_time_limit().
 
 * Changes in Slurm 17.11.7
 ==========================
@@ -977,6 +980,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.12
 ==========================
+ -- Fix segfault in slurmdbd hourly rollup when having a job outside a
+    reservation, with no end_time set, from an assoc that's in a reservation.
 
 * Changes in Slurm 17.02.11
 ==========================

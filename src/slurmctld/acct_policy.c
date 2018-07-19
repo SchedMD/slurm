@@ -1109,9 +1109,9 @@ static bool _validate_time_limit(uint32_t *time_limit_in,
 	uint64_t out_max_64 = *(uint64_t *)out_max_limit;
 	uint32_t out_max_32 = *(uint32_t *)out_max_limit;
 
-	if (((*time_limit_in) != NO_VAL) &&
-	    (!tres_req_cnt || !strict_checking ||
-	     (*limit_set_time) == ADMIN_SET_LIMIT))
+       if (!tres_req_cnt || (((*time_limit_in) != NO_VAL) &&
+           (!strict_checking ||
+            (*limit_set_time) == ADMIN_SET_LIMIT)))
 		return true;
 
 	if (is64) {
