@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.12
 ==========================
+ -- Fix segfault in slurmdbd hourly rollup when having a job outside a
+    reservation, with no end_time set, from an assoc that's in a reservation.
 
 * Changes in Slurm 17.02.11
 ==========================

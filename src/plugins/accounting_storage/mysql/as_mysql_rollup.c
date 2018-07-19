@@ -1494,8 +1494,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 						list_append(assoc_usage_list,
 							    a_usage);
 						last_id = associd;
-						a_usage->loc_tres = list_create(
-							_destroy_local_tres_usage);
+					}
+
+					if (!a_usage->loc_tres) {
+					       a_usage->loc_tres = list_create(
+						    _destroy_local_tres_usage);
 					}
 
 					_add_time_tres(a_usage->loc_tres,
