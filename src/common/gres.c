@@ -5561,7 +5561,6 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		req_sock = xmalloc(sizeof(bool) * sockets);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
-		sock_gres->total_cnt = 0;
 		job_specs = sock_gres->job_specs;
 		if (!job_specs)
 			continue;
@@ -5578,17 +5577,18 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			break;
 		}
 		if (job_specs->gres_per_node && job_specs->gres_per_task) {
-			i = job_specs->gres_per_node / job_specs->gres_per_task;
-			if ((i == 0) ||
-			    (i > *max_tasks_this_node) ||
-			    (i < *min_tasks_this_node)) {
+			max_gres = job_specs->gres_per_node /
+				   job_specs->gres_per_task;
+			if ((max_gres == 0) ||
+			    (max_gres > *max_tasks_this_node) ||
+			    (max_gres < *min_tasks_this_node)) {
 				*max_tasks_this_node = 0;
 				break;
 			}
-			if (*max_tasks_this_node > i)
-				*max_tasks_this_node = i;
-			if (*min_tasks_this_node < i)
-				*min_tasks_this_node = i;
+			if (*max_tasks_this_node > max_gres)
+				*max_tasks_this_node = max_gres;
+			if (*min_tasks_this_node < max_gres)
+				*min_tasks_this_node = max_gres;
 		}
 
 		/*
@@ -5622,9 +5622,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				cnt_avail_sock = sock_gres->cnt_by_sock[i];
 			} else
 				cnt_avail_sock = 0;
-			if ((job_specs->gres_per_socket >
-			     (sock_gres->cnt_any_sock + cnt_avail_sock)) ||
-			    (cnt_avail_sock == 0)) {
+			if (job_specs->gres_per_socket >
+			    (sock_gres->cnt_any_sock + cnt_avail_sock)) {
 				if (sock_gres->cnt_by_sock) {
 					sock_gres->total_cnt -=
 						sock_gres->cnt_by_sock[i];

@@ -2113,7 +2113,8 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
  * IN node_inx - zero-origin node index
  * IN max_nodes - maximum additional node count to allocate
  * IN rem_nodes - desired additional node count to allocate
- * IN rem_tasks - desired additional task count to allocate, UPDATED
+ * IN rem_tasks - desired additional task count to allocate
+ * IN min_tasks_node - minimum number of tasks required on this node, UPDATED
  * IN avail_core - available core bitmap, UPDATED
  * IN avail_res_array - available resources on the node
  * IN first_pass - set if first scheduling attempt for this job, only use
@@ -2121,8 +2122,8 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
  */
 static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			  bool enforce_binding, int node_inx, int *avail_cpus,
-			  uint32_t *max_nodes, int *rem_nodes,
-			  int *rem_tasks,
+			  uint32_t max_nodes, int rem_nodes,
+			  int rem_tasks, int *min_tasks_node,
 			  bitstr_t **avail_core,
 			  avail_res_t **avail_res_array,
 			  bool first_pass)
@@ -2130,33 +2131,33 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	int alloc_tasks = 0;
 	int min_tasks_this_node = 0, max_tasks_this_node = 0;
 
-	if (*rem_tasks == 0) {
+	if (rem_tasks == 0) {
 		min_tasks_this_node = 1;
 		max_tasks_this_node = 1;
 	} else if (mc_ptr->ntasks_per_node) {
 		min_tasks_this_node = mc_ptr->ntasks_per_node;
 		max_tasks_this_node = mc_ptr->ntasks_per_node;
-	} else if (*rem_tasks && (*max_nodes == 1)) {
-		min_tasks_this_node = *rem_tasks;
-		max_tasks_this_node = *rem_tasks;
+	} else if (rem_tasks && (max_nodes == 1)) {
+		min_tasks_this_node = rem_tasks;
+		max_tasks_this_node = rem_tasks;
 	} else if (mc_ptr->ntasks_per_board) {
 		min_tasks_this_node = mc_ptr->ntasks_per_board;
-		max_tasks_this_node = *rem_tasks;
+		max_tasks_this_node = rem_tasks;
 	} else if (mc_ptr->ntasks_per_socket) {
 		min_tasks_this_node = mc_ptr->ntasks_per_socket;
-		max_tasks_this_node = *rem_tasks;
+		max_tasks_this_node = rem_tasks;
 	} else if (mc_ptr->ntasks_per_core) {
 		min_tasks_this_node = mc_ptr->ntasks_per_core;
-		max_tasks_this_node = *rem_tasks;
+		max_tasks_this_node = rem_tasks;
 	} else {
 		min_tasks_this_node = 1;
-		max_tasks_this_node = *rem_tasks;
+		max_tasks_this_node = rem_tasks;
 	}
-	if ((*rem_tasks > 0) && (*rem_nodes > 1)) {
+	if ((rem_tasks > 0) && (rem_nodes > 1)) {
 		/* Remaining nodes must be allocated at least one task each */
-		if (*rem_tasks >= *rem_nodes) {
+		if (rem_tasks >= rem_nodes) {
 			max_tasks_this_node =
-					MAX(1, (*rem_tasks - *rem_nodes + 1));
+					MAX(1, (rem_tasks - rem_nodes + 1));
 			min_tasks_this_node = MIN(min_tasks_this_node,
 						  max_tasks_this_node);
 		} else {
@@ -2180,7 +2181,7 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				avail_res_array[node_inx]->sock_cnt,
 				avail_res_array[node_inx]->avail_cpus,
 				&min_tasks_this_node, &max_tasks_this_node,
-				*rem_nodes, *rem_tasks, enforce_binding,
+				rem_nodes, rem_tasks, enforce_binding,
 				first_pass, avail_core[node_inx]);
 	}
 
@@ -2188,9 +2189,9 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 //FIXME: need to integrate with GRES allocation
 //FIXME: if first_pass==true then try to use only local GRES
 info("NODE:%d MIN-MAX_TASKS: %d-%d", node_inx, min_tasks_this_node, max_tasks_this_node);
-info("REM_TASKS:%d", *rem_tasks);	// 0 IF NOT SPECIFIED
-info("REM_NODES:%d", *rem_nodes);
-info("MAX_NODES:%d", *max_nodes);
+info("REM_TASKS:%d", rem_tasks);	// 0 IF NOT SPECIFIED
+info("REM_NODES:%d", rem_nodes);
+info("MAX_NODES:%d", max_nodes);
 info("BOARDS_PER_NODE:%u", mc_ptr->boards_per_node);
 info("SOCKETS_PER_BOARD:%u", mc_ptr->sockets_per_board);
 info("CORES_PER_SOCKET:%u", mc_ptr->cores_per_socket);
@@ -2202,13 +2203,7 @@ info("NTASKS_PER_SOCKET:%u", mc_ptr->ntasks_per_socket);
 info("NTASKS_PER_CORE:%u", mc_ptr->ntasks_per_core);
 info("OVERCOMMIT:%u\n", mc_ptr->overcommit);
 #endif
-
-//FIXME: Set for testing
-if (*rem_tasks >= min_tasks_this_node)
-  *rem_tasks -= min_tasks_this_node;
-else
-  *rem_tasks = 0;
-
+	*min_tasks_node = min_tasks_this_node;
 	*avail_cpus = avail_res_array[node_inx]->avail_cpus;
 }
 /*
@@ -2248,6 +2243,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	struct node_record *node_ptr = NULL;
 	int consec_index, consec_size, sufficient;
 	int rem_cpus, rem_nodes, rem_tasks; /* remaining resources desired */
+	int min_tasks_node = 0;
 	int min_rem_nodes;	/* remaining resources desired */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_sufficient, best_fit_index = 0;
@@ -2399,9 +2395,9 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				consec_start[consec_index] = i;
 			avail_cpus = avail_res_array[i]->avail_cpus;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, &max_nodes, &rem_nodes,
-				      &rem_tasks, avail_core, avail_res_array,
-				      first_pass);
+				      &avail_cpus, max_nodes, rem_nodes,
+				      rem_tasks, &min_tasks_node, avail_core,
+				      avail_res_array, first_pass);
 			if ((max_nodes > 0) && required_node) {
 				if (consec_req[consec_index] == -1) {
 					/* first required node in set */
@@ -2412,6 +2408,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				min_rem_nodes--;
 				/* leaving bitmap set, decrement max limit */
 				max_nodes--;
+				rem_tasks -= min_tasks_node;
 				if (gres_per_job) {
 //FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
 					gres_plugin_job_sched_add(
