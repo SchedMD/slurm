@@ -68,10 +68,6 @@
 strong_alias(net_stream_listen,		slurm_net_stream_listen);
 strong_alias(net_set_low_water,		slurm_net_set_low_water);
 
-#ifndef NET_DEFAULT_BACKLOG
-#  define NET_DEFAULT_BACKLOG	1024
-#endif
-
 /*
  * Returns the port number in host byte order.
  */
@@ -110,7 +106,7 @@ int net_stream_listen(int *fd, uint16_t *port)
 		goto cleanup;
 
 	*port = _sock_bind_wild(*fd);
-	rc = listen(*fd, NET_DEFAULT_BACKLOG);
+	rc = listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG);
 	if (rc < 0)
 		goto cleanup;
 
@@ -218,7 +214,7 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 	}
 	*port = cc;
 
-	cc = listen(*fd, NET_DEFAULT_BACKLOG);
+	cc = listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG);
 	if (cc < 0) {
 		close(*fd);
 		return -1;
