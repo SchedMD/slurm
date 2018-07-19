@@ -3943,6 +3943,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 	uint32_t uint32_tmp;
 
 	xassert(node != NULL);
+	slurm_init_node_info_t(node, false);
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
@@ -3950,6 +3951,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&node->node_addr, &uint32_tmp, buffer);
 		safe_unpack16(&node->port, buffer);
+		safe_unpack32(&node->next_state, buffer);
 		safe_unpack32(&node->node_state, buffer);
 		safe_unpackstr_xmalloc(&node->version, &uint32_tmp, buffer);
 
@@ -11126,11 +11128,13 @@ _pack_reboot_msg(reboot_msg_t * msg, Buf buffer,
 		if (msg) {
 			packstr(msg->features, buffer);
 			pack16(msg->flags, buffer);
+			pack32(msg->next_state, buffer);
 			packstr(msg->node_list, buffer);
 			packstr(msg->reason, buffer);
 		} else {
 			packnull(buffer);
 			pack16((uint16_t) 0, buffer);
+			pack32((uint32_t) NO_VAL, buffer);
 			packnull(buffer);
 			packnull(buffer);
 		}
@@ -11155,11 +11159,13 @@ _unpack_reboot_msg(reboot_msg_t ** msg_ptr, Buf buffer,
 	uint32_t uint32_tmp;
 
 	msg = xmalloc(sizeof(reboot_msg_t));
+	slurm_init_reboot_msg(msg, false);
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg->features, &uint32_tmp, buffer);
 		safe_unpack16(&msg->flags, buffer);
+		safe_unpack32(&msg->next_state, buffer);
 		safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->reason, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {

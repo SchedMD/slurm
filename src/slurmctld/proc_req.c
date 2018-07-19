@@ -6114,6 +6114,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		node_ptr->boot_req_time = now;
 		node_ptr->last_response = now + slurmctld_config.boot_time;
 		if (reboot_msg) {
+			node_ptr->next_state = reboot_msg->next_state;
 			if (reboot_msg->reason) {
 				xfree(node_ptr->reason);
 				node_ptr->reason = xstrdup(reboot_msg->reason);

@@ -357,6 +357,14 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** Line ******/
+	if ((node_ptr->next_state != NO_VAL) &&
+	    (my_state & NODE_STATE_REBOOT)) {
+		xstrfmtcat(out, "NextState=%s",
+			   node_state_string(node_ptr->next_state));
+		xstrcat(out, line_end);
+	}
+
+	/****** Line ******/
 	if (node_ptr->partitions) {
 		xstrfmtcat(out, "Partitions=%s ", node_ptr->partitions);
 		xstrcat(out, line_end);

@@ -96,6 +96,8 @@ documents those changes that are of interest to users and administrators.
  -- Move libpmi from src/api to contribs/pmi.
  -- Add ability to specify a node reason when rebooting nodes with "scontrol
     reboot".
+ -- Add nextstate option to "scontrol reboot" to dictate state of node after
+    reboot.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

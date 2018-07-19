@@ -672,6 +672,16 @@ extern void slurm_free_last_update_msg(last_update_msg_t * msg)
 	xfree(msg);
 }
 
+extern void slurm_init_reboot_msg(reboot_msg_t *msg, bool clear)
+{
+	xassert(msg);
+
+	if (clear)
+		memset(msg, 0, sizeof(reboot_msg_t));
+
+	msg->next_state = NO_VAL;
+}
+
 extern void slurm_free_reboot_msg(reboot_msg_t * msg)
 {
 	if (msg) {
@@ -3601,6 +3611,16 @@ extern void slurm_free_front_end_info_members(front_end_info_t * front_end)
 		xfree(front_end->reason);
 		xfree(front_end->version);
 	}
+}
+
+extern void slurm_init_node_info_t(node_info_t *msg, bool clear)
+{
+	xassert(msg);
+
+	if (clear)
+		memset(msg, 0, sizeof(node_info_t));
+
+	msg->next_state = NO_VAL;
 }
 
 /*

@@ -226,6 +226,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	packstr (dump_node_ptr->features_act, buffer);
 	packstr (dump_node_ptr->gres, buffer);
 	packstr (dump_node_ptr->cpu_spec_list, buffer);
+	pack32  (dump_node_ptr->next_state, buffer);
 	pack32  (dump_node_ptr->node_state, buffer);
 	pack32  (dump_node_ptr->cpu_bind, buffer);
 	pack16  (dump_node_ptr->cpus, buffer);
@@ -284,7 +285,7 @@ extern int load_all_node_state ( bool state_only )
 	char *mcs_label = NULL;
 	int error_code = 0, node_cnt = 0;
 	uint16_t core_spec_cnt = 0;
-	uint32_t node_state, cpu_bind = 0;
+	uint32_t node_state, cpu_bind = 0, next_state = NO_VAL;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint64_t real_memory;
 	uint32_t tmp_disk, name_len;
@@ -350,6 +351,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
 			safe_unpackstr_xmalloc (&cpu_spec_list,
 							    &name_len, buffer);
+			safe_unpack32 (&next_state,  buffer);
 			safe_unpack32 (&node_state,  buffer);
 			safe_unpack32 (&cpu_bind,    buffer);
 			safe_unpack16 (&cpus,        buffer);
@@ -614,6 +616,8 @@ extern int load_all_node_state ( bool state_only )
 
 		if (node_ptr) {
 			node_cnt++;
+
+			node_ptr->next_state = next_state;
 
 			if (IS_NODE_DOWN(node_ptr)) {
 				if (down_nodes)
@@ -1006,6 +1010,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		packstr (dump_node_ptr->node_hostname, buffer);
 		packstr (dump_node_ptr->comm_name, buffer);
 		pack16(dump_node_ptr->port, buffer);
+		pack32(dump_node_ptr->next_state, buffer);
 		pack32(dump_node_ptr->node_state, buffer);
 		packstr (dump_node_ptr->version, buffer);
 		if (slurmctld_conf.fast_schedule) {
@@ -2785,12 +2790,20 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			      node_ptr->last_response)))) {
 			node_flags &= (~NODE_STATE_REBOOT);
 			if (!xstrcmp(node_ptr->reason, "Reboot ASAP")) {
-				xfree(node_ptr->reason);
-				node_ptr->reason_time = 0;
-				node_ptr->reason_uid = 0;
+				if (node_ptr->next_state != NODE_STATE_DOWN) {
+					xfree(node_ptr->reason);
+					node_ptr->reason_time = 0;
+					node_ptr->reason_uid = 0;
+				}
 				node_flags &= (~NODE_STATE_DRAIN);
 			}
-			if (reg_msg->job_count) {
+			if (node_ptr->next_state == NODE_STATE_DOWN) {
+				node_ptr->node_state = node_ptr->next_state |
+					node_flags;
+
+				if (node_ptr->reason)
+					xstrcat(node_ptr->reason, " : reboot complete");
+			} else if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 					node_flags;
 			} else {
@@ -2798,11 +2811,14 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 					node_flags;
 				node_ptr->last_idle = now;
 			}
+			node_ptr->next_state = NO_VAL;
+
 			info("node %s returned to service",
 			     reg_msg->node_name);
 			trigger_node_up(node_ptr);
 			last_node_update = now;
 			if (!IS_NODE_DRAIN(node_ptr)
+			    && !IS_NODE_DOWN(node_ptr)
 			    && !IS_NODE_FAIL(node_ptr)) {
 				/* reason information is handled in
 				 * clusteracct_storage_g_node_up() */
