@@ -1954,6 +1954,7 @@ void pmixp_server_run_cperf(void)
 
 		PMIXP_ERROR("coll perf %d", size);
 
+		bzero(times, (sizeof(double) * iters));
 		for(j=0; j<iters && !rc; j++){
 			switch (mode) {
 			case PMIXP_COLL_CPERF_MIXED:
