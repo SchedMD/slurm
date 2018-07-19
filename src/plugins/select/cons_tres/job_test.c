@@ -2142,13 +2142,16 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		max_tasks_this_node = rem_tasks;
 	} else if (mc_ptr->ntasks_per_board) {
 		min_tasks_this_node = mc_ptr->ntasks_per_board;
-		max_tasks_this_node = rem_tasks;
+		max_tasks_this_node = mc_ptr->ntasks_per_board *
+				      select_node_record[node_inx].boards;
 	} else if (mc_ptr->ntasks_per_socket) {
 		min_tasks_this_node = mc_ptr->ntasks_per_socket;
-		max_tasks_this_node = rem_tasks;
+		max_tasks_this_node = mc_ptr->ntasks_per_socket *
+				      select_node_record[node_inx].tot_sockets;
 	} else if (mc_ptr->ntasks_per_core) {
 		min_tasks_this_node = mc_ptr->ntasks_per_core;
-		max_tasks_this_node = rem_tasks;
+		max_tasks_this_node = mc_ptr->ntasks_per_core *
+				      select_node_record[node_inx].tot_cores;
 	} else {
 		min_tasks_this_node = 1;
 		max_tasks_this_node = rem_tasks;
@@ -2179,7 +2182,9 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				avail_res_array[node_inx]->sock_gres_list,
 				avail_res_array[node_inx]->avail_cores_per_sock,
 				avail_res_array[node_inx]->sock_cnt,
-				avail_res_array[node_inx]->avail_cpus,
+				select_node_record[node_inx].cores,
+				select_node_record[node_inx].vpus,
+				&avail_res_array[node_inx]->avail_cpus,
 				&min_tasks_this_node, &max_tasks_this_node,
 				rem_nodes, rem_tasks, enforce_binding,
 				first_pass, avail_core[node_inx]);
@@ -2203,8 +2208,12 @@ info("NTASKS_PER_SOCKET:%u", mc_ptr->ntasks_per_socket);
 info("NTASKS_PER_CORE:%u", mc_ptr->ntasks_per_core);
 info("OVERCOMMIT:%u\n", mc_ptr->overcommit);
 #endif
+
+	if (max_tasks_this_node > 0)
+		*avail_cpus = avail_res_array[node_inx]->avail_cpus;
+	else
+		*avail_cpus = 0;
 	*min_tasks_node = min_tasks_this_node;
-	*avail_cpus = avail_res_array[node_inx]->avail_cpus;
 }
 /*
  * This is the heart of the selection process
@@ -2325,7 +2334,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 
 	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
-	gres_plugin_job_sched_clear(job_ptr->gres_list);
 
 	consec_size = 50;	/* start allocation for 50 sets of
 				 * consecutive nodes */
@@ -2393,7 +2401,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		if (node_ptr) {
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = i;
-			avail_cpus = avail_res_array[i]->avail_cpus;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, rem_nodes,
 				      rem_tasks, &min_tasks_node, avail_core,
@@ -2410,7 +2417,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				max_nodes--;
 				rem_tasks -= min_tasks_node;
 				if (gres_per_job) {
-//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
 					gres_plugin_job_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
@@ -2421,7 +2427,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				consec_cpus[consec_index] += avail_cpus;
 				consec_nodes[consec_index]++;
 				if (gres_per_job) {
-//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
 					gres_plugin_job_sched_consec(
 						&consec_gres[consec_index],
 						job_ptr->gres_list,
