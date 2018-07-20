@@ -191,7 +191,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	struct job_resources *job = job_ptr->job_resrcs;
 	struct node_record *node_ptr;
 	struct part_res_record *p_ptr;
-	List gres_list;
+	List node_gres_list;
 	int i, i_first, i_last, n;
 	bitstr_t *core_bitmap;
 
@@ -222,15 +222,16 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		node_ptr = select_node_record[i].node_ptr;
 		if (action != 2) {
 			if (select_node_usage[i].gres_list)
-				gres_list = select_node_usage[i].gres_list;
+				node_gres_list = select_node_usage[i].gres_list;
 			else
-				gres_list = node_ptr->gres_list;
+				node_gres_list = node_ptr->gres_list;
 			core_bitmap = copy_job_resources_node(job, n);
-//FIXME: Selects specific GRES too late
-			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
-					      job->nhosts, n, job_ptr->job_id,
+			gres_plugin_job_alloc(job_ptr->gres_list,
+					      node_gres_list, job->nhosts,
+					      i, n, job_ptr->job_id,
 					      node_ptr->name, core_bitmap);
-			gres_plugin_node_state_log(gres_list, node_ptr->name);
+			gres_plugin_node_state_log(node_gres_list,
+						   node_ptr->name);
 			FREE_NULL_BITMAP(core_bitmap);
 		}
 

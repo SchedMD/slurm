@@ -155,12 +155,27 @@ typedef struct gres_job_state {
 	uint16_t def_cpus_per_gres;
 	uint64_t def_mem_per_gres;
 
+	/*
+	 * Selected resource details. One entry per node on the cluster.
+	 * Used by select/cons_tres to identify which resources would be
+	 * allocated on a node IF that node is included in the job allocation.
+	 * Once specific nodes are selected for the job allocation, select
+	 * portions of these arrays are copied to gres_bit_alloc and
+	 * gres_cnt_node_alloc. The fields can then be cleared.
+	 */
+	uint32_t total_node_cnt;	/* cluster total node count */
+	bitstr_t **gres_bit_select;	/* Per node GRES selected,
+					 * Used with GRES files */
+	uint64_t *gres_cnt_node_select;	/* Per node GRES selected,
+					 * Used without GRES files */
+
 	/* Allocated resources details */
 	uint64_t total_gres;		/* Count of allocated GRES to job */
+	uint32_t node_cnt;		/* 0 if no_consume */
+	bitstr_t **gres_bit_alloc;	/* Per node GRES allocated,
+					 * Used with GRES files */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
 					 * Used without GRES files */
-	uint32_t node_cnt;		/* 0 if no_consume */
-	bitstr_t **gres_bit_alloc;
 
 	/*
 	 * Resources currently allocated to job steps on each node.
@@ -748,12 +763,13 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 bitstr_t *avail_core);
 
 /*
- * Allocate resource to a job and update node and job gres information
+ * Select and allocate GRES to a job and update node and job GRES information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
  *		       gres_plugin_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
- * IN node_offset - zero-origin index to the node of interest
+ * IN node_index  - zero-origin global node index
+ * IN node_offset - zero-origin index in job allocaiton to the node of interest
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
@@ -761,7 +777,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
-				 int node_cnt, int node_offset,
+				 int node_cnt, int node_index, int node_offset,
 				 uint32_t job_id, char *node_name,
 				 bitstr_t *core_bitmap);
 

@@ -192,8 +192,8 @@ static int	_gres_find_job_by_key(void *x, void *key);
 static int	_gres_find_step_by_key(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
 static int	_job_alloc(void *job_gres_data, void *node_gres_data,
-			   int node_cnt, int node_offset, char *gres_name,
-			   uint32_t job_id, char *node_name,
+			   int node_cnt, int node_index, int node_offset,
+			   char *gres_name, uint32_t job_id, char *node_name,
 			   bitstr_t *core_bitmap);
 static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 bool use_total_gres, bitstr_t *core_bitmap,
@@ -2783,7 +2783,7 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name)
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		for (i = 0; i<gres_context_cnt; i++) {
+		for (i = 0; i < gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id !=
 			    gres_context[i].plugin_id)
 				continue;
@@ -2961,6 +2961,11 @@ static void _job_state_delete(void *gres_data)
 	xfree(gres_ptr->gres_cnt_node_alloc);
 	xfree(gres_ptr->gres_bit_step_alloc);
 	xfree(gres_ptr->gres_cnt_step_alloc);
+	if (gres_ptr->gres_cnt_node_select) {
+		for (i = 0; i < gres_ptr->total_node_cnt; i++)
+			FREE_NULL_BITMAP(gres_ptr->gres_bit_select[i]);
+	}
+	xfree(gres_ptr->gres_cnt_node_select);
 	xfree(gres_ptr->gres_name);
 	xfree(gres_ptr->type_name);
 	xfree(gres_ptr);
@@ -5794,12 +5799,12 @@ extern void gres_plugin_job_clear(List job_gres_list)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-static int _job_alloc(void *job_gres_data, void *node_gres_data,
-		      int node_cnt, int node_offset, char *gres_name,
+static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
+		      int node_index, int node_offset, char *gres_name,
 		      uint32_t job_id, char *node_name,
 		      bitstr_t *core_bitmap)
 {
-	int j, k, sz1, sz2;
+	int j, sz1, sz2;
 	uint64_t gres_cnt, i;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
@@ -5851,12 +5856,34 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	}
 
 	/*
+	 * select/cons_tres pre-selects the resources and we just need to update
+	 * the data structures to reflect the selected GRES.
+	 */
+	if (job_gres_ptr->total_node_cnt &&
+	    (job_gres_ptr->gres_bit_select ||
+	     job_gres_ptr->gres_cnt_node_select)) {
+		if (job_gres_ptr->gres_bit_select &&
+		    job_gres_ptr->gres_bit_select[node_index]) {
+			gres_cnt = bit_set_count(
+				    job_gres_ptr->gres_bit_select[node_index]);
+		} else if (job_gres_ptr->gres_cnt_node_select &&
+			   job_gres_ptr->gres_cnt_node_select[node_index]) {
+			gres_cnt = job_gres_ptr->
+				   gres_cnt_node_select[node_index];
+		} else {
+			error("gres/%s: job %u node %s no resources selected",
+			      gres_name, job_id, node_name);
+			return SLURM_ERROR;
+		}
+	} else {
+		gres_cnt = job_gres_ptr->gres_per_node;
+	}
+
+	/*
 	 * Check that sufficient resources exist on this node
 	 */
-	gres_cnt = job_gres_ptr->gres_per_node;
 	job_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_cnt;
 	i = node_gres_ptr->gres_cnt_alloc + gres_cnt;
-
 	if (i > node_gres_ptr->gres_cnt_avail) {
 		error("gres/%s: job %u node %s overallocated resources by %"
 		      PRIu64", (%"PRIu64" > %"PRIu64")",
@@ -5881,7 +5908,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	}
 
 	/*
-	 * Select the specific resources to use for this job.
+	 * Select and/or allocate specific resources for this job.
 	 */
 	if (job_gres_ptr->gres_bit_alloc[node_offset]) {
 		/* Resuming a suspended job, resources already allocated */
@@ -5904,6 +5931,50 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 					node_gres_ptr->gres_cnt_alloc++;
 				}
 			}
+		}
+	} else if (job_gres_ptr->total_node_cnt &&
+		   job_gres_ptr->gres_bit_select &&
+		   job_gres_ptr->gres_bit_select[node_index]) {
+		/* GRES already selected, update the node record */
+		bool job_mod = false;
+		sz1 = bit_size(job_gres_ptr->gres_bit_select[node_index]);
+		sz2 = bit_size(node_gres_ptr->gres_bit_alloc);
+		if (sz1 > sz2) {
+			error("gres/%s: job %u node %s gres bitmap size bad (%d > %d)",
+			      gres_name, job_id, node_name, sz1, sz2);
+			job_gres_ptr->gres_bit_select[node_index] =
+				bit_realloc(
+				job_gres_ptr->gres_bit_select[node_index], sz2);
+			job_mod = true;
+		} else if (sz1 < sz2) {
+			error("gres/%s: job %u node %s gres bitmap size bad (%d < %d)",
+			      gres_name, job_id, node_name, sz1, sz2);
+			job_gres_ptr->gres_bit_select[node_index] =
+				bit_realloc(
+				job_gres_ptr->gres_bit_select[node_index], sz2);
+		}
+		if (bit_overlap(job_gres_ptr->gres_bit_select[node_index],
+				node_gres_ptr->gres_bit_alloc)) {
+			error("gres/%s: job %u node %s gres bitmap overlap",
+			      gres_name, job_id, node_name);
+			bit_and_not(job_gres_ptr->gres_bit_select[node_index],
+				    node_gres_ptr->gres_bit_alloc);
+		}
+		job_gres_ptr->gres_bit_alloc[node_offset] =
+			bit_copy(job_gres_ptr->gres_bit_select[node_index]);
+		if (!node_gres_ptr->gres_bit_alloc) {
+			node_gres_ptr->gres_bit_alloc =
+				bit_copy(job_gres_ptr->
+					 gres_bit_alloc[node_offset]);
+		} else {
+			bit_or(node_gres_ptr->gres_bit_alloc,
+			       job_gres_ptr->gres_bit_alloc[node_offset]);
+		}
+		if (job_mod) {
+			node_gres_ptr->gres_cnt_alloc =
+				bit_set_count(node_gres_ptr->gres_bit_alloc);
+		} else {
+			node_gres_ptr->gres_cnt_alloc += gres_cnt;
 		}
 	} else if (node_gres_ptr->gres_bit_alloc) {
 		job_gres_ptr->gres_bit_alloc[node_offset] =
@@ -5957,7 +6028,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 			gres_cnt--;
 		}
 	} else {
-		node_gres_ptr->gres_cnt_alloc += job_gres_ptr->gres_per_node;
+		node_gres_ptr->gres_cnt_alloc += gres_cnt;
 	}
 
 	if (job_gres_ptr->gres_bit_alloc &&
@@ -6047,6 +6118,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	if (!type_array_updated && job_gres_ptr->type_name) {
 		gres_cnt = job_gres_ptr->gres_per_node;
 		for (j = 0; j < node_gres_ptr->type_cnt; j++) {
+			int64_t k;
 			if (!node_gres_ptr->type_name[j] ||
 			    (job_gres_ptr->type_id !=
 			     node_gres_ptr->type_id[j]))
@@ -6070,7 +6142,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
  * IN node_gres_list - node's gres_list built by
  *		       gres_plugin_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
- * IN node_offset - zero-origin index to the node of interest
+ * IN node_index  - zero-origin global node index
+ * IN node_offset - zero-origin index in job allocaiton to the node of interest
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
@@ -6078,7 +6151,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
-				 int node_cnt, int node_offset,
+				 int node_cnt, int node_index, int node_offset,
 				 uint32_t job_id, char *node_name,
 				 bitstr_t *core_bitmap)
 {
@@ -6127,7 +6200,7 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 		}
 
 		rc2 = _job_alloc(job_gres_ptr->gres_data,
-				 node_gres_ptr->gres_data, node_cnt,
+				 node_gres_ptr->gres_data, node_cnt, node_index,
 				 node_offset, gres_context[i].gres_name,
 				 job_id, node_name, core_bitmap);
 		if (rc2 != SLURM_SUCCESS)

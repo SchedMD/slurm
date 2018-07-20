@@ -2831,7 +2831,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 			else
 				gres_list = node_ptr->gres_list;
 			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
-					      node_cnt, node_offset,
+					      node_cnt, i, node_offset,
 					      job_ptr->job_id, node_ptr->name,
 					      NULL);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
@@ -3102,7 +3102,7 @@ static void _init_node_cr(void)
 				gres_plugin_job_alloc(job_ptr->gres_list,
 						      node_ptr->gres_list,
 						      job_resrcs_ptr->nhosts,
-						      node_offset,
+						      i, node_offset,
 						      job_ptr->job_id,
 						      node_ptr->name,
 						      NULL);
