@@ -74,7 +74,7 @@ static char *hostkey_pub = "/etc/ssh/ssh_host_rsa_key.pub";
 static char *priv_format = "%s/.ssh/id_rsa";
 static char *pub_format = "%s/.ssh/id_rsa.pub";
 
-static const char *xauthority_format = "%s/.Xauthority";
+static bool local_xauthority = false;
 static char *xauthority = NULL;
 
 static int x11_display = 0;
@@ -160,7 +160,12 @@ static void _shutdown_x11(int signal)
 	libssh2_exit();
 
 	if (xauthority) {
-		x11_delete_xauth(xauthority, conf->hostname, x11_display);
+		if (local_xauthority && unlink(xauthority))
+			error("%s: problem unlinking xauthority file %s: %m",
+			      __func__, xauthority);
+		else
+			x11_delete_xauth(xauthority, conf->hostname, x11_display);
+
 		xfree(xauthority);
 	}
 
@@ -208,8 +213,6 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 
 	keypub = xstrdup_printf(pub_format, home);
 	keypriv = xstrdup_printf(priv_format, home);
-	xauthority = xstrdup_printf(xauthority_format, home);
-	xfree(home);
 
 	if (libssh2_init(0)) {
 		error("libssh2 initialization failed");
@@ -275,6 +278,27 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 		goto shutdown;
 	}
 
+	/* use a node-local XAUTHORITY file instead of ~/.Xauthority */
+	if (xstrcasestr(conf->x11_params, "local_xauthority")) {
+		int fd;
+		local_xauthority = true;
+		xauthority = xstrdup_printf("%s/.Xauthority-XXXXXX",
+					    conf->tmpfs);
+
+		/* protect against weak file permissions in old glibc */
+		umask(0077);
+		if ((fd = mkstemp(xauthority)) == -1) {
+			error("%s: failed to create temporary XAUTHORITY file: %m",
+			      __func__);
+			goto shutdown;
+		}
+		close(fd);
+	} else {
+		xauthority = xstrdup_printf("%s/.Xauthority", home);
+	}
+
+	xfree(home);
+
 	/*
 	 * If hostbased failed or was unavailable, try publickey instead.
 	 */
@@ -324,11 +348,14 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	 * steps needing X11 forwarding service launch.
 	 */
 	*display = x11_display;
+	*tmp_xauthority = xstrdup(xauthority);
+
 	return SLURM_SUCCESS;
 
 shutdown:
 	xfree(keypub);
 	xfree(keypriv);
+	xfree(xauthority);
 	close(listen_socket);
 	libssh2_session_disconnect(session, "Disconnecting due to error.");
 	libssh2_session_free(session);

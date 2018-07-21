@@ -4033,6 +4033,15 @@ May not exceed 65533 seconds.
 .TP
 \fBX11Parameters\fR
 For use with Slurm's built-in X11 forwarding implementation.
+.RS
+.TP 8
+\fBlocal_xauthority\fR
+If set, xauth data on the compute node will be placed in a temporary file
+(under \fBTmpFS\fR) rather than in \fB~/.Xauthority\fR, and the
+\fBXAUTHORITY\fR environment variable will be injected into the job's
+environment (as well as any process captured by pam_slurm_adopt).
+This can help avoid file locking contention on the user's home directory.
+.RE
 
 .LP
 The configuration of nodes (or machines) to be managed by Slurm is
