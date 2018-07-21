@@ -775,8 +775,9 @@ extern int stepd_get_x11_display(int fd, uint16_t protocol_version,
 
 	debug("Leaving stepd_get_x11_display");
 	return display;
+
 rwfail:
-	return SLURM_ERROR;
+	return 0;
 }
 
 /*

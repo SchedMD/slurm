@@ -942,9 +942,11 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id,
 	display = stepd_get_x11_display(fd, protocol_version, &xauthority);
 	close(fd);
 
-	if (display == SLURM_ERROR) {
+	if (!display) {
 		error("could not get x11 forwarding display for job %u step %u,"
 		      " x11 forwarding disabled", job_id, step_id);
+		env_array_overwrite(env, "DISPLAY", "SLURM_X11_SETUP_FAILED");
+		*envc = envcount(*env);
 		return;
 	}
 
