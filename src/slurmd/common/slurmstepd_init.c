@@ -80,6 +80,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	pack16(conf->log_fmt, buffer);
 	pack16(conf->mem_limit_enforce, buffer);
 	pack64(conf->msg_aggr_window_msgs, buffer);
+	packstr(conf->tmpfs, buffer);
 	packstr(conf->x11_params, buffer);
 }
 
@@ -130,6 +131,7 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 		safe_unpack16(&conf->log_fmt, buffer);
 		safe_unpack16(&conf->mem_limit_enforce, buffer);
 		safe_unpack64(&conf->msg_aggr_window_msgs, buffer);
+		safe_unpackstr_xmalloc(&conf->tmpfs, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->x11_params, &uint32_tmp, buffer);
 	}
 
@@ -147,5 +149,7 @@ unpack_error:
 	xfree(conf->task_epilog);
 	xfree(conf->node_topo_addr);
 	xfree(conf->node_topo_pattern);
+	xfree(conf->tmpfs);
+	xfree(conf->x11_params);
 	return SLURM_ERROR;
 }
