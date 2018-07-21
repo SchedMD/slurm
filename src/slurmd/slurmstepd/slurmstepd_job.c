@@ -632,6 +632,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job->tres_bind);
 	xfree(job->tres_freq);
 	xfree(job->user_name);
+	xfree(job->x11_xauthority);
 	xfree(job);
 }
 

@@ -926,6 +926,7 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id,
 			       char ***env, uint32_t *envc)
 {
 	int display = 0, fd;
+	char *xauthority = NULL;
 	uint16_t protocol_version;
 
 	fd = stepd_connect(conf->spooldir, conf->node_name,
@@ -938,10 +939,10 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id,
 		return;
 	}
 
-	display = stepd_get_x11_display(fd, protocol_version);
+	display = stepd_get_x11_display(fd, protocol_version, &xauthority);
 	close(fd);
 
-	if (!display) {
+	if (display == SLURM_ERROR) {
 		error("could not get x11 forwarding display for job %u step %u,"
 		      " x11 forwarding disabled", job_id, step_id);
 		return;
@@ -950,6 +951,10 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id,
 	debug2("%s: setting DISPLAY=localhost:%d:0 for job %u step %u",
 	       __func__, display, job_id, step_id);
 	env_array_overwrite_fmt(env, "DISPLAY", "localhost:%d.0", display);
+
+	if (xauthority)
+		env_array_overwrite(env, "XAUTHORITY", xauthority);
+
 	*envc = envcount(*env);
 }
 

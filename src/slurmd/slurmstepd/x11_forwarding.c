@@ -178,7 +178,8 @@ static void _shutdown_x11(int signal)
  * IN/OUT: display - local X11 display number
  * OUT: SLURM_SUCCESS or SLURM_ERROR
  */
-extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
+extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
+			     char **tmp_xauthority)
 {
 	int rc, hostauth_failed = 1;
 	struct sockaddr_in sin;
@@ -192,6 +193,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display)
 	 */
 	uint16_t ports[2] = {6020, 6099};
 	int sig_array[2] = {SIGTERM, 0};
+	*tmp_xauthority = NULL;
 	x11_target_port = job->x11_target_port;
 
 	xsignal(SIGTERM, _shutdown_x11);

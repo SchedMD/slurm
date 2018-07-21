@@ -1020,12 +1020,13 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 
 #ifdef WITH_SLURM_X11
 		if (job->x11) {
-			int display;
+			int display, len = 0;
+			char *xauthority;
 
 			close(x11_pipe[0]);
 
 			/* will create several detached threads to process */
-			if (setup_x11_forward(job, &display)) {
+			if (setup_x11_forward(job, &display, &xauthority)) {
 				/* ssh forwarding setup failed */
 				error("x11 port forwarding setup failed");
 				exit(127);
@@ -1037,6 +1038,23 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 				error("%s: failed sending display number back: %m",
 				      __func__);
 			}
+
+			/* send back temporary xauthority file location */
+			if (xauthority)
+				len = strlen(xauthority) + 1;
+
+			if (write(x11_pipe[1], &len, sizeof(int))
+			    != sizeof(int)) {
+				error("%s: failed sending XAUTHORITY back: %m",
+				      __func__);
+			}
+
+			if (write(x11_pipe[1], xauthority, len) != len) {
+				error("%s: failed sending XAUTHORITY back: %m",
+				      __func__);
+			}
+
+			xfree(xauthority);
 			close(x11_pipe[1]);
 
 			/*
@@ -1100,6 +1118,8 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	 * needs to be marked as having failed as well.
 	 */
 	if (job->x11) {
+		int len;
+
 		close(x11_pipe[1]);
 		if (read(x11_pipe[0], &job->x11_display, sizeof(int))
 		    != sizeof(int)) {
@@ -1107,9 +1127,26 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 			      __func__);
 			job->x11_display = 0;
 		}
+
+		if (read(x11_pipe[0], &len, sizeof(int)) != sizeof(int)) {
+			error("%s: failed retrieving x11 authority value: %m",
+			      __func__);
+		}
+
+		if (len)
+			job->x11_xauthority = xmalloc(len);
+
+		if (read(x11_pipe[0], job->x11_xauthority, len) != len) {
+			error("%s: failed retrieving x11 authority value: %m",
+			      __func__);
+		}
+
 		close(x11_pipe[0]);
 
 		debug("x11 forwarding local display is %d", job->x11_display);
+		if (job->x11_xauthority)
+			debug("x11 forwarding local xauthority is %s",
+			      job->x11_xauthority);
 	}
 #endif
 

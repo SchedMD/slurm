@@ -1284,8 +1284,17 @@ rwfail:
 
 static int _handle_x11_display(int fd, stepd_step_rec_t *job)
 {
+	int len = 0;
 	/* Send the display number. zero indicates no display setup */
 	safe_write(fd, &job->x11_display, sizeof(int));
+	if (job->x11_xauthority) {
+		/* include NUL termination in length */
+		len = strlen(job->x11_xauthority) + 1;
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, job->x11_xauthority, len);
+	} else {
+		safe_write(fd, &len, sizeof(int));
+	}
 
 	debug("Leaving _handle_get_x11_display");
 	return SLURM_SUCCESS;

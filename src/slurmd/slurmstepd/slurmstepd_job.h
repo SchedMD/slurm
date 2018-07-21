@@ -245,6 +245,7 @@ typedef struct {
 	char *x11_magic_cookie;		/* xauth magic cookie value */
 	char *x11_target_host;		/* remote machine to connect back to */
 	uint16_t x11_target_port;	/* remote x11 port to connect back to */
+	char *x11_xauthority;		/* temporary XAUTHORITY location, or NULL */
 } stepd_step_rec_t;
 
 

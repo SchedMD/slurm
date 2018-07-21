@@ -749,10 +749,13 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern int stepd_get_x11_display(int fd, uint16_t protocol_version)
+extern int stepd_get_x11_display(int fd, uint16_t protocol_version,
+				 char **xauthority)
 {
 	int req = REQUEST_X11_DISPLAY;
-	int display = 0;
+	int display = 0, len = 0;
+
+	*xauthority = NULL;
 
 	safe_write(fd, &req, sizeof(int));
 
@@ -761,6 +764,14 @@ extern int stepd_get_x11_display(int fd, uint16_t protocol_version)
 	 * or zero if x11 forwarding is not setup
 	 */
 	safe_read(fd, &display, sizeof(int));
+
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_read(fd, &len, sizeof(int));
+		if (len) {
+			*xauthority = xmalloc(len);
+			safe_read(fd, *xauthority, len);
+		}
+	}
 
 	debug("Leaving stepd_get_x11_display");
 	return display;

@@ -206,10 +206,12 @@ extern int stepd_add_extern_pid(int fd, uint16_t protocol_version, pid_t pid);
 
 /*
  * Fetch the display number if this extern step is providing x11 tunneling.
- * Returns 0 to indicate no display forwarded.
- * (The implementation will never use local X11 display number zero.)
+ * If temporary XAUTHORITY files are in use, xauthority is set to that path,
+ * otherwise NULL.
+ * Returns SLURM_ERROR to indicate no display forwarded.
  */
-extern int stepd_get_x11_display(int fd, uint16_t protocol_version);
+extern int stepd_get_x11_display(int fd, uint16_t protocol_version,
+				 char **xauthority);
 
 /*
  * Return the process ID of the slurmstepd.

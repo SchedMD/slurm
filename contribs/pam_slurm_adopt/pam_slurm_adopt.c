@@ -136,13 +136,23 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 
 	if ((rc == PAM_SUCCESS) && !opts.disable_x11) {
 		int display;
-		display = stepd_get_x11_display(fd, stepd->protocol_version);
+		char *xauthority;
+		display = stepd_get_x11_display(fd, stepd->protocol_version,
+						&xauthority);
 
 		if (display) {
 			char *env;
 			env = xstrdup_printf("DISPLAY=localhost:%d.0", display);
 			pam_putenv(pamh, env);
 			xfree(env);
+		}
+
+		if (xauthority) {
+			char *env;
+			env = xstrdup_printf("XAUTHORITY=%s", xauthority);
+			pam_putenv(pamh, env);
+			xfree(env);
+			xfree(xauthority);
 		}
 	}
 
