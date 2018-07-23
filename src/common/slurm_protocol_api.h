@@ -990,12 +990,6 @@ extern int slurm_init_msg_engine(slurm_addr_t * slurm_address);
  */
 extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t * slurm_address);
 
-/* just calls close on an established msg connection
- * IN open_fd	- an open file descriptor to close
- * RET int	- the return code
- */
-extern int slurm_shutdown_msg_engine(int open_fd);
-
 /**********************************************************************\
  * receive message functions
 \**********************************************************************/

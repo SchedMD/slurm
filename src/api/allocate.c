@@ -1207,7 +1207,7 @@ static listen_t *_create_allocation_response_socket(char *interface_hostname)
 
 	if (slurm_get_stream_addr(listen->fd, &listen->address) < 0) {
 		error("slurm_get_stream_addr error %m");
-		slurm_shutdown_msg_engine(listen->fd);
+		close(listen->fd);
 		return NULL;
 	}
 	listen->hostname = xstrdup(interface_hostname);
@@ -1223,7 +1223,7 @@ static void _destroy_allocation_response_socket(listen_t *listen)
 {
 	xassert(listen != NULL);
 
-	slurm_shutdown_msg_engine(listen->fd);
+	close(listen->fd);
 	if (listen->hostname)
 		xfree(listen->hostname);
 	xfree(listen);

@@ -1235,7 +1235,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	debug3("_slurmctld_rpc_mgr shutting down");
 	for (i = 0; i < nports; i++)
-		(void) slurm_shutdown_msg_engine(sockfd[i]);
+		close(sockfd[i]);
 	xfree(sockfd);
 	server_thread_decr();
 	pthread_exit((void *) 0);

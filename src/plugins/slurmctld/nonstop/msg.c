@@ -342,7 +342,7 @@ static void *_msg_thread(void *no_data)
 	}
 	debug("slurmctld/nonstop: message engine shutdown");
 	if (sock_fd > 0)
-		(void) slurm_shutdown_msg_engine(sock_fd);
+		close(sock_fd);
 	pthread_exit((void *) 0);
 	return NULL;
 }

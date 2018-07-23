@@ -450,7 +450,7 @@ _msg_engine(void)
 		error("accept: %m");
 	}
 	verbose("got shutdown request");
-	slurm_shutdown_msg_engine(conf->lfd);
+	close(conf->lfd);
 	return;
 }
 

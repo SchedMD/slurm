@@ -365,7 +365,7 @@ static int _forward_comm_set(kvs_comm_set_t *kvs_set_ptr)
 void slurm_pmi_finalize(void)
 {
 	if (pmi_fd >= 0) {
-		slurm_shutdown_msg_engine(pmi_fd);
+		close(pmi_fd);
 		pmi_fd = -1;
 	}
 	srun_port = 0;

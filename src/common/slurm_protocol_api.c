@@ -3055,21 +3055,6 @@ int slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
 	return slurm_init_msg_engine(&addr);
 }
 
-/*
- *  Close an established message engine.
- *    Returns SLURM_SUCCESS or SLURM_FAILURE.
- *
- * IN  fd  - an open file descriptor to close
- * RET int - the return code
- */
-int slurm_shutdown_msg_engine(int fd)
-{
-	int rc = close(fd);
-	if (rc)
-		slurm_seterrno(SLURM_COMMUNICATIONS_SHUTDOWN_ERROR);
-	return rc;
-}
-
 /**********************************************************************\
  * msg connection establishment functions used by msg clients
 \**********************************************************************/

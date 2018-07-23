@@ -888,7 +888,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		 */
 		if ((to_stepd[0] != conf->lfd)
 		    && (to_slurmd[1] != conf->lfd))
-			slurm_shutdown_msg_engine(conf->lfd);
+			close(conf->lfd);
 
 		if (close(to_stepd[1]) < 0)
 			error("close write to_stepd in grandchild: %m");

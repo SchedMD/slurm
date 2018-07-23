@@ -372,7 +372,7 @@ static void *_agent_thread(void *arg)
 			_agent_proc_connect(fe_comm_socket, fe_auth_key);;
 		}
 	}
-	slurm_shutdown_msg_engine(fe_comm_socket);
+	close(fe_comm_socket);
 
 	return NULL;
 }
@@ -541,7 +541,7 @@ srun_job_t * _read_job_srun_agent(void)
 		}
 	}
 
-	slurm_shutdown_msg_engine(resp_socket);
+	close(resp_socket);
 	buffer = create_buf(job_data, buf_size);
 	srun_job = _unpack_srun_job_rec(buffer);
 	free_buf(buffer);	/* This does xfree(job_data) */
