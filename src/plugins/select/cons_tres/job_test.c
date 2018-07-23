@@ -1278,7 +1278,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	 *         partitions.
 	 */
 
-
 	/*** Step 1 ***/
 	bit_copybits(node_bitmap, orig_node_map);
 	free_core_array(&free_cores);
@@ -1700,7 +1699,7 @@ alloc_job:
 					(job_res->nhosts *
 					 details_ptr->pn_min_cpus));
 	job_res->node_req         = job_node_req;
-	job_res->cpus             = cpu_count;
+	job_res->cpus             = cpu_count;	/* Per node CPU counts */
 	job_res->cpus_used        = xmalloc(job_res->nhosts *
 					    sizeof(uint16_t));
 	job_res->memory_allocated = xmalloc(job_res->nhosts *
@@ -2216,6 +2215,7 @@ info("OVERCOMMIT:%u\n", mc_ptr->overcommit);
 		*avail_cpus = 0;
 	*min_tasks_node = min_tasks_this_node;
 }
+
 /*
  * This is the heart of the selection process
  * IN job_ptr - job attempting to be scheduled
@@ -2359,7 +2359,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	if (gres_per_job)
 		consec_gres  = xmalloc(sizeof(List) * consec_size);
 
-	for (i = 0; i < select_node_cnt; i++) {
+	for (i = 0; i < select_node_cnt; i++) {		/* For each node */
 		if ((consec_index + 1) >= consec_size) {
 			consec_size *= 2;
 			xrealloc(consec_cpus,  sizeof(int) * consec_size);
@@ -2390,7 +2390,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		    !details_ptr->contiguous &&
 		    (consec_weight[consec_index] != NO_VAL64) && /* Init value*/
 		    (node_ptr->sched_weight != consec_weight[consec_index])) {
-			/* End last set, setup for start of next set */
+			/* End last consecutive set, setup start of next set */
 			if (consec_nodes[consec_index] == 0) {
 				/* Only required nodes, re-use consec record */
 				consec_req[consec_index] = -1;
@@ -2408,6 +2408,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				      rem_tasks, &min_tasks_node, avail_core,
 				      avail_res_array, first_pass);
 			if ((max_nodes > 0) && required_node) {
+				/* Required node, add resources to totals */
 				if (consec_req[consec_index] == -1) {
 					/* first required node in set */
 					consec_req[consec_index] = i;
@@ -2613,7 +2614,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				max_nodes--;
 				rem_cpus -= avail_cpus;
 				if (gres_per_job) {
-//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
 					gres_plugin_job_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
@@ -2659,7 +2659,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				min_rem_nodes--;
 				max_nodes--;
 				if (gres_per_job) {
-//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
 					gres_plugin_job_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
@@ -2684,7 +2683,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 					if (cpus_array[j] < rem_cpus)
 						continue;
 					if (gres_per_job &&
-//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
 					    !gres_plugin_job_sched_test2(
 							job_ptr->gres_list,
 							avail_res_array[i]->
@@ -2765,7 +2763,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				min_rem_nodes--;
 				max_nodes--;
 				if (gres_per_job) {
-//FIXME: We need to select task count and specific cores to accurately determine which GRES can be made available
 					gres_plugin_job_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->sock_gres_list);
@@ -2910,7 +2907,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	rem_nodes = bit_set_count(node_map);
 	if (rem_nodes <= min_nodes) {
-		/* Can not remove any nodes, enable non-local GRES */
+		/* Can not remove any nodes, enable use of non-local GRES */
 		ec = _eval_nodes(job_ptr, tres_mc_ptr, node_map, avail_core,
 				 min_nodes, max_nodes, req_nodes,
 				 avail_res_array, cr_type, prefer_alloc_nodes,
