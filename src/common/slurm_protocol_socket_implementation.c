@@ -436,11 +436,9 @@ extern int slurm_init_msg_engine(slurm_addr_t *addr)
 
 	return fd;
 
-    error:
-	if ((close(fd) < 0) && (errno == EINTR))
-		close(fd);	/* try again */
+error:
+	(void) close(fd);
 	return rc;
-
 }
 
 /* Await a connection on socket FD.
@@ -529,18 +527,16 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 			goto error;
 		}
 
-		if ((close(fd) < 0) && (errno == EINTR))
-			close(fd);	/* try again */
+		(void) close(fd);
 	}
 
 	return fd;
 
-    error:
+error:
 	slurm_get_ip_str(addr, &port, ip, sizeof(ip));
 	debug2("Error connecting slurm stream socket at %s:%d: %m",
 	       ip, ntohs(port));
-	if ((close(fd) < 0) && (errno == EINTR))
-		close(fd);	/* try again */
+	(void) close(fd);
 	return SLURM_SOCKET_ERROR;
 }
 
