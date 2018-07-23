@@ -954,8 +954,10 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id,
 	       __func__, display, job_id, step_id);
 	env_array_overwrite_fmt(env, "DISPLAY", "localhost:%d.0", display);
 
-	if (xauthority)
+	if (xauthority) {
 		env_array_overwrite(env, "XAUTHORITY", xauthority);
+		xfree(xauthority);
+	}
 
 	*envc = envcount(*env);
 }
