@@ -2050,8 +2050,58 @@ extern int assoc_mgr_fini(bool save_state)
 	return SLURM_SUCCESS;
 }
 
+#ifndef NDEBUG
+/*
+ * Used to protect against double-locking within a single thread. Calling
+ * assoc_mgr_lock() while already holding locks will lead to deadlock;
+ * this will force such instances to abort() in development builds.
+ */
+/*
+ * FIXME: __thread is non-standard, and may cause build failures on unusual
+ * systems. Only used within development builds to mitigate possible problems
+ * with production builds.
+ */
+static __thread bool assoc_mgr_locked = false;
+
+/*
+ * Used to detect any location where the acquired locks differ from the
+ * release locks.
+ */
+
+static __thread assoc_mgr_lock_t thread_locks;
+
+static bool _store_locks(assoc_mgr_lock_t *lock_levels)
+{
+	if (assoc_mgr_locked)
+		return false;
+	assoc_mgr_locked = true;
+
+        memcpy((void *) &thread_locks, (void *) lock_levels,
+               sizeof(assoc_mgr_lock_t));
+
+        return true;
+}
+
+static bool _clear_locks(assoc_mgr_lock_t *lock_levels)
+{
+	if (!assoc_mgr_locked)
+		return false;
+	assoc_mgr_locked = false;
+
+	if (memcmp((void *) &thread_locks, (void *) lock_levels,
+		       sizeof(assoc_mgr_lock_t)))
+		return false;
+
+	memset((void *) &thread_locks, 0, sizeof(assoc_mgr_lock_t));
+
+	return true;
+}
+#endif
+
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
 {
+	xassert(_store_locks(locks));
+
 	if (locks->assoc == READ_LOCK)
 		slurm_rwlock_rdlock(&assoc_mgr_locks[ASSOC_LOCK]);
 	else if (locks->assoc == WRITE_LOCK)
@@ -2090,6 +2140,8 @@ extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
 
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
 {
+	xassert(_clear_locks(locks));
+
 	if (locks->wckey)
 		slurm_rwlock_unlock(&assoc_mgr_locks[WCKEY_LOCK]);
 
