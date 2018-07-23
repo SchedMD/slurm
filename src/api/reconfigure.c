@@ -158,18 +158,18 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
 	}
 
 	if (slurm_send_node_msg(fd, req) < 0) {
-		slurm_shutdown_msg_conn(fd);
+		close(fd);
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
 	}
 	slurm_msg_t_init(&resp_msg);
 
 	if ((rc = slurm_receive_msg(fd, &resp_msg, 0)) != 0) {
 		slurm_free_msg_members(&resp_msg);
-		slurm_shutdown_msg_conn(fd);
+		close(fd);
 		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 	}
 
-	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
+	if (close(fd) != SLURM_SUCCESS)
 		rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
 	else if (resp_msg.msg_type != RESPONSE_SLURM_RC)
 		rc = SLURM_UNEXPECTED_MSG_ERROR;

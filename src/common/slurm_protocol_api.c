@@ -3070,18 +3070,6 @@ int slurm_shutdown_msg_engine(int fd)
 	return rc;
 }
 
-/*
- *   Close an established message connection.
- *     Returns SLURM_SUCCESS or SLURM_FAILURE.
- *
- * IN  fd  - an open file descriptor to close
- * RET int - the return code
- */
-int slurm_shutdown_msg_conn(int fd)
-{
-	return close(fd);
-}
-
 /**********************************************************************\
  * msg connection establishment functions used by msg clients
 \**********************************************************************/
@@ -4412,18 +4400,8 @@ static int
 _send_and_recv_msg(int fd, slurm_msg_t *req,
 		   slurm_msg_t *resp, int timeout)
 {
-	int retry = 0;
 	int rc = slurm_send_recv_msg(fd, req, resp, timeout);
-
-	/*
-	 *  Attempt to close an open connection
-	 */
-	while ((slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
-		if (retry++ > MAX_SHUTDOWN_RETRY) {
-			break;
-		}
-	}
-
+	(void) close(fd);
 	return rc;
 }
 
@@ -4441,7 +4419,6 @@ _send_and_recv_msg(int fd, slurm_msg_t *req,
 static List
 _send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 {
-	int retry = 0;
 	List ret_list = NULL;
 	int steps = 0;
 
@@ -4474,15 +4451,7 @@ _send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 		ret_list = slurm_receive_msgs(fd, steps, timeout);
 	}
 
-
-	/*
-	 *  Attempt to close an open connection
-	 */
-	while ((slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
-		if (retry++ > MAX_SHUTDOWN_RETRY) {
-			break;
-		}
-	}
+	(void) close(fd);
 
 	return ret_list;
 }
@@ -4634,7 +4603,6 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 				slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	int      rc = SLURM_SUCCESS;
-	int      retry = 0;
 	int fd = -1;
 	slurm_addr_t ctrl_addr;
 	bool     use_backup = false;
@@ -4655,15 +4623,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 		rc = SLURM_SUCCESS;
 	}
 
-	/*
-	 *  Attempt to close an open connection
-	 */
-	while ( (slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
-		if (retry++ > MAX_SHUTDOWN_RETRY) {
-			rc = SLURM_SOCKET_ERROR;
-			goto cleanup;
-		}
-	}
+	(void) close(fd);
 
 cleanup:
 	if (rc != SLURM_SUCCESS)
@@ -4680,7 +4640,6 @@ cleanup:
 int slurm_send_only_node_msg(slurm_msg_t *req)
 {
 	int rc = SLURM_SUCCESS;
-	int retry = 0;
 	int fd = -1;
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
@@ -4693,13 +4652,8 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 		debug3("slurm_send_only_node_msg: sent %d", rc);
 		rc = SLURM_SUCCESS;
 	}
-	/*
-	 *  Attempt to close an open connection
-	 */
-	while ( (slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
-		if (retry++ > MAX_SHUTDOWN_RETRY)
-			return SLURM_SOCKET_ERROR;
-	}
+
+	(void) close(fd);
 
 	return rc;
 }

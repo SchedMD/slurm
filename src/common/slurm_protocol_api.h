@@ -1110,13 +1110,6 @@ extern int slurm_open_controller_conn_spec(int dest,
  */
 extern int slurm_open_msg_conn(slurm_addr_t * slurm_address);
 
-/* just calls close on an established msg connection to close
- * IN open_fd	- an open file descriptor to close
- * RET int	- the return code
- */
-extern int slurm_shutdown_msg_conn(int open_fd);
-
-
 /**********************************************************************\
  * stream functions
 \**********************************************************************/
