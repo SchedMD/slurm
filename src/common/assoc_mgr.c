@@ -739,11 +739,14 @@ static slurmdb_assoc_rec_t* _find_assoc_parent(
 	return parent;
 }
 
-/* locks should be put in place before calling this function
- * ASSOC_WRITE, USER_WRITE, QOS_READ, TRES_READ */
 static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 				      int reset)
 {
+	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
+
 	xassert(assoc_mgr_user_list);
 
 	if (!assoc || !assoc_mgr_assoc_list) {
@@ -919,14 +922,17 @@ static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 }
 
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
-/* locks should be put in place before calling this function
- * ASSOC_WRITE, USER_WRITE, QOS_READ, TRES_READ */
 static int _post_assoc_list(void)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 	int reset = 1;
 	//DEF_TIMERS;
+
+	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
 
 	if (!assoc_mgr_assoc_list)
 		return SLURM_ERROR;
@@ -2182,6 +2188,8 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	ListIterator itr = NULL;
 	slurmdb_assoc_rec_t *found_assoc = NULL;
 	int set = 0;
+
+	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
 
 	xassert(assoc);
 	xassert(assoc->uid != NO_VAL);
