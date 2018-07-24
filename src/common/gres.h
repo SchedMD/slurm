@@ -222,6 +222,7 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	char *gres_name;	/* GRES name */
 	gres_job_state_t *job_specs;	/* Pointer to job info, for limits */
 	uint64_t max_node_gres;	/* Maximum GRES permitted on this node */
+	gres_node_state_t *node_specs;	/* Pointer to node info, for state */
 	uint32_t plugin_id;	/* Plugin ID (for quick search) */
 	uint64_t total_cnt;	/* Total GRES count of this name & type */
 	uint32_t type_id;	/* GRES type (e.g. model ID) */
@@ -761,6 +762,15 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 bool enforce_binding,
 					 bool first_pass,
 					 bitstr_t *avail_core);
+
+/*
+ * Make final GRES selection for the job
+ * sock_gres_list IN - per-socket GRES details, one record per allocated node
+ * job_res IN - job resource allocation
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_job_core_filter4(List *sock_gres_list,
+					struct job_resources *job_res);
 
 /*
  * Select and allocate GRES to a job and update node and job GRES information

@@ -728,8 +728,7 @@ extern int get_job_resources_offset(job_resources_t *job_resrcs_ptr,
 				job_resrcs_ptr->cores_per_socket[i] *
 				job_resrcs_ptr->sock_core_rep_count[i];
 			node_id -= job_resrcs_ptr->sock_core_rep_count[i];
-		} else if (socket_id >= job_resrcs_ptr->
-			   sockets_per_node[i]) {
+		} else if (socket_id >= job_resrcs_ptr->sockets_per_node[i]) {
 			error("get_job_resrcs_bit: socket_id >= socket_cnt "
 			      "(%u >= %u)", socket_id,
 			      job_resrcs_ptr->sockets_per_node[i]);
