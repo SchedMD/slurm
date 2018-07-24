@@ -1651,6 +1651,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					     this_node_name);
 				}
 				node_ptr->last_idle = 1;
+				node_ptr->next_state = NO_VAL;
 				free(this_node_name);
 				continue;
 			} else if (state_val == NODE_STATE_POWER_UP) {
@@ -1672,6 +1673,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("powering up node %s",
 					     this_node_name);
 				}
+				node_ptr->next_state = NO_VAL;
 				free(this_node_name);
 				continue;
 			} else if ((state_val & NODE_STATE_POWER_SAVE) &&
@@ -1698,6 +1700,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 						(node_ptr->node_state &
 						 NODE_STATE_FLAGS);
 				select_g_update_node_state(node_ptr);
+
+				node_ptr->next_state = NO_VAL;
 
 				info ("update_node: node %s state set to %s",
 					this_node_name,
