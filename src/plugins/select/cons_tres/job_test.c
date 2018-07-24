@@ -2161,7 +2161,7 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		min_tasks_this_node = mc_ptr->ntasks_per_node;
 		max_tasks_this_node = mc_ptr->ntasks_per_node;
 	} else if (rem_tasks && (max_nodes == 1)) {
-		min_tasks_this_node = rem_tasks;
+		min_tasks_this_node = 1;
 		max_tasks_this_node = rem_tasks;
 	} else if (mc_ptr->ntasks_per_board) {
 		min_tasks_this_node = mc_ptr->ntasks_per_board;
@@ -2382,6 +2382,47 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	if (gres_per_job)
 		consec_gres  = xmalloc(sizeof(List) * consec_size);
 
+	/*
+	 * If there are required nodes, first determine the resources they
+	 * provide, then select additional resources as needed in next loop
+	 */
+	if (req_map) {
+		int i_first, i_last;
+		i_first = bit_ffs(req_map);
+		if (i_first >= 0) {
+			i_last = bit_fls(req_map);
+			if (((i_last - i_first + 1) > max_nodes) &&
+			    (bit_set_count(req_map) > max_nodes))
+				goto fini;
+		} else
+			i_last = i_first - 1;
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(req_map, i))
+				continue;
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, rem_nodes,
+				      rem_tasks, &min_tasks_node, avail_core,
+				      avail_res_array, first_pass);
+			total_cpus += avail_cpus;
+			rem_cpus -= avail_cpus;
+			rem_nodes--;
+			min_rem_nodes--;
+			max_nodes--;
+			rem_tasks -= min_tasks_node;
+			if (gres_per_job) {
+				gres_plugin_job_sched_add(job_ptr->gres_list,
+					avail_res_array[i]->sock_gres_list);
+			}
+		}
+		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+		    gres_plugin_job_sched_test(job_ptr->gres_list,
+					       job_ptr->job_id)) {
+			error_code = SLURM_SUCCESS;
+			bit_and(node_map, req_map);
+			goto fini;
+		}
+	}
+
 	for (i = 0; i < select_node_cnt; i++) {		/* For each node */
 		if ((consec_index + 1) >= consec_size) {
 			consec_size *= 2;
@@ -2426,40 +2467,31 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		if (node_ptr) {
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = i;
-			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, max_nodes, rem_nodes,
-				      rem_tasks, &min_tasks_node, avail_core,
-				      avail_res_array, first_pass);
-			if ((max_nodes > 0) && required_node) {
-				/* Required node, add resources to totals */
+			if (required_node) {
+				/*
+				 * Required node, resources counters updated
+				 * in above loop, leave bitmap set
+				 */
 				if (consec_req[consec_index] == -1) {
 					/* first required node in set */
 					consec_req[consec_index] = i;
 				}
-				total_cpus += avail_cpus;
-				rem_cpus -= avail_cpus;
-				rem_nodes--;
-				min_rem_nodes--;
-				/* leaving bitmap set, decrement max limit */
-				max_nodes--;
-				rem_tasks -= min_tasks_node;
-				if (gres_per_job) {
-					gres_plugin_job_sched_add(
-						job_ptr->gres_list,
-						avail_res_array[i]->
-						sock_gres_list);
-				}
-			} else {	/* node not selected (yet) */
-				bit_clear(node_map, i);
-				consec_cpus[consec_index] += avail_cpus;
-				consec_nodes[consec_index]++;
-				if (gres_per_job) {
-					gres_plugin_job_sched_consec(
-						&consec_gres[consec_index],
-						job_ptr->gres_list,
-						avail_res_array[i]->
-						sock_gres_list);
-				}
+				continue;
+			}
+
+			/* node not selected (yet) */
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, rem_nodes,
+				      rem_tasks, &min_tasks_node, avail_core,
+				      avail_res_array, first_pass);
+			bit_clear(node_map, i);
+			consec_cpus[consec_index] += avail_cpus;
+			consec_nodes[consec_index]++;
+			if (gres_per_job) {
+				gres_plugin_job_sched_consec(
+					&consec_gres[consec_index],
+					job_ptr->gres_list,
+					avail_res_array[i]->sock_gres_list);
 			}
 			consec_weight[consec_index] = node_ptr->sched_weight;
 		} else if (consec_nodes[consec_index] == 0) {
@@ -3875,6 +3907,8 @@ static avail_res_t **_select_nodes(struct job_record *job_ptr,
 	rc = _choose_nodes(job_ptr, node_bitmap, avail_core, min_nodes,
 			   max_nodes, req_nodes, avail_res_array, cr_type,
 			   prefer_alloc_nodes);
+	if (rc != SLURM_SUCCESS)
+		goto fini;
 	_log_select_maps("_select_nodes/choose_nodes", node_bitmap, avail_core);
 
 	/* If successful, sync up the avail_core with the node_map */
