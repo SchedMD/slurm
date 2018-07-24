@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Protect against sending to the slurmdbd if the connection has gone away.
  -- Fix checking missing return codes when unpacking structures.
  -- Fix slurm.spec-legacy including slurmsmwd
+ -- More explicit error message when cgroup oom-kill events detected.
 
 * Changes in Slurm 17.11.9-2
 ============================
