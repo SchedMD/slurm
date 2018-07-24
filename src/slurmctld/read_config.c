@@ -2590,9 +2590,12 @@ static int _restore_job_dependencies(void)
 	bool valid = true;
 	List license_list;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	/* provides own locking */
+	assoc_mgr_clear_used_info();
+
 	assoc_mgr_lock(&locks);
 
-	assoc_mgr_clear_used_info();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->array_recs)
