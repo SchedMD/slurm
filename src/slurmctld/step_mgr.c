@@ -512,7 +512,7 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	if (step_spec->tres_freq)
 		debug3("   TRES_freq=%s", step_spec->tres_freq);
 	if (step_spec->tres_per_step)
-		debug3("   tres_per_step=%s", step_spec->tres_per_step);
+		debug3("   TRES_per_step=%s", step_spec->tres_per_step);
 	if (step_spec->tres_per_node)
 		debug3("   TRES_per_node=%s", step_spec->tres_per_node);
 	if (step_spec->tres_per_socket)

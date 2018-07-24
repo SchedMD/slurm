@@ -5763,6 +5763,71 @@ static int _get_sock_cnt(struct job_resources *job_res, int node_inx,
 	}
 	return used_sock_cnt;
 }
+
+/*
+ * Select specific GRES (set GRES bitmap) for this job on this node
+ * job_res IN - job resource allocation
+ * node_inx IN - global node index
+ * job_node_inx IN - node index for this job's allocation
+ * job_specs IN - job request specifications, UPDATED: set bits in
+ *		  gres_bit_select
+ * node_specs IN - node resource request specifications
+ */
+static void _set_sock_bits(struct job_resources *job_res, int node_inx,
+			   int job_node_inx, gres_job_state_t *job_specs,
+			   gres_node_state_t *node_specs)
+{
+	int core_offset, gres_cnt;
+	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
+	int c, i, g, rc, s, t;
+
+	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
+				   &cores_per_socket_cnt);
+	if (rc != SLURM_SUCCESS) {
+		error("cons_tres: %s: Invalid socket/core count", __func__);
+		return;
+	}
+	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
+	if (core_offset < 0) {
+		error("cons_tres: %s: Invalid core offset", __func__);
+		return;
+	}
+	gres_cnt = bit_size(job_specs->gres_bit_select[node_inx]);
+	for (s = 0; s < sock_cnt; s++) {
+		bool used_sock = false;
+		uint64_t rem_gres = job_specs->gres_per_socket;
+		for (c = 0; c < cores_per_socket_cnt; c++) {
+			i = (s * cores_per_socket_cnt) + c;
+			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
+				used_sock = true;
+				break;
+			}
+		}
+		if (!used_sock)
+			continue;
+		/* Now pick specific GRES for this socket */
+		for (t = 0; t < node_specs->topo_cnt; t++) {
+			i = (s * cores_per_socket_cnt) + c;
+			if (!bit_test(node_specs->topo_core_bitmap[t], i))
+				continue;
+			for (g = 0; g < gres_cnt; g++) {
+				if (!bit_test(node_specs->topo_gres_bitmap[t],
+					      g))
+					continue;   /* GRES not on this topo */
+				if (bit_test(node_specs->gres_bit_alloc, g))
+					continue;   /* Already allocated GRES */
+				bit_set(job_specs->gres_bit_select[node_inx], g);
+				if (--rem_gres <= 0)
+					break;
+			}
+		}
+		if (rem_gres > 0) {
+			error("cons_tres: %s: Could not find GRES for socket %d on node %d",
+			      __func__, s, node_inx);
+		}
+	}
+}
+
 static int _get_task_cnt(struct job_resources *job_res, int node_inx)
 {
 //FIXME: Not sure what to do here
@@ -5772,6 +5837,24 @@ static int _get_job_cnt(struct job_resources *job_res, int node_inx)
 {
 //FIXME: Not sure what to do here
 return 1;
+}
+static int _get_gres_node_cnt(gres_node_state_t *node_specs)
+{
+	int i, gres_cnt = 0;
+
+	if (node_specs->gres_bit_alloc) {
+		gres_cnt = bit_size(node_specs->gres_bit_alloc);
+		return gres_cnt;
+	}
+
+	/* This logic should be redundant */
+	gres_cnt = 0;
+	for (i = 0; i < node_specs->topo_cnt; i++) {
+		gres_cnt = MAX(gres_cnt,
+			       bit_size(node_specs->topo_gres_bitmap[i]));
+	}
+
+	return gres_cnt;
 }
 
 /*
@@ -5803,7 +5886,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list,
 			continue;
 		sock_gres_iter =
 			list_iterator_create(sock_gres_list[node_inx++]);
-		while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
+		while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))){
 			job_specs = sock_gres->job_specs;
 			node_specs = sock_gres->node_specs;
 			if (!job_specs || !node_specs)
@@ -5843,18 +5926,30 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list,
 				job_specs->gres_bit_select =
 					xmalloc(sizeof(bitstr_t *) * node_cnt);
 			}
-gres_cnt = 4; // VALUE FOR TESTING, need to determine value
+
+			gres_cnt = _get_gres_node_cnt(node_specs);
 			job_specs->gres_bit_select[i] = bit_alloc(gres_cnt);
-for (j = 0; j <= i; j++)
-  bit_set(job_specs->gres_bit_select[i], j);
+
 			if (job_specs->gres_per_node) {
 //FIXME: FLESH OUT LOGIC with filters and counters
+for (j = 0; j <= i; j++)
+  bit_set(job_specs->gres_bit_select[i], j);
 			} else if (job_specs->gres_per_socket) {
-//FIXME: FLESH OUT LOGIC with filters and counters
+				_set_sock_bits(job_res, i, node_inx-1,
+					       job_specs, node_specs);
 			} else if (job_specs->gres_per_task) {
 //FIXME: FLESH OUT LOGIC with filters and counters
+for (j = 0; j <= i; j++)
+  bit_set(job_specs->gres_bit_select[i], j);
 			} else if (job_specs->gres_per_job) {
 //FIXME: FLESH OUT LOGIC with filters and counters
+for (j = 0; j <= i; j++)
+  bit_set(job_specs->gres_bit_select[i], j);
+			} else {
+				error("cons_tres: %s job_spec lacks GRES counter",
+				      __func__);
+for (j = 0; j <= i; j++)
+  bit_set(job_specs->gres_bit_select[i], j);
 			}
 		}
 		list_iterator_destroy(sock_gres_iter);
