@@ -349,6 +349,7 @@ static int _build_bitmaps(void)
 	power_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	up_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
+	rs_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
 
 	/* Set all bits, all nodes initially available for sharing */
 	bit_set_all(share_node_bitmap);

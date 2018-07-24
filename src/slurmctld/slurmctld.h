@@ -276,6 +276,7 @@ extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
 extern bitstr_t *power_node_bitmap;	/* Powered down nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
+extern bitstr_t *rs_node_bitmap;	/* next_state=resume nodes */
 
 /*****************************************************************************\
  *  FRONT_END parameters and data structures

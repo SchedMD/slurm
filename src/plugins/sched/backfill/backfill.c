@@ -1984,7 +1984,8 @@ next_task:
 			last_job_update = now;
 		}
 		if ((job_ptr->start_time <= now) &&
-		    (bit_overlap(avail_bitmap, cg_node_bitmap) > 0)) {
+		    (bit_overlap(avail_bitmap, cg_node_bitmap) ||
+		     bit_overlap(avail_bitmap, rs_node_bitmap))) {
 			/* Need to wait for in-progress completion/epilog */
 			job_ptr->start_time = now + 1;
 			later_start = 0;

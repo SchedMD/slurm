@@ -101,6 +101,7 @@ bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
+bitstr_t *rs_node_bitmap    = NULL; 	/* bitmap of resuming nodes */
 
 static void 	_dump_node_state (struct node_record *dump_node_ptr,
 				  Buf buffer);
@@ -1652,6 +1653,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}
 				node_ptr->last_idle = 1;
 				node_ptr->next_state = NO_VAL;
+				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
 				continue;
 			} else if (state_val == NODE_STATE_POWER_UP) {
@@ -1674,6 +1676,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					     this_node_name);
 				}
 				node_ptr->next_state = NO_VAL;
+				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
 				continue;
 			} else if ((state_val & NODE_STATE_POWER_SAVE) &&
@@ -1702,6 +1705,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				select_g_update_node_state(node_ptr);
 
 				node_ptr->next_state = NO_VAL;
+				bit_clear(rs_node_bitmap, node_inx);
 
 				info ("update_node: node %s state set to %s",
 					this_node_name,
@@ -2816,6 +2820,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				node_ptr->last_idle = now;
 			}
 			node_ptr->next_state = NO_VAL;
+			bit_clear(rs_node_bitmap, node_inx);
 
 			info("node %s returned to service",
 			     reg_msg->node_name);
@@ -4044,6 +4049,7 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(power_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
+	FREE_NULL_BITMAP(rs_node_bitmap);
 	node_fini2();
 }
 

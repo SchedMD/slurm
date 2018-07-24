@@ -98,6 +98,8 @@ documents those changes that are of interest to users and administrators.
     reboot".
  -- Add nextstate option to "scontrol reboot" to dictate state of node after
     reboot.
+ -- Consider "resuming" (nextstate=resume) nodes as available in backfill
+    future scheduling and don't replace "resuming" nodes in reservations.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

@@ -1836,8 +1836,14 @@ static void _queue_reboot_msg(void)
 		 */
 		node_ptr->node_state &=  NODE_STATE_FLAGS;
 		node_ptr->node_state |=  NODE_STATE_DOWN;
-		bit_clear(avail_node_bitmap, i);
-		bit_clear(idle_node_bitmap, i);
+
+		if (node_ptr->next_state != NODE_RESUME) {
+			bit_clear(avail_node_bitmap, i);
+			bit_clear(idle_node_bitmap, i);
+		} else {
+			bit_set(rs_node_bitmap, i);
+		}
+
 		node_ptr->boot_req_time = now;
 		node_ptr->last_response = now + slurm_get_resume_timeout();
 
