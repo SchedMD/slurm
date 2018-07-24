@@ -2589,8 +2589,7 @@ static int _restore_job_dependencies(void)
 	char *new_depend;
 	bool valid = true;
 	List license_list;
-	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK,
-				   .tres = READ_LOCK };
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 	assoc_mgr_lock(&locks);
 
 	assoc_mgr_clear_used_info();

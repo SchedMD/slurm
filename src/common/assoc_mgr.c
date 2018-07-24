@@ -4967,10 +4967,9 @@ extern void assoc_mgr_clear_used_info(void)
 	ListIterator itr = NULL;
 	slurmdb_assoc_rec_t * found_assoc = NULL;
 	slurmdb_qos_rec_t * found_qos = NULL;
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
 
-	// xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
-	// xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
-
+	assoc_mgr_lock(&locks);
 	if (assoc_mgr_assoc_list) {
 		itr = list_iterator_create(assoc_mgr_assoc_list);
 		while ((found_assoc = list_next(itr))) {
@@ -4986,6 +4985,8 @@ extern void assoc_mgr_clear_used_info(void)
 		}
 		list_iterator_destroy(itr);
 	}
+
+	assoc_mgr_unlock(&locks);
 }
 
 static void _reset_children_usages(List children_list)
