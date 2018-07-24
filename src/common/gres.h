@@ -740,9 +740,8 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
  * IN min_tasks_this_node - Minimum count of tasks that can be started on this
  *                          node, UPDATED
  * IN max_tasks_this_node - Maximum count of tasks that can be started on this
- *                          node, UPDATED
+ *                          node or NO_VAL, UPDATED
  * IN rem_nodes - desired additional node count to allocate, including this node
- * IN rem_tasks - desired additional task count to allocate
  * IN enforce_binding - GRES must be co-allocated with cores
  * IN first_pass - set if first scheduling attempt for this job, use
  *		   co-located GRES and cores if possible
@@ -755,10 +754,9 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 uint16_t cores_per_socket,
 					 uint16_t cpus_per_core,
 					 uint16_t *avail_cpus,
-					 int *min_tasks_this_node,
-					 int *max_tasks_this_node,
+					 uint32_t *min_tasks_this_node,
+					 uint32_t *max_tasks_this_node,
 					 int rem_nodes,
-					 int rem_tasks,
 					 bool enforce_binding,
 					 bool first_pass,
 					 bitstr_t *avail_core);

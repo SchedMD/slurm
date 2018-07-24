@@ -5518,9 +5518,8 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
  * IN min_tasks_this_node - Minimum count of tasks that can be started on this
  *                          node, UPDATED
  * IN max_tasks_this_node - Maximum count of tasks that can be started on this
- *                          node, UPDATED
+ *                          node or NO_VAL, UPDATED
  * IN rem_nodes - desired additional node count to allocate, including this node
- * IN rem_tasks - desired additional task count to allocate
  * IN enforce_binding - GRES must be co-allocated with cores
  * IN first_pass - set if first scheduling attempt for this job, use
  *		   co-located GRES and cores if possible
@@ -5533,10 +5532,9 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 uint16_t cores_per_socket,
 					 uint16_t cpus_per_core,
 					 uint16_t *avail_cpus,
-					 int *min_tasks_this_node,
-					 int *max_tasks_this_node,
+					 uint32_t *min_tasks_this_node,
+					 uint32_t *max_tasks_this_node,
 					 int rem_nodes,
-					 int rem_tasks,
 					 bool enforce_binding,
 					 bool first_pass,
 					 bitstr_t *avail_core)
@@ -5546,12 +5544,15 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	gres_job_state_t *job_specs;
 	int i, c, s, core_cnt, sock_cnt, req_cores, rem_sockets;
 	uint64_t cnt_avail_sock, cnt_avail_total, max_gres = 0, rem_gres = 0;
+	uint64_t max_tasks;
+	uint32_t task_cnt_incr;
 	bool *req_sock = NULL;	/* Required socket */
 
 	if (*max_tasks_this_node == 0)
 		return;
 
 	xassert(avail_core);
+	task_cnt_incr = *min_tasks_this_node;
 	req_sock = xmalloc(sizeof(bool) * sockets);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
@@ -5579,24 +5580,23 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		}
 		rem_nodes = MAX(rem_nodes, 1);
 		rem_sockets = rem_nodes * MAX(1, mc_ptr->sockets_per_node);
-		rem_tasks = MAX(rem_tasks, rem_nodes);
 		if (max_gres &&
 		    (((job_specs->gres_per_node   * rem_nodes)   > max_gres) ||
-		     ((job_specs->gres_per_socket * rem_sockets) > max_gres) ||
-		     ((job_specs->gres_per_task   * rem_tasks)   > max_gres))) {
+		     ((job_specs->gres_per_socket * rem_sockets) > max_gres))) {
 			*max_tasks_this_node = 0;
 			break;
 		}
 		if (job_specs->gres_per_node && job_specs->gres_per_task) {
-			max_gres = job_specs->gres_per_node /
-				   job_specs->gres_per_task;
-			if ((max_gres == 0) ||
-			    (max_gres > *max_tasks_this_node) ||
-			    (max_gres < *min_tasks_this_node)) {
+			max_tasks = job_specs->gres_per_node /
+				    job_specs->gres_per_task;
+			if ((max_tasks == 0) ||
+			    (max_tasks > *max_tasks_this_node) ||
+			    (max_tasks < *min_tasks_this_node)) {
 				*max_tasks_this_node = 0;
 				break;
 			}
-			if (*max_tasks_this_node > max_gres)
+			if ((*max_tasks_this_node == NO_VAL) ||
+			    (*max_tasks_this_node > max_tasks))
 				*max_tasks_this_node = max_gres;
 			if (*min_tasks_this_node < max_gres)
 				*min_tasks_this_node = max_gres;
@@ -5643,11 +5643,22 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			*max_tasks_this_node = 0;
 		}
 		if (job_specs->gres_per_task) {
-			uint64_t max_tasks = cnt_avail_total /
-					     job_specs->gres_per_task;
+			max_tasks = cnt_avail_total / job_specs->gres_per_task;
 			*max_tasks_this_node = MIN(*max_tasks_this_node,
 						   max_tasks);
 		}
+
+		/*
+		 * min_tasks_this_node and max_tasks_this_node must be multiple
+		 * of original min_tasks_this_node value. This is to support
+		 * ntasks_per_* option and we just need to select a count of
+		 * tasks, sockets, etc. Round the values down.
+		 */
+		*min_tasks_this_node = (*min_tasks_this_node / task_cnt_incr) *
+				       task_cnt_incr;
+		*max_tasks_this_node = (*max_tasks_this_node / task_cnt_incr) *
+				       task_cnt_incr;
+
 		if (*max_tasks_this_node == 0)
 			break;
 
