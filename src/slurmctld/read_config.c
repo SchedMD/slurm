@@ -2589,12 +2589,8 @@ static int _restore_job_dependencies(void)
 	char *new_depend;
 	bool valid = true;
 	List license_list;
-	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
-	/* provides own locking */
 	assoc_mgr_clear_used_info();
-
-	assoc_mgr_lock(&locks);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -2644,8 +2640,6 @@ static int _restore_job_dependencies(void)
 		xfree(new_depend);
 	}
 	list_iterator_destroy(job_iterator);
-
-	assoc_mgr_unlock(&locks);
 
 	return error_code;
 }
