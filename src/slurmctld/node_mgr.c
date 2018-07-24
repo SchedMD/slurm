@@ -2807,16 +2807,17 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			}
 			if (node_ptr->next_state == NODE_STATE_DOWN) {
 				node_ptr->node_state = node_ptr->next_state |
-					node_flags;
-
-				if (node_ptr->reason)
-					xstrcat(node_ptr->reason, " : reboot complete");
+						       node_flags;
+				if (node_ptr->reason) {
+					xstrcat(node_ptr->reason,
+						" : reboot complete");
+				}
 			} else if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
-					node_flags;
+						       node_flags;
 			} else {
 				node_ptr->node_state = NODE_STATE_IDLE |
-					node_flags;
+						       node_flags;
 				node_ptr->last_idle = now;
 			}
 			node_ptr->next_state = NO_VAL;
