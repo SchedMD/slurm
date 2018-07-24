@@ -1983,6 +1983,10 @@ next_task:
 			job_ptr->start_time = start_res;
 			last_job_update = now;
 		}
+		/*
+		 * avail_bitmap at this point contains a bitmap of nodes
+		 * selected for this job to be allocated
+		 */
 		if ((job_ptr->start_time <= now) &&
 		    (bit_overlap(avail_bitmap, cg_node_bitmap) ||
 		     bit_overlap(avail_bitmap, rs_node_bitmap))) {
