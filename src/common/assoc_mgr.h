@@ -124,6 +124,10 @@ extern int assoc_mgr_fini(bool save_state);
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);
 
+#ifndef NDEBUG
+extern bool verify_assoc_lock(assoc_mgr_lock_datatype_t datatype, lock_level_t level);
+#endif
+
 /* ran after a new tres_list is given */
 extern int assoc_mgr_post_tres_list(List new_list);
 

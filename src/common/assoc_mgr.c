@@ -2096,6 +2096,11 @@ static bool _clear_locks(assoc_mgr_lock_t *lock_levels)
 
 	return true;
 }
+
+bool verify_assoc_lock(assoc_mgr_lock_datatype_t datatype, lock_level_t level)
+{
+	return (((lock_level_t *) &thread_locks)[datatype] >= level);
+}
 #endif
 
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
