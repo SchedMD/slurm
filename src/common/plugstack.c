@@ -551,7 +551,7 @@ static int _spank_stack_load(struct spank_stack *stack, const char *path)
 	 *   error, but is equivalent to an empty file.
 	 */
 	if ((fd = open(path, O_RDONLY | O_CLOEXEC)) < 0 ||
-	    (fp = fdopen(fd, "r")) < 0) {
+	    (fp = fdopen(fd, "r")) == NULL) {
 		if (errno == ENOENT)
 			return (0);
 		error("spank: Failed to open %s: %m", path);
