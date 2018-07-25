@@ -2525,7 +2525,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	char *error_msg = xstrdup("Database settings not recommended values:");
 
 	if (_get_database_variable(mysql_conn, buffer_var, &value))
-		return SLURM_ERROR;
+		goto error;
 	debug2("%s: %u", buffer_var, value);
 	if (value < (buffer_size / 2)) {
 		recommended_values = false;
@@ -2533,7 +2533,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	}
 
 	if (_get_database_variable(mysql_conn, logfile_var, &value))
-		return SLURM_ERROR;
+		goto error;
 	debug2("%s: %u", logfile_var, value);
 	if (value < (logfile_size / 2)) {
 		recommended_values = false;
@@ -2541,7 +2541,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	}
 
 	if (_get_database_variable(mysql_conn, lockwait_var, &value))
-		return SLURM_ERROR;
+		goto error;
 	debug2("%s: %u", lockwait_var, value);
 	if (value < (lockwait_timeout / 2)) {
 		recommended_values = false;
@@ -2551,8 +2551,13 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	if (!recommended_values) {
 		error("%s", error_msg);
 	}
+
 	xfree(error_msg);
 	return SLURM_SUCCESS;
+
+error:
+	xfree(error_msg);
+	return SLURM_ERROR;
 }
 
 /*
