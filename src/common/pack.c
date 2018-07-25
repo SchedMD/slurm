@@ -147,6 +147,7 @@ Buf create_mmap_buf(char *file)
 
 	if (fstat(fd, &f_stat)) {
 		debug("%s: Failed to fstat file `%s`, %m", __func__, file);
+		close(fd);
 		return NULL;
 	}
 
