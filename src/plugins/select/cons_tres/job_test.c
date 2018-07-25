@@ -1806,9 +1806,10 @@ alloc_job:
 			sock_gres_list[j] = avail_res_array[i]->sock_gres_list;
 			j++;
 		}
-//FIXME: Need to flesh ouut filter4 logic
-//		error_code = gres_plugin_job_core_filter4(sock_gres_list,
-//							  job_res);
+		error_code = gres_plugin_job_core_filter4(sock_gres_list,
+							  job_ptr->job_id,
+							  job_res,
+							  tres_mc_ptr);
 		xfree(node_gres_list);
 		xfree(sock_gres_list);
 	}

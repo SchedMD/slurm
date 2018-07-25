@@ -217,6 +217,7 @@ typedef struct gres_step_state {
 
 /* Per-socket GRES availability information for scheduling purposes */
 typedef struct sock_gres {	/* GRES availability by socket */
+	bitstr_t **bits_by_sock;/* Per-socket GRES bitmap of this name & type */
 	uint64_t cnt_any_sock;	/* GRES count unconstrained by cores */
 	uint64_t *cnt_by_sock;	/* Per-socket GRES count of this name & type */
 	char *gres_name;	/* GRES name */
@@ -224,6 +225,8 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	uint64_t max_node_gres;	/* Maximum GRES permitted on this node */
 	gres_node_state_t *node_specs;	/* Pointer to node info, for state */
 	uint32_t plugin_id;	/* Plugin ID (for quick search) */
+	int sock_cnt;		/* Socket count, size of bits_by_sock and
+				 * cnt_by_sock arrays */
 	uint64_t total_cnt;	/* Total GRES count of this name & type */
 	uint32_t type_id;	/* GRES type (e.g. model ID) */
 	char *type_name;	/* GRES type (e.g. model name) */
@@ -764,11 +767,14 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 /*
  * Make final GRES selection for the job
  * sock_gres_list IN - per-socket GRES details, one record per allocated node
+ * job_id IN - job ID for logging
  * job_res IN - job resource allocation
+ * tres_mc_ptr IN - job's multi-core options
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_plugin_job_core_filter4(List *sock_gres_list,
-					struct job_resources *job_res);
+extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
+					struct job_resources *job_res,
+					gres_mc_data_t *tres_mc_ptr);
 
 /*
  * Select and allocate GRES to a job and update node and job GRES information
