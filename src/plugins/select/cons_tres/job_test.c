@@ -65,6 +65,7 @@ static void _block_whole_nodes(bitstr_t *node_bitmap,
 			       bitstr_t **new_core_bitmap);
 static void _build_row_bitmaps(struct part_res_record *p_ptr,
 			       struct job_record *job_ptr);
+static gres_mc_data_t *_build_gres_mc_data(struct job_record *job_ptr);
 static int  _compare_support(const void *v, const void *v1);
 static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
 			 struct job_details *details_ptr,
@@ -117,7 +118,8 @@ static avail_res_t **_select_nodes(struct job_record *job_ptr,
 				struct node_use_record *node_usage,
 				uint16_t cr_type, bool test_only,
 				bitstr_t **part_core_map,
-				bool prefer_alloc_nodes);
+				bool prefer_alloc_nodes,
+				gres_mc_data_t *tres_mc_ptr);
 static int _sort_usable_nodes_dec(void *j1, void *j2);
 static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      struct job_record *job_ptr,
@@ -1143,6 +1145,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	uint16_t *cpu_count;
 	int i, i_first, i_last;
 	avail_res_t **avail_res_array, **avail_res_array_tmp;
+	gres_mc_data_t *tres_mc_ptr;
 
 	details_ptr = job_ptr->details;
 
@@ -1199,12 +1202,15 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	 *          within avail_cores
 	 */
 	free_cores = copy_core_array(avail_cores);
+	tres_mc_ptr = _build_gres_mc_data(job_ptr);
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 					req_nodes, node_bitmap, free_cores,
 					node_usage, cr_type, test_only,
-					part_core_map, prefer_alloc_nodes);
+					part_core_map, prefer_alloc_nodes,
+					tres_mc_ptr);
 	if (!avail_res_array) {
 		/* job can not fit */
+		xfree(tres_mc_ptr);
 		FREE_NULL_BITMAP(orig_node_map);
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
@@ -1214,6 +1220,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		}
 		return SLURM_ERROR;
 	} else if (test_only) {
+		xfree(tres_mc_ptr);
 		FREE_NULL_BITMAP(orig_node_map);
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
@@ -1222,6 +1229,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			info("cons_tres: %s: test 0 pass: test_only", __func__);
 		return SLURM_SUCCESS;
 	} else if (!job_ptr->best_switch) {
+		xfree(tres_mc_ptr);
 		FREE_NULL_BITMAP(orig_node_map);
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
@@ -1314,7 +1322,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 					req_nodes, node_bitmap, free_cores,
 					node_usage, cr_type, test_only,
-					part_core_map, prefer_alloc_nodes);
+					part_core_map, prefer_alloc_nodes,
+					tres_mc_ptr);
 	if (avail_res_array && (job_ptr->best_switch)) {
 		/* job fits! We're done. */
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
@@ -1405,7 +1414,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 					req_nodes, node_bitmap, free_cores,
 					node_usage, cr_type, test_only,
-					part_core_map, prefer_alloc_nodes);
+					part_core_map, prefer_alloc_nodes,
+					tres_mc_ptr);
 	if (!avail_res_array) {
 		/*
 		 * job needs resources that are currently in use by
@@ -1454,7 +1464,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 					req_nodes, node_bitmap, free_cores,
 					node_usage, cr_type, test_only,
-					part_core_map, prefer_alloc_nodes);
+					part_core_map, prefer_alloc_nodes,
+					tres_mc_ptr);
 	if (avail_res_array) {
 		/*
 		 * To the extent possible, remove from consideration resources
@@ -1489,7 +1500,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 						free_cores_tmp, node_usage,
 						cr_type, test_only,
 						part_core_map,
-						prefer_alloc_nodes);
+						prefer_alloc_nodes,
+						tres_mc_ptr);
 			if (!avail_res_array_tmp) {
 				free_core_array(&free_cores_tmp2);
 				FREE_NULL_BITMAP(node_bitmap_tmp2);
@@ -1541,7 +1553,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 						req_nodes, node_bitmap,
 						free_cores, node_usage, cr_type,
 						test_only, part_core_map,
-						prefer_alloc_nodes);
+						prefer_alloc_nodes,
+						tres_mc_ptr);
 		if (avail_res_array &&
 		    (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
 			info("cons_tres: %s: test 4 pass - first row found",
@@ -1571,7 +1584,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 						req_nodes, node_bitmap,
 						free_cores, node_usage, cr_type,
 						test_only, part_core_map,
-						prefer_alloc_nodes);
+						prefer_alloc_nodes,
+						tres_mc_ptr);
 		if (avail_res_array) {
 			if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 				info("cons_tres: %s: test 4 pass - row %i",
@@ -1598,7 +1612,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 						req_nodes, node_bitmap,
 						free_cores, node_usage, cr_type,
 						test_only, part_core_map,
-						prefer_alloc_nodes);
+						prefer_alloc_nodes,
+						tres_mc_ptr);
 	}
 
 	if (!avail_res_array) {
@@ -1636,6 +1651,7 @@ alloc_job:
 	FREE_NULL_BITMAP(node_bitmap_tmp);
 	if (!avail_res_array || !job_ptr->best_switch) {
 		/* we were sent here to cleanup and exit */
+		xfree(tres_mc_ptr);
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
@@ -1657,6 +1673,7 @@ alloc_job:
 					  job_ptr->details->min_nodes);
 	}
 	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
+		xfree(tres_mc_ptr);
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
@@ -1713,6 +1730,7 @@ alloc_job:
 	error_code = build_job_resources(job_res, node_record_table_ptr,
 					  select_fast_schedule);
 	if (error_code != SLURM_SUCCESS) {
+		xfree(tres_mc_ptr);
 		_free_avail_res_array(avail_res_array);
 		free_job_resources(&job_res);
 		free_core_array(&avail_cores);
@@ -1794,6 +1812,7 @@ alloc_job:
 		xfree(node_gres_list);
 		xfree(sock_gres_list);
 	}
+	xfree(tres_mc_ptr);
 	_free_avail_res_array(avail_res_array);
 	free_core_array(&avail_cores);
 	if (error_code != SLURM_SUCCESS) {
@@ -2833,6 +2852,40 @@ static uint16_t _valid_uint16(uint16_t arg)
 	return arg;
 }
 
+static gres_mc_data_t *_build_gres_mc_data(struct job_record *job_ptr)
+{
+	gres_mc_data_t *tres_mc_ptr;
+
+	tres_mc_ptr = xmalloc(sizeof(gres_mc_data_t));
+	tres_mc_ptr->cpus_per_task =
+		_valid_uint16(job_ptr->details->cpus_per_task);
+	tres_mc_ptr->ntasks_per_node =
+		_valid_uint16(job_ptr->details->ntasks_per_node);
+	tres_mc_ptr->overcommit = job_ptr->details->overcommit;
+	tres_mc_ptr->whole_node = job_ptr->details->whole_node;
+	if (job_ptr->details->mc_ptr) {
+		multi_core_data_t *job_mc_ptr = job_ptr->details->mc_ptr;
+		tres_mc_ptr->boards_per_node =
+			_valid_uint16(job_mc_ptr->boards_per_node);
+		tres_mc_ptr->sockets_per_board =
+			_valid_uint16(job_mc_ptr->sockets_per_board);
+		tres_mc_ptr->sockets_per_node =
+			_valid_uint16(job_mc_ptr->sockets_per_node);
+		tres_mc_ptr->cores_per_socket =
+			_valid_uint16(job_mc_ptr->cores_per_socket);
+		tres_mc_ptr->threads_per_core =
+			_valid_uint16(job_mc_ptr->threads_per_core);
+		tres_mc_ptr->ntasks_per_board =
+			_valid_uint16(job_mc_ptr->ntasks_per_board);
+		tres_mc_ptr->ntasks_per_socket =
+			_valid_uint16(job_mc_ptr->ntasks_per_socket);
+		tres_mc_ptr->ntasks_per_core =
+			_valid_uint16(job_mc_ptr->ntasks_per_core);
+	}
+
+	return tres_mc_ptr;
+}
+
 /*
  * This is an intermediary step between _select_nodes() and _eval_nodes()
  * to tackle the knapsack problem. This code incrementally removes nodes
@@ -2844,13 +2897,12 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			 bitstr_t **avail_core, uint32_t min_nodes,
 			 uint32_t max_nodes, uint32_t req_nodes,
 			 avail_res_t **avail_res_array, uint16_t cr_type,
-			 bool prefer_alloc_nodes)
+			 bool prefer_alloc_nodes, gres_mc_data_t *tres_mc_ptr)
 {
 	int i, i_first, i_last;
 	int count, ec, most_res = 0, rem_nodes, node_cnt = 0;
 	bitstr_t *orig_node_map, *req_node_map = NULL;
 	bitstr_t **orig_core_array;
-	gres_mc_data_t *tres_mc_ptr = NULL;
 
 	if (job_ptr->details->req_node_bitmap)
 		req_node_map = job_ptr->details->req_node_bitmap;
@@ -2888,34 +2940,6 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	if ((job_ptr->details->num_tasks > 1) &&
 	    (max_nodes > job_ptr->details->num_tasks))
 		max_nodes = MAX(job_ptr->details->num_tasks, min_nodes);
-
-	/* tres_mc_ptr built once and used for all _eval_nodes() calls */
-	tres_mc_ptr = xmalloc(sizeof(gres_mc_data_t));
-	tres_mc_ptr->cpus_per_task =
-		_valid_uint16(job_ptr->details->cpus_per_task);
-	tres_mc_ptr->ntasks_per_node =
-		_valid_uint16(job_ptr->details->ntasks_per_node);
-	tres_mc_ptr->overcommit = job_ptr->details->overcommit;
-	tres_mc_ptr->whole_node = job_ptr->details->whole_node;
-	if (job_ptr->details->mc_ptr) {
-		multi_core_data_t *job_mc_ptr = job_ptr->details->mc_ptr;
-		tres_mc_ptr->boards_per_node =
-			_valid_uint16(job_mc_ptr->boards_per_node);
-		tres_mc_ptr->sockets_per_board =
-			_valid_uint16(job_mc_ptr->sockets_per_board);
-		tres_mc_ptr->sockets_per_node =
-			_valid_uint16(job_mc_ptr->sockets_per_node);
-		tres_mc_ptr->cores_per_socket =
-			_valid_uint16(job_mc_ptr->cores_per_socket);
-		tres_mc_ptr->threads_per_core =
-			_valid_uint16(job_mc_ptr->threads_per_core);
-		tres_mc_ptr->ntasks_per_board =
-			_valid_uint16(job_mc_ptr->ntasks_per_board);
-		tres_mc_ptr->ntasks_per_socket =
-			_valid_uint16(job_mc_ptr->ntasks_per_socket);
-		tres_mc_ptr->ntasks_per_core =
-			_valid_uint16(job_mc_ptr->ntasks_per_core);
-	}
 
 	/*
 	 * _eval_nodes() might need to be called more than once and is
@@ -2982,8 +3006,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			break;
 	}
 
-fini:	xfree(tres_mc_ptr);
-	FREE_NULL_BITMAP(orig_node_map);
+fini:	FREE_NULL_BITMAP(orig_node_map);
 	free_core_array(&orig_core_array);
 
 	return ec;
@@ -3822,6 +3845,7 @@ static avail_res_t **_get_res_avail(struct job_record *job_ptr,
  * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
  *                     partition or NULL if don't care
  * IN: prefer_alloc_nodes - select currently allocated nodes first
+ * IN: tres_mc_ptr   - job's multi-core options
  * RET: array of avail_res_t pointers, free using _free_avail_res_array().
  *	NULL on error
  */
@@ -3832,7 +3856,8 @@ static avail_res_t **_select_nodes(struct job_record *job_ptr,
 				struct node_use_record *node_usage,
 				uint16_t cr_type, bool test_only,
 				bitstr_t **part_core_map,
-				bool prefer_alloc_nodes)
+				bool prefer_alloc_nodes,
+				gres_mc_data_t *tres_mc_ptr)
 {
 	int i, rc;
 	uint32_t n;
@@ -3876,7 +3901,7 @@ static avail_res_t **_select_nodes(struct job_record *job_ptr,
 	}
 	rc = _choose_nodes(job_ptr, node_bitmap, avail_core, min_nodes,
 			   max_nodes, req_nodes, avail_res_array, cr_type,
-			   prefer_alloc_nodes);
+			   prefer_alloc_nodes, tres_mc_ptr);
 	if (rc != SLURM_SUCCESS)
 		goto fini;
 	_log_select_maps("_select_nodes/choose_nodes", node_bitmap, avail_core);
