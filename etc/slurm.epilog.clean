@@ -23,6 +23,14 @@ if [ $SLURM_UID -lt 100 ] ; then
 fi
 
 job_list=`${SLURM_BIN}squeue --noheader --format=%A --user=$SLURM_UID --node=localhost`
+squeue_exit_status=$?
+#
+# Don't try to kill if squeue command fails
+#
+if [ $squeue_exit_status -ne 0 ]; then
+        exit 0
+fi
+
 for job_id in $job_list
 do
 	if [ $job_id -ne $SLURM_JOB_ID ] ; then
