@@ -2201,10 +2201,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 		return SLURM_SUCCESS;
 	}
 
-	if (!assoc_mgr_assoc_list) {
-		error("No assoc list available, this should never happen");
-		return SLURM_ERROR;
-	}
+	xassert(assoc_mgr_assoc_list);
 
 	itr = list_iterator_create(assoc_mgr_assoc_list);
 	while ((found_assoc = list_next(itr))) {
