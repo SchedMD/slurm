@@ -350,10 +350,7 @@ When installed, the Slurm PAM module will prevent users from logging
 into any node that has not be assigned to that user.
 On job termination, any processes initiated by the user outside of
 Slurm's control may be killed using an <i>Epilog</i> script configured
-in <i>slurm.conf</i>.
-An example of such a script is included as <i>etc/slurm.epilog.clean</i>.
-Without these mechanisms any user can login to any compute node,
-even those allocated to other users.</p>
+in <i>slurm.conf</i>.</p>
 
 <h2><a name="Config"></a>Configuration</h2>
 <p>The Slurm configuration file includes a wide variety of parameters.

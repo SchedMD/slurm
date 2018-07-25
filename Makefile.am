@@ -13,7 +13,6 @@ EXTRA_DIST =			\
 	etc/layouts.d.power_cpufreq.conf.example \
 	etc/layouts.d.unit.conf.example \
 	etc/slurm.conf.example	\
-	etc/slurm.epilog.clean	\
 	etc/slurmctld.service.in \
 	etc/slurmd.service.in	\
 	etc/slurmdbd.conf.example \

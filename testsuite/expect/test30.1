@@ -141,10 +141,6 @@ expect {
 		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
 		exp_continue
 	}
-	-re "\nwarning: File listed twice: /etc/slurm/slurm.epilog.clean" {
-		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
-		exp_continue
-	}
 	-re "\nwarning: remember to run 'libtool --finish" {
 		send_user "\nWARNING: This seems to be a harmless warning.\n"
 		exp_continue
@@ -230,10 +226,6 @@ expect {
 		exp_continue
 	}
 	-re "\nwarning: File listed twice: /etc/slurm/slurm.conf.example" {
-		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
-		exp_continue
-	}
-	-re "\nwarning: File listed twice: /etc/slurm/slurm.epilog.clean" {
 		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
 		exp_continue
 	}
