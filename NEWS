@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- Add ability to reboot down nodes with scontrol reboot_nodes.
  -- Protect against sending to the slurmdbd if the connection has gone away.
  -- Fix invalid read when not using backup slurmctlds.
+ -- Prevent acct coordinators from changing default acct on add user.
 
 * Changes in Slurm 18.08.0
 ==========================
