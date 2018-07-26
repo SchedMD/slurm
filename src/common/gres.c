@@ -5783,6 +5783,195 @@ static int _get_sock_cnt(struct job_resources *job_res, int node_inx,
 
 /*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
+ *	per-job resource specification. Use only socket-local GRES
+ * job_res IN - job resource allocation
+ * node_inx IN - global node index
+ * job_node_inx IN - node index for this job's allocation
+ * rem_nodes IN - count of nodes remaining to place resources on
+ * job_specs IN - job request specifications, UPDATED: set bits in
+ *		  gres_bit_select
+ * node_specs IN - node resource request specifications
+ * job_id IN - job ID for logging
+ * tres_mc_ptr IN - job's multi-core options
+ * RET 0:more work, 1:fini
+ */
+static int _set_job_bits1(struct job_resources *job_res, int node_inx,
+			  int job_node_inx, int rem_nodes,
+			  sock_gres_t *sock_gres, uint32_t job_id,
+			  gres_mc_data_t *tres_mc_ptr)
+{
+	int core_offset, gres_cnt;
+	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
+	int c, i, g, rc, s;
+	gres_job_state_t *job_specs;
+	gres_node_state_t *node_specs;
+	int *used_sock = NULL, alloc_gres_cnt = 0;
+	int max_gres;
+	int fini = 0;
+
+	job_specs = sock_gres->job_specs;
+	node_specs = sock_gres->node_specs;
+	if (job_specs->gres_per_job == job_specs->total_gres)
+		fini = 1;
+	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
+				   &cores_per_socket_cnt);
+	if (rc != SLURM_SUCCESS) {
+		error("cons_tres: %s: Invalid socket/core count for job %u on node %d",
+		      __func__, job_id, node_inx);
+		return rc;
+	}
+	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
+	if (core_offset < 0) {
+		error("cons_tres: %s: Invalid core offset for job %u on node %d",
+		      __func__, job_id, node_inx);
+		return rc;
+	}
+	i = sock_gres->sock_cnt;
+	if ((i != 0) && (i != sock_cnt)) {
+		error("cons_tres: %s: Inconsistent socket count (%d != %d) for job %u on node %d",
+		      __func__, i, sock_cnt, job_id, node_inx);
+		sock_cnt = MIN(sock_cnt, i);
+	}
+
+	xassert(job_res->core_bitmap);
+	if (job_node_inx == 0)
+		job_specs->total_gres = 0;
+	max_gres = job_specs->gres_per_job - job_specs->total_gres -
+		   (rem_nodes - 1);
+	used_sock = xmalloc(sizeof(int) * sock_cnt);
+	gres_cnt = bit_size(job_specs->gres_bit_select[node_inx]);
+	for (s = 0; s < sock_cnt; s++) {
+		for (c = 0; c < cores_per_socket_cnt; c++) {
+			i = (s * cores_per_socket_cnt) + c;
+			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
+				used_sock[s]++;
+				break;
+			}
+		}
+	}
+
+	/*
+	 * Now pick specific GRES for these sockets.
+	 */
+	for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt < max_gres)); s++) {
+		if (!used_sock[s])
+			continue;
+		for (g = 0; ((g < gres_cnt) && (alloc_gres_cnt < max_gres));
+		     g++) {
+			if (!bit_test(sock_gres->bits_by_sock[s], g))
+				continue;   /* GRES not on this socket */
+			if (bit_test(node_specs->gres_bit_alloc, g) ||
+			    bit_test(job_specs->gres_bit_select[node_inx], g))
+				continue;   /* Already allocated GRES */
+			bit_set(job_specs->gres_bit_select[node_inx], g);
+			alloc_gres_cnt++;
+			job_specs->total_gres++;
+		}
+	}
+	if (alloc_gres_cnt == 0) {
+		for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt == 0)); s++) {
+			if (used_sock[s])
+				continue;
+			for (g = 0; g < gres_cnt; g++) {
+				if (!bit_test(sock_gres->bits_by_sock[s], g))
+					continue;   /* GRES not on this socket */
+				if (bit_test(node_specs->gres_bit_alloc, g) ||
+				    bit_test(job_specs->
+					     gres_bit_select[node_inx], g))
+					continue;   /* Already allocated GRES */
+				bit_set(job_specs->gres_bit_select[node_inx],g);
+				alloc_gres_cnt++;
+				job_specs->total_gres++;
+				break;
+			}
+		}
+	}
+	if (alloc_gres_cnt == 0) {
+		error("cons_tres: %s: job %u failed to find any available GRES on node %d",
+		      __func__, job_id, node_inx);
+	}
+	xfree(used_sock);
+	if (job_specs->gres_per_job == job_specs->total_gres)
+		fini = 1;
+	return fini;
+}
+
+/*
+ * Select specific GRES (set GRES bitmap) for this job on this node based upon
+ *	per-job resource specification. Use any GRES on the node
+ * job_res IN - job resource allocation
+ * node_inx IN - global node index
+ * job_node_inx IN - node index for this job's allocation
+ * job_specs IN - job request specifications, UPDATED: set bits in
+ *		  gres_bit_select
+ * node_specs IN - node resource request specifications
+ * job_id IN - job ID for logging
+ * tres_mc_ptr IN - job's multi-core options
+ * RET 0:more work, 1:fini
+ */
+static int _set_job_bits2(struct job_resources *job_res, int node_inx,
+			  int job_node_inx, sock_gres_t *sock_gres,
+			  uint32_t job_id, gres_mc_data_t *tres_mc_ptr)
+{
+	int core_offset, gres_cnt;
+	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
+	int i, g, rc, s;
+	gres_job_state_t *job_specs;
+	gres_node_state_t *node_specs;
+	int fini = 0;
+
+	job_specs = sock_gres->job_specs;
+	node_specs = sock_gres->node_specs;
+	if (job_specs->gres_per_job == job_specs->total_gres)
+		fini = 1;
+	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
+				   &cores_per_socket_cnt);
+	if (rc != SLURM_SUCCESS) {
+		error("cons_tres: %s: Invalid socket/core count for job %u on node %d",
+		      __func__, job_id, node_inx);
+		return rc;
+	}
+	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
+	if (core_offset < 0) {
+		error("cons_tres: %s: Invalid core offset for job %u on node %d",
+		      __func__, job_id, node_inx);
+		return rc;
+	}
+	i = sock_gres->sock_cnt;
+	if ((i != 0) && (i != sock_cnt)) {
+		error("cons_tres: %s: Inconsistent socket count (%d != %d) for job %u on node %d",
+		      __func__, i, sock_cnt, job_id, node_inx);
+		sock_cnt = MIN(sock_cnt, i);
+	}
+
+	xassert(job_res->core_bitmap);
+	/*
+	 * Now pick specific GRES for these sockets.
+	 */
+	gres_cnt = bit_size(job_specs->gres_bit_select[node_inx]);
+	for (s = 0;
+	     ((s < sock_cnt) &&
+	      (job_specs->gres_per_job > job_specs->total_gres)); s++) {
+		for (g = 0;
+		     ((g < gres_cnt) &&
+		      (job_specs->gres_per_job > job_specs->total_gres)); g++) {
+			if (!bit_test(sock_gres->bits_by_sock[s], g))
+				continue;   /* GRES not on this socket */
+			if (bit_test(node_specs->gres_bit_alloc, g) ||
+			    bit_test(job_specs->gres_bit_select[node_inx], g))
+				continue;   /* Already allocated GRES */
+			bit_set(job_specs->gres_bit_select[node_inx], g);
+			job_specs->total_gres++;
+		}
+	}
+	if (job_specs->gres_per_job == job_specs->total_gres)
+		fini = 1;
+	return fini;
+}
+
+
+/*
+ * Select specific GRES (set GRES bitmap) for this job on this node based upon
  *	per-node resource specification
  * job_res IN - job resource allocation
  * node_inx IN - global node index
@@ -6086,12 +6275,15 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 	sock_gres_t *sock_gres;
 	gres_job_state_t *job_specs;
 	gres_node_state_t *node_specs;
-	int i, i_first, i_last, j, node_inx = -1, gres_cnt, node_cnt;
+	int i, i_first, i_last, j, node_inx = -1, gres_cnt;
+	int node_cnt, rem_node_cnt;
+	int job_fini = -1;	/* -1: not applicable, 0: more work, 1:vfini */
 
 	if (!job_res || !job_res->node_bitmap)
 		return SLURM_ERROR;
 
 	node_cnt = bit_size(job_res->node_bitmap);
+	rem_node_cnt = bit_set_count(job_res->node_bitmap);
 	i_first = bit_ffs(job_res->node_bitmap);
 	if (i_first != -1)
 		i_last  = bit_fls(job_res->node_bitmap);
@@ -6156,20 +6348,51 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 			} else if (job_specs->gres_per_task) {
 //FIXME: FLESH OUT LOGIC with filters and counters
 for (j = 0; j <= i; j++)
-  bit_set(job_specs->gres_bit_select[i], j);
+  bit_set(job_specs->gres_bit_select[i], j+1);
 			} else if (job_specs->gres_per_job) {
-//FIXME: FLESH OUT LOGIC with filters and counters
-for (j = 0; j <= i; j++)
-  bit_set(job_specs->gres_bit_select[i], j);
+				job_fini = _set_job_bits1(job_res, i, node_inx,
+					       rem_node_cnt--, sock_gres,
+					       job_id, tres_mc_ptr);
 			} else {
-				error("cons_tres: %s job_spec lacks GRES counter",
-				      __func__);
+				error("cons_tres: %s job %u job_spec lacks GRES counter",
+				      __func__, job_id);
 for (j = 0; j <= i; j++)
   bit_set(job_specs->gres_bit_select[i], j);
 			}
 		}
 		list_iterator_destroy(sock_gres_iter);
 	}
+
+	if (job_fini == 0) {
+		/* Need more GRES to satisfy gres-per-job option */
+		node_inx = -1;
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(job_res->node_bitmap, i))
+				continue;
+			sock_gres_iter =
+				list_iterator_create(sock_gres_list[++node_inx]);
+			while ((sock_gres = (sock_gres_t *)
+					    list_next(sock_gres_iter))) {
+				job_specs = sock_gres->job_specs;
+				node_specs = sock_gres->node_specs;
+				if (!job_specs || !node_specs)
+					continue;
+				job_fini = _set_job_bits2(job_res, i, node_inx,
+							  sock_gres, job_id,
+							  tres_mc_ptr);
+				if (job_fini == 1)
+					break;
+			}
+			list_iterator_destroy(sock_gres_iter);
+			if (job_fini == 1)
+				break;
+		}
+		if (job_fini == 0) {
+			error("cons_tres: %s job %u failed to satisfy gres-per-job counter",
+			      __func__, job_id);
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
