@@ -5782,7 +5782,125 @@ static int _get_sock_cnt(struct job_resources *job_res, int node_inx,
 }
 
 /*
- * Select specific GRES (set GRES bitmap) for this job on this node
+ * Select specific GRES (set GRES bitmap) for this job on this node based upon
+ *	per-node resource specification
+ * job_res IN - job resource allocation
+ * node_inx IN - global node index
+ * job_node_inx IN - node index for this job's allocation
+ * job_specs IN - job request specifications, UPDATED: set bits in
+ *		  gres_bit_select
+ * node_specs IN - node resource request specifications
+ * job_id IN - job ID for logging
+ * tres_mc_ptr IN - job's multi-core options
+ */
+static void _set_node_bits(struct job_resources *job_res, int node_inx,
+			   int job_node_inx, sock_gres_t *sock_gres,
+			   uint32_t job_id, gres_mc_data_t *tres_mc_ptr)
+{
+	int core_offset, gres_cnt;
+	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
+	int c, i, g, rc, s;
+	gres_job_state_t *job_specs;
+	gres_node_state_t *node_specs;
+	int *used_sock = NULL, alloc_gres_cnt = 0;
+
+	job_specs = sock_gres->job_specs;
+	node_specs = sock_gres->node_specs;
+	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
+				   &cores_per_socket_cnt);
+	if (rc != SLURM_SUCCESS) {
+		error("cons_tres: %s: Invalid socket/core count for job %u on node %d",
+		      __func__, job_id, node_inx);
+		return;
+	}
+	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
+	if (core_offset < 0) {
+		error("cons_tres: %s: Invalid core offset for job %u on node %d",
+		      __func__, job_id, node_inx);
+		return;
+	}
+	i = sock_gres->sock_cnt;
+	if ((i != 0) && (i != sock_cnt)) {
+		error("cons_tres: %s: Inconsistent socket count (%d != %d) for job %u on node %d",
+		      __func__, i, sock_cnt, job_id, node_inx);
+		sock_cnt = MIN(sock_cnt, i);
+	}
+
+	xassert(job_res->core_bitmap);
+	used_sock = xmalloc(sizeof(int) * sock_cnt);
+	gres_cnt = bit_size(job_specs->gres_bit_select[node_inx]);
+	for (s = 0; s < sock_cnt; s++) {
+		for (c = 0; c < cores_per_socket_cnt; c++) {
+			i = (s * cores_per_socket_cnt) + c;
+			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
+				used_sock[s]++;
+				break;
+			}
+		}
+	}
+
+	/*
+	 * Now pick specific GRES for these sockets.
+	 * First: Try to place one GRES per socket in this job's allocation.
+	 * Second: Try to place additional GRES on allocated sockets.
+	 * Third: Use any additional available GRES.
+	 */
+	for (s = 0;
+	     ((s < sock_cnt) && (alloc_gres_cnt < job_specs->gres_per_node));
+	     s++) {
+		if (!used_sock[s])
+			continue;
+		for (g = 0; g < gres_cnt; g++) {
+			if (!bit_test(sock_gres->bits_by_sock[s], g))
+				continue;   /* GRES not on this socket */
+			if (bit_test(node_specs->gres_bit_alloc, g) ||
+			    bit_test(job_specs->gres_bit_select[node_inx], g))
+				continue;   /* Already allocated GRES */
+			bit_set(job_specs->gres_bit_select[node_inx], g);
+			alloc_gres_cnt++;
+			break;
+		}
+	}
+	/* Try to place additional GRES on allocated sockets. */
+	for (s = 0;
+	     ((s < sock_cnt) && (alloc_gres_cnt < job_specs->gres_per_node));
+	     s++) {
+		if (!used_sock[s])
+			continue;
+		for (g = 0; g < gres_cnt; g++) {
+			if (!bit_test(sock_gres->bits_by_sock[s], g))
+				continue;   /* GRES not on this socket */
+			if (bit_test(node_specs->gres_bit_alloc, g) ||
+			    bit_test(job_specs->gres_bit_select[node_inx], g))
+				continue;   /* Already allocated GRES */
+			bit_set(job_specs->gres_bit_select[node_inx], g);
+			if (++alloc_gres_cnt == job_specs->gres_per_node)
+				break;
+		}
+	}
+	/* Use any additional available GRES. */
+	for (s = 0;
+	     ((s < sock_cnt) && (alloc_gres_cnt < job_specs->gres_per_node));
+	     s++) {
+		if (used_sock[s])
+			continue;
+		for (g = 0; g < gres_cnt; g++) {
+			if (!bit_test(sock_gres->bits_by_sock[s], g))
+				continue;   /* GRES not on this socket */
+			if (bit_test(node_specs->gres_bit_alloc, g) ||
+			    bit_test(job_specs->gres_bit_select[node_inx], g))
+				continue;   /* Already allocated GRES */
+			bit_set(job_specs->gres_bit_select[node_inx], g);
+			if (++alloc_gres_cnt == job_specs->gres_per_node)
+				break;
+		}
+	}
+	xfree(used_sock);
+}
+
+/*
+ * Select specific GRES (set GRES bitmap) for this job on this node based upon
+ *	per-socket resource specification
  * job_res IN - job resource allocation
  * node_inx IN - global node index
  * job_node_inx IN - node index for this job's allocation
@@ -5928,7 +6046,9 @@ static int _get_job_cnt(struct job_resources *job_res, int node_inx)
 //FIXME: Not sure what to do here
 return 1;
 }
-static int _get_gres_node_cnt(gres_node_state_t *node_specs)
+
+/* Return count of GRES on this node */
+static int _get_gres_node_cnt(gres_node_state_t *node_specs, int node_inx)
 {
 	int i, gres_cnt = 0;
 
@@ -5938,12 +6058,15 @@ static int _get_gres_node_cnt(gres_node_state_t *node_specs)
 	}
 
 	/* This logic should be redundant */
-	gres_cnt = 0;
-	for (i = 0; i < node_specs->topo_cnt; i++) {
-		gres_cnt = MAX(gres_cnt,
-			       bit_size(node_specs->topo_gres_bitmap[i]));
+	if (node_specs->topo_gres_bitmap && node_specs->topo_gres_bitmap[0]) {
+		gres_cnt = bit_size(node_specs->topo_gres_bitmap[0]);
+		return gres_cnt;
 	}
 
+	/* This logic should also be redundant */
+	gres_cnt = 0;
+	for (i = 0; i < node_specs->topo_cnt; i++)
+		gres_cnt += node_specs->topo_gres_cnt_avail[i];
 	return gres_cnt;
 }
 
@@ -6021,13 +6144,12 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					xmalloc(sizeof(bitstr_t *) * node_cnt);
 			}
 
-			gres_cnt = _get_gres_node_cnt(node_specs);
+			gres_cnt = _get_gres_node_cnt(node_specs, node_inx);
 			job_specs->gres_bit_select[i] = bit_alloc(gres_cnt);
 
 			if (job_specs->gres_per_node) {
-//FIXME: FLESH OUT LOGIC with filters and counters
-for (j = 0; j <= job_specs->gres_per_node; j++)
-  bit_set(job_specs->gres_bit_select[i], j);
+				_set_node_bits(job_res, i, node_inx,
+					       sock_gres, job_id, tres_mc_ptr);
 			} else if (job_specs->gres_per_socket) {
 				_set_sock_bits(job_res, i, node_inx,
 					       sock_gres, job_id, tres_mc_ptr);
