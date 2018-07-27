@@ -1458,7 +1458,7 @@ static int _schedule(uint32_t job_limit)
 	 */
 	if (select_g_update_basil()) {
 		unlock_slurmctld(job_write_lock);
-		debug4("sched: not scheduling due to ALPS");
+		debug3("sched: not scheduling due to ALPS");
 		goto out;
 	}
 #endif
