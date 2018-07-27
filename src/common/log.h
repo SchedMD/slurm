@@ -264,4 +264,15 @@ void	debug3(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	debug4(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	debug5(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 
+/*
+ * Like above logging messages, but prepend "sched: " to the log entry
+ * and route the message into the sched_log if enabled.
+ */
+int	sched_error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	sched_info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	sched_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	sched_debug(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	sched_debug2(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	sched_debug3(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+
 #endif /* !_LOG_H */

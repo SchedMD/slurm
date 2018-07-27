@@ -107,6 +107,12 @@ strong_alias(debug2,		slurm_debug2);
 strong_alias(debug3,		slurm_debug3);
 strong_alias(debug4,		slurm_debug4);
 strong_alias(debug5,		slurm_debug5);
+strong_alias(sched_error,	slurm_sched_error);
+strong_alias(sched_info,	slurm_sched_info);
+strong_alias(sched_verbose,	slurm_sched_verbose);
+strong_alias(sched_debug,	slurm_sched_debug);
+strong_alias(sched_debug2,	slurm_sched_debug2);
+strong_alias(sched_debug3,	slurm_sched_debug3);
 
 /*
 ** struct defining a "log" type
@@ -975,16 +981,16 @@ static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list arg
 		_log_init(NULL, opts, 0, NULL);
 	}
 
-	if (SCHED_LOG_INITIALIZED &&
-	    (sched_log->opt.logfile_level > LOG_LEVEL_QUIET) &&
-	    (xstrncmp(fmt, "sched: ", 7) == 0)) {
+	if (SCHED_LOG_INITIALIZED && sched &&
+	    (sched_log->opt.logfile_level > LOG_LEVEL_QUIET)) {
 		buf = vxstrfmt(fmt, args);
 		xlogfmtcat(&msgbuf, "[%M] %s%s%s", sched_log->fpfx, pfx, buf);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
-			    "%s\n", msgbuf);
+			    "sched: %s\n", msgbuf);
 		fflush(sched_log->logfp);
 		xfree(msgbuf);
 	}
+
 	if ((level > log->opt.syslog_level)  &&
 	    (level > log->opt.logfile_level) &&
 	    (level > log->opt.stderr_level)) {
@@ -1002,27 +1008,28 @@ static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list arg
 
 		case LOG_LEVEL_ERROR:
 			priority = LOG_ERR;
-			pfx = "error: ";
+			pfx = sched? "error: sched: " : "error: ";
 			break;
 
 		case LOG_LEVEL_INFO:
 		case LOG_LEVEL_VERBOSE:
 			priority = LOG_INFO;
+			pfx = sched ? "sched: " : "";
 			break;
 
 		case LOG_LEVEL_DEBUG:
 			priority = LOG_DEBUG;
-			pfx = "debug:  ";
+			pfx = sched ? "debug:  sched: " : "debug:  ";
 			break;
 
 		case LOG_LEVEL_DEBUG2:
 			priority = LOG_DEBUG;
-			pfx = "debug2: ";
+			pfx = sched ? "debug: sched: " : "debug2: ";
 			break;
 
 		case LOG_LEVEL_DEBUG3:
 			priority = LOG_DEBUG;
-			pfx = "debug3: ";
+			pfx = sched ? "debug3: sched: " : "debug3: ";
 			break;
 
 		case LOG_LEVEL_DEBUG4:
@@ -1231,6 +1238,66 @@ void debug5(const char *fmt, ...)
 
 	va_start(ap, fmt);
 	_log_msg(LOG_LEVEL_DEBUG5, false, fmt, ap);
+	va_end(ap);
+}
+
+int sched_error(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	_log_msg(LOG_LEVEL_ERROR, true, fmt, ap);
+	va_end(ap);
+
+	/*
+	 *  Return SLURM_ERROR so calling functions can
+	 *    do "return error (...);"
+	 */
+	return SLURM_ERROR;
+}
+
+void sched_info(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	_log_msg(LOG_LEVEL_INFO, true, fmt, ap);
+	va_end(ap);
+}
+
+void sched_verbose(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	_log_msg(LOG_LEVEL_VERBOSE, true, fmt, ap);
+	va_end(ap);
+}
+
+void sched_debug(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	_log_msg(LOG_LEVEL_DEBUG, true, fmt, ap);
+	va_end(ap);
+}
+
+void sched_debug2(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	_log_msg(LOG_LEVEL_DEBUG2, true, fmt, ap);
+	va_end(ap);
+}
+
+void sched_debug3(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	_log_msg(LOG_LEVEL_DEBUG3, true, fmt, ap);
 	va_end(ap);
 }
 
