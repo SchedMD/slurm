@@ -961,7 +961,7 @@ _log_printf(log_t *log, cbuf_t cb, FILE *stream, const char *fmt, ...)
  * log a message at the specified level to facilities that have been
  * configured to receive messages at that level
  */
-static void log_msg(log_level_t level, const char *fmt, va_list args)
+static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list args)
 {
 	char *pfx = "";
 	char *buf = NULL;
@@ -1130,7 +1130,7 @@ void fatal(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_FATAL, fmt, ap);
+	_log_msg(LOG_LEVEL_FATAL, false, fmt, ap);
 	va_end(ap);
 	log_flush();
 
@@ -1145,7 +1145,7 @@ void fatal_abort(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_FATAL, fmt, ap);
+	_log_msg(LOG_LEVEL_FATAL, false, fmt, ap);
 	va_end(ap);
 	log_flush();
 
@@ -1157,7 +1157,7 @@ int error(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_ERROR, fmt, ap);
+	_log_msg(LOG_LEVEL_ERROR, false, fmt, ap);
 	va_end(ap);
 
 	/*
@@ -1172,7 +1172,7 @@ void info(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_INFO, fmt, ap);
+	_log_msg(LOG_LEVEL_INFO, false, fmt, ap);
 	va_end(ap);
 }
 
@@ -1181,7 +1181,7 @@ void verbose(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_VERBOSE, fmt, ap);
+	_log_msg(LOG_LEVEL_VERBOSE, false, fmt, ap);
 	va_end(ap);
 }
 
@@ -1190,7 +1190,7 @@ void debug(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_DEBUG, fmt, ap);
+	_log_msg(LOG_LEVEL_DEBUG, false, fmt, ap);
 	va_end(ap);
 }
 
@@ -1199,7 +1199,7 @@ void debug2(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_DEBUG2, fmt, ap);
+	_log_msg(LOG_LEVEL_DEBUG2, false, fmt, ap);
 	va_end(ap);
 }
 
@@ -1208,7 +1208,7 @@ void debug3(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_DEBUG3, fmt, ap);
+	_log_msg(LOG_LEVEL_DEBUG3, false, fmt, ap);
 	va_end(ap);
 }
 
@@ -1221,7 +1221,7 @@ void debug4(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_DEBUG4, fmt, ap);
+	_log_msg(LOG_LEVEL_DEBUG4, false, fmt, ap);
 	va_end(ap);
 }
 
@@ -1230,7 +1230,7 @@ void debug5(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg(LOG_LEVEL_DEBUG5, fmt, ap);
+	_log_msg(LOG_LEVEL_DEBUG5, false, fmt, ap);
 	va_end(ap);
 }
 
