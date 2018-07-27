@@ -59,7 +59,7 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int init(void)
 {
-	verbose( "sched: Built-in scheduler plugin loaded" );
+	sched_verbose("Built-in scheduler plugin loaded");
 
 	slurm_mutex_lock( &thread_flag_mutex );
 	if ( builtin_thread ) {

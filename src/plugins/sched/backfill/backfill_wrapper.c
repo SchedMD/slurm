@@ -63,7 +63,7 @@ int init( void )
 	if (slurmctld_config.scheduling_disabled)
 		return SLURM_SUCCESS;
 
-	verbose( "sched: Backfill scheduler plugin loaded" );
+	sched_verbose("Backfill scheduler plugin loaded");
 
 	slurm_mutex_lock( &thread_flag_mutex );
 	if ( backfill_thread ) {

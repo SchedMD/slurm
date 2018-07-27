@@ -55,7 +55,7 @@ const uint32_t		plugin_version	= SLURM_VERSION_NUMBER;
 
 int init(void)
 {
-	verbose( "sched: Hold scheduler plugin loaded" );
+	sched_verbose("Hold scheduler plugin loaded");
 	return SLURM_SUCCESS;
 }
 
