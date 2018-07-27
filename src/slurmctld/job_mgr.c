@@ -4663,7 +4663,9 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 				if ((slurmctld_conf.enforce_part_limits ==
 				     PARTITION_ENFORCE_ANY) ||
 				    (slurmctld_conf.enforce_part_limits ==
-				     PARTITION_ENFORCE_NONE)) {
+				     PARTITION_ENFORCE_NONE) ||
+				    (!test_only &&
+				     (part_limits_rc == WAIT_NO_REASON))) {
 					break;
 				}
 			}
