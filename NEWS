@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix segfault in slurmctld when a job's node bitmap is NULL during a
     scheduling cycle.  Primarily caused by EnforcePartLimits=ALL.
+ -- Remove erroneous unlock in acct_gather_energy/ipmi.
 
 * Changes in Slurm 17.11.8
 ==========================

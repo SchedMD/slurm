@@ -646,7 +646,6 @@ static int _thread_init(void)
 			sensor_reading_flags ^=
 				IPMI_MONITORING_SENSOR_READING_FLAGS_REREAD_SDR_CACHE;
 	}
-	slurm_mutex_unlock(&ipmi_mutex);
 
 	if (rc != SLURM_SUCCESS)
 		if (ipmi_ctx)
