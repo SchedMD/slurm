@@ -312,7 +312,8 @@ extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 	} else if (!xstrncasecmp(type, "Users", MAX(command_len, 1))) {
 		if (!assoc_cond->user_list)
 			assoc_cond->user_list = list_create(slurm_destroy_char);
-		if (slurm_addto_char_list(assoc_cond->user_list, value))
+		if (slurm_addto_char_list_with_case(assoc_cond->user_list,
+						    value, user_case_norm))
 			set = 1;
 	}
 

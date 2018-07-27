@@ -120,8 +120,9 @@ static int _set_cond(int *start, int argc, char **argv,
 					    MAX(command_len, 1))
 			   || !xstrncasecmp(argv[i], "Users",
 					    MAX(command_len, 1))) {
-			if (slurm_addto_char_list(assoc_cond->user_list,
-						 argv[i]+end))
+			if (slurm_addto_char_list_with_case(assoc_cond->user_list,
+							    argv[i]+end,
+							    user_case_norm))
 				u_set = 1;
 			else
 				exit_code=1;
@@ -721,8 +722,9 @@ extern int sacctmgr_add_user(int argc, char **argv)
 		if (!end
 		   || !xstrncasecmp(argv[i], "Names", MAX(command_len, 1))
 		   || !xstrncasecmp(argv[i], "Users", MAX(command_len, 1))) {
-			if (!slurm_addto_char_list(assoc_cond->user_list,
-						 argv[i]+end))
+			if (!slurm_addto_char_list_with_case(assoc_cond->user_list,
+							     argv[i]+end,
+							     user_case_norm))
 				exit_code=1;
 		} else if (!xstrncasecmp(argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
@@ -1972,7 +1974,9 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 				if (!del_user_list)
 					del_user_list = list_create(
 						slurm_destroy_char);
-				slurm_addto_char_list(del_user_list, tmp);
+				slurm_addto_char_list_with_case(del_user_list,
+								tmp,
+								user_case_norm);
 			}
 		}
 		list_iterator_destroy(itr);
@@ -2022,8 +2026,9 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 						       "...\n");
 					}
 					printf("  %s\n", user->name);
-					slurm_addto_char_list(del_user_list,
-							      user->name);
+					slurm_addto_char_list_with_case(del_user_list,
+									user->name,
+									user_case_norm);
 				}
 				list_iterator_destroy(itr);
 				FREE_NULL_LIST(user_list);

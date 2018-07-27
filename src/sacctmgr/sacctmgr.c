@@ -63,6 +63,9 @@ uint32_t my_uid = 0;
 List g_qos_list = NULL;
 List g_res_list = NULL;
 List g_tres_list = NULL;
+
+/* by default, normalize all usernames to lower case */
+bool user_case_norm = true;
 bool tree_display = 0;
 
 static void	_add_it(int argc, char **argv);

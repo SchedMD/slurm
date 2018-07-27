@@ -217,6 +217,7 @@ extern List g_qos_list;
 extern List g_res_list;
 extern List g_tres_list;
 
+extern bool user_case_norm;
 extern bool tree_display;
 
 extern bool sacctmgr_check_default_qos(uint32_t qos_id,
