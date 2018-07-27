@@ -110,7 +110,7 @@ expect {
 		send_user "\nFAILURE: salloc not responding\n"
 		send_user "This may not be a real failure if the system "
 		send_user "lacks three _contiguous_ nodes\n"
-		slow_kill $srun_pid
+		slow_kill $salloc_pid
 		exit 1
 	}
 	eof {
