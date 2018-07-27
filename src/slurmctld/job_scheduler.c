@@ -1657,8 +1657,8 @@ next_task:
 			if (skip_job) {
 				if (job_ptr->part_ptr == skip_part_ptr)
 					continue;
-				debug2("sched: reached partition %s job limit",
-				       job_ptr->part_ptr->name);
+				sched_debug2("reached partition %s job limit",
+					     job_ptr->part_ptr->name);
 				if (job_ptr->state_reason == WAIT_NO_REASON) {
 					xfree(job_ptr->state_desc);
 					job_ptr->state_reason = WAIT_PRIORITY;

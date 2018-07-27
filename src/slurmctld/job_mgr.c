@@ -4988,8 +4988,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	if (!will_run) {
-		debug2("sched: JobId=%u allocated resources: NodeList=%s",
-		       job_ptr->job_id, job_ptr->nodes);
+		sched_debug2("JobId=%u allocated resources: NodeList=%s",
+			     job_ptr->job_id, job_ptr->nodes);
 		rebuild_job_part_list(job_ptr);
 	}
 

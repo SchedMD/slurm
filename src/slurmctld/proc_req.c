@@ -1346,8 +1346,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		goto send_msg;
 	}
 
-	debug2("sched: Processing RPC: REQUEST_JOB_PACK_ALLOCATION from uid=%d",
-	       uid);
+	sched_debug2("Processing RPC: REQUEST_JOB_PACK_ALLOCATION from uid=%d",
+		     uid);
 
 	/*
 	 * If any job component has required nodes, those nodes must be excluded
@@ -1579,8 +1579,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		goto send_msg;
 	}
 
-	debug2("sched: Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%d",
-	       uid);
+	sched_debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%d",
+		     uid);
 
 	/* do RPC call */
 	if ((job_desc_msg->alloc_node == NULL) ||
