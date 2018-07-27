@@ -705,10 +705,10 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 	char	*intermediate_fmt = NULL;
 	char	*out_string = NULL;
 	char	*p;
-	int	found_other_formats = 0;
+	bool found_other_formats = false;
 
 	while (*fmt != '\0') {
-		int is_our_format = 0;
+		bool is_our_format = false;
 		p = (char *)strchr(fmt, '%');
 		if (p == NULL) {
 			/*
@@ -729,10 +729,10 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				case 't':
 				case 'T':
 				case 'M':
-					is_our_format = 1;
+					is_our_format = true;
 					break;
 				default:
-					found_other_formats = 1;
+					found_other_formats = true;
 					break;
 			}
 		} while (!is_our_format &&
