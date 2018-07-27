@@ -235,8 +235,14 @@ extern int slurm_char_list_copy(List dst, List src)
 	return SLURM_SUCCESS;
 }
 
-/* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
+{
+	return slurm_addto_char_list_with_case(char_list, names, true);
+}
+
+/* returns number of objects added to list */
+extern int slurm_addto_char_list_with_case(List char_list, char *names,
+					   bool lower_case_normalization)
 {
 	int i = 0, start = 0, cnt = 0;
 	char *name = NULL;
@@ -299,8 +305,8 @@ extern int slurm_addto_char_list(List char_list, char *names)
 						list_delete_item(itr);
 					} else
 						count++;
-
-					xstrtolower(name);
+					if (lower_case_normalization)
+						xstrtolower(name);
 					list_append(char_list, name);
 
 					list_iterator_reset(itr);
@@ -351,8 +357,8 @@ extern int slurm_addto_char_list(List char_list, char *names)
 							list_delete_item(itr);
 						} else
 							count++;
-
-						xstrtolower(this_node_name);
+						if (lower_case_normalization)
+							xstrtolower(this_node_name);
 						list_append(char_list,
 							    this_node_name);
 
@@ -379,8 +385,8 @@ extern int slurm_addto_char_list(List char_list, char *names)
 				list_delete_item(itr);
 			} else
 				count++;
-
-			xstrtolower(name);
+			if (lower_case_normalization)
+				xstrtolower(name);
 			list_append(char_list, name);
 		}
 	}
