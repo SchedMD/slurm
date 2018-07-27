@@ -1371,25 +1371,23 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				}
 			}
 
-			if (step_spec->tres_per_node) {
-				/* ignore current step allocations */
-				tmp_cpus = gres_plugin_step_test(step_gres_list,
-							job_ptr->gres_list,
-							node_inx, true,
-							job_ptr->job_id,
-							NO_VAL);
-				total_cpus = MIN(total_cpus, tmp_cpus);
-				/* consider current step allocations */
-				tmp_cpus = gres_plugin_step_test(step_gres_list,
-							job_ptr->gres_list,
-							node_inx, false,
-							job_ptr->job_id,
-							NO_VAL);
-				if (tmp_cpus < avail_cpus) {
-					avail_cpus = tmp_cpus;
-					usable_cpu_cnt[i] = avail_cpus;
-					fail_mode = ESLURM_INVALID_GRES;
-				}
+			/* ignore current step allocations */
+			tmp_cpus = gres_plugin_step_test(step_gres_list,
+							 job_ptr->gres_list,
+							 node_inx, true,
+							 job_ptr->job_id,
+							 NO_VAL);
+			total_cpus = MIN(total_cpus, tmp_cpus);
+			/* consider current step allocations */
+			tmp_cpus = gres_plugin_step_test(step_gres_list,
+							 job_ptr->gres_list,
+							 node_inx, false,
+							 job_ptr->job_id,
+							 NO_VAL);
+			if (tmp_cpus < avail_cpus) {
+				avail_cpus = tmp_cpus;
+				usable_cpu_cnt[i] = avail_cpus;
+				fail_mode = ESLURM_INVALID_GRES;
 			}
 
 			avail_tasks = avail_cpus;

@@ -8788,8 +8788,8 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 	uint64_t core_cnt, tmp_cnt;
 	ListIterator  job_gres_iter, step_gres_iter;
 	gres_state_t *job_gres_ptr, *step_gres_ptr;
-
-	if (step_gres_list == NULL)
+//FIXME: Need more work
+//	if (step_gres_list == NULL)
 		return NO_VAL64;
 	if (job_gres_list == NULL)
 		return 0;
