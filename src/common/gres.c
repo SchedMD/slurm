@@ -6307,9 +6307,10 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 			node_specs = sock_gres->node_specs;
 			if (!job_specs || !node_specs)
 				continue;
-			if (job_specs->total_node_cnt == 0)
+			if (job_specs->total_node_cnt == 0) {
 				job_specs->total_node_cnt = node_cnt;
-
+				job_specs->total_gres = 0;
+			}
 			if (!job_specs->gres_cnt_node_select) {
 				job_specs->gres_cnt_node_select =
 					xmalloc(sizeof(uint64_t) * node_cnt);
@@ -6560,14 +6561,14 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	if (job_gres_ptr->total_node_cnt &&
 	    (job_gres_ptr->gres_bit_select ||
 	     job_gres_ptr->gres_cnt_node_select)) {
-		if (job_gres_ptr->gres_bit_select &&
-		    job_gres_ptr->gres_bit_select[node_index]) {
-			gres_cnt = bit_set_count(
-				    job_gres_ptr->gres_bit_select[node_index]);
-		} else if (job_gres_ptr->gres_cnt_node_select &&
-			   job_gres_ptr->gres_cnt_node_select[node_index]) {
+		if (job_gres_ptr->gres_cnt_node_select &&
+		    job_gres_ptr->gres_cnt_node_select[node_index]) {
 			gres_cnt = job_gres_ptr->
 				   gres_cnt_node_select[node_index];
+		} else if (job_gres_ptr->gres_bit_select &&
+			   job_gres_ptr->gres_bit_select[node_index]) {
+			gres_cnt = bit_set_count(
+				    job_gres_ptr->gres_bit_select[node_index]);
 		} else {
 			error("gres/%s: job %u node %s no resources selected",
 			      gres_name, job_id, node_name);
