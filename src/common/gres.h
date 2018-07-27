@@ -175,7 +175,7 @@ typedef struct gres_job_state {
 	bitstr_t **gres_bit_alloc;	/* Per node GRES allocated,
 					 * Used with GRES files */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
-					 * Used without GRES files */
+					 * Used with and without GRES files */
 
 	/*
 	 * Resources currently allocated to job steps on each node.
