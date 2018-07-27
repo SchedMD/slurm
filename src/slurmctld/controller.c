@@ -337,7 +337,7 @@ int main(int argc, char **argv)
 			  slurmctld_conf.slurmctld_logfile);
 		sched_log_alter(sched_log_opts, LOG_DAEMON,
 				slurmctld_conf.sched_logfile);
-		debug("sched: slurmctld starting");
+		sched_debug("slurmctld starting");
 	} else {
 		slurmctld_config.daemonize = 0;
 	}
@@ -2556,7 +2556,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
  */
 int slurmctld_shutdown(void)
 {
-	debug("sched: slurmctld terminating");
+	sched_debug("slurmctld terminating");
 	if (slurmctld_config.thread_id_rpc) {
 		pthread_kill(slurmctld_config.thread_id_rpc, SIGUSR1);
 		return SLURM_SUCCESS;

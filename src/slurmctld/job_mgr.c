@@ -11578,8 +11578,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	 */
 	if (job_specs->partition &&
 	    !xstrcmp(job_specs->partition, job_ptr->partition)) {
-		debug("sched: update_job: new partition identical to "
-		      "old partition %u", job_ptr->job_id);
+		sched_debug("update_job: new partition identical to old partition %u",
+			    job_ptr->job_id);
 	} else if (job_specs->partition) {
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -11614,8 +11614,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				error_code = errno;
 			else if (new_assoc_ptr == job_ptr->assoc_ptr) {
 				new_assoc_ptr = NULL;
-				debug("sched: update_job: new association identical to old association %u",
-				      job_ptr->job_id);
+				sched_debug("update_job: new association identical to old association %u",
+					    job_ptr->job_id);
 			}
 
 			/*
@@ -11652,8 +11652,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			operator, &qos_rec, &error_code, false);
 		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
 			if (job_ptr->qos_ptr == new_qos_ptr) {
-				debug("sched: update_job: new QOS identical "
-				      "to old QOS %u", job_ptr->job_id);
+				sched_debug("update_job: new QOS identical to old QOS %u",
+					    job_ptr->job_id);
 				new_qos_ptr = NULL;
 			} else if (!IS_JOB_PENDING(job_ptr)) {
 				error_code = ESLURM_JOB_NOT_PENDING;
@@ -11735,7 +11735,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	/* this needs to be after partition and QOS checks */
 	if (job_specs->reservation
 	    && !xstrcmp(job_specs->reservation, job_ptr->resv_name)) {
-		debug("sched: update_job: new reservation identical to old reservation %u", job_ptr->job_id);
+		sched_debug("update_job: new reservation identical to old reservation %u",
+			    job_ptr->job_id);
 	} else if (job_specs->reservation) {
 		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
@@ -11916,8 +11917,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->licenses && !xstrcmp(job_specs->licenses,
 					    job_ptr->licenses)) {
-		debug("sched: update_job: new licenses identical to old licenses \"%s\"",
-		      job_ptr->licenses);
+		sched_debug("update_job: new licenses identical to old licenses \"%s\"",
+			    job_ptr->licenses);
 	} else if (job_specs->licenses) {
 		bool valid, pending = IS_JOB_PENDING(job_ptr);
 		license_list = license_validate(job_specs->licenses,
@@ -11937,8 +11938,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->exc_nodes && detail_ptr &&
 	    !xstrcmp(job_specs->exc_nodes, detail_ptr->exc_nodes)) {
-		debug("sched: update_job: new exc_nodes identical to old exc_nodes %s",
-		      job_specs->exc_nodes);
+		sched_debug("update_job: new exc_nodes identical to old exc_nodes %s",
+			    job_specs->exc_nodes);
 	} else if (job_specs->exc_nodes) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -12338,8 +12339,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->time_limit == job_specs->time_limit) {
-			debug("sched: update_job: new time limit identical to "
-			      "old time limit %u", job_ptr->job_id);
+			sched_debug("update_job: new time limit identical to old time limit %u",
+				    job_ptr->job_id);
 		} else if (operator ||
 			   (job_ptr->time_limit > job_specs->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
@@ -12573,8 +12574,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		 */
 		job_ptr->direct_set_prio = 0;
 		set_job_prio(job_ptr);
-		debug("sched: update: job request changed somehow, removing the bad constraints to reevaluate job_id %u uid %u",
-		     job_ptr->job_id, uid);
+		sched_debug("update: job request changed somehow, removing the bad constraints to reevaluate job_id %u uid %u",
+			    job_ptr->job_id, uid);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
 
@@ -12586,8 +12587,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->details &&
 			 (job_ptr->details->nice == job_specs->nice))
-			debug("sched: update_job: new nice identical to "
-			      "old nice %u", job_ptr->job_id);
+			sched_debug("update_job: new nice identical to old nice %u",
+				    job_ptr->job_id);
 		else if (job_ptr->direct_set_prio && job_ptr->priority != 0)
 			info("ignore nice set request on  job %u",
 			     job_ptr->job_id);
@@ -12620,8 +12621,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (job_specs->pn_min_memory
 			   == detail_ptr->pn_min_memory) {
-			debug("sched: update_job: new memory limit identical "
-			      "to old limit for job %u", job_ptr->job_id);
+			sched_debug("update_job: new memory limit identical to old limit for job %u",
+				    job_ptr->job_id);
 		} else {
 			char *entity;
 			if (job_specs->pn_min_memory == MEM_PER_CPU) {
@@ -12761,8 +12762,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->features && detail_ptr &&
 	    !xstrcmp(job_specs->features, detail_ptr->features)) {
-		debug("sched: update_job: new features identical to old features %s",
-		      job_specs->features);
+		sched_debug("update_job: new features identical to old features %s",
+			    job_specs->features);
 	} else if (job_specs->features) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -12865,8 +12866,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_FINISHED;
 			goto fini;
 		} else if (!xstrcmp(job_specs->name, job_ptr->name)) {
-			debug("sched: update_job: new name identical to "
-			      "old name %u", job_ptr->job_id);
+			sched_debug("update_job: new name identical to old name %u",
+				    job_ptr->job_id);
 		} else {
 			xfree(job_ptr->name);
 			job_ptr->name = xstrdup(job_specs->name);
@@ -12879,8 +12880,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->std_out && detail_ptr &&
 	    !xstrcmp(job_specs->std_out, detail_ptr->std_out)) {
-		debug("sched: update_job: new std_out identical to old std_out %s",
-		      job_specs->std_out);
+		sched_debug("update_job: new std_out identical to old std_out %s",
+			    job_specs->std_out);
 	} else if (job_specs->std_out) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -12894,8 +12895,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->wckey
 	    && !xstrcmp(job_specs->wckey, job_ptr->wckey)) {
-		debug("sched: update_job: new wckey identical to "
-		      "old wckey %u", job_ptr->job_id);
+		sched_debug("update_job: new wckey identical to old wckey %u",
+			    job_ptr->job_id);
 	} else if (job_specs->wckey) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -13106,9 +13107,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				sched_info("update_job: setting begin to %s for job_id %u",
 					   time_str, job_ptr->job_id);
 			} else
-				debug("sched: update_job: new begin time "
-				      "identical to old begin time %u",
-				      job_ptr->job_id);
+				sched_debug("update_job: new begin time identical to old begin time %u",
+					    job_ptr->job_id);
 		} else {
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
@@ -13197,8 +13197,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->network && !xstrcmp(job_specs->network,
 					   job_ptr->network)) {
-		debug("sched: update_job: new network identical to old network %s",
-		      job_ptr->network);
+		sched_debug("update_job: new network identical to old network %s",
+			    job_ptr->network);
 	} else if (job_specs->network) {
 		xfree(job_ptr->network);
 		if (!strlen(job_specs->network)

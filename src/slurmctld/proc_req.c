@@ -3640,7 +3640,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 
 	/* do RPC call */
 	if (error_code == SLURM_SUCCESS) {
-		debug("sched: begin reconfiguration");
+		sched_debug("begin reconfiguration");
 		lock_slurmctld(config_write_lock);
 		in_progress = true;
 		error_code = read_slurm_conf(1, true);

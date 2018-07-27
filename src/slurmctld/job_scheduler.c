@@ -1402,12 +1402,12 @@ static int _schedule(uint32_t job_limit)
 
 	if ((defer_rpc_cnt > 0) &&
 	    (slurmctld_config.server_thread_count >= defer_rpc_cnt)) {
-		debug("sched: schedule() returning, too many RPCs");
+		sched_debug("schedule() returning, too many RPCs");
 		goto out;
 	}
 
 	if (!fed_mgr_sibs_synced()) {
-		debug("sched: schedule() returning, federation siblings not synced yet");
+		sched_debug("schedule() returning, federation siblings not synced yet");
 		goto out;
 	}
 
@@ -1436,14 +1436,13 @@ static int _schedule(uint32_t job_limit)
 		list_iterator_destroy(job_iterator);
 
 		unlock_slurmctld(job_write_lock);
-		debug("sched: schedule() returning, no front end nodes are "
-		      "available");
+		sched_debug("schedule() returning, no front end nodes are available");
 		goto out;
 	}
 
 	if (!reduce_completing_frag && job_is_completing(NULL)) {
 		unlock_slurmctld(job_write_lock);
-		debug("sched: schedule() returning, some job is still completing");
+		sched_debug("schedule() returning, some job is still completing");
 		goto out;
 	}
 
@@ -1496,8 +1495,8 @@ static int _schedule(uint32_t job_limit)
 			}
 			list_iterator_destroy(part_iterator);
 			if (cg_part_str) {
-				debug("sched: some job is still completing, skipping partitions '%s'",
-				      cg_part_str);
+				sched_debug("some job is still completing, skipping partitions '%s'",
+					    cg_part_str);
 				xfree(cg_part_str);
 			}
 		}
@@ -1518,7 +1517,7 @@ static int _schedule(uint32_t job_limit)
 		list_iterator_destroy(part_iterator);
 	}
 
-	debug("sched: Running job scheduler");
+	sched_debug("Running job scheduler");
 	/*
 	 * If we are doing FIFO scheduling, use the job records right off the
 	 * job list.
@@ -1619,11 +1618,11 @@ next_part:			part_ptr = (struct part_record *)
 
 next_task:
 		if ((time(NULL) - sched_start) >= sched_timeout) {
-			debug("sched: loop taking too long, breaking out");
+			sched_debug("loop taking too long, breaking out");
 			break;
 		}
 		if (sched_max_job_start && (job_cnt >= sched_max_job_start)) {
-			debug("sched: sched_max_job_start reached, breaking out");
+			sched_debug("sched_max_job_start reached, breaking out");
 			break;
 		}
 
@@ -1668,13 +1667,13 @@ next_task:
 			}
 		}
 		if (job_depth++ > job_limit) {
-			debug("sched: already tested %u jobs, breaking out",
-			       job_depth);
+			sched_debug("already tested %u jobs, breaking out",
+				    job_depth);
 			break;
 		}
 		if ((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) {
-			debug("sched: schedule() returning, too many RPCs");
+			sched_debug("schedule() returning, too many RPCs");
 			break;
 		}
 		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON) {
@@ -1706,10 +1705,9 @@ next_task:
 			job_ptr->state_reason = WAIT_PRIORITY;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
-			debug("sched: JobId=%u. State=PENDING. "
-			       "Reason=Priority, Priority=%u. Partition=%s.",
-			       job_ptr->job_id, job_ptr->priority,
-			       job_ptr->partition);
+			sched_debug("JobId=%u. State=PENDING. Reason=Priority, Priority=%u. Partition=%s.",
+				    job_ptr->job_id, job_ptr->priority,
+				    job_ptr->partition);
 			continue;
 		}
 
@@ -1731,8 +1729,8 @@ next_task:
 				job_ptr->assoc_id = assoc_rec.id;
 				last_job_update = now;
 			} else {
-				debug("sched: JobId=%u has invalid association",
-				      job_ptr->job_id);
+				sched_debug("JobId=%u has invalid association",
+					    job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_ASSOC_RESOURCE_LIMIT;
@@ -1750,8 +1748,8 @@ next_task:
 				!bit_test(job_ptr->assoc_ptr->usage->valid_qos,
 					  job_ptr->qos_id))
 			    && !job_ptr->limit_set.qos) {
-				debug("sched: JobId=%u has invalid QOS",
-				      job_ptr->job_id);
+				sched_debug("JobId=%u has invalid QOS",
+					    job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_QOS;
 				last_job_update = now;
