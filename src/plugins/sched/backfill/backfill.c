@@ -2004,12 +2004,11 @@ next_task:
 				job_ptr->state_reason=WAIT_BURST_BUFFER_STAGING;
 				job_ptr->start_time = now + 1;
 			}
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
+			sched_debug3("JobId=%u. State=%s. Reason=%s. Priority=%u.",
+				     job_ptr->job_id,
+				     job_state_string(job_ptr->job_state),
+				     job_reason_string(job_ptr->state_reason),
+				     job_ptr->priority);
 			last_job_update = now;
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			later_start = 0;

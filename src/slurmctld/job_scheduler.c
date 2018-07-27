@@ -303,9 +303,8 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 		 * previous run hasn't finished yet */
 		job_ptr->state_reason = WAIT_CLEANING;
 		xfree(job_ptr->state_desc);
-		debug3("sched: JobId=%u. State=PENDING. "
-		       "Reason=Cleaning.",
-		       job_ptr->job_id);
+		sched_debug3("JobId=%u. State=PENDING. Reason=Cleaning.",
+			     job_ptr->job_id);
 		return false;
 	}
 
@@ -332,11 +331,11 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
 		}
-		debug3("sched: JobId=%u. State=%s. Reason=%s. Priority=%u.",
-		       job_ptr->job_id,
-		       job_state_string(job_ptr->job_state),
-		       job_reason_string(job_ptr->state_reason),
-		       job_ptr->priority);
+		sched_debug3("JobId=%u. State=%s. Reason=%s. Priority=%u.",
+			     job_ptr->job_id,
+			     job_state_string(job_ptr->job_state),
+			     job_reason_string(job_ptr->state_reason),
+			     job_ptr->priority);
 		return false;
 	}
 
@@ -1458,7 +1457,7 @@ static int _schedule(uint32_t job_limit)
 	 */
 	if (select_g_update_basil()) {
 		unlock_slurmctld(job_write_lock);
-		debug3("sched: not scheduling due to ALPS");
+		sched_debug3("not scheduling due to ALPS");
 		goto out;
 	}
 #endif
@@ -1696,11 +1695,10 @@ next_task:
 			if (found_resv) {
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
-				debug3("sched: JobId=%u. State=PENDING. "
-				       "Reason=Priority. Priority=%u. "
-				       "Resv=%s.",
-				       job_ptr->job_id, job_ptr->priority,
-				       job_ptr->resv_name);
+				sched_debug3("JobId=%u. State=PENDING. Reason=Priority. Priority=%u. Resv=%s.",
+					     job_ptr->job_id,
+					     job_ptr->priority,
+					     job_ptr->resv_name);
 				continue;
 			}
 		} else if (_failed_partition(job_ptr->part_ptr, failed_parts,
@@ -1822,13 +1820,11 @@ next_task:
 					"DOWN, DRAINED or reserved for jobs in "
 					"higher priority partitions");
 			last_job_update = now;
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u. Partition=%s.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority,
-			       job_ptr->partition);
+			sched_debug3("JobId=%u. State=%s. Reason=%s. Priority=%u. Partition=%s.",
+				     job_ptr->job_id,
+				     job_state_string(job_ptr->job_state),
+				     job_reason_string(job_ptr->state_reason),
+				     job_ptr->priority, job_ptr->partition);
 			continue;
 		}
 		if (license_job_test(job_ptr, time(NULL), true) !=
@@ -1836,12 +1832,11 @@ next_task:
 			job_ptr->state_reason = WAIT_LICENSES;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
+			sched_debug3("JobId=%u. State=%s. Reason=%s. Priority=%u.",
+				     job_ptr->job_id,
+				     job_state_string(job_ptr->job_state),
+				     job_reason_string(job_ptr->state_reason),
+				     job_ptr->priority);
 			continue;
 		}
 
@@ -1895,36 +1890,32 @@ skip_start:
 		if ((error_code == ESLURM_NODES_BUSY) ||
 		    (error_code == ESLURM_POWER_NOT_AVAIL) ||
 		    (error_code == ESLURM_POWER_RESERVED)) {
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u. Partition=%s.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority, job_ptr->partition);
+			sched_debug3("JobId=%u. State=%s. Reason=%s. Priority=%u. Partition=%s.",
+				     job_ptr->job_id,
+				     job_state_string(job_ptr->job_state),
+				     job_reason_string(job_ptr->state_reason),
+				     job_ptr->priority, job_ptr->partition);
 			fail_by_part = true;
 		} else if (error_code == ESLURM_BURST_BUFFER_WAIT) {
 			if (job_ptr->start_time == 0) {
 				job_ptr->start_time = last_job_sched_start;
 				bb_wait_cnt++;
 			}
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
+			sched_debug3("JobId=%u. State=%s. Reason=%s. Priority=%u.",
+				     job_ptr->job_id,
+				     job_state_string(job_ptr->job_state),
+				     job_reason_string(job_ptr->state_reason),
+				     job_ptr->priority);
 			continue;
 		} else if ((error_code == ESLURM_RESERVATION_BUSY) ||
 			   (error_code == ESLURM_RESERVATION_NOT_USABLE)) {
 			if (job_ptr->resv_ptr &&
 			    job_ptr->resv_ptr->node_bitmap) {
-				debug3("sched: JobId=%u. State=%s. "
-				       "Reason=%s. Priority=%u.",
-				       job_ptr->job_id,
-				       job_state_string(job_ptr->job_state),
-				       job_reason_string(job_ptr->
-							 state_reason),
-				       job_ptr->priority);
+				sched_debug3("JobId=%u. State=%s. Reason=%s. Priority=%u.",
+					     job_ptr->job_id,
+					     job_state_string(job_ptr->job_state),
+					     job_reason_string(job_ptr->state_reason),
+					     job_ptr->priority);
 				bit_and_not(avail_node_bitmap,
 					job_ptr->resv_ptr->node_bitmap);
 			} else {
@@ -1934,26 +1925,24 @@ skip_start:
 				 * so just skip over this job and try running
 				 * the next lower priority job
 				 */
-				debug3("sched: JobId=%u State=%s. "
-				       "Reason=Required nodes are reserved."
-				       "Priority=%u",job_ptr->job_id,
-				       job_state_string(job_ptr->job_state),
-				       job_ptr->priority);
+				sched_debug3("JobId=%u State=%s. Reason=Required nodes are reserved. Priority=%u",
+					     job_ptr->job_id,
+					     job_state_string(job_ptr->job_state),
+					     job_ptr->priority);
 			}
 		} else if (error_code == ESLURM_FED_JOB_LOCK) {
 			job_ptr->state_reason = WAIT_FED_JOB_LOCK;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u. Partition=%s.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority, job_ptr->partition);
+			sched_debug3("JobId=%u. State=%s. Reason=%s. Priority=%u. Partition=%s.",
+				     job_ptr->job_id,
+				     job_state_string(job_ptr->job_state),
+				     job_reason_string(job_ptr->state_reason),
+				     job_ptr->priority, job_ptr->partition);
 			fail_by_part = true;
 		} else if (error_code == SLURM_SUCCESS) {
 			/* job initiated */
-			debug3("sched: JobId=%u initiated", job_ptr->job_id);
+			sched_debug3("JobId=%u initiated", job_ptr->job_id);
 			last_job_update = now;
 			reject_array_job_id = 0;
 			reject_array_part   = NULL;
@@ -1991,8 +1980,8 @@ skip_start:
 			      job_ptr->job_id, job_ptr->part_ptr->name,
 			      slurm_strerror(error_code));
 		} else if (error_code == ESLURM_ACCOUNTING_POLICY) {
-			debug3("sched: JobId=%u delayed for accounting policy",
-			       job_ptr->job_id);
+			sched_debug3("JobId=%u delayed for accounting policy",
+				     job_ptr->job_id);
 			/* potentially starve this job */
 			if (assoc_limit_stop)
 				fail_by_part = true;
