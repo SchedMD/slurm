@@ -4486,24 +4486,24 @@ extern int fed_mgr_update_job_clusters(struct job_record *job_ptr,
 	xassert(spec_clusters);
 
 	if (!_is_fed_job(job_ptr, &origin_id)) {
-		info("sched: update_job: not a fed job");
+		sched_info("update_job: not a fed job");
 		rc = SLURM_ERROR;
 	} else if ((!IS_JOB_PENDING(job_ptr)) ||
 		   job_ptr->fed_details->cluster_lock) {
 		rc = ESLURM_JOB_NOT_PENDING;
 	} else if (!fed_mgr_fed_rec) {
-		info("sched: update_job: setting Clusters on a non-active federated cluster for job %u",
-		     job_ptr->job_id);
+		sched_info("update_job: setting Clusters on a non-active federated cluster for job %u",
+			   job_ptr->job_id);
 		rc = ESLURM_JOB_NOT_FEDERATED;
 	} else if (_validate_cluster_names(spec_clusters, NULL)) {
-		info("sched: update_job: invalid Clusters for job %u: %s",
-		     job_ptr->job_id, spec_clusters);
+		sched_info("update_job: invalid Clusters for job %u: %s",
+			   job_ptr->job_id, spec_clusters);
 		rc = ESLURM_INVALID_CLUSTER_NAME;
 	} else {
 		xfree(job_ptr->clusters);
 		if (spec_clusters[0] == '\0')
-			info("sched: update_job: cleared Clusters for job %u",
-			     job_ptr->job_id);
+			sched_info("update_job: cleared Clusters for job %u",
+				   job_ptr->job_id);
 		else if (*spec_clusters)
 			job_ptr->clusters =
 				xstrdup(spec_clusters);
@@ -4534,24 +4534,24 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 	xassert(req_features);
 
 	if (!_is_fed_job(job_ptr, &origin_id)) {
-		info("sched: update_job: not a fed job");
+		sched_info("update_job: not a fed job");
 		rc = SLURM_ERROR;
 	} else if ((!IS_JOB_PENDING(job_ptr)) ||
 		   job_ptr->fed_details->cluster_lock) {
 		rc = ESLURM_JOB_NOT_PENDING;
 	} else if (!fed_mgr_fed_rec) {
-		info("sched: update_job: setting ClusterFeatures on a non-active federated cluster for job %u",
-		     job_ptr->job_id);
+		sched_info("update_job: setting ClusterFeatures on a non-active federated cluster for job %u",
+			   job_ptr->job_id);
 		rc = ESLURM_JOB_NOT_FEDERATED;
 	} else if (_validate_cluster_features(req_features, NULL)) {
-		info("sched: update_job: invalid ClusterFeatures for job %u",
-		     job_ptr->job_id);
+		sched_info("update_job: invalid ClusterFeatures for job %u",
+			   job_ptr->job_id);
 		rc = ESLURM_INVALID_CLUSTER_FEATURE;
 	} else {
 		xfree(job_ptr->details->cluster_features);
 		if (req_features[0] == '\0')
-			info("sched: update_job: cleared ClusterFeatures for job %u",
-			     job_ptr->job_id);
+			sched_info("update_job: cleared ClusterFeatures for job %u",
+				   job_ptr->job_id);
 		else if (*req_features)
 			job_ptr->details->cluster_features =
 				xstrdup(req_features);

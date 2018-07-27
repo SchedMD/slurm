@@ -11294,8 +11294,8 @@ static void _hold_job_rec(struct job_record *job_ptr, uid_t uid)
 			job_ptr->priority_array[i] = 0;
 		}
 	}
-	info("sched: %s: hold on job_id %u by uid %u", __func__,
-	     job_ptr->job_id, uid);
+	sched_info("%s: hold on job_id %u by uid %u",
+		   __func__, job_ptr->job_id, uid);
 }
 static void _hold_job(struct job_record *job_ptr, uid_t uid)
 {
@@ -11323,8 +11323,8 @@ static void _release_job_rec(struct job_record *job_ptr, uid_t uid)
 	xfree(job_ptr->state_desc);
 	job_ptr->exit_code = 0;
 	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
-	info("sched: %s: release hold on job_id %u by uid %u", __func__,
-	     job_ptr->job_id, uid);
+	sched_info("%s: release hold on job_id %u by uid %u",
+		   __func__, job_ptr->job_id, uid);
 }
 static void _release_job(struct job_record *job_ptr, uid_t uid)
 {
@@ -11680,16 +11680,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				     false, &new_req_bitmap) ||
 		    !bit_super_set(new_req_bitmap, job_ptr->node_bitmap) ||
 		    (job_ptr->details && job_ptr->details->expanding_jobid)) {
-			info("sched: Invalid node list (%s) for job %u update",
-			     job_specs->req_nodes, job_ptr->job_id);
+			sched_info("Invalid node list (%s) for job %u update",
+				   job_specs->req_nodes, job_ptr->job_id);
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto fini;
 		} else if (new_req_bitmap) {
 			int i, i_first, i_last;
 			struct node_record *node_ptr;
-			info("sched: update_job: setting nodes to %s for "
-			     "job_id %u",
-			     job_specs->req_nodes, job_ptr->job_id);
+			sched_info("update_job: setting nodes to %s for job_id %u",
+				   job_specs->req_nodes, job_ptr->job_id);
 			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
@@ -11721,8 +11720,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else {
 			if (node_name2bitmap(job_specs->req_nodes, false,
 					     &new_req_bitmap)) {
-				info("sched: Invalid node list for job_update: %s",
-				     job_specs->req_nodes);
+				sched_info("Invalid node list for job_update: %s",
+					   job_specs->req_nodes);
 				FREE_NULL_BITMAP(new_req_bitmap);
 				error_code = ESLURM_INVALID_NODE_NAME;
 			} else
@@ -11822,8 +11821,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 						&job_specs->sockets_per_node,
 						&job_specs->cpus_per_task,
 						&gres_list))) {
-			info("sched: update_job: invalid GRES for job %u",
-			     job_ptr->job_id);
+			sched_info("update_job: invalid GRES for job %u",
+				   job_ptr->job_id);
 			goto fini;
 		}
 		if (job_specs->num_tasks == detail_ptr->num_tasks)
@@ -11927,8 +11926,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 						&valid);
 
 		if (!valid) {
-			info("sched: update_job: invalid licenses: %s",
-			     job_specs->licenses);
+			sched_info("update_job: invalid licenses: %s",
+				   job_specs->licenses);
 			error_code = ESLURM_INVALID_LICENSES;
 		}
 	}
@@ -11960,9 +11959,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					xstrdup(job_specs->exc_nodes);
 				FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
 				detail_ptr->exc_node_bitmap = exc_bitmap;
-				info("sched: update_job: setting exc_nodes to "
-				     "%s for job_id %u", job_specs->exc_nodes,
-				     job_ptr->job_id);
+				sched_info("update_job: setting exc_nodes to %s for job_id %u",
+					   job_specs->exc_nodes, job_ptr->job_id);
 			}
 		}
 	}
@@ -12157,17 +12155,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 		detail_ptr->req_node_bitmap = new_req_bitmap;
 		new_req_bitmap = NULL;
-		info("sched: update_job: setting req_nodes to %s for job_id %u",
-		     job_specs->req_nodes,
-		     job_ptr->job_id);
+		sched_info("update_job: setting req_nodes to %s for job_id %u",
+			   job_specs->req_nodes, job_ptr->job_id);
 	}
 
 	if (new_resv_ptr) {
 		job_ptr->resv_name = xstrdup(new_resv_ptr->name);
 		job_ptr->resv_ptr = new_resv_ptr;
-		info("sched: update_job: setting reservation to %s for job_id %u",
-		     job_ptr->resv_name,
-		     job_ptr->job_id);
+		sched_info("update_job: setting reservation to %s for job_id %u",
+			   job_ptr->resv_name, job_ptr->job_id);
 		update_accounting = true;
 	}
 
@@ -12374,9 +12370,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				}
 				job_ptr->end_time_exp = job_ptr->end_time;
 			}
-			info("sched: update_job: setting time_limit to %u for "
-			     "job_id %u", job_specs->time_limit,
-			     job_ptr->job_id);
+			sched_info("update_job: setting time_limit to %u for job_id %u",
+				   job_specs->time_limit, job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
@@ -12385,16 +12380,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			   (job_ptr->part_ptr->max_time >=
 			    job_specs->time_limit)) {
 			job_ptr->time_limit = job_specs->time_limit;
-			info("sched: update_job: setting time_limit to %u for "
-			     "job_id %u", job_specs->time_limit,
-			     job_ptr->job_id);
+			sched_info("update_job: setting time_limit to %u for job_id %u",
+				   job_specs->time_limit, job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
-			info("sched: Attempt to increase time limit for job %u",
-			     job_ptr->job_id);
+			sched_info("Attempt to increase time limit for job %u",
+				   job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -12429,16 +12423,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			int delta_t  = job_specs->end_time - job_ptr->end_time;
 			job_ptr->end_time = job_specs->end_time;
 			job_ptr->time_limit += (delta_t+30)/60; /* Sec->min */
-			info("sched: update_job: setting time_limit to %u for "
-			     "job_id %u", job_ptr->time_limit,
-			     job_ptr->job_id);
+			sched_info("update_job: setting time_limit to %u for job_id %u",
+				   job_ptr->time_limit, job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
-			info("sched: Attempt to extend end time for job %u",
-			     job_ptr->job_id);
+			sched_info("Attempt to extend end time for job %u",
+				   job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -12452,16 +12445,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if (operator) {
 			/* update deadline */
 			job_ptr->deadline = job_specs->deadline;
-			info("sched: update_job: setting deadline to %s for "
-			     "job_id %u", time_str,
-			     job_specs->job_id);
+			sched_info("update_job: setting deadline to %s for job_id %u",
+				   time_str, job_specs->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
-			info("sched: Attempt to extend end time for job %u",
-			     job_specs->job_id);
+			sched_info("Attempt to extend end time for job %u",
+				   job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -12470,14 +12462,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->delay_boot != NO_VAL) {
 		job_ptr->delay_boot = job_specs->delay_boot;
-		info("sched: update_job: setting delay_boot to %u for job_id %u",
-		     job_specs->delay_boot, job_ptr->job_id);
+		sched_info("update_job: setting delay_boot to %u for job_id %u",
+			   job_specs->delay_boot, job_ptr->job_id);
 	}
 
 	if ((job_specs->requeue != NO_VAL16) && detail_ptr) {
 		detail_ptr->requeue = MIN(job_specs->requeue, 1);
-		info("sched: update_job: setting requeue to %u for job_id %u",
-		     job_specs->requeue, job_ptr->job_id);
+		sched_info("update_job: setting requeue to %u for job_id %u",
+			   job_specs->requeue, job_ptr->job_id);
 	}
 
 	if (job_specs->priority != NO_VAL) {
@@ -12541,8 +12533,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					}
 				}
 			}
-			info("sched: %s: set priority to %u for job_id %u",
-			      __func__, job_ptr->priority, job_ptr->job_id);
+			sched_info("%s: set priority to %u for job_id %u",
+				   __func__, job_ptr->priority,
+				   job_ptr->job_id);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
 				if (!operator ||
@@ -12605,11 +12598,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				new_prio += job_ptr->details->nice;
 				new_prio -= job_specs->nice;
 				job_ptr->priority = MAX(new_prio, 2);
-				info("sched: update_job: nice changed from %u to %u, setting priority to %u for job_id %u",
-				     job_ptr->details->nice,
-				     job_specs->nice,
-				     job_ptr->priority,
-				     job_ptr->job_id);
+				sched_info("update_job: nice changed from %u to %u, setting priority to %u for job_id %u",
+					   job_ptr->details->nice,
+					   job_specs->nice,
+					   job_ptr->priority,
+					   job_ptr->job_id);
 			}
 			job_ptr->details->nice = job_specs->nice;
 			update_accounting = true;
@@ -12643,10 +12636,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			detail_ptr->pn_min_memory = job_specs->pn_min_memory;
 			detail_ptr->orig_pn_min_memory =
 					job_specs->pn_min_memory;
-			info("sched: update_job: setting min_memory_%s to %"
-			     ""PRIu64" for job_id %u", entity,
-			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
-			     job_ptr->job_id);
+			sched_info("update_job: setting min_memory_%s to %"PRIu64" for job_id %u",
+				   entity,
+				   (job_specs->pn_min_memory & (~MEM_PER_CPU)),
+				   job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set.tres[TRES_ARRAY_MEM] =
@@ -12663,9 +12656,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			detail_ptr->pn_min_tmp_disk =
 				job_specs->pn_min_tmp_disk;
 
-			info("sched: update_job: setting job_min_tmp_disk to "
-			     "%u for job_id %u", job_specs->pn_min_tmp_disk,
-			     job_ptr->job_id);
+			sched_info("update_job: setting job_min_tmp_disk to %u for job_id %u",
+				   job_specs->pn_min_tmp_disk,
+				   job_ptr->job_id);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -12677,9 +12670,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			goto fini;
 		} else {
 			mc_ptr->sockets_per_node = job_specs->sockets_per_node;
-			info("sched: update_job: setting sockets_per_node to "
-			     "%u for job_id %u", job_specs->sockets_per_node,
-			     job_ptr->job_id);
+			sched_info("update_job: setting sockets_per_node to %u for job_id %u",
+				   job_specs->sockets_per_node,
+				   job_ptr->job_id);
 		}
 	}
 
@@ -12689,9 +12682,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			goto fini;
 		} else {
 			mc_ptr->cores_per_socket = job_specs->cores_per_socket;
-			info("sched: update_job: setting cores_per_socket to "
-			     "%u for job_id %u", job_specs->cores_per_socket,
-			     job_ptr->job_id);
+			sched_info("update_job: setting cores_per_socket to %u for job_id %u",
+				   job_specs->cores_per_socket,
+				   job_ptr->job_id);
 		}
 	}
 
@@ -12701,9 +12694,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			goto fini;
 		} else {
 			mc_ptr->threads_per_core = job_specs->threads_per_core;
-			info("sched: update_job: setting threads_per_core to "
-			     "%u for job_id %u", job_specs->threads_per_core,
-			     job_ptr->job_id);
+			sched_info("update_job: setting threads_per_core to %u for job_id %u",
+				   job_specs->threads_per_core,
+				   job_ptr->job_id);
 		}
 	}
 
@@ -12721,9 +12714,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			} else {
 				detail_ptr->share_res = 0;
 			}
-			info("sched: update_job: setting shared to %u for "
-			     "job_id %u",
-			     job_specs->shared, job_ptr->job_id);
+			sched_info("update_job: setting shared to %u for job_id %u",
+				   job_specs->shared, job_ptr->job_id);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -12735,9 +12727,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if (operator
 			 || (detail_ptr->contiguous > job_specs->contiguous)) {
 			detail_ptr->contiguous = job_specs->contiguous;
-			info("sched: update_job: setting contiguous to %u "
-			     "for job_id %u", job_specs->contiguous,
-			     job_ptr->job_id);
+			sched_info("update_job: setting contiguous to %u for job_id %u",
+				   job_specs->contiguous, job_ptr->job_id);
 		} else {
 			sched_error("Attempt to add contiguous for job %u",
 				    job_ptr->job_id);
@@ -12755,9 +12746,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				detail_ptr->core_spec = NO_VAL16;
 			else
 				detail_ptr->core_spec = job_specs->core_spec;
-			info("sched: update_job: setting core_spec to %u "
-			     "for job_id %u", detail_ptr->core_spec,
-			     job_ptr->job_id);
+			sched_info("update_job: setting core_spec to %u for job_id %u",
+				   detail_ptr->core_spec, job_ptr->job_id);
 			if (detail_ptr->core_spec != NO_VAL16)
 				detail_ptr->whole_node = 1;
 		} else {
@@ -12782,23 +12772,22 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			detail_ptr->features = xstrdup(job_specs->features);
 			detail_ptr->feature_list = NULL;
 			if (build_feature_list(job_ptr)) {
-				info("sched: update_job: invalid features"
-				     "(%s) for job_id %u",
-				     job_specs->features, job_ptr->job_id);
+				sched_info("update_job: invalid features(%s) for job_id %u",
+					   job_specs->features,
+					   job_ptr->job_id);
 				FREE_NULL_LIST(detail_ptr->feature_list);
 				detail_ptr->features = old_features;
 				detail_ptr->feature_list = old_list;
 				error_code = ESLURM_INVALID_FEATURE;
 			} else {
-				info("sched: update_job: setting features to "
-				     "%s for job_id %u",
-				     job_specs->features, job_ptr->job_id);
+				sched_info("update_job: setting features to %s for job_id %u",
+					   job_specs->features, job_ptr->job_id);
 				xfree(old_features);
 				FREE_NULL_LIST(old_list);
 			}
 		} else {
-			info("sched: update_job: cleared features for job %u",
-			     job_ptr->job_id);
+			sched_info("update_job: cleared features for job %u",
+				   job_ptr->job_id);
 			xfree(detail_ptr->features);
 			FREE_NULL_LIST(detail_ptr->feature_list);
 		}
@@ -12860,8 +12849,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->mem_per_tres = job_specs->mem_per_tres;
 			job_specs->mem_per_tres = NULL;
 		}
-		info("sched: update_job: setting %sfor job:%u",
-		     tmp, job_ptr->job_id);
+		sched_info("update_job: setting %sfor job:%u",
+			   tmp, job_ptr->job_id);
 		xfree(tmp);
 		FREE_NULL_LIST(job_ptr->gres_list);
 		job_ptr->gres_list = gres_list;
@@ -12882,8 +12871,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			xfree(job_ptr->name);
 			job_ptr->name = xstrdup(job_specs->name);
 
-			info("sched: update_job: setting name to %s for "
-			     "job_id %u", job_ptr->name, job_ptr->job_id);
+			sched_info("update_job: setting name to %s for job_id %u",
+				   job_ptr->name, job_ptr->job_id);
 			update_accounting = true;
 		}
 	}
@@ -12959,9 +12948,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				error_code = ESLURMD_STEP_EXISTS;
 				goto fini;
 			}
-			info("sched: killing job %u and moving all resources "
-			     "to job %u", job_ptr->job_id,
-			     expand_job_ptr->job_id);
+			sched_info("killing job %u and moving all resources to job %u",
+				   job_ptr->job_id, expand_job_ptr->job_id);
 			job_pre_resize_acctg(job_ptr);
 			job_pre_resize_acctg(expand_job_ptr);
 			_send_job_kill(job_ptr);
@@ -12991,8 +12979,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if ((job_specs->min_nodes == 0) ||
 			   (job_specs->min_nodes > job_ptr->node_cnt) ||
 			   job_ptr->details->expanding_jobid) {
-			info("sched: Invalid node count (%u) for job %u update",
-			     job_specs->min_nodes, job_ptr->job_id);
+			sched_info("Invalid node count (%u) for job %u update",
+				   job_specs->min_nodes, job_ptr->job_id);
 			error_code = ESLURM_INVALID_NODE_COUNT;
 			goto fini;
 		} else if (job_specs->min_nodes == job_ptr->node_cnt) {
@@ -13001,9 +12989,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else {
 			int i, i_first, i_last, total;
 			struct node_record *node_ptr;
-			info("sched: update_job: set node count to %u for "
-			     "job_id %u",
-			     job_specs->min_nodes, job_ptr->job_id);
+			sched_info("update_job: set node count to %u for job_id %u",
+				   job_specs->min_nodes, job_ptr->job_id);
 			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
@@ -13018,9 +13005,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			}
 			(void) gs_job_start(job_ptr);
 			job_post_resize_acctg(job_ptr);
-			info("sched: update_job: set nodes to %s for "
-			     "job_id %u",
-			     job_ptr->nodes, job_ptr->job_id);
+			sched_info("update_job: set nodes to %s for job_id %u",
+				   job_ptr->nodes, job_ptr->job_id);
 			/* Since job_post_resize_acctg will restart
 			 * things don't do it again. */
 			update_accounting = false;
@@ -13051,9 +13037,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if (operator) {
 			detail_ptr->ntasks_per_node =
 				job_specs->ntasks_per_node;
-			info("sched: update_job: setting ntasks_per_node to %u "
-			     "for job_id %u", job_specs->ntasks_per_node,
-			     job_ptr->job_id);
+			sched_info("update_job: setting ntasks_per_node to %u for job_id %u",
+				   job_specs->ntasks_per_node,
+				   job_ptr->job_id);
 		} else {
 			sched_error("Not super user: ignore ntasks_per_node change for job %u",
 				    job_ptr->job_id);
@@ -13070,9 +13056,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if (operator) {
 			detail_ptr->mc_ptr->ntasks_per_socket =
 				job_specs->ntasks_per_socket;
-			info("sched: update_job: setting ntasks_per_socket to %u "
-			     "for job_id %u", job_specs->ntasks_per_socket,
-			     job_ptr->job_id);
+			sched_info("update_job: setting ntasks_per_socket to %u for job_id %u",
+				   job_specs->ntasks_per_socket,
+				   job_ptr->job_id);
 		} else {
 			sched_error("Not super user: ignore ntasks_per_socket change for job %u",
 				    job_ptr->job_id);
@@ -13094,10 +13080,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			else {
 				job_ptr->details->orig_dependency =
 					xstrdup(job_ptr->details->dependency);
-				info("sched: update_job: setting dependency to "
-				     "%s for job_id %u",
-				     job_ptr->details->dependency,
-				     job_ptr->job_id);
+				sched_info("update_job: setting dependency to %s for job_id %u",
+					   job_ptr->details->dependency,
+					   job_ptr->job_id);
 			}
 		}
 	}
@@ -13118,9 +13103,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				update_accounting = true;
 				slurm_make_time_str(&detail_ptr->begin_time,
 						    time_str, sizeof(time_str));
-				info("sched: update_job: setting begin "
-				     "to %s for job_id %u",
-				     time_str, job_ptr->job_id);
+				sched_info("update_job: setting begin to %s for job_id %u",
+					   time_str, job_ptr->job_id);
 			} else
 				debug("sched: update_job: new begin time "
 				      "identical to old begin time %u",
@@ -13136,10 +13120,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
 			license_list = NULL;
-			info("sched: update_job: changing licenses from '%s' "
-			     "to '%s' for pending job %u",
-			     job_ptr->licenses, job_specs->licenses,
-			     job_ptr->job_id);
+			sched_info("update_job: changing licenses from '%s' to '%s' for pending job %u",
+				   job_ptr->licenses, job_specs->licenses,
+				   job_ptr->job_id);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
@@ -13150,18 +13133,17 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
 			license_list = NULL;
-			info("sched: update_job: changing licenses from '%s' "
-			     "to '%s' for running job %u",
-			     job_ptr->licenses, job_specs->licenses,
-			     job_ptr->job_id);
+			sched_info("update_job: changing licenses from '%s' to '%s' for running job %u",
+				   job_ptr->licenses, job_specs->licenses,
+				   job_ptr->job_id);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
 			license_job_get(job_ptr);
 		} else {
 			/* licenses are valid, but job state or user not
 			 * allowed to make changes */
-			info("sched: update_job: could not change licenses "
-			     "for job %u", job_ptr->job_id);
+			sched_info("update_job: could not change licenses for job %u",
+				   job_ptr->job_id);
 			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
 			FREE_NULL_LIST(license_list);
 		}
@@ -13204,8 +13186,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else {
-			info("sched: update_job: setting reboot to %u for "
-			     "jobid %u", job_specs->reboot, job_ptr->job_id);
+			sched_info("update_job: setting reboot to %u for jobid %u",
+				   job_specs->reboot, job_ptr->job_id);
 			if (job_specs->reboot == 0)
 				job_ptr->reboot = 0;
 			else
@@ -13221,12 +13203,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		xfree(job_ptr->network);
 		if (!strlen(job_specs->network)
 		    || !xstrcmp(job_specs->network, "none")) {
-			info("sched: update_job: clearing Network option "
-			     "for jobid %u", job_ptr->job_id);
+			sched_info("update_job: clearing Network option for jobid %u",
+				   job_ptr->job_id);
 		} else {
 			job_ptr->network = xstrdup(job_specs->network);
-			info("sched: update_job: setting Network to %s "
-			     "for jobid %u", job_ptr->network, job_ptr->job_id);
+			sched_info("update_job: setting Network to %s for jobid %u",
+				   job_ptr->network, job_ptr->job_id);
 			select_g_select_jobinfo_set(
 				job_ptr->select_jobinfo,
 				SELECT_JOBDATA_NETWORK,
@@ -13257,13 +13239,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->cpus_per_tres);
 		if (!strlen(job_specs->cpus_per_tres)) {
-			info("sched: update_job: clearing CpusPerTres option for jobid %u",
-			     job_ptr->job_id);
+			sched_info("update_job: clearing CpusPerTres option for jobid %u",
+				   job_ptr->job_id);
 		} else {
 			job_ptr->cpus_per_tres =
 				xstrdup(job_specs->cpus_per_tres);
-			info("sched: update_job: setting CpusPerTres to %s for jobid %u",
-			     job_ptr->cpus_per_tres, job_ptr->job_id);
+			sched_info("update_job: setting CpusPerTres to %s for jobid %u",
+				   job_ptr->cpus_per_tres, job_ptr->job_id);
 		}
 	}
 
@@ -13274,13 +13256,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->mem_per_tres);
 		if (!strlen(job_specs->mem_per_tres)) {
-			info("sched: update_job: clearing MemPerTres option for jobid %u",
-			     job_ptr->job_id);
+			sched_info("update_job: clearing MemPerTres option for jobid %u",
+				   job_ptr->job_id);
 		} else {
 			job_ptr->mem_per_tres =
 				xstrdup(job_specs->mem_per_tres);
-			info("sched: update_job: setting MemPerTres to %s for jobid %u",
-			     job_ptr->mem_per_tres, job_ptr->job_id);
+			sched_info("update_job: setting MemPerTres to %s for jobid %u",
+				   job_ptr->mem_per_tres, job_ptr->job_id);
 		}
 	}
 
@@ -13291,12 +13273,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_bind);
 		if (!strlen(job_specs->tres_bind)) {
-			info("sched: update_job: clearing TresBind option for jobid %u",
-			     job_ptr->job_id);
+			sched_info("update_job: clearing TresBind option for jobid %u",
+				   job_ptr->job_id);
 		} else {
 			job_ptr->tres_bind = xstrdup(job_specs->tres_bind);
-			info("sched: update_job: setting TresBind to %s for jobid %u",
-			     job_ptr->tres_bind, job_ptr->job_id);
+			sched_info("update_job: setting TresBind to %s for jobid %u",
+				   job_ptr->tres_bind, job_ptr->job_id);
 		}
 	}
 
@@ -13307,12 +13289,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_freq);
 		if (!strlen(job_specs->tres_freq)) {
-			info("sched: update_job: clearing TresFreq option for jobid %u",
-			     job_ptr->job_id);
+			sched_info("update_job: clearing TresFreq option for jobid %u",
+				   job_ptr->job_id);
 		} else {
 			job_ptr->tres_freq = xstrdup(job_specs->tres_freq);
-			info("sched: update_job: setting TresFreq to %s for jobid %u",
-			     job_ptr->tres_freq, job_ptr->job_id);
+			sched_info("update_job: setting TresFreq to %s for jobid %u",
+				   job_ptr->tres_freq, job_ptr->job_id);
 		}
 	}
 
@@ -13323,13 +13305,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_per_job);
 		if (!strlen(job_specs->tres_per_job)) {
-			info("sched: update_job: clearing TresPerJob option for jobid %u",
-			     job_ptr->job_id);
+			sched_info("update_job: clearing TresPerJob option for jobid %u",
+				   job_ptr->job_id);
 		} else {
 			job_ptr->tres_per_job =
 					xstrdup(job_specs->tres_per_job);
-			info("sched: update_job: setting TresPerJob to %s for jobid %u",
-			     job_ptr->tres_per_job, job_ptr->job_id);
+			sched_info("update_job: setting TresPerJob to %s for jobid %u",
+				   job_ptr->tres_per_job, job_ptr->job_id);
 		}
 	}
 	if (job_specs->tres_per_node) {
@@ -13339,13 +13321,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_per_node);
 		if (!strlen(job_specs->tres_per_node)) {
-			info("sched: update_job: clearing TresPerNode option for jobid %u",
-			     job_ptr->job_id);
+			sched_info("update_job: clearing TresPerNode option for jobid %u",
+				   job_ptr->job_id);
 		} else {
 			job_ptr->tres_per_node =
 					xstrdup(job_specs->tres_per_node);
-			info("sched: update_job: setting TresPerNode to %s for jobid %u",
-			     job_ptr->tres_per_node, job_ptr->job_id);
+			sched_info("update_job: setting TresPerNode to %s for jobid %u",
+				   job_ptr->tres_per_node, job_ptr->job_id);
 		}
 	}
 
@@ -13356,13 +13338,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_per_socket);
 		if (!strlen(job_specs->tres_per_socket)) {
-			info("sched: update_job: clearing TresPerSocket option for jobid %u",
-			     job_ptr->job_id);
+			sched_info("update_job: clearing TresPerSocket option for jobid %u",
+				   job_ptr->job_id);
 		} else {
 			job_ptr->tres_per_socket =
 				xstrdup(job_specs->tres_per_socket);
-			info("sched: update_job: setting TresPerSocket to %s for jobid %u",
-			     job_ptr->tres_per_socket, job_ptr->job_id);
+			sched_info("update_job: setting TresPerSocket to %s for jobid %u",
+				   job_ptr->tres_per_socket, job_ptr->job_id);
 		}
 	}
 
@@ -13373,13 +13355,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_per_task);
 		if (!strlen(job_specs->tres_per_task)) {
-			info("sched: update_job: clearing TresPerTask option for jobid %u",
-			     job_ptr->job_id);
+			sched_info("update_job: clearing TresPerTask option for jobid %u",
+				   job_ptr->job_id);
 		} else {
 			job_ptr->tres_per_task =
 				xstrdup(job_specs->tres_per_task);
-			info("sched: update_job: setting TresPerTask to %s for jobid %u",
-			     job_ptr->tres_per_task, job_ptr->job_id);
+			sched_info("update_job: setting TresPerTask to %s for jobid %u",
+				   job_ptr->tres_per_task, job_ptr->job_id);
 		}
 	}
 

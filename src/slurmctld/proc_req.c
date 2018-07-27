@@ -1674,8 +1674,9 @@ send_msg:
 
 	if (!reject_job) {
 		xassert(job_ptr);
-		info("sched: %s JobId=%u NodeList=%s %s", __func__,
-		     job_ptr->job_id, job_ptr->nodes, TIME_STR);
+		sched_info("%s JobId=%u NodeList=%s %s",
+			   __func__, job_ptr->job_id,
+			   job_ptr->nodes, TIME_STR);
 
 		alloc_msg = build_alloc_msg(job_ptr, error_code,
 					    job_submit_user_msg);
@@ -2834,10 +2835,10 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		slurm_step_layout_t *layout = step_rec->step_layout;
 
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-			info("sched: %s: StepId=%u.%u %s %s",
-			     __func__,
-			     step_rec->job_ptr->job_id, step_rec->step_id,
-			     req_step_msg->node_list, TIME_STR);
+			sched_info("%s: StepId=%u.%u %s %s",
+				   __func__, step_rec->job_ptr->job_id,
+				   step_rec->step_id, req_step_msg->node_list,
+				   TIME_STR);
 
 		job_step_resp.job_step_id = step_rec->step_id;
 		job_step_resp.resv_ports  = step_rec->resv_ports;
@@ -3870,8 +3871,8 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("sched: %s JobId=%u: %s", __func__,
-				     req->job_id, TIME_STR);
+				sched_info("%s JobId=%u: %s", __func__,
+					   req->job_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			dump_job = true;
 		}
@@ -3893,8 +3894,9 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("sched: %s StepId=%u.%u %s", __func__,
-				     req->job_id, req->job_step_id, TIME_STR);
+				sched_info("%s StepId=%u.%u %s", __func__,
+					   req->job_id, req->job_step_id,
+					   TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			dump_job = true;
 		}
@@ -5970,7 +5972,7 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	unlock_slurmctld (config_read_lock);
 
 	if (schedlog_level != slurmctld_conf.sched_log_level)
-		info("sched: Set scheduler log level to %d", schedlog_level);
+		sched_info("Set scheduler log level to %d", schedlog_level);
 
 	slurmctld_conf.sched_log_level = schedlog_level;
 	slurmctld_conf.last_update = time(NULL);

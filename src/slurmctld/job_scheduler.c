@@ -830,8 +830,8 @@ next_part:		part_ptr = (struct part_record *)
 			     !bit_test(job_ptr->assoc_ptr->usage->valid_qos,
 				       job_ptr->qos_id)) &&
 			    !job_ptr->limit_set.qos) {
-				info("sched: JobId=%u has invalid QOS",
-					job_ptr->job_id);
+				sched_info("JobId=%u has invalid QOS",
+					   job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_QOS;
 				last_job_update = now;
@@ -883,8 +883,8 @@ next_part:		part_ptr = (struct part_record *)
 			 * the time we consider running it. It should be
 			 * very rare.
 			 */
-			info("sched: %s has invalid account",
-			     jobid2fmt(job_ptr, job_id_buf,sizeof(job_id_buf)));
+			sched_info("%s has invalid account",
+				   jobid2fmt(job_ptr, job_id_buf,sizeof(job_id_buf)));
 			last_job_update = now;
 			job_ptr->state_reason = FAIL_ACCOUNT;
 			xfree(job_ptr->state_desc);
@@ -917,10 +917,10 @@ next_part:		part_ptr = (struct part_record *)
 		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
 		if (error_code == SLURM_SUCCESS) {
 			last_job_update = now;
-			info("sched: Allocate %s Partition=%s NodeList=%s #CPUs=%u",
-			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
-			     job_ptr->part_ptr->name, job_ptr->nodes,
-			     job_ptr->total_cpus);
+			sched_info("Allocate %s Partition=%s NodeList=%s #CPUs=%u",
+				   jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
+				   job_ptr->part_ptr->name, job_ptr->nodes,
+				   job_ptr->total_cpus);
 
 			if ((job_ptr->total_cpus > 0) &&
 			    !IS_JOB_CONFIGURING(job_ptr)) {
@@ -1852,8 +1852,8 @@ next_task:
 			 * disabled between when the job was submitted and
 			 * the time we consider running it. It should be
 			 * very rare. */
-			info("sched: JobId=%u has invalid account",
-			     job_ptr->job_id);
+			sched_info("JobId=%u has invalid account",
+				   job_ptr->job_id);
 			last_job_update = now;
 			job_ptr->state_reason = FAIL_ACCOUNT;
 			xfree(job_ptr->state_desc);
@@ -1965,11 +1965,10 @@ skip_start:
 						       "Cluster",
 						       "CurrentSumPower");
 			}
-			info("sched: Allocate %s NodeList=%s #CPUs=%u "
-			     "Partition=%s",
-			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
-			     job_ptr->nodes, job_ptr->total_cpus,
-			     job_ptr->part_ptr->name);
+			sched_info("Allocate %s NodeList=%s #CPUs=%u Partition=%s",
+				   jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
+				   job_ptr->nodes, job_ptr->total_cpus,
+				   job_ptr->part_ptr->name);
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
 			else if (!IS_JOB_CONFIGURING(job_ptr))
@@ -2001,9 +2000,9 @@ skip_start:
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
 			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)){
-			info("sched: schedule: %s non-runnable: %s",
-			     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-			     slurm_strerror(error_code));
+			sched_info("schedule: %s non-runnable: %s",
+				   jobid2str(job_ptr, jbuf, sizeof(jbuf)),
+				   slurm_strerror(error_code));
 			last_job_update = now;
 			job_ptr->job_state = JOB_PENDING;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -2098,9 +2097,8 @@ fail_this_part:	if (fail_by_part) {
 	xfree(sched_part_jobs);
 	if ((slurmctld_config.server_thread_count >= 150) &&
 	    (defer_rpc_cnt == 0)) {
-		info("sched: %d pending RPCs at cycle end, consider "
-		     "configuring max_rpc_cnt",
-		     slurmctld_config.server_thread_count);
+		sched_info("%d pending RPCs at cycle end, consider configuring max_rpc_cnt",
+			   slurmctld_config.server_thread_count);
 	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("schedule");
