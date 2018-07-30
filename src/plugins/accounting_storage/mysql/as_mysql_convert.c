@@ -515,7 +515,7 @@ static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 		while ((row = mysql_fetch_row(result))) {
 			jobacct = jobacctinfo_create(NULL);
 
-			/* Just incase something is already there */
+			/* Just in case something is already there */
 			_set_tres_value(row[STEP_REQ_TRES_USAGE_IN_MAX],
 					jobacct->tres_usage_in_max);
 			_set_tres_value(row[STEP_REQ_TRES_USAGE_IN_MAX_TASKID],

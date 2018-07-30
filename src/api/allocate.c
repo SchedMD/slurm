@@ -1077,7 +1077,7 @@ char *slurm_read_hostfile(char *filename, int n)
 		}
 
 		/*
-		 * Get the string length again just to incase it changed from
+		 * Get the string length again just to in case it changed from
 		 * the above loop
 		 */
 		line_size = strlen(in_line);

@@ -1949,7 +1949,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 	if ((!assoc_mgr_tres_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_TRES)) {
 		/*
-		 * We need the old list just incase something changed.  If
+		 * We need the old list just in case something changed.  If
 		 * the tres is still stored in the assoc_mgr_list we will get
 		 * it from there.  This second check can be removed 2 versions
 		 * after 18.08.
