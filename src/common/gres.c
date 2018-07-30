@@ -202,7 +202,7 @@ static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 char *gres_name, char *node_name);
 static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
 			     int node_offset, char *gres_name, uint32_t job_id,
-			     char *node_name);
+			     char *node_name, bool old_job);
 static void	_job_state_delete(void *gres_data);
 static void *	_job_state_dup(void *gres_data);
 static void *	_job_state_dup2(void *gres_data, int node_index);
@@ -6782,7 +6782,23 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			if (!bit_test(job_gres_ptr->
 				      gres_bit_alloc[node_offset], i))
 				continue;
-			node_gres_ptr->topo_gres_cnt_alloc[i]++;
+			/*
+			 * NOTE: Immediately after slurmctld restart and before
+			 * the node's registration, the GRES type and topology
+			 * information will not be available and we will be
+			 * unable to update topo_gres_cnt_alloc or
+			 * type_cnt_alloc. This results in some incorrect
+			 * internal bookkeeping, but does not cause failures
+			 * in terms of allocating GRES to jobs.
+			 */
+			for (j = 0; j < node_gres_ptr->topo_cnt; j++) {
+				if (node_gres_ptr->topo_gres_bitmap &&
+				    node_gres_ptr->topo_gres_bitmap[j] &&
+				    bit_test(node_gres_ptr->topo_gres_bitmap[j],
+					     i)) {
+					node_gres_ptr->topo_gres_cnt_alloc[i]++;
+				}
+			}
 			if ((node_gres_ptr->type_cnt == 0) ||
 			    (node_gres_ptr->topo_type_name == NULL) ||
 			    (node_gres_ptr->topo_type_name[i] == NULL))
@@ -6915,7 +6931,7 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 
 static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			int node_offset, char *gres_name, uint32_t job_id,
-			char *node_name)
+			char *node_name, bool old_job)
 {
 	int i, j, len, sz1, sz2;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -7003,6 +7019,8 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			if (node_gres_ptr->topo_gres_cnt_alloc[i] >= gres_cnt) {
 				node_gres_ptr->topo_gres_cnt_alloc[i] -=
 					gres_cnt;
+			} else if (old_job) {
+				node_gres_ptr->topo_gres_cnt_alloc[i] = 0;
 			} else {
 				error("gres/%s: job %u dealloc node %s topo "
 				      "gres count underflow "
@@ -7026,6 +7044,8 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 				    gres_cnt) {
 					node_gres_ptr->type_cnt_alloc[j] -=
 						gres_cnt;
+				} else if (old_job) {
+					node_gres_ptr->type_cnt_alloc[j] = 0;
 				} else {
 					error("gres/%s: job %u dealloc node %s "
 					      "type %s gres count underflow "
@@ -7093,11 +7113,16 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
  * IN node_offset - zero-origin index to the node of interest
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
+ * IN old_job     - true if job started before last slurmctld reboot.
+ *		    Immediately after slurmctld restart and before the node's
+ *		    registration, the GRES type and topology. This results in
+ *		    some incorrect internal bookkeeping, but does not cause
+ *		    failures in terms of allocating GRES to jobs.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				   int node_offset, uint32_t job_id,
-				   char *node_name)
+				   char *node_name, bool old_job)
 {
 	int i, rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -7146,7 +7171,7 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 
 		rc2 = _job_dealloc(job_gres_ptr->gres_data,
 				   node_gres_ptr->gres_data, node_offset,
-				   gres_name, job_id, node_name);
+				   gres_name, job_id, node_name, old_job);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}

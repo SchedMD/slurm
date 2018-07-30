@@ -806,11 +806,16 @@ extern void gres_plugin_job_clear(List job_gres_list);
  * IN node_offset - zero-origin index to the node of interest
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
+ * IN old_job     - true if job started before last slurmctld reboot.
+ *		    Immediately after slurmctld restart and before the node's
+ *		    registration, the GRES type and topology. This results in
+ *		    some incorrect internal bookkeeping, but does not cause
+ *		    failures in terms of allocating GRES to jobs.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				   int node_offset, uint32_t job_id,
-				   char *node_name);
+				   char *node_name, bool old_job);
 
 /*
  * Merge one job's gres allocation into another job's gres allocation.

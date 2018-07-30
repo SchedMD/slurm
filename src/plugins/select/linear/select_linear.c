@@ -94,6 +94,7 @@ int node_record_count __attribute__((weak_import));
 time_t last_node_update __attribute__((weak_import));
 struct switch_record *switch_record_table __attribute__((weak_import));
 int switch_record_cnt __attribute__((weak_import));
+slurmctld_config_t slurmctld_config __attribute__((weak_import));
 
 int hypercube_dimensions __attribute__((weak_import));
 struct hypercube_switch *hypercube_switch_table __attribute__((weak_import));
@@ -109,6 +110,7 @@ int node_record_count;
 time_t last_node_update;
 struct switch_record *switch_record_table;
 int switch_record_cnt;
+slurmctld_config_t slurmctld_config;
 
 int hypercube_dimensions;
 struct hypercube_switch *hypercube_switch_table;
@@ -2278,6 +2280,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 	uint16_t cpu_cnt;
 	struct node_record *node_ptr;
 	List gres_list;
+	bool old_job = false;
 
 	if (cr_ptr == NULL) {
 		error("%s: cr_ptr not initialized", pre_err);
@@ -2289,6 +2292,9 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 		     plugin_type, job_ptr);
 		return SLURM_ERROR;
 	}
+
+	if (job_ptr->start_time < slurmctld_config.boot_time)
+		old_job = true;
 
 	if (remove_all && job_ptr->details &&
 	    job_ptr->details->pn_min_memory && (cr_type & CR_MEMORY)) {
@@ -2353,7 +2359,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 				gres_list = node_ptr->gres_list;
 			gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
 						node_offset, job_ptr->job_id,
-						node_ptr->name);
+						node_ptr->name, old_job);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
 		}
 
@@ -2684,6 +2690,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	int first_bit;
 	uint16_t cpu_cnt;
 	List gres_list;
+	bool old_job = false;
 
 	if (cr_ptr == NULL) {
 		error("%s: cr_ptr not initialized", pre_err);
@@ -2731,6 +2738,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 
 	extract_job_resources_node(job_resrcs_ptr, node_offset);
 
+	if (job_ptr->start_time < slurmctld_config.boot_time)
+		old_job = true;
 	if (select_fast_schedule)
 		cpu_cnt = node_ptr->config_ptr->cpus;
 	else
@@ -2752,7 +2761,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	else
 		gres_list = node_ptr->gres_list;
 	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset,
-				job_ptr->job_id, node_ptr->name);
+				job_ptr->job_id, node_ptr->name, old_job);
 	gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 	return _decr_node_job_cnt(node_inx, job_ptr, pre_err);
