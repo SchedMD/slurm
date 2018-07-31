@@ -1819,6 +1819,7 @@ alloc_job:
 			sock_gres_list[j] = avail_res_array[i]->sock_gres_list;
 			j++;
 		}
+//NEED TASK COUNT AND DIST
 		error_code = gres_plugin_job_core_filter4(sock_gres_list,
 							  job_ptr->job_id,
 							  job_res,
@@ -2876,9 +2877,11 @@ static gres_mc_data_t *_build_gres_mc_data(struct job_record *job_ptr)
 	tres_mc_ptr = xmalloc(sizeof(gres_mc_data_t));
 	tres_mc_ptr->cpus_per_task =
 		_valid_uint16(job_ptr->details->cpus_per_task);
+	tres_mc_ptr->ntasks = job_ptr->details->num_tasks;
 	tres_mc_ptr->ntasks_per_node =
 		_valid_uint16(job_ptr->details->ntasks_per_node);
 	tres_mc_ptr->overcommit = job_ptr->details->overcommit;
+	tres_mc_ptr->task_dist = job_ptr->details->task_dist;
 	tres_mc_ptr->whole_node = job_ptr->details->whole_node;
 	if (job_ptr->details->mc_ptr) {
 		multi_core_data_t *job_mc_ptr = job_ptr->details->mc_ptr;
