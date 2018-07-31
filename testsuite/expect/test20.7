@@ -82,7 +82,7 @@ proc check_output { path job_id } {
 }
 
 set job_id 0
-spawn $qsub -l walltime=1:00 -o /dev/null $file_in
+spawn $qsub -l walltime=1:00 -o /dev/null -e /dev/null $file_in
 expect {
 	-re "($number)" {
 		set job_id $expect_out(1,string)
