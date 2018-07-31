@@ -1476,6 +1476,16 @@ extern int get_job_resources_cnt(job_resources_t *job_resrcs_ptr,
 	return SLURM_ERROR;
 }
 
+/* Get CPU count for a specific node_id (zero origin), return -1 on error */
+extern int get_job_resources_cpus(job_resources_t *job_resrcs_ptr,
+				  uint32_t node_id)
+{
+	xassert(job_resrcs_ptr->cpus);
+	if (node_id >= job_resrcs_ptr->nhosts)
+		return -1;
+	return (int) job_resrcs_ptr->cpus[node_id];
+}
+
 /*
  * Test if job can fit into the given full-length core_bitmap
  * IN job_resrcs_ptr - resources allocated to a job

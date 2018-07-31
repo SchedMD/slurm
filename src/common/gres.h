@@ -241,7 +241,7 @@ typedef struct gres_mc_data {
 	uint16_t threads_per_core;  /* threads per core required by job */
 
 	uint16_t cpus_per_task;     /* Count of CPUs per task */
-	uint32_t ntasks;            /* number of tasks to invoke or NO_VAL */
+	uint32_t ntasks_per_job;    /* number of tasks to invoke for job or NO_VAL */
 	uint16_t ntasks_per_node;   /* number of tasks to invoke on each node */
 	uint16_t ntasks_per_board;  /* number of tasks to invoke on each board */
 	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */

@@ -193,8 +193,6 @@ static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			      int gres_name_colon_len);
 static uint32_t	_get_task_cnt_node(uint32_t **tasks_per_node_socket,
 				   int node_inx, int sock_cnt);
-static uint32_t	_get_task_cnt_sock(uint32_t **tasks_per_node_socket,
-				   int node_inx, int sock_inx);
 static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *set_cnt);
 static int	_gres_find_id(void *x, void *key);
 static int	_gres_find_job_by_key(void *x, void *key);
@@ -5749,6 +5747,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	}
 	list_iterator_destroy(sock_gres_iter);
 	xfree(req_sock);
+
+//FIXME: Need work here
+//	*avail_cpus = MIN(*avail_cpus,
+//			  (*max_tasks_this_node * mc_ptr->cpus_per_task));
 }
 
 /*
@@ -6278,14 +6280,15 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 		total_tasks += tasks_per_node_socket[node_inx][s];
 		total_gres_goal = total_tasks * job_specs->gres_per_task;
 		for (g = 0; g < gres_cnt; g++) {
+			if (total_gres_cnt >= total_gres_goal)
+				break;
 			if (!bit_test(sock_gres->bits_by_sock[s], g))
 				continue;   /* GRES not on this socket */
 			if (bit_test(node_specs->gres_bit_alloc, g))
 				continue;   /* Already allocated GRES */
 			bit_set(job_specs->gres_bit_select[node_inx], g);
 			job_specs->gres_cnt_node_select[node_inx]++;
-			if (++total_gres_cnt == total_gres_goal)
-				break;
+			total_gres_cnt++;
 		}
 	}
 
@@ -6294,29 +6297,37 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 	if (total_gres_cnt >= total_gres_goal)
 		return;
 	for (s = 0; s < sock_cnt; s++) {
+		if (total_gres_cnt >= total_gres_goal)
+			break;
 		for (g = 0; g < gres_cnt; g++) {
+			if (total_gres_cnt >= total_gres_goal)
+				break;
 			if (!bit_test(sock_gres->bits_by_sock[s], g))
 				continue;   /* GRES not on this socket */
-			if (bit_test(node_specs->gres_bit_alloc, g))
+			if (bit_test(node_specs->gres_bit_alloc, g) ||
+			    bit_test(job_specs->gres_bit_select[node_inx], g))
 				continue;   /* Already allocated GRES */
 			bit_set(job_specs->gres_bit_select[node_inx], g);
 			job_specs->gres_cnt_node_select[node_inx]++;
-			if (++total_gres_cnt == total_gres_goal)
-				break;
+			total_gres_cnt++;
 		}
+		if (total_gres_cnt == total_gres_goal)
+			break;
 	}
 }
 
+/* Build array to identifyy task count for each node-socket pair */
 static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 					     gres_mc_data_t *tres_mc_ptr)
 {
 	uint32_t **tasks_per_node_socket;
-	int i, i_first, i_last, j, node_cnt;
-	int c, s, core_offset, job_node_inx = 0;
-	int32_t rem_tasks;
+	int i, i_first, i_last, j, node_cnt, job_node_inx = 0;
+	int c, s, core_offset;
+	int cpus_per_task = 1, cpus_per_node, task_per_node_limit = 0;
+	int32_t rem_tasks, excess_tasks;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
 
-	rem_tasks = tres_mc_ptr->ntasks; 
+	rem_tasks = tres_mc_ptr->ntasks_per_job;
 	node_cnt = bit_size(job_res->node_bitmap);
 	tasks_per_node_socket = xmalloc(sizeof(uint32_t *) * node_cnt);
 	i_first = bit_ffs(job_res->node_bitmap);
@@ -6325,6 +6336,7 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 	else
 		i_last = -2;
 	for (i = i_first; i <= i_last; i++) {
+		int tasks_per_node = 0;
 		if (!bit_test(job_res->node_bitmap, i))
 			continue;
 		if (get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
@@ -6335,24 +6347,103 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 			tasks_per_node_socket[i] = xmalloc(sizeof(uint32_t));
 			tasks_per_node_socket[i][0] = 1;
 			rem_tasks--;
+			continue;
 		}
 		tasks_per_node_socket[i] = xmalloc(sizeof(uint32_t) * sock_cnt);
+		if (tres_mc_ptr->ntasks_per_node) {
+			task_per_node_limit = tres_mc_ptr->ntasks_per_node;
+		} else {
+			/*
+			 * cpus_per_node reports CPUs actually used by this
+			 * job on this node. Divide by cpus_per_task to yield
+			 * valid task count on this node.
+			 */
+			cpus_per_node = get_job_resources_cpus(job_res,
+							       job_node_inx);
+			if (cpus_per_node < 1) {
+				error("cons_tres: %s: failed to get cpus_per_node count",
+				      __func__);
+				/* Set default of 1 task on socket 0 */
+				tasks_per_node_socket[i][0] = 1;
+				rem_tasks--;
+				continue;
+			}
+			if (tres_mc_ptr->cpus_per_task)
+				cpus_per_task = tres_mc_ptr->cpus_per_task;
+			else
+				cpus_per_task = 1;
+			task_per_node_limit = cpus_per_node / cpus_per_task;
+		}
 		core_offset = get_job_resources_offset(job_res, job_node_inx++,
 						       0, 0);
+//FIXME: GET DATA HERE
+int cpus_per_core = 2;
 		for (s = 0; s < sock_cnt; s++) {
+			int tasks_per_socket = 0, skip_cores = 0;
 			for (c = 0; c < cores_per_socket_cnt; c++) {
 				j = (s * cores_per_socket_cnt) + c;
 				j += core_offset;
 				if (!bit_test(job_res->core_bitmap, j))
 					continue;
-//FIXME: Dummy value for testing, assume 1 task per core
-				tasks_per_node_socket[i][s]++;
-				rem_tasks--;
+				if (skip_cores > 0) {
+					skip_cores--;
+					continue;
+				}
+				if (tres_mc_ptr->ntasks_per_core) {
+					int tpc = tres_mc_ptr->ntasks_per_core;
+					tasks_per_node_socket[i][s] += tpc;
+					tasks_per_node += tpc;
+					tasks_per_socket += tpc;
+					rem_tasks -= tpc;
+				} else {
+					int tpc = cpus_per_core / cpus_per_task;
+					if (tpc < 1) {
+						tpc = 1;
+						skip_cores = cpus_per_task /
+							     cpus_per_core;
+						skip_cores--;	/* This core */
+					}
+					/* Start with 1 task per core */
+					tasks_per_node_socket[i][s]++;
+					tasks_per_node++;
+					tasks_per_socket++;
+					rem_tasks--;
+				}
+				if (task_per_node_limit) {
+					if (tasks_per_node >
+					    task_per_node_limit) {
+						excess_tasks = tasks_per_node -
+							task_per_node_limit;
+						tasks_per_node_socket[i][s] -=
+							excess_tasks;
+						rem_tasks += excess_tasks;
+					}
+					if (tasks_per_node >=
+					    task_per_node_limit) {
+						s = sock_cnt;
+						break;
+					}
+				}
+				/* NOTE: No support for ntasks_per_board */
+				if (tres_mc_ptr->ntasks_per_socket) {
+					if (tasks_per_socket >
+					    tres_mc_ptr->ntasks_per_socket) {
+						excess_tasks = tasks_per_socket-
+						 tres_mc_ptr->ntasks_per_socket;
+						tasks_per_node_socket[i][s] -=
+							excess_tasks;
+						rem_tasks += excess_tasks;
+					}
+					if (tasks_per_socket >=
+					    tres_mc_ptr->ntasks_per_socket) {
+						break;
+					}
+				}
 			}
 		}
 	}
-if (rem_tasks > 0)
-error("%s: rem_tasks > 0 (%d)", __func__, rem_tasks);
+	if (rem_tasks > 0)	/* This should never happen */
+		error("%s: rem_tasks > 0 (%d)", __func__, rem_tasks);
 
 	return tasks_per_node_socket;
 }
@@ -6386,20 +6477,6 @@ static uint32_t _get_task_cnt_node(uint32_t **tasks_per_node_socket,
 		task_cnt += tasks_per_node_socket[node_inx][s];
 
 	return task_cnt;
-}
-
-/* Return the count of tasks for a job on a given node and socket */
-static uint32_t _get_task_cnt_sock(uint32_t **tasks_per_node_socket,
-				   int node_inx, int sock_inx)
-{
-	if (!tasks_per_node_socket || !tasks_per_node_socket[node_inx]) {
-		error("%s: tasks_per_node_socket is NULL", __func__);
-		return 1;	/* Best guess if no data structure */
-	}
-
-//FIXME: Only populating info for socket 0 now
-//	return tasks_per_node_socket[node_inx][sock_inx];
-	return tasks_per_node_socket[node_inx][0];
 }
 
 static int _get_job_cnt(struct job_resources *job_res, int node_inx)
@@ -6477,8 +6554,6 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 				tasks_per_node_socket =
 					_build_tasks_per_node_sock(job_res,
 								   tres_mc_ptr);
-//FIXME: Dummy function call, just to reference the symbol
-(void) _get_task_cnt_sock(tasks_per_node_socket, 0, 0);
 			}
 			if (job_specs->total_node_cnt == 0) {
 				job_specs->total_node_cnt = node_cnt;
