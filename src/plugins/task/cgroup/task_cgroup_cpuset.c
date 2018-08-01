@@ -576,20 +576,20 @@ static int _hwloc_topo(hwloc_topology_t topology, stepd_step_rec_t *job)
 {
        bool need_load = true;
        int ret = SLURM_SUCCESS;
-       char* topo_file;
        uint32_t jobid = job->jobid;
        uint32_t stepid = job->stepid;
 
-       topo_file = xstrdup_printf("%s/hwloc_topo_%u.%u.xml",
-                                  conf->spooldir, jobid, stepid);
+       if (!hwloc_xml)
+	       hwloc_xml = xstrdup_printf("%s/hwloc_topo_%u.%u.xml",
+					  conf->spooldir, jobid, stepid);
 
        debug2("hwloc_topology_set_xml/load");
-       if (hwloc_topology_set_xml(topology, topo_file)) {
+       if (hwloc_topology_set_xml(topology, hwloc_xml)) {
                error("%s: hwloc_topology_set_xml() failed (%s)",
-                     __func__, topo_file);
+                     __func__, hwloc_xml);
        } else if (hwloc_topology_load(topology)) {
                error("%s: hwloc_topology_load() failed (%s)",
-                     __func__, topo_file);
+                     __func__, hwloc_xml);
        } else {
                need_load = false;
        }
@@ -605,7 +605,6 @@ static int _hwloc_topo(hwloc_topology_t topology, stepd_step_rec_t *job)
                }
        }
 
-       xfree(topo_file);
        return ret;
 }
 
