@@ -161,13 +161,13 @@ static int _hwloc_topo(hwloc_topology_t *topology, bool write)
        int ret = SLURM_SUCCESS;
        char* topo_file;
        bool need_load = true;
-       bool spool_init = (conf->actual_cpus>0);
+       bool spool_init = (conf->actual_cpus > 0);
 
        topo_file = xstrdup_printf("%s/hwloc_topo_whole.xml", conf->spooldir);
 
-       if ( !write && spool_init) {
+       if (!write && spool_init) {
                debug2("hwloc_topology_set_xml/load");
-               if (hwloc_topology_set_xml(*topology,topo_file)) {
+               if (hwloc_topology_set_xml(*topology, topo_file)) {
                        debug("%s: hwloc_topology_set_xml() failed (%s)",
                              __func__, topo_file);
                } else if (hwloc_topology_load(*topology)) {
@@ -210,14 +210,12 @@ static int _hwloc_topo(hwloc_topology_t *topology, bool write)
                        debug("hwloc_topology_load() failed.");
                        ret = SLURM_FAILURE;
                } else {
-                       if( write && spool_init ) {
+                       if (write && spool_init) {
                                debug2("hwloc_topology_export_xml");
                                if (hwloc_topology_export_xml(*topology,
                                                              topo_file)) {
                                        /* error in export hardware topology */
-                                       debug("hwloc_topology_export_xml() "
-                                             "failed (load will be required "
-                                             "after read failures).");
+                                       debug("hwloc_topology_export_xml() failed (load will be required after read failures).");
                                        clean_cpuinfo();
                                }
                        }

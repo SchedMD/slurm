@@ -1447,7 +1447,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 
 	/* Allocate and initialize hwloc objects */
 	hwloc_topology_init(&topology);
-	_hwloc_topo(topology,job);
+	_hwloc_topo(topology, job);
 	cpuset = hwloc_bitmap_alloc();
 #if HWLOC_API_VERSION >= 0x00020000
 	global_allowed_cpuset = hwloc_bitmap_alloc();
