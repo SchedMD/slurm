@@ -5584,18 +5584,20 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		if (!job_specs)
 			continue;
 
-		/*
-		 * gres_plugin_job_core_filter2() sets sock_gres->max_node_gres
-		 * for mem_per_gres enforcement. Ammend it for remaining nodes.
-		 */
 		if (job_specs->gres_per_job) {
 			if (job_specs->total_gres >= job_specs->gres_per_job) {
+				/* Already reached gres_per_job limit */
 				*max_tasks_this_node = 0;
 				break;
 			}
 			rem_gres = job_specs->gres_per_job -
 				   job_specs->total_gres;
 		}
+		/*
+		 * gres_plugin_job_core_filter2() sets sock_gres->max_node_gres
+		 * for mem_per_gres enforcement; use it to set GRES limit for
+		 * this node (max_gres).
+		 */
 		if (sock_gres->max_node_gres) {
 			if (rem_gres && (rem_gres < sock_gres->max_node_gres))
 				max_gres = rem_gres;
@@ -5603,9 +5605,9 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				max_gres = sock_gres->max_node_gres;
 		}
 		rem_nodes = MAX(rem_nodes, 1);
-		rem_sockets = rem_nodes * MAX(1, mc_ptr->sockets_per_node);
+		rem_sockets = MAX(1, mc_ptr->sockets_per_node);
 		if (max_gres &&
-		    (((job_specs->gres_per_node   * rem_nodes)   > max_gres) ||
+		    ((job_specs->gres_per_node > max_gres) ||
 		     ((job_specs->gres_per_socket * rem_sockets) > max_gres))) {
 			*max_tasks_this_node = 0;
 			break;
@@ -5636,6 +5638,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				cnt_avail_sock = 0;
 			if (job_specs->gres_per_socket >
 			    (sock_gres->cnt_any_sock + cnt_avail_sock)) {
+				/* Insufficient GRES on this socket */
 				if (sock_gres->cnt_by_sock) {
 					sock_gres->total_cnt -=
 						sock_gres->cnt_by_sock[s];
@@ -5653,7 +5656,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			cnt_avail_total += cnt_avail_sock;
 			req_sock[s] = true;
 			if (job_specs->gres_per_node &&
-			    (job_specs->gres_per_node >= cnt_avail_total))
+			    (cnt_avail_total >= job_specs->gres_per_node))
 				break;	/* Sufficient GRES */
 		}
 
@@ -5748,9 +5751,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	list_iterator_destroy(sock_gres_iter);
 	xfree(req_sock);
 
-//FIXME: Need work here
-//	*avail_cpus = MIN(*avail_cpus,
-//			  (*max_tasks_this_node * mc_ptr->cpus_per_task));
+	*avail_cpus = MIN(*avail_cpus,
+			  (*max_tasks_this_node * mc_ptr->cpus_per_task));
 }
 
 /*
