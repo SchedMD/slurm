@@ -570,6 +570,9 @@ extern void trigger_node_up(struct node_record *node_ptr)
 
 extern void trigger_reconfig(void)
 {
+	slurmctld_lock_t node_read_lock = { .node = READ_LOCK };
+
+	lock_slurmctld(node_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
 	trigger_node_reconfig = true;
 	if (trigger_down_front_end_bitmap)
@@ -591,7 +594,9 @@ extern void trigger_reconfig(void)
 		trigger_up_nodes_bitmap = bit_realloc(
 			trigger_up_nodes_bitmap, node_record_count);
 	slurm_mutex_unlock(&trigger_mutex);
+	unlock_slurmctld(node_read_lock);
 }
+
 extern void trigger_primary_ctld_fail(void)
 {
 	slurm_mutex_lock(&trigger_mutex);
