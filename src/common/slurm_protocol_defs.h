@@ -700,7 +700,9 @@ typedef struct epilog_complete_msg {
 typedef struct reboot_msg {
 	char *features;
 	uint16_t flags;
+	uint32_t next_state;		/* state after reboot */
 	char *node_list;
+	char *reason;
 } reboot_msg_t;
 
 typedef struct shutdown_msg {
@@ -1384,6 +1386,7 @@ extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg);
 #define	slurm_free_timelimit_msg(msg) \
 	slurm_free_kill_job_msg(msg)
 
+extern void slurm_init_reboot_msg(reboot_msg_t * msg, bool clear);
 extern void slurm_free_reboot_msg(reboot_msg_t * msg);
 
 extern void slurm_free_shutdown_msg(shutdown_msg_t * msg);
@@ -1476,6 +1479,7 @@ extern void slurm_free_job_step_info_members (job_step_info_t * msg);
 extern void slurm_free_front_end_info_msg (front_end_info_msg_t * msg);
 extern void slurm_free_front_end_info_members(front_end_info_t * front_end);
 extern void slurm_free_node_info_msg(node_info_msg_t * msg);
+extern void slurm_init_node_info_t(node_info_t * msg, bool clear);
 extern void slurm_free_node_info_members(node_info_t * node);
 extern void slurm_free_partition_info_msg(partition_info_msg_t * msg);
 extern void slurm_free_partition_info_members(partition_info_t * part);

@@ -94,6 +94,12 @@ documents those changes that are of interest to users and administrators.
  -- SlurmDBD - Print warning if MySQL/MariaDB internal tuning is not at least
     half of the recommended values.
  -- Move libpmi from src/api to contribs/pmi.
+ -- Add ability to specify a node reason when rebooting nodes with "scontrol
+    reboot".
+ -- Add nextstate option to "scontrol reboot" to dictate state of node after
+    reboot.
+ -- Consider "resuming" (nextstate=resume) nodes as available in backfill
+    future scheduling and don't replace "resuming" nodes in reservations.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

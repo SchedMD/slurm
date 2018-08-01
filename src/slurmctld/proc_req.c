@@ -6113,12 +6113,22 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		node_ptr->node_state |= NODE_STATE_REBOOT;
 		node_ptr->boot_req_time = now;
 		node_ptr->last_response = now + slurmctld_config.boot_time;
-		if (reboot_msg && (reboot_msg->flags & REBOOT_FLAGS_ASAP)) {
-			node_ptr->node_state |= NODE_STATE_DRAIN;
-			if (node_ptr->reason == NULL) {
-				node_ptr->reason = xstrdup("Reboot ASAP");
+		if (reboot_msg) {
+			node_ptr->next_state = reboot_msg->next_state;
+			if (reboot_msg->reason) {
+				xfree(node_ptr->reason);
+				node_ptr->reason = xstrdup(reboot_msg->reason);
 				node_ptr->reason_time = now;
 				node_ptr->reason_uid = uid;
+			}
+			if (reboot_msg->flags & REBOOT_FLAGS_ASAP) {
+				node_ptr->node_state |= NODE_STATE_DRAIN;
+				if (node_ptr->reason == NULL) {
+					node_ptr->reason =
+						xstrdup("Reboot ASAP");
+					node_ptr->reason_time = now;
+					node_ptr->reason_uid = uid;
+				}
 			}
 		}
 		want_nodes_reboot = true;

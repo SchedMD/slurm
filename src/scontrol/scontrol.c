@@ -673,7 +673,8 @@ _print_aliases (char* node_hostname)
  * _reboot_nodes - issue RPC to have computing nodes reboot when idle
  * RET 0 or a slurm error code
  */
-static int _reboot_nodes(char *node_list, bool asap)
+static int _reboot_nodes(char *node_list, bool asap, uint32_t next_state,
+			 char *reason)
 {
 	slurm_ctl_conf_t *conf;
 	int rc;
@@ -691,8 +692,10 @@ static int _reboot_nodes(char *node_list, bool asap)
 
 	slurm_msg_t_init(&msg);
 
-	memset(&req, 0, sizeof(reboot_msg_t));
+	slurm_init_reboot_msg(&req, true);
+	req.next_state = next_state;
 	req.node_list = node_list;
+	req.reason    = reason;
 	if (asap)
 		req.flags |= REBOOT_FLAGS_ASAP;
 	msg.msg_type = REQUEST_REBOOT_NODES;
@@ -705,6 +708,86 @@ static int _reboot_nodes(char *node_list, bool asap)
 		slurm_seterrno_ret(rc);
 
 	return rc;
+}
+
+void _process_reboot_command(const char *tag, int argc, char **argv)
+{
+	int error_code = SLURM_SUCCESS;
+	bool asap = false;
+	char *reason = NULL;
+	uint32_t next_state = NO_VAL;
+	int argc_offset = 1;
+
+	if (argc > 1) {
+		int i = 1;
+		for (; i <= 2 && i < argc; i++) {
+			if (!strcasecmp(argv[i], "ASAP")) {
+				asap = true;
+				argc_offset++;
+			} else if (!xstrncasecmp(argv[i], "Reason=",
+						 strlen("Reason="))) {
+				char *tmp_ptr = strchr(argv[i], '=');
+				if (!*(tmp_ptr + 1)) {
+					exit_code = 1;
+					if (!quiet_flag)
+						fprintf(stderr, "missing reason\n");
+					return;
+				}
+
+				reason = xstrdup(tmp_ptr+1);
+				argc_offset++;
+			} else if (!xstrncasecmp(argv[i], "nextstate=",
+						 strlen("nextstate="))) {
+				int state_str_len;
+				char* state_str;
+				char *tmp_ptr = strchr(argv[i], '=');
+				if (!*(tmp_ptr + 1)) {
+					exit_code = 1;
+					if (!quiet_flag)
+						fprintf(stderr, "missing state\n");
+					return;
+				}
+
+				state_str = xstrdup(tmp_ptr+1);
+				state_str_len = strlen(state_str);
+				argc_offset++;
+
+				if (!xstrncasecmp(state_str, "DOWN",
+						  MAX(state_str_len, 1)))
+					next_state = NODE_STATE_DOWN;
+				else if (!xstrncasecmp(state_str, "RESUME",
+						       MAX(state_str_len, 1)))
+					next_state = NODE_RESUME;
+				else {
+					exit_code = 1;
+					if (!quiet_flag) {
+						fprintf(stderr, "Invalid state: %s\n",
+							state_str);
+						fprintf(stderr, "Valid states: DOWN, RESUME\n");
+					}
+					return;
+				}
+			}
+		}
+	}
+	if ((argc - argc_offset) > 1) {
+		exit_code = 1;
+		fprintf (stderr,
+			 "too many arguments for keyword:%s\n",
+			 tag);
+	} else if ((argc - argc_offset) < 1) {
+		error_code = _reboot_nodes("ALL", asap, next_state, reason);
+	} else {
+		error_code = _reboot_nodes(argv[argc_offset], asap, next_state,
+					   reason);
+	}
+
+	xfree(reason);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("scontrol_reboot_nodes error");
+	}
 }
 
 /*
@@ -911,26 +994,7 @@ static int _process_command (int argc, char **argv)
 		exit_flag = 1;
 	}
 	else if (xstrncasecmp(tag, "reboot_nodes", MAX(tag_len, 3)) == 0) {
-		bool asap = false;
-		int argc_offset = 1;
-		if ((argc > 1) && !strcasecmp(argv[1], "ASAP")) {
-			asap = true;
-			argc_offset++;
-		}
-		if ((argc - argc_offset) > 1) {
-			exit_code = 1;
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n",
-				 tag);
-		} else if ((argc - argc_offset) < 1) {
-			error_code = _reboot_nodes("ALL", asap);
-		} else
-			error_code = _reboot_nodes(argv[argc_offset], asap);
-		if (error_code) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				slurm_perror ("scontrol_reboot_nodes error");
-		}
+		_process_reboot_command(tag, argc, argv);
 	}
 	else if (xstrncasecmp(tag, "reconfigure", MAX(tag_len, 3)) == 0) {
 		if (argc > 2) {

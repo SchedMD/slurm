@@ -86,6 +86,7 @@ extern List front_end_list;	/* list of slurm_conf_frontend_t entries */
 struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 	char *name;			/* name of the node. NULL==defunct */
+	uint32_t next_state;		/* state after reboot */
 	char *node_hostname;		/* hostname of the node */
 	uint32_t node_state;		/* enum node_states, ORed with
 					 * NODE_STATE_NO_RESPOND if not
