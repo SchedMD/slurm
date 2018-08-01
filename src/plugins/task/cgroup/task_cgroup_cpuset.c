@@ -124,6 +124,8 @@ static uint16_t bind_mode_ldom =
 			    CPU_BIND_LDMASK | CPU_BIND_LDRANK |
 			    CPU_BIND_LDMAP;
 
+static char *hwloc_xml = NULL;
+
 #endif
 
 static bool cpuset_prefix_set = false;
@@ -517,6 +519,94 @@ static void _add_hwloc_cpuset(
 		hwloc_bitmap_or(cpuset, cpuset, obj->allowed_cpuset);
 #endif
 	}
+}
+
+static int _hwloc_clean_topo(void)
+{
+	if (!hwloc_xml)
+		return SLURM_FAILURE;
+
+	remove(hwloc_xml);
+	xfree(hwloc_xml);
+	return SLURM_SUCCESS;
+}
+
+static inline int _internal_hwloc_topology_export_xml(
+	hwloc_topology_t topology, const char *xmlpath)
+{
+#if HWLOC_API_VERSION >= 0x00020000
+	return hwloc_topology_export_xml(topology, hwloc_xml, 0);
+#else
+	return hwloc_topology_export_xml(topology, hwloc_xml);
+#endif
+}
+
+static int _hwloc_write_topo(uint32_t jobid, uint32_t stepid)
+{
+	hwloc_topology_t topology;
+
+	if (hwloc_topology_init(&topology)) {
+		/* error in initialize hwloc library */
+		error("%s: hwloc_topology_init() failed", __func__);
+		return SLURM_FAILURE;
+	}
+
+	debug2("hwloc_topology_load (to write)");
+	if (hwloc_topology_load(topology)) {
+		error("%s: hwloc_topology_load() failed", __func__);
+		hwloc_topology_destroy(topology);
+		return SLURM_FAILURE;
+	}
+
+	if (!hwloc_xml)
+		hwloc_xml = xstrdup_printf("%s/hwloc_topo_%u.%u.xml",
+					   conf->spooldir, jobid, stepid);
+	if (_internal_hwloc_topology_export_xml(topology, hwloc_xml)) {
+		/* error in export hardware topology */
+		error("hwloc_topology_export_xml() failed (load will be required after read failures).");
+		hwloc_topology_destroy(topology);
+		return SLURM_FAILURE;
+	}
+
+	hwloc_topology_destroy(topology);
+	return SLURM_SUCCESS;
+}
+
+static int _hwloc_topo(hwloc_topology_t topology, stepd_step_rec_t *job)
+{
+       bool need_load = true;
+       int ret = SLURM_SUCCESS;
+       char* topo_file;
+       uint32_t jobid = job->jobid;
+       uint32_t stepid = job->stepid;
+
+       topo_file = xstrdup_printf("%s/hwloc_topo_%u.%u.xml",
+                                  conf->spooldir, jobid, stepid);
+
+       debug2("hwloc_topology_set_xml/load");
+       if (hwloc_topology_set_xml(topology, topo_file)) {
+               error("%s: hwloc_topology_set_xml() failed (%s)",
+                     __func__, topo_file);
+       } else if (hwloc_topology_load(topology)) {
+               error("%s: hwloc_topology_load() failed (%s)",
+                     __func__, topo_file);
+       } else {
+               need_load = false;
+       }
+
+       if (need_load) {
+               hwloc_topology_destroy(topology);
+               hwloc_topology_init(&topology);
+               debug2("hwloc_topology_load");
+               if (hwloc_topology_load(topology)) {
+                       /* error in load hardware topology */
+                       error("hwloc_topology_load() failed.");
+                       ret = SLURM_FAILURE;
+               }
+       }
+
+       xfree(topo_file);
+       return ret;
 }
 
 static int _task_cgroup_cpuset_dist_cyclic(
@@ -996,6 +1086,10 @@ extern int task_cgroup_cpuset_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	xcgroup_t cpuset_cg;
 
+#ifdef HAVE_HWLOC
+	_hwloc_clean_topo();
+#endif
+
 	/* Similarly to task_cgroup_memory_fini(), we must lock the
 	 * root cgroup so we don't race with another job step that is
 	 * being started.  */
@@ -1288,6 +1382,10 @@ again:
 	} else
 		fstatus = SLURM_SUCCESS;
 
+#ifdef HAVE_HWLOC
+	_hwloc_write_topo(jobid,stepid);
+#endif
+
 	/* validate the requested cpu frequency and set it */
 	cpu_freq_cgroup_validate(job, step_alloc_cores);
 
@@ -1350,7 +1448,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 
 	/* Allocate and initialize hwloc objects */
 	hwloc_topology_init(&topology);
-	hwloc_topology_load(topology);
+	_hwloc_topo(topology,job);
 	cpuset = hwloc_bitmap_alloc();
 #if HWLOC_API_VERSION >= 0x00020000
 	global_allowed_cpuset = hwloc_bitmap_alloc();

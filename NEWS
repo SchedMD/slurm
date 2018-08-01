@@ -100,6 +100,7 @@ documents those changes that are of interest to users and administrators.
     reboot.
  -- Consider "resuming" (nextstate=resume) nodes as available in backfill
     future scheduling and don't replace "resuming" nodes in reservations.
+ -- Add the use of a xml file to help performance when using hwloc.
 
 * Changes in Slurm 18.08.0pre1
 ==============================

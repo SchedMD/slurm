@@ -901,6 +901,7 @@ _read_config(void)
 	_update_logging();
 	_update_nice();
 
+	conf->actual_cpus = 0;
 	get_cpuinfo(&conf->actual_cpus,
 		    &conf->actual_boards,
 	            &conf->actual_sockets,
@@ -1485,6 +1486,18 @@ _slurmd_init(void)
 	 */
 	_read_config();
 
+	/*
+	 * Create slurmd spool directory if necessary.
+	 */
+	if (_set_slurmd_spooldir() < 0) {
+		error("Unable to initialize slurmd spooldir");
+		return SLURM_FAILURE;
+	}
+	if (init_cpuinfo() < 0) {
+		error("Unable to initialize slurmd cpuinfo");
+		return SLURM_FAILURE;
+	}
+
 	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
 
@@ -1553,14 +1566,6 @@ _slurmd_init(void)
 		/* Only cache credential for 5 seconds with select/serial
 		 * for shorter cache searches and higher throughput */
 		slurm_cred_ctx_set(conf->vctx, SLURM_CRED_OPT_EXPIRY_WINDOW, 5);
-	}
-
-	/*
-	 * Create slurmd spool directory if necessary.
-	 */
-	if (_set_slurmd_spooldir() < 0) {
-		error("Unable to initialize slurmd spooldir");
-		return SLURM_FAILURE;
 	}
 
 	if (conf->cleanstart) {
@@ -1678,6 +1683,7 @@ static int
 _slurmd_fini(void)
 {
 	assoc_mgr_fini(false);
+	clean_cpuinfo();
 	node_features_g_fini();
 	core_spec_g_fini();
 	switch_g_node_fini();

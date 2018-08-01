@@ -55,6 +55,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/common/read_config.h"
 
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
@@ -153,6 +154,111 @@ static int _core_child_count(hwloc_topology_t topology, hwloc_obj_t obj)
 	return count;
 }
 
+/* read or load topology and write if needed
+ * init and destroy topology must be outside this function */
+static int _hwloc_topo(hwloc_topology_t *topology, bool write)
+{
+       int ret = SLURM_SUCCESS;
+       char* topo_file;
+       bool need_load = true;
+       bool spool_init = (conf->actual_cpus>0);
+
+       topo_file = xstrdup_printf("%s/hwloc_topo_whole.xml", conf->spooldir);
+
+       if ( !write && spool_init) {
+               debug2("hwloc_topology_set_xml/load");
+               if (hwloc_topology_set_xml(*topology,topo_file)) {
+                       debug("%s: hwloc_topology_set_xml() failed (%s)",
+                             __func__, topo_file);
+               } else if (hwloc_topology_load(*topology)) {
+                       debug("%s: hwloc_topology_load() failed (%s)",
+                             __func__, topo_file);
+               } else {
+                       need_load = false;
+               }
+       }
+
+       if (need_load) {
+               hwloc_topology_destroy(*topology);
+               hwloc_topology_init(topology);
+
+               /* parse all system */
+               hwloc_topology_set_flags(*topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
+
+               /* ignores cache, misc */
+#if HWLOC_API_VERSION < 0x00020000
+               hwloc_topology_ignore_type (*topology, HWLOC_OBJ_CACHE);
+               hwloc_topology_ignore_type (*topology, HWLOC_OBJ_MISC);
+#else
+	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L1CACHE,
+					      HWLOC_TYPE_FILTER_KEEP_NONE);
+	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L2CACHE,
+					      HWLOC_TYPE_FILTER_KEEP_NONE);
+	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L3CACHE,
+					      HWLOC_TYPE_FILTER_KEEP_NONE);
+	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L4CACHE,
+					      HWLOC_TYPE_FILTER_KEEP_NONE);
+	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L5CACHE,
+					      HWLOC_TYPE_FILTER_KEEP_NONE);
+	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_MISC,
+					      HWLOC_TYPE_FILTER_KEEP_NONE);
+#endif
+               /* load topology */
+               debug2("hwloc_topology_load");
+               if (hwloc_topology_load(*topology)) {
+                       /* error in load hardware topology */
+                       debug("hwloc_topology_load() failed.");
+                       ret = SLURM_FAILURE;
+               } else {
+                       if( write && spool_init ) {
+                               debug2("hwloc_topology_export_xml");
+                               if (hwloc_topology_export_xml(*topology,
+                                                             topo_file)) {
+                                       /* error in export hardware topology */
+                                       debug("hwloc_topology_export_xml() "
+                                             "failed (load will be required "
+                                             "after read failures).");
+                                       clean_cpuinfo();
+                               }
+                       }
+               }
+       }
+
+       xfree(topo_file);
+       return ret;
+}
+
+extern int init_cpuinfo (void)
+{
+       //test if running is slurmd is not needed
+       int rc = SLURM_SUCCESS;
+       hwloc_topology_t topology;
+
+       debug2("hwloc_topology_init");
+       if (hwloc_topology_init(&topology)) {
+               /* error in initialize hwloc library */
+               debug("hwloc_topology_init() failed.");
+               return SLURM_ERROR;
+       }
+
+       if (_hwloc_topo(&topology, true)) {
+               rc = SLURM_ERROR;
+       }
+
+       hwloc_topology_destroy(topology);
+       return rc;
+}
+
+extern int clean_cpuinfo (void)
+{
+       //test if running is slurmd is not needed
+       char* topo_file;
+       topo_file = xstrdup_printf("%s/hwloc_topo_whole.xml", conf->spooldir);
+       remove(topo_file);
+       xfree(topo_file);
+       return SLURM_SUCCESS;
+}
+
 /*
  * get_cpuinfo - Return detailed cpuinfo on this system
  * Output: p_cpus - number of processors on the system
@@ -192,33 +298,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		return 1;
 	}
 
-	/* parse all system */
-	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
-
-	/* ignores cache, misc */
-#if HWLOC_API_VERSION < 0x00020000
-	hwloc_topology_ignore_type(topology, HWLOC_OBJ_CACHE);
-	hwloc_topology_ignore_type(topology, HWLOC_OBJ_MISC);
-#else
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L1CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L2CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L3CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L4CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L5CACHE,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-	hwloc_topology_set_type_filter(topology, HWLOC_OBJ_MISC,
-				       HWLOC_TYPE_FILTER_KEEP_NONE);
-#endif
-
-	/* load topology */
-	debug2("hwloc_topology_load");
-	if (hwloc_topology_load(topology)) {
-		/* error in load hardware topology */
-		debug("hwloc_topology_load() failed.");
+	if (_hwloc_topo(&topology, false) == SLURM_FAILURE) {
 		hwloc_topology_destroy(topology);
 		return 2;
 	}
@@ -429,6 +509,16 @@ typedef struct cpuinfo {
 } cpuinfo_t;
 static cpuinfo_t *cpuinfo = NULL; /* array of CPU information for get_cpuinfo */
 				  /* Note: file static for qsort/_compare_cpus*/
+
+extern int init_cpuinfo (void)
+{
+	return SLURM_SUCCESS;
+}
+extern int clean_cpuinfo (void)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int
 get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	    uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
