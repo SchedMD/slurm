@@ -233,11 +233,12 @@ defined message can be added to the nodes by using the "reason" option. The
 message will be cleared when the node is resumed.  If "nextstate" is specified
 as "DOWN", then the node(s) will remain in a down state after rebooting. If the
 "nextstate" is specifed as "RESUME", then the node(s) will resume as normal
-when the node registers. When using the "nextstate" and "reason" options
-together the reason will be appended with "reboot issused" when the reboot is
-issued and "reboot complete" when the node registers with a "nextstate" of
-"DOWN". An optional list of nodes to reboot may be specified. By default all
-nodes are rebooted.
+when the node registers. "Resuming" nodes will be considered as available in
+backfill future scheduling and won't be replaced by idle nodes in a reservation.
+When using the "nextstate" and "reason" options together the reason will be
+appended with "reboot issused" when the reboot is issued and "reboot complete"
+when the node registers with a "nextstate" of "DOWN". An optional list of nodes
+to reboot may be specified. By default all nodes are rebooted.
 NOTE: This command does not prevent additional jobs from being scheduled on
 these nodes, so many jobs can be executed on the nodes prior to them being
 rebooted. You can explicitly drain the nodes in order to reboot nodes as soon
