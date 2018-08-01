@@ -402,10 +402,6 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	slurmctld_lock_t job_read_lock =
 		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
-	/* Ensure we don't already have the locks so we don't deadlock. */
-	xassert(!verify_lock(CONF_LOCK, READ_LOCK));
-	xassert(!verify_lock(JOB_LOCK, READ_LOCK));
-
 	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
 
@@ -509,8 +505,6 @@ extern void trigger_front_end_down(front_end_record_t *front_end_ptr)
 {
 	int inx = front_end_ptr - front_end_nodes;
 
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
-
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_down_front_end_bitmap == NULL)
 		trigger_down_front_end_bitmap = bit_alloc(front_end_node_cnt);
@@ -521,8 +515,6 @@ extern void trigger_front_end_down(front_end_record_t *front_end_ptr)
 extern void trigger_front_end_up(front_end_record_t *front_end_ptr)
 {
 	int inx = front_end_ptr - front_end_nodes;
-
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_up_front_end_bitmap == NULL)
@@ -535,8 +527,6 @@ extern void trigger_node_down(struct node_record *node_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
-
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_down_nodes_bitmap == NULL)
 		trigger_down_nodes_bitmap = bit_alloc(node_record_count);
@@ -548,8 +538,6 @@ extern void trigger_node_drained(struct node_record *node_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
-
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_drained_nodes_bitmap == NULL)
 		trigger_drained_nodes_bitmap = bit_alloc(node_record_count);
@@ -560,8 +548,6 @@ extern void trigger_node_drained(struct node_record *node_ptr)
 extern void trigger_node_failing(struct node_record *node_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
-
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_fail_nodes_bitmap == NULL)
@@ -575,8 +561,6 @@ extern void trigger_node_up(struct node_record *node_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
-
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_up_nodes_bitmap == NULL)
 		trigger_up_nodes_bitmap = bit_alloc(node_record_count);
@@ -586,14 +570,6 @@ extern void trigger_node_up(struct node_record *node_ptr)
 
 extern void trigger_reconfig(void)
 {
-	/* Locks: Read node */
-	slurmctld_lock_t node_read_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-
-	/* Ensure we don't already have the lock so we don't deadlock. */
-	xassert(!verify_lock(NODE_LOCK, READ_LOCK));
-
-	lock_slurmctld(node_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
 	trigger_node_reconfig = true;
 	if (trigger_down_front_end_bitmap)
@@ -615,9 +591,7 @@ extern void trigger_reconfig(void)
 		trigger_up_nodes_bitmap = bit_realloc(
 			trigger_up_nodes_bitmap, node_record_count);
 	slurm_mutex_unlock(&trigger_mutex);
-	unlock_slurmctld(node_read_lock);
 }
-
 extern void trigger_primary_ctld_fail(void)
 {
 	slurm_mutex_lock(&trigger_mutex);
@@ -746,8 +720,6 @@ static int _load_trigger_state(Buf buffer, uint16_t protocol_version)
 	trig_mgr_info_t *trig_ptr;
 	uint32_t str_len;
 
-	xassert(verify_lock(JOB_LOCK, READ_LOCK));
-
 	trig_ptr = xmalloc(sizeof(trig_mgr_info_t));
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -820,7 +792,6 @@ unpack_error:
 	xfree(trig_ptr);
 	return SLURM_FAILURE;
 }
-
 extern int trigger_state_save(void)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
@@ -940,8 +911,6 @@ extern void trigger_state_restore(void)
 	uint32_t ver_str_len;
 
 	/* read the file */
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
-
 	lock_state_files();
 	if (!(buffer = _open_trigger_state_file(&state_file))) {
 		info("No trigger state file (%s) to recover", state_file);
@@ -992,9 +961,6 @@ static bool _front_end_job_test(bitstr_t *front_end_bitmap,
 #ifdef HAVE_FRONT_END
 	int i;
 
-	/* Need node read lock for reading front_end_node_cnt. */
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
-
 	if ((front_end_bitmap == NULL) || (job_ptr->batch_host == NULL))
 		return false;
 
@@ -1011,8 +977,6 @@ static bool _front_end_job_test(bitstr_t *front_end_bitmap,
 /* Test if the event has been triggered, change trigger state as needed */
 static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 {
-	xassert(verify_lock(JOB_LOCK, READ_LOCK));
-
 	trig_in->job_ptr = find_job_record(trig_in->job_id);
 
 	if ((trig_in->trig_type & TRIGGER_TYPE_FINI) &&
@@ -1116,8 +1080,6 @@ static void _trigger_front_end_event(trig_mgr_info_t *trig_in, time_t now)
 {
 	int i;
 
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
-
 	if ((trig_in->trig_type & TRIGGER_TYPE_DOWN) &&
 	    (trigger_down_front_end_bitmap != NULL) &&
 	    ((i = bit_ffs(trigger_down_front_end_bitmap)) != -1)) {
@@ -1173,8 +1135,6 @@ static void _trigger_other_event(trig_mgr_info_t *trig_in, time_t now)
 
 static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 {
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
-
 	if ((trig_in->trig_type & TRIGGER_TYPE_DOWN) &&
 	    trigger_down_nodes_bitmap                &&
 	    (bit_ffs(trigger_down_nodes_bitmap) != -1)) {
@@ -1482,7 +1442,6 @@ static void _trigger_database_event(trig_mgr_info_t *trig_in, time_t now)
 		return;
 	}
 }
-
 /* Ideally we would use the existing proctrack plugin to prevent any
  * processes from escaping our control, but that plugin is tied
  * to various slurmd data structures. We just the process group ID
