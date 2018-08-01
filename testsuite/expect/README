@@ -816,3 +816,4 @@ test39.1   Test full set of sbatch --gpu options and scontrol show job
 test39.2   Test full set of salloc --gpu options and scontrol show job
 test39.3   Test full set of srun --gpu options and scontrol show step
 test39.4   Test some invalid combintations of --gpu options
+test39.5   Test some valid combintations of srun --gpu options

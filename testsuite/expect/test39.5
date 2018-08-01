@@ -1,0 +1,261 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test some valid combintations of srun --gpu options
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "39.5"
+set exit_code   0
+set file_in     "test$test_id.input"
+set number_commas  "\[0-9_,\]+"
+
+print_header $test_id
+
+proc get_node_config {} {
+	global cpus_per_socket sockets_per_node
+	global exit_code file_in max_job_delay number srun scontrol
+
+	set cpus_tot 1
+	set sockets_per_node 1
+	set cpus_per_socket 1
+	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	set timeout $max_job_delay
+	log_user 0
+	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 $file_in]
+	expect {
+		-re "CPUTot=($number)" {
+			set cpus_tot $expect_out(1,string)
+			exp_continue
+		}
+		-re "Sockets=($number)" {
+			set sockets_per_node $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+}
+
+set gpu_cnt [get_gpu_count]
+if {$gpu_cnt < 0} {
+	send_user "\nFAILURE: Error getting GPU count\n"
+	exit 1
+}
+if {$gpu_cnt < 1} {
+	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
+	exit 0
+}
+get_node_config
+send_user "\nGPU count is $gpu_cnt\n"
+send_user "Sockets per node is $sockets_per_node\n"
+send_user "CPUs per socket is $cpus_per_socket\n"
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+
+set tot_gpus $gpu_cnt
+if {$nb_nodes > 1} {
+	set nb_nodes 2
+	incr tot_gpus $gpu_cnt
+}
+set gpus_per_node $gpu_cnt
+if {$gpus_per_node > 1 && $sockets_per_node > 1} {
+	set sockets_per_node 2
+	set gpus_per_socket [expr $gpus_per_node / $sockets_per_node]
+} else {
+	set gpus_per_socket $gpus_per_node
+}
+set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
+
+#
+# Build input script file
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+exit 0"
+
+#
+# Test --gpus options using a subset of GPUs actually available on the node
+#
+send_user "\n\nTEST: --gpus option\n"
+set match 0
+set timeout $max_job_delay
+if {$tot_gpus > 1} {
+	set use_gpus_per_job [expr $tot_gpus - 1]
+} else {
+	set use_gpus_per_job $tot_gpus
+}
+set srun_pid [spawn $srun --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -l ./$file_in]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set expected_gpus $use_gpus_per_job
+if {$match != $expected_gpus} {
+	send_user "\nFAILURE: srun --gpus failure ($match != $expected_gpus)\n"
+	set exit_code 1
+}
+
+if {$use_gpus_per_job > 2} {
+	send_user "\n\nTEST: --gpus option, part 2\n"
+	set match 0
+	incr use_gpus_per_job -2
+	set srun_pid [spawn $srun --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -l ./$file_in]
+	expect {
+		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+			incr match [cuda_count $expect_out(1,string)]
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	set expected_gpus $use_gpus_per_job
+	if {$match != $expected_gpus} {
+		send_user "\nFAILURE: srun --gpus failure ($match != $expected_gpus)\n"
+		set exit_code 1
+	}
+}
+
+#
+# Test --gpus-per-node options using a subset of GPUs actually available on the node
+#
+send_user "\n\nTEST: --gpus-per-node option\n"
+set match 0
+if {$gpus_per_node > 1} {
+	set use_gpus_per_node [expr $gpus_per_node - 1]
+} else {
+	set use_gpus_per_node $gpus_per_node
+}
+set srun_pid [spawn $srun --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -l ./$file_in]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set expected_gpus [expr $use_gpus_per_node * $nb_nodes]
+if {$match != $expected_gpus} {
+	send_user "\nFAILURE: srun --gpus-per-node failure ($match != $expected_gpus)\n"
+	set exit_code 1
+}
+
+#
+# Test --gpus-per-socket options using a subset of GPUs actually available on the node
+#
+send_user "\n\nTEST: --gpus-per-socket option\n"
+set match 0
+set srun_pid [spawn $srun --gpus-per-socket=1 --sockets-per-node=$sockets_per_node --ntasks-per-socket=1 --nodes=$nb_nodes -t1 -l ./$file_in]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set expected_gpus [expr $sockets_per_node * $nb_nodes]
+if {$match != $expected_gpus} {
+	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
+	set exit_code 1
+}
+
+#
+# Test --gpus-per-task options using a subset of GPUs actually available on the node
+#
+send_user "\n\nTEST: --gpus-per-task option\n"
+set match 0
+if {$gpu_cnt > 1} {
+	set use_gpus_per_node [expr $gpu_cnt - 1]
+} else {
+	set use_gpus_per_node $gpu_cnt
+}
+set srun_pid [spawn $srun --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -l ./$file_in]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set expected_gpus [expr $use_gpus_per_node * $use_gpus_per_node]
+if {$match != $expected_gpus} {
+	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

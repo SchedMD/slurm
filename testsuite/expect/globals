@@ -4289,4 +4289,42 @@ proc get_over_time_limit {} {
 	}
 	log_user 1
 	return $ret
+
+################################################################
+#
+# Proc: cuda_count
+#
+# Purpose: Determine count of allocated GPUs
+#
+# Returns: Return the number of GPUs or -1 on error
+#
+# Input: cuda_string - Contents of a CUDA_VISIBLE_DEVICES environment
+# variable
+#
+################################################################
+proc cuda_count { cuda_string } {
+	set cuda_count 0
+	set has_number 0
+	set len [string length $cuda_string]
+	for {set char_inx 0} {$char_inx < $len} {incr char_inx} {
+		set cuda_char [string index $cuda_string $char_inx]
+		if {[string match , $cuda_char]} {
+			if {$has_number > 0} {
+				incr cuda_count
+				set has_number 0
+			} else {
+				send_user "cuda_count: Invalid input ($cuda_string)\n"
+				return -1
+			}
+		} elseif {[string is digit $cuda_char]} {
+			set has_number 1
+		}
+	}
+	if {$has_number > 0} {
+		incr cuda_count
+	} else {
+		send_user "cuda_count: Invalid input ($cuda_string)\n"
+		return -1
+	}
+	return $cuda_count
 }
