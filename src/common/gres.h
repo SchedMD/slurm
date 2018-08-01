@@ -737,7 +737,6 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
  *	sockets/cores are required
  * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
  * IN sock_gres_list - list of sock_gres_t entries built by gres_plugin_job_test2()
- * IN avail_cores_per_sock - Count of available cores on each socket
  * IN sockets - Count of sockets on the node
  * IN cores_per_socket - Count of cores per socket on the node
  * IN cpus_per_core - Count of CPUs per core on the node
@@ -754,7 +753,6 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
  */
 extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 List sock_gres_list,
-					 uint16_t *avail_cores_per_sock,
 					 uint16_t sockets,
 					 uint16_t cores_per_socket,
 					 uint16_t cpus_per_core,

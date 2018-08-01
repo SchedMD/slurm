@@ -1,0 +1,145 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Insure job requesting GPUs on multiple sockets gets CPUs on multiple
+#          sockets
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "39.6"
+set exit_code   0
+set file_in     "test$test_id.input"
+set number_commas  "\[0-9_,\]+"
+
+proc get_node_config {} {
+	global cpus_per_socket sockets_per_node
+	global exit_code file_in max_job_delay number srun scontrol
+
+	set cpus_tot 1
+	set sockets_per_node 1
+	set cpus_per_socket 1
+	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	set timeout $max_job_delay
+	log_user 0
+	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 $file_in]
+	expect {
+		-re "CPUTot=($number)" {
+			set cpus_tot $expect_out(1,string)
+			exp_continue
+		}
+		-re "Sockets=($number)" {
+			set sockets_per_node $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+}
+
+print_header $test_id
+
+set select_type [test_select_type]
+if {![string compare $select_type "cons_tres"] ||
+    (![string compare $select_type "cray"] && [test_select_type_params "other_cons_tres"])} {
+        send_user "\nValid configuration, using select/cons_tres\n"
+} else {
+        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
+        exit 0
+}
+
+set gpu_cnt [get_gpu_count]
+if {$gpu_cnt < 0} {
+	send_user "\nFAILURE: Error getting GPU count\n"
+	exit 1
+}
+if {$gpu_cnt < 1} {
+	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
+	exit 0
+}
+get_node_config
+if {$sockets_per_node < 2} {
+	send_user "\nWARNING: This test requires 2 or more sockets per node in the default partition\n"
+	exit 0
+}
+if {$cpus_per_socket < 2} {
+	send_user "\nWARNING: This test requires 2 or more cores per socket in the default partition\n"
+	exit 0
+}
+send_user "\nGPU count is $gpu_cnt\n"
+send_user "Sockets per node is $sockets_per_node\n"
+send_user "CPUs per socket is $cpus_per_socket\n"
+send_user "CPUs per node is [expr $sockets_per_node * $cpus_per_socket]\n\n"
+
+#
+# Build input script file
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+$scontrol -dd show job \$SLURM_JOB_ID
+exit 0"
+
+set match 0
+set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --nodes=1 --ntasks=1 --cpus-per-task=$cpus_per_socket -t1 -l ./$file_in]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	-re "CPU_IDs=($controlmachine_regex)" {
+		if {[string first , $expect_out(1,string)] == -1} {
+			send_user "\nFAILURE: allocated CPUs do not appear to span multiple sockets\n"
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != $gpu_cnt} {
+	send_user "\nFAILURE: srun --gpus-per-node failure ($match != $gpu_cnt)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

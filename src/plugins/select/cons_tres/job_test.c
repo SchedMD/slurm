@@ -2201,6 +2201,12 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		min_tasks_this_node = mc_ptr->ntasks_per_core;
 		max_tasks_this_node = mc_ptr->ntasks_per_core *
 				      select_node_record[node_inx].tot_cores;
+	} else if (job_ptr->details && (job_ptr->details->max_nodes == 1)) {
+		if (job_ptr->details->num_tasks == NO_VAL)
+			min_tasks_this_node = 1;
+		else
+			min_tasks_this_node = job_ptr->details->num_tasks;
+		max_tasks_this_node = job_ptr->details->num_tasks;
 	} else {
 		min_tasks_this_node = 1;
 		max_tasks_this_node = NO_VAL;
@@ -2216,7 +2222,6 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	if (job_ptr->gres_list) {
 		gres_plugin_job_core_filter3(mc_ptr,
 				avail_res_array[node_inx]->sock_gres_list,
-				avail_res_array[node_inx]->avail_cores_per_sock,
 				avail_res_array[node_inx]->sock_cnt,
 				select_node_record[node_inx].cores,
 				select_node_record[node_inx].vpus,
@@ -2225,24 +2230,6 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				rem_nodes, enforce_binding, first_pass,
 				avail_core[node_inx]);
 	}
-
-#if 0
-//FIXME: need to integrate with GRES allocation
-//FIXME: if first_pass==true then try to use only local GRES
-info("NODE:%d MIN-MAX_TASKS: %d-%d", node_inx, min_tasks_this_node, max_tasks_this_node);
-info("REM_NODES:%d", rem_nodes);
-info("MAX_NODES:%d", max_nodes);
-info("BOARDS_PER_NODE:%u", mc_ptr->boards_per_node);
-info("SOCKETS_PER_BOARD:%u", mc_ptr->sockets_per_board);
-info("CORES_PER_SOCKET:%u", mc_ptr->cores_per_socket);
-info("THREADS_PER_CORE:%u", mc_ptr->threads_per_core);
-info("CPUS_PER_TASK:%u", mc_ptr->cpus_per_task);
-info("NTASKS_PER_NODE:%u", mc_ptr->ntasks_per_node);
-info("NTASKS_PER_BOARD:%u", mc_ptr->ntasks_per_board);
-info("NTASKS_PER_SOCKET:%u", mc_ptr->ntasks_per_socket);
-info("NTASKS_PER_CORE:%u", mc_ptr->ntasks_per_core);
-info("OVERCOMMIT:%u\n", mc_ptr->overcommit);
-#endif
 
 	if (max_tasks_this_node > 0)
 		*avail_cpus = avail_res_array[node_inx]->avail_cpus;
