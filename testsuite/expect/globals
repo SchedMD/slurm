@@ -1316,7 +1316,16 @@ proc test_cpu_affinity_or_cgroup { } {
 	if { [lsearch $parts "affinity"] != -1 } {
 		set affinity 1
 	} elseif { [lsearch $parts "cgroup"] != -1 } {
-		set affinity 1
+		spawn $scontrol show config
+		expect {
+			-re "TaskAffinity *= yes" {
+				set affinity 1
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
 	}
 
 	log_user 1
