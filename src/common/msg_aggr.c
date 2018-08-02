@@ -379,16 +379,16 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait,
 		timeout.tv_nsec = now.tv_usec * 1000;
 
 		wait_count++;
+
 		if (pthread_cond_timedwait(&msg_aggr->wait_cond,
 					   &msg_collection.aggr_mutex,
 					   &timeout) == ETIMEDOUT)
 			_handle_msg_aggr_ret(msg_aggr->msg_index, 1);
 		wait_count--;
 		slurm_mutex_unlock(&msg_collection.aggr_mutex);
-;
+
 		if (!msg_collection.running && !wait_count)
 			slurm_mutex_destroy(&msg_collection.aggr_mutex);
-
 		_msg_aggr_free(msg_aggr);
 	}
 }
