@@ -902,13 +902,13 @@ _read_config(void)
 	_update_nice();
 
 	conf->actual_cpus = 0;
-	get_cpuinfo(&conf->actual_cpus,
-		    &conf->actual_boards,
-	            &conf->actual_sockets,
-	            &conf->actual_cores,
-	            &conf->actual_threads,
-	            &conf->block_map_size,
-	            &conf->block_map, &conf->block_map_inv);
+	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
+				&conf->actual_boards,
+				&conf->actual_sockets,
+				&conf->actual_cores,
+				&conf->actual_threads,
+				&conf->block_map_size,
+				&conf->block_map, &conf->block_map_inv);
 #ifdef HAVE_FRONT_END
 	/*
 	 * When running with multiple frontends, the slurmd S:C:T values are not
@@ -1242,6 +1242,10 @@ _destroy_conf(void)
 		xfree(conf->epilog);
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
+		if (conf->hwloc_xml) {
+			remove(conf->hwloc_xml);
+			xfree(conf->hwloc_xml);
+		}
 		xfree(conf->job_acct_gather_freq);
 		xfree(conf->job_acct_gather_type);
 		xfree(conf->logfile);
@@ -1284,13 +1288,13 @@ _print_config(void)
 	gethostname_short(name, sizeof(name));
 	printf("NodeName=%s ", name);
 
-	get_cpuinfo(&conf->actual_cpus,
-		    &conf->actual_boards,
-	            &conf->actual_sockets,
-	            &conf->actual_cores,
-	            &conf->actual_threads,
-	            &conf->block_map_size,
-	            &conf->block_map, &conf->block_map_inv);
+	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
+				&conf->actual_boards,
+				&conf->actual_sockets,
+				&conf->actual_cores,
+				&conf->actual_threads,
+				&conf->block_map_size,
+				&conf->block_map, &conf->block_map_inv);
 	printf("CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u "
 	       "ThreadsPerCore=%u ",
 	       conf->actual_cpus, conf->actual_boards, conf->actual_sockets,
@@ -1493,10 +1497,9 @@ _slurmd_init(void)
 		error("Unable to initialize slurmd spooldir");
 		return SLURM_FAILURE;
 	}
-	if (init_cpuinfo() < 0) {
-		error("Unable to initialize slurmd cpuinfo");
-		return SLURM_FAILURE;
-	}
+
+	/* Set up the hwloc whole system xml file */
+	xcpuinfo_init();
 
 	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
@@ -1683,7 +1686,6 @@ static int
 _slurmd_fini(void)
 {
 	assoc_mgr_fini(false);
-	clean_cpuinfo();
 	node_features_g_fini();
 	core_spec_g_fini();
 	switch_g_node_fini();
@@ -1708,6 +1710,7 @@ _slurmd_fini(void)
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
 	route_fini();
+	xcpuinfo_fini();
 	slurm_mutex_lock(&fini_job_mutex);
 	xfree(fini_job_id);
 	fini_job_cnt = 0;

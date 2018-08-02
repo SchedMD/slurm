@@ -66,6 +66,7 @@
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
+#include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/req.h"
@@ -191,6 +192,10 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	}
 
 	mpi_fini();	/* Remove stale PMI2 sockets */
+
+	if (conf->hwloc_xml)
+		remove(conf->hwloc_xml);
+
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
 	(void) core_spec_g_fini();
@@ -203,6 +208,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	xfree(conf->block_map);
 	xfree(conf->block_map_inv);
 	xfree(conf->hostname);
+	xfree(conf->hwloc_xml);
 	xfree(conf->job_acct_gather_freq);
 	xfree(conf->job_acct_gather_type);
 	xfree(conf->logfile);
@@ -615,6 +621,14 @@ _init_from_slurmd(int sock, char **argv,
 	}
 
 	_set_job_log_prefix(jobid, stepid);
+
+	if (!conf->hwloc_xml)
+		conf->hwloc_xml = xstrdup_printf("%s/hwloc_topo_%u.%u.xml",
+						 conf->spooldir,
+						 jobid, stepid);
+
+	/* create hwloc xml file here to avoid threading issues late */
+	xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);
 
 	/*
 	 * Swap the field to the srun client version, which will eventually

@@ -101,6 +101,7 @@ typedef struct slurmd_config {
 	uint16_t      cr_type;		/* Consumable Resource Type:       *
 					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
 					 * CR_DEFAULT, etc.                */
+	char         *hwloc_xml;	/* path of hwloc xml file if using */
 	time_t        last_update;	/* last update time of the
 					 * build parameters */
 	uint16_t      mem_limit_enforce; /* enforce mem limit on running job */

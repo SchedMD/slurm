@@ -124,6 +124,9 @@ get_procs(uint16_t *procs)
 }
 
 #ifdef HAVE_HWLOC
+
+static char *hwloc_xml_whole = NULL;
+
 #if _DEBUG
 static void _hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
 			    int depth)
@@ -154,41 +157,60 @@ static int _core_child_count(hwloc_topology_t topology, hwloc_obj_t obj)
 	return count;
 }
 
+static inline int _internal_hwloc_topology_export_xml(
+	hwloc_topology_t topology, const char *hwloc_xml)
+{
+#if HWLOC_API_VERSION >= 0x00020000
+	return hwloc_topology_export_xml(topology, hwloc_xml, 0);
+#else
+	return hwloc_topology_export_xml(topology, hwloc_xml);
+#endif
+}
+
 /* read or load topology and write if needed
  * init and destroy topology must be outside this function */
-static int _hwloc_topo(hwloc_topology_t *topology, bool write)
+extern int xcpuinfo_hwloc_topo_load(
+	void *topology_in, char *topo_file, bool full)
 {
        int ret = SLURM_SUCCESS;
-       char* topo_file;
-       bool need_load = true;
-       bool spool_init = (conf->actual_cpus > 0);
+       struct stat buf;
+       hwloc_topology_t *topology = topology_in;
+       hwloc_topology_t tmp_topo;
 
-       topo_file = xstrdup_printf("%s/hwloc_topo_whole.xml", conf->spooldir);
+       xassert(topo_file);
 
-       if (!write && spool_init) {
-               debug2("hwloc_topology_set_xml/load");
-               if (hwloc_topology_set_xml(*topology, topo_file)) {
-                       debug("%s: hwloc_topology_set_xml() failed (%s)",
-                             __func__, topo_file);
-               } else if (hwloc_topology_load(*topology)) {
-                       debug("%s: hwloc_topology_load() failed (%s)",
-                             __func__, topo_file);
-               } else {
-                       need_load = false;
-               }
+       if (!topology_in) {
+	       topology = &tmp_topo;
+	       goto handle_write;
        }
 
-       if (need_load) {
-               hwloc_topology_destroy(*topology);
-               hwloc_topology_init(topology);
+       if (!stat(topo_file, &buf)) {
+               debug2("%s: xml file (%s) found", __func__, topo_file);
+               if (hwloc_topology_set_xml(*topology, topo_file))
+                       error("%s: hwloc_topology_set_xml() failed (%s)",
+                             __func__, topo_file);
+	       else if (hwloc_topology_load(*topology))
+                       error("%s: hwloc_topology_load() failed (%s)",
+                             __func__, topo_file);
+               else
+		       return ret;
+       }
 
-               /* parse all system */
-               hwloc_topology_set_flags(*topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
+       hwloc_topology_destroy(*topology);
 
-               /* ignores cache, misc */
+handle_write:
+
+       hwloc_topology_init(topology);
+
+       if (full) {
+	       /* parse all system */
+	       hwloc_topology_set_flags(*topology,
+					HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
+
+	       /* ignores cache, misc */
 #if HWLOC_API_VERSION < 0x00020000
-               hwloc_topology_ignore_type (*topology, HWLOC_OBJ_CACHE);
-               hwloc_topology_ignore_type (*topology, HWLOC_OBJ_MISC);
+	       hwloc_topology_ignore_type (*topology, HWLOC_OBJ_CACHE);
+	       hwloc_topology_ignore_type (*topology, HWLOC_OBJ_MISC);
 #else
 	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L1CACHE,
 					      HWLOC_TYPE_FILTER_KEEP_NONE);
@@ -203,62 +225,30 @@ static int _hwloc_topo(hwloc_topology_t *topology, bool write)
 	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_MISC,
 					      HWLOC_TYPE_FILTER_KEEP_NONE);
 #endif
-               /* load topology */
-               debug2("hwloc_topology_load");
-               if (hwloc_topology_load(*topology)) {
-                       /* error in load hardware topology */
-                       debug("hwloc_topology_load() failed.");
-                       ret = SLURM_FAILURE;
-               } else {
-                       if (write && spool_init) {
-                               debug2("hwloc_topology_export_xml");
-                               if (hwloc_topology_export_xml(*topology,
-                                                             topo_file)) {
-                                       /* error in export hardware topology */
-                                       debug("hwloc_topology_export_xml() failed (load will be required after read failures).");
-                                       clean_cpuinfo();
-                               }
-                       }
-               }
        }
 
-       xfree(topo_file);
+       /* load topology */
+       debug2("hwloc_topology_load");
+       if (hwloc_topology_load(*topology)) {
+	       /* error in load hardware topology */
+	       debug("hwloc_topology_load() failed.");
+	       ret = SLURM_FAILURE;
+       } else {
+	       debug2("hwloc_topology_export_xml");
+	       if (_internal_hwloc_topology_export_xml(*topology, topo_file)) {
+		       /* error in export hardware topology */
+		       error("%s: failed (load will be required after read failures).", __func__);
+	       }
+       }
+
+       if (!topology_in)
+	       hwloc_topology_destroy(tmp_topo);
+
        return ret;
 }
 
-extern int init_cpuinfo (void)
-{
-       //test if running is slurmd is not needed
-       int rc = SLURM_SUCCESS;
-       hwloc_topology_t topology;
-
-       debug2("hwloc_topology_init");
-       if (hwloc_topology_init(&topology)) {
-               /* error in initialize hwloc library */
-               debug("hwloc_topology_init() failed.");
-               return SLURM_ERROR;
-       }
-
-       if (_hwloc_topo(&topology, true)) {
-               rc = SLURM_ERROR;
-       }
-
-       hwloc_topology_destroy(topology);
-       return rc;
-}
-
-extern int clean_cpuinfo (void)
-{
-       //test if running is slurmd is not needed
-       char* topo_file;
-       topo_file = xstrdup_printf("%s/hwloc_topo_whole.xml", conf->spooldir);
-       remove(topo_file);
-       xfree(topo_file);
-       return SLURM_SUCCESS;
-}
-
 /*
- * get_cpuinfo - Return detailed cpuinfo on this system
+ * xcpuinfo_hwloc_topo_get - Return detailed cpuinfo on the whole system
  * Output: p_cpus - number of processors on the system
  *         p_boards - number of baseboards (containing sockets)
  *         p_sockets - number of physical processor sockets
@@ -269,11 +259,11 @@ extern int clean_cpuinfo (void)
  *         return code - 0 if no error, otherwise errno
  * NOTE: User must xfree block_map and block_map_inv
  */
-extern int
-get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
-	    uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
-	    uint16_t *p_block_map_size,
-	    uint16_t **p_block_map, uint16_t **p_block_map_inv)
+extern int xcpuinfo_hwloc_topo_get(
+	uint16_t *p_cpus, uint16_t *p_boards,
+	uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
+	uint16_t *p_block_map_size,
+	uint16_t **p_block_map, uint16_t **p_block_map_inv)
 {
 	enum { SOCKET=0, CORE=1, PU=2, LAST_OBJ=3 };
 	hwloc_topology_t topology;
@@ -296,7 +286,11 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		return 1;
 	}
 
-	if (_hwloc_topo(&topology, false) == SLURM_FAILURE) {
+	if (!hwloc_xml_whole)
+		hwloc_xml_whole = xstrdup_printf("%s/hwloc_topo_whole.xml",
+						 conf->spooldir);
+	if (xcpuinfo_hwloc_topo_load(&topology, hwloc_xml_whole, true)
+	    == SLURM_FAILURE) {
 		hwloc_topology_destroy(topology);
 		return 2;
 	}
@@ -372,7 +366,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		nobj[SOCKET] = hwloc_get_nbobjs_by_type(topology,
 							objtype[SOCKET]);
 		if (nobj[SOCKET] == 0) {
-			debug("get_cpuinfo() fudging nobj[SOCKET] from 0 to 1");
+			debug("%s: fudging nobj[SOCKET] from 0 to 1", __func__);
 			nobj[SOCKET] = 1;
 		}
 		if (nobj[SOCKET] >= _MAX_SOCKET_INX) {	/* Bitmap size */
@@ -387,13 +381,13 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	 * hwloc_get_nbobjs_by_type() returns 0 on some architectures.
 	 */
 	if ( nobj[CORE] == 0 ) {
-		debug("get_cpuinfo() fudging nobj[CORE] from 0 to 1");
+		debug("%s: fudging nobj[CORE] from 0 to 1", __func__);
 		nobj[CORE] = 1;
 	}
 	if ( nobj[SOCKET] == -1 )
-		fatal("get_cpuinfo() can not handle nobj[SOCKET] = -1");
+		fatal("%s: can not handle nobj[SOCKET] = -1", __func__);
 	if ( nobj[CORE] == -1 )
-		fatal("get_cpuinfo() can not handle nobj[CORE] = -1");
+		fatal("%s: can not handle nobj[CORE] = -1", __func__);
 	actual_cpus  = hwloc_get_nbobjs_by_type(topology, objtype[PU]);
 #if 0
 	/* Used to find workaround above */
@@ -508,20 +502,12 @@ typedef struct cpuinfo {
 static cpuinfo_t *cpuinfo = NULL; /* array of CPU information for get_cpuinfo */
 				  /* Note: file static for qsort/_compare_cpus*/
 
-extern int init_cpuinfo (void)
-{
-	return SLURM_SUCCESS;
-}
-extern int clean_cpuinfo (void)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int
-get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
-	    uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
-	    uint16_t *p_block_map_size,
-	    uint16_t **p_block_map, uint16_t **p_block_map_inv)
+extern int xcpuinfo_hwloc_topo_get(
+	uint16_t *p_cpus, uint16_t *p_boards,
+	uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
+	uint16_t *p_block_map_size,
+	uint16_t **p_block_map, uint16_t **p_block_map_inv,
+	char *topo_file, bool full)
 {
 	int retval;
 
@@ -558,8 +544,8 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 
 	cpu_info_file = fopen(_cpuinfo_path, "r");
 	if (cpu_info_file == NULL) {
-		error ("get_cpuinfo: error %d opening %s",
-			errno, _cpuinfo_path);
+		error ("%s: error %d opening %s",
+		       __func__, errno, _cpuinfo_path);
 		return errno;
 	}
 
@@ -738,6 +724,12 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	xfree(cpuinfo);		/* done with raw cpuinfo data */
 
 	return retval;
+}
+
+extern int xcpuinfo_hwloc_topo_load(
+	void *topology_in, char *topo_file, bool write, bool full)
+{
+	return SLURM_SUCCESS;
 }
 
 /* _chk_cpuinfo_str
@@ -957,8 +949,8 @@ xcpuinfo_init(void)
 	if ( initialized )
 		return XCPUINFO_SUCCESS;
 
-	if ( get_cpuinfo(&procs,&boards,&sockets,&cores,&threads,
-			 &block_map_size,&block_map,&block_map_inv) )
+	if (xcpuinfo_hwloc_topo_get(&procs,&boards,&sockets,&cores,&threads,
+				    &block_map_size,&block_map,&block_map_inv))
 		return XCPUINFO_ERROR;
 
 	initialized = true ;
@@ -977,7 +969,12 @@ xcpuinfo_fini(void)
 	block_map_size = 0;
 	xfree(block_map);
 	xfree(block_map_inv);
-
+#ifdef HAVE_HWLOC
+	if (hwloc_xml_whole) {
+		remove(hwloc_xml_whole);
+		xfree(hwloc_xml_whole);
+	}
+#endif
 	return XCPUINFO_SUCCESS;
 }
 
