@@ -196,11 +196,12 @@ static void * _msg_aggregation_sender(void *arg)
 	composite_msg_t cmp;
 
 	slurm_mutex_lock(&msg_collection.mutex);
+	msg_collection.running = 1;
+	slurm_cond_signal(&msg_collection.cond);
 
 	while (msg_collection.running) {
 		/* Wait for a new msg to be collected */
 		slurm_cond_wait(&msg_collection.cond, &msg_collection.mutex);
-
 
 		if (!msg_collection.running &&
 		    !list_count(msg_collection.msg_list))
@@ -240,6 +241,7 @@ static void * _msg_aggregation_sender(void *arg)
 		msg.msg_type = MESSAGE_COMPOSITE;
 		msg.protocol_version = SLURM_PROTOCOL_VERSION;
 		msg.data = &cmp;
+
 		if (_send_to_next_collector(&msg) != SLURM_SUCCESS) {
 			error("_msg_aggregation_engine: Unable to send "
 			      "composite msg: %m");
@@ -260,9 +262,8 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 	if (msg_collection.running || (max_msg_cnt <= 1))
 		return;
 
-	memset(&msg_collection, 0, sizeof(msg_collection_type_t));
 
-	msg_collection.running = 1;
+	memset(&msg_collection, 0, sizeof(msg_collection_type_t));
 
 	slurm_mutex_init(&msg_collection.aggr_mutex);
 	slurm_mutex_init(&msg_collection.mutex);
@@ -278,10 +279,14 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 	msg_collection.max_msgs = false;
 	msg_collection.debug_flags = slurm_get_debug_flags();
 	slurm_mutex_unlock(&msg_collection.aggr_mutex);
-	slurm_mutex_unlock(&msg_collection.mutex);
 
 	slurm_thread_create(&msg_collection.thread_id,
 			    &_msg_aggregation_sender, NULL);
+
+	/* wait for thread to start */
+	slurm_cond_wait(&msg_collection.cond, &msg_collection.mutex);
+
+	slurm_mutex_unlock(&msg_collection.mutex);
 }
 
 extern void msg_aggr_sender_reconfig(uint64_t window, uint64_t max_msg_cnt)
