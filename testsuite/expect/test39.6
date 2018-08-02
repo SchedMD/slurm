@@ -121,6 +121,7 @@ expect {
 	-re "CPU_IDs=($controlmachine_regex)" {
 		if {[string first , $expect_out(1,string)] == -1} {
 			send_user "\nFAILURE: allocated CPUs do not appear to span multiple sockets\n"
+			set exit_code 1
 		}
 		exp_continue
 	}

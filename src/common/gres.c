@@ -5700,10 +5700,16 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		if (*max_tasks_this_node == NO_VAL)
 			continue;
 
-		/* Determine how many cores are needed for this job */
+		/*
+		 * Determine how many cores are needed for this job.
+		 * Consider rounding errors if cpus_per_task not divisible
+		 * by cpus_per_core
+		 */
 		req_cores = *max_tasks_this_node;
-		if (mc_ptr->cpus_per_task)
-			req_cores *= (mc_ptr->cpus_per_task / cpus_per_core);
+		if (mc_ptr->cpus_per_task) {
+			req_cores *= ((mc_ptr->cpus_per_task + cpus_per_core -1)
+				     / cpus_per_core);
+		}
 		if (job_specs->cpus_per_gres) {
 			if (job_specs->gres_per_node) {
 				i = job_specs->gres_per_node;
@@ -5751,7 +5757,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			for (s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
 					break;
-				if (!req_sock[s])
+				if (!req_sock[s] ||
+				    (avail_cores_per_sock[s] == 0))
 					continue;
 				if ((full_socket == -1) ||
 				    (avail_cores_per_sock[full_socket] <
