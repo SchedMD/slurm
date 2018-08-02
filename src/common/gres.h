@@ -777,6 +777,20 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					gres_mc_data_t *tres_mc_ptr);
 
 /*
+ * Determine the minimum number of CPUs required to satify the job's GRES
+ *	request (based upon total GRES times cpus_per_gres value)
+ * node_count IN - count of nodes in job allocation
+ * sockets_per_node IN - count of sockets per node in job allocation
+ * task_count IN - count of tasks in job allocation
+ * job_gres_list IN - job GRES specification
+ * RET count of required CPUs for the job
+ */
+extern int gres_plugin_job_min_cpus(uint32_t node_count,
+				    uint32_t sockets_per_node,
+				    uint32_t task_count,
+				    List job_gres_list);
+
+/*
  * Select and allocate GRES to a job and update node and job GRES information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by

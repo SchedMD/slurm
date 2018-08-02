@@ -228,9 +228,9 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			sort_brds_core_cnt[b] = 0;
 		}
 		for (s = 0; s < nsockets_nb; s++) {
-			sockets_core_cnt[s]=0;
-			sockets_used[s]=false;
-			b = s/sock_per_brd;
+			sockets_core_cnt[s] = 0;
+			sockets_used[s] = false;
+			b = s / sock_per_brd;
 			for (j = c + (s * ncores_nb);
 			     j < c + ((s+1) * ncores_nb); j++) {
 				if (bit_test(job_res->core_bitmap, j)) {

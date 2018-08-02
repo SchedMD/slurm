@@ -1149,6 +1149,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t **free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
 	bitstr_t **avail_cores, **free_cores;
 	bool test_only;
+	uint32_t sockets_per_node = 0;
 	uint32_t c, j, n, csize, total_cpus;
 	uint64_t save_mem = 0;
 	int32_t build_cnt;
@@ -1715,7 +1716,6 @@ alloc_job:
 		      __func__, j, n);
 	}
 //REVIEWED TO HERE
-//GRES DETAILS HERE: avail_res_array[node_inx]->sock_gres_list
 
 	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(node_bitmap);
@@ -1729,6 +1729,12 @@ alloc_job:
 	job_res->ncpus            = MAX(job_res->ncpus,
 					(job_res->nhosts *
 					 details_ptr->pn_min_cpus));
+	if (job_ptr->details->mc_ptr)
+		sockets_per_node = job_ptr->details->mc_ptr->sockets_per_node;
+	i = gres_plugin_job_min_cpus(job_res->nhosts, sockets_per_node,
+				     job_ptr->details->num_tasks,
+				     job_ptr->gres_list);
+	job_res->ncpus            = MAX(job_res->ncpus, i);
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;	/* Per node CPU counts */
 	job_res->cpus_used        = xmalloc(job_res->nhosts *

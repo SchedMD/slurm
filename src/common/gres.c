@@ -6562,7 +6562,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 	gres_node_state_t *node_specs;
 	int i, i_first, i_last, node_inx = -1, gres_cnt;
 	int node_cnt, rem_node_cnt;
-	int job_fini = -1;	/* -1: not applicable, 0: more work, 1:vfini */
+	int job_fini = -1;	/* -1: not applicable, 0: more work, 1: fini */
 	uint32_t **tasks_per_node_socket = NULL;
 
 	if (!job_res || !job_res->node_bitmap)
@@ -6688,6 +6688,52 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 	_free_tasks_per_node_sock(tasks_per_node_socket, node_cnt);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Determine the minimum number of CPUs required to satify the job's GRES
+ *	request (based upon total GRES times cpus_per_gres value)
+ * node_count IN - count of nodes in job allocation
+ * sockets_per_node IN - count of sockets per node in job allocation
+ * task_count IN - count of tasks in job allocation
+ * job_gres_list IN - job GRES specification
+ * RET count of required CPUs for the job
+ */
+extern int gres_plugin_job_min_cpus(uint32_t node_count,
+				    uint32_t sockets_per_node,
+				    uint32_t task_count,
+				    List job_gres_list)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t  *job_data_ptr;
+	int tmp, min_cpus = 0;
+
+	if (!job_gres_list || (list_count(job_gres_list) == 0))
+		return 0;
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		uint64_t total_gres = 0;
+		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+		if (job_data_ptr->cpus_per_gres == 0)
+			continue;
+		if (job_data_ptr->gres_per_job) {
+			total_gres = job_data_ptr->gres_per_job;
+		} else if (job_data_ptr->gres_per_node) {
+			total_gres = job_data_ptr->gres_per_node *
+				     node_count;
+		} else if (job_data_ptr->gres_per_socket) {
+			total_gres = job_data_ptr->gres_per_socket *
+				     node_count * sockets_per_node;
+		} else if (job_data_ptr->gres_per_task) {
+			total_gres = job_data_ptr->gres_per_task * task_count;
+		} else
+			continue;
+		tmp = job_data_ptr->cpus_per_gres * total_gres;
+		min_cpus = MAX(min_cpus, tmp);
+	}
+	return min_cpus;
 }
 
 /*

@@ -2505,7 +2505,8 @@ static void _set_pack_env(struct job_record *pack_leader,
 				step_layout_req.num_tasks =
 					pack_job->details->num_tasks;
 			} else {
-				step_layout_req.num_tasks = num_cpus / cpus_per_task;
+				step_layout_req.num_tasks = num_cpus /
+							    cpus_per_task;
 			}
 			step_layout_req.num_hosts = pack_job->node_cnt;
 
