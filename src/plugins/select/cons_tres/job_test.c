@@ -2202,11 +2202,14 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		max_tasks_this_node = mc_ptr->ntasks_per_core *
 				      select_node_record[node_inx].tot_cores;
 	} else if (job_ptr->details && (job_ptr->details->max_nodes == 1)) {
-		if (job_ptr->details->num_tasks == NO_VAL)
+		if ((job_ptr->details->num_tasks == NO_VAL) ||
+		    (job_ptr->details->num_tasks == 0)) {
 			min_tasks_this_node = 1;
-		else
+			max_tasks_this_node = NO_VAL;
+		} else {
 			min_tasks_this_node = job_ptr->details->num_tasks;
-		max_tasks_this_node = job_ptr->details->num_tasks;
+			max_tasks_this_node = job_ptr->details->num_tasks;
+		}
 	} else {
 		min_tasks_this_node = 1;
 		max_tasks_this_node = NO_VAL;
