@@ -74,6 +74,9 @@ extern char *node_features_g_job_xlate(char *job_features);
 /* Return bitmap of KNL nodes, NULL if none identified */
 extern bitstr_t *node_features_g_get_node_bitmap(void);
 
+/* Return count of bits in active_bitmap that are in the features bitmap */
+extern int node_features_g_overlap(bitstr_t *active_bitmap);
+
 /* Return true if the plugin requires PowerSave mode for booting nodes */
 extern bool node_features_g_node_power(void);
 

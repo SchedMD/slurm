@@ -62,6 +62,7 @@ typedef struct node_features_ops {
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
 	bitstr_t * (*get_node_bitmap) (void);
+	int     (*overlap)      (bitstr_t *active_bitmap);
 	bool	(*node_power)	(void);
 	int	(*node_set)	(char *active_features);
 	void	(*node_state)	(char **avail_modes, char **current_mode);
@@ -89,6 +90,7 @@ static const char *syms[] = {
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
 	"node_features_p_get_node_bitmap",
+	"node_features_p_overlap",
 	"node_features_p_node_power",
 	"node_features_p_node_set",
 	"node_features_p_node_state",
@@ -344,6 +346,24 @@ extern bitstr_t *node_features_g_get_node_bitmap(void)
 	END_TIMER2("node_features_g_get_node_bitmap");
 
 	return node_bitmap;
+}
+
+/* Return count of bits in active_bitmap that are in the features bitmap */
+extern int node_features_g_overlap(bitstr_t *active_bitmap)
+{
+	DEF_TIMERS;
+	int cnt = 0;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++)
+		cnt += (*(ops[i].overlap))(active_bitmap);
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_overlap");
+
+	return cnt;
 }
 
 /* Return true if the plugin requires PowerSave mode for booting nodes */

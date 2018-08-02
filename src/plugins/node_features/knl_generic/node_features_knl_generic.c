@@ -1633,6 +1633,17 @@ extern bitstr_t *node_features_p_get_node_bitmap(void)
 	return NULL;
 }
 
+/* Return count of overlaping bits in active_bitmap and knl_node_bitmap */
+extern int node_features_p_overlap(bitstr_t *active_bitmap)
+{
+	int cnt = 0;
+
+	if (!knl_node_bitmap || !active_bitmap ||
+	    !(cnt = bit_overlap(active_bitmap, knl_node_bitmap)))
+		return 0;
+
+	return cnt;
+}
 /* Return true if the plugin requires PowerSave mode for booting nodes */
 extern bool node_features_p_node_power(void)
 {
