@@ -727,7 +727,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 			} else if (!xstrncasecmp(argv[i], "Reason=",
 						 strlen("Reason="))) {
 				char *tmp_ptr = strchr(argv[i], '=');
-				if (!*(tmp_ptr + 1)) {
+				if (!tmp_ptr || !*(tmp_ptr + 1)) {
 					exit_code = 1;
 					if (!quiet_flag)
 						fprintf(stderr, "missing reason\n");
@@ -741,7 +741,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 				int state_str_len;
 				char* state_str;
 				char *tmp_ptr = strchr(argv[i], '=');
-				if (!*(tmp_ptr + 1)) {
+				if (!tmp_ptr || !*(tmp_ptr + 1)) {
 					exit_code = 1;
 					if (!quiet_flag)
 						fprintf(stderr, "missing state\n");
