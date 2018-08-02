@@ -48,7 +48,7 @@ if {[test_serial]} {
 #
 # Test if CPU affinity support is supported.
 #
-if {![test_cpu_affinity]} {
+if {![test_cpu_affinity_or_cgroup]} {
 	send_user "\nWARNING: CPU affinity not supported on this system\n"
 	exit 0
 }
