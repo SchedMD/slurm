@@ -765,8 +765,10 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 							state_str);
 						fprintf(stderr, "Valid states: DOWN, RESUME\n");
 					}
+					xfree(state_str);
 					return;
 				}
+				xfree(state_str);
 			}
 		}
 	}
