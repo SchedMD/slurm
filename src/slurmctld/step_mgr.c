@@ -3967,6 +3967,7 @@ extern int dump_job_step_state(void *x, void *arg)
  * IN/OUT - job_ptr - point to a job for which the step is to be loaded.
  * IN/OUT buffer - location to get data from, pointers advanced
  */
+/* NOTE: assoc_mgr tres and assoc read lock must be locked before calling */
 extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			   uint16_t protocol_version)
 {

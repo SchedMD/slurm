@@ -939,7 +939,6 @@ extern int load_all_job_state(void)
 	char *ver_str = NULL;
 	uint32_t ver_str_len;
 	uint16_t protocol_version = NO_VAL16;
-	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .tres = READ_LOCK };
 
 	/* read the file */
 	lock_state_files();
@@ -976,14 +975,19 @@ extern int load_all_job_state(void)
 		job_id_sequence = MAX(saved_job_id, job_id_sequence);
 	debug3("Job id in job_state header is %u", saved_job_id);
 
-	assoc_mgr_lock(&locks);
+	/*
+	 * Previously we locked the tres read lock before this loop.  It turned
+	 * out that created a double lock when steps were being loaded during
+	 * the calls to jobacctinfo_create() which also locks the read lock.
+	 * It ended up being much easier to move the locks for the assoc_mgr
+	 * into the _load_job_state function than any other option.
+	 */
 	while (remaining_buf(buffer) > 0) {
 		error_code = _load_job_state(buffer, protocol_version);
 		if (error_code != SLURM_SUCCESS)
 			goto unpack_error;
 		job_cnt++;
 	}
-	assoc_mgr_unlock(&locks);
 	debug3("Set job_id_sequence to %u", job_id_sequence);
 
 	free_buf(buffer);
@@ -991,7 +995,6 @@ extern int load_all_job_state(void)
 	return error_code;
 
 unpack_error:
-	assoc_mgr_unlock(&locks);
 	if (!ignore_state_errors)
 		fatal("Incomplete job state save file, start with '-i' to ignore this");
 	error("Incomplete job state save file");
@@ -1282,7 +1285,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 }
 
 /* Unpack a job's state information from a buffer */
-/* NOTE: assoc_mgr tres and assoc read lock must be locked before calling */
+/* NOTE: assoc_mgr qos, tres and assoc read lock must be unlocked before
+ * calling */
 static int _load_job_state(Buf buffer, uint16_t protocol_version)
 {
 	uint64_t db_index;
@@ -1340,6 +1344,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char **pelog_env = (char **) NULL;
 	uint32_t pack_leader = 0;
 	job_fed_details_t *job_fed_details = NULL;
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK,
+				   .qos = READ_LOCK,
+				   .tres = READ_LOCK };
 
 	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
 	limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
@@ -2243,6 +2250,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		assoc_rec.uid       = job_ptr->user_id;
 	}
 
+	assoc_mgr_lock(&locks);
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    &job_ptr->assoc_ptr, true) &&
@@ -2315,6 +2323,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			&job_ptr->tres_req_cnt, job_ptr->tres_req_str, 0, true);
 	else
 		job_set_req_tres(job_ptr, true);
+	assoc_mgr_unlock(&locks);
 
 	build_node_details(job_ptr, false);	/* set node_addr */
 	gres_build_job_details(job_ptr->gres_list,
