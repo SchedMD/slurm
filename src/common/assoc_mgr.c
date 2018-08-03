@@ -4513,7 +4513,6 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			if (object->min_prio_thresh != NO_VAL)
 				rec->min_prio_thresh = object->min_prio_thresh;
-			info("got it here with %d", rec->min_prio_thresh);
 			if (object->max_submit_jobs_pa != NO_VAL)
 				rec->max_submit_jobs_pa =
 					object->max_submit_jobs_pa;
