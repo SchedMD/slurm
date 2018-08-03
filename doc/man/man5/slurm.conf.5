@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "June 2018" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "August 2018" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2099,7 +2099,8 @@ If set, the Alloc flag should also be set.  This will allow for salloc to not
 block until the prolog is finished on each node.  The blocking will happen when
 steps reach the slurmd and before any execution has happened in the step.
 This is a much faster way to work and if using srun to launch your tasks you
-should use this flag.
+should use this flag. This flag cannot be combined with the Contain or X11
+flags.
 .TP
 \fBSerial\fR
 By default, the Prolog and Epilog scripts run concurrently on each node.

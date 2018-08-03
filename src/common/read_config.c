@@ -4405,6 +4405,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (conf->prolog_flags == NO_VAL16) {
 			fatal("PrologFlags invalid: %s", temp_str);
 		}
+
+		if ((conf->prolog_flags & PROLOG_FLAG_NOHOLD) &&
+		    (conf->prolog_flags & PROLOG_FLAG_CONTAIN)) {
+			fatal("PrologFlags invalid combination: NoHold cannot be combined with Contain and/or X11");
+		}
 		if (conf->prolog_flags & PROLOG_FLAG_NOHOLD) {
 			conf->prolog_flags |= PROLOG_FLAG_ALLOC;
 #ifdef HAVE_ALPS_CRAY

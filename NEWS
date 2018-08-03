@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove drain on node when reboot nextstate used.
  -- Speed up pack of job's qos.
  -- Fix race condition when trying to update reservation in the database.
+ -- For the PrologFlags slurm.conf option, make NoHold mutually exclusive with
+    Contain and/or X11 options.
 
 * Changes in Slurm 18.08.0pre2
 ==============================
