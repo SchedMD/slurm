@@ -36,6 +36,7 @@ set test_id     "20.3"
 set exit_code   0
 set file_in	"test$test_id.input"
 set file_out	"test$test_id.output"
+set file_err	"test$test_id.error"
 
 print_header $test_id
 
@@ -50,7 +51,7 @@ if {[file executable $qdel] == 0} {
 
 set job_id 0
 make_bash_script $file_in "sleep 60"
-spawn $qsub -l walltime=1:00 -o $file_out $file_in
+spawn $qsub -l walltime=1:00 -o $file_out -e $file_err $file_in
 expect {
 	-re "($number)" {
 		set job_id $expect_out(1,string)
@@ -118,7 +119,7 @@ if {($matches != 0) || ($status == 0)} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
+	exec $bin_rm -f $file_in $file_out $file_err
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

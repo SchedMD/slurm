@@ -68,11 +68,63 @@ proc get_node_config {} {
 	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
 }
 
-proc run_gpu_job { cpus_per_gpu } {
+proc run_gpu_per_job { cpus_per_gpu } {
 	global exit_code file_in number srun test_id
 
 	set cpu_count 0
 	set srun_pid [spawn $srun --gpus=1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 ./$file_in]
+	expect {
+		-re "NumCPUs=($number)" {
+			set cpu_count $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+#	Depending upon minimal allocation unit, job can be allocated extra CPUs
+	if {$cpu_count < $cpus_per_gpu} {
+		send_user "\nFAILURE: srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)\n"
+		set exit_code 1
+	}
+}
+
+proc run_gpu_per_node { cpus_per_gpu } {
+	global exit_code file_in number srun test_id
+
+	set cpu_count 0
+	set srun_pid [spawn $srun --gpus-per-node=1 -N1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 ./$file_in]
+	expect {
+		-re "NumCPUs=($number)" {
+			set cpu_count $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+#	Depending upon minimal allocation unit, job can be allocated extra CPUs
+	if {$cpu_count < $cpus_per_gpu} {
+		send_user "\nFAILURE: srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)\n"
+		set exit_code 1
+	}
+}
+
+proc run_gpu_per_task { cpus_per_gpu } {
+	global exit_code file_in number srun test_id
+
+	set cpu_count 0
+	set srun_pid [spawn $srun --gpus-per-task=1 -n1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 ./$file_in]
 	expect {
 		-re "NumCPUs=($number)" {
 			set cpu_count $expect_out(1,string)
@@ -134,9 +186,33 @@ $scontrol show job \$SLURM_JOB_ID
 exit 0"
 
 #
-# Run test job, double cpus_per_gpu value on each iteration
+# Run test job with global GPU count
+# Double cpus_per_gpu value on each iteration
+#
 for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
-	run_gpu_job $inx
+	run_gpu_per_job $inx
+	if {$exit_code != 0} {
+		break
+	}
+}
+
+#
+# Run test job with gpus-per-node count
+# Double cpus_per_gpu value on each iteration
+#
+for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
+	run_gpu_per_node $inx
+	if {$exit_code != 0} {
+		break
+	}
+}
+
+#
+# Run test job with gpus-per-task count
+# Double cpus_per_gpu value on each iteration
+#
+for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
+	run_gpu_per_task $inx
 	if {$exit_code != 0} {
 		break
 	}
