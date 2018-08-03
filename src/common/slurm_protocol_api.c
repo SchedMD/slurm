@@ -4634,7 +4634,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	if ((rc = slurm_send_node_msg(fd, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
-		debug3("slurm_send_only_node_msg: sent %d", rc);
+		debug3("%s: sent %d", __func__, rc);
 		rc = SLURM_SUCCESS;
 	}
 
