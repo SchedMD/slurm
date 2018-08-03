@@ -6733,19 +6733,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	if (!valid_tres_cnt(job_desc->cpus_per_tres)	||
-	    !valid_tres_cnt(job_desc->mem_per_tres)	||
-	    tres_bind_verify_cmdline(job_desc->tres_bind) ||
-	    tres_freq_verify_cmdline(job_desc->tres_freq) ||
-	    !valid_tres_cnt(job_desc->mem_per_tres)	||
-	    !valid_tres_cnt(job_desc->tres_per_job)	||
-	    !valid_tres_cnt(job_desc->tres_per_node)	||
-	    !valid_tres_cnt(job_desc->tres_per_socket)	||
-	    !valid_tres_cnt(job_desc->tres_per_task)) {
-		error_code = ESLURM_INVALID_TRES;
-		goto cleanup_fail;
-	}
-
 	error_code = _get_job_parts(job_desc, &part_ptr, &part_ptr_list,
 				    err_msg);
 	if (error_code != SLURM_SUCCESS)
@@ -6847,6 +6834,19 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 						&job_desc->cpus_per_task,
 						&gres_list)))
 		goto cleanup_fail;
+
+	if (!valid_tres_cnt(job_desc->cpus_per_tres)	||
+	    !valid_tres_cnt(job_desc->mem_per_tres)	||
+	    tres_bind_verify_cmdline(job_desc->tres_bind) ||
+	    tres_freq_verify_cmdline(job_desc->tres_freq) ||
+	    !valid_tres_cnt(job_desc->mem_per_tres)	||
+	    !valid_tres_cnt(job_desc->tres_per_job)	||
+	    !valid_tres_cnt(job_desc->tres_per_node)	||
+	    !valid_tres_cnt(job_desc->tres_per_socket)	||
+	    !valid_tres_cnt(job_desc->tres_per_task)) {
+		error_code = ESLURM_INVALID_TRES;
+		goto cleanup_fail;
+	}
 
 //FIXME: TRES counts not necessarily established for GRES at this point
 	gres_set_job_tres_cnt(gres_list,
