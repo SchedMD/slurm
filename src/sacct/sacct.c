@@ -124,6 +124,7 @@ print_field_t fields[] = {
 	{10, "SystemCPU", print_fields_str, PRINT_SYSTEMCPU},
 	{15, "SystemComment", print_fields_str, PRINT_SYSTEM_COMMENT},
 	{10, "Timelimit", print_fields_str, PRINT_TIMELIMIT},
+	{10, "TimelimitRaw", print_fields_str, PRINT_TIMELIMIT_RAW},
 	{10, "TotalCPU", print_fields_str, PRINT_TOTALCPU},
 	{14, "TRESUsageInAve", print_fields_str, PRINT_TRESUIA},
 	{14, "TRESUsageInMax", print_fields_str, PRINT_TRESUIM},

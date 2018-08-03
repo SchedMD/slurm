@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
+ -- Add TimelimitRaw sacct output field to display timelimit numbers.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

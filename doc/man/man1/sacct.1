@@ -151,12 +151,13 @@ ReqCPUS             ReqGRES             ReqMem              ReqNodes
 ReqTRES             Reservation         ReservationId       Reserved
 ResvCPU             ResvCPURAW          Start               State
 Submit              Suspended           SystemCPU           SystemComment
-Timelimit           TotalCPU            TRESUsageInAve      TRESUsageInMax
-TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin      TRESUsageInMinNode
-TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve     TRESUsageOutMax
-TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin     TRESUsageOutMinNode
-TRESUsageOutMinTask TRESUsageOutTot     UID                 User
-UserCPU             WCKey               WCKeyID             WorkDir
+Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
+TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
+TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
+TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
+TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
+User                UserCPU             WCKey               WCKeyID
+WorkDir
 
 NOTE: When using with Ave[RSS|VM]Size or their values in
 TRESUsageIn[Ave|Tot].  They represent the average/total of the highest
@@ -798,6 +799,10 @@ does not include CPU time of child processes.
 .TP
 \f3Timelimit\fP
 What the timelimit was/is for the job.
+
+.TP
+\f3TimelimitRaw\fP
+What the timelimit was/is for the job, not formatted.
 
 .TP
 \f3TotalCPU\fP
