@@ -354,7 +354,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_BATCH_CONSTRAINT,
 	  "Job --batch option is invalid or not a subset of --constraints" },
 	{ ESLURM_INVALID_TRES,
-	  "Invalid TRES specification"				},
+	  "Invalid Trackable RESource (TRES) specification"	},
 	{ ESLURM_INVALID_TRES_BILLING_WEIGHTS,
 	  "Invalid TRESBillingWeights specification"            },
 	{ ESLURM_INVALID_JOB_DEFAULTS,
