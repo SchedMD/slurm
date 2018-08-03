@@ -365,7 +365,7 @@ struct option long_options[] = {
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:M:n:N:"
-		   "o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
+		   "o:Op:P:q:Qr:RsS:t:T:uU:vVw:W:x:XZ";
 
 
 static slurm_opt_t *_get_first_opt(int pack_offset);
@@ -3470,8 +3470,8 @@ static void _help(void)
 #ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"
 #endif
-"  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
-"      --qos=qos               quality of service\n"
+"      --quit-on-interrupt     quit on single Ctrl-C\n"
+"  -q, --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot block before starting job\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
