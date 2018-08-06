@@ -4621,6 +4621,26 @@ cleanup:
  *   Then, immediately close the connection w/out waiting for a reply.
  *
  *   Returns SLURM_SUCCESS on success SLURM_FAILURE (< 0) for failure.
+ *
+ * DO NOT USE THIS IN NEW CODE
+ * Use slurm_send_recv_rc_msg_only_one() or something similar instead.
+ *
+ * By not waiting for a response message, the message to be transmitted
+ * may never be received by the remote end. The remote TCP stack may
+ * acknowledge the data while the application itself has not had a chance
+ * to receive it. The only way to tell that the application has processed
+ * a given packet is for it to send back a message across the socket itself.
+ *
+ * The receive side looks like: poll() && read(), close(). If the poll() times
+ * out, the kernel may still ACK the data while the application has jumped to
+ * closing the connection. The send side cannot then distinguish between the
+ * close happening as a result of the timeout vs. as a normal message shutdown.
+ *
+ * This is only one example of the many races inherent in this approach.
+ *
+ * See "UNIX Network Programming" Volume 1 (Third Edition) Section 7.5 on
+ * SO_LINGER for a description of the subtle hazards inherent in abusing
+ * TCP as a unidirectional pipe.
  */
 int slurm_send_only_node_msg(slurm_msg_t *req)
 {
