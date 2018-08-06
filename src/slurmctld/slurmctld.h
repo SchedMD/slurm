@@ -585,6 +585,8 @@ typedef struct job_array_struct {
 	uint32_t tot_run_tasks;		/* Current running task count */
 	uint32_t min_exit_code;		/* Minimum exit code from any task */
 	uint32_t max_exit_code;		/* Maximum exit code from any task */
+	uint32_t pend_run_tasks;	/* Number of tasks ready to run due to
+					 * preempting other jobs */
 	uint32_t tot_comp_tasks;	/* Completed task count */
 } job_array_struct_t;
 

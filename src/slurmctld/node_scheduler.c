@@ -2752,6 +2752,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		    (detail_ptr->preempt_start_time == 0)) {
   			detail_ptr->preempt_start_time = now;
 			job_ptr->preempt_in_progress = true;
+			if (job_ptr->array_recs)
+				job_ptr->array_recs->pend_run_tasks++;
 		}
 	}
 	if (error_code) {

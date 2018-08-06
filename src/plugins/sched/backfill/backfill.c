@@ -1052,12 +1052,38 @@ static bool _job_runnable_now(struct job_record *job_ptr)
 		return false;
 	if (IS_JOB_COMPLETING(job_ptr))	/* Started, requeue and completing */
 		return false;
+	/*
+	 * Already reserved resources for either bf_max_job_array_resv or
+	 * max_run_tasks number of jobs in the array. If max_run_tasks is 0, it
+	 * wasn't set, so ignore it.
+	 */
+	if (job_ptr->array_recs &&
+	    ((job_ptr->array_recs->pend_run_tasks >= bf_max_job_array_resv) ||
+	     (job_ptr->array_recs->max_run_tasks &&
+	      (job_ptr->array_recs->pend_run_tasks >=
+	     job_ptr->array_recs->max_run_tasks))))
+		return false;
+
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CLEANING, &cleaning);
 	if (cleaning)			/* Started, requeue and completing */
 		return false;
 
 	return true;
+}
+
+static void _restore_preempt_state(struct job_record *job_ptr,
+				   time_t *tmp_preempt_start_time,
+				   bool *tmp_preempt_in_progress)
+{
+	if ((*tmp_preempt_start_time != 0)
+	    && (job_ptr->details->preempt_start_time == 0)) {
+		job_ptr->details->preempt_start_time =
+			*tmp_preempt_start_time;
+		job_ptr->preempt_in_progress = *tmp_preempt_in_progress;
+		*tmp_preempt_start_time = 0;
+		*tmp_preempt_in_progress = false;
+	}
 }
 
 static int _attempt_backfill(void)
@@ -1102,6 +1128,8 @@ static int _attempt_backfill(void)
 	int part_inx = -1, user_inx = -1;
 	uint32_t qos_flags = 0;
 	time_t qos_blocked_until = 0, qos_part_blocked_until = 0;
+	time_t tmp_preempt_start_time = 0;
+	bool tmp_preempt_in_progress = false;
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock =
 		{ NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -1247,6 +1275,10 @@ static int _attempt_backfill(void)
 		bf_job_priority  = job_queue_rec->priority;
 		bf_array_task_id = job_queue_rec->array_task_id;
 		xfree(job_queue_rec);
+
+		/* Restore preemption state if needed. */
+		_restore_preempt_state(job_ptr, &tmp_preempt_start_time,
+				       &tmp_preempt_in_progress);
 
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){
@@ -1428,10 +1460,22 @@ static int _attempt_backfill(void)
 			}
 		}
 
+		if (tmp_preempt_in_progress)
+			continue; 	/* scheduled in another partition */
+
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
 
 next_task:
+		/*
+		 * Save the current preemption state. Reset preemption state
+		 * in the job_ptr so a job array can preempt multiple jobs.
+		 */
+		tmp_preempt_in_progress = job_ptr->preempt_in_progress;
+		tmp_preempt_start_time = job_ptr->details->preempt_start_time;
+		job_ptr->details->preempt_start_time = 0;
+		job_ptr->preempt_in_progress = false;
+
 		job_test_count++;
 		slurmctld_diag_stats.bf_last_depth++;
 		already_counted = false;
@@ -1439,8 +1483,6 @@ next_task:
 		if (!IS_JOB_PENDING(job_ptr) ||	/* Started in other partition */
 		    (job_ptr->priority == 0))	/* Job has been held */
 			continue;
-		if (job_ptr->preempt_in_progress)
-			continue; 	/* scheduled in another partition */
 		if (!avail_front_end(job_ptr))
 			continue;	/* No available frontend for this job */
 		if (!_job_part_valid(job_ptr, part_ptr))
@@ -2382,11 +2424,25 @@ skip_start:
 			} else {
 				test_array_count++;
 			}
+
+			/*
+			 * Don't consider the next task if it would exceed the
+			 * maximum number of runnable tasks. If max_run_tasks is
+			 * 0, then it wasn't set, so ignore it.
+			 */
 			if ((test_array_count < bf_max_job_array_resv) &&
-			    (test_array_count < job_ptr->array_recs->task_cnt))
+			    (test_array_count <
+			     job_ptr->array_recs->task_cnt) &&
+			    (!job_ptr->array_recs->max_run_tasks ||
+			     (job_ptr->array_recs->pend_run_tasks <
+			     job_ptr->array_recs->max_run_tasks)))
 				goto next_task;
 		}
 	}
+
+	/* Restore preemption state if needed. */
+	_restore_preempt_state(job_ptr, &tmp_preempt_start_time,
+			       &tmp_preempt_in_progress);
 
 	_job_pack_deadlock_fini();
 	_pack_start_test(node_space);

@@ -1705,6 +1705,14 @@ enable gang scheduling independent of whether preemption is enabled
 specified in addition to a \fBPreemptMode\fR setting with the two
 options comma separated.  The \fBSUSPEND\fR option requires that gang
 scheduling be enabled (i.e, "PreemptMode=SUSPEND,GANG").
+\fBNOTE:
+For performance reasons, the backfill scheduler reserves whole nodes for jobs,
+not partial nodes. If during backfill scheduling a job preempts one or more
+other jbos, the whole nodes for those preempted jobs are reserved for the
+preemptor job, even if the preemptor job requested fewer resources than that.
+These reserved nodes aren't available to other jobs during that backfill
+cycle, even if the other jobs could fit on the nodes. Therefore, jobs may
+preempt more resources during a single backfill iteration than they requested.
 .RS
 .TP 12
 \fBOFF\fR
@@ -2552,6 +2560,12 @@ expected times.
 This has no impact upon the number of tasks from a job array that can be
 started immediately, only those tasks expected to start at some future time.
 The default value is 20 tasks.
+NOTE:
+Jobs submitted to multiple partitions appear in the job queue once per
+partition. If different copies of a single job array record aren't consecutive
+in the job queue and another job array record is in between, then
+bf_max_job_array_resv tasks are considered per partition that the job is
+submitted to.
 .TP
 \fBbf_max_job_assoc=#\fR
 The maximum number of jobs per user association to attempt starting with the
