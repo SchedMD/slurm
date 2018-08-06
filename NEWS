@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- Add TimelimitRaw sacct output field to display timelimit numbers.
  -- Fix job array preemption during backfill scheduling.
+ -- Fix scontrol -o show assoc output.
 
 * Changes in Slurm 18.08.0pre2
 ==============================
