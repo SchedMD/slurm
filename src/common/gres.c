@@ -181,7 +181,8 @@ static gres_node_state_t *
 		_build_gres_node_state(void);
 static uint32_t	_build_id(char *name);
 static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
-					     gres_mc_data_t *tres_mc_ptr);
+					    gres_mc_data_t *tres_mc_ptr,
+					    struct node_record *node_table_ptr);
 static bitstr_t *_core_bitmap_rebuild(bitstr_t *old_core_bitmap, int new_size);
 static void	_destroy_gres_slurmd_conf(void *x);
 static int	_find_job_by_sock_gres(void *x, void *key);
@@ -496,12 +497,12 @@ extern int gres_plugin_init(void)
 	while (one_name) {
 		full_name = xstrdup("gres/");
 		xstrcat(full_name, one_name);
-		for (i=0; i<gres_context_cnt; i++) {
+		for (i = 0; i < gres_context_cnt; i++) {
 			if (!xstrcmp(full_name, gres_context[i].gres_type))
 				break;
 		}
 		xfree(full_name);
-		if (i<gres_context_cnt) {
+		if (i < gres_context_cnt) {
 			error("Duplicate plugin %s ignored",
 			      gres_context[i].gres_type);
 		} else {
@@ -524,7 +525,7 @@ extern int gres_plugin_init(void)
 
 	/* Ensure that plugin_id is valid and unique */
 	for (i=0; i<gres_context_cnt; i++) {
-		for (j=i+1; j<gres_context_cnt; j++) {
+		for (j = i+1; j < gres_context_cnt; j++) {
 			if (gres_context[i].plugin_id !=
 			    gres_context[j].plugin_id)
 				continue;
@@ -6357,14 +6358,16 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 	}
 }
 
-/* Build array to identifyy task count for each node-socket pair */
+/* Build array to identify task count for each node-socket pair */
 static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
-					     gres_mc_data_t *tres_mc_ptr)
+					     gres_mc_data_t *tres_mc_ptr,
+					     struct node_record *node_table_ptr)
 {
 	uint32_t **tasks_per_node_socket;
 	int i, i_first, i_last, j, node_cnt, job_node_inx = 0;
 	int c, s, core_offset;
-	int cpus_per_task = 1, cpus_per_node, task_per_node_limit = 0;
+	int cpus_per_task = 1, cpus_per_node, cpus_per_core;
+	int task_per_node_limit = 0;
 	int32_t rem_tasks, excess_tasks;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
 
@@ -6417,8 +6420,11 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		}
 		core_offset = get_job_resources_offset(job_res, job_node_inx++,
 						       0, 0);
-//FIXME: GET DATA HERE
-int cpus_per_core = 2;
+		if (node_table_ptr[i].cores) {
+			cpus_per_core = node_table_ptr[i].cpus /
+					node_table_ptr[i].cores;
+		else
+			cpus_per_core = 1;
 		for (s = 0; s < sock_cnt; s++) {
 			int tasks_per_socket = 0, skip_cores = 0;
 			for (c = 0; c < cores_per_socket_cnt; c++) {
@@ -6555,11 +6561,13 @@ static int _get_gres_node_cnt(gres_node_state_t *node_specs, int node_inx)
  * job_id IN - job ID for logging
  * job_res IN - job resource allocation
  * tres_mc_ptr IN - job's multi-core options
+ * node_table_ptr IN - slurmctld's node records
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					struct job_resources *job_res,
-					gres_mc_data_t *tres_mc_ptr)
+					gres_mc_data_t *tres_mc_ptr,
+					struct node_record *node_table_ptr)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
@@ -6594,7 +6602,8 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 			    !tasks_per_node_socket) {	/* Not built yet */
 				tasks_per_node_socket =
 					_build_tasks_per_node_sock(job_res,
-								   tres_mc_ptr);
+								tres_mc_ptr,
+								node_table_ptr);
 			}
 			if (job_specs->total_node_cnt == 0) {
 				job_specs->total_node_cnt = node_cnt;

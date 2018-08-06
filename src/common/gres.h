@@ -42,6 +42,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 #include "src/common/bitstring.h"
+#include "src/common/node_conf.h"
 #include "src/common/pack.h"
 
 #define GRES_MAGIC 0x438a34d4
@@ -770,11 +771,13 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
  * job_id IN - job ID for logging
  * job_res IN - job resource allocation
  * tres_mc_ptr IN - job's multi-core options
+ * node_table_ptr IN - slurmctld's node records
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					struct job_resources *job_res,
-					gres_mc_data_t *tres_mc_ptr);
+					gres_mc_data_t *tres_mc_ptr,
+					struct node_record *node_table_ptr);
 
 /*
  * Determine the minimum number of CPUs required to satify the job's GRES

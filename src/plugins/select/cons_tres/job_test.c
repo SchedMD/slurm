@@ -48,8 +48,10 @@
  */
 #if defined (__APPLE__)
 slurmctld_config_t slurmctld_config __attribute__((weak_import));
+struct node_record *node_record_table_ptr __attribute__((weak_import));
 #else
 slurmctld_config_t slurmctld_config;
+struct node_record *node_record_table_ptr;
 #endif
 
 typedef struct avail_res {	/* Per-node resource availability */
@@ -1826,9 +1828,10 @@ alloc_job:
 			j++;
 		}
 		error_code = gres_plugin_job_core_filter4(sock_gres_list,
-							  job_ptr->job_id,
-							  job_res,
-							  tres_mc_ptr);
+							job_ptr->job_id,
+							job_res,
+							tres_mc_ptr,
+							node_record_table_ptr);
 		xfree(node_gres_list);
 		xfree(sock_gres_list);
 	}
