@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove erroneous unlock in acct_gather_energy/ipmi.
  -- Enable support for hwloc version 2.0.1.
  -- Fix 'srun -q' (--qos) option handling.
+ -- Fix socket communication issue that can lead to lost task completition
+    messages, which will cause a permanently stuck srun process.
 
 * Changes in Slurm 17.11.8
 ==========================
