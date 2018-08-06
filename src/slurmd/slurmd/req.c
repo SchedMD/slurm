@@ -2982,7 +2982,7 @@ _enforce_job_mem_limit(void)
 					    &step_vsize,
 					    stepd->protocol_version);
 #if _LIMIT_INFO
-			info("Step:%u.%u RSS:%"PRIu64" KB VSIZE:%"PRIu64" KB",
+			info("Step:%u.%u RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
 			     stepd->jobid, stepd->stepid,
 			     step_rss, step_vsize);
 #endif

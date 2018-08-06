@@ -845,11 +845,11 @@ extern void jobacct_gather_handle_mem_limit(uint64_t total_job_mem,
 
 	if (jobacct_mem_limit) {
 		if (jobacct_step_id == NO_VAL) {
-			debug("Job %u memory used:%"PRIu64" limit:%"PRIu64" KB",
+			debug("Job %u memory used:%"PRIu64" limit:%"PRIu64" B",
 			      jobacct_job_id, total_job_mem, jobacct_mem_limit);
 		} else {
 			debug("Step %u.%u memory used:%"PRIu64" "
-			      "limit:%"PRIu64" KB",
+			      "limit:%"PRIu64" B",
 			      jobacct_job_id, jobacct_step_id,
 			      total_job_mem, jobacct_mem_limit);
 		}
