@@ -197,7 +197,7 @@ extern void step_set_env(char ***step_env_ptr, void *gres_ptr)
 }
 
 /*
- * Reset environment variables as appropriate for a job (i.e. this one tasks)
+ * Reset environment variables as appropriate for a job (i.e. this one task)
  * based upon the job step's GRES state and assigned CPUs.
  */
 extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,

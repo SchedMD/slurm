@@ -1,0 +1,224 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test --gpu-bind options
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "39.8"
+set exit_code   0
+set file_in     "test$test_id.input"
+set number_commas  "\[0-9_,\]+"
+
+proc get_node_config {} {
+	global cpus_per_socket sockets_per_node
+	global exit_code file_in max_job_delay number srun scontrol
+
+	set cpus_tot 1
+	set sockets_per_node 1
+	set cpus_per_socket 1
+	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	set timeout $max_job_delay
+	log_user 0
+	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 ./$file_in]
+	expect {
+		-re "CPUTot=($number)" {
+			set cpus_tot $expect_out(1,string)
+			exp_continue
+		}
+		-re "Sockets=($number)" {
+			set sockets_per_node $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+}
+
+print_header $test_id
+
+set select_type [test_select_type]
+if {![string compare $select_type "cons_tres"] ||
+    (![string compare $select_type "cray"] && [test_select_type_params "other_cons_tres"])} {
+        send_user "\nValid configuration, using select/cons_tres\n"
+} else {
+        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
+        exit 0
+}
+
+set gpu_cnt [get_gpu_count]
+if {$gpu_cnt < 0} {
+	send_user "\nFAILURE: Error getting GPU count\n"
+	exit 1
+}
+if {$gpu_cnt < 2} {
+	send_user "\nWARNING: This test requires 2 or more GPUs in the default partition\n"
+	exit 0
+}
+get_node_config
+set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
+send_user "\nGPU count is $gpu_cnt\n"
+send_user "Sockets per node is $sockets_per_node\n"
+send_user "CPUs per socket is $cpus_per_socket\n"
+send_user "CPUs per node is $cpus_per_node\n\n"
+if {$cpus_per_node < 1} {
+	send_user "\nWARNING: This test requires 2 or more CPUs per node in the default partition\n"
+	exit 0
+}
+
+#
+# Build input script file
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+if \[ \$SLURM_PROCID -eq 0 \]; then
+   $scontrol -dd show job \$SLURM_JOB_ID
+fi
+exit 0"
+
+set timeout $max_job_delay
+set srun_pid [spawn $srun --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J "test$test_id" -t1 ./$file_in]
+expect {
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Test of --gpu-bind=closest
+#
+set srun_pid [spawn $srun -d5 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J "test$test_id" -t1 ./$file_in]
+expect {
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Test of --gpu-bind=map_gpu
+# Note that if the task count exceeds the provided map_gpu, the map will be cycled over for additional tasks
+#
+if {$gpu_cnt < 4} {
+	set map_gpu "map_gpu:1,0"
+	set match_goal 2
+	set tasks_per_node 2
+} else {
+	set map_gpu "map_gpu:1,0,3,2"
+	set match_goal 4
+	set tasks_per_node 4
+}
+set matches 0
+set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J "test$test_id" -l -t1 ./$file_in]
+expect {
+	-re "($number): HOST:($controlmachine_regex) CUDA_VISIBLE_DEVICES:($number)" {
+		if       {$expect_out(1,string) == 0 && $expect_out(3,string) == 1} {
+			incr matches
+		} elseif {$expect_out(1,string) == 1 && $expect_out(3,string) == 0} {
+			incr matches
+		} elseif {$expect_out(1,string) == 2 && $expect_out(3,string) == 3} {
+			incr matches
+		} elseif {$expect_out(1,string) == 3 && $expect_out(3,string) == 2} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != $match_goal} {
+	send_user "\nFAILURE: --gpu-bind=$map_gpu not respected ($matches != $match_goal)\n"
+	set exit_code 1
+}
+
+#
+# Test of --gpu-bind=mask_gpu
+# Note that if the task count exceeds the provided mask_gpu, the mask will be cycled over for additional tasks
+#
+if {$gpu_cnt < 4} {
+	set mask_gpu "mask_gpu:0x3,0x1"
+} else {
+	set mask_gpu "mask_gpu:0x3,0x1,0x5,9"
+}
+set matches 0
+set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J "test$test_id" -l -t1 ./$file_in]
+expect {
+	-re "($number): HOST:($controlmachine_regex) CUDA_VISIBLE_DEVICES:($number_commas)" {
+		if       {$expect_out(1,string) == 0 && $expect_out(3,string) eq "0,1"} {
+			incr matches
+		} elseif {$expect_out(1,string) == 1 && $expect_out(3,string) eq "0"} {
+			incr matches
+		} elseif {$expect_out(1,string) == 2 && $expect_out(3,string) eq "0,2"} {
+			incr matches
+		} elseif {$expect_out(1,string) == 3 && $expect_out(3,string) eq "0,3"} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != $match_goal} {
+	send_user "\nFAILURE: --gpu-bind=$mask_gpu not respected ($matches != $match_goal)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

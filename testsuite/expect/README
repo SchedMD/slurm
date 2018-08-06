@@ -819,3 +819,4 @@ test39.4   Test some invalid combintations of --gpu options
 test39.5   Test some valid combintations of srun --gpu options
 test39.6   Insure job requesting GPUs on multiple sockets gets CPUs on them
 test39.7   Test --cpus-per-gpu option
+test39.8   Test --gpu-bind options

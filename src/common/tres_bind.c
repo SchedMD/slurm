@@ -55,9 +55,18 @@ static int _valid_num_list(const char *arg)
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		val = strtol(tok, &end_ptr, 0);
-		if ((val < 0) || (val == LONG_MAX) || (end_ptr[0] != '\0')) {
+		if ((val < 0) || (val == LONG_MAX) ||
+		    ((end_ptr[0] != '\0') && (end_ptr[0] != '*'))) {
 			rc = -1;
 			break;
+		}
+		if (end_ptr[0] == '*') {
+			val = strtol(end_ptr+1, &end_ptr, 0);
+			if ((val < 0) || (val == LONG_MAX) ||
+			    (end_ptr[0] != '\0')) {
+				rc = -1;
+				break;
+			}
 		}
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}

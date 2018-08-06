@@ -156,6 +156,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	bool alloc_cnt = false;
 	gres_device_t *gres_device, *first_device = NULL;
 	ListIterator itr;
+	char *global_prefix = "", *local_prefix = "";
+	char *new_global_list = NULL, *new_local_list = NULL;
 
 	if (!gres_devices)
 		return;
@@ -171,7 +173,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		    gres_job_ptr->gres_bit_alloc &&
 		    gres_job_ptr->gres_bit_alloc[node_inx]) {
 			bit_alloc = gres_job_ptr->gres_bit_alloc[node_inx];
-//FIXME: Change to total_gres check below once field is set
 		} else if (gres_job_ptr && (gres_job_ptr->gres_per_node > 0))
 			alloc_cnt = true;
 
@@ -183,7 +184,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		    gres_step_ptr->gres_bit_alloc &&
 		    gres_step_ptr->gres_bit_alloc[0]) {
 			bit_alloc = gres_step_ptr->gres_bit_alloc[0];
-//FIXME: Change to total_gres check below once field is set
 		} else if (gres_step_ptr && (gres_step_ptr->gres_per_node > 0))
 			alloc_cnt = true;
 	}
@@ -212,30 +212,36 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				if (!bit_test(usable_gres, i))
 					continue;
 			}
-			if (*global_list) {
-				xstrcat(*global_list, ",");
-				xstrcat(*local_list,  ",");
-			}
-
-			xstrfmtcat(*local_list, "%s%d",
+			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
 				   prefix, use_local_dev_index ?
 				   (*local_inx)++ : gres_device->dev_num);
+			local_prefix = ",";
 			//info("looking at %d and %d", i, gres_device->dev_num);
-			xstrfmtcat(*global_list, "%s%d",
+			xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
 				   prefix, gres_device->dev_num);
+			global_prefix = ",";
 		}
 		list_iterator_destroy(itr);
-
-		if (reset && !*global_list && first_device) {
-			xstrfmtcat(*local_list, "%s%d",
+		if (reset && !new_global_list && first_device) {
+			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
 				   prefix, use_local_dev_index ?
 				   (*local_inx)++ : first_device->dev_num);
-			xstrfmtcat(*global_list, "%s%d",
+			xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
 				   prefix, first_device->dev_num);
 		}
+		if (new_global_list) {
+			xfree(*global_list);
+			*global_list = new_global_list;
+		}
+		if (new_local_list) {
+			xfree(*local_list);
+			*local_list = new_local_list;
+		}
 	} else if (alloc_cnt) {
-		/* The gres.conf file must identify specific device files
-		 * in order to set the CUDA_VISIBLE_DEVICES env var */
+		/*
+		 * The gres.conf file must identify specific device files
+		 * in order to set the CUDA_VISIBLE_DEVICES env var
+		 */
 		debug("%s: unable to set env vars, no device files configured",
 		      __func__);
 	} else if (!*global_list) {

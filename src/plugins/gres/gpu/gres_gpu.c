@@ -102,9 +102,9 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	char *slurm_env_var = NULL;
 
 	if (is_job)
-			slurm_env_var = "SLURM_JOB_GPUS";
+		slurm_env_var = "SLURM_JOB_GPUS";
 	else
-			slurm_env_var = "SLURM_STEP_GPUS";
+		slurm_env_var = "SLURM_STEP_GPUS";
 
 	if (*already_seen) {
 		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
@@ -230,7 +230,7 @@ extern void step_set_env(char ***step_env_ptr, void *gres_ptr)
 }
 
 /*
- * Reset environment variables as appropriate for a job (i.e. this one tasks)
+ * Reset environment variables as appropriate for a job (i.e. this one task)
  * based upon the job step's GRES state and assigned CPUs.
  */
 extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,

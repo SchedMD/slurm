@@ -204,10 +204,11 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 	stepd_step_rec_t *job = NULL;
 
 	if (!(job = stepd_step_rec_create(msg, protocol_version))) {
-		/* We want to send back to the slurmd the reason we
-		   failed so keep track of it since errno could be
-		   reset in _send_launch_failure.
-		*/
+		/*
+		 * We want to send back to the slurmd the reason we
+		 * failed so keep track of it since errno could be
+		 * reset in _send_launch_failure.
+		 */
 		int fail = errno;
 		_send_launch_failure(msg, cli, errno, protocol_version);
 		errno = fail;
@@ -218,6 +219,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 	job->envtp->self = self;
 	job->envtp->select_jobinfo = msg->select_jobinfo;
 	job->accel_bind_type = msg->accel_bind_type;
+	job->tres_bind = xstrdup(msg->tres_bind);
 
 	return job;
 }
@@ -1230,7 +1232,7 @@ job_manager(stepd_step_rec_t *job)
 	if (job->stepid == SLURM_EXTERN_CONT)
 		return _spawn_job_container(job);
 
-	if (!job->batch && job->accel_bind_type) {
+	if (!job->batch && (job->accel_bind_type || job->tres_bind)) {
 		(void) gres_plugin_node_config_load(conf->cpus, conf->node_name,
 						    (void *)&xcpuinfo_abs_to_mac);
 	}
@@ -1276,9 +1278,13 @@ job_manager(stepd_step_rec_t *job)
 		goto fail3;
 	}
 
-	if (!job->batch && job->accel_bind_type && (job->node_tasks <= 1))
+	if (!job->batch && (job->node_tasks <= 1) &&
+	    (job->accel_bind_type || job->tres_bind)) {
 		job->accel_bind_type = 0;
-	if (!job->batch && job->accel_bind_type && (job->node_tasks > 1)) {
+		xfree(job->tres_bind);
+	}
+	if (!job->batch && (job->node_tasks > 1) &&
+	    (job->accel_bind_type || job->tres_bind)) {
 		uint64_t gpu_cnt, mic_cnt, nic_cnt;
 		gpu_cnt = gres_plugin_step_count(job->step_gres_list, "gpu");
 		mic_cnt = gres_plugin_step_count(job->step_gres_list, "mic");
@@ -1293,9 +1299,11 @@ job_manager(stepd_step_rec_t *job)
 			job->accel_bind_type = 0;
 	}
 
-	/* Calls pam_setup() and requires pam_finish() if
+	/*
+	 * Calls pam_setup() and requires pam_finish() if
 	 * successful.  Only check for < 0 here since other slurm
-	 * error codes could come that are more descriptive. */
+	 * error codes could come that are more descriptive.
+	 */
 	if ((rc = _fork_all_tasks(job, &io_initialized)) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
