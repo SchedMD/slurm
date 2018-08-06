@@ -234,7 +234,7 @@ _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 	wait_for_resumed(resp_msg->msg_type);
 	while (1) {
 		rc = slurm_send_only_node_msg(resp_msg);
-		if ((rc == SLURM_SUCCESS) || (errno != ETIMEDOUT))
+		if (rc == SLURM_SUCCESS)
 			break;
 
 		if (!max_retry)
