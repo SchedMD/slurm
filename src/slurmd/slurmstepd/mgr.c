@@ -233,9 +233,22 @@ _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 	 * it is resumed */
 	wait_for_resumed(resp_msg->msg_type);
 	while (1) {
-		rc = slurm_send_only_node_msg(resp_msg);
-		if (rc == SLURM_SUCCESS)
-			break;
+		if (resp_msg->protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+			int msg_rc = 0;
+			msg_rc = slurm_send_recv_rc_msg_only_one(resp_msg,
+								 &rc, 0);
+			/* Both must be zero for a successful transmission. */
+			if (!msg_rc && !rc)
+				break;
+		} else {
+			/*
+			 * Old unreliable method. See slurm_send_only_node_msg()
+			 * for further details.
+			 */
+			rc = slurm_send_only_node_msg(resp_msg);
+			if (rc == SLURM_SUCCESS)
+				break;
+		}
 
 		if (!max_retry)
 			max_retry = (nnodes / 1024) + 5;
