@@ -2986,10 +2986,10 @@ _enforce_job_mem_limit(void)
 			     stepd->jobid, stepd->stepid,
 			     step_rss, step_vsize);
 #endif
-			step_rss /= 1024;	/* KB to MB */
+			step_rss /= 1048576;	/* B to MB */
 			step_rss = MAX(step_rss, 1);
 			job_mem_info_ptr[job_inx].mem_used += step_rss;
-			step_vsize /= 1024;	/* KB to MB */
+			step_vsize /= 1048576;	/* B to MB */
 			step_vsize = MAX(step_vsize, 1);
 			job_mem_info_ptr[job_inx].vsize_used += step_vsize;
 		}
