@@ -2415,6 +2415,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	bool gang_flag = false;
 	bool orig_node_avail;
 	static uint32_t cr_flag = NO_VAL;
+	static int node_features_cnt = 0;
 	int *cpu_spec_array;
 	int sockets1, sockets2;	/* total sockets on node */
 	int cores1, cores2;	/* total cores on node */
@@ -2449,6 +2450,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 						  NULL, &cr_flag)) {
 			cr_flag = NO_VAL;	/* error */
 		}
+		node_features_cnt = node_features_g_count();
 	}
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
@@ -2590,6 +2592,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		}
 		if ((error_code == SLURM_SUCCESS) &&
 		    (cr_flag == SELECT_TYPE_CONS_RES) &&
+		    (node_features_cnt > 0) &&
 		    (reg_msg->sockets != config_ptr->sockets) &&
 		    (reg_msg->cores   != config_ptr->cores) &&
 		    ((reg_msg->sockets * reg_msg->cores) ==
