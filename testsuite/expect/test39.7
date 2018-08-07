@@ -168,7 +168,10 @@ if {$gpu_cnt < 1} {
 }
 get_node_config
 set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
 send_user "\nGPU count is $gpu_cnt\n"
+send_user "Node count in partition default parition $def_part_name is $nb_nodes\n"
 send_user "Sockets per node is $sockets_per_node\n"
 send_user "CPUs per socket is $cpus_per_socket\n"
 send_user "CPUs per node is $cpus_per_node\n\n"
@@ -215,6 +218,44 @@ for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
 	run_gpu_per_task $inx
 	if {$exit_code != 0} {
 		break
+	}
+}
+
+#
+# Run test with --gpus=2 and cpus_per_gpu value that pushed job to 2 nodes
+#
+if {$gpu_cnt > 1 && $nb_nodes > 1} {
+	set cpu_count 0
+	set node_count 0
+	set srun_pid [spawn $srun --gpus=2 --cpus-per-gpu=$cpus_per_node -J "test$test_id" -t1 ./$file_in]
+	expect {
+		-re "NumNodes=($number)" {
+			set node_count $expect_out(1,string)
+			exp_continue
+		}
+		-re "NumCPUs=($number)" {
+			set cpu_count $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+#	Depending upon minimal allocation unit, job can be allocated extra CPUs
+	set cpu_target [expr $cpus_per_node * 2]
+	if {$cpu_count < $cpu_target} {
+		send_user "\nFAILURE: srun --cpus-per-gpu failure, bad CPU count ($cpu_count < $cpu_target)\n"
+		set exit_code 1
+	}
+	set node_target 2
+	if {$node_count < $node_target} {
+		send_user "\nFAILURE: srun --cpus-per-gpu failure, bad node count ($node_count < $node_target)\n"
+		set exit_code 1
 	}
 }
 

@@ -5699,8 +5699,13 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 
 		if (*max_tasks_this_node == 0)
 			break;
-		if (*max_tasks_this_node == NO_VAL)
+		if (*max_tasks_this_node == NO_VAL) {
+			if (job_specs->cpus_per_gres) {
+				i = *avail_cpus / job_specs->cpus_per_gres;
+				sock_gres->total_cnt = MIN(i, sock_gres->total_cnt);
+			}
 			continue;
+		}
 
 		/*
 		 * Determine how many cores are needed for this job.
@@ -5781,6 +5786,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				avail_cores_tot--;
 				break;
 			}
+		}
+		if (job_specs->cpus_per_gres) {
+			i = *avail_cpus / job_specs->cpus_per_gres;
+			sock_gres->total_cnt = MIN(i, sock_gres->total_cnt);
 		}
 	}
 	list_iterator_destroy(sock_gres_iter);
