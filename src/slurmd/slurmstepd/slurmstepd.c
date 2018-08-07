@@ -690,7 +690,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		gres_plugin_job_set_env(&job->env, job->job_gres_list, 0);
 	} else if (msg->msg_type == REQUEST_LAUNCH_TASKS) {
 		gres_plugin_step_set_env(&job->env, job->step_gres_list, 0,
-					 NULL, -1);
+					 NULL, job->tres_freq, -1);
 	}
 
 	/*

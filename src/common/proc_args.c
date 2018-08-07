@@ -1575,6 +1575,10 @@ extern void xfmt_tres(char **dest, char *prefix, char *src)
 
 	if (!src || (src[0] == '\0'))
 		return;
+	if (*dest) {
+		result = xstrdup(*dest);
+		sep = ",";
+	}
 	tmp = xstrdup(src);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
@@ -1583,5 +1587,25 @@ extern void xfmt_tres(char **dest, char *prefix, char *src)
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
+	*dest = result;
+}
+
+/*
+ * Format a tres_freq argument
+ * dest OUT - resulting string
+ * prefix IN - TRES type (e.g. "gpu")
+ * src IN - user input
+ */
+extern void xfmt_tres_freq(char **dest, char *prefix, char *src)
+{
+	char *result = NULL, *sep = "";
+
+	if (!src || (src[0] == '\0'))
+		return;
+	if (*dest) {
+		result = xstrdup(*dest);
+		sep = ";";
+	}
+	xstrfmtcat(result, "%s%s:%s", sep, prefix, src);
 	*dest = result;
 }

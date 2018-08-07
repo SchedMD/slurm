@@ -190,4 +190,12 @@ extern int validate_acctg_freq(char *acctg_freq);
  */
 extern void xfmt_tres(char **dest, char *prefix, char *src);
 
+/*
+ * Format a tres_freq argument
+ * dest OUT - resulting string
+ * prefix IN - TRES type (e.g. "gpu")
+ * src IN - user input
+ */
+extern void xfmt_tres_freq(char **dest, char *prefix, char *src);
+
 #endif /* !_PROC_ARGS_H */

@@ -220,6 +220,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 	job->envtp->select_jobinfo = msg->select_jobinfo;
 	job->accel_bind_type = msg->accel_bind_type;
 	job->tres_bind = xstrdup(msg->tres_bind);
+	job->tres_freq = xstrdup(msg->tres_freq);
 
 	return job;
 }

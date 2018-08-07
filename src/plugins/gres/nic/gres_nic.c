@@ -187,7 +187,7 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job step's GRES state.
  */
-extern void step_set_env(char ***step_env_ptr, void *gres_ptr)
+extern void step_set_env(char ***step_env_ptr, void *gres_ptr, char *tres_bind)
 {
 	static int local_inx = 0;
 	static bool already_seen = false;

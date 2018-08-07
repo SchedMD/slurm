@@ -723,7 +723,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		xfree(opt.tres_bind);
 	}
 	desc->tres_bind = xstrdup(opt.tres_bind);
-	xfmt_tres(&opt.tres_freq, "gpu", opt.gpu_freq);
+	xfmt_tres_freq(&opt.tres_freq, "gpu", opt.gpu_freq);
 	if (tres_freq_verify_cmdline(opt.tres_freq)) {
 		error("Invalid --tres-freq argument: %s. Ignored",
 		      opt.tres_freq);

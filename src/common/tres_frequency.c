@@ -151,11 +151,13 @@ static int _valid_gpu_freq(const char *arg)
 		return -1;
 
 	tmp = xstrdup(arg);
-	tok = strtok_r(tmp, ":", &save_ptr);
+	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		eq = strchr(tok, '=');
 		if (!eq) {
 			rc = _test_val(tok);
+			if ((rc != 0) && !strcmp(tok, "verbose"))
+				rc = 0;	/* "verbose" is undocumented option */
 		} else {
 			eq[0] = '\0';
 			if (!strcmp(tok, "memory") || !strcmp(tok, "voltage")) {
@@ -166,7 +168,7 @@ static int _valid_gpu_freq(const char *arg)
 		}
 		if (rc != 0)
 			break;
-		tok = strtok_r(NULL, ":", &save_ptr);
+		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
 
@@ -179,8 +181,8 @@ static int _valid_gpu_freq(const char *arg)
  * arg IN - Parameter value to check
  * RET - -1 on error, else 0
  *
- * Example: gpu:medium:memory=high:voltage=high
- *          gpu+450:voltage=4.5
+ * Example: gpu:medium,memory=high,voltage=high
+ *          gpu:450,voltage=4.5
  */
 extern int tres_freq_verify_cmdline(const char *arg)
 {
@@ -191,7 +193,7 @@ extern int tres_freq_verify_cmdline(const char *arg)
 		return 0;
 
 	tmp = xstrdup(arg);
-	tok = strtok_r(tmp, ",", &save_ptr);
+	tok = strtok_r(tmp, ";", &save_ptr);
 	while (tok) {
 		sep = strchr(tok, ':');		/* Bad format */
 		if (!sep) {
@@ -209,7 +211,7 @@ extern int tres_freq_verify_cmdline(const char *arg)
 			rc = -1;
 			break;
 		}
-		tok = strtok_r(NULL, ",", &save_ptr);
+		tok = strtok_r(NULL, ";", &save_ptr);
 	}
 	xfree(tmp);
 
