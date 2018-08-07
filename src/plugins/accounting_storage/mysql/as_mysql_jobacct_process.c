@@ -253,6 +253,9 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 	ListIterator itr = NULL;
 	slurmdb_selected_step_t *selected_step = NULL;
 
+	if (!job_cond || (job_cond->flags & JOBCOND_FLAG_RUNAWAY))
+		return;
+
 	if (job_cond->step_list && list_count(job_cond->step_list)) {
 		char *job_ids = NULL, *sep = "";
 		char *array_job_ids = NULL, *array_task_ids = NULL;
@@ -1513,8 +1516,6 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		xstrcat(*extra, ")");
 	}
 
-	_setup_job_cond_selected_steps(job_cond, extra);
-
 	if (job_cond->cpus_min) {
 		if (*extra)
 			xstrcat(*extra, " && (");
@@ -1666,6 +1667,7 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		only_pending = 1;
 
 	setup_job_cond_limits(job_cond, &extra);
+	_setup_job_cond_selected_steps(job_cond, &extra);
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
