@@ -45,6 +45,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <poll.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -4646,6 +4647,10 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 {
 	int rc = SLURM_SUCCESS;
 	int fd = -1;
+	struct pollfd pfd;
+	int timeout = slurm_get_msg_timeout();
+	int value = -1;
+	int pollrc;
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
 		return SLURM_SOCKET_ERROR;
@@ -4656,6 +4661,59 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	} else {
 		debug3("%s: sent %d", __func__, rc);
 		rc = SLURM_SUCCESS;
+	}
+
+	/*
+	 * Make sure message was received by remote, and that there isn't
+	 * and outstanding write() or that the connection has been reset.
+	 *
+	 * The shutdown() call intentionally falls through to the next block,
+	 * the poll() should hit POLLERR which gives the TICOUTQ count as an
+	 * additional diagnostic element.
+	 *
+	 * The steps below may result in a false-positive on occassion, in
+	 * which case the code path above may opt to retransmit an already
+	 * received message. If this is a concern, you should not be using
+	 * this function.
+	 */
+	if (shutdown(fd, SHUT_WR))
+		error("%s: shutdown call failed: %m", __func__);
+
+again:
+	pfd.fd = fd;
+	pfd.events = POLLIN;
+	pollrc = poll(&pfd, 1, timeout);
+	if (pollrc == -1) {
+		if (errno == EINTR)
+			goto again;
+		error("%s: poll error: %m", __func__);
+		(void) close(fd);
+		return SLURM_ERROR;
+	}
+
+	if (pollrc == 0) {
+		if (ioctl(fd, TIOCOUTQ, &value))
+			error("%s: TIOCOUTQ ioctl failed", __func__);
+		error("%s: poll timed out with %d outstanding: %m", __func__, value);
+		(void) close(fd);
+		return SLURM_ERROR;
+	}
+
+	if (pfd.revents & POLLERR) {
+		int err;
+		socklen_t errlen = sizeof(err);
+		int value = -1;
+
+		if (ioctl(fd, TIOCOUTQ, &value))
+			error("%s: TIOCOUTQ ioctl failed", __func__);
+		if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen))
+			error("%s: getsockopt error with %d outstanding: %m",
+			      __func__, value);
+		else
+			error("%s: poll error with %d outstanding: %s",
+			      __func__, value, strerror(err));
+		(void) close(fd);
+		return SLURM_ERROR;
 	}
 
 	(void) close(fd);

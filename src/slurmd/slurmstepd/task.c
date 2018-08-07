@@ -362,8 +362,6 @@ extern void exec_task(stepd_step_rec_t *job, int i)
 		node_offset = job->node_offset;
 	if (job->pack_task_offset != NO_VAL)
 		task_offset = job->pack_task_offset;
-	if (i == 0)
-		_make_tmpdir(job);
 
 	gtids = xmalloc(job->node_tasks * sizeof(uint32_t));
 	for (j = 0; j < job->node_tasks; j++)
@@ -482,6 +480,13 @@ extern void exec_task(stepd_step_rec_t *job, int i)
 		_run_script_and_set_env("user task_prolog",
 					job->task_prolog, job);
 	}
+
+	/*
+	 * Set TMPDIR after running prolog scripts, since TMPDIR
+	 * might be set or changed in one of the prolog scripts.
+	 */
+	if (i == 0)
+		_make_tmpdir(job);
 
 	if (!job->batch)
 		pdebug_stop_current(job);
