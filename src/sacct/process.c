@@ -106,6 +106,7 @@ static void _aggregate_tres_usage_stats_internal(char **dest_tres_max,
 
 	/* Now process the taskid */
 	xfree(*dest_tres_max_taskid);
+	list_iterator_reset(itr);
 	while ((dest_tres_rec = list_next(itr)))
 		dest_tres_rec->count = dest_tres_rec->alloc_secs;
 	*dest_tres_max_taskid = slurmdb_make_tres_string(dest_tres_list, flags);
