@@ -725,15 +725,15 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 		 */
 		do {
 			switch (*(p + 1)) {
-				case 'm':
-				case 't':
-				case 'T':
-				case 'M':
-					is_our_format = true;
-					break;
-				default:
-					found_other_formats = true;
-					break;
+			case 'm':
+			case 't':
+			case 'T':
+			case 'M':
+				is_our_format = true;
+				break;
+			default:
+				found_other_formats = true;
+				break;
 			}
 		} while (!is_our_format &&
 			 (p = (char *)strchr(p + 1, '%')));
