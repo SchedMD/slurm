@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
     a task prolog script.
  -- Avoid node layout fragmentation if running with a fixed CPU count but
     without Sockets and CoresPerSocket defined.
+ -- burst_buffer/cray - Fix datawarp swap default pool overriding jobdw.
 
 * Changes in Slurm 17.11.8
 ==========================

@@ -656,7 +656,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 					sub_tok = strchr(bb_job->job_pool, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
-				} else {
+				} else if (!bb_job->job_pool) {
 					bb_job->job_pool = xstrdup(
 						bb_state.bb_config.default_pool);
 				}
