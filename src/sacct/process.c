@@ -71,6 +71,7 @@ static void _aggregate_tres_usage_stats_internal(char **dest_tres_max,
 		if (!(dest_tres_rec = list_find_first(dest_tres_list,
 						      slurmdb_find_tres_in_list,
 						      &from_tres_rec->id))) {
+			list_remove(itr);
 			list_append(dest_tres_list, from_tres_rec);
 		} else {
 			if (dest_tres_rec->count == INFINITE64 ||
