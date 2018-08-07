@@ -91,6 +91,8 @@ static void _aggregate_tres_usage_stats_internal(char **dest_tres_max,
 			}
 		}
 	}
+	list_iterator_destroy(itr);
+
 	/* make the string now from the list */
 	flags = TRES_STR_FLAG_SIMPLE + TRES_STR_FLAG_REMOVE;
 	xfree(*dest_tres_max);
