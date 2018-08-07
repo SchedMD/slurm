@@ -247,6 +247,87 @@ enum {
 	STEP_REQ_COUNT
 };
 
+static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
+					   char **extra)
+{
+	ListIterator itr = NULL;
+	slurmdb_selected_step_t *selected_step = NULL;
+
+	if (job_cond->step_list && list_count(job_cond->step_list)) {
+		char *job_ids = NULL, *sep = "";
+		char *array_job_ids = NULL, *array_task_ids = NULL;
+		char *pack_job_ids = NULL, *pack_job_offset = NULL;
+
+		if (*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->step_list);
+		while ((selected_step = list_next(itr))) {
+			if (selected_step->array_task_id != NO_VAL) {
+				if (array_job_ids)
+					xstrcat(array_job_ids, " ,");
+				if (array_task_ids)
+					xstrcat(array_task_ids, " ,");
+				xstrfmtcat(array_job_ids, "%u",
+					   selected_step->jobid);
+				xstrfmtcat(array_task_ids, "%u",
+					   selected_step->array_task_id);
+			} else if (selected_step->pack_job_offset != NO_VAL) {
+				if (pack_job_ids)
+					xstrcat(pack_job_ids, " ,");
+				if (pack_job_offset)
+					xstrcat(pack_job_offset, " ,");
+				xstrfmtcat(pack_job_ids, "%u",
+					   selected_step->jobid);
+				xstrfmtcat(pack_job_offset, "%u",
+					   selected_step->pack_job_offset);
+			} else {
+				if (job_ids)
+					xstrcat(job_ids, " ,");
+				if (array_job_ids)
+					xstrcat(array_job_ids, " ,");
+				xstrfmtcat(job_ids, "%u",
+					   selected_step->jobid);
+				xstrfmtcat(array_job_ids, "%u",
+					   selected_step->jobid);
+			}
+		}
+		list_iterator_destroy(itr);
+
+		if (job_ids) {
+			xstrfmtcat(*extra,
+				   "t1.id_job in (%s) || t1.pack_job_id in (%s)",
+				   job_ids, job_ids);
+			sep = " || ";
+		}
+		if (pack_job_offset) {
+			xstrfmtcat(*extra,
+				   "%s(t1.pack_job_id in (%s) && t1.pack_job_offset in (%s))",
+				   sep, pack_job_ids, pack_job_offset);
+			sep = " || ";
+		}
+		if (array_job_ids) {
+			xstrfmtcat(*extra, "%s(t1.id_array_job in (%s)",
+				   sep, array_job_ids);
+			if (array_task_ids) {
+				xstrfmtcat(*extra,
+					   " && t1.id_array_task in (%s)",
+					   array_task_ids);
+			}
+			xstrcat(*extra, ")");
+		}
+
+		xstrcat(*extra, ")");
+		xfree(job_ids);
+		xfree(array_job_ids);
+		xfree(array_task_ids);
+		xfree(pack_job_ids);
+		xfree(pack_job_offset);
+	}
+}
+
 static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 			       uint32_t start, uint32_t end)
 {
@@ -1307,7 +1388,6 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	int set = 0;
 	ListIterator itr = NULL;
 	char *object = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
 
 	if (!job_cond || (job_cond->flags & JOBCOND_FLAG_RUNAWAY))
 		return 0;
@@ -1433,79 +1513,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		xstrcat(*extra, ")");
 	}
 
-	if (job_cond->step_list && list_count(job_cond->step_list)) {
-		char *job_ids = NULL, *sep = "";
-		char *array_job_ids = NULL, *array_task_ids = NULL;
-		char *pack_job_ids = NULL, *pack_job_offset = NULL;
-
-		if (*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-
-		itr = list_iterator_create(job_cond->step_list);
-		while ((selected_step = list_next(itr))) {
-			if (selected_step->array_task_id != NO_VAL) {
-				if (array_job_ids)
-					xstrcat(array_job_ids, " ,");
-				if (array_task_ids)
-					xstrcat(array_task_ids, " ,");
-				xstrfmtcat(array_job_ids, "%u",
-					   selected_step->jobid);
-				xstrfmtcat(array_task_ids, "%u",
-					   selected_step->array_task_id);
-			} else if (selected_step->pack_job_offset != NO_VAL) {
-				if (pack_job_ids)
-					xstrcat(pack_job_ids, " ,");
-				if (pack_job_offset)
-					xstrcat(pack_job_offset, " ,");
-				xstrfmtcat(pack_job_ids, "%u",
-					   selected_step->jobid);
-				xstrfmtcat(pack_job_offset, "%u",
-					   selected_step->pack_job_offset);
-			} else {
-				if (job_ids)
-					xstrcat(job_ids, " ,");
-				if (array_job_ids)
-					xstrcat(array_job_ids, " ,");
-				xstrfmtcat(job_ids, "%u",
-					   selected_step->jobid);
-				xstrfmtcat(array_job_ids, "%u",
-					   selected_step->jobid);
-			}
-		}
-		list_iterator_destroy(itr);
-
-		if (job_ids) {
-			xstrfmtcat(*extra,
-				   "t1.id_job in (%s) || t1.pack_job_id in (%s)",
-				   job_ids, job_ids);
-			sep = " || ";
-		}
-		if (pack_job_offset) {
-			xstrfmtcat(*extra,
-				   "%s(t1.pack_job_id in (%s) && t1.pack_job_offset in (%s))",
-				   sep, pack_job_ids, pack_job_offset);
-			sep = " || ";
-		}
-		if (array_job_ids) {
-			xstrfmtcat(*extra, "%s(t1.id_array_job in (%s)",
-				   sep, array_job_ids);
-			if (array_task_ids) {
-				xstrfmtcat(*extra,
-					   " && t1.id_array_task in (%s)",
-					   array_task_ids);
-			}
-			xstrcat(*extra, ")");
-		}
-
-		xstrcat(*extra, ")");
-		xfree(job_ids);
-		xfree(array_job_ids);
-		xfree(array_task_ids);
-		xfree(pack_job_ids);
-		xfree(pack_job_offset);
-	}
+	_setup_job_cond_selected_steps(job_cond, extra);
 
 	if (job_cond->cpus_min) {
 		if (*extra)
