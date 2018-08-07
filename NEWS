@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     messages, which will cause a permanently stuck srun process.
  -- Handle creation of TMPDIR if environment variable is set or changed in
     a task prolog script.
+ -- Avoid node layout fragmentation if running with a fixed CPU count but
+    without Sockets and CoresPerSocket defined.
 
 * Changes in Slurm 17.11.8
 ==========================
