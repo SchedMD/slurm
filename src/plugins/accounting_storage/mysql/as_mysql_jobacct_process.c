@@ -248,7 +248,7 @@ enum {
 };
 
 static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
-					   char **extra)
+					   char *cluster_name, char **extra)
 {
 	ListIterator itr = NULL;
 	slurmdb_selected_step_t *selected_step = NULL;
@@ -1667,7 +1667,6 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		only_pending = 1;
 
 	setup_job_cond_limits(job_cond, &extra);
-	_setup_job_cond_selected_steps(job_cond, &extra);
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
@@ -1693,6 +1692,7 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		int rc;
+		_setup_job_cond_selected_steps(job_cond, cluster_name, &extra);
 		if ((rc = _cluster_get_jobs(mysql_conn, &user, job_cond,
 					    cluster_name, tmp, tmp2, extra,
 					    is_admin, only_pending, job_list))
