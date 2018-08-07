@@ -1394,7 +1394,7 @@ no_resv:
 
 	/* Don't show revoked sibling federated jobs w/out -D */
 	if (!(job_cond->flags & JOBCOND_FLAG_DUP))
-		xstrfmtcat(*extra, " %s (state != %d)",
+		xstrfmtcat(*extra, " %s (t1.state != %d)",
 			   *extra ? "&&" : "where",
 			   JOB_REVOKED);
 
