@@ -175,6 +175,12 @@ enum cluster_fed_states {
 					  * the time to the usage_start and
 					  * usage_end */
 #define JOBCOND_FLAG_RUNAWAY  0x00000008 /* Report runaway jobs only */
+#define JOBCOND_FLAG_WHOLE_HETJOB    0x00000010 /* Report info about all hetjob
+						 * components
+						 */
+#define JOBCOND_FLAG_NO_WHOLE_HETJOB 0x00000020 /* Only report info about
+						 * requested hetjob components
+						 */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number

@@ -300,15 +300,31 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		list_iterator_destroy(itr);
 
 		if (job_ids) {
-			xstrfmtcat(*extra,
+			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
+				xstrfmtcat(*extra, "t1.id_job in (%s) || "
+					   "(t1.pack_job_offset<>%u && "
+					   "t1.pack_job_id in (select "
+					   "t4.pack_job_id from \"%s_%s\" as "
+					   "t4 where t4.id_job in (%s)))",
+					   job_ids, NO_VAL, cluster_name,
+					   job_table, job_ids);
+			else if (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB)
+				xstrfmtcat(*extra, "t1.id_job in (%s)",
+					   job_ids);
+			else
+				xstrfmtcat(*extra,
 				   "t1.id_job in (%s) || t1.pack_job_id in (%s)",
 				   job_ids, job_ids);
 			sep = " || ";
 		}
 		if (pack_job_offset) {
-			xstrfmtcat(*extra,
-				   "%s(t1.pack_job_id in (%s) && t1.pack_job_offset in (%s))",
-				   sep, pack_job_ids, pack_job_offset);
+			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
+				xstrfmtcat(*extra, "%s(t1.pack_job_id in (%s))",
+					   sep, pack_job_ids);
+			else
+				xstrfmtcat(*extra, "%s(t1.pack_job_id in (%s) "
+					   "&& t1.pack_job_offset in (%s))",
+					   sep, pack_job_ids, pack_job_offset);
 			sep = " || ";
 		}
 		if (array_job_ids) {

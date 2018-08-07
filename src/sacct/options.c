@@ -54,6 +54,7 @@
 #define OPT_LONG_NOCONVERT 0x103
 #define OPT_LONG_UNITS     0x104
 #define OPT_LONG_FEDR      0x105
+#define OPT_LONG_WHETJOB   0x106
 
 #define JOB_HASH_SIZE 1000
 
@@ -424,6 +425,11 @@ sacct [<OPTION>]                                                            \n \
      -V, --version: Print version.                                          \n\
      -W, --wckeys:                                                          \n\
                    Only send data about these wckeys.  Default is all.      \n\
+     --whole-hetjob=[yes|no]:                                               \n\
+		   If set to 'yes' (or not set), then information about all \n\
+		   the heterogeneous components will be retrieved. If set   \n\
+		   to 'no' only the specific filtered components will be    \n\
+		   retrieved.                                               \n\
      -x, --associations:                                                    \n\
                    Only send data about these association id.  Default is all.\n\
      -X, --allocations:                                                     \n\
@@ -690,6 +696,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"verbose",        no_argument,       0,    'v'},
                 {"version",        no_argument,       0,    'V'},
                 {"wckeys",         required_argument, 0,    'W'},
+                {"whole-hetjob",   optional_argument, 0,    OPT_LONG_WHETJOB},
                 {"associations",   required_argument, 0,    'x'},
                 {0,                0,		      0,    0}};
 
@@ -942,6 +949,19 @@ extern void parse_command_line(int argc, char **argv)
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->wckey_list, optarg);
 			break;
+		case OPT_LONG_WHETJOB:
+			if (!optarg || !xstrcasecmp(optarg, "yes") ||
+			    !xstrcasecmp(optarg, "y"))
+				job_cond->flags |= JOBCOND_FLAG_WHOLE_HETJOB;
+			else if (!xstrcasecmp(optarg, "no") ||
+				 !xstrcasecmp(optarg, "n"))
+				job_cond->flags |= JOBCOND_FLAG_NO_WHOLE_HETJOB;
+			else if (optarg) {
+				error("Invalid --whole-hetjob value \"%s\"."
+				      " Valid values: [yes|no].", optarg);
+				exit(1);
+			}
+			break;
 		case 'V':
 			print_slurm_version();
 			exit(0);
@@ -1005,12 +1025,15 @@ extern void parse_command_line(int argc, char **argv)
 	      "\topt_dup=%d\n"
 	      "\topt_field_list=%s\n"
 	      "\topt_help=%d\n"
-	      "\topt_no_steps=%d",
+	      "\topt_no_steps=%d\n"
+	      "\topt_whole_hetjob=%s",
 	      params.opt_completion,
 	      job_cond->flags & JOBCOND_FLAG_DUP,
 	      params.opt_field_list,
 	      params.opt_help,
-	      job_cond->flags & JOBCOND_FLAG_NO_STEP);
+	      job_cond->flags & JOBCOND_FLAG_NO_STEP,
+	      job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB ? "yes" :
+	      (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB ? "no" : 0));
 
 	if (params.opt_completion) {
 		slurmdb_jobcomp_init(params.opt_filein);

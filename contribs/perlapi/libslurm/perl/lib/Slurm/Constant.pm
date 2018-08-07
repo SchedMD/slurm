@@ -583,6 +583,10 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * JOBCOND_FLAG_RUNAWAY     0x00000008
 
+=item * JOBCOND_FLAG_WHOLE_HETJOB 0x00000010
+
+=item * JOBCOND_FLAG_NO_WHOLE_HETJOB 0x00000020
+
 =back
 
 =head3 Connection type
