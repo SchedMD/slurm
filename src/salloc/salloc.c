@@ -810,12 +810,13 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->req_nodes = xstrdup(opt.nodelist);
 	desc->exc_nodes = xstrdup(opt.exc_nodes);
 	desc->partition = xstrdup(opt.partition);
-	desc->min_nodes = opt.min_nodes;
 
-	if (opt.max_nodes)
-		desc->max_nodes = opt.max_nodes;
-	else if (opt.nodes_set)
-		desc->max_nodes = opt.min_nodes;
+	if (opt.nodes_set) {
+		desc->min_nodes = opt.min_nodes;
+		if (opt.max_nodes)
+			desc->max_nodes = opt.max_nodes;
+	} else if (opt.ntasks_set && (opt.ntasks == 0))
+		desc->min_nodes = 0;
 
 	desc->user_id = opt.uid;
 	desc->group_id = opt.gid;
