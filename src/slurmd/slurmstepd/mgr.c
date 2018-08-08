@@ -2333,13 +2333,13 @@ static char *_make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	char *output;
 
 	if (msg->script == NULL) {
-		error("_make_batch_script: called with NULL script");
+		error("%s: called with NULL script", __func__);
 		return NULL;
 	}
 
 	/* note: should replace this with a length as part of msg */
 	if ((length = strlen(msg->script)) < 1) {
-		error("_make_batch_script: called with empty script");
+		error("%s: called with empty script", __func__);
 		return NULL;
 	}
 
