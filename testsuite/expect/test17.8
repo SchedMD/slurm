@@ -66,33 +66,12 @@ if {[test_super_user] == 0} {
 	exit 0
 }
 
-set default_part [default_partition]
-if { $default_part == "" } {
-	log_error "Unable to get the default partition."
-	exit 1
-}
-
 #
 # Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
 # time limits greater than MaxTime.
 #
-spawn $scontrol update partitionname=$default_part MaxTime=-1
-expect {
-	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if { $exit_code == 1 } {
-	endit
-}
-set maxtime [get_partition_maximum_time_limit $default_part]
-if { $maxtime != -1 } {
-	log_error "Unable to update partition MaxTime"
-	set exit_code 1
+set exit_code [set_partition_maximum_time_limit "" -1]
+if { $exit_code != 0 } {
 	endit
 }
 
