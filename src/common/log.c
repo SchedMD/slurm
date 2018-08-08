@@ -75,6 +75,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
 
 #ifndef LINEBUFSIZE
 #  define LINEBUFSIZE 256
@@ -688,12 +689,48 @@ set_idbuf(char *idbuf)
 }
 
 /*
+ * jobid2fmt() - print a job ID as "JobID=..." including, as applicable,
+ * the job array or hetjob component information with the raw jobid in
+ * parenthesis.
+ */
+static char *_jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
+{
+	/*
+	 * NOTE: You will notice we put a %.0s in front of the string.
+	 * This is to handle the fact that we can't remove the job_ptr
+	 * argument from the va_list directly. So when we call vsnprintf()
+	 * to handle the va_list this will effectively skip this argument.
+	 */
+	if (job_ptr == NULL)
+		return "%.0sJobID=Invalid";
+
+	if (job_ptr->pack_job_id) {
+		snprintf(buf, buf_size, "%%.0sJobID=%u+%u(%u)",
+			 job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			 job_ptr->job_id);
+	} else if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
+		snprintf(buf, buf_size, "%%.0sJobID=%u_*",
+			 job_ptr->array_job_id);
+	} else if (job_ptr->array_task_id == NO_VAL) {
+		snprintf(buf, buf_size, "%%.0sJobID=%u", job_ptr->job_id);
+	} else {
+		snprintf(buf, buf_size, "%%.0sJobID=%u_%u(%u)",
+			 job_ptr->array_job_id, job_ptr->array_task_id,
+			 job_ptr->job_id);
+	}
+
+       return buf;
+}
+
+/*
  * return a heap allocated string formed from fmt and ap arglist
  * returned string is allocated with xmalloc, so must free with xfree.
  *
  * args are like printf, with the addition of the following format chars:
  * - %m expands to strerror(errno)
  * - %M expand to time stamp, format is configuration dependent
+ * - %pJ expands to "JobId=XXXX" for the given job_ptr, with the appropriate
+ *       format for job arrays and hetjob components.
  * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
  * - %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  *
@@ -706,9 +743,11 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 	char	*out_string = NULL;
 	char	*p;
 	bool found_other_formats = false;
+	int     cnt = 0;
 
 	while (*fmt != '\0') {
 		bool is_our_format = false;
+
 		p = (char *)strchr(fmt, '%');
 		if (p == NULL) {
 			/*
@@ -731,10 +770,21 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 'M':
 				is_our_format = true;
 				break;
+			case 'p':
+				switch (*(p + 2)) {
+				case 'J':
+					is_our_format = true;
+					break;
+				default:
+					found_other_formats = true;
+					break;
+				}
+				break;
 			default:
 				found_other_formats = true;
 				break;
 			}
+			cnt++;
 		} while (!is_our_format &&
 			 (p = (char *)strchr(p + 1, '%')));
 
@@ -756,6 +806,35 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			 * to substitute for the format sequence in question:
 			 */
 			switch (*fmt) {
+			case 'p':
+				fmt++;
+				switch (*fmt) {
+				case 'J':	/* "%pJ" => "JobID=..." */
+				{
+					int i;
+					void *ptr = NULL;
+					struct job_record *job_ptr;
+					va_list	ap_copy;
+
+					va_copy(ap_copy, ap);
+					for (i = 0; i < cnt; i++ )
+						ptr = va_arg(ap_copy, void *);
+					if (ptr) {
+						job_ptr = ptr;
+						xstrcat(intermediate_fmt,
+							_jobid2fmt(
+								job_ptr,
+								substitute_on_stack,
+								sizeof(substitute_on_stack)));
+					}
+					va_end(ap_copy);
+					break;
+				}
+				default:
+					/* Unknown */
+					break;
+				}
+				break;
 			case 'm':	/* "%m" => strerror(errno) */
 				substitute = slurm_strerror(errno);
 				should_xfree = 0;

@@ -242,6 +242,8 @@ extern int get_log_level(void);
  * args are printf style with the following exceptions:
  * %m expands to strerror(errno)
  * %M expand to time stamp, format is configuration dependent
+ * %pJ expands to "JobId=XXXX" for the given job_ptr, with the appropriate
+ *     format for job arrays and hetjob components.
  * %t expands to strftime("%x %X") [ locally preferred short date/time ]
  * %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  */
