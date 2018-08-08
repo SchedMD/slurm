@@ -42,6 +42,15 @@ if {[test_alps]} {
 }
 
 #
+# We must be SlurmUser or root in order to change the partition MaxTime limit,
+# otherwise this test may fail.
+#
+if {[test_super_user] == 0} {
+	log_warn "You must be SlurmUser or root to run this test."
+	exit 0
+}
+
+#
 # Spawn a job with a deadline and no time
 #
 set timeout $max_job_delay
