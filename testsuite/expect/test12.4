@@ -399,7 +399,7 @@ proc sacct_job { soption job_id} {
 				set not_support 1
 				exp_continue
 			}
-			-re "sacct: Accounting storage SLURMDBD plugin loaded " {
+			-re "sacct: Accounting storage SLURMDBD plugin loaded" {
 				if {$debug} {send_user "\nmatch16\n"}
 				incr matches
 				exp_continue
