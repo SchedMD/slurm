@@ -36,6 +36,22 @@ set job_id      0
 
 print_header $test_id
 
+
+#
+# Since we make changes to configuration, call this function restore
+# configuration before exiting.
+#
+proc endit { } {
+	global exit_code
+	reconfigure
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	} else {
+		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+	}
+	exit $exit_code
+}
+
 if {[test_alps]} {
 	send_user "\nWARNING: This test is incompatible with Cray/alps systems\n"
 	exit $exit_code
@@ -76,7 +92,8 @@ expect {
 if {$job_id == 0} {
 	send_user "\nFAILURE: job not submitted\n"
 	send_user "FAILURE: This can be due to QOS or account time limit <120 minutes\n"
-	exit 1
+	set exit_code 1
+	endit
 }
 
 #
@@ -104,8 +121,10 @@ expect {
 	}
 }
 
-cancel_job $job_id
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+set rc [cancel_job $job_id]
+if { $rc != 0 } {
+	log_error "Unable to cancel job $job_id."
+	incr exit_code
 }
-exit $exit_code
+
+endit
