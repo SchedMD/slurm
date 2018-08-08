@@ -3817,6 +3817,63 @@ proc get_partition_nodes {partition states} {
 
 #####################################################################
 #
+# Proc: set_partition_maximum_time_limit
+#
+# Purpose: Set the maximum time limit in a given partition
+#
+# Input:   partition - partition to set the max time limit of
+#          limit - the new time limit
+#
+# Returns: 0 if succeeded, -1 if error
+#
+#####################################################################
+
+proc set_partition_maximum_time_limit {partition limit} {
+	global scontrol exit_code
+
+	if {[string length $partition] == 0} {
+		set partition [default_partition]
+		if { $partition == "" } {
+			return 1
+		}
+	}
+
+	if { $limit < -1 } {
+		log_error "Trying to set invalid partition time limit of $limit"
+		return 1
+	}
+	if { $limit == -1 } {
+		set expected_lim "UNLIMITED"
+	} else {
+		set expected_lim limit
+	}
+
+	spawn $scontrol update partitionname=$partition MaxTime=-1
+	expect {
+		timeout {
+			log_error "scontrol not responding"
+			return 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set maxtime [get_partition_maximum_time_limit $partition]
+	if { $maxtime != $limit } {
+		log_error "Unable to update partition MaxTime, got $maxtime, wanted $limit"
+		return 1
+	}
+	if { $exit_code != 0 } {
+		log_error "set_partition_maximum_time_limit: Unexpected error."
+		return 1
+	}
+
+	return 0
+}
+
+#####################################################################
+#
 # Proc: get_partition_maximum_time_limit
 #
 # Purpose: Get the maximum time limit in a given partition
