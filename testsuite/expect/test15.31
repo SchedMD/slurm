@@ -61,6 +61,15 @@ if {[test_super_user] == 0} {
 }
 
 #
+# Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
+# time limits greater than MaxTime.
+#
+set exit_code [set_partition_maximum_time_limit "" -1]
+if { $exit_code != 0 } {
+	endit
+}
+
+#
 # Spawn a job that deadline is too short
 #
 set timeout $max_job_delay
