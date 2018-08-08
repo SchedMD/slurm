@@ -129,6 +129,15 @@ array set mod_part_qos {
 
 print_header $test_id
 
+#
+# Cannot run the test if OverTimeLimit is set, since we test time limits.
+#
+set overtimelim [get_over_time_limit]
+if {$overtimelim != 0} {
+	log_warn "Cannot run this test when OverTimeLimit is set. Exiting now."
+	exit 0
+}
+
 proc cleanup { } {
 
 	global acct job_qos part_qos scontrol sacctmgr test_part def_part

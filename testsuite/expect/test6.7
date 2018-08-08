@@ -42,6 +42,15 @@ set file_prog    "test$test_id.prog"
 print_header $test_id
 
 #
+# Cannot run the test if OverTimeLimit is set, since we test time limits.
+#
+set overtimelim [get_over_time_limit]
+if {$overtimelim != 0} {
+	log_warn "Cannot run this test when OverTimeLimit is set. Exiting now."
+	exit 0
+}
+
+#
 # Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output
 # of the ulimit program is inconsistent across systems.

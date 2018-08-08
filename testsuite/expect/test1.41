@@ -49,6 +49,15 @@ if {[test_alps]} {
 }
 
 #
+# Cannot run the test if OverTimeLimit is set, since we test time limits.
+#
+set overtimelim [get_over_time_limit]
+if {$overtimelim != 0} {
+	log_warn "Cannot run this test when OverTimeLimit is set. Exiting now."
+	exit 0
+}
+
+#
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
 # Timeout is max_job_delay (to spawn task) +
