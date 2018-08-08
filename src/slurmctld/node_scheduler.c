@@ -2678,9 +2678,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		(uint64_t)(job_ptr->total_cpus ?
 			   job_ptr->total_cpus : job_ptr->details->min_cpus);
 	tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
-		job_ptr->details->pn_min_memory,
-		tres_req_cnt[TRES_ARRAY_CPU],
-		selected_node_cnt);
+					job_ptr->job_resrcs,
+					job_ptr->details->pn_min_memory,
+					tres_req_cnt[TRES_ARRAY_CPU],
+					selected_node_cnt);
 	tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
 	assoc_mgr_lock(&job_read_locks);

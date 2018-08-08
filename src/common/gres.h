@@ -42,6 +42,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 #include "src/common/bitstring.h"
+#include "src/common/job_resources.h"
 #include "src/common/node_conf.h"
 #include "src/common/pack.h"
 
@@ -778,6 +779,19 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					struct job_resources *job_res,
 					gres_mc_data_t *tres_mc_ptr,
 					struct node_record *node_table_ptr);
+
+/*
+ * Determine if the job GRES specification includes a mem-per-tres specification
+ * RET largest mem-per-tres specification found
+ */
+extern uint64_t gres_plugin_job_mem_max(List job_gres_list);
+
+/*
+ * Set per-node memory limits based upon GRES assignments
+ * RET TRUE if mem-per-tres specification used to set memory limits
+ */
+extern bool gres_plugin_job_mem_set(List job_gres_list,
+				    job_resources_t *job_res);
 
 /*
  * Determine the minimum number of CPUs required to satify the job's GRES

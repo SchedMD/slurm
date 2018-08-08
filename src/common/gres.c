@@ -6715,6 +6715,83 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 }
 
 /*
+ * Determine if the job GRES specification includes a mem-per-tres specification
+ * RET largest mem-per-tres specification found
+ */
+extern uint64_t gres_plugin_job_mem_max(List job_gres_list)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_data_ptr;
+	uint64_t mem_max = 0;
+
+	if (!job_gres_list)
+		return 0;
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+		mem_max = MAX(mem_max, job_data_ptr->mem_per_gres);
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return mem_max;
+}
+
+/*
+ * Set per-node memory limits based upon GRES assignments
+ * RET TRUE if mem-per-tres specification used to set memory limits
+ */
+extern bool gres_plugin_job_mem_set(List job_gres_list,
+				    job_resources_t *job_res)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_data_ptr;
+	bool rc = false, first_set = true;
+	uint64_t gres_cnt, mem_size;
+	int i, i_first, i_last, node_off;
+
+	if (!job_gres_list)
+		return false;
+
+	i_first = bit_ffs(job_res->node_bitmap);
+	if (i_first < 0)
+		return false;
+	i_last = bit_fls(job_res->node_bitmap);
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+//FIXME: REVIEW DEFAULT CPUS_PER_GRES (earlier commits)?
+//FIXME: REVIEW DEFAULT MEM_PER_GRES LOGIC?
+		if ((job_data_ptr->mem_per_gres == 0) ||
+		    !job_data_ptr->gres_cnt_node_select)
+			continue;
+		rc = true;
+		node_off = -1;
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(job_res->node_bitmap, i))
+				continue;
+			node_off++;
+			gres_cnt = job_data_ptr->gres_cnt_node_select[i];
+			mem_size = job_data_ptr->mem_per_gres * gres_cnt;
+			if (first_set) {
+				job_res->memory_allocated[node_off] = mem_size;
+			} else {
+				job_res->memory_allocated[node_off] = MAX(
+					job_res->memory_allocated[node_off],
+					mem_size);
+			}
+		}
+		first_set = false;
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return rc;
+}
+
+/*
  * Determine the minimum number of CPUs required to satify the job's GRES
  *	request (based upon total GRES times cpus_per_gres value)
  * node_count IN - count of nodes in job allocation
@@ -6757,6 +6834,7 @@ extern int gres_plugin_job_min_cpus(uint32_t node_count,
 		tmp = job_data_ptr->cpus_per_gres * total_gres;
 		min_cpus = MAX(min_cpus, tmp);
 	}
+	list_iterator_destroy(job_gres_iter);
 	return min_cpus;
 }
 

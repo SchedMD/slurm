@@ -1172,7 +1172,10 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	alloc_msg->select_jobinfo =
 		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	if (job_ptr->details) {
-		alloc_msg->pn_min_memory = job_ptr->details->pn_min_memory;
+		if (job_ptr->bit_flags & JOB_MEM_SET) {
+			alloc_msg->pn_min_memory =
+				job_ptr->details->pn_min_memory;
+		}
 		alloc_msg->cpu_freq_min = job_ptr->details->cpu_freq_min;
 		alloc_msg->cpu_freq_max = job_ptr->details->cpu_freq_max;
 		alloc_msg->cpu_freq_gov = job_ptr->details->cpu_freq_gov;

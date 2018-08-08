@@ -2317,6 +2317,7 @@ skip_start:
 					   job_ptr->details->min_cpus);
 
 			tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
+						job_ptr->job_resrcs,
 						job_ptr->details->pn_min_memory,
 						tres_req_cnt[TRES_ARRAY_CPU],
 						selected_node_cnt);
@@ -3029,6 +3030,7 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 					       job_ptr->total_cpus :
 					       job_ptr->details->min_cpus);
 		tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
+					       job_ptr->job_resrcs,
 					       job_ptr->details->pn_min_memory,
 					       tres_req_cnt[TRES_ARRAY_CPU],
 					       selected_node_cnt);

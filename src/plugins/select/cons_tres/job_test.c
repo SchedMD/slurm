@@ -1204,7 +1204,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	}
 
 	if ((details_ptr->pn_min_memory == 0) &&
-	    (select_fast_schedule == 0))
+	    (select_fast_schedule == 0) &&
+	    (gres_plugin_job_mem_max(job_ptr->gres_list) == 0))
 		job_ptr->bit_flags |= NODE_MEM_CALC;	/* To be calculated */
 
 	orig_node_map = bit_copy(node_bitmap);
@@ -1717,7 +1718,7 @@ alloc_job:
 		error("%s: problem building cpu_count array (%d != %d)",
 		      __func__, j, n);
 	}
-//REVIEWED TO HERE
+//FIXME: REVIEWED TO HERE
 
 	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(node_bitmap);
@@ -1898,7 +1899,10 @@ alloc_job:
 
 	/* load memory allocated array */
 	save_mem = details_ptr->pn_min_memory;
-	if (save_mem & MEM_PER_CPU) {
+	if (!(job_ptr->bit_flags & JOB_MEM_SET) &&
+	    gres_plugin_job_mem_set(job_ptr->gres_list, job_res)) {
+		debug("JobID:%u memory set via GRES limit", job_ptr->job_id);
+	} else if (save_mem & MEM_PER_CPU) {
 		/* memory is per-cpu */
 		save_mem &= (~MEM_PER_CPU);
 		for (i = 0; i < job_res->nhosts; i++) {
@@ -3728,6 +3732,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		 *          - this node has enough memory (MEM_PER_CPU == 0)
 		 *          - there are enough free_cores (MEM_PER_CPU == 1)
 		 */
+//FIXME: Need to validate mem-per-gres here
 		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			/* memory is per-CPU */
@@ -4026,7 +4031,14 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 	List gres_list;
 	int i, i_first, i_last;
 
-	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
+	if (!(job_ptr->bit_flags & JOB_MEM_SET) &&
+	    ((min_mem = gres_plugin_job_mem_max(job_ptr->gres_list)))) {
+		/*
+		 * Clear default partition or system per-node memory limit.
+		 * Rely exclusively upon the per-GRES memory limit.
+		 */
+		job_ptr->details->pn_min_memory = 0;
+	} else if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 		uint16_t min_cpus;
 		min_mem = job_ptr->details->pn_min_memory & (~MEM_PER_CPU);
 		min_cpus = MAX(job_ptr->details->ntasks_per_node,

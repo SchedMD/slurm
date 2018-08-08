@@ -6498,7 +6498,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_desc->tres_req_cnt = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
 	job_desc->tres_req_cnt[TRES_ARRAY_NODE] = job_desc->min_nodes;
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU]  = job_desc->min_cpus;
-	job_desc->tres_req_cnt[TRES_ARRAY_MEM]  = job_get_tres_mem(
+	job_desc->tres_req_cnt[TRES_ARRAY_MEM]  = job_get_tres_mem(NULL,
 					job_desc->pn_min_memory,
 					job_desc->tres_req_cnt[TRES_ARRAY_CPU],
 					job_desc->min_nodes);
@@ -8105,10 +8105,10 @@ extern void job_validate_mem(struct job_record *job_ptr)
 	    (slurmctld_conf.fast_schedule == 0)) {
 		select_g_job_mem_confirm(job_ptr);
 		job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] =
-				job_get_tres_mem(
-				  job_ptr->details->pn_min_memory,
-				  job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU],
-				  job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE]);
+			job_get_tres_mem(job_ptr->job_resrcs,
+				job_ptr->details->pn_min_memory,
+				job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU],
+				job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE]);
 		set_job_tres_alloc_str(job_ptr, false);
 		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	}
@@ -8437,9 +8437,10 @@ extern void job_set_req_tres(
 
 	job_ptr->tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)node_cnt;
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)cpu_cnt;
-	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(mem_cnt,
-								 cpu_cnt,
-								 node_cnt);
+	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
+							job_ptr->job_resrcs,
+							mem_cnt, cpu_cnt,
+							node_cnt);
 
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_req_cnt,
@@ -8505,10 +8506,11 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 	alloc_nodes = job_ptr->node_cnt;
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE] = (uint64_t)alloc_nodes;
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] =
-			job_get_tres_mem(
-			  job_ptr->details->pn_min_memory,
-			  job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU],
-			  job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE]);
+		job_get_tres_mem(
+			job_ptr->job_resrcs,
+			job_ptr->details->pn_min_memory,
+			job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU],
+			job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE]);
 
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] = NO_VAL64;
 
@@ -8684,9 +8686,13 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			job_desc_msg->pn_min_memory =
 					slurmctld_conf.def_mem_per_cpu;
 		}
-	} else if (!_validate_min_mem_partition(
-			   job_desc_msg, part_ptr, part_list))
+	} else if (!_validate_min_mem_partition(job_desc_msg, part_ptr,
+						part_list)) {
 		return ESLURM_INVALID_TASK_MEMORY;
+	} else {
+		/* Memory limit explicity set by user */
+		job_desc_msg->bitflags |= JOB_MEM_SET;
+	}
 
 	if (job_desc_msg->pn_min_memory == MEM_PER_CPU) {
 		/* Map --mem-per-cpu=0 to --mem=0 for simpler logic */
@@ -11255,7 +11261,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_specs->min_cpus = job_specs->tres_req_cnt[TRES_ARRAY_CPU];
 	}
 
-	job_specs->tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
+	job_specs->tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(NULL,
 		job_specs->pn_min_memory,
 		job_specs->tres_req_cnt[TRES_ARRAY_CPU] ?
 		job_specs->tres_req_cnt[TRES_ARRAY_CPU] :
@@ -11969,12 +11975,19 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			detail_ptr->pn_min_memory = job_specs->pn_min_memory;
 			detail_ptr->orig_pn_min_memory =
 					job_specs->pn_min_memory;
+			job_ptr->bit_flags |= JOB_MEM_SET;
 			sched_info("update_job: setting min_memory_%s to %"PRIu64" for %pJ",
 				   entity,
 				   (job_specs->pn_min_memory & (~MEM_PER_CPU)),
 				   job_ptr);
-			/* Always use the acct_policy_limit_set.*
-			 * since if set by a super user it be set correctly */
+			info("sched: update_job: setting min_memory_%s to %"
+			     ""PRIu64" for job_id %u", entity,
+			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
+			     job_ptr->job_id);
+			/*
+			 * Always use the acct_policy_limit_set.*
+			 * since if set by a super user it be set correctly
+			 */
 			job_ptr->limit_set.tres[TRES_ARRAY_MEM] =
 				acct_policy_limit_set.tres[TRES_ARRAY_MEM];
 		}
@@ -13838,23 +13851,38 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	return;
 }
 
-extern uint64_t job_get_tres_mem(uint64_t pn_min_memory,
-				 uint32_t cpu_cnt, uint32_t node_cnt)
+/*
+ * Return total amount of memory allocated to a job. This can be based upon
+ * a GRES specification with various GRES/memory allocations on each node.
+ * If current allocation information is not available, estimate memory based
+ * upon pn_min_memory and either CPU or node count.
+ */
+extern uint64_t job_get_tres_mem(struct job_resources *job_res,
+				 uint64_t pn_min_memory, uint32_t cpu_cnt,
+				 uint32_t node_cnt)
 {
-	uint64_t count = 0;
+	uint64_t mem_total = 0;
+	int i;
+
+	if (job_res) {
+		for (i = 0; i < job_res->nhosts; i++) {
+			mem_total += job_res->memory_allocated[i];
+		}
+		return mem_total;
+	}
 
 	if (pn_min_memory == NO_VAL64)
-		return count;
+		return mem_total;
 
 	if (pn_min_memory & MEM_PER_CPU) {
 		if (cpu_cnt != NO_VAL) {
-			count = pn_min_memory & (~MEM_PER_CPU);
-			count *= cpu_cnt;
+			mem_total = pn_min_memory & (~MEM_PER_CPU);
+			mem_total *= cpu_cnt;
 		}
 	} else if (node_cnt != NO_VAL)
-		count = pn_min_memory * node_cnt;
+		mem_total = pn_min_memory * node_cnt;
 
-	return count;
+	return mem_total;
 }
 
 /*
@@ -17227,9 +17255,10 @@ extern resource_allocation_response_msg_t *
 	job_info_resp_msg->select_jobinfo =
 		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	if (job_ptr->details) {
-		job_info_resp_msg->pn_min_memory =
-			job_ptr->details->pn_min_memory;
-
+		if (job_ptr->bit_flags & JOB_MEM_SET) {
+			job_info_resp_msg->pn_min_memory =
+				job_ptr->details->pn_min_memory;
+		}
 		if (job_ptr->details->mc_ptr) {
 			job_info_resp_msg->ntasks_per_board =
 				job_ptr->details->mc_ptr->ntasks_per_board;
