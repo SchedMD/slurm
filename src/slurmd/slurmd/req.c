@@ -2753,7 +2753,9 @@ _rpc_reboot(slurm_msg_t *msg)
 			 * case that fails to shut things down this will at
 			 * least offline this node until someone intervenes.
 			 */
-			slurmd_shutdown(SIGTERM);
+			if (xstrcasestr(cfg->slurmd_params,
+					"shutdown_on_reboot"))
+				slurmd_shutdown(SIGTERM);
 		} else
 			error("RebootProgram isn't defined in config");
 		slurm_conf_unlock();

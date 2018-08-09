@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix scontrol -o show assoc output.
  -- Add support for sacct --whole-hetjob=[yes|no] option.
  -- Make salloc handle node requests the same as sbatch.
+ -- Add shutdown_on_reboot SlurmdParameter to control whether the Slurmd will
+    shutdown itself down or not when a reboot request is received.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

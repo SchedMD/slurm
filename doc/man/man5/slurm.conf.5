@@ -3214,6 +3214,16 @@ of communications between Slurm components.
 The default value is "root".
 
 .TP
+\fBSlurmdParameters\fR
+Parameters specific to the Slurmd.
+Multiple options may be comma separated.
+.RS
+.TP
+\fBshutdown_on_reboot\fR
+If set, the Slurmd will shut itself down when a reboot request is received.
+.RE
+
+.TP
 \fBSlurmdUser\fR
 The name of the user that the \fBslurmd\fR daemon executes as.
 This user must exist on all nodes of the cluster for authentication
