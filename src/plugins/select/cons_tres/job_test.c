@@ -3596,7 +3596,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 				bitstr_t **part_core_map)
 {
 	uint16_t cpus = 0;
-	uint64_t avail_mem = 0, req_mem;
+	uint64_t avail_mem = NO_VAL64, req_mem;
 	int cpu_alloc_size, i, rc;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
@@ -4063,10 +4063,12 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		if ((job_ptr->details->pn_min_memory) &&
 		    (cr_type & CR_MEMORY)) {
 			if (select_node_record[i].real_memory >
-			    node_usage[i].alloc_memory)
+			    (select_node_record[i].mem_spec_limit -
+			     node_usage[i].alloc_memory)) {
 				free_mem = select_node_record[i].real_memory -
+					   select_node_record[i].mem_spec_limit-
 					   node_usage[i].alloc_memory;
-			else
+			} else
 				free_mem = 0;
 			if (free_mem < min_mem) {
 				debug3("cons_tres: %s: node %s no mem (%"PRIu64" < %"PRIu64")",

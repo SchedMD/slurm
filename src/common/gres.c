@@ -5509,6 +5509,13 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 				sock_gres->max_node_gres = max_gres;
 			}
 		}
+		if (sock_gres->job_specs &&
+		    sock_gres->job_specs->mem_per_gres) {
+			mem_per_gres = avail_mem /
+				       sock_gres->job_specs->mem_per_gres;
+			sock_gres->total_cnt = MIN(sock_gres->total_cnt,
+						   mem_per_gres);
+		}
 		if ((sock_gres->total_cnt < min_gres) ||
 		    ((sock_gres->max_node_gres != 0) &&
 		     (sock_gres->max_node_gres < min_gres))) {
@@ -5702,7 +5709,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		if (*max_tasks_this_node == NO_VAL) {
 			if (job_specs->cpus_per_gres) {
 				i = *avail_cpus / job_specs->cpus_per_gres;
-				sock_gres->total_cnt = MIN(i, sock_gres->total_cnt);
+				sock_gres->total_cnt =
+					MIN(i, sock_gres->total_cnt);
 			}
 			continue;
 		}
