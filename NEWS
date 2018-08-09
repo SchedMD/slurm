@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 17.11.10
+===========================
+
 * Changes in Slurm 17.11.9
 ==========================
  -- Fix segfault in slurmctld when a job's node bitmap is NULL during a
