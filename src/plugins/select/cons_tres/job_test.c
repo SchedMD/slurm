@@ -3732,7 +3732,6 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		 *          - this node has enough memory (MEM_PER_CPU == 0)
 		 *          - there are enough free_cores (MEM_PER_CPU == 1)
 		 */
-//FIXME: Need to validate mem-per-gres here
 		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			/* memory is per-CPU */
@@ -3808,9 +3807,9 @@ static void _set_gpu_defaults(struct job_record *job_ptr)
 		/* Cache data from last partition referenced */
 		last_part_ptr = job_ptr->part_ptr;
 		last_cpu_per_gpu = get_def_cpu_per_gpu(
-					job_ptr->part_ptr->job_defaults_list);
+					last_part_ptr->job_defaults_list);
 		last_mem_per_gpu = get_def_mem_per_gpu(
-					job_ptr->part_ptr->job_defaults_list);
+					last_part_ptr->job_defaults_list);
 	}
 	if (last_cpu_per_gpu != NO_VAL64)
 		cpu_per_gpu = last_cpu_per_gpu;
@@ -4027,7 +4026,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 {
 	struct node_record *node_ptr;
 	uint32_t gres_cpus, gres_cores;
-	uint64_t free_mem, min_mem;
+	uint64_t free_mem, min_mem, avail_mem;
 	List gres_list;
 	int i, i_first, i_last;
 
@@ -4062,11 +4061,10 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		/* node-level memory check */
 		if ((job_ptr->details->pn_min_memory) &&
 		    (cr_type & CR_MEMORY)) {
-			if (select_node_record[i].real_memory >
-			    (select_node_record[i].mem_spec_limit -
-			     node_usage[i].alloc_memory)) {
-				free_mem = select_node_record[i].real_memory -
-					   select_node_record[i].mem_spec_limit-
+			avail_mem = select_node_record[i].real_memory -
+				    select_node_record[i].mem_spec_limit;
+			if (avail_mem > node_usage[i].alloc_memory) {
+				free_mem = avail_mem -
 					   node_usage[i].alloc_memory;
 			} else
 				free_mem = 0;

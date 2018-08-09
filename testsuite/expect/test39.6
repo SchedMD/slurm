@@ -112,7 +112,7 @@ $scontrol -dd show job \$SLURM_JOB_ID
 exit 0"
 
 set match 0
-set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --nodes=1 --ntasks=1 --cpus-per-task=$cpus_per_socket -t1 -l ./$file_in]
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --nodes=1 --ntasks=1 --cpus-per-task=$cpus_per_socket -t1 -l ./$file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]

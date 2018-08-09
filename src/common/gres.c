@@ -3059,6 +3059,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 {
 	int req_nodes, req_tasks, req_tasks_per_node, req_tasks_per_socket;
 	int req_sockets, req_cpus_per_task;
+	uint16_t cpus_per_gres;
 
 	/* Insure gres_per_job >= gres_per_node >= gres_per_socket */
 	if (job_gres_data->gres_per_job &&
@@ -3179,9 +3180,12 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	}
 
 	/* Insure that cpus_per_gres * gres_per_task == cpus_per_task */
-	if (job_gres_data->cpus_per_gres && job_gres_data->gres_per_task) {
-		req_cpus_per_task = job_gres_data->cpus_per_gres *
-				    job_gres_data->gres_per_task;
+	if (job_gres_data->cpus_per_gres)
+		cpus_per_gres = job_gres_data->cpus_per_gres;
+	else
+		cpus_per_gres = job_gres_data->def_cpus_per_gres;
+	if (cpus_per_gres && job_gres_data->gres_per_task) {
+		req_cpus_per_task = cpus_per_gres *job_gres_data->gres_per_task;
 		if ((*cpus_per_task == NO_VAL16) ||
 		    (*cpus_per_task == 0))
 			*cpus_per_task = req_cpus_per_task;
@@ -5394,6 +5398,7 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 	bool *avail_cores_by_sock = NULL;
 	uint64_t max_gres, mem_per_gres = 0, near_gres_cnt = 0;
 	uint32_t gpu_plugin_id;
+	uint16_t cpus_per_gres;
 	int s, rc = 0;
 
 	*avail_gpus = 0;
@@ -5423,10 +5428,14 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 				min_gres = MAX(min_gres, tmp_u64);
 			}
 		}
-		if (sock_gres->job_specs &&
-		    sock_gres->job_specs->cpus_per_gres) {
-			max_gres = max_cpus /
-				   sock_gres->job_specs->cpus_per_gres;
+		if (!sock_gres->job_specs)
+			cpus_per_gres = 0;
+		else if (sock_gres->job_specs->cpus_per_gres)
+			cpus_per_gres = sock_gres->job_specs->cpus_per_gres;
+		else
+			cpus_per_gres = sock_gres->job_specs->def_cpus_per_gres;
+		if (cpus_per_gres) {
+			max_gres = max_cpus / cpus_per_gres;
 			if ((max_gres == 0) ||
 			    (sock_gres->job_specs->gres_per_node > max_gres) ||
 			    (sock_gres->job_specs->gres_per_task > max_gres) ||
@@ -5436,17 +5445,14 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 				break;
 			}
 		}
-		if (sock_gres->job_specs && avail_mem) {
-			if (sock_gres->job_specs->mem_per_gres) {
-				mem_per_gres =
-					sock_gres->job_specs->mem_per_gres;
-			} else {
-				mem_per_gres =
-					sock_gres->job_specs->def_mem_per_gres;
-			}
-			if (mem_per_gres == 0) {
-				/* No memory limit enforcement */
-			} else if (mem_per_gres <= avail_mem) {
+		if (!sock_gres->job_specs)
+			mem_per_gres = 0;
+		else if (sock_gres->job_specs->mem_per_gres)
+			mem_per_gres = sock_gres->job_specs->mem_per_gres;
+		else
+			mem_per_gres = sock_gres->job_specs->def_mem_per_gres;
+		if (mem_per_gres && avail_mem) {
+			if (mem_per_gres <= avail_mem) {
 				sock_gres->max_node_gres = avail_mem /
 							   mem_per_gres;
 			} else { /* Insufficient memory for any GRES */
@@ -5494,13 +5500,11 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					sock_gres->job_specs->gres_per_node;
 			}
 		}
-		if (sock_gres->job_specs &&
-		    sock_gres->job_specs->cpus_per_gres) {
+		if (cpus_per_gres) {
 			int cpu_cnt;
 			cpu_cnt = bit_set_count(core_bitmap);
 			cpu_cnt *= cpus_per_core;
-			max_gres = cpu_cnt /
-				   sock_gres->job_specs->cpus_per_gres;
+			max_gres = cpu_cnt / cpus_per_gres;
 			if (max_gres == 0) {
 				rc = -1;
 				break;
@@ -5509,12 +5513,10 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 				sock_gres->max_node_gres = max_gres;
 			}
 		}
-		if (sock_gres->job_specs &&
-		    sock_gres->job_specs->mem_per_gres) {
-			mem_per_gres = avail_mem /
-				       sock_gres->job_specs->mem_per_gres;
+		if (mem_per_gres) {
+			max_gres = avail_mem / mem_per_gres;
 			sock_gres->total_cnt = MIN(sock_gres->total_cnt,
-						   mem_per_gres);
+						   max_gres);
 		}
 		if ((sock_gres->total_cnt < min_gres) ||
 		    ((sock_gres->max_node_gres != 0) &&
@@ -5578,7 +5580,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	uint64_t max_tasks;
 	uint32_t task_cnt_incr;
 	bool *req_sock = NULL;	/* Required socket */
-	uint16_t *avail_cores_per_sock;
+	uint16_t *avail_cores_per_sock, cpus_per_gres;
 	uint16_t avail_cores_req = 0, avail_cores_tot = 0;
 
 	if (*max_tasks_this_node == 0)
@@ -5678,8 +5680,12 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				break;	/* Sufficient GRES */
 		}
 
-		if (job_specs->cpus_per_gres) {
-			max_gres = *avail_cpus / job_specs->cpus_per_gres;
+		if (job_specs->cpus_per_gres)
+			cpus_per_gres = job_specs->cpus_per_gres;
+		else
+			cpus_per_gres = job_specs->def_cpus_per_gres;
+		if (cpus_per_gres) {
+			max_gres = *avail_cpus / cpus_per_gres;
 			cnt_avail_total = MIN(cnt_avail_total, max_gres);
 		}
 		if ((cnt_avail_total == 0) ||
@@ -5707,8 +5713,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		if (*max_tasks_this_node == 0)
 			break;
 		if (*max_tasks_this_node == NO_VAL) {
-			if (job_specs->cpus_per_gres) {
-				i = *avail_cpus / job_specs->cpus_per_gres;
+			if (cpus_per_gres) {
+				i = *avail_cpus / cpus_per_gres;
 				sock_gres->total_cnt =
 					MIN(i, sock_gres->total_cnt);
 			}
@@ -5725,7 +5731,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			req_cores *= ((mc_ptr->cpus_per_task + cpus_per_core -1)
 				     / cpus_per_core);
 		}
-		if (job_specs->cpus_per_gres) {
+		if (cpus_per_gres) {
 			if (job_specs->gres_per_node) {
 				i = job_specs->gres_per_node;
 			} else if (job_specs->gres_per_socket) {
@@ -5738,7 +5744,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			} else {
 				i = 1;
 			}
-			i *= job_specs->cpus_per_gres;
+			i *= cpus_per_gres;
 			i /= cpus_per_core;
 			req_cores = MAX(req_cores, i);
 		}
@@ -5795,8 +5801,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				break;
 			}
 		}
-		if (job_specs->cpus_per_gres) {
-			i = *avail_cpus / job_specs->cpus_per_gres;
+		if (cpus_per_gres) {
+			i = *avail_cpus / cpus_per_gres;
 			sock_gres->total_cnt = MIN(i, sock_gres->total_cnt);
 		}
 	}
@@ -6731,7 +6737,7 @@ extern uint64_t gres_plugin_job_mem_max(List job_gres_list)
 	ListIterator job_gres_iter;
 	gres_state_t *job_gres_ptr;
 	gres_job_state_t *job_data_ptr;
-	uint64_t mem_max = 0;
+	uint64_t mem_max = 0, mem_per_gres;
 
 	if (!job_gres_list)
 		return 0;
@@ -6739,7 +6745,11 @@ extern uint64_t gres_plugin_job_mem_max(List job_gres_list)
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-		mem_max = MAX(mem_max, job_data_ptr->mem_per_gres);
+		if (job_data_ptr->mem_per_gres)
+			mem_per_gres = job_data_ptr->mem_per_gres;
+		else
+			mem_per_gres = job_data_ptr->def_mem_per_gres;
+		mem_max = MAX(mem_max, mem_per_gres);
 	}
 	list_iterator_destroy(job_gres_iter);
 
@@ -6757,7 +6767,7 @@ extern bool gres_plugin_job_mem_set(List job_gres_list,
 	gres_state_t *job_gres_ptr;
 	gres_job_state_t *job_data_ptr;
 	bool rc = false, first_set = true;
-	uint64_t gres_cnt, mem_size;
+	uint64_t gres_cnt, mem_size, mem_per_gres;
 	int i, i_first, i_last, node_off;
 
 	if (!job_gres_list)
@@ -6771,10 +6781,11 @@ extern bool gres_plugin_job_mem_set(List job_gres_list,
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-//FIXME: REVIEW DEFAULT CPUS_PER_GRES (earlier commits)?
-//FIXME: REVIEW DEFAULT MEM_PER_GRES LOGIC?
-		if ((job_data_ptr->mem_per_gres == 0) ||
-		    !job_data_ptr->gres_cnt_node_select)
+		if (job_data_ptr->mem_per_gres)
+			mem_per_gres = job_data_ptr->mem_per_gres;
+		else
+			mem_per_gres = job_data_ptr->def_mem_per_gres;
+		if ((mem_per_gres == 0) || !job_data_ptr->gres_cnt_node_select)
 			continue;
 		rc = true;
 		node_off = -1;
@@ -6783,7 +6794,7 @@ extern bool gres_plugin_job_mem_set(List job_gres_list,
 				continue;
 			node_off++;
 			gres_cnt = job_data_ptr->gres_cnt_node_select[i];
-			mem_size = job_data_ptr->mem_per_gres * gres_cnt;
+			mem_size = mem_per_gres * gres_cnt;
 			if (first_set) {
 				job_res->memory_allocated[node_off] = mem_size;
 			} else {
@@ -6817,6 +6828,7 @@ extern int gres_plugin_job_min_cpus(uint32_t node_count,
 	gres_state_t *job_gres_ptr;
 	gres_job_state_t  *job_data_ptr;
 	int tmp, min_cpus = 0;
+	uint16_t cpus_per_gres;
 
 	if (!job_gres_list || (list_count(job_gres_list) == 0))
 		return 0;
@@ -6825,7 +6837,11 @@ extern int gres_plugin_job_min_cpus(uint32_t node_count,
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		uint64_t total_gres = 0;
 		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-		if (job_data_ptr->cpus_per_gres == 0)
+		if (job_data_ptr->cpus_per_gres)
+			cpus_per_gres = job_data_ptr->cpus_per_gres;
+		else
+			cpus_per_gres = job_data_ptr->def_cpus_per_gres;
+		if (cpus_per_gres == 0)
 			continue;
 		if (job_data_ptr->gres_per_job) {
 			total_gres = job_data_ptr->gres_per_job;
@@ -6839,7 +6855,7 @@ extern int gres_plugin_job_min_cpus(uint32_t node_count,
 			total_gres = job_data_ptr->gres_per_task * task_count;
 		} else
 			continue;
-		tmp = job_data_ptr->cpus_per_gres * total_gres;
+		tmp = cpus_per_gres * total_gres;
 		min_cpus = MAX(min_cpus, tmp);
 	}
 	list_iterator_destroy(job_gres_iter);
@@ -6862,6 +6878,7 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
 	gres_state_t *job_gres_ptr;
 	gres_job_state_t  *job_data_ptr;
 	int tmp, min_cpus = 0;
+	uint16_t cpus_per_gres;
 
 	if (!job_gres_list || (list_count(job_gres_list) == 0))
 		return 0;
@@ -6870,7 +6887,11 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		uint64_t total_gres = 0;
 		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-		if (job_data_ptr->cpus_per_gres == 0)
+		if (job_data_ptr->cpus_per_gres)
+			cpus_per_gres = job_data_ptr->cpus_per_gres;
+		else
+			cpus_per_gres = job_data_ptr->def_cpus_per_gres;
+		if (cpus_per_gres == 0)
 			continue;
 		if (job_data_ptr->gres_per_node) {
 			total_gres = job_data_ptr->gres_per_node;
@@ -6882,7 +6903,7 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
 				     tasks_per_node;
 		} else
 			total_gres = 1;
-		tmp = job_data_ptr->cpus_per_gres * total_gres;
+		tmp = cpus_per_gres * total_gres;
 		min_cpus = MAX(min_cpus, tmp);
 	}
 	return min_cpus;
@@ -8475,6 +8496,8 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 	gres_job_state_t *job_gres_data;
 	gres_step_state_t *step_gres_data;
 	gres_key_t job_search_key;
+	uint16_t cpus_per_gres;
+	uint64_t mem_per_gres;
 
 	if (!step_gres_list || (list_count(step_gres_list) == 0))
 		return;
@@ -8499,10 +8522,12 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 			break;
 		}
 		job_gres_data = (gres_job_state_t *) job_gres_ptr->gres_data;
-		if (job_gres_data->cpus_per_gres &&
-		    step_gres_data->cpus_per_gres &&
-		    (job_gres_data->cpus_per_gres <
-		     step_gres_data->cpus_per_gres)) {
+		if (job_gres_data->cpus_per_gres)
+			cpus_per_gres = job_gres_data->cpus_per_gres;
+		else
+			cpus_per_gres = job_gres_data->def_cpus_per_gres;
+		if (cpus_per_gres && step_gres_data->cpus_per_gres &&
+		    (cpus_per_gres < step_gres_data->cpus_per_gres)) {
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
@@ -8534,10 +8559,12 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
-		if (job_gres_data->mem_per_gres &&
-		    step_gres_data->mem_per_gres &&
-		    (job_gres_data->mem_per_gres <
-		     step_gres_data->mem_per_gres)) {
+		if (job_gres_data->mem_per_gres)
+			mem_per_gres = job_gres_data->mem_per_gres;
+		else
+			mem_per_gres = job_gres_data->def_mem_per_gres;
+		if (mem_per_gres && step_gres_data->mem_per_gres &&
+		    (mem_per_gres < step_gres_data->mem_per_gres)) {
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}

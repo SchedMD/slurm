@@ -4232,7 +4232,7 @@ proc get_gpu_count {} {
 			set count -1
 			break
 		}
-		spawn $sbatch --gres=gpu:$inx --output=/dev/null --wrap "exit 0"
+		spawn $sbatch --cpus-per-gpu=1 --gres=gpu:$inx --output=/dev/null --wrap "exit 0"
 		expect {
 			-re "Invalid generic resource" {
 				set fini 1
