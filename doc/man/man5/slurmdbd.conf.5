@@ -357,6 +357,16 @@ Time permitted for a round\-trip communication to complete
 in seconds. Default value is 10 seconds.
 
 .TP
+\fBParameters\fR
+Contains arbitrary comma separated parameters used to alter the behavior of
+the slurmdbd.
+.RS
+.TP
+\fBPreserveCaseUser\fR
+When defining users do not force lower case which is the default behavior.
+.RE
+
+.TP
 \fBPidFile\fR
 Fully qualified pathname of a file into which the Slurm Database Daemon
 may write its process ID. This may be used for automated signal processing.

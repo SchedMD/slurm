@@ -313,6 +313,13 @@ extern int read_slurmdbd_conf(void)
 		}
 
 		s_p_get_string(&slurmdbd_conf->parameters, "Parameters", tbl);
+		if (slurmdbd_conf->parameters) {
+			if (xstrcasestr(slurmdbd_conf->parameters,
+					"PreserveCaseUser"))
+				slurmdbd_conf->persist_conn_rc_flags |=
+					PERSIST_FLAG_P_USER_CASE;
+		}
+
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
 		s_p_get_string(&slurmdbd_conf->plugindir, "PluginDir", tbl);
 
