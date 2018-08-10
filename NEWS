@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Add cancel_reboot scontrol option to cancel pending reboot of nodes.
  -- Make Users case insensitive in the database based on
     Parameters=PreserveCaseUser in the slurmdbd.conf.
+ -- Improve scheduling when dealing with node_features that could have a
+    boot delay.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

@@ -1261,6 +1261,7 @@ static int _attempt_backfill(void)
 	while (1) {
 		uint32_t bf_job_id, bf_array_task_id, bf_job_priority,
 			prio_reserve;
+		bool get_boot_time = false;
 
 		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
 		if (!job_queue_rec) {
@@ -1932,6 +1933,7 @@ next_task:
 					    &active_bitmap);
 		job_ptr->bit_flags |= BACKFILL_TEST;
 		job_ptr->bit_flags |= job_no_reserve;	/* 0 or TEST_NOW_ONLY */
+
 		if (active_bitmap) {
 			j = _try_sched(job_ptr, &active_bitmap, min_nodes,
 				       max_nodes, req_nodes, exc_core_bitmap);
@@ -1941,6 +1943,8 @@ next_task:
 				active_bitmap = NULL;
 				test_fini = 1;
 			} else {
+				if (node_features_g_overlap(active_bitmap))
+					get_boot_time = true;
 				FREE_NULL_BITMAP(active_bitmap);
 				save_share_res  = job_ptr->details->share_res;
 				save_whole_node = job_ptr->details->whole_node;
@@ -1976,7 +1980,8 @@ next_task:
 				bit_and(avail_bitmap, tmp_node_bitmap);
 				FREE_NULL_BITMAP(tmp_node_bitmap);
 			}
-			boot_time = node_features_g_boot_time();
+			if (get_boot_time)
+				boot_time = node_features_g_boot_time();
 			orig_end_time = end_time;
 			end_time += boot_time;
 

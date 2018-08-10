@@ -195,6 +195,16 @@ static int  _valid_job_access_resv(struct job_record *job_ptr,
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
 
+static void _set_boot_time(slurmctld_resv_t *resv_ptr)
+{
+	resv_ptr->boot_time = 0;
+	if (!resv_ptr->node_bitmap)
+		return;
+
+	if (node_features_g_overlap(resv_ptr->node_bitmap))
+		resv_ptr->boot_time = node_features_g_boot_time();
+}
+
 /* Advance res_time by the specified day count,
  * account for daylight savings time */
 static void _advance_time(time_t *res_time, int day_cnt)
@@ -249,6 +259,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	xassert(resv_orig_ptr->magic == RESV_MAGIC);
 	resv_copy_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	resv_copy_ptr->accounts = xstrdup(resv_orig_ptr->accounts);
+	resv_copy_ptr->boot_time = resv_orig_ptr->boot_time;
 	resv_copy_ptr->burst_buffer = xstrdup(resv_orig_ptr->burst_buffer);
 	resv_copy_ptr->account_cnt = resv_orig_ptr->account_cnt;
 	resv_copy_ptr->account_list = xmalloc(sizeof(char *) *
@@ -333,6 +344,8 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	xfree(dest_resv->assoc_list);
 	dest_resv->assoc_list = src_resv->assoc_list;
 	src_resv->assoc_list = NULL;
+
+	dest_resv->boot_time = src_resv->boot_time;
 
 	xfree(dest_resv->burst_buffer);
 	dest_resv->burst_buffer = src_resv->burst_buffer;
@@ -789,6 +802,8 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	slurmdb_reservation_rec_t resv;
 	char temp_bit[BUF_SIZE];
 
+	_set_boot_time(resv_ptr);
+
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		return rc;
 
@@ -850,6 +865,8 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	time_t now = time(NULL);
 
 	xassert(old_resv_ptr);
+
+	_set_boot_time(resv_ptr);
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		return rc;
@@ -1543,6 +1560,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		if (internal) {
 			pack8(resv_ptr->account_not,	buffer);
 			packstr(resv_ptr->assoc_list,	buffer);
+			pack32(resv_ptr->boot_time,	buffer);
 			/*
 			 * NOTE: Restoring core_bitmap directly only works if
 			 * the system's node and core counts don't change.
@@ -1732,6 +1750,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack8((uint8_t *)&resv_ptr->account_not,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
 				       &uint32_tmp,	buffer);
+		safe_unpack32(&resv_ptr->boot_time,	buffer);
 		if (unpack_job_resources(&resv_ptr->core_resrcs, buffer,
 					 protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -4522,8 +4541,9 @@ static uint32_t _get_job_duration(struct job_record *job_ptr, bool reboot)
 		duration *= time_slices;
 	}
 
-	if (reboot)
-		duration += node_features_g_boot_time();
+	/* FIXME: reboot and sending it to this function needs to be removed */
+	/* if (reboot) */
+	/* 	duration += node_features_g_boot_time(); */
 	return duration;
 }
 
@@ -4660,6 +4680,7 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
+	time_t job_end_time_use;
 	burst_buffer_info_msg_t *bb_resv = NULL;
 	ListIterator iter;
 
@@ -4673,7 +4694,14 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
-		if ((resv_ptr->start_time >= job_end_time) ||
+
+		if (reboot)
+			job_end_time_use =
+				job_end_time + resv_ptr->boot_time;
+		else
+			job_end_time_use = job_end_time;
+
+		if ((resv_ptr->start_time >= job_end_time_use) ||
 		    (resv_ptr->end_time   <= job_start_time))
 			continue;	/* reservation at different time */
 		if ((resv_ptr->burst_buffer == NULL) ||
@@ -4704,6 +4732,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
+	time_t job_end_time_use;
 	ListIterator iter;
 	int resv_cnt = 0;
 
@@ -4713,7 +4742,14 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
-		if ((resv_ptr->start_time >= job_end_time) ||
+
+		if (reboot)
+			job_end_time_use =
+				job_end_time + resv_ptr->boot_time;
+		else
+			job_end_time_use = job_end_time;
+
+		if ((resv_ptr->start_time >= job_end_time_use) ||
 		    (resv_ptr->end_time   <= job_start_time))
 			continue;	/* reservation at different time */
 
@@ -4910,6 +4946,7 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
+	time_t job_end_time_use;
 	ListIterator iter;
 	constraint_planning_t wsched;
 	time_t start, end;
@@ -4927,7 +4964,14 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
 		if (resv_ptr->resv_watts == NO_VAL ||
 		    resv_ptr->resv_watts == 0)
 			continue;       /* not a power reservation */
-		if ((resv_ptr->start_time >= job_end_time) ||
+
+		if (reboot)
+			job_end_time_use =
+				job_end_time + resv_ptr->boot_time;
+		else
+			job_end_time_use = job_end_time;
+
+		if ((resv_ptr->start_time >= job_end_time_use) ||
 		    (resv_ptr->end_time   <= job_start_time))
 			continue;	/* reservation at different time */
 
@@ -4983,7 +5027,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bool reboot)
 {
 	slurmctld_resv_t *resv_ptr = NULL, *res2_ptr;
-	time_t job_start_time, job_end_time, lic_resv_time;
+	time_t job_start_time, job_end_time, job_end_time_use, lic_resv_time;
 	time_t start_relative, end_relative;
 	time_t now = time(NULL);
 	ListIterator iter;
@@ -5062,12 +5106,18 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		 */
 		iter = list_iterator_create(resv_list);
 		while ((res2_ptr = (slurmctld_resv_t *) list_next(iter))) {
+			if (reboot)
+				job_end_time_use =
+					job_end_time + res2_ptr->boot_time;
+			else
+				job_end_time_use = job_end_time;
+
 			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
 			    ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
 			     !(res2_ptr->flags & RESERVE_FLAG_MAINT)) ||
 			    (res2_ptr == resv_ptr) ||
 			    (res2_ptr->node_bitmap == NULL) ||
-			    (res2_ptr->start_time >= job_end_time) ||
+			    (res2_ptr->start_time >= job_end_time_use) ||
 			    (res2_ptr->end_time   <= job_start_time) ||
 			    (!res2_ptr->full_nodes))
 				continue;
@@ -5133,8 +5183,14 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				end_relative = resv_ptr->end_time;
 			}
 
+			if (reboot)
+				job_end_time_use =
+					job_end_time + resv_ptr->boot_time;
+			else
+				job_end_time_use = job_end_time;
+
 			if ((resv_ptr->node_bitmap == NULL) ||
-			    (start_relative >= job_end_time) ||
+			    (start_relative >= job_end_time_use) ||
 			    (end_relative   <= job_start_time))
 				continue;
 
@@ -5750,6 +5806,7 @@ extern void update_part_nodes_in_resv(struct part_record *part_ptr)
 			_set_tres_cnt(resv_ptr, &old_resv_ptr);
 			xfree(old_resv_ptr.tres_str);
 			last_resv_update = time(NULL);
+			_set_boot_time(resv_ptr);
 		}
 	}
 	list_iterator_destroy(iter);
