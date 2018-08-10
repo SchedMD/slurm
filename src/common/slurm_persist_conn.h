@@ -189,4 +189,9 @@ extern Buf slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
 				     uint32_t rc, char *comment,
 				     uint16_t ret_info);
 
+extern Buf slurm_persist_make_rc_msg_flags(slurm_persist_conn_t *persist_conn,
+					   uint32_t rc, char *comment,
+					   uint16_t flags,
+					   uint16_t ret_info);
+
 #endif

@@ -755,8 +755,10 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 	if (rc != SLURM_SUCCESS)
 		comment = slurm_strerror(rc);
 
-	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
-						rc, comment, req_msg->version);
+	*out_buffer = slurm_persist_make_rc_msg_flags(
+		slurmdbd_conn->conn, rc, comment,
+		slurmdbd_conf->persist_conn_rc_flags,
+		req_msg->version);
 
 	return rc;
 }
