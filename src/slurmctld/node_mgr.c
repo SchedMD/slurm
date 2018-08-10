@@ -1924,14 +1924,14 @@ static inline void _update_node_features_post(
 	xassert(node_bitmap);
 
 	if (mode == FEATURE_MODE_IND) {
-		info("%s: nodes %s %s features set to: %s",
-		     __func__, node_names, type, features);
+		debug2("%s: nodes %s %s features set to: %s",
+		       __func__, node_names, type, features);
 	} else if (*last_features && *last_node_bitmap &&
 		   ((mode == FEATURE_MODE_PEND) ||
 		    xstrcmp(features, *last_features))) {
 		char *last_node_names = bitmap2node_name(*last_node_bitmap);
-		info("%s: nodes %s %s features set to: %s",
-		     __func__, last_node_names, type, *last_features);
+		debug2("%s: nodes %s %s features set to: %s",
+		       __func__, last_node_names, type, *last_features);
 		xfree(last_node_names);
 		xfree(*last_features);
 		FREE_NULL_BITMAP(*last_node_bitmap);
