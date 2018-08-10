@@ -835,6 +835,20 @@ static int _process_command (int argc, char **argv)
 	}
 	else if (xstrncasecmp(tag, "all", MAX(tag_len, 2)) == 0)
 		all_flag = 1;
+	else if (xstrncasecmp(tag, "cancel_reboot", MAX(tag_len, 3)) == 0) {
+		if (argc > 2) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n",
+				 tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "missing argument for keyword:%s\n",
+				 tag);
+		} else
+			scontrol_cancel_reboot(argv[1]);
+	}
 	else if (xstrncasecmp(tag, "completing", MAX(tag_len, 2)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -1503,7 +1517,7 @@ static int _process_command (int argc, char **argv)
 			slurm_perror("job notify failure");
 		}
 	}
-	else if (xstrncasecmp(tag, "callerid", MAX(tag_len, 2)) == 0) {
+	else if (xstrncasecmp(tag, "callerid", MAX(tag_len, 3)) == 0) {
 		if (argc < 5) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1908,6 +1922,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      generating a core file.                      \n\
      all                      display information about all partitions,    \n\
 			      including hidden partitions.                 \n\
+     cancel_reboot <nodelist> Cancel pending reboot on nodes.              \n\
      cluster                  cluster to issue commands to.  Default is    \n\
 			      current cluster.  cluster with no name will  \n\
 			      reset to default.                            \n\

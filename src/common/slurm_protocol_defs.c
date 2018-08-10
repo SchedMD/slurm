@@ -2897,6 +2897,8 @@ extern char *node_state_string(uint32_t inx)
 		}
 	}
 
+	if (inx == NODE_STATE_CANCEL_REBOOT)
+		return "CANCEL_REBOOT";
 	if (inx == NODE_STATE_POWER_SAVE)
 		return "POWER_DOWN";
 	if (inx == NODE_STATE_POWER_UP)
@@ -3055,6 +3057,8 @@ extern char *node_state_string_compact(uint32_t inx)
 		}
 	}
 
+	if (inx == NODE_STATE_CANCEL_REBOOT)
+		return "CANC_R";
 	if (inx == NODE_STATE_POWER_SAVE)
 		return "POW_DN";
 	if (inx == NODE_STATE_POWER_UP)

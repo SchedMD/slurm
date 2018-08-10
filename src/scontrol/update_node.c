@@ -171,6 +171,10 @@ scontrol_update_node (int argc, char **argv)
 				        MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_NO_RESPOND;
 				update_cnt++;
+			} else if (xstrncasecmp(val, "CANCEL_REBOOT",
+				   MAX(val_len, 3)) == 0) {
+				node_msg.node_state = NODE_STATE_CANCEL_REBOOT;
+				update_cnt++;
 			} else if (xstrncasecmp(val, "DRAIN",
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_DRAIN;

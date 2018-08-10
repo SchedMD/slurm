@@ -89,6 +89,10 @@ See "man slurmctld" for information about where the core file will be
 written.
 
 .TP
+\fBcancel_reboot \fI<NodeList>\fP
+Cancel pending reboots on nodes.
+
+.TP
 \fBcheckpoint\fP \fICKPT_OP\fP \fIID\fP
 Perform a checkpoint activity on the job step(s) with the specified identification.
 \fIID\fP can be used to identify a specific job (e.g. "<job_id>",
@@ -1095,13 +1099,15 @@ Identify the state to be assigned to the node. Possible node states are "NoResp"
 "ALLOC", "ALLOCATED", "COMPLETING", "DOWN", "DRAIN", "FAIL", "FAILING",
 "FUTURE" "IDLE", "MAINT", "MIXED", "PERFCTRS/NPC", "RESERVED", "POWER_DOWN",
 "POWER_UP", "RESUME" or "UNDRAIN". Not all of those states can be set using
-the scontrol command only the following can: "DOWN", "DRAIN", "FAIL",
-"FUTURE", "RESUME", "NoResp", "POWER_DOWN", "POWER_UP" and "UNDRAIN".
+the scontrol command only the following can: "CANCEL_REBOOT", "DOWN", "DRAIN",
+"FAIL", "FUTURE", "RESUME", "NoResp", "POWER_DOWN", "POWER_UP" and "UNDRAIN".
 If a node is in a "MIXED" state it usually means the node is in
 multiple states.  For instance if only part of the node is "ALLOCATED"
 and the rest of the node is "IDLE" the state will be "MIXED".
 If you want to remove a node from service, you typically want to set
 it's state to "DRAIN".
+"CANCEL_REBOOT" cancels a pending reboot on the node (same as "scontrol
+cancel_reboot <node>").
 "FAILING" is similar to "DRAIN" except that some applications will
 seek to relinquish those nodes before the job completes.
 "PERFCTRS/NPC" indicates that Network Performance Counters associated with this

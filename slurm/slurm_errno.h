@@ -208,6 +208,7 @@ enum {
 	ESLURM_INVALID_JOB_DEFAULTS,
 	ESLURM_RESERVATION_MAINT,
 	ESLURM_INVALID_GRES_TYPE,
+	ESLURM_REBOOT_IN_PROGRESS,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
