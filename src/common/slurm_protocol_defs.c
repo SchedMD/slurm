@@ -2876,10 +2876,26 @@ extern char *node_state_string(uint32_t inx)
 		if (comp_flag
 		    || (base == NODE_STATE_ALLOCATED)
 		    || (base == NODE_STATE_MIXED)) {
+			if (maint_flag)
+				return "DRAINING$";
+			if (reboot_flag)
+				return "DRAINING@";
+			if (power_up_flag)
+				return "DRAINING#";
+			if (power_down_flag)
+				return "DRAINING~";
 			if (no_resp_flag)
 				return "DRAINING*";
 			return "DRAINING";
 		} else {
+			if (maint_flag)
+				return "DRAINED$";
+			if (reboot_flag)
+				return "DRAINED@";
+			if (power_up_flag)
+				return "DRAINED#";
+			if (power_down_flag)
+				return "DRAINED~";
 			if (no_resp_flag)
 				return "DRAINED*";
 			return "DRAINED";
@@ -3036,10 +3052,26 @@ extern char *node_state_string_compact(uint32_t inx)
 		if (comp_flag
 		    || (inx == NODE_STATE_ALLOCATED)
 		    || (inx == NODE_STATE_MIXED)) {
+			if (maint_flag)
+				return "DRNG$";
+			if (reboot_flag)
+				return "DRNG@";
+			if (power_up_flag)
+				return "DRNG#";
+			if (power_down_flag)
+				return "DRNG~";
 			if (no_resp_flag)
 				return "DRNG*";
 			return "DRNG";
 		} else {
+			if (maint_flag)
+				return "DRAIN$";
+			if (reboot_flag)
+				return "DRAIN@";
+			if (power_up_flag)
+				return "DRAIN#";
+			if (power_down_flag)
+				return "DRAIN~";
 			if (no_resp_flag)
 				return "DRAIN*";
 			return "DRAIN";
