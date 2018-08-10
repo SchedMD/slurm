@@ -71,6 +71,8 @@ char *time_format_string = "Minutes";
 void *db_conn = NULL;
 slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 char *tres_usage_str = "CPU";
+/* by default, normalize all usernames to lower case */
+bool user_case_norm = true;
 
 static char *	_build_cluster_string(void);
 static void	_build_tres_list(void);
@@ -93,6 +95,7 @@ main (int argc, char **argv)
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	char *temp = NULL;
 	int option_index;
+	uint16_t persist_conn_flags = 0;
 	static struct option long_options[] = {
 		{"all_clusters", 0, 0, 'a'},
 		{"cluster",  1, 0, 'M'},
@@ -243,11 +246,14 @@ main (int argc, char **argv)
 	    !local_flag)
 		cluster_flag = _build_cluster_string();
 
-	db_conn = slurmdb_connection_get();
+	db_conn = slurmdb_connection_get2(&persist_conn_flags);
 	if (errno) {
 		fatal("Problem connecting to the database: %m");
 		exit(1);
 	}
+
+	if (persist_conn_flags & PERSIST_FLAG_P_USER_CASE)
+		user_case_norm = false;
 
 	_build_tres_list();
 

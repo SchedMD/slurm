@@ -658,7 +658,12 @@ extern void scontrol_print_assoc_mgr_info(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "users", MAX(tag_len, 1))) {
 			if (!req.user_list)
 				req.user_list = list_create(slurm_destroy_char);
-			slurm_addto_char_list(req.user_list, val);
+			/*
+			 * Since we don't have a real connection to the dbd to
+			 * know if case is enforced or not so we will assume
+			 * it is.
+			 */
+			slurm_addto_char_list_with_case(req.user_list, val, 0);
 		} else {
 			exit_code = 1;
 			if (quiet_flag != 1)

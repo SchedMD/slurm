@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- Add shutdown_on_reboot SlurmdParameter to control whether the Slurmd will
     shutdown itself down or not when a reboot request is received.
  -- Add cancel_reboot scontrol option to cancel pending reboot of nodes.
+ -- Make Users case insensitive in the database based on
+    Parameters=PreserveCaseUser in the slurmdbd.conf.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

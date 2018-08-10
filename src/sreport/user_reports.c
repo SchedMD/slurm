@@ -104,8 +104,9 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (!assoc_cond->user_list)
 				assoc_cond->user_list =
 					list_create(slurm_destroy_char);
-			slurm_addto_char_list(assoc_cond->user_list,
-					      argv[i]+end);
+			slurm_addto_char_list_with_case(assoc_cond->user_list,
+							argv[i]+end,
+							user_case_norm);
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Accounts",
 					 MAX(command_len, 2))
