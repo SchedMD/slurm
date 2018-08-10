@@ -10265,8 +10265,6 @@ extern void gres_build_job_details(List job_gres_list,
 			for (j = 0; j < my_gres_cnt; j++) {
 				if (j >= job_gres_data->node_cnt)
 					break;	/* node count mismatch */
-				if (job_gres_data->gres_bit_alloc[j] == NULL)
-					continue;
 				if (my_gres_details[j])
 					sep1 = ",";
 				else
@@ -10278,11 +10276,23 @@ extern void gres_build_job_details(List job_gres_list,
 					sep2 = "";
 					type = "";
 				}
-				bit_fmt(tmp_str, sizeof(tmp_str),
-                                        job_gres_data->gres_bit_alloc[j]);
-				xstrfmtcat(my_gres_details[j], "%s%s%s%s(IDX:%s)",
-					   sep1, gres_context[i].gres_name,
-					   sep2, type, tmp_str);
+				if (job_gres_data->gres_bit_alloc[j]) {
+					bit_fmt(tmp_str, sizeof(tmp_str),
+		                                job_gres_data->
+						gres_bit_alloc[j]);
+					xstrfmtcat(my_gres_details[j],
+						   "%s%s%s%s(IDX:%s)", sep1,
+						   gres_context[i].gres_name,
+						   sep2, type, tmp_str);
+				} else {
+					xstrfmtcat(my_gres_details[j],
+						   "%s%s%s%s(CNT:%"PRIu64")",
+						   sep1,
+						   gres_context[i].gres_name,
+						   sep2, type,
+						   job_gres_data->
+						   gres_cnt_node_alloc[j]);
+				}
 			}
 			break;
 		}

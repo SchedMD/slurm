@@ -750,7 +750,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 						hl_last);
 					xstrfmtcat(out,
 						   "  Nodes=%s CPU_IDs=%s "
-						   "Mem=%"PRIu64" GRES_IDX=%s",
+						   "Mem=%"PRIu64" GRES=%s",
 						   last_hosts, tmp2,
 						   last_mem_alloc_ptr ?
 						   last_mem_alloc : 0,
@@ -791,7 +791,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 		if (hostlist_count(hl_last)) {
 			last_hosts = hostlist_ranged_string_xmalloc(hl_last);
-			xstrfmtcat(out, "  Nodes=%s CPU_IDs=%s Mem=%"PRIu64" GRES_IDX=%s",
+			xstrfmtcat(out, "  Nodes=%s CPU_IDs=%s Mem=%"PRIu64" GRES=%s",
 				 last_hosts, tmp2,
 				 last_mem_alloc_ptr ? last_mem_alloc : 0,
 				 gres_last);

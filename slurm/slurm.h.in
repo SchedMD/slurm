@@ -1624,7 +1624,7 @@ typedef struct job_info {
 	char *fed_siblings_viable_str; /* string of viable sibling names */
 	uint32_t gres_detail_cnt; /* Count of gres_detail_str records,
 				 * one per allocated node */
-	char **gres_detail_str;	/* Details of GRES index alloc per node */
+	char **gres_detail_str;	/* Details of GRES count/index alloc per node */
 	uint32_t group_id;	/* group job submitted as */
 	uint32_t job_id;	/* job ID */
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
