@@ -2970,7 +2970,7 @@ static void _job_state_delete(void *gres_data)
 	xfree(gres_ptr->gres_cnt_node_alloc);
 	xfree(gres_ptr->gres_bit_step_alloc);
 	xfree(gres_ptr->gres_cnt_step_alloc);
-	if (gres_ptr->gres_cnt_node_select) {
+	if (gres_ptr->gres_bit_select) {
 		for (i = 0; i < gres_ptr->total_node_cnt; i++)
 			FREE_NULL_BITMAP(gres_ptr->gres_bit_select[i]);
 	}
@@ -5999,8 +5999,16 @@ static int _set_job_bits2(struct job_resources *job_res, int node_inx,
 
 	job_specs = sock_gres->job_specs;
 	node_specs = sock_gres->node_specs;
-	if (job_specs->gres_per_job == job_specs->total_gres)
+	if (job_specs->gres_per_job == job_specs->total_gres) {
 		fini = 1;
+		return fini;
+	}
+	if (!job_specs->gres_bit_select ||
+	   !job_specs->gres_bit_select[node_inx]) {
+		error("cons_tres: %s: gres_bit_select NULL for job %u on node %d",
+		      __func__, job_id, node_inx);
+		return SLURM_ERROR;
+	}
 	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 				   &cores_per_socket_cnt);
 	if (rc != SLURM_SUCCESS) {
@@ -6553,13 +6561,17 @@ static uint32_t _get_task_cnt_node(uint32_t **tasks_per_node_socket,
 }
 
 /* Determine maximum GRES allocation count on this node; no topology */
-static uint64_t _get_job_cnt(sock_gres_t *sock_gres, int rem_node_cnt)
+static uint64_t _get_job_cnt(sock_gres_t *sock_gres,
+			     gres_node_state_t *node_specs, int rem_node_cnt)
 {
-	uint64_t max_gres;
-
+	uint64_t avail_gres, max_gres;
 	gres_job_state_t *job_specs = sock_gres->job_specs;
+
+	avail_gres = node_specs->gres_cnt_avail - node_specs->gres_cnt_alloc;
 	/* Insure at least one GRES per node on remaining nodes */
-	max_gres = job_specs->gres_per_job - (rem_node_cnt - 1);
+	max_gres = job_specs->gres_per_job - job_specs->total_gres -
+		   (rem_node_cnt - 1);
+	max_gres = MIN(avail_gres, max_gres);
 
 	return max_gres;
 }
@@ -6609,6 +6621,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 	int node_cnt, rem_node_cnt;
 	int job_fini = -1;	/* -1: not applicable, 0: more work, 1: fini */
 	uint32_t **tasks_per_node_socket = NULL;
+	uint64_t save_gres_cnt;
 
 	if (!job_res || !job_res->node_bitmap)
 		return SLURM_ERROR;
@@ -6667,8 +6680,11 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 				} else if (job_specs->gres_per_job) {
 					job_specs->gres_cnt_node_select[i] =
 						_get_job_cnt(sock_gres,
+							     node_specs,
 							     rem_node_cnt--);
 				}
+				job_specs->total_gres +=
+					job_specs->gres_cnt_node_select[i];
 				continue;
 			}
 
@@ -6699,12 +6715,20 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 				error("cons_tres: %s job %u job_spec lacks GRES counter",
 				      __func__, job_id);
 			}
+			if (job_fini == -1) {
+				/*
+				 * _set_job_bits1() updates total_gres counter,
+				 * this handle other cases
+				 */
+				job_specs->total_gres +=
+					job_specs->gres_cnt_node_select[i];
+			}
 		}
 		list_iterator_destroy(sock_gres_iter);
 	}
 
 	if (job_fini == 0) {
-		/* Need more GRES to satisfy gres-per-job option */
+		/* Need more GRES to satisfy gres-per-job option with bitmaps */
 		node_inx = -1;
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
@@ -6717,9 +6741,14 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 				node_specs = sock_gres->node_specs;
 				if (!job_specs || !node_specs)
 					continue;
+				save_gres_cnt =
+					job_specs->gres_cnt_node_select[i];
 				job_fini = _set_job_bits2(job_res, i, node_inx,
 							  sock_gres, job_id,
 							  tres_mc_ptr);
+				job_specs->total_gres +=
+					(job_specs->gres_cnt_node_select[i] -
+					 save_gres_cnt);
 				if (job_fini == 1)
 					break;
 			}
