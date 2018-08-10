@@ -82,7 +82,8 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <h3>Functions called by the accounting_storage plugin</h3>
 
 <p class="commandline">void *acct_storage_p_get_connection(bool
-  make_agent, int conn_num, bool rollback, char *location)
+  make_agent, int conn_num, uint16_t *persist_conn_flags,
+  bool rollback, char *location)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 acct_storage_p_get_connection() is called to get a connection to the
   storage medium. acct_storage_p_close_connection() should be used to
@@ -95,6 +96,8 @@ the plugin.  In many cases you should plan on multiple simultaneous
 connections to the plugin.  This number is useful since the debug
 messages can print this out to determine which connection the message
 is from.<br>
+<span class="commandline">persist_conn_flags</span> (output) Flags passed back
+from the server if talking to the dbd (optional).<br>
 <span class="commandline">rollback</span> (input) Allow rollback to
 happen or not (in use with databases that support rollback).<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>

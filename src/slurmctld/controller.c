@@ -684,8 +684,8 @@ int main(int argc, char **argv)
 
 		if (!acct_db_conn) {
 			acct_db_conn = acct_storage_g_get_connection(
-						&callbacks, 0, false,
-						slurmctld_conf.cluster_name);
+				&callbacks, 0, NULL, false,
+				slurmctld_conf.cluster_name);
 			/*
 			 * We only send in a variable the first time
 			 * we call this since we are setting up static
@@ -2314,8 +2314,9 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	if (acct_db_conn)
 		acct_storage_g_close_connection(&acct_db_conn);
 
-	acct_db_conn = acct_storage_g_get_connection(callbacks, 0, false,
-						     slurmctld_conf.cluster_name);
+	acct_db_conn = acct_storage_g_get_connection(
+		callbacks, 0, NULL, false,
+		slurmctld_conf.cluster_name);
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg, errno)) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)

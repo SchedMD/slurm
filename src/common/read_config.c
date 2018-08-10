@@ -3053,7 +3053,7 @@ static int _config_is_storage(s_p_hashtbl_t *hashtbl, char *name)
 	/* unlock conf_lock and set as initialized before accessing it */
 	conf_initialized = true;
 	slurm_mutex_unlock(&conf_lock);
-	db_conn = acct_storage_g_get_connection(NULL, 0, false, NULL);
+	db_conn = acct_storage_g_get_connection(NULL, 0, NULL, false, NULL);
 	if (db_conn == NULL)
 		goto end; /* plugin will out error itself */
 	config = acct_storage_g_get_config(db_conn, "slurm.conf");
