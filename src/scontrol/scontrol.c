@@ -855,8 +855,8 @@ static int _process_command (int argc, char **argv)
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n",
 				 tag);
-		}
-		scontrol_print_completing();
+		} else
+			scontrol_print_completing();
 	}
 	else if (xstrncasecmp(tag, "cluster", MAX(tag_len, 2)) == 0) {
 		if (clusters) {
