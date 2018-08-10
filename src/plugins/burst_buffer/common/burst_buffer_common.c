@@ -241,7 +241,6 @@ extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
 				     struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_alloc = NULL;
-	char jobid_buf[32];
 
 	xassert(job_ptr);
 	xassert(state_ptr);
@@ -252,10 +251,8 @@ extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
 				xassert(bb_alloc->magic == BB_ALLOC_MAGIC);
 				return bb_alloc;
 			}
-			error("%s: Slurm state inconsistent with burst "
-			      "buffer. %s has UserID mismatch (%u != %u)",
-			      __func__,
-			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+			error("%s: Slurm state inconsistent with burst buffer. %pJ has UserID mismatch (%u != %u)",
+			      __func__, job_ptr,
 			      bb_alloc->user_id, job_ptr->user_id);
 			/* This has been observed when slurmctld crashed and
 			 * the job state recovered was missing some jobs
@@ -920,8 +917,7 @@ extern void bb_set_use_time(bb_state_t *state_ptr)
 				job_ptr = find_job_record(bb_alloc->job_id);
 				if (!job_ptr && !bb_alloc->orphaned) {
 					bb_alloc->orphaned = true;
-					error("%s: Job %u not found for "
-					      "allocated burst buffer",
+					error("%s: JobId=%u not found for allocated burst buffer",
 					      __func__, bb_alloc->job_id);
 					bb_alloc->use_time = now + 24 * 60 * 60;
 				} else if (!job_ptr) {
@@ -1187,7 +1183,7 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 	int i;
 
 	if (bb_job) {
-		xstrfmtcat(out_buf, "%s: Job:%u UserID:%u ",
+		xstrfmtcat(out_buf, "%s: JobId=%u UserID:%u ",
 			   state_ptr->name, bb_job->job_id, bb_job->user_id);
 		xstrfmtcat(out_buf, "Swap:%ux%u ", bb_job->swap_size,
 			   bb_job->swap_nodes);
