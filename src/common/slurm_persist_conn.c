@@ -615,6 +615,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		if (resp && (rc == SLURM_SUCCESS)) {
 			rc = resp->rc;
 			persist_conn->version = resp->ret_info;
+			persist_conn->flags |= resp->flags;
 		}
 
 		if (rc != SLURM_SUCCESS) {
@@ -1072,6 +1073,7 @@ extern void slurm_persist_pack_rc_msg(
 {
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		packstr(msg->comment, buffer);
+		pack16(msg->flags, buffer);
 		pack32(msg->rc, buffer);
 		pack16(msg->ret_info, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
@@ -1095,6 +1097,7 @@ extern int slurm_persist_unpack_rc_msg(
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
+		safe_unpack16(&msg_ptr->flags, buffer);
 		safe_unpack32(&msg_ptr->rc, buffer);
 		safe_unpack16(&msg_ptr->ret_info, buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {

@@ -43,6 +43,7 @@
 #define PERSIST_FLAG_DBD            0x0001
 #define PERSIST_FLAG_RECONNECT      0x0002
 #define PERSIST_FLAG_ALREADY_INITED 0x0004
+#define PERSIST_FLAG_P_USER_CASE    0x0008
 
 typedef enum {
 	PERSIST_TYPE_NONE = 0,
@@ -93,6 +94,7 @@ typedef struct {
 
 typedef struct {
 	char *comment;
+	uint16_t flags;
 	uint32_t rc;
 	uint16_t ret_info; /* protocol version we are connecting to since we
 			    * sent the lowest one to begin with, or the return
