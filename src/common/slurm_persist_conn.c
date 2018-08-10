@@ -1070,9 +1070,18 @@ extern void slurm_persist_free_init_req_msg(persist_init_req_msg_t *msg)
 extern void slurm_persist_pack_rc_msg(
 	persist_rc_msg_t *msg, Buf buffer, uint16_t protocol_version)
 {
-	packstr(msg->comment, buffer);
-	pack32(msg->rc, buffer);
-	pack16(msg->ret_info, buffer);
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		packstr(msg->comment, buffer);
+		pack32(msg->rc, buffer);
+		pack16(msg->ret_info, buffer);
+	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		packstr(msg->comment, buffer);
+		pack32(msg->rc, buffer);
+		pack16(msg->ret_info, buffer);
+	} else {
+		error("%s: invalid protocol version %u",
+		      __func__, protocol_version);
+	}
 }
 
 extern int slurm_persist_unpack_rc_msg(
@@ -1084,9 +1093,19 @@ extern int slurm_persist_unpack_rc_msg(
 
 	*msg = msg_ptr;
 
-	safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
-	safe_unpack32(&msg_ptr->rc, buffer);
-	safe_unpack16(&msg_ptr->ret_info, buffer);
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->rc, buffer);
+		safe_unpack16(&msg_ptr->ret_info, buffer);
+	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->rc, buffer);
+		safe_unpack16(&msg_ptr->ret_info, buffer);
+	} else {
+		error("%s: invalid protocol_version %u",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
 
 	return SLURM_SUCCESS;
 
