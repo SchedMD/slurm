@@ -61,7 +61,7 @@ static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void _pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version);
 
 /* Print all licenses on a list */
-static inline void _licenses_print(char *header, List licenses, int job_id)
+static void _licenses_print(char *header, List licenses, struct job_record *job_ptr)
 {
 	ListIterator iter;
 	licenses_t *license_entry;
@@ -73,13 +73,13 @@ static inline void _licenses_print(char *header, List licenses, int job_id)
 
 	iter = list_iterator_create(licenses);
   	while ((license_entry = (licenses_t *) list_next(iter))) {
-		if (job_id == 0) {
+		if (!job_ptr) {
 			info("licenses: %s=%s total=%u used=%u",
 			     header, license_entry->name,
 			     license_entry->total, license_entry->used);
 		} else {
-			info("licenses: %s=%s job_id=%u available=%u used=%u",
-			     header, license_entry->name, job_id,
+			info("licenses: %s=%s %pJ available=%u used=%u",
+			     header, license_entry->name, job_ptr,
 			     license_entry->total, license_entry->used);
 		}
 	}
@@ -260,7 +260,7 @@ extern int license_init(char *licenses)
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
 
-	_licenses_print("init_license", license_list, 0);
+	_licenses_print("init_license", license_list, NULL);
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
 }
@@ -317,7 +317,7 @@ extern int license_update(char *licenses)
 
         FREE_NULL_LIST(license_list);
         license_list = new_list;
-        _licenses_print("update_license", license_list, 0);
+        _licenses_print("update_license", license_list, NULL);
         slurm_mutex_unlock(&license_mutex);
         return SLURM_SUCCESS;
 }
@@ -543,7 +543,7 @@ extern List license_validate(char *licenses,
 	}
 
 	slurm_mutex_lock(&license_mutex);
-	_licenses_print("request_license", job_license_list, 0);
+	_licenses_print("request_license", job_license_list, NULL);
 	iter = list_iterator_create(job_license_list);
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		if (license_list) {
@@ -709,7 +709,7 @@ extern int license_job_get(struct job_record *job_ptr)
 		}
 	}
 	list_iterator_destroy(iter);
-	_licenses_print("acquire_license", license_list, job_ptr->job_id);
+	_licenses_print("acquire_license", license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
 }
@@ -752,7 +752,7 @@ extern int license_job_return(struct job_record *job_ptr)
 		}
 	}
 	list_iterator_destroy(iter);
-	_licenses_print("return_license", license_list, job_ptr->job_id);
+	_licenses_print("return_license", license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
 }
