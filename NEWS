@@ -1,8 +1,11 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 17.11.9-2
+* Changes in Slurm 17.11.10
 ===========================
+
+* Changes in Slurm 17.11.9-2
+============================
  -- Fix printing of node state "drain + reboot" (and other node state flags).
  -- Fix invalid read (segfault) when sorting multi-partition jobs.
  -- Move several new error() messages to debug() to keep them out of users'
