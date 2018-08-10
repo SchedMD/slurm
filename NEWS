@@ -190,6 +190,9 @@ documents those changes that are of interest to users and administrators.
     node_features_p_changeable_feature in node_features plugin.
  -- Add Slurm configuration file check logic using "slurmctld -t" command.
 
+* Changes in Slurm 17.11.10
+===========================
+
 * Changes in Slurm 17.11.9
 ==========================
  -- Fix segfault in slurmctld when a job's node bitmap is NULL during a
@@ -203,6 +206,10 @@ documents those changes that are of interest to users and administrators.
     a task prolog script.
  -- Avoid node layout fragmentation if running with a fixed CPU count but
     without Sockets and CoresPerSocket defined.
+ -- burst_buffer/cray - Fix datawarp swap default pool overriding jobdw.
+ -- Fix incorrect job priority assignment for multi-partition job with
+    different PriorityTier settings on the partitions.
+ -- Fix sinfo to print correct node state.
 
 * Changes in Slurm 17.11.8
 ==========================

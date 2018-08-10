@@ -39,6 +39,40 @@ set job_id      0
 print_header $test_id
 
 #
+# Since we make changes to configuration, call this function restore
+# configuration before exiting.
+#
+proc endit { } {
+	global exit_code bin_rm file_in
+	reconfigure
+	if {$exit_code == 0} {
+		exec $bin_rm -f $file_in
+		send_user "\nSUCCESS\n"
+	} else {
+		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+	}
+	exit $exit_code
+}
+
+#
+# We must be SlurmUser or root in order to change the partition MaxTime limit,
+# otherwise this test may fail.
+#
+if {[test_super_user] == 0} {
+	log_warn "You must be SlurmUser or root to run this test."
+	exit 0
+}
+
+#
+# Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
+# time limits greater than MaxTime.
+#
+set exit_code [set_partition_maximum_time_limit "" -1]
+if { $exit_code != 0 } {
+	endit
+}
+
+#
 # Build input script file
 #
 exec $bin_rm -f $file_in
@@ -70,7 +104,8 @@ expect {
 
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch not submitted\n"
-	exit 1
+	set exit_code 1
+	endit
 }
 
 #
@@ -80,7 +115,8 @@ if {[wait_for_job $job_id DONE] != 0} {
 	cancel_job $job_id
 	send_user "\nFAILURE: job failed to run to completion\n"
 	send_user "FAILURE: This can be due to QOS or account time limit <120 minutes\n"
-	exit 1
+	set exit_code 1
+	endit
 }
 spawn $scontrol show job $job_id
 expect {
@@ -106,8 +142,4 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
-}
-exit $exit_code
+endit

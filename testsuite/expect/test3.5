@@ -45,6 +45,15 @@ if {[test_super_user] == 0} {
 }
 
 #
+# Cannot run the test if OverTimeLimit is set, since we test time limits.
+#
+set overtimelim [get_over_time_limit]
+if {$overtimelim != 0} {
+	log_warn "Cannot run this test when OverTimeLimit is set. Exiting now."
+	exit 0
+}
+
+#
 # Confirm the partition name does not already exist
 #
 set found -1

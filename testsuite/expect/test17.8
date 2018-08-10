@@ -42,6 +42,22 @@ set time_get    0
 print_header $test_id
 
 #
+# Since we make changes to configuration, call this function restore
+# configuration before exiting.
+#
+proc endit { } {
+	global exit_code bin_rm file_in
+	reconfigure
+	if {$exit_code == 0} {
+		exec $bin_rm -f $file_in
+		send_user "\nSUCCESS\n"
+	} else {
+		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+	}
+	exit $exit_code
+}
+
+#
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
 # otherwise this test may fail.
 #
@@ -50,33 +66,13 @@ if {[test_super_user] == 0} {
 	exit 0
 }
 
-set default_part [default_partition]
-if { $default_part == "" } {
-	log_error "Unable to get the default partition."
-	exit 1
-}
-
 #
 # Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
 # time limits greater than MaxTime.
 #
-spawn $scontrol update partitionname=$default_part MaxTime=-1
-expect {
-	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if { $exit_code == 1 } {
-	exit $exit_code
-}
-set maxtime [get_partition_maximum_time_limit $default_part]
-if { $maxtime != -1 } {
-	log_error "Unable to update partition MaxTime"
-	exit 1
+set exit_code [set_partition_maximum_time_limit "" -1]
+if { $exit_code != 0 } {
+	endit
 }
 
 #
@@ -111,7 +107,8 @@ expect {
 }
 if { $job_id == 0 } {
 	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	set exit_code 1
+	endit
 }
 
 spawn $scontrol show job $job_id
@@ -146,6 +143,8 @@ expect {
 	}
 	-re "time limit exceeds" {
 		send_user "\nWARNING: unable to fully test time limits\n"
+		# Don't use endit here since we don't want to print "SUCCESS"
+		reconfigure
 		exit $exit_code
 	}
 	timeout {
@@ -159,7 +158,8 @@ expect {
 }
 if { $job_id == 0 } {
 	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	set exit_code 1
+	endit
 }
 
 spawn $scontrol show job $job_id
@@ -203,7 +203,8 @@ expect {
 }
 if { $job_id == 0 } {
 	send_user "\nFAILURE: failed to submit job\n"
-	exit 1
+	set exit_code 1
+	endit
 }
 
 spawn $scontrol show job $job_id
@@ -220,16 +221,10 @@ if {$time_get != 1500} {
 	send_user "\nFAILURE: sbatch failed to set time limit ($time_get != 1500)\n"
 	set exit_code 1
 }
-cancel_job $job_id
-
-#
-# Restore partition MaxTime.
-# reconfigure will set exit_code and log any errors if it fails.
-#
-reconfigure
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+set rc [cancel_job $job_id]
+if { $rc != 0 } {
+	log_error "Unable to cancel job $job_id."
+	incr exit_code
 }
-exit $exit_code
+
+endit

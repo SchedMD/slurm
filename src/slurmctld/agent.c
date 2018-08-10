@@ -952,7 +952,22 @@ static void *_thread_per_group_rpc(void *args)
 			}
 		}
 		//info("sending %u to %s", msg_type, thread_ptr->nodelist);
-		if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) {
+		if (msg_type == SRUN_JOB_COMPLETE) {
+			/*
+			 * The srun runs as a single thread, while the kernel
+			 * listen() may be queuing messages for further
+			 * processing. If we get our SYN in the listen queue
+			 * at the same time the last MESSAGE_TASK_EXIT is being
+			 * processed, srun may exit meaning this message is
+			 * never received, leading to a series of error
+			 * messages from slurm_send_only_node_msg().
+			 * So, we use this different function that blindly
+			 * flings the message out and disregards any
+			 * communication problems that may arise.
+			 */
+			slurm_send_msg_maybe(&msg);
+			thread_state = DSH_DONE;
+		} else if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) {
 			thread_state = DSH_DONE;
 		} else {
 			if (!srun_agent) {

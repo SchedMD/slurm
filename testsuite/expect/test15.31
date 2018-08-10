@@ -37,6 +37,39 @@ set exit_code   0
 print_header $test_id
 
 #
+# Since we make changes to configuration, call this function restore
+# configuration before exiting.
+#
+proc endit { } {
+	global exit_code
+	reconfigure
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	} else {
+		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+	}
+	exit $exit_code
+}
+
+#
+# We must be SlurmUser or root in order to change the partition MaxTime limit,
+# otherwise this test may fail.
+#
+if {[test_super_user] == 0} {
+	log_warn "You must be SlurmUser or root to run this test."
+	exit 0
+}
+
+#
+# Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
+# time limits greater than MaxTime.
+#
+set exit_code [set_partition_maximum_time_limit "" -1]
+if { $exit_code != 0 } {
+	endit
+}
+
+#
 # Spawn a job that deadline is too short
 #
 set timeout $max_job_delay
@@ -81,7 +114,4 @@ if {$job_id != 0} {
 	}
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
-exit $exit_code
+endit

@@ -490,6 +490,18 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 	return priority_fs;
 }
 
+static int _sort_part_tier(void *x, void *y)
+{
+	struct part_record *parta = (struct part_record *) x;
+	struct part_record *partb = (struct part_record *) y;
+
+	if (parta->priority_tier > partb->priority_tier)
+		return -1;
+	if (parta->priority_tier < partb->priority_tier)
+		return 1;
+
+	return 0;
+}
 
 /* Returns the priority after applying the weight factors */
 static uint32_t _get_priority_internal(time_t start_time,
@@ -587,6 +599,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		}
 
 		i = 0;
+		list_sort(job_ptr->part_ptr_list, _sort_part_tier);
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = (struct part_record *)
 			list_next(part_iterator))) {

@@ -36,9 +36,43 @@ set job_id      0
 
 print_header $test_id
 
+
+#
+# Since we make changes to configuration, call this function restore
+# configuration before exiting.
+#
+proc endit { } {
+	global exit_code
+	reconfigure
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	} else {
+		send_user "\nFAILURE: exiting with exit code $exit_code\n"
+	}
+	exit $exit_code
+}
+
 if {[test_alps]} {
 	send_user "\nWARNING: This test is incompatible with Cray/alps systems\n"
 	exit $exit_code
+}
+
+#
+# We must be SlurmUser or root in order to change the partition MaxTime limit,
+# otherwise this test may fail.
+#
+if {[test_super_user] == 0} {
+	log_warn "You must be SlurmUser or root to run this test."
+	exit 0
+}
+
+#
+# Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
+# time limits greater than MaxTime.
+#
+set exit_code [set_partition_maximum_time_limit "" -1]
+if { $exit_code != 0 } {
+	endit
 }
 
 #
@@ -67,7 +101,8 @@ expect {
 if {$job_id == 0} {
 	send_user "\nFAILURE: job not submitted\n"
 	send_user "FAILURE: This can be due to QOS or account time limit <120 minutes\n"
-	exit 1
+	set exit_code 1
+	endit
 }
 
 #
@@ -95,8 +130,10 @@ expect {
 	}
 }
 
-cancel_job $job_id
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+set rc [cancel_job $job_id]
+if { $rc != 0 } {
+	log_error "Unable to cancel job $job_id."
+	incr exit_code
 }
-exit $exit_code
+
+endit

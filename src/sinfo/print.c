@@ -1012,7 +1012,7 @@ int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
 	char *upper_state, *lower_state;
-	uint16_t my_state;
+	uint32_t my_state;
 
 	if (sinfo_data && sinfo_data->nodes_total) {
 		my_state = sinfo_data->node_state;
@@ -1034,7 +1034,7 @@ int _print_state_long(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
 	char *upper_state, *lower_state;
-	uint16_t my_state;
+	uint32_t my_state;
 
 	if (sinfo_data && sinfo_data->nodes_total) {
 		my_state = sinfo_data->node_state;
