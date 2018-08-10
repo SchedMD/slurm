@@ -1983,8 +1983,6 @@ static int _update_node_active_features(char *node_names, char *active_features,
 						   node_bitmap);
 	}
 
-	info("got %p", last_node_bitmap);
-
 	_update_node_features_post(node_names,
 				   &last_active_features, active_features,
 				   &last_node_bitmap, &node_bitmap,
