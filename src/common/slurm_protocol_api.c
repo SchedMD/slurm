@@ -4561,7 +4561,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	 * this function.
 	 */
 	if (shutdown(fd, SHUT_WR))
-		error("%s: shutdown call failed: %m", __func__);
+		debug("%s: shutdown call failed: %m", __func__);
 
 again:
 	pfd.fd = fd;
@@ -4570,15 +4570,15 @@ again:
 	if (pollrc == -1) {
 		if (errno == EINTR)
 			goto again;
-		error("%s: poll error: %m", __func__);
+		debug("%s: poll error: %m", __func__);
 		(void) close(fd);
 		return SLURM_ERROR;
 	}
 
 	if (pollrc == 0) {
 		if (ioctl(fd, TIOCOUTQ, &value))
-			error("%s: TIOCOUTQ ioctl failed", __func__);
-		error("%s: poll timed out with %d outstanding: %m", __func__, value);
+			debug("%s: TIOCOUTQ ioctl failed", __func__);
+		debug("%s: poll timed out with %d outstanding: %m", __func__, value);
 		(void) close(fd);
 		return SLURM_ERROR;
 	}
@@ -4589,12 +4589,12 @@ again:
 		int value = -1;
 
 		if (ioctl(fd, TIOCOUTQ, &value))
-			error("%s: TIOCOUTQ ioctl failed", __func__);
+			debug("%s: TIOCOUTQ ioctl failed", __func__);
 		if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen))
-			error("%s: getsockopt error with %d outstanding: %m",
+			debug("%s: getsockopt error with %d outstanding: %m",
 			      __func__, value);
 		else
-			error("%s: poll error with %d outstanding: %s",
+			debug("%s: poll error with %d outstanding: %s",
 			      __func__, value, strerror(err));
 		(void) close(fd);
 		return SLURM_ERROR;
