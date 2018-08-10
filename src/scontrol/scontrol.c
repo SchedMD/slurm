@@ -679,7 +679,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 
 	if (argc > 1) {
 		int i = 1;
-		for (; i <= 2 && i < argc; i++) {
+		for (; i <= 3 && i < argc; i++) {
 			if (!strcasecmp(argv[i], "ASAP")) {
 				asap = true;
 				argc_offset++;
