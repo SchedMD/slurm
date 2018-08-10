@@ -5191,6 +5191,7 @@ static sock_gres_t *_build_sock_gres_by_type(gres_job_state_t *job_gres_ptr,
 		}
 		if (avail_gres < min_gres)
 			continue;	/* Insufficient GRES remaining */
+		sock_gres->cnt_any_sock += avail_gres;
 		sock_gres->total_cnt += avail_gres;
 		match = true;
 	}
@@ -5237,6 +5238,7 @@ static sock_gres_t *_build_sock_gres_basic(gres_job_state_t *job_gres_ptr,
 		return NULL;	/* Insufficient GRES remaining */
 
 	sock_gres = xmalloc(sizeof(sock_gres_t));
+	sock_gres->cnt_any_sock += avail_gres;
 	sock_gres->total_cnt += avail_gres;
 
 	return sock_gres;
@@ -6550,10 +6552,16 @@ static uint32_t _get_task_cnt_node(uint32_t **tasks_per_node_socket,
 	return task_cnt;
 }
 
-static int _get_job_cnt(struct job_resources *job_res, int node_inx)
+/* Determine maximum GRES allocation count on this node; no topology */
+static uint64_t _get_job_cnt(sock_gres_t *sock_gres, int rem_node_cnt)
 {
-//FIXME: Not sure what to do here
-return 1;
+	uint64_t max_gres;
+
+	gres_job_state_t *job_specs = sock_gres->job_specs;
+	/* Insure at least one GRES per node on remaining nodes */
+	max_gres = job_specs->gres_per_job - (rem_node_cnt - 1);
+
+	return max_gres;
 }
 
 /* Return count of GRES on this node */
@@ -6658,7 +6666,8 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 						sock_gres->sock_cnt);
 				} else if (job_specs->gres_per_job) {
 					job_specs->gres_cnt_node_select[i] =
-						_get_job_cnt(job_res, i);
+						_get_job_cnt(sock_gres,
+							     rem_node_cnt--);
 				}
 				continue;
 			}
