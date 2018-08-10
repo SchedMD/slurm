@@ -260,6 +260,9 @@ typedef struct slurm_options {
 	char *gpus_per_node;		/* --gpus_per_node		*/
 	char *gpus_per_socket;		/* --gpus_per_socket		*/
 	char *gpus_per_task;		/* --gpus_per_task		*/
+/* tres_per_job option is undocumented. For future use and cons_tres testing */
+	char *tres_per_job;		/* --tres-per-job		*/
+
 	int pn_min_cpus;		/* --mincpus			*/
 	int64_t mem_per_cpu;		/* --mem-per-cpu		*/
 	int64_t mem_per_gpu;		/* --mem-per-gpu		*/

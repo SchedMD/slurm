@@ -987,6 +987,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		xfree(opt.tres_freq);
 	}
 	j->tres_freq = xstrdup(opt.tres_freq);
+	j->tres_per_job = xstrdup(opt.tres_per_job);
 	xfmt_tres(&j->tres_per_job,    "gpu", opt.gpus);
 	xfmt_tres(&j->tres_per_node,   "gpu", opt.gpus_per_node);
 	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE")) {
