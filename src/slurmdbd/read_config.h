@@ -77,6 +77,8 @@ typedef struct slurm_dbd_conf {
 	uint16_t        log_fmt;        /* Log file timestamt format    */
 	uint32_t	max_time_range;	/* max time range for user queries */
 	uint16_t        msg_timeout;    /* message timeout		*/
+	char *		parameters;	/* parameters to change behavior with
+					 * the slurmdbd directly	*/
 	char *		pid_file;	/* where to store current PID	*/
 	char *		plugindir;	/* dir to look for plugins	*/
 	uint16_t        private_data;   /* restrict information         */
