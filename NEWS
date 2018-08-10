@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.10
 ===========================
  -- Fix printing of node state "drain + reboot" (and other node state flags).
+ -- Fix invalid read (segfault) when sorting multi-partition jobs.
 
 * Changes in Slurm 17.11.9
 ==========================
