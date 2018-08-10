@@ -824,8 +824,10 @@ static void _shutdown_agent(void)
 
 /* Open a socket connection to SlurmDbd
  * callbacks IN - make agent to process RPCs and contains callback pointers
+ * persist_conn_flags OUT - fill in from response of slurmdbd
  * Returns SLURM_SUCCESS or an error code */
-extern int open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks)
+extern int open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks,
+			      uint16_t *persist_conn_flags)
 {
 	int tmp_errno = SLURM_SUCCESS;
 	/* we need to set this up before we make the agent or we will
@@ -835,6 +837,8 @@ extern int open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks)
 
 	if (!slurmdbd_conn) {
 		_open_slurmdbd_conn(1);
+		if (persist_conn_flags)
+			*persist_conn_flags = slurmdbd_conn->flags;
 		tmp_errno = errno;
 	}
 	slurm_mutex_unlock(&slurmdbd_lock);

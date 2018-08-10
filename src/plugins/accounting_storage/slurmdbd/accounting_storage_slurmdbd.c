@@ -514,7 +514,7 @@ extern void *acct_storage_p_get_connection(
 	if (first)
 		init();
 
-	if (open_slurmdbd_conn(callbacks) == SLURM_SUCCESS)
+	if (open_slurmdbd_conn(callbacks, persist_conn_flags) == SLURM_SUCCESS)
 		errno = SLURM_SUCCESS;
 	/* send something back to make sure we don't run this again */
 	return (void *)1;

@@ -41,11 +41,11 @@
 #define _SLURMDBD_AGENT_H
 
 /* Open a socket connection to SlurmDbd
- * auth_info IN - alternate authentication key
- * make_agent IN - make agent to process RPCs if set
- * rollback IN - keep journal and permit rollback if set
+ * callbacks IN - make agent to process RPCs and contains callback pointers
+ * persist_conn_flags OUT - fill in from response of slurmdbd
  * Returns SLURM_SUCCESS or an error code */
-extern int open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks);
+extern int open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks,
+			      uint16_t *persist_conn_flags);
 
 /* Close the SlurmDBD socket connection */
 extern int close_slurmdbd_conn(void);
