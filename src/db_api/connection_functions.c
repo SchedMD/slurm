@@ -56,6 +56,22 @@ extern void *slurmdb_connection_get(void)
 }
 
 /*
+ * get a new connection to the slurmdb
+ * OUT: persist_conn_flags - Flags returned from connection if any see
+ *                           slurm_persist_conn.h.
+ * RET: pointer used to access db
+ */
+extern void *slurmdb_connection_get2(uint16_t *persist_conn_flags)
+{
+	char *cluster_name = slurm_get_cluster_name();
+	void *db_conn = acct_storage_g_get_connection(NULL, 0,
+						      persist_conn_flags,
+						      1, cluster_name);
+	xfree(cluster_name);
+	return db_conn;
+}
+
+/*
  * release connection to the storage unit
  * IN/OUT: void ** pointer returned from
  *         slurmdb_connection_get() which will be freed.
