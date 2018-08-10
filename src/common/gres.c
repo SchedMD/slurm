@@ -8267,7 +8267,7 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 		return 0;
 	}
 
-//FIXME: Needs updating for new TRES fields
+//FIXME: Add step support for other GRES count specifications
 	if (job_gres_ptr->gres_cnt_step_alloc) {
 		uint64_t job_gres_avail = job_gres_ptr->gres_per_node;
 		if (!ignore_alloc) {
@@ -9490,7 +9490,7 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 	uint64_t core_cnt, tmp_cnt;
 	ListIterator  job_gres_iter, step_gres_iter;
 	gres_state_t *job_gres_ptr, *step_gres_ptr;
-//FIXME: Need more work
+//FIXME: Add step support for other GRES count specifications
 //	if (step_gres_list == NULL)
 		return NO_VAL64;
 	if (job_gres_list == NULL)
@@ -9564,7 +9564,7 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	if (step_gres_ptr->gres_per_node) {
 		gres_needed = step_gres_ptr->gres_per_node;
 	} else {
-//FIXME: Add support for other GRES count specifications
+//FIXME: Add step support for other GRES count specifications
 		gres_needed = job_gres_ptr->gres_cnt_node_alloc[node_offset];
 	}
 	if (step_gres_ptr->node_cnt == 0)
@@ -10430,14 +10430,13 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
 			col_name = gres_data_ptr->type_name;
-//FIXME: Change to total_gres check below once field is set
-			count = gres_data_ptr->gres_per_node *
-				(uint64_t)gres_data_ptr->node_cnt;
+			count = gres_data_ptr->total_gres;
 		} else {
 			gres_step_state_t *gres_data_ptr = (gres_step_state_t *)
 				gres_state_ptr->gres_data;
 			col_name = gres_data_ptr->type_name;
 //FIXME: Change to total_gres check below once field is set
+//			count = gres_data_ptr->total_gres;
 			count = gres_data_ptr->gres_per_node *
 				(uint64_t)gres_data_ptr->node_cnt;
 		}
@@ -10465,10 +10464,10 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 				   tres_str ? "," : "",
 				   tres_rec->id, count);
 
-		/* Now lets put of the : name tres if we are tracking
+		/*
+		 * Now lets put of the : name tres if we are tracking
 		 * it as well.  This would be handy for gres like
-		 * gpu:tesla, where you might want to track both as
-		 * TRES.
+		 * gpu:tesla, where you might want to track both as TRES.
 		 */
 		if (col_name && (i < gres_context_cnt)) {
 			tres_req.name = xstrdup_printf(
@@ -10549,9 +10548,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		{
 			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
-//FIXME: Change to total_gres check below once field is set
-			count = gres_data_ptr->gres_per_node *
-				(uint64_t)node_cnt;
+			count = gres_data_ptr->total_gres;
 			break;
 		}
 		case GRES_STATE_TYPE_NODE:
@@ -10562,8 +10559,8 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 			break;
 		}
 		default:
-			error("unsupported state type %d in %s",
-			      state_type, __func__);
+			error("%s: unsupported state type %d", __func__,
+			      state_type);
 			continue;
 		}
 		/* Set main tres's count. */
@@ -10621,8 +10618,8 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 			break;
 		}
 		default:
-			error("unsupported state type %d in %s",
-			      state_type, __func__);
+			error("%s: unsupported state type %d", __func__,
+			      state_type);
 			continue;
 		}
 	}
